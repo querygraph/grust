@@ -6,6 +6,14 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ## Unreleased
 
+- Typed index construction reuses sparse edge-group buffers for forward and
+  reverse adjacency and borrows labels while grouping, preserving physical
+  edge identity, multiplicity, and immutable snapshot semantics.
+- PostgreSQL node and edge reads decode rows as they arrive and borrow protocol
+  text during decoding, avoiding an eagerly collected wire-row vector and
+  temporary owned copies of identifiers and JSON property payloads. Late
+  server and decoding errors still fail the complete read.
+
 - LSQB matrix: a Turso observation worker no longer reloads the CSVs; the
   coordinator loads the dataset once into a file-backed store and each
   worker copies that file into a private path, opens the copy and builds its

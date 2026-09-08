@@ -1,0 +1,57 @@
+   Compiling grust-postgres-core v0.13.0 (/tmp/grust-resident-index-review/crates/grust-postgres-core)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.72s
+     Running unittests src/lib.rs (/home/admin/src/adversarial-graph/target/review-grust/debug/deps/grust_postgres_core-cfcf366dd1349f6b)
+
+running 23 tests
+test streamed_read_tests::postgres_read_allocation_diagnostic_buffered ... ignored, allocation diagnostic; requires GRUST_PG_URL; run alone in a fresh process
+test streamed_read_tests::postgres_read_allocation_diagnostic_streamed ... ignored, allocation diagnostic; requires GRUST_PG_URL; run alone in a fresh process
+test streamed_read_tests::streamed_reads_preserve_values_and_recover_after_late_errors ... ignored, requires PostgreSQL (GRUST_PG_URL)
+test sql_safety::tests::autocommit_guard_rejects_unterminated_lexical_regions_and_nul ... ok
+test sql_safety::tests::autocommit_guard_ignores_keywords_in_sql_literals_and_comments ... ok
+test sql_safety::tests::autocommit_guard_rejects_transaction_control_in_batches ... ok
+test tests::live_invalid_typed_schema_is_rejected_before_bootstrap_ddl ... ignored, requires PostgreSQL
+test tests::live_postgres_put_read_traverse_and_schema ... ignored, requires PostgreSQL
+test tests::bootstrap_creates_universal_postgres_tables ... ok
+test tests::graph_schema_enforces_postgres_identifier_byte_limit ... ok
+test tests::edge_upsert_uses_grust_edge_identity ... ok
+test tests::graph_schema_creates_typed_views_and_indexes ... ok
+test tests::node_upsert_uses_jsonb_and_conflict_update ... ok
+test tests::mutation_batch_sql_wraps_ordered_mutations_in_transaction ... ok
+test tests::postgres_config_enforces_schema_and_derived_prefix_boundaries ... ok
+test tests::postgres_recursive_walk_tokens_are_delimiter_free ... ok
+test tests::postgres_typed_column_validates_its_public_input ... ok
+test tests::rejects_invalid_config_identifiers ... ok
+test tests::rejects_unsafe_json_property_keys ... ok
+test tests::traversal_sql_builds_exact_out_step ... ok
+test tests::traversal_sql_builds_property_start ... ok
+test tests::typed_field_aliases_use_postgres_utf8_byte_length ... ok
+test tests::typed_views_reject_fixed_and_duplicate_column_aliases ... ok
+
+test result: ok. 18 passed; 0 failed; 5 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/pg_cypher_live.rs (/home/admin/src/adversarial-graph/target/review-grust/debug/deps/pg_cypher_live-fc108656f882b856)
+
+running 5 tests
+test cypher_writes_execute_on_postgres ... ignored, requires live PostgreSQL (GRUST_PG_URL)
+test gated_reads_fall_back_to_the_reference ... ignored, requires live PostgreSQL (GRUST_PG_URL)
+test pushed_reads_match_the_reference ... ignored, requires live PostgreSQL (GRUST_PG_URL)
+test resident_snapshot_reflects_the_store_and_every_write_drops_it ... ignored, requires live PostgreSQL (GRUST_PG_URL)
+test transaction_scripts_commit_and_roll_back_atomically ... ignored, requires live PostgreSQL (GRUST_PG_URL)
+
+test result: ok. 0 passed; 0 failed; 5 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/scalar_count_sql.rs (/home/admin/src/adversarial-graph/target/review-grust/debug/deps/scalar_count_sql-a552425e4cca35c1)
+
+running 3 tests
+test postgres_zero_count_has_one_row_without_pagination ... ok
+test postgres_scalar_count_uses_qualified_universal_tables ... ok
+test postgres_exact_payload_type_and_byte_comparison_are_required ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests grust_postgres_core
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

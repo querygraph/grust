@@ -17,8 +17,10 @@ self-loops rather than deduplicating away multiplicity.
 Dense offsets give constant-time source lookup for sufficiently populated
 relationship types; sparse types binary-search their sorted active sources.
 This keeps structural auxiliary storage O(V + E), rather than allocating
-V-sized offsets for every rare type. Construction still sorts adjacency and
-scans the serialized graph once; it is not free load work.
+V-sized offsets for every rare type. Construction still sorts adjacency; it
+reuses each sparse type's temporary edge buffer for both directions and borrows
+labels while grouping. Exact serialized graph size is measured lazily on its
+first request. Index construction remains accounted setup work.
 
 `index.adjacency(relationship)` returns a copyable `TypedAdjacencyView` that
 resolves the type once. Its incoming/outgoing methods borrow sorted rows without

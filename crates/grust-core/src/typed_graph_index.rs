@@ -31,7 +31,7 @@ enum CsrOffsets {
 }
 
 impl Csr {
-    fn build(vertices: usize, edges: &[(u32, u32, u32)], reverse: bool) -> Self {
+    fn build(vertices: usize, edges: &mut [(u32, u32, u32)], reverse: bool) -> Self {
         // Every nonempty dense type pays at most 4E + 1 <= 5E offsets.
         // Sparse types must never allocate or initialize a V-sized scratch array.
         if edges.len() >= vertices.div_ceil(4)
@@ -72,22 +72,21 @@ impl Csr {
         }
     }
 
-    fn build_sparse(edges: &[(u32, u32, u32)], reverse: bool) -> Self {
-        let mut ordered: Vec<_> = edges
-            .iter()
-            .map(|&(from, to, edge)| {
-                if reverse {
-                    (to, from, edge)
-                } else {
-                    (from, to, edge)
-                }
-            })
-            .collect();
-        ordered.sort_unstable();
+    fn build_sparse(edges: &mut [(u32, u32, u32)], reverse: bool) -> Self {
+        // These are construction-only triples, not the graph's edge vector.
+        // Reuse their allocation for both sorts instead of allocating another
+        // edge-sized vector for each direction. Physical edge slots stay in
+        // the third field, so sorting cannot change identity or multiplicity.
+        if reverse {
+            edges.sort_unstable_by_key(|&(from, to, edge)| (to, from, edge));
+        } else {
+            edges.sort_unstable();
+        }
         let mut sources = Vec::new();
         let mut offsets = Vec::new();
         let mut neighbors = Vec::with_capacity(edges.len());
-        for (source, vertex, edge) in ordered {
+        for &(from, to, edge) in edges.iter() {
+            let (source, vertex) = if reverse { (to, from) } else { (from, to) };
             if sources.last() != Some(&source) {
                 sources.push(source);
                 offsets.push(neighbors.len() as u32);
@@ -222,9 +221,9 @@ impl<'index> TypedAdjacencyView<'index> {
 /// source lookup is O(1); sparse lookup is O(log(active sources)). Each returned
 /// neighbor slice is sorted by destination slot and then edge slot.
 ///
-/// Construction sorts neighbors (worst-case O(V + E log E) structural work)
-/// and traverses the serialized graph once to cache its exact compact JSON
-/// byte length, without allocating a graph-sized encoding buffer. That cached
+/// Construction sorts neighbors (worst-case O(V + E log E) structural work).
+/// The first serialized-size request traverses the graph to cache its exact
+/// compact JSON byte length without a graph-sized encoding buffer. That cached
 /// length measures the graph, not this index's allocations. Variable-length
 /// identifiers, labels, and property data additionally contribute their byte
 /// costs; the graph snapshot remains owned by the index.
@@ -246,7 +245,10 @@ impl TypedGraphIndex {
             GrustError::Schema("typed graph index exceeds u32 edge capacity".into())
         })?;
         let mut vertex_by_id = HashMap::with_capacity(graph.nodes.len());
-        let mut vertices_by_label: HashMap<Label, Vec<u32>> = HashMap::new();
+        // The graph owns these labels throughout construction. Borrow them
+        // while grouping, then clone one key per distinct label at publication,
+        // avoiding an Arc increment/decrement for every node and edge.
+        let mut vertices_by_label: HashMap<&Label, Vec<u32>> = HashMap::new();
         for (vertex, node) in graph.nodes.iter().enumerate() {
             let vertex = vertex as u32;
             if vertex_by_id.insert(node.id.clone(), vertex).is_some() {
@@ -256,11 +258,11 @@ impl TypedGraphIndex {
                 )));
             }
             vertices_by_label
-                .entry(node.label.clone())
+                .entry(&node.label)
                 .or_default()
                 .push(vertex);
         }
-        let mut typed_edges: HashMap<Label, Vec<(u32, u32, u32)>> = HashMap::new();
+        let mut typed_edges: HashMap<&Label, Vec<(u32, u32, u32)>> = HashMap::new();
         for (edge_index, edge) in graph.edges.iter().enumerate() {
             let from = *vertex_by_id.get(&edge.from).ok_or_else(|| {
                 GrustError::Schema(format!(
@@ -275,16 +277,20 @@ impl TypedGraphIndex {
                 ))
             })?;
             typed_edges
-                .entry(edge.label.clone())
+                .entry(&edge.label)
                 .or_default()
                 .push((from, to, edge_index as u32));
         }
         let mut adjacency = HashMap::with_capacity(typed_edges.len());
-        for (label, edges) in typed_edges {
-            let forward = Csr::build(graph.nodes.len(), &edges, false);
-            let reverse = Csr::build(graph.nodes.len(), &edges, true);
-            adjacency.insert(label, TypedAdjacency { forward, reverse });
+        for (label, mut edges) in typed_edges {
+            let forward = Csr::build(graph.nodes.len(), &mut edges, false);
+            let reverse = Csr::build(graph.nodes.len(), &mut edges, true);
+            adjacency.insert(label.clone(), TypedAdjacency { forward, reverse });
         }
+        let vertices_by_label = vertices_by_label
+            .into_iter()
+            .map(|(label, vertices)| (label.clone(), vertices))
+            .collect();
         Ok(Self {
             graph,
             serialized_graph_bytes: OnceLock::new(),

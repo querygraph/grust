@@ -120,7 +120,7 @@ fn typed_index_matches_direct_scans_on_generated_multigraphs() {
 fn csr_buckets_preserve_empty_source_slots_and_reverse_order() {
     let edges = [(4, 2, 0), (1, 4, 1), (4, 0, 2), (1, 0, 3)];
     for reverse in [false, true] {
-        let csr = Csr::build(6, &edges, reverse);
+        let csr = Csr::build(6, &mut { edges }, reverse);
         let CsrOffsets::Dense(offsets) = &csr.offsets else {
             panic!("four edges on six vertices should use dense offsets");
         };
@@ -256,7 +256,7 @@ fn hybrid_offsets_preserve_parallel_reciprocal_self_loops_and_isolated_vertices(
 fn sparse_offsets_only_describe_sorted_active_sources() {
     let edges = [(4, 2, 0), (1, 4, 1), (4, 0, 2), (1, 0, 3)];
     for reverse in [false, true] {
-        let csr = Csr::build(24, &edges, reverse);
+        let csr = Csr::build(24, &mut { edges }, reverse);
         let CsrOffsets::Sparse { sources, offsets } = &csr.offsets else {
             panic!("four edges on 24 vertices should use sparse offsets");
         };
@@ -288,13 +288,13 @@ fn density_threshold_rounds_up_and_empty_offsets_are_safe() {
     let edges = [(0, 1, 0), (1, 0, 1)];
     for (vertices, edge_count, dense) in [(4, 1, true), (5, 1, false), (8, 2, true), (9, 2, false)]
     {
-        let csr = Csr::build(vertices, &edges[..edge_count], false);
+        let csr = Csr::build(vertices, &mut edges[..edge_count].to_vec(), false);
         assert_eq!(matches!(csr.offsets, CsrOffsets::Dense(_)), dense);
         assert!(csr.at(vertices as u32).is_empty());
         assert!(csr.at(u32::MAX).is_empty());
     }
     for vertices in [0, 10] {
-        let csr = Csr::build(vertices, &[], false);
+        let csr = Csr::build(vertices, &mut [], false);
         assert!(csr.at(0).is_empty());
         assert!(csr.at(u32::MAX).is_empty());
     }

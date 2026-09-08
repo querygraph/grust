@@ -1,0 +1,58 @@
+   Compiling grust-postgres-core v0.13.0 (/tmp/grust-resident-index-review/crates/grust-postgres-core)
+error[E0277]: the trait bound `BTreeMap<std::string::String, grust_core::Value>: std::convert::From<!>` is not satisfied
+    --> crates/grust-postgres-core/src/streamed_read_tests.rs:192:53
+     |
+ 192 |     let mut edge = Edge::new(label, from_id, to_id, props);
+     |                    ---------                        ^^^^^ the trait `std::convert::From<!>` is not implemented for `BTreeMap<std::string::String, grust_core::Value>`
+     |                    |
+     |                    required by a bound introduced by this call
+     |
+help: the trait `From<!>` is not implemented for `BTreeMap<std::string::String, grust_core::Value>`
+      but trait `From<grust_core::xml::PropsXml>` is implemented for it
+    --> crates/grust-core/src/lib.rs:2062:5
+     |
+2062 |     impl From<PropsXml> for Props {
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     = help: for that trait implementation, expected `grust_core::xml::PropsXml`, found `!`
+     = note: required for `!` to implement `Into<BTreeMap<std::string::String, grust_core::Value>>`
+note: required by a bound in `grust_core::Edge::new`
+    --> crates/grust-core/src/lib.rs:1420:21
+     |
+1416 |     pub fn new(
+     |            --- required by a bound in this associated function
+...
+1420 |         props: impl Into<Props>,
+     |                     ^^^^^^^^^^^ required by this bound in `Edge::new`
+
+error[E0277]: the trait bound `!: serde::Deserialize<'de>` is not satisfied
+    --> crates/grust-postgres-core/src/streamed_read_tests.rs:190:17
+     |
+ 190 |     let props = serde_json::from_str(&props_json)
+     |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `serde_core::de::Deserialize<'_>` is not implemented for `!`
+     |
+     = note: for local types consider adding `#[derive(serde::Deserialize)]` to your `!` type
+     = note: for types from other crates check whether the crate offers a `serde` feature flag
+     = help: the following other types implement trait `serde_core::de::Deserialize<'de>`:
+               `&'a [u8]` implements `serde_core::de::Deserialize<'de>`
+               `&'a std::path::Path` implements `serde_core::de::Deserialize<'de>`
+               `&'a str` implements `serde_core::de::Deserialize<'de>`
+               `()` implements `serde_core::de::Deserialize<'de>`
+               `(T,)` implements `serde_core::de::Deserialize<'de>`
+               `(T0, T1)` implements `serde_core::de::Deserialize<'de>`
+               `(T0, T1, T2)` implements `serde_core::de::Deserialize<'de>`
+               `(T0, T1, T2, T3)` implements `serde_core::de::Deserialize<'de>`
+             and 223 others
+     = note: this error might have been caused by changes to Rust's type-inference algorithm (see issue #148922 <https://github.com/rust-lang/rust/issues/148922> for more information)
+     = help: you might have intended to use the type `()` here instead
+note: required by a bound in `serde_json::from_str`
+    --> /home/admin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde_json-1.0.150/src/de.rs:2711:8
+     |
+2709 | pub fn from_str<'a, T>(s: &'a str) -> Result<T>
+     |        -------- required by a bound in this function
+2710 | where
+2711 |     T: de::Deserialize<'a>,
+     |        ^^^^^^^^^^^^^^^^^^^ required by this bound in `from_str`
+
+For more information about this error, try `rustc --explain E0277`.
+error: could not compile `grust-postgres-core` (lib test) due to 2 previous errors
+warning: build failed, waiting for other jobs to finish...

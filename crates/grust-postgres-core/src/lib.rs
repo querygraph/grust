@@ -1,6 +1,7 @@
 mod sql_safety;
 
 use async_trait::async_trait;
+use futures_util::TryStreamExt;
 use grust_core::TypedGraphIndex;
 use grust_core::prelude::*;
 use grust_cypher::pushdown::{NoTypeHints, SqlDialect, StrOp, combine_union, plan_read};
@@ -129,10 +130,22 @@ impl PostgresGraphStore {
     }
 
     async fn query_nodes_unlocked(&self, sql: &str) -> Result<Vec<Node>> {
-        let rows = self.client.query(sql, &[]).await.map_err(|err| {
-            GrustError::Backend(format!("PostgreSQL node query failed: {err}: {sql}"))
-        })?;
-        rows.into_iter().map(row_to_node).collect()
+        let query_error =
+            |err| GrustError::Backend(format!("PostgreSQL node query failed: {err}: {sql}"));
+        let rows = self
+            .client
+            .query_raw(sql, std::iter::empty::<&str>())
+            .await
+            .map_err(query_error)?;
+        let mut rows = std::pin::pin!(rows);
+        let mut nodes = Vec::new();
+        // Decode and release wire rows as they arrive. A resident snapshot
+        // still owns its graph, but no longer first collects a second full
+        // representation of that graph in PostgreSQL protocol buffers.
+        while let Some(row) = rows.try_next().await.map_err(query_error)? {
+            nodes.push(row_to_node(row)?);
+        }
+        Ok(nodes)
     }
 
     async fn query_edges(&self, sql: &str) -> Result<Vec<Edge>> {
@@ -141,10 +154,19 @@ impl PostgresGraphStore {
     }
 
     async fn query_edges_unlocked(&self, sql: &str) -> Result<Vec<Edge>> {
-        let rows = self.client.query(sql, &[]).await.map_err(|err| {
-            GrustError::Backend(format!("PostgreSQL edge query failed: {err}: {sql}"))
-        })?;
-        rows.into_iter().map(row_to_edge).collect()
+        let query_error =
+            |err| GrustError::Backend(format!("PostgreSQL edge query failed: {err}: {sql}"));
+        let rows = self
+            .client
+            .query_raw(sql, std::iter::empty::<&str>())
+            .await
+            .map_err(query_error)?;
+        let mut rows = std::pin::pin!(rows);
+        let mut edges = Vec::new();
+        while let Some(row) = rows.try_next().await.map_err(query_error)? {
+            edges.push(row_to_edge(row)?);
+        }
+        Ok(edges)
     }
 
     async fn execute_transaction(&self, statements: &[String]) -> Result<()> {
@@ -884,28 +906,31 @@ fn jsonb_predicate(alias: &str, key: &str, value: &Value) -> Result<String> {
 }
 
 fn row_to_node(row: tokio_postgres::Row) -> Result<Node> {
-    let id: String = row.get("id");
-    let label: String = row.get("label");
-    let props_json: String = row.get("props");
-    let props: Props = serde_json::from_str(&props_json)
+    // Borrow protocol text until the owned graph value has been decoded.
+    // In particular, avoid copying the whole JSON property payload just to
+    // parse it, and allocate identifiers directly into their Arc<str>.
+    let id: &str = row.get("id");
+    let label: &str = row.get("label");
+    let props_json: &str = row.get("props");
+    let props: Props = serde_json::from_str(props_json)
         .map_err(|err| GrustError::Serialization(format!("node props JSON parse failed: {err}")))?;
     Ok(Node {
-        id: NodeId::new(id),
-        label: Label::new(label),
+        id: NodeId::from(id),
+        label: Label::from(label),
         props,
     })
 }
 
 fn row_to_edge(row: tokio_postgres::Row) -> Result<Edge> {
-    let id: Option<String> = row.get("id");
-    let from_id: String = row.get("from_id");
-    let to_id: String = row.get("to_id");
-    let label: String = row.get("label");
-    let props_json: String = row.get("props");
-    let props: Props = serde_json::from_str(&props_json)
+    let id: Option<&str> = row.get("id");
+    let from_id: &str = row.get("from_id");
+    let to_id: &str = row.get("to_id");
+    let label: &str = row.get("label");
+    let props_json: &str = row.get("props");
+    let props: Props = serde_json::from_str(props_json)
         .map_err(|err| GrustError::Serialization(format!("edge props JSON parse failed: {err}")))?;
     let mut edge = Edge::new(label, from_id, to_id, props);
-    edge.id = id.map(EdgeId::new);
+    edge.id = id.map(EdgeId::from);
     Ok(edge)
 }
 
@@ -941,6 +966,8 @@ pub fn validate_json_key(value: &str) -> Result<()> {
         .map_err(|_| GrustError::Schema(format!("invalid JSON property key '{value}'")))
 }
 
+#[cfg(test)]
+mod streamed_read_tests;
 #[cfg(test)]
 mod tests;
 
