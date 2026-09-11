@@ -6,6 +6,33 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ## Unreleased
 
+- Surreal: every relation table carries an index over `(in, out)`, defined
+  with the table in the schema and in the `DEFINE TABLE IF NOT EXISTS` path
+  a relate batch opens with. The idempotent `RELATE` deletes the edge's
+  earlier copy by its endpoints first, and without the index that delete
+  was a table scan: a load of E edges cost O(E²), and the adversarial-graph
+  ladders saw every full-tier Surreal HTTP load die at ~300 s in the HTTP
+  client's minute-long request timeout ("failed to POST SurrealQL: error
+  sending request"), on every host, 2026-09-10. Edge reads by endpoint use
+  the same index.
+- Surreal: `SurrealConfig.request_timeout` bounds one HTTP request (default
+  the minute it always was); the SDK transport ignores it.
+- Surreal: node reads by ID (`get_node`, `get_nodes`, and every traversal
+  step) select the candidate records directly (`FROM type::record(t, id),
+  …`) instead of scanning the candidate tables under an OR-chain of
+  `id = …`. SurrealDB parses the chain recursively and refuses it past a few
+  hundred terms ("Parse error: Exceeded expression recursion depth limit",
+  v3.2.4), which a traversal frontier reaches on any graph beyond a toy:
+  the ladders' Surreal SDK A1 and A2 at 4,039 nodes. `get_nodes` sends one
+  statement per `batch_size` IDs.
+- Helix: the SDK adapter's errors carry the client's own text ("Got Error
+  from server: …", the transport error) instead of a fixed phrase, so a
+  server that refuses the SDK's wire format can be told from one that is
+  down. The `helix-db` 3.0.0 client posts a nested query AST to `/v2/query`;
+  the enterprise-dev registry image serves `/v1/query` only and answers
+  every SDK request with 400 "missing field `queries`", which is what
+  "Helix SDK replace/drop failed" was hiding.
+
 - LSQB matrix: a Turso observation worker no longer reloads the CSVs; the
   coordinator loads the dataset once into a file-backed store and each
   worker copies that file into a private path, opens the copy and builds its

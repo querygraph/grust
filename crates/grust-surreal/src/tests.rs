@@ -160,6 +160,12 @@ fn relate_edges_are_idempotent_by_endpoints() {
         surreal_relate_edges_query(&graph.edges, &id_tables, &SurrealConfig::default()).unwrap();
     assert!(query.contains("DELETE `presents` WHERE in = type::record(\"person\", \"person-1\")"));
     assert!(query.contains("RELATE (type::record(\"person\", \"person-1\"))->`presents`->(type::record(\"talk\", \"talk-1\"))"));
+    // The delete by endpoints is an index probe, not a table scan.
+    let index = query
+        .find("DEFINE INDEX IF NOT EXISTS `presents_in_out` ON TABLE `presents` FIELDS in, out;")
+        .expect("relation tables carry an (in, out) index");
+    assert!(index > query.find("DEFINE TABLE IF NOT EXISTS `presents` TYPE RELATION;").unwrap());
+    assert!(index < query.find("DELETE `presents`").unwrap());
     assert!(query.contains("`relationship` = \"presents\""));
     assert!(query.contains("`edge_id` = \"edge-1\""));
 }
@@ -251,10 +257,10 @@ fn get_node_query_scans_candidate_tables_in_one_statement() {
     };
     let query = surreal_get_node_query(&NodeId::new("talk-1"), &config).unwrap();
 
-    assert!(query.starts_with("SELECT *, meta::tb(id) AS __grust_physical_label FROM "));
-    assert!(query.contains("`person`, `record`, `talk`"));
-    assert!(query.contains("id = type::record(\"talk\", \"talk-1\")"));
-    assert_eq!(query.matches("SELECT").count(), 1);
+    assert_eq!(
+        query,
+        "SELECT *, meta::tb(id) AS __grust_physical_label FROM type::record(\"person\", \"talk-1\"), type::record(\"record\", \"talk-1\"), type::record(\"talk\", \"talk-1\");"
+    );
 }
 
 #[test]
@@ -266,11 +272,63 @@ fn get_nodes_query_batches_candidate_records_in_one_statement() {
     let query = surreal_get_nodes_query(&[NodeId::new("person-1"), NodeId::new("talk-1")], &config)
         .unwrap();
 
-    assert!(query.starts_with("SELECT *, meta::tb(id) AS __grust_physical_label FROM "));
-    assert!(query.contains("`person`, `record`, `talk`"));
-    assert!(query.contains("id = type::record(\"person\", \"person-1\")"));
-    assert!(query.contains("id = type::record(\"talk\", \"talk-1\")"));
+    // Direct record targets, not a table scan under an OR-chain: the chain
+    // is parsed recursively and a frontier of a few hundred IDs overran
+    // SurrealDB's expression depth ("Exceeded expression recursion depth
+    // limit", v3.2.4, at 4,039 nodes).
+    assert!(query.starts_with("SELECT *, meta::tb(id) AS __grust_physical_label FROM type::record("));
+    assert!(query.contains("type::record(\"person\", \"person-1\"), type::record(\"record\", \"person-1\"), type::record(\"talk\", \"person-1\")"));
+    assert!(query.contains("type::record(\"talk\", \"talk-1\")"));
+    assert!(!query.contains(" OR "));
+    assert!(!query.contains(" WHERE "));
     assert_eq!(query.matches("SELECT").count(), 1);
+}
+
+#[test]
+fn get_nodes_queries_are_bounded_by_batch_size() {
+    let config = SurrealConfig {
+        labels: vec!["Person".to_string()],
+        batch_size: 2,
+        ..SurrealConfig::default()
+    };
+    let ids = (0..5)
+        .map(|i| NodeId::new(format!("person-{i}")))
+        .collect::<Vec<_>>();
+    let queries = surreal_get_nodes_queries(&ids, &config).unwrap();
+
+    assert_eq!(queries.len(), 3);
+    assert!(queries[0].contains("\"person-0\"") && queries[0].contains("\"person-1\""));
+    assert!(queries[2].contains("\"person-4\"") && !queries[2].contains("\"person-3\""));
+    assert!(surreal_get_nodes_queries(&[], &config).unwrap().is_empty());
+}
+
+#[test]
+fn schema_relation_tables_carry_endpoint_index() {
+    let schema = GraphSchema::builder()
+        .node("Person", vec![])
+        .node("Talk", vec![])
+        .edge(
+            "presents",
+            vec![Label::new("Person")],
+            vec![Label::new("Talk")],
+            vec![],
+        )
+        .build();
+    let query = surreal_schema_query(&schema).unwrap();
+
+    assert!(query.contains("DEFINE TABLE `presents` TYPE RELATION SCHEMAFULL;"));
+    assert!(query.contains("DEFINE INDEX `presents_in_out` ON TABLE `presents` FIELDS in, out;"));
+}
+
+#[test]
+fn request_timeout_defaults_to_a_minute_and_is_configurable() {
+    assert_eq!(SurrealConfig::default().request_timeout, Duration::from_secs(60));
+    let store = SurrealHttpGraphStore::connect(SurrealConfig {
+        request_timeout: Duration::from_secs(600),
+        ..SurrealConfig::default()
+    })
+    .unwrap();
+    assert_eq!(store.config.request_timeout, Duration::from_secs(600));
 }
 
 #[test]

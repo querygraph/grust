@@ -71,7 +71,7 @@ impl HelixHttpGraphStore {
             .json(request)
             .send()
             .await
-            .map_err(|_| helix_transport_error("failed to POST Helix query"))?;
+            .map_err(|err| helix_transport_error(&format!("failed to POST Helix query: {err}")))?;
         let status = response.status();
         if !status.is_success() {
             return Err(GrustError::Backend(format!(
@@ -88,7 +88,7 @@ impl HelixHttpGraphStore {
             .json(request)
             .send()
             .await
-            .map_err(|_| helix_transport_error("failed to POST Helix query"))?;
+            .map_err(|err| helix_transport_error(&format!("failed to POST Helix query: {err}")))?;
         let status = response.status();
         if !status.is_success() {
             return Err(GrustError::Backend(format!(
@@ -98,7 +98,7 @@ impl HelixHttpGraphStore {
         let body = response
             .text()
             .await
-            .map_err(|_| helix_transport_error("failed to read Helix response"))?;
+            .map_err(|err| helix_transport_error(&format!("failed to read Helix response: {err}")))?;
         serde_json::from_str(&body)
             .map_err(|err| GrustError::Serialization(format!("invalid Helix response: {err}")))
     }
@@ -190,7 +190,7 @@ impl HelixSdkGraphStore {
     pub fn connect(config: HelixSdkConfig) -> Result<Self> {
         let base_url = helix_base_url(&config.base_url);
         let client = HelixClient::new(Some(&base_url))
-            .map_err(|_| helix_transport_error("failed to build Helix SDK client"))?;
+            .map_err(|err| helix_transport_error(&format!("failed to build Helix SDK client: {err}")))?;
         Ok(Self {
             config: HelixSdkConfig { base_url, ..config },
             client,
@@ -427,7 +427,7 @@ async fn post_helix_sdk_nodes(client: &HelixClient, nodes: &[Node]) -> Result<()
         .query::<serde_json::Value>(request)
         .send()
         .await
-        .map_err(|_| helix_transport_error("Helix SDK node write failed"))?;
+        .map_err(|err| helix_transport_error(&format!("Helix SDK node write failed: {err}")))?;
     Ok(())
 }
 
@@ -472,7 +472,7 @@ async fn post_helix_sdk_edges(client: &HelixClient, edges: &[Edge]) -> Result<()
         .query::<serde_json::Value>(request)
         .send()
         .await
-        .map_err(|_| helix_transport_error("Helix SDK edge write failed"))?;
+        .map_err(|err| helix_transport_error(&format!("Helix SDK edge write failed: {err}")))?;
     Ok(())
 }
 
@@ -539,7 +539,7 @@ async fn send_helix_sdk_read(
         .query::<serde_json::Value>(request)
         .send()
         .await
-        .map_err(|_| helix_transport_error("Helix SDK read failed"))
+        .map_err(|err| helix_transport_error(&format!("Helix SDK read failed: {err}")))
 }
 
 fn helix_get_node_request(id: &NodeId) -> serde_json::Value {
@@ -810,7 +810,7 @@ async fn post_helix_sdk_drop_labels(client: &HelixClient, labels: &[String]) -> 
         .query::<serde_json::Value>(request)
         .send()
         .await
-        .map_err(|_| helix_transport_error("Helix SDK replace/drop failed"))?;
+        .map_err(|err| helix_transport_error(&format!("Helix SDK replace/drop failed: {err}")))?;
     Ok(())
 }
 

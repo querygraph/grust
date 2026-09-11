@@ -31,6 +31,11 @@ pub struct SurrealConfig {
     pub batch_size: usize,
     pub labels: Vec<String>,
     pub relationships: Vec<String>,
+    /// Per-request timeout of the HTTP transport. A batch of `batch_size`
+    /// edges is one request, so the bound belongs to the caller who chose
+    /// the batch size and the server; the default is a minute. The SDK
+    /// transport has no per-request timeout and ignores this.
+    pub request_timeout: Duration,
 }
 
 impl Default for SurrealConfig {
@@ -44,6 +49,7 @@ impl Default for SurrealConfig {
             batch_size: 100,
             labels: Vec::new(),
             relationships: Vec::new(),
+            request_timeout: Duration::from_secs(60),
         }
     }
 }
@@ -58,7 +64,7 @@ impl SurrealHttpGraphStore {
     pub fn connect(config: SurrealConfig) -> Result<Self> {
         validate_surreal_config(&config)?;
         let client = reqwest::Client::builder()
-            .timeout(Duration::from_secs(60))
+            .timeout(config.request_timeout)
             .build()
             .map_err(|err| {
                 GrustError::Backend(format!("failed to build SurrealDB HTTP client: {err}"))
@@ -223,8 +229,11 @@ impl GraphStore for SurrealHttpGraphStore {
     }
 
     async fn get_nodes(&self, ids: &[NodeId]) -> Result<Vec<Node>> {
-        let query = surreal_get_nodes_query(ids, &self.config)?;
-        self.read_nodes(&query).await
+        let mut nodes = Vec::with_capacity(ids.len());
+        for query in surreal_get_nodes_queries(ids, &self.config)? {
+            nodes.extend(self.read_nodes(&query).await?);
+        }
+        Ok(nodes)
     }
 
     async fn get_edges(&self, query: EdgeQuery) -> Result<Vec<Edge>> {
@@ -426,8 +435,11 @@ impl GraphStore for SurrealSdkGraphStore {
     }
 
     async fn get_nodes(&self, ids: &[NodeId]) -> Result<Vec<Node>> {
-        let query = surreal_get_nodes_query(ids, &self.config)?;
-        self.read_nodes(&query).await
+        let mut nodes = Vec::with_capacity(ids.len());
+        for query in surreal_get_nodes_queries(ids, &self.config)? {
+            nodes.extend(self.read_nodes(&query).await?);
+        }
+        Ok(nodes)
     }
 
     async fn get_edges(&self, query: EdgeQuery) -> Result<Vec<Edge>> {
@@ -650,63 +662,48 @@ fn surreal_delete_tables_query(config: &SurrealConfig) -> Result<String> {
 }
 
 fn surreal_get_node_query(id: &NodeId, config: &SurrealConfig) -> Result<String> {
-    validate_node_ids(config, std::slice::from_ref(id))?;
-    let tables = surreal_node_tables_for_id(id, config);
-    let where_clause = tables
-        .iter()
-        .map(|table| {
-            format!(
-                "id = type::record({}, {})",
-                surreal_string(table),
-                surreal_string(id.as_str())
-            )
-        })
-        .collect::<Vec<_>>()
-        .join(" OR ");
-    Ok(format!(
-        "SELECT *, meta::tb(id) AS __grust_physical_label FROM {} WHERE {where_clause};",
-        tables
-            .iter()
-            .map(|table| surreal_identifier(table))
-            .collect::<Vec<_>>()
-            .join(", ")
-    ))
+    surreal_get_nodes_query(std::slice::from_ref(id), config)
 }
 
+/// One statement that fetches the candidate records of `ids` directly:
+/// `SELECT … FROM type::record(t1, id1), type::record(t2, id1), …`. A record
+/// that does not exist contributes nothing, so this is the same result as a
+/// table scan filtered by an OR-chain of `id = …`, but the chain is parsed
+/// recursively and SurrealDB refuses it past a few hundred terms ("Exceeded
+/// expression recursion depth limit"), which a traversal frontier reaches
+/// easily; the target list is flat.
 fn surreal_get_nodes_query(ids: &[NodeId], config: &SurrealConfig) -> Result<String> {
     validate_node_ids(config, ids)?;
     if ids.is_empty() {
         return Ok("RETURN [];".to_string());
     }
-    let tables = ids
-        .iter()
-        .flat_map(|id| surreal_node_tables_for_id(id, config))
-        .collect::<BTreeSet<_>>()
-        .into_iter()
-        .collect::<Vec<_>>();
-    let where_clause = ids
+    let targets = ids
         .iter()
         .flat_map(|id| {
             surreal_node_tables_for_id(id, config)
                 .into_iter()
                 .map(move |table| {
                     format!(
-                        "id = type::record({}, {})",
+                        "type::record({}, {})",
                         surreal_string(&table),
                         surreal_string(id.as_str())
                     )
                 })
         })
-        .collect::<Vec<_>>()
-        .join(" OR ");
+        .collect::<Vec<_>>();
     Ok(format!(
-        "SELECT *, meta::tb(id) AS __grust_physical_label FROM {} WHERE {where_clause};",
-        tables
-            .iter()
-            .map(|table| surreal_identifier(table))
-            .collect::<Vec<_>>()
-            .join(", ")
+        "SELECT *, meta::tb(id) AS __grust_physical_label FROM {};",
+        targets.join(", ")
     ))
+}
+
+/// `get_nodes` over an arbitrary number of IDs, one statement per
+/// `batch_size` IDs so a large frontier is many bounded requests rather than
+/// one unbounded one.
+fn surreal_get_nodes_queries(ids: &[NodeId], config: &SurrealConfig) -> Result<Vec<String>> {
+    ids.chunks(config.batch_size.max(1))
+        .map(|chunk| surreal_get_nodes_query(chunk, config))
+        .collect()
 }
 
 fn surreal_get_edges_query(query: &EdgeQuery, config: &SurrealConfig) -> Result<String> {
@@ -814,6 +811,10 @@ fn surreal_schema_query(schema: &GraphSchema) -> Result<String> {
         let table = surreal_table_name(&relationship_type(edge_type.label.as_str()));
         let table = surreal_identifier(&table);
         statements.push(format!("DEFINE TABLE {table} TYPE RELATION SCHEMAFULL;"));
+        statements.push(surreal_endpoint_index_statement(
+            &surreal_table_name(&relationship_type(edge_type.label.as_str())),
+            false,
+        ));
         statements.push(format!(
             "DEFINE FIELD {} ON TABLE {table} TYPE string;",
             surreal_identifier("relationship")
@@ -901,11 +902,14 @@ fn surreal_relate_edges_query(
     for edge in edges {
         relation_tables.insert(surreal_table_name(&relationship_type(edge.label.as_str())));
     }
-    statements.extend(relation_tables.into_iter().map(|table| {
-        format!(
-            "DEFINE TABLE IF NOT EXISTS {} TYPE RELATION;",
-            surreal_identifier(&table)
-        )
+    statements.extend(relation_tables.into_iter().flat_map(|table| {
+        [
+            format!(
+                "DEFINE TABLE IF NOT EXISTS {} TYPE RELATION;",
+                surreal_identifier(&table)
+            ),
+            surreal_endpoint_index_statement(&table, true),
+        ]
     }));
     statements.extend(
         edges
@@ -1336,6 +1340,20 @@ where
         current.truncate(limit as usize);
     }
     Ok(current)
+}
+
+/// Every relation table carries an index over `(in, out)`: the idempotent
+/// `RELATE` deletes the edge's earlier copy by its endpoints first, and
+/// without the index that delete is a table scan, so a load of E edges costs
+/// O(E²) and outruns any request timeout past a few hundred thousand edges.
+/// Edge reads by endpoint use the same index.
+fn surreal_endpoint_index_statement(table: &str, if_not_exists: bool) -> String {
+    format!(
+        "DEFINE INDEX{} {} ON TABLE {} FIELDS in, out;",
+        if if_not_exists { " IF NOT EXISTS" } else { "" },
+        surreal_identifier(&format!("{table}_in_out")),
+        surreal_identifier(table)
+    )
 }
 
 fn node_id_table(id: &str) -> String {
