@@ -554,3 +554,18 @@ fn signin_url_is_the_sql_endpoint_s_origin() {
     let store = SurrealHttpGraphStore::connect(SurrealConfig::default()).unwrap();
     assert!(store.token.lock().unwrap().is_none(), "no sign-in before the first request");
 }
+
+#[test]
+fn an_edge_without_a_resolved_endpoint_relates_the_record_the_node_read_would_find() {
+    let config = SurrealConfig {
+        labels: vec!["Person".to_string()],
+        ..SurrealConfig::default()
+    };
+    let edge = Edge::new("knows", "160", "Talk:7", Props::new());
+    let query = surreal_relate_edges_query(&[edge], &BTreeMap::new(), &config).unwrap();
+    let from = "type::record(\"person\", \"160\"), type::record(\"record\", \"160\")";
+    let to = "type::record(\"person\", \"Talk:7\"), type::record(\"record\", \"Talk:7\"), type::record(\"talk\", \"Talk:7\")";
+    assert!(query.contains(&format!("DELETE `knows` WHERE in IN [{from}] AND out IN [{to}];")));
+    assert!(query.contains(&format!("RELATE ((SELECT VALUE id FROM {from}))->`knows`->((SELECT VALUE id FROM {to})) SET")));
+    assert!(!query.contains("type::record(\"record\", \"160\"))->"), "no guessed record endpoint");
+}

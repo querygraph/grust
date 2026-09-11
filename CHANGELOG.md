@@ -6,6 +6,16 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ## Unreleased
 
+- Surreal: an edge written without its endpoints' tables in hand (a single
+  `put_edge`, an `UpsertEdge` mutation) relates the record a node read by
+  that ID would find, `RELATE (SELECT VALUE id FROM type::record(t1, id),
+  …)->…`, and its idempotent delete matches the same candidates. The
+  endpoint was guessed from the ID's prefix, so a plain ID such as `160`
+  went to `record:160`, a record no node occupied, while the node was
+  `v:160`: the adversarial-graph hot-node writes of 2026-09-11 put 3,200
+  edges there, readable only because edge reads also search `record`. A
+  missing endpoint now relates nothing rather than a phantom.
+
 - Surreal HTTP: the store signs in once (`/signin`) and sends the session
   token as a bearer on every request, refreshing it once on a 401. Basic
   auth on `/sql` was a sign-in per request, and the server hashes the

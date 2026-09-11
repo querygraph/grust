@@ -960,28 +960,13 @@ fn surreal_relate_edges_query(
         edges
         .iter()
         .map(|edge| {
-            let from_table = id_tables
-                .get(edge.from.as_str())
-                .cloned()
-                .unwrap_or_else(|| node_id_table(edge.from.as_str()));
-            let to_table = id_tables
-                .get(edge.to.as_str())
-                .cloned()
-                .unwrap_or_else(|| node_id_table(edge.to.as_str()));
-            let from = format!(
-                "type::record({}, {})",
-                surreal_string(&from_table),
-                surreal_string(edge.from.as_str())
-            );
-            let to = format!(
-                "type::record({}, {})",
-                surreal_string(&to_table),
-                surreal_string(edge.to.as_str())
-            );
+            let (from, from_match) =
+                surreal_endpoint(&edge.from, id_tables.get(edge.from.as_str()), config);
+            let (to, to_match) = surreal_endpoint(&edge.to, id_tables.get(edge.to.as_str()), config);
             let table = surreal_table_name(&relationship_type(edge.label.as_str()));
             let table = surreal_identifier(&table);
             Ok(format!(
-                "DELETE {table} WHERE in = {from} AND out = {to};\nRELATE ({from})->{table}->({to}) SET {};",
+                "DELETE {table} WHERE in {from_match} AND out {to_match};\nRELATE ({from})->{table}->({to}) SET {};",
                 surreal_edge_props(edge)?
             ))
         })
@@ -1385,6 +1370,47 @@ where
         current.truncate(limit as usize);
     }
     Ok(current)
+}
+
+/// An edge endpoint for `RELATE` and for the delete that precedes it. With
+/// the node's table known (a graph load resolves every endpoint from its
+/// own nodes) it is the record; without it (a single `put_edge`, a
+/// mutation) it is the record among the candidate tables a node read by
+/// that ID searches, `(SELECT VALUE id FROM type::record(t1, id), …)`, so
+/// the edge lands on the node wherever it lives and on nothing when the
+/// node does not exist. Before, an unresolved endpoint was guessed from
+/// the ID's prefix and a plain ID landed on a `record:<id>` that no node
+/// occupied: the hot-node writes of 2026-09-11 put 3,200 edges on
+/// `record:160` while the node was `v:160`.
+fn surreal_endpoint(
+    id: &NodeId,
+    table: Option<&String>,
+    config: &SurrealConfig,
+) -> (String, String) {
+    let record = |table: &str| {
+        format!(
+            "type::record({}, {})",
+            surreal_string(table),
+            surreal_string(id.as_str())
+        )
+    };
+    match table {
+        Some(table) => {
+            let record = record(table);
+            (record.clone(), format!("= {record}"))
+        }
+        None => {
+            let candidates = surreal_node_tables_for_id(id, config)
+                .iter()
+                .map(|table| record(table))
+                .collect::<Vec<_>>()
+                .join(", ");
+            (
+                format!("(SELECT VALUE id FROM {candidates})"),
+                format!("IN [{candidates}]"),
+            )
+        }
+    }
 }
 
 /// Every relation table carries an index over `(in, out)`: the idempotent
