@@ -483,3 +483,28 @@ async fn live_http_put_read_and_traverse() {
     assert_eq!(result.len(), 1);
     assert_eq!(result[0].id, NodeId::new("talk-1"));
 }
+
+#[test]
+fn sdk_edges_between_created_nodes_are_written_by_handle_and_others_by_lookup() {
+    let edges = vec![
+        Edge::new("knows", "a", "b", Props::new()),
+        Edge::new("knows", "a", "stranger", Props::new()),
+    ];
+    let handles = HashMap::from([("a".to_string(), 10u64), ("b".to_string(), 11u64)]);
+    let value = serde_json::to_value(helix_sdk_edges_request(&edges, &handles).unwrap()).unwrap();
+    let entries = value["query"]["write"]["entries"].as_array().unwrap();
+    // one entry for the handled edge, two (target lookup + link) for the other
+    assert_eq!(entries.len(), 3);
+    let first = &entries[0]["query"];
+    assert_eq!(first["name"], "linked_0");
+    let first = first["root"].to_string();
+    assert!(first.contains("\"ids\":[10]") && first.contains("\"ids\":[11]"));
+    assert!(!first.contains("nodes_where"));
+    let lookup = entries[1]["query"].to_string() + &entries[2]["query"].to_string();
+    assert!(lookup.contains("nodes_where") && lookup.contains("stranger"));
+    assert_eq!(value["query"]["write"]["returns"], serde_json::json!(["linked_0", "linked_1"]));
+
+    let (request, returns) = helix_sdk_nodes_request(&[Node::new("V", "a", Props::new())]).unwrap();
+    assert_eq!(returns, vec!["created_0".to_string()]);
+    assert!(serde_json::to_value(request).unwrap().to_string().contains("add_n"));
+}

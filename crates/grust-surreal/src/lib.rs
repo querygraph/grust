@@ -714,14 +714,34 @@ fn surreal_get_edges_query(query: &EdgeQuery, config: &SurrealConfig) -> Result<
             "SurrealConfig.relationships is empty; generic edge reads need configured relationship labels or an EdgeQuery label".to_string(),
         ));
     }
-    // Grust IDs are the complete record keys, independent of physical tables.
-    // Endpoint labels can be absent from the config or differ from ID prefixes,
-    // so restricting reads to inferred type::record(table, id) candidates would
-    // drop valid edges. Filter keys on the server and retain the Rust postfilter.
+    // An endpoint filter is `in IN [type::record(t, id), …]` over the same
+    // candidate tables a node read by that ID would search (the configured
+    // labels, the ID's prefix, `record`): the planner answers it from the
+    // relation's endpoint indexes as a union of index scans, where the
+    // earlier `meta::id(in) = …` (a function of the field) was a scan of the
+    // whole relation per frontier node and made a two-hop walk minutes of
+    // server CPU. The candidate rule is the node reads' rule, so an edge whose
+    // endpoint this adapter could read is an edge it finds. The Rust
+    // postfilter on the full key stays.
     let predicates = [("in", query.from.as_ref()), ("out", query.to.as_ref())]
         .into_iter()
         .filter_map(|(endpoint, id)| {
-            id.map(|id| format!("meta::id({endpoint}) = {}", surreal_string(id.as_str())))
+            id.map(|id| {
+                format!(
+                    "{endpoint} IN [{}]",
+                    surreal_node_tables_for_id(id, config)
+                        .into_iter()
+                        .map(|table| {
+                            format!(
+                                "type::record({}, {})",
+                                surreal_string(&table),
+                                surreal_string(id.as_str())
+                            )
+                        })
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                )
+            })
         })
         .collect::<Vec<_>>();
     let where_clause = if predicates.is_empty() {
@@ -811,10 +831,9 @@ fn surreal_schema_query(schema: &GraphSchema) -> Result<String> {
         let table = surreal_table_name(&relationship_type(edge_type.label.as_str()));
         let table = surreal_identifier(&table);
         statements.push(format!("DEFINE TABLE {table} TYPE RELATION SCHEMAFULL;"));
-        statements.push(surreal_endpoint_index_statement(
-            &surreal_table_name(&relationship_type(edge_type.label.as_str())),
-            false,
-        ));
+        let relation = surreal_table_name(&relationship_type(edge_type.label.as_str()));
+        statements.push(surreal_endpoint_index_statement(&relation, false));
+        statements.push(surreal_out_index_statement(&relation, false));
         statements.push(format!(
             "DEFINE FIELD {} ON TABLE {table} TYPE string;",
             surreal_identifier("relationship")
@@ -909,6 +928,7 @@ fn surreal_relate_edges_query(
                 surreal_identifier(&table)
             ),
             surreal_endpoint_index_statement(&table, true),
+            surreal_out_index_statement(&table, true),
         ]
     }));
     statements.extend(
@@ -1352,6 +1372,17 @@ fn surreal_endpoint_index_statement(table: &str, if_not_exists: bool) -> String 
         "DEFINE INDEX{} {} ON TABLE {} FIELDS in, out;",
         if if_not_exists { " IF NOT EXISTS" } else { "" },
         surreal_identifier(&format!("{table}_in_out")),
+        surreal_identifier(table)
+    )
+}
+
+/// The `(in, out)` index serves filters on `in`; a filter on `out` alone
+/// (an incoming-edge read) needs its own.
+fn surreal_out_index_statement(table: &str, if_not_exists: bool) -> String {
+    format!(
+        "DEFINE INDEX{} {} ON TABLE {} FIELDS out;",
+        if if_not_exists { " IF NOT EXISTS" } else { "" },
+        surreal_identifier(&format!("{table}_out")),
         surreal_identifier(table)
     )
 }

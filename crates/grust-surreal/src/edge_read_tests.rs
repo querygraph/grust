@@ -15,16 +15,17 @@ fn unfiltered_edge_read_preserves_the_full_relation_scan() {
     );
 }
 
+// With no configured labels the candidate tables of an ID are its prefix
+// table (none here) and `record`.
+const PERSON_1: &str = "in IN [type::record(\"record\", \"person-1\")]";
+const TALK_1: &str = "out IN [type::record(\"record\", \"talk-1\")]";
+
 #[test]
 fn edge_read_pushes_from_and_to_independently() {
     for (from, to, expected) in [
-        (Some("person-1"), None, "meta::id(in) = \"person-1\""),
-        (None, Some("talk-1"), "meta::id(out) = \"talk-1\""),
-        (
-            Some("person-1"),
-            Some("talk-1"),
-            "meta::id(in) = \"person-1\" AND meta::id(out) = \"talk-1\"",
-        ),
+        (Some("person-1"), None, PERSON_1.to_string()),
+        (None, Some("talk-1"), TALK_1.to_string()),
+        (Some("person-1"), Some("talk-1"), format!("{PERSON_1} AND {TALK_1}")),
     ] {
         let query = EdgeQuery {
             from: from.map(NodeId::new),
@@ -49,28 +50,51 @@ fn edge_read_combines_endpoint_filters_with_an_explicit_relationship_table() {
     };
     assert_eq!(
         surreal_get_edges_query(&query, &SurrealConfig::default()).unwrap(),
-        "SELECT *, meta::tb(id) AS __grust_label FROM `member_of` WHERE meta::id(in) = \"person-1\" AND meta::id(out) = \"talk-1\";"
+        format!("SELECT *, meta::tb(id) AS __grust_label FROM `member_of` WHERE {PERSON_1} AND {TALK_1};")
     );
 }
 
 #[test]
-fn endpoint_filter_keeps_the_entire_logical_key_and_ignores_label_guesses() {
+fn endpoint_filter_searches_the_same_candidate_tables_as_a_node_read() {
+    // The filter is on the record links, which the relation's endpoint
+    // indexes serve; the candidates are the configured labels' tables, the
+    // ID's prefix table and `record`, the same set surreal_get_node_query
+    // searches, so the postfilter on the full key still decides membership.
     let query = EdgeQuery {
         from: Some(NodeId::new("DifferentPrefix:person:1")),
         to: Some(NodeId::new("talk-without-prefix")),
         label: Some(Label::new("presents")),
     };
-    let expected = "SELECT *, meta::tb(id) AS __grust_label FROM `presents` WHERE meta::id(in) = \"DifferentPrefix:person:1\" AND meta::id(out) = \"talk-without-prefix\";";
-    for labels in [
-        vec![],
-        vec!["Person".into()],
-        vec!["Talk".into(), "Person".into()],
+    for (labels, from_tables, to_tables) in [
+        (vec![], vec!["differentprefix", "record"], vec!["record"]),
+        (vec!["Person".into()], vec!["differentprefix", "person", "record"], vec!["person", "record"]),
+        (
+            vec!["Talk".into(), "Person".into()],
+            vec!["differentprefix", "person", "record", "talk"],
+            vec!["person", "record", "talk"],
+        ),
     ] {
         let config = SurrealConfig {
             labels,
             ..SurrealConfig::default()
         };
-        assert_eq!(surreal_get_edges_query(&query, &config).unwrap(), expected);
+        let rendered = surreal_get_edges_query(&query, &config).unwrap();
+        let candidates = |tables: &[&str], id: &str| {
+            tables
+                .iter()
+                .map(|t| format!("type::record(\"{t}\", \"{id}\")"))
+                .collect::<Vec<_>>()
+                .join(", ")
+        };
+        assert_eq!(
+            rendered,
+            format!(
+                "SELECT *, meta::tb(id) AS __grust_label FROM `presents` WHERE in IN [{}] AND out IN [{}];",
+                candidates(&from_tables, "DifferentPrefix:person:1"),
+                candidates(&to_tables, "talk-without-prefix")
+            )
+        );
+        assert!(!rendered.contains("meta::id("));
     }
 }
 
@@ -88,10 +112,12 @@ fn endpoint_predicate_values_are_escaped_data_even_with_query_punctuation() {
         };
         let endpoint = if from { "in" } else { "out" };
         let rendered = surreal_get_edges_query(&query, &SurrealConfig::default()).unwrap();
+        // The ID's prefix ("Person") names a candidate table; the key itself
+        // is a string literal inside type::record and never a fragment.
         assert_eq!(
             rendered,
             format!(
-                "SELECT *, meta::tb(id) AS __grust_label FROM `presents` WHERE meta::id({endpoint}) = {expected_literal};"
+                "SELECT *, meta::tb(id) AS __grust_label FROM `presents` WHERE {endpoint} IN [type::record(\"person\", {expected_literal}), type::record(\"record\", {expected_literal})];"
             )
         );
         assert_eq!(

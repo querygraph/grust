@@ -166,6 +166,7 @@ fn relate_edges_are_idempotent_by_endpoints() {
         .expect("relation tables carry an (in, out) index");
     assert!(index > query.find("DEFINE TABLE IF NOT EXISTS `presents` TYPE RELATION;").unwrap());
     assert!(index < query.find("DELETE `presents`").unwrap());
+    assert!(query.contains("DEFINE INDEX IF NOT EXISTS `presents_out` ON TABLE `presents` FIELDS out;"));
     assert!(query.contains("`relationship` = \"presents\""));
     assert!(query.contains("`edge_id` = \"edge-1\""));
 }
@@ -318,6 +319,7 @@ fn schema_relation_tables_carry_endpoint_index() {
 
     assert!(query.contains("DEFINE TABLE `presents` TYPE RELATION SCHEMAFULL;"));
     assert!(query.contains("DEFINE INDEX `presents_in_out` ON TABLE `presents` FIELDS in, out;"));
+    assert!(query.contains("DEFINE INDEX `presents_out` ON TABLE `presents` FIELDS out;"));
 }
 
 #[test]

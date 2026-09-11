@@ -2,14 +2,21 @@
 use grust_core::prelude::*;
 use helix_db::{QueryRequest, dsl::prelude as dsl};
 
-pub(super) fn node(id: &NodeId) -> QueryRequest {
+/// A node the store created is addressed by the server's handle for it;
+/// any other by its `id` property (a scan on the standalone server).
+fn node_source(id: &NodeId, handle: Option<u64>) -> dsl::Traversal<dsl::OnNodes> {
+    match handle {
+        Some(handle) => dsl::g().n(dsl::NodeRef::Ids(vec![handle])),
+        None => dsl::g().n_where(dsl::SourcePredicate::eq("id", id.as_str())),
+    }
+}
+
+pub(super) fn node(id: &NodeId, handle: Option<u64>) -> QueryRequest {
     QueryRequest::read(
         dsl::read_batch()
             .var_as(
                 "nodes",
-                dsl::g()
-                    .n_where(dsl::SourcePredicate::eq("id", id.as_str()))
-                    .value_map(None::<Vec<String>>),
+                node_source(id, handle).value_map(None::<Vec<String>>),
             )
             .returning(["nodes"]),
     )
@@ -38,9 +45,9 @@ pub(super) fn edges(query: &EdgeQuery) -> QueryRequest {
     )
 }
 
-pub(super) fn traversal(traversal: &Traversal) -> Result<QueryRequest> {
+pub(super) fn traversal(traversal: &Traversal, start_handle: Option<u64>) -> Result<QueryRequest> {
     let mut query = match &traversal.start {
-        Start::Node(id) => dsl::g().n_where(dsl::SourcePredicate::eq("id", id.as_str())),
+        Start::Node(id) => node_source(id, start_handle),
         Start::NodesByLabel(label) => dsl::g().n_with_label(label.as_str()),
         Start::NodesByProperty { label, key, value } => {
             // Preserve the adapter's public predicate capability; a new SDK
@@ -85,6 +92,10 @@ pub(super) fn traversal(traversal: &Traversal) -> Result<QueryRequest> {
 mod tests {
     use super::*;
 
+    fn traversal_with_none(traversal: &Traversal) -> Result<QueryRequest> {
+        super::traversal(traversal, None)
+    }
+
     fn wire(request: QueryRequest) -> serde_json::Value {
         assert_eq!(request.request_type(), helix_db::QueryRequestType::Read);
         let value = serde_json::to_value(&request).unwrap();
@@ -99,8 +110,30 @@ mod tests {
     }
 
     #[test]
+    fn a_node_the_store_created_is_read_by_its_handle() {
+        let by_handle = wire(node(&NodeId::new("n-1"), Some(41)));
+        let root = &by_handle["query"]["read"]["entries"][0]["query"]["root"];
+        assert_eq!(root["value_map"]["input"]["nodes"]["reference"]["ids"], serde_json::json!([41]));
+        assert!(!by_handle.to_string().contains("nodes_where"));
+        let by_lookup = wire(node(&NodeId::new("n-1"), None));
+        assert!(by_lookup.to_string().contains("nodes_where"));
+        let walk = wire(
+            super::traversal(
+                &Traversal {
+                    start: Start::Node(NodeId::new("n-1")),
+                    steps: vec![],
+                    limit: None,
+                },
+                Some(7),
+            )
+            .unwrap(),
+        );
+        assert!(walk.to_string().contains("\"ids\":[7]"));
+    }
+
+    #[test]
     fn node_read_preserves_identifier_as_data_in_nested_ast() {
-        let value = wire(node(&NodeId::new("a' OR true // λ")));
+        let value = wire(node(&NodeId::new("a' OR true // λ"), None));
         let root = &value["query"]["read"]["entries"][0]["query"]["root"];
         assert!(root["value_map"]["input"]["nodes_where"].is_object());
         assert!(
@@ -137,7 +170,7 @@ mod tests {
             (Direction::In, "in"),
             (Direction::Both, "both"),
         ] {
-            let request = traversal(&Traversal {
+            let request = traversal_with_none(&Traversal {
                 start: Start::NodesByLabel(Label::new("Person")),
                 steps: vec![Step {
                     direction,
@@ -155,7 +188,7 @@ mod tests {
 
     #[test]
     fn unsupported_predicate_remains_rejected_before_transport() {
-        let result = traversal(&Traversal {
+        let result = traversal_with_none(&Traversal {
             start: Start::NodesByProperty {
                 label: Label::new("Person"),
                 key: "payload".into(),

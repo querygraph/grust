@@ -6,6 +6,26 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ## Unreleased
 
+- Surreal: an edge read filtered by endpoint is `in IN [type::record(t, id),
+  …]` (and `out IN […]`) over the candidate tables a node read by that ID
+  searches, which the planner answers from the relation's endpoint indexes
+  as a union of index scans; it was `meta::id(in) = …`, a function of the
+  field and so a scan of the whole relation per frontier node, which made
+  the adversarial-graph two-hop walks on ego-Facebook minutes of server
+  CPU (A2 up to 16 min at 88k edges). Relation tables carry a second
+  index over `out` for incoming-edge reads. The Rust postfilter on the
+  full key stays; an edge whose endpoint this adapter could read by ID is
+  an edge it finds.
+- Helix SDK: the store keeps the server's handle for every node it
+  created (`add_n` answers `{"created_i": [{"$id": N}]}`) and writes an
+  edge between two such nodes by their handles, and reads a node or
+  starts a traversal at one by its handle. Against the standalone SDK3
+  server a `nodes_where id = …` lookup is a scan of every node whatever
+  equality index exists (28 ms at 4,039 nodes: a 500-edge batch 43 s,
+  88k edges past two hours); by handle the same batch is 0.3 s. An
+  endpoint the store did not create is still looked up by `id`; the
+  handles go with `clear`.
+
 - Surreal: every relation table carries an index over `(in, out)`, defined
   with the table in the schema and in the `DEFINE TABLE IF NOT EXISTS` path
   a relate batch opens with. The idempotent `RELATE` deletes the edge's

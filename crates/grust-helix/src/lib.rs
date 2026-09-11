@@ -1,4 +1,8 @@
-use std::time::Duration;
+use std::{
+    collections::HashMap,
+    sync::{Arc, Mutex},
+    time::Duration,
+};
 
 use async_trait::async_trait;
 use grust_core::prelude::*;
@@ -184,6 +188,15 @@ impl GraphAdminStore for HelixHttpGraphStore {
 pub struct HelixSdkGraphStore {
     config: HelixSdkConfig,
     client: HelixClient,
+    /// The server's own handle for every node this store created (from
+    /// `add_n`'s response), keyed by the Grust ID. An edge whose endpoints
+    /// are here is written and read by handle; against the standalone
+    /// server a `nodes_where id = …` lookup is a scan of every node whatever
+    /// index exists (28 ms at 4,039 nodes, so a 500-edge batch 43 s and
+    /// 88k edges past two hours), and by handle the same batch is 0.3 s.
+    /// Cleared with the store; an endpoint not created through this store
+    /// falls back to the lookup.
+    handles: Arc<Mutex<HashMap<String, u64>>>,
 }
 
 impl HelixSdkGraphStore {
@@ -194,7 +207,20 @@ impl HelixSdkGraphStore {
         Ok(Self {
             config: HelixSdkConfig { base_url, ..config },
             client,
+            handles: Arc::new(Mutex::new(HashMap::new())),
         })
+    }
+
+    fn handle(&self, id: &NodeId) -> Option<u64> {
+        self.handles.lock().unwrap().get(id.as_str()).copied()
+    }
+
+    fn remember(&self, created: Vec<(String, u64)>) {
+        self.handles.lock().unwrap().extend(created);
+    }
+
+    fn handles_snapshot(&self) -> HashMap<String, u64> {
+        self.handles.lock().unwrap().clone()
     }
 }
 
@@ -205,12 +231,14 @@ impl GraphStore for HelixSdkGraphStore {
     }
 
     async fn put_node(&self, node: &Node) -> Result<PutOutcome> {
-        post_helix_sdk_nodes(&self.client, std::slice::from_ref(node)).await?;
+        let created = post_helix_sdk_nodes(&self.client, std::slice::from_ref(node)).await?;
+        self.remember(created);
         Ok(PutOutcome::Upserted)
     }
 
     async fn put_edge(&self, edge: &Edge) -> Result<PutOutcome> {
-        post_helix_sdk_edges(&self.client, std::slice::from_ref(edge)).await?;
+        post_helix_sdk_edges(&self.client, std::slice::from_ref(edge), &self.handles_snapshot())
+            .await?;
         Ok(PutOutcome::Upserted)
     }
 
@@ -224,18 +252,21 @@ impl GraphStore for HelixSdkGraphStore {
         }
         let mut report = LoadReport::default();
         for chunk in graph.nodes.chunks(self.config.batch_size.max(1)) {
-            post_helix_sdk_nodes(&self.client, chunk).await?;
+            let created = post_helix_sdk_nodes(&self.client, chunk).await?;
+            self.remember(created);
             report.nodes += chunk.len();
         }
+        let handles = self.handles_snapshot();
         for chunk in graph.edges.chunks(self.config.batch_size.max(1)) {
-            post_helix_sdk_edges(&self.client, chunk).await?;
+            post_helix_sdk_edges(&self.client, chunk, &handles).await?;
             report.edges += chunk.len();
         }
         Ok(report)
     }
 
     async fn get_node(&self, id: &NodeId) -> Result<Option<Node>> {
-        let response = send_helix_sdk_read(&self.client, sdk_read::node(id)).await?;
+        let response =
+            send_helix_sdk_read(&self.client, sdk_read::node(id, self.handle(id))).await?;
         Ok(helix_nodes_from_response(&response, "nodes")?
             .into_iter()
             .next())
@@ -249,7 +280,12 @@ impl GraphStore for HelixSdkGraphStore {
     }
 
     async fn traverse(&self, traversal: Traversal) -> Result<Vec<Node>> {
-        let response = send_helix_sdk_read(&self.client, sdk_read::traversal(&traversal)?).await?;
+        let start = match &traversal.start {
+            Start::Node(id) => self.handle(id),
+            _ => None,
+        };
+        let response =
+            send_helix_sdk_read(&self.client, sdk_read::traversal(&traversal, start)?).await?;
         let mut nodes = helix_nodes_from_response(&response, "nodes")?;
         if let Some(limit) = traversal.limit {
             nodes.truncate(limit as usize);
@@ -261,6 +297,7 @@ impl GraphStore for HelixSdkGraphStore {
 #[async_trait]
 impl GraphAdminStore for HelixSdkGraphStore {
     async fn clear(&self) -> Result<()> {
+        self.handles.lock().unwrap().clear();
         if self.config.labels.is_empty() {
             return Ok(());
         }
@@ -411,7 +448,30 @@ fn helix_drop_labels_request(labels: &[String]) -> serde_json::Value {
     })
 }
 
-async fn post_helix_sdk_nodes(client: &HelixClient, nodes: &[Node]) -> Result<()> {
+/// Writes the nodes and returns the server's handle for each, in order;
+/// `add_n` answers `{"created_i": [{"$id": N}]}` per named entry.
+async fn post_helix_sdk_nodes(client: &HelixClient, nodes: &[Node]) -> Result<Vec<(String, u64)>> {
+    let (request, returns) = helix_sdk_nodes_request(nodes)?;
+    let response: serde_json::Value = client
+        .query::<serde_json::Value>(request)
+        .send()
+        .await
+        .map_err(|err| helix_transport_error(&format!("Helix SDK node write failed: {err}")))?;
+    Ok(nodes
+        .iter()
+        .zip(returns)
+        .filter_map(|(node, name)| {
+            let created = &response[&name];
+            let created = if created.is_array() { &created[0] } else { created };
+            created
+                .get("$id")
+                .and_then(serde_json::Value::as_u64)
+                .map(|handle| (node.id.as_str().to_string(), handle))
+        })
+        .collect())
+}
+
+fn helix_sdk_nodes_request(nodes: &[Node]) -> Result<(QueryRequest, Vec<String>)> {
     let mut batch = write_batch();
     let mut returns = Vec::with_capacity(nodes.len());
     for (index, node) in nodes.iter().enumerate() {
@@ -422,13 +482,7 @@ async fn post_helix_sdk_nodes(client: &HelixClient, nodes: &[Node]) -> Result<()
         );
         returns.push(name);
     }
-    let request = QueryRequest::write(batch.returning(returns));
-    let _: serde_json::Value = client
-        .query::<serde_json::Value>(request)
-        .send()
-        .await
-        .map_err(|err| helix_transport_error(&format!("Helix SDK node write failed: {err}")))?;
-    Ok(())
+    Ok((QueryRequest::write(batch.returning(returns.clone())), returns))
 }
 
 fn helix_sdk_properties(node: &Node) -> Result<Vec<(String, PropertyInput)>> {
@@ -445,35 +499,54 @@ fn helix_sdk_properties(node: &Node) -> Result<Vec<(String, PropertyInput)>> {
     Ok(properties)
 }
 
-async fn post_helix_sdk_edges(client: &HelixClient, edges: &[Edge]) -> Result<()> {
-    let mut batch = write_batch();
-    let mut returns = Vec::with_capacity(edges.len());
-    for (index, edge) in edges.iter().enumerate() {
-        let target_name = format!("target_{index}");
-        let linked_name = format!("linked_{index}");
-        batch = batch
-            .var_as(
-                &target_name,
-                g().n_where(SourcePredicate::eq("id", edge.to.as_str().to_string())),
-            )
-            .var_as(
-                &linked_name,
-                g().n_where(SourcePredicate::eq("id", edge.from.as_str().to_string()))
-                    .add_e(
-                        relationship_type(edge.label.as_str()),
-                        NodeRef::var(&target_name),
-                        helix_sdk_edge_properties(edge)?,
-                    ),
-            );
-        returns.push(linked_name);
-    }
-    let request = QueryRequest::write(batch.returning(returns));
+async fn post_helix_sdk_edges(
+    client: &HelixClient,
+    edges: &[Edge],
+    handles: &HashMap<String, u64>,
+) -> Result<()> {
+    let request = helix_sdk_edges_request(edges, handles)?;
     let _: serde_json::Value = client
         .query::<serde_json::Value>(request)
         .send()
         .await
         .map_err(|err| helix_transport_error(&format!("Helix SDK edge write failed: {err}")))?;
     Ok(())
+}
+
+/// An edge whose endpoints the store created is written between their
+/// handles; any other endpoint is looked up by its `id` property.
+fn helix_sdk_edges_request(edges: &[Edge], handles: &HashMap<String, u64>) -> Result<QueryRequest> {
+    let mut batch = write_batch();
+    let mut returns = Vec::with_capacity(edges.len());
+    for (index, edge) in edges.iter().enumerate() {
+        let linked_name = format!("linked_{index}");
+        let relationship = relationship_type(edge.label.as_str());
+        let properties = helix_sdk_edge_properties(edge)?;
+        match (handles.get(edge.from.as_str()), handles.get(edge.to.as_str())) {
+            (Some(&from), Some(&to)) => {
+                batch = batch.var_as(
+                    &linked_name,
+                    g().n(NodeRef::Ids(vec![from]))
+                        .add_e(relationship, NodeRef::Ids(vec![to]), properties),
+                );
+            }
+            _ => {
+                let target_name = format!("target_{index}");
+                batch = batch
+                    .var_as(
+                        &target_name,
+                        g().n_where(SourcePredicate::eq("id", edge.to.as_str().to_string())),
+                    )
+                    .var_as(
+                        &linked_name,
+                        g().n_where(SourcePredicate::eq("id", edge.from.as_str().to_string()))
+                            .add_e(relationship, NodeRef::var(&target_name), properties),
+                    );
+            }
+        }
+        returns.push(linked_name);
+    }
+    Ok(QueryRequest::write(batch.returning(returns)))
 }
 
 fn helix_sdk_edge_properties(edge: &Edge) -> Result<Vec<(String, PropertyInput)>> {
