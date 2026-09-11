@@ -6,6 +6,14 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ## Unreleased
 
+- Surreal HTTP: the store signs in once (`/signin`) and sends the session
+  token as a bearer on every request, refreshing it once on a 401. Basic
+  auth on `/sql` was a sign-in per request, and the server hashes the
+  password each time: about 50 ms of server CPU per request on v3.2.4
+  against 2 ms under a token, measured end to end on the same query, so a
+  two-hop walk of a thousand neighbour reads was 45 s of server time
+  before any query ran.
+
 - Surreal: an edge read filtered by endpoint is `in IN [type::record(t, id),
   …]` (and `out IN […]`) over the candidate tables a node read by that ID
   searches, which the planner answers from the relation's endpoint indexes

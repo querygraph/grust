@@ -540,3 +540,17 @@ async fn live_http_put_read_and_traverse() {
     assert_eq!(result.len(), 1);
     assert_eq!(result[0].id, NodeId::new("talk-1"));
 }
+
+#[test]
+fn signin_url_is_the_sql_endpoint_s_origin() {
+    assert_eq!(
+        surreal_signin_url("http://127.0.0.1:8000/sql").unwrap(),
+        "http://127.0.0.1:8000/signin"
+    );
+    assert_eq!(
+        surreal_signin_url("https://db.example.test/surreal/sql?x=1").unwrap(),
+        "https://db.example.test/surreal/signin"
+    );
+    let store = SurrealHttpGraphStore::connect(SurrealConfig::default()).unwrap();
+    assert!(store.token.lock().unwrap().is_none(), "no sign-in before the first request");
+}

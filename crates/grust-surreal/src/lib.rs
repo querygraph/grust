@@ -58,6 +58,13 @@ impl Default for SurrealConfig {
 pub struct SurrealHttpGraphStore {
     config: SurrealConfig,
     client: reqwest::Client,
+    /// The session token `/signin` issued, sent as a bearer on every
+    /// request. Basic auth on `/sql` is a sign-in per request, and the
+    /// server hashes the password each time: about 50 ms of server CPU
+    /// per request on v3.2.4 against 2 ms with a token, which made a
+    /// two-hop walk of a thousand neighbour reads 45 s. Fetched on the
+    /// first request, refreshed once on a 401.
+    token: std::sync::Arc<std::sync::Mutex<Option<String>>>,
 }
 
 impl SurrealHttpGraphStore {
@@ -69,82 +76,100 @@ impl SurrealHttpGraphStore {
             .map_err(|err| {
                 GrustError::Backend(format!("failed to build SurrealDB HTTP client: {err}"))
             })?;
-        Ok(Self { config, client })
+        Ok(Self {
+            config,
+            client,
+            token: std::sync::Arc::new(std::sync::Mutex::new(None)),
+        })
     }
 
-    async fn post(&self, query: &str) -> Result<()> {
+    /// The cached session token, or a fresh one from `/signin`.
+    async fn token(&self) -> Result<String> {
+        if let Some(token) = self.token.lock().unwrap().clone() {
+            return Ok(token);
+        }
         let response = self
             .client
-            .post(&self.config.url)
-            .basic_auth(&self.config.user, Some(&self.config.pass))
-            .header("Surreal-NS", &self.config.namespace)
-            .header("Surreal-DB", &self.config.database)
+            .post(surreal_signin_url(&self.config.url)?)
             .header("Accept", "application/json")
-            .header("Content-Type", "application/surrealql")
-            .body(query.to_string())
+            .json(&serde_json::json!({"user": self.config.user, "pass": self.config.pass}))
             .send()
             .await
             .map_err(|err| {
-                GrustError::Backend(format!("failed to POST SurrealQL: {}", err.without_url()))
+                GrustError::Backend(format!(
+                    "failed to sign in to SurrealDB: {}",
+                    err.without_url()
+                ))
             })?;
+        let status = response.status();
+        let body = response.text().await.unwrap_or_default();
+        let token = serde_json::from_str::<serde_json::Value>(&body)
+            .ok()
+            .and_then(|value| value.get("token")?.as_str().map(str::to_string))
+            .ok_or_else(|| {
+                GrustError::Backend(format!(
+                    "SurrealDB sign-in did not return a token (status {status}): {}",
+                    body.chars().take(200).collect::<String>()
+                ))
+            })?;
+        *self.token.lock().unwrap() = Some(token.clone());
+        Ok(token)
+    }
+
+    /// One `/sql` request under the session token, scoped to the configured
+    /// namespace and database unless `scoped` is false (bootstrap defines
+    /// them). A 401 drops the token and the request is sent once more.
+    async fn send(&self, query: &str, scoped: bool, context: &str) -> Result<reqwest::Response> {
+        for attempt in 0..2 {
+            let token = self.token().await?;
+            let mut request = self
+                .client
+                .post(&self.config.url)
+                .bearer_auth(token)
+                .header("Accept", "application/json")
+                .header("Content-Type", "application/surrealql");
+            if scoped {
+                request = request
+                    .header("Surreal-NS", &self.config.namespace)
+                    .header("Surreal-DB", &self.config.database);
+            }
+            let response = request
+                .body(query.to_string())
+                .send()
+                .await
+                .map_err(|err| {
+                    GrustError::Backend(format!("{context}: {}", err.without_url()))
+                })?;
+            if response.status() == reqwest::StatusCode::UNAUTHORIZED && attempt == 0 {
+                *self.token.lock().unwrap() = None;
+                continue;
+            }
+            return Ok(response);
+        }
+        unreachable!("the second attempt returns")
+    }
+
+    async fn post(&self, query: &str) -> Result<()> {
+        let response = self.send(query, true, "failed to POST SurrealQL").await?;
         check_surreal_http_response(response, "SurrealDB query").await
     }
 
     async fn post_bootstrap(&self, query: &str) -> Result<()> {
         let response = self
-            .client
-            .post(&self.config.url)
-            .basic_auth(&self.config.user, Some(&self.config.pass))
-            .header("Accept", "application/json")
-            .header("Content-Type", "application/surrealql")
-            .body(query.to_string())
-            .send()
-            .await
-            .map_err(|err| {
-                GrustError::Backend(format!(
-                    "failed to bootstrap SurrealDB: {}",
-                    err.without_url()
-                ))
-            })?;
+            .send(query, false, "failed to bootstrap SurrealDB")
+            .await?;
         check_surreal_http_bootstrap_response(response).await
     }
 
     async fn post_clear(&self, query: &str) -> Result<()> {
         let response = self
-            .client
-            .post(&self.config.url)
-            .basic_auth(&self.config.user, Some(&self.config.pass))
-            .header("Surreal-NS", &self.config.namespace)
-            .header("Surreal-DB", &self.config.database)
-            .header("Accept", "application/json")
-            .header("Content-Type", "application/surrealql")
-            .body(query.to_string())
-            .send()
-            .await
-            .map_err(|err| {
-                GrustError::Backend(format!(
-                    "failed to clear SurrealDB tables: {}",
-                    err.without_url()
-                ))
-            })?;
+            .send(query, true, "failed to clear SurrealDB tables")
+            .await?;
         check_surreal_http_clear_response(response).await
     }
 
     async fn read(&self, query: &str) -> Result<Vec<serde_json::Value>> {
-        let response = self
-            .client
-            .post(&self.config.url)
-            .basic_auth(&self.config.user, Some(&self.config.pass))
-            .header("Surreal-NS", &self.config.namespace)
-            .header("Surreal-DB", &self.config.database)
-            .header("Accept", "application/json")
-            .header("Content-Type", "application/surrealql")
-            .body(query.to_string())
-            .send()
-            .await
-            .map_err(|err| {
-                GrustError::Backend(format!("failed to POST SurrealQL: {}", err.without_url()))
-            })?;
+        let response = self.send(query, true, "failed to POST SurrealQL").await?;
         read_surreal_http_response(response, "SurrealDB read").await
     }
 
@@ -1422,6 +1447,19 @@ fn surreal_value(value: &Value) -> Result<String> {
 
 fn surreal_string(value: &str) -> String {
     serde_json::to_string(value).expect("string serialization cannot fail")
+}
+
+/// `/signin` on the same origin as the configured `/sql` endpoint.
+fn surreal_signin_url(surreal_url: &str) -> Result<String> {
+    let mut parsed = validated_surreal_url(surreal_url)?;
+    let base = parsed
+        .path()
+        .strip_suffix("/sql")
+        .unwrap_or("")
+        .to_string();
+    parsed.set_path(&format!("{base}/signin"));
+    parsed.set_query(None);
+    Ok(parsed.to_string())
 }
 
 fn surreal_ws_address(surreal_url: &str) -> Result<String> {
