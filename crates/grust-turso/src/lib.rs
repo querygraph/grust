@@ -407,9 +407,10 @@ impl TursoGraphStore {
     /// Whether the edge table exists with the pre-`id_key` layout.
     async fn edges_table_is_legacy_unlocked(&self) -> Result<bool> {
         let sql = format!("PRAGMA table_info({})", self.edges_table());
-        let mut rows = self.conn.query(&sql, ()).await.map_err(|err| {
-            GrustError::Backend(format!("Turso table_info failed: {err}: {sql}"))
-        })?;
+        let mut rows =
+            self.conn.query(&sql, ()).await.map_err(|err| {
+                GrustError::Backend(format!("Turso table_info failed: {err}: {sql}"))
+            })?;
         let mut columns = Vec::new();
         while let Some(row) = rows.next().await.map_err(|err| {
             GrustError::Backend(format!("Turso table_info row read failed: {err}: {sql}"))
