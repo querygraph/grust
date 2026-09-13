@@ -36,6 +36,9 @@ pub struct SurrealConfig {
     /// the batch size and the server; the default is a minute. The SDK
     /// transport has no per-request timeout and ignores this.
     pub request_timeout: Duration,
+    /// Rows per request when a whole graph is loaded at once; the incremental
+    /// path keeps `batch_size`. One HTTP round trip per batch is the cost.
+    pub bulk_batch_size: usize,
 }
 
 impl Default for SurrealConfig {
@@ -47,6 +50,7 @@ impl Default for SurrealConfig {
             namespace: "test".to_string(),
             database: "graph".to_string(),
             batch_size: 100,
+            bulk_batch_size: 2_000,
             labels: Vec::new(),
             relationships: Vec::new(),
             request_timeout: Duration::from_secs(60),
@@ -226,12 +230,12 @@ impl GraphStore for SurrealHttpGraphStore {
         let id_tables = surreal_id_tables(&graph.nodes)?;
         let node_queries = graph
             .nodes
-            .chunks(self.config.batch_size.max(1))
+            .chunks(self.config.bulk_batch_size.max(1))
             .map(surreal_upsert_nodes_query)
             .collect::<Result<Vec<_>>>()?;
         let edge_queries = graph
             .edges
-            .chunks(self.config.batch_size.max(1))
+            .chunks(self.config.bulk_batch_size.max(1))
             .map(|chunk| surreal_relate_edges_query(chunk, &id_tables, &self.config))
             .collect::<Result<Vec<_>>>()?;
         let mut report = LoadReport::default();

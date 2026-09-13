@@ -11,6 +11,9 @@ use lancedb::query::{ExecutableQuery, QueryBase};
 use lancedb::table::{CompactionOptions, OptimizeAction};
 use lancedb::{Connection, Error as LanceError, Table};
 
+mod table_handles;
+use table_handles::{TableHandles, TableLifecycle};
+
 #[derive(Clone, Debug)]
 pub struct LanceDbConfig {
     pub uri: String,
@@ -42,12 +45,17 @@ pub struct LanceDbGraphStore {
     config: LanceDbConfig,
     db: Connection,
     schema: Arc<RwLock<Option<GraphSchema>>>,
+    /// Reusable table handles; lookup and local recreation share an async gate.
+    handles: Arc<TableHandles>,
 }
 
 impl LanceDbGraphStore {
     pub async fn connect(config: LanceDbConfig) -> Result<Self> {
         validate_table_prefix(&config.table_prefix)?;
         let db = lancedb::connect(&config.uri)
+            // Reusing handles must preserve visibility of writes through other
+            // connections. This still checks the latest manifest on each read.
+            .read_consistency_interval(std::time::Duration::ZERO)
             .execute()
             .await
             .map_err(|err| {
@@ -60,6 +68,7 @@ impl LanceDbGraphStore {
             config,
             db,
             schema: Arc::new(RwLock::new(None)),
+            handles: Arc::new(TableHandles::default()),
         })
     }
 
@@ -73,14 +82,6 @@ impl LanceDbGraphStore {
 
     fn edges_table_name(&self) -> String {
         format!("{}_edges", self.config.table_prefix)
-    }
-
-    async fn open_nodes(&self) -> Result<Table> {
-        self.open_table(&self.nodes_table_name()).await
-    }
-
-    async fn open_edges(&self) -> Result<Table> {
-        self.open_table(&self.edges_table_name()).await
     }
 
     /// Merge the small files a load leaves behind. Compaction is bounded work
@@ -404,35 +405,11 @@ impl GraphStore for LanceDbGraphStore {
 #[async_trait]
 impl GraphAdminStore for LanceDbGraphStore {
     async fn bootstrap(&self) -> Result<()> {
-        let nodes = self.nodes_table_name();
-        if !self.table_exists(&nodes).await? {
-            self.db
-                .create_empty_table(&nodes, nodes_schema())
-                .execute()
-                .await
-                .map_err(|err| {
-                    GrustError::Backend(format!("failed to create LanceDB table {nodes}: {err}"))
-                })?;
-        }
-
-        let edges = self.edges_table_name();
-        if !self.table_exists(&edges).await? {
-            self.db
-                .create_empty_table(&edges, edges_schema())
-                .execute()
-                .await
-                .map_err(|err| {
-                    GrustError::Backend(format!("failed to create LanceDB table {edges}: {err}"))
-                })?;
-        }
-
-        Ok(())
+        self.maintain_tables(TableLifecycle::Bootstrap).await
     }
 
     async fn clear(&self) -> Result<()> {
-        self.drop_table_if_exists(&self.edges_table_name()).await?;
-        self.drop_table_if_exists(&self.nodes_table_name()).await?;
-        self.bootstrap().await
+        self.maintain_tables(TableLifecycle::Clear).await
     }
 }
 
