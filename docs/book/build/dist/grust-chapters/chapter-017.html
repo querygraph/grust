@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
   <meta name="author" content="Alexy Khrabrov" />
   <meta name="dcterms.date" content="2026-09-13" />
-  <title>Preface</title>
+  <title>Conclusion</title>
   <style>
     div.sitenav { display: flex; flex-direction: row; flex-wrap: wrap; }
     span.navlink { flex: 1; }
@@ -47,30 +47,26 @@
 </div>
 <div class="sitenav">
 <span class="navlink">
-<span class="navlink-label">Next:</span> <a href="chapter-003.html" accesskey="n" rel="next">The Shape of Grust</a>
 </span>
 <span class="navlink">
-<span class="navlink-label">Previous:</span> <a href="chapter-001.html" accesskey="p" rel="previous">Grust</a>
+<span class="navlink-label">Previous:</span> <a href="chapter-016.html" accesskey="p" rel="previous">Arrow tables and IPC (unreleased)</a>
 </span>
 </div>
 </nav>
-<h1 class="unnumbered" id="preface">Preface</h1>
-<p>Grust is a small Rust property graph API with a large architectural
-promise: application code should be able to build, validate, traverse,
-and persist graph data without committing itself to a database query
-language too early.</p>
-<p>That goal matters because many graph-shaped Rust applications live
-between worlds. A crawler wants a local graph while it extracts facts.
-An indexing pipeline wants deterministic target state. A data product
-may begin with tests and an in-memory backend, then later need
-SurrealDB, FalkorDB, PostgreSQL, LanceDB, Sail, or another backend.
-Grust gives those applications one model to program against:</p>
-<pre class="text"><code>Graph = nodes + edges
-Node  = id + label + properties
-Edge  = optional id + from + to + label + properties</code></pre>
-<p>This book is a guided tour of that model. It covers the workspace
-architecture, the Rust concepts the code leans on, the core graph types,
-traversal IR, backend contracts, implemented backend profiles, query
-safety, semantic-model projection, and practical examples.</p>
+<h1 class="unnumbered" id="conclusion">Conclusion</h1>
+<p>Grust is small by design. Its core model is easy to hold in your
+head, and its backend contract is narrow enough that very different
+systems can implement it. That is the source of its leverage.</p>
+<p>The project says: build your graph once, keep the domain model in
+Rust, and let the backend translate. Sometimes that translation is a map
+scan. Sometimes it is Arrow and LanceDB. Sometimes it is PostgreSQL,
+Spark SQL, Redis graph commands, SurrealQL, Helix SDK calls, or
+CocoIndex target state. And sometimes it is a capability-secured agent
+memory path in which TypeSec guards authority while Grust persists
+opaque records and their entity graph durably in Turso.</p>
+<p>The more Grust grows, the more important that center becomes: a
+stable property graph model, a backend-neutral traversal IR, explicit
+errors, feature-gated integrations, and enough Rust type structure to
+make the right path feel natural.</p>
 </body>
 </html>

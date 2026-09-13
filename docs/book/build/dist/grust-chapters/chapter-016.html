@@ -5,8 +5,8 @@
   <meta name="generator" content="pandoc" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
   <meta name="author" content="Alexy Khrabrov" />
-  <meta name="dcterms.date" content="2026-09-05" />
-  <title>Conclusion</title>
+  <meta name="dcterms.date" content="2026-09-13" />
+  <title>Arrow tables and IPC (unreleased)</title>
   <style>
     div.sitenav { display: flex; flex-direction: row; flex-wrap: wrap; }
     span.navlink { flex: 1; }
@@ -47,26 +47,63 @@
 </div>
 <div class="sitenav">
 <span class="navlink">
+<span class="navlink-label">Next:</span> <a href="chapter-017.html" accesskey="n" rel="next">Conclusion</a>
 </span>
 <span class="navlink">
 <span class="navlink-label">Previous:</span> <a href="chapter-015.html" accesskey="p" rel="previous">Where Grust Can Grow</a>
 </span>
 </div>
 </nav>
-<h1 class="unnumbered" id="conclusion">Conclusion</h1>
-<p>Grust is small by design. Its core model is easy to hold in your
-head, and its backend contract is narrow enough that very different
-systems can implement it. That is the source of its leverage.</p>
-<p>The project says: build your graph once, keep the domain model in
-Rust, and let the backend translate. Sometimes that translation is a map
-scan. Sometimes it is Arrow and LanceDB. Sometimes it is PostgreSQL,
-Spark SQL, Redis graph commands, SurrealQL, Helix SDK calls, or
-CocoIndex target state. And sometimes it is a capability-secured agent
-memory path in which TypeSec guards authority while Grust persists
-opaque records and their entity graph durably in Turso.</p>
-<p>The more Grust grows, the more important that center becomes: a
-stable property graph model, a backend-neutral traversal IR, explicit
-errors, feature-gated integrations, and enough Rust type structure to
-make the right path feel natural.</p>
+<h1 data-number="14" id="arrow-tables-and-ipc-unreleased"><span
+class="header-section-number">14</span> Arrow tables and IPC
+(unreleased)</h1>
+<p>Enable the facade’s <code>arrow</code> feature and use
+<code>grust::arrow::ArrowGraph</code>, or depend on
+<code>grust-arrow</code>. Arrow 59.3 tables are shared by reference;
+conversion to/from Grust’s row-oriented model materializes values and
+builds a validation index. No database service, JSON payload, or text
+edge-list conversion is required.</p>
+<pre class="rust,no_run"><code>use grust::arrow::ArrowGraph;
+use std::fs::File;
+# fn main() -&gt; Result&lt;(), Box&lt;dyn std::error::Error&gt;&gt; {
+let graph = grust::Graph::default();
+let tables = ArrowGraph::from_graph(&amp;graph)?;
+tables.write_ipc(File::create(&quot;nodes.arrow&quot;)?, File::create(&quot;edges.arrow&quot;)?)?;
+let restored = ArrowGraph::read_ipc(
+    File::open(&quot;nodes.arrow&quot;)?, File::open(&quot;edges.arrow&quot;)?,
+)?.to_graph()?;
+assert_eq!(graph, restored);
+# Ok(()) }</code></pre>
+<h2 data-number="14.1" id="arrow-table-contract"><span
+class="header-section-number">14.1</span> Arrow table contract</h2>
+<p>The node table has non-null UTF-8 <code>node_id</code> and
+<code>label</code>. The edge table has non-null UTF-8
+<code>source</code>, <code>target</code>, <code>label</code>, and
+nullable UTF-8 <code>edge_id</code>. Endpoint IDs must exist; node IDs
+must be unique. Row order, isolates, loops, parallel edges and explicit
+edge IDs survive round trips. Direction is encoded by source/target;
+this format does not encode an undirected-graph flag.</p>
+<p>Each property uses a nullable <code>property.&lt;key&gt;</code>
+column plus a non-null Boolean <code>present.&lt;key&gt;</code> column.
+A false marker with a null value means absent; true with null means
+explicit <code>Value::Null</code>. Keys can contain dots or reserved
+base names because all property names are prefixed. Properties are
+native Arrow Null, Boolean, Int64, Float64 or Utf8. Integer precision
+and floating-point values are not routed through JSON. Mixed non-null
+types within a property and complex Grust values (lists, JSON, temporal,
+decimal, path, graph) currently return errors; they are never silently
+converted to strings or discarded.</p>
+<p>IPC uses one record batch in each of two Arrow
+<strong>file-format</strong> streams. The caller owns sinks and file
+lifecycle. A failure writing the second sink does not undo the first.
+Reading multiple batches or IPC streaming-format files is not supported
+yet. Reads materialize the batch; there is no mmap, spill, byte budget
+or protection against arbitrarily large untrusted IPC allocations.</p>
+<p>The tables can be consumed as RecordBatches in Arrow/DataFusion.
+Icecat’s local <code>grustcat</code> adapter feeds them directly to
+Icecat’s Arrow table builder and exports them again with properties
+intact. Select <code>property.weight</code> as the Icecat weight column.
+Icecat’s simple graph semantics reject parallel edges; Grust’s model
+preserves them. See Icecat for the algorithms and benchmark runner.</p>
 </body>
 </html>

@@ -6,6 +6,15 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ## Unreleased
 
+### Arrow interchange — 2026-09-13 (unreleased)
+
+- Add optional `grust-arrow` / facade `arrow` support for native scalar property
+  RecordBatches and two-file IPC read/write, including null versus absent values.
+- Validate graph identity, endpoints, schemas and supported property types; retain
+  isolates, loops, parallel edges, labels and edge IDs. Complex properties and
+  multi-batch IPC are explicitly unsupported in this initial surface.
+
+
 - LSQB matrix: a Turso observation worker no longer reloads the CSVs; the
   coordinator loads the dataset once into a file-backed store and each
   worker copies that file into a private path, opens the copy and builds its

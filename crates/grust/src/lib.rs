@@ -1,3 +1,6 @@
+#[cfg(feature = "arrow")]
+pub use grust_arrow as arrow;
+
 pub use grust_core::*;
 
 pub mod lakecat;
