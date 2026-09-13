@@ -5,7 +5,7 @@
   <meta name="generator" content="pandoc" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
   <meta name="author" content="Alexy Khrabrov" />
-  <meta name="dcterms.date" content="2026-09-05" />
+  <meta name="dcterms.date" content="2026-09-13" />
   <title>Backend Architecture</title>
   <style>
     div.sitenav { display: flex; flex-direction: row; flex-wrap: wrap; }
@@ -143,6 +143,15 @@ and local workflows that need no external service. When a
 <code>GraphSchema</code> is applied, the memory backend validates writes
 against it, which makes it a useful conformance harness for typed
 storage behavior before a database enters the picture.</p>
+<p>For repeated language reads, <code>indexed_snapshot()</code> returns
+a shared immutable <code>TypedGraphIndex</code>. The first call after a
+write clones the graph and builds typed incoming/outgoing adjacency;
+later calls reuse it, including through cloned store handles. Every
+write attempt invalidates the cache, while snapshots already returned
+remain unchanged. Construction holds the store’s read lock and therefore
+delays writers. Ordinary <code>GraphStore</code> reads and traversals
+keep their map-based behavior; indexed Cypher entrypoints are a separate
+choice.</p>
 <div class="sourceCode" id="cb1"><pre
 class="sourceCode rust"><code class="sourceCode rust"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">use</span> <span class="pp">grust::prelude::</span><span class="op">*;</span></span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
@@ -716,9 +725,15 @@ scanning no relation tables. Explicit edge-label reads and deletes can
 still target a known relation table directly. Traversal batches
 target-node reads per step through <code>get_nodes</code>, avoiding a
 serial node lookup for every edge in a fan-out. Mutation batches are
-wrapped in SurrealDB transactions. SurrealDB 3.2 identifiers are quoted
-without lossy property-name rewriting. Every newly written node stores
-its original, case-sensitive Grust label in the reserved
+wrapped in SurrealDB transactions. Both transports push edge endpoint
+filters to SurrealQL using <code>meta::id(in)</code> and
+<code>meta::id(out)</code> with complete escaped logical IDs, then
+retain the Rust postfilter. This avoids transferring unrelated relation
+rows without guessing an endpoint table from its ID prefix. It is not a
+claim that the server uses an index seek; live query-plan and
+performance validation remain separate work. SurrealDB 3.2 identifiers
+are quoted without lossy property-name rewriting. Every newly written
+node stores its original, case-sensitive Grust label in the reserved
 <code>__grust_label</code> field instead of reconstructing that label
 from a normalized, lowercase physical table. Reads of older rows fall
 back to the physical table label exposed as
@@ -768,18 +783,19 @@ configured local source checkouts such as <code>~/src/sail</code>,
 available. The repository-level <code>docs/INTEGRATION.md</code> guide
 covers profiles, modes, Docker image pins, source-checkout
 configuration, and CI strategy.</p>
-<p>Krill 0.13.2 is a scoped registry patch: <code>grust-cypher</code>,
-<code>grust-sail</code>, and the <code>grust-graph</code> facade move to
-0.13.2. Surreal remains 0.13.1, while consumers naming any other
-published Grust crate directly continue to use 0.13.0. Krill corrects
-Sail integer row-marker decoding and recursive-path admission, and adds
-explicit remote-session cleanup. It retains Crayfish’s endpoint-safe
-connection errors and faithful Surreal logical identities, and inherits
-Prawn’s dependency qualification: Redis client 1.6.0 and FalkorDB
-service v4.20.4, SurrealDB Rust SDK and service 3.2.4 with reqwest
-0.13.4, pgGraph service 1.2.0, tokio-postgres 0.7.18, and stable Turso
-0.7.2. These are tested compatibility updates, not claims that every
-adapter implements the portable Cypher executor.</p>
+<p>Acorn 0.14.0 is a lockstep release of all publishable Grust crates.
+It adds reusable graph algorithms, optional Arrow interchange/results,
+extensible Cypher procedures and shared resource admission. It retains
+earlier Sail session and path-admission fixes and the backend
+identity/transport corrections documented in the repository changelog.
+Backend-native feature parity remains explicit; the portable local
+algorithm executor does not imply native backend analytics.</p>
+<p>Surreal and Helix HTTP distinguish bulk-load batch size from
+incremental writes. LanceDB reuses table handles while checking
+latest-read consistency; an async gate prevents a concurrent first
+lookup from republishing a handle across local table recreation. Turso’s
+sync constructor initializes its snapshot cache, and a pull retires
+cached captures before it can change local data, even if cancelled.</p>
 <p>LanceDB stays at 0.30.0: the attempted 0.38.0 default-feature local
 build fails within upstream <code>lancedb</code> because
 <code>job.rs</code> references the remote-only <code>Error::Http</code>
@@ -788,10 +804,10 @@ adapter now targets exact <code>helix-db</code> 3.0.0: its SDK path uses
 typed nested-AST <code>QueryRequest</code> builders and
 <code>Client::query(request)</code> rather than
 <code>DynamicQueryRequest</code> and <code>dynamic_query</code>. The
-direct HTTP/v1 store remains separate and unchanged. Nineteen unit tests
-pass, including SDK serialization and existing HTTP behavior. The
-separate SDK/v2 Docker example run now has 264 passing observations
-across baseline and adversarial queries, with a retained runtime audit.
+direct HTTP/v1 store remains separate, with explicit bulk-load batching.
+Unit tests cover SDK serialization and HTTP behavior. The separate
+SDK/v2 Docker example run now has 264 passing observations across
+baseline and adversarial queries, with a retained runtime audit.
 Historical HTTP service evidence is not reused as proof of SDK/v2
 compatibility. The repository’s <code>benchmarks/lsqb/BACKENDS.md</code>
 records the full qualification matrix and live gate evidence.</p>
@@ -844,6 +860,14 @@ and a stable rejection category. A capability or service gap remains
 visible rather than becoming a fallback pass. Those execution classes
 are not performance equivalent and their timings must not be
 collapsed.</p>
+<p>New matrix observations also record a worker-declared execution
+<code>plan</code>: <code>clause-pipeline</code>,
+<code>count-factorized</code>, <code>sql-row-source</code>,
+<code>sql-count</code>, or <code>backend-native</code>. This is the
+selected Grust route, not the database’s physical plan. It is retained
+in incremental records, including timeouts. Historical observations
+without it remain explicitly unknown; frozen Neo4j and upstream bundles
+are not rewritten. Mixed plans do not form one timing distribution.</p>
 <p>The 28-node, 72-edge <code>sfexample</code> graph is a conformance
 and orchestration gate, not a backend ranking. Authenticated LSQB SF0.1
 and SF0.3 downloads add larger tiers with sealed archive and
@@ -854,11 +878,21 @@ materialization plus the Rust reference is explicitly
 <code>unsupported</code>. The manifest additionally binds a per-query,
 per-execution-class logical-row bound: only exact cardinalities or
 certified upper bounds at or below 1,000,000 are timed on downloaded
-tiers. Larger or insufficient Rust-row bounds are explicit unsupported
-outcomes without samples, while native scalar aggregates remain a
-separate class. The fourteen-case policy suite remains fixed to
-<code>sfexample</code>. Sail, PostgreSQL PGQ, and Helix have no default
-pinned service startup contract; their cells are
+tiers for row-producing Rust plans. Larger or insufficient Rust-row
+bounds are explicit unsupported outcomes without samples. A separate,
+hash-bound registry admits proven indexed counts as
+<code>count-factorized</code> with <code>not-materialized</code> Rust
+rows; this describes the algorithm, not an empty query result or zero
+memory usage. Native scalar aggregates remain a separate class. For the
+pinned workload, Memory selects indexed counts for all 22 cases (q1–q9
+and a1–a13); Turso and PostgreSQL select scalar SQL counts for q1, q4,
+a1 and a7. Unproven shapes retain their existing routes and gates. All
+22 example cases pass offline on Memory and embedded Turso, but these
+checks do not qualify a performance run or a live PostgreSQL service.
+Index construction is load work; parsing, semantic analysis, planning
+and execution remain query-timed. The fourteen-case policy suite remains
+fixed to <code>sfexample</code>. Sail, PostgreSQL PGQ, and Helix have no
+default pinned service startup contract; their cells are
 <code>unavailable</code> unless an operator explicitly qualifies a
 digest-pinned, resource-limited external service.</p>
 <p>This is a conformance and reproducibility microbenchmark, and LSQB is

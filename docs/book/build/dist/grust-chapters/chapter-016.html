@@ -5,8 +5,8 @@
   <meta name="generator" content="pandoc" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
   <meta name="author" content="Alexy Khrabrov" />
-  <meta name="dcterms.date" content="2026-09-05" />
-  <title>Conclusion</title>
+  <meta name="dcterms.date" content="2026-09-13" />
+  <title>Graph analytics through one Rust implementation</title>
   <style>
     div.sitenav { display: flex; flex-direction: row; flex-wrap: wrap; }
     span.navlink { flex: 1; }
@@ -32,6 +32,71 @@
       vertical-align: middle;
     }
     .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+    /* CSS for syntax highlighting */
+    html { -webkit-text-size-adjust: 100%; }
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
   </style>
   <link rel="stylesheet" href="book.css" />
 </head>
@@ -47,26 +112,234 @@
 </div>
 <div class="sitenav">
 <span class="navlink">
+<span class="navlink-label">Next:</span> <a href="chapter-017.html" accesskey="n" rel="next">Arrow tables and IPC</a>
 </span>
 <span class="navlink">
 <span class="navlink-label">Previous:</span> <a href="chapter-015.html" accesskey="p" rel="previous">Where Grust Can Grow</a>
 </span>
 </div>
 </nav>
-<h1 class="unnumbered" id="conclusion">Conclusion</h1>
-<p>Grust is small by design. Its core model is easy to hold in your
-head, and its backend contract is narrow enough that very different
-systems can implement it. That is the source of its leverage.</p>
-<p>The project says: build your graph once, keep the domain model in
-Rust, and let the backend translate. Sometimes that translation is a map
-scan. Sometimes it is Arrow and LanceDB. Sometimes it is PostgreSQL,
-Spark SQL, Redis graph commands, SurrealQL, Helix SDK calls, or
-CocoIndex target state. And sometimes it is a capability-secured agent
-memory path in which TypeSec guards authority while Grust persists
-opaque records and their entity graph durably in Turso.</p>
-<p>The more Grust grows, the more important that center becomes: a
-stable property graph model, a backend-neutral traversal IR, explicit
-errors, feature-gated integrations, and enough Rust type structure to
-make the right path feel natural.</p>
+<h1 data-number="14"
+id="graph-analytics-through-one-rust-implementation"><span
+class="header-section-number">14</span> Graph analytics through one Rust
+implementation</h1>
+<p>Acorn adds graph analytics to Grust’s backend-neutral property-graph
+API. Applications prepare an explicit immutable snapshot, run a Rust
+kernel, and choose Rust, Arrow or ordinary Cypher consumption.
+Algorithms do not own a database connection or choose another graph.
+Memory and private Turso snapshots demonstrate the same prepared query
+against two independently captured sources.</p>
+<figure>
+<img src="diagrams/diagram-08.png" alt="Diagram 8" />
+<figcaption aria-hidden="true">Diagram 8</figcaption>
+</figure>
+<p><code>grust-algorithms</code> has no Cypher dependency.
+<code>grust-procedures</code> owns signatures, providers, checked
+cursors and the shared execution budget. The
+<code>grust-algorithm-procedures</code> crate connects them. An
+application can register an independent provider without changing the
+parser, analyzer or executor. The facade exposes these through
+<code>algorithms</code>, <code>cypher</code> and optional
+<code>arrow</code> features.</p>
+<h2 data-number="14.1" id="starting-from-the-facade"><span
+class="header-section-number">14.1</span> Starting from the facade</h2>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode toml"><code class="sourceCode toml"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[dependencies]</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="dt">grust</span> <span class="op">=</span> <span class="op">{ </span><span class="dt">package</span><span class="op"> =</span> <span class="st">&quot;grust-graph&quot;</span><span class="op">, </span><span class="dt">version</span><span class="op"> =</span> <span class="st">&quot;0.14.0&quot;</span><span class="op">, </span><span class="dt">features</span><span class="op"> =</span> <span class="op">[</span><span class="st">&quot;algorithms&quot;</span><span class="op">,</span> <span class="st">&quot;cypher&quot;</span><span class="op">,</span> <span class="st">&quot;arrow&quot;</span><span class="op">] }</span></span></code></pre></div>
+<p>Register the desired providers once and retain the immutable
+registry:</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode rust"><code class="sourceCode rust"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">use</span> <span class="pp">grust::</span><span class="op">{</span>algorithm_procedures<span class="op">,</span> procedures<span class="op">,</span> CypherParameters<span class="op">};</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> <span class="kw">mut</span> builder <span class="op">=</span> <span class="pp">procedures::RegistryBuilder::</span><span class="kw">default</span>()<span class="op">;</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="pp">procedures::</span>register_builtins(<span class="op">&amp;</span><span class="kw">mut</span> builder)<span class="op">?;</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="pp">algorithm_procedures::</span>register_algorithms(<span class="op">&amp;</span><span class="kw">mut</span> builder)<span class="op">?;</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> registry <span class="op">=</span> builder<span class="op">.</span>build()<span class="op">;</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> result <span class="op">=</span> <span class="pp">grust::</span>run_read_query_with_registry(</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>    <span class="op">&amp;</span>graph<span class="op">,</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;roads&quot;</span><span class="op">,</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;CALL grust.algorithms.dijkstra(&#39;start&#39;, {weightProperty: &#39;cost&#39;}) </span><span class="sc">\</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="st">     YIELD nodeId, distance RETURN nodeId, distance&quot;</span><span class="op">,</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>    <span class="op">&amp;</span><span class="pp">CypherParameters::</span>new()<span class="op">,</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>    <span class="op">&amp;</span>registry<span class="op">,</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>)<span class="op">?;</span></span></code></pre></div>
+<p>Here <code>graph</code> is a caller-owned <code>grust::Graph</code>.
+A bounded query additionally opts into
+<code>ReadQueryPolicy::allow_read_procedures</code>; catalog permission
+alone cannot admit analytics. For a backend capture, construct a
+<code>LocalSnapshot</code> after access checks, with an explicit graph,
+revision and principal. A prepared plan rejects a different graph name
+before invoking a provider. The capability pins data; the identity
+strings do not grant access.</p>
+<p>For direct Rust, create an <code>ExecutionContext</code> with
+memory/work limits, batch size and optional deadline.
+<code>GraphProjection::from_graph</code> accepts label selection,
+orientation and a weight policy. <code>from_topology</code> accepts
+external IDs and typed edges; <code>from_arrow_batches</code> reads
+typed columns directly. Kernel results share the projection, so dropping
+the caller’s projection handle cannot invalidate IDs. Runnable source
+examples are <code>weighted_paths</code> in
+<code>grust-algorithms</code> and <code>custom_procedure</code> in
+<code>grust-cypher</code>.</p>
+<h2 data-number="14.2" id="available-operations"><span
+class="header-section-number">14.2</span> Available operations</h2>
+<p>All procedure names below have the prefix
+<code>grust.algorithms.</code>. They call the same kernels as direct
+Rust and have typed Arrow result adapters.</p>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Operation</th>
+<th>Contract</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>bfs</code></td>
+<td>Hop distances from one external source ID</td>
+</tr>
+<tr>
+<td><code>multiSourceBfs</code></td>
+<td>Minimum hop distance from a nonempty source array</td>
+</tr>
+<tr>
+<td><code>dfs</code></td>
+<td>Deterministic reachable-node discovery order</td>
+</tr>
+<tr>
+<td><code>dijkstra</code></td>
+<td>Distances with finite nonnegative weights</td>
+</tr>
+<tr>
+<td><code>shortestPaths</code></td>
+<td>One selected full shortest path per reachable target</td>
+</tr>
+<tr>
+<td><code>wcc</code></td>
+<td>Weak components, including isolates</td>
+</tr>
+<tr>
+<td><code>scc</code></td>
+<td>Directed strong components with iterative traversal</td>
+</tr>
+<tr>
+<td><code>pagerank</code></td>
+<td>Weighted scores, residual, iterations and convergence status</td>
+</tr>
+<tr>
+<td><code>topologicalSort</code></td>
+<td>Complete DAG order or a concrete closed cycle witness</td>
+</tr>
+</tbody>
+</table>
+<p><code>projectionStats</code> inspects selected topology.
+<code>estimateCsr</code> reports nominal adjacency-buffer upper bounds
+from snapshot counts, excluding graph storage, ID maps, original edge
+tables, kernel scratch, output and allocator overhead. Selection can
+reduce those counts. The estimate is not total memory admission.</p>
+<p>The common configuration keys are <code>orientation</code>,
+<code>nodeLabels</code>, <code>relationshipTypes</code>,
+<code>weightProperty</code> and <code>defaultWeight</code>. Unknown keys
+fail. Null label arrays select all labels; empty arrays select none.
+Edges crossing outside the selected node set are excluded, while
+selected isolates remain. Orientations are outgoing, incoming and
+undirected. Undirected loops contribute one traversal arc; other
+undirected edges contribute two. Parallel edges remain distinct.
+Topology algorithms ignore weights after projection validation.</p>
+<p>Weights must be finite and nonnegative. Integer weights outside
+<code>0..=2^53</code> are rejected rather than rounded. Missing or null
+weights fail unless a finite nonnegative default is explicitly supplied.
+Unit projections omit weight storage. Dijkstra uses strict improvement
+and stable adjacency order for equal costs; zero-weight ties cannot
+create predecessor cycles. Reachable cost overflow is an error.
+Unreachable distances are infinity in direct Rust and null in
+Cypher/Arrow. Component IDs are the external ID at the minimum
+projection row in each component.</p>
+<p>PageRank defaults to damping .85, L1 tolerance 1e-8 and 1000
+iterations. Scores start uniformly. Optional personalization controls
+teleportation and dangling mass; zero outgoing weight is dangling.
+Parallel edges contribute separately. Finite large weights are scaled
+before sums. Iteration-limit results explicitly report non-convergence.
+Seeds, community algorithms, negative-weight paths, all-pairs/k-shortest
+paths, flow, similarity and ML are deferred; the current catalog is not
+universal GDS compatibility.</p>
+<h2 data-number="14.3" id="full-paths-and-incremental-consumption"><span
+class="header-section-number">14.3</span> Full paths and incremental
+consumption</h2>
+<p>A full path contains source-first external node IDs and cumulative
+costs beginning at zero. Original edge ordinals identify the selected
+multigraph edges. The zero-hop source path is included; unreachable
+targets are omitted.</p>
+<pre class="cypher"><code>CALL grust.algorithms.shortestPaths(&#39;start&#39;, {weightProperty: &#39;cost&#39;})
+YIELD nodeIds, costs
+UNWIND range(0, size(costs) - 1) AS i
+RETURN count(nodeIds[i]), sum(costs[i])
+LIMIT 1</code></pre>
+<p>This query consumes every actual requested array element. LIMIT
+bounds the final aggregate output, not its input. The executor
+incrementally handles CALL/YIELD filters, simple WITH, UNWIND, plain
+RETURN and ungrouped COUNT/SUM/AVG. Generic array/index aggregation
+avoids allocating a binding row for every path element. It does not
+recognize a benchmark graph or substitute a closed-form answer. Other
+shapes use the existing budgeted materializing executor. Grouping,
+sorting, DISTINCT and collecting have no spill implementation and may
+exceed admission. Early LIMIT can stop consumption, but a global kernel
+may already have computed its result before producing the first
+batch.</p>
+<p>One shared execution context accounts for projection buffers,
+scratch, provider results and downstream intermediates. Reservations
+stay attached through internal ownership transfers. Temporary consumed
+values release live admission; legacy materializing operators retain
+cumulative-copy accounting. Cancellation, deadline and work checks span
+preparation, kernels, reconstruction and consumption. Execution is
+synchronous without prefetch or parallel kernel workers.</p>
+<p>Borrowed path visitor slices expire when the callback returns. Pull
+cursors reuse scratch storage. Owned scalar and Arrow batches retain
+admission through wrapper clones; raw Arrow clones require retaining the
+wrapper or independent consumer admission. Full paths and cycle/order
+arrays use LargeList offsets with explicit limits. An individual
+oversized path fails instead of truncating. Caller-owned input and
+externally retained legacy result tables require caller admission;
+logical accounting is not a process RSS sandbox for untrusted provider
+code.</p>
+<h2 data-number="14.4"
+id="discovery-preparation-reuse-and-execution-classes"><span
+class="header-section-number">14.4</span> Discovery, preparation reuse
+and execution classes</h2>
+<p><code>db.procedures</code> describes the final registry generation,
+including argument and option defaults, outputs, provider identity,
+modes, correlation and computation boundary. Prepared explanations use
+the same definitions and consumer classifier.
+<code>explain_snapshot</code> also identifies the admitted revision and
+principal without running algorithms. These are Rust planning methods; a
+literal Cypher EXPLAIN prefix is not added by this extension.</p>
+<p>Projection reuse is query-scoped and keyed by snapshot, principal,
+representation, selection, orientation and weight policy. Correlated
+CALL still executes once per incoming row; caching preparation does not
+cache algorithm answers. Reverse SCC adjacency is built lazily and
+stores only topology, without duplicate weights or edge identities.
+Projections retain their selection policy for inspection.</p>
+<p>The current procedure executor accepts an explicitly selected local
+snapshot. Backend-native execution is rejected when unsupported, with no
+automatic whole- graph download. Memory and a private Turso database
+have snapshot integration proofs, including reads from old captures
+after later writes. Arbitrary external writers, remote snapshot
+stability and native analytics are not thereby qualified.
+Mutation/write-back needs a separate atomic transaction design and
+remains absent.</p>
+<p>Both local direct Rust and ordinary Cypher completed the 65,536-node
+full-path chain, consuming 2,147,516,416 entries in each array. Those
+single observations have disclosed process envelopes and differ from the
+frozen Docker protocol. The repository retains independent small-graph
+oracles, source/binary receipts, frozen baseline results and current
+qualification status. See the <a
+href="https://github.com/querygraph/grust/blob/main/docs/GENERALIZED_ALGORITHMS.md">coverage
+and resource contracts</a> and <a
+href="https://github.com/querygraph/grust/tree/main/benchmarks/algorithms">benchmark
+evidence</a>.</p>
 </body>
 </html>

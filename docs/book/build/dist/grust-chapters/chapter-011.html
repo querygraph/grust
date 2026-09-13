@@ -5,7 +5,7 @@
   <meta name="generator" content="pandoc" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
   <meta name="author" content="Alexy Khrabrov" />
-  <meta name="dcterms.date" content="2026-09-05" />
+  <meta name="dcterms.date" content="2026-09-13" />
   <title>Cypher and GQL</title>
   <style>
     div.sitenav { display: flex; flex-direction: row; flex-wrap: wrap; }
@@ -87,13 +87,138 @@ table-valued functions: <code>CALL name(args) [YIELD …]</code> evaluates
 its arguments against each incoming row (<code>tvf.range</code>,
 <code>tvf.keys</code> join the <code>db.*</code> catalog
 procedures).</p>
-<p>Backends that can materialize SQL push the bounded read subset down:
+<p>Backends that can materialize SQL push a supported read subset down:
 a query’s <code>MATCH</code>/<code>WHERE</code> filter lowers into
-backend SQL (Spark and SQLite dialects), while the <code>RETURN</code>
-projection still runs through the shared reference. Pushed results are
-therefore identical to the reference <em>by construction</em>, and an
-embedded-SQLite differential oracle checks reference-vs-pushdown row
-equality on every change.</p>
+backend SQL, while the <code>RETURN</code> projection normally runs
+through the shared reference. Turso and PostgreSQL additionally opt into
+a conservative scalar <code>COUNT(*)</code> lowering over existing match
+sources, returning one integer to Rust for decoding and final
+pagination. Sail has not opted into scalar aggregation. Segment and
+multi-pattern SQL joins decline overlapping relationship types when
+physical edge independence is unproven; nullable or duplicate edge IDs
+are not a valid uniqueness guard. Scalar filters admit only conjunctions
+of genuine property/string equality with exact JSON payload-type checks
+and byte-wise comparison, in addition to structural node labels. Numeric
+and ambiguous inline-label filters keep their older routes. Existing
+row-source SQL filter/coercion restrictions still apply; an
+embedded-SQLite differential oracle checks supported
+reference-vs-pushdown results. Sharing the final projection alone does
+not prove every backend SQL predicate equivalent.</p>
+<p><code>grust_cypher::read::run_read_query_indexed</code> uses a
+reusable <code>TypedGraphIndex</code> and selects exact count algebra
+for proven query shapes. Forests require globally distinct relationship
+types and allow labels and inline scalar literal properties. The wedge
+supports labels but no inline property maps: two undirected hops with
+unequal outer endpoints are weighted by a differently typed outgoing
+leaf. Parallel edges, reciprocal edges, self-loops, empty-match zero and
+final scalar pagination are preserved. General predicates, grouping,
+unproven repeated types and other unsupported shapes use the existing
+reference executor. A forest may also carry independent single-edge
+optional leaves; each contributes its number of matching edges, or one
+padded row if none match. Optional anchor predicates stay optional. A
+narrowly supported plain <code>WITH</code> before those leaves preserves
+multiplicity even when it drops bindings; filters, nullable anchors and
+dependent optional branches retain fallback. Mandatory forest branch
+combination reuses borrowed necessary candidates from predicate
+evaluation. Outside-seed weights remain zero; neither optional padding
+nor child products revive them. Full weight-array initialization,
+optional scans and root sums retain their existing accounting. Mandatory
+child-branch scans prepay borrowed chunks of at most 256 physical
+adjacency slots, including incoming self-loop copies that are skipped
+when counting. Successful work totals remain exact and no storage is
+added; a tight budget can reject a whole chunk before its affordable
+prefix. Per-predicate charges and checkpoints remain, while
+property-free scans checkpoint at most 256 slots apart. Optional
+execution is unchanged. Property-bearing roles with at least two
+mandatory incident atoms first require a nonempty typed adjacency row
+for each atom in its role-relative direction. This necessary-condition
+prefilter resolves each type once into a borrowed
+<code>TypedAdjacencyView</code>, retaining a charged per-role vector of
+views and directions. Each actual row probe is still charged; it does
+not scan neighbors or allocate candidates. Enabled roles may choose a
+strictly shorter borrowed sparse source list for a mandatory directed
+atom instead of their label/full-domain seed, charging one metadata
+inspection per atom. Ties retain the current seed; undirected atoms and
+dense storage do not supply source lists. The view’s
+<code>sparse_outgoing_sources()</code> and
+<code>sparse_incoming_sources()</code> distinguish dense storage
+(<code>None</code>) from an absent relationship
+(<code>Some(&amp;[])</code>). Source slots are sorted and unique,
+without copying or intersecting lists; every original predicate and
+required-row check still applies to survivors. Disabled or
+empty-candidate roles prepare nothing. Views borrow the immutable index
+and retain its dense/sparse and absent-row behavior without cloning the
+snapshot. Original predicates remain for survivors; optional edges never
+qualify a mandatory role. Degree-one and property-free roles stay
+unchanged. This structural heuristic can add overhead on dense roles; it
+is not a general selectivity estimate or a measured speedup
+guarantee.</p>
+<p>Weighted tag intersections and optional-null tag/wedge anti-joins
+preserve the distinction between witness existence and witness
+multiplicity. Wedge anti-joins subtract weighted support triangles; they
+share a degree-oriented topology helper with location triangles and
+account for their additional scratch space. Support edges store checked
+compact multiplicities and widen before count arithmetic. The helper
+orders forward targets by explicit
+<code>(simple support degree, stable graph vertex slot)</code> rank, not
+multiplicity or original ordinal. For x–y, y’s forward neighbors all
+rank above y, so the intersection safely starts strictly after y in x’s
+sorted row. Callbacks map the three ranks back to original active-domain
+ordinals; location-triangle and wedge anti-join role weights and
+semantics are unchanged.</p>
+<p>Constructing that rank order costs O(V log V) and charges two V-entry
+<code>u32</code> maps, ordinal-to-rank and rank-to-ordinal, retaining
+only the latter after forward adjacency is filled. Here V is the active
+domain size and M the number of distinct non-loop support pairs. The
+helper’s scratch remains O(V + M); forward-row sorting costs O(M log M)
+in the worst case and triangle intersections remain O(M^(3/2)). These
+structural bounds are not a measured speedup claim. Fixed-cost
+anti-wedge mask scans precharge small chunks, retaining cumulative work
+totals and end-of-pass deadline checkpoints. Wedge role masks seed
+unconditional roles during initialization and use the label index for
+the others, preserving every label condition and overlapping roles. Leaf
+and non-anti center traversal reuse those borrowed candidates with full
+mask checks and per-candidate charging. Unlabeled roles still scan all
+vertices, and full-size mask/leaf arrays and their initialization remain
+accounted. Non-anti wedges merge each center’s neighbors once,
+accumulating its A degree, weighted C leaves and A/C overlap. The exact
+checked <code>u128</code> product minus overlap preserves the
+unequal-outer-node constraint and physical edge multiplicities without
+additional scratch. Scalar narrowing happens only after subtraction; the
+wedge anti-join’s support algorithm is unchanged. The index’s global
+edge bound allows checked <code>u32</code> multiplicities/degrees and
+checked <code>u64</code> weighted leaf totals; overlap, final products
+and accumulated counts stay <code>u128</code>. Multiplicities come from
+drained adjacency spans, while raw scan indices remain
+<code>usize</code> because loops occur in both adjacency rows. Non-anti
+physical-slot scans prepay at most 256 slots per chunk, preserving exact
+successful work totals and separate grouped-endpoint charges. Deadline
+checks remain bounded even within large parallel groups and cover the
+end of traversal. An insufficient budget may conservatively refuse a
+partly affordable chunk. Directed four-cycles narrow role candidates
+through required labels, retain every predicate, and choose adjacency
+merging or binary probes. Symmetric location triangles use sparse
+country/path weights and oriented intersections; neither creators nor
+locations are assumed functional. Scalar scans count proven nonnull
+node/edge bindings, zero-hop identities, bounded literal ranges, simple
+null/constant-string probes and compatible scalar unions without
+match-row buffers. Range limits, null semantics and duplicates remain
+part of each proof. Scalar literal predicates borrow property values;
+comparing an incompatible complex JSON value does not clone its
+payload.</p>
+<p>The classifier and executor share their eligibility proof; a query ID
+never selects an optimization. The repository’s <a
+href="https://github.com/querygraph/grust/blob/main/docs/INDEXED_READS.md"><code>docs/INDEXED_READS.md</code></a>
+documents the exact API and shape boundaries.</p>
+<p>The reference executor also enforces relationship uniqueness within a
+single <code>MATCH</code>, including comma paths. It uses physical edge
+slots, not application IDs, and starts a new uniqueness scope at the
+next <code>MATCH</code>. Named fixed edges keep their identity through
+<code>WITH</code> aliases, bare-variable grouping and
+<code>WITH DISTINCT</code>; internal slot keys never appear in public
+results. Repeated relationship-list bindings are explicitly unsupported;
+shortest selection and node-simple variable-length traversal retain
+their documented restrictions.</p>
 <p>Applications that intentionally expose a small read-only surface can
 use <code>ReadQueryPolicy</code>, <code>validate_read_query</code>, and
 <code>run_bounded_read_query</code>. This is more than a final
@@ -112,6 +237,14 @@ scan, so an outer row cannot reset that work or its deadline.
 Authorization, tenant-safe graph projection, remote-backend deadlines,
 and process isolation remain the host’s responsibility; the cooperative
 timeout is not an operating-system hard kill.</p>
+<p><code>run_bounded_read_query_indexed</code> applies that same policy
+to an immutable indexed snapshot, including fallback execution. Planner
+work, masks, count arrays and typed adjacency scans consume the active
+budgets. Exact serialized graph size is cached at index construction, so
+each query checks the same byte limit without serializing the graph
+again. Snapshot construction occurs before the query call and is outside
+its deadline and intermediate budget; the host must separately bound
+loading and resident memory.</p>
 <h2 data-number="9.2" id="values-procedures-transactions-writes"><span
 class="header-section-number">9.2</span> Values, procedures,
 transactions, writes</h2>
