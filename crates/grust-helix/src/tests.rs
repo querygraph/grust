@@ -502,9 +502,17 @@ fn sdk_edges_between_created_nodes_are_written_by_handle_and_others_by_lookup() 
     assert!(!first.contains("nodes_where"));
     let lookup = entries[1]["query"].to_string() + &entries[2]["query"].to_string();
     assert!(lookup.contains("nodes_where") && lookup.contains("stranger"));
-    assert_eq!(value["query"]["write"]["returns"], serde_json::json!(["linked_0", "linked_1"]));
+    assert_eq!(
+        value["query"]["write"]["returns"],
+        serde_json::json!(["linked_0", "linked_1"])
+    );
 
     let (request, returns) = helix_sdk_nodes_request(&[Node::new("V", "a", Props::new())]).unwrap();
     assert_eq!(returns, vec!["created_0".to_string()]);
-    assert!(serde_json::to_value(request).unwrap().to_string().contains("add_n"));
+    assert!(
+        serde_json::to_value(request)
+            .unwrap()
+            .to_string()
+            .contains("add_n")
+    );
 }

@@ -201,6 +201,7 @@ impl TursoGraphStore {
             },
             _db: TursoDatabase::Synced(db),
             conn,
+            index_cache: std::sync::Mutex::new(None),
             connection_gate: tokio::sync::Mutex::new(()),
             transaction_needs_rollback: AtomicBool::new(false),
         })
@@ -227,6 +228,9 @@ impl TursoGraphStore {
     #[cfg(feature = "sync")]
     pub async fn pull(&self) -> Result<bool> {
         let _gate = self.lock_connection().await?;
+        // Retire before polling: a failed or cancelled pull may already have
+        // changed local data. Previously returned immutable snapshots stay valid.
+        self.invalidate_snapshot();
         match &self._db {
             TursoDatabase::Synced(db) => db
                 .pull()

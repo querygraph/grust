@@ -35,15 +35,52 @@ databases:
 - traversal expressed as an IR rather than a database query string
 - an async store trait for persistence backends
 
-Grust focuses on that persistent property-graph layer. It is not trying to
-replace `petgraph` for graph algorithms. A Grust memory backend can use simple
-maps today and could use `petgraph` internally later where that helps.
+Grust combines that persistent property-graph layer with optional analytics over
+explicit immutable snapshots. Applications can use its Rust kernels directly or
+register them for ordinary Cypher CALL execution across supported local captures.
+The [algorithm coverage matrix](docs/GENERALIZED_ALGORITHMS.md) states the exact
+algorithms, representations, resource limits and backend execution classes.
+
+## Generalized graph analytics
+
+The working source adds facade features `algorithms` and `arrow`. Combine
+`algorithms` with `cypher` for registry-backed BFS, weighted distances/full paths,
+components, PageRank, DFS, multi-source BFS and topological order. An external
+provider implements the same public contract without changing the parser.
+
+```cypher
+CALL grust.algorithms.shortestPaths('start', {weightProperty: 'cost'})
+YIELD targetNodeId, nodeIds, costs, edgeOrdinals
+RETURN targetNodeId, nodeIds, costs, edgeOrdinals
+```
+
+Register providers explicitly with `grust::algorithm_procedures::register_algorithms`
+and pass the immutable registry to `run_read_query_with_registry`. Bounded queries
+also require `allow_read_procedures`. Introspection and prepared explanations use
+the same definitions as execution. Typed Arrow results retain their admission;
+full-path consumers can stream real arrays through ordinary UNWIND and aggregates.
+
+Runnable examples:
+
+```sh
+cargo run -p grust-algorithms --example weighted_paths
+cargo run -p grust-cypher --example custom_procedure
+```
+
+See [algorithm procedures](crates/grust-algorithm-procedures/README.md),
+[direct Rust contracts](crates/grust-algorithms/README.md), and the
+[coverage and migration guide](docs/GENERALIZED_ALGORITHMS.md). This source has
+not yet completed the named release qualification.
 
 ## Current Workspace
 
 ```text
 crates/
   grust/          Public facade package (`grust-graph`) and prelude
+  grust-algorithms/ Immutable projections and reusable Rust graph analytics
+  grust-algorithm-procedures/ Registry adapters for those same kernels
+  grust-procedures/ Open signatures, providers, cursors and shared resource budgets
+  grust-arrow/    Optional scalar graph/Arrow interchange
   grust-cocoindex/ CocoIndex-style graph target-state export adapter
   grust-core/     Core model, builder, schema, traversal IR, GraphStore trait
   grust-cypher/   Portable GQL/Cypher parser, planner, and reference executor

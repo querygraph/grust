@@ -164,9 +164,16 @@ fn relate_edges_are_idempotent_by_endpoints() {
     let index = query
         .find("DEFINE INDEX IF NOT EXISTS `presents_in_out` ON TABLE `presents` FIELDS in, out;")
         .expect("relation tables carry an (in, out) index");
-    assert!(index > query.find("DEFINE TABLE IF NOT EXISTS `presents` TYPE RELATION;").unwrap());
+    assert!(
+        index
+            > query
+                .find("DEFINE TABLE IF NOT EXISTS `presents` TYPE RELATION;")
+                .unwrap()
+    );
     assert!(index < query.find("DELETE `presents`").unwrap());
-    assert!(query.contains("DEFINE INDEX IF NOT EXISTS `presents_out` ON TABLE `presents` FIELDS out;"));
+    assert!(
+        query.contains("DEFINE INDEX IF NOT EXISTS `presents_out` ON TABLE `presents` FIELDS out;")
+    );
     assert!(query.contains("`relationship` = \"presents\""));
     assert!(query.contains("`edge_id` = \"edge-1\""));
 }
@@ -277,7 +284,9 @@ fn get_nodes_query_batches_candidate_records_in_one_statement() {
     // is parsed recursively and a frontier of a few hundred IDs overran
     // SurrealDB's expression depth ("Exceeded expression recursion depth
     // limit", v3.2.4, at 4,039 nodes).
-    assert!(query.starts_with("SELECT *, meta::tb(id) AS __grust_physical_label FROM type::record("));
+    assert!(
+        query.starts_with("SELECT *, meta::tb(id) AS __grust_physical_label FROM type::record(")
+    );
     assert!(query.contains("type::record(\"person\", \"person-1\"), type::record(\"record\", \"person-1\"), type::record(\"talk\", \"person-1\")"));
     assert!(query.contains("type::record(\"talk\", \"talk-1\")"));
     assert!(!query.contains(" OR "));
@@ -324,7 +333,10 @@ fn schema_relation_tables_carry_endpoint_index() {
 
 #[test]
 fn request_timeout_defaults_to_a_minute_and_is_configurable() {
-    assert_eq!(SurrealConfig::default().request_timeout, Duration::from_secs(60));
+    assert_eq!(
+        SurrealConfig::default().request_timeout,
+        Duration::from_secs(60)
+    );
     let store = SurrealHttpGraphStore::connect(SurrealConfig {
         request_timeout: Duration::from_secs(600),
         ..SurrealConfig::default()
@@ -552,7 +564,10 @@ fn signin_url_is_the_sql_endpoint_s_origin() {
         "https://db.example.test/surreal/signin"
     );
     let store = SurrealHttpGraphStore::connect(SurrealConfig::default()).unwrap();
-    assert!(store.token.lock().unwrap().is_none(), "no sign-in before the first request");
+    assert!(
+        store.token.lock().unwrap().is_none(),
+        "no sign-in before the first request"
+    );
 }
 
 #[test]
@@ -565,7 +580,14 @@ fn an_edge_without_a_resolved_endpoint_relates_the_record_the_node_read_would_fi
     let query = surreal_relate_edges_query(&[edge], &BTreeMap::new(), &config).unwrap();
     let from = "type::record(\"person\", \"160\"), type::record(\"record\", \"160\")";
     let to = "type::record(\"person\", \"Talk:7\"), type::record(\"record\", \"Talk:7\"), type::record(\"talk\", \"Talk:7\")";
-    assert!(query.contains(&format!("DELETE `knows` WHERE in IN [{from}] AND out IN [{to}];")));
-    assert!(query.contains(&format!("RELATE ((SELECT VALUE id FROM {from}))->`knows`->((SELECT VALUE id FROM {to})) SET")));
-    assert!(!query.contains("type::record(\"record\", \"160\"))->"), "no guessed record endpoint");
+    assert!(query.contains(&format!(
+        "DELETE `knows` WHERE in IN [{from}] AND out IN [{to}];"
+    )));
+    assert!(query.contains(&format!(
+        "RELATE ((SELECT VALUE id FROM {from}))->`knows`->((SELECT VALUE id FROM {to})) SET"
+    )));
+    assert!(
+        !query.contains("type::record(\"record\", \"160\"))->"),
+        "no guessed record endpoint"
+    );
 }

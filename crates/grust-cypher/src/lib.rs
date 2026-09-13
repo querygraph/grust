@@ -37,10 +37,18 @@ pub mod pushdown;
 pub mod read;
 mod read_budget;
 pub mod read_policy;
+pub use grust_procedures as procedures;
 pub use read::run_read_query_on_named_graph;
+pub use read::run_read_query_with_registry;
+pub use read::{
+    PreparedProcedureQuery, ProcedureCallPlan, ProcedureExecutionTarget, ProcedureQueryPlan,
+    ProcedureRowExecution,
+};
 pub use read_budget::MAX_RANGE_ITEMS;
 pub use read_policy::{
-    ReadQueryPolicy, run_bounded_read_query, run_bounded_read_query_indexed, validate_read_query,
+    ReadQueryPolicy, run_bounded_read_query, run_bounded_read_query_indexed,
+    run_bounded_read_query_on_snapshot, run_bounded_read_query_with_registry, validate_read_query,
+    validate_read_query_with_registry,
 };
 pub mod semantics;
 pub mod session;

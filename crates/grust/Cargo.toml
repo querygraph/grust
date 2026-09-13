@@ -15,6 +15,8 @@ name = "grust"
 
 [features]
 default = []
+algorithms = ["dep:grust-algorithms", "dep:grust-algorithm-procedures"]
+arrow = ["dep:grust-arrow", "grust-algorithms?/arrow"]
 cocoindex = ["dep:grust-cocoindex"]
 cypher = ["dep:grust-cypher"]
 falkor = ["dep:grust-falkor"]
@@ -34,6 +36,9 @@ typed-garde = ["grust-core/typed-garde"]
 typed-zod-rs = ["typed-garde", "grust-core/typed-zod-rs"]
 
 [dependencies]
+grust-algorithms = { version = "0.13.0", path = "../grust-algorithms", optional = true }
+grust-algorithm-procedures = { version = "0.13.0", path = "../grust-algorithm-procedures", optional = true }
+grust-arrow = { version = "0.13.0", path = "../grust-arrow", optional = true }
 grust-core = { version = "0.13.0", path = "../grust-core" }
 grust-cocoindex = { version = "0.13.0", path = "../grust-cocoindex", optional = true }
 grust-cypher = { version = "0.13.2", path = "../grust-cypher", optional = true }
@@ -49,6 +54,7 @@ grust-turso = { version = "0.13.0", path = "../grust-turso", optional = true }
 serde_json.workspace = true
 
 [dev-dependencies]
+tokio.workspace = true
 garde = { workspace = true, features = ["derive"] }
 serde.workspace = true
 serde_yaml.workspace = true

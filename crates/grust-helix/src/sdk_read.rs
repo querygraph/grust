@@ -113,7 +113,10 @@ mod tests {
     fn a_node_the_store_created_is_read_by_its_handle() {
         let by_handle = wire(node(&NodeId::new("n-1"), Some(41)));
         let root = &by_handle["query"]["read"]["entries"][0]["query"]["root"];
-        assert_eq!(root["value_map"]["input"]["nodes"]["reference"]["ids"], serde_json::json!([41]));
+        assert_eq!(
+            root["value_map"]["input"]["nodes"]["reference"]["ids"],
+            serde_json::json!([41])
+        );
         assert!(!by_handle.to_string().contains("nodes_where"));
         let by_lookup = wire(node(&NodeId::new("n-1"), None));
         assert!(by_lookup.to_string().contains("nodes_where"));

@@ -1,0 +1,22 @@
+[package]
+name = "grust-algorithms"
+version = "0.13.0"
+edition.workspace = true
+license = "MIT"
+repository.workspace = true
+homepage.workspace = true
+description = "Budgeted property-graph projections and reusable graph analytics for Grust."
+keywords.workspace = true
+categories.workspace = true
+
+[features]
+default = []
+arrow = ["dep:arrow-array"]
+
+[dependencies]
+grust-core = { version = "0.13.0", path = "../grust-core" }
+grust-procedures = { version = "0.13.0", path = "../grust-procedures" }
+arrow-array = { version = "59.3.0", optional = true }
+
+[lints.rust]
+unsafe_code = "forbid"

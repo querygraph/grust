@@ -99,10 +99,9 @@ impl HelixHttpGraphStore {
                 "Helix query failed with status {status}"
             )));
         }
-        let body = response
-            .text()
-            .await
-            .map_err(|err| helix_transport_error(&format!("failed to read Helix response: {err}")))?;
+        let body = response.text().await.map_err(|err| {
+            helix_transport_error(&format!("failed to read Helix response: {err}"))
+        })?;
         serde_json::from_str(&body)
             .map_err(|err| GrustError::Serialization(format!("invalid Helix response: {err}")))
     }
@@ -202,8 +201,9 @@ pub struct HelixSdkGraphStore {
 impl HelixSdkGraphStore {
     pub fn connect(config: HelixSdkConfig) -> Result<Self> {
         let base_url = helix_base_url(&config.base_url);
-        let client = HelixClient::new(Some(&base_url))
-            .map_err(|err| helix_transport_error(&format!("failed to build Helix SDK client: {err}")))?;
+        let client = HelixClient::new(Some(&base_url)).map_err(|err| {
+            helix_transport_error(&format!("failed to build Helix SDK client: {err}"))
+        })?;
         Ok(Self {
             config: HelixSdkConfig { base_url, ..config },
             client,
@@ -237,8 +237,12 @@ impl GraphStore for HelixSdkGraphStore {
     }
 
     async fn put_edge(&self, edge: &Edge) -> Result<PutOutcome> {
-        post_helix_sdk_edges(&self.client, std::slice::from_ref(edge), &self.handles_snapshot())
-            .await?;
+        post_helix_sdk_edges(
+            &self.client,
+            std::slice::from_ref(edge),
+            &self.handles_snapshot(),
+        )
+        .await?;
         Ok(PutOutcome::Upserted)
     }
 
@@ -462,7 +466,11 @@ async fn post_helix_sdk_nodes(client: &HelixClient, nodes: &[Node]) -> Result<Ve
         .zip(returns)
         .filter_map(|(node, name)| {
             let created = &response[&name];
-            let created = if created.is_array() { &created[0] } else { created };
+            let created = if created.is_array() {
+                &created[0]
+            } else {
+                created
+            };
             created
                 .get("$id")
                 .and_then(serde_json::Value::as_u64)
@@ -482,7 +490,10 @@ fn helix_sdk_nodes_request(nodes: &[Node]) -> Result<(QueryRequest, Vec<String>)
         );
         returns.push(name);
     }
-    Ok((QueryRequest::write(batch.returning(returns.clone())), returns))
+    Ok((
+        QueryRequest::write(batch.returning(returns.clone())),
+        returns,
+    ))
 }
 
 fn helix_sdk_properties(node: &Node) -> Result<Vec<(String, PropertyInput)>> {
@@ -522,12 +533,18 @@ fn helix_sdk_edges_request(edges: &[Edge], handles: &HashMap<String, u64>) -> Re
         let linked_name = format!("linked_{index}");
         let relationship = relationship_type(edge.label.as_str());
         let properties = helix_sdk_edge_properties(edge)?;
-        match (handles.get(edge.from.as_str()), handles.get(edge.to.as_str())) {
+        match (
+            handles.get(edge.from.as_str()),
+            handles.get(edge.to.as_str()),
+        ) {
             (Some(&from), Some(&to)) => {
                 batch = batch.var_as(
                     &linked_name,
-                    g().n(NodeRef::Ids(vec![from]))
-                        .add_e(relationship, NodeRef::Ids(vec![to]), properties),
+                    g().n(NodeRef::Ids(vec![from])).add_e(
+                        relationship,
+                        NodeRef::Ids(vec![to]),
+                        properties,
+                    ),
                 );
             }
             _ => {

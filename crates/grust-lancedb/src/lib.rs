@@ -93,9 +93,7 @@ impl LanceDbGraphStore {
             })
             .await
             .map(|_| ())
-            .map_err(|err| {
-                GrustError::Backend(format!("LanceDB compaction failed: {err}"))
-            })
+            .map_err(|err| GrustError::Backend(format!("LanceDB compaction failed: {err}")))
     }
 
     async fn open_table(&self, name: &str) -> Result<Table> {

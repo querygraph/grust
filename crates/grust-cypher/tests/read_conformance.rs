@@ -10,6 +10,9 @@ use grust_core::{Edge, Graph, Node, Props, Value};
 use grust_cypher::CypherParameters;
 use grust_cypher::read::run_read_query;
 
+#[path = "read_conformance/procedures.rs"]
+mod procedures;
+
 fn node(label: &str, id: &str, props: &[(&str, Value)]) -> Node {
     let mut p = Props::new();
     for (k, v) in props {
@@ -443,3 +446,5 @@ fn error_matches_kind(err: &grust_core::GrustError, kind: grust_cypher::GqlError
             )
     )
 }
+#[path = "read_conformance/streaming.rs"]
+mod streaming;

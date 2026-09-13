@@ -12,6 +12,11 @@ use std::time::Instant;
 use grust_core::prelude::{Edge, Node, Props, Result, Value};
 
 use crate::gql_execution;
+use grust_procedures::{ExecutionContext, ExecutionLimits};
+
+#[path = "read_budget_live.rs"]
+mod live;
+pub(crate) use live::with_live_intermediates;
 
 /// Absolute allocation ceiling for `range()` in every reference-executor
 /// entrypoint, including the intentionally unrestricted `run_read_query`.
@@ -25,11 +30,10 @@ pub(crate) struct ReadExecutionBudgetLimits {
     pub deadline: Instant,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 struct ReadExecutionBudget {
     limits: ReadExecutionBudgetLimits,
-    candidate_work: usize,
-    intermediate_bytes: usize,
+    execution: ExecutionContext,
 }
 
 thread_local! {
@@ -50,12 +54,17 @@ pub(crate) fn with_budget<T>(
     limits: ReadExecutionBudgetLimits,
     run: impl FnOnce() -> Result<T>,
 ) -> Result<T> {
+    let execution = ExecutionContext::new(ExecutionLimits {
+        memory_bytes: limits.max_intermediate_bytes,
+        work_units: limits.max_candidate_work,
+        batch_rows: 1024,
+        deadline: Some(limits.deadline),
+    })
+    .map_err(|error| gql_execution(error.to_string()))?;
     BUDGETS.with(|budgets| {
-        budgets.borrow_mut().push(ReadExecutionBudget {
-            limits,
-            candidate_work: 0,
-            intermediate_bytes: 0,
-        });
+        budgets
+            .borrow_mut()
+            .push(ReadExecutionBudget { limits, execution });
     });
     let _guard = BudgetGuard;
     checkpoint()?;
@@ -68,6 +77,9 @@ pub(crate) fn with_budget<T>(
 /// large binding is bounded even when earlier rows are subsequently dropped.
 /// Calls made by the unrestricted executor remain no-ops.
 pub(crate) fn charge_intermediate_bytes(bytes: usize, context: &str) -> Result<()> {
+    if let Some(result) = live::charge(bytes, context) {
+        return result;
+    }
     BUDGETS.with(|budgets| {
         let mut budgets = budgets.borrow_mut();
         let Some(budget) = budgets.last_mut() else {
@@ -76,17 +88,14 @@ pub(crate) fn charge_intermediate_bytes(bytes: usize, context: &str) -> Result<(
         if Instant::now() >= budget.limits.deadline {
             return Err(gql_execution("bounded read execution timed out"));
         }
-        let next = budget
-            .intermediate_bytes
-            .checked_add(bytes)
-            .ok_or_else(|| gql_execution("bounded read intermediate-byte counter overflowed"))?;
-        if next > budget.limits.max_intermediate_bytes {
-            return Err(gql_execution(format!(
-                "bounded read exceeded {} cumulative intermediate bytes while {context}",
-                budget.limits.max_intermediate_bytes
-            )));
-        }
-        budget.intermediate_bytes = next;
+        budget
+            .execution
+            .charge_cumulative_memory(bytes)
+            .map_err(|error| {
+                gql_execution(format!(
+                    "bounded read cumulative intermediate bytes ({error}) while {context}"
+                ))
+            })?;
         Ok(())
     })
 }
@@ -96,6 +105,9 @@ pub(crate) fn charge_intermediate_bytes(bytes: usize, context: &str) -> Result<(
 /// capacity can be computed up front; the materialized value is charged once
 /// it has been produced.
 pub(crate) fn check_intermediate_bytes_available(bytes: usize, context: &str) -> Result<()> {
+    if let Some(result) = live::available(bytes, context) {
+        return result;
+    }
     BUDGETS.with(|budgets| {
         let budgets = budgets.borrow();
         let Some(budget) = budgets.last() else {
@@ -104,16 +116,14 @@ pub(crate) fn check_intermediate_bytes_available(bytes: usize, context: &str) ->
         if Instant::now() >= budget.limits.deadline {
             return Err(gql_execution("bounded read execution timed out"));
         }
-        let next = budget
-            .intermediate_bytes
-            .checked_add(bytes)
-            .ok_or_else(|| gql_execution("bounded read intermediate-byte counter overflowed"))?;
-        if next > budget.limits.max_intermediate_bytes {
-            return Err(gql_execution(format!(
-                "bounded read exceeded {} cumulative intermediate bytes while {context}",
-                budget.limits.max_intermediate_bytes
-            )));
-        }
+        budget
+            .execution
+            .check_memory_available(bytes)
+            .map_err(|error| {
+                gql_execution(format!(
+                    "bounded read cumulative intermediate bytes ({error}) while {context}"
+                ))
+            })?;
         Ok(())
     })
 }
@@ -206,6 +216,9 @@ pub(crate) fn json_copy_bytes(value: &serde_json::Value) -> usize {
 /// Check the cooperative wall-clock deadline at expression and pipeline
 /// boundaries. An inactive (ordinary read) executor has no deadline.
 pub(crate) fn checkpoint() -> Result<()> {
+    if let Some(result) = live::work(0, "checking streaming execution") {
+        return result;
+    }
     BUDGETS.with(|budgets| {
         let budgets = budgets.borrow();
         let Some(budget) = budgets.last() else {
@@ -219,12 +232,15 @@ pub(crate) fn checkpoint() -> Result<()> {
 }
 
 pub(crate) fn intermediate_accounting_active() -> bool {
-    BUDGETS.with(|budgets| !budgets.borrow().is_empty())
+    live::active() || BUDGETS.with(|budgets| !budgets.borrow().is_empty())
 }
 
 /// Account candidate rows, scanned graph elements, expanded list items, and
 /// path-search steps before they are added to an intermediate allocation.
 pub(crate) fn charge_candidate_work(units: usize, context: &str) -> Result<()> {
+    if let Some(result) = live::work(units, context) {
+        return result;
+    }
     BUDGETS.with(|budgets| {
         let mut budgets = budgets.borrow_mut();
         let Some(budget) = budgets.last_mut() else {
@@ -233,17 +249,11 @@ pub(crate) fn charge_candidate_work(units: usize, context: &str) -> Result<()> {
         if Instant::now() >= budget.limits.deadline {
             return Err(gql_execution("bounded read execution timed out"));
         }
-        let next = budget
-            .candidate_work
-            .checked_add(units)
-            .ok_or_else(|| gql_execution("bounded read candidate-work counter overflowed"))?;
-        if next > budget.limits.max_candidate_work {
-            return Err(gql_execution(format!(
-                "bounded read exceeded {} candidate-work units while {context}",
-                budget.limits.max_candidate_work
-            )));
-        }
-        budget.candidate_work = next;
+        budget.execution.charge_work(units).map_err(|error| {
+            gql_execution(format!(
+                "bounded read candidate-work units ({error}) while {context}"
+            ))
+        })?;
         Ok(())
     })
 }
@@ -272,15 +282,27 @@ pub(crate) fn check_range_items(items: usize) -> Result<()> {
     charge_candidate_work(items, "materializing range()")
 }
 
-/// Exercise execution-phase checkpoints without sleeps or scheduler races.
 #[cfg(test)]
-pub(crate) fn expire_deadline_for_test() {
+#[path = "read_budget_test_support.rs"]
+mod test_support;
+#[cfg(test)]
+pub(crate) use test_support::expire_deadline_for_test;
+
+/// Share the active read envelope with registered providers. Ordinary CALL
+/// execution has a 256 MiB materialization ceiling until all consumers stream;
+/// callers requiring another envelope use the bounded registry entrypoint.
+/// The range expression retains its separate universal allocation ceiling.
+pub(crate) fn procedure_execution_context() -> Result<ExecutionContext> {
     BUDGETS.with(|budgets| {
-        budgets
-            .borrow_mut()
-            .last_mut()
-            .expect("deadline expiry requires an active test budget")
-            .limits
-            .deadline = Instant::now();
-    });
+        if let Some(budget) = budgets.borrow().last() {
+            return Ok(budget.execution.clone());
+        }
+        ExecutionContext::new(ExecutionLimits {
+            memory_bytes: 256 * 1024 * 1024,
+            work_units: usize::MAX,
+            batch_rows: 1024,
+            deadline: None,
+        })
+        .map_err(|error| gql_execution(error.to_string()))
+    })
 }

@@ -15,6 +15,7 @@ use crate::read_budget::{MAX_RANGE_ITEMS, ReadExecutionBudgetLimits, with_budget
 use crate::{CypherParameters, CypherResultTable, gql_execution, gql_syntax};
 use grust_core::TypedGraphIndex;
 use grust_core::prelude::{Graph, Result};
+use grust_procedures::{ProcedureMode, ProcedureRegistry, RegistryBuilder, register_builtins};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct ReadQueryPolicy {
@@ -43,7 +44,11 @@ pub struct ReadQueryPolicy {
     /// Cooperative wall-clock deadline for parsing, execution, and encoding.
     pub max_execution_time: Duration,
     pub allow_graph_selection: bool,
+    /// Compatibility permission for catalog and graph-free table procedures.
     pub allow_catalog_procedures: bool,
+    /// Separate opt-in for registered read-only graph analytics. This never
+    /// grants catalog/table access or write procedures.
+    pub allow_read_procedures: bool,
     pub require_match: bool,
 }
 
@@ -65,6 +70,7 @@ impl Default for ReadQueryPolicy {
             max_execution_time: Duration::from_secs(2),
             allow_graph_selection: false,
             allow_catalog_procedures: false,
+            allow_read_procedures: false,
             require_match: true,
         }
     }
@@ -74,6 +80,18 @@ impl Default for ReadQueryPolicy {
 /// AST. Every query arm must have a positive literal `LIMIT` no larger than the
 /// policy's result ceiling.
 pub fn validate_read_query(query_text: &str, policy: &ReadQueryPolicy) -> Result<Query> {
+    let mut builder = RegistryBuilder::default();
+    register_builtins(&mut builder).map_err(|error| gql_syntax(error.to_string()))?;
+    validate_read_query_with_registry(query_text, policy, &builder.build())
+}
+
+/// Validate read-policy admission using the same registry as execution.
+/// Unknown providers and denied modes fail before graph preparation.
+pub fn validate_read_query_with_registry(
+    query_text: &str,
+    policy: &ReadQueryPolicy,
+    registry: &ProcedureRegistry,
+) -> Result<Query> {
     validate_policy(policy)?;
     let text = query_text.trim();
     if text.is_empty() || text.len() > policy.max_query_bytes {
@@ -82,8 +100,9 @@ pub fn validate_read_query(query_text: &str, policy: &ReadQueryPolicy) -> Result
             policy.max_query_bytes
         )));
     }
-    let query = parse_query(text).map_err(|error| error.into_grust(text))?;
-    validate_query(&query, policy)?;
+    let mut query = parse_query(text).map_err(|error| error.into_grust(text))?;
+    validate_query(&query, policy, registry)?;
+    crate::read::prepare_query_with_registry(&mut query, registry)?;
     Ok(query)
 }
 
@@ -94,7 +113,7 @@ pub fn run_bounded_read_query(
     params: &CypherParameters,
     policy: &ReadQueryPolicy,
 ) -> Result<CypherResultTable> {
-    run_bounded_read_query_with_executor(graph, None, query_text, params, policy, |query| {
+    run_bounded_read_query_with_executor(graph, None, query_text, params, policy, None, |query| {
         execute_read_query(graph, query, params)
     })
 }
@@ -119,7 +138,55 @@ pub fn run_bounded_read_query_indexed(
         query_text,
         params,
         policy,
+        None,
         |query| execute_read_query_indexed(index, query, params),
+    )
+}
+
+/// Execute ordinary Cypher with an application registry under the complete read
+/// policy. Catalog/table and graph-analytics permissions are checked separately.
+/// The selected local graph is explicit and cannot be changed by a provider.
+pub fn run_bounded_read_query_with_registry(
+    graph: &Graph,
+    graph_name: &str,
+    query_text: &str,
+    params: &CypherParameters,
+    policy: &ReadQueryPolicy,
+    registry: &ProcedureRegistry,
+) -> Result<CypherResultTable> {
+    run_bounded_read_query_with_executor(
+        graph,
+        None,
+        query_text,
+        params,
+        policy,
+        Some(registry),
+        |query| {
+            crate::ensure_query_uses_graph(query, graph_name)?;
+            crate::read::execute_read_query_with_registry(
+                graph, graph_name, query, params, registry,
+            )
+        },
+    )
+}
+
+/// Execute on an explicitly authorized snapshot, preserving graph/revision/
+/// principal identity while applying the complete bounded read policy.
+pub fn run_bounded_read_query_on_snapshot(
+    snapshot: grust_procedures::LocalSnapshot<'_>,
+    query_text: &str,
+    params: &CypherParameters,
+    policy: &ReadQueryPolicy,
+    registry: &ProcedureRegistry,
+) -> Result<CypherResultTable> {
+    run_bounded_read_query_with_executor(
+        snapshot.graph(),
+        None,
+        query_text,
+        params,
+        policy,
+        Some(registry),
+        |query| crate::read::execute_read_query_on_snapshot(snapshot, query, params, registry),
     )
 }
 
@@ -129,13 +196,17 @@ fn run_bounded_read_query_with_executor(
     query_text: &str,
     params: &CypherParameters,
     policy: &ReadQueryPolicy,
+    registry: Option<&ProcedureRegistry>,
     execute: impl FnOnce(&Query) -> Result<CypherResultTable>,
 ) -> Result<CypherResultTable> {
     let started = Instant::now();
     let deadline = started
         .checked_add(policy.max_execution_time)
         .ok_or_else(|| gql_execution("read policy execution timeout is too large"))?;
-    let query = validate_read_query(query_text, policy)?;
+    let query = match registry {
+        Some(registry) => validate_read_query_with_registry(query_text, policy, registry)?,
+        None => validate_read_query(query_text, policy)?,
+    };
     ensure_before_deadline(deadline)?;
     crate::semantics::analyze(&query)?;
     ensure_graph_bounds(graph, policy)?;
@@ -301,7 +372,11 @@ fn ensure_serialized_size<T: Serialize + ?Sized>(
         .map_err(|error| gql_execution(format!("could not measure bounded read {what}: {error}")))
 }
 
-fn validate_query(query: &Query, policy: &ReadQueryPolicy) -> Result<()> {
+fn validate_query(
+    query: &Query,
+    policy: &ReadQueryPolicy,
+    registry: &ProcedureRegistry,
+) -> Result<()> {
     if query.parts.is_empty() || query.parts.len() > policy.max_union_arms {
         return Err(gql_syntax(format!(
             "query must contain 1 to {} UNION arms",
@@ -309,12 +384,16 @@ fn validate_query(query: &Query, policy: &ReadQueryPolicy) -> Result<()> {
         )));
     }
     for part in &query.parts {
-        validate_single(&part.query, policy)?;
+        validate_single(&part.query, policy, registry)?;
     }
     Ok(())
 }
 
-fn validate_single(query: &SingleQuery, policy: &ReadQueryPolicy) -> Result<()> {
+fn validate_single(
+    query: &SingleQuery,
+    policy: &ReadQueryPolicy,
+    registry: &ProcedureRegistry,
+) -> Result<()> {
     if policy.require_match
         && !query
             .clauses
@@ -331,10 +410,24 @@ fn validate_single(query: &SingleQuery, policy: &ReadQueryPolicy) -> Result<()> 
             Clause::Use(_) if !policy.allow_graph_selection => {
                 return Err(gql_syntax("graph selection is forbidden by read policy"));
             }
-            Clause::Call(_) if !policy.allow_catalog_procedures => {
-                return Err(gql_syntax("procedure calls are forbidden by read policy"));
+            Clause::Call(call) => {
+                let procedure = registry
+                    .resolve(&call.name)
+                    .map_err(|error| gql_syntax(error.to_string()))?;
+                let allowed = match procedure.definition().mode {
+                    ProcedureMode::Catalog | ProcedureMode::Table => {
+                        policy.allow_catalog_procedures
+                    }
+                    ProcedureMode::Read => policy.allow_read_procedures,
+                    ProcedureMode::Write => false,
+                };
+                if !allowed {
+                    return Err(gql_syntax(
+                        "procedure calls are forbidden by read policy for this provider mode",
+                    ));
+                }
             }
-            Clause::Subquery(subquery) => validate_query(&subquery.query, policy)?,
+            Clause::Subquery(subquery) => validate_query(&subquery.query, policy, registry)?,
             Clause::Match(clause) => {
                 for pattern in &clause.patterns {
                     validate_pattern(pattern, policy)?;
@@ -385,265 +478,5 @@ fn validate_pattern(pattern: &PathPattern, policy: &ReadQueryPolicy) -> Result<(
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use grust_core::prelude::GraphBuilder;
-
-    #[test]
-    fn parser_backed_policy_executes_bounded_reads() {
-        let mut builder = GraphBuilder::new();
-        let _ = builder.node("Person", "ada").prop("name", "Ada").finish();
-        let graph = builder.build();
-        let result = run_bounded_read_query(
-            &graph,
-            "MATCH (n:Person) RETURN n.name AS name LIMIT 5",
-            &CypherParameters::new(),
-            &ReadQueryPolicy::default(),
-        )
-        .unwrap();
-        assert_eq!(result.rows.len(), 1);
-    }
-
-    #[test]
-    fn policy_rejects_updates_and_nonliteral_or_unbounded_limits() {
-        let policy = ReadQueryPolicy::default();
-        assert!(validate_read_query("MATCH (n) DELETE n RETURN n LIMIT 1", &policy).is_err());
-        assert!(validate_read_query("MATCH (n) RETURN n", &policy).is_err());
-        assert!(validate_read_query("MATCH (n) RETURN n LIMIT $limit", &policy).is_err());
-        assert!(validate_read_query("MATCH (n) RETURN n LIMIT 4294967297", &policy).is_err());
-        assert!(validate_read_query("MATCH (n)-[*]->(m) RETURN m LIMIT 5", &policy).is_err());
-    }
-
-    #[test]
-    fn keywords_inside_values_do_not_confuse_the_policy() {
-        let policy = ReadQueryPolicy::default();
-        assert!(
-            validate_read_query(
-                "MATCH (n {label: 'DELETE USE CREATE'}) RETURN n LIMIT 1",
-                &policy
-            )
-            .is_ok()
-        );
-    }
-
-    #[test]
-    fn path_limit_is_cumulative_across_segments() {
-        let policy = ReadQueryPolicy::default();
-        assert!(
-            validate_read_query(
-                "MATCH (a)-[*1..3]->(b)-[*1..2]->(c) RETURN c LIMIT 1",
-                &policy,
-            )
-            .is_err()
-        );
-    }
-
-    #[test]
-    fn candidate_work_stops_cartesian_expansion_before_return_limit() {
-        let mut builder = GraphBuilder::new();
-        for index in 0..8 {
-            let _ = builder.node("N", format!("n{index}")).finish();
-        }
-        let graph = builder.build();
-        let policy = ReadQueryPolicy {
-            max_candidate_work: 60,
-            ..ReadQueryPolicy::default()
-        };
-        let error = run_bounded_read_query(
-            &graph,
-            "MATCH (a), (b), (c) RETURN a LIMIT 1",
-            &CypherParameters::new(),
-            &policy,
-        )
-        .unwrap_err();
-        assert!(error.to_string().contains("candidate-work"));
-    }
-
-    #[test]
-    fn intermediate_byte_budget_stops_deep_binding_clone_amplification() {
-        let mut builder = GraphBuilder::new();
-        let _ = builder
-            .node("N", "large")
-            .prop("payload", "x".repeat(2 * 1024))
-            .finish();
-        let graph = builder.build();
-        let query = "MATCH (n:N) UNWIND range(1, 100) AS item RETURN item LIMIT 1";
-        let policy = ReadQueryPolicy {
-            max_graph_bytes: 16 * 1024,
-            max_candidate_work: 10_000,
-            max_intermediate_bytes: 8 * 1024,
-            max_range_items: 100,
-            ..ReadQueryPolicy::default()
-        };
-
-        let error = run_bounded_read_query(&graph, query, &CypherParameters::new(), &policy)
-            .expect_err("deep row copies must exhaust the cumulative byte budget");
-        assert!(error.to_string().contains("cumulative intermediate bytes"));
-        assert!(error.to_string().contains("expanding UNWIND rows"));
-
-        let result = crate::read::run_read_query(&graph, query, &CypherParameters::new())
-            .expect("the unrestricted executor retains its existing behavior");
-        assert_eq!(result.rows, vec![vec![grust_core::Value::Int(1)]]);
-    }
-
-    #[test]
-    fn intermediate_byte_budget_stops_literal_projection_amplification_before_limit() {
-        let mut builder = GraphBuilder::new();
-        for index in 0..128 {
-            let _ = builder.node("N", format!("n{index}")).finish();
-        }
-        let graph = builder.build();
-        let literal = "x".repeat(512);
-        let query = format!("MATCH (n:N) RETURN '{literal}' AS payload LIMIT 1");
-        let policy = ReadQueryPolicy {
-            max_query_bytes: 2_000,
-            max_candidate_work: 10_000,
-            // Leave room for MATCH bindings and relationship-scope framing;
-            // the repeated 512-byte projection must still exhaust the budget.
-            max_intermediate_bytes: 96 * 1024,
-            ..ReadQueryPolicy::default()
-        };
-
-        let error = run_bounded_read_query(&graph, &query, &CypherParameters::new(), &policy)
-            .expect_err("repeated literal results must exhaust the cumulative byte budget");
-        assert!(
-            error.to_string().contains("cumulative intermediate bytes"),
-            "{error}"
-        );
-        assert!(
-            error
-                .to_string()
-                .contains("materializing expression results"),
-            "{error}"
-        );
-    }
-
-    #[test]
-    fn candidate_work_accounts_for_correlated_subquery_index_builds() {
-        let mut builder = GraphBuilder::new();
-        for index in 0..64 {
-            let _ = builder.node("N", format!("n{index}")).finish();
-        }
-        let graph = builder.build();
-        let policy = ReadQueryPolicy {
-            max_candidate_work: 2_000,
-            ..ReadQueryPolicy::default()
-        };
-        let error = run_bounded_read_query(
-            &graph,
-            "MATCH (n) CALL { MATCH (n) RETURN n AS m LIMIT 1 } RETURN n LIMIT 1",
-            &CypherParameters::new(),
-            &policy,
-        )
-        .unwrap_err();
-        assert!(error.to_string().contains("candidate-work"));
-        assert!(error.to_string().contains("subquery node index"));
-    }
-
-    #[test]
-    fn candidate_work_accounts_for_correlated_catalog_scans() {
-        let mut builder = GraphBuilder::new();
-        for index in 0..64 {
-            let _ = builder
-                .node("N", format!("n{index}"))
-                .prop("name", format!("node {index}"))
-                .finish();
-        }
-        let graph = builder.build();
-        let policy = ReadQueryPolicy {
-            max_candidate_work: 2_000,
-            allow_catalog_procedures: true,
-            ..ReadQueryPolicy::default()
-        };
-        let error = run_bounded_read_query(
-            &graph,
-            "MATCH (n) CALL db.propertyKeys() YIELD propertyKey RETURN n LIMIT 1",
-            &CypherParameters::new(),
-            &policy,
-        )
-        .unwrap_err();
-        assert!(error.to_string().contains("candidate-work"));
-        assert!(error.to_string().contains("db.propertyKeys()"));
-    }
-
-    #[test]
-    fn parameter_graph_output_and_range_budgets_are_enforced() {
-        let mut builder = GraphBuilder::new();
-        let _ = builder
-            .node("N", "n")
-            .prop("payload", "x".repeat(256))
-            .finish();
-        let graph = builder.build();
-        let query = "MATCH (n) RETURN n LIMIT 1";
-
-        let mut params = CypherParameters::new();
-        params.insert("payload".into(), grust_core::Value::String("x".repeat(256)));
-        let parameter_policy = ReadQueryPolicy {
-            max_parameter_bytes: 32,
-            ..ReadQueryPolicy::default()
-        };
-        assert!(
-            run_bounded_read_query(&graph, query, &params, &parameter_policy)
-                .unwrap_err()
-                .to_string()
-                .contains("parameters")
-        );
-
-        let graph_policy = ReadQueryPolicy {
-            max_graph_nodes: 1,
-            max_graph_bytes: 32,
-            ..ReadQueryPolicy::default()
-        };
-        assert!(
-            run_bounded_read_query(&graph, query, &CypherParameters::new(), &graph_policy,)
-                .unwrap_err()
-                .to_string()
-                .contains("graph")
-        );
-
-        let output_policy = ReadQueryPolicy {
-            max_output_bytes: 32,
-            ..ReadQueryPolicy::default()
-        };
-        assert!(
-            run_bounded_read_query(&graph, query, &CypherParameters::new(), &output_policy,)
-                .unwrap_err()
-                .to_string()
-                .contains("query output")
-        );
-
-        let range_policy = ReadQueryPolicy {
-            max_range_items: 3,
-            ..ReadQueryPolicy::default()
-        };
-        assert!(
-            run_bounded_read_query(
-                &graph,
-                "MATCH (n) RETURN range(1, 4) AS values LIMIT 1",
-                &CypherParameters::new(),
-                &range_policy,
-            )
-            .unwrap_err()
-            .to_string()
-            .contains("read policy maximum")
-        );
-    }
-
-    #[test]
-    fn execution_deadline_is_enforced() {
-        let mut builder = GraphBuilder::new();
-        let _ = builder.node("N", "n").finish();
-        let policy = ReadQueryPolicy {
-            max_execution_time: Duration::from_nanos(1),
-            ..ReadQueryPolicy::default()
-        };
-        let error = run_bounded_read_query(
-            &builder.build(),
-            "MATCH (n) RETURN n LIMIT 1",
-            &CypherParameters::new(),
-            &policy,
-        )
-        .unwrap_err();
-        assert!(error.to_string().contains("timed out"));
-    }
-}
+#[path = "read_policy_tests.rs"]
+mod tests;

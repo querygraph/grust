@@ -1,0 +1,47 @@
+{
+  "stage": "working source before release versioning",
+  "base_commit": "1de21d512d8f152c474f9d14327eedc9b7fa2149",
+  "workspace_tests": {
+    "command": "cargo test --workspace --all-features --locked",
+    "targets": 92,
+    "passed": 1484,
+    "failed": 0,
+    "ignored": 47
+  },
+  "checks": [
+    {
+      "command": "cargo build --workspace --all-features --locked",
+      "status": "pass"
+    },
+    {
+      "command": "cargo clippy --workspace --all-features --all-targets --locked -- -D warnings",
+      "status": "pass"
+    },
+    {
+      "command": "cargo fmt --all -- --check",
+      "status": "pass"
+    },
+    {
+      "command": "cargo test --locked --offline -p grust-graph --features algorithms,arrow,cypher,memory,turso --test algorithm_snapshots",
+      "status": "pass"
+    }
+  ],
+  "retained_failures": [
+    {
+      "status": "unavailable",
+      "phase": "offline workspace build",
+      "reason": "codespan-reporting 0.11.1 was not cached; online build fetched it"
+    },
+    {
+      "status": "error",
+      "phase": "all-features build",
+      "reason": "existing Turso sync constructor omitted index_cache; initialized it and retired snapshots before pull"
+    },
+    {
+      "status": "error",
+      "phase": "frozen Docker smoke launch",
+      "reason": "Docker-created output directory was root-owned; error log retained; corrected ownership and reran"
+    }
+  ],
+  "boundary": "Correctness/compilation evidence, not a release or statistical performance claim. Ignored external-service tests are not passes."
+}

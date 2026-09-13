@@ -42,12 +42,28 @@ mod count_triangle;
 mod count_wedge;
 mod indexed;
 mod match_scope;
+mod prepared_procedures;
+mod procedure_plan;
+pub use procedure_plan::{
+    ProcedureCallPlan, ProcedureExecutionTarget, ProcedureQueryPlan, ProcedureRowExecution,
+};
+mod indexing;
+mod procedures;
+mod streaming;
+mod streaming_aggregate;
+mod streaming_fusion;
+pub use prepared_procedures::PreparedProcedureQuery;
 mod property_equality;
 pub use indexed::{
     IndexedReadPlan, classify_indexed_read_query, execute_read_query_indexed,
     run_read_query_indexed,
 };
 use match_scope::{EdgeTrail, MatchRow};
+use procedures::ProcedureExecution;
+pub(crate) use procedures::execute_read_query_on_snapshot;
+pub(crate) use procedures::execute_read_query_with_registry;
+pub(crate) use procedures::prepare_query_with_registry;
+pub use procedures::run_read_query_with_registry;
 
 /// A value bound to a variable in a candidate row. Pattern matching binds
 /// `Node`/`Edge`; `WITH`/`UNWIND` projections bind computed `Value`s.
@@ -173,11 +189,11 @@ pub fn run_read_query(
     cypher: &str,
     params: &CypherParameters,
 ) -> Result<CypherResultTable> {
-    let query = parse_query(cypher).map_err(|e| e.into_grust(cypher))?;
+    let mut query = parse_query(cypher).map_err(|e| e.into_grust(cypher))?;
     ensure_query_uses_graph(&query, "default")?;
-    // Reuse the shared semantic analyzer for binding/kind checks.
-    crate::semantics::analyze(&query)?;
-    execute_read_query(graph, &query, params)
+    let procedures = ProcedureExecution::builtins()?;
+    procedures.prepare(&mut query)?;
+    execute_read_query_with_procedures(graph, &query, params, &procedures)
 }
 
 pub fn run_read_query_on_named_graph(
@@ -186,10 +202,11 @@ pub fn run_read_query_on_named_graph(
     cypher: &str,
     params: &CypherParameters,
 ) -> Result<CypherResultTable> {
-    let query = parse_query(cypher).map_err(|e| e.into_grust(cypher))?;
+    let mut query = parse_query(cypher).map_err(|e| e.into_grust(cypher))?;
     ensure_query_uses_graph(&query, graph_name)?;
-    crate::semantics::analyze(&query)?;
-    execute_read_query(graph, &query, params)
+    let procedures = ProcedureExecution::builtins()?.with_graph_name(graph_name)?;
+    procedures.prepare(&mut query)?;
+    execute_read_query_with_procedures(graph, &query, params, &procedures)
 }
 
 /// Execute an already-parsed read-only query against an in-memory graph.
@@ -198,7 +215,17 @@ pub fn execute_read_query(
     query: &Query,
     params: &CypherParameters,
 ) -> Result<CypherResultTable> {
+    execute_read_query_with_procedures(graph, query, params, &ProcedureExecution::builtins()?)
+}
+
+fn execute_read_query_with_procedures(
+    graph: &Graph,
+    query: &Query,
+    params: &CypherParameters,
+    procedures: &ProcedureExecution,
+) -> Result<CypherResultTable> {
     read_budget::checkpoint()?;
+    procedures.preflight(query, Some(params))?;
     let mut combined: Option<CypherResultTable> = None;
     // `UNION` (without ALL) deduplicates the whole result; `UNION ALL` keeps
     // duplicates. A mixed chain dedups if any boundary is a distinct UNION.
@@ -208,7 +235,7 @@ pub fn execute_read_query(
         if part.union == Some(UnionKind::Distinct) {
             distinct = true;
         }
-        let table = execute_single(graph, &part.query, params)?;
+        let table = execute_single(graph, &part.query, params, procedures)?;
         match combined.as_mut() {
             None => combined = Some(table),
             Some(acc) => {
@@ -241,7 +268,11 @@ fn execute_single(
     graph: &Graph,
     query: &SingleQuery,
     params: &CypherParameters,
+    procedures: &ProcedureExecution,
 ) -> Result<CypherResultTable> {
+    if let Some(result) = streaming::try_execute(graph, query, params, procedures) {
+        return result;
+    }
     let requirements = query_adjacency_requirements(query);
     read_budget::charge_candidate_work(graph.nodes.len(), "building the node index")?;
     if requirements.outgoing || requirements.incoming {
@@ -261,7 +292,7 @@ fn execute_single(
             // Terminal: project the current bindings to the result table.
             return project(graph, &rows, &r.projection, params);
         }
-        let (next, call_cols) = advance_rows(graph, &index, clause, rows, params)?;
+        let (next, call_cols) = advance_rows(graph, &index, clause, rows, params, procedures)?;
         rows = next;
         if call_cols.is_some() {
             call_output = call_cols;
@@ -301,6 +332,7 @@ fn advance_rows(
     clause: &Clause,
     rows: Vec<Row>,
     params: &CypherParameters,
+    procedures: &ProcedureExecution,
 ) -> Result<(Vec<Row>, Option<Vec<String>>)> {
     match clause {
         Clause::Use(_) => Ok((rows, None)),
@@ -355,42 +387,11 @@ fn advance_rows(
             Ok((rows, None))
         }
         Clause::Unwind(u) => Ok((unwind_rows(rows, u, params)?, None)),
-        Clause::Call(c) => {
-            let name_lower = c.name.to_ascii_lowercase();
-            let full_cols = procedure_signature(&name_lower).ok_or_else(|| {
-                unsupported_gql_feature(
-                    GqlFeature::ProcedureCall,
-                    GqlConformanceProfile::PortableGql,
-                    format!(
-                        "procedure `{}` is not supported (known: db.labels, db.relationshipTypes, db.propertyKeys, tvf.range, tvf.keys)",
-                        c.name
-                    ),
-                )
-            })?;
-            let (out_cols, indices) = yield_projection(&c.name, &full_cols, &c.yields)?;
-            let mut next = Vec::new();
-            for row in &rows {
-                // Arguments are evaluated per incoming row (correlated TVF).
-                for vals in procedure_rows(graph, &name_lower, &c.args, row, params)? {
-                    let mut nr = clone_row(row, "producing procedure rows")?;
-                    for (col, &i) in out_cols.iter().zip(indices.iter()) {
-                        nr.insert(
-                            col.clone(),
-                            Bound::Value(clone_value(&vals[i], "binding procedure result values")?),
-                        );
-                    }
-                    read_budget::charge_candidate_work(1, "producing procedure rows")?;
-                    next.push(nr);
-                }
-            }
-            let next = if let Some(where_expr) = &c.where_clause {
-                filter_rows(next, where_expr, params)?
-            } else {
-                next
-            };
-            Ok((next, Some(out_cols)))
-        }
-        Clause::Subquery(s) => Ok((execute_subquery_clause(graph, s, rows, params)?, None)),
+        Clause::Call(c) => procedures.advance(graph, c, rows, params),
+        Clause::Subquery(s) => Ok((
+            execute_subquery_clause(graph, s, rows, params, procedures)?,
+            None,
+        )),
         Clause::Return(_) => unreachable!("RETURN is handled by the caller"),
         Clause::Create(_)
         | Clause::Merge(_)
@@ -410,10 +411,11 @@ fn execute_subquery_clause(
     subquery: &SubqueryClause,
     rows: Vec<Row>,
     params: &CypherParameters,
+    procedures: &ProcedureExecution,
 ) -> Result<Vec<Row>> {
     let mut out = Vec::new();
     for row in rows {
-        let (columns, inner_rows) = run_subquery(graph, &subquery.query, &row, params)?;
+        let (columns, inner_rows) = run_subquery(graph, &subquery.query, &row, params, procedures)?;
         for col in &columns {
             if row.contains_key(col) {
                 return Err(gql_name(format!(
@@ -444,6 +446,7 @@ fn run_subquery(
     query: &Query,
     seed: &Row,
     params: &CypherParameters,
+    procedures: &ProcedureExecution,
 ) -> Result<(Vec<String>, Vec<Row>)> {
     let mut columns: Option<Vec<String>> = None;
     let mut all: Vec<Row> = Vec::new();
@@ -452,7 +455,7 @@ fn run_subquery(
         if part.union == Some(UnionKind::Distinct) {
             distinct = true;
         }
-        let (cols, rows) = run_subquery_single(graph, &part.query, seed, params)?;
+        let (cols, rows) = run_subquery_single(graph, &part.query, seed, params, procedures)?;
         match &columns {
             None => columns = Some(cols),
             Some(existing) if existing != &cols => {
@@ -490,6 +493,7 @@ fn run_subquery_single(
     query: &SingleQuery,
     seed: &Row,
     params: &CypherParameters,
+    procedures: &ProcedureExecution,
 ) -> Result<(Vec<String>, Vec<Row>)> {
     let requirements = query_adjacency_requirements(query);
     read_budget::charge_candidate_work(graph.nodes.len(), "building a subquery node index")?;
@@ -506,7 +510,7 @@ fn run_subquery_single(
         if let Clause::Return(r) = clause {
             return project_subquery_return(&r.projection, rows, params);
         }
-        let (next, _) = advance_rows(graph, &index, clause, rows, params)?;
+        let (next, _) = advance_rows(graph, &index, clause, rows, params, procedures)?;
         rows = next;
     }
     Err(gql_execution("CALL { … } subquery must end in RETURN"))
@@ -562,20 +566,6 @@ fn project_subquery_return(
     Ok((columns, out))
 }
 
-/// The full output columns of a registered procedure / table-valued function,
-/// or `None` for an unknown name.
-fn procedure_signature(name_lower: &str) -> Option<Vec<String>> {
-    let cols: &[&str] = match name_lower {
-        "db.labels" => &["label"],
-        "db.relationshiptypes" => &["relationshipType"],
-        "db.propertykeys" => &["propertyKey"],
-        "tvf.range" => &["value"],
-        "tvf.keys" => &["key"],
-        _ => return None,
-    };
-    Some(cols.iter().map(|c| c.to_string()).collect())
-}
-
 /// Resolve a `YIELD` list against the procedure's full columns: the projected
 /// output names plus, for each, the index into the full row.
 fn yield_projection(
@@ -598,126 +588,6 @@ fn yield_projection(
         indices.push(idx);
     }
     Ok((out_cols, indices))
-}
-
-/// Produce the full (pre-`YIELD`) rows of a procedure / table-valued function
-/// invocation for one incoming row. Catalog procedures are nullary and
-/// row-independent; TVFs evaluate their arguments against the row.
-fn procedure_rows(
-    graph: &Graph,
-    name_lower: &str,
-    args: &[Expr],
-    row: &Row,
-    params: &CypherParameters,
-) -> Result<Vec<Vec<Value>>> {
-    let string_rows = |values: std::collections::BTreeSet<String>| {
-        values
-            .into_iter()
-            .map(|s| vec![Value::from(s)])
-            .collect::<Vec<Vec<Value>>>()
-    };
-    match name_lower {
-        "db.labels" | "db.relationshiptypes" | "db.propertykeys" => {
-            if !args.is_empty() {
-                return Err(gql_type(format!(
-                    "procedure `{name_lower}` expects no arguments"
-                )));
-            }
-            match name_lower {
-                "db.labels" => read_budget::charge_candidate_work(
-                    graph.nodes.len(),
-                    "scanning nodes for db.labels()",
-                )?,
-                "db.relationshiptypes" => read_budget::charge_candidate_work(
-                    graph.edges.len(),
-                    "scanning edges for db.relationshipTypes()",
-                )?,
-                _ => {
-                    read_budget::charge_candidate_work(
-                        graph.nodes.len(),
-                        "scanning nodes for db.propertyKeys()",
-                    )?;
-                    read_budget::charge_candidate_work(
-                        graph.edges.len(),
-                        "scanning edges for db.propertyKeys()",
-                    )?;
-                }
-            }
-            Ok(match name_lower {
-                "db.labels" => string_rows(
-                    graph
-                        .nodes
-                        .iter()
-                        .map(|n| n.label.as_str().to_string())
-                        .collect(),
-                ),
-                "db.relationshiptypes" => string_rows(
-                    graph
-                        .edges
-                        .iter()
-                        .map(|e| e.label.as_str().to_string())
-                        .collect(),
-                ),
-                _ => {
-                    let mut keys = std::collections::BTreeSet::new();
-                    for n in &graph.nodes {
-                        keys.extend(n.props.keys().cloned());
-                    }
-                    for e in &graph.edges {
-                        keys.extend(e.props.keys().cloned());
-                    }
-                    string_rows(keys)
-                }
-            })
-        }
-        // `tvf.range(start, end[, step]) YIELD value` — one row per integer.
-        "tvf.range" => match eval_range(args, row, params)? {
-            Value::IntArray(values) => {
-                Ok(values.into_iter().map(|n| vec![Value::Int(n)]).collect())
-            }
-            other => Err(gql_type(format!(
-                "tvf.range() produced a non-integer list: {other:?}"
-            ))),
-        },
-        // `tvf.keys(element_or_map) YIELD key` — sorted property/map keys.
-        "tvf.keys" => {
-            let [arg] = args else {
-                return Err(gql_type(
-                    "tvf.keys(element_or_map) expects exactly one argument".to_string(),
-                ));
-            };
-            // A variable bound to a node/edge yields its property keys.
-            if let Expr::Variable(v) = arg {
-                match row.get(v) {
-                    Some(Bound::Node(n)) => {
-                        return Ok(string_rows(n.props.keys().cloned().collect()));
-                    }
-                    Some(Bound::Edge(e, _)) => {
-                        return Ok(string_rows(e.props.keys().cloned().collect()));
-                    }
-                    _ => {}
-                }
-            }
-            let keys: std::collections::BTreeSet<String> = match eval(arg, row, params)? {
-                Value::Null => return Ok(Vec::new()),
-                Value::Json(serde_json::Value::Object(map)) => {
-                    // A serialized node/edge element exposes its `props`; a
-                    // plain map its own keys.
-                    match map.get("props") {
-                        Some(serde_json::Value::Object(props)) => props.keys().cloned().collect(),
-                        _ => map.keys().cloned().collect(),
-                    }
-                }
-                other => {
-                    return Err(gql_type(format!(
-                        "tvf.keys() expects a node, relationship, or map, got {other:?}"
-                    )));
-                }
-            };
-            Ok(string_rows(keys))
-        }
-        _ => unreachable!("procedure_signature gates the registry"),
-    }
 }
 
 /// Keep rows whose `where_expr` evaluates to TRUE (NULL/FALSE drop), surfacing
@@ -2744,51 +2614,12 @@ fn eval(expr: &Expr, row: &Row, params: &CypherParameters) -> Result<Value> {
             }
             Ok(Value::Json(serde_json::Value::Object(out)))
         }
-        Expr::Index { base, index } => {
-            let base = eval(base, row, params)?;
-            let index = eval(index, row, params)?;
-            eval_index(base, index)
-        }
+        Expr::Index { base, index } => indexing::evaluate(base, index, row, params),
     }?;
     charge_intermediate_copy("materializing expression results", || {
         read_budget::value_copy_bytes(&value)
     })?;
     Ok(value)
-}
-
-/// `base[index]`: list indexing (0-based, negative counts from the end, out of
-/// range → NULL) and map key lookup (missing key → NULL). NULL base or index
-/// propagates NULL.
-fn eval_index(base: Value, index: Value) -> Result<Value> {
-    match (base, index) {
-        (Value::Null, _) | (_, Value::Null) => Ok(Value::Null),
-        (Value::Json(serde_json::Value::Object(mut map)), Value::String(key)) => Ok(map
-            .remove(&key)
-            .map(Value::from_json)
-            .unwrap_or(Value::Null)),
-        (
-            base @ (Value::StringArray(_)
-            | Value::IntArray(_)
-            | Value::FloatArray(_)
-            | Value::Json(serde_json::Value::Array(_))),
-            Value::Int(i),
-        ) => {
-            let items = list_elements(base);
-            let len = items.len() as i64;
-            let idx = if i < 0 { i + len } else { i };
-            if idx < 0 || idx >= len {
-                Ok(Value::Null)
-            } else {
-                Ok(items
-                    .into_iter()
-                    .nth(idx as usize)
-                    .expect("list index was bounds checked"))
-            }
-        }
-        (base, index) => Err(gql_type(format!(
-            "indexing expects list[integer] or map[string], got {base:?}[{index:?}]"
-        ))),
-    }
 }
 
 /// Flatten a list-shaped value into a vector of element `Value`s.
@@ -3514,1023 +3345,5 @@ fn value_into_json(value: Value) -> serde_json::Value {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn node(label: &str, id: &str, props: &[(&str, Value)]) -> Node {
-        let mut p = Props::new();
-        for (k, v) in props {
-            p.insert((*k).to_string(), v.clone());
-        }
-        Node::new(label, id, p)
-    }
-
-    fn graph() -> Graph {
-        let nodes = vec![
-            node(
-                "Person",
-                "p1",
-                &[("name", Value::from("Ada")), ("age", Value::Int(36))],
-            ),
-            node(
-                "Person",
-                "p2",
-                &[("name", Value::from("Alan")), ("age", Value::Int(41))],
-            ),
-            node(
-                "Person",
-                "p3",
-                &[("name", Value::from("Grace")), ("age", Value::Int(85))],
-            ),
-            node("City", "c1", &[("name", Value::from("London"))]),
-        ];
-        let edges = vec![
-            Edge::new("KNOWS", "p1", "p2", Props::new()),
-            Edge::new("KNOWS", "p2", "p3", Props::new()),
-            Edge::new("LIVES_IN", "p1", "c1", Props::new()),
-        ];
-        Graph::new(nodes, edges)
-    }
-
-    fn run(cypher: &str) -> CypherResultTable {
-        run_read_query(&graph(), cypher, &CypherParameters::new())
-            .unwrap_or_else(|e| panic!("query failed: {e}"))
-    }
-
-    #[test]
-    fn match_all_by_label() {
-        let t = run("MATCH (n:Person) RETURN n.name");
-        assert_eq!(t.columns, vec!["n.name".to_string()]);
-        assert_eq!(t.rows.len(), 3);
-    }
-
-    #[test]
-    fn match_with_inline_property() {
-        let t = run("MATCH (n:Person {name: 'Ada'}) RETURN n.age");
-        assert_eq!(t.rows, vec![vec![Value::Int(36)]]);
-    }
-
-    #[test]
-    fn where_comparison_filters() {
-        let t = run("MATCH (n:Person) WHERE n.age >= 40 RETURN n.name ORDER BY n.name");
-        let names: Vec<_> = t.rows.iter().map(|r| r[0].clone()).collect();
-        assert_eq!(names, vec![Value::from("Alan"), Value::from("Grace")]);
-    }
-
-    #[test]
-    fn where_boolean_and_or() {
-        let t = run(
-            "MATCH (n:Person) WHERE n.age < 40 OR n.name = 'Grace' RETURN n.name ORDER BY n.name",
-        );
-        assert_eq!(t.rows.len(), 2);
-    }
-
-    #[test]
-    fn where_in_list() {
-        let t =
-            run("MATCH (n:Person) WHERE n.name IN ['Ada', 'Grace'] RETURN n.name ORDER BY n.name");
-        assert_eq!(
-            t.rows.iter().map(|r| r[0].clone()).collect::<Vec<_>>(),
-            vec![Value::from("Ada"), Value::from("Grace")]
-        );
-    }
-
-    #[test]
-    fn where_starts_with() {
-        let t = run("MATCH (n:Person) WHERE n.name STARTS WITH 'A' RETURN n.name ORDER BY n.name");
-        assert_eq!(t.rows.len(), 2);
-    }
-
-    #[test]
-    fn relationship_hop() {
-        let t = run("MATCH (a:Person {name: 'Ada'})-[:KNOWS]->(b:Person) RETURN b.name");
-        assert_eq!(t.rows, vec![vec![Value::from("Alan")]]);
-    }
-
-    #[test]
-    fn relationship_incoming() {
-        let t = run("MATCH (a:Person)<-[:KNOWS]-(b:Person {name: 'Ada'}) RETURN a.name");
-        assert_eq!(t.rows, vec![vec![Value::from("Alan")]]);
-    }
-
-    #[test]
-    fn two_hop_path() {
-        let t = run("MATCH (a:Person {name:'Ada'})-[:KNOWS]->(b)-[:KNOWS]->(c) RETURN c.name");
-        assert_eq!(t.rows, vec![vec![Value::from("Grace")]]);
-    }
-
-    #[test]
-    fn indexed_undirected_traversal_visits_self_loops_once() {
-        let graph = Graph::new(
-            vec![
-                node("Person", "p1", &[("name", Value::from("Ada"))]),
-                node("Person", "p2", &[("name", Value::from("Alan"))]),
-            ],
-            vec![
-                Edge::new("SELF", "p1", "p1", Props::new()),
-                Edge::new("KNOWS", "p1", "p2", Props::new()),
-            ],
-        );
-        let table = run_read_query(
-            &graph,
-            "MATCH (a:Person {name:'Ada'})-[:SELF]-(b)-[:KNOWS]->(c) RETURN c.name",
-            &CypherParameters::new(),
-        )
-        .expect("indexed traversal");
-        assert_eq!(table.rows, vec![vec![Value::from("Alan")]]);
-    }
-
-    #[test]
-    fn adjacency_planning_keeps_short_selective_paths_on_contiguous_scans() {
-        let query =
-            parse_query("MATCH (a:Person {name:'Ada'})-[:KNOWS]->(b)-[:KNOWS]->(c) RETURN c.name")
-                .expect("selective path");
-        let selective = query_adjacency_requirements(&query.parts[0].query);
-        assert!(!selective.outgoing);
-        assert!(!selective.incoming);
-
-        let query =
-            parse_query("MATCH (a:Person)-[:KNOWS]->(b) RETURN b.name").expect("broad path");
-        let broad = query_adjacency_requirements(&query.parts[0].query);
-        assert!(broad.outgoing);
-        assert!(!broad.incoming);
-    }
-
-    #[test]
-    fn order_by_desc_skip_limit() {
-        let t = run("MATCH (n:Person) RETURN n.name AS name ORDER BY n.age DESC SKIP 1 LIMIT 1");
-        assert_eq!(t.columns, vec!["name".to_string()]);
-        assert_eq!(t.rows, vec![vec![Value::from("Alan")]]);
-    }
-
-    #[test]
-    fn distinct_dedups() {
-        let t = run("MATCH (n:Person) RETURN DISTINCT n.label");
-        assert_eq!(t.rows, vec![vec![Value::from("Person")]]);
-    }
-
-    #[test]
-    fn return_star_lists_bound_variables() {
-        let t = run("MATCH (n:Person {name:'Ada'}) RETURN *");
-        assert_eq!(t.columns, vec!["n".to_string()]);
-        assert_eq!(t.rows.len(), 1);
-    }
-
-    #[test]
-    fn parameters_bind() {
-        let mut params = CypherParameters::new();
-        params.insert("min".to_string(), Value::Int(40));
-        let t = run_read_query(
-            &graph(),
-            "MATCH (n:Person) WHERE n.age >= $min RETURN n.name",
-            &params,
-        )
-        .unwrap();
-        assert_eq!(t.rows.len(), 2);
-    }
-
-    #[test]
-    fn null_comparison_is_unknown_and_filters() {
-        // p? has no `age`; comparison yields NULL -> row filtered.
-        let t = run("MATCH (n:City) WHERE n.population > 0 RETURN n.name");
-        assert!(t.rows.is_empty());
-    }
-
-    #[test]
-    fn is_null_predicate() {
-        let t = run("MATCH (n) WHERE n.population IS NULL RETURN n.name ORDER BY n.name");
-        // all 4 nodes lack `population`
-        assert_eq!(t.rows.len(), 4);
-    }
-
-    #[test]
-    fn arithmetic_projection() {
-        let t = run("MATCH (n:Person {name:'Ada'}) RETURN n.age + 4");
-        assert_eq!(t.rows, vec![vec![Value::Int(40)]]);
-    }
-
-    #[test]
-    fn variable_length_paths() {
-        let t =
-            run("MATCH (a:Person {name:'Ada'})-[:KNOWS*1..2]->(b) RETURN b.name ORDER BY b.name");
-        assert_eq!(
-            t.rows.iter().map(|r| r[0].clone()).collect::<Vec<_>>(),
-            vec![Value::from("Alan"), Value::from("Grace")]
-        );
-    }
-
-    #[test]
-    fn variable_length_exact_bound() {
-        let t = run("MATCH (a:Person {name:'Ada'})-[:KNOWS*2..2]->(b) RETURN b.name");
-        assert_eq!(t.rows, vec![vec![Value::from("Grace")]]);
-    }
-
-    #[test]
-    fn variable_length_binds_edge_list() {
-        let t = run(
-            "MATCH (a:Person {name:'Ada'})-[r:KNOWS*1..2]->(b) RETURN b.name AS name, size(r) AS hops ORDER BY name",
-        );
-        assert_eq!(
-            t.rows,
-            vec![
-                vec![Value::from("Alan"), Value::Int(1)],
-                vec![Value::from("Grace"), Value::Int(2)],
-            ]
-        );
-    }
-
-    #[test]
-    fn path_variable_length_and_nodes() {
-        let t = run("MATCH p = (:Person {name:'Ada'})-[:KNOWS]->(:Person) RETURN length(p) AS len");
-        assert_eq!(t.rows, vec![vec![Value::Int(1)]]);
-        // nodes(p) returns the 2 nodes on the path.
-        let t =
-            run("MATCH p = (:Person {name:'Ada'})-[:KNOWS]->(b:Person) RETURN size(nodes(p)) AS n");
-        assert_eq!(t.rows, vec![vec![Value::Int(2)]]);
-    }
-
-    #[test]
-    fn path_variable_returns_first_class_path_value() {
-        let t = run("MATCH p = (:Person {name:'Ada'})-[:KNOWS]->(b:Person) RETURN p");
-        let Value::Path(path) = &t.rows[0][0] else {
-            panic!("expected Value::Path, got {:?}", t.rows[0][0]);
-        };
-        assert_eq!(path.nodes.len(), 2);
-        assert_eq!(path.relationships.len(), 1);
-        assert_eq!(path.nodes[0]["props"]["name"], Value::from("Ada").to_json());
-
-        let json = t.rows[0][0].to_json();
-        assert!(json.get("nodes").is_some());
-        assert!(json.get("relationships").is_some());
-    }
-
-    #[test]
-    fn path_variable_two_hop() {
-        let t = run(
-            "MATCH p = (:Person {name:'Ada'})-[:KNOWS]->()-[:KNOWS]->() RETURN length(p) AS len",
-        );
-        assert_eq!(t.rows, vec![vec![Value::Int(2)]]);
-    }
-
-    #[test]
-    fn path_variable_over_var_length_rejected() {
-        let err = run_read_query(
-            &graph(),
-            "MATCH p = (:Person {name:'Ada'})-[:KNOWS*1..2]->(b) RETURN p",
-            &CypherParameters::new(),
-        )
-        .unwrap_err();
-        assert!(matches!(err, GrustError::Unsupported(_)));
-    }
-
-    #[test]
-    fn range_with_unwind() {
-        let t = run("UNWIND range(1, 3) AS x RETURN x");
-        assert_eq!(
-            t.rows,
-            vec![
-                vec![Value::Int(1)],
-                vec![Value::Int(2)],
-                vec![Value::Int(3)]
-            ]
-        );
-    }
-
-    #[test]
-    fn head_and_last_over_collect() {
-        let t = run(
-            "MATCH (n:Person) WITH collect(n.name) AS names RETURN head(names) AS h, last(names) AS l",
-        );
-        assert_eq!(t.rows, vec![vec![Value::from("Ada"), Value::from("Grace")]]);
-    }
-
-    #[test]
-    fn labels_type_id() {
-        assert_eq!(
-            run("MATCH (n:Person {name:'Ada'}) RETURN labels(n)").rows,
-            vec![vec![Value::StringArray(vec!["Person".to_string()])]]
-        );
-        assert_eq!(
-            run("MATCH (:Person {name:'Ada'})-[r:KNOWS]->() RETURN type(r)").rows,
-            vec![vec![Value::from("KNOWS")]]
-        );
-        assert_eq!(
-            run("MATCH (n:Person {name:'Ada'}) RETURN id(n)").rows,
-            vec![vec![Value::from("p1")]]
-        );
-    }
-
-    #[test]
-    fn map_literals_and_indexing_evaluate() {
-        let t = run("MATCH (n:Person {name:'Ada'}) RETURN {name: n.name, older: n.age + 4} AS m");
-        assert_eq!(
-            t.rows,
-            vec![vec![Value::Json(serde_json::json!({
-                "name": "Ada",
-                "older": 40
-            }))]]
-        );
-        // Map key lookup on the literal; missing keys are NULL.
-        let t = run("MATCH (n:Person {name:'Ada'}) RETURN {a: 1}['a'] AS hit, {a: 1}['b'] AS miss");
-        assert_eq!(t.rows, vec![vec![Value::Int(1), Value::Null]]);
-        // List indexing: 0-based, negative from the end, out of range -> NULL.
-        let t = run("UNWIND [[10, 20, 30]] AS xs RETURN xs[0], xs[-1], xs[9]");
-        assert_eq!(
-            t.rows,
-            vec![vec![Value::Int(10), Value::Int(30), Value::Null]]
-        );
-        // Indexing a non-list is a structured type error.
-        let err = run_read_query(
-            &graph(),
-            "MATCH (n:Person) RETURN n.age[0]",
-            &CypherParameters::new(),
-        )
-        .unwrap_err();
-        assert!(err.to_string().contains("gql:type"));
-    }
-
-    #[test]
-    fn return_distinct_with_order_by() {
-        let t = run("MATCH (n) RETURN DISTINCT n.label AS l ORDER BY l DESC");
-        assert_eq!(
-            t.rows,
-            vec![vec![Value::from("Person")], vec![Value::from("City")]]
-        );
-        // The key may also be the projected expression itself.
-        let t = run("MATCH (n) RETURN DISTINCT n.label ORDER BY n.label");
-        assert_eq!(
-            t.rows,
-            vec![vec![Value::from("City")], vec![Value::from("Person")]]
-        );
-        // A non-projected key is a structured error.
-        let err = run_read_query(
-            &graph(),
-            "MATCH (n:Person) RETURN DISTINCT n.label ORDER BY n.age",
-            &CypherParameters::new(),
-        )
-        .unwrap_err();
-        assert!(err.to_string().contains("must reference a projected item"));
-    }
-
-    #[test]
-    fn star_with_aggregates_groups_by_bound_variables() {
-        let t = run("MATCH (n:Person) RETURN *, count(*) AS c");
-        // n is the grouping key: three distinct persons, one row each.
-        assert_eq!(t.columns, vec!["n".to_string(), "c".to_string()]);
-        assert_eq!(t.rows.len(), 3);
-        assert!(t.rows.iter().all(|r| r[1] == Value::Int(1)));
-        let t = run(
-            "MATCH (a:Person)-[:KNOWS]->(b) WITH *, count(*) AS c RETURN a.name, c ORDER BY a.name",
-        );
-        assert_eq!(t.rows.len(), 2);
-    }
-
-    #[test]
-    fn multi_label_patterns_are_conjunctive() {
-        // Distinct labels can never both hold on a single-label node: empty.
-        let t = run("MATCH (n:Person:City) RETURN n.name");
-        assert!(t.rows.is_empty());
-        // A repeated label is satisfied.
-        let t = run("MATCH (n:Person:Person {name:'Ada'}) RETURN n.name");
-        assert_eq!(t.rows, vec![vec![Value::from("Ada")]]);
-    }
-
-    #[test]
-    fn union_all_concatenates() {
-        let t = run(
-            "MATCH (n:Person {name:'Ada'}) RETURN n.name AS x UNION ALL MATCH (m:City) RETURN m.name AS x",
-        );
-        assert_eq!(t.columns, vec!["x".to_string()]);
-        assert_eq!(t.rows.len(), 2);
-    }
-
-    #[test]
-    fn union_deduplicates() {
-        // The same row from both arms collapses under UNION (distinct).
-        let t = run(
-            "MATCH (n:Person {name:'Ada'}) RETURN n.label AS l UNION MATCH (m:Person {name:'Alan'}) RETURN m.label AS l",
-        );
-        assert_eq!(t.rows, vec![vec![Value::from("Person")]]);
-    }
-
-    #[test]
-    fn union_all_keeps_duplicates() {
-        let t = run(
-            "MATCH (n:Person {name:'Ada'}) RETURN n.label AS l UNION ALL MATCH (m:Person {name:'Alan'}) RETURN m.label AS l",
-        );
-        assert_eq!(t.rows.len(), 2);
-    }
-
-    #[test]
-    fn union_mismatched_columns_rejected() {
-        let err = run_read_query(
-            &graph(),
-            "MATCH (n:Person) RETURN n.name AS a UNION MATCH (m:City) RETURN m.name AS b",
-            &CypherParameters::new(),
-        )
-        .unwrap_err();
-        assert!(matches!(err, GrustError::CypherUnresolvedIdentity(_)));
-    }
-
-    #[test]
-    fn with_carry_and_filter() {
-        let t = run("MATCH (n:Person) WITH n WHERE n.age > 40 RETURN n.name ORDER BY n.name");
-        assert_eq!(
-            t.rows.iter().map(|r| r[0].clone()).collect::<Vec<_>>(),
-            vec![Value::from("Alan"), Value::from("Grace")]
-        );
-    }
-
-    #[test]
-    fn with_computed_alias() {
-        let t = run("MATCH (n:Person) WITH n.age AS age WHERE age >= 40 RETURN age ORDER BY age");
-        assert_eq!(t.rows, vec![vec![Value::Int(41)], vec![Value::Int(85)]]);
-    }
-
-    #[test]
-    fn with_aggregate_then_return() {
-        let t =
-            run("MATCH (n) WITH n.label AS label, count(*) AS c RETURN label, c ORDER BY label");
-        assert_eq!(
-            t.rows,
-            vec![
-                vec![Value::from("City"), Value::Int(1)],
-                vec![Value::from("Person"), Value::Int(3)],
-            ]
-        );
-    }
-
-    #[test]
-    fn with_order_limit_horizon() {
-        let t = run("MATCH (n:Person) WITH n ORDER BY n.age DESC LIMIT 1 RETURN n.name");
-        assert_eq!(t.rows, vec![vec![Value::from("Grace")]]);
-    }
-
-    #[test]
-    fn with_carries_node_into_later_match() {
-        let t = run("MATCH (a:Person {name:'Ada'}) WITH a MATCH (a)-[:KNOWS]->(b) RETURN b.name");
-        assert_eq!(t.rows, vec![vec![Value::from("Alan")]]);
-    }
-
-    #[test]
-    fn optional_match_null_pads() {
-        let t = run(
-            "MATCH (a:Person) OPTIONAL MATCH (a)-[:KNOWS]->(b) RETURN a.name, b.name ORDER BY a.name",
-        );
-        assert_eq!(
-            t.rows,
-            vec![
-                vec![Value::from("Ada"), Value::from("Alan")],
-                vec![Value::from("Alan"), Value::from("Grace")],
-                vec![Value::from("Grace"), Value::Null],
-            ]
-        );
-    }
-
-    #[test]
-    fn optional_match_where_excludes_all_null_pads() {
-        let t = run(
-            "MATCH (a:Person {name:'Ada'}) OPTIONAL MATCH (a)-[:KNOWS]->(b) WHERE b.name = 'Zzz' RETURN b.name",
-        );
-        assert_eq!(t.rows, vec![vec![Value::Null]]);
-    }
-
-    #[test]
-    fn unwind_list() {
-        let t = run("UNWIND [1, 2, 3] AS x RETURN x");
-        assert_eq!(
-            t.rows,
-            vec![
-                vec![Value::Int(1)],
-                vec![Value::Int(2)],
-                vec![Value::Int(3)]
-            ]
-        );
-    }
-
-    #[test]
-    fn unwind_cross_product_with_match() {
-        let t = run("MATCH (n:Person) UNWIND [1, 2] AS k RETURN n.name, k");
-        assert_eq!(t.rows.len(), 6);
-    }
-
-    #[test]
-    fn searched_case_expression() {
-        let t = run(
-            "MATCH (n:Person) RETURN CASE WHEN n.age >= 80 THEN 'senior' WHEN n.age >= 40 THEN 'mid' ELSE 'young' END AS bucket ORDER BY n.name",
-        );
-        assert_eq!(
-            t.rows.iter().map(|r| r[0].clone()).collect::<Vec<_>>(),
-            vec![
-                Value::from("young"),
-                Value::from("mid"),
-                Value::from("senior")
-            ]
-        );
-    }
-
-    #[test]
-    fn simple_case_expression() {
-        let t = run(
-            "MATCH (n:Person {name:'Ada'}) RETURN CASE n.age WHEN 36 THEN 'yes' ELSE 'no' END AS m",
-        );
-        assert_eq!(t.rows, vec![vec![Value::from("yes")]]);
-    }
-
-    #[test]
-    fn case_without_else_is_null() {
-        let t =
-            run("MATCH (n:Person {name:'Ada'}) RETURN CASE WHEN n.age > 100 THEN 'old' END AS m");
-        assert_eq!(t.rows, vec![vec![Value::Null]]);
-    }
-
-    #[test]
-    fn unbound_variable_rejected_by_semantics() {
-        let err = run_read_query(
-            &graph(),
-            "MATCH (n:Person) RETURN m.name",
-            &CypherParameters::new(),
-        )
-        .unwrap_err();
-        assert!(matches!(err, GrustError::CypherUnresolvedIdentity(_)));
-    }
-
-    #[test]
-    fn executes_against_memory_graph_store() {
-        use futures_executor::block_on;
-        use grust_memory::MemoryGraphStore;
-
-        let store = MemoryGraphStore::new();
-        block_on(async {
-            store
-                .put_node(&node("Person", "p1", &[("name", Value::from("Ada"))]))
-                .await
-                .unwrap();
-            store
-                .put_node(&node("Person", "p2", &[("name", Value::from("Alan"))]))
-                .await
-                .unwrap();
-            store
-                .put_edge(&Edge::new("KNOWS", "p1", "p2", Props::new()))
-                .await
-                .unwrap();
-        });
-
-        // The Memory reference executor reads the materialized graph snapshot.
-        let snapshot = store.graph();
-        let table = run_read_query(
-            &snapshot,
-            "MATCH (a:Person {name: 'Ada'})-[:KNOWS]->(b:Person) RETURN b.name AS friend",
-            &CypherParameters::new(),
-        )
-        .unwrap();
-        assert_eq!(table.columns, vec!["friend".to_string()]);
-        assert_eq!(table.rows, vec![vec![Value::from("Alan")]]);
-    }
-
-    #[test]
-    fn count_star() {
-        let t = run("MATCH (n:Person) RETURN count(*)");
-        assert_eq!(t.rows, vec![vec![Value::Int(3)]]);
-    }
-
-    #[test]
-    fn count_over_empty_match_is_zero() {
-        let t = run("MATCH (n:Nonexistent) RETURN count(*)");
-        assert_eq!(t.rows, vec![vec![Value::Int(0)]]);
-    }
-
-    #[test]
-    fn min_max_avg() {
-        let t = run("MATCH (n:Person) RETURN min(n.age) AS lo, max(n.age) AS hi");
-        assert_eq!(t.columns, vec!["lo".to_string(), "hi".to_string()]);
-        assert_eq!(t.rows, vec![vec![Value::Int(36), Value::Int(85)]]);
-    }
-
-    #[test]
-    fn group_by_label_with_count() {
-        let t = run("MATCH (n) RETURN n.label AS label, count(*) AS c ORDER BY label");
-        assert_eq!(
-            t.rows,
-            vec![
-                vec![Value::from("City"), Value::Int(1)],
-                vec![Value::from("Person"), Value::Int(3)],
-            ]
-        );
-    }
-
-    #[test]
-    fn count_property_skips_nulls() {
-        // No Person has `population`, so count(n.population) == 0.
-        let t = run("MATCH (n:Person) RETURN count(n.population)");
-        assert_eq!(t.rows, vec![vec![Value::Int(0)]]);
-    }
-
-    #[test]
-    fn collect_gathers_values() {
-        let t = run("MATCH (n:Person) RETURN collect(n.name) AS names");
-        assert_eq!(t.rows.len(), 1);
-        match &t.rows[0][0] {
-            Value::Json(serde_json::Value::Array(items)) => assert_eq!(items.len(), 3),
-            other => panic!("expected a list, got {other:?}"),
-        }
-    }
-
-    #[test]
-    fn count_distinct() {
-        let t = run("MATCH (n) RETURN count(DISTINCT n.label) AS kinds");
-        assert_eq!(t.rows, vec![vec![Value::Int(2)]]);
-    }
-
-    #[test]
-    fn scalar_string_functions() {
-        let t = run("MATCH (n:Person {name:'Ada'}) RETURN toUpper(n.name) AS u, size(n.name) AS s");
-        assert_eq!(t.rows, vec![vec![Value::from("ADA"), Value::Int(3)]]);
-    }
-
-    #[test]
-    fn scalar_numeric_functions() {
-        let t =
-            run("MATCH (n:Person {name:'Ada'}) RETURN abs(0 - n.age) AS a, toString(n.age) AS s");
-        assert_eq!(t.rows, vec![vec![Value::Int(36), Value::from("36")]]);
-    }
-
-    #[test]
-    fn coalesce_picks_first_non_null() {
-        let t = run("MATCH (n:Person {name:'Ada'}) RETURN coalesce(n.population, n.age, 0) AS c");
-        assert_eq!(t.rows, vec![vec![Value::Int(36)]]);
-    }
-
-    #[test]
-    fn scalar_function_null_propagates() {
-        let t = run("MATCH (n:Person {name:'Ada'}) RETURN toUpper(n.population) AS u");
-        assert_eq!(t.rows, vec![vec![Value::Null]]);
-    }
-
-    #[test]
-    fn scalar_in_where_filters() {
-        let t = run("MATCH (n:Person) WHERE toUpper(n.name) = 'ADA' RETURN n.name");
-        assert_eq!(t.rows, vec![vec![Value::from("Ada")]]);
-    }
-
-    #[test]
-    fn graph_constructor_builds_first_class_graph_value() {
-        let t = run(
-            "MATCH (a:Person)-[r:KNOWS]->(b:Person) WITH collect(a) AS ns, collect(r) AS rs RETURN graph(ns, rs) AS g",
-        );
-        let Value::Graph(g) = &t.rows[0][0] else {
-            panic!("expected Value::Graph, got {:?}", t.rows[0][0]);
-        };
-        // Two KNOWS edges (p1->p2, p2->p3); start nodes p1, p2 deduplicate.
-        assert_eq!(g.nodes.len(), 2);
-        assert_eq!(g.relationships.len(), 2);
-
-        let json = t.rows[0][0].to_json();
-        assert!(json.get("nodes").is_some());
-        assert!(json.get("relationships").is_some());
-    }
-
-    #[test]
-    fn graph_value_deduplicates_repeated_elements() {
-        // Every KNOWS edge contributes its start node; collecting the same node
-        // twice still yields a set-shaped graph value.
-        let t = run(
-            "MATCH (a:Person {name:'Ada'})-[r:KNOWS]->(b) WITH collect(a) AS ns RETURN graph(ns, null) AS g",
-        );
-        let Value::Graph(g) = &t.rows[0][0] else {
-            panic!("expected Value::Graph");
-        };
-        assert_eq!(g.nodes.len(), 1);
-        assert!(g.relationships.is_empty());
-    }
-
-    #[test]
-    fn graph_value_nodes_and_relationships_accessors() {
-        let t = run(
-            "MATCH (a:Person)-[r:KNOWS]->(b:Person) WITH collect(a) AS ns, collect(r) AS rs WITH graph(ns, rs) AS g RETURN size(nodes(g)) AS n, size(relationships(g)) AS r",
-        );
-        assert_eq!(t.rows, vec![vec![Value::Int(2), Value::Int(2)]]);
-    }
-
-    #[test]
-    fn graph_constructor_rejects_non_list_arguments() {
-        let err = run_read_query(
-            &graph(),
-            "MATCH (n:Person {name:'Ada'}) RETURN graph(n.age, null)",
-            &CypherParameters::new(),
-        )
-        .unwrap_err();
-        assert!(err.to_string().contains("gql:type"));
-    }
-
-    #[test]
-    fn shortest_path_finds_minimal_route() {
-        // p1 -KNOWS-> p2 -KNOWS-> p3; add a direct long-way-around check by
-        // asking for the Ada -> Grace shortest path: exactly 2 hops.
-        let t = run(
-            "MATCH p = shortestPath((a:Person {name:'Ada'})-[:KNOWS*]->(b:Person {name:'Grace'})) RETURN length(p) AS len",
-        );
-        assert_eq!(t.rows, vec![vec![Value::Int(2)]]);
-    }
-
-    #[test]
-    fn shortest_path_prefers_direct_edge() {
-        // Diamond with a shortcut: s -> m1 -> t and s -> t.
-        let nodes = vec![
-            node("N", "s", &[]),
-            node("N", "m1", &[]),
-            node("N", "t", &[]),
-        ];
-        let edges = vec![
-            Edge::new("R", "s", "m1", Props::new()),
-            Edge::new("R", "m1", "t", Props::new()),
-            Edge::new("R", "s", "t", Props::new()),
-        ];
-        let g = Graph::new(nodes, edges);
-        let t = run_read_query(
-            &g,
-            "MATCH p = shortestPath((a:N {id:'s'})-[:R*]->(b:N {id:'t'})) RETURN length(p) AS len",
-            &CypherParameters::new(),
-        )
-        .unwrap();
-        assert_eq!(t.rows, vec![vec![Value::Int(1)]]);
-    }
-
-    #[test]
-    fn all_shortest_paths_keeps_ties() {
-        // Two distinct 2-hop routes s -> {m1|m2} -> t and no direct edge.
-        let nodes = vec![
-            node("N", "s", &[]),
-            node("N", "m1", &[]),
-            node("N", "m2", &[]),
-            node("N", "t", &[]),
-        ];
-        let edges = vec![
-            Edge::new("R", "s", "m1", Props::new()),
-            Edge::new("R", "s", "m2", Props::new()),
-            Edge::new("R", "m1", "t", Props::new()),
-            Edge::new("R", "m2", "t", Props::new()),
-        ];
-        let g = Graph::new(nodes, edges);
-        let all = run_read_query(
-            &g,
-            "MATCH p = allShortestPaths((a:N {id:'s'})-[:R*]->(b:N {id:'t'})) RETURN length(p) AS len",
-            &CypherParameters::new(),
-        )
-        .unwrap();
-        assert_eq!(all.rows, vec![vec![Value::Int(2)], vec![Value::Int(2)]]);
-        // shortestPath keeps exactly one of the ties.
-        let single = run_read_query(
-            &g,
-            "MATCH p = shortestPath((a:N {id:'s'})-[:R*]->(b:N {id:'t'})) RETURN length(p) AS len",
-            &CypherParameters::new(),
-        )
-        .unwrap();
-        assert_eq!(single.rows, vec![vec![Value::Int(2)]]);
-    }
-
-    #[test]
-    fn shortest_path_binds_endpoints_and_relationships() {
-        let t = run(
-            "MATCH shortestPath((a:Person {name:'Ada'})-[r:KNOWS*]->(b:Person {name:'Grace'})) RETURN a.name, b.name, size(r) AS hops",
-        );
-        assert_eq!(
-            t.rows,
-            vec![vec![
-                Value::from("Ada"),
-                Value::from("Grace"),
-                Value::Int(2)
-            ]]
-        );
-    }
-
-    #[test]
-    fn shortest_path_without_star_is_one_hop() {
-        // `-[:R]->` inside shortestPath means exactly one hop, like every
-        // other pattern position; only `*` opens the bound. Ada's only 1-hop
-        // KNOWS endpoint is Alan (Grace is 2 hops away and must not appear).
-        let t =
-            run("MATCH shortestPath((a:Person {name:'Ada'})-[:KNOWS]->(b:Person)) RETURN b.name");
-        assert_eq!(t.rows, vec![vec![Value::from("Alan")]]);
-    }
-
-    #[test]
-    fn shortest_path_per_endpoint_pair() {
-        // Unbound end node: one shortest path per reachable endpoint.
-        let t = run(
-            "MATCH p = shortestPath((a:Person {name:'Ada'})-[:KNOWS*]->(b:Person)) RETURN b.name, length(p) AS len ORDER BY b.name",
-        );
-        assert_eq!(
-            t.rows,
-            vec![
-                vec![Value::from("Alan"), Value::Int(1)],
-                vec![Value::from("Grace"), Value::Int(2)],
-            ]
-        );
-    }
-
-    #[test]
-    fn shortest_path_no_route_yields_no_rows() {
-        let t = run(
-            "MATCH p = shortestPath((a:Person {name:'Grace'})-[:KNOWS*]->(b:City)) RETURN length(p)",
-        );
-        assert!(t.rows.is_empty());
-    }
-
-    #[test]
-    fn shortest_path_multi_segment_is_rejected() {
-        let err = run_read_query(
-            &graph(),
-            "MATCH p = shortestPath((a)-[:KNOWS*]->(m)-[:KNOWS*]->(b)) RETURN p",
-            &CypherParameters::new(),
-        )
-        .unwrap_err();
-        assert!(matches!(err, GrustError::CypherSyntax(_)));
-    }
-
-    #[test]
-    fn tvf_range_yields_rows() {
-        let t = run("CALL tvf.range(1, 3) YIELD value RETURN value");
-        assert_eq!(
-            t.rows,
-            vec![
-                vec![Value::Int(1)],
-                vec![Value::Int(2)],
-                vec![Value::Int(3)]
-            ]
-        );
-    }
-
-    #[test]
-    fn scalar_range_handles_integer_max_without_overflow() {
-        let t =
-            run("MATCH (n:City) RETURN range(9223372036854775806, 9223372036854775807) AS values");
-        assert_eq!(
-            t.rows,
-            vec![vec![Value::IntArray(vec![i64::MAX - 1, i64::MAX])]]
-        );
-    }
-
-    #[test]
-    fn scalar_range_rejects_unbounded_allocation_without_a_policy() {
-        let error = run_read_query(
-            &graph(),
-            "MATCH (n:City) RETURN range(0, 9223372036854775807) AS values",
-            &CypherParameters::new(),
-        )
-        .unwrap_err();
-        assert!(error.to_string().contains("executor maximum"));
-    }
-
-    #[test]
-    fn tvf_range_standalone_call_shapes_result() {
-        let t = run("CALL tvf.range(1, 2) YIELD value AS v");
-        assert_eq!(t.columns, vec!["v".to_string()]);
-        assert_eq!(t.rows.len(), 2);
-    }
-
-    #[test]
-    fn tvf_keys_is_correlated_per_row() {
-        // `id` is a real property key: Node::new mirrors the id into props.
-        let t =
-            run("MATCH (n:Person {name:'Ada'}) CALL tvf.keys(n) YIELD key RETURN key ORDER BY key");
-        assert_eq!(
-            t.rows,
-            vec![
-                vec![Value::from("age")],
-                vec![Value::from("id")],
-                vec![Value::from("name")]
-            ]
-        );
-    }
-
-    #[test]
-    fn tvf_range_with_correlated_argument() {
-        // end = n.age - 34 -> Ada (36) yields 1..2.
-        let t = run(
-            "MATCH (n:Person {name:'Ada'}) CALL tvf.range(1, n.age - 34) YIELD value RETURN value",
-        );
-        assert_eq!(t.rows, vec![vec![Value::Int(1)], vec![Value::Int(2)]]);
-    }
-
-    #[test]
-    fn catalog_procedure_rejects_arguments() {
-        let err = run_read_query(
-            &graph(),
-            "CALL db.labels('x') YIELD label RETURN label",
-            &CypherParameters::new(),
-        )
-        .unwrap_err();
-        assert!(err.to_string().contains("expects no arguments"));
-    }
-
-    #[test]
-    fn with_distinct_over_computed_alias() {
-        // DISTINCT dedups by the produced (post-projection) values; the source
-        // expression's variable is out of scope after the horizon.
-        let t = run("MATCH (n:Person) WITH DISTINCT n.label AS l RETURN l");
-        assert_eq!(t.rows, vec![vec![Value::from("Person")]]);
-    }
-
-    #[test]
-    fn call_subquery_distinct_computed_return() {
-        let t = run(
-            "MATCH (a:City) CALL { MATCH (p:Person) RETURN DISTINCT p.label AS l } RETURN a.name, l",
-        );
-        assert_eq!(
-            t.rows,
-            vec![vec![Value::from("London"), Value::from("Person")]]
-        );
-    }
-
-    #[test]
-    fn call_subquery_correlated_join() {
-        // The outer binding `a` is visible inside; a row whose subquery
-        // returns nothing (Grace has no outgoing KNOWS) is dropped.
-        let t = run(
-            "MATCH (a:Person) CALL { MATCH (a)-[:KNOWS]->(b) RETURN b.name AS friend } RETURN a.name, friend ORDER BY a.name",
-        );
-        assert_eq!(
-            t.rows,
-            vec![
-                vec![Value::from("Ada"), Value::from("Alan")],
-                vec![Value::from("Alan"), Value::from("Grace")],
-            ]
-        );
-    }
-
-    #[test]
-    fn call_subquery_uncorrelated_aggregate() {
-        let t = run(
-            "MATCH (a:Person) CALL { MATCH (c:City) RETURN count(*) AS cities } RETURN a.name, cities ORDER BY a.name",
-        );
-        assert_eq!(t.rows.len(), 3);
-        assert!(t.rows.iter().all(|r| r[1] == Value::Int(1)));
-    }
-
-    #[test]
-    fn call_subquery_returns_node_binding_for_later_match() {
-        // A bare-variable subquery RETURN keeps its node binding, so a later
-        // MATCH can extend from it.
-        let t = run(
-            "CALL { MATCH (a:Person {name:'Ada'}) RETURN a } MATCH (a)-[:KNOWS]->(b) RETURN b.name",
-        );
-        assert_eq!(t.rows, vec![vec![Value::from("Alan")]]);
-    }
-
-    #[test]
-    fn call_subquery_union_arms() {
-        let t = run(
-            "CALL { MATCH (p:Person {name:'Ada'}) RETURN p.name AS n UNION MATCH (c:City) RETURN c.name AS n } RETURN n ORDER BY n",
-        );
-        assert_eq!(
-            t.rows,
-            vec![vec![Value::from("Ada")], vec![Value::from("London")]]
-        );
-    }
-
-    #[test]
-    fn call_subquery_column_collision_rejected() {
-        let err = run_read_query(
-            &graph(),
-            "MATCH (a:Person) CALL { MATCH (x:City) RETURN x.name AS a } RETURN a",
-            &CypherParameters::new(),
-        )
-        .unwrap_err();
-        assert!(matches!(err, GrustError::CypherUnresolvedIdentity(_)));
-        assert!(err.to_string().contains("already bound"));
-    }
-
-    #[test]
-    fn call_subquery_requires_return() {
-        let err = run_read_query(
-            &graph(),
-            "MATCH (a:Person) CALL { MATCH (c:City) } RETURN a.name",
-            &CypherParameters::new(),
-        )
-        .unwrap_err();
-        assert!(err.to_string().contains("must end in RETURN"));
-    }
-
-    #[test]
-    fn call_subquery_return_star_is_feature_tagged() {
-        let err = run_read_query(
-            &graph(),
-            "MATCH (a:Person) CALL { MATCH (c:City) RETURN * } RETURN a.name",
-            &CypherParameters::new(),
-        )
-        .unwrap_err();
-        assert!(matches!(err, GrustError::Unsupported(_)));
-    }
-
-    #[test]
-    fn unknown_scalar_function_is_feature_tagged() {
-        let err = run_read_query(
-            &graph(),
-            "MATCH (n:Person) RETURN notafunction(n.age)",
-            &CypherParameters::new(),
-        )
-        .unwrap_err();
-        assert!(matches!(err, GrustError::Unsupported(_)));
-    }
-}
+#[path = "read_tests.rs"]
+mod tests;

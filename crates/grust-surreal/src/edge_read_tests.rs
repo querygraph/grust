@@ -25,7 +25,11 @@ fn edge_read_pushes_from_and_to_independently() {
     for (from, to, expected) in [
         (Some("person-1"), None, PERSON_1.to_string()),
         (None, Some("talk-1"), TALK_1.to_string()),
-        (Some("person-1"), Some("talk-1"), format!("{PERSON_1} AND {TALK_1}")),
+        (
+            Some("person-1"),
+            Some("talk-1"),
+            format!("{PERSON_1} AND {TALK_1}"),
+        ),
     ] {
         let query = EdgeQuery {
             from: from.map(NodeId::new),
@@ -50,7 +54,9 @@ fn edge_read_combines_endpoint_filters_with_an_explicit_relationship_table() {
     };
     assert_eq!(
         surreal_get_edges_query(&query, &SurrealConfig::default()).unwrap(),
-        format!("SELECT *, meta::tb(id) AS __grust_label FROM `member_of` WHERE {PERSON_1} AND {TALK_1};")
+        format!(
+            "SELECT *, meta::tb(id) AS __grust_label FROM `member_of` WHERE {PERSON_1} AND {TALK_1};"
+        )
     );
 }
 
@@ -67,7 +73,11 @@ fn endpoint_filter_searches_the_same_candidate_tables_as_a_node_read() {
     };
     for (labels, from_tables, to_tables) in [
         (vec![], vec!["differentprefix", "record"], vec!["record"]),
-        (vec!["Person".into()], vec!["differentprefix", "person", "record"], vec!["person", "record"]),
+        (
+            vec!["Person".into()],
+            vec!["differentprefix", "person", "record"],
+            vec!["person", "record"],
+        ),
         (
             vec!["Talk".into(), "Person".into()],
             vec!["differentprefix", "person", "record", "talk"],

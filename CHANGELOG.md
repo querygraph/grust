@@ -6,6 +6,33 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ## Unreleased
 
+- Added generalized analytics infrastructure: Arrow graph interchange from the
+  pinned handoff is available through the optional facade `arrow` feature;
+  `grust-procedures` adds immutable registration and shared resource contracts.
+  The Cypher source now resolves CALL through that registry, including external
+  providers and correlated CALL subqueries. Bounded reads separate catalog/table
+  admission from read-procedure permission, and provider allocations share the
+  existing read budget. Explicit local snapshot capabilities preserve graph,
+  revision and principal identity through prepared execution.
+- Added reusable BFS, Dijkstra, full shortest paths, WCC, iterative SCC and
+  weighted PageRank kernels, native multi-batch Arrow projection and typed Arrow
+  results. The optional facade `algorithms` feature exposes kernels and registry
+  adapters; all six run through ordinary Cypher with checked configurations.
+  The same extension contracts also expose DFS, multi-source BFS, topological
+  order with cycle witnesses, projection statistics and scoped CSR sizing.
+  Query-scoped projection reuse includes graph, revision, principal and options;
+  prepared explanations and `db.procedures` use pinned registry metadata.
+- Added incremental CALL/YIELD/filter/WITH/UNWIND consumption and ungrouped
+  COUNT/SUM/AVG, live intermediate admission and LIMIT propagation. Array indexing
+  borrows bound arrays instead of copying the whole array per element. Generic
+  typed-array aggregate fusion consumes actual path entries. Local Memory and
+  private Turso snapshots are tested with the same prepared bounded plan; old
+  captures survive writes. Full-chain direct and ordinary Cypher receipts retain
+  their exact resource and timing boundaries in `benchmarks/algorithms`.
+- Fixed Turso's optional sync constructor to initialize its snapshot cache and
+  retire the cache before a pull can mutate local data, including failed or
+  cancelled pulls. Existing immutable snapshots remain valid.
+
 - Surreal: an edge written without its endpoints' tables in hand (a single
   `put_edge`, an `UpsertEdge` mutation) relates the record a node read by
   that ID would find, `RELATE (SELECT VALUE id FROM type::record(t1, id),

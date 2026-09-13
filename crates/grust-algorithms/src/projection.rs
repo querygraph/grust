@@ -1,0 +1,247 @@
+//! Projection identity and topology validation. Property extraction lives at adapters.
+
+use std::collections::{HashMap, HashSet};
+use std::sync::{Arc, Mutex};
+
+use grust_core::{EdgeId, NodeId};
+pub use grust_procedures::SnapshotIdentity;
+use grust_procedures::{ExecutionContext, MemoryReservation, ProcedureError, Result};
+
+use crate::buffer::Buffer;
+
+mod adjacency;
+mod origin;
+pub(crate) use adjacency::{Adjacency, ReverseTopology};
+pub use origin::{ProjectionRepresentation, ProjectionSelection};
+
+/// Explicit orientation applied once while preparing topology.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum Orientation {
+    /// Follow source-to-target edges.
+    Outgoing,
+    /// Follow target-to-source edges.
+    Incoming,
+    /// Traverse each non-loop edge in both directions; loops occur once.
+    Undirected,
+}
+
+/// Topology-only input edge. Dense endpoints refer to the supplied node table.
+/// An original ordinal distinguishes parallel edges and nonunique/missing IDs.
+#[derive(Clone, Debug)]
+pub struct ProjectionEdge {
+    /// Source row in the supplied external-ID mapping.
+    pub source: usize,
+    /// Target row in the supplied external-ID mapping.
+    pub target: usize,
+    /// Original snapshot edge position, unique within this projection.
+    pub ordinal: usize,
+    /// Optional external edge identity, preserved without reinterpretation.
+    pub id: Option<EdgeId>,
+}
+
+/// A validated immutable topology and external identity mapping.
+///
+/// Input vectors transfer ownership. Their retained storage is charged upon
+/// entry; the caller remains responsible for allocating those input vectors
+/// under its ingestion envelope. CSR and scratch are reserved before allocation.
+/// No property maps enter adjacency loops. Reverse CSR is constructed lazily.
+#[derive(Clone)]
+pub struct GraphProjection {
+    inner: Arc<ProjectionData>,
+}
+
+struct ProjectionData {
+    identity: SnapshotIdentity,
+    representation: ProjectionRepresentation,
+    selection: Option<ProjectionSelection>,
+    orientation: Orientation,
+    nodes: Vec<NodeId>,
+    node_by_id: HashMap<NodeId, usize>,
+    edges: Vec<ProjectionEdge>,
+    outgoing: Adjacency,
+    reverse: Mutex<Option<Arc<ReverseTopology>>>,
+    context: ExecutionContext,
+    _retained: MemoryReservation,
+}
+
+impl GraphProjection {
+    /// Validate and prepare topology. Weights are either absent (all unit
+    /// weights, with no weight buffer) or one finite nonnegative value per edge.
+    /// Duplicate node IDs, ordinals and missing endpoints are errors. External
+    /// edge IDs may repeat; the original ordinal remains the disambiguator.
+    pub fn from_topology(
+        identity: SnapshotIdentity,
+        nodes: Vec<NodeId>,
+        edges: Vec<ProjectionEdge>,
+        weights: Option<Vec<f64>>,
+        orientation: Orientation,
+        context: &ExecutionContext,
+    ) -> Result<Self> {
+        context.checkpoint()?;
+        let mut bytes = size_of::<ProjectionData>()
+            .saturating_add(2 * size_of::<usize>())
+            .saturating_add(nodes.capacity().saturating_mul(size_of::<NodeId>()))
+            .saturating_add(edges.capacity().saturating_mul(size_of::<ProjectionEdge>()))
+            .saturating_add(
+                nodes
+                    .len()
+                    .saturating_add(4)
+                    .saturating_mul(2 * (size_of::<NodeId>() + size_of::<usize>() + 1)),
+            )
+            .saturating_add(identity.owned_bytes());
+        for id in &nodes {
+            context.charge_work(1)?;
+            bytes = bytes
+                .saturating_add(id.as_str().len())
+                .saturating_add(2 * size_of::<usize>());
+        }
+        for edge in &edges {
+            context.charge_work(1)?;
+            if let Some(id) = &edge.id {
+                bytes = bytes
+                    .saturating_add(id.as_str().len())
+                    .saturating_add(2 * size_of::<usize>());
+            }
+        }
+        let retained = context.reserve(bytes)?;
+        let weight_reservation = context.reserve(weights.as_ref().map_or(0, |values| {
+            values.capacity().saturating_mul(size_of::<f64>())
+        }))?;
+        let mut node_by_id = HashMap::new();
+        node_by_id.try_reserve(nodes.len())?;
+        for (index, id) in nodes.iter().enumerate() {
+            context.charge_work(1)?;
+            if node_by_id.insert(id.clone(), index).is_some() {
+                return Err(ProcedureError::InvalidArguments(format!(
+                    "duplicate node ID: {id}"
+                )));
+            }
+        }
+        if weights
+            .as_ref()
+            .is_some_and(|weights| weights.len() != edges.len())
+        {
+            return Err(ProcedureError::InvalidArguments(
+                "weight count must equal edge count".into(),
+            ));
+        }
+        let ordinal_reservation = context.reserve(
+            edges
+                .len()
+                .saturating_add(4)
+                .saturating_mul(2 * (size_of::<usize>() + 1)),
+        )?;
+        let mut ordinals = HashSet::new();
+        ordinals.try_reserve(edges.len())?;
+        for (index, edge) in edges.iter().enumerate() {
+            context.charge_work(1)?;
+            if edge.source >= nodes.len() || edge.target >= nodes.len() {
+                return Err(ProcedureError::InvalidArguments(
+                    "edge endpoint outside node table".into(),
+                ));
+            }
+            if let Some(weights) = &weights
+                && (!weights[index].is_finite() || weights[index] < 0.0)
+            {
+                return Err(ProcedureError::InvalidArguments(
+                    "weights must be finite and nonnegative".into(),
+                ));
+            }
+            if !ordinals.insert(edge.ordinal) {
+                return Err(ProcedureError::InvalidArguments(
+                    "duplicate original edge ordinal".into(),
+                ));
+            }
+        }
+        drop(ordinals);
+        drop(ordinal_reservation);
+        let outgoing = Adjacency::build(
+            nodes.len(),
+            &edges,
+            weights.as_deref(),
+            orientation,
+            context,
+        )?;
+        drop(weights);
+        drop(weight_reservation);
+        Ok(Self {
+            inner: Arc::new(ProjectionData {
+                identity,
+                representation: ProjectionRepresentation::Topology,
+                selection: None,
+                orientation,
+                nodes,
+                node_by_id,
+                edges,
+                outgoing,
+                reverse: Mutex::new(None),
+                context: context.clone(),
+                _retained: retained,
+            }),
+        })
+    }
+
+    /// Snapshot and principal to which this projection belongs.
+    pub fn identity(&self) -> &SnapshotIdentity {
+        &self.inner.identity
+    }
+    /// Adapter representation used to construct the owned topology.
+    pub fn representation(&self) -> ProjectionRepresentation {
+        self.inner.representation
+    }
+    /// Retained label and property policy; absent for raw topology input.
+    pub fn selection(&self) -> Option<&ProjectionSelection> {
+        self.inner.selection.as_ref()
+    }
+    /// Orientation used by directed kernels.
+    pub fn orientation(&self) -> Orientation {
+        self.inner.orientation
+    }
+    /// External IDs in result row order, including isolates.
+    pub fn node_ids(&self) -> &[NodeId] {
+        &self.inner.nodes
+    }
+    /// Original edge identity mapping. Kernel edge slots index this slice.
+    pub fn edges(&self) -> &[ProjectionEdge] {
+        &self.inner.edges
+    }
+    /// Shared resource context for preparation, kernels and consumers.
+    pub fn execution(&self) -> &ExecutionContext {
+        &self.inner.context
+    }
+    /// Number of selected vertices.
+    pub fn node_count(&self) -> usize {
+        self.inner.nodes.len()
+    }
+    /// Number of original selected edges; undirected traversal may have more arcs.
+    pub fn edge_count(&self) -> usize {
+        self.inner.edges.len()
+    }
+    /// Whether a weight buffer was explicitly supplied.
+    pub fn is_weighted(&self) -> bool {
+        self.inner.outgoing.weights.is_some()
+    }
+
+    pub(crate) fn source(&self, id: &str) -> Result<usize> {
+        self.inner.node_by_id.get(id).copied().ok_or_else(|| {
+            ProcedureError::InvalidArguments(format!("source is not selected: {id}"))
+        })
+    }
+    pub(crate) fn outgoing(&self) -> &Adjacency {
+        &self.inner.outgoing
+    }
+    pub(crate) fn reverse(&self) -> Result<Arc<ReverseTopology>> {
+        self.inner.context.checkpoint()?;
+        let mut cached = self
+            .inner
+            .reverse
+            .lock()
+            .map_err(|_| ProcedureError::ResourceStatePoisoned)?;
+        if let Some(reverse) = &*cached {
+            return Ok(Arc::clone(reverse));
+        }
+        let reverse = Arc::new(self.inner.outgoing.reversed(&self.inner.context)?);
+        *cached = Some(Arc::clone(&reverse));
+        Ok(reverse)
+    }
+}

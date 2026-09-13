@@ -1,5 +1,13 @@
 pub use grust_core::*;
 
+#[cfg(feature = "algorithms")]
+pub use grust_algorithm_procedures as algorithm_procedures;
+#[cfg(feature = "algorithms")]
+pub use grust_algorithms as algorithms;
+
+#[cfg(feature = "arrow")]
+pub use grust_arrow as arrow;
+
 pub mod lakecat;
 pub mod semantic;
 pub use lakecat::{
@@ -23,16 +31,19 @@ pub use grust_cypher::{
     CypherParameters, CypherRelationshipIdPolicy, CypherResultTable, CypherSchemaApplication,
     CypherSchemaManager, CypherSession, CypherWrittenEdgeIdentity, CypherWrittenNodeIdentity,
     GraphIndexDefinition, GraphIndexElement, GraphTypeDefinition, MAX_RANGE_ITEMS,
-    NamedGraphCatalog, NamedGraphConstraint, NamedGraphIndex, NamedGraphType, ReadQueryPolicy,
-    SessionCommand, apply_cypher_ddl_to_schema, apply_cypher_native_constraints,
-    cypher_catalog_procedure, cypher_constraints, cypher_ddl, cypher_mutation_plan,
-    cypher_mutation_plan_with_options, cypher_mutation_plan_with_return_options,
-    ensure_catalog_graph_selection, ensure_query_uses_graph,
-    execute_cypher_mutation_returning_with_options_on_store, query_graph_selection,
-    run_bounded_read_query, run_bounded_read_query_indexed, run_read_query_on_named_graph,
-    sail_cypher_constraints, sail_cypher_ddl, sail_cypher_mutation_plan,
-    sail_cypher_mutation_plan_with_options, sail_cypher_mutation_plan_with_return_options,
-    validate_read_query,
+    NamedGraphCatalog, NamedGraphConstraint, NamedGraphIndex, NamedGraphType,
+    PreparedProcedureQuery, ProcedureCallPlan, ProcedureExecutionTarget, ProcedureQueryPlan,
+    ProcedureRowExecution, ReadQueryPolicy, SessionCommand, apply_cypher_ddl_to_schema,
+    apply_cypher_native_constraints, cypher_catalog_procedure, cypher_constraints, cypher_ddl,
+    cypher_mutation_plan, cypher_mutation_plan_with_options,
+    cypher_mutation_plan_with_return_options, ensure_catalog_graph_selection,
+    ensure_query_uses_graph, execute_cypher_mutation_returning_with_options_on_store,
+    query_graph_selection, run_bounded_read_query, run_bounded_read_query_indexed,
+    run_bounded_read_query_on_snapshot, run_bounded_read_query_with_registry,
+    run_read_query_on_named_graph, run_read_query_with_registry, sail_cypher_constraints,
+    sail_cypher_ddl, sail_cypher_mutation_plan, sail_cypher_mutation_plan_with_options,
+    sail_cypher_mutation_plan_with_return_options, validate_read_query,
+    validate_read_query_with_registry,
 };
 
 #[cfg(feature = "falkor")]

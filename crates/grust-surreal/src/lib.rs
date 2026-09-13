@@ -137,9 +137,7 @@ impl SurrealHttpGraphStore {
                 .body(query.to_string())
                 .send()
                 .await
-                .map_err(|err| {
-                    GrustError::Backend(format!("{context}: {}", err.without_url()))
-                })?;
+                .map_err(|err| GrustError::Backend(format!("{context}: {}", err.without_url())))?;
             if response.status() == reqwest::StatusCode::UNAUTHORIZED && attempt == 0 {
                 *self.token.lock().unwrap() = None;
                 continue;
@@ -1478,11 +1476,7 @@ fn surreal_string(value: &str) -> String {
 /// `/signin` on the same origin as the configured `/sql` endpoint.
 fn surreal_signin_url(surreal_url: &str) -> Result<String> {
     let mut parsed = validated_surreal_url(surreal_url)?;
-    let base = parsed
-        .path()
-        .strip_suffix("/sql")
-        .unwrap_or("")
-        .to_string();
+    let base = parsed.path().strip_suffix("/sql").unwrap_or("").to_string();
     parsed.set_path(&format!("{base}/signin"));
     parsed.set_query(None);
     Ok(parsed.to_string())
