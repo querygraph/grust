@@ -3,7 +3,7 @@
 
 use super::streaming_aggregate::AggregateState;
 use super::*;
-use grust_procedures::{Invocation, LocalSnapshot, MemoryAccount};
+use grust_procedures::MemoryAccount;
 use std::ops::ControlFlow;
 
 pub(super) fn try_execute(
@@ -148,17 +148,7 @@ impl Pipeline<'_> {
                         .map(|arg| eval(arg, row, self.params))
                         .collect::<Result<Vec<_>>>()?;
                     let mut cursor = procedure
-                        .open(
-                            args,
-                            Invocation {
-                                snapshot: Some(LocalSnapshot::new(
-                                    self.graph.local_graph(),
-                                    self.procedures.identity(),
-                                )),
-                                execution: context,
-                                cache: Some(self.procedures.cache()),
-                            },
-                        )
+                        .open(args, self.procedures.invocation(self.graph, &procedure))
                         .map_err(|error| procedures::invocation_error(error, call))?;
                     while let Some(batch) = cursor
                         .next_batch()

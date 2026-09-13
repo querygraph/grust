@@ -8,6 +8,11 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ## 0.14.0 — Acorn — 2026-09-13
 
+- Indexed Cypher materializes a full graph for `CALL` only when the registered
+  provider declares `GraphRequirement::LocalSnapshot`. Graph-free procedures
+  such as `tvf.range` and `db.procedures` retain the compact source in both
+  streaming and materializing query pipelines.
+
 - Cypher over `grust-memory` reads the store in place instead of a copy of
   it. `MemoryGraphStore::indexed_snapshot` shares the store's frozen storage
   (copy-on-write: a write copies the store only while an older snapshot is

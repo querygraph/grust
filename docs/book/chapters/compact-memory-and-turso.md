@@ -19,7 +19,10 @@ materializes and caches a full Graph when the source does not already own one.
 
 Ordinary indexed Cypher reads traverse that source in place, preserving candidate
 order, result/error behavior and budget checks. Registered local-snapshot
-procedures still require a Graph; CALL can therefore materialize the source.
+procedures still require a Graph; CALL therefore materializes the source only
+when the resolved provider declares `GraphRequirement::LocalSnapshot`. Graph-free
+providers such as `tvf.range` and `db.procedures` receive no snapshot and cause no
+full-graph copy, in both streaming and materializing query pipelines.
 Lean indexed MATCH execution does not imply zero-copy algorithm projection.
 Callers continue to own admission of retained input snapshots and this explicit
 materialization boundary.

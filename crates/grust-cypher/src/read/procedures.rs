@@ -1,8 +1,9 @@
 //! Registry adaptation at the Cypher boundary. Providers never see AST or rows.
 
 use grust_procedures::{
-    ExecutionContext, Invocation, InvocationCache, LocalSnapshot, ProcedureError, ProcedureMode,
-    ProcedureRegistry, RegistryBuilder, ResolvedProcedure, SnapshotIdentity, register_builtins,
+    ExecutionContext, GraphRequirement, Invocation, InvocationCache, LocalSnapshot, ProcedureError,
+    ProcedureMode, ProcedureRegistry, RegistryBuilder, ResolvedProcedure, SnapshotIdentity,
+    register_builtins,
 };
 
 use super::*;
@@ -117,15 +118,28 @@ impl ProcedureExecution {
         Ok(())
     }
 
-    pub(super) fn cache(&self) -> &InvocationCache {
-        &self.cache
-    }
-
     pub(super) fn execution(&self) -> &ExecutionContext {
         &self.execution
     }
-    pub(super) fn identity(&self) -> &SnapshotIdentity {
-        &self.identity
+    /// Materialize an indexed snapshot only when the resolved provider needs it.
+    /// Graph-free providers receive neither a snapshot nor preparation cache.
+    pub(super) fn invocation<'a>(
+        &'a self,
+        graph: GraphRef<'a>,
+        procedure: &ResolvedProcedure,
+    ) -> Invocation<'a> {
+        let (snapshot, cache) = match procedure.definition().graph {
+            GraphRequirement::None => (None, None),
+            GraphRequirement::LocalSnapshot => (
+                Some(LocalSnapshot::new(graph.local_graph(), &self.identity)),
+                Some(&self.cache),
+            ),
+        };
+        Invocation {
+            snapshot,
+            cache,
+            execution: &self.execution,
+        }
     }
 
     pub(super) fn resolve(&self, call: &CallClause) -> Result<ResolvedProcedure> {
@@ -140,7 +154,7 @@ impl ProcedureExecution {
 
     pub(super) fn advance(
         &self,
-        graph: &Graph,
+        graph: GraphRef<'_>,
         call: &CallClause,
         rows: Vec<Row>,
         params: &CypherParameters,
@@ -161,14 +175,7 @@ impl ProcedureExecution {
                 .map(|arg| eval(arg, &row, params))
                 .collect::<Result<Vec<_>>>()?;
             let mut cursor = procedure
-                .open(
-                    args,
-                    Invocation {
-                        snapshot: Some(LocalSnapshot::new(graph, &self.identity)),
-                        cache: Some(&self.cache),
-                        execution: &self.execution,
-                    },
-                )
+                .open(args, self.invocation(graph, &procedure))
                 .map_err(|error| invocation_error(error, call))?;
             while let Some(batch) = cursor
                 .next_batch()

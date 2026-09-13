@@ -442,7 +442,7 @@ fn advance_rows(
             Ok((rows, None))
         }
         Clause::Unwind(u) => Ok((unwind_rows(rows, u, params)?, None)),
-        Clause::Call(c) => procedures.advance(graph.local_graph(), c, rows, params),
+        Clause::Call(c) => procedures.advance(graph, c, rows, params),
         Clause::Subquery(s) => Ok((
             execute_subquery_clause(graph, s, rows, params, procedures)?,
             None,
