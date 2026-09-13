@@ -6,6 +6,8 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ## Unreleased
 
+## 0.14.0 — Acorn — 2026-09-13
+
 - Cypher over `grust-memory` reads the store in place instead of a copy of
   it. `MemoryGraphStore::indexed_snapshot` shares the store's frozen storage
   (copy-on-write: a write copies the store only while an older snapshot is
@@ -48,8 +50,11 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 - Turso keeps parallel edges. The universal edge table's key gains an
   identity column through a new `GraphSqlDialect::edge_identity_column` hook
-  (default none, so PostgreSQL's schema is unchanged); Turso sets `id_key`,
-  the edge's id or empty, and upserts on (from_id, label, to_id, id_key).
+  (default none, so PostgreSQL's schema is unchanged); Turso sets `identity_key`,
+  an encoded optional ID, and upserts on (from_id, label, to_id, identity_key).
+  Missing and empty IDs remain distinct; migrated stored IDs retain their
+  update identity. Both the old endpoint-only schema and the unreleased raw
+  `id_key` schema are rebuilt transactionally.
   Edges with distinct ids between the same endpoints are all kept, as
   grust-memory and LanceDB already did; an edge without an id still replaces
   the earlier one; re-putting an id updates it in place. A database created
@@ -57,8 +62,6 @@ reconstructed from Git history, release commits, and the shipped docs.
   one transaction, keeping every row. The adversarial-graph strain benchmark
   found the gap: on sx-stackoverflow, a temporal multigraph, Turso merged
   27 million parallel interactions and answered hub degrees wrong.
-
-## 0.14.0 — Acorn — 2026-09-13
 
 - Added generalized analytics infrastructure: Arrow graph interchange from the
   pinned handoff is available through the optional facade `arrow` feature;

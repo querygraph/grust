@@ -2,8 +2,8 @@
 
 Grust is a modern property graph API for Rust.
 
-**Acorn 0.14.0 is implemented and qualified in source; crates.io publication is
-pending publishing credentials.** The versioned examples below target that release.
+**Acorn 0.14.0 release preparation is in progress.** The versioned examples below
+target that release.
 See the [qualification and release handoff](docs/GENERALIZED_ALGORITHMS.md#qualification-and-release-handoff).
 
 It gives Rust applications one small, backend-neutral way to build, validate,

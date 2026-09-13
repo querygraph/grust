@@ -876,19 +876,21 @@ project, and the trait makes the maturity boundary explicit.
 
 ## Memory
 
-`grust-memory` is the deterministic local backend. It stores nodes in a
-`BTreeMap<NodeId, Node>` and stores edges by source, label, destination, and
-optional explicit edge ID. That means structural edges still behave
+`grust-memory` is the deterministic local backend. It interns node ids and
+labels as `u32` handles and stores each edge once, as a 16-byte record keyed by
+source, label, destination, and optional explicit edge ID, with ids and
+properties kept out of line. That means structural edges still behave
 deterministically, while id-bearing parallel edges between the same endpoints
-can coexist. Reads and traversals scan those maps. It is the best backend for
+can coexist. Reads return nodes and edges in id and edge-key order. It is the best backend for
 tests, examples, and local workflows that need no external service.
 When a `GraphSchema` is applied, the memory backend validates writes against it,
 which makes it a useful conformance harness for typed storage behavior before a
 database enters the picture.
 
 For repeated language reads, `indexed_snapshot()` returns a shared immutable
-`TypedGraphIndex`. The first call after a write clones the graph and builds
-typed incoming/outgoing adjacency; later calls reuse it, including through
+`TypedGraphIndex`. The first call after a write builds typed incoming/outgoing
+adjacency over the store's own copy-on-write storage rather than a copy of the
+graph; later calls reuse it, including through
 cloned store handles. Every write attempt invalidates the cache, while snapshots
 already returned remain unchanged. Construction holds the store's read lock
 and therefore delays writers. Ordinary `GraphStore` reads and traversals keep
@@ -2145,6 +2147,8 @@ operations in source order inside one isolated transaction. The generic
 write-with-`RETURN` helper remains sequential because later operations may use
 intermediate bindings; it is not a whole-statement atomicity boundary. Explicit
 transaction scripts batch supported mutations when atomicity is required.
+
+<!-- include: chapters/compact-memory-and-turso.md -->
 
 <!-- include: chapters/generalized-algorithms.md -->
 

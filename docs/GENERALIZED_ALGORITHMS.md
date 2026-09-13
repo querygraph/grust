@@ -1,7 +1,9 @@
 # Generalized graph algorithms
 
-Status: implemented and qualified in Acorn 0.14.0 source. Registry publication
-and external release verification remain pending publishing credentials.
+Status: generalized algorithms are implemented. The earlier Acorn checkpoint was
+qualified; the subsequent compact Memory/indexed-Cypher and Turso changes require
+fresh validation on a cleared host. Publishing credentials are now configured.
+See `codex-to-codex.md` at the repository root for host coordination.
 Contract: the 2026-09-13 generalized algorithms handoff in
 `adversarial-graph-algorithms/docs/grust-generalized-graph-algorithms-handoff.md`.
 Engineering guide: QueryGraph `RUST.md`, retrieved 2026-09-13.
@@ -211,8 +213,8 @@ mandatory. Comprehensive per-kernel peak/output estimates are deferred.
 
 ## Qualification and release handoff
 
-The Acorn workspace has 1,486 passing tests, zero failures and 47 explicitly
-ignored tests. Workspace build, all-feature/all-target Clippy with warnings denied,
+The earlier Acorn checkpoint had 1,486 passing tests, zero failures and 47
+explicitly ignored tests. Those receipts do not qualify later source changes. Workspace build, all-feature/all-target Clippy with warnings denied,
 formatting, public rustdoc and all 23 workspace tarballs pass. The algorithms/Arrow
 facade also builds without Cypher. Package attribution checks retain both the
 algorithm MIT notice and the facade's Apache Ossie fixture attribution.
@@ -225,7 +227,7 @@ Helix is unavailable on this host; its unit tests pass, but live service behavio
 is not claimed. Other unrun service checks remain explicit in the
 [source qualification receipt](../benchmarks/algorithms/evidence/2026-09-13/acorn-source-validation.json).
 
-The final-runtime Acorn Docker image passes 72 upstream correctness cases, two
+The earlier pinned Acorn Docker image passes 72 upstream correctness cases, two
 30-case matrices at 128 and 1,024 nodes, and full weighted chains at 16,384 and
 65,536 nodes. Separately named direct and ordinary Cypher participants preserve
 all historical participants and official GDS calls. Both upstream modes consume
@@ -245,10 +247,13 @@ identical timer/allocation boundary is claimed.
 
 The Acorn [book](book/build/dist/VERSION.md) and
 [release TextPack](blog/grust-acorn/dist/VERSION.md) are built, verified, committed
-and pushed. Runnable provider and weighted-path examples, migration guidance,
-coverage matrices and lockstep manifests are complete. Remaining release work is
-crates.io publication in dependency order, external `cargo info` verification and
-the exact crate-source release tag, following AGENTS.md/PUBLISH.md/FIRSTPAIR.md.
+and pushed for that checkpoint. The new compact-snapshot and Turso changes have
+updated manuscript source awaiting a fresh build, updated release post/TextPack,
+workspace/package checks and algorithm rerun. Quegee remains reserved for another
+benchmark; eigen coordinates availability on eigen and grust. After qualification,
+remaining release work is crates.io publication in dependency order, external
+`cargo info` verification and the exact crate-source release tag, following
+AGENTS.md/PUBLISH.md/FIRSTPAIR.md.
 No crates.io publication is claimed until that work succeeds. The broader deferred
 catalog is explicit; the extension does not imply arbitrary Cypher or universal
 GDS coverage.
