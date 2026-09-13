@@ -110,7 +110,8 @@ samples are not per-participant maximum RSS. Neo4j has its own separate 4 GiB
 container; neither participant group borrows the other's memory envelope.
 
 
-Acorn 0.14.0 qualification is retained under `evidence/2026-09-13/`:
+An earlier Acorn 0.14.0 source checkpoint was qualified under
+`evidence/2026-09-13/`; these receipts do not qualify the current source:
 
 - `grust-acorn-upstream-image-validation.json`: 72 checks, all pass.
 - `grust-acorn-upstream-smoke.json` and `grust-acorn-upstream-medium.json`: 30 cases
@@ -131,6 +132,11 @@ during completion is 216,145,920 bytes; no per-participant RSS is inferred.
 Historical frozen smoke/completion receipts remain separate. Original image reports
 are retained as `*-image-report.md`; the main Markdown reports are regenerated
 from unchanged JSON to clarify historical Arrow timing and caller-owned memory.
-Runtime source is pinned in the container receipt; later changes only clarify
-rustdoc links, documentation and reporting. Statistical performance qualification,
-prepared-query phase measurements and isolated per-participant RSS remain unclaimed.
+Runtime source is pinned in the container receipt. Subsequent compact Memory,
+indexed Cypher and Turso changes require fresh qualification, including the
+registry-driven snapshot materialization fix. The rerun is queued for quegee,
+eigen and grust as their benchmark owners clear capacity; no new run is implied
+by the historical receipts. Keep each complete case on one host and disclose
+that host rather than pooling timings across machines. Statistical performance
+qualification, prepared-query phase measurements and isolated per-participant
+RSS remain unclaimed.
