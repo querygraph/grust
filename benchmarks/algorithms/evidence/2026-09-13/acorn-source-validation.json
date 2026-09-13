@@ -1,0 +1,111 @@
+{
+  "version": "0.14.0",
+  "source_commit": "494eea248609bf686a59d04c81bae180d64fa798",
+  "checks": [
+    {
+      "name": "workspace_tests",
+      "command": "cargo test --workspace --all-features --locked",
+      "status": "pass",
+      "exit_code": 0,
+      "log_sha256": "6c5f8d9c9e840834e124b6a2a8ed31be6668486ec3bc81ecf51a1f6daa983538",
+      "passed": 1486,
+      "failed": 0,
+      "ignored": 47,
+      "test_summaries": 92
+    },
+    {
+      "name": "workspace_build",
+      "command": "cargo build --workspace --all-features --locked",
+      "status": "pass",
+      "exit_code": 0,
+      "log_sha256": "7f58ce162622cc79b6f41e871e2ef63c560973fc7ca437a6d54c4cfad8fd3ab2"
+    },
+    {
+      "name": "workspace_clippy",
+      "command": "cargo clippy --workspace --all-features --all-targets --locked -- -D warnings",
+      "status": "pass",
+      "exit_code": 0,
+      "log_sha256": "80cd251bfb152a8935bc44d83f18e9125126bd9c45b08270ec300cd81d844da2"
+    },
+    {
+      "name": "local_integration",
+      "command": "scripts/integration-test.sh --profile quick",
+      "status": "pass",
+      "exit_code": 0,
+      "log_sha256": "2ef6c0ee54e28a23c805767521fcb40222a37dc034d149fc2e7613b607611c03",
+      "passed": 18,
+      "failed": 0,
+      "ignored": 0,
+      "test_summaries": 5
+    },
+    {
+      "name": "surreal_integration",
+      "command": "scripts/integration-test.sh --backend surreal --mode docker",
+      "status": "pass",
+      "exit_code": 0,
+      "log_sha256": "331ae48b64f5ed5c1b47b45b26985afa81b0a3d902a7c358d95432c2794784a0",
+      "passed": 1,
+      "failed": 0,
+      "ignored": 0,
+      "test_summaries": 2
+    },
+    {
+      "name": "book",
+      "command": "build-library-book.sh --repo-root /home/admin/src/grust",
+      "status": "pass",
+      "exit_code": 0,
+      "log_sha256": "8e10bbd870758d5b6c97d0e59cdca040b22cf65328c373626aefe0c0d06c60bb"
+    },
+    {
+      "name": "helix_live",
+      "status": "unavailable",
+      "command": "scripts/integration-test.sh doctor --backend helix --mode auto",
+      "detail": "No source checkout or listening service at 127.0.0.1:8080. Unit/all-feature checks pass; live Helix behavior is not qualified on this host."
+    },
+    {
+      "name": "public_rustdoc",
+      "command": "RUSTDOCFLAGS=\"-D warnings\" cargo doc -p grust-procedures -p grust-algorithms -p grust-algorithm-procedures -p grust-cypher -p grust-arrow -p grust-graph --all-features --no-deps --locked",
+      "status": "pass",
+      "exit_code": 0,
+      "log_sha256": "860d0d216c5dab3357078ddfacd745e2f970cdb59ba01a5ff1d6e56c6800e678"
+    },
+    {
+      "name": "facade_algorithms_arrow_without_cypher",
+      "command": "cargo check -p grust-graph --no-default-features --features algorithms,arrow --locked",
+      "status": "pass",
+      "exit_code": 0,
+      "log_sha256": "fae755336a77ce5a352a810aebbe2353cc4a5435fa850581c8a58a59eb6ffbcc"
+    }
+  ],
+  "surreal_image": {
+    "tag": "surrealdb/surrealdb:v3.2.4",
+    "id": "sha256:51baed8709f57f67dcf04b30e3177db846803fa9342dae2be58c6fa5f8d59843",
+    "repo_digests": [
+      "surrealdb/surrealdb@sha256:51baed8709f57f67dcf04b30e3177db846803fa9342dae2be58c6fa5f8d59843"
+    ]
+  },
+  "other_live_backends": "No Sail, Turso cloud-sync, FalkorDB or PostgreSQL service integration was run for this change. Memory/private Turso snapshot proof and all workspace tests are separate local checks.",
+  "retained_setup_failures": [
+    {
+      "stage": "package_attribution_before_package_completion",
+      "status": "error",
+      "detail": "Facade archive was not yet available; repeat attribution after the workspace package gate completes."
+    },
+    {
+      "stage": "memory_sampler_initial_destination",
+      "status": "error",
+      "detail": "PermissionError writing host sampling file inside a root-created Docker output directory. Sampler restarted with a new /tmp destination; benchmark execution was unaffected."
+    },
+    {
+      "stage": "public_rustdoc",
+      "status": "error",
+      "detail": "Warnings-denied rustdoc found three pre-existing broken/private links in grust-cypher pushdown.rs. Corrected only documentation links; rerun required.",
+      "log": "/tmp/grust-acorn-rustdoc.log"
+    }
+  ],
+  "pending": [
+    "workspace_package_and_attribution",
+    "upstream_full_path_completion",
+    "registry_publication_and_external_verification"
+  ]
+}

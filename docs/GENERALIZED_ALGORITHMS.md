@@ -36,6 +36,28 @@ The Arrow branch `62b8b0fa2b12ec84ee02b5296969efeaf0367a58` was reconciled onto
 main `1de21d5`, preserving newer upstream work. Its interchange wrapper remains
 separate from direct typed algorithm input.
 
+## Migrating existing callers
+
+Existing `run_read_query` and bounded-read entrypoints retain their built-in
+catalog/TVF behavior. Analytics are opt-in: enable the facade's `algorithms` and
+`cypher` features, register algorithm providers, and call a `*_with_registry`
+entrypoint. A custom `RegistryBuilder` starts empty; call `register_builtins`
+when that registry also needs the existing catalog/TVF procedures. The facade
+re-exports these contracts as `grust::procedures`.
+
+Bounded analytics must explicitly set `ReadQueryPolicy::allow_read_procedures`.
+Existing catalog permission does not grant it. Callers using complete policy
+struct literals must account for this new field; defaults keep analytics denied.
+Use `LocalSnapshot` and the snapshot-aware prepared/bounded entrypoints when
+revision and principal identity come from a backend capture. A plain Graph call
+uses a fresh local execution identity and cannot establish backend authorization.
+
+The runnable `grust-cypher` example `custom_procedure` demonstrates an independent
+provider and correlated ordinary Cypher. The `grust-algorithms` example
+`weighted_paths` demonstrates direct projection, Dijkstra and borrowed path visits.
+Arrow is a separate opt-in feature; callers retaining raw Arrow array clones must
+retain the owning result wrapper or supply their own admission.
+
 ## Algorithm and option coverage
 
 All algorithm rows below have direct Rust calls, ordinary registry-backed Cypher
@@ -211,5 +233,7 @@ Remaining acceptance work:
    AGENTS.md/PUBLISH.md/FIRSTPAIR.md. Runnable provider and weighted-path examples,
    migration guidance and lockstep source manifests are in place.
 
-No release or book build has completed. The broader deferred catalog is explicit;
+The Acorn book and provenance-stamped release TextPack are built and verified.
+Registry publication and final qualification receipts remain open. The broader
+deferred catalog is explicit;
 this architecture does not imply arbitrary Cypher or universal GDS coverage.

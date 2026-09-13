@@ -1,7 +1,7 @@
 //! Backend-neutral read-query pushdown (Unit 15 of `docs/GQL_GOAL.md`).
 //!
 //! The Memory reference executor in [`crate::read`] runs the bounded read subset
-//! portably over an in-memory [`Graph`]. A persistent backend (Sail/Spark,
+//! portably over an in-memory [`grust_core::Graph`]. A persistent backend (Sail/Spark,
 //! Turso/SQLite, …) does not want to materialize the whole graph: it wants to
 //! push the selective `MATCH`/`WHERE` *filter* down into its own SQL and fetch
 //! only the surviving rows. This module performs that **lowering** in a
@@ -16,7 +16,7 @@
 //!    `json_extract`, identifier quoting, numeric casts).
 //! 3. [`NodeReadPushdown::project`] takes the nodes the backend fetched and runs
 //!    the `RETURN` projection through the **shared reference projection**
-//!    ([`crate::read::project_nodes`]), so the pushdown result is byte-identical
+//!    (`crate::read::project_nodes`), so the pushdown result is byte-identical
 //!    to [`crate::read::run_read_query`] by construction.
 //!
 //! Only the MATCH/WHERE → SQL filter therefore has to be proven equivalent to the
@@ -220,7 +220,7 @@ enum Scalar {
     Str(String),
 }
 
-/// Coarse kind of a [`Scalar`], for casting and homogeneity checks. Also the
+/// Coarse kind of an internal scalar, for casting and homogeneity checks. Also the
 /// vocabulary of [`TypeHints`] (a backend's per-property type knowledge).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ScalarKind {
