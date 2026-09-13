@@ -1101,3 +1101,9 @@ Grust is dual-licensed under either of:
 - MIT license
 
 Choose either license when using, modifying, or distributing Grust.
+
+## Arrow interchange (unreleased)
+
+The optional `arrow` feature exposes native scalar property tables and Arrow IPC
+through `grust::arrow::ArrowGraph`. See [the Arrow contract](crates/grust-arrow/README.md)
+for examples, null/missing semantics, and current type and IO limits.
