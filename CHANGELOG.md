@@ -6,6 +6,17 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ## Unreleased
 
+- `grust-memory` stores each edge once: node ids and labels are interned as
+  `u32` handles, an edge is a 16-byte record listed by slot in `u32` adjacency
+  lists and found by key through a hash index, and edge ids and properties
+  live out of line, costing nothing when absent. A node's `id` property is
+  kept implicitly when it equals the node id. Loading 10 million untyped edges
+  over 500,000 nodes grows RSS by 48 bytes per edge instead of 694
+  (`examples/footprint.rs`). Edge identity is unchanged: `(from, label, to, id)`
+  keys parallel edges with distinct ids, and reads return nodes and edges in
+  the same id and edge-key order as before. Adding a native constraint no
+  longer clones the whole store to validate it.
+
 - Turso under MVCC loads in groups: `put_graph` commits every
   `MVCC_LOAD_COMMIT_STATEMENTS` (20) batches as its own `BEGIN CONCURRENT`
   transaction instead of one transaction around the whole load. MVCC keeps an

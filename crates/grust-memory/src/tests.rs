@@ -22,37 +22,37 @@ impl TypedNode for Person {
     }
 }
 
+/// Every live edge is listed exactly once in its source's outgoing and its
+/// target's incoming adjacency and is found by its key; adjacency lists and
+/// the key index hold only live edges; the counters match.
 fn assert_adjacency_consistent(store: &MemoryGraphStore) {
     let inner = store.inner.read().expect("memory graph lock poisoned");
-    for (key, edge) in &inner.edges {
-        assert_eq!(key, &MemoryEdgeKey::from_edge(edge));
-        assert!(
-            inner
-                .outgoing_edges
-                .get(&key.from)
-                .is_some_and(|keys| keys.contains(key))
-        );
-        assert!(
-            inner
-                .incoming_edges
-                .get(&key.to)
-                .is_some_and(|keys| keys.contains(key))
-        );
+    let live = inner.edge_handles().collect::<Vec<_>>();
+    assert_eq!(live.len(), inner.edge_count);
+    assert_eq!(inner.edge_index.len(), inner.edge_count);
+    assert_eq!(inner.node_handles().count(), inner.node_count);
+    for &slot in &live {
+        let rec = inner.edges[slot as usize];
+        let listed = |list: &[Handle]| list.iter().filter(|&&other| other == slot).count();
+        assert_eq!(listed(&inner.vertices[rec.from as usize].outgoing), 1);
+        assert_eq!(listed(&inner.vertices[rec.to as usize].incoming), 1);
+        assert_eq!(inner.lookup_edge(&inner.edge(slot)), Some(slot));
     }
-    for (node, keys) in &inner.outgoing_edges {
-        assert!(!keys.is_empty());
-        assert!(
-            keys.iter()
-                .all(|key| &key.from == node && inner.edges.contains_key(key))
-        );
+    for (vertex, v) in inner.vertices.iter().enumerate() {
+        assert!(v.outgoing.iter().all(|&slot| {
+            let rec = inner.edges[slot as usize];
+            rec.from != NONE && rec.from as usize == vertex
+        }));
+        assert!(v.incoming.iter().all(|&slot| {
+            let rec = inner.edges[slot as usize];
+            rec.from != NONE && rec.to as usize == vertex
+        }));
     }
-    for (node, keys) in &inner.incoming_edges {
-        assert!(!keys.is_empty());
-        assert!(
-            keys.iter()
-                .all(|key| &key.to == node && inner.edges.contains_key(key))
-        );
-    }
+    let extras = live
+        .iter()
+        .filter(|&&slot| inner.edges[slot as usize].extra != NONE)
+        .count();
+    assert_eq!(extras + inner.free_extras.len(), inner.edge_extras.len());
 }
 
 #[test]
