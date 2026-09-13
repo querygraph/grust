@@ -94,7 +94,7 @@ pub fn run(mode: Mode) -> Result<()> {
     println!(
         "{}",
         serde_json::json!({
-            "provider": "grust.algorithms", "participant": match mode { Mode::Direct => "grust_upstream_direct", Mode::Cypher => "grust_upstream_cypher" },
+            "provider": "grust.algorithms", "crate_version": env!("CARGO_PKG_VERSION"), "participant": match mode { Mode::Direct => "grust_upstream_direct", Mode::Cypher => "grust_upstream_cypher" },
             "execution_class": "explicit_local_snapshot", "ms": output.execution_ms,
             "loading_ms": loading_ms, "preparation_ms": output.preparation_ms,
             "verification_ms": output.verification_ms, "serialization_ms": serialization_ms,

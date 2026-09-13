@@ -191,9 +191,8 @@ mandatory. Comprehensive per-kernel peak/output estimates are deferred.
 Baseline core: 73 passed; Cypher: 820 passed, one ignored. Expanded focused suites
 pass for procedure contracts, native Arrow, nine kernels, registry Cypher, streaming,
 preparation isolation and both backend snapshots. The reachability oracle exhausts
-all 512 directed three-node topologies in all three orientations. Targeted Clippy
-with all targets/features and warnings denied passes; revalidation continues after
-subsequent edits. Final workspace feature/package gates remain open.
+all 512 directed three-node topologies in all three orientations. The Acorn workspace tests and Clippy with all targets/features and warnings
+denied pass. Package and live-service gates are being recorded separately.
 
 Both direct and ordinary Cypher completed the 65,536-node chain and consumed
 2,147,516,416 entries in each path array. The checksum was 46,912,496,107,520 for
@@ -204,14 +203,13 @@ catalog/cache changes require final-source qualification.
 
 Remaining acceptance work:
 
-1. Finish allocation/cancellation review, feature combinations and final-source
-   focused checks, preserving failures and external-service outcomes separately.
-2. Integrate separately named upstream participants into the neutral companion
-   Docker harness; retain historical participants and official GDS calls. Capture
-   container/source identities and end-to-end/projection/query timer boundaries.
-3. Finish runnable examples, migration docs, the named Acorn release, lockstep
-   manifests, workspace/package gates, book/blog artifacts, publication and external
-   registry verification according to AGENTS.md/PUBLISH.md/FIRSTPAIR.md.
+1. Complete final-source Docker qualification of the separately named upstream
+   participants. The staging integration preserves historical participants and
+   official GDS calls, records phase boundaries and retains process failures.
+2. Complete package/live-service gates, book/blog artifacts, publication and
+   external registry verification for Acorn 0.14.0 according to
+   AGENTS.md/PUBLISH.md/FIRSTPAIR.md. Runnable provider and weighted-path examples,
+   migration guidance and lockstep source manifests are in place.
 
 No release or book build has completed. The broader deferred catalog is explicit;
 this architecture does not imply arbitrary Cypher or universal GDS coverage.

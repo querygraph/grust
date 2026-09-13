@@ -55,9 +55,9 @@ struct ProjectionData {
     representation: ProjectionRepresentation,
     selection: Option<ProjectionSelection>,
     orientation: Orientation,
-    nodes: Vec<NodeId>,
+    nodes: Buffer<NodeId>,
     node_by_id: HashMap<NodeId, usize>,
-    edges: Vec<ProjectionEdge>,
+    edges: Buffer<ProjectionEdge>,
     outgoing: Adjacency,
     reverse: Mutex<Option<Arc<ReverseTopology>>>,
     context: ExecutionContext,
@@ -77,11 +77,29 @@ impl GraphProjection {
         orientation: Orientation,
         context: &ExecutionContext,
     ) -> Result<Self> {
+        Self::from_buffers(
+            identity,
+            Buffer::adopt(nodes, context)?,
+            Buffer::adopt(edges, context)?,
+            weights
+                .map(|values| Buffer::adopt(values, context))
+                .transpose()?,
+            orientation,
+            context,
+        )
+    }
+
+    pub(crate) fn from_buffers(
+        identity: SnapshotIdentity,
+        nodes: Buffer<NodeId>,
+        edges: Buffer<ProjectionEdge>,
+        weights: Option<Buffer<f64>>,
+        orientation: Orientation,
+        context: &ExecutionContext,
+    ) -> Result<Self> {
         context.checkpoint()?;
         let mut bytes = size_of::<ProjectionData>()
             .saturating_add(2 * size_of::<usize>())
-            .saturating_add(nodes.capacity().saturating_mul(size_of::<NodeId>()))
-            .saturating_add(edges.capacity().saturating_mul(size_of::<ProjectionEdge>()))
             .saturating_add(
                 nodes
                     .len()
@@ -89,13 +107,13 @@ impl GraphProjection {
                     .saturating_mul(2 * (size_of::<NodeId>() + size_of::<usize>() + 1)),
             )
             .saturating_add(identity.owned_bytes());
-        for id in &nodes {
+        for id in nodes.iter() {
             context.charge_work(1)?;
             bytes = bytes
                 .saturating_add(id.as_str().len())
                 .saturating_add(2 * size_of::<usize>());
         }
-        for edge in &edges {
+        for edge in edges.iter() {
             context.charge_work(1)?;
             if let Some(id) = &edge.id {
                 bytes = bytes
@@ -104,9 +122,6 @@ impl GraphProjection {
             }
         }
         let retained = context.reserve(bytes)?;
-        let weight_reservation = context.reserve(weights.as_ref().map_or(0, |values| {
-            values.capacity().saturating_mul(size_of::<f64>())
-        }))?;
         let mut node_by_id = HashMap::new();
         node_by_id.try_reserve(nodes.len())?;
         for (index, id) in nodes.iter().enumerate() {
@@ -163,7 +178,6 @@ impl GraphProjection {
             context,
         )?;
         drop(weights);
-        drop(weight_reservation);
         Ok(Self {
             inner: Arc::new(ProjectionData {
                 identity,

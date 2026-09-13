@@ -43,7 +43,7 @@ algorithms, representations, resource limits and backend execution classes.
 
 ## Generalized graph analytics
 
-The working source adds facade features `algorithms` and `arrow`. Combine
+Acorn adds facade features `algorithms` and `arrow`. Combine
 `algorithms` with `cypher` for registry-backed BFS, weighted distances/full paths,
 components, PageRank, DFS, multi-source BFS and topological order. An external
 provider implements the same public contract without changing the parser.
@@ -69,8 +69,7 @@ cargo run -p grust-cypher --example custom_procedure
 
 See [algorithm procedures](crates/grust-algorithm-procedures/README.md),
 [direct Rust contracts](crates/grust-algorithms/README.md), and the
-[coverage and migration guide](docs/GENERALIZED_ALGORITHMS.md). This source has
-not yet completed the named release qualification.
+[coverage and migration guide](docs/GENERALIZED_ALGORITHMS.md). Acorn release qualification is tracked in the coverage guide.
 
 ## Current Workspace
 
@@ -364,7 +363,7 @@ Enable the `memory` feature to use `MemoryGraphStore` from the public facade:
 
 ```toml
 [dependencies]
-grust = { package = "grust-graph", version = "0.13.2", features = ["memory"] }
+grust = { package = "grust-graph", version = "0.14.0", features = ["memory"] }
 ```
 
 The facade re-exports the full `grust-memory` crate surface when the feature is
@@ -495,7 +494,7 @@ Backend crates are optional facade features:
 ```toml
 [dependencies.grust]
 package = "grust-graph"
-version = "0.13.2"
+version = "0.14.0"
 features = [
   "cocoindex", "cypher", "falkor", "lancedb", "memory", "postgres",
   "postgres-pgq", "pggraph", "sail", "surreal", "turso",
@@ -510,9 +509,9 @@ The additional `turso-sync` feature enables Turso Cloud synchronization and
 implies `turso`; `typed-garde` and `typed-zod-rs` enable typed ingestion rather
 than storage backends.
 
-Krill is a scoped registry patch: `grust-graph`, `grust-cypher`, and
-`grust-sail` are 0.13.2. `grust-surreal` remains 0.13.1; consumers that depend
-directly on any other publishable Grust crate continue to use 0.13.0.
+Acorn 0.14.0 uses a lockstep version for all publishable Grust crates. The optional
+`algorithms` feature adds graph kernels and their procedure adapters; `arrow`
+adds typed interchange and, with algorithms enabled, native result batches.
 
 For Arrow-native data sources, enable `sail` to stage Arrow IPC streams as
 Spark temp views. The internal Ladybug adapter also has an Arrow IPC surface
@@ -1032,11 +1031,10 @@ backend-specific extension traits later.
 
 ## Status
 
-Grust 0.13.2 "Krill" is the current source release line. It is a scoped patch for
-`grust-cypher`, `grust-sail`, and the `grust-graph` facade; Surreal remains
-0.13.1 and other publishable crates remain on 0.13.0. The core model and reference execution paths are stable
-enough for real use, while backend-native feature parity remains intentionally
-explicit rather than implied by the common trait.
+Grust 0.14.0 "Acorn" is the current source release line, with lockstep publishable
+crates, generalized Rust/Cypher graph analytics and optional typed Arrow results.
+The backend matrix distinguishes local projection from backend-native execution;
+unsupported algorithms, modes and representations remain explicit.
 
 Implemented:
 
@@ -1102,7 +1100,7 @@ Grust is dual-licensed under either of:
 
 Choose either license when using, modifying, or distributing Grust.
 
-## Arrow interchange (unreleased)
+## Arrow interchange
 
 The optional `arrow` feature exposes native scalar property tables and Arrow IPC
 through `grust::arrow::ArrowGraph`. See [the Arrow contract](crates/grust-arrow/README.md)

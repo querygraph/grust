@@ -18,10 +18,10 @@ history.
   0.13.0)
 - Krill — 0.13.2 (2026-09-05; scoped registry patch: `grust-cypher`,
   `grust-sail`, and `grust-graph`; Surreal remains 0.13.1, other publishable
-  crates remain 0.13.0) ← current
+  crates remain 0.13.0)
 
 ## Barnacles
-- Acorn
+- Acorn — 0.14.0 (2026-09-13) ← current
 - Gooseneck
 
 ## Smaller and Lesser-Known

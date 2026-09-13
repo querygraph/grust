@@ -61,6 +61,17 @@ implementation. Later catalog, projection-cache and traversal additions are not
 part of that measured binary. A source digest records the listed Rust/manifests,
 not a build attestation. Release qualification must identify the final source.
 
-The companion Docker harness still needs separately named upstream participants,
-with all historical participants and official GDS calls retained. Until that
-integration and run finish, these local receipts do not establish container parity.
+`stage_companion.py` verifies the companion's frozen context and adds separately
+named `grust_upstream_direct` and `grust_upstream_cypher` participants in a new
+staging directory. Historical sources, participants and official GDS calls remain
+intact. The staged image runs `check_upstream.py` against the independent C++
+participant before qualification. `participant_audit.py` retains process failures
+and raw output separately from answer validation. Container receipts disclose
+projection, query, verification and process boundaries; the earlier local receipts
+do not establish container parity.
+
+```sh
+python3 benchmarks/algorithms/stage_companion.py \
+  --frozen-context ../adversarial-graph-algorithms/.docker-context \
+  --output /tmp/grust-upstream-context
+```

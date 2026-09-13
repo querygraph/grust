@@ -121,8 +121,9 @@ Publish every affected publishable package in dependency order. For a lockstep
 release of the current workspace, the order is:
 
 ```text
-grust-core -> grust-sql-core -> grust-memory -> grust-cocoindex ->
-grust-falkor -> grust-lancedb -> grust-surreal -> grust-cypher ->
+grust-core -> grust-procedures -> grust-algorithms -> grust-arrow ->
+grust-cypher -> grust-algorithm-procedures -> grust-sql-core -> grust-memory -> grust-cocoindex ->
+grust-falkor -> grust-lancedb -> grust-surreal ->
 grust-postgres-core -> grust-postgres -> grust-postgres-pgq -> grust-pggraph ->
 grust-sail -> grust-turso -> grust-graph
 ```

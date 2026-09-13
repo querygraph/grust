@@ -8,8 +8,19 @@ pub(crate) struct Buffer<T> {
 }
 
 impl<T> Buffer<T> {
-    pub(crate) fn into_values(self) -> Vec<T> {
-        self.values
+    /// Adopt caller-owned input while retaining admission through every internal
+    /// transfer. Adapters pass existing Buffers instead of releasing/reacquiring.
+    pub(crate) fn adopt(values: Vec<T>, context: &ExecutionContext) -> Result<Self> {
+        let bytes = values.capacity().checked_mul(size_of::<T>()).ok_or(
+            ProcedureError::BudgetExceeded {
+                resource: "memory",
+                limit: context.limits().memory_bytes,
+            },
+        )?;
+        Ok(Self {
+            values,
+            _reservation: context.reserve(bytes)?,
+        })
     }
 
     pub(crate) fn capacity(count: usize, context: &ExecutionContext) -> Result<Self> {
@@ -41,5 +52,12 @@ impl<T> Buffer<T> {
             buffer.values.resize(end, value.clone());
         }
         Ok(buffer)
+    }
+}
+
+impl<T> std::ops::Deref for Buffer<T> {
+    type Target = [T];
+    fn deref(&self) -> &Self::Target {
+        &self.values
     }
 }

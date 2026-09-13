@@ -6,6 +6,8 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ## Unreleased
 
+## 0.14.0 — Acorn — 2026-09-13
+
 - Added generalized analytics infrastructure: Arrow graph interchange from the
   pinned handoff is available through the optional facade `arrow` feature;
   `grust-procedures` adds immutable registration and shared resource contracts.
@@ -29,6 +31,10 @@ reconstructed from Git history, release commits, and the shipped docs.
   private Turso snapshots are tested with the same prepared bounded plan; old
   captures survive writes. Full-chain direct and ordinary Cypher receipts retain
   their exact resource and timing boundaries in `benchmarks/algorithms`.
+- Integrated the pending backend batch configuration: Surreal and Helix HTTP
+  distinguish bulk loads from incremental writes. LanceDB reuses table handles
+  with latest-read consistency and serializes lookup against local recreation.
+  This preserves cross-connection writes and prevents stale cache publication.
 - Fixed Turso's optional sync constructor to initialize its snapshot cache and
   retire the cache before a pull can mutate local data, including failed or
   cancelled pulls. Existing immutable snapshots remain valid.

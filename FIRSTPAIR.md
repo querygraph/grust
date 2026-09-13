@@ -36,6 +36,11 @@ package validation. Keep title-specific assembly, diagrams, EPUB repair,
 special formats, and validators in source-owned hooks declared by that config.
 A build never publishes or copies artifacts to the public library.
 
+The source prepare hook expands book-local `<!-- include: chapters/name.md -->`
+directives once before rendering Mermaid diagrams. Authored chapters remain in
+`docs/book/chapters/`; the shared builder still owns all standard output formats,
+version metadata and package validation.
+
 ## FirstPair Deployment
 
 Always inspect a non-writing publisher plan before any public action:

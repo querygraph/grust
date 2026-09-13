@@ -140,13 +140,13 @@ impl GraphProjection {
         }
         drop(mapping);
         drop(mapping_reservation);
-        // Transfer the already admitted inputs; from_topology takes over their
-        // retained admission synchronously before allocating its lookup and CSR.
-        Self::from_topology(
+        // Transfer buffers with their existing reservations; shared contexts
+        // never observe an uncharged interval during ownership transfer.
+        Self::from_buffers(
             identity,
-            nodes.into_values(),
-            edges.into_values(),
-            weights.map(Buffer::into_values),
+            nodes,
+            edges,
+            weights,
             options.orientation,
             context,
         )?

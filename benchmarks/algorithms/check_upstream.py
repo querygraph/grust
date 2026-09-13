@@ -32,7 +32,7 @@ def main():
                     try:
                         metrics, values = bench.execute(ROOT / participant, graph, algorithm, 0, directory / "actual.bin")
                         receipt["metrics"] = metrics
-                        if metrics.get("provider") != "grust.algorithms":
+                        if metrics.get("provider") != "grust.algorithms" or metrics.get("participant") != participant.replace("-", "_"):
                             raise AssertionError("upstream participant did not identify the registered upstream provider")
                         assert len(values) == n and all(math.isfinite(value) for value in values)
                         if algorithm == "pagerank":

@@ -68,7 +68,17 @@ const renderedCoverMarkdown = coverSource.replace(
 );
 await writeFile(renderedCover, renderedCoverMarkdown);
 
-const source = await readFile(manuscript, "utf8");
+let source = await readFile(manuscript, "utf8");
+// Keep focused authored chapters separate while retaining one native manuscript.
+// Includes are local to the book and expanded once, before diagram rendering.
+for (const match of source.matchAll(/^<!-- include: ([\w./-]+) -->$/gm)) {
+  const chapter = path.resolve(root, match[1]);
+  if (!chapter.startsWith(`${root}${path.sep}`)) {
+    throw new Error(`Book include escapes its source root: ${match[1]}`);
+  }
+  const content = await readFile(chapter, "utf8");
+  source = source.replaceAll(match[0], () => content);
+}
 let diagramIndex = 0;
 const renderedMarkdown = source.replace(
   /```mermaid\n([\s\S]*?)\n```/g,

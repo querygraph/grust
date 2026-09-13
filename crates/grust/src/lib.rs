@@ -1,5 +1,8 @@
 pub use grust_core::*;
 
+#[cfg(any(feature = "algorithms", feature = "cypher"))]
+pub use grust_procedures as procedures;
+
 #[cfg(feature = "algorithms")]
 pub use grust_algorithm_procedures as algorithm_procedures;
 #[cfg(feature = "algorithms")]

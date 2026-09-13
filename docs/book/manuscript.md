@@ -305,7 +305,7 @@ The typed layer is optional. It is enabled through Cargo features:
 
 ```toml
 [dependencies]
-grust = { package = "grust-graph", version = "0.13.2", features = ["typed-garde"] }
+grust = { package = "grust-graph", version = "0.14.0", features = ["typed-garde"] }
 ```
 
 `typed-garde` adds Rust-struct validation and typed lowering. A second feature,
@@ -313,7 +313,7 @@ grust = { package = "grust-graph", version = "0.13.2", features = ["typed-garde"
 
 ```toml
 [dependencies]
-grust = { package = "grust-graph", version = "0.13.2", features = ["typed-zod-rs"] }
+grust = { package = "grust-graph", version = "0.14.0", features = ["typed-zod-rs"] }
 ```
 
 `typed-zod-rs` implies `typed-garde`. That relationship matters: zod-rs checks
@@ -1513,16 +1513,18 @@ Docker Compose where a service is available. The repository-level
 `docs/INTEGRATION.md` guide covers profiles, modes, Docker image pins,
 source-checkout configuration, and CI strategy.
 
-Krill 0.13.2 is a scoped registry patch: `grust-cypher`, `grust-sail`, and
-the `grust-graph` facade move to 0.13.2. Surreal remains 0.13.1, while consumers
-naming any other published Grust crate directly continue to use 0.13.0.
-Krill corrects Sail integer row-marker decoding and recursive-path admission,
-and adds explicit remote-session cleanup. It retains Crayfish's endpoint-safe
-connection errors and faithful Surreal logical identities, and inherits Prawn's dependency
-qualification: Redis client 1.6.0 and FalkorDB service v4.20.4, SurrealDB Rust
-SDK and service 3.2.4 with reqwest 0.13.4, pgGraph service 1.2.0,
-tokio-postgres 0.7.18, and stable Turso 0.7.2. These are tested compatibility
-updates, not claims that every adapter implements the portable Cypher executor.
+Acorn 0.14.0 is a lockstep release of all publishable Grust crates. It adds
+reusable graph algorithms, optional Arrow interchange/results, extensible Cypher
+procedures and shared resource admission. It retains earlier Sail session and
+path-admission fixes and the backend identity/transport corrections documented
+in the repository changelog. Backend-native feature parity remains explicit;
+the portable local algorithm executor does not imply native backend analytics.
+
+Surreal and Helix HTTP distinguish bulk-load batch size from incremental writes.
+LanceDB reuses table handles while checking latest-read consistency; an async gate
+prevents a concurrent first lookup from republishing a handle across local table
+recreation. Turso's sync constructor initializes its snapshot cache, and a pull
+retires cached captures before it can change local data, even if cancelled.
 
 LanceDB stays at 0.30.0:
 the attempted 0.38.0 default-feature local build fails within upstream
@@ -1530,8 +1532,8 @@ the attempted 0.38.0 default-feature local build fails within upstream
 when `remote` is disabled. The unpublished Helix adapter now targets exact
 `helix-db` 3.0.0: its SDK path uses typed nested-AST `QueryRequest` builders and
 `Client::query(request)` rather than `DynamicQueryRequest` and `dynamic_query`.
-The direct HTTP/v1 store remains separate and unchanged. Nineteen unit tests
-pass, including SDK serialization and existing HTTP behavior. The separate
+The direct HTTP/v1 store remains separate, with explicit bulk-load batching.
+Unit tests cover SDK serialization and HTTP behavior. The separate
 SDK/v2 Docker example run now has 264 passing observations across baseline and
 adversarial queries, with a retained runtime audit. Historical HTTP service evidence is not
 reused as proof of SDK/v2 compatibility. The repository's
@@ -2144,7 +2146,9 @@ write-with-`RETURN` helper remains sequential because later operations may use
 intermediate bindings; it is not a whole-statement atomicity boundary. Explicit
 transaction scripts batch supported mutations when atomicity is required.
 
-# Arrow tables and IPC (unreleased)
+<!-- include: chapters/generalized-algorithms.md -->
+
+# Arrow tables and IPC
 
 Enable the facade's `arrow` feature and use `grust::arrow::ArrowGraph`, or depend
 on `grust-arrow`. Arrow 59.3 tables are shared by reference; conversion to/from
@@ -2188,11 +2192,11 @@ not undo the first. Reading multiple batches or IPC streaming-format files is
 not supported yet. Reads materialize the batch; there is no mmap, spill, byte
 budget or protection against arbitrarily large untrusted IPC allocations.
 
-The tables can be consumed as RecordBatches in Arrow/DataFusion. Icecat's local
-`grustcat` adapter feeds them directly to Icecat's Arrow table builder and
-exports them again with properties intact. Select `property.weight` as the
-Icecat weight column. Icecat's simple graph semantics reject parallel edges;
-Grust's model preserves them. See Icecat for the algorithms and benchmark runner.
+The tables can be consumed as RecordBatches in Arrow/DataFusion. Grust's
+algorithm adapter reads multiple typed batches directly into validated selected
+CSR without materializing properties as Value. That path is separate from this
+interchange wrapper's Graph conversion. Grust preserves parallel edges; typed
+full-path results retain original edge ordinals to disambiguate them.
 
 # Conclusion {.unnumbered}
 

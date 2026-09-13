@@ -119,16 +119,17 @@ impl GraphProjection {
         }
         drop(mapping);
         drop(map_reservation);
-        drop(id_reservation);
-        Self::from_topology(
+        let projection = Self::from_buffers(
             identity,
-            nodes.into_values(),
-            edges.into_values(),
-            weights.map(Buffer::into_values),
+            nodes,
+            edges,
+            weights,
             options.orientation,
             context,
         )?
-        .with_origin(crate::ProjectionRepresentation::ArrowBatches, options)
+        .with_origin(crate::ProjectionRepresentation::ArrowBatches, options)?;
+        drop(id_reservation);
+        Ok(projection)
     }
 }
 

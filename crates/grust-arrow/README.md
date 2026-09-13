@@ -1,4 +1,4 @@
-# Grust Arrow interchange (unreleased)
+# Grust Arrow interchange
 
 Enable the facade's `arrow` feature and use `grust::arrow::ArrowGraph`, or depend
 on `grust-arrow`. Arrow 59.3 tables are shared by reference; conversion to/from
