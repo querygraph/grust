@@ -75,6 +75,44 @@
       "status": "pass",
       "exit_code": 0,
       "log_sha256": "fae755336a77ce5a352a810aebbe2353cc4a5435fa850581c8a58a59eb6ffbcc"
+    },
+    {
+      "name": "workspace_package_initial",
+      "command": "cargo package --workspace --allow-dirty",
+      "status": "pass",
+      "exit_code": 0,
+      "log_sha256": "30afe50ac8b0a3c115979398bd8cbdc90877c3af420dc24ea87fa0b836bfb99b",
+      "boundary": "Initial Acorn tarballs before three rustdoc-link corrections; final tarballs are being regenerated."
+    },
+    {
+      "name": "workspace_package_final",
+      "command": "cargo package --workspace --allow-dirty",
+      "status": "pass",
+      "exit_code": 0,
+      "source_commit": "ff26eda",
+      "log_sha256": "cdfbb240a8c6b30272e30e42c0de09951c52cc9e0158ceabdff2cdd2c5110f4b"
+    },
+    {
+      "name": "package_attribution",
+      "command": "scripts/verify-package-attribution.sh; inspect algorithms LICENSE and NOTICE.md",
+      "status": "pass",
+      "exit_code": 0
+    },
+    {
+      "name": "format_and_diff",
+      "command": "cargo fmt --all -- --check; git diff --check",
+      "status": "pass",
+      "exit_code": 0
+    },
+    {
+      "name": "upstream_docker_full_path_and_medium",
+      "status": "pass",
+      "exit_code": 0,
+      "receipt_prefixes": [
+        "grust-acorn-upstream-completion",
+        "grust-acorn-upstream-medium"
+      ],
+      "boundary": "Correctness/completion under separate two-CPU/four-GiB containers. Single measured repetitions, not statistical performance qualification."
     }
   ],
   "surreal_image": {
@@ -104,8 +142,31 @@
     }
   ],
   "pending": [
-    "workspace_package_and_attribution",
-    "upstream_full_path_completion",
     "registry_publication_and_external_verification"
-  ]
+  ],
+  "package_sha256": {
+    "grust-algorithm-procedures-0.14.0.crate": "005726fc5b16d1c7fd2f30facf7f3f04d60b62eeedebe31edbdf8baaee2acfd5",
+    "grust-algorithms-0.14.0.crate": "7606f52b9af335c105e3a8c9afa9ba7b40eb7ab1bdbfd7f5f865ef3db712072e",
+    "grust-arrow-0.14.0.crate": "b99b090c9da6670ae91080760e4e39a7bf8cc7fd580c04e274bfb3bd92d81cd5",
+    "grust-beads-0.1.0.crate": "3d164e10da9ed5f6445e097e7412818796eefe3c236693a2d3c99055263619cb",
+    "grust-cocoindex-0.14.0.crate": "834d8333ed5edd527ae8e805c0a65d999ca141e34ffe524af5a1cab09c5efe23",
+    "grust-core-0.14.0.crate": "a421aa06fc599870520125ab66c925ee8edf5cb6d0d58940bb1853b407decffc",
+    "grust-cypher-0.14.0.crate": "ee8503375fa95ca84fdb43cf30b75ab695850ef32506d2f841766251a8b6f5a1",
+    "grust-falkor-0.14.0.crate": "11fab6a0a643f6d2c0da8a9a6daab9860ffaa2891516e66630ea5ebd3cd5aefb",
+    "grust-graph-0.14.0.crate": "4138e23c5cf625e616326d7371e4d0b06d3a9f69de9753c5645b27142f5904c4",
+    "grust-helix-0.14.0.crate": "452f6acb571fb6106146b48d5c2a3a44e9be89f812340489fc32414777bf48d2",
+    "grust-ladybug-0.14.0.crate": "73daccef720c321ae94316a5ba35efb6fc35cc7c9eb26920628a26c535d35683",
+    "grust-lancedb-0.14.0.crate": "cf0945c83aba73551f81af23d69bb3189a767d7c758979b114d7d6a4806072bf",
+    "grust-memory-0.14.0.crate": "bd69bf712b6f51c9ca9d41347a493b328c8388933bb5ae021e7978723e685ac6",
+    "grust-pggraph-0.14.0.crate": "f4be433884195b859e9018fbb745a606f47c2797d1e5bb429fba601fdf238e89",
+    "grust-postgres-0.14.0.crate": "00ba638e8484f66733e548af1ffe541ea1ea49b62ea394cdb0696fe1bbe532f3",
+    "grust-postgres-core-0.14.0.crate": "46b03dfeb248a72e750631bbddd111115d53e28147ad6c402ca952fe3c7897e2",
+    "grust-postgres-pgq-0.14.0.crate": "551a3b304be9f9a0ab766170b38c647b3d889170cc2f048dab26f96bbf00fdbd",
+    "grust-procedures-0.14.0.crate": "b9ab81ab4e9d380c45bed1064091b9b7463fd3aadf3d62bc7e9244994a906894",
+    "grust-sail-0.14.0.crate": "6cdbc913778810fb4982a67600b47892b7b07847b116f0093e44341884583f75",
+    "grust-sql-core-0.14.0.crate": "e666e2da435b41fa9401b1789600aeb911d6b83e2d7f821d366109f7f52f1d10",
+    "grust-surreal-0.14.0.crate": "d1992b2ba51ca9dad1f031aaad2e992058e9974ab4d3f20daa443af0c5207765",
+    "grust-turso-0.14.0.crate": "58dfeeeeefd54801acc82ebfa8761c588d81103f84f7e8cb6cf38bddece5857a",
+    "querygraph-memory-0.14.0.crate": "65f670381630456fd20b5672e1f7be96d957781eea3d0478b0f133b803b77094"
+  }
 }

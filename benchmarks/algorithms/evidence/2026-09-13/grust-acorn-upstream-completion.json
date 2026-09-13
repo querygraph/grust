@@ -1,0 +1,505 @@
+{
+  "metadata": {
+    "gds": "2026.08.1",
+    "database": [
+      {
+        "versions": [
+          "2026.08.0"
+        ],
+        "edition": "community"
+      },
+      {
+        "versions": [
+          "5",
+          "25"
+        ],
+        "edition": ""
+      }
+    ],
+    "warmups": 0,
+    "repeats": 1,
+    "concurrency": 1,
+    "dijkstra_mode": "full-path",
+    "java": "openjdk version \"21.0.12\" 2026-07-21 LTS\nOpenJDK Runtime Environment Temurin-21.0.12+8 (build 21.0.12+8-LTS)\nOpenJDK 64-Bit Server VM Temurin-21.0.12+8 (build 21.0.12+8-LTS, mixed mode, sharing)",
+    "runner_platform": "Linux-6.12.107+deb13-cloud-amd64-x86_64-with-glibc2.36",
+    "native_engines": {
+      "cpp": "Icebug",
+      "rust": "Icecat",
+      "grustcat": "Grustcat",
+      "grustcat_cypher": "Grustcat Cypher",
+      "grust_upstream_direct": "Grust upstream direct",
+      "grust_upstream_cypher": "Grust upstream Cypher"
+    },
+    "heap": "2G",
+    "user_log_level": "WARN",
+    "server_log_level": "WARN",
+    "page_cache": "512M",
+    "jar_sha256": "c8dc6396cd3bce89fc95ad20f55d09615d931f216a693e6bee005f8163d4df4f",
+    "native_binary_sha256": {
+      "legacy": "18ec10b1caa52ddfece635ae88f02ff69d32a0f6927ffbc3ff51eb8e6e2d3f02",
+      "rust-bench": "9e7c71a724b5ca55bed8bf211f0c2e8ed292d9fb9edd71eb471ab447705d4ff3",
+      "grustcat": "faa593cc7be8089772418b6bfbca3a5ed089e4bde7571540ed63a4ea6130e47e",
+      "grustcat-cypher": "571d7bf485f919336accce510655395f9e2c5856b8b8179257b5acfdbc7c578b",
+      "grust-upstream-direct": "af3ce083a8fcc0c6cd6f859eb4b58e4a62fb0d65066c4f77cb5c0253d64f677d",
+      "grust-upstream-cypher": "3b02d0e356cf827e56adced72f04bbff576db7d7af728077e6e8cee6e3e81c6b"
+    }
+  },
+  "results": [
+    {
+      "family": "path",
+      "n": 16384,
+      "edges": 16383,
+      "algorithm": "dijkstra",
+      "graph_sha256": "ad59945a9ebc54454aac40ec2e161c0f135c4b50e8efac305d8d0e8dccbe4ea0",
+      "projection": {
+        "nodeCount": 16384,
+        "projectMillis": 60,
+        "relationshipCount": 16383
+      },
+      "configuration": {
+        "concurrency": 1,
+        "logProgress": false,
+        "relationshipTypes": [
+          "EDGE"
+        ],
+        "sourceNode": 0,
+        "relationshipWeightProperty": "weight"
+      },
+      "procedure": "gds.allShortestPaths.dijkstra.stream",
+      "timing_kind": "server_query",
+      "native_ms": {
+        "cpp": [
+          895.833857
+        ],
+        "rust": [
+          602.463788
+        ],
+        "grustcat": [
+          570.127782
+        ],
+        "grustcat_cypher": [
+          592.889886
+        ],
+        "grust_upstream_direct": [
+          3410.3668799999996
+        ],
+        "grust_upstream_cypher": [
+          49172.296473
+        ]
+      },
+      "native_details": {
+        "cpp": [
+          {
+            "ms": 895.833857,
+            "iterations": 0,
+            "reachable": 16384,
+            "path_entries": 134225920,
+            "node_sum": 733007749120,
+            "cost_sum": 11722888521915,
+            "process_seconds": 0.9552828769665211,
+            "warmup": false
+          }
+        ],
+        "rust": [
+          {
+            "ms": 602.463788,
+            "iterations": 0,
+            "reachable": 16384,
+            "path_entries": 134225920,
+            "node_sum": 733007749120,
+            "cost_sum": 11722888521915,
+            "process_seconds": 0.6199353950214572,
+            "warmup": false
+          }
+        ],
+        "grustcat": [
+          {
+            "ms": 570.127782,
+            "iterations": 0,
+            "reachable": 16384,
+            "path_entries": 134225920,
+            "node_sum": 733007749120,
+            "cost_sum": 11722888521915,
+            "process_seconds": 0.6215337500325404,
+            "warmup": false
+          }
+        ],
+        "grustcat_cypher": [
+          {
+            "query": "CALL grustcat.fullPaths($source) YIELD nodeIds, costs UNWIND range(0,size(nodeIds)-1) AS i RETURN count(*) AS path_entries, sum(nodeIds[i]) AS node_sum, sum(costs[i]) AS cost_sum",
+            "execution_class": "grust-parser-arrow-backend",
+            "ms": 592.889886,
+            "iterations": 0,
+            "reachable": 16384,
+            "path_entries": 134225920,
+            "node_sum": 733007749120,
+            "cost_sum": 11722888521915,
+            "process_seconds": 0.6436736019677483,
+            "warmup": false
+          }
+        ],
+        "grust_upstream_direct": [
+          {
+            "concurrency": 1,
+            "cost_sum": 11722888521915.0,
+            "crate_version": "0.14.0",
+            "deadline_seconds": null,
+            "end_to_end_ms": 3441.814844,
+            "execution_class": "explicit_local_snapshot",
+            "iterations": 0,
+            "loading_ms": 17.408495,
+            "memory_allowance_bytes": 268435456,
+            "ms": 3410.3668799999996,
+            "node_sum": 733007749120,
+            "participant": "grust_upstream_direct",
+            "path_entries": 134225920,
+            "preparation_ms": 12.556391999999999,
+            "provider": "grust.algorithms",
+            "query": null,
+            "reachable": 16384,
+            "serialization_ms": 0.195733,
+            "status": "pass",
+            "timer_boundary": "kernel and result conversion, including actual full paths when requested; projection separate",
+            "verification_ms": null,
+            "process_seconds": 3.4491274210158736,
+            "warmup": false
+          }
+        ],
+        "grust_upstream_cypher": [
+          {
+            "concurrency": 1,
+            "cost_sum": 11722888521915.0,
+            "crate_version": "0.14.0",
+            "deadline_seconds": 86400,
+            "end_to_end_ms": 49291.056144,
+            "execution_class": "explicit_local_snapshot",
+            "iterations": 0,
+            "loading_ms": 16.683348000000002,
+            "memory_allowance_bytes": 268435456,
+            "ms": 49172.296473,
+            "node_sum": 733007749120,
+            "participant": "grust_upstream_cypher",
+            "path_entries": 134225920,
+            "preparation_ms": null,
+            "provider": "grust.algorithms",
+            "query": "CALL grust.algorithms.shortestPaths($source, {weightProperty: 'weight'}) YIELD nodeIds, costs UNWIND range(0, size(costs) - 1) AS i RETURN count(nodeIds[i]), sum(toInteger(nodeIds[i])), sum(costs[i]) LIMIT 1",
+            "reachable": 16384,
+            "serialization_ms": 0.17011099999999998,
+            "status": "pass",
+            "timer_boundary": "ordinary query including parse, policy validation, projection and consumption; separate distance verification after full-path query",
+            "verification_ms": 100.474436,
+            "process_seconds": 49.29797160398448,
+            "warmup": false
+          }
+        ]
+      },
+      "native_iterations": {
+        "cpp": 0,
+        "rust": 0,
+        "grustcat": 0,
+        "grustcat_cypher": 0,
+        "grust_upstream_direct": 0,
+        "grust_upstream_cypher": 0
+      },
+      "native_queries": {
+        "grustcat_cypher": "CALL grustcat.fullPaths($source) YIELD nodeIds, costs UNWIND range(0,size(nodeIds)-1) AS i RETURN count(*) AS path_entries, sum(nodeIds[i]) AS node_sum, sum(costs[i]) AS cost_sum",
+        "grust_upstream_direct": null,
+        "grust_upstream_cypher": "CALL grust.algorithms.shortestPaths($source, {weightProperty: 'weight'}) YIELD nodeIds, costs UNWIND range(0, size(costs) - 1) AS i RETURN count(nodeIds[i]), sum(toInteger(nodeIds[i])), sum(costs[i]) LIMIT 1"
+      },
+      "native_path_summaries": {
+        "cpp": [
+          {
+            "reachable": 16384,
+            "path_entries": 134225920,
+            "node_sum": 733007749120,
+            "cost_sum": 11722888521915
+          }
+        ],
+        "rust": [
+          {
+            "reachable": 16384,
+            "path_entries": 134225920,
+            "node_sum": 733007749120,
+            "cost_sum": 11722888521915
+          }
+        ],
+        "grustcat": [
+          {
+            "reachable": 16384,
+            "path_entries": 134225920,
+            "node_sum": 733007749120,
+            "cost_sum": 11722888521915
+          }
+        ],
+        "grustcat_cypher": [
+          {
+            "reachable": 16384,
+            "path_entries": 134225920,
+            "node_sum": 733007749120,
+            "cost_sum": 11722888521915
+          }
+        ],
+        "grust_upstream_direct": [
+          {
+            "reachable": 16384,
+            "path_entries": 134225920,
+            "node_sum": 733007749120,
+            "cost_sum": 11722888521915.0
+          }
+        ],
+        "grust_upstream_cypher": [
+          {
+            "reachable": 16384,
+            "path_entries": 134225920,
+            "node_sum": 733007749120,
+            "cost_sum": 11722888521915.0
+          }
+        ]
+      },
+      "warmups": [],
+      "samples": [
+        {
+          "reachable": 16384,
+          "distance_sum": 2146713455.0,
+          "path_entries": 134225920,
+          "node_sum": 733007749120,
+          "cost_sum": 11722888521915.0,
+          "server_query_ms": 24609,
+          "client_wall_ms": 24722.782250959426
+        }
+      ],
+      "validation": {
+        "all_distances_match": true,
+        "path_aggregates_match_unique_path_oracle": true
+      }
+    },
+    {
+      "family": "path",
+      "n": 65536,
+      "edges": 65535,
+      "algorithm": "dijkstra",
+      "graph_sha256": "92fd77be9c6e0565179f9152dd8169006653e0afd30b7ae5b902704130cf35ab",
+      "projection": {
+        "nodeCount": 65536,
+        "projectMillis": 130,
+        "relationshipCount": 65535
+      },
+      "configuration": {
+        "concurrency": 1,
+        "logProgress": false,
+        "relationshipTypes": [
+          "EDGE"
+        ],
+        "sourceNode": 0,
+        "relationshipWeightProperty": "weight"
+      },
+      "procedure": "gds.allShortestPaths.dijkstra.stream",
+      "timing_kind": "server_query",
+      "native_ms": {
+        "cpp": [
+          26421.567189
+        ],
+        "rust": [
+          9833.513387
+        ],
+        "grustcat": [
+          9263.711123000001
+        ],
+        "grustcat_cypher": [
+          9646.361797000001
+        ],
+        "grust_upstream_direct": [
+          54834.074679
+        ],
+        "grust_upstream_cypher": [
+          817917.328587
+        ]
+      },
+      "native_details": {
+        "cpp": [
+          {
+            "ms": 26421.567189,
+            "iterations": 0,
+            "reachable": 65536,
+            "path_entries": 2147516416,
+            "node_sum": 46912496107520,
+            "cost_sum": 750516181958851,
+            "process_seconds": 26.480184009997174,
+            "warmup": false
+          }
+        ],
+        "rust": [
+          {
+            "ms": 9833.513387,
+            "iterations": 0,
+            "reachable": 65536,
+            "path_entries": 2147516416,
+            "node_sum": 46912496107520,
+            "cost_sum": 750516181958851,
+            "process_seconds": 9.898815608990844,
+            "warmup": false
+          }
+        ],
+        "grustcat": [
+          {
+            "ms": 9263.711123000001,
+            "iterations": 0,
+            "reachable": 65536,
+            "path_entries": 2147516416,
+            "node_sum": 46912496107520,
+            "cost_sum": 750516181958851,
+            "process_seconds": 9.462100426026154,
+            "warmup": false
+          }
+        ],
+        "grustcat_cypher": [
+          {
+            "query": "CALL grustcat.fullPaths($source) YIELD nodeIds, costs UNWIND range(0,size(nodeIds)-1) AS i RETURN count(*) AS path_entries, sum(nodeIds[i]) AS node_sum, sum(costs[i]) AS cost_sum",
+            "execution_class": "grust-parser-arrow-backend",
+            "ms": 9646.361797000001,
+            "iterations": 0,
+            "reachable": 65536,
+            "path_entries": 2147516416,
+            "node_sum": 46912496107520,
+            "cost_sum": 750516181958851,
+            "process_seconds": 9.849803621997125,
+            "warmup": false
+          }
+        ],
+        "grust_upstream_direct": [
+          {
+            "concurrency": 1,
+            "cost_sum": 750516181958851.0,
+            "crate_version": "0.14.0",
+            "deadline_seconds": null,
+            "end_to_end_ms": 54953.809409,
+            "execution_class": "explicit_local_snapshot",
+            "iterations": 0,
+            "loading_ms": 64.99094099999999,
+            "memory_allowance_bytes": 268435456,
+            "ms": 54834.074679,
+            "node_sum": 46912496107520,
+            "participant": "grust_upstream_direct",
+            "path_entries": 2147516416,
+            "preparation_ms": 49.225463,
+            "provider": "grust.algorithms",
+            "query": null,
+            "reachable": 65536,
+            "serialization_ms": 0.5006550000000001,
+            "status": "pass",
+            "timer_boundary": "kernel and result conversion, including actual full paths when requested; projection separate",
+            "verification_ms": null,
+            "process_seconds": 55.018911112973,
+            "warmup": false
+          }
+        ],
+        "grust_upstream_cypher": [
+          {
+            "concurrency": 1,
+            "cost_sum": 750516181958851.0,
+            "crate_version": "0.14.0",
+            "deadline_seconds": 86400,
+            "end_to_end_ms": 818406.860736,
+            "execution_class": "explicit_local_snapshot",
+            "iterations": 0,
+            "loading_ms": 66.30772,
+            "memory_allowance_bytes": 268435456,
+            "ms": 817917.328587,
+            "node_sum": 46912496107520,
+            "participant": "grust_upstream_cypher",
+            "path_entries": 2147516416,
+            "preparation_ms": null,
+            "provider": "grust.algorithms",
+            "query": "CALL grust.algorithms.shortestPaths($source, {weightProperty: 'weight'}) YIELD nodeIds, costs UNWIND range(0, size(costs) - 1) AS i RETURN count(nodeIds[i]), sum(toInteger(nodeIds[i])), sum(costs[i]) LIMIT 1",
+            "reachable": 65536,
+            "serialization_ms": 0.470961,
+            "status": "pass",
+            "timer_boundary": "ordinary query including parse, policy validation, projection and consumption; separate distance verification after full-path query",
+            "verification_ms": 415.90918700000003,
+            "process_seconds": 818.428155437985,
+            "warmup": false
+          }
+        ]
+      },
+      "native_iterations": {
+        "cpp": 0,
+        "rust": 0,
+        "grustcat": 0,
+        "grustcat_cypher": 0,
+        "grust_upstream_direct": 0,
+        "grust_upstream_cypher": 0
+      },
+      "native_queries": {
+        "grustcat_cypher": "CALL grustcat.fullPaths($source) YIELD nodeIds, costs UNWIND range(0,size(nodeIds)-1) AS i RETURN count(*) AS path_entries, sum(nodeIds[i]) AS node_sum, sum(costs[i]) AS cost_sum",
+        "grust_upstream_direct": null,
+        "grust_upstream_cypher": "CALL grust.algorithms.shortestPaths($source, {weightProperty: 'weight'}) YIELD nodeIds, costs UNWIND range(0, size(costs) - 1) AS i RETURN count(nodeIds[i]), sum(toInteger(nodeIds[i])), sum(costs[i]) LIMIT 1"
+      },
+      "native_path_summaries": {
+        "cpp": [
+          {
+            "reachable": 65536,
+            "path_entries": 2147516416,
+            "node_sum": 46912496107520,
+            "cost_sum": 750516181958851
+          }
+        ],
+        "rust": [
+          {
+            "reachable": 65536,
+            "path_entries": 2147516416,
+            "node_sum": 46912496107520,
+            "cost_sum": 750516181958851
+          }
+        ],
+        "grustcat": [
+          {
+            "reachable": 65536,
+            "path_entries": 2147516416,
+            "node_sum": 46912496107520,
+            "cost_sum": 750516181958851
+          }
+        ],
+        "grustcat_cypher": [
+          {
+            "reachable": 65536,
+            "path_entries": 2147516416,
+            "node_sum": 46912496107520,
+            "cost_sum": 750516181958851
+          }
+        ],
+        "grust_upstream_direct": [
+          {
+            "reachable": 65536,
+            "path_entries": 2147516416,
+            "node_sum": 46912496107520,
+            "cost_sum": 750516181958851.0
+          }
+        ],
+        "grust_upstream_cypher": [
+          {
+            "reachable": 65536,
+            "path_entries": 2147516416,
+            "node_sum": 46912496107520,
+            "cost_sum": 750516181958851.0
+          }
+        ]
+      },
+      "warmups": [],
+      "samples": [
+        {
+          "reachable": 65536,
+          "distance_sum": 34356658252.0,
+          "path_entries": 2147516416,
+          "node_sum": 46912496107520,
+          "cost_sum": 750516181958851.0,
+          "server_query_ms": 433659,
+          "client_wall_ms": 434123.3816249878
+        }
+      ],
+      "validation": {
+        "all_distances_match": true,
+        "path_aggregates_match_unique_path_oracle": true
+      }
+    }
+  ]
+}

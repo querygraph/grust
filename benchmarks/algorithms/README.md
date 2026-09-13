@@ -3,7 +3,7 @@
 These are local correctness and resource observations for the upstream Rust
 kernels and ordinary registry-backed Cypher executor. They are separate from the
 historical Docker experiment in `adversarial-graph-algorithms/publication`.
-No timing from another provider or execution class is used here.
+Each timing stays attributed to its provider and execution class.
 
 Build and run from the repository root on Linux:
 
@@ -61,6 +61,8 @@ implementation. Later catalog, projection-cache and traversal additions are not
 part of that measured binary. A source digest records the listed Rust/manifests,
 not a build attestation. Release qualification must identify the final source.
 
+## Upstream Docker qualification
+
 `stage_companion.py` verifies the companion's frozen context and adds separately
 named `grust_upstream_direct` and `grust_upstream_cypher` participants in a new
 staging directory. Historical sources, participants and official GDS calls remain
@@ -74,4 +76,61 @@ do not establish container parity.
 python3 benchmarks/algorithms/stage_companion.py \
   --frozen-context ../adversarial-graph-algorithms/.docker-context \
   --output /tmp/grust-upstream-context
+docker build --target benchmark -t grust-upstream-algorithms:local \
+  /tmp/grust-upstream-context
 ```
+
+Prepare the frozen context with the companion's default `docker/prepare.py` first.
+Its Compose Neo4j service must be healthy on `graph-algorithm-bench_bench`; retain
+the pinned official server/plugin versions. Run the staged image directly so the
+companion's `docker/run.sh` cannot replace the staged sources:
+
+```sh
+mkdir -p /tmp/grust-upstream-results
+docker run --rm --user "$(id -u):$(id -g)" \
+  --network graph-algorithm-bench_bench --cpus 2 --memory 4g \
+  -e NEO4J_URI=bolt://neo4j:7687 \
+  -e BENCH_NEO4J_HEAP=2G -e BENCH_NEO4J_PAGE_CACHE=512M \
+  -v /tmp/grust-upstream-results:/work grust-upstream-algorithms:local \
+  --full-path --sizes 128 --warmups 1 --repeats 1 --label upstream-smoke
+```
+
+For actual full-chain completion, use `--full-path --algorithms dijkstra
+--families path --sizes 16384 65536 --warmups 0 --repeats 1` and a new label/output
+directory. This can run for many minutes. Keep the generated environment, results,
+process audit and Markdown report together. A completed process is not yet a
+correctness pass; the comparison must finish successfully. Single repetitions are
+completion evidence, not statistical performance qualification.
+
+The upstream 256 MiB allowance accounts for algorithm/query working storage.
+Caller-owned input, final legacy tables after query return, and protocol output
+conversion buffers remain outside that logical allowance. The 4 GiB container
+limit covers the whole benchmark process tree and file cache. Container memory
+samples are not per-participant maximum RSS. Neo4j has its own separate 4 GiB
+container; neither participant group borrows the other's memory envelope.
+
+
+Acorn 0.14.0 qualification is retained under `evidence/2026-09-13/`:
+
+- `grust-acorn-upstream-image-validation.json`: 72 checks, all pass.
+- `grust-acorn-upstream-smoke.json` and `grust-acorn-upstream-medium.json`: 30 cases
+  each at 128 and 1,024 nodes, one warmup and one measured repetition, all pass.
+- `grust-acorn-upstream-completion.json`: actual weighted full paths at 16,384 and
+  65,536 nodes, no warmups and one measured repetition, all comparisons pass.
+- `grust-acorn-upstream-container.json`: image/source identity and resource/report
+  boundaries; companion environment files retain per-file source hashes.
+
+The weighted 65,536-node run consumes 2,147,516,416 entries in each array, with
+node checksum 46,912,496,107,520 and cost checksum 750,516,181,958,851. Its raw
+upstream distance-output hashes agree with the retained reference implementations.
+The upstream direct kernel/consumption timer is 54.834 seconds; ordinary Cypher's
+query timer is 817.917 seconds. These are different consumption/timer boundaries,
+not a measurement of dispatch overhead alone. Whole-container peak memory sampled
+during completion is 216,145,920 bytes; no per-participant RSS is inferred.
+
+Historical frozen smoke/completion receipts remain separate. Original image reports
+are retained as `*-image-report.md`; the main Markdown reports are regenerated
+from unchanged JSON to clarify historical Arrow timing and caller-owned memory.
+Runtime source is pinned in the container receipt; later changes only clarify
+rustdoc links, documentation and reporting. Statistical performance qualification,
+prepared-query phase measurements and isolated per-participant RSS remain unclaimed.

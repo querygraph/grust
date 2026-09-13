@@ -1,6 +1,7 @@
 # Generalized graph algorithms
 
-Status: implemented in the working source; release qualification is ongoing.
+Status: implemented and qualified in Acorn 0.14.0 source. Registry publication
+and external release verification remain pending publishing credentials.
 Contract: the 2026-09-13 generalized algorithms handoff in
 `adversarial-graph-algorithms/docs/grust-generalized-graph-algorithms-handoff.md`.
 Engineering guide: QueryGraph `RUST.md`, retrieved 2026-09-13.
@@ -208,32 +209,46 @@ positions only. It excludes graph/ID/edge storage, allocators, kernels and resul
 whole-snapshot counts conservatively ignore selection. Actual admission remains
 mandatory. Comprehensive per-kernel peak/output estimates are deferred.
 
-## Evidence and open release gates
+## Qualification and release handoff
 
-Baseline core: 73 passed; Cypher: 820 passed, one ignored. Expanded focused suites
-pass for procedure contracts, native Arrow, nine kernels, registry Cypher, streaming,
-preparation isolation and both backend snapshots. The reachability oracle exhausts
-all 512 directed three-node topologies in all three orientations. The Acorn workspace tests and Clippy with all targets/features and warnings
-denied pass. Package and live-service gates are being recorded separately.
+The Acorn workspace has 1,486 passing tests, zero failures and 47 explicitly
+ignored tests. Workspace build, all-feature/all-target Clippy with warnings denied,
+formatting, public rustdoc and all 23 workspace tarballs pass. The algorithms/Arrow
+facade also builds without Cypher. Package attribution checks retain both the
+algorithm MIT notice and the facade's Apache Ossie fixture attribution.
 
-Both direct and ordinary Cypher completed the 65,536-node chain and consumed
-2,147,516,416 entries in each path array. The checksum was 46,912,496,107,520 for
-both nodes and costs. See [receipts and exact boundaries](../benchmarks/algorithms/README.md).
-These are single local observations, not statistical comparisons or Docker quota
-parity. The large Cypher receipt identifies an earlier working binary; later
-catalog/cache changes require final-source qualification.
+The reachability oracle exhausts all 512 directed three-node topologies in all
+three orientations. Independent weighted and structural checks cover the nine
+kernels, Arrow, provider contracts, streaming, preparation isolation and both
+backend snapshots. Live Ladybug, LanceDB, CocoIndex and SurrealDB checks pass.
+Helix is unavailable on this host; its unit tests pass, but live service behavior
+is not claimed. Other unrun service checks remain explicit in the
+[source qualification receipt](../benchmarks/algorithms/evidence/2026-09-13/acorn-source-validation.json).
 
-Remaining acceptance work:
+The final-runtime Acorn Docker image passes 72 upstream correctness cases, two
+30-case matrices at 128 and 1,024 nodes, and full weighted chains at 16,384 and
+65,536 nodes. Separately named direct and ordinary Cypher participants preserve
+all historical participants and official GDS calls. Both upstream modes consume
+2,147,516,416 entries in each large-chain path array, producing node checksum
+46,912,496,107,520 and weighted-cost checksum 750,516,181,958,851. The full comparison
+passes. The earlier local unit-weight receipts have a different cost checksum;
+they remain separately identified.
 
-1. Complete final-source Docker qualification of the separately named upstream
-   participants. The staging integration preserves historical participants and
-   official GDS calls, records phase boundaries and retains process failures.
-2. Complete package/live-service gates, book/blog artifacts, publication and
-   external registry verification for Acorn 0.14.0 according to
-   AGENTS.md/PUBLISH.md/FIRSTPAIR.md. Runnable provider and weighted-path examples,
-   migration guidance and lockstep source manifests are in place.
+See [receipts and reproduction boundaries](../benchmarks/algorithms/README.md)
+for exact source/image identities, input hashes, query text, phase timings,
+process outcomes and memory samples. The benchmark and Neo4j each have a separate
+two-CPU/four-GiB container. The sampled benchmark-container peak was 216,145,920
+bytes, including all sequential native participants and file cache; this is not
+per-participant RSS. Runs use single measured repetitions and the host performed
+release compilation during part of qualification. No statistical performance or
+identical timer/allocation boundary is claimed.
 
-The Acorn book and provenance-stamped release TextPack are built and verified.
-Registry publication and final qualification receipts remain open. The broader
-deferred catalog is explicit;
-this architecture does not imply arbitrary Cypher or universal GDS coverage.
+The Acorn [book](book/build/dist/VERSION.md) and
+[release TextPack](blog/grust-acorn/dist/VERSION.md) are built, verified, committed
+and pushed. Runnable provider and weighted-path examples, migration guidance,
+coverage matrices and lockstep manifests are complete. Remaining release work is
+crates.io publication in dependency order, external `cargo info` verification and
+the exact crate-source release tag, following AGENTS.md/PUBLISH.md/FIRSTPAIR.md.
+No crates.io publication is claimed until that work succeeds. The broader deferred
+catalog is explicit; the extension does not imply arbitrary Cypher or universal
+GDS coverage.

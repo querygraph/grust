@@ -17,6 +17,19 @@ def replace_once(text, old, new):
     return text.replace(old, new, 1)
 
 
+def clarify_report_boundaries(text):
+    text = replace_once(
+        text,
+        "Direct native columns are kernel milliseconds including Arrow result construction in Rust; Grustcat Cypher additionally includes query compilation and execution.",
+        "Historical direct native columns are kernel milliseconds including Arrow result construction in Rust; Grustcat Cypher additionally includes query compilation and execution. Upstream columns use the separately disclosed boundaries below.",
+    )
+    return replace_once(
+        text,
+        "Upstream uses a 256 MiB working allowance;",
+        "Upstream uses a 256 MiB logical working allowance, excluding caller-owned input, final legacy tables after query return and protocol output conversion buffers; the container limit covers the whole process tree and file cache;",
+    )
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--frozen-context", type=Path, required=True)
@@ -58,7 +71,7 @@ def main():
     text = text.replace("|---|---:|---|---:|---:|---:|---:|---:|---|", "|---|---:|---|---:|---:|---:|---:|---:|---:|---:|---|")
     text = text.replace("{med('grustcat_cypher')} | {val}", "{med('grustcat_cypher')} | {med('grust_upstream_direct')} | {med('grust_upstream_cypher')} | {val}")
     text = replace_once(text, "lines+=['',", "lines+=['','Upstream direct includes kernel/result conversion, with projection separate. Upstream Cypher includes parsing, policy checks, projection and ordinary query execution; full-path distance verification is a separate query outside that timer. Per-phase and process times are retained in native_details. Upstream uses a 256 MiB working allowance; Cypher additionally has a disclosed 24-hour deadline. These boundaries differ from historical participants. No common allocation strategy or timer boundary is implied.','',")
-    report.write_text(text)
+    report.write_text(clarify_report_boundaries(text))
     for name in ["participant_audit.py", "check_upstream.py"]:
         shutil.copy2(root / "benchmarks/algorithms" / name, target / "benchmark" / name)
     dockerfile = target / "Dockerfile"

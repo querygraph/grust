@@ -1,5 +1,5 @@
 {
-  "status": "image_and_smoke_pass",
+  "status": "image_smoke_medium_and_large_completion_pass",
   "source_commit": "494eea248609bf686a59d04c81bae180d64fa798",
   "source_boundary": "Staged Rust sources and Cargo manifests match commit 494eea248609bf686a59d04c81bae180d64fa798. Full per-file hashes are embedded in the environment receipt. Later release commits add documentation/artifacts and correct three pre-existing rustdoc links in pushdown.rs; they do not change runtime code.",
   "image_id": "sha256:bcee5e5758e2478522905febdefeb2f6d088dbf86bf57b24d4abbc7af138f82d",
@@ -21,5 +21,20 @@
   "smoke_cases": 30,
   "smoke_warmups": 1,
   "smoke_repeats": 1,
-  "source_manifest_sha256": "ed91a816f558a44d32f84f34c7937251f32f62ecf6a58b6fe489e90138bf5d13"
+  "source_manifest_sha256": "ed91a816f558a44d32f84f34c7937251f32f62ecf6a58b6fe489e90138bf5d13",
+  "medium_cases": 30,
+  "medium_nodes": 1024,
+  "medium_warmups": 1,
+  "medium_repeats": 1,
+  "large_completion_nodes": [
+    16384,
+    65536
+  ],
+  "large_completion_warmups": 0,
+  "large_completion_repeats": 1,
+  "sampled_benchmark_container_peak_bytes": 216145920,
+  "memory_sampling_boundary": "Five-second samples began after the container started; memory.peak retains earlier allocations. Whole benchmark container including all sequential participants and file cache, not per-participant RSS. Last successful sample can precede container exit.",
+  "neo4j_cgroup_memory_at_qualification_end": "2895429632\nlow 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\n",
+  "neo4j_memory_boundary": "Service-lifetime counters include the earlier frozen baseline and subsequent medium matrix; not attributable to one participant run.",
+  "report_boundary_correction": "Markdown reports were regenerated from the unchanged raw JSON using clarify_report_boundaries in stage_companion.py. This clarifies that historical Rust columns include Arrow construction and that the upstream logical allowance excludes caller/protocol storage. Original image-generated reports are retained as *-image-report.md. No measurements or binaries changed."
 }
