@@ -596,3 +596,22 @@ async fn resident_snapshot_reflects_the_store_and_every_write_drops_it() {
     let after_delete = store.indexed_snapshot().await.unwrap();
     assert_eq!(after_delete.graph().edges.len(), 2);
 }
+
+#[tokio::test]
+async fn mvcc_put_graph_commits_in_groups_and_keeps_every_row() {
+    let config = TursoConfig {
+        journal_mode: TursoJournalMode::Mvcc,
+        batch_size: 7,
+        ..TursoConfig::default()
+    };
+    let store = TursoGraphStore::connect(config).await.unwrap();
+    store.bootstrap().await.unwrap();
+    // Enough batches to span several commit groups.
+    let n = 7 * MVCC_LOAD_COMMIT_STATEMENTS * 3 + 5;
+    let nodes: Vec<_> = (0..=n).map(|i| Node::new("N", format!("n{i}"), Props::new())).collect();
+    let edges: Vec<_> = (0..n).map(|i| Edge::new("E", format!("n{i}"), format!("n{}", i + 1), Props::new())).collect();
+    let report = store.put_graph(&Graph::new(nodes, edges)).await.unwrap();
+    assert_eq!(report.edges, n);
+    let all = store.get_edges(EdgeQuery::default()).await.unwrap();
+    assert_eq!(all.len(), n);
+}

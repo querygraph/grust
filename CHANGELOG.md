@@ -6,6 +6,15 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ## Unreleased
 
+- Turso under MVCC loads in groups: `put_graph` commits every
+  `MVCC_LOAD_COMMIT_STATEMENTS` (20) batches as its own `BEGIN CONCURRENT`
+  transaction instead of one transaction around the whole load. MVCC keeps an
+  open transaction's row versions in memory until commit and retried the
+  entire load on a conflict; the adversarial-graph strain benchmark measured
+  about 1,500 edges/s that way, too slow to attempt cit-Patents inside its
+  two-hour budget. Under MVCC a load is no longer all-or-nothing: a failure
+  leaves the groups committed before it. WAL mode is unchanged.
+
 - Turso keeps parallel edges. The universal edge table's key gains an
   identity column through a new `GraphSqlDialect::edge_identity_column` hook
   (default none, so PostgreSQL's schema is unchanged); Turso sets `id_key`,

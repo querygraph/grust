@@ -479,7 +479,20 @@ impl GraphStore for TursoGraphStore {
             .chain(edge_batches)
             .collect::<Result<Vec<_>>>()?;
         let concurrent = self.config.journal_mode == TursoJournalMode::Mvcc;
-        self.execute_transaction(&statements, concurrent).await?;
+        if concurrent {
+            // MVCC keeps every row version of an open transaction in memory
+            // until it commits, so one BEGIN CONCURRENT around a whole load
+            // grows with the load and a conflict retries all of it: the
+            // adversarial-graph strain benchmark measured about 1,500 edges/s
+            // this way. Committing every MVCC_LOAD_COMMIT_STATEMENTS batches
+            // keeps each transaction small; a load is no longer all-or-nothing
+            // under MVCC, and a failure leaves the batches committed before it.
+            for group in statements.chunks(MVCC_LOAD_COMMIT_STATEMENTS) {
+                self.execute_transaction(group, true).await?;
+            }
+        } else {
+            self.execute_transaction(&statements, false).await?;
+        }
         // In WAL mode one transaction leaves the whole load in the
         // write-ahead log, and every read until the next checkpoint pays to
         // look through it; checkpointing here keeps that cost inside the load
@@ -743,6 +756,10 @@ fn turso_prop_expr(field: &Field) -> String {
         FieldType::Bool => format!("CAST({value} AS INTEGER)"),
     }
 }
+
+/// Batches per MVCC transaction in `put_graph`: with the default batch size of
+/// 500 rows, twenty statements commit about ten thousand rows at a time.
+pub const MVCC_LOAD_COMMIT_STATEMENTS: usize = 20;
 
 pub fn upsert_nodes_sql(table: &str, nodes: &[Node]) -> Result<String> {
     TursoDialect.upsert_nodes_sql(table, nodes)
