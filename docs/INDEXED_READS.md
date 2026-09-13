@@ -32,12 +32,16 @@ sorted unique vertex slots with nonempty rows, without scanning or allocating.
 relationship; an absent type returns `Some(&[])`.
 
 `MemoryGraphStore::indexed_snapshot()` returns an `Arc<TypedGraphIndex>`. The
-first read after a write clones the stored graph and constructs the index;
-subsequent reads, including through cloned store handles, share it. Every write
-attempt invalidates the cache, including attempts that fail validation. Already
-returned snapshots remain immutable and usable. Cache construction holds the
-store's read lock, so writers wait for that first build. Ordinary `GraphStore`
-reads and traversals retain their existing behavior.
+first read after a write builds the index over the store's own frozen storage,
+through `GraphSnapshotSource`, instead of copying the graph: it adds three
+`u32` orderings and the typed adjacency, and builds nodes and edges one at a
+time when a query examines them. Subsequent reads, including through cloned
+store handles, share it. Storage is copy-on-write: a write copies the store
+only while an older snapshot is still held. Every write attempt invalidates the
+cache, including attempts that fail validation. Already returned snapshots
+remain immutable and usable. Cache construction holds the store's read lock, so
+writers wait for that first build. Ordinary `GraphStore` reads and traversals
+retain their existing behavior.
 
 A load into an empty store builds the snapshot as part of `put_graph`, and
 until the next write `traverse` and endpoint-anchored `get_edges` answer from

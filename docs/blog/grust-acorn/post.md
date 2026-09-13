@@ -32,7 +32,9 @@ Memory, work, cancellation and deadline checks share one execution context. Reta
 
 Projection reuse is scoped to one query and keyed by graph, revision, principal and projection options. Identity strings do not grant access: a trusted adapter must capture and authorize the snapshot first. The same bounded prepared query is tested against independently captured Memory and private Turso snapshots, including captures that remain unchanged after later writes. This demonstrates local analytics over those snapshots; it does not claim native algorithm execution in every backend.
 
-Acorn also integrates backend maintenance work. Surreal and Helix HTTP distinguish bulk-load batches from incremental writes. LanceDB reuses table handles while checking current table state and serializing local recreation; tests cover writes through another connection and recreation races. Turso retires its optional sync snapshot cache before a pull can change local state, including failed or cancelled pulls.
+Acorn also integrates backend maintenance work. Surreal and Helix HTTP distinguish bulk-load batches from incremental writes. LanceDB reuses table handles while checking current table state and serializing local recreation; tests cover writes through another connection and recreation races. Turso retires its optional sync snapshot cache before a pull can change local state, including failed or cancelled pulls. Turso now keeps parallel edges that carry distinct ids, as Memory and LanceDB do, and rebuilds a database created with the older edge key once, in place. Under MVCC it commits a whole-graph load in groups instead of one transaction.
+
+Memory stores each edge once, as a 16-byte record with interned ids, and Cypher reads that store in place instead of a copy of the graph. Loading 10 million untyped edges and answering indexed reads over them peaks at about 96 bytes per edge instead of 222.
 
 ## Evidence and limits
 

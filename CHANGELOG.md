@@ -6,6 +6,8 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ## Unreleased
 
+## 0.14.0 — Acorn — 2026-09-13
+
 - Cypher over `grust-memory` reads the store in place instead of a copy of
   it. `MemoryGraphStore::indexed_snapshot` shares the store's frozen storage
   (copy-on-write: a write copies the store only while an older snapshot is
