@@ -113,6 +113,15 @@
         "grust-acorn-upstream-medium"
       ],
       "boundary": "Correctness/completion under separate two-CPU/four-GiB containers. Single measured repetitions, not statistical performance qualification."
+    },
+    {
+      "name": "registry_publication",
+      "command": "cargo publish -p grust-core --locked",
+      "status": "unavailable",
+      "exit_code": 101,
+      "source_commit": "7ca5656290320b0f690b780ecdba5dcc3aa6cd48",
+      "error": "Updating crates.io index\nerror: no token found, please run `cargo login`\nor use environment variable CARGO_REGISTRY_TOKEN",
+      "outcome": "No crate uploaded. Configure Cargo publishing credentials locally, then resume dependency-ordered publication and external verification."
     }
   ],
   "surreal_image": {
@@ -168,5 +177,21 @@
     "grust-surreal-0.14.0.crate": "d1992b2ba51ca9dad1f031aaad2e992058e9974ab4d3f20daa443af0c5207765",
     "grust-turso-0.14.0.crate": "58dfeeeeefd54801acc82ebfa8761c588d81103f84f7e8cb6cf38bddece5857a",
     "querygraph-memory-0.14.0.crate": "65f670381630456fd20b5672e1f7be96d957781eea3d0478b0f133b803b77094"
-  }
+  },
+  "registry_checks_outside_workspace": [
+    {
+      "command": "cargo info grust-core@0.14.0",
+      "working_directory": "/tmp",
+      "status": "unavailable",
+      "exit_code": 101,
+      "output": "Updating crates.io index\nerror: could not find `grust-core@0.14.0` in registry `https://github.com/rust-lang/crates.io-index`"
+    },
+    {
+      "command": "cargo info grust-graph@0.14.0",
+      "working_directory": "/tmp",
+      "status": "unavailable",
+      "exit_code": 101,
+      "output": "Updating crates.io index\nerror: could not find `grust-graph@0.14.0` in registry `https://github.com/rust-lang/crates.io-index`"
+    }
+  ]
 }
