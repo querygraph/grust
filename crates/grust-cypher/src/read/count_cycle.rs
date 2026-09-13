@@ -53,7 +53,7 @@ impl<'a> Groups<'a> {
 
     fn next(
         &mut self,
-        graph: &Graph,
+        index: &TypedGraphIndex,
         rel: &RelationshipPattern,
         masks: &[u8],
         bit: u8,
@@ -75,7 +75,7 @@ impl<'a> Groups<'a> {
             read_budget::charge_candidate_work(1, "scanning cycle adjacency edges")?;
             if masks[vertex as usize] & bit != 0
                 && props_match(
-                    &graph.edges[self.outgoing[self.out].edge as usize].props,
+                    index.edge_props(self.outgoing[self.out].edge),
                     rel.properties.as_ref(),
                     params,
                 )?
@@ -93,7 +93,7 @@ impl<'a> Groups<'a> {
             if vertex != self.center
                 && masks[vertex as usize] & bit != 0
                 && props_match(
-                    &graph.edges[self.incoming[self.inc].edge as usize].props,
+                    index.edge_props(self.incoming[self.inc].edge),
                     rel.properties.as_ref(),
                     params,
                 )?
@@ -132,25 +132,23 @@ fn intersect(
     // preserves arbitrary creator multiplicity, and dense lists retain merging.
     if probe_cost < merge_cost {
         let mut count = 0;
-        while let Some((target, multiplicity)) =
-            creators.next(index.graph(), creator, masks, 8, params)?
-        {
+        while let Some((target, multiplicity)) = creators.next(index, creator, masks, 8, params)? {
             read_budget::charge_candidate_work(1, "visiting cycle probe targets")?;
             if multiplicity == 0 {
                 continue;
             }
-            let outgoing = probe(index.graph(), knows.outgoing, target, cycle.knows, params)?;
+            let outgoing = probe(index, knows.outgoing, target, cycle.knows, params)?;
             let incoming = if target == person {
                 0
             } else {
-                probe(index.graph(), knows.incoming, target, cycle.knows, params)?
+                probe(index, knows.incoming, target, cycle.knows, params)?
             };
             count = add(count, multiply(multiplicity, add(outgoing, incoming)?)?)?;
         }
         return Ok(count);
     }
-    let mut left = creators.next(index.graph(), creator, masks, 8, params)?;
-    let mut right = knows.next(index.graph(), cycle.knows, masks, 8, params)?;
+    let mut left = creators.next(index, creator, masks, 8, params)?;
+    let mut right = knows.next(index, cycle.knows, masks, 8, params)?;
     let mut count = 0;
     while let (Some((a, ac)), Some((b, bc))) = (left, right) {
         read_budget::charge_candidate_work(1, "intersecting cycle adjacency targets")?;
@@ -158,10 +156,10 @@ fn intersect(
             count = add(count, multiply(ac, bc)?)?;
         }
         if a <= b {
-            left = creators.next(index.graph(), creator, masks, 8, params)?;
+            left = creators.next(index, creator, masks, 8, params)?;
         }
         if b <= a {
-            right = knows.next(index.graph(), cycle.knows, masks, 8, params)?;
+            right = knows.next(index, cycle.knows, masks, 8, params)?;
         }
     }
     Ok(count)
@@ -170,7 +168,7 @@ fn intersect(
 /// Find just one sorted physical target group, charging every binary-search
 /// comparison and every qualifying-group edge visit. No key/property copies.
 fn probe(
-    graph: &Graph,
+    index: &TypedGraphIndex,
     neighbors: &[TypedNeighbor],
     target: u32,
     rel: &RelationshipPattern,
@@ -190,7 +188,7 @@ fn probe(
     while neighbors.get(low).is_some_and(|edge| edge.vertex == target) {
         read_budget::charge_candidate_work(1, "scanning cycle probe edges")?;
         if props_match(
-            &graph.edges[neighbors[low].edge as usize].props,
+            index.edge_props(neighbors[low].edge),
             rel.properties.as_ref(),
             params,
         )? {
@@ -213,10 +211,9 @@ pub(super) fn try_execute(
     let Some(cycle) = plan::plan(query)? else {
         return Ok(None);
     };
-    let graph = index.graph();
-    read_budget::charge_intermediate_bytes(graph.nodes.len(), "allocating cycle role masks")?;
-    read_budget::charge_candidate_work(graph.nodes.len(), "initializing cycle role masks")?;
-    let mut masks = vec![0u8; graph.nodes.len()];
+    read_budget::charge_intermediate_bytes(index.node_count(), "allocating cycle role masks")?;
+    read_budget::charge_candidate_work(index.node_count(), "initializing cycle role masks")?;
+    let mut masks = vec![0u8; index.node_count()];
     for (role, &slot) in cycle.roles.iter().enumerate() {
         // A required label can seed candidates even when its first mention
         // was bare. Every mention remains a conjunct; unlabeled roles scan V.
@@ -231,12 +228,12 @@ pub(super) fn try_execute(
         } else {
             None
         };
-        for candidate in 0..candidates.map_or(graph.nodes.len(), |vertices| vertices.len()) {
+        for candidate in 0..candidates.map_or(index.node_count(), |vertices| vertices.len()) {
             let vertex = candidates.map_or(candidate, |vertices| vertices[candidate] as usize);
             let mut matches = true;
             for pattern in &cycle.nodes[slot] {
                 read_budget::charge_candidate_work(1, "filtering cycle node mentions")?;
-                if !node_matches(&graph.nodes[vertex], pattern, params)? {
+                if !node_matches(&index.node(vertex as u32), pattern, params)? {
                     matches = false;
                     break;
                 }
@@ -253,7 +250,7 @@ pub(super) fn try_execute(
             continue;
         }
         let mut replies = Groups::new(index, comment as u32, &cycle.reply.types[0], false);
-        while let Some((post, reply_count)) = replies.next(graph, cycle.reply, &masks, 2, params)? {
+        while let Some((post, reply_count)) = replies.next(index, cycle.reply, &masks, 2, params)? {
             if reply_count == 0 {
                 continue;
             }
@@ -261,7 +258,7 @@ pub(super) fn try_execute(
             let creator = cycle.creators[0];
             let mut creators = Groups::new(index, comment as u32, &creator.types[0], false);
             while let Some((person, creator_count)) =
-                creators.next(graph, creator, &masks, 4, params)?
+                creators.next(index, creator, &masks, 4, params)?
             {
                 if creator_count == 0 {
                     continue;

@@ -61,7 +61,6 @@ pub(super) fn prepare<'index>(
     index: &'index TypedGraphIndex,
     wedge: &Wedge<'_>,
 ) -> Result<Prepared<'index>> {
-    let graph = index.graph();
     read_budget::charge_candidate_work(wedge.nodes.len(), "preparing count wedge roles")?;
     // The wedge proof rejects all property maps. An unlabeled role therefore
     // has no vertex predicate, and its bit belongs in every initialized mask.
@@ -71,9 +70,9 @@ pub(super) fn prepare<'index>(
         .enumerate()
         .filter(|(_, pattern)| pattern.labels.is_empty())
         .fold(0u8, |bits, (role, _)| bits | (1 << role));
-    read_budget::charge_candidate_work(graph.nodes.len(), "initializing count wedge node masks")?;
-    let mut masks = reserved_vec(graph.nodes.len(), "allocating count wedge node masks")?;
-    masks.resize(graph.nodes.len(), unlabeled_bits);
+    read_budget::charge_candidate_work(index.node_count(), "initializing count wedge node masks")?;
+    let mut masks = reserved_vec(index.node_count(), "allocating count wedge node masks")?;
+    masks.resize(index.node_count(), unlabeled_bits);
     let mut b_candidates = None;
     let mut c_candidates = None;
     let params = CypherParameters::new();
@@ -96,7 +95,7 @@ pub(super) fn prepare<'index>(
             read_budget::charge_candidate_work(1, "filtering count wedge vertices")?;
             // A seed label narrows candidates; it never replaces the remaining
             // conjuncts or their per-label and string-comparison accounting.
-            if count_predicate::node_matches(&graph.nodes[vertex as usize], pattern, &params)? {
+            if count_predicate::node_matches(&index.node(vertex), pattern, &params)? {
                 masks[vertex as usize] |= 1 << role;
             }
         }

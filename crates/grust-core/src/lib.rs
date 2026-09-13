@@ -9,9 +9,11 @@ use std::{
 use async_trait::async_trait;
 use serde::{Deserialize, Deserializer, Serialize, Serializer, de};
 
+mod graph_source;
 mod guarded_commit;
 mod typed_graph_index;
 mod unique_values;
+pub use graph_source::GraphSnapshotSource;
 pub use guarded_commit::{
     GraphCommitReceipt, GraphCommitStore, GraphExpectation, GuardedGraphCommit,
 };

@@ -82,7 +82,12 @@ impl PreparedProcedureQuery {
         }
         let execution = ProcedureExecution::new(self.registry.clone())?
             .with_identity(snapshot.identity().clone());
-        execute_read_query_with_procedures(snapshot.graph(), &self.query, params, &execution)
+        execute_read_query_with_procedures(
+            GraphRef::Owned(snapshot.graph()),
+            &self.query,
+            params,
+            &execution,
+        )
     }
 
     /// Apply a caller's current bounded policy to this plan's source and pinned

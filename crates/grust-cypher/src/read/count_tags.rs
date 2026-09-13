@@ -273,7 +273,7 @@ fn exclusion(
             read_budget::charge_candidate_work(1, "scanning tag intersection edges")?;
             if masks[a as usize] & 1 != 0
                 && props_match(
-                    &index.graph().edges[left[i].edge as usize].props,
+                    index.edge_props(left[i].edge),
                     tags.relationships[0].properties.as_ref(),
                     params,
                 )?
@@ -287,7 +287,7 @@ fn exclusion(
             if !tags.anti
                 && masks[a as usize] & 8 != 0
                 && props_match(
-                    &index.graph().edges[right[j].edge as usize].props,
+                    index.edge_props(right[j].edge),
                     tags.relationships[2].properties.as_ref(),
                     params,
                 )?
@@ -317,24 +317,24 @@ pub(super) fn try_execute(
     let Some(tags) = plan(query)? else {
         return Ok(None);
     };
-    let graph = index.graph();
-    read_budget::charge_intermediate_bytes(graph.nodes.len(), "allocating tag node masks")?;
-    read_budget::charge_candidate_work(graph.nodes.len(), "initializing tag node masks")?;
-    let mut masks = vec![0u8; graph.nodes.len()];
-    for (node, mask) in graph.nodes.iter().zip(&mut masks) {
+    read_budget::charge_intermediate_bytes(index.node_count(), "allocating tag node masks")?;
+    read_budget::charge_candidate_work(index.node_count(), "initializing tag node masks")?;
+    let mut masks = vec![0u8; index.node_count()];
+    for (vertex, mask) in masks.iter_mut().enumerate() {
         read_budget::charge_candidate_work(4, "filtering tag vertices")?;
+        let node = index.node(vertex as u32);
         for (role, pattern) in tags.nodes.iter().enumerate() {
-            if node_matches(node, pattern, params)? {
+            if node_matches(&node, pattern, params)? {
                 *mask |= 1 << role;
             }
         }
     }
     read_budget::charge_intermediate_bytes(
-        graph.nodes.len().saturating_mul(16),
+        index.node_count().saturating_mul(16),
         "allocating tag degrees",
     )?;
-    read_budget::charge_candidate_work(graph.nodes.len(), "initializing tag degrees")?;
-    let mut degrees = vec![[0u64; 2]; graph.nodes.len()];
+    read_budget::charge_candidate_work(index.node_count(), "initializing tag degrees")?;
+    let mut degrees = vec![[0u64; 2]; index.node_count()];
     for (vertex, degree) in degrees.iter_mut().enumerate() {
         read_budget::charge_candidate_work(1, "counting tag source degrees")?;
         for (side, source_bit, target_bit, rel) in [
@@ -348,7 +348,7 @@ pub(super) fn try_execute(
                 read_budget::charge_candidate_work(1, "scanning filtered tag edges")?;
                 if masks[neighbor.vertex as usize] & target_bit != 0
                     && props_match(
-                        &graph.edges[neighbor.edge as usize].props,
+                        index.edge_props(neighbor.edge),
                         rel.properties.as_ref(),
                         params,
                     )?
@@ -375,7 +375,7 @@ pub(super) fn try_execute(
                 read_budget::charge_candidate_work(1, "scanning tag bridge edges")?;
                 if masks[m as usize] & 2 != 0
                     && props_match(
-                        &graph.edges[neighbors[pos].edge as usize].props,
+                        index.edge_props(neighbors[pos].edge),
                         bridge.properties.as_ref(),
                         params,
                     )?

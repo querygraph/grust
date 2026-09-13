@@ -250,15 +250,14 @@ pub(super) fn try_execute(
     else {
         return Ok(None);
     };
-    let graph = index.graph();
     let mut weights: Vec<Option<Vec<u64>>> = (0..forest.nodes.len()).map(|_| None).collect();
     for &slot in order.iter().rev() {
         read_budget::charge_intermediate_bytes(
-            graph.nodes.len().saturating_mul(8),
+            index.node_count().saturating_mul(8),
             "allocating count weights",
         )?;
-        read_budget::charge_candidate_work(graph.nodes.len(), "initializing count weights")?;
-        let mut values = vec![0; graph.nodes.len()];
+        read_budget::charge_candidate_work(index.node_count(), "initializing count weights")?;
+        let mut values = vec![0; index.node_count()];
         let label = forest.nodes[slot].iter().find_map(|p| p.labels.first());
         let candidates = if let Some(label) = label {
             read_budget::charge_candidate_work(
@@ -269,17 +268,17 @@ pub(super) fn try_execute(
         } else {
             None
         };
-        let candidate_count = candidates.map_or(graph.nodes.len(), |v| v.len());
+        let candidate_count = candidates.map_or(index.node_count(), |v| v.len());
         let prefilter = if candidate_count == 0 {
             None
         } else {
             mandatory_adjacency::prepare(index, &forest, slot)?
         };
         let candidates = match &prefilter {
-            Some(prefilter) => prefilter.narrow_candidates(candidates, graph.nodes.len())?,
+            Some(prefilter) => prefilter.narrow_candidates(candidates, index.node_count())?,
             None => candidates,
         };
-        let candidate_count = candidates.map_or(graph.nodes.len(), |v| v.len());
+        let candidate_count = candidates.map_or(index.node_count(), |v| v.len());
         for candidate in 0..candidate_count {
             read_budget::charge_candidate_work(1, "filtering count vertices")?;
             let vertex = candidates.map_or(candidate, |v| v[candidate] as usize);
@@ -290,7 +289,7 @@ pub(super) fn try_execute(
             }
             let mut matches = true;
             for pattern in &forest.nodes[slot] {
-                if !node_matches(&graph.nodes[vertex], pattern, params)? {
+                if !node_matches(&index.node(vertex as u32), pattern, params)? {
                     matches = false;
                     break;
                 }
@@ -353,7 +352,7 @@ pub(super) fn try_execute(
                                 continue;
                             }
                             if props_match(
-                                &graph.edges[neighbor.edge as usize].props,
+                                index.edge_props(neighbor.edge),
                                 rel.properties.as_ref(),
                                 params,
                             )? {

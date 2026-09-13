@@ -7,7 +7,7 @@ use grust_procedures::{Invocation, LocalSnapshot, MemoryAccount};
 use std::ops::ControlFlow;
 
 pub(super) fn try_execute(
-    graph: &Graph,
+    graph: GraphRef<'_>,
     query: &SingleQuery,
     params: &CypherParameters,
     procedures: &ProcedureExecution,
@@ -117,7 +117,7 @@ impl RowSink for AggregateSink<'_> {
 }
 
 struct Pipeline<'a> {
-    graph: &'a Graph,
+    graph: GraphRef<'a>,
     clauses: &'a [Clause],
     params: &'a CypherParameters,
     procedures: &'a ProcedureExecution,
@@ -152,7 +152,7 @@ impl Pipeline<'_> {
                             args,
                             Invocation {
                                 snapshot: Some(LocalSnapshot::new(
-                                    self.graph,
+                                    self.graph.local_graph(),
                                     self.procedures.identity(),
                                 )),
                                 execution: context,
@@ -280,7 +280,7 @@ fn unwind_value(value: Value, consume: &mut dyn FnMut(Value) -> Result<Flow>) ->
 }
 
 fn execute(
-    graph: &Graph,
+    graph: GraphRef<'_>,
     clauses: &[Clause],
     projection: &Projection,
     params: &CypherParameters,

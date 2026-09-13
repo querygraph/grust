@@ -22,7 +22,10 @@
 //! answer. Aggregation and the general expression/function registry arrive in
 //! Units 7–9.
 
+use std::borrow::Cow;
 use std::collections::{BTreeMap, HashMap};
+
+use grust_core::TypedGraphIndex;
 
 use crate::ast;
 use crate::ast::*;
@@ -77,6 +80,49 @@ enum Bound {
 
 /// One candidate solution: pattern variable -> bound graph element.
 type Row = BTreeMap<String, Bound>;
+
+/// The graph a read executes over: an owned [`Graph`], or a typed index whose
+/// source may build nodes and edges on demand instead of holding a copy of
+/// each. Rows own clones of what they bind either way, so only elements a
+/// query actually examines are ever built.
+#[derive(Clone, Copy)]
+pub(crate) enum GraphRef<'g> {
+    Owned(&'g Graph),
+    Indexed(&'g TypedGraphIndex),
+}
+
+impl<'g> GraphRef<'g> {
+    fn node_count(self) -> usize {
+        match self {
+            Self::Owned(graph) => graph.nodes.len(),
+            Self::Indexed(index) => index.node_count(),
+        }
+    }
+
+    fn edge_count(self) -> usize {
+        match self {
+            Self::Owned(graph) => graph.edges.len(),
+            Self::Indexed(index) => index.edge_count(),
+        }
+    }
+
+    fn node_id(self, slot: usize) -> &'g NodeId {
+        match self {
+            Self::Owned(graph) => &graph.nodes[slot].id,
+            Self::Indexed(index) => index.node_id(slot as u32),
+        }
+    }
+
+    /// The whole graph, for procedures that read a local snapshot. Over an
+    /// index whose source is not an owned graph this materializes, once per
+    /// index, a full copy; only `CALL` needs it.
+    pub(crate) fn local_graph(self) -> &'g Graph {
+        match self {
+            Self::Owned(graph) => graph,
+            Self::Indexed(index) => index.graph(),
+        }
+    }
+}
 
 fn charge_intermediate_copy(context: &str, measure: impl FnOnce() -> usize) -> Result<()> {
     if read_budget::intermediate_accounting_active() {
@@ -193,7 +239,7 @@ pub fn run_read_query(
     ensure_query_uses_graph(&query, "default")?;
     let procedures = ProcedureExecution::builtins()?;
     procedures.prepare(&mut query)?;
-    execute_read_query_with_procedures(graph, &query, params, &procedures)
+    execute_read_query_with_procedures(GraphRef::Owned(graph), &query, params, &procedures)
 }
 
 pub fn run_read_query_on_named_graph(
@@ -206,7 +252,7 @@ pub fn run_read_query_on_named_graph(
     ensure_query_uses_graph(&query, graph_name)?;
     let procedures = ProcedureExecution::builtins()?.with_graph_name(graph_name)?;
     procedures.prepare(&mut query)?;
-    execute_read_query_with_procedures(graph, &query, params, &procedures)
+    execute_read_query_with_procedures(GraphRef::Owned(graph), &query, params, &procedures)
 }
 
 /// Execute an already-parsed read-only query against an in-memory graph.
@@ -215,11 +261,20 @@ pub fn execute_read_query(
     query: &Query,
     params: &CypherParameters,
 ) -> Result<CypherResultTable> {
+    execute_read_query_on(GraphRef::Owned(graph), query, params)
+}
+
+/// [`execute_read_query`] over either an owned graph or a typed index.
+pub(crate) fn execute_read_query_on(
+    graph: GraphRef<'_>,
+    query: &Query,
+    params: &CypherParameters,
+) -> Result<CypherResultTable> {
     execute_read_query_with_procedures(graph, query, params, &ProcedureExecution::builtins()?)
 }
 
 fn execute_read_query_with_procedures(
-    graph: &Graph,
+    graph: GraphRef<'_>,
     query: &Query,
     params: &CypherParameters,
     procedures: &ProcedureExecution,
@@ -265,7 +320,7 @@ fn execute_read_query_with_procedures(
 }
 
 fn execute_single(
-    graph: &Graph,
+    graph: GraphRef<'_>,
     query: &SingleQuery,
     params: &CypherParameters,
     procedures: &ProcedureExecution,
@@ -274,9 +329,9 @@ fn execute_single(
         return result;
     }
     let requirements = query_adjacency_requirements(query);
-    read_budget::charge_candidate_work(graph.nodes.len(), "building the node index")?;
+    read_budget::charge_candidate_work(graph.node_count(), "building the node index")?;
     if requirements.outgoing || requirements.incoming {
-        read_budget::charge_candidate_work(graph.edges.len(), "building adjacency indexes")?;
+        read_budget::charge_candidate_work(graph.edge_count(), "building adjacency indexes")?;
     }
     let index = NodeIndex::build(graph, requirements)?;
     read_budget::checkpoint()?;
@@ -327,7 +382,7 @@ fn execute_single(
 /// rows plus, for a `CALL <proc>`, the procedure's output columns (so a
 /// standalone trailing `CALL` can shape the result table).
 fn advance_rows(
-    graph: &Graph,
+    graph: GraphRef<'_>,
     index: &NodeIndex,
     clause: &Clause,
     rows: Vec<Row>,
@@ -387,7 +442,7 @@ fn advance_rows(
             Ok((rows, None))
         }
         Clause::Unwind(u) => Ok((unwind_rows(rows, u, params)?, None)),
-        Clause::Call(c) => procedures.advance(graph, c, rows, params),
+        Clause::Call(c) => procedures.advance(graph.local_graph(), c, rows, params),
         Clause::Subquery(s) => Ok((
             execute_subquery_clause(graph, s, rows, params, procedures)?,
             None,
@@ -407,7 +462,7 @@ fn advance_rows(
 /// bindings are visible inside), joining its returned columns onto the row.
 /// A row whose subquery returns no rows is dropped.
 fn execute_subquery_clause(
-    graph: &Graph,
+    graph: GraphRef<'_>,
     subquery: &SubqueryClause,
     rows: Vec<Row>,
     params: &CypherParameters,
@@ -442,7 +497,7 @@ fn execute_subquery_clause(
 /// Run a subquery (possibly `UNION`-composed) seeded with the outer row's
 /// bindings. Returns the output column names and one binding row per result.
 fn run_subquery(
-    graph: &Graph,
+    graph: GraphRef<'_>,
     query: &Query,
     seed: &Row,
     params: &CypherParameters,
@@ -489,17 +544,17 @@ fn run_subquery(
 }
 
 fn run_subquery_single(
-    graph: &Graph,
+    graph: GraphRef<'_>,
     query: &SingleQuery,
     seed: &Row,
     params: &CypherParameters,
     procedures: &ProcedureExecution,
 ) -> Result<(Vec<String>, Vec<Row>)> {
     let requirements = query_adjacency_requirements(query);
-    read_budget::charge_candidate_work(graph.nodes.len(), "building a subquery node index")?;
+    read_budget::charge_candidate_work(graph.node_count(), "building a subquery node index")?;
     if requirements.outgoing || requirements.incoming {
         read_budget::charge_candidate_work(
-            graph.edges.len(),
+            graph.edge_count(),
             "building subquery adjacency indexes",
         )?;
     }
@@ -934,7 +989,7 @@ pub(crate) fn project_bindings(
 ) -> Result<CypherResultTable> {
     let rows = binding_rows_to_rows(binding_rows);
     let empty = Graph::default();
-    project(&empty, &rows, projection, params)
+    project(GraphRef::Owned(&empty), &rows, projection, params)
 }
 
 fn binding_rows_to_rows(binding_rows: Vec<Vec<(String, PushedBinding)>>) -> Vec<Row> {
@@ -991,7 +1046,7 @@ fn run_tail_pipeline(
             }
             Clause::Return(r) => {
                 let empty = Graph::default();
-                return project(&empty, &rows, &r.projection, params);
+                return project(GraphRef::Owned(&empty), &rows, &r.projection, params);
             }
             _ => {
                 return Err(gql_execution(
@@ -1181,10 +1236,14 @@ pub(crate) fn project_correlated_procedure_pipeline(
 // Pattern matching
 // ---------------------------------------------------------------------------
 
+/// Per-query node lookup and adjacency. Over an owned graph it builds them;
+/// over a typed index it builds nothing and answers from the index, visiting
+/// candidates in the same order and charging the same work.
 struct NodeIndex {
     by_id: HashMap<NodeId, usize>,
     outgoing_by_vertex: Option<CompressedAdjacency>,
     incoming_by_vertex: Option<CompressedAdjacency>,
+    requirements: AdjacencyRequirements,
 }
 
 #[derive(Clone, Copy, Default)]
@@ -1205,33 +1264,36 @@ impl CompressedAdjacency {
 }
 
 impl NodeIndex {
-    fn build(graph: &Graph, requirements: AdjacencyRequirements) -> Result<Self> {
+    fn build(graph: GraphRef<'_>, requirements: AdjacencyRequirements) -> Result<Self> {
+        // The same charge over either graph: an indexed read is budgeted as
+        // the owned executor would be, not by what it happens to allocate.
         charge_intermediate_copy("building graph indexes", || {
-            let id_index_bytes = graph.nodes.iter().fold(
-                graph
-                    .nodes
-                    .len()
-                    .saturating_mul(std::mem::size_of::<(NodeId, usize)>()),
-                |bytes, node| bytes.saturating_add(node.id.as_str().len()),
+            let nodes = graph.node_count();
+            let id_index_bytes = (0..nodes).fold(
+                nodes.saturating_mul(std::mem::size_of::<(NodeId, usize)>()),
+                |bytes, slot| bytes.saturating_add(graph.node_id(slot).as_str().len()),
             );
             let adjacency_count = usize::from(requirements.outgoing)
                 .saturating_add(usize::from(requirements.incoming));
             let adjacency_bytes = adjacency_count.saturating_mul(
                 graph
-                    .edges
-                    .len()
+                    .edge_count()
                     .saturating_mul(
                         std::mem::size_of::<(usize, usize)>() + std::mem::size_of::<usize>(),
                     )
-                    .saturating_add(
-                        graph
-                            .nodes
-                            .len()
-                            .saturating_mul(2 * std::mem::size_of::<usize>()),
-                    ),
+                    .saturating_add(nodes.saturating_mul(2 * std::mem::size_of::<usize>())),
             );
             id_index_bytes.saturating_add(adjacency_bytes)
         })?;
+        let GraphRef::Owned(graph) = graph else {
+            // A typed index already resolves ids and holds typed adjacency.
+            return Ok(NodeIndex {
+                by_id: HashMap::new(),
+                outgoing_by_vertex: None,
+                incoming_by_vertex: None,
+                requirements,
+            });
+        };
         let mut by_id = HashMap::with_capacity(graph.nodes.len());
         for (i, node) in graph.nodes.iter().enumerate() {
             by_id.insert(node.id.clone(), i);
@@ -1246,11 +1308,91 @@ impl NodeIndex {
             by_id,
             outgoing_by_vertex,
             incoming_by_vertex,
+            requirements,
         })
     }
 
-    fn get<'g>(&self, graph: &'g Graph, id: &str) -> Option<&'g Node> {
-        self.by_id.get(id).map(|&i| &graph.nodes[i])
+    fn get<'g>(&self, graph: GraphRef<'g>, id: &str) -> Option<Cow<'g, Node>> {
+        match graph {
+            GraphRef::Owned(graph) => self.by_id.get(id).map(|&i| Cow::Borrowed(&graph.nodes[i])),
+            GraphRef::Indexed(index) => index.vertex_index(id).map(|vertex| index.node(vertex)),
+        }
+    }
+
+    /// The relationship candidates a pattern step examines from `node`, in
+    /// the order the owned executor examines them: its adjacency lists when
+    /// the query needs adjacency, otherwise the whole edge vector.
+    ///
+    /// Over a typed index the whole-vector scan is replaced by the edges that
+    /// touch `node`, which are the only ones the scan can accept, in the same
+    /// edge-slot order. A candidate is `None` for an edge that is visited but
+    /// never built: with `exact_scan` (a budget is counting, or the step's
+    /// relationship variable is already bound) every slot of the scan is
+    /// still visited, so the caller's per-slot checks charge and fail exactly
+    /// as over the owned graph; otherwise nothing can observe the rejected
+    /// slots and only the touching edges are visited.
+    fn edges_of<'a>(
+        &'a self,
+        graph: GraphRef<'a>,
+        node: &Node,
+        direction: ast::Direction,
+        exact_scan: bool,
+    ) -> Result<EdgeCandidates<'a>> {
+        let index = match graph {
+            GraphRef::Owned(graph) => {
+                return Ok(match self.indexed_edges(graph, node, direction) {
+                    Some(edges) => EdgeCandidates::Adjacent(edges),
+                    None => EdgeCandidates::Scan(graph.edges.iter().enumerate()),
+                });
+            }
+            GraphRef::Indexed(index) => index,
+        };
+        let Some(vertex) = index.vertex_index(node.id.as_str()) else {
+            // The owned executor scans every edge and accepts none.
+            return Ok(if exact_scan {
+                EdgeCandidates::scan_order(index, Vec::new())
+            } else {
+                EdgeCandidates::Slots(index, Vec::new().into_iter())
+            });
+        };
+        let outgoing = || typed_edge_slots(index, vertex, false);
+        let incoming = || typed_edge_slots(index, vertex, true);
+        let adjacent = match direction {
+            ast::Direction::Outgoing => self.requirements.outgoing,
+            ast::Direction::Incoming => self.requirements.incoming,
+            ast::Direction::Undirected => self.requirements.outgoing && self.requirements.incoming,
+        };
+        let slots: Vec<u32> = match direction {
+            ast::Direction::Outgoing => outgoing().into_iter().map(|(edge, _)| edge).collect(),
+            ast::Direction::Incoming => incoming().into_iter().map(|(edge, _)| edge).collect(),
+            ast::Direction::Undirected if adjacent => {
+                // Outgoing, then incoming without self-loops already listed.
+                let mut slots: Vec<u32> = outgoing().into_iter().map(|(edge, _)| edge).collect();
+                slots.extend(
+                    incoming()
+                        .into_iter()
+                        .filter(|&(_, other)| other != vertex)
+                        .map(|(edge, _)| edge),
+                );
+                slots
+            }
+            ast::Direction::Undirected => {
+                // Edge-vector order; a self-loop is one edge.
+                let mut slots: Vec<u32> = outgoing()
+                    .into_iter()
+                    .chain(incoming())
+                    .map(|(edge, _)| edge)
+                    .collect();
+                slots.sort_unstable();
+                slots.dedup();
+                slots
+            }
+        };
+        Ok(if exact_scan && !adjacent {
+            EdgeCandidates::scan_order(index, slots)
+        } else {
+            EdgeCandidates::Slots(index, slots.into_iter())
+        })
     }
 
     fn indexed_edges<'a>(
@@ -1340,6 +1482,86 @@ impl<'a> Iterator for IndexedEdges<'a> {
     }
 }
 
+/// `(edge slot, other endpoint)` for every edge of every type leaving
+/// (`reverse`: entering) `vertex`, in edge-slot order: the order of the owned
+/// executor's compressed adjacency, which lists edges by edge-vector position.
+fn typed_edge_slots(index: &TypedGraphIndex, vertex: u32, reverse: bool) -> Vec<(u32, u32)> {
+    let mut slots = Vec::new();
+    for relationship in index.relationship_types() {
+        let view = index.adjacency(relationship.as_str());
+        let row = if reverse {
+            view.incoming(vertex)
+        } else {
+            view.outgoing(vertex)
+        };
+        slots.extend(row.iter().map(|neighbor| (neighbor.edge, neighbor.vertex)));
+    }
+    slots.sort_unstable();
+    slots
+}
+
+/// Relationship candidates, borrowed from an owned graph or built one at a
+/// time from a typed index's source. A `None` edge is a slot visited only for
+/// the checks the owned scan makes before rejecting an edge that does not
+/// touch the current node.
+enum EdgeCandidates<'a> {
+    Adjacent(IndexedEdges<'a>),
+    Scan(std::iter::Enumerate<std::slice::Iter<'a, Edge>>),
+    /// Only the listed slots, each built.
+    Slots(&'a TypedGraphIndex, std::vec::IntoIter<u32>),
+    /// Every slot in edge-vector order; only the sorted `incident` ones built.
+    ScanOrder {
+        index: &'a TypedGraphIndex,
+        incident: std::iter::Peekable<std::vec::IntoIter<u32>>,
+        next: u32,
+        end: u32,
+    },
+}
+
+impl<'a> EdgeCandidates<'a> {
+    fn scan_order(index: &'a TypedGraphIndex, incident: Vec<u32>) -> Self {
+        Self::ScanOrder {
+            index,
+            incident: incident.into_iter().peekable(),
+            next: 0,
+            // A validated index has at most u32::MAX edges.
+            end: index.edge_count() as u32,
+        }
+    }
+}
+
+impl<'a> Iterator for EdgeCandidates<'a> {
+    type Item = (usize, Option<Cow<'a, Edge>>);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self {
+            Self::Adjacent(edges) => edges
+                .next()
+                .map(|(slot, edge)| (slot, Some(Cow::Borrowed(edge)))),
+            Self::Scan(edges) => edges
+                .next()
+                .map(|(slot, edge)| (slot, Some(Cow::Borrowed(edge)))),
+            Self::Slots(index, slots) => slots
+                .next()
+                .map(|slot| (slot as usize, Some(index.edge(slot)))),
+            Self::ScanOrder {
+                index,
+                incident,
+                next,
+                end,
+            } => {
+                if *next >= *end {
+                    return None;
+                }
+                let slot = *next;
+                *next += 1;
+                let edge = incident.next_if_eq(&slot).map(|slot| index.edge(slot));
+                Some((slot as usize, edge))
+            }
+        }
+    }
+}
+
 const FIXED_SEGMENT_ADJACENCY_THRESHOLD: usize = 64;
 
 fn query_adjacency_requirements(query: &SingleQuery) -> AdjacencyRequirements {
@@ -1402,7 +1624,7 @@ fn pattern_variables(patterns: &[PathPattern]) -> Vec<String> {
 }
 
 fn expand_pattern(
-    graph: &Graph,
+    graph: GraphRef<'_>,
     index: &NodeIndex,
     pattern: &PathPattern,
     base_rows: Vec<MatchRow>,
@@ -1465,7 +1687,7 @@ fn expand_pattern(
 /// shortest by construction; ties are kept for `All`, first-found (in
 /// deterministic edge order) for `Single`.
 fn expand_shortest(
-    graph: &Graph,
+    graph: GraphRef<'_>,
     index: &NodeIndex,
     pattern: &PathPattern,
     kind: ShortestKind,
@@ -1490,7 +1712,7 @@ fn expand_shortest(
     };
     // Simple paths never repeat a node, so no shortest path is longer than
     // |nodes| - 1 hops; that caps the open-ended `*` search.
-    let cap = graph.nodes.len().saturating_sub(1);
+    let cap = graph.node_count().saturating_sub(1);
     let cap = max.map_or(cap, |m| m.min(cap));
 
     let mut out = Vec::new();
@@ -1568,7 +1790,7 @@ fn expand_shortest(
                     if let Some(var) = &segment.node.variable {
                         next_row.insert(
                             var.clone(),
-                            Bound::Node(clone_node(end_node, "binding shortest-path end nodes")?),
+                            Bound::Node(clone_node(&end_node, "binding shortest-path end nodes")?),
                         );
                     }
                     if let Some(var) = &rel.variable {
@@ -1599,7 +1821,7 @@ fn expand_shortest(
 
 /// Reconstruct the node sequence of a path from its start node and edge list.
 fn walk_path_nodes(
-    graph: &Graph,
+    graph: GraphRef<'_>,
     index: &NodeIndex,
     start: &Node,
     edges: &[Edge],
@@ -1613,8 +1835,8 @@ fn walk_path_nodes(
         let next = index
             .get(graph, next_id)
             .ok_or_else(|| gql_execution("shortest path endpoint node not found"))?;
-        nodes.push(clone_node(next, "reconstructing shortest-path nodes")?);
-        current = clone_node(next, "tracking shortest-path endpoints")?;
+        nodes.push(clone_node(&next, "reconstructing shortest-path nodes")?);
+        current = clone_node(&next, "tracking shortest-path endpoints")?;
     }
     Ok(nodes)
 }
@@ -1637,7 +1859,7 @@ fn path_value(nodes: &[Node], edges: &[Edge]) -> Result<Value> {
 
 #[allow(clippy::too_many_arguments)]
 fn expand_segments(
-    graph: &Graph,
+    graph: GraphRef<'_>,
     index: &NodeIndex,
     segments: &[PathSegment],
     idx: usize,
@@ -1740,32 +1962,24 @@ fn expand_segments(
         return Ok(());
     }
 
-    if let Some(edges) = index.indexed_edges(graph, current, rel.direction) {
-        return expand_fixed_edges(
-            edges, graph, index, segments, idx, current, &row, params, path_var, &acc_nodes,
-            &acc_edges, out,
-        );
-    }
+    // A bound relationship variable makes every scanned slot observable:
+    // `fixed_binding_matches` can refuse it before its endpoints are read.
+    let exact_scan = read_budget::intermediate_accounting_active()
+        || rel
+            .variable
+            .as_ref()
+            .is_some_and(|name| row.contains_key(name));
+    let edges = index.edges_of(graph, current, rel.direction, exact_scan)?;
     expand_fixed_edges(
-        graph.edges.iter().enumerate(),
-        graph,
-        index,
-        segments,
-        idx,
-        current,
-        &row,
-        params,
-        path_var,
-        &acc_nodes,
-        &acc_edges,
-        out,
+        edges, graph, index, segments, idx, current, &row, params, path_var, &acc_nodes,
+        &acc_edges, out,
     )
 }
 
 #[allow(clippy::too_many_arguments)]
 fn expand_fixed_edges<'a>(
-    edges: impl Iterator<Item = (usize, &'a Edge)>,
-    graph: &Graph,
+    edges: impl Iterator<Item = (usize, Option<Cow<'a, Edge>>)>,
+    graph: GraphRef<'_>,
     index: &NodeIndex,
     segments: &[PathSegment],
     idx: usize,
@@ -1787,7 +2001,11 @@ fn expand_fixed_edges<'a>(
         if !match_scope::fixed_binding_matches(row, rel.variable.as_deref(), slot)? {
             continue;
         }
-        let Some(next_id) = edge_other_endpoint(edge, current, rel.direction) else {
+        // An unbuilt slot does not touch `current`: the endpoint test rejects it.
+        let Some(edge) = edge else {
+            continue;
+        };
+        let Some(next_id) = edge_other_endpoint(&edge, current, rel.direction) else {
             continue;
         };
         if !rel.types.is_empty() && !rel.types.iter().any(|t| t == edge.label.as_str()) {
@@ -1799,7 +2017,7 @@ fn expand_fixed_edges<'a>(
         let Some(next_node) = index.get(graph, next_id) else {
             continue;
         };
-        if !node_matches(next_node, &segment.node, params)? {
+        if !node_matches(&next_node, &segment.node, params)? {
             continue;
         }
         // consistency with an already-bound next-node variable
@@ -1815,7 +2033,7 @@ fn expand_fixed_edges<'a>(
             next_row.insert(
                 var.clone(),
                 Bound::Edge(
-                    clone_edge(edge, "binding matched relationships")?,
+                    clone_edge(&edge, "binding matched relationships")?,
                     Some(slot),
                 ),
             );
@@ -1823,14 +2041,14 @@ fn expand_fixed_edges<'a>(
         if let Some(var) = &segment.node.variable {
             next_row.insert(
                 var.clone(),
-                Bound::Node(clone_node(next_node, "binding matched nodes")?),
+                Bound::Node(clone_node(&next_node, "binding matched nodes")?),
             );
         }
         let (na, ea) = if path_var.is_some() {
             let mut na = clone_nodes(acc_nodes, "carrying path-node accumulators")?;
-            na.push(clone_node(next_node, "extending path-node accumulators")?);
+            na.push(clone_node(&next_node, "extending path-node accumulators")?);
             let mut ea = clone_edges(acc_edges, "carrying path-edge accumulators")?;
-            ea.push(clone_edge(edge, "extending path-edge accumulators")?);
+            ea.push(clone_edge(&edge, "extending path-edge accumulators")?);
             (na, ea)
         } else {
             (Vec::new(), Vec::new())
@@ -1840,7 +2058,7 @@ fn expand_fixed_edges<'a>(
             index,
             segments,
             idx + 1,
-            next_node,
+            &next_node,
             next_row,
             params,
             path_var,
@@ -1857,7 +2075,7 @@ fn expand_fixed_edges<'a>(
 /// revisited within a path, so the search terminates even when `max` is open.
 #[allow(clippy::too_many_arguments)]
 fn collect_var_length_paths(
-    graph: &Graph,
+    graph: GraphRef<'_>,
     index: &NodeIndex,
     rel: &RelationshipPattern,
     node: &Node,
@@ -1880,24 +2098,10 @@ fn collect_var_length_paths(
     if max.is_some_and(|m| depth >= m) {
         return Ok(());
     }
-    if let Some(edges) = index.indexed_edges(graph, node, rel.direction) {
-        return collect_var_length_edges(
-            edges,
-            graph,
-            index,
-            rel,
-            node,
-            min,
-            max,
-            edges_so_far,
-            visited,
-            used_slots,
-            params,
-            results,
-        );
-    }
+    let exact_scan = read_budget::intermediate_accounting_active();
+    let edges = index.edges_of(graph, node, rel.direction, exact_scan)?;
     collect_var_length_edges(
-        graph.edges.iter().enumerate(),
+        edges,
         graph,
         index,
         rel,
@@ -1914,8 +2118,8 @@ fn collect_var_length_paths(
 
 #[allow(clippy::too_many_arguments)]
 fn collect_var_length_edges<'a>(
-    edges: impl Iterator<Item = (usize, &'a Edge)>,
-    graph: &Graph,
+    edges: impl Iterator<Item = (usize, Option<Cow<'a, Edge>>)>,
+    graph: GraphRef<'_>,
     index: &NodeIndex,
     rel: &RelationshipPattern,
     node: &Node,
@@ -1932,7 +2136,11 @@ fn collect_var_length_edges<'a>(
         if match_scope::contains(used_slots, slot)? {
             continue;
         }
-        let Some(next_id) = edge_other_endpoint(edge, node, rel.direction) else {
+        // An unbuilt slot does not touch `node`: the endpoint test rejects it.
+        let Some(edge) = edge else {
+            continue;
+        };
+        let Some(next_id) = edge_other_endpoint(&edge, node, rel.direction) else {
             continue;
         };
         if !rel.types.is_empty() && !rel.types.iter().any(|t| t == edge.label.as_str()) {
@@ -1947,13 +2155,13 @@ fn collect_var_length_edges<'a>(
         let Some(next_node) = index.get(graph, next_id) else {
             continue;
         };
-        edges_so_far.push(slot, edge)?;
+        edges_so_far.push(slot, &edge)?;
         visited.insert(next_id.to_string());
         collect_var_length_paths(
             graph,
             index,
             rel,
-            next_node,
+            &next_node,
             min,
             max,
             edges_so_far,
@@ -1994,7 +2202,7 @@ fn edge_other_endpoint<'e>(
 }
 
 fn node_candidates(
-    graph: &Graph,
+    graph: GraphRef<'_>,
     np: &NodePattern,
     row: &Row,
     params: &CypherParameters,
@@ -2011,13 +2219,49 @@ fn node_candidates(
         });
     }
     let mut out = Vec::new();
-    for node in &graph.nodes {
-        read_budget::charge_candidate_work(1, "scanning node candidates")?;
-        if node_matches(node, np, params)? {
-            out.push(clone_node(node, "collecting matched node candidates")?);
+    match graph {
+        GraphRef::Owned(graph) => {
+            for node in &graph.nodes {
+                read_budget::charge_candidate_work(1, "scanning node candidates")?;
+                if node_matches(node, np, params)? {
+                    out.push(clone_node(node, "collecting matched node candidates")?);
+                }
+            }
+        }
+        GraphRef::Indexed(index) => {
+            // Test labels and properties in place; build only the matches.
+            for slot in 0..index.node_count() as u32 {
+                read_budget::charge_candidate_work(1, "scanning node candidates")?;
+                if node_slot_matches(index, slot, np, params)? {
+                    out.push(clone_node(
+                        &index.node(slot),
+                        "collecting matched node candidates",
+                    )?);
+                }
+            }
         }
     }
     Ok(out)
+}
+
+/// [`node_matches`] for the node in `slot`, read in place.
+fn node_slot_matches(
+    index: &TypedGraphIndex,
+    slot: u32,
+    np: &NodePattern,
+    params: &CypherParameters,
+) -> Result<bool> {
+    let label = index.node_label(slot);
+    for wanted in &np.labels {
+        if label.as_str() != wanted {
+            return Ok(false);
+        }
+    }
+    props_match_by(
+        |key| index.node_property(slot, key),
+        np.properties.as_ref(),
+        params,
+    )
 }
 
 fn node_matches(node: &Node, np: &NodePattern, params: &CypherParameters) -> Result<bool> {
@@ -2034,6 +2278,15 @@ fn node_matches(node: &Node, np: &NodePattern, params: &CypherParameters) -> Res
 
 /// True when every entry in the inline pattern map equals the element's property.
 fn props_match(props: &Props, map: Option<&MapLiteral>, params: &CypherParameters) -> Result<bool> {
+    props_match_by(|key| props.get(key).map(Cow::Borrowed), map, params)
+}
+
+/// [`props_match`] over an element whose properties are read one key at a time.
+fn props_match_by<'v>(
+    get: impl Fn(&str) -> Option<Cow<'v, Value>>,
+    map: Option<&MapLiteral>,
+    params: &CypherParameters,
+) -> Result<bool> {
     let Some(map) = map else {
         return Ok(true);
     };
@@ -2047,15 +2300,15 @@ fn props_match(props: &Props, map: Option<&MapLiteral>, params: &CypherParameter
             expr,
             Expr::Null | Expr::Boolean(_) | Expr::Integer(_) | Expr::Float(_) | Expr::String(_)
         ) {
-            match props.get(key) {
-                Some(actual) if count_predicate::literal_equal(actual, expr)? => continue,
+            match get(key) {
+                Some(actual) if count_predicate::literal_equal(&actual, expr)? => continue,
                 _ => return Ok(false),
             }
         }
         // Preserve expression/parameter errors even when the property is absent.
         let expected = eval_constant(expr, params)?;
-        match props.get(key) {
-            Some(actual) if property_equality::checked(actual, &expected)? == Some(true) => {}
+        match get(key) {
+            Some(actual) if property_equality::checked(&actual, &expected)? == Some(true) => {}
             _ => return Ok(false),
         }
     }
@@ -2067,7 +2320,7 @@ fn props_match(props: &Props, map: Option<&MapLiteral>, params: &CypherParameter
 // ---------------------------------------------------------------------------
 
 fn project(
-    graph: &Graph,
+    graph: GraphRef<'_>,
     rows: &[Row],
     projection: &Projection,
     params: &CypherParameters,

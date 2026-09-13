@@ -80,7 +80,13 @@ pub fn execute_read_query_indexed(
     if let Some(table) = count_triangle::try_execute(index, query, params)? {
         return Ok(table);
     }
-    execute_read_query(index.graph(), query, params)
+    // An index over an owned graph keeps the owned reference pipeline. Any
+    // other source is read in place: no owned copy of the graph is built.
+    let graph = match index.source().as_graph() {
+        Some(graph) => GraphRef::Owned(graph),
+        None => GraphRef::Indexed(index),
+    };
+    execute_read_query_on(graph, query, params)
 }
 
 #[cfg(test)]

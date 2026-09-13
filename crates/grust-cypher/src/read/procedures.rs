@@ -294,7 +294,7 @@ pub(crate) fn execute_read_query_with_registry(
     registry: &ProcedureRegistry,
 ) -> Result<CypherResultTable> {
     execute_read_query_with_procedures(
-        graph,
+        GraphRef::Owned(graph),
         query,
         params,
         &ProcedureExecution::new(registry.clone())?.with_graph_name(graph_name)?,
@@ -310,7 +310,7 @@ pub(crate) fn execute_read_query_on_snapshot(
     ensure_query_uses_graph(query, snapshot.identity().graph())?;
     let execution =
         ProcedureExecution::new(registry.clone())?.with_identity(snapshot.identity().clone());
-    execute_read_query_with_procedures(snapshot.graph(), query, params, &execution)
+    execute_read_query_with_procedures(GraphRef::Owned(snapshot.graph()), query, params, &execution)
 }
 
 pub(crate) fn prepare_query_with_registry(

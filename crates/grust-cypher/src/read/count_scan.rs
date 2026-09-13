@@ -314,7 +314,7 @@ fn count_nodes(
     } else {
         None
     };
-    let count = candidates.map_or(index.graph().nodes.len(), <[u32]>::len);
+    let count = candidates.map_or(index.node_count(), <[u32]>::len);
     if matches!(filter, Filter::Always(true)) && unfiltered(first) && last.is_none_or(unfiltered) {
         return Ok(count as u64);
     }
@@ -322,7 +322,7 @@ fn count_nodes(
     for offset in 0..count {
         read_budget::charge_candidate_work(1, "scanning indexed count vertices")?;
         let slot = candidates.map_or(offset, |slots| slots[offset] as usize);
-        let node = &index.graph().nodes[slot];
+        let node = index.node(slot as u32);
         // Label consistency was proved above, and candidates use that label.
         if !props_match(&node.props, first.properties.as_ref(), params)? {
             continue;
@@ -373,21 +373,20 @@ fn count_edges(
         && bare(&path.start)
         && bare(&segment.node)
     {
-        return Ok(index.graph().edges.len() as u64);
+        return Ok(index.edge_count() as u64);
     }
     let mut count = 0;
-    for edge in &index.graph().edges {
+    for edge in 0..index.edge_count() as u32 {
         read_budget::charge_candidate_work(1, "scanning indexed count edges")?;
-        if !rel.types.is_empty() && !rel.types.iter().any(|kind| kind == edge.label.as_str())
-            || !props_match(&edge.props, rel.properties.as_ref(), params)?
+        let label = index.edge_label(edge);
+        if !rel.types.is_empty() && !rel.types.iter().any(|kind| kind == label.as_str())
+            || !props_match(index.edge_props(edge), rel.properties.as_ref(), params)?
         {
             continue;
         }
-        let from = index
-            .vertex_index(edge.from.as_str())
-            .expect("index validates endpoints");
-        let to = index
-            .vertex_index(edge.to.as_str())
+        let (from, to) = index
+            .source()
+            .edge_endpoints(edge)
             .expect("index validates endpoints");
         if same_node && from != to {
             continue;
@@ -401,8 +400,8 @@ fn count_edges(
             }
             read_budget::charge_candidate_work(1, "checking count edge orientation")?;
             let (left, right) = if reverse { (to, from) } else { (from, to) };
-            if node_matches(&index.graph().nodes[left as usize], &path.start, params)?
-                && node_matches(&index.graph().nodes[right as usize], &segment.node, params)?
+            if node_matches(&index.node(left), &path.start, params)?
+                && node_matches(&index.node(right), &segment.node, params)?
             {
                 count += 1
             }

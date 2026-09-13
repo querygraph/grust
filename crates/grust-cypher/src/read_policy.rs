@@ -113,9 +113,14 @@ pub fn run_bounded_read_query(
     params: &CypherParameters,
     policy: &ReadQueryPolicy,
 ) -> Result<CypherResultTable> {
-    run_bounded_read_query_with_executor(graph, None, query_text, params, policy, None, |query| {
-        execute_read_query(graph, query, params)
-    })
+    run_bounded_read_query_with_executor(
+        BoundedInput::Graph(graph),
+        query_text,
+        params,
+        policy,
+        None,
+        |query| execute_read_query(graph, query, params),
+    )
 }
 
 /// Execute a bounded read against the index's immutable projected graph.
@@ -133,8 +138,7 @@ pub fn run_bounded_read_query_indexed(
     policy: &ReadQueryPolicy,
 ) -> Result<CypherResultTable> {
     run_bounded_read_query_with_executor(
-        index.graph(),
-        Some(index.serialized_graph_bytes()),
+        BoundedInput::Indexed(index),
         query_text,
         params,
         policy,
@@ -155,8 +159,7 @@ pub fn run_bounded_read_query_with_registry(
     registry: &ProcedureRegistry,
 ) -> Result<CypherResultTable> {
     run_bounded_read_query_with_executor(
-        graph,
-        None,
+        BoundedInput::Graph(graph),
         query_text,
         params,
         policy,
@@ -180,8 +183,7 @@ pub fn run_bounded_read_query_on_snapshot(
     registry: &ProcedureRegistry,
 ) -> Result<CypherResultTable> {
     run_bounded_read_query_with_executor(
-        snapshot.graph(),
-        None,
+        BoundedInput::Graph(snapshot.graph()),
         query_text,
         params,
         policy,
@@ -190,9 +192,17 @@ pub fn run_bounded_read_query_on_snapshot(
     )
 }
 
+/// The projected input graph whose size a bounded read checks.
+#[derive(Clone, Copy)]
+enum BoundedInput<'a> {
+    Graph(&'a Graph),
+    /// A typed index: its counts, and the serialized size it measures once
+    /// per snapshot, without materializing an owned graph.
+    Indexed(&'a TypedGraphIndex),
+}
+
 fn run_bounded_read_query_with_executor(
-    graph: &Graph,
-    indexed_graph_bytes: Option<usize>,
+    input: BoundedInput<'_>,
     query_text: &str,
     params: &CypherParameters,
     policy: &ReadQueryPolicy,
@@ -209,18 +219,26 @@ fn run_bounded_read_query_with_executor(
     };
     ensure_before_deadline(deadline)?;
     crate::semantics::analyze(&query)?;
-    ensure_graph_bounds(graph, policy)?;
+    let (nodes, edges) = match input {
+        BoundedInput::Graph(graph) => (graph.nodes.len(), graph.edges.len()),
+        BoundedInput::Indexed(index) => (index.node_count(), index.edge_count()),
+    };
+    ensure_graph_bounds(nodes, edges, policy)?;
     ensure_serialized_size("parameters", params, policy.max_parameter_bytes, deadline)?;
-    if let Some(bytes) = indexed_graph_bytes {
-        ensure_before_deadline(deadline)?;
-        if bytes > policy.max_graph_bytes {
-            return Err(gql_execution(format!(
-                "bounded read graph exceeds {} serialized bytes",
-                policy.max_graph_bytes
-            )));
+    match input {
+        BoundedInput::Indexed(index) => {
+            let bytes = index.serialized_graph_bytes();
+            ensure_before_deadline(deadline)?;
+            if bytes > policy.max_graph_bytes {
+                return Err(gql_execution(format!(
+                    "bounded read graph exceeds {} serialized bytes",
+                    policy.max_graph_bytes
+                )));
+            }
         }
-    } else {
-        ensure_serialized_size("graph", graph, policy.max_graph_bytes, deadline)?;
+        BoundedInput::Graph(graph) => {
+            ensure_serialized_size("graph", graph, policy.max_graph_bytes, deadline)?
+        }
     }
 
     let limits = ReadExecutionBudgetLimits {
@@ -283,19 +301,17 @@ fn validate_policy(policy: &ReadQueryPolicy) -> Result<()> {
     Ok(())
 }
 
-fn ensure_graph_bounds(graph: &Graph, policy: &ReadQueryPolicy) -> Result<()> {
-    if graph.nodes.len() > policy.max_graph_nodes {
+fn ensure_graph_bounds(nodes: usize, edges: usize, policy: &ReadQueryPolicy) -> Result<()> {
+    if nodes > policy.max_graph_nodes {
         return Err(gql_execution(format!(
             "bounded read graph contains {} nodes; policy maximum is {}",
-            graph.nodes.len(),
-            policy.max_graph_nodes
+            nodes, policy.max_graph_nodes
         )));
     }
-    if graph.edges.len() > policy.max_graph_edges {
+    if edges > policy.max_graph_edges {
         return Err(gql_execution(format!(
             "bounded read graph contains {} edges; policy maximum is {}",
-            graph.edges.len(),
-            policy.max_graph_edges
+            edges, policy.max_graph_edges
         )));
     }
     Ok(())

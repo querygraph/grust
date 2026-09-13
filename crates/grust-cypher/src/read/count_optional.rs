@@ -131,11 +131,10 @@ pub(super) fn apply(
     weights: &mut [u64],
     params: &CypherParameters,
 ) -> Result<()> {
-    let graph = index.graph();
     for leaf in leaves {
         for (vertex, weight) in weights.iter_mut().enumerate() {
             read_budget::charge_candidate_work(1, "combining optional count leaves")?;
-            if *weight == 0 || !node_matches(&graph.nodes[vertex], leaf.anchor, params)? {
+            if *weight == 0 || !node_matches(&index.node(vertex as u32), leaf.anchor, params)? {
                 // A failed OPTIONAL anchor predicate pads; it must not filter
                 // out the mandatory assignment or contribute a zero factor.
                 continue;
@@ -162,14 +161,11 @@ pub(super) fn apply(
                         continue;
                     }
                     if props_match(
-                        &graph.edges[neighbor.edge as usize].props,
+                        index.edge_props(neighbor.edge),
                         rel.properties.as_ref(),
                         params,
-                    )? && node_matches(
-                        &graph.nodes[neighbor.vertex as usize],
-                        leaf.leaf,
-                        params,
-                    )? {
+                    )? && node_matches(&index.node(neighbor.vertex), leaf.leaf, params)?
+                    {
                         degree = add(degree, 1);
                     }
                 }

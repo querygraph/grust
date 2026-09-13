@@ -185,12 +185,11 @@ pub(super) fn try_execute(
     let Some(wedge) = plan(query)? else {
         return Ok(None);
     };
-    let graph = index.graph();
     let roles = role_masks::prepare(index, &wedge)?;
     let masks = roles.masks();
-    read_budget::charge_candidate_work(graph.nodes.len(), "initializing count wedge leaf counts")?;
-    let mut leaves = reserved_vec(graph.nodes.len(), "allocating count wedge leaf counts")?;
-    leaves.resize(graph.nodes.len(), 0u64);
+    read_budget::charge_candidate_work(index.node_count(), "initializing count wedge leaf counts")?;
+    let mut leaves = reserved_vec(index.node_count(), "allocating count wedge leaf counts")?;
+    leaves.resize(index.node_count(), 0u64);
     for vertex in roles.c_candidates() {
         read_budget::charge_candidate_work(1, "counting wedge leaves")?;
         if masks[vertex] & 4 == 0 {

@@ -1,14 +1,21 @@
-use std::sync::RwLockWriteGuard;
+use std::{
+    ops::{Deref, DerefMut},
+    sync::RwLockWriteGuard,
+};
 
 use super::*;
+use snapshot_source::StoreSnapshot;
 
 impl MemoryGraphStore {
-    /// Returns a reusable typed index owning an immutable graph snapshot.
+    /// Returns a reusable typed index over an immutable snapshot of the store.
     ///
-    /// The first call after a write clones the stored nodes and edges and builds
-    /// their index. Subsequent calls, including calls through cloned stores,
-    /// share that index without cloning the graph. Previously returned snapshots
-    /// remain valid and unchanged after later writes.
+    /// The first call after a write freezes the stored graph, shares it with
+    /// the index instead of copying its nodes and edges, and builds the index's
+    /// slot order and adjacency. Subsequent calls, including calls through
+    /// cloned stores, share that index. Previously returned snapshots remain
+    /// valid and unchanged after later writes: a write while one is still held
+    /// elsewhere copies the store's graph first (copy-on-write), leaving the
+    /// snapshot's frozen graph untouched.
     ///
     /// Like `TypedGraphIndex::new`, this returns an error for dangling edges or
     /// graphs that exceed the index's slot capacity. Existing store reads and
@@ -27,8 +34,8 @@ impl MemoryGraphStore {
         if let Some(index) = cache.as_ref() {
             return Ok(Arc::clone(index));
         }
-        let graph = Arc::new(Self::graph_snapshot(&inner));
-        let index = Arc::new(TypedGraphIndex::new(graph)?);
+        let source = Arc::new(StoreSnapshot::new(Arc::clone(&inner)));
+        let index = Arc::new(TypedGraphIndex::from_source(source)?);
         *cache = Some(Arc::clone(&index));
         Ok(index)
     }
@@ -37,32 +44,40 @@ impl MemoryGraphStore {
     ///
     /// Invalidate before exposing mutable state so early errors and mutation
     /// plans that partially apply cannot leave a stale snapshot cached.
-    pub(super) fn write_inner(&self) -> RwLockWriteGuard<'_, MemoryGraph> {
+    ///
+    /// The retired index is dropped here, inline: it holds the store's graph
+    /// `Arc`, and if it were still alive when the writer first mutated, that
+    /// write would copy the whole graph. Dropping it frees only its
+    /// permutations and adjacency arrays, a few large allocations.
+    pub(super) fn write_inner(&self) -> MemoryWriteGuard<'_> {
         let inner = self.inner.write().expect("memory graph lock poisoned");
         let retired = self
             .index_cache
             .lock()
             .expect("memory index cache lock poisoned")
             .take();
-        if let Some(index) = retired {
-            release_in_background(index);
-        }
-        inner
+        drop(retired);
+        MemoryWriteGuard(inner)
     }
 }
 
-/// Free a retired snapshot off the writer's path.
-///
-/// When the cache held the last reference, dropping it frees every cloned
-/// node and edge of the snapshot, tens of milliseconds for a few hundred
-/// thousand elements, and that would land on the latency of the one write
-/// that invalidated it. A detached thread takes the drop instead; if no
-/// thread can be spawned the closure is dropped here, releasing it inline.
-fn release_in_background(index: Arc<TypedGraphIndex>) {
-    std::thread::Builder::new()
-        .name("grust-memory-snapshot-release".into())
-        .spawn(move || drop(index))
-        .ok();
+/// Write access to the store's graph. Reading is free; the first mutable
+/// access copies the graph only if a snapshot handed out earlier still
+/// shares it (`Arc::make_mut`).
+pub(super) struct MemoryWriteGuard<'a>(RwLockWriteGuard<'a, Arc<MemoryGraph>>);
+
+impl Deref for MemoryWriteGuard<'_> {
+    type Target = MemoryGraph;
+
+    fn deref(&self) -> &MemoryGraph {
+        &self.0
+    }
+}
+
+impl DerefMut for MemoryWriteGuard<'_> {
+    fn deref_mut(&mut self) -> &mut MemoryGraph {
+        Arc::make_mut(&mut self.0)
+    }
 }
 
 #[cfg(test)]

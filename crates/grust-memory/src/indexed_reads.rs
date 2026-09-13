@@ -45,26 +45,23 @@ impl MemoryGraphStore {
 
 /// `traversal` over `index`, as `GraphStore::traverse` would answer it.
 pub(super) fn traverse_indexed(index: &TypedGraphIndex, traversal: &Traversal) -> Vec<Node> {
-    let graph = index.graph();
     traverse_slots(index, traversal)
         .into_iter()
-        .map(|vertex| graph.nodes[vertex as usize].clone())
+        .map(|vertex| index.node(vertex).into_owned())
         .collect()
 }
 
 /// `traversal` over `index`, as `GraphStore::traverse_ids` would answer it:
 /// the same vertices, cloning only their ids.
 pub(super) fn traverse_ids_indexed(index: &TypedGraphIndex, traversal: &Traversal) -> Vec<NodeId> {
-    let graph = index.graph();
     traverse_slots(index, traversal)
         .into_iter()
-        .map(|vertex| graph.nodes[vertex as usize].id.clone())
+        .map(|vertex| index.node_id(vertex).clone())
         .collect()
 }
 
 /// The vertex slots `traversal` reaches over `index`, in result order.
 fn traverse_slots(index: &TypedGraphIndex, traversal: &Traversal) -> Vec<u32> {
-    let graph = index.graph();
     let mut current: Vec<u32> = match &traversal.start {
         Start::Node(id) => index.vertex_index(id.as_str()).into_iter().collect(),
         Start::NodesByLabel(label) => index.vertices_with_label(label.as_str()).to_vec(),
@@ -72,7 +69,7 @@ fn traverse_slots(index: &TypedGraphIndex, traversal: &Traversal) -> Vec<u32> {
             .vertices_with_label(label.as_str())
             .iter()
             .copied()
-            .filter(|&vertex| graph.nodes[vertex as usize].props.get(key) == Some(value))
+            .filter(|&vertex| index.node_property(vertex, key).as_deref() == Some(value))
             .collect(),
     };
     for step in &traversal.steps {
@@ -85,7 +82,7 @@ fn traverse_slots(index: &TypedGraphIndex, traversal: &Traversal) -> Vec<u32> {
                     let wanted = step
                         .node
                         .as_ref()
-                        .is_none_or(|label| graph.nodes[target as usize].label == *label);
+                        .is_none_or(|label| index.node_label(target) == label);
                     if wanted {
                         next.push(target);
                     }
@@ -123,11 +120,20 @@ fn traverse_slots(index: &TypedGraphIndex, traversal: &Traversal) -> Vec<u32> {
 /// Edges matching `query` over `index`, or `None` when the query anchors on
 /// neither endpoint and only a full scan can answer it.
 pub(super) fn edges_indexed(index: &TypedGraphIndex, query: &EdgeQuery) -> Option<Vec<Edge>> {
-    let graph = index.graph();
     let types = step_types(index, query.label.as_ref());
-    let matches = |edge: &Edge| {
-        query.from.as_ref().is_none_or(|from| from == &edge.from)
-            && query.to.as_ref().is_none_or(|to| to == &edge.to)
+    // Endpoints compare by slot, so no edge is built only to be rejected.
+    let from = query
+        .from
+        .as_ref()
+        .map(|id| index.vertex_index(id.as_str()));
+    let to = query.to.as_ref().map(|id| index.vertex_index(id.as_str()));
+    let matches = |n: &TypedNeighbor, vertex: u32, reverse: bool| {
+        let (source, target) = if reverse {
+            (n.vertex, vertex)
+        } else {
+            (vertex, n.vertex)
+        };
+        from.is_none_or(|from| from == Some(source)) && to.is_none_or(|to| to == Some(target))
     };
     let neighbours = |vertex: u32, reverse: bool| {
         types
@@ -140,9 +146,8 @@ pub(super) fn edges_indexed(index: &TypedGraphIndex, query: &EdgeQuery) -> Optio
                     view.outgoing(vertex)
                 }
             })
-            .map(|n| &graph.edges[n.edge as usize])
-            .filter(|edge| matches(edge))
-            .cloned()
+            .filter(|n| matches(n, vertex, reverse))
+            .map(|n| index.edge(n.edge).into_owned())
             .collect::<Vec<_>>()
     };
     let (anchor, reverse) = match (&query.from, &query.to) {

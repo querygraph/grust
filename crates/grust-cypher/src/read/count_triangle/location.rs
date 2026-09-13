@@ -32,7 +32,7 @@ impl Locations {
 /// trigger an unaccounted capacity increase.
 fn directed_groups(
     neighbors: &[TypedNeighbor],
-    graph: &Graph,
+    index: &TypedGraphIndex,
     label: &str,
     groups: &mut Vec<Group>,
 ) -> Result<()> {
@@ -50,7 +50,7 @@ fn directed_groups(
             cursor += 1;
         }
         read_budget::charge_candidate_work(1, "grouping triangle location endpoints")?;
-        if graph.nodes[vertex as usize].label.as_str() == label {
+        if index.node_label(vertex).as_str() == label {
             if groups.len() == groups.capacity() {
                 return Err(gql_execution(
                     "count triangle location group exceeded its proven capacity",
@@ -89,13 +89,13 @@ fn regroup_city(
 ) -> Result<()> {
     directed_groups(
         index.incoming(city, triangle.located_type),
-        index.graph(),
+        index,
         triangle.person_label,
         incoming_people,
     )?;
     directed_groups(
         index.outgoing(city, triangle.part_type),
-        index.graph(),
+        index,
         triangle.country_label,
         outgoing_countries,
     )

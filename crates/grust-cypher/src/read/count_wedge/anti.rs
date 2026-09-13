@@ -185,7 +185,7 @@ fn count_parts(
     masks: &[u8],
     leaves: &[u64],
 ) -> Result<(u128, u128)> {
-    let graph_len = index.graph().nodes.len();
+    let graph_len = index.node_count();
     if masks.len() != graph_len || leaves.len() != graph_len {
         return Err(gql_execution(
             "anti-wedge role masks and leaves must cover the indexed graph",

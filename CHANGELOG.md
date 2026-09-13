@@ -6,6 +6,26 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ## Unreleased
 
+- Cypher over `grust-memory` reads the store in place instead of a copy of
+  it. `MemoryGraphStore::indexed_snapshot` shares the store's frozen storage
+  (copy-on-write: a write copies the store only while an older snapshot is
+  still held) and adds three `u32` permutations plus the typed adjacency;
+  nodes and edges are built on demand, one at a time, when a query examines
+  them. `TypedGraphIndex` now reads its graph through the new
+  `GraphSnapshotSource` trait (`TypedGraphIndex::from_source`, with slot
+  accessors `node`, `edge`, `node_label`, `node_property`, `edge_props`, ...);
+  `TypedGraphIndex::new(Arc<Graph>)` is unchanged, and `graph()` still returns
+  a `&Graph`, materializing one on first use for a borrowed source. The
+  reference executor behind `execute_read_query_indexed` walks the index
+  instead of `index.graph()`, visiting candidates in the same order and
+  charging the same budget, so results, refusals and error messages are
+  unchanged; bounded indexed reads take node and edge counts and the
+  serialized size from the index. With 10 million untyped edges the store
+  plus the Cypher read path hold 83 bytes per edge instead of 213 (the read
+  path 35 instead of 165), and the benchmark's anchored reads run in
+  milliseconds instead of seconds (`examples/footprint.rs`, which now also
+  builds the snapshot and answers out-degree and two-hop reads).
+
 - `grust-memory` stores each edge once: node ids and labels are interned as
   `u32` handles, an edge is a 16-byte record listed by slot in `u32` adjacency
   lists and found by key through a hash index, and edge ids and properties

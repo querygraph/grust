@@ -105,11 +105,10 @@ pub(super) fn try_execute(
     let Some(triangle) = plan::plan(query)? else {
         return Ok(None);
     };
-    let graph = index.graph();
     let people = index.vertices_with_label(triangle.person_label);
-    read_budget::charge_candidate_work(graph.nodes.len(), "initializing triangle person slots")?;
-    let mut person_slot = reserved_vec(graph.nodes.len(), "allocating triangle person slots")?;
-    person_slot.resize(graph.nodes.len(), u32::MAX);
+    read_budget::charge_candidate_work(index.node_count(), "initializing triangle person slots")?;
+    let mut person_slot = reserved_vec(index.node_count(), "allocating triangle person slots")?;
+    person_slot.resize(index.node_count(), u32::MAX);
     read_budget::charge_candidate_work(people.len(), "indexing triangle people")?;
     for (ordinal, &vertex) in people.iter().enumerate() {
         // TypedGraphIndex construction proves both vertex and label-list

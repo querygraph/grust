@@ -133,10 +133,10 @@ fn undirected_groups(
 }
 
 fn validate_domain(index: &TypedGraphIndex, vertices: &[u32], vertex_slot: &[u32]) -> Result<()> {
-    if vertex_slot.len() != index.graph().nodes.len() {
+    if vertex_slot.len() != index.node_count() {
         return Err(support_error("inverse-map length differs from graph"));
     }
-    if vertices.len() > index.graph().nodes.len() {
+    if vertices.len() > index.node_count() {
         return Err(support_error("active domain exceeds graph cardinality"));
     }
     for (ordinal, &vertex) in vertices.iter().enumerate() {

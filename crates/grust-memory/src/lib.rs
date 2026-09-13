@@ -8,11 +8,12 @@ use std::{
 };
 
 use async_trait::async_trait;
-use grust_core::{TypedGraphIndex, UniqueValueIndex, prelude::*};
+use grust_core::{TypedGraphIndex, TypedNeighbor, UniqueValueIndex, prelude::*};
 use hashbrown::{DefaultHashBuilder, HashTable, hash_table::Entry};
 
 mod indexed_reads;
 mod indexed_snapshot;
+mod snapshot_source;
 
 type UniqueValueIndexes<Owner> = BTreeMap<Label, BTreeMap<String, UniqueValueIndex<Owner, Value>>>;
 
@@ -28,7 +29,9 @@ static EMPTY_PROPS: Props = Props::new();
 
 #[derive(Clone, Debug, Default)]
 pub struct MemoryGraphStore {
-    inner: Arc<RwLock<MemoryGraph>>,
+    /// The graph, shared copy-on-write with the snapshots indexed from it:
+    /// a write clones it only while a caller still holds such a snapshot.
+    inner: Arc<RwLock<Arc<MemoryGraph>>>,
     index_cache: Arc<Mutex<Option<Arc<TypedGraphIndex>>>>,
 }
 
@@ -49,7 +52,7 @@ pub struct MemoryGraphStore {
 /// Storage order is insertion order; every read that returns several nodes
 /// or edges sorts them by node id or by edge key, the order of the ordered
 /// maps this layout replaced.
-#[derive(Default)]
+#[derive(Clone, Default)]
 struct MemoryGraph {
     vertices: Vec<Vertex>,
     /// Vertex handles, hashed by id.
@@ -84,7 +87,7 @@ impl fmt::Debug for MemoryGraph {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 struct Vertex {
     id: NodeId,
     /// Label of the stored node; `NONE` while no node with this id is stored
@@ -109,7 +112,7 @@ struct EdgeRec {
     extra: Handle,
 }
 
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 struct EdgeExtra {
     id: Option<EdgeId>,
     props: Props,
@@ -193,9 +196,13 @@ impl MemoryGraph {
     // ---- vertices and labels ------------------------------------------------
 
     fn vertex(&self, id: &NodeId) -> Option<Handle> {
-        let hash = self.hasher.hash_one(id.as_str());
+        self.vertex_str(id.as_str())
+    }
+
+    fn vertex_str(&self, id: &str) -> Option<Handle> {
+        let hash = self.hasher.hash_one(id);
         self.vertex_index
-            .find(hash, |&h| self.vertices[h as usize].id == *id)
+            .find(hash, |&h| self.vertices[h as usize].id.as_str() == id)
             .copied()
     }
 
