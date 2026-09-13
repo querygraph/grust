@@ -38,6 +38,14 @@ pub trait GraphSqlDialect {
         "BEGIN"
     }
 
+    /// An extra column that joins the universal edge table's primary key, for
+    /// a dialect whose store keeps parallel edges apart by their ids. With
+    /// `None` (the default) the key stays `(from_id, label, to_id)` and a
+    /// repeat of one endpoint pair and label replaces the earlier edge.
+    fn edge_identity_column(&self) -> Option<&'static str> {
+        None
+    }
+
     fn commit_transaction(&self) -> &'static str {
         "COMMIT"
     }
@@ -110,14 +118,22 @@ pub fn universal_bootstrap_sql(
             from_id text NOT NULL REFERENCES {nodes_table}(id) ON DELETE CASCADE,
             to_id text NOT NULL REFERENCES {nodes_table}(id) ON DELETE CASCADE,
             label text NOT NULL,
-            props {props_type} NOT NULL DEFAULT {props_default},
-            PRIMARY KEY (from_id, label, to_id)
+            props {props_type} NOT NULL DEFAULT {props_default},{identity_column}
+            PRIMARY KEY (from_id, label, to_id{identity_key})
          );
          CREATE INDEX IF NOT EXISTS {edge_from_idx} ON {edges_table}(from_id);
          CREATE INDEX IF NOT EXISTS {edge_to_idx} ON {edges_table}(to_id);
          CREATE INDEX IF NOT EXISTS {node_label_idx} ON {nodes_table}(label);",
         nodes_table = tables.nodes,
         edges_table = tables.edges,
+        identity_column = dialect
+            .edge_identity_column()
+            .map(|c| format!("\n            {c} text NOT NULL DEFAULT '',"))
+            .unwrap_or_default(),
+        identity_key = dialect
+            .edge_identity_column()
+            .map(|c| format!(", {c}"))
+            .unwrap_or_default(),
         props_type = dialect.props_column_type(),
         props_default = dialect.empty_props_default(),
         edge_from_idx = quote_ident(&format!("{table_prefix}_edges_from_idx")),

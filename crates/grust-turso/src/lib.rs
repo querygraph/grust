@@ -404,6 +404,21 @@ impl TursoGraphStore {
         quote_ident(&format!("{}_nodes", self.config.table_prefix))
     }
 
+    /// Whether the edge table exists with the pre-`id_key` layout.
+    async fn edges_table_is_legacy_unlocked(&self) -> Result<bool> {
+        let sql = format!("PRAGMA table_info({})", self.edges_table());
+        let mut rows = self.conn.query(&sql, ()).await.map_err(|err| {
+            GrustError::Backend(format!("Turso table_info failed: {err}: {sql}"))
+        })?;
+        let mut columns = Vec::new();
+        while let Some(row) = rows.next().await.map_err(|err| {
+            GrustError::Backend(format!("Turso table_info row read failed: {err}: {sql}"))
+        })? {
+            columns.push(row_text(&row, 1, "table_info name")?);
+        }
+        Ok(!columns.is_empty() && !columns.iter().any(|c| c == "id_key"))
+    }
+
     fn edges_table(&self) -> String {
         quote_ident(&format!("{}_edges", self.config.table_prefix))
     }
@@ -506,12 +521,28 @@ impl GraphStore for TursoGraphStore {
 #[async_trait]
 impl GraphAdminStore for TursoGraphStore {
     async fn bootstrap(&self) -> Result<()> {
-        self.execute(&bootstrap_sql(
-            &self.config,
-            &self.nodes_table(),
-            &self.edges_table(),
-        )?)
-        .await
+        let sql = bootstrap_sql(&self.config, &self.nodes_table(), &self.edges_table())?;
+        let _gate = self.lock_connection().await?;
+        if self.edges_table_is_legacy_unlocked().await? {
+            // A database created before edges were keyed by id has the old
+            // (from_id, label, to_id) key and no id_key column. Rebuild the
+            // edge table once, in one transaction, keeping every row with an
+            // empty id_key (its old identity). The old indexes leave with the
+            // old table; the second bootstrap below recreates them.
+            let edges = self.edges_table();
+            let old = quote_ident(&format!("{}_edges_v1", self.config.table_prefix));
+            self.execute_unlocked(&format!(
+                "BEGIN;
+                 ALTER TABLE {edges} RENAME TO {old};
+                 {sql};
+                 INSERT INTO {edges} (id, from_id, to_id, label, props, id_key)
+                     SELECT id, from_id, to_id, label, props, '' FROM {old};
+                 DROP TABLE {old};
+                 COMMIT;"
+            ))
+            .await?;
+        }
+        self.execute_unlocked(&sql).await
     }
 
     async fn clear(&self) -> Result<()> {
@@ -1201,6 +1232,12 @@ impl GraphSqlDialect for TursoDialect {
         ))
     }
 
+    /// Edges are keyed by `(from_id, label, to_id, id_key)`, where `id_key` is
+    /// the edge's id or empty: an edge without an id replaces the earlier edge
+    /// between the same endpoints with the same label, as before, while edges
+    /// with distinct ids are kept apart, so a multigraph keeps every parallel
+    /// edge (as grust-memory and LanceDB already do). Re-putting an id updates
+    /// that edge in place.
     fn upsert_edges_sql(&self, table: &str, edges: &[Edge]) -> Result<String> {
         if edges.is_empty() {
             return Ok(String::new());
@@ -1209,26 +1246,29 @@ impl GraphSqlDialect for TursoDialect {
             .iter()
             .map(|edge| {
                 let props = grust_sql_core::props_to_json(&edge.props)?;
+                let id = edge.id.as_ref().map(|id| sql_str(id.as_str()));
                 Ok(format!(
-                    "({}, {}, {}, {}, {})",
-                    edge.id
-                        .as_ref()
-                        .map(|id| sql_str(id.as_str()))
-                        .unwrap_or_else(|| "NULL".to_string()),
+                    "({}, {}, {}, {}, {}, {})",
+                    id.clone().unwrap_or_else(|| "NULL".to_string()),
                     sql_str(edge.from.as_str()),
                     sql_str(edge.to.as_str()),
                     sql_str(edge.label.as_str()),
-                    sql_str(&props)
+                    sql_str(&props),
+                    id.unwrap_or_else(|| "''".to_string())
                 ))
             })
             .collect::<Result<Vec<_>>>()?
             .join(", ");
         Ok(format!(
-            "INSERT INTO {table} (id, from_id, to_id, label, props) VALUES {rows}
-             ON CONFLICT(from_id, label, to_id) DO UPDATE SET
+            "INSERT INTO {table} (id, from_id, to_id, label, props, id_key) VALUES {rows}
+             ON CONFLICT(from_id, label, to_id, id_key) DO UPDATE SET
                 id = excluded.id,
                 props = excluded.props"
         ))
+    }
+
+    fn edge_identity_column(&self) -> Option<&'static str> {
+        Some("id_key")
     }
 
     fn patch_node_sql(&self, nodes_table: &str, id: &NodeId, props: &Props) -> Result<String> {
