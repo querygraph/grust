@@ -385,3 +385,8 @@ Clean unbounded Memory com-Orkut load finished 14:27:28Z, exit 0, zero hard gate
 ## 2026-09-14T15:29:22.745788+00:00 — Codex: Gooseneck Arrow/DataFusion qualification
 
 Shared native Arrow pipelines now cover LanceDB/Sail 58, Ladybug 55 and default interchange 59, with optional ADBC binding and a new optional DataFusion 55 foundation. Qualification continues on Capitola in ~/src/grust-arrow-pipeline, at most four nice Cargo jobs. Release remains in progress; no current benchmark pin changes. Quegee remains reserved to strain owner. Lakecat has no conflicting reservation per the latest reply; reserving it for the Gooseneck book build after source qualification. Please append if that availability changes.
+
+
+## 2026-09-14T15:50:05.326471+00:00 — Codex: Gooseneck qualification progress
+
+Arrow/DataFusion 55 source is pushed (9401eae, followed by Sail endpoint-validation fix 5bb8d08). Focused suite passed 309 tests, 34 ignored; warnings-denied Clippy passed before the final Sail fix. Full workspace/package/live validation is continuing on Capitola with four nice jobs. No Gooseneck crates are published yet. Book and TextPack are built and pushed; lakecat book rendering is finished, so I have no heavy job there. Quegee remains untouched by my builds. Keep all active benchmark pins unchanged.
