@@ -182,7 +182,7 @@ expose unsupported policy mappings and unknown costs, and must not retry errors
 after execution begins. Capture/conversion and provider authority remain part
 of the end-to-end decision.
 
-## Shared asynchronous control, in qualification
+## Shared asynchronous control, qualified increment
 
 The unreleased shared `ExecutionContext` now exposes runtime-independent
 cancellation notifications. DataFusion's `run_cancellable`, controlled Arrow
@@ -190,9 +190,25 @@ streams, SQL `execute_stream_with_context`, and Cypher `execute_with_context`
 propagate cancellation and the absolute deadline through consumption. They
 retain ordinary error outcomes and drop owned pending streams on termination.
 The implementation uses no queue, worker task or Arrow buffer copy. Synchronous
-work inside a poll remains cooperative. Broader qualification is recorded in
+work inside a poll remains cooperative. The five-crate consumer gate passed 976 tests, zero failures and two ignored,
+plus warnings-denied Clippy. Qualification is recorded in
 `benchmarks/arrow-pipelines/evidence/query-control-3139917`.
 
 This is a prerequisite for automatic routing, not the routing implementation.
 Shared query/parameter/input admission and candidate/intermediate accounting
 remain necessary; none is inferred from cancellation or the memory-pool limit.
+
+## Shared request admission, qualified increment
+
+`PreparedReadRequest` now centralizes bounded query/parameter validation, graph
+and index size checks, output checks and the original absolute deadline. It owns
+the validated AST and policy, borrows immutable admitted parameters and retains
+the application registry generation. The bounded reference executor now uses
+these checks. Source `294baa8` passed 980 consumer tests with zero failures and
+two ignored, plus warnings-denied Clippy; raw receipts are under
+`benchmarks/arrow-pipelines/evidence/read-admission-294baa8`.
+
+Preparation does not confer backend graph authority or install execution
+budgets. Those route-specific obligations remain explicit and incomplete for
+DataFusion. Automatic selection, exact provider statistics, native input
+admission, candidate/intermediate accounting and release delivery remain open.
