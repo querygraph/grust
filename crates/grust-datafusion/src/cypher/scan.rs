@@ -153,8 +153,13 @@ pub fn plan_node_scan(
     }
     let predicate = match &matched.where_clause {
         Some(expression) => {
-            match lower_expression_with_parameters(expression, variable, schema, parameters) {
-                Ok(expression) => Some(expression),
+            match super::lower(expression, variable, schema, parameters) {
+                Ok((expression, datafusion::arrow::datatypes::DataType::Boolean)) => {
+                    Some(expression)
+                }
+                // The portable WHERE executor retains only Value::Bool(true).
+                // Supported non-Boolean scalar expressions cannot retain rows.
+                Ok(_) => Some(lit(false)),
                 Err(_) => return Ok(NodeScanPlan::Unsupported(UnsupportedScan::Expression)),
             }
         }

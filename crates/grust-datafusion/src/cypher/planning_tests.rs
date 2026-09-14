@@ -218,3 +218,38 @@ async fn extrema_of_missing_properties_return_null_on_nonempty_input() {
         );
     }
 }
+
+#[tokio::test]
+async fn scalar_where_filters_match_reference_true_only_rule() {
+    use datafusion::arrow::array::Int64Array;
+    use grust_core::{Graph, Node, Props, Value};
+    use grust_cypher::read::run_read_query;
+    let graph = Graph::new(
+        vec![Node::new(
+            "N",
+            "a",
+            Props::from([("x".into(), Value::Int(7))]),
+        )],
+        vec![],
+    );
+    let arrow = grust_arrow::ArrowGraph::from_graph(&graph).unwrap();
+    let context = SessionContext::new();
+    for predicate in ["n.x", "n.missing", "null", "true", "false"] {
+        let text = format!("MATCH (n) WHERE {predicate} RETURN count(*) AS count");
+        let expected = run_read_query(&graph, &text, &CypherParameters::new()).unwrap();
+        let query = grust_cypher::parser::parse_query(&text).unwrap();
+        let batches = lower_node_scan(&query, context.read_batch(arrow.nodes().clone()).unwrap())
+            .unwrap()
+            .unwrap()
+            .collect()
+            .await
+            .unwrap();
+        let count = batches[0]
+            .column(0)
+            .as_any()
+            .downcast_ref::<Int64Array>()
+            .unwrap()
+            .value(0);
+        assert_eq!(expected.rows, vec![vec![Value::Int(count)]], "{predicate}");
+    }
+}
