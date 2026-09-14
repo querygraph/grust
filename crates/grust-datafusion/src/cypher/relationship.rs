@@ -9,12 +9,12 @@ use datafusion::{
 };
 use std::collections::BTreeMap;
 
-type Columns = BTreeMap<String, (Expr, DataType)>;
+pub(super) type Columns = BTreeMap<String, (Expr, DataType)>;
 
 /// Binding resolution retained alongside an endpoint-join plan.
 /// Physical names are generated independently of user variable/property names.
 pub struct GraphBindings {
-    variables: BTreeMap<String, Columns>,
+    pub(super) variables: BTreeMap<String, Columns>,
 }
 impl GraphBindings {
     /// Physical relationship identity for trail exclusion in this snapshot.
@@ -57,8 +57,9 @@ impl ExpressionBindings for GraphBindings {
 
 /// A lazy relationship plan and the bindings used to compile its expressions.
 pub struct RelationshipPlan {
-    frame: DataFrame,
-    bindings: GraphBindings,
+    pub(super) frame: DataFrame,
+    pub(super) bindings: GraphBindings,
+    pub(super) snapshot: std::sync::Arc<()>,
 }
 impl RelationshipPlan {
     pub fn bindings(&self) -> &GraphBindings {
@@ -108,6 +109,7 @@ impl GraphSnapshot {
             .clone()
             .not_eq(reverse.bindings.variables[target]["node_id"].0.clone());
         Ok(RelationshipPlan {
+            snapshot: std::sync::Arc::clone(&self.identity),
             frame: forward.frame.union(reverse.frame.filter(different)?)?,
             bindings: forward.bindings,
         })
@@ -160,6 +162,7 @@ impl GraphSnapshot {
         variables.insert(source.into(), source_columns);
         variables.insert(edge.into(), edge_columns);
         Ok(RelationshipPlan {
+            snapshot: std::sync::Arc::clone(&self.identity),
             frame,
             bindings: GraphBindings { variables },
         })

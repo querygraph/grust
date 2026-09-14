@@ -25,6 +25,7 @@ pub const EDGE_ORDINAL: &str = "__grust_edge_ordinal";
 /// This handle does not establish backend transaction or authorization identity.
 #[derive(Clone)]
 pub struct GraphSnapshot {
+    pub(super) identity: Arc<()>,
     nodes: Arc<dyn TableProvider>,
     edges: Arc<dyn TableProvider>,
 }
@@ -36,6 +37,7 @@ impl GraphSnapshot {
     pub fn try_new(engine: &DataFusionEngine, graph: ArrowGraphTables) -> Result<Self> {
         let (nodes, edges) = graph.into_tables();
         Ok(Self {
+            identity: Arc::new(()),
             nodes: engine.table_provider(nodes)?,
             edges: engine.table_provider(with_ordinals(edges)?)?,
         })

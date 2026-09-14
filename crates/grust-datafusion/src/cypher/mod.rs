@@ -16,6 +16,7 @@ pub use planner::{PlanKind, QueryPlan};
 pub use result::decode_result_batch;
 mod relationship;
 mod scan;
+mod trail;
 pub use pattern::plan_relationship_scan;
 mod snapshot;
 pub use relationship::{GraphBindings, RelationshipPlan};
@@ -223,3 +224,6 @@ mod collect_tests;
 
 #[cfg(test)]
 mod execute_tests;
+
+#[cfg(test)]
+mod trail_tests;
