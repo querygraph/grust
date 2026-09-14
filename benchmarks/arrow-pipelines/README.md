@@ -97,3 +97,9 @@ no equivalent memory admission. Neither route has a deadline. These deliberately
 disclosed differences prevent interpreting this profile as resource-equivalent
 comparison or an automatic-routing threshold. Existing prepared-input profiles
 remain separate and unchanged. Qualify empty/boundary fixtures before large runs.
+
+`cypher_plan_memory <nodes> <target-partitions> <repeats>` is a separate
+diagnostic for physical plans and batch-versus-slice memory reporting. It
+executes the captured physical plan, retains each error/mismatch and checks
+the arithmetic count oracle. It does not report performance timings. See
+[evidence](evidence/cypher-plan-memory-c658abc) for the captured partition plans.
