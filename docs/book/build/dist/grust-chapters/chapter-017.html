@@ -145,7 +145,7 @@ parser, analyzer or executor. The facade exposes these through
 class="header-section-number">15.1</span> Starting from the facade</h2>
 <div class="sourceCode" id="cb1"><pre
 class="sourceCode toml"><code class="sourceCode toml"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[dependencies]</span></span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="dt">grust</span> <span class="op">=</span> <span class="op">{ </span><span class="dt">package</span><span class="op"> =</span> <span class="st">&quot;grust-graph&quot;</span><span class="op">, </span><span class="dt">version</span><span class="op"> =</span> <span class="st">&quot;0.15.0&quot;</span><span class="op">, </span><span class="dt">features</span><span class="op"> =</span> <span class="op">[</span><span class="st">&quot;algorithms&quot;</span><span class="op">,</span> <span class="st">&quot;cypher&quot;</span><span class="op">,</span> <span class="st">&quot;arrow&quot;</span><span class="op">] }</span></span></code></pre></div>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="dt">grust</span> <span class="op">=</span> <span class="op">{ </span><span class="dt">package</span><span class="op"> =</span> <span class="st">&quot;grust-graph&quot;</span><span class="op">, </span><span class="dt">version</span><span class="op"> =</span> <span class="st">&quot;0.16.0&quot;</span><span class="op">, </span><span class="dt">features</span><span class="op"> =</span> <span class="op">[</span><span class="st">&quot;algorithms&quot;</span><span class="op">,</span> <span class="st">&quot;cypher&quot;</span><span class="op">,</span> <span class="st">&quot;arrow&quot;</span><span class="op">] }</span></span></code></pre></div>
 <p>Register the desired providers once and retain the immutable
 registry:</p>
 <div class="sourceCode" id="cb2"><pre
@@ -227,6 +227,10 @@ Rust and have typed Arrow result adapters.</p>
 <td>Directed strong components with iterative traversal</td>
 </tr>
 <tr>
+<td><code>degree</code></td>
+<td>Exact projected arc counts and optional weighted strength</td>
+</tr>
+<tr>
 <td><code>pagerank</code></td>
 <td>Weighted scores, residual, iterations and convergence status</td>
 </tr>
@@ -259,6 +263,24 @@ create predecessor cycles. Reachable cost overflow is an error.
 Unreachable distances are infinity in direct Rust and null in
 Cypher/Arrow. Component IDs are the external ID at the minimum
 projection row in each component.</p>
+<p><code>degree</code> returns every selected node, including isolates.
+Direct Rust <code>degree(&amp;projection)</code> exposes exact
+<code>usize</code> counts and optional <code>f64</code> strengths. Arrow
+columns are <code>nodeId: Utf8</code>, <code>degree: UInt64</code>, and
+nullable <code>strength: Float64</code>; Cypher returns an exact checked
+integer count and null strength for unweighted projections. No
+normalization is implicit.</p>
+<pre class="cypher"><code>CALL grust.algorithms.degree({orientation: &#39;incoming&#39;, weightProperty: &#39;cost&#39;})
+YIELD nodeId, degree, strength
+RETURN nodeId, degree, strength</code></pre>
+<p>Counts include parallel and zero-weight arcs. Undirected loops count
+once under this projection contract. Weighted strength sums finite
+nonnegative weights; overflow fails explicitly. Negative weights remain
+unsupported. Unweighted execution reads existing CSR offsets in O(V);
+weighted execution takes O(V+A). Result buffers retain the shared memory
+admission, and bounded work-accounting chunks preserve cancellation
+polling without a lock per scalar. This contract does not establish
+universal degree-centrality compatibility with other engines.</p>
 <p>PageRank defaults to damping .85, L1 tolerance 1e-8 and 1000
 iterations. Scores start uniformly. Optional personalization controls
 teleportation and dangling mass; zero outgoing weight is dangling.
