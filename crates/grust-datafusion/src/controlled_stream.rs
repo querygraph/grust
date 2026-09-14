@@ -60,18 +60,18 @@ impl ControlledStream {
         self.execution
             .checkpoint()
             .map_err(super::control::resource_error)?;
-        if let Some(cancellation) = &mut self.cancellation {
-            if let Poll::Ready(result) = Pin::new(cancellation).poll(cx) {
-                result.map_err(super::control::resource_error)?;
-                return Err(super::control::resource_error(ProcedureError::Cancelled));
-            }
+        if let Some(cancellation) = &mut self.cancellation
+            && let Poll::Ready(result) = Pin::new(cancellation).poll(cx)
+        {
+            result.map_err(super::control::resource_error)?;
+            return Err(super::control::resource_error(ProcedureError::Cancelled));
         }
-        if let Some(deadline) = &mut self.deadline {
-            if deadline.as_mut().poll(cx).is_ready() {
-                return Err(super::control::resource_error(
-                    ProcedureError::DeadlineExceeded,
-                ));
-            }
+        if let Some(deadline) = &mut self.deadline
+            && deadline.as_mut().poll(cx).is_ready()
+        {
+            return Err(super::control::resource_error(
+                ProcedureError::DeadlineExceeded,
+            ));
         }
         Ok(())
     }
