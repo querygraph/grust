@@ -111,8 +111,8 @@ fn slot_keys_cannot_collide_with_json_but_graph_free_bindings_remain_value_keyed
     let graph = graph(false);
     let edge = graph.edges[0].clone();
     let value = graph_edge_value(&edge).unwrap();
-    let physical = Row::from([("r".into(), Bound::Edge(edge.clone(), Some(0)))]);
-    let pushed = Row::from([("r".into(), Bound::Edge(edge, None))]);
+    let physical = Row::from([("r".into(), Bound::Edge(edge.clone().into(), Some(0)))]);
+    let pushed = Row::from([("r".into(), Bound::Edge(edge.into(), None))]);
     let computed = Row::from([("r".into(), Bound::Value(value))]);
     assert_ne!(bindings(&physical).unwrap(), bindings(&computed).unwrap());
     assert_eq!(bindings(&pushed).unwrap(), bindings(&computed).unwrap());
@@ -137,7 +137,8 @@ fn slot_key_allocation_is_precharged_without_materializing_relationship_properti
                 "a",
                 "b",
                 Props::from([("big".into(), Value::from("x".repeat(32_000)))]),
-            ),
+            )
+            .into(),
             Some(0),
         ),
     )]);

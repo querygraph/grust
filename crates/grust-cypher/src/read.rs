@@ -24,6 +24,7 @@
 
 use std::borrow::Cow;
 use std::collections::{BTreeMap, HashMap};
+use std::sync::Arc;
 
 use grust_core::TypedGraphIndex;
 
@@ -69,12 +70,13 @@ pub(crate) use procedures::prepare_query_with_registry;
 pub use procedures::run_read_query_with_registry;
 
 /// A value bound to a variable in a candidate row. Pattern matching binds
-/// `Node`/`Edge`; `WITH`/`UNWIND` projections bind computed `Value`s.
+/// immutable shared `Node`/`Edge`; `WITH`/`UNWIND` bind computed `Value`s.
+/// Candidate copies share graph elements; projection still produces owned values.
 #[derive(Debug)]
 enum Bound {
-    Node(Node),
+    Node(Arc<Node>),
     // Graph-free pushed bindings have no slot; graph MATCH bindings do.
-    Edge(Edge, Option<usize>),
+    Edge(Arc<Edge>, Option<usize>),
     Value(Value),
 }
 
@@ -83,7 +85,7 @@ type Row = BTreeMap<String, Bound>;
 
 /// The graph a read executes over: an owned [`Graph`], or a typed index whose
 /// source may build nodes and edges on demand instead of holding a copy of
-/// each. Rows own clones of what they bind either way, so only elements a
+/// each. Rows share immutable copies of bound elements, so only elements a
 /// query actually examines are ever built.
 #[derive(Clone, Copy)]
 pub(crate) enum GraphRef<'g> {
@@ -131,6 +133,8 @@ fn charge_intermediate_copy(context: &str, measure: impl FnOnce() -> usize) -> R
     Ok(())
 }
 
+// Keep logical full-element charges when sharing bindings. The budget remains
+// conservative; physical sharing must not waive property-copy admission.
 fn bound_copy_bytes(bound: &Bound) -> usize {
     let nested = match bound {
         Bound::Node(node) => read_budget::node_copy_bytes(node),
@@ -1007,8 +1011,8 @@ fn binding_rows_to_rows(binding_rows: Vec<Vec<(String, PushedBinding)>>) -> Vec<
 
 fn bound_from_pushed(binding: PushedBinding) -> Bound {
     match binding {
-        PushedBinding::Node(node) => Bound::Node(node),
-        PushedBinding::Edge(edge) => Bound::Edge(edge, None),
+        PushedBinding::Node(node) => Bound::Node(node.into()),
+        PushedBinding::Edge(edge) => Bound::Edge(edge.into(), None),
         PushedBinding::Null => Bound::Value(Value::Null),
     }
 }
@@ -1166,7 +1170,7 @@ pub(crate) fn project_subquery_join_pipeline(
             .into_iter()
             .map(|node| -> Result<Row> {
                 let mut row = clone_row(&outer_row, "seeding pushed subquery rows")?;
-                row.insert(inner_var.to_string(), Bound::Node(node));
+                row.insert(inner_var.to_string(), Bound::Node(node.into()));
                 Ok(row)
             })
             .collect::<Result<_>>()?;
@@ -1653,7 +1657,7 @@ fn expand_pattern(
             if let Some(var) = &pattern.start.variable {
                 next_row.insert(
                     var.clone(),
-                    Bound::Node(clone_node(&start, "binding MATCH start nodes")?),
+                    Bound::Node(clone_node(&start, "binding MATCH start nodes")?.into()),
                 );
             }
             let acc_nodes = if path_var.is_some() {
@@ -1784,13 +1788,17 @@ fn expand_shortest(
                     if let Some(var) = &pattern.start.variable {
                         next_row.insert(
                             var.clone(),
-                            Bound::Node(clone_node(&start, "binding shortest-path start nodes")?),
+                            Bound::Node(
+                                clone_node(&start, "binding shortest-path start nodes")?.into(),
+                            ),
                         );
                     }
                     if let Some(var) = &segment.node.variable {
                         next_row.insert(
                             var.clone(),
-                            Bound::Node(clone_node(&end_node, "binding shortest-path end nodes")?),
+                            Bound::Node(
+                                clone_node(&end_node, "binding shortest-path end nodes")?.into(),
+                            ),
                         );
                     }
                     if let Some(var) = &rel.variable {
@@ -1938,10 +1946,9 @@ fn expand_segments(
             if let Some(var) = &segment.node.variable {
                 next_row.insert(
                     var.clone(),
-                    Bound::Node(clone_node(
-                        &end_node,
-                        "binding variable-length path endpoints",
-                    )?),
+                    Bound::Node(
+                        clone_node(&end_node, "binding variable-length path endpoints")?.into(),
+                    ),
                 );
             }
             // path_var is guaranteed None here (rejected with variable-length).
@@ -2033,7 +2040,7 @@ fn expand_fixed_edges<'a>(
             next_row.insert(
                 var.clone(),
                 Bound::Edge(
-                    clone_edge(&edge, "binding matched relationships")?,
+                    clone_edge(&edge, "binding matched relationships")?.into(),
                     Some(slot),
                 ),
             );
@@ -2041,7 +2048,7 @@ fn expand_fixed_edges<'a>(
         if let Some(var) = &segment.node.variable {
             next_row.insert(
                 var.clone(),
-                Bound::Node(clone_node(&next_node, "binding matched nodes")?),
+                Bound::Node(clone_node(&next_node, "binding matched nodes")?.into()),
             );
         }
         let (na, ea) = if path_var.is_some() {
