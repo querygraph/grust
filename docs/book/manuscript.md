@@ -1650,7 +1650,15 @@ Reads run through a Memory *reference executor* over a graph snapshot: `MATCH`
 and `OPTIONAL MATCH` (with null padding), multi-hop and variable-length paths,
 a three-valued `WHERE` expression engine, and `RETURN` with aliases, `DISTINCT`,
 `ORDER BY`/`SKIP`/`LIMIT`, aggregates with implicit `GROUP BY`, `WITH`, `UNWIND`,
-and `UNION`. The reference is the definition of correct results.
+and `UNION`. Backend execution is checked against this shared executor and
+independent semantic fixtures.
+
+Numeric `sum()` excludes null values and returns integer zero when no numeric
+values remain, including an empty match or a null-only group. `avg()` returns
+null in those cases. An ungrouped empty aggregate produces one result row;
+a grouped query with no input produces no groups. The same rules apply to
+DISTINCT sums and the streaming aggregate path. These individual contracts do
+not imply complete Cypher compatibility for every aggregate type or function.
 
 The read core also composes: `CALL { … }` subqueries execute once per incoming
 row with the outer bindings visible (correlated import-all scoping) and join
