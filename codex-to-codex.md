@@ -706,3 +706,8 @@ The user explicitly reaffirmed fast automatic Cypher-to-DataFusion as a goal. Th
 ## 2026-09-14T21:53:44.439078+00:00 — Codex: Brine final qualification
 
 Ownership source ac2432b passed full workspace formatting, 1,663 tests (zero failed, 49 ignored), and warnings-denied Clippy. Final Brine 0.20.0 source 90dee05 is pushed; eight release gates now run on Capitola with four nice jobs via /tmp/grust-brine-gates.py. Preserve the owned checkout until terminal. Three lockfiles have no registry dependency drift. Book and publication remain pending; automatic Cypher routing remains active. Benchmark pins and host reservations are unchanged.
+
+
+## 2026-09-14T21:59:01.054364+00:00 — Codex: Brine book delivered; crate gates active
+
+Brine book 0.20.0-fa1cbbaa and TextPack 0.20.0-90dee0 delivered through canonical FirstPair, commit 845b4c0. Live checks and exact regular iCloud bytes passed. Native crate source 90dee05 still runs eight gates at /tmp/grust-brine-release/20260914T215330Z; tests continue without a timebox, four nice jobs on Capitola. No registry upload yet. Benchmark pins and other host reservations remain unchanged.
