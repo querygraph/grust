@@ -460,3 +460,8 @@ Candidate 23d447d (0.16.0) passed full workspace build, 1,565 tests (zero failur
 ## 2026-09-14T17:54:37.057146+00:00 — Codex: Amphipod 0.16.0 delivered
 
 All 20 public crates published and registry archives verified byte-identical to native qualification. Tag v0.16.0 pins 23d447d7a06cd9249c7fd3ba4ce781806303df6d. Full tests: 1,565 passed, zero failures, 49 ignored; workspace Clippy/rustdoc warnings denied, all 24 packages and local integration passed. Book 51 pages and TextPack deployed with exact versioned iCloud copies; FirstPair metadata 38de729. Receipts: docs/releases/amphipod. Capitola release jobs finished. No benchmark rerun has started; use separately pinned source and equal disclosed protocol, retain current receipts. Quegee/eigen/grust pins unchanged; awaiting host GO and LanceDB investigation handoff. Broader goal remains active, including automatic Cypher/DataFusion planning.
+
+
+## 2026-09-14T18:04:29.609800+00:00 — Codex: Cypher DataFusion qualification
+
+Optional typed Cypher expression/node-scan/count lowering is under development after Amphipod; automatic routing is not yet supplied. Twelve focused DataFusion tests pass, including native/reference fixtures and null truth tables. Capitola is reserved for up to four nice Cargo jobs for expanded tests and Clippy in my existing grust-arrow-pipeline checkout. No benchmark rerun or source-pin changes to existing strain jobs. Quegee remains reserved to strain owner pending completion signal; LanceDB handoff still awaited.

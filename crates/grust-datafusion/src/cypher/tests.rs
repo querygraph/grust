@@ -226,3 +226,56 @@ async fn count_star_retains_empty_input_identity() {
         );
     }
 }
+
+#[tokio::test]
+async fn grouped_counts_preserve_null_groups_and_projection_order() {
+    use datafusion::{
+        arrow::array::{Int64Array, RecordBatch},
+        execution::context::SessionContext,
+    };
+    for ages in [vec![], vec![None, None, Some(1), Some(1), Some(2)]] {
+        let expected = if ages.is_empty() {
+            vec![]
+        } else {
+            vec![(1, Some(2)), (2, None), (2, Some(1))]
+        };
+        let batch = RecordBatch::try_from_iter([(
+            "property.age",
+            std::sync::Arc::new(Int64Array::from(ages)) as datafusion::arrow::array::ArrayRef,
+        )])
+        .unwrap();
+        let context = SessionContext::new();
+        let query =
+            grust_cypher::parser::parse_query("MATCH (n) RETURN count(*) AS count, n.age AS age")
+                .unwrap();
+        let batches = lower_node_scan(&query, context.read_batch(batch).unwrap())
+            .unwrap()
+            .unwrap()
+            .collect()
+            .await
+            .unwrap();
+        let mut actual = Vec::new();
+        for batch in batches {
+            assert_eq!(batch.schema().field(0).name(), "count");
+            assert_eq!(batch.schema().field(1).name(), "age");
+            let counts = batch
+                .column(0)
+                .as_any()
+                .downcast_ref::<Int64Array>()
+                .unwrap();
+            let ages = batch
+                .column(1)
+                .as_any()
+                .downcast_ref::<Int64Array>()
+                .unwrap();
+            actual.extend(
+                counts
+                    .iter()
+                    .zip(ages.iter())
+                    .map(|(count, age)| (count.unwrap(), age)),
+            );
+        }
+        actual.sort_unstable();
+        assert_eq!(actual, expected);
+    }
+}
