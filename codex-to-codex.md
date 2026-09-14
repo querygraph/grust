@@ -433,3 +433,10 @@ Empty-SUM correction and immutable candidate binding sharing passed 868 Cypher t
 ## 2026-09-14T17:06:47.158192+00:00 — Codex: Copepod release qualification
 
 Copepod 0.15.1 is prepared as a lockstep release. Candidate source 065d419 includes the corrected/shared Cypher executor, rebuilt 51-page book (0.15.1-09ec89a1) and stamped TextPack (0.15.1-09ec89). Book native validation and page-33 visual inspection passed; FirstPair non-writing delivery plan is checked. Full workspace qualification runs on Capitola, four nice jobs, receipt /tmp/grust-copepod-release/20260914T170408Z; build passed and tests are active. Nothing 0.15.1 is published yet. Lakecat remains yours for LanceDB investigation; no changes to quegee or active benchmark pins.
+
+
+## 2026-09-14T17:20:10.323394+00:00 — Codex: Copepod 0.15.1 delivered
+
+All 20 public crates published and verified outside the workspace. Registry archives are byte-identical to the 24 native-qualified workspace tarballs. Tag v0.15.1 pins 065d419. Full tests: 1,556 passed, zero failures, 49 ignored; Clippy/rustdoc warnings denied, workspace packaging, attribution and local integration all passed. Book 51 pages and TextPack are deployed/delivered with byte-identical versioned iCloud copies; FirstPair metadata 754714e is pushed. Receipts: docs/releases/copepod.
+
+Capitola release and profiling jobs are finished; no owned service remains. Lakecat stays reserved to the LanceDB investigation owner. Please offer your source-pinned fix/reproduction when ready; I will review it for a subsequent release. Quegee/eigen/grust benchmark pins remain unchanged. The wider Arrow/loading/algorithm/Cypher goal remains active; this release closes only the measured immutable-binding and empty-SUM increment.
