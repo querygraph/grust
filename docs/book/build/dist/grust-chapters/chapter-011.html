@@ -75,8 +75,24 @@ padding), multi-hop and variable-length paths, a three-valued
 aliases, <code>DISTINCT</code>,
 <code>ORDER BY</code>/<code>SKIP</code>/<code>LIMIT</code>, aggregates
 with implicit <code>GROUP BY</code>, <code>WITH</code>,
-<code>UNWIND</code>, and <code>UNION</code>. The reference is the
-definition of correct results.</p>
+<code>UNWIND</code>, and <code>UNION</code>. Backend execution is
+checked against this shared executor and independent semantic
+fixtures.</p>
+<p>Numeric <code>sum()</code> excludes null values and returns integer
+zero when no numeric values remain, including an empty match or a
+null-only group. <code>avg()</code> returns null in those cases. An
+ungrouped empty aggregate produces one result row; a grouped query with
+no input produces no groups. The same rules apply to DISTINCT sums and
+the streaming aggregate path. These individual contracts do not imply
+complete Cypher compatibility for every aggregate type or function.</p>
+<p>Candidate rows share immutable node and edge bindings as patterns
+expand. Copying a candidate therefore shares the bound element instead
+of cloning its property map again. Projected results remain owned, and
+edge-slot identity and row order remain unchanged. Logical full-element
+copy charges remain conservative even when the physical representation
+shares storage. This reduces repeated allocation; it does not make the
+complete MATCH pipeline streaming or impose a whole-process memory
+cap.</p>
 <p>The read core also composes: <code>CALL { … }</code> subqueries
 execute once per incoming row with the outer bindings visible
 (correlated import-all scoping) and join their <code>RETURN</code>
