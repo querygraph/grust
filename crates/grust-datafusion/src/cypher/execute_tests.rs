@@ -106,6 +106,23 @@ async fn text_execution_preserves_results_and_error_boundaries() {
             .await
             .is_err()
     );
+    let no_copies = grust_procedures::ExecutionContext::new(grust_procedures::ExecutionLimits {
+        memory_bytes: 0,
+        ..execution.limits()
+    })
+    .unwrap();
+    assert!(
+        snapshot
+            .execute_with_context(
+                "MATCH () RETURN count(*) AS count",
+                engine.context(),
+                &parameters,
+                output,
+                &no_copies,
+            )
+            .await
+            .is_err()
+    );
     execution.cancel().unwrap();
     assert!(
         snapshot

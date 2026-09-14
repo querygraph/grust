@@ -11,7 +11,7 @@ mod pattern;
 mod planner;
 mod projection;
 mod result;
-pub use collect::collect_result;
+pub use collect::{collect_result, collect_result_with_context};
 pub use planner::{PlanKind, QueryPlan};
 pub use result::{decode_result_batch, decode_result_batch_with_context};
 mod relationship;

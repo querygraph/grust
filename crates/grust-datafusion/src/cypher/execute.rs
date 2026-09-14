@@ -1,5 +1,8 @@
 //! End-to-end explicit Cypher execution on one captured Arrow graph.
-use super::{GraphSnapshot, PlanKind, QueryPlan, UnsupportedScan, collect_result};
+use super::{
+    GraphSnapshot, PlanKind, QueryPlan, UnsupportedScan, collect_result,
+    collect_result_with_context,
+};
 use datafusion::{
     common::{DataFusionError, Result},
     execution::context::SessionContext,
@@ -30,7 +33,8 @@ impl GraphSnapshot {
     /// Execute the explicit Cypher route with shared cancellation and deadline
     /// control across parsing, planning and complete output consumption. Work
     /// within a single poll remains cooperative, and full read-policy admission
-    /// and candidate/intermediate accounting remain caller responsibilities.
+    /// and operator candidate/intermediate accounting remain caller responsibilities.
+    /// Portable output copies are charged cumulatively before materialization.
     pub async fn execute_with_context(
         &self,
         query_text: &str,
@@ -41,7 +45,7 @@ impl GraphSnapshot {
     ) -> Result<CypherExecution> {
         crate::run_cancellable(
             execution,
-            self.execute(query_text, context, parameters, output),
+            self.execute_inner(query_text, context, parameters, output, Some(execution)),
         )
         .await
     }
@@ -62,12 +66,37 @@ impl GraphSnapshot {
         parameters: &CypherParameters,
         output: OutputLimits,
     ) -> Result<CypherExecution> {
+        self.execute_inner(query_text, context, parameters, output, None)
+            .await
+    }
+
+    async fn execute_inner(
+        &self,
+        query_text: &str,
+        context: &SessionContext,
+        parameters: &CypherParameters,
+        output: OutputLimits,
+        execution: Option<&grust_procedures::ExecutionContext>,
+    ) -> Result<CypherExecution> {
         let query = grust_cypher::parser::parse_query(query_text)
             .map_err(|error| DataFusionError::Plan(error.into_grust(query_text).to_string()))?;
         match self.plan(&query, context, parameters)? {
             QueryPlan::Supported { kind, frame } => Ok(CypherExecution::Completed {
                 kind,
-                table: collect_result(frame, output.max_rows, output.max_serialized_bytes).await?,
+                table: match execution {
+                    Some(execution) => {
+                        collect_result_with_context(
+                            frame,
+                            output.max_rows,
+                            output.max_serialized_bytes,
+                            execution,
+                        )
+                        .await?
+                    }
+                    None => {
+                        collect_result(frame, output.max_rows, output.max_serialized_bytes).await?
+                    }
+                },
             }),
             QueryPlan::Unsupported { kind, reason } => {
                 Ok(CypherExecution::Unsupported { kind, reason })
