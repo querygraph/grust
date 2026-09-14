@@ -1,4 +1,5 @@
 //! Typed Cypher expression lowering. Query routing is not yet implemented.
+mod aggregate;
 mod scan;
 pub use scan::{
     NodeScanPlan, UnsupportedScan, lower_node_scan, lower_node_scan_with_parameters, plan_node_scan,

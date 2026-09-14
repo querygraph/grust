@@ -3,7 +3,6 @@ use super::lower_expression_with_parameters;
 use datafusion::{
     common::{Column, DataFusionError, Result},
     dataframe::DataFrame,
-    functions_aggregate::expr_fn::{count, count_distinct},
     logical_expr::{Expr, lit},
 };
 use grust_cypher::CypherParameters;
@@ -133,36 +132,13 @@ pub fn plan_node_scan(
             .alias
             .clone()
             .unwrap_or_else(|| grust_cypher::read::column_name(&item.expr));
-        if let CypherExpr::Function {
-            name,
-            distinct,
-            star,
-            args,
-        } = &item.expr
-        {
-            if !name.eq_ignore_ascii_case("count") {
+        if matches!(&item.expr, CypherExpr::Function { .. }) {
+            let Ok(expression) =
+                super::aggregate::aggregate(&item.expr, variable, schema, parameters)
+            else {
                 return Ok(NodeScanPlan::Unsupported(UnsupportedScan::Expression));
-            }
-            let expression = match (*star, args.as_slice()) {
-                (true, []) if !*distinct => lit(1_i64),
-                (false, [argument]) => {
-                    let Ok(expression) =
-                        lower_expression_with_parameters(argument, variable, schema, parameters)
-                    else {
-                        return Ok(NodeScanPlan::Unsupported(UnsupportedScan::Expression));
-                    };
-                    expression
-                }
-                _ => return Ok(NodeScanPlan::Unsupported(UnsupportedScan::Expression)),
             };
-            aggregates.push(
-                if *distinct {
-                    count_distinct(expression)
-                } else {
-                    count(expression)
-                }
-                .alias(&alias),
-            );
+            aggregates.push(expression.alias(&alias));
         } else {
             let Ok(expression) =
                 lower_expression_with_parameters(&item.expr, variable, schema, parameters)
