@@ -14,8 +14,8 @@ use grust_cypher::{
 /// Plan a parsed single-hop MATCH/WHERE/RETURN on a captured snapshot.
 /// Uses the same RETURN compiler as node scans. Unsupported shapes are explicit;
 /// semantic and planning errors remain errors. No resource-policy admission or
-/// automatic routing is supplied. Binding names must currently be
-/// present, with relationship names distinct from node names; variable-length and optional patterns remain
+/// automatic routing is supplied. Anonymous elements receive private bindings; relationship names must differ
+/// from node names. variable-length and optional patterns remain
 /// unsupported on this relationship route.
 pub fn plan_relationship_scan(
     query: &Query,
@@ -39,13 +39,12 @@ pub fn plan_relationship_scan(
         return unsupported();
     };
     let relationship = &segment.relationship;
-    let (Some(start), Some(edge), Some(end)) = (
+    let names = super::bindings::resolve_names([
         pattern.start.variable.as_deref(),
         relationship.variable.as_deref(),
         segment.node.variable.as_deref(),
-    ) else {
-        return unsupported();
-    };
+    ]);
+    let [start, edge, end] = names.each_ref().map(|name| name.as_ref());
     if part.union.is_some()
         || matched.optional
         || pattern.variable.is_some()

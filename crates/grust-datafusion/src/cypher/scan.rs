@@ -63,9 +63,8 @@ pub fn plan_node_scan(
     let [pattern] = matched.patterns.as_slice() else {
         return Ok(NodeScanPlan::Unsupported(UnsupportedScan::QueryShape));
     };
-    let Some(variable) = pattern.start.variable.as_deref() else {
-        return Ok(NodeScanPlan::Unsupported(UnsupportedScan::QueryShape));
-    };
+    let names = super::bindings::resolve_names([pattern.start.variable.as_deref()]);
+    let variable = names[0].as_ref();
     let projection = &returned.projection;
     if part.union.is_some()
         || matched.optional

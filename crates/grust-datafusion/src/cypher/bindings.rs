@@ -53,3 +53,21 @@ impl ExpressionBindings for SingleBinding<'_> {
         Ok((Expr::Column(Column::from_name("node_id")), DataType::Utf8))
     }
 }
+
+/// Assign private names only after semantic analysis. Each slot's numeric stem
+/// is distinct, and suffixes avoid every explicit pattern name. Borrow named
+/// bindings so ordinary named patterns incur no name allocation.
+pub(super) fn resolve_names<const N: usize>(
+    names: [Option<&str>; N],
+) -> [std::borrow::Cow<'_, str>; N] {
+    std::array::from_fn(|index| match names[index] {
+        Some(name) => std::borrow::Cow::Borrowed(name),
+        None => {
+            let mut name = format!("__grust_anonymous_{index}");
+            while names.iter().flatten().any(|existing| *existing == name) {
+                name.push('_');
+            }
+            std::borrow::Cow::Owned(name)
+        }
+    })
+}
