@@ -98,6 +98,8 @@ a `GraphBindings` resolver for scalar/aggregate composition and physical edge
 identity. This operator preserves loops and parallel relationships.
 `plan_relationship_scan` lowers parsed directed one-hop MATCH/WHERE/RETURN
 patterns with named, distinct variables, node labels and relationship types.
+Undirected patterns are also admitted: both orientations preserve the same
+physical edge identity, and self-loops occur once.
 It shares projection, grouping, count/extrema, DISTINCT, ordering and pagination
 with the node planner. Repeated variables, optional
 matching, variable-length traversal and automatic routing remain unsupported.

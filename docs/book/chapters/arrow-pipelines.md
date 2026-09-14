@@ -207,3 +207,8 @@ Inline scalar property maps on both endpoint nodes and relationships use the
 same predicate compiler as node scans. Literal and parameter values are admitted;
 correlated expressions remain unsupported. Missing properties and null equality
 retain the portable executor's matching behavior.
+
+Undirected one-hop patterns now use both endpoint orientations while excluding
+self-loops from the reverse branch. Parallel relationships retain their distinct
+physical ordinals across both branches. This implementation composes typed joins
+and UNION ALL; its execution cost still needs separate measurement.
