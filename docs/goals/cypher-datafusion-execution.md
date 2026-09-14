@@ -287,3 +287,12 @@ milestone does not close candidate-work accounting, optimizer coverage, full
 policy admission, provider authority or automatic route selection. See
 [execution-accounting design](cypher-execution-accounting.md) and the retained
 [result admission receipt](../../benchmarks/arrow-pipelines/evidence/result-admission-ff5e895).
+
+## Mantis delivery completed
+
+Mantis `v0.19.0` at `e6cb1fa` passed all eight final gates, with 1,637 tests
+passed, zero failed and 49 ignored. Twenty-four archives reproduced identically;
+all 20 registry archives matched qualification. Book, readers and TextPack are
+delivered; [release receipts](../releases/mantis/README.md) retain proof.
+Automatic selection, operator accounting and provider authority remain open.
+The safe buffer-owner candidate is isolated and is not part of Mantis.
