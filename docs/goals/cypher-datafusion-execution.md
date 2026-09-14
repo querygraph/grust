@@ -19,10 +19,12 @@ routes where they are appropriate. Publish the upgrade with full workspace,
 package, documentation, book and registry verification. Neither explicit SQL
 execution nor the current partial scan compiler establishes completion.
 
-Current implementation admits scalar predicates, single-node scans, projection,
-DISTINCT and count aggregation through an explicit lowering API. Joins, broader
-aggregates, parameter binding, route selection, resource mapping, comparative
-performance qualification and release delivery remain outstanding.
+Current implementation admits scalar predicates and parameters, inline property
+maps, single-node scans, projection, DISTINCT, count aggregation and grouping,
+projected-expression ordering and pagination through an explicit lowering API.
+Planner decisions distinguish unsupported shapes from semantic errors. Joins,
+broader aggregates, route selection, resource mapping, comparative performance
+qualification and release delivery remain outstanding.
 
 ## Integration boundaries
 
@@ -108,3 +110,17 @@ relational descriptor before duplicating those eligibility rules. Existing
 pushdown caveats, including arithmetic error behavior, are not automatic proof
 of DataFusion semantic equivalence. The public AST remains the alternative
 input if extracting those descriptors would entangle unrelated backend contracts.
+
+## Current qualification and measurement boundary
+
+The full Cypher suite passed 869 tests (zero failures, two ignored) after the
+shared integer-ordering and column-name changes. The focused DataFusion suite
+passed 19 tests and warnings-denied Clippy at `a94f394`; subsequent ordered-value
+assertions passed at `c3b1cf4`. These are unreleased source qualifications.
+
+The `cypher_scan` profiler at `771cb89` compares identical Cypher text through
+indexed execution and typed DataFusion lowering, with a closed-form count oracle.
+Its optimized build is in progress on Capitola. No timing result or automatic
+selection threshold is established yet. Prepared-input measurements disclose
+separate conversion/index costs and differing admission boundaries; they cannot
+alone establish backend or policy parity.
