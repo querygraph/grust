@@ -184,7 +184,7 @@ of the end-to-end decision.
 
 ## Shared asynchronous control, qualified increment
 
-The unreleased shared `ExecutionContext` now exposes runtime-independent
+The shared `ExecutionContext`, released in Ostracod, exposes runtime-independent
 cancellation notifications. DataFusion's `run_cancellable`, controlled Arrow
 streams, SQL `execute_stream_with_context`, and Cypher `execute_with_context`
 propagate cancellation and the absolute deadline through consumption. They
@@ -221,15 +221,15 @@ Clones and catalog replacement preserve these captured values. DataFusion's
 47 tests and warnings-denied Clippy passed; receipts are under
 `benchmarks/arrow-pipelines/evidence/snapshot-statistics-7ab955f`.
 
-Next, exact serialized input admission can build on Arrow's existing paired
+Exact serialized input admission now builds on Arrow's paired
 `property.<key>` and `present.<key>` columns: absence and explicit null survive
-capture. A borrowed native serializer must preserve Grust's tagged scalar JSON,
+capture. The borrowed native serializer preserves Grust's tagged scalar JSON,
 identity fields, property keys, batch order and escaping, with independent
 comparison against ordinary `Graph` serialization. Counting through a bounded
-writer should avoid encoded JSON and row-graph allocation. This is not yet
-implemented; row counts alone do not satisfy `max_graph_bytes`.
+writer avoids encoded JSON and row-graph allocation. This shipped in Ostracod;
+row counts alone still do not satisfy `max_graph_bytes`.
 
-## Native serialized input admission, implemented and in qualification
+## Native serialized input admission, released in Ostracod
 
 `ArrowGraphTables::as_serializable_graph()` now borrows native Arrow 55/58/59
 columns to reproduce the core graph serde representation. Source `7e337ad`
@@ -241,20 +241,20 @@ and exposes writer-controlled serialization without graph/JSON materialization.
 measurements. `GraphSnapshot::try_new_with_input_policy` checks rows before
 serialization, counts exact bytes under the original deadline, then captures
 providers and retains the size. Ordinary capture keeps `serialized_graph_bytes`
-explicitly unknown. Full workspace tests/Clippy are running on Capitola; a later
-test-only change `cda270f` broadens typed-null coverage. Snapshot authority,
+explicitly unknown. Full workspace tests/Clippy passed; the later
+test-only change `cda270f` broadens typed-null coverage and passed final gates. Snapshot authority,
 existing buffer/ordinal admission, candidate/intermediate accounting, automatic
 routing, cost qualification and release delivery remain outstanding.
 
-## Workspace integration passed; Ostracod release in qualification
+## Workspace integration and Ostracod release completed
 
 The full `0e7abba` workspace gate passed 1,627 tests, zero failures and 49
 ignored, plus warnings-denied all-target Clippy. Raw evidence is retained in
 `benchmarks/arrow-pipelines/evidence/native-admission-workspace-0e7abba`.
 Ostracod 0.18.0 prepares the accumulated shared control/admission changes for
-release. Final source `28d2471` includes expanded typed-null tests and is running
-the full native release gates on Capitola. Registry publication and book/blog
-delivery are not yet complete. This release does not close automatic routing,
+release. Final source `28d2471` includes expanded typed-null tests and passed
+all native release gates on Capitola. Registry publication and book/blog
+delivery are complete. This release does not close automatic routing,
 full execution-budget mapping, provider authority or performance qualification.
 
 ## Ostracod registry milestone, 2026-09-14
@@ -271,3 +271,19 @@ qualification remain incomplete and are the next engineering obligations.
 Ostracod delivery is now complete: book `0.18.0-99af0afd`, TextPack
 `0.18.0-28d247`, FirstPair commit `1a009db`. Hosted deployment and exact iCloud
 copy checks passed. This closes release delivery, not automatic execution.
+
+## Portable materialization admission and Mantis qualification
+
+`579c7ab` adds shared-context admission before native scalar result decoding;
+`ff5e895` applies it through controlled collection and explicit Cypher execution.
+Both passed 49 DataFusion tests and warnings-denied Clippy. Charges use actual
+slice/null/string contents and logical row/value/container copies, remain
+cumulative, and precede portable allocation. Validation descriptors, Arrow input,
+allocator capacity and operator work remain separate boundaries.
+
+Merged `b3230b0` passed 1,637 workspace tests (zero failures, 49 ignored) and
+Clippy. Mantis final source `e6cb1fa` is running release gates. This result-copy
+milestone does not close candidate-work accounting, optimizer coverage, full
+policy admission, provider authority or automatic route selection. See
+[execution-accounting design](cypher-execution-accounting.md) and the retained
+[result admission receipt](../../benchmarks/arrow-pipelines/evidence/result-admission-ff5e895).
