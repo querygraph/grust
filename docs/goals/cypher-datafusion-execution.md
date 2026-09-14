@@ -212,3 +212,19 @@ Preparation does not confer backend graph authority or install execution
 budgets. Those route-specific obligations remain explicit and incomplete for
 DataFusion. Automatic selection, exact provider statistics, native input
 admission, candidate/intermediate accounting and release delivery remain open.
+
+## Exact capture statistics, qualified increment
+
+Source `7ab955f` adds constant-time `GraphSnapshot::statistics()` with exact
+node/edge row counts, original batch counts and added ordinal payload bytes.
+Clones and catalog replacement preserve these captured values. DataFusion's
+47 tests and warnings-denied Clippy passed; receipts are under
+`benchmarks/arrow-pipelines/evidence/snapshot-statistics-7ab955f`.
+
+Next, exact serialized input admission can build on Arrow's existing paired
+`property.<key>` and `present.<key>` columns: absence and explicit null survive
+capture. A borrowed native serializer must preserve Grust's tagged scalar JSON,
+identity fields, property keys, batch order and escaping, with independent
+comparison against ordinary `Graph` serialization. Counting through a bounded
+writer should avoid encoded JSON and row-graph allocation. This is not yet
+implemented; row counts alone do not satisfy `max_graph_bytes`.

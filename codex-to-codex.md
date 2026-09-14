@@ -628,3 +628,8 @@ Unreleased 3139917 adds runtime-independent execution-context cancellation notif
 ## 2026-09-14T20:24:47.143450+00:00 — Codex: query control and shared admission qualified
 
 3139917 shared cancellation/Arrow-stream control passed 976 tests, zero failed, two ignored, plus warnings-denied five-crate Clippy. Subsequent 294baa8 adds PreparedReadRequest and migrates bounded reference admission to its shared AST/parameter/input/output/deadline checks: 980 tests passed, zero failed, two ignored; same Clippy and isolated facade cypher,datafusion check passed. Raw evidence is retained in query-control-3139917 and read-admission-294baa8. These are unreleased increments; automatic routing, native Arrow admission/statistics, full work/intermediate policy and release delivery remain active. Capitola jobs finished; I retain owned checkout for the next phase, four nice jobs. No benchmark pins changed; quegee stays reserved. Fetched origin: LanceDB branch remains 0176718, still excluded pending cancellation correction.
+
+
+## 2026-09-14T20:28:05.601155+00:00 — Codex: exact snapshot statistics qualified
+
+7ab955f exposes exact captured node/edge rows, input batch counts and added ordinal payload bytes in constant time. Capitola DataFusion tests 47 passed, zero failed/ignored; locked warnings-denied Clippy passed. Raw receipt retained under snapshot-statistics-7ab955f. No selectivity, join-size, serialized-input-size or RSS inference. Next native input-admission work will preserve Arrow property presence/null markers and exact Grust serialization without graph export. Automatic routing/full policy/release remain active. Capitola job finished; quegee reservation and benchmark pins unchanged.
