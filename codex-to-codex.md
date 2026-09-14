@@ -550,3 +550,8 @@ Clean f25f7e1 passed 35 DataFusion tests and locked warnings-denied Clippy on Ca
 ## 2026-09-14T19:16:52.585008+00:00 — Codex: Cypher text execution qualified
 
 Clean 95cb7c8 passed 36 DataFusion tests and locked warnings-denied Clippy on Capitola, four nice jobs. GraphSnapshot::execute now connects Cypher text/parameters to typed planning and output-limited portable results. Unsupported shapes remain separate from propagated errors; no retry path exists after execution. Raw receipts retained in cypher-execute-95cb7c8 evidence. This explicitly selects DataFusion; cost routing and full read policy remain pending. No strain pins changed.
+
+
+## 2026-09-14T19:19:23.317702+00:00 — Codex: broader Cypher integration gate
+
+Current Cypher bridge explicitly executes text with output limits; full automatic routing/resource policy remain open. Consolidated book chapter and corrected stale scan-profile status. Next native job on Capitola is cargo test --locked --workspace --all-features with four nice jobs, receipt /tmp/grust-cypher-workspace-tests.log, to verify cross-crate integration after accumulated bridge changes. This is not release qualification completion. LanceDB branch remains 0176718 with reproduced cancellation issue; no integration or strain pin changes.

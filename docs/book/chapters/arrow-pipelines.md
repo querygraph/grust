@@ -146,106 +146,74 @@ compatibility and testing contracts. Reproducible pipeline benchmarks measure
 native slicing, explicit IPC boundaries and graph validation separately from
 backend load and algorithm timings.
 
-## Typed Cypher planning under development
+## Typed Cypher execution under development
 
-The optional `grust-datafusion` feature `cypher` now provides an explicit
-planning bridge over the existing parsed Cypher AST and immutable native Arrow
-node providers. It builds DataFusion 55 logical expressions directly, without
-SQL text generation. `plan_node_scan` reports either a supported DataFrame or
-an unsupported reason; semantic and DataFusion planning errors remain errors.
-This interface is unreleased and is not yet wired into automatic route selection.
+The optional `grust-datafusion` feature `cypher` provides an explicit execution
+bridge over native Arrow graph tables. `GraphSnapshot::execute` accepts Cypher
+text, parameters and `OutputLimits`; it uses the existing parser and semantic
+analyzer, builds DataFusion 55 expressions directly, and returns an ordinary
+`CypherResultTable`. No SQL text or intermediate row-oriented graph is generated.
+This surface is unreleased. Ordinary Cypher entrypoints do not yet select it
+automatically, and it does not implement the complete bounded read policy.
 
-The implemented surface includes scalar Bool/Int/String/null predicates, scalar
-parameters, inline node property maps, projections and DISTINCT, count variants
-and grouping, integer/string MIN/MAX, node identity, ordering by projected
-expressions or aliases, and literal or
-parameterized pagination. Implicit output names share the portable Cypher
-projection helper. Duplicate names require future result remapping. Floats,
-mixed numeric types, arithmetic, joins and other aggregates need their own
-semantic qualification. In particular, integer SUM must preserve overflow
-behavior across execution partitions, not only an equal final total.
+### Snapshot and composition
 
-Caller policy remains a separate unfinished integration: DataFusion's working
-memory pool does not enforce Cypher candidate-work, intermediate-copy or encoded
-output budgets. Providers must retain snapshot identity and validated native
-schemas. Automatic selection and end-to-end performance claims require these
-contracts and measurements, including capture, conversion and result consumption.
+`GraphSnapshot` captures validated immutable node/edge providers, independent of
+session catalog replacement. Existing Arrow buffers remain shared. An additional
+UInt64 ordinal, costing eight bytes per edge, supplies physical relationship
+identity within the snapshot. Parallel edges and optional/repeated external edge
+IDs remain distinct. Backend transaction and authorization identity, input
+storage and ordinal allocation remain caller responsibilities.
 
-Qualification includes provider replacement: a DataFrame planned against an
-immutable memory provider retains that provider when the session catalog name is
-replaced; replanning sees the replacement. This does not establish snapshot
-isolation for every external provider. WHERE lowering also preserves the portable
-executor's rule that only Boolean true retains a row, including scalar and null
-cases. Boolean AND/OR/XOR truth tables are checked through actual execution.
+`GraphSnapshot::plan` selects the node or relationship compiler from the parsed
+query shape. `QueryPlan` records its `PlanKind` and either a DataFrame or an
+unsupported reason. `CypherExecution` distinguishes completed execution from an
+unsupported query that never executed. Parse, semantic, planning, execution and
+output-limit errors propagate without retrying another executor or snapshot.
 
-The unreleased `ExpressionBindings` contract resolves multiple graph variables
-to typed physical expressions. Scalar and aggregate lowering share that
-resolver, including missing-property nulls and explicit unknown-binding errors.
-Callers can prepare inputs with multiple bindings; the directed one-hop planner
-uses the same resolver.
+Applications can also use `plan_node_scan`, `plan_relationship_scan`, and the
+snapshot's directed/undirected relationship operators directly. The shared
+`ExpressionBindings` contract resolves graph variables to typed physical
+expressions for scalar and aggregate compilation. Missing properties become
+null; unknown variables remain errors. This allows composition without copying
+the scalar semantics into each pattern planner.
 
-The unreleased `cypher::GraphSnapshot` captures immutable validated node/edge
-providers directly, independent of session catalog replacement. It adds a UInt64
-physical edge ordinal scoped to that snapshot, preserving parallel edges and
-optional or repeated external IDs. The ordinal allocation costs eight bytes per
-edge; existing Arrow buffers remain shared. Callers admit input and ordinal
-storage separately from DataFusion working memory and retain responsibility for
-backend transaction and authorization identity.
+### Qualified language surface
 
-The unreleased `GraphSnapshot::directed_relationships` operator creates lazy
-DataFusion endpoint joins for source, relationship and target bindings.
-Its `RelationshipPlan` exposes typed binding resolution for projection, filters
-and aggregates, plus the snapshot-scoped relationship ordinal. Parallel edges
-and loops survive; isolates produce no directed relationship rows. This is a
-composable operator. `plan_relationship_scan` lowers parsed incoming/outgoing
-one-hop patterns with named or anonymous bindings, node labels, relationship types
-and WHERE. It shares RETURN projection, aggregation, DISTINCT, sorting and
-pagination with node scans. Optional matches and automatic execution selection remain outstanding.
+The current compiler supports node scans and single-hop relationships in either
+direction or undirected form; labels, relationship types and scalar inline maps;
+named, anonymous and repeated endpoint bindings; WHERE, projection, DISTINCT,
+count variants/grouping, integer/string MIN/MAX, node identity, projected
+ordering, and literal/parameter pagination. Scalar domains are Boolean, Int64,
+UTF-8 and null. Only Boolean true retains a WHERE row.
 
-Inline scalar property maps on both endpoint nodes and relationships use the
-same predicate compiler as node scans. Literal and parameter values are admitted;
-correlated expressions remain unsupported. Missing properties and null equality
-retain the portable executor's matching behavior.
+Undirected matching emits both orientations of non-loop edges and each self-loop
+once. Repeated endpoints constrain matching to self-loops using one node join;
+the undirected form omits its reverse branch. Anonymous names are generated after
+semantic analysis and cannot collide with explicit pattern bindings.
 
-Undirected one-hop patterns now use both endpoint orientations while excluding
-self-loops from the reverse branch. Parallel relationships retain their distinct
-physical ordinals across both branches. This implementation composes typed joins
-and UNION ALL; its execution cost still needs separate measurement.
+Multi-hop/variable-length paths, OPTIONAL MATCH, correlated maps, floating-point
+and mixed numeric expressions, arithmetic, additional aggregates and duplicate
+projection names still need mappings or result remapping. Integer SUM requires
+particular care: preserving an equal final total does not preserve sequential
+overflow behavior across partitions. Unsupported cases are not silently coerced.
 
-A repeated endpoint variable now constrains single-hop matches to self-loops.
-The plan uses one node join plus endpoint equality and omits the redundant
-reverse branch for undirected matching. Node/relationship name collisions
-remain invalid.
+### Output and remaining policy work
 
-Anonymous node and relationship elements receive private, collision-free
-bindings after semantic analysis. Named bindings remain borrowed during name
-resolution. Anonymous node scans retain label and inline-property constraints.
+`decode_result_batch` preserves column order/names, row multiplicity, nulls and
+exact Int64 values when converting native scalar batches to portable rows. Types
+are resolved once per column; unsupported types fail before allocating rows.
+Arrow/ADBC consumers can retain native batches and avoid owned row conversion.
 
-The common `GraphSnapshot::plan` entrypoint selects the node or relationship
-compiler from the parsed query shape. `QueryPlan` retains the selected kind and
-a supported DataFrame or an unsupported reason; semantic errors propagate.
-It plans against the captured provider pair without executing the query. This
-is not yet cost-based routing through ordinary Cypher execution entrypoints.
+`collect_result` checks cumulative row counts before decoding each batch and
+counts exact serialized JSON output bytes without allocating a JSON buffer.
+The count includes column metadata, delimiters, escaping and inter-row commas,
+including empty results. Exceeding either limit returns an error with no partial
+result. One decoded batch still requires separate memory admission.
 
-`decode_result_batch` converts supported native scalar batches into ordinary
-`CypherResultTable` rows. It preserves column order/names, nulls and exact Int64
-values, validates types before allocating rows, and resolves array types once
-per column. Unsupported types fail without coercion. Owned rows and strings
-require caller allocation/output admission; Arrow/ADBC consumers can keep the
-native batches directly.
-
-`collect_result` consumes a typed DataFrame incrementally into a portable table
-with cumulative row and serialized JSON output limits. It checks rows before
-decoding and counts encoding bytes without building a JSON buffer. The accounting
-includes columns, delimiters, escaping and inter-row commas across batches.
-Errors abort without returning partial output or retrying. One decoded batch,
-input/working memory, candidate work and deadlines still need separate admission;
-this is output enforcement, not the complete Cypher read policy.
-
-`GraphSnapshot::execute` accepts Cypher text, parameters and explicit
-`OutputLimits`, selects the typed compiler and returns an ordinary result table.
-`CypherExecution` separates completed execution from unsupported queries that
-never executed. Parse, semantic, execution and output-limit errors propagate
-without fallback. This explicitly selects DataFusion; query/input admission,
-candidate work, intermediate memory, deadlines and cost-based routing remain
-separate integration requirements.
+DataFusion's working-memory pool and these output checks do not enforce Cypher's
+candidate-work, intermediate-copy, query/input or deadline contracts. Automatic
+selection remains pending until those boundaries and measured cost decisions
+are integrated. The completed scan profile reports conversion/preparation costs
+separately; join throughput is not yet qualified. Passing explicit execution
+tests does not establish backend-wide speed or resource-policy parity.

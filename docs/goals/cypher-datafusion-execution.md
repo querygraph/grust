@@ -131,13 +131,24 @@ input if extracting those descriptors would entangle unrelated backend contracts
 ## Current qualification and measurement boundary
 
 The full Cypher suite passed 869 tests (zero failures, two ignored) after the
-shared integer-ordering and column-name changes. The focused DataFusion suite
-passed 19 tests and warnings-denied Clippy at `a94f394`; subsequent ordered-value
-assertions passed at `c3b1cf4`. These are unreleased source qualifications.
+shared integer-ordering and column-name changes. The DataFusion suite passed
+36 tests and locked warnings-denied Clippy at `95cb7c8`; its retained receipt is
+`benchmarks/arrow-pipelines/evidence/cypher-execute-95cb7c8`. That includes the
+text execution entrypoint, 28 relationship differential queries, anonymous node
+scans, shared bindings, snapshot identity, result conversion and output limits.
+These are unreleased source qualifications, not full-workspace release gates.
 
-The `cypher_scan` profiler at `771cb89` compares identical Cypher text through
-indexed execution and typed DataFusion lowering, with a closed-form count oracle.
-Its optimized build is in progress on Capitola. No timing result or automatic
-selection threshold is established yet. Prepared-input measurements disclose
-separate conversion/index costs and differing admission boundaries; they cannot
-alone establish backend or policy parity.
+The optimized `cypher_scan` profile at `771cb89` completed on Capitola with all
+42 oracle checks passing. It compares identical Cypher text through indexed
+execution and typed lowering. At one million nodes, three-trial prepared-query
+medians were 1.476991 seconds indexed and 0.004989 seconds typed DataFusion;
+Arrow conversion/registration separately took 0.974918 seconds. The indexed
+route was faster on the 17-node fixture. The raw receipt discloses differing
+admission boundaries and co-resident inputs. These observations do not establish
+an automatic threshold, backend parity or join throughput.
+
+Output rows and exact serialized bytes are now enforced incrementally. Remaining
+policy integration includes query/parameter/input admission, candidate work,
+intermediate allocation, deadlines/cancellation and backend snapshot authority.
+Automatic ordinary-entrypoint routing, broader language mappings, provider
+coverage, comparable end-to-end profiling and the named release remain open.
