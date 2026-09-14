@@ -94,11 +94,18 @@ async fn run() -> Result<()> {
             let result = execute(route, &index, &snapshot, &engine, &query).await;
             let seconds = start.elapsed().as_secs_f64();
             match result {
-                Ok(actual) => {
+                Ok(Some(actual)) => {
                     failed |= actual != expected;
                     println!(
                         "{}",
                         json!({"event":"trial","route":route,"trial":trial,"seconds":seconds,"actual":actual,"expected":expected,"status":if actual==expected {"pass"} else {"mismatch"}})
+                    );
+                }
+                Ok(None) => {
+                    failed = true;
+                    println!(
+                        "{}",
+                        json!({"event":"trial","route":route,"trial":trial,"seconds":seconds,"expected":expected,"status":"unsupported"})
                     );
                 }
                 Err(error) => {
@@ -122,7 +129,7 @@ async fn execute(
     snapshot: &GraphSnapshot,
     engine: &DataFusionEngine,
     query: &str,
-) -> Result<i64> {
+) -> Result<Option<i64>> {
     let parameters = CypherParameters::new();
     let table = if route == "indexed" {
         run_read_query_indexed(index, query, &parameters)?
@@ -140,7 +147,7 @@ async fn execute(
             .await?
         {
             CypherExecution::Completed { table, .. } => table,
-            CypherExecution::Unsupported { .. } => return Err("unsupported typed path".into()),
+            CypherExecution::Unsupported { .. } => return Ok(None),
         }
     };
     if table.columns != ["count"] {
@@ -148,7 +155,7 @@ async fn execute(
     }
     match table.rows.as_slice() {
         [row] => match row.as_slice() {
-            [Value::Int(value)] => Ok(*value),
+            [Value::Int(value)] => Ok(Some(*value)),
             _ => Err("unexpected value".into()),
         },
         _ => Err("unexpected row count".into()),
