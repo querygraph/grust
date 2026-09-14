@@ -22,10 +22,10 @@ history.
 
 ## Barnacles
 - Acorn — 0.14.0 (2026-09-14)
-- Gooseneck — 0.15.0 (2026-09-14) ← current
+- Gooseneck — 0.15.0 (2026-09-14)
 
 ## Smaller and Lesser-Known
-- Copepod
+- Copepod — 0.15.1 (2026-09-14) ← current
 - Amphipod
 - Isopod
 - Ostracod

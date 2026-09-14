@@ -1660,6 +1660,14 @@ a grouped query with no input produces no groups. The same rules apply to
 DISTINCT sums and the streaming aggregate path. These individual contracts do
 not imply complete Cypher compatibility for every aggregate type or function.
 
+Candidate rows share immutable node and edge bindings as patterns expand.
+Copying a candidate therefore shares the bound element instead of cloning its
+property map again. Projected results remain owned, and edge-slot identity and
+row order remain unchanged. Logical full-element copy charges remain conservative
+even when the physical representation shares storage. This reduces repeated
+allocation; it does not make the complete MATCH pipeline streaming or impose a
+whole-process memory cap.
+
 The read core also composes: `CALL { … }` subqueries execute once per incoming
 row with the outer bindings visible (correlated import-all scoping) and join
 their `RETURN` columns back onto the row, and `shortestPath(…)` /

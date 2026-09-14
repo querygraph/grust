@@ -6,6 +6,8 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ## Unreleased
 
+## 0.15.1 — Copepod — 2026-09-14
+
 - Candidate rows in the portable Cypher executor share immutable node and edge
   bindings instead of repeatedly cloning their property maps. Projected values
   remain owned, relationship identity and row order are preserved, and logical
