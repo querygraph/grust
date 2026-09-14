@@ -5,16 +5,12 @@ use std::{
 };
 
 #[cfg(feature = "arrow")]
-use std::io::Cursor;
-
-#[cfg(feature = "arrow")]
-use arrow::{
-    ipc::{reader::StreamReader as ArrowStreamReader, writer::StreamWriter as ArrowStreamWriter},
-    record_batch::RecordBatch as ArrowRecordBatch,
-};
+use arrow::record_batch::RecordBatch as ArrowRecordBatch;
 use async_trait::async_trait;
 use grust_core::prelude::*;
 
+#[cfg(feature = "arrow")]
+mod arrow_load;
 #[cfg(feature = "arrow")]
 mod bulk_load;
 mod traversal;
@@ -1191,30 +1187,15 @@ impl GraphAdminStore for LadybugGraphStore {
 
 #[cfg(feature = "arrow")]
 fn arrow_ipc_batches(ipc_stream: &[u8]) -> Result<Vec<ArrowRecordBatch>> {
-    let reader = ArrowStreamReader::try_new(Cursor::new(ipc_stream), None)
-        .map_err(|err| GrustError::Backend(format!("Arrow IPC read failed: {err}")))?;
-    reader
-        .map(|batch| {
-            batch.map_err(|err| GrustError::Backend(format!("Arrow batch read failed: {err}")))
-        })
-        .collect()
+    grust_arrow::v55::read_ipc_stream(ipc_stream)
+        .and_then(Iterator::collect)
+        .map_err(|err| GrustError::Serialization(format!("Arrow IPC read failed: {err}")))
 }
 
 #[cfg(feature = "arrow")]
 fn arrow_batch_to_ipc(batch: &ArrowRecordBatch) -> Result<Vec<u8>> {
-    let mut data = Vec::new();
-    {
-        let cursor = Cursor::new(&mut data);
-        let mut writer = ArrowStreamWriter::try_new(cursor, batch.schema().as_ref())
-            .map_err(|err| GrustError::Backend(format!("Arrow IPC write failed: {err}")))?;
-        writer
-            .write(batch)
-            .map_err(|err| GrustError::Backend(format!("Arrow IPC write failed: {err}")))?;
-        writer
-            .finish()
-            .map_err(|err| GrustError::Backend(format!("Arrow IPC write failed: {err}")))?;
-    }
-    Ok(data)
+    grust_arrow::v55::batch_to_ipc(batch)
+        .map_err(|err| GrustError::Serialization(format!("Arrow IPC write failed: {err}")))
 }
 
 fn props_to_string(props: &Props) -> Result<String> {
@@ -1322,3 +1303,6 @@ fn rel_index_id(label: &Label, from_label: &Label, to_label: &Label) -> String {
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(all(test, feature = "arrow"))]
+mod arrow_load_tests;

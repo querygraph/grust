@@ -1,10 +1,8 @@
 //! Strict decoding and validation of untrusted Sail result rows.
 
 use std::collections::{BTreeSet, HashMap};
-use std::io::Cursor;
 
 use arrow::array::{Array, StringArray};
-use arrow::ipc::reader::StreamReader;
 use typesec_memory::{ConsolidationPlan, RecalledMemory};
 
 use super::SailCognitionSession;
@@ -35,7 +33,7 @@ fn decode_pair_chunks(chunks: Vec<Vec<u8>>) -> Result<Vec<(String, String)>, Cog
 
     let mut rows = Vec::new();
     for chunk in chunks {
-        let reader = StreamReader::try_new(Cursor::new(chunk), None)
+        let reader = grust_arrow::v58::read_ipc_stream(chunk.as_slice())
             .map_err(|_| sail_error("Sail returned invalid Arrow IPC"))?;
         for batch in reader {
             let batch = batch.map_err(|_| sail_error("Sail returned an invalid Arrow batch"))?;

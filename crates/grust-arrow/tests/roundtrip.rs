@@ -1,3 +1,4 @@
+#![cfg(feature = "arrow-59")]
 use grust_arrow::ArrowGraph;
 use grust_core::{Edge, Graph, Node, Props, Value};
 use std::io::Cursor;

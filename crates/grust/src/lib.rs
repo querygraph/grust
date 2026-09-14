@@ -155,3 +155,7 @@ pub mod prelude {
     #[cfg(feature = "turso")]
     pub use grust_turso::*;
 }
+
+/// Optional shared DataFusion 55 foundation for native Arrow pipelines.
+#[cfg(feature = "datafusion")]
+pub use grust_datafusion as datafusion;

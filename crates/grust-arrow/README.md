@@ -1,8 +1,9 @@
 # Grust Arrow interchange
 
 Enable the facade's `arrow` feature and use `grust::arrow::ArrowGraph`, or depend
-on `grust-arrow`. Arrow 59.3 tables are shared by reference; conversion to/from
-Grust's row-oriented model materializes values and builds a validation index.
+on `grust-arrow`. Arrow 59.3 tables are shared by reference. Native construction validates columns
+without building property rows or adjacency; `to_graph` explicitly materializes
+Grust values.
 No database service, JSON payload, or text edge-list conversion is required.
 
 ```rust,no_run
@@ -47,3 +48,29 @@ The tables can be consumed as RecordBatches in Arrow/DataFusion. Icecat's local
 exports them again with properties intact. Select `property.weight` as the
 Icecat weight column. Icecat's simple graph semantics reject parallel edges;
 Grust's model preserves them. See Icecat for the algorithms and benchmark runner.
+
+
+## Native pipelines and ADBC
+
+The default `arrow-59` feature exports `ArrowGraph`, `ArrowGraphTables`,
+`ArrowTable`, `BatchReader`, IPC readers/writers and storage batch encoders.
+Optional `arrow-55` and `arrow-58` expose the same implementation through `v55`
+and `v58`; `v59` is also available explicitly. Disable default features when
+only an older SDK version is required.
+
+`ArrowTable` preserves arbitrary Arrow types, schema metadata and batch
+boundaries. `ArrowGraphTables` validates the scalar graph contract across
+multiple batches. Standard `RecordBatchReader` inputs and outputs compose with
+ADBC and other Arrow applications. `BatchReader` lazily slices rows without
+copying buffers and checks decoded input-batch memory; `ByteLimitWriter` bounds
+encoded output. These are explicit accounting limits, not process-RSS caps.
+
+The `adbc` feature supplies `adbc::ingest` for a caller-owned ADBC 0.24 statement
+and native Arrow 59 reader. Driver errors, unknown counts and ownership remain
+with ADBC. The optional `ffi` feature exports standard C streams through
+upstream Arrow. Grust does not add unsafe code or an alternative driver manager.
+
+LanceDB, Sail, Ladybug and the optional QueryGraph Memory Sail adapter use these
+shared pipeline operations. Graph storage layouts and mutation boundaries are
+documented in [Arrow pipelines](../../docs/arrow-pipelines.md). Sail's SQL property
+normalization is distinct from the universal tagged Grust property format.

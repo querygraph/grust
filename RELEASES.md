@@ -21,8 +21,8 @@ history.
   crates remain 0.13.0)
 
 ## Barnacles
-- Acorn — 0.14.0 (2026-09-14) ← current
-- Gooseneck
+- Acorn — 0.14.0 (2026-09-14)
+- Gooseneck — 0.15.0 (2026-09-14) ← current
 
 ## Smaller and Lesser-Known
 - Copepod

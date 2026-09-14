@@ -2,9 +2,11 @@
 
 Grust is a modern property graph API for Rust.
 
-**Acorn 0.14.0** adds reusable graph algorithms across Rust, Arrow and Cypher.
-The versioned examples below target Acorn.
-See the [qualification and release handoff](docs/GENERALIZED_ALGORITHMS.md#qualification-and-release-handoff).
+**Gooseneck 0.15.0** adds shared native Arrow pipelines and optional ADBC bulk
+integration across the Arrow-based adapters, alongside Rust and Cypher graph
+algorithms. The versioned examples below target Gooseneck.
+See [Arrow pipelines and ADBC](docs/arrow-pipelines.md) and the
+[algorithm capability inventory](docs/GENERALIZED_ALGORITHMS.md).
 
 It gives Rust applications one small, backend-neutral way to build, validate,
 traverse, and eventually persist graph data. The core model is intentionally
@@ -83,7 +85,8 @@ crates/
   grust-algorithms/ Immutable projections and reusable Rust graph analytics
   grust-algorithm-procedures/ Registry adapters for those same kernels
   grust-procedures/ Open signatures, providers, cursors and shared resource budgets
-  grust-arrow/    Optional scalar graph/Arrow interchange
+  grust-arrow/    Shared native Arrow pipelines and graph interchange
+  grust-datafusion/ Optional DataFusion 55 execution over Arrow 59
   grust-cocoindex/ CocoIndex-style graph target-state export adapter
   grust-core/     Core model, builder, schema, traversal IR, GraphStore trait
   grust-cypher/   Portable GQL/Cypher parser, planner, and reference executor
@@ -367,7 +370,7 @@ Enable the `memory` feature to use `MemoryGraphStore` from the public facade:
 
 ```toml
 [dependencies]
-grust = { package = "grust-graph", version = "0.14.0", features = ["memory"] }
+grust = { package = "grust-graph", version = "0.15.0", features = ["memory"] }
 ```
 
 The facade re-exports the full `grust-memory` crate surface when the feature is
@@ -498,7 +501,7 @@ Backend crates are optional facade features:
 ```toml
 [dependencies.grust]
 package = "grust-graph"
-version = "0.14.0"
+version = "0.15.0"
 features = [
   "cocoindex", "cypher", "falkor", "lancedb", "memory", "postgres",
   "postgres-pgq", "pggraph", "sail", "surreal", "turso",
@@ -513,7 +516,7 @@ The additional `turso-sync` feature enables Turso Cloud synchronization and
 implies `turso`; `typed-garde` and `typed-zod-rs` enable typed ingestion rather
 than storage backends.
 
-Acorn 0.14.0 uses a lockstep version for all publishable Grust crates. The optional
+Gooseneck 0.15.0 uses a lockstep version for all publishable Grust crates. The optional
 `algorithms` feature adds graph kernels and their procedure adapters; `arrow`
 adds typed interchange and, with algorithms enabled, native result batches.
 
@@ -1035,7 +1038,7 @@ backend-specific extension traits later.
 
 ## Status
 
-Grust 0.14.0 "Acorn" is the current source release line, with lockstep publishable
+Grust 0.15.0 "Gooseneck" is the current source release line, with lockstep publishable
 crates, generalized Rust/Cypher graph analytics and optional typed Arrow results.
 The backend matrix distinguishes local projection from backend-native execution;
 unsupported algorithms, modes and representations remain explicit.
@@ -1104,8 +1107,17 @@ Grust is dual-licensed under either of:
 
 Choose either license when using, modifying, or distributing Grust.
 
-## Arrow interchange
+## Arrow pipelines and DataFusion
 
-The optional `arrow` feature exposes native scalar property tables and Arrow IPC
-through `grust::arrow::ArrowGraph`. See [the Arrow contract](crates/grust-arrow/README.md)
-for examples, null/missing semantics, and current type and IO limits.
+The optional `arrow` feature exposes native graph tables, multi-batch tables,
+standard readers and IPC through `grust::arrow`. Shared version modules serve
+Arrow-based backend SDKs without conversion between incompatible Rust types.
+The `adbc` feature binds standard Arrow readers to caller-owned ADBC statements.
+
+The optional `datafusion` feature exposes the shared DataFusion 55 foundation:
+native Arrow 59 tables and graph catalogs, upstream provider extensions,
+streaming read-only SQL and explicit working-memory and spill settings. Existing
+backend SDK engines and Cypher execution remain independently qualified paths.
+See [Arrow contracts](crates/grust-arrow/README.md),
+[DataFusion usage](crates/grust-datafusion/README.md) and the
+[pipeline architecture](docs/arrow-pipelines.md) for ownership and resource limits.

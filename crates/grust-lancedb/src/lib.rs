@@ -1,3 +1,4 @@
+mod arrow_load;
 use std::collections::BTreeSet;
 use std::sync::{Arc, RwLock};
 
@@ -775,22 +776,10 @@ impl LanceDbGraphStore {
 }
 
 fn nodes_schema() -> SchemaRef {
-    Arc::new(Schema::new(vec![
-        Field::new("id", DataType::Utf8, false),
-        Field::new("label", DataType::Utf8, false),
-        Field::new("props", DataType::Utf8, false),
-    ]))
+    grust_arrow::v58::node_storage_schema()
 }
-
 fn edges_schema() -> SchemaRef {
-    Arc::new(Schema::new(vec![
-        Field::new("key", DataType::Utf8, false),
-        Field::new("id", DataType::Utf8, true),
-        Field::new("from_id", DataType::Utf8, false),
-        Field::new("to_id", DataType::Utf8, false),
-        Field::new("label", DataType::Utf8, false),
-        Field::new("props", DataType::Utf8, false),
-    ]))
+    grust_arrow::v58::edge_storage_schema()
 }
 
 fn typed_node_schema(node_type: &NodeType) -> SchemaRef {
@@ -829,71 +818,19 @@ fn arrow_field(field: &grust_core::Field) -> Field {
 }
 
 fn node_batch_reader(nodes: &[Node]) -> Result<Box<dyn arrow::array::RecordBatchReader + Send>> {
-    let schema = nodes_schema();
-    let props = nodes
-        .iter()
-        .map(|node| props_to_json(&node.props))
-        .collect::<Result<Vec<_>>>()?;
-    let batch = RecordBatch::try_new(
-        schema.clone(),
-        vec![
-            Arc::new(StringArray::from_iter_values(
-                nodes.iter().map(|node| node.id.as_str()),
-            )),
-            Arc::new(StringArray::from_iter_values(
-                nodes.iter().map(|node| node.label.as_str()),
-            )),
-            Arc::new(StringArray::from_iter_values(
-                props.iter().map(String::as_str),
-            )),
-        ],
-    )
-    .map_err(|err| GrustError::Serialization(format!("failed to build node batch: {err}")))?;
+    let batch = grust_arrow::v58::nodes_to_batch(nodes)?;
+    let schema = batch.schema();
     Ok(Box::new(RecordBatchIterator::new(
-        vec![Ok(batch)].into_iter(),
+        std::iter::once(Ok(batch)),
         schema,
     )))
 }
 
 fn edge_batch_reader(edges: &[Edge]) -> Result<Box<dyn arrow::array::RecordBatchReader + Send>> {
-    let schema = edges_schema();
-    let props = edges
-        .iter()
-        .map(|edge| props_to_json(&edge.props))
-        .collect::<Result<Vec<_>>>()?;
-    let keys = edges
-        .iter()
-        .map(checked_edge_key)
-        .collect::<Result<Vec<_>>>()?;
-    let batch = RecordBatch::try_new(
-        schema.clone(),
-        vec![
-            Arc::new(StringArray::from_iter_values(
-                keys.iter().map(String::as_str),
-            )),
-            Arc::new(StringArray::from(
-                edges
-                    .iter()
-                    .map(|edge| edge.id.as_ref().map(EdgeId::as_str))
-                    .collect::<Vec<_>>(),
-            )),
-            Arc::new(StringArray::from_iter_values(
-                edges.iter().map(|edge| edge.from.as_str()),
-            )),
-            Arc::new(StringArray::from_iter_values(
-                edges.iter().map(|edge| edge.to.as_str()),
-            )),
-            Arc::new(StringArray::from_iter_values(
-                edges.iter().map(|edge| edge.label.as_str()),
-            )),
-            Arc::new(StringArray::from_iter_values(
-                props.iter().map(String::as_str),
-            )),
-        ],
-    )
-    .map_err(|err| GrustError::Serialization(format!("failed to build edge batch: {err}")))?;
+    let batch = grust_arrow::v58::edges_to_batch(edges)?;
+    let schema = batch.schema();
     Ok(Box::new(RecordBatchIterator::new(
-        vec![Ok(batch)].into_iter(),
+        std::iter::once(Ok(batch)),
         schema,
     )))
 }
@@ -1125,10 +1062,6 @@ fn step_edge_filter(node_id: &str, step: &Step) -> String {
     } else {
         endpoint
     }
-}
-
-fn props_to_json(props: &Props) -> Result<String> {
-    serde_json::to_string(props).map_err(|err| GrustError::Serialization(err.to_string()))
 }
 
 fn parse_props(value: &str) -> Result<Props> {

@@ -1,8 +1,8 @@
 # Grust Algorithms
 
 Immutable selected property-graph topology and budgeted Rust graph kernels.
-This crate is under development as part of Grust's generalized analytics work.
-The repository's `docs/GENERALIZED_ALGORITHMS.md` tracks the delivery boundary.
+The repository's `docs/GENERALIZED_ALGORITHMS.md` tracks implemented capabilities,
+unsupported modes and qualification evidence.
 
 The direct Rust API provides BFS, Dijkstra distances, one full shortest path per
 reachable node, weak and strong components, weighted PageRank, DFS, multi-source BFS and

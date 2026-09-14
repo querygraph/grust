@@ -5,7 +5,6 @@ use std::sync::Arc;
 
 use arrow::array::{Int64Array, RecordBatch, StringArray};
 use arrow::datatypes::{DataType, Field, Schema};
-use arrow::ipc::writer::StreamWriter;
 use typesec_memory::{MemoryContent, Provenance, RecalledMemory};
 
 use crate::analytics::planning::{normalize_text, normalized_assertion_parts};
@@ -48,7 +47,7 @@ pub(super) fn encode(memories: &[RecalledMemory]) -> Result<Vec<u8>, CognitionEr
         ],
     )
     .map_err(|_| serialization_error("invalid governed Arrow request"))?;
-    encode_batch(&schema, &batch)
+    encode_batch(&batch)
 }
 
 pub(super) fn owned_planning_memories(memories: &[RecalledMemory]) -> Vec<RecalledMemory> {
@@ -91,16 +90,12 @@ fn check_string_bytes(
     budget::check_arrow_bytes(bytes)
 }
 
-fn encode_batch(schema: &Schema, batch: &RecordBatch) -> Result<Vec<u8>, CognitionError> {
+fn encode_batch(batch: &RecordBatch) -> Result<Vec<u8>, CognitionError> {
     let mut output = BoundedBuffer::new(budget::MAX_ARROW_BYTES);
-    let encoded = {
-        let mut writer = StreamWriter::try_new(&mut output, schema)
-            .map_err(|_| serialization_error("Arrow request encoding failed"))?;
-        writer
-            .write(batch)
-            .and_then(|()| writer.finish())
-            .map_err(|_| serialization_error("Arrow request encoding failed"))
-    };
+    let reader =
+        arrow::array::RecordBatchIterator::new(std::iter::once(Ok(batch.clone())), batch.schema());
+    let encoded = grust_arrow::v58::write_ipc_stream(&mut output, reader)
+        .map_err(|_| serialization_error("Arrow request encoding failed"));
     if output.exceeded {
         return Err(CognitionError::ResourceBudgetExceeded("Arrow bytes"));
     }

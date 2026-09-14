@@ -5,7 +5,6 @@ use std::sync::{Arc, RwLock};
 use arrow::array::{Array as _, Int64Array, RecordBatch, StringArray};
 use arrow::datatypes::{DataType, Field as ArrowField, Schema as ArrowSchema};
 use arrow::ipc::reader::StreamReader;
-use arrow::ipc::writer::StreamWriter;
 use async_trait::async_trait;
 use grust_core::prelude::*;
 // Internal access to the full shared Cypher language layer (parser, planner,
@@ -45,6 +44,7 @@ use sc::{
 // ── Config ────────────────────────────────────────────────────────────────────
 
 mod arrow_ipc;
+mod arrow_load;
 mod text_rows;
 use text_rows::parse_text_rows_from_arrow;
 mod config;
@@ -1502,17 +1502,19 @@ impl SailGraphStore {
     /// Node streams must provide `id`, `label`, and `props` string columns.
     /// Edge streams must provide `src_id`, `dst_id`, `edge_type`, and `props`
     /// string columns, and may include an optional string `id` column.
+    /// Validation and writes occur batch by batch; an error can leave earlier
+    /// batches committed. Use [`Self::load_arrow`] to set decoded batch admission.
     pub async fn load_graph_arrow_ipc(
         &self,
         nodes_ipc: &[u8],
         edges_ipc: &[u8],
     ) -> Result<LoadReport> {
-        self.bootstrap().await?;
-        let graph = Graph::new(
-            parse_nodes_from_arrow(nodes_ipc)?,
-            parse_edges_from_arrow(edges_ipc)?,
-        );
-        self.put_graph(&graph).await
+        let nodes = grust_arrow::v58::read_ipc_stream(nodes_ipc)
+            .map_err(grust_arrow::v58::into_grust_error)?;
+        let edges = grust_arrow::v58::read_ipc_stream(edges_ipc)
+            .map_err(grust_arrow::v58::into_grust_error)?;
+        self.load_arrow(nodes, edges, std::num::NonZeroUsize::MAX)
+            .await
     }
 
     /// Reads the generic persisted `grust_nodes` and `grust_edges` tables into
@@ -2362,19 +2364,8 @@ fn cypher_constraint_registry_record_batch(name: &str, registry_json: &str) -> R
 }
 
 fn ipc_bytes(batch: &RecordBatch) -> Result<Vec<u8>> {
-    let mut data = Vec::new();
-    {
-        let cursor = Cursor::new(&mut data);
-        let mut writer = StreamWriter::try_new(cursor, batch.schema().as_ref())
-            .map_err(|e| GrustError::Backend(format!("Arrow IPC write failed: {e}")))?;
-        writer
-            .write(batch)
-            .map_err(|e| GrustError::Backend(format!("Arrow IPC write failed: {e}")))?;
-        writer
-            .finish()
-            .map_err(|e| GrustError::Backend(format!("Arrow IPC write failed: {e}")))?;
-    }
-    Ok(data)
+    grust_arrow::v58::batch_to_ipc(batch)
+        .map_err(|err| GrustError::Serialization(format!("Arrow IPC write failed: {err}")))
 }
 
 // ── SQL builders ──────────────────────────────────────────────────────────────
@@ -3640,130 +3631,25 @@ fn scalar_kind_of(ty: &FieldType) -> Option<grust_cypher::pushdown::ScalarKind> 
 }
 
 fn parse_nodes_from_arrow(data: &[u8]) -> Result<Vec<Node>> {
-    let reader = StreamReader::try_new(Cursor::new(data), None)
-        .map_err(|e| GrustError::Backend(format!("Arrow IPC read failed: {e}")))?;
-    let schema = reader.schema();
-    let id_idx = schema
-        .index_of("id")
-        .map_err(|_| GrustError::Schema("grust_nodes missing 'id' column".into()))?;
-    let label_idx = schema
-        .index_of("label")
-        .map_err(|_| GrustError::Schema("grust_nodes missing 'label' column".into()))?;
-    let props_idx = schema
-        .index_of("props")
-        .map_err(|_| GrustError::Schema("grust_nodes missing 'props' column".into()))?;
-
     let mut nodes = Vec::new();
-    for batch in reader {
-        let batch = batch.map_err(|e| GrustError::Backend(format!("Arrow batch error: {e}")))?;
-        let ids = batch
-            .column(id_idx)
-            .as_any()
-            .downcast_ref::<StringArray>()
-            .ok_or_else(|| GrustError::Schema("id column is not string".into()))?;
-        let labels = batch
-            .column(label_idx)
-            .as_any()
-            .downcast_ref::<StringArray>()
-            .ok_or_else(|| GrustError::Schema("label column is not string".into()))?;
-        let props_col = batch
-            .column(props_idx)
-            .as_any()
-            .downcast_ref::<StringArray>()
-            .ok_or_else(|| GrustError::Schema("props column is not string".into()))?;
-
-        for i in 0..batch.num_rows() {
-            let id = ids.value(i);
-            let label = labels.value(i);
-            let props = if props_col.is_null(i) || props_col.value(i).is_empty() {
-                Props::new()
-            } else {
-                props_from_json(props_col.value(i))?
-            };
-            nodes.push(Node {
-                id: NodeId::new(id),
-                label: Label::new(label),
-                props,
-            });
-        }
+    for batch in
+        grust_arrow::v58::read_ipc_stream(data).map_err(grust_arrow::v58::into_grust_error)?
+    {
+        nodes.extend(arrow_load::nodes_from_batch(
+            &batch.map_err(grust_arrow::v58::into_grust_error)?,
+        )?);
     }
     Ok(nodes)
 }
 
 fn parse_edges_from_arrow(data: &[u8]) -> Result<Vec<Edge>> {
-    let reader = StreamReader::try_new(Cursor::new(data), None)
-        .map_err(|e| GrustError::Backend(format!("Arrow IPC read failed: {e}")))?;
-    let schema = reader.schema();
-    let src_id_idx = schema
-        .index_of("src_id")
-        .map_err(|_| GrustError::Schema("grust_edges missing 'src_id' column".into()))?;
-    let dst_id_idx = schema
-        .index_of("dst_id")
-        .map_err(|_| GrustError::Schema("grust_edges missing 'dst_id' column".into()))?;
-    let edge_type_idx = schema
-        .index_of("edge_type")
-        .map_err(|_| GrustError::Schema("grust_edges missing 'edge_type' column".into()))?;
-    let props_idx = schema
-        .index_of("props")
-        .map_err(|_| GrustError::Schema("grust_edges missing 'props' column".into()))?;
-    let id_idx = schema.index_of("id").ok();
-
     let mut edges = Vec::new();
-    for batch in reader {
-        let batch = batch.map_err(|e| GrustError::Backend(format!("Arrow batch error: {e}")))?;
-        let src_ids = batch
-            .column(src_id_idx)
-            .as_any()
-            .downcast_ref::<StringArray>()
-            .ok_or_else(|| GrustError::Schema("src_id column is not string".into()))?;
-        let dst_ids = batch
-            .column(dst_id_idx)
-            .as_any()
-            .downcast_ref::<StringArray>()
-            .ok_or_else(|| GrustError::Schema("dst_id column is not string".into()))?;
-        let edge_types = batch
-            .column(edge_type_idx)
-            .as_any()
-            .downcast_ref::<StringArray>()
-            .ok_or_else(|| GrustError::Schema("edge_type column is not string".into()))?;
-        let props_col = batch
-            .column(props_idx)
-            .as_any()
-            .downcast_ref::<StringArray>()
-            .ok_or_else(|| GrustError::Schema("props column is not string".into()))?;
-        let ids = if let Some(id_idx) = id_idx {
-            Some(
-                batch
-                    .column(id_idx)
-                    .as_any()
-                    .downcast_ref::<StringArray>()
-                    .ok_or_else(|| GrustError::Schema("id column is not string".into()))?,
-            )
-        } else {
-            None
-        };
-
-        for i in 0..batch.num_rows() {
-            let props = if props_col.is_null(i) || props_col.value(i).is_empty() {
-                Props::new()
-            } else {
-                props_from_json(props_col.value(i))?
-            };
-            let id = ids.and_then(|ids| {
-                if ids.is_null(i) || ids.value(i).is_empty() {
-                    None
-                } else {
-                    Some(EdgeId::new(ids.value(i)))
-                }
-            });
-            edges.push(Edge {
-                id,
-                from: NodeId::new(src_ids.value(i)),
-                to: NodeId::new(dst_ids.value(i)),
-                label: Label::new(edge_types.value(i)),
-                props,
-            });
-        }
+    for batch in
+        grust_arrow::v58::read_ipc_stream(data).map_err(grust_arrow::v58::into_grust_error)?
+    {
+        edges.extend(arrow_load::edges_from_batch(
+            &batch.map_err(grust_arrow::v58::into_grust_error)?,
+        )?);
     }
     Ok(edges)
 }

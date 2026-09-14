@@ -1,0 +1,20 @@
+[package]
+name = "grust-datafusion"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+readme = "README.md"
+description = "Shared DataFusion 55 execution foundation for Grust Arrow pipelines"
+keywords.workspace = true
+categories.workspace = true
+
+[dependencies]
+datafusion = { version = "55.0.0", default-features = false, features = ["sql", "recursive_protection"] }
+grust-arrow = { version = "0.15.0", path = "../grust-arrow" }
+futures = "0.3.32"
+tokio.workspace = true
+
+[dev-dependencies]
+grust-core = { version = "0.15.0", path = "../grust-core" }

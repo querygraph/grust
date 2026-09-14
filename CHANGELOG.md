@@ -6,6 +6,42 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ## Unreleased
 
+## 0.15.0 — Gooseneck — 2026-09-14
+
+- Shared Arrow pipelines now serve LanceDB, Sail, Ladybug and the optional
+  QueryGraph Memory Sail adapter. Additive Arrow 55/58/59 features use shared
+  implementations with native SDK types. Standard readers support bounded
+  zero-copy row slicing, explicit column projection, multi-batch IPC, schema
+  validation and optional C Stream export through upstream Arrow.
+- `ArrowTable` preserves arbitrary native types, metadata and batch boundaries.
+  `ArrowGraphTables` validates graph identities across batches without building
+  property rows or adjacency. Existing `ArrowGraph` construction now validates
+  columns directly; its single-batch file-format API remains available.
+- Optional ADBC integration binds standard Arrow 59 readers to caller-owned
+  statements using upstream ingestion options. Driver errors and unknown row
+  counts remain intact. Driver lifecycle, transactions and capabilities stay
+  with ADBC; ingestion modes do not imply graph upserts.
+- Added optional `grust-datafusion`, a shared DataFusion 55 foundation over
+  native Arrow 59 tables and graph catalogs. Upstream providers retain pushdown;
+  read-only SQL returns native streams with explicit working-memory and spill
+  settings. A caller-driven blocking reader composes results with ADBC. This
+  does not change Cypher lowering or older database SDK execution engines.
+- LanceDB and Sail accept native readers for graph bulk loads. LanceDB shares
+  storage batch encoders and preserves input arrays through merge insertion;
+  Sail stages columnar input without whole-stream Graph materialization and
+  preserves identity arrays while normalizing its SQL property representation.
+  Stream loads have batch-local validation and can retain prior committed
+  batches after a later error. Sail's graph IPC convenience loader now follows
+  that streaming contract and preserves explicit empty edge IDs.
+- Ladybug exposes native reader registration and streaming batch callbacks;
+  its persisted bulk COPY path uses shared Arrow construction. QueryGraph
+  Memory retains its strict pre-decode checks and byte budgets while sharing
+  IPC encoding/decoding.
+- Added Arrow/ADBC architecture documentation, a maintained performance and
+  compatibility goal, and reproducible native/IPC and graph-validation
+  Criterion workloads. These are distinct from active source-pinned backend
+  benchmark runs.
+
 ## 0.14.0 — Acorn — 2026-09-14
 
 - LanceDB snapshot invalidation tracks table generations as well as versions,

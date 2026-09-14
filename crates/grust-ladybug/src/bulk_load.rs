@@ -15,14 +15,10 @@
 
 use std::{
     collections::{BTreeMap, HashSet},
-    sync::{Arc, atomic::AtomicU64},
+    sync::atomic::AtomicU64,
 };
 
-use arrow::{
-    array::{ArrayRef, StringArray},
-    datatypes::{DataType, Field, Schema},
-    record_batch::RecordBatch,
-};
+use arrow::record_batch::RecordBatch;
 use grust_core::prelude::*;
 
 use super::{LadybugGraphStore, ladybug_error, props_to_string};
@@ -203,16 +199,6 @@ fn scratch_table_name(prefix: &str) -> String {
 
 /// A record batch of non-null UTF-8 columns.
 fn string_batch(columns: &[(&str, Vec<&str>)]) -> Result<RecordBatch> {
-    let schema = Arc::new(Schema::new(
-        columns
-            .iter()
-            .map(|(name, _)| Field::new(*name, DataType::Utf8, false))
-            .collect::<Vec<_>>(),
-    ));
-    let arrays: Vec<ArrayRef> = columns
-        .iter()
-        .map(|(_, values)| Arc::new(StringArray::from(values.clone())) as ArrayRef)
-        .collect();
-    RecordBatch::try_new(schema, arrays)
+    grust_arrow::v55::string_batch(columns)
         .map_err(|err| GrustError::Serialization(format!("Ladybug Arrow batch error: {err}")))
 }

@@ -521,3 +521,61 @@ async fn live_local_lancedb_put_read_traverse_and_schema() {
         .expect("typed person table");
     assert_eq!(person_table.count_rows(None).await.expect("person rows"), 1);
 }
+
+#[tokio::test]
+async fn arrow_readers_bulk_upsert_and_preserve_edge_identity() {
+    use std::num::NonZeroUsize;
+    let store = store().await;
+    let graph = sample_graph();
+    let nodes = grust_arrow::v58::nodes_to_batch(&graph.nodes).unwrap();
+    let edges = grust_arrow::v58::edges_to_batch(&graph.edges).unwrap();
+    let node_reader = RecordBatchIterator::new(vec![Ok(nodes.clone())], nodes.schema());
+    let edge_reader = RecordBatchIterator::new(vec![Ok(edges.clone())], edges.schema());
+    let report = store
+        .load_arrow(
+            node_reader,
+            edge_reader,
+            NonZeroUsize::new(1 << 20).unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(report.nodes, graph.nodes.len());
+    assert_eq!(report.edges, graph.edges.len());
+    for node in &graph.nodes {
+        assert_eq!(store.get_node(&node.id).await.unwrap().as_ref(), Some(node));
+    }
+    let got = store.get_edges(EdgeQuery::default()).await.unwrap();
+    assert_eq!(got.len(), graph.edges.len());
+    for edge in &graph.edges {
+        assert!(got.contains(edge));
+    }
+}
+
+#[tokio::test]
+async fn arrow_readers_reject_forged_keys_before_edge_write() {
+    use std::num::NonZeroUsize;
+    let store = store().await;
+    let graph = sample_graph();
+    let nodes = grust_arrow::v58::nodes_to_batch(&graph.nodes).unwrap();
+    let edge = grust_arrow::v58::edges_to_batch(&graph.edges[..1]).unwrap();
+    let mut columns = edge.columns().to_vec();
+    columns[0] = Arc::new(StringArray::from(vec!["forged"]));
+    let invalid = RecordBatch::try_new(edge.schema(), columns).unwrap();
+    let result = store
+        .load_arrow(
+            RecordBatchIterator::new(vec![Ok(nodes.clone())], nodes.schema()),
+            RecordBatchIterator::new(vec![Ok(invalid)], edge.schema()),
+            NonZeroUsize::new(1 << 20).unwrap(),
+        )
+        .await;
+    assert!(matches!(result, Err(GrustError::Serialization(_))));
+    assert!(
+        store
+            .get_edges(EdgeQuery::default())
+            .await
+            .unwrap()
+            .is_empty()
+    );
+    // Earlier node batches have their documented independent commits.
+    assert!(store.get_node(&graph.nodes[0].id).await.unwrap().is_some());
+}
