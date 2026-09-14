@@ -1,9 +1,8 @@
 # Automatic Cypher execution with DataFusion 55
 
 Status: active implementation goal, explicitly requested 2026-09-14. This extends the active
-[performance and compatibility goal](arrow-performance-parity.md). The released
-DataFusion foundation accepts explicit SQL; it does not yet select plans for
-ordinary Cypher queries.
+[performance and compatibility goal](arrow-performance-parity.md). Isopod 0.17.0 provides explicit SQL and typed Cypher execution over Arrow;
+it does not yet select DataFusion automatically for ordinary Cypher queries.
 
 ## Goal and completion evidence
 
@@ -17,7 +16,7 @@ language and resource-policy contracts, and measured end-to-end improvements
 for the qualified workload classes. Retain efficient indexed/native/kernel
 routes where they are appropriate. Publish the upgrade with full workspace,
 package, documentation, book and registry verification. Neither explicit SQL
-execution nor the current partial scan compiler establishes completion.
+execution nor the released explicit Cypher bridge establishes completion.
 
 Current implementation admits scalar predicates and parameters, inline property
 maps, single-node scans, projection, DISTINCT, count aggregation and grouping,
@@ -28,8 +27,8 @@ unsupported queries remain distinct from errors. Scalar binding resolution now s
 caller-defined bindings. Parsed fixed-length relationship patterns now
 share the RETURN compiler with scans.
 Planner decisions distinguish unsupported shapes from semantic errors. Broader joins,
-broader aggregates, route selection, resource mapping, comparative performance
-qualification and release delivery remain outstanding.
+broader aggregates, route selection, resource mapping and comparative performance
+qualification remain outstanding. The explicit bridge shipped in Isopod 0.17.0.
 
 The completed [typed scan profile](../../benchmarks/arrow-pipelines/evidence/cypher-scan-771cb89)
 passed all 42 oracle checks. Prepared execution improved on the larger tested
@@ -63,7 +62,7 @@ and heterogeneous-value behavior. Do not silently discard unsupported values.
 The current interchange schema has optional external `edge_id`. Trail matching
 requires stable physical relationship identity independent of external IDs;
 providers must expose a unique snapshot-scoped relationship ordinal or decline
-that plan. The unreleased `cypher::GraphSnapshot` now supplies this ordinal for
+that plan. The released `cypher::GraphSnapshot` now supplies this ordinal for
 validated native Arrow graph tables and retains an immutable provider pair.
 Backend transaction/authorization identity and resource admission still need
 integration. A lazy directed endpoint-join operator now retains these ordinals
@@ -138,8 +137,8 @@ text execution entrypoint, 28 relationship differential queries, anonymous node
 scans, shared bindings, snapshot identity, result conversion and output limits.
 The subsequent full workspace gate at `6c2bc0b` passed 1,597 tests, with zero
 failures and 49 ignored, plus warnings-denied workspace Clippy. Linker warnings
-and ignored tests are retained in `cypher-workspace-6c2bc0b` evidence. Packaging,
-book delivery and registry release verification remain outstanding.
+and ignored tests are retained in `cypher-workspace-6c2bc0b` evidence. Final Isopod qualification and delivery supersede this preliminary release
+status; see the release evidence below.
 
 The optimized `cypher_scan` profile at `771cb89` completed on Capitola with all
 42 oracle checks passing. It compares identical Cypher text through indexed
@@ -154,7 +153,8 @@ Output rows and exact serialized bytes are now enforced incrementally. Remaining
 policy integration includes query/parameter/input admission, candidate work,
 intermediate allocation, deadlines/cancellation and backend snapshot authority.
 Automatic ordinary-entrypoint routing, broader language mappings, provider
-coverage, comparable end-to-end profiling and the named release remain open.
+coverage and comparable end-to-end profiling remain open. Isopod released
+the explicit bridge; automatic routing will require its own qualified release.
 
 The fixed-path profile at `100822f` completed with all 84 oracle checks passing.
 At 100,000 nodes, prepared two-hop medians were 0.247736 s indexed and 0.018985 s
@@ -163,3 +163,21 @@ was 0.0676–0.0691 s separately. Indexed execution was faster at 17 nodes. Raw
 receipts and admission boundaries are retained under
 `benchmarks/arrow-pipelines/evidence/cypher-paths-100822f`; this is a parallel-ring
 profile, not a general cost threshold or backend/policy parity result.
+
+## Isopod release completed, 2026-09-14
+
+[Isopod evidence](../releases/isopod/README.md) records the final source
+`044f4e9`: 1,599 tests passed, zero failed, 49 ignored; all eight native gates
+passed; 24 archives matched independently; all 20 published registry archives
+matched the qualified hashes. The book, hosted readers and TextPack are delivered.
+This closes the explicit bridge milestone without closing this goal.
+
+Next integration must preserve the complete `ReadQueryPolicy`. Its existing
+execution budget is thread-local and synchronous; an async, multithreaded
+DataFusion plan cannot inherit that budget by wrapping future construction.
+Use an execution-owned admission/cancellation contract across planning, scans,
+operators and result consumption. Keep cumulative candidate/intermediate-copy
+accounting distinct from DataFusion's retained-memory pool. Route selection must
+expose unsupported policy mappings and unknown costs, and must not retry errors
+after execution begins. Capture/conversion and provider authority remain part
+of the end-to-end decision.

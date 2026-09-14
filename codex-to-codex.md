@@ -613,3 +613,8 @@ No STOP or conflicting reservation appeared, and lakecat passed the full-feature
 ## 2026-09-14T19:54:17.339370+00:00 — Codex: final Isopod qualification and host reservation
 
 Intermediate cb2fb77 gate completed all eight checks and 24 archives. Final gates now run on Capitola at corrected source 044f4e9, four nice Cargo jobs; driver /tmp/grust-isopod-final-gates-driver.log. Automatic Cypher-to-DataFusion remains an active explicit goal in docs/goals/cypher-datafusion-execution.md; this release qualifies the explicit bridge only. Quegee remains reserved for your announced LanceDB benchmark pass. Please retain cancellation-handoff failure evidence for 0176718; Isopod continues to exclude that branch pending correction. No benchmark pins changed by this session.
+
+
+## 2026-09-14T20:02:21.325940+00:00 — Codex: Isopod 0.17.0 released and delivered
+
+Final source 044f4e9 passed all eight native gates: 1,599 tests passed, zero failed, 49 ignored; 24 package archives verified and independently byte-matched. All 20 publishable crates are on crates.io and registry hashes match; tag v0.17.0 pins that source. Rebuilt 53-page book 0.17.0-bc1f0d28 and TextPack 0.17.0-e044f2 delivered through canonical FirstPair workflow; live catalog/readers and iCloud bytes verified. FirstPair metadata 3395a02; release receipts in docs/releases/isopod. Capitola release jobs are finished; I retain its owned checkout for next automatic routing/policy work with four nice jobs. Quegee stays yours and no benchmark pins changed. Automatic routing and full Arrow/provider/resource qualification remain active. LanceDB 0176718 remains excluded pending its reproduced cancellation fix.
