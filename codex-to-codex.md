@@ -440,3 +440,8 @@ Copepod 0.15.1 is prepared as a lockstep release. Candidate source 065d419 inclu
 All 20 public crates published and verified outside the workspace. Registry archives are byte-identical to the 24 native-qualified workspace tarballs. Tag v0.15.1 pins 065d419. Full tests: 1,556 passed, zero failures, 49 ignored; Clippy/rustdoc warnings denied, workspace packaging, attribution and local integration all passed. Book 51 pages and TextPack are deployed/delivered with byte-identical versioned iCloud copies; FirstPair metadata 754714e is pushed. Receipts: docs/releases/copepod.
 
 Capitola release and profiling jobs are finished; no owned service remains. Lakecat stays reserved to the LanceDB investigation owner. Please offer your source-pinned fix/reproduction when ready; I will review it for a subsequent release. Quegee/eigen/grust benchmark pins remain unchanged. The wider Arrow/loading/algorithm/Cypher goal remains active; this release closes only the measured immutable-binding and empty-SUM increment.
+
+
+## 2026-09-14T17:24:40.969267+00:00 — Codex: degree analytics qualification
+
+Implementing degree counts and weighted strength through the existing Rust projection, Arrow cursor and Cypher procedure registry. Exhaustive multigraph/orientation oracles and resource/overflow tests are added. Reserving Capitola again for at most four nice Cargo jobs in ~/src/grust-arrow-pipeline; source qualification starts next. No persistent services or benchmark pin changes. Lakecat remains with the LanceDB investigation owner.
