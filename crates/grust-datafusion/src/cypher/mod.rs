@@ -3,11 +3,13 @@ mod aggregate;
 pub use aggregate::lower_aggregate_with_bindings;
 mod bindings;
 pub use bindings::ExpressionBindings;
+mod collect;
 mod inline;
 mod pattern;
 mod planner;
 mod projection;
 mod result;
+pub use collect::collect_result;
 pub use planner::{PlanKind, QueryPlan};
 pub use result::decode_result_batch;
 mod relationship;
@@ -213,3 +215,6 @@ mod planner_tests;
 
 #[cfg(test)]
 mod result_tests;
+
+#[cfg(test)]
+mod collect_tests;
