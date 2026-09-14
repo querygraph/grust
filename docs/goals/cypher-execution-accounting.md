@@ -99,3 +99,39 @@ input-policy and owned ordinal capture. Reservations follow the actual buffers,
 including after snapshots and emitted batch parents are dropped. Failed later
 batches release earlier allocations. Original-input storage, metadata and full
 operator accounting remain outside this increment.
+
+## DataFusion 55.1 operator inspection
+
+Inspection of Capitola's resolved `datafusion-execution-55.1.0` and
+`datafusion-physical-plan-55.1.0` sources identifies two distinct integration
+requirements:
+
+- `src/memory_pool/mod.rs`, `MemoryPool`: `try_grow` can reject a reservation,
+  but `grow` is explicitly infallible. Pool reservations track retained memory;
+  they do not describe cumulative copied values or candidate examinations.
+  A pool adapter cannot alone implement the Cypher read-policy contract.
+- `src/joins/hash_join/stream.rs`, hash lookup and join-filter application:
+  matching index arrays are constructed before the residual filter is applied.
+  Fanout metrics are updated after lookup. Wrapping the final join stream or
+  inspecting those metrics afterward cannot admit candidate construction before
+  allocation, and emitted row counts omit rejected pairs.
+- `src/joins/hash_join/exec.rs`, build-side collection: batch memory reservation
+  is made after upstream emission and optional bounds-accumulator updates.
+  That reservation admits retained build batches, not all work or allocations
+  performed while producing them.
+
+The next implementation must distinguish provider-input admission, operator
+candidate admission, cumulative copied values and retained working memory.
+A qualified physical-plan visitor must reject uncovered operators after
+optimization; it must not assume logical-plan coverage survives join selection,
+projection/filter fusion, repartitioning or aggregate rewrites. Join admission
+needs a hook before pair construction, with one shared request context across
+partitions. Preserve upstream vectorized kernels and planner extension points;
+do not claim that a result-stream wrapper supplies that hook.
+
+Required adversarial regression: many equal join keys plus a residual predicate
+that rejects every pair, so a zero-row result still exhausts candidate work.
+Check the limit before pair-buffer growth, including across multiple input
+batches and partitions. A post-execution failure is not sufficient evidence.
+This source inspection establishes the missing hook; no new bounded executor
+or automatic route is claimed by it.
