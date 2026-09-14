@@ -191,3 +191,38 @@ async fn native_scan_matches_reference_for_nulls_duplicates_and_large_integers()
         assert_eq!(actual, expected, "{query_text}");
     }
 }
+
+#[tokio::test]
+async fn count_star_retains_empty_input_identity() {
+    use datafusion::{
+        arrow::array::{Int64Array, RecordBatch, StringArray},
+        execution::context::SessionContext,
+    };
+    for labels in [vec![], vec!["N", "N", "Other"]] {
+        let expected = labels.iter().filter(|label| **label == "N").count() as i64;
+        let batch = RecordBatch::try_from_iter([(
+            "label",
+            std::sync::Arc::new(StringArray::from(labels)) as datafusion::arrow::array::ArrayRef,
+        )])
+        .unwrap();
+        let context = SessionContext::new();
+        let query =
+            grust_cypher::parser::parse_query("MATCH (n:N) RETURN count(*) AS count").unwrap();
+        let batches = lower_node_scan(&query, context.read_batch(batch).unwrap())
+            .unwrap()
+            .unwrap()
+            .collect()
+            .await
+            .unwrap();
+        assert_eq!(batches.iter().map(|b| b.num_rows()).sum::<usize>(), 1);
+        assert_eq!(
+            batches[0]
+                .column(0)
+                .as_any()
+                .downcast_ref::<Int64Array>()
+                .unwrap()
+                .value(0),
+            expected
+        );
+    }
+}

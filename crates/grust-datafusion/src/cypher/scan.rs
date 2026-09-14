@@ -3,9 +3,10 @@ use super::lower_expression;
 use datafusion::{
     common::{Column, DataFusionError, Result},
     dataframe::DataFrame,
+    functions_aggregate::expr_fn::count,
     logical_expr::{Expr, lit},
 };
-use grust_cypher::ast::{Clause, Query};
+use grust_cypher::ast::{Clause, Expr as CypherExpr, Query};
 
 /// Lower an analyzed single-node MATCH/WHERE/RETURN into a typed DataFrame.
 /// Returns None for unsupported shapes or expression types. Semantic errors
@@ -44,14 +45,30 @@ pub fn lower_node_scan(query: &Query, input: DataFrame) -> Result<Option<DataFra
     }
     let schema = input.schema().as_arrow();
     let mut expressions = Vec::with_capacity(projection.items.len());
+    let mut groups = Vec::new();
+    let mut aggregates = Vec::new();
     for item in &projection.items {
         let Some(alias) = &item.alias else {
             return Ok(None);
         };
-        let Ok(expression) = lower_expression(&item.expr, variable, schema) else {
-            return Ok(None);
-        };
-        expressions.push(expression.alias(alias));
+        if let CypherExpr::Function {
+            name,
+            distinct: false,
+            star: true,
+            args,
+        } = &item.expr
+        {
+            if !name.eq_ignore_ascii_case("count") || !args.is_empty() {
+                return Ok(None);
+            }
+            aggregates.push(count(lit(1_i64)).alias(alias));
+        } else {
+            let Ok(expression) = lower_expression(&item.expr, variable, schema) else {
+                return Ok(None);
+            };
+            groups.push(expression.alias(alias));
+        }
+        expressions.push(Expr::Column(Column::from_name(alias.clone())));
     }
     let predicate = match &matched.where_clause {
         Some(expression) => match lower_expression(expression, variable, schema) {
@@ -67,7 +84,11 @@ pub fn lower_node_scan(query: &Query, input: DataFrame) -> Result<Option<DataFra
     if let Some(predicate) = predicate {
         frame = frame.filter(predicate)?;
     }
-    frame = frame.select(expressions)?;
+    frame = if aggregates.is_empty() {
+        frame.select(groups)?
+    } else {
+        frame.aggregate(groups, aggregates)?.select(expressions)?
+    };
     if projection.distinct {
         frame = frame.distinct()?;
     }
