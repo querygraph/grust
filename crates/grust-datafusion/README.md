@@ -79,3 +79,8 @@ snapshot/schema validity and caller resource admission are prerequisites.
 DataFusion runtime limits alone do not implement Cypher's candidate-work,
 intermediate-copy and serialized-output budgets. The automatic execution goal
 requires these boundaries to be integrated and qualified before route selection.
+
+`ExpressionBindings` resolves graph variables to typed physical expressions.
+`lower_expression_with_bindings` and `lower_aggregate_with_bindings` share this
+contract so caller-prepared inputs with multiple bindings reuse scalar, count
+and extrema semantics. This does not yet lower relationship patterns into joins.

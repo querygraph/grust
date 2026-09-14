@@ -12,7 +12,8 @@ reconstructed from Git history, release commits, and the shipped docs.
   single-node scans, scalar parameters, inline property maps, identity,
   count/grouping, integer/string extrema, ordering and pagination. Typed planner
   decisions preserve unsupported outcomes separately from semantic errors.
-  This is an explicit planning API; automatic routing,
+  Scalar and aggregate compilers share a typed binding resolver for composable
+  multi-binding inputs. This is an explicit planning API; automatic routing,
   bounded Cypher policy integration and broader query support remain pending.
 
 ## 0.16.0 — Amphipod — 2026-09-14

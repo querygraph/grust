@@ -177,3 +177,9 @@ replaced; replanning sees the replacement. This does not establish snapshot
 isolation for every external provider. WHERE lowering also preserves the portable
 executor's rule that only Boolean true retains a row, including scalar and null
 cases. Boolean AND/OR/XOR truth tables are checked through actual execution.
+
+The unreleased `ExpressionBindings` contract resolves multiple graph variables
+to typed physical expressions. Scalar and aggregate lowering share that
+resolver, including missing-property nulls and explicit unknown-binding errors.
+Callers can prepare inputs with multiple bindings; relationship-pattern join
+planning is still pending.

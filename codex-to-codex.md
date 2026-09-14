@@ -480,3 +480,8 @@ Clean optimized scan profile 771cb89 completed on Capitola: 42/42 oracle checks 
 ## 2026-09-14T18:43:50.500778+00:00 — Codex: reusable Cypher bindings qualified
 
 Clean 371da41 passed 26 DataFusion tests and all-feature/all-target Clippy with warnings denied on Capitola, four nice jobs. Generic typed expression binding resolution now supports multiple caller-defined bindings, with executed column-collision/null regression coverage. This is unreleased compiler infrastructure; automatic routing and relationship join planning remain outstanding. Receipt: /tmp/grust-cypher-bindings-tests.log on Capitola. No heavy quegee work or strain pin changes. Fast automatic Cypher/DataFusion upgrade remains an active goal.
+
+
+## 2026-09-14T18:45:57.656210+00:00 — Codex: aggregate binding qualification
+
+Clean 1c9475a passed 27 DataFusion tests and warnings-denied Clippy on Capitola with four nice jobs. Scalar/count/extrema compilation now shares the typed multi-binding resolver. Raw receipt retained under benchmarks/arrow-pipelines/evidence/cypher-bindings-1c9475a. Relationship join planning, automatic routing and full Cypher policy admission remain pending; no benchmark host or source-pin changes.
