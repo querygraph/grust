@@ -9,7 +9,7 @@ use arrow_array::{
     Array, ArrayRef, BooleanArray, Float64Array, Int64Array, RecordBatch, StringArray,
 };
 use arrow_schema::{DataType, Field, Schema};
-use grust_core::{Edge, Graph, GraphIndex, GrustError, Node, Props, Result, Value};
+use grust_core::{Edge, Graph, GrustError, Node, Props, Result, Value};
 use std::{
     collections::BTreeSet,
     io::{Read, Seek, Write},
@@ -54,7 +54,7 @@ impl ArrowGraph {
 
     /// Materialize scalar property columns from a Grust graph.
     pub fn from_graph(graph: &Graph) -> Result<Self> {
-        GraphIndex::new(graph)?;
+        validate_row_graph(graph)?;
         let nodes = table(
             vec![
                 (
@@ -220,7 +220,10 @@ fn table(base: Vec<(&str, ArrayRef)>, props: Vec<&Props>) -> Result<RecordBatch>
             DataType::Boolean => col!(BooleanArray, Bool),
             DataType::Int64 => col!(Int64Array, Int),
             DataType::Float64 => col!(Float64Array, Float),
-            DataType::Utf8 => col!(StringArray, String),
+            DataType::Utf8 => Arc::new(StringArray::from_iter(vals.iter().map(|v| match v {
+                Some(Value::String(value)) => Some(value.as_str()),
+                _ => None,
+            }))) as ArrayRef,
             _ => Arc::new(arrow_array::NullArray::new(props.len())) as ArrayRef,
         };
         fields.push(Field::new(format!("property.{key}"), ty, true));
@@ -362,3 +365,35 @@ pub(super) fn validate_tables(nodes: &[RecordBatch], edges: &[RecordBatch]) -> R
     }
     Ok(())
 }
+
+// Validation needs membership only, not adjacency or owned copies of node IDs.
+fn validate_row_graph(graph: &Graph) -> Result<()> {
+    let mut ids = std::collections::HashSet::with_capacity(graph.nodes.len());
+    for node in &graph.nodes {
+        if !ids.insert(node.id.as_str()) {
+            return Err(GrustError::Schema(format!(
+                "duplicate vertex id '{}'",
+                node.id.as_str()
+            )));
+        }
+    }
+    for edge in &graph.edges {
+        if !ids.contains(edge.from.as_str()) {
+            return Err(GrustError::Schema(format!(
+                "edge source '{}' is not present in vertices",
+                edge.from.as_str()
+            )));
+        }
+        if !ids.contains(edge.to.as_str()) {
+            return Err(GrustError::Schema(format!(
+                "edge destination '{}' is not present in vertices",
+                edge.to.as_str()
+            )));
+        }
+    }
+    Ok(())
+}
+
+#[cfg(test)]
+#[path = "graph_conversion_tests.rs"]
+mod conversion_tests;

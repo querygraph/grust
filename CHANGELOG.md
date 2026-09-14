@@ -6,6 +6,10 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ## Unreleased
 
+- Validate row-to-Arrow conversion with borrowed identity membership instead of
+  constructing discarded adjacency, and copy string properties directly into
+  Arrow buffers without temporary owned String clones.
+
 ## 0.20.0 — Brine — 2026-09-14
 
 - Preserve algorithm-result admission through independently retained raw Arrow
