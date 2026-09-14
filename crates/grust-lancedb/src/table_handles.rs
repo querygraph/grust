@@ -44,6 +44,9 @@ impl LanceDbGraphStore {
         // not republish handles opened before a clear/recreation completed.
         let mut cached = self.handles.tables.lock().await;
         *cached = None;
+        // A recreated table starts its version count again, so a snapshot
+        // keyed by the old tables' versions could match the new ones.
+        self.reads.invalidate();
         if matches!(operation, TableLifecycle::Clear) {
             self.drop_table_if_exists(&self.edges_table_name()).await?;
             self.drop_table_if_exists(&self.nodes_table_name()).await?;

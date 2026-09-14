@@ -110,6 +110,9 @@ impl TursoGraphStore {
             transaction_needs_rollback: AtomicBool::new(false),
         };
         store.apply_journal_mode().await?;
+        store
+            .execute_discarding_rows(&format!("PRAGMA cache_size = -{PAGE_CACHE_KIB}"))
+            .await?;
         Ok(store)
     }
 
@@ -429,6 +432,181 @@ impl TursoGraphStore {
     }
 }
 
+/// The encoded edge identity the SQL-text upsert writes: empty for an edge
+/// without an id, `id:` followed by the id otherwise. The two must agree;
+/// `prepared_bulk_load_writes_exactly_the_rows_of_the_sql_text_upserts`
+/// compares the stored rows of both paths.
+fn edge_identity_key(edge: &Edge) -> String {
+    edge.id
+        .as_ref()
+        .map_or_else(String::new, |id| format!("id:{}", id.as_str()))
+}
+
+fn prepared_upsert_nodes_sql(table: &str, rows: usize) -> String {
+    let values = vec!["(?, ?, ?)"; rows].join(", ");
+    format!(
+        "INSERT INTO {table} (id, label, props) VALUES {values}
+         ON CONFLICT(id) DO UPDATE SET
+            label = excluded.label,
+            props = excluded.props"
+    )
+}
+
+fn prepared_upsert_edges_sql(table: &str, rows: usize) -> String {
+    let values = vec!["(?, ?, ?, ?, ?, ?)"; rows].join(", ");
+    format!(
+        "INSERT INTO {table} (id, from_id, to_id, label, props, identity_key) VALUES {values}
+         ON CONFLICT(from_id, label, to_id, identity_key) DO UPDATE SET
+            id = excluded.id,
+            props = excluded.props"
+    )
+}
+
+impl TursoGraphStore {
+    /// `put_graph`: the rows of `graph` as prepared multi-row upserts.
+    async fn put_graph_rows(&self, graph: &Graph) -> Result<LoadReport> {
+        let rows = self.config.batch_size.max(1);
+        if self.config.journal_mode == TursoJournalMode::Mvcc {
+            // MVCC keeps every row version of an open transaction in memory
+            // until it commits, so one BEGIN CONCURRENT around a whole load
+            // grows with the load and a conflict retries all of it: the
+            // adversarial-graph strain benchmark measured about 1,500 edges/s
+            // this way. Committing every MVCC_LOAD_COMMIT_STATEMENTS batches
+            // keeps each transaction small; a load is no longer all-or-nothing
+            // under MVCC, and a failure leaves the groups committed before it.
+            let group = MVCC_LOAD_COMMIT_STATEMENTS * rows;
+            for chunk in graph.nodes.chunks(group) {
+                self.load_transaction(chunk, &[], true, rows).await?;
+            }
+            for chunk in graph.edges.chunks(group) {
+                self.load_transaction(&[], chunk, true, rows).await?;
+            }
+        } else {
+            self.load_transaction(&graph.nodes, &graph.edges, false, rows)
+                .await?;
+            // One transaction leaves the whole load in the write-ahead log,
+            // and every read until the next checkpoint pays to look through
+            // it; checkpointing here keeps that cost inside the load interval.
+            // MVCC mode has no equivalent the engine allows by default.
+            self.execute_discarding_rows("PRAGMA wal_checkpoint(TRUNCATE)")
+                .await?;
+        }
+        Ok(LoadReport {
+            nodes: graph.nodes.len(),
+            edges: graph.edges.len(),
+        })
+    }
+
+    /// Upsert `nodes` then `edges` in one transaction on the shared
+    /// connection, with the same gate, rollback and MVCC retry handling as
+    /// [`Self::execute_transaction`].
+    async fn load_transaction(
+        &self,
+        nodes: &[Node],
+        edges: &[Edge],
+        concurrent: bool,
+        rows: usize,
+    ) -> Result<()> {
+        const MAX_ATTEMPTS: usize = 8;
+        if nodes.is_empty() && edges.is_empty() {
+            return Ok(());
+        }
+        let _gate = self.lock_connection().await?;
+        let mut attempt = 0;
+        loop {
+            attempt += 1;
+            self.transaction_needs_rollback
+                .store(true, Ordering::Release);
+            let result = async {
+                self.execute_unlocked(if concurrent {
+                    "BEGIN CONCURRENT"
+                } else {
+                    "BEGIN"
+                })
+                .await?;
+                self.upsert_rows_unlocked(nodes, edges, rows).await?;
+                self.execute_unlocked("COMMIT").await
+            }
+            .await;
+            match result {
+                Ok(()) => {
+                    self.transaction_needs_rollback
+                        .store(false, Ordering::Release);
+                    return Ok(());
+                }
+                Err(err) => {
+                    if let Err(recovery_err) = self.recover_transaction_unlocked().await {
+                        return Err(GrustError::Backend(format!(
+                            "{err}; Turso transaction recovery failed: {recovery_err}"
+                        )));
+                    }
+                    if concurrent && is_mvcc_conflict(&err) && attempt < MAX_ATTEMPTS {
+                        continue;
+                    }
+                    return Err(err);
+                }
+            }
+        }
+    }
+
+    /// Multi-row upserts of `rows` rows each through prepared statements
+    /// with bound values: the statement is parsed once per row count instead
+    /// of once per batch, and no row is rendered into SQL text.
+    async fn upsert_rows_unlocked(
+        &self,
+        nodes: &[Node],
+        edges: &[Edge],
+        rows: usize,
+    ) -> Result<()> {
+        self.invalidate_snapshot();
+        let nodes_table = self.nodes_table();
+        for chunk in nodes.chunks(rows) {
+            let sql = prepared_upsert_nodes_sql(&nodes_table, chunk.len());
+            let mut params = Vec::with_capacity(chunk.len() * 3);
+            for node in chunk {
+                params.push(turso::Value::Text(node.id.as_str().to_string()));
+                params.push(turso::Value::Text(node.label.as_str().to_string()));
+                params.push(turso::Value::Text(grust_sql_core::props_to_json(
+                    &node.props,
+                )?));
+            }
+            self.execute_prepared_unlocked(&sql, params).await?;
+        }
+        let edges_table = self.edges_table();
+        for chunk in edges.chunks(rows) {
+            let sql = prepared_upsert_edges_sql(&edges_table, chunk.len());
+            let mut params = Vec::with_capacity(chunk.len() * 6);
+            for edge in chunk {
+                params.push(match &edge.id {
+                    Some(id) => turso::Value::Text(id.as_str().to_string()),
+                    None => turso::Value::Null,
+                });
+                params.push(turso::Value::Text(edge.from.as_str().to_string()));
+                params.push(turso::Value::Text(edge.to.as_str().to_string()));
+                params.push(turso::Value::Text(edge.label.as_str().to_string()));
+                params.push(turso::Value::Text(grust_sql_core::props_to_json(
+                    &edge.props,
+                )?));
+                params.push(turso::Value::Text(edge_identity_key(edge)));
+            }
+            self.execute_prepared_unlocked(&sql, params).await?;
+        }
+        Ok(())
+    }
+
+    async fn execute_prepared_unlocked(&self, sql: &str, params: Vec<turso::Value>) -> Result<()> {
+        let mut statement =
+            self.conn.prepare_cached(sql).await.map_err(|err| {
+                GrustError::Backend(format!("Turso prepare failed: {err}: {sql}"))
+            })?;
+        statement
+            .execute(params)
+            .await
+            .map_err(|err| GrustError::Backend(format!("Turso command failed: {err}: {sql}")))?;
+        Ok(())
+    }
+}
+
 #[async_trait]
 impl GraphStore for TursoGraphStore {
     async fn apply_schema(&self, schema: &GraphSchema) -> Result<()> {
@@ -460,52 +638,18 @@ impl GraphStore for TursoGraphStore {
         Ok(PutOutcome::Upserted)
     }
 
-    /// Load the whole graph in one transaction: one durable commit for all
-    /// of its batches instead of one per batch, and either every batch lands
-    /// or none does. The lowered SQL for every batch is held in memory for
-    /// the transaction's duration, a constant factor of the graph itself.
+    /// Load the whole graph: in WAL mode one transaction, so one durable
+    /// commit for all of its rows and either every row lands or none does.
+    ///
+    /// Rows go in as multi-row upserts of `batch_size` rows through prepared
+    /// statements with bound values (see [`TursoGraphStore::put_graph_rows`]):
+    /// each statement shape is parsed once per load, not once per batch, and
+    /// only one batch of bound values is alive at a time instead of the SQL
+    /// text of the whole load. The upserts are the same `ON CONFLICT DO
+    /// UPDATE` statements as [`upsert_nodes_sql`] and [`upsert_edges_sql`], so
+    /// a repeated key keeps its last row, as before.
     async fn put_graph(&self, graph: &Graph) -> Result<LoadReport> {
-        let batch_size = self.config.batch_size.max(1);
-        let nodes_table = self.nodes_table();
-        let edges_table = self.edges_table();
-        let node_batches = graph
-            .nodes
-            .chunks(batch_size)
-            .map(|chunk| upsert_nodes_sql(&nodes_table, chunk));
-        let edge_batches = graph
-            .edges
-            .chunks(batch_size)
-            .map(|chunk| upsert_edges_sql(&edges_table, chunk));
-        let statements = node_batches
-            .chain(edge_batches)
-            .collect::<Result<Vec<_>>>()?;
-        let concurrent = self.config.journal_mode == TursoJournalMode::Mvcc;
-        if concurrent {
-            // MVCC keeps every row version of an open transaction in memory
-            // until it commits, so one BEGIN CONCURRENT around a whole load
-            // grows with the load and a conflict retries all of it: the
-            // adversarial-graph strain benchmark measured about 1,500 edges/s
-            // this way. Committing every MVCC_LOAD_COMMIT_STATEMENTS batches
-            // keeps each transaction small; a load is no longer all-or-nothing
-            // under MVCC, and a failure leaves the batches committed before it.
-            for group in statements.chunks(MVCC_LOAD_COMMIT_STATEMENTS) {
-                self.execute_transaction(group, true).await?;
-            }
-        } else {
-            self.execute_transaction(&statements, false).await?;
-        }
-        // In WAL mode one transaction leaves the whole load in the
-        // write-ahead log, and every read until the next checkpoint pays to
-        // look through it; checkpointing here keeps that cost inside the load
-        // interval. MVCC mode has no equivalent the engine allows by default.
-        if !concurrent {
-            self.execute_discarding_rows("PRAGMA wal_checkpoint(TRUNCATE)")
-                .await?;
-        }
-        Ok(LoadReport {
-            nodes: graph.nodes.len(),
-            edges: graph.edges.len(),
-        })
+        self.put_graph_rows(graph).await
     }
 
     async fn get_node(&self, id: &NodeId) -> Result<Option<Node>> {
@@ -760,8 +904,19 @@ fn turso_prop_expr(field: &Field) -> String {
     }
 }
 
-/// Batches per MVCC transaction in `put_graph`: with the default batch size of
-/// 500 rows, twenty statements commit about ten thousand rows at a time.
+/// Page cache per connection, in KiB (`PRAGMA cache_size = -1048576`).
+///
+/// The engine's native default is 2,000 pages, about 8 MB: a load outgrows
+/// it within the first million edges, and from then on every insert into
+/// the edge key, the two edge indexes and the foreign-key probes of the node
+/// key is a page read. At 1 GiB a 2M-edge load runs at 42k edges/s instead
+/// of 24k, and a 30M-edge load holds 27-37k edges/s per 5M-edge batch.
+/// The cache fills lazily, so a small store never holds more than its pages.
+pub const PAGE_CACHE_KIB: u64 = 1024 * 1024;
+
+/// Batches per MVCC transaction in `put_graph`: each transaction commits this
+/// many `batch_size`-row statements, so with the default batch size of 500
+/// rows about ten thousand rows at a time.
 pub const MVCC_LOAD_COMMIT_STATEMENTS: usize = 20;
 
 pub fn upsert_nodes_sql(table: &str, nodes: &[Node]) -> Result<String> {

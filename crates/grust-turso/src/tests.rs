@@ -619,3 +619,101 @@ async fn mvcc_put_graph_commits_in_groups_and_keeps_every_row() {
     let all = store.get_edges(EdgeQuery::default()).await.unwrap();
     assert_eq!(all.len(), n);
 }
+
+fn weight(v: i64) -> Props {
+    let mut props = Props::new();
+    props.insert("v".into(), Value::Int(v));
+    props
+}
+
+/// A load whose later rows rewrite earlier ones: a re-put node, repeated
+/// id-less edges between one pair, and edges whose ids are missing, empty,
+/// plain and prefix-like, one of them re-put.
+fn rewriting_graph() -> Graph {
+    let nodes = vec![
+        Node::new("A", "n1", weight(1)),
+        Node::new("A", "n2", Props::new()),
+        Node::new("B", "n3", Props::new()),
+        Node::new("C", "n1", weight(2)),
+    ];
+    let edges = vec![
+        Edge::new("E", "n1", "n2", weight(1)),
+        Edge::new("E", "n1", "n2", weight(2)),
+        Edge::new("E", "n1", "n2", weight(3)).with_id(""),
+        Edge::new("E", "n1", "n2", weight(4)).with_id("a"),
+        Edge::new("E", "n1", "n2", weight(5)).with_id("id:a"),
+        Edge::new("E", "n1", "n2", weight(6)).with_id("a"),
+        Edge::new("F", "n2", "n3", Props::new()),
+        Edge::new("E", "n3", "n1", weight(7)),
+        Edge::new("E", "n3", "n1", weight(8)),
+    ];
+    Graph::new(nodes, edges)
+}
+
+async fn raw_rows(store: &TursoGraphStore) -> Vec<Vec<Option<String>>> {
+    let mut rows = store
+        .run_text_rows(
+            &format!(
+                "SELECT id, label, props FROM {} ORDER BY id",
+                store.nodes_table()
+            ),
+            3,
+        )
+        .await
+        .unwrap();
+    rows.extend(
+        store
+            .run_text_rows(
+                &format!(
+                    "SELECT id, from_id, to_id, label, props, identity_key FROM {}
+                     ORDER BY from_id, label, to_id, identity_key",
+                    store.edges_table()
+                ),
+                6,
+            )
+            .await
+            .unwrap(),
+    );
+    rows
+}
+
+#[tokio::test]
+async fn prepared_bulk_load_writes_exactly_the_rows_of_the_sql_text_upserts() {
+    for journal_mode in [TursoJournalMode::Wal, TursoJournalMode::Mvcc] {
+        for batch_size in [2, 500] {
+            let config = TursoConfig {
+                journal_mode,
+                batch_size,
+                ..TursoConfig::default()
+            };
+            let graph = rewriting_graph();
+
+            let prepared = TursoGraphStore::connect(config.clone()).await.unwrap();
+            prepared.bootstrap().await.unwrap();
+            prepared.put_graph(&graph).await.unwrap();
+
+            let text = TursoGraphStore::connect(config).await.unwrap();
+            text.bootstrap().await.unwrap();
+            let mut statements = Vec::new();
+            for chunk in graph.nodes.chunks(batch_size) {
+                statements.push(upsert_nodes_sql(&text.nodes_table(), chunk).unwrap());
+            }
+            for chunk in graph.edges.chunks(batch_size) {
+                statements.push(upsert_edges_sql(&text.edges_table(), chunk).unwrap());
+            }
+            text.execute_transaction(&statements, journal_mode == TursoJournalMode::Mvcc)
+                .await
+                .unwrap();
+
+            let expected = raw_rows(&text).await;
+            assert_eq!(
+                raw_rows(&prepared).await,
+                expected,
+                "{journal_mode:?} batch {batch_size}"
+            );
+            // Three nodes, then the edges: one id-less n1->n2, ids "", "a",
+            // "id:a", the F edge and one id-less n3->n1.
+            assert_eq!(expected.len(), 3 + 6, "{journal_mode:?} batch {batch_size}");
+        }
+    }
+}
