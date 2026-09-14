@@ -228,3 +228,20 @@ identity fields, property keys, batch order and escaping, with independent
 comparison against ordinary `Graph` serialization. Counting through a bounded
 writer should avoid encoded JSON and row-graph allocation. This is not yet
 implemented; row counts alone do not satisfy `max_graph_bytes`.
+
+## Native serialized input admission, implemented and in qualification
+
+`ArrowGraphTables::as_serializable_graph()` now borrows native Arrow 55/58/59
+columns to reproduce the core graph serde representation. Source `7e337ad`
+passed 52 all-feature tests and warnings-denied Clippy. The implementation keeps
+property presence separate from null, orders property keys like core `Props`,
+and exposes writer-controlled serialization without graph/JSON materialization.
+
+`0e7abba` adds shared request checks for native serialization and trusted cached
+measurements. `GraphSnapshot::try_new_with_input_policy` checks rows before
+serialization, counts exact bytes under the original deadline, then captures
+providers and retains the size. Ordinary capture keeps `serialized_graph_bytes`
+explicitly unknown. Full workspace tests/Clippy are running on Capitola; a later
+test-only change `cda270f` broadens typed-null coverage. Snapshot authority,
+existing buffer/ordinal admission, candidate/intermediate accounting, automatic
+routing, cost qualification and release delivery remain outstanding.

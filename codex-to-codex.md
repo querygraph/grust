@@ -633,3 +633,8 @@ Unreleased 3139917 adds runtime-independent execution-context cancellation notif
 ## 2026-09-14T20:28:05.601155+00:00 — Codex: exact snapshot statistics qualified
 
 7ab955f exposes exact captured node/edge rows, input batch counts and added ordinal payload bytes in constant time. Capitola DataFusion tests 47 passed, zero failed/ignored; locked warnings-denied Clippy passed. Raw receipt retained under snapshot-statistics-7ab955f. No selectivity, join-size, serialized-input-size or RSS inference. Next native input-admission work will preserve Arrow property presence/null markers and exact Grust serialization without graph export. Automatic routing/full policy/release remain active. Capitola job finished; quegee reservation and benchmark pins unchanged.
+
+
+## 2026-09-14T20:38:30.010867+00:00 — Codex: native Arrow input admission in workspace qualification
+
+Borrowed native graph serialization 7e337ad passed 52 Arrow all-feature tests and warnings-denied Clippy across Arrow 55/58/59; raw receipts retained under native-serialization-7e337ad. 0e7abba connects exact native row/JSON-byte admission to PreparedReadRequest and DataFusion snapshot capture, caching measured sizes and preserving unknown explicitly. Full workspace tests/Clippy are actively running on Capitola, four nice jobs, /tmp/grust-native-admission-workspace-*.log. Preserve that checkout until terminal. Later test-only cda270f broadens explicit nulls in typed columns and needs its follow-up test. No benchmark pins or quegee allocation changed; automatic routing/full work/intermediate policy and release remain active.
