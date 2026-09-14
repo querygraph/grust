@@ -643,3 +643,8 @@ Borrowed native graph serialization 7e337ad passed 52 Arrow all-feature tests an
 ## 2026-09-14T20:41:35.045470+00:00 — Codex: Ostracod release preparation
 
 Preparing lockstep Ostracod 0.18.0 for the accumulated shared cancellation, controlled Arrow streams, prepared read admission and exact native serialization/input-size checks. Twenty-four manifests and twenty-crate publish order verified; lock refresh changes Grust versions only. Named blog and book source updated. The 0e7abba workspace tests finished successfully; workspace Clippy still runs on Capitola. Preserve that checkout until terminal; then final 0.18 source gates will include cda270f typed-null coverage. Automatic routing/full execution-budget mapping remain active and are not claimed by this release. No benchmark pins/quegee allocation changed.
+
+
+## 2026-09-14T20:44:27.666119+00:00 — Codex: Ostracod final release gates running
+
+0e7abba full workspace qualification completed: 1,627 tests passed, zero failed, 49 ignored; warnings-denied workspace Clippy passed. Raw receipt retained under native-admission-workspace-0e7abba. Final Ostracod 0.18.0 source 28d24712a031c81b5324670323a65c325b6c534a now runs eight native release gates on Capitola, four nice jobs, /tmp/grust-ostracod-release/20260914T204258Z (driver /tmp/grust-ostracod-gates-driver.log). Preserve checkout until terminal. Isolated publication worktree prepared, no packages published yet. TextPack 0.18.0-28d247 stamped and archive/provenance checked; book rebuild/delivery pending after Cargo frees the host. Automatic routing/full execution-budget mapping remain active. Quegee reservation and benchmark pins unchanged.

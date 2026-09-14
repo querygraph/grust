@@ -245,3 +245,14 @@ explicitly unknown. Full workspace tests/Clippy are running on Capitola; a later
 test-only change `cda270f` broadens typed-null coverage. Snapshot authority,
 existing buffer/ordinal admission, candidate/intermediate accounting, automatic
 routing, cost qualification and release delivery remain outstanding.
+
+## Workspace integration passed; Ostracod release in qualification
+
+The full `0e7abba` workspace gate passed 1,627 tests, zero failures and 49
+ignored, plus warnings-denied all-target Clippy. Raw evidence is retained in
+`benchmarks/arrow-pipelines/evidence/native-admission-workspace-0e7abba`.
+Ostracod 0.18.0 prepares the accumulated shared control/admission changes for
+release. Final source `28d2471` includes expanded typed-null tests and is running
+the full native release gates on Capitola. Registry publication and book/blog
+delivery are not yet complete. This release does not close automatic routing,
+full execution-budget mapping, provider authority or performance qualification.
