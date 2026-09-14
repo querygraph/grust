@@ -23,7 +23,14 @@ fn fixture() -> Graph {
         vec![
             Node::new("N", "a", first),
             Node::new("N", "isolate", second),
-            Node::new("N", "z", Props::new()),
+            Node::new(
+                "N",
+                "z",
+                ["bool", "int", "float", "text"]
+                    .into_iter()
+                    .map(|key| (key.to_owned(), Value::Null))
+                    .collect::<Props>(),
+            ),
         ],
         vec![edge.clone(), edge, Edge::new("E", "a", "z", Props::new())],
     )
