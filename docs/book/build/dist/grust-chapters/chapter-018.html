@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
   <meta name="author" content="Alexy Khrabrov" />
   <meta name="dcterms.date" content="2026-09-14" />
-  <title>Arrow tables and IPC</title>
+  <title>Arrow pipelines, ADBC and DataFusion</title>
   <style>
     div.sitenav { display: flex; flex-direction: row; flex-wrap: wrap; }
     span.navlink { flex: 1; }
@@ -32,6 +32,71 @@
       vertical-align: middle;
     }
     .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+    /* CSS for syntax highlighting */
+    html { -webkit-text-size-adjust: 100%; }
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
   </style>
   <link rel="stylesheet" href="book.css" />
 </head>
@@ -54,55 +119,164 @@
 </span>
 </div>
 </nav>
-<h1 data-number="16" id="arrow-tables-and-ipc"><span
-class="header-section-number">16</span> Arrow tables and IPC</h1>
-<p>Enable the facade’s <code>arrow</code> feature and use
-<code>grust::arrow::ArrowGraph</code>, or depend on
-<code>grust-arrow</code>. Arrow 59.3 tables are shared by reference;
-conversion to/from Grust’s row-oriented model materializes values and
-builds a validation index. No database service, JSON payload, or text
-edge-list conversion is required.</p>
-<pre class="rust,no_run"><code>use grust::arrow::ArrowGraph;
-use std::fs::File;
-# fn main() -&gt; Result&lt;(), Box&lt;dyn std::error::Error&gt;&gt; {
-let graph = grust::Graph::default();
-let tables = ArrowGraph::from_graph(&amp;graph)?;
-tables.write_ipc(File::create(&quot;nodes.arrow&quot;)?, File::create(&quot;edges.arrow&quot;)?)?;
-let restored = ArrowGraph::read_ipc(
-    File::open(&quot;nodes.arrow&quot;)?, File::open(&quot;edges.arrow&quot;)?,
-)?.to_graph()?;
-assert_eq!(graph, restored);
-# Ok(()) }</code></pre>
-<h2 data-number="16.1" id="arrow-table-contract"><span
-class="header-section-number">16.1</span> Arrow table contract</h2>
-<p>The node table has non-null UTF-8 <code>node_id</code> and
-<code>label</code>. The edge table has non-null UTF-8
-<code>source</code>, <code>target</code>, <code>label</code>, and
-nullable UTF-8 <code>edge_id</code>. Endpoint IDs must exist; node IDs
-must be unique. Row order, isolates, loops, parallel edges and explicit
-edge IDs survive round trips. Direction is encoded by source/target;
-this format does not encode an undirected-graph flag.</p>
-<p>Each property uses a nullable <code>property.&lt;key&gt;</code>
-column plus a non-null Boolean <code>present.&lt;key&gt;</code> column.
-A false marker with a null value means absent; true with null means
-explicit <code>Value::Null</code>. Keys can contain dots or reserved
-base names because all property names are prefixed. Properties are
-native Arrow Null, Boolean, Int64, Float64 or Utf8. Integer precision
-and floating-point values are not routed through JSON. Mixed non-null
-types within a property and complex Grust values (lists, JSON, temporal,
-decimal, path, graph) currently return errors; they are never silently
-converted to strings or discarded.</p>
-<p>IPC uses one record batch in each of two Arrow
-<strong>file-format</strong> streams. The caller owns sinks and file
-lifecycle. A failure writing the second sink does not undo the first.
-Reading multiple batches or IPC streaming-format files is not supported
-yet. Reads materialize the batch; there is no mmap, spill, byte budget
-or protection against arbitrarily large untrusted IPC allocations.</p>
-<p>The tables can be consumed as RecordBatches in Arrow/DataFusion.
-Grust’s algorithm adapter reads multiple typed batches directly into
-validated selected CSR without materializing properties as Value. That
-path is separate from this interchange wrapper’s Graph conversion. Grust
-preserves parallel edges; typed full-path results retain original edge
-ordinals to disambiguate them.</p>
+<h1 data-number="16" id="arrow-pipelines-adbc-and-datafusion"><span
+class="header-section-number">16</span> Arrow pipelines, ADBC and
+DataFusion</h1>
+<p>Grust’s Arrow-based adapters use <code>grust-arrow</code> for common
+batch and IPC operations. The graph core and other adapters remain
+independent of Arrow. LanceDB and Sail select Arrow 58; the private
+Ladybug adapter selects Arrow 55. The default interchange and ADBC
+helper use Arrow 59. These modules compile the same implementation
+against the native SDK types.</p>
+<figure>
+<img src="diagrams/diagram-09.png" alt="Diagram 9" />
+<figcaption aria-hidden="true">Diagram 9</figcaption>
+</figure>
+<h2 data-number="16.1" id="native-tables-and-readers"><span
+class="header-section-number">16.1</span> Native tables and readers</h2>
+<p><code>ArrowTable</code> retains arbitrary native Arrow columns,
+metadata and batch boundaries. Its schema is checked when constructed.
+Its <code>into_reader</code> method transfers ownership into the
+standard <code>RecordBatchReader</code> interface without concatenating
+batches or serializing their contents.</p>
+<p><code>BatchReader</code> wraps a standard reader with a row limit and
+an input-batch memory limit. It pulls on demand and slices without
+copying buffers. Errors terminate the stream after one error result. A
+slice can retain its complete original allocation. The memory limit
+applies to decoded Arrow arrays, not process RSS or the upstream
+decoder’s temporary allocations. <code>ByteLimitWriter</code> separately
+bounds encoded output, including schema bytes, before the sink grows
+past its limit.</p>
+<p>The shared IPC functions accept standard readers and caller-owned
+sinks. They support multiple batches and schema-only empty streams. IPC
+remains an explicit encoding boundary; it is not needed when producer
+and consumer already share native Arrow types.</p>
+<h2 data-number="16.2" id="property-graph-interchange"><span
+class="header-section-number">16.2</span> Property-graph
+interchange</h2>
+<p>The original <code>ArrowGraph</code> is a validated pair of
+scalar-property batches:</p>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Table</th>
+<th>Structural columns</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Nodes</td>
+<td>non-null UTF-8 <code>node_id</code>, <code>label</code></td>
+</tr>
+<tr>
+<td>Edges</td>
+<td>non-null UTF-8 <code>source</code>, <code>target</code>,
+<code>label</code>; nullable UTF-8 <code>edge_id</code></td>
+</tr>
+</tbody>
+</table>
+<p>Property columns use <code>property.&lt;key&gt;</code> and a non-null
+Boolean <code>present.&lt;key&gt;</code>. The marker distinguishes a
+missing property from an explicit null. Scalar properties support Null,
+Boolean, Int64, Float64 and UTF-8, preserving integer precision. Mixed
+non-null types and complex graph properties are rejected by this scalar
+interchange contract rather than silently coerced.</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode rust"><code class="sourceCode rust"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">use</span> <span class="pp">grust::arrow::</span>ArrowGraph<span class="op">;</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="kw">use</span> <span class="pp">std::fs::</span>File<span class="op">;</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> main() <span class="op">-&gt;</span> <span class="dt">Result</span><span class="op">&lt;</span>()<span class="op">,</span> <span class="dt">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="pp">std::error::</span><span class="bu">Error</span><span class="op">&gt;&gt;</span> <span class="op">{</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> graph <span class="op">=</span> <span class="pp">grust::Graph::</span><span class="kw">default</span>()<span class="op">;</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> tables <span class="op">=</span> <span class="pp">ArrowGraph::</span>from_graph(<span class="op">&amp;</span>graph)<span class="op">?;</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>    tables<span class="op">.</span>write_ipc(</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>        <span class="pp">File::</span>create(<span class="st">&quot;nodes.arrow&quot;</span>)<span class="op">?,</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>        <span class="pp">File::</span>create(<span class="st">&quot;edges.arrow&quot;</span>)<span class="op">?,</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>    )<span class="op">?;</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> restored <span class="op">=</span> <span class="pp">ArrowGraph::</span>read_ipc(</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>        <span class="pp">File::</span>open(<span class="st">&quot;nodes.arrow&quot;</span>)<span class="op">?,</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>        <span class="pp">File::</span>open(<span class="st">&quot;edges.arrow&quot;</span>)<span class="op">?,</span></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>    )<span class="op">?.</span>to_graph()<span class="op">?;</span></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>    <span class="pp">assert_eq!</span>(graph<span class="op">,</span> restored)<span class="op">;</span></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Ok</span>(())</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p>This legacy file-format API still stores one batch in each of two
+Arrow files. <code>ArrowGraphTables</code> supports the same graph
+contract across multiple batches. It validates global node identity and
+edge endpoints without building property rows or adjacency. It preserves
+isolates, loops, parallel edges and row order.
+<code>ArrowGraph::into_tables</code> and
+<code>ArrowGraphTables::into_tables</code> expose general Arrow tables
+whose readers compose with other consumers.</p>
+<p>These graph restrictions do not constrain arbitrary
+<code>ArrowTable</code> values passed to ADBC or backend-native
+registration. Those pipelines retain nested, dictionary, temporal and
+extension columns according to the destination’s capabilities.</p>
+<h2 data-number="16.3" id="database-ingestion"><span
+class="header-section-number">16.3</span> Database ingestion</h2>
+<p>The shared universal storage layout uses <code>id,label,props</code>
+for nodes and <code>key,id,from_id,to_id,label,props</code> for edges.
+The property payload preserves Grust’s tagged serialization, including
+complex values. Native storage encoders and decoders share the stable
+edge-key validation rule. Projection can rename columns without copying
+their arrays.</p>
+<p>LanceDB’s <code>load_arrow</code> takes standard readers in that
+storage layout and merges native batches, maintaining typed mirrors.
+Sail’s <code>load_arrow</code> accepts its existing SQL column names and
+plain-JSON property representation. It reuses identity columns and
+performs required property normalization and endpoint-label resolution.
+Spark Connect transports the staged batches as IPC. Sail’s graph IPC
+convenience loader now uses the same streaming path.</p>
+<p>Stream graph loads validate a batch before writing it. Nodes precede
+edges, and earlier batches can remain committed if a later operation
+fails or is cancelled. They do not promise atomic whole-import
+replacement. Consult the adapter contract for existing-row upserts,
+constraints and typed mirror behavior.</p>
+<p>Ladybug can register native readers without IPC, and visit query
+batches without collecting all output. Registration requires all input
+batches simultaneously; a conservative retained-memory bound applies
+before registering the table. Registration creates a queryable Arrow
+table, not an implicit persisted graph upsert. Persisted graph loading
+continues through the adapter’s Arrow-backed COPY path and transaction
+policy.</p>
+<h2 data-number="16.4" id="adbc-and-extension"><span
+class="header-section-number">16.4</span> ADBC and extension</h2>
+<p>Enable the facade’s <code>adbc</code> feature, or
+<code>grust-arrow</code>’s optional <code>adbc</code> feature, to bind
+an Arrow 59 reader to a caller-owned ADBC statement with
+<code>grust_arrow::adbc::ingest</code>. ADBC controls connection
+lifecycle, target catalog/schema, ingestion mode, transactions and
+cancellation. The helper preserves driver errors and unknown
+affected-row counts. An ingestion mode such as append is not
+reinterpreted as graph upsert.</p>
+<p>The optional <code>ffi</code> feature exports standard Arrow C
+streams through upstream Arrow’s implementation and release callbacks.
+Grust adds no unsafe FFI code. Rust callers using the same Arrow major
+can share readers directly; IPC is an explicit option for serialized
+cross-language or cross-version boundaries.</p>
+<p>New adapters should reuse the standard reader and shared batch
+operations, keeping only their schema and backend semantics locally.
+Enable the facade’s <code>datafusion</code> feature for the shared
+DataFusion 55 foundation. It registers native Arrow 59 tables and
+validated graph catalogs without re-encoding their buffers, accepts
+upstream table providers, and exposes DataFrames and streaming SQL
+results. Working-memory, parallelism, batch size and spill policy are
+explicit. Input buffers and retained results remain caller-owned
+admission; the working pool is not a process RSS limit.</p>
+<p><code>BlockingReader</code> connects a result stream to synchronous
+Arrow and ADBC consumers on an ordinary thread or
+<code>spawn_blocking</code>, using a caller-owned live Tokio runtime. It
+adds no worker, prefetch queue or IPC boundary. Existing backend SDKs
+keep their own compatible Arrow and execution-engine versions. Cypher
+lowering and algorithm kernel selection require separate semantic and
+performance qualification; this foundation does not automatically change
+them.</p>
+<p>See the repository’s <code>docs/arrow-pipelines.md</code> for
+detailed admission, compatibility and testing contracts. Reproducible
+pipeline benchmarks measure native slicing, explicit IPC boundaries and
+graph validation separately from backend load and algorithm timings.</p>
 </body>
 </html>
