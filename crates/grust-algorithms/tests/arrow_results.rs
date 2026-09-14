@@ -252,3 +252,39 @@ fn degree_arrow_batches_keep_exact_counts_and_weighted_strengths() {
     assert_eq!(counts, vec![1, 0, 0]);
     assert_eq!(strengths, vec![2.5, 0.0, 0.0]);
 }
+
+#[test]
+fn unweighted_degree_arrow_nulls_and_retained_batches_keep_admission() {
+    let context = context();
+    let graph = GraphProjection::from_topology(
+        SnapshotIdentity::new("g".into(), "r1".into(), "reader".into()).unwrap(),
+        vec!["a".into(), "isolate".into()],
+        vec![ProjectionEdge {
+            source: 0,
+            target: 0,
+            ordinal: 1,
+            id: None,
+        }],
+        None,
+        Orientation::Undirected,
+        &context,
+    )
+    .unwrap();
+    let retained = context.usage().unwrap().live_bytes;
+    let mut cursor = grust_algorithms::degree(&graph)
+        .unwrap()
+        .into_arrow_results();
+    let batch = cursor.next_batch().unwrap().unwrap();
+    let counts = batch
+        .record_batch()
+        .column(1)
+        .as_any()
+        .downcast_ref::<UInt64Array>()
+        .unwrap();
+    assert_eq!(counts.values().as_ref(), &[1, 0]);
+    assert_eq!(batch.record_batch().column(2).null_count(), 2);
+    drop(cursor);
+    assert!(context.usage().unwrap().live_bytes > retained);
+    drop(batch);
+    assert_eq!(context.usage().unwrap().live_bytes, retained);
+}

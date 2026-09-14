@@ -125,3 +125,26 @@ fn empty_projection_preserves_weight_presence_without_rows() {
         assert_eq!(result.strengths(), weighted.then_some([].as_slice()));
     }
 }
+
+#[test]
+fn result_allocation_obeys_the_shared_memory_envelope() {
+    let context = context();
+    let graph = graph(&[(0, 1, 1.0)], Orientation::Outgoing, false, &context);
+    let retained = context.usage().unwrap().live_bytes;
+    let held = context
+        .reserve(context.limits().memory_bytes - retained)
+        .unwrap();
+    assert!(matches!(
+        degree(&graph),
+        Err(AlgorithmError::BudgetExceeded {
+            resource: "memory",
+            ..
+        })
+    ));
+    assert_eq!(
+        context.usage().unwrap().live_bytes,
+        context.limits().memory_bytes
+    );
+    drop(held);
+    assert_eq!(context.usage().unwrap().live_bytes, retained);
+}
