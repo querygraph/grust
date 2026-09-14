@@ -157,3 +157,19 @@ composition. Labels, relationship types, inline maps and repeated nodes constrai
 the complete path, with physical edge uniqueness across all segments. Direction
 may differ per segment. Variable-length bounds and named path values remain
 unsupported; path execution costs still need measurement.
+
+### Shared cancellation and deadlines (unreleased)
+
+`ExecutionContext::cancelled()` is a runtime-independent notification shared by
+procedures and relational execution. `grust_datafusion::run_cancellable` races
+an operation with that notification and the context's absolute deadline.
+`GraphSnapshot::execute_with_context` applies it through complete Cypher result
+consumption. The operation and its owned streams are dropped on cancellation or
+deadline; errors are never retried. Dropping one wrapper unregisters its waiter
+without cancelling sibling work. A deadline needs Tokio's time driver.
+
+Control is cooperative: synchronous work within one poll is not preempted, and
+providers/kernels must checkpoint during computation. Wrapping stream creation
+alone does not control later consumption. These methods do not charge candidate
+work or intermediate allocations and do not establish complete read-policy
+admission or automatic routing.

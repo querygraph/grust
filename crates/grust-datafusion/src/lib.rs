@@ -32,6 +32,8 @@ pub mod cypher;
 
 mod blocking_reader;
 pub use blocking_reader::BlockingReader;
+mod control;
+pub use control::run_cancellable;
 /// Re-export upstream DataFusion 55 for expression/provider extensions, without
 /// creating a parallel set of traits or requiring consumers to guess versions.
 pub use datafusion;

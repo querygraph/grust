@@ -27,6 +27,25 @@ pub enum CypherExecution {
 }
 
 impl GraphSnapshot {
+    /// Execute the explicit Cypher route with shared cancellation and deadline
+    /// control across parsing, planning and complete output consumption. Work
+    /// within a single poll remains cooperative, and full read-policy admission
+    /// and candidate/intermediate accounting remain caller responsibilities.
+    pub async fn execute_with_context(
+        &self,
+        query_text: &str,
+        context: &SessionContext,
+        parameters: &CypherParameters,
+        output: OutputLimits,
+        execution: &grust_procedures::ExecutionContext,
+    ) -> Result<CypherExecution> {
+        crate::run_cancellable(
+            execution,
+            self.execute(query_text, context, parameters, output),
+        )
+        .await
+    }
+
     /// Parse, select a typed compiler and execute Cypher on this snapshot, with
     /// cumulative portable output limits. No SQL text or intermediate graph is
     /// generated. Unsupported syntax shapes return without execution; parse,

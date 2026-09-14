@@ -6,6 +6,13 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ## Unreleased
 
+- Add runtime-independent cancellation subscriptions to the shared execution
+  context, waking all live waiters without retaining dropped subscriptions.
+- Add DataFusion future lifetime control and explicit Cypher execution with a
+  shared cancellation/deadline context. Pending operations release their owned
+  streams and reservations on cancellation; full read-policy accounting and
+  automatic routing remain under development.
+
 ## 0.17.0 — Isopod — 2026-09-14
 
 - Preserve exact Int64 ordering in portable Cypher comparisons, including

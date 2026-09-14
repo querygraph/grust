@@ -10,6 +10,8 @@ mod failures;
 mod builtins;
 #[path = "contracts/cache.rs"]
 mod cache;
+#[path = "contracts/cancellation.rs"]
+mod cancellation;
 
 #[test]
 fn temporary_memory_accounts_release_only_their_own_admission() {

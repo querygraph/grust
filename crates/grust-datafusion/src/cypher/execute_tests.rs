@@ -27,6 +27,13 @@ async fn text_execution_preserves_results_and_error_boundaries() {
         max_rows: 10,
         max_serialized_bytes: 1024,
     };
+    let execution = grust_procedures::ExecutionContext::new(grust_procedures::ExecutionLimits {
+        memory_bytes: 1024,
+        work_units: 1024,
+        batch_rows: 1024,
+        deadline: None,
+    })
+    .unwrap();
     for text in [
         "MATCH (n) WHERE id(n) = $id RETURN id(n) AS id",
         "MATCH ()-->() RETURN count(*) AS count",
@@ -36,6 +43,14 @@ async fn text_execution_preserves_results_and_error_boundaries() {
         let expected = grust_cypher::read::execute_read_query(&graph, &query, &parameters).unwrap();
         let CypherExecution::Completed { table, .. } = snapshot
             .execute(text, engine.context(), &parameters, output)
+            .await
+            .unwrap()
+        else {
+            panic!("{text}");
+        };
+        assert_eq!(table, expected);
+        let CypherExecution::Completed { table, .. } = snapshot
+            .execute_with_context(text, engine.context(), &parameters, output, &execution)
             .await
             .unwrap()
         else {
@@ -87,6 +102,19 @@ async fn text_execution_preserves_results_and_error_boundaries() {
                     max_serialized_bytes: 0,
                     ..output
                 }
+            )
+            .await
+            .is_err()
+    );
+    execution.cancel().unwrap();
+    assert!(
+        snapshot
+            .execute_with_context(
+                "MATCH () RETURN count(*) AS count",
+                engine.context(),
+                &parameters,
+                output,
+                &execution,
             )
             .await
             .is_err()

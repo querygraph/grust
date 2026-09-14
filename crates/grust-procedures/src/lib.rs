@@ -24,7 +24,8 @@ pub use registry::{
     RegistryBuilder, ResolvedProcedure, ValidatedArguments,
 };
 pub use resources::{
-    ExecutionContext, ExecutionLimits, MemoryAccount, MemoryReservation, ResourceUsage,
+    Cancellation, ExecutionContext, ExecutionLimits, MemoryAccount, MemoryReservation,
+    ResourceUsage,
 };
 pub use signature::{
     Argument, Correlation, Determinism, Field, GraphRequirement, OptionField, ProcedureDefinition,

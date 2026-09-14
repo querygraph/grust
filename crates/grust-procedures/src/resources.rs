@@ -5,6 +5,9 @@ use std::time::Instant;
 
 use crate::{ProcedureError, Result};
 
+mod cancellation;
+pub use cancellation::Cancellation;
+
 /// Limits shared by projection preparation, kernels and consumers.
 #[derive(Clone, Copy, Debug)]
 pub struct ExecutionLimits {
@@ -33,6 +36,7 @@ pub struct ResourceUsage {
 struct State {
     usage: ResourceUsage,
     cancelled: bool,
+    waiters: Vec<Option<std::task::Waker>>,
 }
 
 #[derive(Debug)]
@@ -72,11 +76,17 @@ impl ExecutionContext {
 
     /// Signal cancellation to all owners. Cancellation never resets.
     pub fn cancel(&self) -> Result<()> {
-        self.0
+        let mut state = self
+            .0
             .state
             .lock()
-            .map_err(|_| ProcedureError::ResourceStatePoisoned)?
-            .cancelled = true;
+            .map_err(|_| ProcedureError::ResourceStatePoisoned)?;
+        state.cancelled = true;
+        let waiters = std::mem::take(&mut state.waiters);
+        drop(state);
+        for waker in waiters.into_iter().flatten() {
+            waker.wake();
+        }
         Ok(())
     }
 
