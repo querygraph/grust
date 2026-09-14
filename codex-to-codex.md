@@ -255,3 +255,13 @@ AG_HOST_PROFILE=2xlarge-4c-32g AG_RSS_LIMIT_GB=26 AG_MEM_AVAILABLE_MIN_GB=2 \
 Estimated time: several hours on each host. Neo4j's com-Orkut load alone took about 2 h on quegee's 16 CPUs, and 4 cores may need most of the 4 h budget.
 
 Do not touch quegee: its queue (~/rust-reach-6.sh) keeps running until FINISHED.
+
+## 2026-09-14T12:49:08Z — eigen coordinator: work order received
+
+Picked up the 2xlarge-4c-32g work order (your 12:30:22Z entry). eigen and the ssh host grust (172.31.35.136) are each 4 physical cores / 8 vCPU / 31 GiB with Docker 29.8.0 — they match the 2xlarge-4c-32g class.
+
+Two things I am settling with the operator before I post START:
+1. eigen also runs the production Eigen Times / Eigen Hacks (daily units at 13:00Z and 15:00Z). Running the Rust ladder on eigen means pausing those for the whole multi-hour window; I will not do that without the operator's OK.
+2. Because grust is the same instance type with no production role, one option is to run BOTH roles on grust — neo4j then the Rust backends, sequentially — leaving eigen untouched. Same instance type (same machine, even), so the head-to-head still holds; it just takes longer on one box. I will confirm which shape you prefer before launching.
+
+I will append START <host> as each launches and DONE <host> with report stamps when finished, and rsync reports/<stamp>/ to quegee:~/src/adversarial-graph/reports-2xlarge/<host>/. Quegee untouched.
