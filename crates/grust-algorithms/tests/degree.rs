@@ -148,3 +148,49 @@ fn result_allocation_obeys_the_shared_memory_envelope() {
     drop(held);
     assert_eq!(context.usage().unwrap().live_bytes, retained);
 }
+
+#[test]
+fn chunk_boundaries_preserve_arc_counts_and_exact_successful_work_charges() {
+    let context = context();
+    let edges = (0..2051).map(|i| (i % 2, 1, 1.0)).collect::<Vec<_>>();
+    let graph = graph(&edges, Orientation::Outgoing, true, &context);
+    let before = context.usage().unwrap();
+    let result = degree(&graph).unwrap();
+    assert_eq!(result.counts(), &[1026, 1025, 0]);
+    assert_eq!(result.strengths(), Some([1026.0, 1025.0, 0.0].as_slice()));
+    assert_eq!(
+        context.usage().unwrap().work_units - before.work_units,
+        2054
+    );
+    drop(result);
+    let used = context.usage().unwrap().work_units;
+    context
+        .charge_work(context.limits().work_units - used - 10)
+        .unwrap();
+    assert!(matches!(
+        degree(&graph),
+        Err(AlgorithmError::BudgetExceeded {
+            resource: "work",
+            ..
+        })
+    ));
+    assert_eq!(context.usage().unwrap().live_bytes, before.live_bytes);
+}
+
+#[test]
+fn node_chunks_preserve_large_isolate_sets() {
+    let context = context();
+    let graph = GraphProjection::from_topology(
+        SnapshotIdentity::new("g".into(), "r1".into(), "reader".into()).unwrap(),
+        (0..2049).map(|id| id.to_string().into()).collect(),
+        Vec::new(),
+        None,
+        Orientation::Outgoing,
+        &context,
+    )
+    .unwrap();
+    let before = context.usage().unwrap().work_units;
+    let result = degree(&graph).unwrap();
+    assert_eq!(result.counts(), vec![0; 2049]);
+    assert_eq!(context.usage().unwrap().work_units - before, 2049);
+}

@@ -46,23 +46,40 @@ pub fn degree(graph: &GraphProjection) -> Result<Degrees> {
         .as_ref()
         .map(|_| Buffer::capacity(graph.node_count(), context))
         .transpose()?;
-    for node in 0..graph.node_count() {
-        context.charge_work(1)?;
-        let start = adjacency.offsets.values[node];
-        let end = adjacency.offsets.values[node + 1];
-        counts.values.push(end - start);
-        if let (Some(weights), Some(strengths)) = (&adjacency.weights, &mut strengths) {
-            let mut sum = 0.0;
-            for &weight in &weights.values[start..end] {
-                context.charge_work(1)?;
-                sum += weight;
+    // Precharge bounded chunks, as Buffer initialization does, instead of
+    // locking the execution context for every scalar. Arc charges span node
+    // boundaries so low-degree graphs also amortize the accounting lock.
+    let mut arcs_charged_until = 0;
+    for first in (0..graph.node_count()).step_by(1024) {
+        let last = first.saturating_add(1024).min(graph.node_count());
+        context.charge_work(last - first)?;
+        for node in first..last {
+            let start = adjacency.offsets.values[node];
+            let end = adjacency.offsets.values[node + 1];
+            counts.values.push(end - start);
+            if let (Some(weights), Some(strengths)) = (&adjacency.weights, &mut strengths) {
+                let mut sum = 0.0;
+                let mut position = start;
+                while position < end {
+                    if position == arcs_charged_until {
+                        arcs_charged_until =
+                            position.saturating_add(1024).min(weights.values.len());
+                        context.charge_work(arcs_charged_until - position)?;
+                    }
+                    let stop = end.min(arcs_charged_until);
+                    for &weight in &weights.values[position..stop] {
+                        sum += weight;
+                    }
+                    position = stop;
+                }
+                // Nonnegative finite inputs cannot recover after overflowing.
                 if !sum.is_finite() {
                     return Err(AlgorithmError::Numerical(
                         "weighted degree exceeds finite Float64 domain".into(),
                     ));
                 }
+                strengths.values.push(sum);
             }
-            strengths.values.push(sum);
         }
     }
     context.checkpoint()?;
