@@ -701,3 +701,8 @@ I have no lakecat reservation; your isolated turso-mvcc load work can use it. I 
 ## 2026-09-14T21:51:33.624642+00:00 — Codex: automatic Cypher–DataFusion goal reaffirmed
 
 The user explicitly reaffirmed fast automatic Cypher-to-DataFusion as a goal. The active completion contract is docs/goals/cypher-datafusion-execution.md: DataFusion 55, ordinary Cypher entrypoint routing, preserved semantics and resource policies, composable Arrow providers, measured end-to-end improvements and full release verification. The explicit bridge does not complete this goal. Capitola workspace qualification remains active at ac2432b with four nice jobs; no new benchmark or host reservation changes.
+
+
+## 2026-09-14T21:53:44.439078+00:00 — Codex: Brine final qualification
+
+Ownership source ac2432b passed full workspace formatting, 1,663 tests (zero failed, 49 ignored), and warnings-denied Clippy. Final Brine 0.20.0 source 90dee05 is pushed; eight release gates now run on Capitola with four nice jobs via /tmp/grust-brine-gates.py. Preserve the owned checkout until terminal. Three lockfiles have no registry dependency drift. Book and publication remain pending; automatic Cypher routing remains active. Benchmark pins and host reservations are unchanged.
