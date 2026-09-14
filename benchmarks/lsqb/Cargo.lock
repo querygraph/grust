@@ -3342,8 +3342,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "grust-arrow"
+version = "0.19.0"
+dependencies = [
+ "arrow-array 55.2.0",
+ "arrow-array 58.4.0",
+ "arrow-ipc 55.2.0",
+ "arrow-ipc 58.4.0",
+ "arrow-schema 55.2.0",
+ "arrow-schema 58.4.0",
+ "grust-core",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "grust-core"
-version = "0.13.0"
+version = "0.19.0"
 dependencies = [
  "async-trait",
  "quick-xml",
@@ -3355,10 +3370,11 @@ dependencies = [
 
 [[package]]
 name = "grust-cypher"
-version = "0.13.2"
+version = "0.19.0"
 dependencies = [
  "async-trait",
  "grust-core",
+ "grust-procedures",
  "serde",
  "serde_json",
  "uuid",
@@ -3366,7 +3382,7 @@ dependencies = [
 
 [[package]]
 name = "grust-falkor"
-version = "0.13.0"
+version = "0.19.0"
 dependencies = [
  "async-trait",
  "grust-core",
@@ -3376,7 +3392,7 @@ dependencies = [
 
 [[package]]
 name = "grust-helix"
-version = "0.13.0"
+version = "0.19.0"
 dependencies = [
  "async-trait",
  "grust-core",
@@ -3387,10 +3403,11 @@ dependencies = [
 
 [[package]]
 name = "grust-ladybug"
-version = "0.13.0"
+version = "0.19.0"
 dependencies = [
  "arrow 55.2.0",
  "async-trait",
+ "grust-arrow",
  "grust-core",
  "lbug",
  "serde_json",
@@ -3398,12 +3415,14 @@ dependencies = [
 
 [[package]]
 name = "grust-lancedb"
-version = "0.13.0"
+version = "0.19.0"
 dependencies = [
  "arrow 58.4.0",
  "async-trait",
  "futures",
+ "grust-arrow",
  "grust-core",
+ "hashbrown 0.15.5",
  "lancedb",
  "serde_json",
 ]
@@ -3438,15 +3457,16 @@ dependencies = [
 
 [[package]]
 name = "grust-memory"
-version = "0.13.0"
+version = "0.19.0"
 dependencies = [
  "async-trait",
  "grust-core",
+ "hashbrown 0.15.5",
 ]
 
 [[package]]
 name = "grust-pggraph"
-version = "0.13.0"
+version = "0.19.0"
 dependencies = [
  "async-trait",
  "grust-core",
@@ -3458,7 +3478,7 @@ dependencies = [
 
 [[package]]
 name = "grust-postgres-core"
-version = "0.13.0"
+version = "0.19.0"
 dependencies = [
  "async-trait",
  "grust-core",
@@ -3471,7 +3491,7 @@ dependencies = [
 
 [[package]]
 name = "grust-postgres-pgq"
-version = "0.13.0"
+version = "0.19.0"
 dependencies = [
  "async-trait",
  "grust-core",
@@ -3482,11 +3502,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "grust-procedures"
+version = "0.19.0"
+dependencies = [
+ "grust-core",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
 name = "grust-sail"
-version = "0.13.2"
+version = "0.19.0"
 dependencies = [
  "arrow 58.4.0",
  "async-trait",
+ "grust-arrow",
  "grust-core",
  "grust-cypher",
  "prost",
@@ -3501,7 +3531,7 @@ dependencies = [
 
 [[package]]
 name = "grust-sql-core"
-version = "0.13.0"
+version = "0.19.0"
 dependencies = [
  "grust-core",
  "serde_json",
@@ -3509,7 +3539,7 @@ dependencies = [
 
 [[package]]
 name = "grust-surreal"
-version = "0.13.1"
+version = "0.19.0"
 dependencies = [
  "async-trait",
  "grust-core",
@@ -3521,7 +3551,7 @@ dependencies = [
 
 [[package]]
 name = "grust-turso"
-version = "0.13.0"
+version = "0.19.0"
 dependencies = [
  "async-trait",
  "chrono",
@@ -3612,6 +3642,8 @@ version = "0.15.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9229cfe53dfd69f0609a49f65461bd93001ea1ef889cd5529dd176593f5338a1"
 dependencies = [
+ "allocator-api2 0.2.21",
+ "equivalent",
  "foldhash 0.1.5",
 ]
 
