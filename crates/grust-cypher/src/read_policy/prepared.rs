@@ -99,17 +99,42 @@ impl<'a> PreparedReadRequest<'a> {
     /// Check graph counts and exact serialized size. This does not establish
     /// transaction/principal authority or reserve executor-owned allocations.
     pub fn check_graph(&self, graph: &Graph) -> Result<()> {
-        ensure_before_deadline(self.deadline)?;
-        ensure_graph_bounds(graph.nodes.len(), graph.edges.len(), &self.policy)?;
-        ensure_serialized_size("graph", graph, self.policy.max_graph_bytes, self.deadline)
+        self.check_serializable_graph(graph.nodes.len(), graph.edges.len(), graph)
+            .map(|_| ())
     }
 
     /// Check the index's immutable snapshot using its cached exact byte size,
     /// avoiding graph materialization or repeated serialization.
     pub fn check_index(&self, index: &TypedGraphIndex) -> Result<()> {
+        self.check_measured_graph(
+            index.node_count(),
+            index.edge_count(),
+            index.serialized_graph_bytes(),
+        )
+    }
+
+    /// Check a trusted graph projection's exact counts and borrowed serialization
+    /// view. Counts must describe the same immutable projection as `graph`; this
+    /// is an adapter contract, not validation of arbitrary serializer behavior.
+    /// Returns exact JSON bytes for caching beside that snapshot. Count rejection
+    /// happens before serialization; counting allocates no encoded JSON buffer.
+    pub fn check_serializable_graph<T: serde::Serialize + ?Sized>(
+        &self,
+        nodes: usize,
+        edges: usize,
+        graph: &T,
+    ) -> Result<usize> {
         ensure_before_deadline(self.deadline)?;
-        ensure_graph_bounds(index.node_count(), index.edge_count(), &self.policy)?;
-        if index.serialized_graph_bytes() > self.policy.max_graph_bytes {
+        ensure_graph_bounds(nodes, edges, &self.policy)?;
+        ensure_serialized_size("graph", graph, self.policy.max_graph_bytes, self.deadline)
+    }
+
+    /// Check exact measurements retained by a trusted immutable snapshot. The
+    /// caller must not substitute estimates or measurements from another graph.
+    pub fn check_measured_graph(&self, nodes: usize, edges: usize, bytes: usize) -> Result<()> {
+        ensure_before_deadline(self.deadline)?;
+        ensure_graph_bounds(nodes, edges, &self.policy)?;
+        if bytes > self.policy.max_graph_bytes {
             return Err(gql_execution(format!(
                 "bounded read graph exceeds {} serialized bytes",
                 self.policy.max_graph_bytes
@@ -137,6 +162,7 @@ impl<'a> PreparedReadRequest<'a> {
             self.policy.max_output_bytes,
             self.deadline,
         )
+        .map(|_| ())
     }
 }
 

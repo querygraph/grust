@@ -202,3 +202,20 @@ replacement cannot change them. Batch counts do not claim execution parallelism.
 Selectivity, join cardinalities, serialized graph size and total memory are not
 inferred from these counts. Automatic routing still requires qualified costs and
 complete resource admission.
+
+### Native Arrow input admission (unreleased)
+
+`GraphSnapshot::try_new_with_input_policy` checks a prepared request's node/edge
+limits and exact graph JSON size before capturing native providers. It uses the
+borrowed Arrow serialization view and bounded counting writer, with no row graph
+or encoded JSON buffer. Row rejection precedes serialization; the original
+request deadline also covers capture. `SnapshotStatistics::serialized_graph_bytes`
+is `Some(exact_bytes)` after measured capture and `None` for ordinary capture,
+including an unmeasured empty graph. Clones retain the measurement.
+
+`PreparedReadRequest::check_serializable_graph` shares these checks with trusted
+native adapters. `check_measured_graph` reuses exact cached measurements for the
+same immutable projection; estimates are not admissible substitutes. Backend
+snapshot authority, pre-existing input buffers, ordinal allocation and execution
+work/intermediates remain separate obligations. This is input-size admission,
+not a complete bounded DataFusion executor or automatic routing.

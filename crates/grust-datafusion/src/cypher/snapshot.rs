@@ -20,8 +20,8 @@ pub const EDGE_ORDINAL: &str = "__grust_edge_ordinal";
 
 /// Exact counts from the captured native tables, not optimizer estimates.
 /// Original batch counts describe input layout, not execution parallelism.
-/// These values do not estimate selectivity, join cardinality, serialized graph
-/// size, retained input memory or total process memory.
+/// Selectivity, join cardinality, retained input memory and total process memory
+/// are not inferred. Serialized size is explicitly unknown unless measured.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct SnapshotStatistics {
     pub node_rows: usize,
@@ -31,6 +31,9 @@ pub struct SnapshotStatistics {
     /// Logical UInt64 identity payload added during capture. Allocator capacity
     /// and array/schema metadata are not included.
     pub edge_ordinal_bytes: usize,
+    /// Exact core Graph JSON size when measured by input-policy capture. `None`
+    /// means unmeasured, including for empty tables; it never means zero bytes.
+    pub serialized_graph_bytes: Option<usize>,
 }
 
 /// Validated, immutable node/edge provider pair for one captured graph.
@@ -61,6 +64,7 @@ impl GraphSnapshot {
                 .num_rows()
                 .checked_mul(size_of::<u64>())
                 .ok_or_else(|| DataFusionError::Plan("edge ordinal byte size overflow".into()))?,
+            serialized_graph_bytes: None,
         };
         Ok(Self {
             identity: Arc::new(()),
@@ -68,6 +72,37 @@ impl GraphSnapshot {
             edges: engine.table_provider(with_ordinals(edges)?)?,
             statistics,
         })
+    }
+
+    /// Admit exact graph rows and serialized bytes under the prepared request's
+    /// original deadline, then capture native providers. The borrowed Arrow view
+    /// avoids a row graph and encoded JSON allocation; measurement is cached.
+    ///
+    /// This checks input size only. Backend authority, existing input-buffer
+    /// admission, ordinal allocation and execution work/intermediates remain
+    /// separate obligations. It does not establish a complete bounded executor.
+    pub fn try_new_with_input_policy(
+        engine: &DataFusionEngine,
+        graph: ArrowGraphTables,
+        request: &grust_cypher::PreparedReadRequest<'_>,
+    ) -> Result<Self> {
+        let bytes = request
+            .check_serializable_graph(
+                graph.nodes().num_rows(),
+                graph.edges().num_rows(),
+                &graph.as_serializable_graph(),
+            )
+            .map_err(|error| DataFusionError::External(Box::new(error)))?;
+        let mut snapshot = Self::try_new(engine, graph)?;
+        snapshot.statistics.serialized_graph_bytes = Some(bytes);
+        request
+            .check_measured_graph(
+                snapshot.statistics.node_rows,
+                snapshot.statistics.edge_rows,
+                bytes,
+            )
+            .map_err(|error| DataFusionError::External(Box::new(error)))?;
+        Ok(snapshot)
     }
 
     /// Read exact capture metadata in constant time without scanning providers,

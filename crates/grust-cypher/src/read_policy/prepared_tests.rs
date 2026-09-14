@@ -115,3 +115,31 @@ fn prepared_request_retains_the_validated_registry_generation() {
         .is_err()
     );
 }
+
+#[test]
+fn graph_count_rejection_precedes_native_serialization() {
+    struct MustNotSerialize;
+    impl serde::Serialize for MustNotSerialize {
+        fn serialize<S: serde::Serializer>(&self, _: S) -> std::result::Result<S::Ok, S::Error> {
+            panic!("row admission must precede serialization")
+        }
+    }
+    let parameters = CypherParameters::new();
+    let policy = ReadQueryPolicy {
+        max_graph_nodes: 1,
+        max_graph_edges: 1,
+        ..ReadQueryPolicy::default()
+    };
+    let request = PreparedReadRequest::new(QUERY, &parameters, &policy).unwrap();
+    assert!(
+        request
+            .check_serializable_graph(2, 0, &MustNotSerialize)
+            .is_err()
+    );
+    assert!(
+        request
+            .check_serializable_graph(0, 2, &MustNotSerialize)
+            .is_err()
+    );
+    assert!(request.check_measured_graph(2, 0, 0).is_err());
+}

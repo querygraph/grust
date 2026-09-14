@@ -48,6 +48,7 @@ async fn physical_edge_identity_survives_batches_partitions_and_catalog_replacem
     assert_eq!(statistics.node_batches, 1);
     assert_eq!(statistics.edge_batches, 2);
     assert_eq!(statistics.edge_ordinal_bytes, 24);
+    assert_eq!(statistics.serialized_graph_bytes, None);
     let captured = snapshot.edges(engine.context()).unwrap();
     let (nodes, edges) = ArrowGraph::from_graph(&Graph::new(vec![], vec![]))
         .unwrap()
@@ -126,6 +127,57 @@ fn empty_snapshot_statistics_are_exact_without_executing_a_plan() {
             node_batches: 0,
             edge_batches: 0,
             edge_ordinal_bytes: 0,
+            serialized_graph_bytes: None,
         }
     );
+}
+
+#[test]
+fn native_input_admission_matches_exact_graph_bytes_and_retains_measurement() {
+    let engine = DataFusionEngine::new(ExecutionOptions {
+        working_memory_bytes: (1 << 20).try_into().unwrap(),
+        target_partitions: 4.try_into().unwrap(),
+        batch_rows: 1024.try_into().unwrap(),
+        spill: SpillPolicy::Disabled,
+    })
+    .unwrap();
+    let parameters = grust_cypher::CypherParameters::new();
+    for graph in [
+        Graph::new(vec![], vec![]),
+        Graph::new(
+            vec![
+                Node::new("N", "a\"", Props::new()),
+                Node::new("N", "b", Props::new()),
+            ],
+            vec![Edge::new("E", "a\"", "b", Props::new())],
+        ),
+    ] {
+        let bytes = serde_json::to_vec(&graph).unwrap().len();
+        let (nodes, edges) = ArrowGraph::from_graph(&graph).unwrap().into_tables();
+        let tables = ArrowGraphTables::try_new(nodes, edges).unwrap();
+        let policy = grust_cypher::ReadQueryPolicy {
+            max_graph_bytes: bytes,
+            ..grust_cypher::ReadQueryPolicy::default()
+        };
+        let request = grust_cypher::PreparedReadRequest::new(
+            "MATCH (n) RETURN count(*) LIMIT 1",
+            &parameters,
+            &policy,
+        )
+        .unwrap();
+        let snapshot =
+            GraphSnapshot::try_new_with_input_policy(&engine, tables.clone(), &request).unwrap();
+        assert_eq!(snapshot.statistics().serialized_graph_bytes, Some(bytes));
+        assert_eq!(snapshot.clone().statistics(), snapshot.statistics());
+        let too_small = grust_cypher::PreparedReadRequest::new(
+            "MATCH (n) RETURN count(*) LIMIT 1",
+            &parameters,
+            &grust_cypher::ReadQueryPolicy {
+                max_graph_bytes: bytes - 1,
+                ..policy
+            },
+        )
+        .unwrap();
+        assert!(GraphSnapshot::try_new_with_input_policy(&engine, tables, &too_small).is_err());
+    }
 }

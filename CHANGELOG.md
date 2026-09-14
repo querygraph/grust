@@ -6,6 +6,11 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ## Unreleased
 
+- Admit native Arrow graph row counts and exact serialized bytes through the
+  shared prepared-read policy, preserving its original deadline. Optional
+  DataFusion input-policy capture caches the measured size; ordinary capture
+  explicitly leaves it unknown. This does not replace execution accounting.
+
 - Add a borrowed serialization view of native Arrow graph tables on Arrow
   55/58/59. It preserves the core graph wire format without allocating row graphs
   or copying property values, and composes with bounded output/counting writers.

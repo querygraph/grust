@@ -333,7 +333,7 @@ fn ensure_serialized_size<T: Serialize + ?Sized>(
     value: &T,
     maximum: usize,
     deadline: Instant,
-) -> Result<()> {
+) -> Result<usize> {
     let mut writer = LimitWriter {
         written: 0,
         maximum,
@@ -350,8 +350,10 @@ fn ensure_serialized_size<T: Serialize + ?Sized>(
             "bounded read {what} exceeds {maximum} serialized bytes"
         )));
     }
-    encoded
-        .map_err(|error| gql_execution(format!("could not measure bounded read {what}: {error}")))
+    encoded.map_err(|error| {
+        gql_execution(format!("could not measure bounded read {what}: {error}"))
+    })?;
+    Ok(writer.written)
 }
 
 fn validate_query(
