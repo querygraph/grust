@@ -84,6 +84,40 @@ impl GraphSnapshot {
         edge: &str,
         target: &str,
     ) -> Result<RelationshipPlan> {
+        self.endpoint_relationships(context, source, edge, target, false)
+    }
+
+    /// Plan both orientations of each non-loop edge, and each self-loop once.
+    /// Physical relationship ordinals are retained across both orientations.
+    /// This has the same distinct-binding and admission contract as the directed
+    /// operator; row order is unspecified without an explicit sort.
+    pub fn undirected_relationships(
+        &self,
+        context: &SessionContext,
+        source: &str,
+        edge: &str,
+        target: &str,
+    ) -> Result<RelationshipPlan> {
+        let forward = self.endpoint_relationships(context, source, edge, target, false)?;
+        let reverse = self.endpoint_relationships(context, source, edge, target, true)?;
+        let different = reverse.bindings.variables[source]["node_id"]
+            .0
+            .clone()
+            .not_eq(reverse.bindings.variables[target]["node_id"].0.clone());
+        Ok(RelationshipPlan {
+            frame: forward.frame.union(reverse.frame.filter(different)?)?,
+            bindings: forward.bindings,
+        })
+    }
+
+    fn endpoint_relationships(
+        &self,
+        context: &SessionContext,
+        source: &str,
+        edge: &str,
+        target: &str,
+        reverse: bool,
+    ) -> Result<RelationshipPlan> {
         if source == edge || source == target || edge == target {
             return Err(DataFusionError::Plan(
                 "relationship bindings must be distinct".into(),
@@ -92,11 +126,16 @@ impl GraphSnapshot {
         let (source_frame, source_columns) = rename(self.nodes(context)?, 0)?;
         let (edge_frame, edge_columns) = rename(self.edges(context)?, 1)?;
         let (target_frame, target_columns) = rename(self.nodes(context)?, 2)?;
+        let (from_key, to_key) = if reverse {
+            ("target", "source")
+        } else {
+            ("source", "target")
+        };
         let from = source_columns["node_id"]
             .0
             .clone()
-            .eq(edge_columns["source"].0.clone());
-        let to = edge_columns["target"]
+            .eq(edge_columns[from_key].0.clone());
+        let to = edge_columns[to_key]
             .0
             .clone()
             .eq(target_columns["node_id"].0.clone());

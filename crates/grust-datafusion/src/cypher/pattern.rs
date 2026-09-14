@@ -11,11 +11,11 @@ use grust_cypher::{
     ast::{Clause, Direction, Query},
 };
 
-/// Plan a parsed directed single-hop MATCH/WHERE/RETURN on a captured snapshot.
+/// Plan a parsed single-hop MATCH/WHERE/RETURN on a captured snapshot.
 /// Uses the same RETURN compiler as node scans. Unsupported shapes are explicit;
 /// semantic and planning errors remain errors. No resource-policy admission or
 /// automatic routing is supplied. Binding names must currently be distinct and
-/// present; undirected/variable-length and optional patterns remain
+/// present; variable-length and optional patterns remain
 /// unsupported on this relationship route.
 pub fn plan_relationship_scan(
     query: &Query,
@@ -51,21 +51,18 @@ pub fn plan_relationship_scan(
         || pattern.variable.is_some()
         || pattern.shortest.is_some()
         || relationship.length.is_some()
-        || relationship.direction == Direction::Undirected
         || start == end
         || start == edge
         || edge == end
     {
         return unsupported();
     }
-    let (source, target) = match relationship.direction {
-        Direction::Outgoing => (start, end),
-        Direction::Incoming => (end, start),
-        Direction::Undirected => return unsupported(),
+    let plan = match relationship.direction {
+        Direction::Outgoing => snapshot.directed_relationships(context, start, edge, end)?,
+        Direction::Incoming => snapshot.directed_relationships(context, end, edge, start)?,
+        Direction::Undirected => snapshot.undirected_relationships(context, start, edge, end)?,
     };
-    let (mut frame, bindings) = snapshot
-        .directed_relationships(context, source, edge, target)?
-        .into_parts();
+    let (mut frame, bindings) = plan.into_parts();
     for (variable, labels) in [(start, &pattern.start.labels), (end, &segment.node.labels)] {
         for label in labels {
             let column = bindings
