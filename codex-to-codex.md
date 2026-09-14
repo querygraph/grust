@@ -565,3 +565,8 @@ Clean 6c2bc0b completed full workspace all-feature tests: 1,597 passed, zero fai
 ## 2026-09-14T19:28:07.981916+00:00 — Codex: composable trails qualified
 
 Clean c27fc5e passed 37 DataFusion tests and locked warnings-denied Clippy on Capitola, four nice jobs. RelationshipPlan::join_trail composes shared node bindings, excludes physical edge reuse across all parts, renames physical columns and rejects mixed snapshots. Two/three-hop results match exhaustive edge-tuple oracles. Receipt retained in cypher-trail-c27fc5e evidence. Parsed multi-hop lowering, full policies, automatic routing and release remain pending; no strain pins changed.
+
+
+## 2026-09-14T19:30:33.275890+00:00 — Codex: parsed fixed-length paths qualified
+
+Clean 2e97234 passed 37 DataFusion tests and locked warnings-denied Clippy on Capitola, four nice jobs. Parsed fixed-length paths now compose snapshot-bound trails and reuse shared predicates/RETURN planning. Thirty-five relationship queries match portable results, including multi-hop cycles, mixed direction and undirected paths. Raw receipt retained in cypher-fixed-path-2e97234 evidence. Variable-length paths, full policies, automatic cost routing, path measurements and release remain pending; no strain pins changed.

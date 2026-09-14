@@ -182,7 +182,7 @@ the scalar semantics into each pattern planner.
 
 ### Qualified language surface
 
-The current compiler supports node scans and single-hop relationships in either
+The current compiler supports node scans and fixed-length relationship paths in either
 direction or undirected form; labels, relationship types and scalar inline maps;
 named, anonymous and repeated endpoint bindings; WHERE, projection, DISTINCT,
 count variants/grouping, integer/string MIN/MAX, node identity, projected
@@ -194,7 +194,7 @@ once. Repeated endpoints constrain matching to self-loops using one node join;
 the undirected form omits its reverse branch. Anonymous names are generated after
 semantic analysis and cannot collide with explicit pattern bindings.
 
-Multi-hop/variable-length paths, OPTIONAL MATCH, correlated maps, floating-point
+Variable-length paths, OPTIONAL MATCH, correlated maps, floating-point
 and mixed numeric expressions, arithmetic, additional aggregates and duplicate
 projection names still need mappings or result remapping. Integer SUM requires
 particular care: preserving an equal final total does not preserve sequential
@@ -224,5 +224,11 @@ tests does not establish backend-wide speed or resource-policy parity.
 excludes physical edge reuse across all joined parts. Parallel edges remain
 distinct. Plans must come from the same captured snapshot; cloned handles retain
 that identity. Physical columns are renamed before composition to avoid alias
-collisions. This is a lazy operator; parsed multi-hop lowering and path-resource
-admission remain separate work.
+collisions. The parsed path planner composes these operators for fixed-length paths;
+variable-length lowering and path-resource admission remain separate work.
+
+Fixed-length paths reuse the shared RETURN and predicate compilers after trail
+composition. Labels, relationship types, inline maps and repeated nodes constrain
+the complete path, with physical edge uniqueness across all segments. Direction
+may differ per segment. Variable-length bounds and named path values remain
+unsupported; path execution costs still need measurement.

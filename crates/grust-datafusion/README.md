@@ -96,7 +96,7 @@ shared. Backend transaction identity and authorization remain caller contracts.
 for node/relationship/node bindings. `RelationshipPlan` retains
 a `GraphBindings` resolver for scalar/aggregate composition and physical edge
 identity. This operator preserves loops and parallel relationships.
-`plan_relationship_scan` lowers parsed directed one-hop MATCH/WHERE/RETURN
+`plan_relationship_scan` lowers parsed fixed-length MATCH/WHERE/RETURN
 patterns with named or anonymous elements, node labels and relationship types.
 Undirected patterns are also admitted: both orientations preserve the same
 physical edge identity, and self-loops occur once.
@@ -150,5 +150,11 @@ separate integration requirements.
 excludes physical edge reuse across all joined parts. Parallel edges remain
 distinct. Plans must come from the same captured snapshot; cloned handles retain
 that identity. Physical columns are renamed before composition to avoid alias
-collisions. This is a lazy operator; parsed multi-hop lowering and path-resource
-admission remain separate work.
+collisions. The parsed path planner composes these operators for fixed-length paths;
+variable-length lowering and path-resource admission remain separate work.
+
+Fixed-length paths reuse the shared RETURN and predicate compilers after trail
+composition. Labels, relationship types, inline maps and repeated nodes constrain
+the complete path, with physical edge uniqueness across all segments. Direction
+may differ per segment. Variable-length bounds and named path values remain
+unsupported; path execution costs still need measurement.

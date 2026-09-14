@@ -25,7 +25,7 @@ projected-expression ordering, integer/string extrema, node identity and paginat
 through explicit lowering APIs. `GraphSnapshot::execute` now connects Cypher
 text parsing, typed planning and output-bounded portable result collection;
 unsupported queries remain distinct from errors. Scalar binding resolution now supports multiple
-caller-defined bindings. Parsed directed single-hop relationship patterns now
+caller-defined bindings. Parsed fixed-length relationship patterns now
 share the RETURN compiler with scans.
 Planner decisions distinguish unsupported shapes from semantic errors. Broader joins,
 broader aggregates, route selection, resource mapping, comparative performance
@@ -67,8 +67,8 @@ that plan. The unreleased `cypher::GraphSnapshot` now supplies this ordinal for
 validated native Arrow graph tables and retains an immutable provider pair.
 Backend transaction/authorization identity and resource admission still need
 integration. A lazy directed endpoint-join operator now retains these ordinals
-and shared typed bindings. Parsed incoming/outgoing single-hop lowering is
-implemented, as are undirected and repeated-endpoint one-hop matches; optional and variable-length patterns
+and shared typed bindings. Parsed fixed-length incoming/outgoing/undirected paths and repeated nodes are
+implemented; optional and variable-length patterns
 remain outstanding. Parallel edges, repeated external IDs and loops must retain their
 multiplicity. Node identity and endpoint integrity need equivalent validation.
 Provider statistics must have an unknown state; guessed cardinalities cannot

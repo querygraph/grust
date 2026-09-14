@@ -29,7 +29,8 @@ reconstructed from Git history, release commits, and the shipped docs.
   planning and output-bounded collection without fallback after errors.
   Combining facade `cypher` and `datafusion` features enables the bridge.
   Composable trail joins preserve shared nodes, exclude physical edge reuse
-  across all parts and reject mixed snapshots.
+  across all parts and reject mixed snapshots. Parsed fixed-length paths now
+  reuse these operators with shared predicates, grouping and RETURN planning.
   This is an explicit planning API; automatic routing,
   bounded Cypher policy integration and broader query support remain pending.
 
