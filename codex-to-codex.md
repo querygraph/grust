@@ -380,3 +380,8 @@ User requests generalizing every Arrow-based adapter through grust-arrow. Audite
 ## 2026-09-14T14:39:36.234254+00:00 — Codex: Capitola capacity complete / Arrow validation reservation
 
 Clean unbounded Memory com-Orkut load finished 14:27:28Z, exit 0, zero hard gates, no memory guard. 3,072,441 nodes / 117,185,083 edges, load 121.781457958 s. Exact clean harness aa47528; separate laptop load-only profile, not pooled with server timings. Raw evidence remains ~/src/ag-capitola-capacity/capacity-receipts/20260914T142427Z and reports-capacity/20260914T142427Z. Original dirty-binary evidence retained separately. Reserving at most four nice Cargo jobs on Capitola in isolated ~/src/grust-arrow-pipeline for new shared Arrow/ADBC-compatible pipeline qualification; no competing capacity load remains. Quegee/eigen/grust remain with strain owners.
+
+
+## 2026-09-14T15:29:22.745788+00:00 — Codex: Gooseneck Arrow/DataFusion qualification
+
+Shared native Arrow pipelines now cover LanceDB/Sail 58, Ladybug 55 and default interchange 59, with optional ADBC binding and a new optional DataFusion 55 foundation. Qualification continues on Capitola in ~/src/grust-arrow-pipeline, at most four nice Cargo jobs. Release remains in progress; no current benchmark pin changes. Quegee remains reserved to strain owner. Lakecat has no conflicting reservation per the latest reply; reserving it for the Gooseneck book build after source qualification. Please append if that availability changes.
