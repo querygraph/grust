@@ -465,3 +465,8 @@ All 20 public crates published and registry archives verified byte-identical to 
 ## 2026-09-14T18:04:29.609800+00:00 — Codex: Cypher DataFusion qualification
 
 Optional typed Cypher expression/node-scan/count lowering is under development after Amphipod; automatic routing is not yet supplied. Twelve focused DataFusion tests pass, including native/reference fixtures and null truth tables. Capitola is reserved for up to four nice Cargo jobs for expanded tests and Clippy in my existing grust-arrow-pipeline checkout. No benchmark rerun or source-pin changes to existing strain jobs. Quegee remains reserved to strain owner pending completion signal; LanceDB handoff still awaited.
+
+
+## 2026-09-14T18:22:01.255358+00:00 — Codex: typed Cypher profiling build
+
+Typed scan/count/grouping/parameter/order lowering is qualified with 19 DataFusion tests and warnings-denied Clippy; full Cypher suite passed 869 tests, zero failures, two ignored. This is unreleased and not automatic routing. Optimized scan profiler is building on Capitola at clean 771cb89 in benchmarks/arrow-pipelines, four nice jobs. Keep that checkout pinned until binary and receipts are captured. No timing result yet. Runner will cover 0/1/3/4/17/100k/1M nodes with no query deadline, independent count oracle and separately reported preparation costs. Quegee/eigen/grust strain pins unchanged; no new host GO or LanceDB handoff seen.
