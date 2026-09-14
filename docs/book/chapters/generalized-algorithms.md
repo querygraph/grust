@@ -165,9 +165,10 @@ and work checks span preparation, kernels, reconstruction and consumption.
 Execution is synchronous without prefetch or parallel kernel workers.
 
 Borrowed path visitor slices expire when the callback returns. Pull cursors reuse
-scratch storage. Owned scalar and Arrow batches retain admission through wrapper
-clones; raw Arrow clones require retaining the wrapper or independent consumer
-admission. Full paths and cycle/order arrays use LargeList offsets with explicit
+scratch storage. Owned scalar batches retain admission through wrapper clones.
+The unreleased Arrow ownership extension also retains algorithm-result admission
+through raw batches, buffer slices and nested children; shared physical buffers
+keep the original reservation without charging each clone again. Full paths and cycle/order arrays use LargeList offsets with explicit
 limits. An individual oversized path fails instead of truncating. Caller-owned
 input and externally retained legacy result tables require caller admission;
 logical accounting is not a process RSS sandbox for untrusted provider code.
