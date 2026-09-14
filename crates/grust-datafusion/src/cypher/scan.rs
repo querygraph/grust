@@ -99,16 +99,19 @@ pub fn plan_node_scan(
     }
     let mut ordering = Vec::with_capacity(projection.order_by.len());
     for item in &projection.order_by {
-        let CypherExpr::Variable(alias) = &item.expr else {
-            return Ok(NodeScanPlan::Unsupported(UnsupportedScan::Ordering));
+        let alias = match &item.expr {
+            CypherExpr::Variable(alias) if names.contains(alias) => alias,
+            expression => {
+                let Some(index) = projection
+                    .items
+                    .iter()
+                    .position(|item| &item.expr == expression)
+                else {
+                    return Ok(NodeScanPlan::Unsupported(UnsupportedScan::Ordering));
+                };
+                &names[index]
+            }
         };
-        if !projection
-            .items
-            .iter()
-            .any(|item| item.alias.as_ref() == Some(alias))
-        {
-            return Ok(NodeScanPlan::Unsupported(UnsupportedScan::Ordering));
-        }
         ordering.push(
             Expr::Column(Column::from_name(alias.clone())).sort(!item.descending, item.descending),
         );

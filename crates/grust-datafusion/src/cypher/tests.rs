@@ -404,7 +404,7 @@ async fn implicit_projection_names_match_the_reference_contract() {
     .unwrap();
     let context = SessionContext::new();
     for (text, expected) in [
-        ("MATCH (n) RETURN n.x", "n.x"),
+        ("MATCH (n) RETURN n.x ORDER BY n.x DESC", "n.x"),
         ("MATCH (n) RETURN count(*)", "expr"),
     ] {
         let query = grust_cypher::parser::parse_query(text).unwrap();

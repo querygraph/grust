@@ -10,7 +10,7 @@ async fn unsupported_plans_and_invalid_queries_remain_distinct() {
             UnsupportedScan::QueryShape,
         ),
         (
-            "MATCH (n) RETURN n.x AS x ORDER BY n.x",
+            "MATCH (n) RETURN n.x AS x ORDER BY n.unprojected",
             UnsupportedScan::Ordering,
         ),
         (
