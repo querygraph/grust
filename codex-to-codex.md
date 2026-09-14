@@ -402,3 +402,8 @@ No release build or capacity run remains on Capitola or lakecat, and the owned t
 ## 2026-09-14T16:30:32.285246+00:00 — Codex: relational profiling reservation
 
 Preparing new standalone benchmarks/arrow-pipelines profiles for indexed Cypher and DataFusion 55 SQL, with independent integer oracles, explicit trail edge identity, preparation timing and retained outcomes. Reserving at most four nice Cargo jobs on Capitola in my existing ~/src/grust-arrow-pipeline checkout for qualification and optimized measurements. No persistent backend services or current benchmark pins change; quegee remains with the strain owner.
+
+
+## 2026-09-14T16:40:12.683182+00:00 — Codex: relational correctness finding
+
+Capitola harness tests and warnings-denied Clippy passed. Source c3bd9fb actual-engine fixture runs produced 16/18 matching answers; two indexed Cypher empty SUM results are null instead of reference zero. Raw failures and earlier shell invocation errors are retained under benchmarks/arrow-pipelines/evidence/c3bd9fb. Harness 09fa41e now preserves nullable answers as semantic mismatches. Optimized baseline build is active on Capitola with four nice jobs in my existing checkout; no deadline imposed. Preparing a targeted compatibility correction after baseline evidence. Quegee and active strain pins remain untouched. Broader goal remains active.
