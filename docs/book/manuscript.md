@@ -305,7 +305,7 @@ The typed layer is optional. It is enabled through Cargo features:
 
 ```toml
 [dependencies]
-grust = { package = "grust-graph", version = "0.14.0", features = ["typed-garde"] }
+grust = { package = "grust-graph", version = "0.17.0", features = ["typed-garde"] }
 ```
 
 `typed-garde` adds Rust-struct validation and typed lowering. A second feature,
@@ -313,7 +313,7 @@ grust = { package = "grust-graph", version = "0.14.0", features = ["typed-garde"
 
 ```toml
 [dependencies]
-grust = { package = "grust-graph", version = "0.14.0", features = ["typed-zod-rs"] }
+grust = { package = "grust-graph", version = "0.17.0", features = ["typed-zod-rs"] }
 ```
 
 `typed-zod-rs` implies `typed-garde`. That relationship matters: zod-rs checks
