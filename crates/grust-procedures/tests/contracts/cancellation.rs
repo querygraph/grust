@@ -67,3 +67,37 @@ fn repoll_replaces_the_waiter_waker() {
     assert_eq!(old.0.load(Ordering::Relaxed), 0);
     assert_eq!(new.0.load(Ordering::Relaxed), 1);
 }
+
+struct Reentrant {
+    execution: grust_procedures::ExecutionContext,
+    wakes: AtomicUsize,
+}
+impl Wake for Reentrant {
+    fn wake(self: Arc<Self>) {
+        // Wakers may call back into the context; cancellation must not hold its
+        // resource lock while invoking them.
+        self.execution.cancel().unwrap();
+        assert!(matches!(
+            self.execution.checkpoint(),
+            Err(grust_procedures::ProcedureError::Cancelled)
+        ));
+        self.wakes.fetch_add(1, Ordering::Relaxed);
+    }
+}
+
+#[test]
+fn cancellation_wakers_can_reenter_the_context() {
+    let execution = context(100);
+    let waiter = Arc::new(Reentrant {
+        execution: execution.clone(),
+        wakes: AtomicUsize::new(0),
+    });
+    let mut notification = execution.cancelled();
+    assert!(
+        Pin::new(&mut notification)
+            .poll(&mut Context::from_waker(&Waker::from(waiter.clone())))
+            .is_pending()
+    );
+    execution.cancel().unwrap();
+    assert_eq!(waiter.wakes.load(Ordering::Relaxed), 1);
+}
