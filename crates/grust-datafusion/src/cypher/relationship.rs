@@ -114,7 +114,7 @@ impl GraphSnapshot {
 
 fn rename(frame: DataFrame, binding: usize) -> Result<(DataFrame, Columns)> {
     let mut columns = BTreeMap::new();
-    let expressions = frame
+    let expressions: Vec<Expr> = frame
         .schema()
         .fields()
         .iter()
