@@ -6,6 +6,25 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ## Unreleased
 
+- `grust-lancedb` answers anchored reads (`get_node`, `get_nodes`,
+  `get_edges`, `traverse`, `traverse_ids`) from a resident read snapshot
+  instead of a filtered scan of the whole table per call. LanceDB keeps no
+  index on `from_id`/`to_id`, so each traversal step scanned the edge table
+  once per frontier node and the node table twice. The snapshot mirrors both
+  universal tables once per pair of table versions (node ids interned to
+  `u32`, out- and in-adjacency in scan order, props and edge ids kept as the
+  scanned Arrow strings) and is used only while both tables still report
+  the versions it was read at, so writes through this or another connection
+  are seen on the next read, as before. It is built on the second read at
+  unchanged versions, so a caller alternating writes and reads keeps the
+  direct scans. Results and their order are unchanged. `traverse_ids` is now
+  overridden and skips building nodes it would discard. The direct scans
+  remain behind `LanceDbGraphStore::with_read_snapshot(false)`.
+  On web-Google (875,713 nodes, 5,105,039 edges) a one-hop `traverse_ids`
+  took 0.373 s over the direct scans and 94 µs over the snapshot, which
+  builds in 1.8 s; the strain benchmark's A2 BFS (600,493 calls) goes from
+  about 62 hours to 57 s. Example: `anchored_reads`.
+
 ## 0.14.0 — Acorn — 2026-09-13
 
 - Indexed Cypher materializes a full graph for `CALL` only when the registered

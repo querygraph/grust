@@ -11,8 +11,33 @@ use lancedb::query::{ExecutableQuery, QueryBase};
 use lancedb::table::{CompactionOptions, OptimizeAction};
 use lancedb::{Connection, Error as LanceError, Table};
 
+mod snapshot;
 mod table_handles;
+use snapshot::ReadSnapshot;
 use table_handles::{TableHandles, TableLifecycle};
+
+/// The resident read snapshot and when to build it.
+#[derive(Default)]
+struct ReadCache {
+    current: RwLock<Option<Arc<ReadSnapshot>>>,
+    /// The table versions the last read saw without a current snapshot.
+    /// A snapshot is built on the second read at the same versions, so a
+    /// caller that alternates writes and reads keeps the direct scans
+    /// instead of rebuilding the mirror after every write.
+    seen: std::sync::Mutex<Option<(u64, u64)>>,
+    build: futures::lock::Mutex<()>,
+    disabled: std::sync::atomic::AtomicBool,
+}
+
+impl ReadCache {
+    fn invalidate(&self) {
+        *self
+            .current
+            .write()
+            .expect("LanceDB read cache lock poisoned") = None;
+        *self.seen.lock().expect("LanceDB read cache lock poisoned") = None;
+    }
+}
 
 #[derive(Clone, Debug)]
 pub struct LanceDbConfig {
@@ -47,6 +72,8 @@ pub struct LanceDbGraphStore {
     schema: Arc<RwLock<Option<GraphSchema>>>,
     /// Reusable table handles; lookup and local recreation share an async gate.
     handles: Arc<TableHandles>,
+    /// Anchored reads served from a mirror of the current table versions.
+    reads: Arc<ReadCache>,
 }
 
 impl LanceDbGraphStore {
@@ -69,11 +96,80 @@ impl LanceDbGraphStore {
             db,
             schema: Arc::new(RwLock::new(None)),
             handles: Arc::new(TableHandles::default()),
+            reads: Arc::new(ReadCache::default()),
         })
     }
 
     pub fn config(&self) -> &LanceDbConfig {
         &self.config
+    }
+
+    /// Whether reads may use the resident snapshot (the default). With it
+    /// off, every read is a filtered scan of the tables, as before the
+    /// snapshot existed; answers are the same either way. Applies to every
+    /// clone of this store.
+    pub fn with_read_snapshot(self, enabled: bool) -> Self {
+        self.reads
+            .disabled
+            .store(!enabled, std::sync::atomic::Ordering::Relaxed);
+        if !enabled {
+            self.reads.invalidate();
+        }
+        self
+    }
+
+    /// The snapshot of the tables' current versions, when there is one or
+    /// this is the second read at these versions. `None` sends the read to
+    /// the direct filtered scans.
+    async fn read_snapshot(&self) -> Result<Option<Arc<ReadSnapshot>>> {
+        if self
+            .reads
+            .disabled
+            .load(std::sync::atomic::Ordering::Relaxed)
+        {
+            return Ok(None);
+        }
+        let nodes = self.open_nodes().await?;
+        let edges = self.open_edges().await?;
+        let version = |table: Table| async move {
+            table.version().await.map_err(|err| {
+                GrustError::Backend(format!("failed to read LanceDB table version: {err}"))
+            })
+        };
+        let versions = (version(nodes.clone()).await?, version(edges.clone()).await?);
+        let current = || {
+            self.reads
+                .current
+                .read()
+                .expect("LanceDB read cache lock poisoned")
+                .clone()
+                .filter(|snapshot| snapshot.versions == versions)
+        };
+        if let Some(snapshot) = current() {
+            return Ok(Some(snapshot));
+        }
+        {
+            let mut seen = self
+                .reads
+                .seen
+                .lock()
+                .expect("LanceDB read cache lock poisoned");
+            if *seen != Some(versions) {
+                *seen = Some(versions);
+                return Ok(None);
+            }
+        }
+        let _building = self.reads.build.lock().await;
+        if let Some(snapshot) = current() {
+            return Ok(Some(snapshot));
+        }
+        let snapshot = Arc::new(ReadSnapshot::build(&nodes, &edges, versions).await?);
+        *self
+            .reads
+            .current
+            .write()
+            .expect("LanceDB read cache lock poisoned") = Some(snapshot.clone());
+        Ok(Some(snapshot))
     }
 
     fn nodes_table_name(&self) -> String {
@@ -328,6 +424,9 @@ impl GraphStore for LanceDbGraphStore {
     }
 
     async fn get_node(&self, id: &NodeId) -> Result<Option<Node>> {
+        if let Some(snapshot) = self.read_snapshot().await? {
+            return snapshot.get_node(id);
+        }
         Ok(self
             .query_nodes(Some(format!("id = {}", sql_str(id.as_str()))), Some(1))
             .await?
@@ -339,6 +438,43 @@ impl GraphStore for LanceDbGraphStore {
         if ids.is_empty() {
             return Ok(Vec::new());
         }
+        if let Some(snapshot) = self.read_snapshot().await? {
+            return snapshot.get_nodes(ids);
+        }
+        self.scan_nodes_by_id(ids).await
+    }
+
+    async fn get_edges(&self, query: EdgeQuery) -> Result<Vec<Edge>> {
+        if let Some(snapshot) = self.read_snapshot().await? {
+            return snapshot.get_edges(&query);
+        }
+        self.query_edges(edge_query_filter(query)).await
+    }
+
+    async fn traverse(&self, traversal: Traversal) -> Result<Vec<Node>> {
+        if let Some(snapshot) = self.read_snapshot().await? {
+            return snapshot.nodes_at(&snapshot.traverse_rows(&traversal)?);
+        }
+        self.scan_traverse(traversal).await
+    }
+
+    async fn traverse_ids(&self, traversal: Traversal) -> Result<Vec<NodeId>> {
+        if let Some(snapshot) = self.read_snapshot().await? {
+            return Ok(snapshot.ids_at(&snapshot.traverse_rows(&traversal)?));
+        }
+        Ok(self
+            .scan_traverse(traversal)
+            .await?
+            .into_iter()
+            .map(|node| node.id)
+            .collect())
+    }
+}
+
+/// The direct paths: filtered scans of the tables, used when no snapshot
+/// of the current versions is resident.
+impl LanceDbGraphStore {
+    async fn scan_nodes_by_id(&self, ids: &[NodeId]) -> Result<Vec<Node>> {
         let ids = ids
             .iter()
             .map(|id| sql_str(id.as_str()))
@@ -347,11 +483,7 @@ impl GraphStore for LanceDbGraphStore {
         self.query_nodes(Some(format!("id IN ({ids})")), None).await
     }
 
-    async fn get_edges(&self, query: EdgeQuery) -> Result<Vec<Edge>> {
-        self.query_edges(edge_query_filter(query)).await
-    }
-
-    async fn traverse(&self, traversal: Traversal) -> Result<Vec<Node>> {
+    async fn scan_traverse(&self, traversal: Traversal) -> Result<Vec<Node>> {
         let start_limit = match &traversal.start {
             Start::NodesByProperty { .. } => None,
             _ => traversal.limit,
@@ -387,7 +519,11 @@ impl GraphStore for LanceDbGraphStore {
             }
 
             let next_ids = next_ids.into_iter().collect::<Vec<_>>();
-            let mut next = self.get_nodes(&next_ids).await?;
+            let mut next = if next_ids.is_empty() {
+                Vec::new()
+            } else {
+                self.scan_nodes_by_id(&next_ids).await?
+            };
             next.retain(|node| step.node.as_ref().is_none_or(|label| label == &node.label));
             if let Some(limit) = traversal.limit {
                 next.truncate(limit as usize);
