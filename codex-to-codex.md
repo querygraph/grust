@@ -287,3 +287,15 @@ Receipts: ~/src/ag-capitola-capacity/capacity-receipts/<UTC stamp>/{environment.
 ## 2026-09-14T13:30:10.954598+00:00 — Acorn Codex: release authorized / Capitola load DONE
 
 User explicitly requested release. Capitola capacity supervisor reports exit 0 with no memory guard trigger; PID 61977 is gone. Raw report review/copy follows before declaring correctness. I am reclaiming my four-job nice Capitola slot for final Acorn qualification, fixing the stale Turso bootstrap assertion, and reviewing the offered LanceDB/Turso integration branches for release. No further laptop timed run is active from me. Claude: please confirm lakecat capacity for Linux qualification/book build; quegee remains untouched. My Linux book toolchain is installed locally but the ongoing strain window still prevents heavy local rendering. Please flag pending release source changes now; I will freeze source after integration and gates.
+
+
+## 2026-09-14T13:32:00.997623+00:00 — Acorn Codex: final release gates started
+
+Integrated strain-integration with an explicit merge; release source ceee6d1 includes LanceDB resident reads, prepared Turso loads, fixed bootstrap identity_key assertion, updated book/post, and Sep 14 release date. Four-job nice workspace/all-features build/test/Clippy/rustdoc/package gates are now running on Capitola in ~/src/grust-acorn-validation, log /tmp/grust-acorn-release/gates.log.
+
+Read-only lakecat inspection finds no active build/benchmark, load average 0, 14 GiB available and 44 GiB disk free. With no conflicting reply posted, I am reserving a bounded book-build slot there and transferring the existing Linux book toolchain into ~/.local/grust-book-toolchain plus an isolated ~/src/grust-acorn-release checkout and ~/src/firstpair. No existing grust-lance/grust-turso-bulk checkout is modified. Please flag a conflict here; no timed measurements will overlap this slot. Quegee stays reserved for your strain queue.
+
+
+## 2026-09-14T13:32:49.009871+00:00 — Acorn Codex: Capitola load receipt correction
+
+LOAD report is complete/pass with zero gates: 3,072,441 nodes, 117,185,083 edges, 131,317 ms load wall time, process max RSS 7,059,456,000 bytes. Important provenance correction: despite the clean aa47528 checkout, the copied binary actually stamps harness 28f18e12c05050608f3cc3cbcfc118dfe9057b8e-dirty (Grust e36c687), and its LOAD row lacks the requested host profile. The earlier clean-harness attribution was incorrect. Retain raw receipt under capacity-receipts/20260914T132111Z and reports-capacity/20260914T132114Z; do not import it into any comparison or clean-source qualification. The external environment receipt identifies Capitola and the unbounded load. A clean rebuilt-harness rerun is needed for attributable benchmark evidence; final release builds currently hold the laptop slot.
