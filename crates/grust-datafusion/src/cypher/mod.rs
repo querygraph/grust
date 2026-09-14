@@ -13,7 +13,7 @@ mod projection;
 mod result;
 pub use collect::collect_result;
 pub use planner::{PlanKind, QueryPlan};
-pub use result::decode_result_batch;
+pub use result::{decode_result_batch, decode_result_batch_with_context};
 mod relationship;
 mod scan;
 mod trail;

@@ -6,6 +6,10 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ## Unreleased
 
+- Add shared-context admission before portable DataFusion result decoding,
+  charging cumulative logical copy bytes for the actual Arrow slice before
+  allocating row values and strings. Full operator accounting remains separate.
+
 ## 0.18.0 — Ostracod — 2026-09-14
 
 - Admit native Arrow graph row counts and exact serialized bytes through the

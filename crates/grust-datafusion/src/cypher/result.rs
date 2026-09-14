@@ -19,7 +19,12 @@ use grust_cypher::CypherResultTable;
 /// and complete serialized output size; this conversion does not implement the
 /// Cypher read policy. Prefer retaining native batches for Arrow/ADBC consumers.
 pub fn decode_result_batch(batch: &RecordBatch) -> Result<CypherResultTable> {
-    let columns = batch
+    let columns = validated_columns(batch)?;
+    Ok(decode_validated(batch, &columns))
+}
+
+fn validated_columns(batch: &RecordBatch) -> Result<Vec<Values<'_>>> {
+    batch
         .columns()
         .iter()
         .map(|array| {
@@ -49,8 +54,11 @@ pub fn decode_result_batch(batch: &RecordBatch) -> Result<CypherResultTable> {
                 _ => Err(invalid()),
             }
         })
-        .collect::<Result<Vec<_>>>()?;
-    Ok(CypherResultTable {
+        .collect()
+}
+
+fn decode_validated(batch: &RecordBatch, columns: &[Values<'_>]) -> CypherResultTable {
+    CypherResultTable {
         columns: batch
             .schema()
             .fields()
@@ -60,7 +68,7 @@ pub fn decode_result_batch(batch: &RecordBatch) -> Result<CypherResultTable> {
         rows: (0..batch.num_rows())
             .map(|row| columns.iter().map(|column| column.value(row)).collect())
             .collect(),
-    })
+    }
 }
 
 enum Values<'a> {
@@ -79,4 +87,53 @@ impl Values<'_> {
             _ => Value::Null,
         }
     }
+}
+
+/// Decode after charging cumulative logical copy bytes to the shared execution.
+/// Charges column-name storage, row containers, values and non-null UTF-8 bytes
+/// from this batch's slice before allocating the portable table. The small
+/// column-validation descriptors, Arrow input and allocator overhead are outside
+/// this logical-copy measure. Charges remain consumed after the table is dropped.
+/// This is materialization admission, not complete query/operator accounting.
+pub fn decode_result_batch_with_context(
+    batch: &RecordBatch,
+    execution: &grust_procedures::ExecutionContext,
+) -> Result<CypherResultTable> {
+    execution.checkpoint().map_err(execution_error)?;
+    let columns = validated_columns(batch)?;
+    let overflow = || DataFusionError::Execution("Cypher result copy size overflow".into());
+    let add = |a: usize, b: usize| a.checked_add(b).ok_or_else(overflow);
+    let row_bytes = batch
+        .num_columns()
+        .checked_mul(std::mem::size_of::<Value>())
+        .and_then(|bytes| bytes.checked_add(std::mem::size_of::<Vec<Value>>()))
+        .ok_or_else(overflow)?;
+    let mut bytes = batch
+        .num_rows()
+        .checked_mul(row_bytes)
+        .ok_or_else(overflow)?;
+    for field in batch.schema().fields() {
+        bytes = add(bytes, std::mem::size_of::<String>())?;
+        bytes = add(bytes, field.name().len())?;
+    }
+    for column in &columns {
+        if let Values::String(values) = column {
+            for row in 0..values.len() {
+                if row % 1024 == 0 {
+                    execution.checkpoint().map_err(execution_error)?;
+                }
+                if !values.is_null(row) {
+                    bytes = add(bytes, values.value(row).len())?;
+                }
+            }
+        }
+    }
+    execution
+        .charge_cumulative_memory(bytes)
+        .map_err(execution_error)?;
+    Ok(decode_validated(batch, &columns))
+}
+
+fn execution_error(error: grust_procedures::ProcedureError) -> DataFusionError {
+    DataFusionError::External(Box::new(error))
 }

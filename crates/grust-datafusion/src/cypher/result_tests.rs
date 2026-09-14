@@ -61,3 +61,41 @@ fn decoding_does_not_coerce_unsupported_result_types() {
     .unwrap();
     assert!(decode_result_batch(&batch).is_err());
 }
+
+#[test]
+fn admitted_decoding_charges_only_the_slice_and_retains_cumulative_usage() {
+    use grust_procedures::{ExecutionContext, ExecutionLimits};
+    let batch = RecordBatch::try_new(
+        Arc::new(Schema::new(vec![Field::new("s", DataType::Utf8, true)])),
+        vec![Arc::new(StringArray::from(vec![
+            Some("outside"),
+            Some("λ"),
+            None,
+            Some(""),
+        ]))],
+    )
+    .unwrap()
+    .slice(1, 3);
+    let bytes = std::mem::size_of::<String>()
+        + 1
+        + 3 * (std::mem::size_of::<Vec<Value>>() + std::mem::size_of::<Value>())
+        + 2;
+    let context = |memory_bytes| {
+        ExecutionContext::new(ExecutionLimits {
+            memory_bytes,
+            work_units: 0,
+            batch_rows: 1024,
+            deadline: None,
+        })
+        .unwrap()
+    };
+    let exact = context(bytes);
+    let table = decode_result_batch_with_context(&batch, &exact).unwrap();
+    assert_eq!(table, decode_result_batch(&batch).unwrap());
+    drop(table);
+    assert!(decode_result_batch_with_context(&batch, &exact).is_err());
+    assert!(decode_result_batch_with_context(&batch, &context(bytes - 1)).is_err());
+    let cancelled = context(bytes);
+    cancelled.cancel().unwrap();
+    assert!(decode_result_batch_with_context(&batch, &cancelled).is_err());
+}
