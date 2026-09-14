@@ -3,7 +3,7 @@ use super::lower_expression;
 use datafusion::{
     common::{Column, DataFusionError, Result},
     dataframe::DataFrame,
-    functions_aggregate::expr_fn::count,
+    functions_aggregate::expr_fn::{count, count_distinct},
     logical_expr::{Expr, lit},
 };
 use grust_cypher::ast::{Clause, Expr as CypherExpr, Query};
@@ -53,15 +53,32 @@ pub fn lower_node_scan(query: &Query, input: DataFrame) -> Result<Option<DataFra
         };
         if let CypherExpr::Function {
             name,
-            distinct: false,
-            star: true,
+            distinct,
+            star,
             args,
         } = &item.expr
         {
-            if !name.eq_ignore_ascii_case("count") || !args.is_empty() {
+            if !name.eq_ignore_ascii_case("count") {
                 return Ok(None);
             }
-            aggregates.push(count(lit(1_i64)).alias(alias));
+            let expression = match (*star, args.as_slice()) {
+                (true, []) if !*distinct => lit(1_i64),
+                (false, [argument]) => {
+                    let Ok(expression) = lower_expression(argument, variable, schema) else {
+                        return Ok(None);
+                    };
+                    expression
+                }
+                _ => return Ok(None),
+            };
+            aggregates.push(
+                if *distinct {
+                    count_distinct(expression)
+                } else {
+                    count(expression)
+                }
+                .alias(alias),
+            );
         } else {
             let Ok(expression) = lower_expression(&item.expr, variable, schema) else {
                 return Ok(None);

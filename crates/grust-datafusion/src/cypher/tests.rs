@@ -279,3 +279,50 @@ async fn grouped_counts_preserve_null_groups_and_projection_order() {
         assert_eq!(actual, expected);
     }
 }
+
+#[tokio::test]
+async fn count_expression_ignores_nulls_and_distinct_removes_duplicates() {
+    use datafusion::{
+        arrow::array::{Int64Array, RecordBatch},
+        execution::context::SessionContext,
+    };
+    for values in [
+        vec![],
+        vec![None, None],
+        vec![None, Some(1), Some(1), Some(2)],
+    ] {
+        let expected_count = values.iter().flatten().count() as i64;
+        let expected_distinct = values
+            .iter()
+            .flatten()
+            .collect::<std::collections::BTreeSet<_>>()
+            .len() as i64;
+        let batch = RecordBatch::try_from_iter([(
+            "property.x",
+            std::sync::Arc::new(Int64Array::from(values)) as datafusion::arrow::array::ArrayRef,
+        )])
+        .unwrap();
+        let context = SessionContext::new();
+        let query = grust_cypher::parser::parse_query(
+            "MATCH (n) RETURN count(n.x) AS count, count(DISTINCT n.x) AS unique",
+        )
+        .unwrap();
+        let batches = lower_node_scan(&query, context.read_batch(batch).unwrap())
+            .unwrap()
+            .unwrap()
+            .collect()
+            .await
+            .unwrap();
+        for (column, expected) in [expected_count, expected_distinct].into_iter().enumerate() {
+            assert_eq!(
+                batches[0]
+                    .column(column)
+                    .as_any()
+                    .downcast_ref::<Int64Array>()
+                    .unwrap()
+                    .value(0),
+                expected
+            );
+        }
+    }
+}
