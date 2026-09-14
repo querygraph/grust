@@ -3,8 +3,10 @@ mod aggregate;
 pub use aggregate::lower_aggregate_with_bindings;
 mod bindings;
 pub use bindings::ExpressionBindings;
+mod relationship;
 mod scan;
 mod snapshot;
+pub use relationship::{GraphBindings, RelationshipPlan};
 pub use scan::{
     NodeScanPlan, UnsupportedScan, lower_node_scan, lower_node_scan_with_parameters, plan_node_scan,
 };
@@ -194,3 +196,6 @@ mod binding_tests;
 
 #[cfg(test)]
 mod snapshot_tests;
+
+#[cfg(test)]
+mod relationship_tests;
