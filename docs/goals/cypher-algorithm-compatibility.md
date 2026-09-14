@@ -85,6 +85,8 @@ The initial [relational fixture receipts](../../benchmarks/arrow-pipelines/evide
 found two empty-SUM mismatches at c3bd9fb: indexed Cypher returned null, while the
 independent oracle and DataFusion query returned zero. The correction covers
 materialized and streaming aggregate implementations, with empty, all-null,
-DISTINCT and grouping regression cases. Qualification and release are pending;
-the original failures remain immutable evidence. This does not establish general
+DISTINCT and grouping regression cases. Copepod 0.15.1 delivered this correction: all 54 optimized fixture checks
+passed, alongside full workspace qualification and registry archive verification.
+See [release receipts](../releases/copepod/validation.json); the original failures
+remain immutable evidence. This does not establish general
 numeric or aggregate compatibility.

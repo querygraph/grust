@@ -38,6 +38,14 @@ The [Cypher and algorithm compatibility inventory](cypher-algorithm-compatibilit
 tracks reference versions, remaining semantic qualification, backend execution
 classes and required independent conformance evidence.
 
+Copepod 0.15.1 subsequently corrected empty Cypher sums and shared immutable
+candidate bindings in the portable executor. All 54 optimized fixture checks
+passed; before/after source-pinned profiles retain every observation and memory
+boundary. [Release receipts](../releases/copepod/validation.json) include 1,556
+passing workspace tests, package/archive verification, book and registry delivery.
+This incremental release does not close the broader compatibility inventory or
+complete automatic Cypher-to-DataFusion execution.
+
 ## DataFusion foundation and evaluation
 
 User constraint: evaluate **DataFusion 55 only**. Do not select another
