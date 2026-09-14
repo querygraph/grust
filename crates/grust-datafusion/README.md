@@ -16,10 +16,9 @@ with `grust-arrow` and uses upstream DataFrames, providers and result streams.
   consumers on an ordinary or blocking thread. It needs a caller-owned live
   Tokio runtime; it introduces no hidden worker or prefetch queue.
 
-This is relational SQL execution, not a second Cypher interpreter or a rewrite
-of graph kernels as joins. Cypher lowering must separately preserve null,
-identity, multiplicity, ordering and numeric semantics before selecting this
-execution path. SDKs using older DataFusion/Arrow versions keep their native
+The optional Cypher bridge lowers the existing AST into typed plans. Its admitted
+scalar domains preserve null, identity, multiplicity, ordering and exact Int64
+semantics. SDKs using older DataFusion/Arrow versions keep their native
 execution paths until a separately verified compatible adapter is available.
 
 Working-memory pools are not RSS caps and upstream does not account for every
@@ -59,7 +58,7 @@ async fn query() -> Result<(), Box<dyn std::error::Error>> {
 }
 ```
 
-## Cypher lowering under development
+## Explicit Cypher execution
 
 The optional `cypher` feature exposes typed expression and single-node scan
 lowering through `cypher::lower_node_scan_with_parameters`. Supply the existing

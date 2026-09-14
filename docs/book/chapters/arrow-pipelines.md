@@ -146,7 +146,7 @@ compatibility and testing contracts. Reproducible pipeline benchmarks measure
 native slicing, explicit IPC boundaries and graph validation separately from
 backend load and algorithm timings.
 
-## Typed Cypher execution under development
+## Typed Cypher execution
 
 Combining facade features `cypher` and `datafusion` enables the bridge at
 `grust::datafusion::cypher`. Direct consumers can enable `grust-datafusion`
@@ -155,7 +155,7 @@ bridge over native Arrow graph tables. `GraphSnapshot::execute` accepts Cypher
 text, parameters and `OutputLimits`; it uses the existing parser and semantic
 analyzer, builds DataFusion 55 expressions directly, and returns an ordinary
 `CypherResultTable`. No SQL text or intermediate row-oriented graph is generated.
-This surface is unreleased. Ordinary Cypher entrypoints do not yet select it
+Isopod 0.17.0 adds this explicit surface. Ordinary Cypher entrypoints do not yet select it
 automatically, and it does not implement the complete bounded read policy.
 
 ### Snapshot and composition
@@ -217,7 +217,7 @@ DataFusion's working-memory pool and these output checks do not enforce Cypher's
 candidate-work, intermediate-copy, query/input or deadline contracts. Automatic
 selection remains pending until those boundaries and measured cost decisions
 are integrated. The completed scan profile reports conversion/preparation costs
-separately; join throughput is not yet qualified. Passing explicit execution
+separately; the parallel-ring path profile also retains preparation and admission boundaries. Passing explicit execution
 tests does not establish backend-wide speed or resource-policy parity.
 
 `RelationshipPlan::join_trail` composes plans through shared node bindings and
@@ -231,4 +231,5 @@ Fixed-length paths reuse the shared RETURN and predicate compilers after trail
 composition. Labels, relationship types, inline maps and repeated nodes constrain
 the complete path, with physical edge uniqueness across all segments. Direction
 may differ per segment. Variable-length bounds and named path values remain
-unsupported; path execution costs still need measurement.
+unsupported; the pinned parallel-ring profile measures two- and three-hop execution with
+separate preparation costs; it is not a general routing threshold.

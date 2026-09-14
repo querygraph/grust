@@ -6,9 +6,11 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ## Unreleased
 
+## 0.17.0 — Isopod — 2026-09-14
+
 - Preserve exact Int64 ordering in portable Cypher comparisons, including
   adjacent values beyond Float64 integer precision.
-- Begin optional DataFusion 55 lowering of typed Cypher scalar predicates and
+- Add optional DataFusion 55 lowering of typed Cypher scalar predicates and
   single-node scans, scalar parameters, inline property maps, identity,
   count/grouping, integer/string extrema, ordering and pagination. Typed planner
   decisions preserve unsupported outcomes separately from semantic errors.
