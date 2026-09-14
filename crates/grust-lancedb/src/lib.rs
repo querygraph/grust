@@ -8,14 +8,37 @@ use arrow::record_batch::{RecordBatch, RecordBatchIterator};
 use async_trait::async_trait;
 use futures::TryStreamExt;
 use grust_core::prelude::*;
+use lancedb::index::Index;
+use lancedb::index::scalar::BTreeIndexBuilder;
 use lancedb::query::{ExecutableQuery, QueryBase};
 use lancedb::table::{CompactionOptions, OptimizeAction};
 use lancedb::{Connection, Error as LanceError, Table};
 
 mod snapshot;
 mod table_handles;
+mod write_queue;
 use snapshot::ReadSnapshot;
 use table_handles::{TableHandles, TableLifecycle};
+use write_queue::WriteQueue;
+
+/// Lance keeps one index cache and one metadata cache per session. Their
+/// defaults (6 GiB and 1 GiB) are budgets, not what a graph store needs: the
+/// only indices are the merge-key B-trees, and the metadata cache holds a
+/// manifest per table version, which a long run of small writes piles up.
+const INDEX_CACHE_BYTES: usize = 512 * 1024 * 1024;
+const METADATA_CACHE_BYTES: usize = 128 * 1024 * 1024;
+
+/// Single-row commits to a table between compactions of their fragments.
+const COMPACT_EVERY_COMMITS: u64 = 64;
+
+/// Single-row writes queued per universal table (see `write_queue`).
+#[derive(Default)]
+struct Writes {
+    nodes: WriteQueue<Node>,
+    edges: WriteQueue<Edge>,
+    node_commits: std::sync::atomic::AtomicU64,
+    edge_commits: std::sync::atomic::AtomicU64,
+}
 
 /// The resident read snapshot and when to build it.
 #[derive(Default)]
@@ -43,6 +66,30 @@ impl ReadCache {
             .write()
             .expect("LanceDB read cache lock poisoned") = None;
         *self.seen.lock().expect("LanceDB read cache lock poisoned") = None;
+    }
+
+    /// Free a snapshot no read can use any more: its versions are behind the
+    /// tables'. Only an invalidation (recreated tables) moves the generation.
+    fn release_stale(&self, versions: (u64, u64)) {
+        let mut current = self
+            .current
+            .write()
+            .expect("LanceDB read cache lock poisoned");
+        if current
+            .as_ref()
+            .is_some_and(|(_, snapshot)| snapshot.versions != versions)
+        {
+            *current = None;
+        }
+    }
+
+    /// This store just committed a write, so whatever snapshot is resident
+    /// describes versions the tables have left behind.
+    fn release_after_write(&self) {
+        *self
+            .current
+            .write()
+            .expect("LanceDB read cache lock poisoned") = None;
     }
 }
 
@@ -81,15 +128,23 @@ pub struct LanceDbGraphStore {
     handles: Arc<TableHandles>,
     /// Anchored reads served from a mirror of the current table versions.
     reads: Arc<ReadCache>,
+    /// Concurrent single-row writes through clones of this store.
+    writes: Arc<Writes>,
 }
 
 impl LanceDbGraphStore {
     pub async fn connect(config: LanceDbConfig) -> Result<Self> {
         validate_table_prefix(&config.table_prefix)?;
+        let session = lancedb::Session::new(
+            INDEX_CACHE_BYTES,
+            METADATA_CACHE_BYTES,
+            Arc::new(lancedb::ObjectStoreRegistry::default()),
+        );
         let db = lancedb::connect(&config.uri)
             // Reusing handles must preserve visibility of writes through other
             // connections. This still checks the latest manifest on each read.
             .read_consistency_interval(std::time::Duration::ZERO)
+            .session(Arc::new(session))
             .execute()
             .await
             .map_err(|err| {
@@ -104,6 +159,7 @@ impl LanceDbGraphStore {
             schema: Arc::new(RwLock::new(None)),
             handles: Arc::new(TableHandles::default()),
             reads: Arc::new(ReadCache::default()),
+            writes: Arc::new(Writes::default()),
         })
     }
 
@@ -162,6 +218,7 @@ impl LanceDbGraphStore {
         if let Some(snapshot) = current() {
             return Ok(Some(snapshot));
         }
+        self.reads.release_stale(versions);
         {
             let mut seen = self
                 .reads
@@ -205,6 +262,58 @@ impl LanceDbGraphStore {
             .await
             .map(|_| ())
             .map_err(|err| GrustError::Backend(format!("LanceDB compaction failed: {err}")))
+    }
+
+    /// Give the table a B-tree on its merge key, or fold rows written since
+    /// into the one it has. With it, a `merge_insert` looks its rows' keys
+    /// up instead of joining them against a scan of the whole table, which
+    /// held every key of the table in memory once per concurrent write and
+    /// made each single-row write cost a full scan. Only fragments written
+    /// after the last index update are still scanned. An empty table is left
+    /// unindexed; its first bulk load indexes it.
+    async fn index_merge_key(table: &Table, column: &str) -> Result<()> {
+        let failed =
+            |err: LanceError| GrustError::Backend(format!("LanceDB {column} index failed: {err}"));
+        let indexed = table
+            .list_indices()
+            .await
+            .map_err(failed)?
+            .iter()
+            .any(|index| index.columns == [column]);
+        if indexed {
+            table
+                .optimize(OptimizeAction::Index(Default::default()))
+                .await
+                .map_err(failed)?;
+        } else if table.count_rows(None).await.map_err(failed)? > 0 {
+            table
+                .create_index(&[column], Index::BTree(BTreeIndexBuilder::default()))
+                .execute()
+                .await
+                .map_err(failed)?;
+        }
+        Ok(())
+    }
+
+    /// Every `COMPACT_EVERY_COMMITS` single-row commits to a table, merge the
+    /// small fragments they left. Each commit adds one, and every later
+    /// `merge_insert` scans all fragments its key index does not cover, so
+    /// per-commit time otherwise grows with the number of writes (13 ms to
+    /// 91 ms over A4's 3,200 hub writes on web-Google; 10–25 ms with this).
+    /// The write that triggers it has already committed, so a failed or
+    /// conflicting compaction is left for the next one.
+    async fn compact_now_and_then(table: &Table, commits: &std::sync::atomic::AtomicU64) {
+        let n = commits.fetch_add(1, std::sync::atomic::Ordering::Relaxed) + 1;
+        if n.is_multiple_of(COMPACT_EVERY_COMMITS) {
+            let _ = Self::compact(table).await;
+        }
+    }
+
+    /// The bulk paths' last step: merge the small files the load left, then
+    /// index the merge key.
+    async fn finish_bulk_load(table: &Table, key: &str) -> Result<()> {
+        Self::compact(table).await?;
+        Self::index_merge_key(table, key).await
     }
 
     async fn open_table(&self, name: &str) -> Result<Table> {
@@ -260,8 +369,21 @@ impl LanceDbGraphStore {
         if nodes.is_empty() {
             return Ok(());
         }
-        let table = self.open_nodes().await?;
-        Self::merge_nodes_into(&table, nodes).await
+        let apply = |rows: Vec<Node>| async move {
+            let table = self.open_nodes().await?;
+            Self::merge_nodes_into(&table, &rows).await?;
+            self.reads.release_after_write();
+            Self::compact_now_and_then(&table, &self.writes.node_commits).await;
+            Ok(())
+        };
+        self.writes
+            .nodes
+            .submit(
+                nodes.to_vec(),
+                |node| Ok(node.id.as_str().to_owned()),
+                apply,
+            )
+            .await
     }
 
     /// Write into a table the caller already opened. A bulk load opens each
@@ -287,8 +409,17 @@ impl LanceDbGraphStore {
         if edges.is_empty() {
             return Ok(());
         }
-        let table = self.open_edges().await?;
-        Self::merge_edges_into(&table, edges).await
+        let apply = |rows: Vec<Edge>| async move {
+            let table = self.open_edges().await?;
+            Self::merge_edges_into(&table, &rows).await?;
+            self.reads.release_after_write();
+            Self::compact_now_and_then(&table, &self.writes.edge_commits).await;
+            Ok(())
+        };
+        self.writes
+            .edges
+            .submit(edges.to_vec(), checked_edge_key, apply)
+            .await
     }
 
     async fn merge_edges_into(table: &Table, edges: &[Edge]) -> Result<()> {
@@ -393,7 +524,8 @@ impl GraphStore for LanceDbGraphStore {
         // files the load leaves behind merged afterwards.
         let batch_size = self.config.bulk_batch_size.max(1);
         let mut report = LoadReport::default();
-        let mut touched: Vec<Table> = Vec::new();
+        // Each table the load wrote, with its merge key.
+        let mut touched: Vec<(Table, &str)> = Vec::new();
 
         if !graph.nodes.is_empty() {
             let nodes_table = self.open_nodes().await?;
@@ -409,8 +541,8 @@ impl GraphStore for LanceDbGraphStore {
                 }
                 report.nodes += chunk.len();
             }
-            touched.push(nodes_table);
-            touched.extend(typed.into_iter().map(|(_, table)| table));
+            touched.push((nodes_table, "id"));
+            touched.extend(typed.into_iter().map(|(_, table)| (table, "id")));
         }
 
         if !graph.edges.is_empty() {
@@ -427,13 +559,14 @@ impl GraphStore for LanceDbGraphStore {
                 }
                 report.edges += chunk.len();
             }
-            touched.push(edges_table);
-            touched.extend(typed.into_iter().map(|(_, table)| table));
+            touched.push((edges_table, "key"));
+            touched.extend(typed.into_iter().map(|(_, table)| (table, "key")));
         }
 
-        for table in &touched {
-            Self::compact(table).await?;
+        for (table, key) in &touched {
+            Self::finish_bulk_load(table, key).await?;
         }
+        self.reads.release_after_write();
         Ok(report)
     }
 

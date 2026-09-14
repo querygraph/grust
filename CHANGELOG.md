@@ -6,6 +6,31 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ## Unreleased
 
+- LanceDB no longer grows its resident set under concurrent single-row
+  writes. Every `put_node`/`put_edge` is a `merge_insert` keyed on `id` or
+  `key`; with no index on that column Lance joined each write's row against
+  a scan of the whole table, holding every key once per concurrent write. On
+  web-Google the adversarial-graph A4 family (16 writers × 200 hub edges on
+  one store) took the process from 2.1 GiB to 8.0 GiB and 2,042 s; on
+  GAP-road it passed the 34 GiB guard as A4 began. Bulk loads (`put_graph`,
+  `load_arrow`) now finish by giving each table a B-tree on its merge key, or
+  folding new rows into the one it has, so a write looks its keys up and
+  scans only fragments written since.
+- Concurrent `put_node`/`put_edge` calls through clones of one store are
+  group-committed: one caller commits every row queued meanwhile as one
+  `merge_insert`, callers still return only once their rows are durable, a
+  failed commit fails every caller it carried (with the same message), and
+  rows queued twice under one key keep the last. Every 64 such commits the
+  table's small fragments are compacted. The write that triggers it has
+  already committed, so a failed compaction is left for the next one.
+- A resident read snapshot is dropped as soon as this store writes, or a
+  read finds the tables have moved on, instead of staying alive until the
+  next snapshot replaces it.
+- Each connection's Lance session caps its index cache at 512 MiB and its
+  metadata cache at 128 MiB (Lance's defaults are 6 GiB and 1 GiB).
+- On web-Google, A4 now runs in 15 s at a flat 2.0 GiB. Answers are
+  unchanged; LanceDB stays the source of truth.
+
 ## 0.15.0 — Gooseneck — 2026-09-14
 
 - Shared Arrow pipelines now serve LanceDB, Sail, Ladybug and the optional
