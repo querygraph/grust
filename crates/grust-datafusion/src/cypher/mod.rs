@@ -4,9 +4,11 @@ pub use aggregate::lower_aggregate_with_bindings;
 mod bindings;
 pub use bindings::ExpressionBindings;
 mod scan;
+mod snapshot;
 pub use scan::{
     NodeScanPlan, UnsupportedScan, lower_node_scan, lower_node_scan_with_parameters, plan_node_scan,
 };
+pub use snapshot::{EDGE_ORDINAL, GraphSnapshot};
 
 use datafusion::{
     arrow::datatypes::{DataType, Schema},
@@ -189,3 +191,6 @@ mod planning_tests;
 
 #[cfg(test)]
 mod binding_tests;
+
+#[cfg(test)]
+mod snapshot_tests;
