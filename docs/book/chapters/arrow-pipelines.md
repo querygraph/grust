@@ -181,8 +181,8 @@ cases. Boolean AND/OR/XOR truth tables are checked through actual execution.
 The unreleased `ExpressionBindings` contract resolves multiple graph variables
 to typed physical expressions. Scalar and aggregate lowering share that
 resolver, including missing-property nulls and explicit unknown-binding errors.
-Callers can prepare inputs with multiple bindings; relationship-pattern join
-planning is still pending.
+Callers can prepare inputs with multiple bindings; the directed one-hop planner
+uses the same resolver.
 
 The unreleased `cypher::GraphSnapshot` captures immutable validated node/edge
 providers directly, independent of session catalog replacement. It adds a UInt64
@@ -197,5 +197,8 @@ DataFusion endpoint joins for distinct source, relationship and target bindings.
 Its `RelationshipPlan` exposes typed binding resolution for projection, filters
 and aggregates, plus the snapshot-scoped relationship ordinal. Parallel edges
 and loops survive; isolates produce no directed relationship rows. This is a
-composable operator; parsed relationship-pattern lowering, repeated variables,
+composable operator. `plan_relationship_scan` lowers parsed incoming/outgoing
+one-hop patterns with named distinct bindings, node labels, relationship types
+and WHERE. It shares RETURN projection, aggregation, DISTINCT, sorting and
+pagination with node scans. Relationship inline maps, repeated variables,
 optional matches and automatic execution selection remain outstanding.

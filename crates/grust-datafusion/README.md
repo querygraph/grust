@@ -83,7 +83,7 @@ requires these boundaries to be integrated and qualified before route selection.
 `ExpressionBindings` resolves graph variables to typed physical expressions.
 `lower_expression_with_bindings` and `lower_aggregate_with_bindings` share this
 contract so caller-prepared inputs with multiple bindings reuse scalar, count
-and extrema semantics. This does not yet lower relationship patterns into joins.
+and extrema semantics.
 
 `cypher::GraphSnapshot` captures a validated `ArrowGraphTables` provider pair.
 Node and edge plans retain that pair independently of catalog replacement.
@@ -95,6 +95,9 @@ shared. Backend transaction identity and authorization remain caller contracts.
 `GraphSnapshot::directed_relationships` constructs lazy typed endpoint joins
 for three distinct node/relationship/node bindings. `RelationshipPlan` retains
 a `GraphBindings` resolver for scalar/aggregate composition and physical edge
-identity. This operator preserves loops and parallel relationships; it does not
-yet translate parsed relationship patterns or implement repeated variables,
-optional matching, variable-length traversal, or automatic route selection.
+identity. This operator preserves loops and parallel relationships.
+`plan_relationship_scan` lowers parsed directed one-hop MATCH/WHERE/RETURN
+patterns with named, distinct variables, node labels and relationship types.
+It shares projection, grouping, count/extrema, DISTINCT, ordering and pagination
+with the node planner. Relationship inline maps, repeated variables, optional
+matching, variable-length traversal and automatic routing remain unsupported.

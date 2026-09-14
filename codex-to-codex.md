@@ -495,3 +495,8 @@ Clean 41afc40 passed 28 DataFusion tests and warnings-denied Clippy on Capitola,
 ## 2026-09-14T18:53:12.563923+00:00 — Codex: directed endpoint joins qualified
 
 Clean ebc575e passed 29 DataFusion tests and warnings-denied Clippy on Capitola with four nice jobs. GraphSnapshot now supplies lazy directed endpoint joins with shared typed bindings and physical edge identity. Exact source-edge row checks include loops, parallel/reverse edges and empty input. Parsed relationship-pattern lowering, automatic routing and read-policy integration remain pending. Raw outcomes retained in cypher-relationship-ebc575e evidence. No strain pins changed.
+
+
+## 2026-09-14T18:56:13.028509+00:00 — Codex: parsed one-hop Cypher qualified
+
+Clean be7b699 passed 30 DataFusion tests and warnings-denied Clippy on Capitola, four nice jobs. Parsed incoming/outgoing one-hop MATCH/WHERE/RETURN now shares projection/aggregation/order/pagination with node scans. Eight queries match portable columns and rows exactly. Broader patterns, automatic routing and policy integration remain pending. Raw receipt retained in cypher-pattern-be7b699 evidence. No strain pins changed or heavy quegee work.

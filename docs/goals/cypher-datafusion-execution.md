@@ -23,8 +23,9 @@ Current implementation admits scalar predicates and parameters, inline property
 maps, single-node scans, projection, DISTINCT, count aggregation and grouping,
 projected-expression ordering, integer/string extrema, node identity and pagination
 through an explicit lowering API. Scalar binding resolution now supports multiple
-caller-defined bindings; relationship join planning remains outstanding.
-Planner decisions distinguish unsupported shapes from semantic errors. Joins,
+caller-defined bindings. Parsed directed single-hop relationship patterns now
+share the RETURN compiler with scans.
+Planner decisions distinguish unsupported shapes from semantic errors. Broader joins,
 broader aggregates, route selection, resource mapping, comparative performance
 qualification and release delivery remain outstanding.
 
@@ -64,7 +65,9 @@ that plan. The unreleased `cypher::GraphSnapshot` now supplies this ordinal for
 validated native Arrow graph tables and retains an immutable provider pair.
 Backend transaction/authorization identity and resource admission still need
 integration. A lazy directed endpoint-join operator now retains these ordinals
-and shared typed bindings; parsed relationship-pattern lowering is still pending. Parallel edges, repeated external IDs and loops must retain their
+and shared typed bindings. Parsed incoming/outgoing single-hop lowering is
+implemented; undirected, repeated-variable, optional and variable-length patterns
+remain outstanding. Parallel edges, repeated external IDs and loops must retain their
 multiplicity. Node identity and endpoint integrity need equivalent validation.
 Provider statistics must have an unknown state; guessed cardinalities cannot
 justify a claimed cost improvement.
