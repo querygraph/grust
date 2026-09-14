@@ -951,6 +951,20 @@ as `grust_node_person` or `grust_edge_presents` with typed columns for declared
 fields. That gives analytical consumers and future vector extensions a native
 columnar surface without giving up the backend-neutral graph model.
 
+The unreleased write path groups concurrent single-row writes through clones of
+one store into universal-table commits, preserving last-key-wins order inside a
+batch. Queue leadership is owned across cancellation and handoff. A cancelled
+leader can leave an in-flight batch's durability uncertain, which its waiting
+callers receive as an explicit error. Universal and typed-mirror writes remain
+separate commits; this is not an atomic multi-table transaction.
+
+Bulk graph and shared Arrow loads compact their fragments and create or update
+merge-key indexes. Single-row commits periodically compact fragments, and writes
+release the store's retained read snapshot. A connection's index and metadata
+cache budgets are 512 MiB and 128 MiB. These are cache limits, not a total process
+memory bound. Performance evidence must disclose dataset, concurrency, indexing,
+load cost and peak-memory boundaries separately from correctness qualification.
+
 ## LadybugDB
 
 `grust-ladybug` embeds LadybugDB directly through the Rust `lbug` 0.20.2 crate.

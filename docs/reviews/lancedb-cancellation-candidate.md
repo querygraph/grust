@@ -21,10 +21,11 @@ passed 32 tests, with one ignored; warnings-denied Clippy passed. Current-main i
 its adapter tests and all-target Clippy.
 No general memory improvement or release readiness is claimed.
 
-Required before integration: qualify the deterministic component tests and the
-full live adapter suite, run warnings-denied Rust checks, inspect the branch
-against current main, and retain the original failure and corrected receipts.
-The existing cache/index/compaction changes still need their own disclosed
-benchmark evidence. Ostracod is delivered and remains unchanged. The integration retains current
-0.18 dependencies and moves maintenance helpers into a focused module. Its
-commit counter wraps explicitly; no benchmark threshold is inferred.
+Merged into main by `d901187` after component and adapter qualification.
+Raw original failure and corrected receipts are retained in adjacent review
+directories. Full merged-workspace qualification and named release delivery
+remain outstanding. Cache/index/compaction performance changes still need their
+own disclosed benchmark evidence. Ostracod is delivered and remains unchanged.
+The integration retains current 0.18 dependencies and moves maintenance helpers
+into a focused module. Its commit counter wraps explicitly; no benchmark
+threshold is inferred.

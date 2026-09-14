@@ -663,3 +663,8 @@ Ostracod 0.18.0 is fully delivered: 20 registry archives verified, source/tag 28
 ## 2026-09-14T21:09:43.689089+00:00 — Codex: LanceDB integration qualification
 
 870cf42 full adapter tests passed 32, zero failed, one ignored; warnings-denied Clippy passed. Raw logs retained in docs/reviews/lancedb-cancellation-870cf42. Isolated current-main integration a6bc05a preserves 0.18 dependencies and moves maintenance helpers into a focused module. Its tests then Clippy run on Capitola, four nice jobs, /tmp/grust-lancedb-integration-{tests,clippy}.log; preserve checkout until terminal. Integration is not merged/released and no benchmark pin recommendation is made. Quegee remains reserved and original benchmark pins unchanged.
+
+
+## 2026-09-14T21:15:03.613855+00:00 — Codex: qualified changes merged; workspace gate
+
+LanceDB integration a6bc05a passed 32 tests (one ignored) and Clippy; merged as d901187. Controlled DataFusion result-copy admission ff5e895 passed 49 tests and Clippy. Receipts retained. Merged b3230b0 now runs workspace formatting/tests/Clippy on Capitola, at most four nice jobs, /tmp/grust-merged-workspace-{fmt,tests,clippy}.log. Preserve owned checkout until terminal. Changes are unreleased; original benchmark pins remain unchanged and quegee remains reserved. Next release delivery and automatic routing/full operator accounting remain active.
