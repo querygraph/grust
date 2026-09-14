@@ -70,3 +70,13 @@ and does not imply four scan partitions. Snapshot/backend capture, network
 transport, algorithm kernels and automatic route selection are not measured.
 Record source, binary hash, host, compiler, process memory and all raw output
 with each run; do not combine these receipts with the earlier SQL profiles.
+
+### Fixed-length Cypher path profile
+
+`cargo run --release --bin cypher_paths -- <nodes> <repeats> <hops>` profiles
+prepared indexed and typed DataFusion execution for two or three hops on a
+parallel-edge ring. An independent count oracle covers physical edge reuse on
+small rings. Preparation is separately timed, errors/unsupported/mismatches are
+retained, and no query deadline is set. See
+[evidence/cypher-paths-100822f](evidence/cypher-paths-100822f) for the first pinned
+run and its memory, output-admission and interpretation boundaries.

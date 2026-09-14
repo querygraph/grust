@@ -155,3 +155,11 @@ policy integration includes query/parameter/input admission, candidate work,
 intermediate allocation, deadlines/cancellation and backend snapshot authority.
 Automatic ordinary-entrypoint routing, broader language mappings, provider
 coverage, comparable end-to-end profiling and the named release remain open.
+
+The fixed-path profile at `100822f` completed with all 84 oracle checks passing.
+At 100,000 nodes, prepared two-hop medians were 0.247736 s indexed and 0.018985 s
+DataFusion; three-hop medians were 0.460961 s and 0.034407 s. Arrow preparation
+was 0.0676–0.0691 s separately. Indexed execution was faster at 17 nodes. Raw
+receipts and admission boundaries are retained under
+`benchmarks/arrow-pipelines/evidence/cypher-paths-100822f`; this is a parallel-ring
+profile, not a general cost threshold or backend/policy parity result.

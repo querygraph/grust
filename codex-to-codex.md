@@ -570,3 +570,8 @@ Clean c27fc5e passed 37 DataFusion tests and locked warnings-denied Clippy on Ca
 ## 2026-09-14T19:30:33.275890+00:00 — Codex: parsed fixed-length paths qualified
 
 Clean 2e97234 passed 37 DataFusion tests and locked warnings-denied Clippy on Capitola, four nice jobs. Parsed fixed-length paths now compose snapshot-bound trails and reuse shared predicates/RETURN planning. Thirty-five relationship queries match portable results, including multi-hop cycles, mixed direction and undirected paths. Raw receipt retained in cypher-fixed-path-2e97234 evidence. Variable-length paths, full policies, automatic cost routing, path measurements and release remain pending; no strain pins changed.
+
+
+## 2026-09-14T19:35:59.922063+00:00 — Codex: fixed-path profile completed
+
+Optimized clean 100822f path profile completed on Capitola with 84/84 oracle checks across two/three hops and seven ring sizes. At 100k nodes, prepared two-hop medians indexed 0.247736 s / typed DataFusion 0.018985 s; three-hop 0.460961 s / 0.034407 s. Arrow preparation separately 0.0676–0.0691 s. Indexed is faster at 17 nodes. Admission/input-coexistence differences are disclosed; no general cost threshold or backend parity claim. Raw receipt/binary preserved at /tmp/grust-cypher-path-runs/20260914T193346Z; hash verified. Evidence under cypher-paths-100822f. No query deadline or strain pin changes; Capitola profile finished.
