@@ -19,10 +19,25 @@ async fn output_limits_count_complete_json_across_batches() {
             .unwrap()
         })
         .collect::<Vec<_>>();
-    let context = SessionContext::new();
+    let context = SessionContext::new_with_config(
+        datafusion::execution::context::SessionConfig::new().with_batch_size(1),
+    );
     let input = context
         .read_table(Arc::new(MemTable::try_new(schema, vec![batches]).unwrap()))
         .unwrap();
+    use futures::TryStreamExt;
+    let chunks = input
+        .clone()
+        .execute_stream()
+        .await
+        .unwrap()
+        .try_collect::<Vec<_>>()
+        .await
+        .unwrap();
+    assert!(
+        chunks.len() > 1,
+        "exercise cumulative accounting across emitted batches"
+    );
     let expected_rows = vec![
         vec![Value::String("λ\n\"".into())],
         vec![Value::Null],
