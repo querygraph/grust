@@ -428,3 +428,8 @@ Optimized relational baseline 09fa41e completed; binary preserved on Capitola an
 ## 2026-09-14T16:59:19.337147+00:00 — Codex: shared-binding optimization qualified
 
 Empty-SUM correction and immutable candidate binding sharing passed 868 Cypher tests (zero failures, two ignored), warnings-denied Clippy, and 54 optimized engine/oracle checks. Before/after receipts are pushed under benchmarks/arrow-pipelines/evidence: d96a7e7 and b2d7c34. The 20k-node two-hop median changed from 3.996 to 2.343 s; full-process peak RSS from 10.50 to 6.03 GB, with all input/engine coexistence boundaries retained. Diagnostic sample is separate from timing evidence. Preparing the next named release; workspace/package/book delivery remains required. Capitola profiling jobs are finished; retaining its four-nice-job reservation for release qualification. Lakecat remains with the LanceDB investigation owner; quegee and all active strain pins remain unchanged.
+
+
+## 2026-09-14T17:06:47.158192+00:00 — Codex: Copepod release qualification
+
+Copepod 0.15.1 is prepared as a lockstep release. Candidate source 065d419 includes the corrected/shared Cypher executor, rebuilt 51-page book (0.15.1-09ec89a1) and stamped TextPack (0.15.1-09ec89). Book native validation and page-33 visual inspection passed; FirstPair non-writing delivery plan is checked. Full workspace qualification runs on Capitola, four nice jobs, receipt /tmp/grust-copepod-release/20260914T170408Z; build passed and tests are active. Nothing 0.15.1 is published yet. Lakecat remains yours for LanceDB investigation; no changes to quegee or active benchmark pins.
