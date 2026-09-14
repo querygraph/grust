@@ -211,6 +211,20 @@ surface, while schema-labeled rows are mirrored into tables such as
 typed columns for declared fields. That gives analytical consumers and
 future vector extensions a native columnar surface without giving up the
 backend-neutral graph model.</p>
+<p>Mantis 0.19.0’s write path groups concurrent single-row writes
+through clones of one store into universal-table commits, preserving
+last-key-wins order inside a batch. Queue leadership is owned across
+cancellation and handoff. A cancelled leader can leave an in-flight
+batch’s durability uncertain, which its waiting callers receive as an
+explicit error. Universal and typed-mirror writes remain separate
+commits; this is not an atomic multi-table transaction.</p>
+<p>Bulk graph and shared Arrow loads compact their fragments and create
+or update merge-key indexes. Single-row commits periodically compact
+fragments, and writes release the store’s retained read snapshot. A
+connection’s index and metadata cache budgets are 512 MiB and 128 MiB.
+These are cache limits, not a total process memory bound. Performance
+evidence must disclose dataset, concurrency, indexing, load cost and
+peak-memory boundaries separately from correctness qualification.</p>
 <h2 data-number="8.3" id="ladybugdb"><span
 class="header-section-number">8.3</span> LadybugDB</h2>
 <p><code>grust-ladybug</code> embeds LadybugDB directly through the Rust
