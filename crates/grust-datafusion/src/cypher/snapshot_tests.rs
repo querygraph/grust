@@ -34,8 +34,8 @@ async fn physical_edge_identity_survives_batches_partitions_and_catalog_replacem
     )
     .unwrap();
     assert_eq!(
-        edges.batches()[0].column(0).to_data().buffers()[0].as_ptr(),
-        original.to_data().buffers()[0].as_ptr()
+        edges.batches()[0].column(0).to_data().buffers()[1].as_ptr(),
+        original.to_data().buffers()[1].as_ptr()
     );
     let tables = ArrowGraphTables::try_new(ArrowTable::from(arrow.nodes().clone()), edges).unwrap();
     engine
@@ -57,8 +57,8 @@ async fn physical_edge_identity_survives_batches_partitions_and_catalog_replacem
     let mut external = Vec::new();
     for batch in batches {
         assert_eq!(
-            batch.column_by_name("source").unwrap().to_data().buffers()[0].as_ptr(),
-            original.to_data().buffers()[0].as_ptr()
+            batch.column_by_name("source").unwrap().to_data().buffers()[1].as_ptr(),
+            original.to_data().buffers()[1].as_ptr()
         );
         let ordinals = batch
             .column_by_name(EDGE_ORDINAL)
