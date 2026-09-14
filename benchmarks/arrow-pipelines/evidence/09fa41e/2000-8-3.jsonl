@@ -1,0 +1,27 @@
+{"event":"configuration","source":"09fa41e71d4c9797c6fbff68e0d81872348cfe96","nodes":2000,"fanout":8,"repeats":3,"datafusion_major":55,"working_memory_bytes":268435456,"partitions":4,"boundary":"local indexed Cypher and native Arrow SQL are distinct execution classes; retained input is outside working-memory accounting"}
+{"event":"preparation","phase":"fixture","seconds":0.006216458}
+{"event":"preparation","phase":"typed_graph_index","seconds":0.001346416}
+{"event":"preparation","phase":"graph_to_arrow","seconds":0.003932083}
+{"event":"preparation","phase":"datafusion_registration","seconds":0.000420542}
+{"event":"workload","name":"filtered_node_aggregate","cypher":"MATCH (n:N) WHERE n.bucket = 3 RETURN count(*) AS c, sum(n.score) AS w","sql":"SELECT COUNT(*) AS c, COALESCE(SUM(n.\"property.score\"), 0) AS w FROM g.graph.nodes n WHERE n.label = 'N' AND n.\"property.bucket\" = 3","oracle":[125,6205]}
+{"event":"result","workload":"filtered_node_aggregate","engine":"indexed_cypher","trial":0,"seconds":0.001993625,"outcome":"pass","actual":[125,6205],"expected":[125,6205],"error":null}
+{"event":"result","workload":"filtered_node_aggregate","engine":"datafusion_sql","trial":0,"seconds":0.002305,"outcome":"pass","actual":[125,6205],"expected":[125,6205],"error":null}
+{"event":"result","workload":"filtered_node_aggregate","engine":"datafusion_sql","trial":1,"seconds":0.00081725,"outcome":"pass","actual":[125,6205],"expected":[125,6205],"error":null}
+{"event":"result","workload":"filtered_node_aggregate","engine":"indexed_cypher","trial":1,"seconds":0.001530666,"outcome":"pass","actual":[125,6205],"expected":[125,6205],"error":null}
+{"event":"result","workload":"filtered_node_aggregate","engine":"indexed_cypher","trial":2,"seconds":0.00143175,"outcome":"pass","actual":[125,6205],"expected":[125,6205],"error":null}
+{"event":"result","workload":"filtered_node_aggregate","engine":"datafusion_sql","trial":2,"seconds":0.000944042,"outcome":"pass","actual":[125,6205],"expected":[125,6205],"error":null}
+{"event":"workload","name":"filtered_one_hop_aggregate","cypher":"MATCH (a:N)-[e:E]->(b:N) WHERE a.bucket = 3 RETURN count(*) AS c, sum(e.weight) AS w","sql":"SELECT COUNT(*) AS c, COALESCE(SUM(e.\"property.weight\"), 0) AS w FROM g.graph.nodes a JOIN g.graph.edges e ON a.node_id = e.source JOIN g.graph.nodes b ON e.target = b.node_id WHERE a.label = 'N' AND b.label = 'N' AND e.label = 'E' AND a.\"property.bucket\" = 3","oracle":[904,4068]}
+{"event":"result","workload":"filtered_one_hop_aggregate","engine":"indexed_cypher","trial":0,"seconds":0.033946875,"outcome":"pass","actual":[904,4068],"expected":[904,4068],"error":null}
+{"event":"result","workload":"filtered_one_hop_aggregate","engine":"datafusion_sql","trial":0,"seconds":0.002580708,"outcome":"pass","actual":[904,4068],"expected":[904,4068],"error":null}
+{"event":"result","workload":"filtered_one_hop_aggregate","engine":"datafusion_sql","trial":1,"seconds":0.002099083,"outcome":"pass","actual":[904,4068],"expected":[904,4068],"error":null}
+{"event":"result","workload":"filtered_one_hop_aggregate","engine":"indexed_cypher","trial":1,"seconds":0.032503083,"outcome":"pass","actual":[904,4068],"expected":[904,4068],"error":null}
+{"event":"result","workload":"filtered_one_hop_aggregate","engine":"indexed_cypher","trial":2,"seconds":0.028325917,"outcome":"pass","actual":[904,4068],"expected":[904,4068],"error":null}
+{"event":"result","workload":"filtered_one_hop_aggregate","engine":"datafusion_sql","trial":2,"seconds":0.002312375,"outcome":"pass","actual":[904,4068],"expected":[904,4068],"error":null}
+{"event":"workload","name":"filtered_two_hop_trail_aggregate","cypher":"MATCH (a:N)-[e:E]->(b:N)-[f:E]->(c:N) WHERE a.bucket = 3 RETURN count(*) AS c, sum(f.weight) AS w","sql":"SELECT COUNT(*) AS c, COALESCE(SUM(f.\"property.weight\"), 0) AS w FROM g.graph.nodes a JOIN g.graph.edges e ON a.node_id = e.source JOIN g.graph.nodes b ON e.target = b.node_id JOIN g.graph.edges f ON b.node_id = f.source JOIN g.graph.nodes c ON f.target = c.node_id WHERE a.label = 'N' AND b.label = 'N' AND c.label = 'N' AND e.label = 'E' AND f.label = 'E' AND e.edge_id <> f.edge_id AND a.\"property.bucket\" = 3","oracle":[7119,32431]}
+{"event":"result","workload":"filtered_two_hop_trail_aggregate","engine":"indexed_cypher","trial":0,"seconds":0.403847166,"outcome":"pass","actual":[7119,32431],"expected":[7119,32431],"error":null}
+{"event":"result","workload":"filtered_two_hop_trail_aggregate","engine":"datafusion_sql","trial":0,"seconds":0.005038958,"outcome":"pass","actual":[7119,32431],"expected":[7119,32431],"error":null}
+{"event":"result","workload":"filtered_two_hop_trail_aggregate","engine":"datafusion_sql","trial":1,"seconds":0.002931375,"outcome":"pass","actual":[7119,32431],"expected":[7119,32431],"error":null}
+{"event":"result","workload":"filtered_two_hop_trail_aggregate","engine":"indexed_cypher","trial":1,"seconds":0.303605833,"outcome":"pass","actual":[7119,32431],"expected":[7119,32431],"error":null}
+{"event":"result","workload":"filtered_two_hop_trail_aggregate","engine":"indexed_cypher","trial":2,"seconds":0.274041125,"outcome":"pass","actual":[7119,32431],"expected":[7119,32431],"error":null}
+{"event":"result","workload":"filtered_two_hop_trail_aggregate","engine":"datafusion_sql","trial":2,"seconds":0.004966791,"outcome":"pass","actual":[7119,32431],"expected":[7119,32431],"error":null}
+{"event":"completion","failures":0}

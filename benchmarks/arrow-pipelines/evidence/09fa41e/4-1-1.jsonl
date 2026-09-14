@@ -1,0 +1,16 @@
+{"event":"configuration","source":"09fa41e71d4c9797c6fbff68e0d81872348cfe96","nodes":4,"fanout":1,"repeats":1,"datafusion_major":55,"working_memory_bytes":268435456,"partitions":4,"boundary":"local indexed Cypher and native Arrow SQL are distinct execution classes; retained input is outside working-memory accounting"}
+{"event":"preparation","phase":"fixture","seconds":0.00020475}
+{"event":"preparation","phase":"typed_graph_index","seconds":0.00007175}
+{"event":"preparation","phase":"graph_to_arrow","seconds":0.000529416}
+{"event":"preparation","phase":"datafusion_registration","seconds":0.003286333}
+{"event":"workload","name":"filtered_node_aggregate","cypher":"MATCH (n:N) WHERE n.bucket = 3 RETURN count(*) AS c, sum(n.score) AS w","sql":"SELECT COUNT(*) AS c, COALESCE(SUM(n.\"property.score\"), 0) AS w FROM g.graph.nodes n WHERE n.label = 'N' AND n.\"property.bucket\" = 3","oracle":[1,3]}
+{"event":"result","workload":"filtered_node_aggregate","engine":"indexed_cypher","trial":0,"seconds":0.000700125,"outcome":"pass","actual":[1,3],"expected":[1,3],"error":null}
+{"event":"result","workload":"filtered_node_aggregate","engine":"datafusion_sql","trial":0,"seconds":0.015777459,"outcome":"pass","actual":[1,3],"expected":[1,3],"error":null}
+{"event":"workload","name":"filtered_one_hop_aggregate","cypher":"MATCH (a:N)-[e:E]->(b:N) WHERE a.bucket = 3 RETURN count(*) AS c, sum(e.weight) AS w","sql":"SELECT COUNT(*) AS c, COALESCE(SUM(e.\"property.weight\"), 0) AS w FROM g.graph.nodes a JOIN g.graph.edges e ON a.node_id = e.source JOIN g.graph.nodes b ON e.target = b.node_id WHERE a.label = 'N' AND b.label = 'N' AND e.label = 'E' AND a.\"property.bucket\" = 3","oracle":[1,1]}
+{"event":"result","workload":"filtered_one_hop_aggregate","engine":"indexed_cypher","trial":0,"seconds":0.000102417,"outcome":"pass","actual":[1,1],"expected":[1,1],"error":null}
+{"event":"result","workload":"filtered_one_hop_aggregate","engine":"datafusion_sql","trial":0,"seconds":0.002827417,"outcome":"pass","actual":[1,1],"expected":[1,1],"error":null}
+{"event":"workload","name":"filtered_two_hop_trail_aggregate","cypher":"MATCH (a:N)-[e:E]->(b:N)-[f:E]->(c:N) WHERE a.bucket = 3 RETURN count(*) AS c, sum(f.weight) AS w","sql":"SELECT COUNT(*) AS c, COALESCE(SUM(f.\"property.weight\"), 0) AS w FROM g.graph.nodes a JOIN g.graph.edges e ON a.node_id = e.source JOIN g.graph.nodes b ON e.target = b.node_id JOIN g.graph.edges f ON b.node_id = f.source JOIN g.graph.nodes c ON f.target = c.node_id WHERE a.label = 'N' AND b.label = 'N' AND c.label = 'N' AND e.label = 'E' AND f.label = 'E' AND e.edge_id <> f.edge_id AND a.\"property.bucket\" = 3","oracle":[0,0]}
+{"event":"result","workload":"filtered_two_hop_trail_aggregate","engine":"indexed_cypher","trial":0,"seconds":0.000054334,"outcome":"mismatch","actual":[0,null],"expected":[0,0],"error":null}
+{"event":"result","workload":"filtered_two_hop_trail_aggregate","engine":"datafusion_sql","trial":0,"seconds":0.002802666,"outcome":"pass","actual":[0,0],"expected":[0,0],"error":null}
+{"event":"completion","failures":1}
+{"event":"error","error":"one or more profiles did not pass the independent oracle"}
