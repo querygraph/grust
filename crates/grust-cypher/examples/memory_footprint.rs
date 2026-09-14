@@ -10,7 +10,7 @@
 //! out-neighbour ids, and a two-hop expansion.
 //!
 //! ```text
-//! cargo run --release -p grust-memory --example footprint -- 10000000
+//! cargo run --release -p grust-cypher --example memory_footprint -- 10000000
 //! ```
 //!
 //! Arguments: edge count (default 1,000,000), batch size (default 50,000).

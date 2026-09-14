@@ -49,3 +49,8 @@ for the entire graph. Missing, empty and explicit edge identities use the same
 encoding as incremental upserts. Ordinary connections allow a lazily filled
 1 GiB page cache; synced connections retain their existing configuration. MVCC
 commits node groups before edge groups, with up to 20 batches per transaction.
+
+The Linux footprint example lives with its Cypher consumer:
+`cargo run --release -p grust-cypher --example memory_footprint -- 10000000`.
+This keeps the Memory crate independent of Cypher, including its packaged
+examples and development dependencies.

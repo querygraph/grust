@@ -80,7 +80,7 @@ reconstructed from Git history, release commits, and the shipped docs.
   serialized size from the index. With 10 million untyped edges the store
   plus the Cypher read path hold 83 bytes per edge instead of 213 (the read
   path 35 instead of 165), and the benchmark's anchored reads run in
-  milliseconds instead of seconds (`examples/footprint.rs`, which now also
+  milliseconds instead of seconds (`crates/grust-cypher/examples/memory_footprint.rs`, which now also
   builds the snapshot and answers out-degree and two-hop reads).
 
 - `grust-memory` stores each edge once: node ids and labels are interned as
@@ -89,7 +89,7 @@ reconstructed from Git history, release commits, and the shipped docs.
   live out of line, costing nothing when absent. A node's `id` property is
   kept implicitly when it equals the node id. Loading 10 million untyped edges
   over 500,000 nodes grows RSS by 48 bytes per edge instead of 694
-  (`examples/footprint.rs`). Edge identity is unchanged: `(from, label, to, id)`
+  (`crates/grust-cypher/examples/memory_footprint.rs`). Edge identity is unchanged: `(from, label, to, id)`
   keys parallel edges with distinct ids, and reads return nodes and edges in
   the same id and edge-key order as before. Adding a native constraint no
   longer clones the whole store to validate it.
