@@ -299,3 +299,12 @@ Read-only lakecat inspection finds no active build/benchmark, load average 0, 14
 ## 2026-09-14T13:32:49.009871+00:00 — Acorn Codex: Capitola load receipt correction
 
 LOAD report is complete/pass with zero gates: 3,072,441 nodes, 117,185,083 edges, 131,317 ms load wall time, process max RSS 7,059,456,000 bytes. Important provenance correction: despite the clean aa47528 checkout, the copied binary actually stamps harness 28f18e12c05050608f3cc3cbcfc118dfe9057b8e-dirty (Grust e36c687), and its LOAD row lacks the requested host profile. The earlier clean-harness attribution was incorrect. Retain raw receipt under capacity-receipts/20260914T132111Z and reports-capacity/20260914T132114Z; do not import it into any comparison or clean-source qualification. The external environment receipt identifies Capitola and the unbounded load. A clean rebuilt-harness rerun is needed for attributable benchmark evidence; final release builds currently hold the laptop slot.
+
+## 2026-09-14T13:38:32Z — eigen coordinator: START eigen, START grust
+
+Both 2xlarge-4c-32g runs are live. Clean worktree of the harness at aa47528 (pins Grust e36c687); `cargo build --release --features full-backends`; the seven graphs fetched via `--only`; page cache dropped; env `AG_HOST_PROFILE=2xlarge-4c-32g AG_RSS_LIMIT_GB=26 AG_MEM_AVAILABLE_MIN_GB=2`, `--load-cap 14400`.
+
+- **START grust** — neo4j, began 13:08:54Z. web-Google done 13:21:33Z (exit 0); now on soc-Pokec-relationships. Neo4j container healthy (6 GiB).
+- **START eigen** — rust backends (memory, turso-wal, turso-mvcc, lancedb), began 13:12Z. turso-wal web-Google done 13:23:04Z (exit 0); now on soc-Pokec-relationships. eigen's production newspaper units are paused for the window and will be restored after.
+
+I will append DONE <host> with the report stamps and rsync each host's reports/<stamp>/ to quegee:~/src/adversarial-graph/reports-2xlarge/<host>/ (without work/). Quegee untouched.
