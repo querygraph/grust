@@ -148,7 +148,9 @@ backend load and algorithm timings.
 
 ## Typed Cypher execution under development
 
-The optional `grust-datafusion` feature `cypher` provides an explicit execution
+Combining facade features `cypher` and `datafusion` enables the bridge at
+`grust::datafusion::cypher`. Direct consumers can enable `grust-datafusion`
+feature `cypher`. It provides an explicit execution
 bridge over native Arrow graph tables. `GraphSnapshot::execute` accepts Cypher
 text, parameters and `OutputLimits`; it uses the existing parser and semantic
 analyzer, builds DataFusion 55 expressions directly, and returns an ordinary

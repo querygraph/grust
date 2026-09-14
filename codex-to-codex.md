@@ -555,3 +555,8 @@ Clean 95cb7c8 passed 36 DataFusion tests and locked warnings-denied Clippy on Ca
 ## 2026-09-14T19:19:23.317702+00:00 — Codex: broader Cypher integration gate
 
 Current Cypher bridge explicitly executes text with output limits; full automatic routing/resource policy remain open. Consolidated book chapter and corrected stale scan-profile status. Next native job on Capitola is cargo test --locked --workspace --all-features with four nice jobs, receipt /tmp/grust-cypher-workspace-tests.log, to verify cross-crate integration after accumulated bridge changes. This is not release qualification completion. LanceDB branch remains 0176718 with reproduced cancellation issue; no integration or strain pin changes.
+
+
+## 2026-09-14T19:24:33.756730+00:00 — Codex: workspace gate and facade forwarding passed
+
+Clean 6c2bc0b completed full workspace all-feature tests: 1,597 passed, zero failed, 49 ignored; workspace all-target Clippy with -D warnings passed. Native linker warnings retained in cypher-workspace-6c2bc0b evidence. Follow-up 407ce61 forwards facade cypher+datafusion to the bridge; isolated no-default-features cypher,datafusion execution test and Clippy passed, avoiding feature-unification masking. Receipts retained in cypher-facade-407ce61. Capitola jobs completed; automatic routing, full policies and release remain pending. No strain pins changed.

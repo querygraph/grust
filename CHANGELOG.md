@@ -27,6 +27,7 @@ reconstructed from Git history, release commits, and the shipped docs.
   collection enforces cumulative rows and serialized JSON output bytes.
   An explicit snapshot execution entrypoint connects Cypher text parsing, typed
   planning and output-bounded collection without fallback after errors.
+  Combining facade `cypher` and `datafusion` features enables the bridge.
   This is an explicit planning API; automatic routing,
   bounded Cypher policy integration and broader query support remain pending.
 

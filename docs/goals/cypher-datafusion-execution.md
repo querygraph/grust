@@ -136,7 +136,10 @@ shared integer-ordering and column-name changes. The DataFusion suite passed
 `benchmarks/arrow-pipelines/evidence/cypher-execute-95cb7c8`. That includes the
 text execution entrypoint, 28 relationship differential queries, anonymous node
 scans, shared bindings, snapshot identity, result conversion and output limits.
-These are unreleased source qualifications, not full-workspace release gates.
+The subsequent full workspace gate at `6c2bc0b` passed 1,597 tests, with zero
+failures and 49 ignored, plus warnings-denied workspace Clippy. Linker warnings
+and ignored tests are retained in `cypher-workspace-6c2bc0b` evidence. Packaging,
+book delivery and registry release verification remain outstanding.
 
 The optimized `cypher_scan` profile at `771cb89` completed on Capitola with all
 42 oracle checks passing. It compares identical Cypher text through indexed

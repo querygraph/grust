@@ -48,6 +48,13 @@ register them for ordinary Cypher CALL execution across supported local captures
 The [algorithm coverage matrix](docs/GENERALIZED_ALGORITHMS.md) states the exact
 algorithms, representations, resource limits and backend execution classes.
 
+Combine facade features `cypher` and `datafusion` to enable the explicit typed
+Cypher bridge at `grust::datafusion::cypher`. The snapshot execution API accepts
+Cypher text and output limits; it does not yet provide automatic cost-based
+routing or the complete bounded read policy. See the
+[Arrow pipeline chapter](docs/book/chapters/arrow-pipelines.md) for supported
+patterns and admission boundaries.
+
 ## Generalized graph analytics
 
 Acorn adds facade features `algorithms` and `arrow`. Combine
