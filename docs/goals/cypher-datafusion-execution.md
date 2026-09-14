@@ -256,3 +256,14 @@ release. Final source `28d2471` includes expanded typed-null tests and is runnin
 the full native release gates on Capitola. Registry publication and book/blog
 delivery are not yet complete. This release does not close automatic routing,
 full execution-budget mapping, provider authority or performance qualification.
+
+## Ostracod registry milestone, 2026-09-14
+
+Final source `28d2471` passed all eight native release gates: 1,627 tests
+passed, zero failed, 49 ignored. All 24 independently packaged archives matched;
+all 20 published 0.18.0 registry archives matched those qualified hashes.
+Tag `v0.18.0` identifies that source. The rebuilt book and TextPack are prepared;
+canonical book deployment is in progress. Receipts are under
+[Ostracod evidence](../releases/ostracod/README.md). Automatic routing, complete
+work/intermediate-budget mapping, backend authority and comparable end-to-end
+qualification remain incomplete and are the next engineering obligations.

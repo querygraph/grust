@@ -1,0 +1,231 @@
+{
+  "source": "28d24712a031c81b5324670323a65c325b6c534a",
+  "version": "0.18.0",
+  "host": "capitola",
+  "started": "20260914T204258Z",
+  "cargo_build_jobs": 4,
+  "complete": true,
+  "steps": [
+    {
+      "name": "fmt",
+      "command": [
+        "cargo",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "exit_code": 0,
+      "seconds": 1.20776366602513
+    },
+    {
+      "name": "build",
+      "command": [
+        "cargo",
+        "build",
+        "--locked",
+        "--workspace",
+        "--all-features"
+      ],
+      "exit_code": 0,
+      "seconds": 29.29533008299768
+    },
+    {
+      "name": "tests",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--workspace",
+        "--all-features"
+      ],
+      "exit_code": 0,
+      "seconds": 321.13055766699836
+    },
+    {
+      "name": "clippy",
+      "command": [
+        "cargo",
+        "clippy",
+        "--locked",
+        "--workspace",
+        "--all-features",
+        "--all-targets",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0,
+      "seconds": 80.17701091701747
+    },
+    {
+      "name": "rustdoc",
+      "command": [
+        "cargo",
+        "doc",
+        "--locked",
+        "--workspace",
+        "--all-features",
+        "--no-deps"
+      ],
+      "exit_code": 0,
+      "seconds": 24.09648516701418
+    },
+    {
+      "name": "package",
+      "command": [
+        "cargo",
+        "package",
+        "--workspace",
+        "--allow-dirty"
+      ],
+      "exit_code": 0,
+      "seconds": 172.25712629201007
+    },
+    {
+      "name": "attribution",
+      "command": [
+        "bash",
+        "scripts/verify-package-attribution.sh"
+      ],
+      "exit_code": 0,
+      "seconds": 0.06256395799573511
+    },
+    {
+      "name": "integration-quick",
+      "command": [
+        "bash",
+        "scripts/integration-test.sh",
+        "--profile",
+        "quick"
+      ],
+      "exit_code": 0,
+      "seconds": 37.498702624987345
+    }
+  ],
+  "rustc": "rustc 1.98.0 (88d9e12ae 2026-08-18) (Homebrew)\nbinary: rustc\ncommit-hash: 88d9e12ae178fab0fb5cc050a94da85685d449ea\ncommit-date: 2026-08-18\nhost: aarch64-apple-darwin\nrelease: 1.98.0\nLLVM version: 22.1.8\n",
+  "cargo": "cargo 1.98.0 (797e8a9bc 2026-08-05) (Homebrew)\n",
+  "boundary": "Quick integration covers local Ladybug/LanceDB/CocoIndex. No external service suite is claimed; Arrow/ADBC native paths retain Gooseneck evidence; typed Cypher adds focused scalar, path, output and facade qualification.",
+  "archives": [
+    {
+      "name": "grust-algorithm-procedures-0.18.0.crate",
+      "bytes": 19888,
+      "sha256": "a60cc945d3531d2e3fc5f6738163902c7704efdfb06cb4077dfaa786460e9437"
+    },
+    {
+      "name": "grust-algorithms-0.18.0.crate",
+      "bytes": 42011,
+      "sha256": "6b2436121c4e61857c7399308eae4747e27c506d1f1487b9b006f4910e4a51c8"
+    },
+    {
+      "name": "grust-arrow-0.18.0.crate",
+      "bytes": 32737,
+      "sha256": "d1cdf0604e7b8441b6ea264dc1c5d037a8b70e5b01678a825d9c0d004b3867f3"
+    },
+    {
+      "name": "grust-beads-0.1.0.crate",
+      "bytes": 9083,
+      "sha256": "e6df99df1a1e41b2d63bfa0199894488d2e24401591165527326963262b0134c"
+    },
+    {
+      "name": "grust-cocoindex-0.18.0.crate",
+      "bytes": 6580,
+      "sha256": "e08cc92c50d63110aff7dbdd9f9ed0a127e0eedd6af3cfef685e1d0514ea58a1"
+    },
+    {
+      "name": "grust-core-0.18.0.crate",
+      "bytes": 60863,
+      "sha256": "742d34590742c4d630e5e67bce8414b0974dba5a7dce2799bd8c67dca94f97c2"
+    },
+    {
+      "name": "grust-cypher-0.18.0.crate",
+      "bytes": 431289,
+      "sha256": "3ac02a7ceab264ba307aa619f640a012e8b8370a311eb25e54c912d714a5b5a8"
+    },
+    {
+      "name": "grust-datafusion-0.18.0.crate",
+      "bytes": 56671,
+      "sha256": "9c91bbee4f77634c9f95382f5fd742d0a4d81e774341e5ff0a44cfec759ce001"
+    },
+    {
+      "name": "grust-falkor-0.18.0.crate",
+      "bytes": 12615,
+      "sha256": "cea8f733912363f1d4629d702b4243118a071e6c013f58a6bad8b9dddb500ef7"
+    },
+    {
+      "name": "grust-graph-0.18.0.crate",
+      "bytes": 100854,
+      "sha256": "59cb853f07b0bd6a472994da82f5d8664f0f52ed12b5acfb3c0996262c9f66b3"
+    },
+    {
+      "name": "grust-helix-0.18.0.crate",
+      "bytes": 28459,
+      "sha256": "e2be11c4dfa348dca14e128f14975b09472197618291db020ff3bb3a6fb95cd6"
+    },
+    {
+      "name": "grust-ladybug-0.18.0.crate",
+      "bytes": 29133,
+      "sha256": "cdbe3fbd7fc1df88598a77baa3816976dcd16c2292dc621502112b17021c4700"
+    },
+    {
+      "name": "grust-lancedb-0.18.0.crate",
+      "bytes": 57871,
+      "sha256": "dbed1be39a8dbe03ffca40c31cb8507c27b9643dce568087d41e48ab23daff15"
+    },
+    {
+      "name": "grust-memory-0.18.0.crate",
+      "bytes": 37046,
+      "sha256": "eb47bc1c55ca7da664ac6cd0d6bcec530b503ec35dc7f720df3ae9aaf8bdd290"
+    },
+    {
+      "name": "grust-pggraph-0.18.0.crate",
+      "bytes": 11657,
+      "sha256": "a1ab3aa650fb6b25fb8c38f4b93f865a4b07888e802f39960a0ddbe7219fef25"
+    },
+    {
+      "name": "grust-postgres-0.18.0.crate",
+      "bytes": 8768,
+      "sha256": "8d9512260ca7e0915877106781918f945afd3b15a7f2819d4967557e537a7139"
+    },
+    {
+      "name": "grust-postgres-core-0.18.0.crate",
+      "bytes": 29788,
+      "sha256": "1e0581536d1f6378c1ae793e036b638c6b53cb2544a730fccc182e4227de41df"
+    },
+    {
+      "name": "grust-postgres-pgq-0.18.0.crate",
+      "bytes": 13737,
+      "sha256": "714f77b775d2dcdb82fcebdf5d514fbe9ac548c9f5f01dc2765440a23494b7ef"
+    },
+    {
+      "name": "grust-procedures-0.18.0.crate",
+      "bytes": 24413,
+      "sha256": "6c228bdc927ed3f6cd005293448b1ac5519f0228154c61a15246b9ad4d3823d9"
+    },
+    {
+      "name": "grust-sail-0.18.0.crate",
+      "bytes": 146544,
+      "sha256": "8038738d9ee12d687eb34943d6bcf93a23135df50aa961bb0449c044a84160f5"
+    },
+    {
+      "name": "grust-sql-core-0.18.0.crate",
+      "bytes": 8000,
+      "sha256": "72bf7c3ee3978ac1c9e6aef6ad0d88b78d9aa7d09ecb42500fab7c711c4b8c9c"
+    },
+    {
+      "name": "grust-surreal-0.18.0.crate",
+      "bytes": 58098,
+      "sha256": "0984db2c494c645a06daa28c296b1fa0e401b40d9fcca49ff6fd8fc4a5e5d725"
+    },
+    {
+      "name": "grust-turso-0.18.0.crate",
+      "bytes": 66055,
+      "sha256": "c972b9495a387bc1d6e4ec117bbcc9a51b470a152046fd38cb8fd6fba3b9988b"
+    },
+    {
+      "name": "querygraph-memory-0.18.0.crate",
+      "bytes": 119088,
+      "sha256": "e5139b2103f64bd97beee2e576610101753f99a6ffc9738992814090ba0f4a8f"
+    }
+  ]
+}
