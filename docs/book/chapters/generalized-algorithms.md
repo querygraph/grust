@@ -80,6 +80,7 @@ kernels as direct Rust and have typed Arrow result adapters.
 | `shortestPaths` | One selected full shortest path per reachable target |
 | `wcc` | Weak components, including isolates |
 | `scc` | Directed strong components with iterative traversal |
+| `degree` | Exact projected arc counts and optional weighted strength |
 | `pagerank` | Weighted scores, residual, iterations and convergence status |
 | `topologicalSort` | Complete DAG order or a concrete closed cycle witness |
 
@@ -103,6 +104,26 @@ Dijkstra uses strict improvement and stable adjacency order for equal costs;
 zero-weight ties cannot create predecessor cycles. Reachable cost overflow is an
 error. Unreachable distances are infinity in direct Rust and null in Cypher/Arrow.
 Component IDs are the external ID at the minimum projection row in each component.
+
+`degree` returns every selected node, including isolates. Direct Rust
+`degree(&projection)` exposes exact `usize` counts and optional `f64` strengths.
+Arrow columns are `nodeId: Utf8`, `degree: UInt64`, and nullable
+`strength: Float64`; Cypher returns an exact checked integer count and null
+strength for unweighted projections. No normalization is implicit.
+
+```cypher
+CALL grust.algorithms.degree({orientation: 'incoming', weightProperty: 'cost'})
+YIELD nodeId, degree, strength
+RETURN nodeId, degree, strength
+```
+
+Counts include parallel and zero-weight arcs. Undirected loops count once under
+this projection contract. Weighted strength sums finite nonnegative weights;
+overflow fails explicitly. Negative weights remain unsupported. Unweighted
+execution reads existing CSR offsets in O(V); weighted execution takes O(V+A).
+Result buffers retain the shared memory admission, and bounded work-accounting
+chunks preserve cancellation polling without a lock per scalar. This contract
+does not establish universal degree-centrality compatibility with other engines.
 
 PageRank defaults to damping .85, L1 tolerance 1e-8 and 1000 iterations. Scores
 start uniformly. Optional personalization controls teleportation and dangling
