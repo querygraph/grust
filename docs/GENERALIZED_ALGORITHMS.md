@@ -1,7 +1,10 @@
 # Generalized graph algorithms
 
 Status: generalized algorithms are implemented and source-qualified for Acorn
-0.14.0. See the [release validation](releases/acorn/validation.json) for the
+0.14.0, published and tagged as `v0.14.0`. All 19 public crates were verified
+from outside the workspace; their registry archive hashes match the uploads.
+See the [registry receipt](releases/acorn/registry-verification.json) and
+[release validation](releases/acorn/validation.json) for the
 exact source, package checks and backend boundaries.
 Contract: the 2026-09-13 generalized algorithms handoff in
 `adversarial-graph-algorithms/docs/grust-generalized-graph-algorithms-handoff.md`.
