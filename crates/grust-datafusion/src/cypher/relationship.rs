@@ -23,7 +23,11 @@ impl GraphBindings {
             .map(|(expression, _)| expression)
     }
 
-    fn field(&self, variable: &str, name: &str) -> Result<(Expr, DataType), UnsupportedExpression> {
+    pub(super) fn field(
+        &self,
+        variable: &str,
+        name: &str,
+    ) -> Result<(Expr, DataType), UnsupportedExpression> {
         self.variables
             .get(variable)
             .and_then(|columns| columns.get(name))

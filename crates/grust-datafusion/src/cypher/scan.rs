@@ -77,80 +77,8 @@ pub fn plan_node_scan(
     {
         return Ok(NodeScanPlan::Unsupported(UnsupportedScan::QueryShape));
     }
-    let names = projection
-        .items
-        .iter()
-        .map(|item| {
-            item.alias
-                .clone()
-                .unwrap_or_else(|| grust_cypher::read::column_name(&item.expr))
-        })
-        .collect::<Vec<_>>();
-    if names
-        .iter()
-        .collect::<std::collections::BTreeSet<_>>()
-        .len()
-        != names.len()
-    {
-        // DataFusion requires unique logical field names; the ordinary executor
-        // retains Cypher's duplicate-column contract until result remapping exists.
-        return Ok(NodeScanPlan::Unsupported(UnsupportedScan::QueryShape));
-    }
-    let mut ordering = Vec::with_capacity(projection.order_by.len());
-    for item in &projection.order_by {
-        let alias = match &item.expr {
-            CypherExpr::Variable(alias) if names.contains(alias) => alias,
-            expression => {
-                let Some(index) = projection
-                    .items
-                    .iter()
-                    .position(|item| &item.expr == expression)
-                else {
-                    return Ok(NodeScanPlan::Unsupported(UnsupportedScan::Ordering));
-                };
-                &names[index]
-            }
-        };
-        ordering.push(
-            Expr::Column(Column::from_name(alias.clone())).sort(!item.descending, item.descending),
-        );
-    }
-    let offset = match bound(projection.skip.as_ref(), parameters) {
-        Some(value) => value.unwrap_or(0),
-        None => return Ok(NodeScanPlan::Unsupported(UnsupportedScan::Pagination)),
-    };
-    let limit = match bound(projection.limit.as_ref(), parameters) {
-        Some(value) => value,
-        None => return Ok(NodeScanPlan::Unsupported(UnsupportedScan::Pagination)),
-    };
-    let schema = input.schema().as_arrow();
-    let mut expressions = Vec::with_capacity(projection.items.len());
-    let mut groups = Vec::new();
-    let mut aggregates = Vec::new();
-    for item in &projection.items {
-        let alias = item
-            .alias
-            .clone()
-            .unwrap_or_else(|| grust_cypher::read::column_name(&item.expr));
-        if matches!(&item.expr, CypherExpr::Function { name, .. }
-            if ["count", "min", "max", "sum", "avg", "collect"].iter().any(|candidate| name.eq_ignore_ascii_case(candidate)))
-        {
-            let Ok(expression) =
-                super::aggregate::aggregate(&item.expr, variable, schema, parameters)
-            else {
-                return Ok(NodeScanPlan::Unsupported(UnsupportedScan::Expression));
-            };
-            aggregates.push(expression.alias(&alias));
-        } else {
-            let Ok(expression) =
-                lower_expression_with_parameters(&item.expr, variable, schema, parameters)
-            else {
-                return Ok(NodeScanPlan::Unsupported(UnsupportedScan::Expression));
-            };
-            groups.push(expression.alias(&alias));
-        }
-        expressions.push(Expr::Column(Column::from_name(alias.clone())));
-    }
+    let projection_schema = input.schema().as_arrow().clone();
+    let schema = &projection_schema;
     let predicate = match &matched.where_clause {
         Some(expression) => {
             match super::lower(expression, variable, schema, parameters) {
@@ -205,34 +133,13 @@ pub fn plan_node_scan(
     if let Some(predicate) = predicate {
         frame = frame.filter(predicate)?;
     }
-    frame = if aggregates.is_empty() {
-        frame.select(groups)?
-    } else {
-        frame.aggregate(groups, aggregates)?.select(expressions)?
-    };
-    if projection.distinct {
-        frame = frame.distinct()?;
-    }
-    if !ordering.is_empty() {
-        frame = frame.sort(ordering)?;
-    }
-    if offset != 0 || limit.is_some() {
-        frame = frame.limit(offset, limit)?;
-    }
-    Ok(NodeScanPlan::Supported(frame))
-}
-
-fn bound(expression: Option<&CypherExpr>, parameters: &CypherParameters) -> Option<Option<usize>> {
-    let Some(expression) = expression else {
-        return Some(None);
-    };
-    let value = match expression {
-        CypherExpr::Integer(value) => *value,
-        CypherExpr::Parameter(name) => match parameters.get(name)? {
-            grust_core::Value::Int(value) => *value,
-            _ => return None,
+    super::projection::project(
+        projection,
+        frame,
+        &super::bindings::SingleBinding {
+            variable,
+            schema: &projection_schema,
         },
-        _ => return None,
-    };
-    usize::try_from(value).ok().map(Some)
+        parameters,
+    )
 }

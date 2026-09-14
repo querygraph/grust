@@ -100,3 +100,89 @@ async fn endpoint_joins_preserve_exact_relationship_multiplicity() {
         );
     }
 }
+
+#[tokio::test]
+async fn parsed_relationship_queries_match_portable_results() {
+    use datafusion::arrow::array::{Array, Int64Array};
+    let engine = DataFusionEngine::new(ExecutionOptions {
+        working_memory_bytes: (16 * 1024 * 1024).try_into().unwrap(),
+        target_partitions: 4.try_into().unwrap(),
+        batch_rows: 1024.try_into().unwrap(),
+        spill: SpillPolicy::Disabled,
+    })
+    .unwrap();
+    let graph = Graph::new(
+        vec![
+            Node::new("N", "a", Props::new()),
+            Node::new("M", "b", Props::new()),
+        ],
+        vec![
+            Edge::new("E", "a", "b", Props::new()),
+            Edge::new("E", "a", "b", Props::new()),
+            Edge::new("F", "b", "b", Props::new()),
+            Edge::new("E", "b", "a", Props::new()),
+        ],
+    );
+    let (nodes, edges) = ArrowGraph::from_graph(&graph).unwrap().into_tables();
+    let snapshot =
+        GraphSnapshot::try_new(&engine, ArrowGraphTables::try_new(nodes, edges).unwrap()).unwrap();
+    let parameters = CypherParameters::new();
+    for text in [
+        "MATCH (a)-[r]->(b) RETURN count(*) AS count",
+        "MATCH (a:N)-[r:E]->(b:M) RETURN count(*) AS count",
+        "MATCH (a:M)<-[r:E]-(b:N) RETURN count(*) AS count",
+        "MATCH (a)-[r:E|F]->(b) WHERE id(a) = 'b' RETURN count(*) AS count",
+        "MATCH (a:Missing)-[r]->(b) RETURN count(*) AS count",
+        "MATCH (a)-[r]->(b) RETURN id(a) AS source, count(*) AS count ORDER BY source",
+        "MATCH (a)-[r]->(b) RETURN DISTINCT id(b) AS target ORDER BY target DESC SKIP 1 LIMIT 1",
+        "MATCH (a)-[r]->(b) WHERE null RETURN count(*) AS count",
+    ] {
+        let query = grust_cypher::parser::parse_query(text).unwrap();
+        let expected = grust_cypher::read::execute_read_query(&graph, &query, &parameters).unwrap();
+        let NodeScanPlan::Supported(frame) =
+            plan_relationship_scan(&query, &snapshot, engine.context(), &parameters).unwrap()
+        else {
+            panic!("unsupported: {text}");
+        };
+        assert_eq!(
+            frame
+                .schema()
+                .fields()
+                .iter()
+                .map(|field| field.name().clone())
+                .collect::<Vec<_>>(),
+            expected.columns,
+            "{text}"
+        );
+        let mut rows = Vec::new();
+        for batch in frame.collect().await.unwrap() {
+            for row in 0..batch.num_rows() {
+                rows.push(
+                    batch
+                        .columns()
+                        .iter()
+                        .map(|column| {
+                            if column.is_null(row) {
+                                Value::Null
+                            } else if let Some(values) =
+                                column.as_any().downcast_ref::<Int64Array>()
+                            {
+                                Value::Int(values.value(row))
+                            } else {
+                                Value::String(
+                                    column
+                                        .as_any()
+                                        .downcast_ref::<StringArray>()
+                                        .unwrap()
+                                        .value(row)
+                                        .into(),
+                                )
+                            }
+                        })
+                        .collect::<Vec<_>>(),
+                );
+            }
+        }
+        assert_eq!(rows, expected.rows, "{text}");
+    }
+}

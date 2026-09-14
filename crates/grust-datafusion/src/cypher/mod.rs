@@ -3,8 +3,11 @@ mod aggregate;
 pub use aggregate::lower_aggregate_with_bindings;
 mod bindings;
 pub use bindings::ExpressionBindings;
+mod pattern;
+mod projection;
 mod relationship;
 mod scan;
+pub use pattern::plan_relationship_scan;
 mod snapshot;
 pub use relationship::{GraphBindings, RelationshipPlan};
 pub use scan::{

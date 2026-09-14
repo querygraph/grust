@@ -1,24 +1,11 @@
 //! Aggregate lowering with explicit scalar-domain eligibility.
 use super::{ExpressionBindings, UnsupportedExpression, lower_bound};
 use datafusion::{
-    arrow::datatypes::{DataType, Schema},
+    arrow::datatypes::DataType,
     functions_aggregate::expr_fn::{count, count_distinct, max, min},
     logical_expr::{Expr, lit},
 };
 use grust_cypher::{CypherParameters, ast::Expr as CypherExpr};
-
-pub(super) fn aggregate(
-    expression: &CypherExpr,
-    variable: &str,
-    schema: &Schema,
-    parameters: &CypherParameters,
-) -> Result<Expr, UnsupportedExpression> {
-    lower_aggregate_with_bindings(
-        expression,
-        &super::bindings::SingleBinding { variable, schema },
-        parameters,
-    )
-}
 
 /// Lower count and integer/string extrema over caller-resolved graph bindings.
 /// Scalar domains, missing values and unknown variables follow the same contract
