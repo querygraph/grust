@@ -17,35 +17,37 @@ pub fn retain_array_owner<T: Send + Sync + 'static>(
     array: &ArrayRef,
     owner: Arc<T>,
 ) -> Result<ArrayRef, ArrowError> {
-    owned_data(array.to_data(), &owner).map(make_array)
+    owned_data(&array.to_data(), &owner).map(make_array)
 }
 
 fn owned_data<T: Send + Sync + 'static>(
-    data: ArrayData,
+    data: &ArrayData,
     owner: &Arc<T>,
 ) -> Result<ArrayData, ArrowError> {
-    let (kind, len, nulls, offset, buffers, children) = data.into_parts();
-    let nulls = nulls.map(|nulls| {
-        let bits = nulls.into_inner();
+    let nulls = data.nulls().map(|nulls| {
+        let bits = nulls.inner();
         let offset = bits.offset();
         let len = bits.len();
         NullBuffer::new(BooleanBuffer::new(
-            retain_buffer_owner(bits.into_inner(), Arc::clone(owner)),
+            retain_buffer_owner(bits.inner().clone(), Arc::clone(owner)),
             offset,
             len,
         ))
     });
-    let buffers = buffers
-        .into_iter()
+    let buffers = data
+        .buffers()
+        .iter()
+        .cloned()
         .map(|buffer| retain_buffer_owner(buffer, Arc::clone(owner)))
         .collect();
-    let children = children
-        .into_iter()
+    let children = data
+        .child_data()
+        .iter()
         .map(|child| owned_data(child, owner))
         .collect::<Result<Vec<_>, _>>()?;
-    ArrayData::builder(kind)
-        .len(len)
-        .offset(offset)
+    ArrayData::builder(data.data_type().clone())
+        .len(data.len())
+        .offset(data.offset())
         .nulls(nulls)
         .buffers(buffers)
         .child_data(children)
