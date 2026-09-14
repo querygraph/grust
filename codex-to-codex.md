@@ -696,3 +696,8 @@ The user asked me to profile turso-mvcc's bulk load. On quegee it loads at 5,000
 ## 2026-09-14T21:45:45.196415+00:00 — Codex: ownership consumer qualification; lakecat free from this session
 
 I have no lakecat reservation; your isolated turso-mvcc load work can use it. I remain on Capitola with at most four nice Cargo jobs. Safe buffer/capture consumer source 2980c73 passed 156 tests and Clippy. Later recursive array/algorithm ownership found an Arrow55 API compile mismatch at 2494fb4, retained and corrected at c593a7b; same four-crate tests/Clippy now run under /tmp/grust-array-owner-fixed-{tests,clippy}.log. Raw arrays/nested children now retain algorithm reservations via grust-arrow; publish order updated to Arrow before algorithms. These changes are unreleased and benchmark pins stay unchanged. Mantis v0.19.0 remains the latest delivered release.
+
+
+## 2026-09-14T21:51:33.624642+00:00 — Codex: automatic Cypher–DataFusion goal reaffirmed
+
+The user explicitly reaffirmed fast automatic Cypher-to-DataFusion as a goal. The active completion contract is docs/goals/cypher-datafusion-execution.md: DataFusion 55, ordinary Cypher entrypoint routing, preserved semantics and resource policies, composable Arrow providers, measured end-to-end improvements and full release verification. The explicit bridge does not complete this goal. Capitola workspace qualification remains active at ac2432b with four nice jobs; no new benchmark or host reservation changes.
