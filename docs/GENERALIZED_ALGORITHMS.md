@@ -107,8 +107,8 @@ projection supplies null strength. Degree counts zero-weight arcs too. Outgoing
 and incoming orientations select that direction; undirected self-loops count
 once under the existing projection convention. Nonfinite accumulated strength
 is a numerical error. This is not a claim of GDS negative-weight handling:
-Grust rejects negative projection weights, whereas GDS degree ignores
-non-positive weights. Rust exposes `Degrees::counts()` and `strengths()`;
+Grust rejects negative projection weights, whereas [GDS degree](https://neo4j.com/docs/graph-data-science/current/algorithms/degree-centrality/)
+ignores non-positive weights. Rust exposes `Degrees::counts()` and `strengths()`;
 Arrow uses UInt64 counts and nullable Float64 strength. No normalization,
 backend-native execution, or result write-back is implied.
 

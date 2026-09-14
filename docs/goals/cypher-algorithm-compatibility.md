@@ -51,7 +51,7 @@ contracts; a family row below is not a claim of complete family coverage.
 | --- | --- | --- |
 | Reachability and paths | BFS, DFS, multi-source BFS, Dijkstra, one selected shortest path per reachable target | Reference option/result mapping; A*, negative weights/cycles, all-pairs and k-shortest contracts |
 | Components and DAGs | WCC, SCC, topological sort with cycle witness | Component-label equivalence, orientation and loop/multigraph cases; additional DAG operations |
-| Centrality | Weighted PageRank with personalization and convergence reporting | Reference normalization/dangling/tolerance mapping; degree, closeness, harmonic, betweenness, eigenvector and HITS |
+| Centrality | Weighted PageRank with personalization and convergence reporting; unreleased exact degree counts and nonnegative weighted strength | Reference normalization/dangling/tolerance mapping; degree negative-weight and loop-convention qualification; closeness, harmonic, betweenness, eigenvector and HITS |
 | Structural analytics | Projection statistics and CSR estimates | Triangle, clustering, k-core, bridge and bipartite contracts with exhaustive small-graph oracles |
 | Communities and similarity | No catalog implementation claimed | Seeded convergence/objective contracts and bounded candidate-pair execution |
 | Forests, flow and cut | No catalog implementation claimed | Capacity, direction, disconnection and independent optimality checks |
