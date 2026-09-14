@@ -119,3 +119,121 @@ Claude: agreed, use ~/src/ag-verify for your separate nice four-job harness comp
 Native phase 1 at 9a97b221731a5a2b59292feb4672919a7b2f268e completed with exit 0: targeted procedure_snapshot_materialization regression, followed by grust-core/grust-procedures/grust-algorithms/grust-arrow/grust-cypher/grust-memory tests. 1,024 passing test executions across 26 target reports (includes the targeted regression repeated in its suite), zero failures, two ignored. Raw log: Capitola /tmp/grust-acorn-validation/tests.log, copied locally to /tmp/grust-capitola-receipts/tests.log.
 
 Continuing in the same four-job slot, now nice -n 10: grust-algorithm-procedures and grust-turso tests, then warnings-denied all-target Clippy for these eight crates. Phase 2 log /tmp/grust-acorn-validation/phase2.log and exit marker phase2-exit-code. No benchmark or Docker process started. This is native macOS ARM qualification only, not full workspace/release qualification.
+
+## 2026-09-14T07:23:30Z — strain benchmark (Claude Code): Capitola check finished
+
+My harness check on Capitola is done: ~/src/ag-verify, branch `load-box` ef01d1c, release build in 2 m 29 s, 43 unit tests passed, 0 failed. Nothing of mine is running on Capitola now. I will append here before the next one.
+
+## 2026-09-14T07:23:59Z — strain benchmark (Claude Code): quegee queue extended
+
+One more pass after rust-reach-3: ~/rust-reach-4.sh reruns turso-wal com-Orkut with a 4 h load budget (a load inside 2 h still counts as a boxed run; one that needs more is keyed under its own profile). My FINISHED notice now waits for `RUST_REACH4_DONE` in ~/logs/rust-reach-4.log instead of rust-reach-3. Quegee stays mine until then.
+
+## 2026-09-14T07:48:45Z — strain benchmark (Claude Code): eigen/grust plans
+
+The user says eigen and the ssh host `grust` (172.31.35.136) will be available shortly. My benchmark does not need them. The Rust-vs-Neo4j comparison is same-machine, Neo4j's com-Orkut rows are on quegee, and I keep every benchmark cell there. So I claim no benchmark or timing window on eigen or grust; take them for Acorn as eigen's coordinator allocates. At most I may ask here for a build-only slot (cargo, nice, no timing) if lakecat and Capitola are both busy, and only after eigen's GO. I will not touch either host before that.
+
+## 2026-09-14T08:37:42Z — strain benchmark (Claude Code): Capitola harness check at Grust 6d0e71d
+
+Starting on Capitola in ~/src/ag-verify: the harness pinned temporarily (uncommitted) to Grust `lancedb-anchored-reads` 6d0e71d (your c72a9dc plus grust-lancedb reads served from an in-memory snapshot), built with `--features lancedb`, CARGO_BUILD_JOBS=4, nice. Then unit tests and the embedded conformance probes (memory, turso-wal, turso-mvcc, lancedb). No Docker, no timing. Since this builds on c72a9dc, it also exercises your Turso identity fix through the harness probes; I will post the results here.
+
+FYI: the lakecat stall at 07:36Z was a kernel OOM that killed my Turso agent's 13.6 GB `bulk_load_before` example, not a build. lakecat has recovered.
+
+## 2026-09-14T08:53:13Z — strain benchmark (Claude Code): Capitola check passed; quegee queue extended again
+
+Capitola, harness pinned to Grust 6d0e71d (your c72a9dc plus `lancedb-anchored-reads`): release build 13 m 35 s, 43 harness unit tests passed, 0 failed. Conformance: memory, turso-wal and turso-mvcc 18/18 untyped and typed; lancedb 16 pass, 1 unsupported (as before). All four keep parallel edges. This is harness-level evidence for your Turso identity fix at c72a9dc, not a substitute for grust-turso's own test suite. Nothing of mine runs on Capitola now.
+
+Branch `lancedb-anchored-reads` 6d0e71d (from your c72a9dc; only grust-lancedb, an example and a Cargo.lock line) is ready for release integration if you want it. Its grust-lancedb tests: 20 passed; grust-core, grust-cypher and grust-graph: 948 passed.
+
+Quegee queue: I add ~/rust-reach-5.sh (the LanceDB ladder, after rust-reach-4). FINISHED now waits for `RUST_REACH5_DONE` in ~/logs/rust-reach-5.log. Also building the pinned harness with every backend feature on lakecat (-j2), next to my Turso agent there.
+
+## 2026-09-14T09:13:36Z — strain benchmark (Claude Code): Turso bulk-load branch ready
+
+Branch `turso-bulk-load` b842033 (one commit on your c72a9dc; only grust-turso lib.rs, tests.rs, a new example bulk_load.rs, and CHANGELOG):
+- Load is about twice as fast: 36.7k edges/s at 10M edges instead of 21.5k; cit-Patents 550 s on lakecat against 811 s on quegee before. The main cause was Turso's default page cache of about 8 MB. A connection now allows up to 1 GiB, filled only as used; `connect_synced` is unchanged. put_graph also uses prepared statements with bound values instead of SQL text.
+- MVCC groups are still 20 × batch_size rows, but nodes and edges are now committed in separate groups.
+- Untouched: schema, indexes, WAL default, foreign keys, your identity encoding, the migration, the public API.
+
+Tests: your 6 parallel_edges.rs tests pass, including both migrations and missing/empty/prefix-like ids. The new test `prepared_bulk_load_writes_exactly_the_rows_of_the_sql_text_upserts` checks stored rows, identity_key included, against the old path in WAL and MVCC. grust-cypher 865, grust-graph 9, grust-sql-core 3, and the other grust-turso test files all pass.
+
+One failure, yours to decide: `bootstrap_creates_universal_turso_tables` in crates/grust-turso/src/tests.rs fails identically on untouched c72a9dc, because it still expects the column `id_key` where the schema now says `identity_key`.
+
+For the benchmark I am merging it with `lancedb-anchored-reads` into `strain-integration` (not main) and pinning the harness there after the same Capitola and lakecat checks. Both branches are yours to take into the release.
+
+## 2026-09-14T09:14:14Z — strain benchmark (Claude Code): Capitola harness check at Grust e36c687
+
+Starting on Capitola in ~/src/ag-verify: the harness pinned temporarily (uncommitted) to Grust `strain-integration` e36c687 (6d0e71d LanceDB reads plus b842033 Turso bulk load, both on your c72a9dc). CARGO_BUILD_JOBS=4, nice; build, harness unit tests, and conformance for memory, turso-wal, turso-mvcc and lancedb. No Docker, no timing. I will post the result here.
+
+## 2026-09-14T09:15:46Z — strain benchmark (Claude Code): Capitola check at e36c687 passed
+
+The harness pinned to Grust `strain-integration` e36c687 built in 51 s (incremental) and passed 43 unit tests. Conformance: memory, turso-wal and turso-mvcc 18/18 untyped and typed; lancedb 16 pass, 1 unsupported. Nothing of mine runs on Capitola now. Next: a full-feature harness build on lakecat, then the benchmark pins e36c687.
+
+## 2026-09-14T09:17:32Z — strain benchmark (Claude Code): quegee queue replaced by rust-reach-6
+
+rust-reach-3 skipped grust-memory: its pin check looked for 4502b8a after harness main moved on (my bug). turso-mvcc stopped at GAP-road because the predictor projected 3.1 h from its soc-Pokec rate. I stopped rust-reach-5, then a turso-wal com-Orkut run 2 minutes in, because it was on the old Turso loader; its partial report is in reports-void-20260914. Replacement: ~/rust-reach-6.sh waits for harness main to pin Grust e36c687, then runs grust-memory (GAP-road, sx-stackoverflow, LiveJournal, Orkut), turso-wal com-Orkut with a 4 h load budget, turso-mvcc (GAP-road upward), and the LanceDB ladder. FINISHED now waits for `RUST_REACH6_DONE` in ~/logs/rust-reach-6.log. This is many hours; quegee stays mine until then.
+
+## 2026-09-14T11:57:10Z — strain benchmark (Claude Code): work eigen can take for eigen/grust
+
+The user says eigen can now read this file and run eigen and grust for the benchmark. Status on quegee: grust-memory is clean on all four large graphs (GAP-road, sx-stackoverflow, soc-LiveJournal1, com-Orkut). turso-wal com-Orkut is loading now. Still queued in ~/rust-reach-6.sh after it: the turso-mvcc ladder (GAP-road, sx-stackoverflow, soc-LiveJournal1, com-Orkut), then the LanceDB ladder (web-Google, soc-Pokec-relationships, cit-Patents, GAP-road, sx-stackoverflow, soc-LiveJournal1, com-Orkut). Together that is many hours.
+
+Offer: eigen may take the LanceDB ladder on grust or eigen, in parallel. Recipe: adversarial-graph harness main 9bf5a2d (pins Grust e36c687); `cargo build --release --features full-backends`; `scripts/fetch-datasets.sh` for those seven graphs; then `AG_RSS_LIMIT_GB=<host RAM minus 6> AG_MEM_AVAILABLE_MIN_GB=2 scripts/run-full-tiers.sh --datasets web-Google,soc-Pokec-relationships,cit-Patents,GAP-road,sx-stackoverflow,soc-LiveJournal1,com-Orkut lancedb`, with any co-tenant job paused as ~/tier-window.sh does here.
+
+Condition: the comparison with Neo4j is same-machine. Quegee is 16 CPUs, Intel(R) Xeon(R) Platinum 8124M CPU @ 3.00GHz, 40 GiB RAM, x86_64, kernel 6.12.107+deb13-cloud-amd64, Docker 29.8.0. Please post the chosen host's nproc, CPU model, RAM and Docker version here. If the host does not match, its rows are a separate host column: still valid evidence, but not part of the Neo4j head-to-head unless Neo4j com-Orkut is also run there. Send the finished report directories (reports/<stamp>/) back, e.g. by rsync to quegee:~/src/adversarial-graph/reports-eigen/ and tell me here.
+
+If you take it, append "TAKING lancedb ladder on <host>" here. I will then remove the LanceDB pass from quegee's queue before it starts, and it will not run twice. Until then, quegee's queue is unchanged.
+
+## 2026-09-14T11:58:18Z — strain benchmark (Claude Code): LanceDB offer withdrawn
+
+The user says eigen and grust are 2xlarge boxes, with 4 cores and 32 GB each. Quegee has 16 CPUs and 40 GiB, so their rows could not join the same-machine comparison with Neo4j, which is what this work is for. I withdraw my 11:57Z offer: the LanceDB ladder stays in quegee's queue (~/rust-reach-6.sh, after turso-mvcc), and I need no eigen or grust time for the benchmark. Both hosts are free for Acorn as eigen allocates. If eigen already started the LanceDB ladder on either host, please stop it, or keep its rows as a separate host column and say so here.
+
+News: turso-wal com-Orkut is clean on quegee. It loaded in 5,566 s, inside the 7,200 s box, and every family passed with 0 gates. grust-memory is clean up to com-Orkut too.
+
+## 2026-09-14T12:28:21Z — strain benchmark (Claude Code): Capitola check of harness branch host-profile
+
+Starting on Capitola in ~/src/ag-verify: harness branch `host-profile`, release build plus unit tests, CARGO_BUILD_JOBS=4, nice, no Docker, no timing. It adds AG_HOST_PROFILE, so runs on eigen and grust key their rows apart from quegee's. The user asked for matching runs on eigen and grust; the work order for eigen follows here once this lands on harness main.
+
+## 2026-09-14T12:29:06Z — strain benchmark (Claude Code): Capitola check of host-profile passed
+
+The harness branch `host-profile` (aa47528) passed on Capitola: 44 unit tests, 0 failed, including the new host-profile test. Nothing of mine runs on Capitola now. Next is a full-feature build on lakecat. Once that passes, harness main moves and I post the eigen/grust work order here.
+
+## 2026-09-14T12:30:22Z — strain benchmark (Claude Code): WORK ORDER for eigen, matching runs on eigen and grust
+
+The user asked for matching runs on eigen and grust. Both are 2xlarge boxes with 4 cores and 32 GB each. Quegee has 16 CPUs and 40 GiB, so these runs form their own host class, `2xlarge-4c-32g`. Inside that class, Neo4j and the Rust backends run on the same instance type, the same harness, the same Grust pin and the same graphs. That makes it a second same-hardware comparison. It is not pooled with quegee's rows.
+
+Eigen, as coordinator of eigen and grust, please run this when both hosts are free, and append START and DONE lines here for each host.
+
+**Source, on both hosts:**
+- adversarial-graph harness `main` at aa47528. It pins Grust e36c687: lean grust-memory, LanceDB resident reads, Turso bulk load.
+- A clean checkout, so the report's `harness_dirty_paths` stays empty.
+- `cargo build --release --features full-backends`
+- `scripts/fetch-datasets.sh` for web-Google, soc-Pokec-relationships, cit-Patents, GAP-road, sx-stackoverflow, soc-LiveJournal1 and com-Orkut.
+
+**Environment, on both hosts, for every run:**
+- `AG_HOST_PROFILE=2xlarge-4c-32g`. Every row then carries `host=2xlarge-4c-32g` in its profile, so it never supersedes a quegee row.
+- `AG_RSS_LIMIT_GB=26` and `AG_MEM_AVAILABLE_MIN_GB=2`: the host memory guard, sized to 32 GB.
+- Pause every co-tenant job (the hn units) for the whole window and restore it afterwards. Drop the page cache before each window, as quegee's ~/tier-window.sh does.
+- Docker Compose from the harness checkout, so Neo4j runs with the track's default container envelope (6 GiB), as on quegee.
+
+**grust runs Neo4j:**
+```
+AG_HOST_PROFILE=2xlarge-4c-32g AG_RSS_LIMIT_GB=26 AG_MEM_AVAILABLE_MIN_GB=2 \
+  scripts/run-full-tiers.sh --load-cap 14400 \
+  --datasets web-Google,soc-Pokec-relationships,cit-Patents,GAP-road,sx-stackoverflow,soc-LiveJournal1,com-Orkut neo4j
+```
+
+**eigen runs the Rust backends, same graphs, same budgets:**
+```
+AG_HOST_PROFILE=2xlarge-4c-32g AG_RSS_LIMIT_GB=26 AG_MEM_AVAILABLE_MIN_GB=2 \
+  scripts/run-full-tiers.sh --load-cap 14400 \
+  --datasets web-Google,soc-Pokec-relationships,cit-Patents,GAP-road,sx-stackoverflow,soc-LiveJournal1,com-Orkut \
+  memory turso-wal turso-mvcc lancedb
+```
+
+**Rules:**
+- `--load-cap 14400` gives every load up to 4 h, for Neo4j and Rust alike. A load that finishes inside the 7,200 s box is keyed as a boxed run. One that needed more carries `load_budget_s=14400` in its profile. Families keep their 2 h.
+- Do not change the ladder's stop rules, budgets or dataset order, or the harness. If a run fails for a host reason (Docker, disk, an OOM of the host rather than the store), say so here and rerun that pair. Do not edit its rows.
+
+**Returning the results:** rsync each host's finished `reports/<stamp>/` directories to quegee:~/src/adversarial-graph/reports-2xlarge/<host>/ (without `work/`), then append "DONE <host>" here with the stamps. I will render them as their own host class.
+
+Estimated time: several hours on each host. Neo4j's com-Orkut load alone took about 2 h on quegee's 16 CPUs, and 4 cores may need most of the 4 h budget.
+
+Do not touch quegee: its queue (~/rust-reach-6.sh) keeps running until FINISHED.
