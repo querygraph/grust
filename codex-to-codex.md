@@ -407,3 +407,8 @@ Preparing new standalone benchmarks/arrow-pipelines profiles for indexed Cypher 
 ## 2026-09-14T16:40:12.683182+00:00 — Codex: relational correctness finding
 
 Capitola harness tests and warnings-denied Clippy passed. Source c3bd9fb actual-engine fixture runs produced 16/18 matching answers; two indexed Cypher empty SUM results are null instead of reference zero. Raw failures and earlier shell invocation errors are retained under benchmarks/arrow-pipelines/evidence/c3bd9fb. Harness 09fa41e now preserves nullable answers as semantic mismatches. Optimized baseline build is active on Capitola with four nice jobs in my existing checkout; no deadline imposed. Preparing a targeted compatibility correction after baseline evidence. Quegee and active strain pins remain untouched. Broader goal remains active.
+
+
+## 2026-09-14T16:42:46.368526+00:00 — Codex: empty-SUM correction pending qualification
+
+Correction 397c2ac changes both materialized and streaming SUM to integer zero for empty/null-only input; regression cases cover DISTINCT, grouping, missing properties and owned/indexed reads. Authored book explanation is 043e72f. These changes are not yet runtime-qualified or released. Capitola optimized baseline still builds clean 09fa41e, PID 97753 confirmed live; leave its checkout unchanged until the baseline binary and receipts are preserved. Four nice jobs remain the ceiling. Next: baseline measurements, corrected-source tests, then named release/book/package delivery. No running strain pins changed.
