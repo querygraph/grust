@@ -103,7 +103,6 @@ async fn endpoint_joins_preserve_exact_relationship_multiplicity() {
 
 #[tokio::test]
 async fn parsed_relationship_queries_match_portable_results() {
-    use datafusion::arrow::array::{Array, Int64Array};
     let engine = DataFusionEngine::new(ExecutionOptions {
         working_memory_bytes: (16 * 1024 * 1024).try_into().unwrap(),
         target_partitions: 4.try_into().unwrap(),
@@ -180,32 +179,9 @@ async fn parsed_relationship_queries_match_portable_results() {
         );
         let mut rows = Vec::new();
         for batch in frame.collect().await.unwrap() {
-            for row in 0..batch.num_rows() {
-                rows.push(
-                    batch
-                        .columns()
-                        .iter()
-                        .map(|column| {
-                            if column.is_null(row) {
-                                Value::Null
-                            } else if let Some(values) =
-                                column.as_any().downcast_ref::<Int64Array>()
-                            {
-                                Value::Int(values.value(row))
-                            } else {
-                                Value::String(
-                                    column
-                                        .as_any()
-                                        .downcast_ref::<StringArray>()
-                                        .unwrap()
-                                        .value(row)
-                                        .into(),
-                                )
-                            }
-                        })
-                        .collect::<Vec<_>>(),
-                );
-            }
+            let decoded = decode_result_batch(&batch).unwrap();
+            assert_eq!(decoded.columns, expected.columns, "{text}");
+            rows.extend(decoded.rows);
         }
         assert_eq!(rows, expected.rows, "{text}");
     }
