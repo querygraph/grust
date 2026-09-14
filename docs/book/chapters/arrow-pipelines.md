@@ -213,6 +213,16 @@ The count includes column metadata, delimiters, escaping and inter-row commas,
 including empty results. Exceeding either limit returns an error with no partial
 result. One decoded batch still requires separate memory admission.
 
+The unreleased `decode_result_batch_with_context` charges cumulative logical
+copy bytes before creating portable rows and strings. It measures the actual
+Arrow slice, including null-aware UTF-8 lengths, column names and row/value
+containers. `collect_result_with_context` also charges collection metadata and
+moved row containers, and shares cancellation/deadline control. Controlled
+`GraphSnapshot::execute_with_context` now uses this collector. The charge stays
+consumed after output is dropped; it is not a live-heap or allocator-capacity
+measurement. Arrow input, validation descriptors and operator allocations remain
+separate. No query is automatically routed on this basis.
+
 DataFusion's working-memory pool and these output checks do not enforce Cypher's
 candidate-work, intermediate-copy, query/input or deadline contracts. Automatic
 selection remains pending until those boundaries and measured cost decisions

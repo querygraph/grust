@@ -82,14 +82,15 @@ impl LanceDbGraphStore {
             }
             report.edges += rows.len();
         }
-        Self::compact(&node_table).await?;
-        Self::compact(&edge_table).await?;
+        Self::finish_bulk_load(&node_table, "id").await?;
+        Self::finish_bulk_load(&edge_table, "key").await?;
         for (_, table) in &typed_nodes {
-            Self::compact(table).await?;
+            Self::finish_bulk_load(table, "id").await?;
         }
         for (_, table) in &typed_edges {
-            Self::compact(table).await?;
+            Self::finish_bulk_load(table, "key").await?;
         }
+        self.reads.release_after_write();
         Ok(report)
     }
 }
