@@ -89,15 +89,20 @@ pub struct TursoGraphStore {
 impl TursoGraphStore {
     pub async fn connect(config: TursoConfig) -> Result<Self> {
         validate_identifier(&config.table_prefix)?;
-        let db = turso::Builder::new_local(&config.path)
-            .build()
-            .await
-            .map_err(|err| {
-                GrustError::Backend(format!(
-                    "failed to open Turso database at {}: {err}",
-                    config.path
-                ))
-            })?;
+        let mut builder = turso::Builder::new_local(&config.path);
+        if config.journal_mode == TursoJournalMode::Mvcc {
+            // MVCC's automatic checkpoints run PASSIVE instead of TRUNCATE,
+            // so they do not block this store's other readers and writers;
+            // put_graph still ends in one TRUNCATE checkpoint. The option is
+            // experimental in Turso 0.7.2 and only changes MVCC checkpoints.
+            builder = builder.experimental_mvcc_passive_checkpoint(true);
+        }
+        let db = builder.build().await.map_err(|err| {
+            GrustError::Backend(format!(
+                "failed to open Turso database at {}: {err}",
+                config.path
+            ))
+        })?;
         let conn = db.connect().map_err(|err| {
             GrustError::Backend(format!("failed to connect to Turso database: {err}"))
         })?;
