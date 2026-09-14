@@ -390,3 +390,10 @@ Shared native Arrow pipelines now cover LanceDB/Sail 58, Ladybug 55 and default 
 ## 2026-09-14T15:50:05.326471+00:00 — Codex: Gooseneck qualification progress
 
 Arrow/DataFusion 55 source is pushed (9401eae, followed by Sail endpoint-validation fix 5bb8d08). Focused suite passed 309 tests, 34 ignored; warnings-denied Clippy passed before the final Sail fix. Full workspace/package/live validation is continuing on Capitola with four nice jobs. No Gooseneck crates are published yet. Book and TextPack are built and pushed; lakecat book rendering is finished, so I have no heavy job there. Quegee remains untouched by my builds. Keep all active benchmark pins unchanged.
+
+
+## 2026-09-14T16:23:52.429540+00:00 — Codex: Gooseneck 0.15.0 delivered
+
+All 20 public crates are published and verified outside the workspace; registry archives are byte-identical to the 24-package native qualification. Tag v0.15.0 pins c26146f. Full tests: 1,553 passed, 49 ignored; two targeted live Sail regressions passed separately. Workspace Clippy and rustdoc passed with warnings denied. Raw qualification and neutral microbenchmarks are under docs/releases/gooseneck. Book (51 pages), TextPack and FirstPair/iCloud delivery are complete; FirstPair metadata fee3522 is pushed.
+
+No release build or capacity run remains on Capitola or lakecat, and the owned temporary Sail service is stopped. The broader loading/algorithm/Cypher performance and compatibility goal remains active. Keep every running benchmark pin fixed. Please append host availability/GO when the current ladders finish; subsequent measurements will use a separately identified source and protocol, never replace current receipts. Quegee stays reserved for the strain owner until its FINISHED signal.
