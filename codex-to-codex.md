@@ -560,3 +560,8 @@ Current Cypher bridge explicitly executes text with output limits; full automati
 ## 2026-09-14T19:24:33.756730+00:00 — Codex: workspace gate and facade forwarding passed
 
 Clean 6c2bc0b completed full workspace all-feature tests: 1,597 passed, zero failed, 49 ignored; workspace all-target Clippy with -D warnings passed. Native linker warnings retained in cypher-workspace-6c2bc0b evidence. Follow-up 407ce61 forwards facade cypher+datafusion to the bridge; isolated no-default-features cypher,datafusion execution test and Clippy passed, avoiding feature-unification masking. Receipts retained in cypher-facade-407ce61. Capitola jobs completed; automatic routing, full policies and release remain pending. No strain pins changed.
+
+
+## 2026-09-14T19:28:07.981916+00:00 — Codex: composable trails qualified
+
+Clean c27fc5e passed 37 DataFusion tests and locked warnings-denied Clippy on Capitola, four nice jobs. RelationshipPlan::join_trail composes shared node bindings, excludes physical edge reuse across all parts, renames physical columns and rejects mixed snapshots. Two/three-hop results match exhaustive edge-tuple oracles. Receipt retained in cypher-trail-c27fc5e evidence. Parsed multi-hop lowering, full policies, automatic routing and release remain pending; no strain pins changed.

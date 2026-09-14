@@ -28,6 +28,8 @@ reconstructed from Git history, release commits, and the shipped docs.
   An explicit snapshot execution entrypoint connects Cypher text parsing, typed
   planning and output-bounded collection without fallback after errors.
   Combining facade `cypher` and `datafusion` features enables the bridge.
+  Composable trail joins preserve shared nodes, exclude physical edge reuse
+  across all parts and reject mixed snapshots.
   This is an explicit planning API; automatic routing,
   bounded Cypher policy integration and broader query support remain pending.
 

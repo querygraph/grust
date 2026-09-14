@@ -219,3 +219,10 @@ selection remains pending until those boundaries and measured cost decisions
 are integrated. The completed scan profile reports conversion/preparation costs
 separately; join throughput is not yet qualified. Passing explicit execution
 tests does not establish backend-wide speed or resource-policy parity.
+
+`RelationshipPlan::join_trail` composes plans through shared node bindings and
+excludes physical edge reuse across all joined parts. Parallel edges remain
+distinct. Plans must come from the same captured snapshot; cloned handles retain
+that identity. Physical columns are renamed before composition to avoid alias
+collisions. This is a lazy operator; parsed multi-hop lowering and path-resource
+admission remain separate work.

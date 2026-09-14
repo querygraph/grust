@@ -145,3 +145,10 @@ never executed. Parse, semantic, execution and output-limit errors propagate
 without fallback. This explicitly selects DataFusion; query/input admission,
 candidate work, intermediate memory, deadlines and cost-based routing remain
 separate integration requirements.
+
+`RelationshipPlan::join_trail` composes plans through shared node bindings and
+excludes physical edge reuse across all joined parts. Parallel edges remain
+distinct. Plans must come from the same captured snapshot; cloned handles retain
+that identity. Physical columns are renamed before composition to avoid alias
+collisions. This is a lazy operator; parsed multi-hop lowering and path-resource
+admission remain separate work.
