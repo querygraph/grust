@@ -191,3 +191,14 @@ exact serialized size; parameter/output counting does not allocate encoded JSON.
 Oversized parameters fail before graph inspection. Preparation does not authorize
 or bind a backend snapshot, install execution budgets, or qualify a DataFusion
 route. Route-specific candidate/intermediate accounting must still be enforced.
+
+### Exact snapshot statistics (unreleased)
+
+`GraphSnapshot::statistics()` returns exact node/edge row counts, original input
+batch counts and the logical bytes added for UInt64 relationship ordinals. These
+are cached during capture and read in constant time without a provider scan or
+graph export. Cloned snapshots keep identical statistics; session catalog
+replacement cannot change them. Batch counts do not claim execution parallelism.
+Selectivity, join cardinalities, serialized graph size and total memory are not
+inferred from these counts. Automatic routing still requires qualified costs and
+complete resource admission.

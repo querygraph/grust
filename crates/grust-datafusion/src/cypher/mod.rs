@@ -23,7 +23,7 @@ pub use relationship::{GraphBindings, RelationshipPlan};
 pub use scan::{
     NodeScanPlan, UnsupportedScan, lower_node_scan, lower_node_scan_with_parameters, plan_node_scan,
 };
-pub use snapshot::{EDGE_ORDINAL, GraphSnapshot};
+pub use snapshot::{EDGE_ORDINAL, GraphSnapshot, SnapshotStatistics};
 
 use datafusion::{
     arrow::datatypes::{DataType, Schema},

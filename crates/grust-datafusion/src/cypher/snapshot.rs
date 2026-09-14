@@ -18,6 +18,21 @@ use std::sync::Arc;
 /// Ordinals are unique only within one [`GraphSnapshot`] and survive partitioning.
 pub const EDGE_ORDINAL: &str = "__grust_edge_ordinal";
 
+/// Exact counts from the captured native tables, not optimizer estimates.
+/// Original batch counts describe input layout, not execution parallelism.
+/// These values do not estimate selectivity, join cardinality, serialized graph
+/// size, retained input memory or total process memory.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct SnapshotStatistics {
+    pub node_rows: usize,
+    pub edge_rows: usize,
+    pub node_batches: usize,
+    pub edge_batches: usize,
+    /// Logical UInt64 identity payload added during capture. Allocator capacity
+    /// and array/schema metadata are not included.
+    pub edge_ordinal_bytes: usize,
+}
+
 /// Validated, immutable node/edge provider pair for one captured graph.
 /// Clones share providers and Arrow buffers. Replacing a session catalog cannot
 /// change either side of this pair. Construction allocates eight bytes per edge
@@ -28,6 +43,7 @@ pub struct GraphSnapshot {
     pub(super) identity: Arc<()>,
     nodes: Arc<dyn TableProvider>,
     edges: Arc<dyn TableProvider>,
+    statistics: SnapshotStatistics,
 }
 impl GraphSnapshot {
     /// Capture validated native Arrow tables without copying property buffers.
@@ -36,11 +52,29 @@ impl GraphSnapshot {
     /// domain, even when its rows happen to receive the same ordinal numbers.
     pub fn try_new(engine: &DataFusionEngine, graph: ArrowGraphTables) -> Result<Self> {
         let (nodes, edges) = graph.into_tables();
+        let statistics = SnapshotStatistics {
+            node_rows: nodes.num_rows(),
+            edge_rows: edges.num_rows(),
+            node_batches: nodes.batches().len(),
+            edge_batches: edges.batches().len(),
+            edge_ordinal_bytes: edges
+                .num_rows()
+                .checked_mul(size_of::<u64>())
+                .ok_or_else(|| DataFusionError::Plan("edge ordinal byte size overflow".into()))?,
+        };
         Ok(Self {
             identity: Arc::new(()),
             nodes: engine.table_provider(nodes)?,
             edges: engine.table_provider(with_ordinals(edges)?)?,
+            statistics,
         })
+    }
+
+    /// Read exact capture metadata in constant time without scanning providers,
+    /// exporting the graph or planning a query. Clones retain the same counts;
+    /// session catalog replacement cannot change this snapshot's statistics.
+    pub fn statistics(&self) -> SnapshotStatistics {
+        self.statistics
     }
 
     /// Build a plan directly from this snapshot's node provider.

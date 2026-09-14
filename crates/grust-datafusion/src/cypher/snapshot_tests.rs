@@ -42,6 +42,12 @@ async fn physical_edge_identity_survives_batches_partitions_and_catalog_replacem
         .register_graph("replacement", tables.clone())
         .unwrap();
     let snapshot = GraphSnapshot::try_new(&engine, tables).unwrap();
+    let statistics = snapshot.statistics();
+    assert_eq!(statistics.node_rows, 2);
+    assert_eq!(statistics.edge_rows, 3);
+    assert_eq!(statistics.node_batches, 1);
+    assert_eq!(statistics.edge_batches, 2);
+    assert_eq!(statistics.edge_ordinal_bytes, 24);
     let captured = snapshot.edges(engine.context()).unwrap();
     let (nodes, edges) = ArrowGraph::from_graph(&Graph::new(vec![], vec![]))
         .unwrap()
@@ -95,4 +101,31 @@ async fn physical_edge_identity_survives_batches_partitions_and_catalog_replacem
         .await
         .unwrap();
     assert_eq!(nodes.iter().map(|batch| batch.num_rows()).sum::<usize>(), 2);
+    assert_eq!(snapshot.clone().statistics(), statistics);
+}
+
+#[test]
+fn empty_snapshot_statistics_are_exact_without_executing_a_plan() {
+    let engine = DataFusionEngine::new(ExecutionOptions {
+        working_memory_bytes: (1 << 20).try_into().unwrap(),
+        target_partitions: 4.try_into().unwrap(),
+        batch_rows: 1024.try_into().unwrap(),
+        spill: SpillPolicy::Disabled,
+    })
+    .unwrap();
+    let arrow = ArrowGraph::from_graph(&Graph::new(vec![], vec![])).unwrap();
+    let nodes = ArrowTable::try_new(arrow.nodes().schema(), vec![]).unwrap();
+    let edges = ArrowTable::try_new(arrow.edges().schema(), vec![]).unwrap();
+    let snapshot =
+        GraphSnapshot::try_new(&engine, ArrowGraphTables::try_new(nodes, edges).unwrap()).unwrap();
+    assert_eq!(
+        snapshot.statistics(),
+        super::SnapshotStatistics {
+            node_rows: 0,
+            edge_rows: 0,
+            node_batches: 0,
+            edge_batches: 0,
+            edge_ordinal_bytes: 0,
+        }
+    );
 }

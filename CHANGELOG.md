@@ -6,6 +6,10 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ## Unreleased
 
+- Expose exact native snapshot row/batch counts and added relationship-ordinal
+  payload bytes for routing preparation, without scanning providers or exporting
+  graph rows. Unknown selectivity and memory costs are not guessed.
+
 - Share bounded Cypher request preparation, immutable parameter admission,
   graph/index size checks and output checks through `PreparedReadRequest`.
   The reference executor uses the same checks and original absolute deadline;
