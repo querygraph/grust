@@ -108,6 +108,38 @@ impl GraphSnapshot {
         graph: ArrowGraphTables,
         request: &grust_cypher::PreparedReadRequest<'_>,
     ) -> Result<Self> {
+        Self::capture_with_input_policy(engine, graph, request, None)
+    }
+
+    /// Combine exact input admission with owned ordinal payload/work admission.
+    /// The execution deadline must be no later than the prepared request's
+    /// original deadline. Existing input storage and full operator accounting
+    /// remain separate; neither check grants backend authority.
+    pub fn try_new_with_input_policy_and_context(
+        engine: &DataFusionEngine,
+        graph: ArrowGraphTables,
+        request: &grust_cypher::PreparedReadRequest<'_>,
+        execution: &grust_procedures::ExecutionContext,
+    ) -> Result<Self> {
+        if !execution
+            .limits()
+            .deadline
+            .is_some_and(|deadline| deadline <= request.deadline())
+        {
+            return Err(DataFusionError::Plan(
+                "capture execution must retain the prepared request deadline".into(),
+            ));
+        }
+        execution.checkpoint().map_err(resource_error)?;
+        Self::capture_with_input_policy(engine, graph, request, Some(execution))
+    }
+
+    fn capture_with_input_policy(
+        engine: &DataFusionEngine,
+        graph: ArrowGraphTables,
+        request: &grust_cypher::PreparedReadRequest<'_>,
+        execution: Option<&grust_procedures::ExecutionContext>,
+    ) -> Result<Self> {
         let bytes = request
             .check_serializable_graph(
                 graph.nodes().num_rows(),
@@ -115,7 +147,7 @@ impl GraphSnapshot {
                 &graph.as_serializable_graph(),
             )
             .map_err(|error| DataFusionError::External(Box::new(error)))?;
-        let mut snapshot = Self::try_new(engine, graph)?;
+        let mut snapshot = Self::capture(engine, graph, execution)?;
         snapshot.statistics.serialized_graph_bytes = Some(bytes);
         request
             .check_measured_graph(
