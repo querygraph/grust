@@ -213,7 +213,7 @@ The count includes column metadata, delimiters, escaping and inter-row commas,
 including empty results. Exceeding either limit returns an error with no partial
 result. One decoded batch still requires separate memory admission.
 
-The unreleased `decode_result_batch_with_context` charges cumulative logical
+Mantis 0.19.0's `decode_result_batch_with_context` charges cumulative logical
 copy bytes before creating portable rows and strings. It measures the actual
 Arrow slice, including null-aware UTF-8 lengths, column names and row/value
 containers. `collect_result_with_context` also charges collection metadata and

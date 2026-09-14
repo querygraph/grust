@@ -6,6 +6,8 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ## Unreleased
 
+## 0.19.0 — Mantis — 2026-09-14
+
 - Add shared-context admission before portable DataFusion result decoding,
   charging cumulative logical copy bytes for the actual Arrow slice before
   allocating row values and strings. Full operator accounting remains separate.

@@ -305,7 +305,7 @@ The typed layer is optional. It is enabled through Cargo features:
 
 ```toml
 [dependencies]
-grust = { package = "grust-graph", version = "0.18.0", features = ["typed-garde"] }
+grust = { package = "grust-graph", version = "0.19.0", features = ["typed-garde"] }
 ```
 
 `typed-garde` adds Rust-struct validation and typed lowering. A second feature,
@@ -313,7 +313,7 @@ grust = { package = "grust-graph", version = "0.18.0", features = ["typed-garde"
 
 ```toml
 [dependencies]
-grust = { package = "grust-graph", version = "0.18.0", features = ["typed-zod-rs"] }
+grust = { package = "grust-graph", version = "0.19.0", features = ["typed-zod-rs"] }
 ```
 
 `typed-zod-rs` implies `typed-garde`. That relationship matters: zod-rs checks
@@ -951,7 +951,7 @@ as `grust_node_person` or `grust_edge_presents` with typed columns for declared
 fields. That gives analytical consumers and future vector extensions a native
 columnar surface without giving up the backend-neutral graph model.
 
-The unreleased write path groups concurrent single-row writes through clones of
+Mantis 0.19.0's write path groups concurrent single-row writes through clones of
 one store into universal-table commits, preserving last-key-wins order inside a
 batch. Queue leadership is owned across cancellation and handoff. A cancelled
 leader can leave an in-flight batch's durability uncertain, which its waiting
