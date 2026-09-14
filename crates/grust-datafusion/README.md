@@ -173,3 +173,10 @@ providers/kernels must checkpoint during computation. Wrapping stream creation
 alone does not control later consumption. These methods do not charge candidate
 work or intermediate allocations and do not establish complete read-policy
 admission or automatic routing.
+
+`control_stream` retains cancellation and deadline control for an Arrow stream's
+whole lifetime. `DataFusionEngine::execute_stream_with_context` controls both
+SQL preparation and the returned stream. Batches pass through without buffer
+copies, queues or worker tasks. Completion or the first error immediately drops
+the provider stream and timer; subsequent polls remain finished. The controlled
+stream can feed `BlockingReader` and ADBC ingestion directly.

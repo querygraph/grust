@@ -12,23 +12,23 @@ use std::{
 /// Wait for explicit cancellation of an execution, without charging resources.
 /// This notification does not install a deadline timer. Runtime adapters must
 /// race the context's absolute deadline separately and continue checkpointing.
-pub struct Cancellation<'a> {
-    execution: &'a ExecutionContext,
+pub struct Cancellation {
+    execution: ExecutionContext,
     slot: Option<usize>,
 }
 
 impl ExecutionContext {
     /// Subscribe to explicit cancellation. Multiple tasks can wait independently;
     /// a previously cancelled context completes immediately on the first poll.
-    pub fn cancelled(&self) -> Cancellation<'_> {
+    pub fn cancelled(&self) -> Cancellation {
         Cancellation {
-            execution: self,
+            execution: self.clone(),
             slot: None,
         }
     }
 }
 
-impl Future for Cancellation<'_> {
+impl Future for Cancellation {
     type Output = Result<()>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
@@ -56,7 +56,7 @@ impl Future for Cancellation<'_> {
     }
 }
 
-impl Drop for Cancellation<'_> {
+impl Drop for Cancellation {
     fn drop(&mut self) {
         let Some(slot) = self.slot else { return };
         let mut state = self

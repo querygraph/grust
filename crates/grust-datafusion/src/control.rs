@@ -39,7 +39,7 @@ pub async fn run_cancellable<T>(
     }
 }
 
-fn resource_error(error: ProcedureError) -> DataFusionError {
+pub(super) fn resource_error(error: ProcedureError) -> DataFusionError {
     DataFusionError::External(Box::new(error))
 }
 

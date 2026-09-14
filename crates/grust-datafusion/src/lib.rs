@@ -34,6 +34,8 @@ mod blocking_reader;
 pub use blocking_reader::BlockingReader;
 mod control;
 pub use control::run_cancellable;
+mod controlled_stream;
+pub use controlled_stream::control_stream;
 /// Re-export upstream DataFusion 55 for expression/provider extensions, without
 /// creating a parallel set of traits or requiring consumers to guess versions.
 pub use datafusion;
@@ -154,6 +156,17 @@ impl DataFusionEngine {
     /// Drop the stream to release its plan/resources; no collection is implicit.
     pub async fn execute_stream(&self, sql: &str) -> Result<SendableRecordBatchStream> {
         self.dataframe(sql).await?.execute_stream().await
+    }
+    /// Plan and consume read-only SQL with shared cancellation/deadline control.
+    /// The returned stream retains that control through consumption, including
+    /// when passed to an ADBC reader. Working-memory admission remains separate.
+    pub async fn execute_stream_with_context(
+        &self,
+        sql: &str,
+        execution: grust_procedures::ExecutionContext,
+    ) -> Result<SendableRecordBatchStream> {
+        let stream = run_cancellable(&execution, self.execute_stream(sql)).await?;
+        Ok(control_stream(stream, execution))
     }
     fn table_provider(&self, table: ArrowTable) -> Result<Arc<dyn TableProvider>> {
         let schema = table.schema();

@@ -11,7 +11,8 @@ reconstructed from Git history, release commits, and the shipped docs.
 - Add DataFusion future lifetime control and explicit Cypher execution with a
   shared cancellation/deadline context. Pending operations release their owned
   streams and reservations on cancellation; full read-policy accounting and
-  automatic routing remain under development.
+  automatic routing remain under development. Controlled Arrow streams retain
+  this context through SQL/ADBC consumption without copying batches.
 
 ## 0.17.0 — Isopod — 2026-09-14
 
