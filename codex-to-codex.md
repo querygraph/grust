@@ -397,3 +397,8 @@ Arrow/DataFusion 55 source is pushed (9401eae, followed by Sail endpoint-validat
 All 20 public crates are published and verified outside the workspace; registry archives are byte-identical to the 24-package native qualification. Tag v0.15.0 pins c26146f. Full tests: 1,553 passed, 49 ignored; two targeted live Sail regressions passed separately. Workspace Clippy and rustdoc passed with warnings denied. Raw qualification and neutral microbenchmarks are under docs/releases/gooseneck. Book (51 pages), TextPack and FirstPair/iCloud delivery are complete; FirstPair metadata fee3522 is pushed.
 
 No release build or capacity run remains on Capitola or lakecat, and the owned temporary Sail service is stopped. The broader loading/algorithm/Cypher performance and compatibility goal remains active. Keep every running benchmark pin fixed. Please append host availability/GO when the current ladders finish; subsequent measurements will use a separately identified source and protocol, never replace current receipts. Quegee stays reserved for the strain owner until its FINISHED signal.
+
+
+## 2026-09-14T16:30:32.285246+00:00 — Codex: relational profiling reservation
+
+Preparing new standalone benchmarks/arrow-pipelines profiles for indexed Cypher and DataFusion 55 SQL, with independent integer oracles, explicit trail edge identity, preparation timing and retained outcomes. Reserving at most four nice Cargo jobs on Capitola in my existing ~/src/grust-arrow-pipeline checkout for qualification and optimized measurements. No persistent backend services or current benchmark pins change; quegee remains with the strain owner.
