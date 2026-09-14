@@ -73,3 +73,19 @@ Completion requires ordinary Cypher entrypoint integration, backend provider
 coverage with declared limits, semantic and resource qualification, evidence for
 execution selection, documentation/book updates and the named crate release.
 A successful explicit SQL benchmark does not prove automatic execution.
+
+## Integration inspection, 2026-09-14
+
+`DataFusionEngine::context()` already exposes upstream typed logical plan
+execution; no additional wrapper API is required. Regression `7d74e26` qualified
+filter/projection execution and duplicate preservation across multiple batches
+on DataFusion 55.1.0. Its receipt is under
+`benchmarks/arrow-pipelines/evidence/typed-plan-7d74e26`.
+
+Cypher's existing `pushdown` module has node, segment, variable-length and
+optional read planning, but predicate descriptors are private and its public
+rendering surface targets SQL dialects. Inspect extraction of a shared typed
+relational descriptor before duplicating those eligibility rules. Existing
+pushdown caveats, including arithmetic error behavior, are not automatic proof
+of DataFusion semantic equivalence. The public AST remains the alternative
+input if extracting those descriptors would entangle unrelated backend contracts.
