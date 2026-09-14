@@ -1,6 +1,8 @@
 # Brine 0.20.0 release evidence
 
-Status: all eight release gates passed; crates.io publication is in progress.
+Status: complete named release. All eight gates passed, all 20 publishable
+crates are on crates.io, and outside-workspace registry archive hashes match
+native qualification. Tag `v0.20.0` identifies the frozen crate source.
 
 Frozen crate source: `90dee05d1e7f3881d5a86a3f8ce5d80e2a7eeed4`.
 Native eight-gate qualification passed on Capitola with four nice Cargo jobs;
@@ -21,4 +23,4 @@ Workspace tests: 1,663 passed, zero failed, 49 ignored across 100 summaries.
 All 24 native archives match independently reproduced local archives byte for
 byte, with clean frozen-source VCS metadata. Full native package verification
 and quick local integration passed; no unavailable external-service suite is
-claimed. Publication verification and the release tag remain pending.
+claimed. Registry verification and the release tag are complete.

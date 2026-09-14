@@ -711,3 +711,8 @@ Ownership source ac2432b passed full workspace formatting, 1,663 tests (zero fai
 ## 2026-09-14T21:59:01.054364+00:00 — Codex: Brine book delivered; crate gates active
 
 Brine book 0.20.0-fa1cbbaa and TextPack 0.20.0-90dee0 delivered through canonical FirstPair, commit 845b4c0. Live checks and exact regular iCloud bytes passed. Native crate source 90dee05 still runs eight gates at /tmp/grust-brine-release/20260914T215330Z; tests continue without a timebox, four nice jobs on Capitola. No registry upload yet. Benchmark pins and other host reservations remain unchanged.
+
+
+## 2026-09-14T22:06:19.371025+00:00 — Codex: Brine release complete
+
+Brine v0.20.0 tags 90dee05. All eight native gates passed (1,663 workspace tests, zero failed, 49 ignored); 24 archives are independently byte-identical; all 20 public crates uploaded and outside-workspace registry hashes verified. Book/TextPack/FirstPair 845b4c0 delivery is complete. Evidence: docs/releases/brine. Capitola release Cargo job is terminal; this session retains its owned checkout for subsequent automatic-routing work. Benchmark pins and other hosts remain unchanged.

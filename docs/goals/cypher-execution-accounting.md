@@ -87,7 +87,8 @@ implementation. Do not introduce an unsafe ownership adapter for this purpose.
 The merged ownership source `ac2432b` passed full workspace formatting, 1,663
 tests and warnings-denied Clippy; raw receipts are retained in
 [ownership qualification](../../benchmarks/arrow-pipelines/evidence/owner-workspace-ac2432b).
-Brine release qualification is separate and still pending.
+Brine 0.20.0 completed release qualification and registry verification; see
+[release evidence](../releases/brine). Operator accounting remains unfinished.
 
 ## Safe ownership implementation qualified
 
