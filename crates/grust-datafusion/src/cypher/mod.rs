@@ -1,4 +1,7 @@
 //! Typed Cypher expression lowering. Query routing is not yet implemented.
+mod scan;
+pub use scan::lower_node_scan;
+
 use datafusion::{
     arrow::datatypes::{DataType, Schema},
     common::{Column, ScalarValue},

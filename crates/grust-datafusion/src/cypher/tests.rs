@@ -91,3 +91,37 @@ async fn boolean_null_truth_tables_execute_with_cypher_results() {
         }
     }
 }
+
+#[tokio::test]
+async fn parsed_node_scan_filters_and_projects_native_property_columns() {
+    use datafusion::{
+        arrow::array::{Int64Array, RecordBatch, StringArray},
+        execution::context::SessionContext,
+    };
+    let context = SessionContext::new();
+    let batch = RecordBatch::try_from_iter(vec![
+        (
+            "label",
+            std::sync::Arc::new(StringArray::from(vec!["N", "N", "Other"]))
+                as datafusion::arrow::array::ArrayRef,
+        ),
+        (
+            "property.age",
+            std::sync::Arc::new(Int64Array::from(vec![Some(1), Some(3), Some(5)])),
+        ),
+    ])
+    .unwrap();
+    let query =
+        grust_cypher::parser::parse_query("MATCH (n:N) WHERE n.age > 1 RETURN n.age AS age")
+            .unwrap();
+    let frame = lower_node_scan(&query, context.read_batch(batch).unwrap())
+        .unwrap()
+        .unwrap();
+    let batches = frame.collect().await.unwrap();
+    let values = batches[0]
+        .column(0)
+        .as_any()
+        .downcast_ref::<Int64Array>()
+        .unwrap();
+    assert_eq!(values.values().as_ref(), &[3]);
+}
