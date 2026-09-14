@@ -16,7 +16,7 @@
 //!
 //! Search returns the cosine-nearest record ids; the vault still applies the
 //! label gate, so ranking is never an authorization path. A hybrid graph
-//! re-rank ([`VectorIndex::with_neighbors`]) can boost ids that co-mention an
+//! re-rank ([`VectorIndex::search_hybrid`]) can boost ids that co-mention an
 //! entity, Zep-style — but that is a *reordering* of already-authorized
 //! candidates, never a widening.
 

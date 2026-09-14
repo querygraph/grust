@@ -19,7 +19,9 @@ use table_handles::{TableHandles, TableLifecycle};
 /// The resident read snapshot and when to build it.
 #[derive(Default)]
 struct ReadCache {
-    current: RwLock<Option<Arc<ReadSnapshot>>>,
+    current: RwLock<Option<(u64, Arc<ReadSnapshot>)>>,
+    /// Invalidations distinguish recreated tables even when versions repeat.
+    generation: std::sync::atomic::AtomicU64,
     /// The table versions the last read saw without a current snapshot.
     /// A snapshot is built on the second read at the same versions, so a
     /// caller that alternates writes and reads keeps the direct scans
@@ -31,6 +33,10 @@ struct ReadCache {
 
 impl ReadCache {
     fn invalidate(&self) {
+        // Publish the generation change before clearing cached state. A builder
+        // already in flight may finish later, but keeps its older generation.
+        self.generation
+            .fetch_add(1, std::sync::atomic::Ordering::AcqRel);
         *self
             .current
             .write()
@@ -129,6 +135,10 @@ impl LanceDbGraphStore {
         {
             return Ok(None);
         }
+        let generation = self
+            .reads
+            .generation
+            .load(std::sync::atomic::Ordering::Acquire);
         let nodes = self.open_nodes().await?;
         let edges = self.open_edges().await?;
         let version = |table: Table| async move {
@@ -142,8 +152,11 @@ impl LanceDbGraphStore {
                 .current
                 .read()
                 .expect("LanceDB read cache lock poisoned")
-                .clone()
-                .filter(|snapshot| snapshot.versions == versions)
+                .as_ref()
+                .filter(|(cached_generation, snapshot)| {
+                    *cached_generation == generation && snapshot.versions == versions
+                })
+                .map(|(_, snapshot)| snapshot.clone())
         };
         if let Some(snapshot) = current() {
             return Ok(Some(snapshot));
@@ -168,7 +181,7 @@ impl LanceDbGraphStore {
             .reads
             .current
             .write()
-            .expect("LanceDB read cache lock poisoned") = Some(snapshot.clone());
+            .expect("LanceDB read cache lock poisoned") = Some((generation, snapshot.clone()));
         Ok(Some(snapshot))
     }
 

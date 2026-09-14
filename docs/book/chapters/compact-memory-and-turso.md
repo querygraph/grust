@@ -41,7 +41,9 @@ not the transaction contract of `apply_mutations` or explicit mutation scripts.
 LanceDB can retain a resident snapshot of its node and edge tables. The snapshot
 is built on a second read at unchanged table versions and serves anchored reads
 and traversal through interned IDs and adjacency slots. A version change sends
-reads back to the tables; `with_read_snapshot(false)` disables the mirror for
+reads back to the tables. Cache generations also prevent a build started before
+table recreation from repopulating the cache with old rows.
+`with_read_snapshot(false)` disables the mirror for
 all clones of that store. This trades retained process memory for fewer scans.
 
 Turso bulk loads bind prepared multi-row upserts instead of retaining SQL text

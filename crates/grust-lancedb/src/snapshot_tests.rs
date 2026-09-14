@@ -242,3 +242,24 @@ async fn a_resident_snapshot_never_hides_a_later_write() {
     assert!(fast.reads.current.read().unwrap().is_none());
     assert_eq!(out(fast.clone()).await, 0);
 }
+
+#[tokio::test]
+async fn recreation_rejects_a_snapshot_published_by_an_older_reader() {
+    let dir = tempfile::tempdir().unwrap();
+    let (store, _) = pair(dir.path(), 2).await;
+    let mut node = Node::new("N", "n", Props::new());
+    node.props.insert("rank".into(), Value::Int(1));
+    store.put_node(&node).await.unwrap();
+    store.get_node(&node.id).await.unwrap();
+    store.get_node(&node.id).await.unwrap();
+    let stale = store.reads.current.read().unwrap().clone();
+    assert!(stale.is_some());
+
+    store.clear().await.unwrap();
+    node.props.insert("rank".into(), Value::Int(2));
+    store.put_node(&node).await.unwrap();
+    // An in-flight snapshot build can publish after clear invalidates the cache.
+    // Recreated table versions can equal the previous generation's versions.
+    *store.reads.current.write().unwrap() = stale;
+    assert_eq!(store.get_node(&node.id).await.unwrap(), Some(node));
+}

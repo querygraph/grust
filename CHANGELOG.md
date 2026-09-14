@@ -8,6 +8,9 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ## 0.14.0 — Acorn — 2026-09-14
 
+- LanceDB snapshot invalidation tracks table generations as well as versions,
+  so an older in-flight build cannot make recreated tables serve stale rows.
+
 - `grust-lancedb` answers anchored reads (`get_node`, `get_nodes`,
   `get_edges`, `traverse`, `traverse_ids`) from a resident read snapshot
   instead of a filtered scan of the whole table per call. LanceDB keeps no

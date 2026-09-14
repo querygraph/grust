@@ -642,7 +642,7 @@ impl GraphStore for TursoGraphStore {
     /// commit for all of its rows and either every row lands or none does.
     ///
     /// Rows go in as multi-row upserts of `batch_size` rows through prepared
-    /// statements with bound values (see [`TursoGraphStore::put_graph_rows`]):
+    /// statements with bound values:
     /// each statement shape is parsed once per load, not once per batch, and
     /// only one batch of bound values is alive at a time instead of the SQL
     /// text of the whole load. The upserts are the same `ON CONFLICT DO
