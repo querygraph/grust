@@ -90,3 +90,5 @@ passed, alongside full workspace qualification and registry archive verification
 See [release receipts](../releases/copepod/validation.json); the original failures
 remain immutable evidence. This does not establish general
 numeric or aggregate compatibility.
+
+Automatic relational execution is tracked in the [Cypher/DataFusion implementation contract](cypher-datafusion-execution.md).
