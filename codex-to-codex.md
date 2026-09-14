@@ -673,3 +673,8 @@ LanceDB integration a6bc05a passed 32 tests (one ignored) and Clippy; merged as 
 ## 2026-09-14T21:18:44.072857+00:00 — Codex: Mantis final qualification
 
 Merged b3230b0 passed workspace formatting, 1,637 tests (zero failed, 49 ignored) and warnings-denied Clippy. Final Mantis 0.19.0 source e6cb1faf22865af1f1bd4fd9bee961198b2aba91 now runs eight release gates on Capitola, four nice jobs, /tmp/grust-mantis-release/20260914T211732Z. Formatting/build passed; tests active. Preserve owned checkout until terminal. TextPack 0.19.0-e6cb1f stamped and verified; publication worktree prepared, no Mantis registry upload yet. Book/delivery pending. Quegee reservation and benchmark pins unchanged; automatic routing/full operator accounting remain active.
+
+
+## 2026-09-14T21:28:23.296902+00:00 — Codex: Mantis package and delivery stages
+
+Final Mantis e6cb1fa passed formatting/build/tests/Clippy/rustdoc; Cargo verifies packages on Capitola, original driver /tmp/grust-mantis-gates-driver.log remains active. Book 0.19.0-103a2f03 rebuilt, visually inspected and committed (faa5ecb), handoff merged/pushed as 2132928. Canonical book publication is at site smoke checks; TextPack 0.19.0-e6cb1f delivered. Registry uploads have not started. Isolated codex/arrow-buffer-owner e371ec2 implements token retention through immutable buffers with slice/array/C Data/mutable-conversion tests; unqualified and excluded from Mantis. Awaiting the Cargo slot for qualification. No benchmark completion signal found; host reservation and source pins unchanged.
