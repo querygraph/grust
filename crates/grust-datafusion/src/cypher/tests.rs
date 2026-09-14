@@ -304,7 +304,7 @@ async fn count_expression_ignores_nulls_and_distinct_removes_duplicates() {
         .unwrap();
         let context = SessionContext::new();
         let query = grust_cypher::parser::parse_query(
-            "MATCH (n) RETURN count(n.x) AS count, count(DISTINCT n.x) AS unique",
+            "MATCH (n) RETURN count(n.x) AS count, count(DISTINCT n.x) AS distinct_count",
         )
         .unwrap();
         let batches = lower_node_scan(&query, context.read_batch(batch).unwrap())
@@ -325,4 +325,18 @@ async fn count_expression_ignores_nulls_and_distinct_removes_duplicates() {
             );
         }
     }
+}
+
+#[test]
+fn scalar_parameters_are_bound_without_lossy_numeric_conversion() {
+    let expression = CypherExpr::Parameter("limit".into());
+    let parameters = CypherParameters::from([("limit".into(), Value::Int(i64::MAX))]);
+    assert_eq!(
+        lower_expression_with_parameters(&expression, "n", &Schema::empty(), &parameters).unwrap(),
+        lit(i64::MAX)
+    );
+    assert_eq!(
+        lower_expression(&expression, "n", &Schema::empty()),
+        Err(UnsupportedExpression::MissingParameter)
+    );
 }

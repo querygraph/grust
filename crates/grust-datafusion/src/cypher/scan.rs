@@ -1,11 +1,12 @@
 //! Initial typed node-scan lowering over a caller-owned immutable provider.
-use super::lower_expression;
+use super::lower_expression_with_parameters;
 use datafusion::{
     common::{Column, DataFusionError, Result},
     dataframe::DataFrame,
     functions_aggregate::expr_fn::{count, count_distinct},
     logical_expr::{Expr, lit},
 };
+use grust_cypher::CypherParameters;
 use grust_cypher::ast::{Clause, Expr as CypherExpr, Query};
 
 /// Lower an analyzed single-node MATCH/WHERE/RETURN into a typed DataFrame.
@@ -15,6 +16,16 @@ use grust_cypher::ast::{Clause, Expr as CypherExpr, Query};
 /// policy or choose an execution route; callers must admit resources separately.
 /// Explicit projection aliases are required in this initial implementation.
 pub fn lower_node_scan(query: &Query, input: DataFrame) -> Result<Option<DataFrame>> {
+    lower_node_scan_with_parameters(query, input, &CypherParameters::new())
+}
+
+/// Parameter-bound form of [`lower_node_scan`]. Parameter types participate in
+/// eligibility; callers must replan when bindings change.
+pub fn lower_node_scan_with_parameters(
+    query: &Query,
+    input: DataFrame,
+    parameters: &CypherParameters,
+) -> Result<Option<DataFrame>> {
     grust_cypher::semantics::analyze(query)
         .map_err(|error| DataFusionError::Plan(error.to_string()))?;
     let [part] = query.parts.as_slice() else {
@@ -64,7 +75,9 @@ pub fn lower_node_scan(query: &Query, input: DataFrame) -> Result<Option<DataFra
             let expression = match (*star, args.as_slice()) {
                 (true, []) if !*distinct => lit(1_i64),
                 (false, [argument]) => {
-                    let Ok(expression) = lower_expression(argument, variable, schema) else {
+                    let Ok(expression) =
+                        lower_expression_with_parameters(argument, variable, schema, parameters)
+                    else {
                         return Ok(None);
                     };
                     expression
@@ -80,7 +93,9 @@ pub fn lower_node_scan(query: &Query, input: DataFrame) -> Result<Option<DataFra
                 .alias(alias),
             );
         } else {
-            let Ok(expression) = lower_expression(&item.expr, variable, schema) else {
+            let Ok(expression) =
+                lower_expression_with_parameters(&item.expr, variable, schema, parameters)
+            else {
                 return Ok(None);
             };
             groups.push(expression.alias(alias));
@@ -88,10 +103,12 @@ pub fn lower_node_scan(query: &Query, input: DataFrame) -> Result<Option<DataFra
         expressions.push(Expr::Column(Column::from_name(alias.clone())));
     }
     let predicate = match &matched.where_clause {
-        Some(expression) => match lower_expression(expression, variable, schema) {
-            Ok(expression) => Some(expression),
-            Err(_) => return Ok(None),
-        },
+        Some(expression) => {
+            match lower_expression_with_parameters(expression, variable, schema, parameters) {
+                Ok(expression) => Some(expression),
+                Err(_) => return Ok(None),
+            }
+        }
         None => None,
     };
     let mut frame = input;
