@@ -317,3 +317,20 @@ same immutable projection; estimates are not admissible substitutes. Backend
 snapshot authority, pre-existing input buffers, ordinal allocation and execution
 work/intermediates remain separate obligations. This is input-size admission,
 not a complete bounded DataFusion executor or automatic routing.
+
+### Owned buffer admission (unreleased)
+
+`retain_buffer_owner` attaches an application token to an immutable Arrow buffer
+through safe `bytes::Bytes` ownership. Native slices, array clones and C Data
+exports retain that owner without copying bytes. Existing clones made before
+attachment do not acquire the token. Reserve storage before allocation; this
+helper preserves ownership and does not itself measure memory.
+
+`GraphSnapshot::try_new_with_context` admits the added UInt64 ordinal payload
+and construction work. Reservations stay with the buffers after the snapshot,
+provider or result stream disappears. The combined
+`try_new_with_input_policy_and_context` also checks exact input size and requires
+an execution deadline no later than the prepared request's deadline. Input
+buffers, provider/schema metadata and allocator capacity remain outside the
+logical ordinal-payload bound. These capture checks do not establish backend
+authority, full operator accounting or automatic execution selection.

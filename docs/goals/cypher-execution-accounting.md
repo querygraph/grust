@@ -89,3 +89,14 @@ no mutation, handle empty buffers, and retain ownership across slices and FFI
 release. First qualify the shared mechanism across enabled Arrow majors before
 using it for capture ordinals or algorithm batches. The source inspection is a
 design lead, not an implemented or verified safety claim.
+
+## Safe ownership implementation qualified
+
+The implementation uses `bytes::Bytes::from_owner` and Arrow's safe conversion,
+not Grust-owned unsafe code. Shared tests cover Arrow 55/58/59 buffers, native
+array slices, empty buffers, C Data release and rejected mutable conversion.
+`2d2fcac` passed 67 Arrow tests and Clippy; `6bd5d67` qualifies combined exact
+input-policy and owned ordinal capture. Reservations follow the actual buffers,
+including after snapshots and emitted batch parents are dropped. Failed later
+batches release earlier allocations. Original-input storage, metadata and full
+operator accounting remain outside this increment.

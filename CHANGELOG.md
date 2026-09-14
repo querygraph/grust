@@ -6,6 +6,12 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ## Unreleased
 
+- Retain application-owned tokens through native Arrow buffers, slices and C
+  Data export using safe shared Bytes ownership across Arrow 55/58/59.
+- Admit snapshot relationship-ordinal payload and construction work before
+  allocation, retaining reservations with emitted buffers. Combined input-policy
+  capture preserves the prepared request deadline and exact serialized limits.
+
 ## 0.19.0 — Mantis — 2026-09-14
 
 - Add shared-context admission before portable DataFusion result decoding,
