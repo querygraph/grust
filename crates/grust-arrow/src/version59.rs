@@ -25,3 +25,6 @@ pub use table::ArrowTable;
 #[path = "graph_tables.rs"]
 mod graph_tables;
 pub use graph_tables::ArrowGraphTables;
+
+#[path = "graph_serialization.rs"]
+mod graph_serialization;

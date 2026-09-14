@@ -6,6 +6,10 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ## Unreleased
 
+- Add a borrowed serialization view of native Arrow graph tables on Arrow
+  55/58/59. It preserves the core graph wire format without allocating row graphs
+  or copying property values, and composes with bounded output/counting writers.
+
 - Expose exact native snapshot row/batch counts and added relationship-ordinal
   payload bytes for routing preparation, without scanning providers or exporting
   graph rows. Unknown selectivity and memory costs are not guessed.

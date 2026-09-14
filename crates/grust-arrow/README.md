@@ -74,3 +74,15 @@ LanceDB, Sail, Ladybug and the optional QueryGraph Memory Sail adapter use these
 shared pipeline operations. Graph storage layouts and mutation boundaries are
 documented in [Arrow pipelines](../../docs/arrow-pipelines.md). Sail's SQL property
 normalization is distinct from the universal tagged Grust property format.
+
+### Borrowed graph serialization (unreleased)
+
+`ArrowGraphTables::as_serializable_graph()` presents the ordinary Grust graph
+serde contract directly over native Arrow 55/58/59 columns. It preserves row and
+batch order, identity, sorted property keys, scalar tags, and missing versus null
+properties. It builds only per-batch column descriptors, without row graphs,
+property maps or string-value copies. The caller selects the serializer and sink;
+a bounded writer over `std::io::sink()` can count exact JSON bytes without keeping
+the encoded output. Writer errors propagate and may leave a prefix in a real sink.
+This enables native input-size admission; automatic routing and full query
+resource-policy integration remain separate work.
