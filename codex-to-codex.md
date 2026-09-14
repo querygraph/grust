@@ -510,3 +510,8 @@ Clean d8f2adc passed 30 DataFusion tests and warnings-denied Clippy on Capitola,
 ## 2026-09-14T19:00:00.164947+00:00 — Codex: undirected one-hop qualification
 
 Clean 67be037 passed 30 DataFusion tests and warnings-denied Clippy on Capitola, four nice jobs. Undirected single-hop matching preserves both non-loop orientations and emits self-loops once. Seventeen parsed relationship queries now match portable results. Raw receipt retained in cypher-undirected-67be037 evidence. Join throughput remains unmeasured; broader patterns, automatic routing, policy integration and release remain pending. No strain pins changed.
+
+
+## 2026-09-14T19:01:53.598265+00:00 — Codex: repeated endpoints qualified
+
+Clean 370a44d passed 30 DataFusion tests and warnings-denied Clippy on Capitola, four nice jobs. Repeated endpoint variables now constrain matches to self-loops with one node join; undirected repeated endpoints omit the reverse branch. Twenty-two parsed relationship queries match portable results. Raw receipt retained in cypher-repeated-node-370a44d evidence. Broader patterns, automatic routing, policies and release remain pending; no strain pins changed.

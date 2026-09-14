@@ -93,18 +93,22 @@ external IDs. Ordinal storage costs eight bytes per edge; existing buffers are
 shared. Backend transaction identity and authorization remain caller contracts.
 
 `GraphSnapshot::directed_relationships` constructs lazy typed endpoint joins
-for three distinct node/relationship/node bindings. `RelationshipPlan` retains
+for node/relationship/node bindings. `RelationshipPlan` retains
 a `GraphBindings` resolver for scalar/aggregate composition and physical edge
 identity. This operator preserves loops and parallel relationships.
 `plan_relationship_scan` lowers parsed directed one-hop MATCH/WHERE/RETURN
-patterns with named, distinct variables, node labels and relationship types.
+patterns with named variables, node labels and relationship types.
 Undirected patterns are also admitted: both orientations preserve the same
 physical edge identity, and self-loops occur once.
 It shares projection, grouping, count/extrema, DISTINCT, ordering and pagination
-with the node planner. Repeated variables, optional
+with the node planner. Optional
 matching, variable-length traversal and automatic routing remain unsupported.
 
 Inline scalar property maps on both endpoint nodes and relationships use the
 same predicate compiler as node scans. Literal and parameter values are admitted;
 correlated expressions remain unsupported. Missing properties and null equality
 retain the portable executor's matching behavior.
+
+Repeated endpoint variables constrain the pattern to self-loops. They use one
+node join and endpoint equality; the undirected form needs no reverse branch.
+Node and relationship variables must remain distinct.

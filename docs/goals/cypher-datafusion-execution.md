@@ -66,7 +66,7 @@ validated native Arrow graph tables and retains an immutable provider pair.
 Backend transaction/authorization identity and resource admission still need
 integration. A lazy directed endpoint-join operator now retains these ordinals
 and shared typed bindings. Parsed incoming/outgoing single-hop lowering is
-implemented, as is undirected one-hop matching; repeated-variable, optional and variable-length patterns
+implemented, as are undirected and repeated-endpoint one-hop matches; optional and variable-length patterns
 remain outstanding. Parallel edges, repeated external IDs and loops must retain their
 multiplicity. Node identity and endpoint integrity need equivalent validation.
 Provider statistics must have an unknown state; guessed cardinalities cannot

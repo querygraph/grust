@@ -19,6 +19,7 @@ reconstructed from Git history, release commits, and the shipped docs.
   Parsed incoming/outgoing single-hop patterns share RETURN and inline-property
   predicate planning with scans, including parameterized edge and endpoint maps.
   Undirected one-hop patterns retain both edge orientations and emit loops once.
+  Repeated endpoints use a single node join and explicit self-loop constraint.
   This is an explicit planning API; automatic routing,
   bounded Cypher policy integration and broader query support remain pending.
 
