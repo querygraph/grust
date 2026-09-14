@@ -21,7 +21,7 @@ history.
   crates remain 0.13.0)
 
 ## Barnacles
-- Acorn — 0.14.0 (2026-09-13) ← current
+- Acorn — 0.14.0 (2026-09-14) ← current
 - Gooseneck
 
 ## Smaller and Lesser-Known

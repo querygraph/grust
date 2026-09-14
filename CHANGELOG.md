@@ -6,6 +6,8 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ## Unreleased
 
+## 0.14.0 — Acorn — 2026-09-14
+
 - `grust-lancedb` answers anchored reads (`get_node`, `get_nodes`,
   `get_edges`, `traverse`, `traverse_ids`) from a resident read snapshot
   instead of a filtered scan of the whole table per call. LanceDB keeps no
@@ -55,8 +57,6 @@ reconstructed from Git history, release commits, and the shipped docs.
   lookups and two-hop traversals, WAL as the default journal mode, MVCC's
   grouped commits (`MVCC_LOAD_COMMIT_STATEMENTS`), foreign-key checks, and
   the edge identity encoding and its migration.
-
-## 0.14.0 — Acorn — 2026-09-13
 
 - Indexed Cypher materializes a full graph for `CALL` only when the registered
   provider declares `GraphRequirement::LocalSnapshot`. Graph-free procedures

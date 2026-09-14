@@ -37,3 +37,15 @@ Turso MVCC bulk loads commit groups of 20 SQL batches. Earlier committed groups
 remain if a later group fails: MVCC `put_graph` is no longer an all-or-nothing load.
 WAL mode retains its whole-load transaction. This changes the bulk-load boundary,
 not the transaction contract of `apply_mutations` or explicit mutation scripts.
+
+LanceDB can retain a resident snapshot of its node and edge tables. The snapshot
+is built on a second read at unchanged table versions and serves anchored reads
+and traversal through interned IDs and adjacency slots. A version change sends
+reads back to the tables; `with_read_snapshot(false)` disables the mirror for
+all clones of that store. This trades retained process memory for fewer scans.
+
+Turso bulk loads bind prepared multi-row upserts instead of retaining SQL text
+for the entire graph. Missing, empty and explicit edge identities use the same
+encoding as incremental upserts. Ordinary connections allow a lazily filled
+1 GiB page cache; synced connections retain their existing configuration. MVCC
+commits node groups before edge groups, with up to 20 batches per transaction.
