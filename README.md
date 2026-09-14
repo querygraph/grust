@@ -2,8 +2,8 @@
 
 Grust is a modern property graph API for Rust.
 
-**Acorn 0.14.0 release preparation is in progress.** The versioned examples below
-target that release.
+**Acorn 0.14.0** adds reusable graph algorithms across Rust, Arrow and Cypher.
+The versioned examples below target Acorn.
 See the [qualification and release handoff](docs/GENERALIZED_ALGORITHMS.md#qualification-and-release-handoff).
 
 It gives Rust applications one small, backend-neutral way to build, validate,
