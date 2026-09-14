@@ -390,3 +390,30 @@ async fn ordering_and_parameterized_pagination_match_cypher_null_order() {
         assert_eq!(actual, expected);
     }
 }
+
+#[tokio::test]
+async fn implicit_projection_names_match_the_reference_contract() {
+    use datafusion::{
+        arrow::array::{Int64Array, RecordBatch},
+        execution::context::SessionContext,
+    };
+    let batch = RecordBatch::try_from_iter([(
+        "property.x",
+        std::sync::Arc::new(Int64Array::from(vec![1, 2])) as datafusion::arrow::array::ArrayRef,
+    )])
+    .unwrap();
+    let context = SessionContext::new();
+    for (text, expected) in [
+        ("MATCH (n) RETURN n.x", "n.x"),
+        ("MATCH (n) RETURN count(*)", "expr"),
+    ] {
+        let query = grust_cypher::parser::parse_query(text).unwrap();
+        let batches = lower_node_scan(&query, context.read_batch(batch.clone()).unwrap())
+            .unwrap()
+            .unwrap()
+            .collect()
+            .await
+            .unwrap();
+        assert_eq!(batches[0].schema().field(0).name(), expected);
+    }
+}

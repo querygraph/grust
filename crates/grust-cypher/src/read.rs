@@ -2778,7 +2778,9 @@ fn apply_skip_limit(
     Ok(())
 }
 
-fn column_name(expr: &Expr) -> String {
+/// Default output-column label used by the portable Cypher projection engine.
+/// Execution bridges should reuse this when RETURN omits an explicit alias.
+pub fn column_name(expr: &Expr) -> String {
     match expr {
         Expr::Variable(name) => name.clone(),
         Expr::Property { base, key } => format!("{}.{}", column_name(base), key),

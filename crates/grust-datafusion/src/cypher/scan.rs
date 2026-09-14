@@ -14,7 +14,7 @@ use grust_cypher::ast::{Clause, Expr as CypherExpr, Query};
 /// remain errors. The provider must expose the validated native node-table
 /// schema and one immutable graph snapshot. This does not enforce a Cypher read
 /// policy or choose an execution route; callers must admit resources separately.
-/// Explicit projection aliases are required in this initial implementation.
+/// Implicit output names follow the shared Cypher projection contract.
 pub fn lower_node_scan(query: &Query, input: DataFrame) -> Result<Option<DataFrame>> {
     lower_node_scan_with_parameters(query, input, &CypherParameters::new())
 }
@@ -80,9 +80,10 @@ pub fn lower_node_scan_with_parameters(
     let mut groups = Vec::new();
     let mut aggregates = Vec::new();
     for item in &projection.items {
-        let Some(alias) = &item.alias else {
-            return Ok(None);
-        };
+        let alias = item
+            .alias
+            .clone()
+            .unwrap_or_else(|| grust_cypher::read::column_name(&item.expr));
         if let CypherExpr::Function {
             name,
             distinct,
@@ -111,7 +112,7 @@ pub fn lower_node_scan_with_parameters(
                 } else {
                     count(expression)
                 }
-                .alias(alias),
+                .alias(&alias),
             );
         } else {
             let Ok(expression) =
@@ -119,7 +120,7 @@ pub fn lower_node_scan_with_parameters(
             else {
                 return Ok(None);
             };
-            groups.push(expression.alias(alias));
+            groups.push(expression.alias(&alias));
         }
         expressions.push(Expr::Column(Column::from_name(alias.clone())));
     }
