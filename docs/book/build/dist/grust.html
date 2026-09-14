@@ -2297,7 +2297,9 @@ mutation scripts.</p>
 <p>LanceDB can retain a resident snapshot of its node and edge tables.
 The snapshot is built on a second read at unchanged table versions and
 serves anchored reads and traversal through interned IDs and adjacency
-slots. A version change sends reads back to the tables;
+slots. A version change sends reads back to the tables. Cache
+generations also prevent a build started before table recreation from
+repopulating the cache with old rows.
 <code>with_read_snapshot(false)</code> disables the mirror for all
 clones of that store. This trades retained process memory for fewer
 scans.</p>
