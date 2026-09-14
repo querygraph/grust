@@ -6,6 +6,7 @@ pub(super) enum AlgorithmOutput {
     Distances(algorithms::Distances),
     Components(algorithms::Components),
     PageRank(algorithms::PageRank),
+    Degrees(algorithms::Degrees),
     Paths(algorithms::PathCursor),
     Order(algorithms::NodeOrder),
     Topology(algorithms::TopologicalOrder),
@@ -66,6 +67,7 @@ impl ProcedureCursor for AlgorithmCursor {
                 self.graph.node_ids()[result.values()[index]].as_str().len(),
             ),
             AlgorithmOutput::PageRank(_) => (5, 0),
+            AlgorithmOutput::Degrees(_) => (3, 0),
             AlgorithmOutput::Paths(_) | AlgorithmOutput::Topology(_) => {
                 return Err(ProcedureError::OutputContract(
                     "path output reached scalar adapter".into(),
@@ -95,6 +97,14 @@ impl ProcedureCursor for AlgorithmCursor {
                     .as_str()
                     .into(),
             )),
+            AlgorithmOutput::Degrees(result) => {
+                row.push(Value::Int(integer(result.counts()[index])?));
+                row.push(
+                    result
+                        .strengths()
+                        .map_or(Value::Null, |values| Value::Float(values[index])),
+                );
+            }
             AlgorithmOutput::PageRank(result) => {
                 row.push(Value::Float(result.values()[index]));
                 row.push(Value::Int(integer(result.iterations())?));

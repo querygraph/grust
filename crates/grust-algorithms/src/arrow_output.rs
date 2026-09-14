@@ -9,8 +9,8 @@ use arrow_array::{
 use grust_procedures::MemoryReservation;
 
 use crate::{
-    AlgorithmError, Components, Distances, GraphProjection, NodeOrder, PageRank, PathCursor,
-    PathView, Result, ShortestPaths, TopologicalOrder,
+    AlgorithmError, Components, Degrees, Distances, GraphProjection, NodeOrder, PageRank,
+    PathCursor, PathView, Result, ShortestPaths, TopologicalOrder,
 };
 
 /// A bounded Arrow batch retaining its query memory reservation. Clone this
@@ -42,6 +42,7 @@ enum Output {
     Distances(Distances),
     Components(Components),
     PageRank(PageRank),
+    Degrees(Degrees),
     Paths(PathCursor),
 }
 
@@ -86,6 +87,12 @@ impl PageRank {
     /// Transfer scores and convergence evidence into Arrow batches.
     pub fn into_arrow_results(self) -> ArrowResultCursor {
         ArrowResultCursor::new(self.projection().clone(), Output::PageRank(self))
+    }
+}
+impl Degrees {
+    /// Transfer exact UInt64 `degree` and nullable Float64 `strength` columns.
+    pub fn into_arrow_results(self) -> ArrowResultCursor {
+        ArrowResultCursor::new(self.projection().clone(), Output::Degrees(self))
     }
 }
 impl ShortestPaths {
@@ -210,6 +217,19 @@ impl ArrowResultCursor {
                     values.append_value(graph.node_ids()[component].as_str());
                 }
                 columns.push(("componentId", Arc::new(values.finish())));
+            }
+            Output::Degrees(result) => {
+                let mut counts = UInt64Builder::with_capacity(count);
+                let mut strengths = Float64Builder::with_capacity(count);
+                for index in start..end {
+                    context.charge_work(1)?;
+                    counts.append_value(unsigned(result.counts()[index])?);
+                    strengths.append_option(result.strengths().map(|values| values[index]));
+                }
+                columns.extend([
+                    ("degree", Arc::new(counts.finish()) as ArrayRef),
+                    ("strength", Arc::new(strengths.finish())),
+                ]);
             }
             Output::PageRank(result) => {
                 let mut scores = Float64Builder::with_capacity(count);

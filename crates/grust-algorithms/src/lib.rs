@@ -11,6 +11,8 @@ mod arrow_output;
 #[cfg(feature = "arrow")]
 pub use arrow_output::{ArrowResultBatch, ArrowResultCursor};
 mod buffer;
+mod degree;
+pub use degree::{Degrees, degree};
 mod graph_input;
 mod ordering;
 pub use ordering::{NodeOrder, TopologicalOrder, depth_first, topological_sort};

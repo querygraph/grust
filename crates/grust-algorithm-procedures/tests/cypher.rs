@@ -235,3 +235,29 @@ fn projection_inspection_and_csr_estimates_disclose_their_scope() {
         .is_err()
     );
 }
+
+#[test]
+fn degree_counts_and_strengths_use_projection_orientation() {
+    assert_eq!(
+        run(
+            "CALL grust.algorithms.degree() YIELD nodeId, degree, strength RETURN degree, strength"
+        ),
+        vec![
+            vec![Value::Int(1), Value::Null],
+            vec![Value::Int(1), Value::Null],
+            vec![Value::Int(1), Value::Null],
+            vec![Value::Int(0), Value::Null]
+        ]
+    );
+    assert_eq!(
+        run(
+            "CALL grust.algorithms.degree({orientation: 'incoming', weightProperty: 'cost'}) YIELD nodeId, degree, strength RETURN degree, strength"
+        ),
+        vec![
+            vec![Value::Int(0), Value::Float(0.0)],
+            vec![Value::Int(2), Value::Float(2.0)],
+            vec![Value::Int(1), Value::Float(0.5)],
+            vec![Value::Int(0), Value::Float(0.0)]
+        ]
+    );
+}

@@ -18,6 +18,18 @@ pub fn register_algorithms(builder: &mut RegistryBuilder) -> Result<()> {
     statistics::register(builder)?;
     register(
         builder,
+        "degree",
+        None,
+        vec![
+            field("nodeId", ValueType::String),
+            field("degree", ValueType::Integer),
+            nullable("strength", ValueType::Number),
+        ],
+        vec![],
+        |graph, _| Ok(AlgorithmOutput::Degrees(algorithms::degree(graph)?)),
+    )?;
+    register(
+        builder,
         "bfs",
         Some(ValueType::String),
         vec![

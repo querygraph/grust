@@ -222,3 +222,33 @@ fn arrow_order_and_cycle_contracts_keep_external_ids() {
     assert_eq!(cycle.value_length(0), 0);
     assert!(topology.next_batch().unwrap().is_none());
 }
+
+#[test]
+fn degree_arrow_batches_keep_exact_counts_and_weighted_strengths() {
+    let context = context();
+    let graph = graph(&context);
+    let mut cursor = grust_algorithms::degree(&graph)
+        .unwrap()
+        .into_arrow_results();
+    let mut counts = Vec::new();
+    let mut strengths = Vec::new();
+    while let Some(batch) = cursor.next_batch().unwrap() {
+        assert!(batch.record_batch().num_rows() <= 2);
+        let c = batch
+            .record_batch()
+            .column(1)
+            .as_any()
+            .downcast_ref::<UInt64Array>()
+            .unwrap();
+        let w = batch
+            .record_batch()
+            .column(2)
+            .as_any()
+            .downcast_ref::<Float64Array>()
+            .unwrap();
+        counts.extend(c.values().iter().copied());
+        strengths.extend(w.values().iter().copied());
+    }
+    assert_eq!(counts, vec![1, 0, 0]);
+    assert_eq!(strengths, vec![2.5, 0.0, 0.0]);
+}
