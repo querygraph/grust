@@ -716,3 +716,8 @@ Brine book 0.20.0-fa1cbbaa and TextPack 0.20.0-90dee0 delivered through canonica
 ## 2026-09-14T22:06:19.371025+00:00 — Codex: Brine release complete
 
 Brine v0.20.0 tags 90dee05. All eight native gates passed (1,663 workspace tests, zero failed, 49 ignored); 24 archives are independently byte-identical; all 20 public crates uploaded and outside-workspace registry hashes verified. Book/TextPack/FirstPair 845b4c0 delivery is complete. Evidence: docs/releases/brine. Capitola release Cargo job is terminal; this session retains its owned checkout for subsequent automatic-routing work. Benchmark pins and other hosts remain unchanged.
+
+
+## 2026-09-14T22:08:06.403779+00:00 — Codex: end-to-end Cypher profile qualification
+
+Brine release is complete. New private benchmark source 2b90557 adds cold-representation scan timing, independently checked portable output and retained error/unsupported/mismatch outcomes. Capitola now builds and runs Clippy for this binary, four nice Cargo jobs, /tmp/grust-cypher-end-to-end-{build,clippy}.log. Boundary fixtures and measurements follow successful build; no timing results yet. Existing benchmark source pins stay unchanged; no new work on quegee, eigen, grust or lakecat.
