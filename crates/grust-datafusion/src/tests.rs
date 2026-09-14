@@ -156,3 +156,48 @@ async fn disabled_spill_and_small_pool_reject_sort_work() {
     }
     assert!(resource_error(&error), "unexpected error: {error}");
 }
+
+#[tokio::test]
+async fn typed_relational_plans_execute_without_sql_serialization() {
+    use datafusion::logical_expr::{col, lit};
+
+    let engine = DataFusionEngine::new(options()).unwrap();
+    engine.register_table("numbers", numbers()).unwrap();
+    let plan = engine
+        .context()
+        .table("numbers")
+        .await
+        .unwrap()
+        .filter(col("n").gt(lit(1_i64)))
+        .unwrap()
+        .select(vec![(col("n") + lit(10_i64)).alias("shifted")])
+        .unwrap()
+        .into_unoptimized_plan();
+    let batches = engine
+        .context()
+        .execute_logical_plan(plan)
+        .await
+        .unwrap()
+        .execute_stream()
+        .await
+        .unwrap()
+        .try_collect::<Vec<_>>()
+        .await
+        .unwrap();
+    let mut values = batches
+        .iter()
+        .flat_map(|batch| {
+            assert_eq!(batch.schema().field(0).name(), "shifted");
+            batch
+                .column(0)
+                .as_any()
+                .downcast_ref::<Int64Array>()
+                .unwrap()
+                .values()
+                .iter()
+                .copied()
+        })
+        .collect::<Vec<_>>();
+    values.sort_unstable();
+    assert_eq!(values, [12, 12, 13, 13]);
+}
