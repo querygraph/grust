@@ -58,3 +58,24 @@ async fn query() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 ```
+
+## Cypher lowering under development
+
+The optional `cypher` feature exposes typed expression and single-node scan
+lowering through `cypher::lower_node_scan_with_parameters`. Supply the existing
+parsed Cypher AST, an immutable native node-table DataFrame, and parameters.
+The planner performs semantic analysis and returns `None` for unsupported query
+shapes. It constructs DataFusion expressions directly without SQL serialization.
+
+Current lowering covers scalar Bool/Int/String/null predicates, inline property
+maps, projections, DISTINCT, count variants and grouping, projected-alias
+ordering, and literal/parameter pagination. Output names reuse the portable
+Cypher contract. Duplicate output names remain unsupported pending result
+remapping. Floats, mixed types, arithmetic, joins and other query forms remain
+outside this initial lowering surface.
+
+This is not automatic routing and does not enforce `ReadQueryPolicy`. Provider
+snapshot/schema validity and caller resource admission are prerequisites.
+DataFusion runtime limits alone do not implement Cypher's candidate-work,
+intermediate-copy and serialized-output budgets. The automatic execution goal
+requires these boundaries to be integrated and qualified before route selection.
