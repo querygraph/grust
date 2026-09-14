@@ -511,12 +511,12 @@ Grust’s typed ingestion layer connects those two worlds.</p>
 <p>The typed layer is optional. It is enabled through Cargo
 features:</p>
 <div class="sourceCode" id="cb9"><pre class="sourceCode toml"><code class="sourceCode toml"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[dependencies]</span></span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="dt">grust</span> <span class="op">=</span> <span class="op">{ </span><span class="dt">package</span><span class="op"> =</span> <span class="st">&quot;grust-graph&quot;</span><span class="op">, </span><span class="dt">version</span><span class="op"> =</span> <span class="st">&quot;0.18.0&quot;</span><span class="op">, </span><span class="dt">features</span><span class="op"> =</span> <span class="op">[</span><span class="st">&quot;typed-garde&quot;</span><span class="op">] }</span></span></code></pre></div>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="dt">grust</span> <span class="op">=</span> <span class="op">{ </span><span class="dt">package</span><span class="op"> =</span> <span class="st">&quot;grust-graph&quot;</span><span class="op">, </span><span class="dt">version</span><span class="op"> =</span> <span class="st">&quot;0.19.0&quot;</span><span class="op">, </span><span class="dt">features</span><span class="op"> =</span> <span class="op">[</span><span class="st">&quot;typed-garde&quot;</span><span class="op">] }</span></span></code></pre></div>
 <p><code>typed-garde</code> adds Rust-struct validation and typed
 lowering. A second feature, <code>typed-zod-rs</code>, layers raw JSON
 shape validation on top:</p>
 <div class="sourceCode" id="cb10"><pre class="sourceCode toml"><code class="sourceCode toml"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[dependencies]</span></span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="dt">grust</span> <span class="op">=</span> <span class="op">{ </span><span class="dt">package</span><span class="op"> =</span> <span class="st">&quot;grust-graph&quot;</span><span class="op">, </span><span class="dt">version</span><span class="op"> =</span> <span class="st">&quot;0.18.0&quot;</span><span class="op">, </span><span class="dt">features</span><span class="op"> =</span> <span class="op">[</span><span class="st">&quot;typed-zod-rs&quot;</span><span class="op">] }</span></span></code></pre></div>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="dt">grust</span> <span class="op">=</span> <span class="op">{ </span><span class="dt">package</span><span class="op"> =</span> <span class="st">&quot;grust-graph&quot;</span><span class="op">, </span><span class="dt">version</span><span class="op"> =</span> <span class="st">&quot;0.19.0&quot;</span><span class="op">, </span><span class="dt">features</span><span class="op"> =</span> <span class="op">[</span><span class="st">&quot;typed-zod-rs&quot;</span><span class="op">] }</span></span></code></pre></div>
 <p><code>typed-zod-rs</code> implies <code>typed-garde</code>. That
 relationship matters: zod-rs checks untrusted JSON shape first, Serde
 turns the JSON into Rust values, and garde checks typed domain
@@ -1061,6 +1061,20 @@ surface, while schema-labeled rows are mirrored into tables such as
 typed columns for declared fields. That gives analytical consumers and
 future vector extensions a native columnar surface without giving up the
 backend-neutral graph model.</p>
+<p>Mantis 0.19.0’s write path groups concurrent single-row writes
+through clones of one store into universal-table commits, preserving
+last-key-wins order inside a batch. Queue leadership is owned across
+cancellation and handoff. A cancelled leader can leave an in-flight
+batch’s durability uncertain, which its waiting callers receive as an
+explicit error. Universal and typed-mirror writes remain separate
+commits; this is not an atomic multi-table transaction.</p>
+<p>Bulk graph and shared Arrow loads compact their fragments and create
+or update merge-key indexes. Single-row commits periodically compact
+fragments, and writes release the store’s retained read snapshot. A
+connection’s index and metadata cache budgets are 512 MiB and 128 MiB.
+These are cache limits, not a total process memory bound. Performance
+evidence must disclose dataset, concurrency, indexing, load cost and
+peak-memory boundaries separately from correctness qualification.</p>
 <h2 data-number="8.3" id="ladybugdb"><span class="header-section-number">8.3</span> LadybugDB</h2>
 <p><code>grust-ladybug</code> embeds LadybugDB directly through the Rust
 <code>lbug</code> 0.20.2 crate. It is the durable local graph-database
@@ -2358,7 +2372,7 @@ parser, analyzer or executor. The facade exposes these through
 <code>arrow</code> features.</p>
 <h2 data-number="15.1" id="starting-from-the-facade"><span class="header-section-number">15.1</span> Starting from the facade</h2>
 <div class="sourceCode" id="cb41"><pre class="sourceCode toml"><code class="sourceCode toml"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[dependencies]</span></span>
-<span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a><span class="dt">grust</span> <span class="op">=</span> <span class="op">{ </span><span class="dt">package</span><span class="op"> =</span> <span class="st">&quot;grust-graph&quot;</span><span class="op">, </span><span class="dt">version</span><span class="op"> =</span> <span class="st">&quot;0.18.0&quot;</span><span class="op">, </span><span class="dt">features</span><span class="op"> =</span> <span class="op">[</span><span class="st">&quot;algorithms&quot;</span><span class="op">,</span> <span class="st">&quot;cypher&quot;</span><span class="op">,</span> <span class="st">&quot;arrow&quot;</span><span class="op">] }</span></span></code></pre></div>
+<span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a><span class="dt">grust</span> <span class="op">=</span> <span class="op">{ </span><span class="dt">package</span><span class="op"> =</span> <span class="st">&quot;grust-graph&quot;</span><span class="op">, </span><span class="dt">version</span><span class="op"> =</span> <span class="st">&quot;0.19.0&quot;</span><span class="op">, </span><span class="dt">features</span><span class="op"> =</span> <span class="op">[</span><span class="st">&quot;algorithms&quot;</span><span class="op">,</span> <span class="st">&quot;cypher&quot;</span><span class="op">,</span> <span class="st">&quot;arrow&quot;</span><span class="op">] }</span></span></code></pre></div>
 <p>Register the desired providers once and retain the immutable
 registry:</p>
 <div class="sourceCode" id="cb42"><pre class="sourceCode rust"><code class="sourceCode rust"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a><span class="kw">use</span> <span class="pp">grust::</span><span class="op">{</span>algorithm_procedures<span class="op">,</span> procedures<span class="op">,</span> CypherParameters<span class="op">};</span></span>
@@ -2792,6 +2806,17 @@ without allocating a JSON buffer. The count includes column metadata,
 delimiters, escaping and inter-row commas, including empty results.
 Exceeding either limit returns an error with no partial result. One
 decoded batch still requires separate memory admission.</p>
+<p>Mantis 0.19.0’s <code>decode_result_batch_with_context</code> charges
+cumulative logical copy bytes before creating portable rows and strings.
+It measures the actual Arrow slice, including null-aware UTF-8 lengths,
+column names and row/value containers.
+<code>collect_result_with_context</code> also charges collection
+metadata and moved row containers, and shares cancellation/deadline
+control. Controlled <code>GraphSnapshot::execute_with_context</code> now
+uses this collector. The charge stays consumed after output is dropped;
+it is not a live-heap or allocator-capacity measurement. Arrow input,
+validation descriptors and operator allocations remain separate. No
+query is automatically routed on this basis.</p>
 <p>DataFusion’s working-memory pool and these output checks do not
 enforce Cypher’s candidate-work, intermediate-copy, query/input or
 deadline contracts. Automatic selection remains pending until those
