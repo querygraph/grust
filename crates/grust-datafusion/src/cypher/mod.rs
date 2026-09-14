@@ -5,7 +5,9 @@ mod bindings;
 pub use bindings::ExpressionBindings;
 mod inline;
 mod pattern;
+mod planner;
 mod projection;
+pub use planner::{PlanKind, QueryPlan};
 mod relationship;
 mod scan;
 pub use pattern::plan_relationship_scan;
@@ -203,3 +205,6 @@ mod snapshot_tests;
 
 #[cfg(test)]
 mod relationship_tests;
+
+#[cfg(test)]
+mod planner_tests;
