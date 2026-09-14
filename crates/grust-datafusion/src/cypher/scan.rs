@@ -48,12 +48,33 @@ pub fn lower_node_scan_with_parameters(
         || !pattern.segments.is_empty()
         || pattern.start.properties.is_some()
         || projection.star
-        || !projection.order_by.is_empty()
-        || projection.skip.is_some()
-        || projection.limit.is_some()
     {
         return Ok(None);
     }
+    let mut ordering = Vec::with_capacity(projection.order_by.len());
+    for item in &projection.order_by {
+        let CypherExpr::Variable(alias) = &item.expr else {
+            return Ok(None);
+        };
+        if !projection
+            .items
+            .iter()
+            .any(|item| item.alias.as_ref() == Some(alias))
+        {
+            return Ok(None);
+        }
+        ordering.push(
+            Expr::Column(Column::from_name(alias.clone())).sort(!item.descending, item.descending),
+        );
+    }
+    let offset = match bound(projection.skip.as_ref(), parameters) {
+        Some(value) => value.unwrap_or(0),
+        None => return Ok(None),
+    };
+    let limit = match bound(projection.limit.as_ref(), parameters) {
+        Some(value) => value,
+        None => return Ok(None),
+    };
     let schema = input.schema().as_arrow();
     let mut expressions = Vec::with_capacity(projection.items.len());
     let mut groups = Vec::new();
@@ -126,5 +147,26 @@ pub fn lower_node_scan_with_parameters(
     if projection.distinct {
         frame = frame.distinct()?;
     }
+    if !ordering.is_empty() {
+        frame = frame.sort(ordering)?;
+    }
+    if offset != 0 || limit.is_some() {
+        frame = frame.limit(offset, limit)?;
+    }
     Ok(Some(frame))
+}
+
+fn bound(expression: Option<&CypherExpr>, parameters: &CypherParameters) -> Option<Option<usize>> {
+    let Some(expression) = expression else {
+        return Some(None);
+    };
+    let value = match expression {
+        CypherExpr::Integer(value) => *value,
+        CypherExpr::Parameter(name) => match parameters.get(name)? {
+            grust_core::Value::Int(value) => *value,
+            _ => return None,
+        },
+        _ => return None,
+    };
+    usize::try_from(value).ok().map(Some)
 }

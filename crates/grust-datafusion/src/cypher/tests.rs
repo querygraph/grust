@@ -340,3 +340,53 @@ fn scalar_parameters_are_bound_without_lossy_numeric_conversion() {
         Err(UnsupportedExpression::MissingParameter)
     );
 }
+
+#[tokio::test]
+async fn ordering_and_parameterized_pagination_match_cypher_null_order() {
+    use datafusion::{
+        arrow::array::{Int64Array, RecordBatch},
+        execution::context::SessionContext,
+    };
+    let context = SessionContext::new();
+    let batch = RecordBatch::try_from_iter([(
+        "property.x",
+        std::sync::Arc::new(Int64Array::from(vec![Some(2), None, Some(1), Some(3)]))
+            as datafusion::arrow::array::ArrayRef,
+    )])
+    .unwrap();
+    let parameters = CypherParameters::from([
+        ("skip".into(), Value::Int(1)),
+        ("take".into(), Value::Int(2)),
+    ]);
+    for (direction, expected) in [
+        ("ASC", vec![Some(2), Some(3)]),
+        ("DESC", vec![Some(3), Some(2)]),
+    ] {
+        let query = grust_cypher::parser::parse_query(&format!(
+            "MATCH (n) RETURN n.x AS x ORDER BY x {direction} SKIP $skip LIMIT $take"
+        ))
+        .unwrap();
+        let batches = lower_node_scan_with_parameters(
+            &query,
+            context.read_batch(batch.clone()).unwrap(),
+            &parameters,
+        )
+        .unwrap()
+        .unwrap()
+        .collect()
+        .await
+        .unwrap();
+        let actual = batches
+            .iter()
+            .flat_map(|batch| {
+                batch
+                    .column(0)
+                    .as_any()
+                    .downcast_ref::<Int64Array>()
+                    .unwrap()
+                    .iter()
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(actual, expected);
+    }
+}
