@@ -132,7 +132,9 @@ pub fn plan_node_scan(
             .alias
             .clone()
             .unwrap_or_else(|| grust_cypher::read::column_name(&item.expr));
-        if matches!(&item.expr, CypherExpr::Function { .. }) {
+        if matches!(&item.expr, CypherExpr::Function { name, .. }
+            if ["count", "min", "max", "sum", "avg", "collect"].iter().any(|candidate| name.eq_ignore_ascii_case(candidate)))
+        {
             let Ok(expression) =
                 super::aggregate::aggregate(&item.expr, variable, schema, parameters)
             else {

@@ -120,3 +120,38 @@ async fn string_extrema_follow_rust_lexicographic_order() {
         }
     }
 }
+
+#[tokio::test]
+async fn node_identity_predicates_preserve_external_ids() {
+    use datafusion::arrow::array::StringArray;
+    use grust_core::{Graph, Node, Props};
+    let graph = Graph::new(
+        vec![
+            Node::new("N", "external.a", Props::new()),
+            Node::new("N", "external.b", Props::new()),
+        ],
+        vec![],
+    );
+    let arrow = grust_arrow::ArrowGraph::from_graph(&graph).unwrap();
+    let context = SessionContext::new();
+    let query = grust_cypher::parser::parse_query(
+        "MATCH (n) WHERE id(n) = 'external.b' RETURN id(n) AS id",
+    )
+    .unwrap();
+    let batches = lower_node_scan(&query, context.read_batch(arrow.nodes().clone()).unwrap())
+        .unwrap()
+        .unwrap()
+        .collect()
+        .await
+        .unwrap();
+    assert_eq!(batches.iter().map(|b| b.num_rows()).sum::<usize>(), 1);
+    assert_eq!(
+        batches[0]
+            .column(0)
+            .as_any()
+            .downcast_ref::<StringArray>()
+            .unwrap()
+            .value(0),
+        "external.b"
+    );
+}

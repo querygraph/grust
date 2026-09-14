@@ -70,6 +70,21 @@ fn lower(
         CypherExpr::Boolean(value) => (lit(*value), DataType::Boolean),
         CypherExpr::Integer(value) => (lit(*value), DataType::Int64),
         CypherExpr::String(value) => (lit(value.clone()), DataType::Utf8),
+        CypherExpr::Function {
+            name,
+            distinct: false,
+            star: false,
+            args,
+        } if name.eq_ignore_ascii_case("id") => {
+            if !matches!(args.as_slice(), [CypherExpr::Variable(name)] if name == variable) {
+                return Err(Binding);
+            }
+            let field = schema.field_with_name("node_id").map_err(|_| Binding)?;
+            if field.data_type() != &DataType::Utf8 || field.is_nullable() {
+                return Err(Type);
+            }
+            (Expr::Column(Column::from_name("node_id")), DataType::Utf8)
+        }
         CypherExpr::Property { base, key } => {
             if !matches!(base.as_ref(), CypherExpr::Variable(name) if name == variable) {
                 return Err(Binding);
