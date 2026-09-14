@@ -81,3 +81,42 @@ async fn integer_extrema_preserve_nulls_and_exact_limits() {
         }
     }
 }
+
+#[tokio::test]
+async fn string_extrema_follow_rust_lexicographic_order() {
+    use datafusion::arrow::array::{Array, RecordBatch, StringArray};
+    for values in [
+        vec![],
+        vec![None],
+        vec![Some("é"), Some("z"), Some(""), None, Some("z")],
+    ] {
+        let expected = (
+            values.iter().flatten().min().copied(),
+            values.iter().flatten().max().copied(),
+        );
+        let batch = RecordBatch::try_from_iter([(
+            "property.x",
+            std::sync::Arc::new(StringArray::from(values)) as datafusion::arrow::array::ArrayRef,
+        )])
+        .unwrap();
+        let context = SessionContext::new();
+        let query = grust_cypher::parser::parse_query(
+            "MATCH (n) RETURN min(DISTINCT n.x) AS low, max(n.x) AS high",
+        )
+        .unwrap();
+        let batches = lower_node_scan(&query, context.read_batch(batch).unwrap())
+            .unwrap()
+            .unwrap()
+            .collect()
+            .await
+            .unwrap();
+        for (column, expected) in [expected.0, expected.1].into_iter().enumerate() {
+            let array = batches[0]
+                .column(column)
+                .as_any()
+                .downcast_ref::<StringArray>()
+                .unwrap();
+            assert_eq!((!array.is_null(0)).then(|| array.value(0)), expected);
+        }
+    }
+}

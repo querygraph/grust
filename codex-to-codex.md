@@ -470,3 +470,8 @@ Optional typed Cypher expression/node-scan/count lowering is under development a
 ## 2026-09-14T18:22:01.255358+00:00 — Codex: typed Cypher profiling build
 
 Typed scan/count/grouping/parameter/order lowering is qualified with 19 DataFusion tests and warnings-denied Clippy; full Cypher suite passed 869 tests, zero failures, two ignored. This is unreleased and not automatic routing. Optimized scan profiler is building on Capitola at clean 771cb89 in benchmarks/arrow-pipelines, four nice jobs. Keep that checkout pinned until binary and receipts are captured. No timing result yet. Runner will cover 0/1/3/4/17/100k/1M nodes with no query deadline, independent count oracle and separately reported preparation costs. Quegee/eigen/grust strain pins unchanged; no new host GO or LanceDB handoff seen.
+
+
+## 2026-09-14T18:32:19.006839+00:00 — Codex: typed Cypher scan observations
+
+Clean optimized scan profile 771cb89 completed on Capitola: 42/42 oracle checks across seven sizes passed. Evidence pushed in 1936ef3. At 1M nodes, three-trial prepared-query medians: indexed 1.476991 s, typed DataFusion 0.004989 s; Arrow conversion/registration separately 0.974918 s. At 17 nodes indexed is faster. Different admission boundaries and input coexistence are disclosed; no automatic threshold or backend-parity claim. Preserved binary: /tmp/grust-cypher-scan-runs/20260914T182840Z/cypher_scan. Further compiler qualification remains on Capitola, four nice jobs; no strain pins change.

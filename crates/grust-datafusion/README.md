@@ -68,7 +68,7 @@ The planner performs semantic analysis and returns `None` for unsupported query
 shapes. It constructs DataFusion expressions directly without SQL serialization.
 
 Current lowering covers scalar Bool/Int/String/null predicates, inline property
-maps, projections, DISTINCT, count variants and grouping, projected-alias
+maps, projections, DISTINCT, count variants and grouping, integer/string MIN/MAX, projected-alias
 ordering, and literal/parameter pagination. Output names reuse the portable
 Cypher contract. Duplicate output names remain unsupported pending result
 remapping. Floats, mixed types, arithmetic, joins and other query forms remain
