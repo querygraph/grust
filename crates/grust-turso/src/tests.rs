@@ -27,7 +27,7 @@ fn bootstrap_creates_universal_turso_tables() {
     assert!(sql.contains("CREATE TABLE IF NOT EXISTS \"grust_edges\""));
     assert!(sql.contains("props TEXT NOT NULL"));
     assert!(sql.contains("identity_key text NOT NULL DEFAULT ''"));
-    assert!(sql.contains("PRIMARY KEY (from_id, label, to_id, id_key)"));
+    assert!(sql.contains("PRIMARY KEY (from_id, label, to_id, identity_key)"));
 }
 
 #[test]
