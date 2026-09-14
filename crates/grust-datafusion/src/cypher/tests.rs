@@ -1,5 +1,6 @@
 use super::*;
 use datafusion::arrow::datatypes::Field;
+use datafusion::common::Column;
 
 fn property(key: &str) -> CypherExpr {
     CypherExpr::Property {

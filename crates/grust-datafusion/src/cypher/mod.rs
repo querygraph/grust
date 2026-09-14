@@ -1,5 +1,7 @@
 //! Typed Cypher expression lowering. Query routing is not yet implemented.
 mod aggregate;
+mod bindings;
+pub use bindings::ExpressionBindings;
 mod scan;
 pub use scan::{
     NodeScanPlan, UnsupportedScan, lower_node_scan, lower_node_scan_with_parameters, plan_node_scan,
@@ -7,7 +9,7 @@ pub use scan::{
 
 use datafusion::{
     arrow::datatypes::{DataType, Schema},
-    common::{Column, ScalarValue},
+    common::ScalarValue,
     logical_expr::{Expr, lit},
 };
 use grust_core::Value;
@@ -53,6 +55,29 @@ fn lower(
     schema: &Schema,
     parameters: &CypherParameters,
 ) -> Result<(Expr, DataType), UnsupportedExpression> {
+    lower_bound(
+        expression,
+        &bindings::SingleBinding { variable, schema },
+        parameters,
+    )
+}
+
+/// Lower an expression through caller-supplied typed binding resolution.
+/// Resolvers must preserve snapshot identity and report the actual column types.
+/// This composes multiple bindings without duplicating scalar semantics.
+pub fn lower_expression_with_bindings(
+    expression: &CypherExpr,
+    bindings: &impl ExpressionBindings,
+    parameters: &CypherParameters,
+) -> Result<Expr, UnsupportedExpression> {
+    lower_bound(expression, bindings, parameters).map(|(expression, _)| expression)
+}
+
+fn lower_bound(
+    expression: &CypherExpr,
+    bindings: &impl ExpressionBindings,
+    parameters: &CypherParameters,
+) -> Result<(Expr, DataType), UnsupportedExpression> {
     use UnsupportedExpression::{Binding, Syntax, Type};
     let null = || (lit(ScalarValue::Null), DataType::Null);
     Ok(match expression {
@@ -76,37 +101,30 @@ fn lower(
             star: false,
             args,
         } if name.eq_ignore_ascii_case("id") => {
-            if !matches!(args.as_slice(), [CypherExpr::Variable(name)] if name == variable) {
+            let [CypherExpr::Variable(name)] = args.as_slice() else {
                 return Err(Binding);
-            }
-            let field = schema.field_with_name("node_id").map_err(|_| Binding)?;
-            if field.data_type() != &DataType::Utf8 || field.is_nullable() {
+            };
+            let (value, kind) = bindings.node_id(name)?;
+            if kind != DataType::Utf8 {
                 return Err(Type);
             }
-            (Expr::Column(Column::from_name("node_id")), DataType::Utf8)
+            (value, kind)
         }
         CypherExpr::Property { base, key } => {
-            if !matches!(base.as_ref(), CypherExpr::Variable(name) if name == variable) {
+            let CypherExpr::Variable(name) = base.as_ref() else {
                 return Err(Binding);
+            };
+            let (value, kind) = bindings.property(name, key)?;
+            if !matches!(
+                kind,
+                DataType::Null | DataType::Boolean | DataType::Int64 | DataType::Utf8
+            ) {
+                return Err(Type);
             }
-            let name = format!("property.{key}");
-            match schema.field_with_name(&name) {
-                Err(_) => null(),
-                Ok(field) => {
-                    let kind = field.data_type();
-                    if !matches!(
-                        kind,
-                        DataType::Null | DataType::Boolean | DataType::Int64 | DataType::Utf8
-                    ) {
-                        return Err(Type);
-                    }
-                    // Do not parse dots in property keys as relation qualifiers.
-                    (Expr::Column(Column::from_name(name)), kind.clone())
-                }
-            }
+            (value, kind)
         }
         CypherExpr::IsNull { operand, negated } => {
-            let (value, _) = lower(operand, variable, schema, parameters)?;
+            let (value, _) = lower_bound(operand, bindings, parameters)?;
             (
                 if *negated {
                     value.is_not_null()
@@ -120,15 +138,15 @@ fn lower(
             op: UnaryOp::Not,
             operand,
         } => {
-            let (value, kind) = lower(operand, variable, schema, parameters)?;
+            let (value, kind) = lower_bound(operand, bindings, parameters)?;
             if !matches!(kind, DataType::Boolean | DataType::Null) {
                 return Err(Type);
             }
             (!value, DataType::Boolean)
         }
         CypherExpr::Binary { op, lhs, rhs } => {
-            let (left, left_type) = lower(lhs, variable, schema, parameters)?;
-            let (right, right_type) = lower(rhs, variable, schema, parameters)?;
+            let (left, left_type) = lower_bound(lhs, bindings, parameters)?;
+            let (right, right_type) = lower_bound(rhs, bindings, parameters)?;
             if left_type != right_type
                 && left_type != DataType::Null
                 && right_type != DataType::Null
@@ -167,3 +185,6 @@ mod tests;
 
 #[cfg(test)]
 mod planning_tests;
+
+#[cfg(test)]
+mod binding_tests;
