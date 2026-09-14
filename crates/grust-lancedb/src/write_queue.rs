@@ -12,30 +12,34 @@
 
 use futures::channel::oneshot;
 use grust_core::prelude::*;
+use std::{
+    collections::VecDeque,
+    sync::{Arc, Mutex},
+};
 
 enum Turn<T> {
     /// Another leader committed this caller's rows, with this outcome.
     Done(std::result::Result<(), String>),
     /// This caller leads the next commit; its own rows come back with it.
-    Lead(Vec<T>),
+    Lead { rows: Vec<T>, ownership: Lead<T> },
 }
 
 struct State<T> {
-    pending: Vec<(Vec<T>, oneshot::Sender<Turn<T>>)>,
+    pending: VecDeque<(Vec<T>, oneshot::Sender<Turn<T>>)>,
     leading: bool,
 }
 
 pub(super) struct WriteQueue<T> {
-    state: std::sync::Mutex<State<T>>,
+    state: Arc<Mutex<State<T>>>,
 }
 
 impl<T> Default for WriteQueue<T> {
     fn default() -> Self {
         Self {
-            state: std::sync::Mutex::new(State {
-                pending: Vec::new(),
+            state: Arc::new(Mutex::new(State {
+                pending: VecDeque::new(),
                 leading: false,
-            }),
+            })),
         }
     }
 }
@@ -56,18 +60,23 @@ impl<T> WriteQueue<T> {
             let mut state = self.lock();
             if state.leading {
                 let (reply, turn) = oneshot::channel();
-                state.pending.push((rows, reply));
+                state.pending.push_back((rows, reply));
                 Err(turn)
             } else {
                 state.leading = true;
-                Ok(rows)
+                Ok((
+                    rows,
+                    Lead {
+                        state: Some(Arc::clone(&self.state)),
+                    },
+                ))
             }
         };
-        let own = match turn {
-            Ok(rows) => rows,
+        let (own, lead) = match turn {
+            Ok(lead) => lead,
             Err(turn) => match turn.await {
                 Ok(Turn::Done(result)) => return result.map_err(GrustError::Backend),
-                Ok(Turn::Lead(rows)) => rows,
+                Ok(Turn::Lead { rows, ownership }) => (rows, ownership),
                 Err(oneshot::Canceled) => {
                     return Err(GrustError::Backend(
                         "LanceDB write abandoned: the caller committing it was cancelled, \
@@ -78,8 +87,7 @@ impl<T> WriteQueue<T> {
             },
         };
         // This caller leads until `lead` is dropped, which hands the lead on.
-        let lead = Lead { queue: self };
-        let queued = std::mem::take(&mut lead.queue.lock().pending);
+        let queued = std::mem::take(&mut self.lock().pending);
         let mut rows = own;
         let mut replies = Vec::with_capacity(queued.len());
         for (batch, reply) in queued {
@@ -108,28 +116,55 @@ impl<T> WriteQueue<T> {
 
 /// The lead, handed on when dropped — after a commit, or when the leading
 /// caller is cancelled mid-commit (its batch's callers then see `Canceled`).
-struct Lead<'a, T> {
-    queue: &'a WriteQueue<T>,
+struct Lead<T> {
+    // The message owns leadership even before its receiving future is polled.
+    // Failed delivery disarms this token before continuing the iterative handoff.
+    state: Option<Arc<Mutex<State<T>>>>,
 }
 
-impl<T> Drop for Lead<'_, T> {
+impl<T> Drop for Lead<T> {
     fn drop(&mut self) {
-        let mut state = self.queue.lock();
-        while !state.pending.is_empty() {
-            let (rows, reply) = state.pending.remove(0);
-            if reply.send(Turn::Lead(rows)).is_ok() {
-                return;
+        let Some(shared) = self.state.take() else {
+            return;
+        };
+        loop {
+            let next = {
+                let mut state = shared.lock().expect("LanceDB write queue lock poisoned");
+                match state.pending.pop_front() {
+                    Some(next) => next,
+                    None => {
+                        state.leading = false;
+                        return;
+                    }
+                }
+            };
+            let (rows, reply) = next;
+            // Sending/dropping a channel value can run wake/drop callbacks.
+            // Never hold the queue lock across either operation.
+            let ownership = Lead {
+                state: Some(Arc::clone(&shared)),
+            };
+            match reply.send(Turn::Lead { rows, ownership }) {
+                Ok(()) => return,
+                Err(mut undelivered) => {
+                    if let Turn::Lead { ownership, .. } = &mut undelivered {
+                        ownership.state = None;
+                    }
+                    // The cancelled caller's uncommitted rows are discarded.
+                    // Disarming avoids recursive Drop for a long cancelled queue.
+                    drop(undelivered);
+                }
             }
-            // That caller stopped waiting before its rows were written;
-            // they are dropped with it, as if never submitted.
         }
-        state.leading = false;
     }
 }
 
 /// Keep the last row per key, in queue order of those last rows.
 fn last_per_key<T>(rows: Vec<T>, key: impl Fn(&T) -> Result<String>) -> Result<Vec<T>> {
     if rows.len() < 2 {
+        if let Some(row) = rows.first() {
+            key(row)?;
+        }
         return Ok(rows);
     }
     let mut seen = std::collections::HashSet::with_capacity(rows.len());
@@ -144,138 +179,8 @@ fn last_per_key<T>(rows: Vec<T>, key: impl Fn(&T) -> Result<String>) -> Result<V
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn last_row_per_key_wins_in_queue_order() {
-        let rows = vec![("a", 1), ("b", 1), ("a", 2), ("c", 1), ("b", 2)];
-        let kept = last_per_key(rows, |row| Ok(row.0.to_string())).unwrap();
-        assert_eq!(kept, vec![("a", 2), ("c", 1), ("b", 2)]);
-    }
-
-    async fn store(dir: &std::path::Path) -> crate::LanceDbGraphStore {
-        let store = crate::LanceDbGraphStore::connect(crate::LanceDbConfig {
-            uri: dir.display().to_string(),
-            table_prefix: "queue".to_string(),
-            batch_size: 500,
-            bulk_batch_size: 50_000,
-        })
-        .await
-        .unwrap();
-        store.bootstrap().await.unwrap();
-        store
-    }
-
-    /// A4's pattern: writers on clones of one store attach new nodes and
-    /// edges to one hub at once. Every accepted write is durable exactly
-    /// once, seen by this store and by another connection, with and without
-    /// a merge-key index, and across the periodic compactions.
-    #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
-    async fn concurrent_writers_on_clones_commit_every_row_once() {
-        for indexed in [false, true] {
-            let dir = tempfile::tempdir().unwrap();
-            let store = store(dir.path()).await;
-            if indexed {
-                let mut graph = Graph::default();
-                graph.nodes.push(Node::new("V", "hub", Props::new()));
-                for i in 0..50 {
-                    graph
-                        .nodes
-                        .push(Node::new("V", format!("v{i}"), Props::new()));
-                    graph
-                        .edges
-                        .push(Edge::new("E", "hub", format!("v{i}"), Props::new()));
-                }
-                store.put_graph(&graph).await.unwrap();
-            }
-            let initial = if indexed { 50 } else { 0 };
-            let writers = (0..8)
-                .map(|w| {
-                    let store = store.clone();
-                    tokio::spawn(async move {
-                        for i in 0..20 {
-                            let id = format!("hot-{w}-{i}");
-                            store
-                                .put_node(&Node::new("V", id.clone(), Props::new()))
-                                .await
-                                .unwrap();
-                            store
-                                .put_edge(&Edge::new("E", "hub", id, Props::new()))
-                                .await
-                                .unwrap();
-                        }
-                    })
-                })
-                .collect::<Vec<_>>();
-            for writer in writers {
-                writer.await.unwrap();
-            }
-            let hub_edges = EdgeQuery {
-                from: Some(NodeId::new("hub")),
-                ..Default::default()
-            };
-            let other = crate::LanceDbGraphStore::connect(store.config().clone())
-                .await
-                .unwrap()
-                .with_read_snapshot(false);
-            for reader in [&store, &other] {
-                let edges = reader.get_edges(hub_edges.clone()).await.unwrap();
-                assert_eq!(edges.len(), initial + 160, "indexed: {indexed}");
-                let targets = edges
-                    .iter()
-                    .map(|edge| edge.to.as_str().to_owned())
-                    .collect::<std::collections::HashSet<_>>();
-                assert_eq!(targets.len(), edges.len(), "indexed: {indexed}");
-                for w in 0..8 {
-                    for i in 0..20 {
-                        let id = NodeId::new(format!("hot-{w}-{i}"));
-                        assert!(reader.get_node(&id).await.unwrap().is_some());
-                    }
-                }
-            }
-        }
-    }
-
-    /// Writers that upsert the same node at once leave one row holding one
-    /// of the values written, as sequential upserts would.
-    #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
-    async fn concurrent_upserts_of_one_key_leave_one_row() {
-        let dir = tempfile::tempdir().unwrap();
-        let store = store(dir.path()).await;
-        let writers = (0..8i64)
-            .map(|w| {
-                let store = store.clone();
-                tokio::spawn(async move {
-                    for i in 0..10i64 {
-                        let mut node = Node::new("V", "same", Props::new());
-                        node.props.insert("by".into(), Value::Int(w * 100 + i));
-                        store.put_node(&node).await.unwrap();
-                        store
-                            .put_edge(&Edge::new("E", "same", "same", Props::new()))
-                            .await
-                            .unwrap();
-                    }
-                })
-            })
-            .collect::<Vec<_>>();
-        for writer in writers {
-            writer.await.unwrap();
-        }
-        let direct = store.clone().with_read_snapshot(false);
-        let nodes = direct
-            .traverse(Traversal {
-                start: Start::NodesByLabel(Label::new("V")),
-                steps: Vec::new(),
-                limit: None,
-            })
-            .await
-            .unwrap();
-        assert_eq!(nodes.len(), 1);
-        assert!(matches!(nodes[0].props.get("by"), Some(Value::Int(_))));
-        assert_eq!(
-            direct.get_edges(EdgeQuery::default()).await.unwrap().len(),
-            1
-        );
-    }
-}
+#[path = "write_queue/cancellation_tests.rs"]
+mod cancellation_tests;
+#[cfg(test)]
+#[path = "write_queue/tests.rs"]
+mod tests;
