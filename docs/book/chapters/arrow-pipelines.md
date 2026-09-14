@@ -8,17 +8,14 @@ same implementation against the native SDK types.
 
 ```mermaid
 flowchart LR
-  Sources[Arrow / ADBC sources] --> Readers[Standard batch readers]
-  Readers --> Shared[grust-arrow: admission and projection]
-  Shared --> Lance[LanceDB native merge]
+  Readers[Native Arrow readers] --> Shared[grust-arrow pipelines]
+  Shared --> Lance[LanceDB merge]
   Shared --> Sail[Sail IPC staging]
-  Shared --> Ladybug[Ladybug Arrow registration]
-  Shared --> ADBC[Caller-owned ADBC statement]
-  Shared --> Kernels[Grust graph projection and kernels]
-  Shared --> DF[DataFusion 55 tables and providers]
-  DF --> Results[Native result stream]
-  Results --> Bridge[Blocking Arrow reader]
-  Bridge --> ADBC
+  Shared --> Ladybug[Ladybug registration]
+  Shared --> Kernels[Graph kernels]
+  Shared --> DF[DataFusion 55 SQL]
+  Shared --> ADBC[ADBC statement]
+  DF -->|BlockingReader| ADBC
 ```
 
 ## Native tables and readers
@@ -55,18 +52,24 @@ properties support Null, Boolean, Int64, Float64 and UTF-8, preserving integer
 precision. Mixed non-null types and complex graph properties are rejected by
 this scalar interchange contract rather than silently coerced.
 
-```rust,no_run
+```rust
 use grust::arrow::ArrowGraph;
 use std::fs::File;
-# fn main() -> Result<(), Box<dyn std::error::Error>> {
-let graph = grust::Graph::default();
-let tables = ArrowGraph::from_graph(&graph)?;
-tables.write_ipc(File::create("nodes.arrow")?, File::create("edges.arrow")?)?;
-let restored = ArrowGraph::read_ipc(
-    File::open("nodes.arrow")?, File::open("edges.arrow")?,
-)?.to_graph()?;
-assert_eq!(graph, restored);
-# Ok(()) }
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let graph = grust::Graph::default();
+    let tables = ArrowGraph::from_graph(&graph)?;
+    tables.write_ipc(
+        File::create("nodes.arrow")?,
+        File::create("edges.arrow")?,
+    )?;
+    let restored = ArrowGraph::read_ipc(
+        File::open("nodes.arrow")?,
+        File::open("edges.arrow")?,
+    )?.to_graph()?;
+    assert_eq!(graph, restored);
+    Ok(())
+}
 ```
 
 This legacy file-format API still stores one batch in each of two Arrow files.
