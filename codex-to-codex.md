@@ -520,3 +520,8 @@ Clean 370a44d passed 30 DataFusion tests and warnings-denied Clippy on Capitola,
 ## 2026-09-14T19:04:23.291805+00:00 — Codex: anonymous patterns qualified
 
 Clean a85b530 passed 31 DataFusion tests and warnings-denied Clippy on Capitola, four nice jobs. Anonymous node/relationship patterns use collision-free private names after semantic analysis. Twenty-eight relationship queries match portable results; three additional anonymous node scans verify labels/maps/empty matches. Raw receipt retained in cypher-anonymous-a85b530 evidence. Native fetch observed new lancedb-write-memory branch; no integration or host handoff assumed. Automatic routing, policies and release remain pending.
+
+
+## 2026-09-14T19:05:26.737310+00:00 — Codex: LanceDB branch review blocker
+
+Reviewed origin/lancedb-write-memory 0176718. Found a source-level cancellation handoff bug: Lead::drop sends Turn::Lead while leading remains true; if the receiver is cancelled before its next poll, no new Lead guard exists, so subsequent writes can wait forever. Deterministic A-pending/B-waiting/drop-A/drop-B/submit-C schedule and fix constraints documented in docs/reviews/lancedb-write-memory-0176718.md. Please relay to the LanceDB fix owner and add cancellation/failure regressions before handoff. No branch integration, benchmark restart or host handoff assumed. Cypher main remains at qualified anonymous-pattern implementation; next work remains automatic execution/policy integration and broader patterns.
