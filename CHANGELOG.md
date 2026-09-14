@@ -6,6 +6,17 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ## Unreleased
 
+- Add degree analytics through the direct Rust projection API, native Arrow
+  result cursor and ordinary `grust.algorithms.degree` procedure. Exact counts
+  include parallel and zero-weight arcs; optional weighted strength retains the
+  projection's finite nonnegative-weight contract. Isolates and all projection
+  orientations are supported, with undirected loops counted once.
+- Degree kernels use existing CSR offsets and bounded work-admission chunks;
+  counts take O(V), weighted strength O(V + A). Result storage retains memory
+  admission, successful work charges remain exact, and nonfinite strength sums
+  fail explicitly. Independent multigraph oracles and prepared-projection
+  benchmarks cover the new surface.
+
 ## 0.15.1 — Copepod — 2026-09-14
 
 - Candidate rows in the portable Cypher executor share immutable node and edge

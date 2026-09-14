@@ -78,13 +78,14 @@ its deferred roadmap is the Grust algorithms module owner.
 | Required / implemented | `wcc` | Weak reachability, isolates; exhaustive matrix closure |
 | Required / implemented | `scc` | Mutual reachability; exhaustive matrix closure and iterative 65,536-node chain |
 | Required / implemented | `pagerank` | Weighted probability scores, dangling mass and convergence; closed-form and probability-mass checks |
+| Next slice / implemented (unreleased) | `degree` | Exact projected degree and optional weighted strength; exhaustive two-node multigraph/orientation oracle |
 | Next slice / implemented | `dfs` | Deterministic discovery order, each reachable vertex once |
 | Next slice / implemented | `multiSourceBfs` | Minimum hop distance from nonempty source array; duplicates harmless |
 | Next slice / implemented | `topologicalSort` | Complete DAG order or concrete closed cycle witness |
 | Inspection / implemented | `projectionStats` | Selected nodes, original edges, traversal arcs, loops and outgoing CSR bytes |
 | Sizing / implemented | `estimateCsr` | O(1) nominal CSR upper bounds from whole snapshot counts; not total memory admission |
 | Deferred P2 | A*, Bellman–Ford, DAG/all-pairs/k-shortest paths | Require negative-cycle, heuristic and output-bound contracts/oracles |
-| Deferred P2 | Degree, closeness/harmonic, betweenness, eigenvector/HITS | Require directed/disconnected normalization and sampling oracles |
+| Deferred P2 | Closeness/harmonic, betweenness, eigenvector/HITS | Require directed/disconnected normalization and sampling oracles |
 | Deferred P2 | Triangles, clustering, k-core, bridges, bipartiteness | Require explicit multigraph semantics and small exhaustive oracles |
 | Deferred P3 | Communities | Require seeded randomness, convergence and objective validation |
 | Deferred P3 | Forests, flow/cut | Require capacity, direction and disconnection contracts |
@@ -99,6 +100,17 @@ parallel edges remain distinct. Finite nonnegative weights are required, includi
 an explicitly supplied default. Integer property weights must be within
 `0..=2^53`; larger integers are rejected rather than rounded. Unweighted projections
 omit weight buffers. BFS/DFS/components/order use topology, irrespective of weight.
+
+`degree` returns `nodeId`, exact integer `degree`, and nullable numeric
+`strength`. A weighted projection supplies finite strength sums; an unweighted
+projection supplies null strength. Degree counts zero-weight arcs too. Outgoing
+and incoming orientations select that direction; undirected self-loops count
+once under the existing projection convention. Nonfinite accumulated strength
+is a numerical error. This is not a claim of GDS negative-weight handling:
+Grust rejects negative projection weights, whereas GDS degree ignores
+non-positive weights. Rust exposes `Degrees::counts()` and `strengths()`;
+Arrow uses UInt64 counts and nullable Float64 strength. No normalization,
+backend-native execution, or result write-back is implied.
 
 PageRank additionally accepts damping (default .85, in [0,1)), L1 tolerance
 (default 1e-8), positive maximum iterations (1000), and personalization. It starts

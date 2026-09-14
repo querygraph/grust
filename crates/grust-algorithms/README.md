@@ -6,7 +6,8 @@ unsupported modes and qualification evidence.
 
 The direct Rust API provides BFS, Dijkstra distances, one full shortest path per
 reachable node, weak and strong components, weighted PageRank, DFS, multi-source BFS and
-topological order with a concrete cycle witness. Projections
+topological order with a concrete cycle witness, plus exact degree counts and
+optional weighted strength. Projections
 retain node IDs and original edge ordinals, including isolates and parallel
 edges. Directed orientation is explicit; weak components ignore direction.
 Components use the minimum projection node row as their canonical label.
@@ -50,3 +51,16 @@ does not imply convergence.
 `CsrEstimate::upper_bound` sizes packed outgoing/reverse buffers and temporary
 insertion positions. It excludes the graph, IDs, edge table, kernel/result memory
 and allocator overhead; it must not be used as a total admission estimate.
+
+`degree(&projection)` returns exact `usize` arc counts in projection node order
+and optional Float64 strengths when weights were selected. Incoming/outgoing
+orientation is inherited from the projection; undirected loops count once.
+Zero-weight and parallel arcs count independently. Negative/nonfinite inputs
+remain rejected by projection validation; a nonfinite strength sum is an error.
+The Arrow cursor emits `nodeId`, UInt64 `degree`, and nullable Float64 `strength`.
+
+`cargo bench -p grust-algorithms --bench degree` measures prepared-projection
+kernel allocation, execution and result disposal at 4,096 and 65,536 nodes. It
+excludes capture, projection and Arrow output, and reports node-result throughput.
+Fixtures include loops, isolates and zero weights; closed-form answers are
+checked before timing. Working admission is not a process RSS limit.
