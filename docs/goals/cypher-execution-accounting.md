@@ -73,3 +73,19 @@ then verify that admission remains charged until the last array slice drops.
 Cover cancellation during construction and errors after one batch allocates,
 plus empty graphs and a one-byte-short ordinal budget. This lifetime proof is
 separate from cumulative portable-copy accounting and serialized input size.
+
+The existing algorithm `ArrowResultBatch` retains a reservation beside its batch,
+with an explicit caller obligation when cloning raw arrays independently. That
+wrapper is useful for controlled consumers but cannot establish the stronger
+buffer-lifetime guarantee required above. Do not silently broaden its claim.
+
+The locally resolved Arrow 59 `Buffer::from_custom_allocation` provides an
+allocation-owner hook. A reusable adapter could own an immutable existing Buffer
+and a reservation together, then expose exactly that buffer's valid byte region
+through the custom owner. Keeping the original Buffer alive preserves address,
+alignment and storage lifetime without copying data. This needs a narrowly
+reviewed unsafe constructor: derive pointer/length from the owned buffer, expose
+no mutation, handle empty buffers, and retain ownership across slices and FFI
+release. First qualify the shared mechanism across enabled Arrow majors before
+using it for capture ordinals or algorithm batches. The source inspection is a
+design lead, not an implemented or verified safety claim.
