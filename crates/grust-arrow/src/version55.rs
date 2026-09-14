@@ -28,3 +28,8 @@ pub use graph_tables::ArrowGraphTables;
 
 #[path = "graph_serialization.rs"]
 mod graph_serialization;
+
+use arrow_buffer_55 as buffer;
+#[path = "buffer_owner.rs"]
+mod buffer_owner;
+pub use buffer_owner::retain_buffer_owner;

@@ -181,3 +181,162 @@ fn native_input_admission_matches_exact_graph_bytes_and_retains_measurement() {
         assert!(GraphSnapshot::try_new_with_input_policy(&engine, tables, &too_small).is_err());
     }
 }
+
+#[tokio::test]
+async fn ordinal_admission_follows_emitted_arrays_after_snapshot_drop() {
+    use grust_procedures::{ExecutionContext, ExecutionLimits};
+    let engine = DataFusionEngine::new(ExecutionOptions {
+        working_memory_bytes: (16 * 1024 * 1024).try_into().unwrap(),
+        target_partitions: 1.try_into().unwrap(),
+        batch_rows: 1024.try_into().unwrap(),
+        spill: SpillPolicy::Disabled,
+    })
+    .unwrap();
+    let graph = Graph::new(
+        vec![Node::new("N", "a", Props::new())],
+        vec![Edge::new("E", "a", "a", Props::new())],
+    );
+    let tables = || {
+        let (nodes, edges) = ArrowGraph::from_graph(&graph).unwrap().into_tables();
+        ArrowGraphTables::try_new(nodes, edges).unwrap()
+    };
+    let context = |memory_bytes| {
+        ExecutionContext::new(ExecutionLimits {
+            memory_bytes,
+            work_units: 1,
+            batch_rows: 1024,
+            deadline: None,
+        })
+        .unwrap()
+    };
+    assert!(GraphSnapshot::try_new_with_context(&engine, tables(), &context(7)).is_err());
+    let execution = context(8);
+    let snapshot = GraphSnapshot::try_new_with_context(&engine, tables(), &execution).unwrap();
+    let batches = snapshot
+        .edges(engine.context())
+        .unwrap()
+        .collect()
+        .await
+        .unwrap();
+    drop(snapshot);
+    assert_eq!(execution.usage().unwrap().live_bytes, 8);
+    let ordinal = batches[0].column_by_name(EDGE_ORDINAL).unwrap().slice(0, 1);
+    drop(batches);
+    assert_eq!(execution.usage().unwrap().live_bytes, 8);
+    assert_eq!(
+        ordinal
+            .as_any()
+            .downcast_ref::<UInt64Array>()
+            .unwrap()
+            .value(0),
+        0
+    );
+    drop(ordinal);
+    assert_eq!(execution.usage().unwrap().live_bytes, 0);
+    assert_eq!(execution.usage().unwrap().work_units, 1);
+
+    let cancelled = context(8);
+    cancelled.cancel().unwrap();
+    assert!(GraphSnapshot::try_new_with_context(&engine, tables(), &cancelled).is_err());
+    assert_eq!(cancelled.usage().unwrap().live_bytes, 0);
+
+    let (nodes, edges) = tables().into_tables();
+    let edges = ArrowTable::try_new(
+        edges.schema(),
+        vec![edges.batches()[0].clone(), edges.batches()[0].clone()],
+    )
+    .unwrap();
+    let partial = context(8);
+    assert!(
+        GraphSnapshot::try_new_with_context(
+            &engine,
+            ArrowGraphTables::try_new(nodes, edges).unwrap(),
+            &partial
+        )
+        .is_err()
+    );
+    assert_eq!(partial.usage().unwrap().live_bytes, 0);
+    assert_eq!(partial.usage().unwrap().peak_bytes, 8);
+    assert_eq!(partial.usage().unwrap().work_units, 1);
+
+    let no_work = ExecutionContext::new(ExecutionLimits {
+        work_units: 0,
+        ..execution.limits()
+    })
+    .unwrap();
+    assert!(GraphSnapshot::try_new_with_context(&engine, tables(), &no_work).is_err());
+    assert_eq!(no_work.usage().unwrap().live_bytes, 0);
+}
+
+#[test]
+fn combined_capture_preserves_input_limit_and_original_deadline() {
+    use grust_procedures::{ExecutionContext, ExecutionLimits};
+    let engine = DataFusionEngine::new(ExecutionOptions {
+        working_memory_bytes: (16 * 1024 * 1024).try_into().unwrap(),
+        target_partitions: 1.try_into().unwrap(),
+        batch_rows: 1024.try_into().unwrap(),
+        spill: SpillPolicy::Disabled,
+    })
+    .unwrap();
+    let graph = Graph::new(
+        vec![Node::new("N", "a", Props::new())],
+        vec![Edge::new("E", "a", "a", Props::new())],
+    );
+    let (nodes, edges) = ArrowGraph::from_graph(&graph).unwrap().into_tables();
+    let tables = ArrowGraphTables::try_new(nodes, edges).unwrap();
+    let parameters = grust_cypher::CypherParameters::new();
+    let policy = grust_cypher::ReadQueryPolicy::default();
+    let request = grust_cypher::PreparedReadRequest::new(
+        "MATCH (n) RETURN count(*) LIMIT 1",
+        &parameters,
+        &policy,
+    )
+    .unwrap();
+    let context = |deadline| {
+        ExecutionContext::new(ExecutionLimits {
+            memory_bytes: 8,
+            work_units: 1,
+            batch_rows: 1024,
+            deadline,
+        })
+        .unwrap()
+    };
+    assert!(
+        GraphSnapshot::try_new_with_input_policy_and_context(
+            &engine,
+            tables.clone(),
+            &request,
+            &context(None)
+        )
+        .is_err()
+    );
+    let execution = context(Some(request.deadline()));
+    let snapshot = GraphSnapshot::try_new_with_input_policy_and_context(
+        &engine,
+        tables.clone(),
+        &request,
+        &execution,
+    )
+    .unwrap();
+    assert_eq!(
+        snapshot.statistics().serialized_graph_bytes,
+        Some(serde_json::to_vec(&graph).unwrap().len())
+    );
+    drop(snapshot);
+    assert_eq!(execution.usage().unwrap().live_bytes, 0);
+    let small = grust_cypher::PreparedReadRequest::new(
+        "MATCH (n) RETURN count(*) LIMIT 1",
+        &parameters,
+        &grust_cypher::ReadQueryPolicy {
+            max_graph_bytes: 1,
+            ..policy
+        },
+    )
+    .unwrap();
+    let execution = context(Some(small.deadline()));
+    assert!(
+        GraphSnapshot::try_new_with_input_policy_and_context(&engine, tables, &small, &execution)
+            .is_err()
+    );
+    assert_eq!(execution.usage().unwrap().peak_bytes, 0);
+}

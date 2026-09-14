@@ -11,11 +11,12 @@ description = "Arrow tables and IPC interchange for Grust property graphs"
 default = ["arrow-59"]
 adbc = ["arrow-59", "dep:adbc_core"]
 ffi = ["arrow_array_55?/ffi", "arrow_array_58?/ffi", "arrow-array?/ffi"]
-arrow-55 = ["dep:arrow_array_55", "dep:arrow_schema_55", "dep:arrow_ipc_55"]
-arrow-58 = ["dep:arrow_array_58", "dep:arrow_schema_58", "dep:arrow_ipc_58"]
-arrow-59 = ["dep:arrow-array", "dep:arrow-schema", "dep:arrow-ipc"]
+arrow-55 = ["dep:arrow_buffer_55", "dep:arrow_array_55", "dep:arrow_schema_55", "dep:arrow_ipc_55"]
+arrow-58 = ["dep:arrow_buffer_58", "dep:arrow_array_58", "dep:arrow_schema_58", "dep:arrow_ipc_58"]
+arrow-59 = ["dep:arrow-buffer", "dep:arrow-array", "dep:arrow-schema", "dep:arrow-ipc"]
 
 [dependencies]
+bytes = "1.11.1"
 adbc_core = { version = "0.24.0", optional = true }
 serde_json.workspace = true
 serde.workspace = true
@@ -39,3 +40,17 @@ tempfile.workspace = true
 name = "pipelines"
 harness = false
 required-features = ["arrow-59"]
+
+[dependencies.arrow_buffer_55]
+package = "arrow-buffer"
+version = "55"
+optional = true
+
+[dependencies.arrow_buffer_58]
+package = "arrow-buffer"
+version = "58"
+optional = true
+
+[dependencies.arrow-buffer]
+version = "59.3.0"
+optional = true

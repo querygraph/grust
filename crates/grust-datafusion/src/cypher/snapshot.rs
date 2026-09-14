@@ -3,6 +3,7 @@ use crate::DataFusionEngine;
 use datafusion::{
     arrow::{
         array::UInt64Array,
+        buffer::{Buffer, ScalarBuffer},
         datatypes::{DataType, Field, Schema},
         record_batch::RecordBatch,
     },
@@ -54,6 +55,27 @@ impl GraphSnapshot {
     /// repeated external IDs. Re-capturing a graph creates a separate identity
     /// domain, even when its rows happen to receive the same ordinal numbers.
     pub fn try_new(engine: &DataFusionEngine, graph: ArrowGraphTables) -> Result<Self> {
+        Self::capture(engine, graph, None)
+    }
+
+    /// Capture with admission for added ordinal payload and construction work.
+    /// Reservations follow the actual Arrow buffers through cloned arrays and
+    /// emitted batches. Existing input buffers and provider/schema metadata are
+    /// outside this logical payload bound; this is not full read-policy admission.
+    pub fn try_new_with_context(
+        engine: &DataFusionEngine,
+        graph: ArrowGraphTables,
+        execution: &grust_procedures::ExecutionContext,
+    ) -> Result<Self> {
+        execution.checkpoint().map_err(resource_error)?;
+        Self::capture(engine, graph, Some(execution))
+    }
+
+    fn capture(
+        engine: &DataFusionEngine,
+        graph: ArrowGraphTables,
+        execution: Option<&grust_procedures::ExecutionContext>,
+    ) -> Result<Self> {
         let (nodes, edges) = graph.into_tables();
         let statistics = SnapshotStatistics {
             node_rows: nodes.num_rows(),
@@ -69,7 +91,7 @@ impl GraphSnapshot {
         Ok(Self {
             identity: Arc::new(()),
             nodes: engine.table_provider(nodes)?,
-            edges: engine.table_provider(with_ordinals(edges)?)?,
+            edges: engine.table_provider(with_ordinals(edges, execution)?)?,
             statistics,
         })
     }
@@ -86,6 +108,38 @@ impl GraphSnapshot {
         graph: ArrowGraphTables,
         request: &grust_cypher::PreparedReadRequest<'_>,
     ) -> Result<Self> {
+        Self::capture_with_input_policy(engine, graph, request, None)
+    }
+
+    /// Combine exact input admission with owned ordinal payload/work admission.
+    /// The execution deadline must be no later than the prepared request's
+    /// original deadline. Existing input storage and full operator accounting
+    /// remain separate; neither check grants backend authority.
+    pub fn try_new_with_input_policy_and_context(
+        engine: &DataFusionEngine,
+        graph: ArrowGraphTables,
+        request: &grust_cypher::PreparedReadRequest<'_>,
+        execution: &grust_procedures::ExecutionContext,
+    ) -> Result<Self> {
+        if !execution
+            .limits()
+            .deadline
+            .is_some_and(|deadline| deadline <= request.deadline())
+        {
+            return Err(DataFusionError::Plan(
+                "capture execution must retain the prepared request deadline".into(),
+            ));
+        }
+        execution.checkpoint().map_err(resource_error)?;
+        Self::capture_with_input_policy(engine, graph, request, Some(execution))
+    }
+
+    fn capture_with_input_policy(
+        engine: &DataFusionEngine,
+        graph: ArrowGraphTables,
+        request: &grust_cypher::PreparedReadRequest<'_>,
+        execution: Option<&grust_procedures::ExecutionContext>,
+    ) -> Result<Self> {
         let bytes = request
             .check_serializable_graph(
                 graph.nodes().num_rows(),
@@ -93,7 +147,7 @@ impl GraphSnapshot {
                 &graph.as_serializable_graph(),
             )
             .map_err(|error| DataFusionError::External(Box::new(error)))?;
-        let mut snapshot = Self::try_new(engine, graph)?;
+        let mut snapshot = Self::capture(engine, graph, execution)?;
         snapshot.statistics.serialized_graph_bytes = Some(bytes);
         request
             .check_measured_graph(
@@ -123,7 +177,10 @@ impl GraphSnapshot {
     }
 }
 
-fn with_ordinals(table: ArrowTable) -> Result<ArrowTable> {
+fn with_ordinals(
+    table: ArrowTable,
+    execution: Option<&grust_procedures::ExecutionContext>,
+) -> Result<ArrowTable> {
     let input_schema = table.schema();
     if input_schema.field_with_name(EDGE_ORDINAL).is_ok() {
         return Err(DataFusionError::Plan(format!(
@@ -146,7 +203,32 @@ fn with_ordinals(table: ArrowTable) -> Result<ArrowTable> {
             let end = offset
                 .checked_add(count)
                 .ok_or_else(|| DataFusionError::Plan("edge ordinal overflow".into()))?;
-            let ordinals = UInt64Array::from_iter_values(offset..end);
+            let ordinals = match execution {
+                None => UInt64Array::from_iter_values(offset..end),
+                Some(execution) => {
+                    let bytes =
+                        batch
+                            .num_rows()
+                            .checked_mul(size_of::<u64>())
+                            .ok_or_else(|| {
+                                DataFusionError::Plan("edge ordinal byte size overflow".into())
+                            })?;
+                    let reservation = execution.reserve(bytes).map_err(resource_error)?;
+                    execution
+                        .charge_work(batch.num_rows())
+                        .map_err(resource_error)?;
+                    let mut values = Vec::with_capacity(batch.num_rows());
+                    for ordinal in offset..end {
+                        if values.len() % 1024 == 0 {
+                            execution.checkpoint().map_err(resource_error)?;
+                        }
+                        values.push(ordinal);
+                    }
+                    let buffer =
+                        grust_arrow::retain_buffer_owner(Buffer::from_vec(values), reservation);
+                    UInt64Array::new(ScalarBuffer::new(buffer, 0, batch.num_rows()), None)
+                }
+            };
             offset = end;
             let mut columns = batch.columns().to_vec();
             columns.push(Arc::new(ordinals));
@@ -154,4 +236,8 @@ fn with_ordinals(table: ArrowTable) -> Result<ArrowTable> {
         })
         .collect::<Result<Vec<_>>>()?;
     ArrowTable::try_new(schema, batches).map_err(|error| DataFusionError::External(Box::new(error)))
+}
+
+fn resource_error(error: grust_procedures::ProcedureError) -> DataFusionError {
+    DataFusionError::External(Box::new(error))
 }
