@@ -1,9 +1,28 @@
 # Automatic Cypher execution with DataFusion 55
 
-Status: implementation work pending, 2026-09-14. This extends the active
+Status: active implementation goal, explicitly requested 2026-09-14. This extends the active
 [performance and compatibility goal](arrow-performance-parity.md). The released
 DataFusion foundation accepts explicit SQL; it does not yet select plans for
 ordinary Cypher queries.
+
+## Goal and completion evidence
+
+Deliver a fast, automatic Cypher-to-DataFusion 55 execution upgrade as part of
+the existing broader Grust engineering goal. Preserve that goal's backend,
+Arrow/ADBC, algorithm, benchmark and release obligations.
+
+Completion requires automatic execution selection through ordinary Cypher
+entrypoints, composable typed plans and native Arrow providers, preserved
+language and resource-policy contracts, and measured end-to-end improvements
+for the qualified workload classes. Retain efficient indexed/native/kernel
+routes where they are appropriate. Publish the upgrade with full workspace,
+package, documentation, book and registry verification. Neither explicit SQL
+execution nor the current partial scan compiler establishes completion.
+
+Current implementation admits scalar predicates, single-node scans, projection,
+DISTINCT and count aggregation through an explicit lowering API. Joins, broader
+aggregates, parameter binding, route selection, resource mapping, comparative
+performance qualification and release delivery remain outstanding.
 
 ## Integration boundaries
 
