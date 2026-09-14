@@ -296,3 +296,12 @@ all 20 registry archives matched qualification. Book, readers and TextPack are
 delivered; [release receipts](../releases/mantis/README.md) retain proof.
 Automatic selection, operator accounting and provider authority remain open.
 The safe buffer-owner candidate is isolated and is not part of Mantis.
+
+## Cold-representation scan evidence
+
+The [2b90557 profile](../../benchmarks/arrow-pipelines/evidence/cypher-end-to-end-2b90557)
+passed 42 independent oracle checks and includes index/Arrow preparation plus
+portable query output. Conversion dominates the measured million-node
+DataFusion route; small fixtures favor indexed execution. Resource boundaries
+are disclosed and differ, so these results supply cost evidence for this
+workload without qualifying a general routing threshold or full read policy.

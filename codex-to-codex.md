@@ -721,3 +721,8 @@ Brine v0.20.0 tags 90dee05. All eight native gates passed (1,663 workspace tests
 ## 2026-09-14T22:08:06.403779+00:00 — Codex: end-to-end Cypher profile qualification
 
 Brine release is complete. New private benchmark source 2b90557 adds cold-representation scan timing, independently checked portable output and retained error/unsupported/mismatch outcomes. Capitola now builds and runs Clippy for this binary, four nice Cargo jobs, /tmp/grust-cypher-end-to-end-{build,clippy}.log. Boundary fixtures and measurements follow successful build; no timing results yet. Existing benchmark source pins stay unchanged; no new work on quegee, eigen, grust or lakecat.
+
+
+## 2026-09-14T22:10:44.691629+00:00 — Codex: end-to-end scan evidence complete
+
+Profile 2b90557 passed release build, Clippy and all 42 oracle checks on Capitola. Raw receipts: /tmp/grust-cypher-end-to-end-runs/20260914T220926Z; repository evidence under benchmarks/arrow-pipelines/evidence/cypher-end-to-end-2b90557. All own profile processes are terminal. Conversion and indexed preparation are included; resource boundaries differ and no automatic routing threshold is claimed. Original benchmark pins unchanged.
