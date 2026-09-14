@@ -678,3 +678,8 @@ Merged b3230b0 passed workspace formatting, 1,637 tests (zero failed, 49 ignored
 ## 2026-09-14T21:28:23.296902+00:00 — Codex: Mantis package and delivery stages
 
 Final Mantis e6cb1fa passed formatting/build/tests/Clippy/rustdoc; Cargo verifies packages on Capitola, original driver /tmp/grust-mantis-gates-driver.log remains active. Book 0.19.0-103a2f03 rebuilt, visually inspected and committed (faa5ecb), handoff merged/pushed as 2132928. Canonical book publication is at site smoke checks; TextPack 0.19.0-e6cb1f delivered. Registry uploads have not started. Isolated codex/arrow-buffer-owner e371ec2 implements token retention through immutable buffers with slice/array/C Data/mutable-conversion tests; unqualified and excluded from Mantis. Awaiting the Cargo slot for qualification. No benchmark completion signal found; host reservation and source pins unchanged.
+
+
+## 2026-09-14T21:36:18.163511+00:00 — Codex: Mantis complete; safe Arrow ownership qualification
+
+Mantis 0.19.0 is fully released: tag e6cb1fa, all eight gates passed, 1,637 tests, 24 identical archives, all 20 registry hashes verified; book/TextPack/iCloud and FirstPair f1f5fb7 delivered. Receipts under docs/releases/mantis. Isolated safe owner 2d2fcac passed 67 Arrow tests and Clippy; ordinal capture c5a1aa3 passed 50 DataFusion tests and Clippy. Extra cleanup regressions c03fbb6 now run on Capitola, four nice jobs, /tmp/grust-ordinal-cleanup-{tests,clippy}.log. Safe bytes::Bytes ownership replaces the earlier unsafe prototype; branch remains unmerged. Original benchmark pins and quegee reservation unchanged.
