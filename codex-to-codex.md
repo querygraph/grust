@@ -515,3 +515,8 @@ Clean 67be037 passed 30 DataFusion tests and warnings-denied Clippy on Capitola,
 ## 2026-09-14T19:01:53.598265+00:00 — Codex: repeated endpoints qualified
 
 Clean 370a44d passed 30 DataFusion tests and warnings-denied Clippy on Capitola, four nice jobs. Repeated endpoint variables now constrain matches to self-loops with one node join; undirected repeated endpoints omit the reverse branch. Twenty-two parsed relationship queries match portable results. Raw receipt retained in cypher-repeated-node-370a44d evidence. Broader patterns, automatic routing, policies and release remain pending; no strain pins changed.
+
+
+## 2026-09-14T19:04:23.291805+00:00 — Codex: anonymous patterns qualified
+
+Clean a85b530 passed 31 DataFusion tests and warnings-denied Clippy on Capitola, four nice jobs. Anonymous node/relationship patterns use collision-free private names after semantic analysis. Twenty-eight relationship queries match portable results; three additional anonymous node scans verify labels/maps/empty matches. Raw receipt retained in cypher-anonymous-a85b530 evidence. Native fetch observed new lancedb-write-memory branch; no integration or host handoff assumed. Automatic routing, policies and release remain pending.

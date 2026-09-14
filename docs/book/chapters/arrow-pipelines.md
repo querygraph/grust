@@ -198,7 +198,7 @@ Its `RelationshipPlan` exposes typed binding resolution for projection, filters
 and aggregates, plus the snapshot-scoped relationship ordinal. Parallel edges
 and loops survive; isolates produce no directed relationship rows. This is a
 composable operator. `plan_relationship_scan` lowers parsed incoming/outgoing
-one-hop patterns with named bindings, node labels, relationship types
+one-hop patterns with named or anonymous bindings, node labels, relationship types
 and WHERE. It shares RETURN projection, aggregation, DISTINCT, sorting and
 pagination with node scans. Optional matches and automatic execution selection remain outstanding.
 
@@ -216,3 +216,7 @@ A repeated endpoint variable now constrains single-hop matches to self-loops.
 The plan uses one node join plus endpoint equality and omits the redundant
 reverse branch for undirected matching. Node/relationship name collisions
 remain invalid.
+
+Anonymous node and relationship elements receive private, collision-free
+bindings after semantic analysis. Named bindings remain borrowed during name
+resolution. Anonymous node scans retain label and inline-property constraints.

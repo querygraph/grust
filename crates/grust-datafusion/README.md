@@ -97,7 +97,7 @@ for node/relationship/node bindings. `RelationshipPlan` retains
 a `GraphBindings` resolver for scalar/aggregate composition and physical edge
 identity. This operator preserves loops and parallel relationships.
 `plan_relationship_scan` lowers parsed directed one-hop MATCH/WHERE/RETURN
-patterns with named variables, node labels and relationship types.
+patterns with named or anonymous elements, node labels and relationship types.
 Undirected patterns are also admitted: both orientations preserve the same
 physical edge identity, and self-loops occur once.
 It shares projection, grouping, count/extrema, DISTINCT, ordering and pagination
@@ -112,3 +112,7 @@ retain the portable executor's matching behavior.
 Repeated endpoint variables constrain the pattern to self-loops. They use one
 node join and endpoint equality; the undirected form needs no reverse branch.
 Node and relationship variables must remain distinct.
+
+Anonymous node and relationship elements receive private, collision-free
+bindings after semantic analysis. Named bindings remain borrowed during name
+resolution. Anonymous node scans retain label and inline-property constraints.
