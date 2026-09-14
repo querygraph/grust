@@ -1,9 +1,8 @@
 # Generalized graph algorithms
 
-Status: generalized algorithms are implemented. The earlier Acorn checkpoint was
-qualified; the subsequent compact Memory/indexed-Cypher and Turso changes require
-fresh validation on a cleared host. Publishing credentials are now configured.
-See `codex-to-codex.md` at the repository root for host coordination.
+Status: generalized algorithms are implemented and source-qualified for Acorn
+0.14.0. See the [release validation](releases/acorn/validation.json) for the
+exact source, package checks and backend boundaries.
 Contract: the 2026-09-13 generalized algorithms handoff in
 `adversarial-graph-algorithms/docs/grust-generalized-graph-algorithms-handoff.md`.
 Engineering guide: QueryGraph `RUST.md`, retrieved 2026-09-13.
@@ -213,11 +212,18 @@ mandatory. Comprehensive per-kernel peak/output estimates are deferred.
 
 ## Qualification and release handoff
 
-The earlier Acorn checkpoint had 1,486 passing tests, zero failures and 47
-explicitly ignored tests. Those receipts do not qualify later source changes. Workspace build, all-feature/all-target Clippy with warnings denied,
-formatting, public rustdoc and all 23 workspace tarballs pass. The algorithms/Arrow
-facade also builds without Cypher. Package attribution checks retain both the
-algorithm MIT notice and the facade's Apache Ossie fixture attribution.
+Acorn qualification has 1,502 passing workspace tests, zero failures and 47
+explicitly ignored tests across 95 targets. Formatting, all-features build,
+all-target Clippy with warnings denied, warnings-denied rustdoc, verification of
+all 23 workspace tarballs and package attribution pass on macOS ARM64 with
+Rust/Cargo 1.97.1. Native Ladybug, LanceDB and CocoIndex integration checks pass;
+Turso WAL/MVCC and Memory run through their embedded tests. The final LanceDB
+recreation regression fails on the previous cache and passes with generation
+invalidation. See the [current receipt](releases/acorn/validation.json) and its
+[raw logs](releases/acorn/qualification-logs.tar.gz).
+
+The following service and Docker observations belong to the earlier checkpoint;
+they are retained as historical evidence, not current performance qualification.
 
 The reachability oracle exhausts all 512 directed three-node topologies in all
 three orientations. Independent weighted and structural checks cover the nine
@@ -247,13 +253,10 @@ identical timer/allocation boundary is claimed.
 
 The Acorn [book](book/build/dist/VERSION.md) and
 [release TextPack](blog/grust-acorn/dist/VERSION.md) are built, verified, committed
-and pushed for that checkpoint. The new compact-snapshot and Turso changes have
-updated manuscript source awaiting a fresh build, updated release post/TextPack,
-workspace/package checks and algorithm rerun. Quegee remains reserved for another
-benchmark; eigen coordinates availability on eigen and grust. After qualification,
-remaining release work is crates.io publication in dependency order, external
-`cargo info` verification and the exact crate-source release tag, following
-AGENTS.md/PUBLISH.md/FIRSTPAIR.md.
-No crates.io publication is claimed until that work succeeds. The broader deferred
-catalog is explicit; the extension does not imply arbitrary Cypher or universal
-GDS coverage.
+and pushed for the released surface, including compact snapshots, prepared Turso
+loads, and LanceDB cache generations. Crate publication follows the package gate
+in dependency order, with outside-workspace registry verification and a tag of
+the uploaded source. The current-source algorithm benchmark rerun remains
+separate from source qualification and retains each host's execution boundary.
+The broader deferred catalog is explicit; the extension does not imply arbitrary
+Cypher or universal GDS coverage.

@@ -1,0 +1,146 @@
+{
+  "version": "0.14.0",
+  "release": "Acorn",
+  "date": "2026-09-14",
+  "qualification": {
+    "source": "c976386eb68d70516198ef77018ee37cdb8116bb",
+    "host": "capitola",
+    "platform": "macOS ARM64",
+    "steps": [
+      {
+        "name": "fmt",
+        "command": [
+          "cargo",
+          "fmt",
+          "--all",
+          "--",
+          "--check"
+        ],
+        "exit_code": 0,
+        "seconds": 1.1046459674835205
+      },
+      {
+        "name": "build",
+        "command": [
+          "cargo",
+          "build",
+          "--locked",
+          "--workspace",
+          "--all-features"
+        ],
+        "exit_code": 0,
+        "seconds": 10.209361791610718
+      },
+      {
+        "name": "tests",
+        "command": [
+          "cargo",
+          "test",
+          "--locked",
+          "--workspace",
+          "--all-features"
+        ],
+        "exit_code": 0,
+        "seconds": 93.23853898048401
+      },
+      {
+        "name": "clippy",
+        "command": [
+          "cargo",
+          "clippy",
+          "--locked",
+          "--workspace",
+          "--all-features",
+          "--all-targets",
+          "--",
+          "-D",
+          "warnings"
+        ],
+        "exit_code": 0,
+        "seconds": 8.378931283950806
+      },
+      {
+        "name": "rustdoc",
+        "command": [
+          "cargo",
+          "doc",
+          "--locked",
+          "--workspace",
+          "--all-features",
+          "--no-deps"
+        ],
+        "exit_code": 0,
+        "seconds": 86.00412082672119
+      },
+      {
+        "name": "package",
+        "command": [
+          "cargo",
+          "package",
+          "--workspace",
+          "--allow-dirty"
+        ],
+        "exit_code": 0,
+        "seconds": 596.3358070850372
+      },
+      {
+        "name": "attribution",
+        "command": [
+          "bash",
+          "scripts/verify-package-attribution.sh"
+        ],
+        "exit_code": 0,
+        "seconds": 0.06704425811767578
+      },
+      {
+        "name": "integration-quick",
+        "command": [
+          "bash",
+          "scripts/integration-test.sh",
+          "--profile",
+          "quick"
+        ],
+        "exit_code": 0,
+        "seconds": 40.52534103393555
+      }
+    ],
+    "complete": true
+  },
+  "packaged_source": "72307b2f1d0d8180f7f7bb8c09f61ac1521c0df2",
+  "toolchain": {
+    "rustc": "1.97.1",
+    "cargo": "1.97.1"
+  },
+  "rustdoc_flags": "-D warnings",
+  "workspace_tests": {
+    "passed": 1502,
+    "failed": 0,
+    "ignored": 47,
+    "targets": 95
+  },
+  "workspace_tarballs": 23,
+  "publishable_crates": 19,
+  "live_backends": [
+    "ladybug",
+    "lancedb",
+    "cocoindex"
+  ],
+  "embedded_tests": [
+    "memory",
+    "turso WAL",
+    "turso MVCC"
+  ],
+  "other_live_services": "Not rerun for this candidate; ignored service tests are not passes. Earlier service receipts remain separately identified.",
+  "book_source": "72307b2",
+  "book_pdf_pages": 48,
+  "book_formats": [
+    "PDF",
+    "EPUB",
+    "HTML",
+    "chapter HTML",
+    "MOBI"
+  ],
+  "post_source": "ceee6d1979640285a66355853c459dc4f41a943f",
+  "benchmark_boundary": "Historical algorithm Docker receipts do not qualify current performance. Current workspace tests include algorithm oracles and Cypher/provider regressions. Server benchmark work remains separate.",
+  "publication_boundary": "Later documentation commits do not change packaged source or dependency resolution. Upload candidates are compared with verified tarballs; VCS provenance and corresponding workspace archive checksums are the only permitted differences."
+}
