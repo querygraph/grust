@@ -476,5 +476,30 @@ Backend snapshot authority, pre-existing input buffers, ordinal
 allocation and execution work/intermediates remain separate obligations.
 This is input-size admission, not a complete bounded DataFusion executor
 or automatic routing.</p>
+<h3 data-number="16.5.9" id="owned-buffer-admission-brine-0.20.0"><span
+class="header-section-number">16.5.9</span> Owned buffer admission
+(Brine 0.20.0)</h3>
+<p><code>retain_buffer_owner</code> attaches an application token to an
+immutable Arrow buffer through safe <code>bytes::Bytes</code> ownership.
+Native slices, array clones and C Data exports retain that owner without
+copying bytes. Existing clones made before attachment do not acquire the
+token. Reserve storage before allocation; this helper preserves
+ownership and does not itself measure memory.</p>
+<p><code>GraphSnapshot::try_new_with_context</code> admits the added
+UInt64 ordinal payload and construction work. Reservations stay with the
+buffers after the snapshot, provider or result stream disappears. The
+combined <code>try_new_with_input_policy_and_context</code> also checks
+exact input size and requires an execution deadline no later than the
+prepared request’s deadline. Input buffers, provider/schema metadata and
+allocator capacity remain outside the logical ordinal-payload bound.
+These capture checks do not establish backend authority, full operator
+accounting or automatic execution selection.</p>
+<p><code>retain_array_owner</code> extends buffer ownership through an
+array’s validity bits and nested children. It rebuilds and validates
+metadata without copying payload bytes. Arrays with no physical buffers
+retain no token; a wrapper remains necessary when metadata-only lifetime
+must be admitted. Algorithm result batches use the same mechanism so raw
+batch clones and retained child slices keep their original reservation.
+New reservations are not charged for each clone.</p>
 </body>
 </html>
