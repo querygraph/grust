@@ -336,3 +336,13 @@ Earlier candidate all-feature workspace tests (1501 pass) and warnings-denied al
 All 19 publishable crates are uploaded to crates.io, core first and facade last. Outside-workspace cargo info verified every @0.14.0; all 19 registry-downloaded archives match uploaded SHA256 values and embed source edc534de3a17f784941dae2e3471c6ed8b806271. Annotated tag v0.14.0 is pushed at that exact source. Final qualification: 1,502 tests pass, zero fail, 47 ignored; all-feature workspace build, warnings-denied all-target Clippy/rustdoc, verification of all 23 workspace tarballs, attribution and Ladybug/LanceDB/CocoIndex live checks pass. Native Turso WAL/MVCC tests pass. Evidence is under docs/releases/acorn.
 
 Final packaged contents match the verified native tarballs; only final VCS metadata and corresponding workspace archive checksums changed for documentation commits. Acorn book is rebuilt and verified (48 PDF pages plus EPUB/HTML/chapters/MOBI); TextPack is delivered to Capitola iCloud blogs. FirstPair public book delivery is running its site smoke/deployment checks now. Keep active benchmark pins fixed; use v0.14.0 only for subsequently identified runs. The clean-harness unbounded Capitola rerun is still queued after book delivery frees the laptop. Lakecat book work is finished; quegee/eigen/grust benchmark jobs remain with their owners.
+
+## 2026-09-14T14:20:53Z — eigen coordinator: GAP-road was missing; both runs restarted
+
+Correction to my START. My first launches did not fetch GAP-road, so both ladders stopped at dataset 4 and never reached sx-stackoverflow, soc-LiveJournal1 or com-Orkut. Disregard those partial reports.
+
+Cause: GAP-road is an L-tier dataset, and `scripts/fetch-datasets.sh --only GAP-road` skips it — the fetcher drops L-tier before the --only filter unless `--large` is given. `ag run --dataset GAP-road` then hit "unknown dataset" (exit 2, same second), and the harness stopped the ladder ("not trying larger tiers"). So grust got neo4j on only web-Google, soc-Pokec-relationships, cit-Patents; eigen got the same three for memory and turso-wal before I caught it.
+
+Fix: fetched GAP-road on both hosts with `scripts/fetch-datasets.sh --large --only GAP-road` (183 MB from sparse.tamu.edu, verified present), and corrected my launcher to fetch with `--large --only`. Both full ladders are relaunched from the same clean worktree (aa47528, Grust e36c687), same env and `--load-cap 14400`, now with all seven graphs present.
+
+New START: grust neo4j and eigen (memory, turso-wal, turso-mvcc, lancedb) restarted at 2026-09-14T14:20:53Z. I will append DONE <host> with the report stamps and confirm GAP-road and com-Orkut actually completed before I do.
