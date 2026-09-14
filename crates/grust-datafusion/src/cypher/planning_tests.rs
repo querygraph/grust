@@ -192,3 +192,29 @@ async fn planned_scan_retains_provider_when_catalog_registration_changes() {
         );
     }
 }
+
+#[tokio::test]
+async fn extrema_of_missing_properties_return_null_on_nonempty_input() {
+    use datafusion::arrow::array::{Array, Int64Array};
+    let context = SessionContext::new();
+    let query = grust_cypher::parser::parse_query(
+        "MATCH (n) RETURN min(n.absent) AS low, max(null) AS high",
+    )
+    .unwrap();
+    let batches = lower_node_scan(&query, context.read_empty().unwrap())
+        .unwrap()
+        .unwrap()
+        .collect()
+        .await
+        .unwrap();
+    assert_eq!(batches[0].num_rows(), 1);
+    for column in batches[0].columns() {
+        assert!(
+            column
+                .as_any()
+                .downcast_ref::<Int64Array>()
+                .unwrap()
+                .is_null(0)
+        );
+    }
+}

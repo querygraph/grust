@@ -55,7 +55,7 @@ async fn boolean_null_truth_tables_execute_with_cypher_results() {
     let values = [Some(false), Some(true), None];
     for left in values {
         for right in values {
-            for op in [BinaryOp::And, BinaryOp::Or] {
+            for op in [BinaryOp::And, BinaryOp::Or, BinaryOp::Xor] {
                 let literal = |v: Option<bool>| v.map_or(CypherExpr::Null, CypherExpr::Boolean);
                 let expression = CypherExpr::Binary {
                     op,
@@ -84,6 +84,7 @@ async fn boolean_null_truth_tables_execute_with_cypher_results() {
                     (BinaryOp::And, Some(true), Some(true)) => Some(true),
                     (BinaryOp::Or, Some(true), _) | (BinaryOp::Or, _, Some(true)) => Some(true),
                     (BinaryOp::Or, Some(false), Some(false)) => Some(false),
+                    (BinaryOp::Xor, Some(left), Some(right)) => Some(left != right),
                     _ => None,
                 };
                 assert_eq!(actual, expected, "{left:?} {op:?} {right:?}");

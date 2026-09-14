@@ -36,6 +36,15 @@ pub(super) fn aggregate(
             count(value)
         });
     }
+    let (value, kind) = if kind == DataType::Null {
+        // A typed null permits upstream aggregation on absent/null-only columns.
+        (
+            lit(datafusion::common::ScalarValue::Int64(None)),
+            DataType::Int64,
+        )
+    } else {
+        (value, kind)
+    };
     if !matches!(kind, DataType::Int64 | DataType::Utf8) {
         return Err(UnsupportedExpression::Type);
     }

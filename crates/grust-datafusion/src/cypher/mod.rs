@@ -142,16 +142,16 @@ fn lower(
                 BinaryOp::Le => left.lt_eq(right),
                 BinaryOp::Gt => left.gt(right),
                 BinaryOp::Ge => left.gt_eq(right),
-                BinaryOp::And | BinaryOp::Or => {
+                BinaryOp::And | BinaryOp::Or | BinaryOp::Xor => {
                     if !matches!(left_type, DataType::Boolean | DataType::Null)
                         || !matches!(right_type, DataType::Boolean | DataType::Null)
                     {
                         return Err(Type);
                     }
-                    if *op == BinaryOp::And {
-                        left.and(right)
-                    } else {
-                        left.or(right)
+                    match op {
+                        BinaryOp::And => left.and(right),
+                        BinaryOp::Or => left.or(right),
+                        _ => left.not_eq(right),
                     }
                 }
                 _ => return Err(Syntax),
