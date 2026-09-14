@@ -4,6 +4,8 @@ pub use aggregate::lower_aggregate_with_bindings;
 mod bindings;
 pub use bindings::ExpressionBindings;
 mod collect;
+mod execute;
+pub use execute::{CypherExecution, OutputLimits};
 mod inline;
 mod pattern;
 mod planner;
@@ -218,3 +220,6 @@ mod result_tests;
 
 #[cfg(test)]
 mod collect_tests;
+
+#[cfg(test)]
+mod execute_tests;
