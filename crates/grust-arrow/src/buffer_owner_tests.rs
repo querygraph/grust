@@ -66,3 +66,17 @@ fn c_data_export_retains_owner_until_release() {
     drop(exported);
     assert!(weak.upgrade().is_none());
 }
+
+#[test]
+fn custom_owner_cannot_be_detached_by_mutable_conversion() {
+    let token = Arc::new(());
+    let weak = Arc::downgrade(&token);
+    let buffer = retain_buffer_owner(Buffer::from_vec(vec![1_u64]), token);
+    let buffer = buffer
+        .into_mutable()
+        .expect_err("custom storage stays immutable");
+    assert!(weak.upgrade().is_some());
+    assert_eq!(buffer.as_slice(), 1_u64.to_ne_bytes());
+    drop(buffer);
+    assert!(weak.upgrade().is_none());
+}
