@@ -155,3 +155,40 @@ async fn node_identity_predicates_preserve_external_ids() {
         "external.b"
     );
 }
+
+#[tokio::test]
+async fn planned_scan_retains_provider_when_catalog_registration_changes() {
+    use datafusion::arrow::array::{Int64Array, RecordBatch};
+    let context = SessionContext::new();
+    let batch = |values: Vec<i64>| {
+        RecordBatch::try_from_iter([(
+            "property.x",
+            std::sync::Arc::new(Int64Array::from(values)) as datafusion::arrow::array::ArrayRef,
+        )])
+        .unwrap()
+    };
+    context.register_batch("nodes", batch(vec![1, 2])).unwrap();
+    let query = grust_cypher::parser::parse_query("MATCH (n) RETURN count(*) AS count").unwrap();
+    let original = lower_node_scan(&query, context.table("nodes").await.unwrap())
+        .unwrap()
+        .unwrap();
+    context.deregister_table("nodes").unwrap();
+    context
+        .register_batch("nodes", batch(vec![3, 4, 5]))
+        .unwrap();
+    let replacement = lower_node_scan(&query, context.table("nodes").await.unwrap())
+        .unwrap()
+        .unwrap();
+    for (frame, expected) in [(original, 2), (replacement, 3)] {
+        let batches = frame.collect().await.unwrap();
+        assert_eq!(
+            batches[0]
+                .column(0)
+                .as_any()
+                .downcast_ref::<Int64Array>()
+                .unwrap()
+                .value(0),
+            expected
+        );
+    }
+}
