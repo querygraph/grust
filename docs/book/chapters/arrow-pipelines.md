@@ -256,3 +256,14 @@ SQL preparation and the returned stream. Batches pass through without buffer
 copies, queues or worker tasks. Completion or the first error immediately drops
 the provider stream and timer; subsequent polls remain finished. The controlled
 stream can feed `BlockingReader` and ADBC ingestion directly.
+
+### Prepared read admission (unreleased)
+
+`grust_cypher::PreparedReadRequest` owns the validated AST, policy and original
+absolute deadline, borrows the admitted immutable parameters, and retains any
+application registry generation. The bounded reference executor uses its
+request, graph/index and output checks. Indexed graph checks reuse the cached
+exact serialized size; parameter/output counting does not allocate encoded JSON.
+Oversized parameters fail before graph inspection. Preparation does not authorize
+or bind a backend snapshot, install execution budgets, or qualify a DataFusion
+route. Route-specific candidate/intermediate accounting must still be enforced.

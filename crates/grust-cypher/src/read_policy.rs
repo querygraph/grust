@@ -17,6 +17,9 @@ use grust_core::TypedGraphIndex;
 use grust_core::prelude::{Graph, Result};
 use grust_procedures::{ProcedureMode, ProcedureRegistry, RegistryBuilder, register_builtins};
 
+mod prepared;
+pub use prepared::PreparedReadRequest;
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct ReadQueryPolicy {
     pub max_query_bytes: usize,
@@ -209,57 +212,20 @@ fn run_bounded_read_query_with_executor(
     registry: Option<&ProcedureRegistry>,
     execute: impl FnOnce(&Query) -> Result<CypherResultTable>,
 ) -> Result<CypherResultTable> {
-    let started = Instant::now();
-    let deadline = started
-        .checked_add(policy.max_execution_time)
-        .ok_or_else(|| gql_execution("read policy execution timeout is too large"))?;
-    let query = match registry {
-        Some(registry) => validate_read_query_with_registry(query_text, policy, registry)?,
-        None => validate_read_query(query_text, policy)?,
-    };
-    ensure_before_deadline(deadline)?;
-    crate::semantics::analyze(&query)?;
-    let (nodes, edges) = match input {
-        BoundedInput::Graph(graph) => (graph.nodes.len(), graph.edges.len()),
-        BoundedInput::Indexed(index) => (index.node_count(), index.edge_count()),
-    };
-    ensure_graph_bounds(nodes, edges, policy)?;
-    ensure_serialized_size("parameters", params, policy.max_parameter_bytes, deadline)?;
+    let request = PreparedReadRequest::prepare(query_text, params, policy, registry)?;
     match input {
-        BoundedInput::Indexed(index) => {
-            let bytes = index.serialized_graph_bytes();
-            ensure_before_deadline(deadline)?;
-            if bytes > policy.max_graph_bytes {
-                return Err(gql_execution(format!(
-                    "bounded read graph exceeds {} serialized bytes",
-                    policy.max_graph_bytes
-                )));
-            }
-        }
-        BoundedInput::Graph(graph) => {
-            ensure_serialized_size("graph", graph, policy.max_graph_bytes, deadline)?
-        }
+        BoundedInput::Graph(graph) => request.check_graph(graph)?,
+        BoundedInput::Indexed(index) => request.check_index(index)?,
     }
-
     let limits = ReadExecutionBudgetLimits {
         max_candidate_work: policy.max_candidate_work,
         max_intermediate_bytes: policy.max_intermediate_bytes,
         max_range_items: policy.max_range_items,
-        deadline,
+        deadline: request.deadline(),
     };
     with_budget(limits, || {
-        let table = execute(&query)?;
-        if table.rows.len() > policy.max_result_rows {
-            return Err(gql_execution(format!(
-                "query produced more than {} rows",
-                policy.max_result_rows
-            )));
-        }
-        let output = EncodedResultSize {
-            columns: &table.columns,
-            rows: &table.rows,
-        };
-        ensure_serialized_size("query output", &output, policy.max_output_bytes, deadline)?;
+        let table = execute(request.query())?;
+        request.check_output(&table)?;
         Ok(table)
     })
 }

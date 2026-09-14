@@ -6,6 +6,12 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ## Unreleased
 
+- Share bounded Cypher request preparation, immutable parameter admission,
+  graph/index size checks and output checks through `PreparedReadRequest`.
+  The reference executor uses the same checks and original absolute deadline;
+  oversized parameters now fail before graph inspection. Route-specific work
+  and intermediate budgets remain separate requirements.
+
 - Add runtime-independent cancellation subscriptions to the shared execution
   context, waking all live waiters without retaining dropped subscriptions.
 - Add DataFusion future lifetime control and explicit Cypher execution with a

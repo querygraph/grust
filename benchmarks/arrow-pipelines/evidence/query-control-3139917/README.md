@@ -1,7 +1,10 @@
 # Shared query lifetime control qualification
 
-Final source under test: `3139917`. Status: broader consumer tests and Clippy
-are running on Capitola with four nice Cargo jobs. This is unreleased work,
+Qualified source: `3139917`. Broader consumer tests passed 976 tests, zero
+failed, two ignored across 26 summaries. Warnings-denied all-target Clippy
+passed for procedures, DataFusion, Cypher, algorithms and algorithm-procedures.
+Native Capitola used four nice Cargo jobs; `final-logs.tar.gz` retains the logs.
+This is unreleased work,
 not a completed release gate or a performance measurement.
 
 The preliminary `91e6da7` run passed 41 DataFusion and 22 procedure tests,
