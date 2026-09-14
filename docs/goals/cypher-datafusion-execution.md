@@ -267,3 +267,7 @@ canonical book deployment is in progress. Receipts are under
 [Ostracod evidence](../releases/ostracod/README.md). Automatic routing, complete
 work/intermediate-budget mapping, backend authority and comparable end-to-end
 qualification remain incomplete and are the next engineering obligations.
+
+Ostracod delivery is now complete: book `0.18.0-99af0afd`, TextPack
+`0.18.0-28d247`, FirstPair commit `1a009db`. Hosted deployment and exact iCloud
+copy checks passed. This closes release delivery, not automatic execution.

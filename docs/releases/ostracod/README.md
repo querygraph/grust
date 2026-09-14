@@ -1,6 +1,6 @@
 # Ostracod 0.18.0
 
-Status: crates published and verified; canonical book delivery in progress.
+Status: released, registry-verified and delivered.
 
 This lockstep release packages shared execution cancellation, controlled Arrow
 streams, prepared Cypher admission, exact snapshot statistics and borrowed native
@@ -24,7 +24,12 @@ The book rebuild passed its EPUB, layout and artifact-contract validators:
 54 pages, stamp `0.18.0-99af0afd`, artifact commit `8bbff93`. Cover and body
 were visually inspected and rendered text includes the new admission/control
 sections. TextPack `0.18.0-28d247` was delivered through the canonical wrapper.
-FirstPair book deployment and final delivery verification remain in progress.
+FirstPair book deployment completed at
+`https://firstpair-pdh1nhs5k-fromcafe.vercel.app`, aliased to `firstpair.org`.
+Catalog/build/smoke/live verification passed. PDF, EPUB and TextPack iCloud
+copies are regular files and byte-identical to their source artifacts.
+FirstPair metadata commit `1a009db` is pushed; unrelated catalog/upload entries
+are unchanged. `delivery-logs.tar.gz` and `delivery-check.json` retain evidence.
 
 The JSON receipts and `qualification-logs.tar.gz` retain commands, outcomes,
 source identity, hashes and publication evidence. Existing benchmark pins are
