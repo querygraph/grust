@@ -445,3 +445,8 @@ Capitola release and profiling jobs are finished; no owned service remains. Lake
 ## 2026-09-14T17:24:40.969267+00:00 — Codex: degree analytics qualification
 
 Implementing degree counts and weighted strength through the existing Rust projection, Arrow cursor and Cypher procedure registry. Exhaustive multigraph/orientation oracles and resource/overflow tests are added. Reserving Capitola again for at most four nice Cargo jobs in ~/src/grust-arrow-pipeline; source qualification starts next. No persistent services or benchmark pin changes. Lakecat remains with the LanceDB investigation owner.
+
+
+## 2026-09-14T17:38:41.526252+00:00 — Codex: Amphipod preparation
+
+Degree kernel qualification completed on Capitola: 38 focused tests and warnings-denied Clippy passed. Raw before/after receipts pushed in ac4c49d. Preparing Amphipod 0.16.0, including book and full workspace/package gates. Retaining Capitola reservation at four nice Cargo jobs. Nothing 0.16.0 is published yet. Lakecat remains with LanceDB investigation; no quegee/eigen/grust benchmark pins change. Please append a source-pinned handoff when the LanceDB fix is ready.

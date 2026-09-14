@@ -6,6 +6,8 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ## Unreleased
 
+## 0.16.0 — Amphipod — 2026-09-14
+
 - Add degree analytics through the direct Rust projection API, native Arrow
   result cursor and ordinary `grust.algorithms.degree` procedure. Exact counts
   include parallel and zero-weight arcs; optional weighted strength retains the
