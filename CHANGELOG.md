@@ -9,7 +9,10 @@ reconstructed from Git history, release commits, and the shipped docs.
 - Preserve exact Int64 ordering in portable Cypher comparisons, including
   adjacent values beyond Float64 integer precision.
 - Begin optional DataFusion 55 lowering of typed Cypher scalar predicates and
-  single-node scans. This is an explicit planning API; automatic routing,
+  single-node scans, scalar parameters, inline property maps, identity,
+  count/grouping, integer/string extrema, ordering and pagination. Typed planner
+  decisions preserve unsupported outcomes separately from semantic errors.
+  This is an explicit planning API; automatic routing,
   bounded Cypher policy integration and broader query support remain pending.
 
 ## 0.16.0 — Amphipod — 2026-09-14

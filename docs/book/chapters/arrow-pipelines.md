@@ -157,7 +157,8 @@ This interface is unreleased and is not yet wired into automatic route selection
 
 The implemented surface includes scalar Bool/Int/String/null predicates, scalar
 parameters, inline node property maps, projections and DISTINCT, count variants
-and grouping, ordering by projected expressions or aliases, and literal or
+and grouping, integer/string MIN/MAX, node identity, ordering by projected
+expressions or aliases, and literal or
 parameterized pagination. Implicit output names share the portable Cypher
 projection helper. Duplicate names require future result remapping. Floats,
 mixed numeric types, arithmetic, joins and other aggregates need their own
@@ -169,3 +170,10 @@ memory pool does not enforce Cypher candidate-work, intermediate-copy or encoded
 output budgets. Providers must retain snapshot identity and validated native
 schemas. Automatic selection and end-to-end performance claims require these
 contracts and measurements, including capture, conversion and result consumption.
+
+Qualification includes provider replacement: a DataFrame planned against an
+immutable memory provider retains that provider when the session catalog name is
+replaced; replanning sees the replacement. This does not establish snapshot
+isolation for every external provider. WHERE lowering also preserves the portable
+executor's rule that only Boolean true retains a row, including scalar and null
+cases. Boolean AND/OR/XOR truth tables are checked through actual execution.
