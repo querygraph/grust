@@ -78,7 +78,7 @@ fn lower(
             if !matches!(kind, DataType::Boolean | DataType::Null) {
                 return Err(Type);
             }
-            (value.not(), DataType::Boolean)
+            (!value, DataType::Boolean)
         }
         CypherExpr::Binary { op, lhs, rhs } => {
             let (left, left_type) = lower(lhs, variable, schema)?;

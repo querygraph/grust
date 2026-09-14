@@ -47,3 +47,47 @@ fn mixed_types_and_unqualified_arithmetic_are_not_lowered() {
         Err(UnsupportedExpression::Syntax)
     );
 }
+
+#[tokio::test]
+async fn boolean_null_truth_tables_execute_with_cypher_results() {
+    use datafusion::{arrow::array::BooleanArray, execution::context::SessionContext};
+    let context = SessionContext::new();
+    let values = [Some(false), Some(true), None];
+    for left in values {
+        for right in values {
+            for op in [BinaryOp::And, BinaryOp::Or] {
+                let literal = |v: Option<bool>| v.map_or(CypherExpr::Null, CypherExpr::Boolean);
+                let expression = CypherExpr::Binary {
+                    op,
+                    lhs: Box::new(literal(left)),
+                    rhs: Box::new(literal(right)),
+                };
+                let lowered = lower_expression(&expression, "n", &Schema::empty()).unwrap();
+                let batches = context
+                    .read_empty()
+                    .unwrap()
+                    .select(vec![lowered])
+                    .unwrap()
+                    .collect()
+                    .await
+                    .unwrap();
+                let array = batches[0]
+                    .column(0)
+                    .as_any()
+                    .downcast_ref::<BooleanArray>()
+                    .unwrap();
+                let actual = array.iter().next().unwrap();
+                let expected = match (op, left, right) {
+                    (BinaryOp::And, Some(false), _) | (BinaryOp::And, _, Some(false)) => {
+                        Some(false)
+                    }
+                    (BinaryOp::And, Some(true), Some(true)) => Some(true),
+                    (BinaryOp::Or, Some(true), _) | (BinaryOp::Or, _, Some(true)) => Some(true),
+                    (BinaryOp::Or, Some(false), Some(false)) => Some(false),
+                    _ => None,
+                };
+                assert_eq!(actual, expected, "{left:?} {op:?} {right:?}");
+            }
+        }
+    }
+}
