@@ -13,6 +13,7 @@ cargo test --offline`. No timeout or sleep-based race test is used.
 
 The original failed handoff schedule remains in
 `../lancedb-0176718-reproducer`. These results qualify only the queue component.
-Full LanceDB adapter tests and warnings-denied Clippy are running separately
-against branch source `870cf42`; integration against current main and complete
-release qualification remain outstanding. No benchmark pin changed.
+Full LanceDB adapter tests at `870cf42` passed 32 tests, zero failed, one
+ignored; warnings-denied all-target Clippy passed. Their raw logs are retained.
+The current-main integration `a6bc05a` is undergoing separate qualification;
+complete release qualification remains outstanding. No benchmark pin changed.

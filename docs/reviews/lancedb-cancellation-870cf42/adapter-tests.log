@@ -1,0 +1,56 @@
+   Compiling grust-core v0.15.0 (/Users/alexy/src/grust-lancedb-cancellation/crates/grust-core)
+   Compiling grust-arrow v0.15.0 (/Users/alexy/src/grust-lancedb-cancellation/crates/grust-arrow)
+   Compiling grust-lancedb v0.15.0 (/Users/alexy/src/grust-lancedb-cancellation/crates/grust-lancedb)
+warning: linker stderr: ld: __eh_frame section too large (max 16MB) to encode dwarf unwind offsets in compact unwind table, performance of exception handling might be affected
+  |
+  = note: `#[warn(linker_messages)]` on by default
+
+warning: `grust-lancedb` (example "anchored_reads") generated 1 warning
+warning: `grust-lancedb` (example "hot_node_writes") generated 1 warning (1 duplicate)
+warning: `grust-lancedb` (lib test) generated 1 warning (1 duplicate)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 17.01s
+     Running unittests src/lib.rs (/Users/alexy/src/grust-arrow-pipeline/target/debug/deps/grust_lancedb-6447bb4f44399944)
+
+running 33 tests
+test tests::apply_schema_rejects_physical_table_and_field_collisions ... ok
+test tests::applied_schema_rejects_wrong_typed_property ... ok
+test tests::bootstrap_creates_empty_tables ... ok
+test tests::arrow_readers_reject_forged_keys_before_edge_write ... ok
+test tests::edge_batch_rejects_ambiguous_and_explicit_delimiter_keys ... ok
+test tests::edge_key_prefers_explicit_id ... ok
+test table_handles::tests::recreation_and_first_lookup_share_one_gate ... ok
+test tests::live_local_lancedb_put_read_traverse_and_schema ... ignored, explicit LanceDB integration test; run through scripts/integration-test.sh --backend lancedb
+test table_handles::tests::cached_reader_observes_writes_through_another_connection ... ok
+test snapshot::tests::recreation_rejects_a_snapshot_published_by_an_older_reader ... ok
+test tests::arrow_readers_bulk_upsert_and_preserve_edge_identity ... ok
+test tests::idempotent_put_node_updates_props ... ok
+test tests::put_edge_validates_applied_schema_before_any_table_write ... ok
+test tests::put_and_get_node ... ok
+test tests::clear_removes_graph ... ok
+test write_queue::cancellation_tests::apply_failure_reaches_every_batch_caller_and_does_not_strand_the_queue ... ok
+test tests::put_graph_preflights_all_edge_keys_before_writing_nodes ... ok
+test write_queue::cancellation_tests::cancelling_an_inflight_batch_reports_uncertain_durability_to_its_followers ... ok
+test write_queue::cancellation_tests::cancelling_handoff_before_receiver_poll_releases_leadership ... ok
+test write_queue::cancellation_tests::cancelling_handoff_promotes_an_already_waiting_writer ... ok
+test write_queue::cancellation_tests::one_row_still_validates_its_key_and_releases_leadership_on_failure ... ok
+test write_queue::cancellation_tests::cancelled_waiters_are_skipped_without_recursive_handoff ... ok
+test tests::property_start_matches_exact_property_value_only ... ok
+test write_queue::tests::last_row_per_key_wins_in_queue_order ... ok
+test snapshot::tests::a_resident_snapshot_never_hides_a_later_write ... ok
+test tests::put_graph_and_get_edges ... ok
+test tests::starts_by_label_and_property ... ok
+test tests::traverse_one_and_two_hops ... ok
+test tests::apply_schema_creates_typed_tables_and_mirrors_writes ... ok
+test write_queue::tests::concurrent_upserts_of_one_key_leave_one_row ... ok
+test snapshot::tests::snapshot_reads_match_direct_scans_over_many_fragments ... ok
+test write_queue::tests::concurrent_writers_on_clones_commit_every_row_once ... ok
+test snapshot::tests::snapshot_reads_match_direct_scans_after_incremental_writes ... ok
+
+test result: ok. 32 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 15.67s
+
+   Doc-tests grust_lancedb
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
