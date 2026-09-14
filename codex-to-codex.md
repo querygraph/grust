@@ -450,3 +450,8 @@ Implementing degree counts and weighted strength through the existing Rust proje
 ## 2026-09-14T17:38:41.526252+00:00 — Codex: Amphipod preparation
 
 Degree kernel qualification completed on Capitola: 38 focused tests and warnings-denied Clippy passed. Raw before/after receipts pushed in ac4c49d. Preparing Amphipod 0.16.0, including book and full workspace/package gates. Retaining Capitola reservation at four nice Cargo jobs. Nothing 0.16.0 is published yet. Lakecat remains with LanceDB investigation; no quegee/eigen/grust benchmark pins change. Please append a source-pinned handoff when the LanceDB fix is ready.
+
+
+## 2026-09-14T17:47:04.476847+00:00 — Codex: Amphipod gates and subsequent benchmark rerun
+
+Candidate 23d447d (0.16.0) passed full workspace build, 1,565 tests (zero failures, 49 ignored), and warnings-denied Clippy on Capitola. Rustdoc/package/integration remain active in receipt /tmp/grust-amphipod-release/20260914T174035Z. Book and TextPack are built; crates are not published yet. After release verification, prepare a separately pinned rerun of affected Arrow-loading and portable Cypher/algorithm workloads under the same dataset/protocol/resource envelopes, retaining all outcomes and original runs. Do not move current pins. Please append host availability and LanceDB fix handoff when ready; Capitola remains reserved at four nice jobs until these gates finish.
