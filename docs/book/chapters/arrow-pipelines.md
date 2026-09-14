@@ -241,3 +241,11 @@ includes columns, delimiters, escaping and inter-row commas across batches.
 Errors abort without returning partial output or retrying. One decoded batch,
 input/working memory, candidate work and deadlines still need separate admission;
 this is output enforcement, not the complete Cypher read policy.
+
+`GraphSnapshot::execute` accepts Cypher text, parameters and explicit
+`OutputLimits`, selects the typed compiler and returns an ordinary result table.
+`CypherExecution` separates completed execution from unsupported queries that
+never executed. Parse, semantic, execution and output-limit errors propagate
+without fallback. This explicitly selects DataFusion; query/input admission,
+candidate work, intermediate memory, deadlines and cost-based routing remain
+separate integration requirements.

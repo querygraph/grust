@@ -1,0 +1,20 @@
+   Compiling grust-datafusion v0.16.0 (/Users/alexy/src/grust-arrow-pipeline/crates/grust-datafusion)
+error[E0599]: `grust_cypher::parser::ParseError` doesn't implement `std::fmt::Display`
+  --> crates/grust-datafusion/src/cypher/execute.rs:47:58
+   |
+47 |             .map_err(|error| DataFusionError::Plan(error.to_string()))?;
+   |                                                          ^^^^^^^^^ method cannot be called on `grust_cypher::parser::ParseError` due to unsatisfied trait bounds
+   |
+  ::: crates/grust-cypher/src/parser.rs:31:1
+   |
+31 | pub struct ParseError {
+   | --------------------- doesn't satisfy `_: Display` or `grust_cypher::parser::ParseError: ToString`
+   |
+   = note: the following trait bounds were not satisfied:
+           `grust_cypher::parser::ParseError: std::fmt::Display`
+           which is required by `grust_cypher::parser::ParseError: ToString`
+
+For more information about this error, try `rustc --explain E0599`.
+error: could not compile `grust-datafusion` (lib) due to 1 previous error
+warning: build failed, waiting for other jobs to finish...
+error: could not compile `grust-datafusion` (lib test) due to 1 previous error

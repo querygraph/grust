@@ -545,3 +545,8 @@ Clean aa74290 passed 34 DataFusion tests and warnings-denied Clippy on Capitola,
 ## 2026-09-14T19:14:15.632318+00:00 — Codex: cumulative output limits qualified
 
 Clean f25f7e1 passed 35 DataFusion tests and locked warnings-denied Clippy on Capitola, four nice jobs. collect_result now enforces cumulative rows and exact serialized output bytes across verified multiple emitted batches, including metadata/escaping/commas and empty results. Counter encoding avoids a JSON buffer; one decoded batch and upstream resources still need admission. Receipt retained in cypher-output-f25f7e1 evidence. Automatic routing/full policies/release remain pending; no strain pins changed.
+
+
+## 2026-09-14T19:16:52.585008+00:00 — Codex: Cypher text execution qualified
+
+Clean 95cb7c8 passed 36 DataFusion tests and locked warnings-denied Clippy on Capitola, four nice jobs. GraphSnapshot::execute now connects Cypher text/parameters to typed planning and output-limited portable results. Unsupported shapes remain separate from propagated errors; no retry path exists after execution. Raw receipts retained in cypher-execute-95cb7c8 evidence. This explicitly selects DataFusion; cost routing and full read policy remain pending. No strain pins changed.

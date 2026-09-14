@@ -22,7 +22,9 @@ execution nor the current partial scan compiler establishes completion.
 Current implementation admits scalar predicates and parameters, inline property
 maps, single-node scans, projection, DISTINCT, count aggregation and grouping,
 projected-expression ordering, integer/string extrema, node identity and pagination
-through an explicit lowering API. Scalar binding resolution now supports multiple
+through explicit lowering APIs. `GraphSnapshot::execute` now connects Cypher
+text parsing, typed planning and output-bounded portable result collection;
+unsupported queries remain distinct from errors. Scalar binding resolution now supports multiple
 caller-defined bindings. Parsed directed single-hop relationship patterns now
 share the RETURN compiler with scans.
 Planner decisions distinguish unsupported shapes from semantic errors. Broader joins,

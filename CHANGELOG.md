@@ -25,6 +25,8 @@ reconstructed from Git history, release commits, and the shipped docs.
   Native scalar results convert to portable Cypher rows with exact integer/null
   semantics and explicit rejection of unsupported Arrow types. Incremental
   collection enforces cumulative rows and serialized JSON output bytes.
+  An explicit snapshot execution entrypoint connects Cypher text parsing, typed
+  planning and output-bounded collection without fallback after errors.
   This is an explicit planning API; automatic routing,
   bounded Cypher policy integration and broader query support remain pending.
 
