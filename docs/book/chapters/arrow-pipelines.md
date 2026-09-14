@@ -233,3 +233,11 @@ values, validates types before allocating rows, and resolves array types once
 per column. Unsupported types fail without coercion. Owned rows and strings
 require caller allocation/output admission; Arrow/ADBC consumers can keep the
 native batches directly.
+
+`collect_result` consumes a typed DataFrame incrementally into a portable table
+with cumulative row and serialized JSON output limits. It checks rows before
+decoding and counts encoding bytes without building a JSON buffer. The accounting
+includes columns, delimiters, escaping and inter-row commas across batches.
+Errors abort without returning partial output or retrying. One decoded batch,
+input/working memory, candidate work and deadlines still need separate admission;
+this is output enforcement, not the complete Cypher read policy.

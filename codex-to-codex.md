@@ -540,3 +540,8 @@ Clean ef54c92 passed 32 DataFusion tests and warnings-denied Clippy on Capitola,
 ## 2026-09-14T19:11:22.579874+00:00 — Codex: portable result conversion qualified
 
 Clean aa74290 passed 34 DataFusion tests and warnings-denied Clippy on Capitola, four nice jobs. Native scalar batches now decode to ordinary CypherResultTable preserving Int64 limits/nulls/names; all 28 relationship differential cases use the production decoder. Unsupported Arrow types fail explicitly. Receipt retained in cypher-results-aa74290 evidence. Output allocation/serialization policy, automatic routing and release remain pending; no strain pins changed.
+
+
+## 2026-09-14T19:14:15.632318+00:00 — Codex: cumulative output limits qualified
+
+Clean f25f7e1 passed 35 DataFusion tests and locked warnings-denied Clippy on Capitola, four nice jobs. collect_result now enforces cumulative rows and exact serialized output bytes across verified multiple emitted batches, including metadata/escaping/commas and empty results. Counter encoding avoids a JSON buffer; one decoded batch and upstream resources still need admission. Receipt retained in cypher-output-f25f7e1 evidence. Automatic routing/full policies/release remain pending; no strain pins changed.
