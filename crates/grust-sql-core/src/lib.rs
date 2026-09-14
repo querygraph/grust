@@ -46,6 +46,14 @@ pub trait GraphSqlDialect {
         None
     }
 
+    /// Whether the universal bootstrap creates `<prefix>_edges_from_idx` on
+    /// `from_id`. The edge primary key already leads with `from_id`, so a
+    /// dialect whose planner answers source lookups from that key (Turso's
+    /// does) can skip the index and the write it costs on every edge.
+    fn edge_source_index(&self) -> bool {
+        true
+    }
+
     fn commit_transaction(&self) -> &'static str {
         "COMMIT"
     }
@@ -121,8 +129,7 @@ pub fn universal_bootstrap_sql(
             props {props_type} NOT NULL DEFAULT {props_default},{identity_column}
             PRIMARY KEY (from_id, label, to_id{identity_key})
          );
-         CREATE INDEX IF NOT EXISTS {edge_from_idx} ON {edges_table}(from_id);
-         CREATE INDEX IF NOT EXISTS {edge_to_idx} ON {edges_table}(to_id);
+         {edge_from_index}CREATE INDEX IF NOT EXISTS {edge_to_idx} ON {edges_table}(to_id);
          CREATE INDEX IF NOT EXISTS {node_label_idx} ON {nodes_table}(label);",
         nodes_table = tables.nodes,
         edges_table = tables.edges,
@@ -136,7 +143,15 @@ pub fn universal_bootstrap_sql(
             .unwrap_or_default(),
         props_type = dialect.props_column_type(),
         props_default = dialect.empty_props_default(),
-        edge_from_idx = quote_ident(&format!("{table_prefix}_edges_from_idx")),
+        edge_from_index = if dialect.edge_source_index() {
+            format!(
+                "CREATE INDEX IF NOT EXISTS {} ON {}(from_id);\n         ",
+                quote_ident(&format!("{table_prefix}_edges_from_idx")),
+                tables.edges
+            )
+        } else {
+            String::new()
+        },
         edge_to_idx = quote_ident(&format!("{table_prefix}_edges_to_idx")),
         node_label_idx = quote_ident(&format!("{table_prefix}_nodes_label_idx")),
     )
