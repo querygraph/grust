@@ -83,17 +83,7 @@ async fn run() -> Result<()> {
                     Ok(actual) if actual == expected => ("pass", Some(actual), None),
                     Ok(actual) => ("mismatch", Some(actual), None),
                     Err(error) => {
-                        let status = if matches!(
-                            error.downcast_ref::<GrustError>(),
-                            Some(
-                                GrustError::Unsupported(_)
-                                    | GrustError::CypherUnsupportedCardinality(_)
-                            )
-                        ) {
-                            "unsupported"
-                        } else {
-                            "error"
-                        };
+                        let status = failure_status(error.as_ref());
                         (status, None, Some(error.to_string()))
                     }
                 };
@@ -158,4 +148,26 @@ async fn sql(engine: &DataFusionEngine, workload: Workload) -> Result<(i64, i64)
         }
     }
     answer.ok_or_else(|| "SQL aggregate returned no row".into())
+}
+
+fn failure_status(mut error: &(dyn Error + 'static)) -> &'static str {
+    use grust_datafusion::datafusion::common::DataFusionError;
+    loop {
+        match error.downcast_ref::<GrustError>() {
+            Some(GrustError::Unsupported(_) | GrustError::CypherUnsupportedCardinality(_)) => {
+                return "unsupported";
+            }
+            Some(GrustError::ResourceLimitExceeded { .. }) => return "resource_exhausted",
+            _ => {}
+        }
+        match error.downcast_ref::<DataFusionError>() {
+            Some(DataFusionError::NotImplemented(_)) => return "unsupported",
+            Some(DataFusionError::ResourcesExhausted(_)) => return "resource_exhausted",
+            _ => {}
+        }
+        match error.source() {
+            Some(source) => error = source,
+            None => return "error",
+        }
+    }
 }
