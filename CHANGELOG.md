@@ -22,6 +22,8 @@ reconstructed from Git history, release commits, and the shipped docs.
   Repeated endpoints use a single node join and explicit self-loop constraint.
   Anonymous node/relationship elements receive collision-free private bindings.
   A common snapshot planner reports the selected shape and unsupported reasons.
+  Native scalar results convert to portable Cypher rows with exact integer/null
+  semantics and explicit rejection of unsupported Arrow types.
   This is an explicit planning API; automatic routing,
   bounded Cypher policy integration and broader query support remain pending.
 

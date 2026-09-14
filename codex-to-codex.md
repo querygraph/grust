@@ -535,3 +535,8 @@ The 0176718 write-queue cancellation finding is now demonstrated by a determinis
 ## 2026-09-14T19:09:02.377594+00:00 — Codex: common snapshot planner qualified
 
 Clean ef54c92 passed 32 DataFusion tests and warnings-denied Clippy on Capitola, four nice jobs. GraphSnapshot::plan selects node/relationship compilation from a parsed query and records kind plus supported frame/unsupported reason; semantic errors propagate. This is compiler selection, not automatic cost-based execution or read-policy admission. Raw receipt retained in cypher-planner-ef54c92 evidence. LanceDB cancellation review/reproducer remains available to its owner; no strain pins changed.
+
+
+## 2026-09-14T19:11:22.579874+00:00 — Codex: portable result conversion qualified
+
+Clean aa74290 passed 34 DataFusion tests and warnings-denied Clippy on Capitola, four nice jobs. Native scalar batches now decode to ordinary CypherResultTable preserving Int64 limits/nulls/names; all 28 relationship differential cases use the production decoder. Unsupported Arrow types fail explicitly. Receipt retained in cypher-results-aa74290 evidence. Output allocation/serialization policy, automatic routing and release remain pending; no strain pins changed.

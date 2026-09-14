@@ -122,3 +122,10 @@ resolution. Anonymous node scans retain label and inline-property constraints.
 explicit unsupported reason. Invalid queries remain errors. This chooses a
 compiler from the query shape; cost-based executor selection and read-policy
 admission are still required before ordinary Cypher can route automatically.
+
+`decode_result_batch` converts supported native scalar batches into ordinary
+`CypherResultTable` rows. It preserves column order/names, nulls and exact Int64
+values, validates types before allocating rows, and resolves array types once
+per column. Unsupported types fail without coercion. Owned rows and strings
+require caller allocation/output admission; Arrow/ADBC consumers can keep the
+native batches directly.
