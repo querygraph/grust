@@ -103,3 +103,16 @@ diagnostic for physical plans and batch-versus-slice memory reporting. It
 executes the captured physical plan, retains each error/mismatch and checks
 the arithmetic count oracle. It does not report performance timings. See
 [evidence](evidence/cypher-plan-memory-c658abc) for the captured partition plans.
+
+### Warm routed-read profile
+
+`cypher_route <repeats> <nodes>...` captures one `RoutedGraph` per size and then
+times the complete bounded-read entrypoint on each forced route, alternating
+route order: admission, route planning, execution and portable output. Capture
+(index plus Arrow snapshot) is reported once per size and excluded from trials,
+so this measures reuse of warm representations, unlike `cypher_end_to_end`.
+Both routes run under the same `ReadQueryPolicy`; DataFusion additionally uses a
+1 GiB tracked pool, no spill and four target partitions. Each query's first
+result is the oracle for every later trial on either route; mismatches, errors
+and all timings are retained. Its measurements set
+`DEFAULT_MIN_DATAFUSION_NODES` for this scan workload only.

@@ -217,6 +217,28 @@ fn run_bounded_read_query_with_executor(
         BoundedInput::Graph(graph) => request.check_graph(graph)?,
         BoundedInput::Indexed(index) => request.check_index(index)?,
     }
+    run_prepared(&request, execute)
+}
+
+/// Execute an already admitted request on a typed index, keeping its original
+/// deadline, policy and parameters. Automatic routers use this after another
+/// executor declined before execution, so a declined route never resets the
+/// deadline or repeats query admission. Input size is checked against `index`.
+pub fn run_prepared_read_query_indexed(
+    request: &PreparedReadRequest<'_>,
+    index: &TypedGraphIndex,
+) -> Result<CypherResultTable> {
+    request.check_index(index)?;
+    run_prepared(request, |query| {
+        execute_read_query_indexed(index, query, request.parameters())
+    })
+}
+
+fn run_prepared(
+    request: &PreparedReadRequest<'_>,
+    execute: impl FnOnce(&Query) -> Result<CypherResultTable>,
+) -> Result<CypherResultTable> {
+    let policy = request.policy();
     let limits = ReadExecutionBudgetLimits {
         max_candidate_work: policy.max_candidate_work,
         max_intermediate_bytes: policy.max_intermediate_bytes,

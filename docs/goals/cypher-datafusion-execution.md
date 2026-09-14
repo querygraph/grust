@@ -305,3 +305,48 @@ portable query output. Conversion dominates the measured million-node
 DataFusion route; small fixtures favor indexed execution. Resource boundaries
 are disclosed and differ, so these results supply cost evidence for this
 workload without qualifying a general routing threshold or full read policy.
+
+## Automatic scan routing, implementation increment
+
+Branch `claude/auto-datafusion-route` (from `a134e05`) adds
+`grust_datafusion::cypher::RoutedGraph`. It captures one immutable graph as
+both a typed index and a `GraphSnapshot`, admits each read once through
+`PreparedReadRequest`, and keeps that admission and deadline on whichever
+route runs. The new `grust_cypher::run_prepared_read_query_indexed` lets a
+declined route fall back without re-preparing.
+
+Automatic selection covers single-node scan plans only. Before execution the
+router declines, with a structured `RouteDecline`, when: capture failed;
+the typed compiler does not support the shape; the plan contains a
+relationship join; the node table is below the size threshold; scanning every
+node would exceed `max_candidate_work`; or the optimized physical plan has an
+operator outside an explicit allowlist. `RouteMode::Force` exists for
+qualification; forcing DataFusion never runs a plan that would be declined.
+Errors after execution starts propagate and are not rerouted.
+
+The policy maps onto one `ExecutionContext` exactly as the reference executor
+maps it. An accounting wrapper charges rows emitted by each scan leaf as
+candidate work and the sliced bytes emitted by each copying operator as
+cumulative intermediate bytes, shared across partitions. Pass-through
+operators are not charged twice. Retained operator state (hash tables, sort
+buffers) remains bounded by the DataFusion pool, not by this cumulative
+count. Relationship joins stay on the reference executor, because upstream
+hash joins build candidate pairs before any hook can charge them.
+
+The same branch splits a large single-batch table into contiguous zero-copy
+partitions. DataFusion 55.1 `repartition/mod.rs` charges each queued batch
+`get_array_memory_size()`, which reports a slice's whole parent buffers, and
+falls back to the disabled spill writer when `try_grow` fails; that matches the
+retained 256 MiB failure message. Without round-robin repartitioning above the
+scan, those per-slice charges no longer occur.
+
+[Capitola receipts](../../benchmarks/arrow-pipelines/evidence/cypher-route-capitola-20260914):
+alternating ten process pairs at one million nodes, the retained `6544dc4`
+binary reproduced memory exhaustion in 2 of 30 DataFusion trials and the fixed
+binary in 0 of 30, with unchanged median time. That count alone is not
+decisive; the plan regression and upstream mechanism carry the argument. The
+warm `cypher_route` profile found the reference route faster only for a count
+at 1,000 nodes and DataFusion faster for all three scan shapes from 3,000
+nodes (about 4× at 3,000, 90–170× at 100,000), so the default threshold is
+3,000 nodes. All trials matched across routes. Joins, OPTIONAL MATCH,
+variable-length paths, backend providers and a named release remain open.

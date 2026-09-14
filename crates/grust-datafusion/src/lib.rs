@@ -170,14 +170,55 @@ impl DataFusionEngine {
     }
     fn table_provider(&self, table: ArrowTable) -> Result<Arc<dyn TableProvider>> {
         let schema = table.schema();
-        let batches = table.into_batches();
-        let count = self.partitions.get().min(batches.len().max(1));
+        let partitions = partition_batches(table.into_batches(), self.partitions.get());
+        Ok(Arc::new(MemTable::try_new(schema, partitions)?))
+    }
+}
+
+/// Smallest slice worth a separate partition when splitting one large batch.
+const MIN_SLICE_ROWS: usize = 8192;
+
+/// Distribute batches over at most `target` partitions. Large tables with fewer
+/// batches than partitions are split into contiguous zero-copy slices, so the
+/// planner does not add round-robin repartitioning above the scan. Upstream
+/// repartitioning charges every queued slice the full size of its shared parent
+/// buffers; many slices of one large batch could exhaust the working-memory
+/// pool although nothing was copied. Row order within each partition is kept.
+fn partition_batches(
+    batches: Vec<datafusion::arrow::record_batch::RecordBatch>,
+    target: usize,
+) -> Vec<Vec<datafusion::arrow::record_batch::RecordBatch>> {
+    let rows = batches.iter().map(|batch| batch.num_rows()).sum::<usize>();
+    if batches.len() >= target || rows < target.saturating_mul(MIN_SLICE_ROWS) {
+        let count = target.min(batches.len().max(1));
         let mut partitions = (0..count).map(|_| Vec::new()).collect::<Vec<_>>();
         for (i, batch) in batches.into_iter().enumerate() {
             partitions[i % count].push(batch);
         }
-        Ok(Arc::new(MemTable::try_new(schema, partitions)?))
+        return partitions;
     }
+    let per_partition = rows.div_ceil(target);
+    let mut partitions = (0..target).map(|_| Vec::new()).collect::<Vec<_>>();
+    let (mut index, mut filled) = (0, 0);
+    for batch in batches {
+        let mut offset = 0;
+        while offset < batch.num_rows() {
+            let capacity = if index + 1 == target {
+                usize::MAX
+            } else {
+                per_partition - filled
+            };
+            let take = capacity.min(batch.num_rows() - offset);
+            partitions[index].push(batch.slice(offset, take));
+            offset += take;
+            filled += take;
+            if filled == per_partition && index + 1 < target {
+                index += 1;
+                filled = 0;
+            }
+        }
+    }
+    partitions
 }
 
 #[cfg(test)]

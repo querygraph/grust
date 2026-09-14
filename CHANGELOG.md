@@ -9,6 +9,24 @@ reconstructed from Git history, release commits, and the shipped docs.
 - Validate row-to-Arrow conversion with borrowed identity membership instead of
   constructing discarded adjacency, and copy string properties directly into
   Arrow buffers without temporary owned String clones.
+- Add automatic Cypher routing through `grust_datafusion::cypher::RoutedGraph`:
+  one graph captured as a typed index and an Arrow snapshot, one bounded-read
+  admission per query, and DataFusion execution for single-node scan plans
+  whose every physical operator charges candidate work and intermediate bytes
+  against the caller's `ReadQueryPolicy`. Relationship joins, unsupported
+  shapes, small graphs and plans over a limit stay on the reference executor;
+  explain reports the chosen route and why DataFusion was declined.
+- Add `run_prepared_read_query_indexed`, so a declined route keeps the original
+  admission and deadline instead of re-preparing the query.
+- Split large single-batch Arrow tables into contiguous zero-copy partitions.
+  Upstream round-robin repartitioning charged every queued slice the full size
+  of its shared parent buffers, which intermittently exhausted a 256 MiB pool on
+  a one-million-node scan with nothing copied.
+- Add `LadybugConfig::max_db_bytes`. Ladybug reserves its maximum database
+  size (8 TiB by default) as virtual address space per open database, so one
+  x86-64 Linux process can hold only about fifteen at once. `grust-ladybug`
+  unit tests now cap each database at 16 GiB, as Ladybug's own tests do;
+  parallel test threads previously failed intermittently with `Mmap ... failed`.
 
 ## 0.20.0 — Brine — 2026-09-14
 

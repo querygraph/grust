@@ -1,4 +1,4 @@
-//! Typed Cypher expression lowering. Query routing is not yet implemented.
+//! Typed Cypher lowering, explicit execution and automatic bounded-read routing.
 mod aggregate;
 pub use aggregate::lower_aggregate_with_bindings;
 mod bindings;
@@ -15,6 +15,11 @@ pub use collect::{collect_result, collect_result_with_context};
 pub use planner::{PlanKind, QueryPlan};
 pub use result::{decode_result_batch, decode_result_batch_with_context};
 mod relationship;
+mod route;
+pub use route::{
+    DEFAULT_MIN_DATAFUSION_NODES, ReadRoute, RouteDecline, RouteExplain, RouteMode, RoutedGraph,
+    RoutedReadResult,
+};
 mod scan;
 mod trail;
 pub use pattern::plan_relationship_scan;
@@ -227,3 +232,6 @@ mod execute_tests;
 
 #[cfg(test)]
 mod trail_tests;
+
+#[cfg(test)]
+mod route_tests;
