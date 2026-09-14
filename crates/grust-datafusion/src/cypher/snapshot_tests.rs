@@ -234,4 +234,36 @@ async fn ordinal_admission_follows_emitted_arrays_after_snapshot_drop() {
     drop(ordinal);
     assert_eq!(execution.usage().unwrap().live_bytes, 0);
     assert_eq!(execution.usage().unwrap().work_units, 1);
+
+    let cancelled = context(8);
+    cancelled.cancel().unwrap();
+    assert!(GraphSnapshot::try_new_with_context(&engine, tables(), &cancelled).is_err());
+    assert_eq!(cancelled.usage().unwrap().live_bytes, 0);
+
+    let (nodes, edges) = tables().into_tables();
+    let edges = ArrowTable::try_new(
+        edges.schema(),
+        vec![edges.batches()[0].clone(), edges.batches()[0].clone()],
+    )
+    .unwrap();
+    let partial = context(8);
+    assert!(
+        GraphSnapshot::try_new_with_context(
+            &engine,
+            ArrowGraphTables::try_new(nodes, edges).unwrap(),
+            &partial
+        )
+        .is_err()
+    );
+    assert_eq!(partial.usage().unwrap().live_bytes, 0);
+    assert_eq!(partial.usage().unwrap().peak_bytes, 8);
+    assert_eq!(partial.usage().unwrap().work_units, 1);
+
+    let no_work = ExecutionContext::new(ExecutionLimits {
+        work_units: 0,
+        ..execution.limits()
+    })
+    .unwrap();
+    assert!(GraphSnapshot::try_new_with_context(&engine, tables(), &no_work).is_err());
+    assert_eq!(no_work.usage().unwrap().live_bytes, 0);
 }
