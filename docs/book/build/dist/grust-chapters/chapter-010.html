@@ -5,7 +5,7 @@
   <meta name="generator" content="pandoc" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
   <meta name="author" content="Alexy Khrabrov" />
-  <meta name="dcterms.date" content="2026-09-13" />
+  <meta name="dcterms.date" content="2026-09-14" />
   <title>Backend Architecture</title>
   <style>
     div.sitenav { display: flex; flex-direction: row; flex-wrap: wrap; }
@@ -134,23 +134,25 @@ explicit.</p>
 <h2 data-number="8.1" id="memory"><span
 class="header-section-number">8.1</span> Memory</h2>
 <p><code>grust-memory</code> is the deterministic local backend. It
-stores nodes in a <code>BTreeMap&lt;NodeId, Node&gt;</code> and stores
-edges by source, label, destination, and optional explicit edge ID. That
-means structural edges still behave deterministically, while id-bearing
-parallel edges between the same endpoints can coexist. Reads and
-traversals scan those maps. It is the best backend for tests, examples,
-and local workflows that need no external service. When a
-<code>GraphSchema</code> is applied, the memory backend validates writes
-against it, which makes it a useful conformance harness for typed
+interns node ids and labels as <code>u32</code> handles and stores each
+edge once, as a 16-byte record keyed by source, label, destination, and
+optional explicit edge ID, with ids and properties kept out of line.
+That means structural edges still behave deterministically, while
+id-bearing parallel edges between the same endpoints can coexist. Reads
+return nodes and edges in id and edge-key order. It is the best backend
+for tests, examples, and local workflows that need no external service.
+When a <code>GraphSchema</code> is applied, the memory backend validates
+writes against it, which makes it a useful conformance harness for typed
 storage behavior before a database enters the picture.</p>
 <p>For repeated language reads, <code>indexed_snapshot()</code> returns
 a shared immutable <code>TypedGraphIndex</code>. The first call after a
-write clones the graph and builds typed incoming/outgoing adjacency;
-later calls reuse it, including through cloned store handles. Every
-write attempt invalidates the cache, while snapshots already returned
-remain unchanged. Construction holds the store’s read lock and therefore
-delays writers. Ordinary <code>GraphStore</code> reads and traversals
-keep their map-based behavior; indexed Cypher entrypoints are a separate
+write builds typed incoming/outgoing adjacency over the store’s own
+copy-on-write storage rather than a copy of the graph; later calls reuse
+it, including through cloned store handles. Every write attempt
+invalidates the cache, while snapshots already returned remain
+unchanged. Construction holds the store’s read lock and therefore delays
+writers. Ordinary <code>GraphStore</code> reads and traversals keep
+their map-based behavior; indexed Cypher entrypoints are a separate
 choice.</p>
 <div class="sourceCode" id="cb1"><pre
 class="sourceCode rust"><code class="sourceCode rust"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">use</span> <span class="pp">grust::prelude::</span><span class="op">*;</span></span>
