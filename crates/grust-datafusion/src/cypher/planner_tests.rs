@@ -52,7 +52,7 @@ async fn common_planner_selects_shapes_without_hiding_errors() {
         );
     }
     let query =
-        grust_cypher::parser::parse_query("MATCH ()-->()-->() RETURN count(*) AS count").unwrap();
+        grust_cypher::parser::parse_query("MATCH ()-[*1..3]->() RETURN count(*) AS count").unwrap();
     assert!(matches!(
         snapshot
             .plan(&query, engine.context(), &parameters)

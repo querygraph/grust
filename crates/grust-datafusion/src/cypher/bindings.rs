@@ -60,7 +60,17 @@ impl ExpressionBindings for SingleBinding<'_> {
 pub(super) fn resolve_names<const N: usize>(
     names: [Option<&str>; N],
 ) -> [std::borrow::Cow<'_, str>; N] {
-    std::array::from_fn(|index| match names[index] {
+    std::array::from_fn(|index| resolve_name(&names, index))
+}
+
+pub(super) fn resolve_path_names<'a>(names: &[Option<&'a str>]) -> Vec<std::borrow::Cow<'a, str>> {
+    (0..names.len())
+        .map(|index| resolve_name(names, index))
+        .collect()
+}
+
+fn resolve_name<'a>(names: &[Option<&'a str>], index: usize) -> std::borrow::Cow<'a, str> {
+    match names[index] {
         Some(name) => std::borrow::Cow::Borrowed(name),
         None => {
             let mut name = format!("__grust_anonymous_{index}");
@@ -69,5 +79,5 @@ pub(super) fn resolve_names<const N: usize>(
             }
             std::borrow::Cow::Owned(name)
         }
-    })
+    }
 }

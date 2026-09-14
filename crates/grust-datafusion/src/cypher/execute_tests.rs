@@ -46,7 +46,7 @@ async fn text_execution_preserves_results_and_error_boundaries() {
     assert!(matches!(
         snapshot
             .execute(
-                "MATCH ()-->()-->() RETURN count(*) AS count",
+                "MATCH ()-[*1..3]->() RETURN count(*) AS count",
                 engine.context(),
                 &parameters,
                 output
