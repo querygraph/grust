@@ -15,7 +15,7 @@ use grust_cypher::{
 /// Uses the same RETURN compiler as node scans. Unsupported shapes are explicit;
 /// semantic and planning errors remain errors. No resource-policy admission or
 /// automatic routing is supplied. Binding names must currently be distinct and
-/// present; inline maps, undirected/variable-length and optional patterns remain
+/// present; undirected/variable-length and optional patterns remain
 /// unsupported on this relationship route.
 pub fn plan_relationship_scan(
     query: &Query,
@@ -52,9 +52,6 @@ pub fn plan_relationship_scan(
         || pattern.shortest.is_some()
         || relationship.length.is_some()
         || relationship.direction == Direction::Undirected
-        || pattern.start.properties.is_some()
-        || relationship.properties.is_some()
-        || segment.node.properties.is_some()
         || start == end
         || start == edge
         || edge == end
@@ -85,6 +82,19 @@ pub fn plan_relationship_scan(
             .0;
         frame = frame
             .filter(label.in_list(relationship.types.iter().cloned().map(lit).collect(), false))?;
+    }
+    for (variable, properties) in [
+        (start, pattern.start.properties.as_ref()),
+        (edge, relationship.properties.as_ref()),
+        (end, segment.node.properties.as_ref()),
+    ] {
+        let Ok(predicates) = super::inline::predicates(properties, variable, &bindings, parameters)
+        else {
+            return Ok(NodeScanPlan::Unsupported(UnsupportedScan::Expression));
+        };
+        for predicate in predicates {
+            frame = frame.filter(predicate)?;
+        }
     }
     if let Some(predicate) = &matched.where_clause {
         let predicate = match super::lower_bound(predicate, &bindings, parameters) {

@@ -1,12 +1,11 @@
 //! Initial typed node-scan lowering over a caller-owned immutable provider.
-use super::lower_expression_with_parameters;
 use datafusion::{
     common::{Column, DataFusionError, Result},
     dataframe::DataFrame,
     logical_expr::{Expr, lit},
 };
 use grust_cypher::CypherParameters;
-use grust_cypher::ast::{Clause, Expr as CypherExpr, Query};
+use grust_cypher::ast::{Clause, Query};
 
 /// Why the typed node-scan route was not selected.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -93,36 +92,14 @@ pub fn plan_node_scan(
         }
         None => None,
     };
-    let mut inline = Vec::new();
-    if let Some(properties) = &pattern.start.properties {
-        for (key, value) in &properties.entries {
-            // Pattern-map values are evaluated without the new node binding.
-            if !matches!(
-                value,
-                CypherExpr::Null
-                    | CypherExpr::Boolean(_)
-                    | CypherExpr::Integer(_)
-                    | CypherExpr::String(_)
-                    | CypherExpr::Parameter(_)
-            ) {
-                return Ok(NodeScanPlan::Unsupported(UnsupportedScan::Expression));
-            }
-            let comparison = CypherExpr::Binary {
-                op: grust_cypher::ast::BinaryOp::Eq,
-                lhs: Box::new(CypherExpr::Property {
-                    base: Box::new(CypherExpr::Variable(variable.into())),
-                    key: key.clone(),
-                }),
-                rhs: Box::new(value.clone()),
-            };
-            let Ok(predicate) =
-                lower_expression_with_parameters(&comparison, variable, schema, parameters)
-            else {
-                return Ok(NodeScanPlan::Unsupported(UnsupportedScan::Expression));
-            };
-            inline.push(predicate);
-        }
-    }
+    let Ok(inline) = super::inline::predicates(
+        pattern.start.properties.as_ref(),
+        variable,
+        &super::bindings::SingleBinding { variable, schema },
+        parameters,
+    ) else {
+        return Ok(NodeScanPlan::Unsupported(UnsupportedScan::Expression));
+    };
     let mut frame = input;
     for label in &pattern.start.labels {
         frame = frame.filter(Expr::Column(Column::from_name("label")).eq(lit(label.clone())))?;

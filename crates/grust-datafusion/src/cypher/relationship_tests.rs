@@ -111,7 +111,7 @@ async fn parsed_relationship_queries_match_portable_results() {
         spill: SpillPolicy::Disabled,
     })
     .unwrap();
-    let graph = Graph::new(
+    let mut graph = Graph::new(
         vec![
             Node::new("N", "a", Props::new()),
             Node::new("M", "b", Props::new()),
@@ -123,10 +123,14 @@ async fn parsed_relationship_queries_match_portable_results() {
             Edge::new("E", "b", "a", Props::new()),
         ],
     );
+    graph.nodes[0].props.insert("x".into(), Value::Int(1));
+    graph.nodes[1].props.insert("x".into(), Value::Int(2));
+    graph.edges[0].props.insert("x".into(), Value::Int(7));
+    graph.edges[1].props.insert("x".into(), Value::Null);
     let (nodes, edges) = ArrowGraph::from_graph(&graph).unwrap().into_tables();
     let snapshot =
         GraphSnapshot::try_new(&engine, ArrowGraphTables::try_new(nodes, edges).unwrap()).unwrap();
-    let parameters = CypherParameters::new();
+    let parameters = CypherParameters::from([("wanted".into(), Value::Int(7))]);
     for text in [
         "MATCH (a)-[r]->(b) RETURN count(*) AS count",
         "MATCH (a:N)-[r:E]->(b:M) RETURN count(*) AS count",
@@ -136,6 +140,11 @@ async fn parsed_relationship_queries_match_portable_results() {
         "MATCH (a)-[r]->(b) RETURN id(a) AS source, count(*) AS count ORDER BY source",
         "MATCH (a)-[r]->(b) RETURN DISTINCT id(b) AS target ORDER BY target DESC SKIP 1 LIMIT 1",
         "MATCH (a)-[r]->(b) WHERE null RETURN count(*) AS count",
+        "MATCH (a {x: 1})-[r {x: $wanted}]->(b {x: 2}) RETURN count(*) AS count",
+        "MATCH (b {x: 2})<-[r {x: 7}]-(a {x: 1}) RETURN count(*) AS count",
+        "MATCH (a)-[r {x: null}]->(b) RETURN count(*) AS count",
+        "MATCH (a)-[r {missing: 7}]->(b) RETURN count(*) AS count",
+        "MATCH (a {x: 2})-[r]->(b {x: 2}) RETURN count(*) AS count",
     ] {
         let query = grust_cypher::parser::parse_query(text).unwrap();
         let expected = grust_cypher::read::execute_read_query(&graph, &query, &parameters).unwrap();

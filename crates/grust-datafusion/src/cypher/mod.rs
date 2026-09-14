@@ -3,6 +3,7 @@ mod aggregate;
 pub use aggregate::lower_aggregate_with_bindings;
 mod bindings;
 pub use bindings::ExpressionBindings;
+mod inline;
 mod pattern;
 mod projection;
 mod relationship;
