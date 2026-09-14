@@ -375,5 +375,95 @@ uniqueness across all segments. Direction may differ per segment.
 Variable-length bounds and named path values remain unsupported; the
 pinned parallel-ring profile measures two- and three-hop execution with
 separate preparation costs; it is not a general routing threshold.</p>
+<h3 data-number="16.5.4"
+id="shared-cancellation-and-deadlines-ostracod-0.18.0"><span
+class="header-section-number">16.5.4</span> Shared cancellation and
+deadlines (Ostracod 0.18.0)</h3>
+<p><code>ExecutionContext::cancelled()</code> is a runtime-independent
+notification shared by procedures and relational execution.
+<code>grust_datafusion::run_cancellable</code> races an operation with
+that notification and the context’s absolute deadline.
+<code>GraphSnapshot::execute_with_context</code> applies it through
+complete Cypher result consumption. The operation and its owned streams
+are dropped on cancellation or deadline; errors are never retried.
+Dropping one wrapper unregisters its waiter without cancelling sibling
+work. A deadline needs Tokio’s time driver.</p>
+<p>Control is cooperative: synchronous work within one poll is not
+preempted, and providers/kernels must checkpoint during computation.
+Wrapping stream creation alone does not control later consumption. These
+methods do not charge candidate work or intermediate allocations and do
+not establish complete read-policy admission or automatic routing.</p>
+<p><code>control_stream</code> retains cancellation and deadline control
+for an Arrow stream’s whole lifetime.
+<code>DataFusionEngine::execute_stream_with_context</code> controls both
+SQL preparation and the returned stream. Batches pass through without
+buffer copies, queues or worker tasks. Completion or the first error
+immediately drops the provider stream and timer; subsequent polls remain
+finished. The controlled stream can feed <code>BlockingReader</code> and
+ADBC ingestion directly.</p>
+<h3 data-number="16.5.5"
+id="prepared-read-admission-ostracod-0.18.0"><span
+class="header-section-number">16.5.5</span> Prepared read admission
+(Ostracod 0.18.0)</h3>
+<p><code>grust_cypher::PreparedReadRequest</code> owns the validated
+AST, policy and original absolute deadline, borrows the admitted
+immutable parameters, and retains any application registry generation.
+The bounded reference executor uses its request, graph/index and output
+checks. Indexed graph checks reuse the cached exact serialized size;
+parameter/output counting does not allocate encoded JSON. Oversized
+parameters fail before graph inspection. Preparation does not authorize
+or bind a backend snapshot, install execution budgets, or qualify a
+DataFusion route. Route-specific candidate/intermediate accounting must
+still be enforced.</p>
+<h3 data-number="16.5.6"
+id="exact-snapshot-statistics-ostracod-0.18.0"><span
+class="header-section-number">16.5.6</span> Exact snapshot statistics
+(Ostracod 0.18.0)</h3>
+<p><code>GraphSnapshot::statistics()</code> returns exact node/edge row
+counts, original input batch counts and the logical bytes added for
+UInt64 relationship ordinals. These are cached during capture and read
+in constant time without a provider scan or graph export. Cloned
+snapshots keep identical statistics; session catalog replacement cannot
+change them. Batch counts do not claim execution parallelism.
+Selectivity, join cardinalities, serialized graph size and total memory
+are not inferred from these counts. Automatic routing still requires
+qualified costs and complete resource admission.</p>
+<h3 data-number="16.5.7"
+id="borrowed-graph-serialization-ostracod-0.18.0"><span
+class="header-section-number">16.5.7</span> Borrowed graph serialization
+(Ostracod 0.18.0)</h3>
+<p><code>ArrowGraphTables::as_serializable_graph()</code> presents the
+ordinary Grust graph serde contract directly over native Arrow 55/58/59
+columns. It preserves row and batch order, identity, sorted property
+keys, scalar tags, and missing versus null properties. It builds only
+per-batch column descriptors, without row graphs, property maps or
+string-value copies. The caller selects the serializer and sink; a
+bounded writer over <code>std::io::sink()</code> can count exact JSON
+bytes without keeping the encoded output. Writer errors propagate and
+may leave a prefix in a real sink. This enables native input-size
+admission; automatic routing and full query resource-policy integration
+remain separate work.</p>
+<h3 data-number="16.5.8"
+id="native-arrow-input-admission-ostracod-0.18.0"><span
+class="header-section-number">16.5.8</span> Native Arrow input admission
+(Ostracod 0.18.0)</h3>
+<p><code>GraphSnapshot::try_new_with_input_policy</code> checks a
+prepared request’s node/edge limits and exact graph JSON size before
+capturing native providers. It uses the borrowed Arrow serialization
+view and bounded counting writer, with no row graph or encoded JSON
+buffer. Row rejection precedes serialization; the original request
+deadline also covers capture.
+<code>SnapshotStatistics::serialized_graph_bytes</code> is
+<code>Some(exact_bytes)</code> after measured capture and
+<code>None</code> for ordinary capture, including an unmeasured empty
+graph. Clones retain the measurement.</p>
+<p><code>PreparedReadRequest::check_serializable_graph</code> shares
+these checks with trusted native adapters.
+<code>check_measured_graph</code> reuses exact cached measurements for
+the same immutable projection; estimates are not admissible substitutes.
+Backend snapshot authority, pre-existing input buffers, ordinal
+allocation and execution work/intermediates remain separate obligations.
+This is input-size admission, not a complete bounded DataFusion executor
+or automatic routing.</p>
 </body>
 </html>
