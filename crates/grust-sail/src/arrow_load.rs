@@ -11,7 +11,11 @@ use arrow::{
 };
 use grust_arrow::v58::{BatchReader, into_grust_error, project_batch, utf8_column};
 use grust_core::prelude::*;
-use std::{collections::BTreeMap, num::NonZeroUsize, sync::Arc};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    num::NonZeroUsize,
+    sync::Arc,
+};
 
 impl SailGraphStore {
     /// Upsert standard Arrow readers into Sail without building a whole Graph.
@@ -66,9 +70,13 @@ impl SailGraphStore {
             for edge in &edges {
                 validate_edge_key_components(edge)?;
             }
+            // get_nodes preserves repeated requests. The validation graph must
+            // contain each endpoint once, including self-loops and shared ends.
             let ids = edges
                 .iter()
                 .flat_map(|e| [&e.from, &e.to])
+                .collect::<BTreeSet<_>>()
+                .into_iter()
                 .cloned()
                 .collect::<Vec<_>>();
             let graph = Graph::new(self.get_nodes(&ids).await?, edges);

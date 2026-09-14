@@ -61,15 +61,30 @@ async fn native_readers_load_multiple_batches_and_keep_typed_tables() {
     .await
     .unwrap();
     let schema = GraphSchema::builder()
-        .node("N", vec![])
+        .node(
+            "N",
+            vec![grust_core::Field::required("token", FieldType::String)],
+        )
         .edge("E", vec!["N".into()], vec!["N".into()], vec![])
+        .unique_node_property("N", "token")
         .build();
     store.apply_schema(&schema).await.unwrap();
     let nodes = vec![
-        Node::new("N", "a", Props::new()),
-        Node::new("N", "b", Props::new()),
+        Node::new(
+            "N",
+            "a",
+            Props::from([("token".into(), Value::String("a".into()))]),
+        ),
+        Node::new(
+            "N",
+            "b",
+            Props::from([("token".into(), Value::String("b".into()))]),
+        ),
     ];
-    let edges = vec![Edge::new("E", "a", "b", Props::new()).with_id("explicit")];
+    let edges = vec![
+        Edge::new("E", "a", "b", Props::new()).with_id("explicit"),
+        Edge::new("E", "a", "a", Props::new()).with_id("loop"),
+    ];
     let node_batch = super::super::nodes_record_batch(&nodes).unwrap();
     let edge_batch = super::super::edges_record_batch(&edges, &BTreeMap::new()).unwrap();
     let node_reader = RecordBatchIterator::new(vec![Ok(node_batch.clone())], node_batch.schema());
@@ -82,12 +97,16 @@ async fn native_readers_load_multiple_batches_and_keep_typed_tables() {
         )
         .await
         .unwrap();
-    assert_eq!((report.nodes, report.edges), (2, 1));
+    assert_eq!((report.nodes, report.edges), (2, 2));
     assert_eq!(
         store.get_node(&nodes[0].id).await.unwrap(),
         Some(nodes[0].clone())
     );
-    assert_eq!(store.get_edges(EdgeQuery::default()).await.unwrap(), edges);
+    let persisted = store.get_edges(EdgeQuery::default()).await.unwrap();
+    assert_eq!(persisted.len(), edges.len());
+    for edge in &edges {
+        assert!(persisted.contains(edge));
+    }
     let mut count = 0;
     store
         .visit_arrow_batches("SELECT id FROM grust_node_n", |batch| {
