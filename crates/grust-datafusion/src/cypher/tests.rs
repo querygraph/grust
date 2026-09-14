@@ -417,3 +417,45 @@ async fn implicit_projection_names_match_the_reference_contract() {
         assert_eq!(batches[0].schema().field(0).name(), expected);
     }
 }
+
+#[tokio::test]
+async fn inline_parameter_maps_select_nodes_and_duplicate_names_decline() {
+    use datafusion::{
+        arrow::array::{Int64Array, RecordBatch},
+        execution::context::SessionContext,
+    };
+    let context = SessionContext::new();
+    let batch = RecordBatch::try_from_iter([(
+        "property.x",
+        std::sync::Arc::new(Int64Array::from(vec![1, 2, 2])) as datafusion::arrow::array::ArrayRef,
+    )])
+    .unwrap();
+    let parameters = CypherParameters::from([("value".into(), Value::Int(2))]);
+    let query = grust_cypher::parser::parse_query("MATCH (n {x: $value}) RETURN count(*) AS count")
+        .unwrap();
+    let batches = lower_node_scan_with_parameters(
+        &query,
+        context.read_batch(batch.clone()).unwrap(),
+        &parameters,
+    )
+    .unwrap()
+    .unwrap()
+    .collect()
+    .await
+    .unwrap();
+    assert_eq!(
+        batches[0]
+            .column(0)
+            .as_any()
+            .downcast_ref::<Int64Array>()
+            .unwrap()
+            .value(0),
+        2
+    );
+    let query = grust_cypher::parser::parse_query("MATCH (n) RETURN n.x, n.x").unwrap();
+    assert!(
+        lower_node_scan(&query, context.read_batch(batch).unwrap())
+            .unwrap()
+            .is_none()
+    );
+}

@@ -46,9 +46,27 @@ pub fn lower_node_scan_with_parameters(
         || pattern.variable.is_some()
         || pattern.shortest.is_some()
         || !pattern.segments.is_empty()
-        || pattern.start.properties.is_some()
         || projection.star
     {
+        return Ok(None);
+    }
+    let names = projection
+        .items
+        .iter()
+        .map(|item| {
+            item.alias
+                .clone()
+                .unwrap_or_else(|| grust_cypher::read::column_name(&item.expr))
+        })
+        .collect::<Vec<_>>();
+    if names
+        .iter()
+        .collect::<std::collections::BTreeSet<_>>()
+        .len()
+        != names.len()
+    {
+        // DataFusion requires unique logical field names; the ordinary executor
+        // retains Cypher's duplicate-column contract until result remapping exists.
         return Ok(None);
     }
     let mut ordering = Vec::with_capacity(projection.order_by.len());
@@ -133,9 +151,42 @@ pub fn lower_node_scan_with_parameters(
         }
         None => None,
     };
+    let mut inline = Vec::new();
+    if let Some(properties) = &pattern.start.properties {
+        for (key, value) in &properties.entries {
+            // Pattern-map values are evaluated without the new node binding.
+            if !matches!(
+                value,
+                CypherExpr::Null
+                    | CypherExpr::Boolean(_)
+                    | CypherExpr::Integer(_)
+                    | CypherExpr::String(_)
+                    | CypherExpr::Parameter(_)
+            ) {
+                return Ok(None);
+            }
+            let comparison = CypherExpr::Binary {
+                op: grust_cypher::ast::BinaryOp::Eq,
+                lhs: Box::new(CypherExpr::Property {
+                    base: Box::new(CypherExpr::Variable(variable.into())),
+                    key: key.clone(),
+                }),
+                rhs: Box::new(value.clone()),
+            };
+            let Ok(predicate) =
+                lower_expression_with_parameters(&comparison, variable, schema, parameters)
+            else {
+                return Ok(None);
+            };
+            inline.push(predicate);
+        }
+    }
     let mut frame = input;
     for label in &pattern.start.labels {
         frame = frame.filter(Expr::Column(Column::from_name("label")).eq(lit(label.clone())))?;
+    }
+    for predicate in inline {
+        frame = frame.filter(predicate)?;
     }
     if let Some(predicate) = predicate {
         frame = frame.filter(predicate)?;
