@@ -42,3 +42,31 @@ measurements require a clean source stamp and a fresh source-pinned build. The
 build script watches repository source and Git state, including worktree Git
 paths; a runtime checkout hash alone is not binary provenance. Commit Cargo.lock
 before collecting qualified optimized measurements.
+
+## Typed Cypher scan profile (unreleased bridge)
+
+The `cypher_scan` binary runs the same parsed-language workload through indexed
+Cypher and typed DataFusion 55 lowering:
+
+```sh
+cargo build --release --locked --manifest-path benchmarks/arrow-pipelines/Cargo.toml --bin cypher_scan
+benchmarks/arrow-pipelines/target/release/cypher_scan 100000 3
+```
+
+Arguments are node count and nonzero trial count. The fixture has no edges and
+one integer bucket property (`node ordinal % 16`). The query filters bucket 3
+and returns count; its expected answer is computed independently from the node
+count. Every trial retains its answer, outcome and elapsed time. Engine order
+alternates; there is no warmup or query deadline. Errors terminate with a JSON
+error record and nonzero exit; preserve stderr and process status externally.
+
+This measures prepared-input queries, each including parsing, planning,
+execution and complete scalar result consumption. Fixture construction, index
+construction, and Arrow conversion/registration are reported separately. Both
+representations coexist in the process. The DataFusion pool admits 256 MiB with
+spill disabled; this is not a process-memory cap or equivalent to an indexed
+Cypher policy. Target partitions is four, but this fixture registers one batch
+and does not imply four scan partitions. Snapshot/backend capture, network
+transport, algorithm kernels and automatic route selection are not measured.
+Record source, binary hash, host, compiler, process memory and all raw output
+with each run; do not combine these receipts with the earlier SQL profiles.
