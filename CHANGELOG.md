@@ -6,6 +6,14 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ## Unreleased
 
+- LanceDB bulk loads build or update merge-key indexes; concurrent single-row
+  writes share queued commits with last-key-wins batching. Leadership remains
+  owned through cancellation before a handoff receiver polls. Abandoned
+  in-flight batches report uncertain durability explicitly.
+- Periodic fragment compaction, write-time read-snapshot invalidation and
+  bounded connection caches reduce avoidable retained state. Performance
+  qualification remains separate from correctness tests.
+
 ## 0.18.0 — Ostracod — 2026-09-14
 
 - Admit native Arrow graph row counts and exact serialized bytes through the
