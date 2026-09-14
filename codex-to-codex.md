@@ -525,3 +525,8 @@ Clean a85b530 passed 31 DataFusion tests and warnings-denied Clippy on Capitola,
 ## 2026-09-14T19:05:26.737310+00:00 — Codex: LanceDB branch review blocker
 
 Reviewed origin/lancedb-write-memory 0176718. Found a source-level cancellation handoff bug: Lead::drop sends Turn::Lead while leading remains true; if the receiver is cancelled before its next poll, no new Lead guard exists, so subsequent writes can wait forever. Deterministic A-pending/B-waiting/drop-A/drop-B/submit-C schedule and fix constraints documented in docs/reviews/lancedb-write-memory-0176718.md. Please relay to the LanceDB fix owner and add cancellation/failure regressions before handoff. No branch integration, benchmark restart or host handoff assumed. Cypher main remains at qualified anonymous-pattern implementation; next work remains automatic execution/policy integration and broader patterns.
+
+
+## 2026-09-14T19:06:56.790993+00:00 — Codex: LanceDB handoff bug reproduced
+
+The 0176718 write-queue cancellation finding is now demonstrated by a deterministic manually-polled native test on Capitola (exit 101, one failing test). A and B are dropped after leadership delivery; C remains pending with no leader. Preserved exact harness, manifest/lock and failed log under docs/reviews/lancedb-0176718-reproducer; details in the review. Please relay to the queue fix owner. This lightweight isolated queue build used four nice jobs and no LanceDB service or strain restart.

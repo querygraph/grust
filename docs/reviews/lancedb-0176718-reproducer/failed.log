@@ -1,0 +1,87 @@
+     Locking 33 packages to latest Rust 1.98.0 compatible versions
+   Compiling serde_core v1.0.229
+   Compiling futures-core v0.3.34
+   Compiling syn v3.0.5
+   Compiling futures-sink v0.3.34
+   Compiling serde_json v1.0.151
+   Compiling futures-channel v0.3.34
+   Compiling indexmap v2.14.2
+   Compiling serde_derive v1.0.229
+   Compiling futures-macro v0.3.34
+   Compiling thiserror-impl v2.0.20
+   Compiling futures-util v0.3.34
+   Compiling thiserror v2.0.20
+   Compiling async-trait v0.1.92
+   Compiling serde v1.0.229
+   Compiling futures-executor v0.3.34
+   Compiling futures v0.3.34
+   Compiling quick-xml v0.40.1
+   Compiling serde_yaml v0.9.34+deprecated
+   Compiling grust-core v0.16.0 (/Users/alexy/src/grust-arrow-pipeline/crates/grust-core)
+   Compiling grust-lance-queue-review v0.0.0 (/private/tmp/grust-lance-queue-review)
+warning: enum `Turn` is never used
+  --> src/lib.rs:17:6
+   |
+17 | enum Turn<T> {
+   |      ^^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: struct `State` is never constructed
+  --> src/lib.rs:24:8
+   |
+24 | struct State<T> {
+   |        ^^^^^
+
+warning: struct `WriteQueue` is never constructed
+  --> src/lib.rs:29:19
+   |
+29 | pub(super) struct WriteQueue<T> {
+   |                   ^^^^^^^^^^
+
+warning: methods `submit` and `lock` are never used
+   --> src/lib.rs:49:25
+    |
+ 44 | impl<T> WriteQueue<T> {
+    | --------------------- methods in this implementation
+...
+ 49 |     pub(super) async fn submit<K, F, Fut>(&self, rows: Vec<T>, key: K, apply: F) -> Result<()>
+    |                         ^^^^^^
+...
+103 |     fn lock(&self) -> std::sync::MutexGuard<'_, State<T>> {
+    |        ^^^^
+
+warning: struct `Lead` is never constructed
+   --> src/lib.rs:112:8
+    |
+112 | struct Lead<'a, T> {
+    |        ^^^^
+
+warning: function `last_per_key` is never used
+   --> src/lib.rs:132:4
+    |
+132 | fn last_per_key<T>(rows: Vec<T>, key: impl Fn(&T) -> Result<String>) -> Result<Vec<T>> {
+    |    ^^^^^^^^^^^^
+
+warning: `grust-lance-queue-review` (lib) generated 6 warnings
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 14.41s
+     Running unittests src/lib.rs (/Users/alexy/src/grust-arrow-pipeline/target/debug/deps/grust_lance_queue_review-ef78ffbc6b6eb445)
+
+running 1 test
+test queue::cancellation_review::cancellation_after_handoff_must_release_leadership ... FAILED
+
+failures:
+
+---- queue::cancellation_review::cancellation_after_handoff_must_release_leadership stdout ----
+
+thread 'queue::cancellation_review::cancellation_after_handoff_must_release_leadership' (5924340) panicked at src/lib.rs:165:9:
+new writer remains pending after all previous callers were dropped
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    queue::cancellation_review::cancellation_after_handoff_must_release_leadership
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--lib`
