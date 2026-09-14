@@ -9,7 +9,8 @@ and distinct edge identities. Fanout larger than the active vertex count also
 creates parallel edges. Three workloads measure a filtered node aggregate,
 one-hop aggregate and two-hop trail aggregate. Each result must match a separate
 integer-coordinate oracle. SQL excludes reuse of the same edge identity in the
-two-hop query and coalesces an empty sum to zero to match these Cypher semantics.
+two-hop query and coalesces an empty sum to zero to match the reference Cypher semantics. The initial Grust empty-sum
+mismatch is retained in [correctness evidence](evidence/c3bd9fb/README.md).
 These rewrites are disclosed in every output; this is not automatic Cypher
 lowering and does not establish equivalence beyond the fixtures and workloads.
 

@@ -63,7 +63,8 @@ async fn run() -> Result<()> {
     phase("datafusion_registration", start);
     let mut failures = 0;
     for workload in Workload::ALL {
-        let expected = fixture::expected(workload, nodes, degree);
+        let (count, sum) = fixture::expected(workload, nodes, degree);
+        let expected = (count, Some(sum));
         println!(
             "{}",
             json!({"event":"workload","name":workload.name(),
@@ -113,17 +114,18 @@ fn phase(name: &str, started: Instant) {
         json!({"event":"preparation","phase":name,"seconds":started.elapsed().as_secs_f64()})
     );
 }
-fn cypher(index: &TypedGraphIndex, workload: Workload) -> Result<(i64, i64)> {
+fn cypher(index: &TypedGraphIndex, workload: Workload) -> Result<(i64, Option<i64>)> {
     let table = run_read_query_indexed(index, workload.cypher(), &CypherParameters::new())?;
     match table.rows.as_slice() {
         [row] => match row.as_slice() {
-            [Value::Int(count), Value::Int(sum)] => Ok((*count, *sum)),
+            [Value::Int(count), Value::Int(sum)] => Ok((*count, Some(*sum))),
+            [Value::Int(count), Value::Null] => Ok((*count, None)),
             _ => Err(format!("unexpected Cypher result: {table:?}").into()),
         },
         _ => Err(format!("unexpected Cypher row count: {}", table.rows.len()).into()),
     }
 }
-async fn sql(engine: &DataFusionEngine, workload: Workload) -> Result<(i64, i64)> {
+async fn sql(engine: &DataFusionEngine, workload: Workload) -> Result<(i64, Option<i64>)> {
     let mut stream = engine.execute_stream(workload.sql()).await?;
     let mut answer = None;
     while let Some(batch) = stream.try_next().await? {
@@ -141,10 +143,10 @@ async fn sql(engine: &DataFusionEngine, workload: Workload) -> Result<(i64, i64)
             .downcast_ref::<Int64Array>()
             .ok_or("SQL sum is not Int64")?;
         for i in 0..batch.num_rows() {
-            if answer.is_some() || a.is_null(i) || b.is_null(i) {
+            if answer.is_some() || a.is_null(i) {
                 return Err("unexpected SQL row or null".into());
             }
-            answer = Some((a.value(i), b.value(i)));
+            answer = Some((a.value(i), (!b.is_null(i)).then(|| b.value(i))));
         }
     }
     answer.ok_or_else(|| "SQL aggregate returned no row".into())
