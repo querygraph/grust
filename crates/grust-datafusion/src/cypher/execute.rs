@@ -44,7 +44,7 @@ impl GraphSnapshot {
         output: OutputLimits,
     ) -> Result<CypherExecution> {
         let query = grust_cypher::parser::parse_query(query_text)
-            .map_err(|error| DataFusionError::Plan(error.to_string()))?;
+            .map_err(|error| DataFusionError::Plan(error.into_grust(query_text).to_string()))?;
         match self.plan(&query, context, parameters)? {
             QueryPlan::Supported { kind, frame } => Ok(CypherExecution::Completed {
                 kind,
