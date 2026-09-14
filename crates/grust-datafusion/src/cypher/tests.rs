@@ -125,3 +125,69 @@ async fn parsed_node_scan_filters_and_projects_native_property_columns() {
         .unwrap();
     assert_eq!(values.values().as_ref(), &[3]);
 }
+
+#[tokio::test]
+async fn native_scan_matches_reference_for_nulls_duplicates_and_large_integers() {
+    use datafusion::{arrow::array::Int64Array, execution::context::SessionContext};
+    use grust_core::{Graph, Node, Props, Value};
+    use grust_cypher::{CypherParameters, read::run_read_query};
+
+    let nodes = [
+        None,
+        Some(Value::Null),
+        Some(Value::Int(1)),
+        Some(Value::Int(1)),
+        Some(Value::Int(9_007_199_254_740_993)),
+    ]
+    .into_iter()
+    .enumerate()
+    .map(|(id, value)| {
+        let mut props = Props::new();
+        if let Some(value) = value {
+            props.insert("age".into(), value);
+        }
+        Node::new("N", id.to_string(), props)
+    })
+    .collect();
+    let graph = Graph::new(nodes, vec![]);
+    let arrow = grust_arrow::ArrowGraph::from_graph(&graph).unwrap();
+    let context = SessionContext::new();
+    for query_text in [
+        "MATCH (n:N) RETURN n.age AS age",
+        "MATCH (n:N) RETURN DISTINCT n.age AS age",
+        "MATCH (n:N) WHERE n.age IS NULL RETURN n.age AS age",
+        "MATCH (n:N) WHERE n.age IS NOT NULL RETURN n.age AS age",
+        "MATCH (n:N) WHERE n.age > 9007199254740992 RETURN n.age AS age",
+        "MATCH (n:Absent) RETURN n.age AS age",
+    ] {
+        let expected = run_read_query(&graph, query_text, &CypherParameters::new()).unwrap();
+        let mut expected = expected
+            .rows
+            .into_iter()
+            .map(|row| match row[0] {
+                Value::Int(value) => Some(value),
+                Value::Null => None,
+                ref value => panic!("unexpected {value:?}"),
+            })
+            .collect::<Vec<_>>();
+        let query = grust_cypher::parser::parse_query(query_text).unwrap();
+        let frame = lower_node_scan(&query, context.read_batch(arrow.nodes().clone()).unwrap())
+            .unwrap()
+            .unwrap();
+        let batches = frame.collect().await.unwrap();
+        let mut actual = batches
+            .iter()
+            .flat_map(|batch| {
+                batch
+                    .column(0)
+                    .as_any()
+                    .downcast_ref::<Int64Array>()
+                    .unwrap()
+                    .iter()
+            })
+            .collect::<Vec<_>>();
+        expected.sort_unstable();
+        actual.sort_unstable();
+        assert_eq!(actual, expected, "{query_text}");
+    }
+}
