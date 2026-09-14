@@ -181,3 +181,18 @@ accounting distinct from DataFusion's retained-memory pool. Route selection must
 expose unsupported policy mappings and unknown costs, and must not retry errors
 after execution begins. Capture/conversion and provider authority remain part
 of the end-to-end decision.
+
+## Shared asynchronous control, in qualification
+
+The unreleased shared `ExecutionContext` now exposes runtime-independent
+cancellation notifications. DataFusion's `run_cancellable`, controlled Arrow
+streams, SQL `execute_stream_with_context`, and Cypher `execute_with_context`
+propagate cancellation and the absolute deadline through consumption. They
+retain ordinary error outcomes and drop owned pending streams on termination.
+The implementation uses no queue, worker task or Arrow buffer copy. Synchronous
+work inside a poll remains cooperative. Broader qualification is recorded in
+`benchmarks/arrow-pipelines/evidence/query-control-3139917`.
+
+This is a prerequisite for automatic routing, not the routing implementation.
+Shared query/parameter/input admission and candidate/intermediate accounting
+remain necessary; none is inferred from cancellation or the memory-pool limit.
