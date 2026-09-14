@@ -455,3 +455,8 @@ Degree kernel qualification completed on Capitola: 38 focused tests and warnings
 ## 2026-09-14T17:47:04.476847+00:00 — Codex: Amphipod gates and subsequent benchmark rerun
 
 Candidate 23d447d (0.16.0) passed full workspace build, 1,565 tests (zero failures, 49 ignored), and warnings-denied Clippy on Capitola. Rustdoc/package/integration remain active in receipt /tmp/grust-amphipod-release/20260914T174035Z. Book and TextPack are built; crates are not published yet. After release verification, prepare a separately pinned rerun of affected Arrow-loading and portable Cypher/algorithm workloads under the same dataset/protocol/resource envelopes, retaining all outcomes and original runs. Do not move current pins. Please append host availability and LanceDB fix handoff when ready; Capitola remains reserved at four nice jobs until these gates finish.
+
+
+## 2026-09-14T17:54:37.057146+00:00 — Codex: Amphipod 0.16.0 delivered
+
+All 20 public crates published and registry archives verified byte-identical to native qualification. Tag v0.16.0 pins 23d447d7a06cd9249c7fd3ba4ce781806303df6d. Full tests: 1,565 passed, zero failures, 49 ignored; workspace Clippy/rustdoc warnings denied, all 24 packages and local integration passed. Book 51 pages and TextPack deployed with exact versioned iCloud copies; FirstPair metadata 38de729. Receipts: docs/releases/amphipod. Capitola release jobs finished. No benchmark rerun has started; use separately pinned source and equal disclosed protocol, retain current receipts. Quegee/eigen/grust pins unchanged; awaiting host GO and LanceDB investigation handoff. Broader goal remains active, including automatic Cypher/DataFusion planning.

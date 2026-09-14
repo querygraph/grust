@@ -78,7 +78,7 @@ its deferred roadmap is the Grust algorithms module owner.
 | Required / implemented | `wcc` | Weak reachability, isolates; exhaustive matrix closure |
 | Required / implemented | `scc` | Mutual reachability; exhaustive matrix closure and iterative 65,536-node chain |
 | Required / implemented | `pagerank` | Weighted probability scores, dangling mass and convergence; closed-form and probability-mass checks |
-| Next slice / implemented (unreleased) | `degree` | Exact projected degree and optional weighted strength; exhaustive two-node multigraph/orientation oracle |
+| Amphipod 0.16.0 / implemented | `degree` | Exact projected degree and optional weighted strength; exhaustive two-node multigraph/orientation oracle |
 | Next slice / implemented | `dfs` | Deterministic discovery order, each reachable vertex once |
 | Next slice / implemented | `multiSourceBfs` | Minimum hop distance from nonempty source array; duplicates harmless |
 | Next slice / implemented | `topologicalSort` | Complete DAG order or concrete closed cycle witness |
