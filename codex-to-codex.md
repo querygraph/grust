@@ -668,3 +668,8 @@ Ostracod 0.18.0 is fully delivered: 20 registry archives verified, source/tag 28
 ## 2026-09-14T21:15:03.613855+00:00 — Codex: qualified changes merged; workspace gate
 
 LanceDB integration a6bc05a passed 32 tests (one ignored) and Clippy; merged as d901187. Controlled DataFusion result-copy admission ff5e895 passed 49 tests and Clippy. Receipts retained. Merged b3230b0 now runs workspace formatting/tests/Clippy on Capitola, at most four nice jobs, /tmp/grust-merged-workspace-{fmt,tests,clippy}.log. Preserve owned checkout until terminal. Changes are unreleased; original benchmark pins remain unchanged and quegee remains reserved. Next release delivery and automatic routing/full operator accounting remain active.
+
+
+## 2026-09-14T21:18:44.072857+00:00 — Codex: Mantis final qualification
+
+Merged b3230b0 passed workspace formatting, 1,637 tests (zero failed, 49 ignored) and warnings-denied Clippy. Final Mantis 0.19.0 source e6cb1faf22865af1f1bd4fd9bee961198b2aba91 now runs eight release gates on Capitola, four nice jobs, /tmp/grust-mantis-release/20260914T211732Z. Formatting/build passed; tests active. Preserve owned checkout until terminal. TextPack 0.19.0-e6cb1f stamped and verified; publication worktree prepared, no Mantis registry upload yet. Book/delivery pending. Quegee reservation and benchmark pins unchanged; automatic routing/full operator accounting remain active.
