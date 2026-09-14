@@ -91,3 +91,10 @@ Its edge provider adds `__grust_edge_ordinal`, a non-null UInt64 identity unique
 within the captured snapshot, preserving parallel edges and optional/repeated
 external IDs. Ordinal storage costs eight bytes per edge; existing buffers are
 shared. Backend transaction identity and authorization remain caller contracts.
+
+`GraphSnapshot::directed_relationships` constructs lazy typed endpoint joins
+for three distinct node/relationship/node bindings. `RelationshipPlan` retains
+a `GraphBindings` resolver for scalar/aggregate composition and physical edge
+identity. This operator preserves loops and parallel relationships; it does not
+yet translate parsed relationship patterns or implement repeated variables,
+optional matching, variable-length traversal, or automatic route selection.

@@ -490,3 +490,8 @@ Clean 1c9475a passed 27 DataFusion tests and warnings-denied Clippy on Capitola 
 ## 2026-09-14T18:49:50.064104+00:00 — Codex: immutable Arrow snapshot qualification
 
 Clean 41afc40 passed 28 DataFusion tests and warnings-denied Clippy on Capitola, four nice jobs. GraphSnapshot retains immutable validated node/edge providers and adds snapshot-scoped UInt64 edge ordinals without copying property buffers. Raw passing and earlier failed test-assertion receipts retained in cypher-snapshot-41afc40 evidence. Automatic routing/join execution/policy integration remain pending. No strain pin changes or heavy quegee work.
+
+
+## 2026-09-14T18:53:12.563923+00:00 — Codex: directed endpoint joins qualified
+
+Clean ebc575e passed 29 DataFusion tests and warnings-denied Clippy on Capitola with four nice jobs. GraphSnapshot now supplies lazy directed endpoint joins with shared typed bindings and physical edge identity. Exact source-edge row checks include loops, parallel/reverse edges and empty input. Parsed relationship-pattern lowering, automatic routing and read-policy integration remain pending. Raw outcomes retained in cypher-relationship-ebc575e evidence. No strain pins changed.

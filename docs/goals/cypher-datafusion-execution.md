@@ -63,7 +63,8 @@ providers must expose a unique snapshot-scoped relationship ordinal or decline
 that plan. The unreleased `cypher::GraphSnapshot` now supplies this ordinal for
 validated native Arrow graph tables and retains an immutable provider pair.
 Backend transaction/authorization identity and resource admission still need
-integration. Parallel edges, repeated external IDs and loops must retain their
+integration. A lazy directed endpoint-join operator now retains these ordinals
+and shared typed bindings; parsed relationship-pattern lowering is still pending. Parallel edges, repeated external IDs and loops must retain their
 multiplicity. Node identity and endpoint integrity need equivalent validation.
 Provider statistics must have an unknown state; guessed cardinalities cannot
 justify a claimed cost improvement.

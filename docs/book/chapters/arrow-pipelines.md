@@ -191,3 +191,11 @@ optional or repeated external IDs. The ordinal allocation costs eight bytes per
 edge; existing Arrow buffers remain shared. Callers admit input and ordinal
 storage separately from DataFusion working memory and retain responsibility for
 backend transaction and authorization identity.
+
+The unreleased `GraphSnapshot::directed_relationships` operator creates lazy
+DataFusion endpoint joins for distinct source, relationship and target bindings.
+Its `RelationshipPlan` exposes typed binding resolution for projection, filters
+and aggregates, plus the snapshot-scoped relationship ordinal. Parallel edges
+and loops survive; isolates produce no directed relationship rows. This is a
+composable operator; parsed relationship-pattern lowering, repeated variables,
+optional matches and automatic execution selection remain outstanding.

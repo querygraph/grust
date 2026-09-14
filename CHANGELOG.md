@@ -14,7 +14,8 @@ reconstructed from Git history, release commits, and the shipped docs.
   decisions preserve unsupported outcomes separately from semantic errors.
   Scalar and aggregate compilers share a typed binding resolver for composable
   multi-binding inputs. Immutable provider pairs add snapshot-scoped physical
-  relationship ordinals while sharing existing Arrow buffers.
+  relationship ordinals while sharing existing Arrow buffers. A composable
+  directed endpoint-join operator retains typed bindings and edge multiplicity.
   This is an explicit planning API; automatic routing,
   bounded Cypher policy integration and broader query support remain pending.
 

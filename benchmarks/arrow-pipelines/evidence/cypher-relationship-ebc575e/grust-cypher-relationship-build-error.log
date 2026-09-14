@@ -1,0 +1,25 @@
+   Compiling grust-datafusion v0.16.0 (/Users/alexy/src/grust-arrow-pipeline/crates/grust-datafusion)
+error[E0283]: type annotations needed
+    --> crates/grust-datafusion/src/cypher/relationship.rs:117:9
+     |
+ 117 |     let expressions = frame
+     |         ^^^^^^^^^^^
+...
+ 133 |         .collect();
+     |          ------- type must be known at this point
+     |
+     = note: the type must implement `FromIterator<datafusion::prelude::Expr>`
+note: required by a bound in `std::iter::Iterator::collect`
+    --> /opt/homebrew/Cellar/rust/1.98.0/lib/rustlib/src/rust/library/core/src/iter/traits/iterator.rs:2077:19
+     |
+2077 |     fn collect<B: FromIterator<Self::Item>>(self) -> B
+     |                   ^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `Iterator::collect`
+help: consider giving `expressions` an explicit type
+     |
+ 117 |     let expressions: Vec<_> = frame
+     |                    ++++++++
+
+For more information about this error, try `rustc --explain E0283`.
+error: could not compile `grust-datafusion` (lib) due to 1 previous error
+warning: build failed, waiting for other jobs to finish...
+error: could not compile `grust-datafusion` (lib test) due to 1 previous error
