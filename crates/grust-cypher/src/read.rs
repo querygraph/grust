@@ -3550,8 +3550,9 @@ fn value_order(a: &Value, b: &Value) -> Option<std::cmp::Ordering> {
     if matches!(a, Value::Null) || matches!(b, Value::Null) {
         return None;
     }
-    // Exact decimal/duration ordering before any lossy f64 coercion.
+    // Exact same-type ordering before any lossy mixed-numeric f64 coercion.
     match (a, b) {
+        (Value::Int(x), Value::Int(y)) => return Some(x.cmp(y)),
         (Value::Decimal(x), Value::Decimal(y)) => return Some(x.cmp(y)),
         (Value::Duration(x), Value::Duration(y)) => return Some(x.cmp(y)),
         _ => {}
