@@ -256,6 +256,7 @@ readers</a></li>
 interchange</a></li>
 <li><a href="#database-ingestion" id="toc-database-ingestion"><span class="toc-section-number">16.3</span> Database ingestion</a></li>
 <li><a href="#adbc-and-extension" id="toc-adbc-and-extension"><span class="toc-section-number">16.4</span> ADBC and extension</a></li>
+<li><a href="#typed-cypher-execution" id="toc-typed-cypher-execution"><span class="toc-section-number">16.5</span> Typed Cypher execution</a></li>
 </ul></li>
 <li><a href="#conclusion" id="toc-conclusion">Conclusion</a></li>
 </ul>
@@ -510,12 +511,12 @@ Grust’s typed ingestion layer connects those two worlds.</p>
 <p>The typed layer is optional. It is enabled through Cargo
 features:</p>
 <div class="sourceCode" id="cb9"><pre class="sourceCode toml"><code class="sourceCode toml"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[dependencies]</span></span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="dt">grust</span> <span class="op">=</span> <span class="op">{ </span><span class="dt">package</span><span class="op"> =</span> <span class="st">&quot;grust-graph&quot;</span><span class="op">, </span><span class="dt">version</span><span class="op"> =</span> <span class="st">&quot;0.14.0&quot;</span><span class="op">, </span><span class="dt">features</span><span class="op"> =</span> <span class="op">[</span><span class="st">&quot;typed-garde&quot;</span><span class="op">] }</span></span></code></pre></div>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="dt">grust</span> <span class="op">=</span> <span class="op">{ </span><span class="dt">package</span><span class="op"> =</span> <span class="st">&quot;grust-graph&quot;</span><span class="op">, </span><span class="dt">version</span><span class="op"> =</span> <span class="st">&quot;0.17.0&quot;</span><span class="op">, </span><span class="dt">features</span><span class="op"> =</span> <span class="op">[</span><span class="st">&quot;typed-garde&quot;</span><span class="op">] }</span></span></code></pre></div>
 <p><code>typed-garde</code> adds Rust-struct validation and typed
 lowering. A second feature, <code>typed-zod-rs</code>, layers raw JSON
 shape validation on top:</p>
 <div class="sourceCode" id="cb10"><pre class="sourceCode toml"><code class="sourceCode toml"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[dependencies]</span></span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="dt">grust</span> <span class="op">=</span> <span class="op">{ </span><span class="dt">package</span><span class="op"> =</span> <span class="st">&quot;grust-graph&quot;</span><span class="op">, </span><span class="dt">version</span><span class="op"> =</span> <span class="st">&quot;0.14.0&quot;</span><span class="op">, </span><span class="dt">features</span><span class="op"> =</span> <span class="op">[</span><span class="st">&quot;typed-zod-rs&quot;</span><span class="op">] }</span></span></code></pre></div>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="dt">grust</span> <span class="op">=</span> <span class="op">{ </span><span class="dt">package</span><span class="op"> =</span> <span class="st">&quot;grust-graph&quot;</span><span class="op">, </span><span class="dt">version</span><span class="op"> =</span> <span class="st">&quot;0.17.0&quot;</span><span class="op">, </span><span class="dt">features</span><span class="op"> =</span> <span class="op">[</span><span class="st">&quot;typed-zod-rs&quot;</span><span class="op">] }</span></span></code></pre></div>
 <p><code>typed-zod-rs</code> implies <code>typed-garde</code>. That
 relationship matters: zod-rs checks untrusted JSON shape first, Serde
 turns the JSON into Rust values, and garde checks typed domain
@@ -2357,7 +2358,7 @@ parser, analyzer or executor. The facade exposes these through
 <code>arrow</code> features.</p>
 <h2 data-number="15.1" id="starting-from-the-facade"><span class="header-section-number">15.1</span> Starting from the facade</h2>
 <div class="sourceCode" id="cb41"><pre class="sourceCode toml"><code class="sourceCode toml"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[dependencies]</span></span>
-<span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a><span class="dt">grust</span> <span class="op">=</span> <span class="op">{ </span><span class="dt">package</span><span class="op"> =</span> <span class="st">&quot;grust-graph&quot;</span><span class="op">, </span><span class="dt">version</span><span class="op"> =</span> <span class="st">&quot;0.16.0&quot;</span><span class="op">, </span><span class="dt">features</span><span class="op"> =</span> <span class="op">[</span><span class="st">&quot;algorithms&quot;</span><span class="op">,</span> <span class="st">&quot;cypher&quot;</span><span class="op">,</span> <span class="st">&quot;arrow&quot;</span><span class="op">] }</span></span></code></pre></div>
+<span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a><span class="dt">grust</span> <span class="op">=</span> <span class="op">{ </span><span class="dt">package</span><span class="op"> =</span> <span class="st">&quot;grust-graph&quot;</span><span class="op">, </span><span class="dt">version</span><span class="op"> =</span> <span class="st">&quot;0.17.0&quot;</span><span class="op">, </span><span class="dt">features</span><span class="op"> =</span> <span class="op">[</span><span class="st">&quot;algorithms&quot;</span><span class="op">,</span> <span class="st">&quot;cypher&quot;</span><span class="op">,</span> <span class="st">&quot;arrow&quot;</span><span class="op">] }</span></span></code></pre></div>
 <p>Register the desired providers once and retain the immutable
 registry:</p>
 <div class="sourceCode" id="cb42"><pre class="sourceCode rust"><code class="sourceCode rust"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a><span class="kw">use</span> <span class="pp">grust::</span><span class="op">{</span>algorithm_procedures<span class="op">,</span> procedures<span class="op">,</span> CypherParameters<span class="op">};</span></span>
@@ -2721,6 +2722,99 @@ them.</p>
 detailed admission, compatibility and testing contracts. Reproducible
 pipeline benchmarks measure native slicing, explicit IPC boundaries and
 graph validation separately from backend load and algorithm timings.</p>
+<h2 data-number="16.5" id="typed-cypher-execution"><span class="header-section-number">16.5</span> Typed Cypher execution</h2>
+<p>Combining facade features <code>cypher</code> and
+<code>datafusion</code> enables the bridge at
+<code>grust::datafusion::cypher</code>. Direct consumers can enable
+<code>grust-datafusion</code> feature <code>cypher</code>. It provides
+an explicit execution bridge over native Arrow graph tables.
+<code>GraphSnapshot::execute</code> accepts Cypher text, parameters and
+<code>OutputLimits</code>; it uses the existing parser and semantic
+analyzer, builds DataFusion 55 expressions directly, and returns an
+ordinary <code>CypherResultTable</code>. No SQL text or intermediate
+row-oriented graph is generated. Isopod 0.17.0 adds this explicit
+surface. Ordinary Cypher entrypoints do not yet select it automatically,
+and it does not implement the complete bounded read policy.</p>
+<h3 data-number="16.5.1" id="snapshot-and-composition"><span class="header-section-number">16.5.1</span> Snapshot and
+composition</h3>
+<p><code>GraphSnapshot</code> captures validated immutable node/edge
+providers, independent of session catalog replacement. Existing Arrow
+buffers remain shared. An additional UInt64 ordinal, costing eight bytes
+per edge, supplies physical relationship identity within the snapshot.
+Parallel edges and optional/repeated external edge IDs remain distinct.
+Backend transaction and authorization identity, input storage and
+ordinal allocation remain caller responsibilities.</p>
+<p><code>GraphSnapshot::plan</code> selects the node or relationship
+compiler from the parsed query shape. <code>QueryPlan</code> records its
+<code>PlanKind</code> and either a DataFrame or an unsupported reason.
+<code>CypherExecution</code> distinguishes completed execution from an
+unsupported query that never executed. Parse, semantic, planning,
+execution and output-limit errors propagate without retrying another
+executor or snapshot.</p>
+<p>Applications can also use <code>plan_node_scan</code>,
+<code>plan_relationship_scan</code>, and the snapshot’s
+directed/undirected relationship operators directly. The shared
+<code>ExpressionBindings</code> contract resolves graph variables to
+typed physical expressions for scalar and aggregate compilation. Missing
+properties become null; unknown variables remain errors. This allows
+composition without copying the scalar semantics into each pattern
+planner.</p>
+<h3 data-number="16.5.2" id="qualified-language-surface"><span class="header-section-number">16.5.2</span> Qualified language
+surface</h3>
+<p>The current compiler supports node scans and fixed-length
+relationship paths in either direction or undirected form; labels,
+relationship types and scalar inline maps; named, anonymous and repeated
+endpoint bindings; WHERE, projection, DISTINCT, count variants/grouping,
+integer/string MIN/MAX, node identity, projected ordering, and
+literal/parameter pagination. Scalar domains are Boolean, Int64, UTF-8
+and null. Only Boolean true retains a WHERE row.</p>
+<p>Undirected matching emits both orientations of non-loop edges and
+each self-loop once. Repeated endpoints constrain matching to self-loops
+using one node join; the undirected form omits its reverse branch.
+Anonymous names are generated after semantic analysis and cannot collide
+with explicit pattern bindings.</p>
+<p>Variable-length paths, OPTIONAL MATCH, correlated maps,
+floating-point and mixed numeric expressions, arithmetic, additional
+aggregates and duplicate projection names still need mappings or result
+remapping. Integer SUM requires particular care: preserving an equal
+final total does not preserve sequential overflow behavior across
+partitions. Unsupported cases are not silently coerced.</p>
+<h3 data-number="16.5.3" id="output-and-remaining-policy-work"><span class="header-section-number">16.5.3</span> Output and remaining policy
+work</h3>
+<p><code>decode_result_batch</code> preserves column order/names, row
+multiplicity, nulls and exact Int64 values when converting native scalar
+batches to portable rows. Types are resolved once per column;
+unsupported types fail before allocating rows. Arrow/ADBC consumers can
+retain native batches and avoid owned row conversion.</p>
+<p><code>collect_result</code> checks cumulative row counts before
+decoding each batch and counts exact serialized JSON output bytes
+without allocating a JSON buffer. The count includes column metadata,
+delimiters, escaping and inter-row commas, including empty results.
+Exceeding either limit returns an error with no partial result. One
+decoded batch still requires separate memory admission.</p>
+<p>DataFusion’s working-memory pool and these output checks do not
+enforce Cypher’s candidate-work, intermediate-copy, query/input or
+deadline contracts. Automatic selection remains pending until those
+boundaries and measured cost decisions are integrated. The completed
+scan profile reports conversion/preparation costs separately; the
+parallel-ring path profile also retains preparation and admission
+boundaries. Passing explicit execution tests does not establish
+backend-wide speed or resource-policy parity.</p>
+<p><code>RelationshipPlan::join_trail</code> composes plans through
+shared node bindings and excludes physical edge reuse across all joined
+parts. Parallel edges remain distinct. Plans must come from the same
+captured snapshot; cloned handles retain that identity. Physical columns
+are renamed before composition to avoid alias collisions. The parsed
+path planner composes these operators for fixed-length paths;
+variable-length lowering and path-resource admission remain separate
+work.</p>
+<p>Fixed-length paths reuse the shared RETURN and predicate compilers
+after trail composition. Labels, relationship types, inline maps and
+repeated nodes constrain the complete path, with physical edge
+uniqueness across all segments. Direction may differ per segment.
+Variable-length bounds and named path values remain unsupported; the
+pinned parallel-ring profile measures two- and three-hop execution with
+separate preparation costs; it is not a general routing threshold.</p>
 <h1 class="unnumbered" id="conclusion">Conclusion</h1>
 <p>Grust is small by design. Its core model is easy to hold in your
 head, and its backend contract is narrow enough that very different
