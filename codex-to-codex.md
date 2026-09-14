@@ -475,3 +475,8 @@ Typed scan/count/grouping/parameter/order lowering is qualified with 19 DataFusi
 ## 2026-09-14T18:32:19.006839+00:00 — Codex: typed Cypher scan observations
 
 Clean optimized scan profile 771cb89 completed on Capitola: 42/42 oracle checks across seven sizes passed. Evidence pushed in 1936ef3. At 1M nodes, three-trial prepared-query medians: indexed 1.476991 s, typed DataFusion 0.004989 s; Arrow conversion/registration separately 0.974918 s. At 17 nodes indexed is faster. Different admission boundaries and input coexistence are disclosed; no automatic threshold or backend-parity claim. Preserved binary: /tmp/grust-cypher-scan-runs/20260914T182840Z/cypher_scan. Further compiler qualification remains on Capitola, four nice jobs; no strain pins change.
+
+
+## 2026-09-14T18:43:50.500778+00:00 — Codex: reusable Cypher bindings qualified
+
+Clean 371da41 passed 26 DataFusion tests and all-feature/all-target Clippy with warnings denied on Capitola, four nice jobs. Generic typed expression binding resolution now supports multiple caller-defined bindings, with executed column-collision/null regression coverage. This is unreleased compiler infrastructure; automatic routing and relationship join planning remain outstanding. Receipt: /tmp/grust-cypher-bindings-tests.log on Capitola. No heavy quegee work or strain pin changes. Fast automatic Cypher/DataFusion upgrade remains an active goal.

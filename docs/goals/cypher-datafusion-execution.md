@@ -21,10 +21,18 @@ execution nor the current partial scan compiler establishes completion.
 
 Current implementation admits scalar predicates and parameters, inline property
 maps, single-node scans, projection, DISTINCT, count aggregation and grouping,
-projected-expression ordering and pagination through an explicit lowering API.
+projected-expression ordering, integer/string extrema, node identity and pagination
+through an explicit lowering API. Scalar binding resolution now supports multiple
+caller-defined bindings; relationship join planning remains outstanding.
 Planner decisions distinguish unsupported shapes from semantic errors. Joins,
 broader aggregates, route selection, resource mapping, comparative performance
 qualification and release delivery remain outstanding.
+
+The completed [typed scan profile](../../benchmarks/arrow-pipelines/evidence/cypher-scan-771cb89)
+passed all 42 oracle checks. Prepared execution improved on the larger tested
+fixtures, while the indexed route was faster on the small fixture. Conversion
+costs and differing admission boundaries are reported separately; these results
+do not establish an automatic routing threshold.
 
 ## Integration boundaries
 
