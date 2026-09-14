@@ -145,3 +145,27 @@ See the repository's `docs/arrow-pipelines.md` for detailed admission,
 compatibility and testing contracts. Reproducible pipeline benchmarks measure
 native slicing, explicit IPC boundaries and graph validation separately from
 backend load and algorithm timings.
+
+## Typed Cypher planning under development
+
+The optional `grust-datafusion` feature `cypher` now provides an explicit
+planning bridge over the existing parsed Cypher AST and immutable native Arrow
+node providers. It builds DataFusion 55 logical expressions directly, without
+SQL text generation. `plan_node_scan` reports either a supported DataFrame or
+an unsupported reason; semantic and DataFusion planning errors remain errors.
+This interface is unreleased and is not yet wired into automatic route selection.
+
+The implemented surface includes scalar Bool/Int/String/null predicates, scalar
+parameters, inline node property maps, projections and DISTINCT, count variants
+and grouping, ordering by projected expressions or aliases, and literal or
+parameterized pagination. Implicit output names share the portable Cypher
+projection helper. Duplicate names require future result remapping. Floats,
+mixed numeric types, arithmetic, joins and other aggregates need their own
+semantic qualification. In particular, integer SUM must preserve overflow
+behavior across execution partitions, not only an equal final total.
+
+Caller policy remains a separate unfinished integration: DataFusion's working
+memory pool does not enforce Cypher candidate-work, intermediate-copy or encoded
+output budgets. Providers must retain snapshot identity and validated native
+schemas. Automatic selection and end-to-end performance claims require these
+contracts and measurements, including capture, conversion and result consumption.

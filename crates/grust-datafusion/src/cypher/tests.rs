@@ -415,6 +415,25 @@ async fn implicit_projection_names_match_the_reference_contract() {
             .await
             .unwrap();
         assert_eq!(batches[0].schema().field(0).name(), expected);
+        let values = batches
+            .iter()
+            .flat_map(|batch| {
+                batch
+                    .column(0)
+                    .as_any()
+                    .downcast_ref::<Int64Array>()
+                    .unwrap()
+                    .iter()
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(
+            values,
+            if expected == "n.x" {
+                vec![Some(2), Some(1)]
+            } else {
+                vec![Some(2)]
+            }
+        );
     }
 }
 
