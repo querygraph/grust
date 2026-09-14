@@ -318,7 +318,7 @@ snapshot authority, pre-existing input buffers, ordinal allocation and execution
 work/intermediates remain separate obligations. This is input-size admission,
 not a complete bounded DataFusion executor or automatic routing.
 
-### Owned buffer admission (unreleased)
+### Owned buffer admission (Brine 0.20.0)
 
 `retain_buffer_owner` attaches an application token to an immutable Arrow buffer
 through safe `bytes::Bytes` ownership. Native slices, array clones and C Data

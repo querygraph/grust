@@ -2,10 +2,10 @@
 
 Grust is a modern property graph API for Rust.
 
-**Mantis 0.19.0** adds cancellation-safe LanceDB write batching and merge-key
-maintenance, plus shared admission before portable DataFusion result copies.
+**Brine 0.20.0** retains execution admission through shared Arrow buffers,
+raw algorithm result arrays and policy-controlled DataFusion snapshot capture.
 Automatic Cypher routing and complete operator accounting remain active work.
-The versioned examples below target Mantis.
+The versioned examples below target Brine.
 
 It gives Rust applications one small, backend-neutral way to build, validate,
 traverse, and eventually persist graph data. The core model is intentionally
@@ -376,7 +376,7 @@ Enable the `memory` feature to use `MemoryGraphStore` from the public facade:
 
 ```toml
 [dependencies]
-grust = { package = "grust-graph", version = "0.19.0", features = ["memory"] }
+grust = { package = "grust-graph", version = "0.20.0", features = ["memory"] }
 ```
 
 The facade re-exports the full `grust-memory` crate surface when the feature is
@@ -507,7 +507,7 @@ Backend crates are optional facade features:
 ```toml
 [dependencies.grust]
 package = "grust-graph"
-version = "0.19.0"
+version = "0.20.0"
 features = [
   "cocoindex", "cypher", "falkor", "lancedb", "memory", "postgres",
   "postgres-pgq", "pggraph", "sail", "surreal", "turso",
@@ -522,7 +522,7 @@ The additional `turso-sync` feature enables Turso Cloud synchronization and
 implies `turso`; `typed-garde` and `typed-zod-rs` enable typed ingestion rather
 than storage backends.
 
-Mantis 0.19.0 uses a lockstep version for all publishable Grust crates. The optional
+Brine 0.20.0 uses a lockstep version for all publishable Grust crates. The optional
 `algorithms` feature adds graph kernels and their procedure adapters; `arrow`
 adds typed interchange and, with algorithms enabled, native result batches.
 
@@ -1044,7 +1044,7 @@ backend-specific extension traits later.
 
 ## Status
 
-Grust 0.19.0 "Mantis" is the current source release line, with lockstep publishable
+Grust 0.20.0 "Brine" is the current source release line, with lockstep publishable
 crates, generalized Rust/Cypher graph analytics and optional typed Arrow results.
 The backend matrix distinguishes local projection from backend-native execution;
 unsupported algorithms, modes and representations remain explicit.

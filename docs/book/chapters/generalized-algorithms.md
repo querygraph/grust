@@ -29,7 +29,7 @@ exposes these through `algorithms`, `cypher` and optional `arrow` features.
 
 ```toml
 [dependencies]
-grust = { package = "grust-graph", version = "0.19.0", features = ["algorithms", "cypher", "arrow"] }
+grust = { package = "grust-graph", version = "0.20.0", features = ["algorithms", "cypher", "arrow"] }
 ```
 
 Register the desired providers once and retain the immutable registry:
@@ -166,7 +166,7 @@ Execution is synchronous without prefetch or parallel kernel workers.
 
 Borrowed path visitor slices expire when the callback returns. Pull cursors reuse
 scratch storage. Owned scalar batches retain admission through wrapper clones.
-The unreleased Arrow ownership extension also retains algorithm-result admission
+Brine 0.20.0's Arrow ownership extension also retains algorithm-result admission
 through raw batches, buffer slices and nested children; shared physical buffers
 keep the original reservation without charging each clone again. Full paths and cycle/order arrays use LargeList offsets with explicit
 limits. An individual oversized path fails instead of truncating. Caller-owned

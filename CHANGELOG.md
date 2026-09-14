@@ -6,6 +6,8 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ## Unreleased
 
+## 0.20.0 — Brine — 2026-09-14
+
 - Preserve algorithm-result admission through independently retained raw Arrow
   batches and nested array children. Shared array ownership covers payload and
   validity buffers without copying payload bytes; metadata is revalidated.
