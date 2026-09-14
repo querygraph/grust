@@ -27,6 +27,9 @@ use std::{
     sync::Arc,
 };
 
+#[cfg(feature = "cypher")]
+pub mod cypher;
+
 mod blocking_reader;
 pub use blocking_reader::BlockingReader;
 /// Re-export upstream DataFusion 55 for expression/provider extensions, without

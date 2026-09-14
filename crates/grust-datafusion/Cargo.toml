@@ -10,7 +10,11 @@ description = "Shared DataFusion 55 execution foundation for Grust Arrow pipelin
 keywords.workspace = true
 categories.workspace = true
 
+[features]
+cypher = ["dep:grust-cypher"]
+
 [dependencies]
+grust-cypher = { version = "0.16.0", path = "../grust-cypher", optional = true }
 datafusion = { version = "55.0.0", default-features = false, features = ["sql", "recursive_protection"] }
 grust-arrow = { version = "0.16.0", path = "../grust-arrow" }
 futures = "0.3.32"
