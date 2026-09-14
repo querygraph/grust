@@ -1,0 +1,267 @@
+{
+  "release": "Gooseneck",
+  "version": "0.15.0",
+  "date": "2026-09-14",
+  "qualification": {
+    "source": "c26146f101630e7c0bfcd2a190f6132142322c6c",
+    "host": "capitola",
+    "platform": "macOS ARM64",
+    "started": "20260914T155626Z",
+    "steps": [
+      {
+        "name": "fmt",
+        "command": [
+          "cargo",
+          "fmt",
+          "--all",
+          "--",
+          "--check"
+        ],
+        "exit_code": 0,
+        "seconds": 1.120834417
+      },
+      {
+        "name": "build",
+        "command": [
+          "cargo",
+          "build",
+          "--locked",
+          "--workspace",
+          "--all-features"
+        ],
+        "exit_code": 0,
+        "seconds": 4.792055292000001
+      },
+      {
+        "name": "sail-native",
+        "command": [
+          "cargo",
+          "test",
+          "--locked",
+          "-p",
+          "grust-sail",
+          "arrow_load::tests::native_",
+          "--",
+          "--ignored",
+          "--test-threads=1"
+        ],
+        "exit_code": 0,
+        "seconds": 30.438421166999998
+      },
+      {
+        "name": "tests",
+        "command": [
+          "cargo",
+          "test",
+          "--locked",
+          "--workspace",
+          "--all-features"
+        ],
+        "exit_code": 0,
+        "seconds": 90.357924833
+      },
+      {
+        "name": "clippy",
+        "command": [
+          "cargo",
+          "clippy",
+          "--locked",
+          "--workspace",
+          "--all-features",
+          "--all-targets",
+          "--",
+          "-D",
+          "warnings"
+        ],
+        "exit_code": 0,
+        "seconds": 168.21846004100001
+      },
+      {
+        "name": "rustdoc",
+        "command": [
+          "cargo",
+          "doc",
+          "--locked",
+          "--workspace",
+          "--all-features",
+          "--no-deps"
+        ],
+        "exit_code": 0,
+        "seconds": 120.07193995800003
+      },
+      {
+        "name": "package",
+        "command": [
+          "cargo",
+          "package",
+          "--workspace",
+          "--allow-dirty"
+        ],
+        "exit_code": 0,
+        "seconds": 549.6113002500001
+      },
+      {
+        "name": "attribution",
+        "command": [
+          "bash",
+          "scripts/verify-package-attribution.sh"
+        ],
+        "exit_code": 0,
+        "seconds": 0.06405341699996825
+      },
+      {
+        "name": "integration-quick",
+        "command": [
+          "bash",
+          "scripts/integration-test.sh",
+          "--profile",
+          "quick"
+        ],
+        "exit_code": 0,
+        "seconds": 42.30586904200004
+      },
+      {
+        "name": "arrow-55",
+        "command": [
+          "cargo",
+          "test",
+          "--locked",
+          "-p",
+          "grust-arrow",
+          "--no-default-features",
+          "--features",
+          "arrow-55,ffi"
+        ],
+        "exit_code": 0,
+        "seconds": 7.967969541000002
+      },
+      {
+        "name": "arrow-58",
+        "command": [
+          "cargo",
+          "test",
+          "--locked",
+          "-p",
+          "grust-arrow",
+          "--no-default-features",
+          "--features",
+          "arrow-58,ffi"
+        ],
+        "exit_code": 0,
+        "seconds": 9.280319208000037
+      },
+      {
+        "name": "pipelines-benchmark",
+        "command": [
+          "cargo",
+          "bench",
+          "--locked",
+          "-p",
+          "grust-arrow",
+          "--bench",
+          "pipelines"
+        ],
+        "exit_code": 0,
+        "seconds": 91.33628529199996
+      }
+    ],
+    "complete": true,
+    "cargo_build_jobs": 4,
+    "rustc": "rustc 1.98.0 (88d9e12ae 2026-08-18) (Homebrew)\nbinary: rustc\ncommit-hash: 88d9e12ae178fab0fb5cc050a94da85685d449ea\ncommit-date: 2026-08-18\nhost: aarch64-apple-darwin\nrelease: 1.98.0\nLLVM version: 22.1.8\n",
+    "cargo": "cargo 1.98.0 (797e8a9bc 2026-08-05) (Homebrew)\n",
+    "clippy": "clippy 0.1.98\n"
+  },
+  "workspace_tests": {
+    "passed": 1553,
+    "failed": 0,
+    "ignored": 49
+  },
+  "live_sail_tests": {
+    "passed": 2,
+    "service": {
+      "pid": 82831,
+      "binary": "/Users/alexy/src/sail/target/release/sail",
+      "sha256": "bac2167f45b4fe4a6a1868cb7d1b1cfcce45b61abd330ab85d2b00ac378d6b84",
+      "purpose": "Arrow pipeline live qualification"
+    },
+    "boundary": "Exact native binary hash; its source-build revision is not attested."
+  },
+  "packages": {
+    "workspace_verified": 24,
+    "publishable": 20,
+    "upload_candidates_byte_identical": true
+  },
+  "environment": {
+    "hw.model": "MacBookPro18,2",
+    "hw.memsize": "68719476736",
+    "hw.logicalcpu": "10",
+    "machdep.cpu.brand_string": "Apple M1 Max",
+    "os": "ProductName:\t\tmacOS\nProductVersion:\t\t26.2\nBuildVersion:\t\t25C56\n",
+    "execution": "nice 10; four Cargo build jobs; no overlapping Grust compilation during Criterion measurement; interactive laptop"
+  },
+  "microbenchmarks": {
+    "source": "c26146f101630e7c0bfcd2a190f6132142322c6c",
+    "command": "cargo bench --locked -p grust-arrow --bench pipelines",
+    "samples": 20,
+    "boundary": "Batch transport and graph constructor validation only; not backend loading, SQL execution, or an end-to-end database comparison. IPC includes encode/decode; native reader has no wire requirement.",
+    "estimates": [
+      {
+        "operation": "65536_rows_to_4096_row_batches/ipc_boundary",
+        "estimate_kind": "slope",
+        "nanoseconds": {
+          "confidence_interval": {
+            "confidence_level": 0.95,
+            "lower_bound": 254765.7152307378,
+            "upper_bound": 255634.5468452308
+          },
+          "point_estimate": 255215.0621857555,
+          "standard_error": 222.50698257125077
+        }
+      },
+      {
+        "operation": "65536_rows_to_4096_row_batches/native_reader",
+        "estimate_kind": "slope",
+        "nanoseconds": {
+          "confidence_interval": {
+            "confidence_level": 0.95,
+            "lower_bound": 1674.514129369227,
+            "upper_bound": 1678.9413134209874
+          },
+          "point_estimate": 1676.3244423313918,
+          "standard_error": 1.1365261083459888
+        }
+      },
+      {
+        "operation": "validate_32768_nodes_131072_edges/former_row_index_validation",
+        "estimate_kind": "slope",
+        "nanoseconds": {
+          "confidence_interval": {
+            "confidence_level": 0.95,
+            "lower_bound": 31818157.774965137,
+            "upper_bound": 32015869.67205912
+          },
+          "point_estimate": 31912399.988501742,
+          "standard_error": 50809.00625649486
+        }
+      },
+      {
+        "operation": "validate_32768_nodes_131072_edges/native_columns",
+        "estimate_kind": "slope",
+        "nanoseconds": {
+          "confidence_interval": {
+            "confidence_level": 0.95,
+            "lower_bound": 6689845.176848816,
+            "upper_bound": 6766462.173187253
+          },
+          "point_estimate": 6717281.027700349,
+          "standard_error": 19720.432350792846
+        }
+      }
+    ]
+  },
+  "limitations": [
+    "ADBC binding tested against the actual upstream Statement trait with a probe; no live ADBC driver qualification claimed.",
+    "Ignored service-dependent tests remain distinct from passing tests.",
+    "DataFusion 55 foundation does not change Cypher lowering or older embedded SDK engines."
+  ]
+}
