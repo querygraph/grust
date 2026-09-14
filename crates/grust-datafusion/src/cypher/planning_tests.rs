@@ -253,3 +253,44 @@ async fn scalar_where_filters_match_reference_true_only_rule() {
         assert_eq!(expected.rows, vec![vec![Value::Int(count)]], "{predicate}");
     }
 }
+
+#[tokio::test]
+async fn anonymous_node_scan_preserves_label_and_map_filters() {
+    use datafusion::arrow::array::Int64Array;
+    use grust_arrow::ArrowGraph;
+    use grust_core::{Graph, Node, Props, Value};
+    let graph = Graph::new(
+        vec![
+            Node::new("N", "a", Props::from([("x".into(), Value::Int(1))])),
+            Node::new("N", "b", Props::from([("x".into(), Value::Int(2))])),
+        ],
+        vec![],
+    );
+    let arrow = ArrowGraph::from_graph(&graph).unwrap();
+    let context = SessionContext::new();
+    for (text, expected) in [
+        ("MATCH () RETURN count(*) AS count", 2),
+        ("MATCH (:N {x: 1}) RETURN count(*) AS count", 1),
+        ("MATCH (:Missing) RETURN count(*) AS count", 0),
+    ] {
+        let query = grust_cypher::parser::parse_query(text).unwrap();
+        let NodeScanPlan::Supported(frame) = plan_node_scan(
+            &query,
+            context.read_batch(arrow.nodes().clone()).unwrap(),
+            &CypherParameters::new(),
+        )
+        .unwrap() else {
+            panic!("{text}");
+        };
+        let batches = frame.collect().await.unwrap();
+        assert_eq!(
+            batches[0]
+                .column(0)
+                .as_any()
+                .downcast_ref::<Int64Array>()
+                .unwrap()
+                .value(0),
+            expected
+        );
+    }
+}
