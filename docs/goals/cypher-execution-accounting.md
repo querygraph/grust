@@ -50,3 +50,26 @@ partitions, cancellation during pending input, errors without replay, and
 optimizer plans whose rejected candidates exceed emitted rows. Independent
 small-graph oracles remain required. A result-decoder test alone does not prove
 full execution-budget coverage.
+
+## Capture allocation lifetime inspection
+
+`GraphSnapshot::try_new` creates eight logical bytes of relationship identity per
+edge in `with_ordinals`. `nodes()` and `edges()` return independent DataFrames,
+and planning may retain providers after the snapshot handle is dropped. A
+reservation stored only on `GraphSnapshot` would therefore be released too
+early. A token on a provider alone is also insufficient if an emitted Arrow
+batch survives that provider through a consumer or C Stream handoff.
+
+Admission for added buffers must follow their actual final owner. Before adding
+a capture-budget API, establish a buffer-owner mechanism that survives Arrow
+array slicing, record-batch cloning, provider removal and exported readers.
+Reserve checked bytes before ordinal allocation, retain the token with the
+allocated buffer, and release it only when its last owner disappears. Existing
+input buffers remain caller-owned unless an explicit ownership transfer admits
+them separately. Do not charge a copied snapshot handle as a new buffer.
+
+Qualification must retain a result batch beyond snapshot/provider/stream drop,
+then verify that admission remains charged until the last array slice drops.
+Cover cancellation during construction and errors after one batch allocates,
+plus empty graphs and a one-byte-short ordinal budget. This lifetime proof is
+separate from cumulative portable-copy accounting and serialized input size.
