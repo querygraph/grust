@@ -99,5 +99,10 @@ identity. This operator preserves loops and parallel relationships.
 `plan_relationship_scan` lowers parsed directed one-hop MATCH/WHERE/RETURN
 patterns with named, distinct variables, node labels and relationship types.
 It shares projection, grouping, count/extrema, DISTINCT, ordering and pagination
-with the node planner. Relationship inline maps, repeated variables, optional
+with the node planner. Repeated variables, optional
 matching, variable-length traversal and automatic routing remain unsupported.
+
+Inline scalar property maps on both endpoint nodes and relationships use the
+same predicate compiler as node scans. Literal and parameter values are admitted;
+correlated expressions remain unsupported. Missing properties and null equality
+retain the portable executor's matching behavior.

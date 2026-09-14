@@ -16,7 +16,8 @@ reconstructed from Git history, release commits, and the shipped docs.
   multi-binding inputs. Immutable provider pairs add snapshot-scoped physical
   relationship ordinals while sharing existing Arrow buffers. A composable
   directed endpoint-join operator retains typed bindings and edge multiplicity.
-  Parsed incoming/outgoing single-hop patterns share RETURN planning with scans.
+  Parsed incoming/outgoing single-hop patterns share RETURN and inline-property
+  predicate planning with scans, including parameterized edge and endpoint maps.
   This is an explicit planning API; automatic routing,
   bounded Cypher policy integration and broader query support remain pending.
 

@@ -200,5 +200,10 @@ and loops survive; isolates produce no directed relationship rows. This is a
 composable operator. `plan_relationship_scan` lowers parsed incoming/outgoing
 one-hop patterns with named distinct bindings, node labels, relationship types
 and WHERE. It shares RETURN projection, aggregation, DISTINCT, sorting and
-pagination with node scans. Relationship inline maps, repeated variables,
+pagination with node scans. Repeated variables,
 optional matches and automatic execution selection remain outstanding.
+
+Inline scalar property maps on both endpoint nodes and relationships use the
+same predicate compiler as node scans. Literal and parameter values are admitted;
+correlated expressions remain unsupported. Missing properties and null equality
+retain the portable executor's matching behavior.

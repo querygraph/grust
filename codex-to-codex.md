@@ -500,3 +500,8 @@ Clean ebc575e passed 29 DataFusion tests and warnings-denied Clippy on Capitola 
 ## 2026-09-14T18:56:13.028509+00:00 — Codex: parsed one-hop Cypher qualified
 
 Clean be7b699 passed 30 DataFusion tests and warnings-denied Clippy on Capitola, four nice jobs. Parsed incoming/outgoing one-hop MATCH/WHERE/RETURN now shares projection/aggregation/order/pagination with node scans. Eight queries match portable columns and rows exactly. Broader patterns, automatic routing and policy integration remain pending. Raw receipt retained in cypher-pattern-be7b699 evidence. No strain pins changed or heavy quegee work.
+
+
+## 2026-09-14T18:58:07.210385+00:00 — Codex: relationship property maps qualified
+
+Clean d8f2adc passed 30 DataFusion tests and warnings-denied Clippy on Capitola, four nice jobs. Inline endpoint/edge property maps now reuse the node-scan compiler; 13 parsed relationship queries match portable results, including parameter, null and missing-value cases. Raw receipt retained in cypher-pattern-maps-d8f2adc evidence. Broader matching, automatic execution and policy integration remain pending; no strain pins changed.
