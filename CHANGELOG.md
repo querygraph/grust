@@ -27,10 +27,9 @@ reconstructed from Git history, release commits, and the shipped docs.
   remain behind `LanceDbGraphStore::with_read_snapshot(false)`.
   On web-Google (875,713 nodes, 5,105,039 edges) a one-hop `traverse_ids`
   took 0.373 s over the direct scans and 94 µs over the snapshot, which
-  builds in 1.8 s; the strain benchmark's A2 BFS (600,493 calls) goes from
-  about 62 hours to 57 s. Example: `anchored_reads`.
-
-### grust-turso: bulk loads about 1.7-1.9x faster
+  builds in 1.8 s. Extrapolating the direct-scan call time over the strain
+  benchmark's A2 BFS (600,493 calls) gives about 62 hours; the snapshot run
+  measured 57 s. Example: `anchored_reads`.
 
 - `TursoGraphStore::put_graph` binds rows to prepared multi-row upserts
   instead of rendering each batch as SQL text. Each statement shape is
@@ -43,7 +42,8 @@ reconstructed from Git history, release commits, and the shipped docs.
   prefix-like edge ids) through both paths, in WAL and MVCC mode and with
   batch sizes 2 and 500, and compares the stored rows including
   `identity_key`.
-- Every connection sets `PRAGMA cache_size` to 1 GiB (`PAGE_CACHE_KIB`).
+- Ordinary, non-synced connections set `PRAGMA cache_size` to 1 GiB
+  (`PAGE_CACHE_KIB`); synced connections retain their existing configuration.
   The engine's native default is 2,000 pages (about 8 MB), which a load
   outgrows within its first million edges; after that every insert into the
   edge key, the two edge indexes and the node-key foreign-key probes reads
