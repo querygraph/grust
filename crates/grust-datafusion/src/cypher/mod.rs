@@ -7,7 +7,9 @@ mod inline;
 mod pattern;
 mod planner;
 mod projection;
+mod result;
 pub use planner::{PlanKind, QueryPlan};
+pub use result::decode_result_batch;
 mod relationship;
 mod scan;
 pub use pattern::plan_relationship_scan;
@@ -208,3 +210,6 @@ mod relationship_tests;
 
 #[cfg(test)]
 mod planner_tests;
+
+#[cfg(test)]
+mod result_tests;
