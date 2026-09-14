@@ -9,6 +9,21 @@ use datafusion::{
 use grust_cypher::CypherParameters;
 use grust_cypher::ast::{Clause, Expr as CypherExpr, Query};
 
+/// Why the typed node-scan route was not selected.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum UnsupportedScan {
+    QueryShape,
+    Ordering,
+    Pagination,
+    Expression,
+}
+
+/// Planning result without executing or collecting input rows.
+pub enum NodeScanPlan {
+    Supported(DataFrame),
+    Unsupported(UnsupportedScan),
+}
+
 /// Lower an analyzed single-node MATCH/WHERE/RETURN into a typed DataFrame.
 /// Returns None for unsupported shapes or expression types. Semantic errors
 /// remain errors. The provider must expose the validated native node-table
@@ -26,19 +41,32 @@ pub fn lower_node_scan_with_parameters(
     input: DataFrame,
     parameters: &CypherParameters,
 ) -> Result<Option<DataFrame>> {
+    Ok(match plan_node_scan(query, input, parameters)? {
+        NodeScanPlan::Supported(frame) => Some(frame),
+        NodeScanPlan::Unsupported(_) => None,
+    })
+}
+
+/// Plan with an explicit unsupported reason suitable for execution explain.
+/// Semantic and DataFusion planning errors remain errors, never fallback advice.
+pub fn plan_node_scan(
+    query: &Query,
+    input: DataFrame,
+    parameters: &CypherParameters,
+) -> Result<NodeScanPlan> {
     grust_cypher::semantics::analyze(query)
         .map_err(|error| DataFusionError::Plan(error.to_string()))?;
     let [part] = query.parts.as_slice() else {
-        return Ok(None);
+        return Ok(NodeScanPlan::Unsupported(UnsupportedScan::QueryShape));
     };
     let [Clause::Match(matched), Clause::Return(returned)] = part.query.clauses.as_slice() else {
-        return Ok(None);
+        return Ok(NodeScanPlan::Unsupported(UnsupportedScan::QueryShape));
     };
     let [pattern] = matched.patterns.as_slice() else {
-        return Ok(None);
+        return Ok(NodeScanPlan::Unsupported(UnsupportedScan::QueryShape));
     };
     let Some(variable) = pattern.start.variable.as_deref() else {
-        return Ok(None);
+        return Ok(NodeScanPlan::Unsupported(UnsupportedScan::QueryShape));
     };
     let projection = &returned.projection;
     if part.union.is_some()
@@ -48,7 +76,7 @@ pub fn lower_node_scan_with_parameters(
         || !pattern.segments.is_empty()
         || projection.star
     {
-        return Ok(None);
+        return Ok(NodeScanPlan::Unsupported(UnsupportedScan::QueryShape));
     }
     let names = projection
         .items
@@ -67,19 +95,19 @@ pub fn lower_node_scan_with_parameters(
     {
         // DataFusion requires unique logical field names; the ordinary executor
         // retains Cypher's duplicate-column contract until result remapping exists.
-        return Ok(None);
+        return Ok(NodeScanPlan::Unsupported(UnsupportedScan::QueryShape));
     }
     let mut ordering = Vec::with_capacity(projection.order_by.len());
     for item in &projection.order_by {
         let CypherExpr::Variable(alias) = &item.expr else {
-            return Ok(None);
+            return Ok(NodeScanPlan::Unsupported(UnsupportedScan::Ordering));
         };
         if !projection
             .items
             .iter()
             .any(|item| item.alias.as_ref() == Some(alias))
         {
-            return Ok(None);
+            return Ok(NodeScanPlan::Unsupported(UnsupportedScan::Ordering));
         }
         ordering.push(
             Expr::Column(Column::from_name(alias.clone())).sort(!item.descending, item.descending),
@@ -87,11 +115,11 @@ pub fn lower_node_scan_with_parameters(
     }
     let offset = match bound(projection.skip.as_ref(), parameters) {
         Some(value) => value.unwrap_or(0),
-        None => return Ok(None),
+        None => return Ok(NodeScanPlan::Unsupported(UnsupportedScan::Pagination)),
     };
     let limit = match bound(projection.limit.as_ref(), parameters) {
         Some(value) => value,
-        None => return Ok(None),
+        None => return Ok(NodeScanPlan::Unsupported(UnsupportedScan::Pagination)),
     };
     let schema = input.schema().as_arrow();
     let mut expressions = Vec::with_capacity(projection.items.len());
@@ -110,7 +138,7 @@ pub fn lower_node_scan_with_parameters(
         } = &item.expr
         {
             if !name.eq_ignore_ascii_case("count") {
-                return Ok(None);
+                return Ok(NodeScanPlan::Unsupported(UnsupportedScan::Expression));
             }
             let expression = match (*star, args.as_slice()) {
                 (true, []) if !*distinct => lit(1_i64),
@@ -118,11 +146,11 @@ pub fn lower_node_scan_with_parameters(
                     let Ok(expression) =
                         lower_expression_with_parameters(argument, variable, schema, parameters)
                     else {
-                        return Ok(None);
+                        return Ok(NodeScanPlan::Unsupported(UnsupportedScan::Expression));
                     };
                     expression
                 }
-                _ => return Ok(None),
+                _ => return Ok(NodeScanPlan::Unsupported(UnsupportedScan::Expression)),
             };
             aggregates.push(
                 if *distinct {
@@ -136,7 +164,7 @@ pub fn lower_node_scan_with_parameters(
             let Ok(expression) =
                 lower_expression_with_parameters(&item.expr, variable, schema, parameters)
             else {
-                return Ok(None);
+                return Ok(NodeScanPlan::Unsupported(UnsupportedScan::Expression));
             };
             groups.push(expression.alias(&alias));
         }
@@ -146,7 +174,7 @@ pub fn lower_node_scan_with_parameters(
         Some(expression) => {
             match lower_expression_with_parameters(expression, variable, schema, parameters) {
                 Ok(expression) => Some(expression),
-                Err(_) => return Ok(None),
+                Err(_) => return Ok(NodeScanPlan::Unsupported(UnsupportedScan::Expression)),
             }
         }
         None => None,
@@ -163,7 +191,7 @@ pub fn lower_node_scan_with_parameters(
                     | CypherExpr::String(_)
                     | CypherExpr::Parameter(_)
             ) {
-                return Ok(None);
+                return Ok(NodeScanPlan::Unsupported(UnsupportedScan::Expression));
             }
             let comparison = CypherExpr::Binary {
                 op: grust_cypher::ast::BinaryOp::Eq,
@@ -176,7 +204,7 @@ pub fn lower_node_scan_with_parameters(
             let Ok(predicate) =
                 lower_expression_with_parameters(&comparison, variable, schema, parameters)
             else {
-                return Ok(None);
+                return Ok(NodeScanPlan::Unsupported(UnsupportedScan::Expression));
             };
             inline.push(predicate);
         }
@@ -205,7 +233,7 @@ pub fn lower_node_scan_with_parameters(
     if offset != 0 || limit.is_some() {
         frame = frame.limit(offset, limit)?;
     }
-    Ok(Some(frame))
+    Ok(NodeScanPlan::Supported(frame))
 }
 
 fn bound(expression: Option<&CypherExpr>, parameters: &CypherParameters) -> Option<Option<usize>> {
