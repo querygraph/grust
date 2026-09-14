@@ -54,3 +54,22 @@ fn null_only_groups_have_zero_sum_but_empty_grouped_input_has_no_rows() {
     .unwrap();
     assert!(result.rows.is_empty());
 }
+
+#[test]
+fn mutation_returning_uses_the_same_null_only_sum_contract() {
+    use grust_cypher::{
+        CypherMutationOptions, execute_cypher_mutation_returning_with_options_on_store,
+    };
+    let store = grust_memory::MemoryGraphStore::new();
+    let result =
+        futures_executor::block_on(execute_cypher_mutation_returning_with_options_on_store(
+            &store,
+            "CREATE (n:N {id: 'n'}) RETURN sum(n.missing), sum(DISTINCT n.missing), avg(n.missing)",
+            CypherMutationOptions::default(),
+        ))
+        .unwrap();
+    assert_eq!(
+        result.table.rows,
+        vec![vec![Value::Int(0), Value::Int(0), Value::Null]]
+    );
+}
