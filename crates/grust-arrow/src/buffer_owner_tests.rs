@@ -1,4 +1,5 @@
 use super::*;
+use std::sync::Arc;
 
 #[test]
 fn token_and_storage_survive_cloning_slicing_and_original_drop() {
