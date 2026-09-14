@@ -86,3 +86,74 @@ async fn multiple_bindings_keep_literal_columns_distinct() {
         Err(UnsupportedExpression::Type)
     );
 }
+
+#[tokio::test]
+async fn aggregates_resolve_multiple_bindings_and_preserve_nulls() {
+    let aggregate = |name: &str, variable: &str, distinct| CypherExpr::Function {
+        name: name.into(),
+        distinct,
+        star: false,
+        args: vec![CypherExpr::Property {
+            base: Box::new(CypherExpr::Variable(variable.into())),
+            key: "x.y".into(),
+        }],
+    };
+    let parameters = CypherParameters::new();
+    let expressions = [
+        ("count", "a", true),
+        ("count", "b", false),
+        ("max", "a", false),
+        ("min", "b", false),
+    ]
+    .into_iter()
+    .enumerate()
+    .map(|(index, (name, variable, distinct))| {
+        lower_aggregate_with_bindings(
+            &aggregate(name, variable, distinct),
+            &JoinedBindings,
+            &parameters,
+        )
+        .unwrap()
+        .alias(format!("result_{index}"))
+    })
+    .collect();
+    let batch = RecordBatch::try_new(
+        Arc::new(Schema::new(vec![
+            Field::new("a.x.y", DataType::Int64, true),
+            Field::new("b.x.y", DataType::Int64, true),
+        ])),
+        vec![
+            Arc::new(Int64Array::from(vec![Some(4), Some(4), None])),
+            Arc::new(Int64Array::from(vec![Some(2), None, Some(i64::MIN)])),
+        ],
+    )
+    .unwrap();
+    let results = SessionContext::new()
+        .read_batch(batch)
+        .unwrap()
+        .aggregate(vec![], expressions)
+        .unwrap()
+        .collect()
+        .await
+        .unwrap();
+    for (index, expected) in [1, 2, 4, i64::MIN].into_iter().enumerate() {
+        let values = results[0]
+            .column(index)
+            .as_any()
+            .downcast_ref::<Int64Array>()
+            .unwrap();
+        assert_eq!(values.value(0), expected);
+    }
+    assert_eq!(
+        lower_aggregate_with_bindings(&aggregate("sum", "a", false), &JoinedBindings, &parameters),
+        Err(UnsupportedExpression::Syntax)
+    );
+    assert_eq!(
+        lower_aggregate_with_bindings(
+            &aggregate("count", "unknown", false),
+            &JoinedBindings,
+            &parameters
+        ),
+        Err(UnsupportedExpression::Binding)
+    );
+}
