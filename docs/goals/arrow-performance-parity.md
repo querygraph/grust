@@ -23,7 +23,10 @@ parity. Existing benchmark runs retain their original source pins.
 
 ## Current work
 
-The shared Arrow and DataFusion 55 foundations are in implementation and qualification. See
+The shared Arrow and DataFusion 55 foundations are delivered in Gooseneck 0.15.0.
+All 20 public crates have registry verification and byte-identical qualified
+archives. The broader compatibility and end-to-end performance work remains
+active. See [release evidence](../releases/gooseneck/validation.json) and
 [Arrow pipelines](../arrow-pipelines.md). Coverage includes native Arrow 55/58/59,
 ADBC statement binding, C Stream export, multi-batch tables, columnar graph
 validation, native adapter reader paths and explicit memory/copy boundaries.
