@@ -79,4 +79,47 @@ async fn trail_joins_preserve_parallel_edges_and_exclude_physical_reuse() {
     }
     actual.sort_unstable();
     assert_eq!(actual, expected);
+    let plan = make(&snapshot, "a", "r", "b")
+        .join_trail(make(&snapshot, "b", "s", "c"))
+        .unwrap()
+        .join_trail(make(&snapshot, "c", "t", "d"))
+        .unwrap();
+    let projection = ["r", "s", "t"]
+        .into_iter()
+        .map(|name| {
+            plan.bindings()
+                .relationship_ordinal(name)
+                .unwrap()
+                .alias(name)
+        })
+        .collect::<Vec<_>>();
+    let (frame, _) = plan.into_parts();
+    let mut actual = Vec::new();
+    for batch in frame.select(projection).unwrap().collect().await.unwrap() {
+        let columns = batch
+            .columns()
+            .iter()
+            .map(|column| column.as_any().downcast_ref::<UInt64Array>().unwrap())
+            .collect::<Vec<_>>();
+        for row in 0..batch.num_rows() {
+            actual.push((
+                columns[0].value(row),
+                columns[1].value(row),
+                columns[2].value(row),
+            ));
+        }
+    }
+    let mut expected = Vec::new();
+    for (i, first) in graph.edges.iter().enumerate() {
+        for (j, second) in graph.edges.iter().enumerate() {
+            for (k, third) in graph.edges.iter().enumerate() {
+                if i != j && i != k && j != k && first.to == second.from && second.to == third.from
+                {
+                    expected.push((i as u64, j as u64, k as u64));
+                }
+            }
+        }
+    }
+    actual.sort_unstable();
+    assert_eq!(actual, expected);
 }
