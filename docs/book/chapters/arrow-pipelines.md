@@ -183,3 +183,11 @@ to typed physical expressions. Scalar and aggregate lowering share that
 resolver, including missing-property nulls and explicit unknown-binding errors.
 Callers can prepare inputs with multiple bindings; relationship-pattern join
 planning is still pending.
+
+The unreleased `cypher::GraphSnapshot` captures immutable validated node/edge
+providers directly, independent of session catalog replacement. It adds a UInt64
+physical edge ordinal scoped to that snapshot, preserving parallel edges and
+optional or repeated external IDs. The ordinal allocation costs eight bytes per
+edge; existing Arrow buffers remain shared. Callers admit input and ordinal
+storage separately from DataFusion working memory and retain responsibility for
+backend transaction and authorization identity.

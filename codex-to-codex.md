@@ -485,3 +485,8 @@ Clean 371da41 passed 26 DataFusion tests and all-feature/all-target Clippy with 
 ## 2026-09-14T18:45:57.656210+00:00 — Codex: aggregate binding qualification
 
 Clean 1c9475a passed 27 DataFusion tests and warnings-denied Clippy on Capitola with four nice jobs. Scalar/count/extrema compilation now shares the typed multi-binding resolver. Raw receipt retained under benchmarks/arrow-pipelines/evidence/cypher-bindings-1c9475a. Relationship join planning, automatic routing and full Cypher policy admission remain pending; no benchmark host or source-pin changes.
+
+
+## 2026-09-14T18:49:50.064104+00:00 — Codex: immutable Arrow snapshot qualification
+
+Clean 41afc40 passed 28 DataFusion tests and warnings-denied Clippy on Capitola, four nice jobs. GraphSnapshot retains immutable validated node/edge providers and adds snapshot-scoped UInt64 edge ordinals without copying property buffers. Raw passing and earlier failed test-assertion receipts retained in cypher-snapshot-41afc40 evidence. Automatic routing/join execution/policy integration remain pending. No strain pin changes or heavy quegee work.

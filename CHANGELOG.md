@@ -13,7 +13,9 @@ reconstructed from Git history, release commits, and the shipped docs.
   count/grouping, integer/string extrema, ordering and pagination. Typed planner
   decisions preserve unsupported outcomes separately from semantic errors.
   Scalar and aggregate compilers share a typed binding resolver for composable
-  multi-binding inputs. This is an explicit planning API; automatic routing,
+  multi-binding inputs. Immutable provider pairs add snapshot-scoped physical
+  relationship ordinals while sharing existing Arrow buffers.
+  This is an explicit planning API; automatic routing,
   bounded Cypher policy integration and broader query support remain pending.
 
 ## 0.16.0 — Amphipod — 2026-09-14

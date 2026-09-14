@@ -84,3 +84,10 @@ requires these boundaries to be integrated and qualified before route selection.
 `lower_expression_with_bindings` and `lower_aggregate_with_bindings` share this
 contract so caller-prepared inputs with multiple bindings reuse scalar, count
 and extrema semantics. This does not yet lower relationship patterns into joins.
+
+`cypher::GraphSnapshot` captures a validated `ArrowGraphTables` provider pair.
+Node and edge plans retain that pair independently of catalog replacement.
+Its edge provider adds `__grust_edge_ordinal`, a non-null UInt64 identity unique
+within the captured snapshot, preserving parallel edges and optional/repeated
+external IDs. Ordinal storage costs eight bytes per edge; existing buffers are
+shared. Backend transaction identity and authorization remain caller contracts.
