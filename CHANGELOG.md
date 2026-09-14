@@ -39,6 +39,19 @@ reconstructed from Git history, release commits, and the shipped docs.
 - Admit snapshot relationship-ordinal payload and construction work before
   allocation, retaining reservations with emitted buffers. Combined input-policy
   capture preserves the prepared request deadline and exact serialized limits.
+- grust-turso no longer creates `<prefix>_edges_from_idx`, and bootstrap
+  drops it from existing stores. The edge primary key
+  `(from_id, label, to_id, identity_key)` leads with `from_id`, and Turso's
+  planner already answered every source lookup and traversal hop from that
+  key, so the index only cost a write per edge. Query plans and results are
+  unchanged. Other SQL dialects keep the index (`GraphSqlDialect::
+  edge_source_index`, default `true`). With the bulk_load example on a
+  4-core host, 1M edges: MVCC 12.7k -> 15.9k edges/s, WAL 43.6k -> 51.5k.
+- MVCC loads end in a `TRUNCATE` checkpoint inside `put_graph`, as WAL loads
+  already did, so a load returns durable in the database file with the MVCC
+  in-memory store drained.
+- Optional `mimalloc` feature on grust-turso: Turso's own default allocator,
+  installed as the binary's global allocator (MVCC loads about 9% faster).
 
 ## 0.19.0 — Mantis — 2026-09-14
 

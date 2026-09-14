@@ -423,6 +423,24 @@ impl TursoGraphStore {
         Ok(!columns.is_empty() && !columns.iter().any(|c| c == "identity_key"))
     }
 
+    /// Whether the retired `<prefix>_edges_from_idx` is still in the schema.
+    async fn edges_from_index_exists_unlocked(&self) -> Result<bool> {
+        let sql = format!(
+            "SELECT 1 FROM sqlite_schema WHERE type = 'index' AND name = {}",
+            sql_str(&format!("{}_edges_from_idx", self.config.table_prefix))
+        );
+        let mut rows = self.conn.query(&sql, ()).await.map_err(|err| {
+            GrustError::Backend(format!("Turso schema query failed: {err}: {sql}"))
+        })?;
+        Ok(rows
+            .next()
+            .await
+            .map_err(|err| {
+                GrustError::Backend(format!("Turso schema row read failed: {err}: {sql}"))
+            })?
+            .is_some())
+    }
+
     fn edges_table(&self) -> String {
         quote_ident(&format!("{}_edges", self.config.table_prefix))
     }
@@ -484,13 +502,16 @@ impl TursoGraphStore {
         } else {
             self.load_transaction(&graph.nodes, &graph.edges, false, rows)
                 .await?;
-            // One transaction leaves the whole load in the write-ahead log,
-            // and every read until the next checkpoint pays to look through
-            // it; checkpointing here keeps that cost inside the load interval.
-            // MVCC mode has no equivalent the engine allows by default.
-            self.execute_discarding_rows("PRAGMA wal_checkpoint(TRUNCATE)")
-                .await?;
         }
+        // End every load in a TRUNCATE checkpoint, inside the load interval.
+        // WAL: one transaction leaves the whole load in the write-ahead log,
+        // and every read until the next checkpoint pays to look through it.
+        // MVCC: the automatic checkpoints leave up to a threshold's worth of
+        // the load in the logical log and its row versions in memory; this
+        // folds them into the database file, so the load returns durable in
+        // the B-tree and with the in-memory store drained.
+        self.execute_discarding_rows("PRAGMA wal_checkpoint(TRUNCATE)")
+            .await?;
         Ok(LoadReport {
             nodes: graph.nodes.len(),
             edges: graph.edges.len(),
@@ -702,7 +723,16 @@ impl GraphAdminStore for TursoGraphStore {
             ))
             .await?;
         }
-        self.execute_unlocked(&sql).await
+        self.execute_unlocked(&sql).await?;
+        // Stores bootstrapped before the edge-source index was retired still
+        // carry it: every plan already reads source lookups from the edge
+        // primary key, so dropping it changes no answer and ends its cost.
+        if self.edges_from_index_exists_unlocked().await? {
+            let idx = quote_ident(&format!("{}_edges_from_idx", self.config.table_prefix));
+            self.execute_unlocked(&format!("DROP INDEX IF EXISTS {idx}"))
+                .await?;
+        }
+        Ok(())
     }
 
     async fn clear(&self) -> Result<()> {
@@ -1445,6 +1475,14 @@ impl GraphSqlDialect for TursoDialect {
                 id = excluded.id,
                 props = excluded.props"
         ))
+    }
+
+    /// The edge primary key `(from_id, label, to_id, identity_key)` leads with
+    /// `from_id`, and Turso's planner reads every source lookup and traversal
+    /// hop from it even when `<prefix>_edges_from_idx` exists; that index
+    /// only cost a write per edge (a quarter of an MVCC load, a sixth of WAL).
+    fn edge_source_index(&self) -> bool {
+        false
     }
 
     fn edge_identity_column(&self) -> Option<&'static str> {
