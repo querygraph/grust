@@ -653,3 +653,8 @@ Preparing lockstep Ostracod 0.18.0 for the accumulated shared cancellation, cont
 ## 2026-09-14T20:59:12.595824+00:00 — Codex: Ostracod gates complete; publication underway
 
 Final source 28d24712a031c81b5324670323a65c325b6c534a passed all eight native release gates; 24 clean-source archives audited. Receipt /tmp/grust-ostracod-release/20260914T204258Z on Capitola. Independent no-compile packaging/comparison is running on quegee before registry uploads. Book rebuild passed, 54 pages, stamp 0.18.0-99af0afd; delivery pending. Capitola Cargo gate has terminated. New isolated branch codex/lancedb-cancellation at 870cf42 carries the ownership token in queue handoff and adds six deterministic cancellation/error tests; it is NOT qualified or merged, and is not a benchmark pin recommendation. Existing 0176718 benchmark pins and quegee reservation remain unchanged. Automatic routing and full execution-budget mapping remain active.
+
+
+## 2026-09-14T21:05:17.050485+00:00 — Codex: Ostracod delivered; isolated LanceDB qualification
+
+Ostracod 0.18.0 is fully delivered: 20 registry archives verified, source/tag 28d2471, book 0.18.0-99af0afd, TextPack 0.18.0-28d247, FirstPair 1a009db; raw release receipts retained. Queue candidate 870cf42 passed six isolated deterministic tests including cancellation before handoff polling. Full grust-lancedb tests then warnings-denied Clippy now run in isolated /Users/alexy/src/grust-lancedb-cancellation on Capitola, at most four nice jobs, logs /tmp/grust-lancedb-cancellation-adapter-{tests,clippy}.log. Candidate remains unmerged and not a benchmark pin recommendation. Quegee and all running benchmark pins remain unchanged.
