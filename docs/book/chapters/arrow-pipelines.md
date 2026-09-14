@@ -220,3 +220,9 @@ remain invalid.
 Anonymous node and relationship elements receive private, collision-free
 bindings after semantic analysis. Named bindings remain borrowed during name
 resolution. Anonymous node scans retain label and inline-property constraints.
+
+The common `GraphSnapshot::plan` entrypoint selects the node or relationship
+compiler from the parsed query shape. `QueryPlan` retains the selected kind and
+a supported DataFrame or an unsupported reason; semantic errors propagate.
+It plans against the captured provider pair without executing the query. This
+is not yet cost-based routing through ordinary Cypher execution entrypoints.

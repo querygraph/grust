@@ -116,3 +116,9 @@ Node and relationship variables must remain distinct.
 Anonymous node and relationship elements receive private, collision-free
 bindings after semantic analysis. Named bindings remain borrowed during name
 resolution. Anonymous node scans retain label and inline-property constraints.
+
+`GraphSnapshot::plan` provides one parsed-Cypher planning entrypoint. Its
+`QueryPlan` records the selected `PlanKind` and either a typed DataFrame or an
+explicit unsupported reason. Invalid queries remain errors. This chooses a
+compiler from the query shape; cost-based executor selection and read-policy
+admission are still required before ordinary Cypher can route automatically.
