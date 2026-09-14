@@ -181,3 +181,57 @@ fn native_input_admission_matches_exact_graph_bytes_and_retains_measurement() {
         assert!(GraphSnapshot::try_new_with_input_policy(&engine, tables, &too_small).is_err());
     }
 }
+
+#[tokio::test]
+async fn ordinal_admission_follows_emitted_arrays_after_snapshot_drop() {
+    use grust_procedures::{ExecutionContext, ExecutionLimits};
+    let engine = DataFusionEngine::new(ExecutionOptions {
+        working_memory_bytes: (16 * 1024 * 1024).try_into().unwrap(),
+        target_partitions: 1.try_into().unwrap(),
+        batch_rows: 1024.try_into().unwrap(),
+        spill: SpillPolicy::Disabled,
+    })
+    .unwrap();
+    let graph = Graph::new(
+        vec![Node::new("N", "a", Props::new())],
+        vec![Edge::new("E", "a", "a", Props::new())],
+    );
+    let tables = || {
+        let (nodes, edges) = ArrowGraph::from_graph(&graph).unwrap().into_tables();
+        ArrowGraphTables::try_new(nodes, edges).unwrap()
+    };
+    let context = |memory_bytes| {
+        ExecutionContext::new(ExecutionLimits {
+            memory_bytes,
+            work_units: 1,
+            batch_rows: 1024,
+            deadline: None,
+        })
+        .unwrap()
+    };
+    assert!(GraphSnapshot::try_new_with_context(&engine, tables(), &context(7)).is_err());
+    let execution = context(8);
+    let snapshot = GraphSnapshot::try_new_with_context(&engine, tables(), &execution).unwrap();
+    let batches = snapshot
+        .edges(engine.context())
+        .unwrap()
+        .collect()
+        .await
+        .unwrap();
+    drop(snapshot);
+    assert_eq!(execution.usage().unwrap().live_bytes, 8);
+    let ordinal = batches[0].column_by_name(EDGE_ORDINAL).unwrap().slice(0, 1);
+    drop(batches);
+    assert_eq!(execution.usage().unwrap().live_bytes, 8);
+    assert_eq!(
+        ordinal
+            .as_any()
+            .downcast_ref::<UInt64Array>()
+            .unwrap()
+            .value(0),
+        0
+    );
+    drop(ordinal);
+    assert_eq!(execution.usage().unwrap().live_bytes, 0);
+    assert_eq!(execution.usage().unwrap().work_units, 1);
+}
