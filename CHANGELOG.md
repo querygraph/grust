@@ -6,6 +6,12 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ## Unreleased
 
+- Candidate rows in the portable Cypher executor share immutable node and edge
+  bindings instead of repeatedly cloning their property maps. Projected values
+  remain owned, relationship identity and row order are preserved, and logical
+  full-element copy charges remain conservative. Source-pinned relational
+  profiles retain exact oracle checks and before/after resource evidence.
+
 - Cypher `sum()` now returns integer zero for empty or null-only input in both
   materialized and streaming aggregation. `avg()` remains null for those inputs;
   empty grouped input still produces no groups. The correction includes DISTINCT
