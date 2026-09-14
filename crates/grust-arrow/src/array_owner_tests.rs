@@ -65,3 +65,21 @@ fn nested_list_child_keeps_owner_after_all_parents_drop() {
     drop(child);
     assert!(weak.upgrade().is_none());
 }
+
+#[cfg(feature = "ffi")]
+#[test]
+fn exported_array_holds_owner_until_c_data_release() {
+    use super::super::array::ffi::to_ffi;
+    let input: ArrayRef = Arc::new(StringArray::from(vec![Some("λ"), None]));
+    let token = Arc::new(());
+    let weak = Arc::downgrade(&token);
+    let owned = retain_array_owner(&input, token).unwrap();
+    let (exported, schema) = to_ffi(&owned.to_data()).unwrap();
+    drop(input);
+    drop(owned);
+    assert!(weak.upgrade().is_some());
+    drop(schema);
+    assert!(weak.upgrade().is_some());
+    drop(exported);
+    assert!(weak.upgrade().is_none());
+}
