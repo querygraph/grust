@@ -6,6 +6,37 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ## Unreleased
 
+### grust-turso: bulk loads about 1.7-1.9x faster
+
+- `TursoGraphStore::put_graph` binds rows to prepared multi-row upserts
+  instead of rendering each batch as SQL text. Each statement shape is
+  parsed once per load rather than once per batch, and only one batch of
+  bound values is alive at a time; the old path held the SQL text of the
+  whole load in memory before executing any of it. The statements are the
+  same `INSERT ... ON CONFLICT DO UPDATE` upserts as `upsert_nodes_sql` /
+  `upsert_edges_sql`, so a repeated key still keeps its last row. A new test
+  loads a graph that rewrites nodes and edges (missing, empty, plain and
+  prefix-like edge ids) through both paths, in WAL and MVCC mode and with
+  batch sizes 2 and 500, and compares the stored rows including
+  `identity_key`.
+- Every connection sets `PRAGMA cache_size` to 1 GiB (`PAGE_CACHE_KIB`).
+  The engine's native default is 2,000 pages (about 8 MB), which a load
+  outgrows within its first million edges; after that every insert into the
+  edge key, the two edge indexes and the node-key foreign-key probes reads
+  pages. The cache fills lazily, so a small store holds only its own pages.
+- Measured with the new `bulk_load` example on a shared 4-core host, fed as
+  the adversarial-graph harness feeds it (vertices first, then edges in CSR
+  order, 5M-edge `put_graph` calls):
+  2M edges 22.5k -> 42.5k edges/s; 10M edges 21.5k -> 35.8k edges/s;
+  30M edges 31.6k edges/s overall, 37.9k falling to 28.3k per 5M-edge batch, levelling off
+  rather than collapsing. SNAP cit-Patents (3,774,768 nodes, 16,518,948
+  edges) loads in 550 s, 32.6k edges/s; the strain benchmark measured 811 s
+  for it before this change, on a different host.
+- Unchanged: the schema and its indexes, the query plans of anchored edge
+  lookups and two-hop traversals, WAL as the default journal mode, MVCC's
+  grouped commits (`MVCC_LOAD_COMMIT_STATEMENTS`), foreign-key checks, and
+  the edge identity encoding and its migration.
+
 ## 0.14.0 — Acorn — 2026-09-13
 
 - Indexed Cypher materializes a full graph for `CALL` only when the registered
