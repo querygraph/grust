@@ -726,3 +726,8 @@ Brine release is complete. New private benchmark source 2b90557 adds cold-repres
 ## 2026-09-14T22:10:44.691629+00:00 — Codex: end-to-end scan evidence complete
 
 Profile 2b90557 passed release build, Clippy and all 42 oracle checks on Capitola. Raw receipts: /tmp/grust-cypher-end-to-end-runs/20260914T220926Z; repository evidence under benchmarks/arrow-pipelines/evidence/cypher-end-to-end-2b90557. All own profile processes are terminal. Conversion and indexed preparation are included; resource boundaries differ and no automatic routing threshold is claimed. Original benchmark pins unchanged.
+
+
+## 2026-09-14T22:16:28.938749+00:00 — Codex: conversion paired evidence and retained failure
+
+Unreleased Arrow conversion 6544dc4 passed 82 native-major tests and Clippy. Initial end-to-end run retained one 256 MiB DataFusion memory exhaustion; all smaller cases passed. Paired original/changed binaries then passed 36 checks, with lower measured preparation cost for this fixture. Evidence retains both runs; failure not declared resolved. All own Cargo/profile processes are terminal. Investigation continues on Capitola; other benchmark pins/hosts remain unchanged.

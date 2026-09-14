@@ -9,8 +9,9 @@ The unchanged end-to-end profile passed all six trials at each of 0, 1, 3, 4,
 one DataFusion trial returned memory exhaustion under the unchanged 256 MiB
 tracked pool with spill disabled, and the other two passed. All 42 trial
 outcomes and the failing process exit are retained. No successful-only speedup
-summary is justified. A paired run of the original and modified source-pinned
-binaries is investigating repeatability without increasing the limit.
+summary is justified. A [paired run](../cypher-conversion-paired) of the original and modified
+source-pinned binaries passed 36 checks without increasing the limit. The
+original failure remains unresolved.
 
 The optimization remains unreleased. This failure does not prove its cause;
 semantic correctness tests do not establish stable resource-envelope behavior.
