@@ -27,8 +27,8 @@ history.
 ## Smaller and Lesser-Known
 - Copepod — 0.15.1 (2026-09-14)
 - Amphipod — 0.16.0 (2026-09-14)
-- Isopod — 0.17.0 (2026-09-14) ← current
-- Ostracod
+- Isopod — 0.17.0 (2026-09-14)
+- Ostracod — 0.18.0 (2026-09-14) ← current
 - Mantis
 - Brine
 - Tadpole

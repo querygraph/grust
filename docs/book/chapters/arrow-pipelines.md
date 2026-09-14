@@ -234,7 +234,7 @@ may differ per segment. Variable-length bounds and named path values remain
 unsupported; the pinned parallel-ring profile measures two- and three-hop execution with
 separate preparation costs; it is not a general routing threshold.
 
-### Shared cancellation and deadlines (unreleased)
+### Shared cancellation and deadlines (Ostracod 0.18.0)
 
 `ExecutionContext::cancelled()` is a runtime-independent notification shared by
 procedures and relational execution. `grust_datafusion::run_cancellable` races
@@ -257,7 +257,7 @@ copies, queues or worker tasks. Completion or the first error immediately drops
 the provider stream and timer; subsequent polls remain finished. The controlled
 stream can feed `BlockingReader` and ADBC ingestion directly.
 
-### Prepared read admission (unreleased)
+### Prepared read admission (Ostracod 0.18.0)
 
 `grust_cypher::PreparedReadRequest` owns the validated AST, policy and original
 absolute deadline, borrows the admitted immutable parameters, and retains any
@@ -268,7 +268,7 @@ Oversized parameters fail before graph inspection. Preparation does not authoriz
 or bind a backend snapshot, install execution budgets, or qualify a DataFusion
 route. Route-specific candidate/intermediate accounting must still be enforced.
 
-### Exact snapshot statistics (unreleased)
+### Exact snapshot statistics (Ostracod 0.18.0)
 
 `GraphSnapshot::statistics()` returns exact node/edge row counts, original input
 batch counts and the logical bytes added for UInt64 relationship ordinals. These
@@ -279,7 +279,7 @@ Selectivity, join cardinalities, serialized graph size and total memory are not
 inferred from these counts. Automatic routing still requires qualified costs and
 complete resource admission.
 
-### Borrowed graph serialization (unreleased)
+### Borrowed graph serialization (Ostracod 0.18.0)
 
 `ArrowGraphTables::as_serializable_graph()` presents the ordinary Grust graph
 serde contract directly over native Arrow 55/58/59 columns. It preserves row and
@@ -291,7 +291,7 @@ the encoded output. Writer errors propagate and may leave a prefix in a real sin
 This enables native input-size admission; automatic routing and full query
 resource-policy integration remain separate work.
 
-### Native Arrow input admission (unreleased)
+### Native Arrow input admission (Ostracod 0.18.0)
 
 `GraphSnapshot::try_new_with_input_policy` checks a prepared request's node/edge
 limits and exact graph JSON size before capturing native providers. It uses the

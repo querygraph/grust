@@ -2,11 +2,11 @@
 
 Grust is a modern property graph API for Rust.
 
-**Isopod 0.17.0** adds explicit typed Cypher execution over immutable Arrow
-snapshots, fixed-length trail matching and bounded portable output collection.
-It retains the shared Arrow/ADBC foundations and generalized Rust/Cypher graph
-algorithms. Automatic cost-based routing and full read-policy integration remain
-active work. The versioned examples below target Isopod.
+**Ostracod 0.18.0** adds shared query cancellation, controlled Arrow streams,
+prepared Cypher admission and exact native Arrow input-size checks. It retains
+the explicit DataFusion 55 Cypher bridge and generalized Rust/Cypher algorithms.
+Automatic cost-based routing and full execution-policy mapping remain active
+work. The versioned examples below target Ostracod.
 See [Arrow pipelines and ADBC](docs/arrow-pipelines.md) and the
 [algorithm capability inventory](docs/GENERALIZED_ALGORITHMS.md).
 
@@ -379,7 +379,7 @@ Enable the `memory` feature to use `MemoryGraphStore` from the public facade:
 
 ```toml
 [dependencies]
-grust = { package = "grust-graph", version = "0.17.0", features = ["memory"] }
+grust = { package = "grust-graph", version = "0.18.0", features = ["memory"] }
 ```
 
 The facade re-exports the full `grust-memory` crate surface when the feature is
@@ -510,7 +510,7 @@ Backend crates are optional facade features:
 ```toml
 [dependencies.grust]
 package = "grust-graph"
-version = "0.17.0"
+version = "0.18.0"
 features = [
   "cocoindex", "cypher", "falkor", "lancedb", "memory", "postgres",
   "postgres-pgq", "pggraph", "sail", "surreal", "turso",
@@ -525,7 +525,7 @@ The additional `turso-sync` feature enables Turso Cloud synchronization and
 implies `turso`; `typed-garde` and `typed-zod-rs` enable typed ingestion rather
 than storage backends.
 
-Isopod 0.17.0 uses a lockstep version for all publishable Grust crates. The optional
+Ostracod 0.18.0 uses a lockstep version for all publishable Grust crates. The optional
 `algorithms` feature adds graph kernels and their procedure adapters; `arrow`
 adds typed interchange and, with algorithms enabled, native result batches.
 
@@ -1047,7 +1047,7 @@ backend-specific extension traits later.
 
 ## Status
 
-Grust 0.17.0 "Isopod" is the current source release line, with lockstep publishable
+Grust 0.18.0 "Ostracod" is the current source release line, with lockstep publishable
 crates, generalized Rust/Cypher graph analytics and optional typed Arrow results.
 The backend matrix distinguishes local projection from backend-native execution;
 unsupported algorithms, modes and representations remain explicit.

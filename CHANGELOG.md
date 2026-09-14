@@ -6,6 +6,8 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ## Unreleased
 
+## 0.18.0 — Ostracod — 2026-09-14
+
 - Admit native Arrow graph row counts and exact serialized bytes through the
   shared prepared-read policy, preserving its original deadline. Optional
   DataFusion input-policy capture caches the measured size; ordinary capture

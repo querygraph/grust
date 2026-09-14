@@ -75,7 +75,7 @@ shared pipeline operations. Graph storage layouts and mutation boundaries are
 documented in [Arrow pipelines](../../docs/arrow-pipelines.md). Sail's SQL property
 normalization is distinct from the universal tagged Grust property format.
 
-### Borrowed graph serialization (unreleased)
+### Borrowed graph serialization (Ostracod 0.18.0)
 
 `ArrowGraphTables::as_serializable_graph()` presents the ordinary Grust graph
 serde contract directly over native Arrow 55/58/59 columns. It preserves row and

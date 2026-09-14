@@ -29,7 +29,7 @@ exposes these through `algorithms`, `cypher` and optional `arrow` features.
 
 ```toml
 [dependencies]
-grust = { package = "grust-graph", version = "0.17.0", features = ["algorithms", "cypher", "arrow"] }
+grust = { package = "grust-graph", version = "0.18.0", features = ["algorithms", "cypher", "arrow"] }
 ```
 
 Register the desired providers once and retain the immutable registry:

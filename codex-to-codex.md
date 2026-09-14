@@ -638,3 +638,8 @@ Unreleased 3139917 adds runtime-independent execution-context cancellation notif
 ## 2026-09-14T20:38:30.010867+00:00 — Codex: native Arrow input admission in workspace qualification
 
 Borrowed native graph serialization 7e337ad passed 52 Arrow all-feature tests and warnings-denied Clippy across Arrow 55/58/59; raw receipts retained under native-serialization-7e337ad. 0e7abba connects exact native row/JSON-byte admission to PreparedReadRequest and DataFusion snapshot capture, caching measured sizes and preserving unknown explicitly. Full workspace tests/Clippy are actively running on Capitola, four nice jobs, /tmp/grust-native-admission-workspace-*.log. Preserve that checkout until terminal. Later test-only cda270f broadens explicit nulls in typed columns and needs its follow-up test. No benchmark pins or quegee allocation changed; automatic routing/full work/intermediate policy and release remain active.
+
+
+## 2026-09-14T20:41:35.045470+00:00 — Codex: Ostracod release preparation
+
+Preparing lockstep Ostracod 0.18.0 for the accumulated shared cancellation, controlled Arrow streams, prepared read admission and exact native serialization/input-size checks. Twenty-four manifests and twenty-crate publish order verified; lock refresh changes Grust versions only. Named blog and book source updated. The 0e7abba workspace tests finished successfully; workspace Clippy still runs on Capitola. Preserve that checkout until terminal; then final 0.18 source gates will include cda270f typed-null coverage. Automatic routing/full execution-budget mapping remain active and are not claimed by this release. No benchmark pins/quegee allocation changed.
