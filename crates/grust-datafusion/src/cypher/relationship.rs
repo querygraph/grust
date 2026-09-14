@@ -72,8 +72,8 @@ impl RelationshipPlan {
 
 impl GraphSnapshot {
     /// Plan every directed `(source)-[edge]->(target)` in this snapshot.
-    /// All three binding names must be distinct; repeated-variable patterns
-    /// require an explicit equality constraint in a higher-level pattern planner.
+    /// Repeated endpoint names constrain matching to self-loops. Relationship
+    /// and node names must differ.
     /// Inner endpoint joins preserve loops and parallel edges, omit isolates and
     /// do not collapse rows by optional external relationship ID. No execution or
     /// resource admission occurs here. This is not an automatic Cypher route.
@@ -89,7 +89,7 @@ impl GraphSnapshot {
 
     /// Plan both orientations of each non-loop edge, and each self-loop once.
     /// Physical relationship ordinals are retained across both orientations.
-    /// This has the same distinct-binding and admission contract as the directed
+    /// This has the same binding and admission contract as the directed
     /// operator; row order is unspecified without an explicit sort.
     pub fn undirected_relationships(
         &self,
@@ -99,6 +99,9 @@ impl GraphSnapshot {
         target: &str,
     ) -> Result<RelationshipPlan> {
         let forward = self.endpoint_relationships(context, source, edge, target, false)?;
+        if source == target {
+            return Ok(forward);
+        }
         let reverse = self.endpoint_relationships(context, source, edge, target, true)?;
         let different = reverse.bindings.variables[source]["node_id"]
             .0
@@ -118,14 +121,13 @@ impl GraphSnapshot {
         target: &str,
         reverse: bool,
     ) -> Result<RelationshipPlan> {
-        if source == edge || source == target || edge == target {
+        if source == edge || edge == target {
             return Err(DataFusionError::Plan(
-                "relationship bindings must be distinct".into(),
+                "relationship and node bindings must differ".into(),
             ));
         }
         let (source_frame, source_columns) = rename(self.nodes(context)?, 0)?;
         let (edge_frame, edge_columns) = rename(self.edges(context)?, 1)?;
-        let (target_frame, target_columns) = rename(self.nodes(context)?, 2)?;
         let (from_key, to_key) = if reverse {
             ("target", "source")
         } else {
@@ -135,22 +137,31 @@ impl GraphSnapshot {
             .0
             .clone()
             .eq(edge_columns[from_key].0.clone());
-        let to = edge_columns[to_key]
-            .0
-            .clone()
-            .eq(target_columns["node_id"].0.clone());
-        let frame = edge_frame
-            .join_on(source_frame, JoinType::Inner, [from])?
-            .join_on(target_frame, JoinType::Inner, [to])?;
+        let mut frame = edge_frame.join_on(source_frame, JoinType::Inner, [from])?;
+        let mut variables = BTreeMap::new();
+        if source == target {
+            // Unique validated node IDs make one node join sufficient. Constrain
+            // endpoints before projection instead of scanning the node table twice.
+            frame = frame.filter(
+                edge_columns[from_key]
+                    .0
+                    .clone()
+                    .eq(edge_columns[to_key].0.clone()),
+            )?;
+        } else {
+            let (target_frame, target_columns) = rename(self.nodes(context)?, 2)?;
+            let to = edge_columns[to_key]
+                .0
+                .clone()
+                .eq(target_columns["node_id"].0.clone());
+            frame = frame.join_on(target_frame, JoinType::Inner, [to])?;
+            variables.insert(target.into(), target_columns);
+        }
+        variables.insert(source.into(), source_columns);
+        variables.insert(edge.into(), edge_columns);
         Ok(RelationshipPlan {
             frame,
-            bindings: GraphBindings {
-                variables: BTreeMap::from([
-                    (source.into(), source_columns),
-                    (edge.into(), edge_columns),
-                    (target.into(), target_columns),
-                ]),
-            },
+            bindings: GraphBindings { variables },
         })
     }
 }

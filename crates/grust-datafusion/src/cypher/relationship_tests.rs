@@ -95,7 +95,7 @@ async fn endpoint_joins_preserve_exact_relationship_multiplicity() {
         assert_eq!(actual, expected);
         assert!(
             snapshot
-                .directed_relationships(engine.context(), "a", "r", "a")
+                .directed_relationships(engine.context(), "a", "a", "b")
                 .is_err()
         );
     }
@@ -140,6 +140,11 @@ async fn parsed_relationship_queries_match_portable_results() {
         "MATCH (a)-[r]->(b) RETURN id(a) AS source, count(*) AS count ORDER BY source",
         "MATCH (a)-[r]->(b) RETURN DISTINCT id(b) AS target ORDER BY target DESC SKIP 1 LIMIT 1",
         "MATCH (a)-[r]->(b) WHERE null RETURN count(*) AS count",
+        "MATCH (a)-[r]->(a) RETURN count(*) AS count",
+        "MATCH (a)<-[r]-(a) RETURN count(*) AS count",
+        "MATCH (a)-[r]-(a) RETURN count(*) AS count",
+        "MATCH (a:M {x: 2})-[r:F]->(a:M) RETURN id(a) AS node, count(*) AS count",
+        "MATCH (a:N)-[r]->(a:M) RETURN count(*) AS count",
         "MATCH (a)-[r]-(b) RETURN count(*) AS count",
         "MATCH (a)-[r]-(b) RETURN id(a) AS source, id(b) AS target, count(*) AS count ORDER BY source, target",
         "MATCH (a:M)-[r:F]-(b:M) RETURN count(*) AS count",
