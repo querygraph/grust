@@ -334,3 +334,10 @@ an execution deadline no later than the prepared request's deadline. Input
 buffers, provider/schema metadata and allocator capacity remain outside the
 logical ordinal-payload bound. These capture checks do not establish backend
 authority, full operator accounting or automatic execution selection.
+
+`retain_array_owner` extends buffer ownership through an array's validity bits
+and nested children. It rebuilds and validates metadata without copying payload
+bytes. Arrays with no physical buffers retain no token; a wrapper remains
+necessary when metadata-only lifetime must be admitted. Algorithm result batches
+use the same mechanism so raw batch clones and retained child slices keep their
+original reservation. New reservations are not charged for each clone.

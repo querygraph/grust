@@ -6,6 +6,10 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ## Unreleased
 
+- Preserve algorithm-result admission through independently retained raw Arrow
+  batches and nested array children. Shared array ownership covers payload and
+  validity buffers without copying payload bytes; metadata is revalidated.
+
 - Retain application-owned tokens through native Arrow buffers, slices and C
   Data export using safe shared Bytes ownership across Arrow 55/58/59.
 - Admit snapshot relationship-ordinal payload and construction work before
