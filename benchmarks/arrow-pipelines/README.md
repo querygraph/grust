@@ -80,3 +80,20 @@ small rings. Preparation is separately timed, errors/unsupported/mismatches are
 retained, and no query deadline is set. See
 [evidence/cypher-paths-100822f](evidence/cypher-paths-100822f) for the first pinned
 run and its memory, output-admission and interpretation boundaries.
+
+### Cold-representation Cypher profile
+
+`cypher_end_to_end <nodes> <repeats>` compares preparation plus one scan/count
+query from the same immutable row graph. Every trial creates and drops its own
+index or Arrow tables and DataFusion engine. Report preparation, query and total
+time separately; teardown and fixture construction are excluded. Both routes
+return portable rows and are checked against an independent arithmetic oracle,
+including output columns. Route order alternates, and errors, unsupported results
+and mismatches are retained while subsequent trials continue.
+
+DataFusion uses its 256 MiB tracked pool, no spill, a four-partition target and
+one input partition, plus one-row/1,024-byte output limits. Indexed execution has
+no equivalent memory admission. Neither route has a deadline. These deliberately
+disclosed differences prevent interpreting this profile as resource-equivalent
+comparison or an automatic-routing threshold. Existing prepared-input profiles
+remain separate and unchanged. Qualify empty/boundary fixtures before large runs.
