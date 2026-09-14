@@ -33,3 +33,8 @@ use arrow_buffer_55 as buffer;
 #[path = "buffer_owner.rs"]
 mod buffer_owner;
 pub use buffer_owner::retain_buffer_owner;
+
+use arrow_data_55 as data;
+#[path = "array_owner.rs"]
+mod array_owner;
+pub use array_owner::retain_array_owner;
