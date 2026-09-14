@@ -76,7 +76,7 @@ impl AggregateState {
     pub(super) fn finish(self) -> Result<Value> {
         match self {
             Self::Count(count) => count_value(count),
-            Self::Sum { value, count } => Ok(if count == 0 { Value::Null } else { value }),
+            Self::Sum { value, .. } => Ok(value),
             Self::Average { sum, count } => Ok(if count == 0 {
                 Value::Null
             } else {

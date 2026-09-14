@@ -62,7 +62,7 @@ fn unwind_reuses_large_live_arrays_and_matches_empty_aggregate_rules() {
     .unwrap();
     assert_eq!(
         empty.rows,
-        vec![vec![Value::Int(0), Value::Null, Value::Null]]
+        vec![vec![Value::Int(0), Value::Int(0), Value::Null]]
     );
 }
 

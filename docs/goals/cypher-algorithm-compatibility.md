@@ -78,3 +78,13 @@ microbenchmark does not qualify database loading or an algorithm query.
 Completion requires replacing outstanding rows with specific tested contracts
 and linked receipts, retaining every failure. Neither the Arrow foundation
 release nor this initial inventory closes the wider goal.
+
+## Active qualification findings
+
+The initial [relational fixture receipts](../../benchmarks/arrow-pipelines/evidence/c3bd9fb/README.md)
+found two empty-SUM mismatches at c3bd9fb: indexed Cypher returned null, while the
+independent oracle and DataFusion query returned zero. The correction covers
+materialized and streaming aggregate implementations, with empty, all-null,
+DISTINCT and grouping regression cases. Qualification and release are pending;
+the original failures remain immutable evidence. This does not establish general
+numeric or aggregate compatibility.

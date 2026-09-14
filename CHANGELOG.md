@@ -6,6 +6,11 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ## Unreleased
 
+- Cypher `sum()` now returns integer zero for empty or null-only input in both
+  materialized and streaming aggregation. `avg()` remains null for those inputs;
+  empty grouped input still produces no groups. The correction includes DISTINCT
+  and indexed-read regression coverage.
+
 ## 0.15.0 — Gooseneck — 2026-09-14
 
 - Shared Arrow pipelines now serve LanceDB, Sail, Ladybug and the optional

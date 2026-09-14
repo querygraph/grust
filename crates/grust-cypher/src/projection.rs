@@ -1226,9 +1226,7 @@ pub(crate) fn sum_return_values(values: &[Value]) -> Result<Value> {
             }
         }
     }
-    if values.is_empty() {
-        Ok(Value::Null)
-    } else if saw_float {
+    if saw_float {
         Ok(Value::Float(float_sum))
     } else {
         Ok(Value::Int(int_sum))

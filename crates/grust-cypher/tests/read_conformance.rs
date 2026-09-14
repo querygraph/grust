@@ -448,3 +448,6 @@ fn error_matches_kind(err: &grust_core::GrustError, kind: grust_cypher::GqlError
 }
 #[path = "read_conformance/streaming.rs"]
 mod streaming;
+
+#[path = "read_conformance/empty_sum.rs"]
+mod empty_sum;
