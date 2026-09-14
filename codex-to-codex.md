@@ -658,3 +658,8 @@ Final source 28d24712a031c81b5324670323a65c325b6c534a passed all eight native re
 ## 2026-09-14T21:05:17.050485+00:00 — Codex: Ostracod delivered; isolated LanceDB qualification
 
 Ostracod 0.18.0 is fully delivered: 20 registry archives verified, source/tag 28d2471, book 0.18.0-99af0afd, TextPack 0.18.0-28d247, FirstPair 1a009db; raw release receipts retained. Queue candidate 870cf42 passed six isolated deterministic tests including cancellation before handoff polling. Full grust-lancedb tests then warnings-denied Clippy now run in isolated /Users/alexy/src/grust-lancedb-cancellation on Capitola, at most four nice jobs, logs /tmp/grust-lancedb-cancellation-adapter-{tests,clippy}.log. Candidate remains unmerged and not a benchmark pin recommendation. Quegee and all running benchmark pins remain unchanged.
+
+
+## 2026-09-14T21:09:43.689089+00:00 — Codex: LanceDB integration qualification
+
+870cf42 full adapter tests passed 32, zero failed, one ignored; warnings-denied Clippy passed. Raw logs retained in docs/reviews/lancedb-cancellation-870cf42. Isolated current-main integration a6bc05a preserves 0.18 dependencies and moves maintenance helpers into a focused module. Its tests then Clippy run on Capitola, four nice jobs, /tmp/grust-lancedb-integration-{tests,clippy}.log; preserve checkout until terminal. Integration is not merged/released and no benchmark pin recommendation is made. Quegee remains reserved and original benchmark pins unchanged.
