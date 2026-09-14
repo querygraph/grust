@@ -67,7 +67,14 @@ fn arrow_distances_preserve_nulls_batch_bounds_and_retained_admission() {
         context.usage().unwrap().live_bytes,
         retained.reserved_bytes()
     );
+    let bytes = retained.reserved_bytes();
+    let raw = retained.record_batch().clone();
     drop(retained);
+    assert_eq!(context.usage().unwrap().live_bytes, bytes);
+    let slice = raw.column(0).slice(0, 1);
+    drop(raw);
+    assert_eq!(context.usage().unwrap().live_bytes, bytes);
+    drop(slice);
     assert_eq!(context.usage().unwrap().live_bytes, 0);
 }
 

@@ -14,9 +14,9 @@ use crate::{
 };
 
 /// A bounded Arrow batch retaining its query memory reservation. Clone this
-/// wrapper to share buffers and their admission together. Independently cloning
-/// raw Arrow arrays/batches requires the consumer to retain this wrapper or
-/// obtain its own admission; those Arrow APIs cannot carry Grust's token.
+/// wrapper or its raw Arrow arrays to share buffers and admission together.
+/// Physical buffers retain the reservation through slices and exported readers;
+/// the wrapper additionally retains admission for metadata-only output.
 #[derive(Clone)]
 pub struct ArrowResultBatch {
     batch: RecordBatch,
@@ -284,6 +284,15 @@ fn finish(
             "Arrow result exceeds admitted buffer bound".into(),
         ));
     }
+    let owner = Arc::new(reservation.clone());
+    let columns = batch
+        .columns()
+        .iter()
+        .map(|array| grust_arrow::retain_array_owner(array, Arc::clone(&owner)))
+        .collect::<std::result::Result<Vec<_>, _>>()
+        .map_err(|error| AlgorithmError::Provider(Box::new(error)))?;
+    let batch = RecordBatch::try_new(batch.schema(), columns)
+        .map_err(|error| AlgorithmError::Provider(Box::new(error)))?;
     Ok(ArrowResultBatch {
         batch,
         _reservation: reservation,
