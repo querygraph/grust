@@ -784,8 +784,15 @@ impl TursoGraphStore {
 
     /// The MVCC load with `mvcc_load_parallelism` writers: nodes, then
     /// edges, each split into that many contiguous slices, every slice loaded
-    /// on its own shared connection and task. The first error is returned
-    /// after every writer has finished.
+    /// on its own shared connection and task.
+    ///
+    /// Automatic checkpoints cannot run while another writer's transaction
+    /// is open (they fail Busy and are skipped), so free-running writers kept
+    /// every row version resident: 14–15 GB at 5 M edges against 1.7 GB for
+    /// one writer. The writers therefore advance in rounds of at most
+    /// `MVCC_PARALLEL_ROUND_GROUPS` commit groups each; after every round,
+    /// with nothing in flight, one TRUNCATE checkpoint folds the round into
+    /// the database file. The first error is returned after its round ends.
     async fn put_mvcc_parallel(&self, graph: &Graph, rows: usize) -> Result<()> {
         let writers = self.mvcc_load_parallelism.load(Ordering::Acquire);
         if writers <= 1 || graph.nodes.len() + graph.edges.len() < 2 * rows {
@@ -806,34 +813,50 @@ impl TursoGraphStore {
                 .map(|s| s..(s + per).min(len))
                 .collect()
         };
+        let round = MVCC_PARALLEL_ROUND_GROUPS * MVCC_LOAD_COMMIT_STATEMENTS * rows;
         for phase in [false, true] {
             let len = if phase {
                 graph.edges.len()
             } else {
                 graph.nodes.len()
             };
-            let mut tasks = Vec::new();
-            for (range, handle) in slices(len).into_iter().zip(handles.iter().cloned()) {
-                let part = if phase {
-                    Graph::new(Vec::new(), graph.edges[range].to_vec())
-                } else {
-                    Graph::new(graph.nodes[range].to_vec(), Vec::new())
-                };
-                tasks.push(tokio::spawn(async move {
-                    handle.put_mvcc_groups(&part, rows).await
-                }));
-            }
-            let mut first_err = None;
-            for task in tasks {
-                let outcome = task.await.map_err(|err| {
-                    GrustError::Backend(format!("Turso parallel load task failed: {err}"))
-                });
-                if let Err(err) = outcome.and_then(|r| r) {
-                    first_err.get_or_insert(err);
+            let ranges = slices(len);
+            let mut offset = 0;
+            loop {
+                let mut tasks = Vec::new();
+                for (range, handle) in ranges.iter().zip(handles.iter().cloned()) {
+                    let start = range.start + offset;
+                    if start >= range.end {
+                        continue;
+                    }
+                    let part_range = start..(start + round).min(range.end);
+                    let part = if phase {
+                        Graph::new(Vec::new(), graph.edges[part_range].to_vec())
+                    } else {
+                        Graph::new(graph.nodes[part_range].to_vec(), Vec::new())
+                    };
+                    tasks.push(tokio::spawn(async move {
+                        handle.put_mvcc_groups(&part, rows).await
+                    }));
                 }
-            }
-            if let Some(err) = first_err {
-                return Err(err);
+                if tasks.is_empty() {
+                    break;
+                }
+                let mut first_err = None;
+                for task in tasks {
+                    let outcome = task.await.map_err(|err| {
+                        GrustError::Backend(format!("Turso parallel load task failed: {err}"))
+                    });
+                    if let Err(err) = outcome.and_then(|r| r) {
+                        first_err.get_or_insert(err);
+                    }
+                }
+                if let Some(err) = first_err {
+                    return Err(err);
+                }
+                self.execute_discarding_rows("PRAGMA wal_checkpoint(TRUNCATE)")
+                    .await?;
+                offset += round;
             }
         }
         Ok(())
@@ -1282,6 +1305,10 @@ pub const PAGE_CACHE_KIB: u64 = 1024 * 1024;
 /// many `batch_size`-row statements, so with the default batch size of 500
 /// rows about ten thousand rows at a time.
 pub const MVCC_LOAD_COMMIT_STATEMENTS: usize = 20;
+
+/// Commit groups each parallel MVCC load writer runs between the checkpoints
+/// that bound the load's resident row versions (see `put_mvcc_parallel`).
+pub const MVCC_PARALLEL_ROUND_GROUPS: usize = 5;
 
 pub fn upsert_nodes_sql(table: &str, nodes: &[Node]) -> Result<String> {
     TursoDialect.upsert_nodes_sql(table, nodes)
