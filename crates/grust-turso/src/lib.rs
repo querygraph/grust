@@ -116,6 +116,39 @@ impl TursoGraphStore {
         Ok(store)
     }
 
+    /// Another handle on this store's open database: a new connection that
+    /// shares the same `turso::Database` (its MVCC store and page cache)
+    /// instead of opening the file again. Concurrent writers in one process
+    /// should use this; `connect` on the same path builds a separate database
+    /// object.
+    pub async fn connect_shared(&self) -> Result<Self> {
+        let db = match &self._db {
+            TursoDatabase::Local(db) => db.clone(),
+            #[cfg(feature = "sync")]
+            TursoDatabase::Synced(_) => {
+                return Err(GrustError::Unsupported(
+                    "connect_shared is not available on a synced Turso store".to_string(),
+                ));
+            }
+        };
+        let conn = db.connect().map_err(|err| {
+            GrustError::Backend(format!("failed to connect to Turso database: {err}"))
+        })?;
+        let store = Self {
+            config: self.config.clone(),
+            _db: TursoDatabase::Local(db),
+            conn,
+            index_cache: std::sync::Mutex::new(None),
+            connection_gate: tokio::sync::Mutex::new(()),
+            transaction_needs_rollback: AtomicBool::new(false),
+        };
+        store.apply_journal_mode().await?;
+        store
+            .execute_discarding_rows(&format!("PRAGMA cache_size = -{PAGE_CACHE_KIB}"))
+            .await?;
+        Ok(store)
+    }
+
     /// Apply the configured journal mode on a fresh connection. MVCC is set via
     /// `PRAGMA journal_mode = mvcc` (a database-header mode) and verified by
     /// reading the mode back, so a silently-unconverted existing WAL database
