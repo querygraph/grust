@@ -5,7 +5,7 @@ use grust_cypher::pushdown::{NoTypeHints, SqlDialect, StrOp, combine_union, plan
 use grust_cypher::{CypherParameters, CypherResultTable};
 use grust_sql_core::{GraphSqlDialect, UniversalTableRefs};
 use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 
 mod guarded_commit;
 
@@ -173,6 +173,9 @@ pub struct TursoGraphStore {
     /// When set, an MVCC `put_graph` switches the database to WAL for the
     /// load and back to MVCC afterwards (see `set_bulk_load_via_wal`).
     bulk_load_via_wal: AtomicBool,
+    /// Concurrent writers an MVCC `put_graph` uses (see
+    /// `set_mvcc_load_parallelism`); 1 loads on this connection alone.
+    mvcc_load_parallelism: AtomicUsize,
     /// Set before an explicit transaction begins and cleared only after its
     /// commit or rollback finishes. If a future is cancelled while the gate is
     /// held, the next caller recovers the abandoned transaction first.
@@ -203,6 +206,7 @@ impl TursoGraphStore {
             transaction_needs_rollback: AtomicBool::new(false),
             group: None,
             bulk_load_via_wal: AtomicBool::new(false),
+            mvcc_load_parallelism: AtomicUsize::new(1),
         };
         store.apply_journal_mode().await?;
         store
@@ -240,6 +244,9 @@ impl TursoGraphStore {
             // connection is opened before it exists and so commits directly.
             group: self.group.clone(),
             bulk_load_via_wal: AtomicBool::new(self.bulk_load_via_wal.load(Ordering::Acquire)),
+            mvcc_load_parallelism: AtomicUsize::new(
+                self.mvcc_load_parallelism.load(Ordering::Acquire),
+            ),
         };
         store.apply_journal_mode().await?;
         store
@@ -364,6 +371,16 @@ impl TursoGraphStore {
         self.bulk_load_via_wal.store(enabled, Ordering::Release);
     }
 
+    /// Load an MVCC store's `put_graph` with `writers` concurrent connections
+    /// (`BEGIN CONCURRENT` transactions on disjoint slices of the nodes, then
+    /// of the edges), so the per-row MVCC index work runs on several cores;
+    /// WAL allows one writer. 1 (the default) loads on this connection alone.
+    /// Needs a multi-threaded Tokio runtime to use more than one core.
+    pub fn set_mvcc_load_parallelism(&self, writers: usize) {
+        self.mvcc_load_parallelism
+            .store(writers.max(1), Ordering::Release);
+    }
+
     pub async fn in_memory() -> Result<Self> {
         Self::connect(TursoConfig::default()).await
     }
@@ -399,6 +416,7 @@ impl TursoGraphStore {
             transaction_needs_rollback: AtomicBool::new(false),
             group: None,
             bulk_load_via_wal: AtomicBool::new(false),
+            mvcc_load_parallelism: AtomicUsize::new(1),
         })
     }
 
@@ -706,7 +724,7 @@ impl TursoGraphStore {
             let synchronous = self.query_scalar_i64("PRAGMA synchronous").await?;
             self.execute_discarding_rows("PRAGMA synchronous = NORMAL")
                 .await?;
-            let loaded = self.put_mvcc_groups(graph, rows).await;
+            let loaded = self.put_mvcc_parallel(graph, rows).await;
             self.execute_discarding_rows(&format!("PRAGMA synchronous = {synchronous}"))
                 .await?;
             loaded?;
@@ -762,6 +780,63 @@ impl TursoGraphStore {
                 "Turso did not switch journal_mode to {want}; it reports {got:?}"
             )))
         }
+    }
+
+    /// The MVCC load with `mvcc_load_parallelism` writers: nodes, then
+    /// edges, each split into that many contiguous slices, every slice loaded
+    /// on its own shared connection and task. The first error is returned
+    /// after every writer has finished.
+    async fn put_mvcc_parallel(&self, graph: &Graph, rows: usize) -> Result<()> {
+        let writers = self.mvcc_load_parallelism.load(Ordering::Acquire);
+        if writers <= 1 || graph.nodes.len() + graph.edges.len() < 2 * rows {
+            return self.put_mvcc_groups(graph, rows).await;
+        }
+        let mut handles = Vec::with_capacity(writers);
+        for _ in 0..writers {
+            let handle = self.connect_shared().await?;
+            handle
+                .execute_discarding_rows("PRAGMA synchronous = NORMAL")
+                .await?;
+            handles.push(Arc::new(handle));
+        }
+        let slices = |len: usize| -> Vec<std::ops::Range<usize>> {
+            let per = len.div_ceil(writers).max(1);
+            (0..len)
+                .step_by(per)
+                .map(|s| s..(s + per).min(len))
+                .collect()
+        };
+        for phase in [false, true] {
+            let len = if phase {
+                graph.edges.len()
+            } else {
+                graph.nodes.len()
+            };
+            let mut tasks = Vec::new();
+            for (range, handle) in slices(len).into_iter().zip(handles.iter().cloned()) {
+                let part = if phase {
+                    Graph::new(Vec::new(), graph.edges[range].to_vec())
+                } else {
+                    Graph::new(graph.nodes[range].to_vec(), Vec::new())
+                };
+                tasks.push(tokio::spawn(async move {
+                    handle.put_mvcc_groups(&part, rows).await
+                }));
+            }
+            let mut first_err = None;
+            for task in tasks {
+                let outcome = task.await.map_err(|err| {
+                    GrustError::Backend(format!("Turso parallel load task failed: {err}"))
+                });
+                if let Err(err) = outcome.and_then(|r| r) {
+                    first_err.get_or_insert(err);
+                }
+            }
+            if let Some(err) = first_err {
+                return Err(err);
+            }
+        }
+        Ok(())
     }
 
     /// The MVCC load body: nodes, then edges, each committed in groups of
