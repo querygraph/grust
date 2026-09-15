@@ -174,27 +174,6 @@ impl TursoGraphStore {
         }
     }
 
-    /// The first column of the first row of `sql` as an integer.
-    async fn query_scalar_i64(&self, sql: &str) -> Result<i64> {
-        let _gate = self.lock_connection().await?;
-        let mut rows = self
-            .conn
-            .query(sql, ())
-            .await
-            .map_err(|err| GrustError::Backend(format!("Turso query failed: {err}: {sql}")))?;
-        let row = rows
-            .next()
-            .await
-            .map_err(|err| GrustError::Backend(format!("Turso row read failed: {err}: {sql}")))?
-            .ok_or_else(|| GrustError::Backend(format!("Turso returned no row: {sql}")))?;
-        match row.get_value(0) {
-            Ok(turso::Value::Integer(value)) => Ok(value),
-            other => Err(GrustError::Backend(format!(
-                "Turso returned {other:?} where an integer was expected: {sql}"
-            ))),
-        }
-    }
-
     pub async fn in_memory() -> Result<Self> {
         Self::connect(TursoConfig::default()).await
     }
@@ -513,22 +492,13 @@ impl TursoGraphStore {
             // this way. Committing every MVCC_LOAD_COMMIT_STATEMENTS batches
             // keeps each transaction small; a load is no longer all-or-nothing
             // under MVCC, and a failure leaves the groups committed before it.
-            //
-            // Automatic checkpoints are off for the load: each one wrote the
-            // rows committed so far into the B-tree, about a third of an MVCC
-            // load's time, and the TRUNCATE below writes them all once. The
-            // store's threshold is restored whether or not the load succeeds.
-            let threshold = self
-                .query_scalar_i64("PRAGMA mvcc_checkpoint_threshold")
-                .await?;
-            self.execute_discarding_rows("PRAGMA mvcc_checkpoint_threshold = -1")
-                .await?;
-            let loaded = self.put_mvcc_groups(graph, rows).await;
-            self.execute_discarding_rows(&format!(
-                "PRAGMA mvcc_checkpoint_threshold = {threshold}"
-            ))
-            .await?;
-            loaded?;
+            let group = MVCC_LOAD_COMMIT_STATEMENTS * rows;
+            for chunk in graph.nodes.chunks(group) {
+                self.load_transaction(chunk, &[], true, rows).await?;
+            }
+            for chunk in graph.edges.chunks(group) {
+                self.load_transaction(&[], chunk, true, rows).await?;
+            }
         } else {
             self.load_transaction(&graph.nodes, &graph.edges, false, rows)
                 .await?;
@@ -546,19 +516,6 @@ impl TursoGraphStore {
             nodes: graph.nodes.len(),
             edges: graph.edges.len(),
         })
-    }
-
-    /// The MVCC load body: nodes, then edges, each committed in groups of
-    /// `MVCC_LOAD_COMMIT_STATEMENTS` batches.
-    async fn put_mvcc_groups(&self, graph: &Graph, rows: usize) -> Result<()> {
-        let group = MVCC_LOAD_COMMIT_STATEMENTS * rows;
-        for chunk in graph.nodes.chunks(group) {
-            self.load_transaction(chunk, &[], true, rows).await?;
-        }
-        for chunk in graph.edges.chunks(group) {
-            self.load_transaction(&[], chunk, true, rows).await?;
-        }
-        Ok(())
     }
 
     /// Upsert `nodes` then `edges` in one transaction on the shared
