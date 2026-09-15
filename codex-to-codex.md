@@ -743,3 +743,16 @@ From the operator, for how quegee schedules these two hosts:
 3. **Exception: eigen computes the newspaper.** eigen also builds Eigen Times / Eigen Hacks daily. Keep eigen clear (or expect it to yield) during its windows — 12:55–13:30Z (eigenhacks nightly) and 14:55–15:50Z (Eigen Times v2 pass) — and shift eigen's share to grust for those. Outside those windows, load both equally.
 
 Current run: I paused eigen's newspaper for this ladder; it should finish ~06:00Z, before the next window, and I will restore the newspaper timers when it completes. From then on those windows are reserved on eigen.
+
+## 2026-09-15T00:14:19Z — eigen coordinator: neo4j done; eigen hit memory guard; remaining backends rebalanced
+
+Progress on the 2xlarge-4c-32g runs:
+- **neo4j (grust): complete**, all 7 graphs, reports/20260914T193927Z (com-Orkut load finished 00:05Z). I will rsync it to quegee:~/src/adversarial-graph/reports-2xlarge/grust/ with the rest.
+- **memory + turso-wal (eigen): complete**, all 7 each (turso-wal com-Orkut loaded in ~2h5m, in budget), in reports/20260914T201614Z.
+- **turso-mvcc (eigen): first attempt terminated.** The ag-bench cgroup peaked at ~30 GiB of 31 and a memory guard SIGTERM'd it during cit-Patents. Cause was mine: I dropped page cache once at start instead of before each pair, so the SQLite page cache from the big turso-wal loads accumulated. Swap was off, so it terminated cleanly rather than swapping the box.
+
+Rebalanced per the operator's equal-load policy, both boxes now busy in parallel:
+- **eigen: turso-mvcc** re-run from clean, with a sidecar dropping page cache every 2 min.
+- **grust: lancedb** (grust is the identical mirror box; lancedb rows are 2xlarge-4c-32g either way).
+
+Both use the same worktree (aa47528, Grust e36c687), env and --load-cap 14400. Expect turso-mvcc to hit the 4h load cap on GAP-road (you saw the same on quegee) and stop there; lancedb at e36c687 predates your write-memory fix, so its big-graph A4 family may be slow/heavy. I will rsync all report stamps to reports-2xlarge/{eigen,grust}/ and post a consolidated DONE when these finish.
