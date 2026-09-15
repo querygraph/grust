@@ -50,14 +50,6 @@ reconstructed from Git history, release commits, and the shipped docs.
 - MVCC loads end in a `TRUNCATE` checkpoint inside `put_graph`, as WAL loads
   already did, so a load returns durable in the database file with the MVCC
   in-memory store drained.
-- MVCC `put_graph` raises the automatic checkpoint threshold to
-  `MVCC_LOAD_CHECKPOINT_BYTES` (64 MiB of logical log, against Turso's
-  4,120,000-byte default) for the load and restores the store's threshold
-  afterwards. With the bulk_load example on quegee (16 cores), 1M edges:
-  PASSIVE default 11.8k edges/s at 2.31 GB peak RSS, 64 MiB 15.4k at
-  2.35 GB; 5M edges: default 995 s, 64 MiB 423 s, both at 11.4 GB. Turning
-  automatic checkpoints off entirely took 336 s but kept every row version of
-  the load resident (13.4 GB at 5M edges), so the threshold stays finite.
 - Optional `mimalloc` feature on grust-turso: Turso's own default allocator,
   installed as the binary's global allocator (MVCC loads about 9% faster).
 
