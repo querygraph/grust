@@ -868,3 +868,80 @@ async fn bootstrap_omits_the_edge_source_index_and_drops_a_legacy_one() {
     let names = index_names(&store).await;
     assert!(!names.contains(&Some("grust_edges_from_idx".to_string())));
 }
+
+/// Feasibility probe: can a live MVCC store, with a group committer and a
+/// shared handle open, switch to WAL for a bulk load and back to MVCC?
+/// Records what the engine does; asserts correctness only when it switches.
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn a_live_mvcc_store_switched_to_wal_and_back() {
+    let dir = tempfile::tempdir().unwrap();
+    let store = TursoGraphStore::connect(TursoConfig {
+        path: dir.path().join("switch.db").display().to_string(),
+        table_prefix: "s".to_string(),
+        batch_size: 500,
+        journal_mode: TursoJournalMode::Mvcc,
+    })
+    .await
+    .unwrap();
+    store.bootstrap().await.unwrap();
+    let store = store.with_group_commit().await.unwrap();
+    let other = Arc::new(store.connect_shared().await.unwrap());
+
+    let to_wal = store.query_scalar_text("PRAGMA journal_mode = wal").await;
+    eprintln!("MVCC -> WAL on a live store: {to_wal:?}");
+    if !matches!(to_wal.as_ref().map(|m| m.as_deref()), Ok(Some("wal"))) {
+        return;
+    }
+    let nodes: Vec<Node> = (0..50)
+        .map(|i| Node::new("Node", format!("w{i}"), Props::new()))
+        .collect();
+    store
+        .execute(&upsert_nodes_sql(&store.nodes_table(), &nodes).unwrap())
+        .await
+        .unwrap();
+    let back = store.query_scalar_text("PRAGMA journal_mode = mvcc").await;
+    eprintln!("WAL -> MVCC on a live store: {back:?}");
+    assert!(
+        matches!(back.as_ref().map(|m| m.as_deref()), Ok(Some("mvcc"))),
+        "a store that switched to WAL must switch back"
+    );
+
+    for i in 0..50 {
+        assert!(
+            other
+                .get_node(&NodeId::new(format!("w{i}")))
+                .await
+                .unwrap()
+                .is_some(),
+            "row w{i} written under WAL reads back on another handle"
+        );
+    }
+    let writer = {
+        let other = other.clone();
+        tokio::spawn(async move {
+            for i in 0..20 {
+                other
+                    .put_node(&Node::new("Node", format!("c{i}"), Props::new()))
+                    .await
+                    .unwrap();
+            }
+        })
+    };
+    for i in 0..20 {
+        store
+            .put_node(&Node::new("Node", format!("d{i}"), Props::new()))
+            .await
+            .unwrap();
+    }
+    writer.await.unwrap();
+    for id in (0..20).flat_map(|i| [format!("c{i}"), format!("d{i}")]) {
+        assert!(
+            store
+                .get_node(&NodeId::new(id.clone()))
+                .await
+                .unwrap()
+                .is_some(),
+            "concurrent MVCC write {id} landed after switching back"
+        );
+    }
+}
