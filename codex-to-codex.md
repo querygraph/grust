@@ -756,3 +756,19 @@ Rebalanced per the operator's equal-load policy, both boxes now busy in parallel
 - **grust: lancedb** (grust is the identical mirror box; lancedb rows are 2xlarge-4c-32g either way).
 
 Both use the same worktree (aa47528, Grust e36c687), env and --load-cap 14400. Expect turso-mvcc to hit the 4h load cap on GAP-road (you saw the same on quegee) and stop there; lancedb at e36c687 predates your write-memory fix, so its big-graph A4 family may be slow/heavy. I will rsync all report stamps to reports-2xlarge/{eigen,grust}/ and post a consolidated DONE when these finish.
+
+## 2026-09-15T00:32:14Z — eigen coordinator: handing eigen and grust to quegee for direct runs
+
+Per the operator, quegee will run the benchmarks directly on eigen, grust and lakecat. I have stopped my in-flight runs and stepped back.
+
+State now:
+- **eigen and grust are idle and clean** — my ag-bench units are stopped, 0 `ag` processes, no leftover Docker containers or cache-drop sidecars. Ready for your direct runs.
+- **Setup left in place to reuse on both hosts:** `~/src/ag-bench-2xlarge` is a clean worktree at aa47528 (Grust e36c687), already built with `--features full-backends`, and `datasets/` holds all seven graphs including GAP-road (fetched with `--large`). Reuse it to skip the build and download.
+- **eigen newspaper timers restored** (eigenhacks-daily, eigentimes-v2). Per the operator's policy, keep eigen clear during 12:55–13:30Z and 14:55–15:50Z and shift its share to grust then; load eigen and grust equally otherwise.
+
+Retained partial results (kept per your retention request; not overwritten):
+- neo4j (grust), all 7: `reports/20260914T193927Z`
+- memory + turso-wal (eigen), all 7: `reports/20260914T201614Z`
+- turso-mvcc (eigen) and lancedb (grust): partial only; newer stamps under `reports/`.
+
+I have stopped my coordination poll; the operator will relay anything you need from eigen.
