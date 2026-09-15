@@ -28,6 +28,7 @@ struct Args {
     mode: TursoJournalMode,
     path: String,
     snap: Option<String>,
+    wal_load: bool,
 }
 
 fn parse_args() -> Args {
@@ -41,6 +42,7 @@ fn parse_args() -> Args {
             .display()
             .to_string(),
         snap: None,
+        wal_load: false,
     };
     let mut it = std::env::args().skip(1);
     while let Some(flag) = it.next() {
@@ -58,6 +60,13 @@ fn parse_args() -> Args {
             }
             "--path" => args.path = value,
             "--snap" => args.snap = Some(value),
+            "--wal-load" => {
+                args.wal_load = match value.as_str() {
+                    "on" => true,
+                    "off" => false,
+                    other => panic!("unknown wal-load {other}"),
+                }
+            }
             other => panic!("unknown flag {other}"),
         }
     }
@@ -216,6 +225,7 @@ async fn main() -> Result<()> {
     })
     .await?;
     store.bootstrap().await?;
+    store.set_bulk_load_via_wal(args.wal_load);
 
     let load = Instant::now();
     for graph in csr.node_chunks(args.chunk.max(1)) {

@@ -17,8 +17,9 @@ pub enum TursoJournalMode {
     Wal,
     /// Multi-version concurrency control (`PRAGMA journal_mode = mvcc`), which
     /// enables `BEGIN CONCURRENT` concurrent writers. MVCC is a database-*header*
-    /// mode, so it only takes effect on a **fresh** database — an existing WAL
-    /// database is not converted (`connect` errors if the mode cannot be applied).
+    /// mode; Turso 0.7.2 converts an existing WAL database when it is opened
+    /// in this mode, and a live store can switch between the two
+    /// (`set_bulk_load_via_wal`). `connect` errors if the mode is not applied.
     Mvcc,
 }
 
@@ -169,6 +170,9 @@ pub struct TursoGraphStore {
     /// MVCC group commit shared by every handle opened with `connect_shared`
     /// from a store that called `with_group_commit`.
     group: Option<Arc<GroupCommit>>,
+    /// When set, an MVCC `put_graph` switches the database to WAL for the
+    /// load and back to MVCC afterwards (see `set_bulk_load_via_wal`).
+    bulk_load_via_wal: AtomicBool,
     /// Set before an explicit transaction begins and cleared only after its
     /// commit or rollback finishes. If a future is cancelled while the gate is
     /// held, the next caller recovers the abandoned transaction first.
@@ -198,6 +202,7 @@ impl TursoGraphStore {
             connection_gate: tokio::sync::Mutex::new(()),
             transaction_needs_rollback: AtomicBool::new(false),
             group: None,
+            bulk_load_via_wal: AtomicBool::new(false),
         };
         store.apply_journal_mode().await?;
         store
@@ -234,6 +239,7 @@ impl TursoGraphStore {
             // Handles share the store's committer; the committer's own
             // connection is opened before it exists and so commits directly.
             group: self.group.clone(),
+            bulk_load_via_wal: AtomicBool::new(self.bulk_load_via_wal.load(Ordering::Acquire)),
         };
         store.apply_journal_mode().await?;
         store
@@ -257,8 +263,7 @@ impl TursoGraphStore {
             .await?;
         if got.as_deref() != Some(want) {
             return Err(GrustError::Backend(format!(
-                "requested Turso journal_mode = {want} but the database reports {got:?}; \
-                 MVCC must be set on a fresh database (an existing WAL database cannot be converted)"
+                "requested Turso journal_mode = {want} but the database reports {got:?}"
             )));
         }
         Ok(())
@@ -347,6 +352,18 @@ impl TursoGraphStore {
             .await
     }
 
+    /// Run this MVCC store's `put_graph` calls through WAL: each switches the
+    /// database to `journal_mode = wal`, loads in one transaction (WAL's load
+    /// path, several times faster than MVCC's, which keeps every index entry
+    /// of every row version in memory), checkpoints, and switches back to
+    /// MVCC, also when the load fails. Journal mode is database-wide, so the
+    /// caller must not run other writes on the database while a `put_graph`
+    /// is in flight; a bulk load before serving is the intended use. A no-op
+    /// for WAL stores. Handles opened later with `connect_shared` inherit it.
+    pub fn set_bulk_load_via_wal(&self, enabled: bool) {
+        self.bulk_load_via_wal.store(enabled, Ordering::Release);
+    }
+
     pub async fn in_memory() -> Result<Self> {
         Self::connect(TursoConfig::default()).await
     }
@@ -381,6 +398,7 @@ impl TursoGraphStore {
             connection_gate: tokio::sync::Mutex::new(()),
             transaction_needs_rollback: AtomicBool::new(false),
             group: None,
+            bulk_load_via_wal: AtomicBool::new(false),
         })
     }
 
@@ -665,6 +683,11 @@ impl TursoGraphStore {
     /// `put_graph`: the rows of `graph` as prepared multi-row upserts.
     async fn put_graph_rows(&self, graph: &Graph) -> Result<LoadReport> {
         let rows = self.config.batch_size.max(1);
+        if self.config.journal_mode == TursoJournalMode::Mvcc
+            && self.bulk_load_via_wal.load(Ordering::Acquire)
+        {
+            return self.put_graph_rows_via_wal(graph, rows).await;
+        }
         if self.config.journal_mode == TursoJournalMode::Mvcc {
             // MVCC keeps every row version of an open transaction in memory
             // until it commits, so one BEGIN CONCURRENT around a whole load
@@ -704,6 +727,41 @@ impl TursoGraphStore {
             nodes: graph.nodes.len(),
             edges: graph.edges.len(),
         })
+    }
+
+    /// An MVCC store's `put_graph` run through WAL (`set_bulk_load_via_wal`):
+    /// switch to WAL, load everything in one transaction, checkpoint, switch
+    /// back to MVCC whether or not the load succeeded.
+    async fn put_graph_rows_via_wal(&self, graph: &Graph, rows: usize) -> Result<LoadReport> {
+        self.switch_journal_mode("wal").await?;
+        let loaded = async {
+            self.load_transaction(&graph.nodes, &graph.edges, false, rows)
+                .await?;
+            self.execute_discarding_rows("PRAGMA wal_checkpoint(TRUNCATE)")
+                .await
+        }
+        .await;
+        let back = self.switch_journal_mode("mvcc").await;
+        loaded?;
+        back?;
+        Ok(LoadReport {
+            nodes: graph.nodes.len(),
+            edges: graph.edges.len(),
+        })
+    }
+
+    /// Set the database's journal mode and confirm the engine reports it.
+    async fn switch_journal_mode(&self, want: &str) -> Result<()> {
+        let got = self
+            .query_scalar_text(&format!("PRAGMA journal_mode = {want}"))
+            .await?;
+        if got.as_deref() == Some(want) {
+            Ok(())
+        } else {
+            Err(GrustError::Backend(format!(
+                "Turso did not switch journal_mode to {want}; it reports {got:?}"
+            )))
+        }
     }
 
     /// The MVCC load body: nodes, then edges, each committed in groups of
