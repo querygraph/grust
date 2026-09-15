@@ -622,6 +622,14 @@ impl TursoGraphStore {
             .is_some())
     }
 
+    /// Whether `table` (an already-quoted identifier) holds at least one row.
+    async fn table_has_rows(&self, table: &str) -> Result<bool> {
+        Ok(self
+            .query_scalar_i64(&format!("SELECT EXISTS(SELECT 1 FROM {table})"))
+            .await?
+            != 0)
+    }
+
     fn edges_table(&self) -> String {
         quote_ident(&format!("{}_edges", self.config.table_prefix))
     }
@@ -680,12 +688,47 @@ impl TursoGraphStore {
             // TRUNCATE checkpoint below still fsyncs, so the load is durable
             // when put_graph returns. The connection's previous setting is
             // restored whether or not the load succeeds.
+            //
+            // MVCC keeps every index entry of every row version in an
+            // in-memory skip list as well as in the B-tree; profiling an MVCC
+            // load put 16% of its time in that skip list's key comparisons.
+            // When a table is empty at the start of the call, its secondary
+            // index is dropped for the load and built once at the end with
+            // CREATE INDEX, which is rebuilt whether or not the load succeeds.
+            let defer_edge_index =
+                !graph.edges.is_empty() && !self.table_has_rows(&self.edges_table()).await?;
+            let defer_node_index =
+                !graph.nodes.is_empty() && !self.table_has_rows(&self.nodes_table()).await?;
+            let edge_index = quote_ident(&format!("{}_edges_to_idx", self.config.table_prefix));
+            let node_index = quote_ident(&format!("{}_nodes_label_idx", self.config.table_prefix));
+            if defer_edge_index {
+                self.execute(&format!("DROP INDEX IF EXISTS {edge_index}"))
+                    .await?;
+            }
+            if defer_node_index {
+                self.execute(&format!("DROP INDEX IF EXISTS {node_index}"))
+                    .await?;
+            }
             let synchronous = self.query_scalar_i64("PRAGMA synchronous").await?;
             self.execute_discarding_rows("PRAGMA synchronous = NORMAL")
                 .await?;
             let loaded = self.put_mvcc_groups(graph, rows).await;
             self.execute_discarding_rows(&format!("PRAGMA synchronous = {synchronous}"))
                 .await?;
+            if defer_node_index {
+                self.execute(&format!(
+                    "CREATE INDEX IF NOT EXISTS {node_index} ON {}(label)",
+                    self.nodes_table()
+                ))
+                .await?;
+            }
+            if defer_edge_index {
+                self.execute(&format!(
+                    "CREATE INDEX IF NOT EXISTS {edge_index} ON {}(to_id)",
+                    self.edges_table()
+                ))
+                .await?;
+            }
             loaded?;
         } else {
             self.load_transaction(&graph.nodes, &graph.edges, false, rows)

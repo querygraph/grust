@@ -800,6 +800,17 @@ async fn mvcc_bulk_load_stores_the_rows_of_the_wal_load_and_keeps_concurrent_wri
         2,
         "a load runs at synchronous = NORMAL and restores FULL afterwards"
     );
+    for index in ["edges_to_idx", "nodes_label_idx"] {
+        assert_eq!(
+            mvcc.query_scalar_i64(&format!(
+                "SELECT COUNT(*) FROM sqlite_schema WHERE type = 'index' AND name LIKE '%{index}'"
+            ))
+            .await
+            .unwrap(),
+            1,
+            "{index} exists after a load that deferred it"
+        );
+    }
     assert_eq!(raw_rows(&mvcc).await, expected, "MVCC rows equal WAL rows");
     assert!(
         expected.iter().any(|row| row.len() == 6
