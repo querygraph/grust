@@ -519,15 +519,20 @@ impl TursoGraphStore {
             // keeps each transaction small; a load is no longer all-or-nothing
             // under MVCC, and a failure leaves the groups committed before it.
             //
-            // Automatic checkpoints are off for the load: each one wrote the
-            // rows committed so far into the B-tree, about a third of an MVCC
-            // load's time, and the TRUNCATE below writes them all once. The
+            // A load raises the automatic checkpoint threshold to
+            // MVCC_LOAD_CHECKPOINT_BYTES of logical log: each checkpoint
+            // writes the rows committed so far into the B-tree, and at Turso's
+            // 4 MB default they took about a third of an MVCC load. Turning
+            // them off entirely kept every row version of the load resident
+            // (13.4 GB at 5 M edges), so the threshold stays finite. The
             // store's threshold is restored whether or not the load succeeds.
             let threshold = self
                 .query_scalar_i64("PRAGMA mvcc_checkpoint_threshold")
                 .await?;
-            self.execute_discarding_rows("PRAGMA mvcc_checkpoint_threshold = -1")
-                .await?;
+            self.execute_discarding_rows(&format!(
+                "PRAGMA mvcc_checkpoint_threshold = {MVCC_LOAD_CHECKPOINT_BYTES}"
+            ))
+            .await?;
             let loaded = self.put_mvcc_groups(graph, rows).await;
             self.execute_discarding_rows(&format!(
                 "PRAGMA mvcc_checkpoint_threshold = {threshold}"
@@ -996,6 +1001,13 @@ pub const PAGE_CACHE_KIB: u64 = 1024 * 1024;
 /// many `batch_size`-row statements, so with the default batch size of 500
 /// rows about ten thousand rows at a time.
 pub const MVCC_LOAD_COMMIT_STATEMENTS: usize = 20;
+
+/// Logical-log bytes between automatic checkpoints while `put_graph` loads
+/// an MVCC store, in place of Turso's 4,120,000-byte default. Each
+/// checkpoint rewrites the rows committed so far into the B-tree; a larger
+/// threshold takes fewer of them, at the cost of keeping up to this much
+/// log's row versions resident between them.
+pub const MVCC_LOAD_CHECKPOINT_BYTES: i64 = 64 * 1024 * 1024;
 
 pub fn upsert_nodes_sql(table: &str, nodes: &[Node]) -> Result<String> {
     TursoDialect.upsert_nodes_sql(table, nodes)
