@@ -795,6 +795,11 @@ async fn mvcc_bulk_load_stores_the_rows_of_the_wal_load_and_keeps_concurrent_wri
         .unwrap();
     let mode = mvcc.query_scalar_text("PRAGMA journal_mode").await.unwrap();
     assert_eq!(mode.as_deref(), Some("mvcc"), "the load stays an MVCC load");
+    assert_eq!(
+        mvcc.query_scalar_i64("PRAGMA synchronous").await.unwrap(),
+        2,
+        "a load runs at synchronous = NORMAL and restores FULL afterwards"
+    );
     assert_eq!(raw_rows(&mvcc).await, expected, "MVCC rows equal WAL rows");
     assert!(
         expected.iter().any(|row| row.len() == 6

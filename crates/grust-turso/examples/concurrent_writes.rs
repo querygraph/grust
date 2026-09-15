@@ -15,7 +15,7 @@
 //! accepted writes per second, then checks the hub's final out-degree.
 
 use grust_core::prelude::*;
-use grust_turso::{TursoConfig, TursoGraphStore, TursoJournalMode};
+use grust_turso::{TursoConfig, TursoGraphStore, TursoJournalMode, TursoSynchronous};
 use std::sync::Arc;
 use std::time::Instant;
 
@@ -26,6 +26,7 @@ struct Args {
     per: usize,
     mode: TursoJournalMode,
     shared: bool,
+    sync: Option<TursoSynchronous>,
     path: String,
 }
 
@@ -35,6 +36,7 @@ fn parse_args() -> Args {
         per: 200,
         mode: TursoJournalMode::Mvcc,
         shared: false,
+        sync: None,
         path: std::env::temp_dir()
             .join("grust-turso-concurrent.db")
             .display()
@@ -59,6 +61,14 @@ fn parse_args() -> Args {
                     "separate" => false,
                     other => panic!("unknown handles {other}"),
                 }
+            }
+            "--sync" => {
+                args.sync = Some(match value.as_str() {
+                    "full" => TursoSynchronous::Full,
+                    "normal" => TursoSynchronous::Normal,
+                    "off" => TursoSynchronous::Off,
+                    other => panic!("unknown sync {other}"),
+                })
             }
             "--path" => args.path = value,
             other => panic!("unknown flag {other}"),
@@ -96,6 +106,9 @@ async fn main() -> Result<()> {
         } else {
             TursoGraphStore::connect(config.clone()).await?
         };
+        if let Some(mode) = args.sync {
+            store.set_synchronous(mode).await?;
+        }
         stores.push(Arc::new(store));
     }
     let open_s = opened.elapsed().as_secs_f64();
@@ -147,7 +160,8 @@ async fn main() -> Result<()> {
         .await?
         .len();
     println!(
-        "mode={:?} handles={} writers={} per={} open={:.2}s wall={:.2}s accepted={} conflicts={} other={} writes/s={:.0} hub_degree={} consistent={}",
+        "sync={:?} mode={:?} handles={} writers={} per={} open={:.2}s wall={:.2}s accepted={} conflicts={} other={} writes/s={:.0} hub_degree={} consistent={}",
+        args.sync,
         args.mode,
         if args.shared { "shared" } else { "separate" },
         args.writers,

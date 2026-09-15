@@ -32,6 +32,27 @@ impl TursoJournalMode {
     }
 }
 
+/// `PRAGMA synchronous` for a connection. Turso's default is `Full`: every
+/// commit fsyncs (under MVCC, while holding the global commit lock).
+/// `Normal` skips the per-commit fsync and still fsyncs at checkpoints, so a
+/// crash can lose the commits since the last checkpoint; `Off` never fsyncs.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum TursoSynchronous {
+    Off,
+    Normal,
+    Full,
+}
+
+impl TursoSynchronous {
+    fn pragma_value(self) -> &'static str {
+        match self {
+            TursoSynchronous::Off => "OFF",
+            TursoSynchronous::Normal => "NORMAL",
+            TursoSynchronous::Full => "FULL",
+        }
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct TursoConfig {
     pub path: String,
@@ -205,6 +226,34 @@ impl TursoGraphStore {
             Some(row) => row_optional_text(&row, 0, "pragma result"),
             None => Ok(None),
         }
+    }
+
+    /// The first column of the first row of `sql` as an integer.
+    async fn query_scalar_i64(&self, sql: &str) -> Result<i64> {
+        let _gate = self.lock_connection().await?;
+        let mut rows = self
+            .conn
+            .query(sql, ())
+            .await
+            .map_err(|err| GrustError::Backend(format!("Turso query failed: {err}: {sql}")))?;
+        let row = rows
+            .next()
+            .await
+            .map_err(|err| GrustError::Backend(format!("Turso row read failed: {err}: {sql}")))?
+            .ok_or_else(|| GrustError::Backend(format!("Turso returned no row: {sql}")))?;
+        match row.get_value(0) {
+            Ok(turso::Value::Integer(value)) => Ok(value),
+            other => Err(GrustError::Backend(format!(
+                "Turso returned {other:?} where an integer was expected: {sql}"
+            ))),
+        }
+    }
+
+    /// Set `PRAGMA synchronous` on this store's connection. Each handle has
+    /// its own connection, so set it on every handle that should use it.
+    pub async fn set_synchronous(&self, mode: TursoSynchronous) -> Result<()> {
+        self.execute_discarding_rows(&format!("PRAGMA synchronous = {}", mode.pragma_value()))
+            .await
     }
 
     pub async fn in_memory() -> Result<Self> {
@@ -525,13 +574,20 @@ impl TursoGraphStore {
             // this way. Committing every MVCC_LOAD_COMMIT_STATEMENTS batches
             // keeps each transaction small; a load is no longer all-or-nothing
             // under MVCC, and a failure leaves the groups committed before it.
-            let group = MVCC_LOAD_COMMIT_STATEMENTS * rows;
-            for chunk in graph.nodes.chunks(group) {
-                self.load_transaction(chunk, &[], true, rows).await?;
-            }
-            for chunk in graph.edges.chunks(group) {
-                self.load_transaction(&[], chunk, true, rows).await?;
-            }
+            //
+            // Under the default synchronous = FULL every MVCC commit fsyncs
+            // the logical log while holding Turso's global commit lock. The
+            // load runs at NORMAL, which skips the per-commit fsync; the
+            // TRUNCATE checkpoint below still fsyncs, so the load is durable
+            // when put_graph returns. The connection's previous setting is
+            // restored whether or not the load succeeds.
+            let synchronous = self.query_scalar_i64("PRAGMA synchronous").await?;
+            self.execute_discarding_rows("PRAGMA synchronous = NORMAL")
+                .await?;
+            let loaded = self.put_mvcc_groups(graph, rows).await;
+            self.execute_discarding_rows(&format!("PRAGMA synchronous = {synchronous}"))
+                .await?;
+            loaded?;
         } else {
             self.load_transaction(&graph.nodes, &graph.edges, false, rows)
                 .await?;
@@ -549,6 +605,19 @@ impl TursoGraphStore {
             nodes: graph.nodes.len(),
             edges: graph.edges.len(),
         })
+    }
+
+    /// The MVCC load body: nodes, then edges, each committed in groups of
+    /// `MVCC_LOAD_COMMIT_STATEMENTS` batches.
+    async fn put_mvcc_groups(&self, graph: &Graph, rows: usize) -> Result<()> {
+        let group = MVCC_LOAD_COMMIT_STATEMENTS * rows;
+        for chunk in graph.nodes.chunks(group) {
+            self.load_transaction(chunk, &[], true, rows).await?;
+        }
+        for chunk in graph.edges.chunks(group) {
+            self.load_transaction(&[], chunk, true, rows).await?;
+        }
+        Ok(())
     }
 
     /// Upsert `nodes` then `edges` in one transaction on the shared
