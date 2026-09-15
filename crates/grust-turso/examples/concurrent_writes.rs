@@ -27,6 +27,7 @@ struct Args {
     mode: TursoJournalMode,
     shared: bool,
     sync: Option<TursoSynchronous>,
+    group: bool,
     path: String,
 }
 
@@ -37,6 +38,7 @@ fn parse_args() -> Args {
         mode: TursoJournalMode::Mvcc,
         shared: false,
         sync: None,
+        group: false,
         path: std::env::temp_dir()
             .join("grust-turso-concurrent.db")
             .display()
@@ -70,6 +72,13 @@ fn parse_args() -> Args {
                     other => panic!("unknown sync {other}"),
                 })
             }
+            "--group" => {
+                args.group = match value.as_str() {
+                    "on" => true,
+                    "off" => false,
+                    other => panic!("unknown group {other}"),
+                }
+            }
             "--path" => args.path = value,
             other => panic!("unknown flag {other}"),
         }
@@ -94,8 +103,11 @@ async fn main() -> Result<()> {
         batch_size: 500,
         journal_mode: args.mode,
     };
-    let base = TursoGraphStore::connect(config.clone()).await?;
+    let mut base = TursoGraphStore::connect(config.clone()).await?;
     base.bootstrap().await?;
+    if args.group {
+        base = base.with_group_commit().await?;
+    }
     base.put_node(&Node::new("Node", HUB, Props::new())).await?;
 
     let opened = Instant::now();
@@ -160,7 +172,8 @@ async fn main() -> Result<()> {
         .await?
         .len();
     println!(
-        "sync={:?} mode={:?} handles={} writers={} per={} open={:.2}s wall={:.2}s accepted={} conflicts={} other={} writes/s={:.0} hub_degree={} consistent={}",
+        "group={} sync={:?} mode={:?} handles={} writers={} per={} open={:.2}s wall={:.2}s accepted={} conflicts={} other={} writes/s={:.0} hub_degree={} consistent={}",
+        args.group,
         args.sync,
         args.mode,
         if args.shared { "shared" } else { "separate" },

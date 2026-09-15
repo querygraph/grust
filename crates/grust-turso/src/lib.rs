@@ -53,6 +53,71 @@ impl TursoSynchronous {
     }
 }
 
+/// One statement waiting for a group commit, and where to send its outcome.
+struct GroupJob {
+    sql: String,
+    reply: tokio::sync::oneshot::Sender<Result<()>>,
+}
+
+/// The MVCC group committer: a task that owns one connection and commits
+/// whatever statements are waiting as one transaction.
+struct GroupCommit {
+    jobs: tokio::sync::mpsc::UnboundedSender<GroupJob>,
+}
+
+/// Most statements one group commit carries; a larger backlog waits for the
+/// next commit.
+const GROUP_COMMIT_MAX_STATEMENTS: usize = 256;
+
+impl GroupCommit {
+    fn spawn(committer: TursoGraphStore) -> Self {
+        let (jobs, mut queue) = tokio::sync::mpsc::unbounded_channel::<GroupJob>();
+        tokio::spawn(async move {
+            while let Some(first) = queue.recv().await {
+                let mut batch = vec![first];
+                while batch.len() < GROUP_COMMIT_MAX_STATEMENTS {
+                    match queue.try_recv() {
+                        Ok(job) => batch.push(job),
+                        Err(_) => break,
+                    }
+                }
+                let statements: Vec<String> = batch.iter().map(|job| job.sql.clone()).collect();
+                if batch.len() > 1
+                    && committer
+                        .execute_transaction(&statements, true)
+                        .await
+                        .is_ok()
+                {
+                    for job in batch {
+                        let _ = job.reply.send(Ok(()));
+                    }
+                    continue;
+                }
+                // One statement, or a batch that failed as a whole: each job
+                // runs as its own transaction with the usual conflict retry,
+                // so only the failing statement's caller sees the error.
+                for job in batch {
+                    let outcome = committer
+                        .execute_transaction(std::slice::from_ref(&job.sql), true)
+                        .await;
+                    let _ = job.reply.send(outcome);
+                }
+            }
+        });
+        Self { jobs }
+    }
+
+    async fn submit(&self, sql: String) -> Result<()> {
+        let (reply, outcome) = tokio::sync::oneshot::channel();
+        self.jobs
+            .send(GroupJob { sql, reply })
+            .map_err(|_| GrustError::Backend("Turso group committer has stopped".to_string()))?;
+        outcome
+            .await
+            .map_err(|_| GrustError::Backend("Turso group committer dropped a write".to_string()))?
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct TursoConfig {
     pub path: String,
@@ -101,6 +166,9 @@ pub struct TursoGraphStore {
     /// cannot accidentally absorb a concurrent read or write on the same
     /// connection.
     connection_gate: tokio::sync::Mutex<()>,
+    /// MVCC group commit shared by every handle opened with `connect_shared`
+    /// from a store that called `with_group_commit`.
+    group: Option<Arc<GroupCommit>>,
     /// Set before an explicit transaction begins and cleared only after its
     /// commit or rollback finishes. If a future is cancelled while the gate is
     /// held, the next caller recovers the abandoned transaction first.
@@ -129,6 +197,7 @@ impl TursoGraphStore {
             index_cache: std::sync::Mutex::new(None),
             connection_gate: tokio::sync::Mutex::new(()),
             transaction_needs_rollback: AtomicBool::new(false),
+            group: None,
         };
         store.apply_journal_mode().await?;
         store
@@ -162,6 +231,9 @@ impl TursoGraphStore {
             index_cache: std::sync::Mutex::new(None),
             connection_gate: tokio::sync::Mutex::new(()),
             transaction_needs_rollback: AtomicBool::new(false),
+            // Handles share the store's committer; the committer's own
+            // connection is opened before it exists and so commits directly.
+            group: self.group.clone(),
         };
         store.apply_journal_mode().await?;
         store
@@ -249,6 +321,25 @@ impl TursoGraphStore {
         }
     }
 
+    /// Turn on MVCC group commit for this store and every handle later opened
+    /// from it with `connect_shared`. Single-statement writes (`put_node`,
+    /// `put_edge`, and the other one-statement mutations) from all of those
+    /// handles are handed to one committer, which runs whatever is waiting
+    /// as one `BEGIN CONCURRENT … COMMIT`: under `synchronous = FULL` that
+    /// is one fsync for the batch instead of one per write, and each caller
+    /// returns only after the commit that carries its statement. A batch
+    /// that fails is retried one statement at a time, so a failing or
+    /// conflicting write fails only its own caller. WAL stores are returned
+    /// unchanged. Must be called from within a Tokio runtime.
+    pub async fn with_group_commit(mut self) -> Result<Self> {
+        if self.config.journal_mode != TursoJournalMode::Mvcc || self.group.is_some() {
+            return Ok(self);
+        }
+        let committer = self.connect_shared().await?;
+        self.group = Some(Arc::new(GroupCommit::spawn(committer)));
+        Ok(self)
+    }
+
     /// Set `PRAGMA synchronous` on this store's connection. Each handle has
     /// its own connection, so set it on every handle that should use it.
     pub async fn set_synchronous(&self, mode: TursoSynchronous) -> Result<()> {
@@ -289,6 +380,7 @@ impl TursoGraphStore {
             index_cache: std::sync::Mutex::new(None),
             connection_gate: tokio::sync::Mutex::new(()),
             transaction_needs_rollback: AtomicBool::new(false),
+            group: None,
         })
     }
 
@@ -377,6 +469,13 @@ impl TursoGraphStore {
     async fn execute_data(&self, sql: &str) -> Result<()> {
         match self.config.journal_mode {
             TursoJournalMode::Wal => self.execute(sql).await,
+            TursoJournalMode::Mvcc if self.group.is_some() => {
+                self.invalidate_snapshot();
+                let group = self.group.as_ref().expect("checked above");
+                let result = group.submit(sql.to_string()).await;
+                self.invalidate_snapshot();
+                result
+            }
             TursoJournalMode::Mvcc => {
                 self.execute_concurrent(std::slice::from_ref(&sql.to_string()))
                     .await
