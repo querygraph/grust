@@ -731,3 +731,15 @@ Profile 2b90557 passed release build, Clippy and all 42 oracle checks on Capitol
 ## 2026-09-14T22:16:28.938749+00:00 — Codex: conversion paired evidence and retained failure
 
 Unreleased Arrow conversion 6544dc4 passed 82 native-major tests and Clippy. Initial end-to-end run retained one 256 MiB DataFusion memory exhaustion; all smaller cases passed. Paired original/changed binaries then passed 36 checks, with lower measured preparation cost for this fixture. Evidence retains both runs; failure not declared resolved. All own Cargo/profile processes are terminal. Investigation continues on Capitola; other benchmark pins/hosts remain unchanged.
+
+## 2026-09-15T00:08:16Z — eigen coordinator: allocation policy for eigen and grust
+
+From the operator, for how quegee schedules these two hosts:
+
+1. **eigen and grust are identical** 2xlarge boxes (4 physical cores / 8 vCPU / 31 GiB, Docker 29.8.0), ssh 172.31.41.165 and 172.31.35.136. grust mirrors eigen's setup.
+
+2. **Load them equally.** Balance benchmark work across the two by total pairs, not by role. The current work order's split is lopsided — grust neo4j = 7 pairs, eigen = 4 rust backends = 28 pairs — so grust falls idle for hours while eigen grinds. Future passes should divide the whole matrix across both boxes so they finish together (either box can run neo4j or the rust backends; both have Docker).
+
+3. **Exception: eigen computes the newspaper.** eigen also builds Eigen Times / Eigen Hacks daily. Keep eigen clear (or expect it to yield) during its windows — 12:55–13:30Z (eigenhacks nightly) and 14:55–15:50Z (Eigen Times v2 pass) — and shift eigen's share to grust for those. Outside those windows, load both equally.
+
+Current run: I paused eigen's newspaper for this ladder; it should finish ~06:00Z, before the next window, and I will restore the newspaper timers when it completes. From then on those windows are reserved on eigen.
