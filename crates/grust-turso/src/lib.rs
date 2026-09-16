@@ -176,6 +176,10 @@ pub struct TursoGraphStore {
     /// Concurrent writers an MVCC `put_graph` uses (see
     /// `set_mvcc_load_parallelism`); 1 loads on this connection alone.
     mvcc_load_parallelism: AtomicUsize,
+    /// Set for the duration of a `put_graph` whose target tables were empty
+    /// when it began: its batches insert without a conflict clause, and a
+    /// batch that does collide is replayed as an upsert.
+    loading_empty_tables: Arc<AtomicBool>,
     /// Set before an explicit transaction begins and cleared only after its
     /// commit or rollback finishes. If a future is cancelled while the gate is
     /// held, the next caller recovers the abandoned transaction first.
@@ -207,6 +211,7 @@ impl TursoGraphStore {
             group: None,
             bulk_load_via_wal: AtomicBool::new(false),
             mvcc_load_parallelism: AtomicUsize::new(1),
+            loading_empty_tables: Arc::new(AtomicBool::new(false)),
         };
         store.apply_journal_mode().await?;
         store
@@ -247,6 +252,9 @@ impl TursoGraphStore {
             mvcc_load_parallelism: AtomicUsize::new(
                 self.mvcc_load_parallelism.load(Ordering::Acquire),
             ),
+            // Shared, not copied: a parallel load sets the flag on the store
+            // and its writer handles must see it.
+            loading_empty_tables: self.loading_empty_tables.clone(),
         };
         store.apply_journal_mode().await?;
         store
@@ -417,6 +425,7 @@ impl TursoGraphStore {
             group: None,
             bulk_load_via_wal: AtomicBool::new(false),
             mvcc_load_parallelism: AtomicUsize::new(1),
+            loading_empty_tables: Arc::new(AtomicBool::new(false)),
         })
     }
 
@@ -658,6 +667,15 @@ impl TursoGraphStore {
             .is_some())
     }
 
+    /// Whether `table` (an already-quoted identifier) holds at least one row.
+    /// `EXISTS` stops at the first row, where `COUNT(*)` would walk the table.
+    async fn table_has_rows(&self, table: &str) -> Result<bool> {
+        Ok(self
+            .query_scalar_i64(&format!("SELECT EXISTS(SELECT 1 FROM {table})"))
+            .await?
+            != 0)
+    }
+
     fn edges_table(&self) -> String {
         quote_ident(&format!("{}_edges", self.config.table_prefix))
     }
@@ -697,10 +715,46 @@ fn prepared_upsert_edges_sql(table: &str, rows: usize) -> String {
     )
 }
 
+/// The same rows as [`prepared_upsert_nodes_sql`] without the conflict
+/// clause: on a table that was empty when the load began there is nothing to
+/// conflict with, and the upsert's index probe per row is pure cost.
+fn prepared_insert_nodes_sql(table: &str, rows: usize) -> String {
+    let values = vec!["(?, ?, ?)"; rows].join(", ");
+    format!("INSERT INTO {table} (id, label, props) VALUES {values}")
+}
+
+/// The same rows as [`prepared_upsert_edges_sql`] without the conflict clause.
+fn prepared_insert_edges_sql(table: &str, rows: usize) -> String {
+    let values = vec!["(?, ?, ?, ?, ?, ?)"; rows].join(", ");
+    format!("INSERT INTO {table} (id, from_id, to_id, label, props, identity_key) VALUES {values}")
+}
+
+/// Whether an error is a key collision, so a batch that took the plain-INSERT
+/// path can be replayed as an upsert. Deliberately broad: Turso's wording is
+/// not pinned down here, and replaying a batch as an upsert is always correct.
+fn is_key_collision(err: &GrustError) -> bool {
+    let msg = err.to_string().to_ascii_lowercase();
+    msg.contains("constraint") || msg.contains("unique") || msg.contains("duplicate")
+}
+
 impl TursoGraphStore {
     /// `put_graph`: the rows of `graph` as prepared multi-row upserts.
     async fn put_graph_rows(&self, graph: &Graph) -> Result<LoadReport> {
         let rows = self.config.batch_size.max(1);
+        // A load whose target tables are empty right now cannot collide, so
+        // its batches insert without the upsert's conflict clause (and its
+        // index probe per row). The flag covers this call only, and is cleared
+        // on every exit so an ordinary later write never takes that path. Each
+        // side is only checked when the graph has rows for it.
+        let fresh = (graph.nodes.is_empty() || !self.table_has_rows(&self.nodes_table()).await?)
+            && (graph.edges.is_empty() || !self.table_has_rows(&self.edges_table()).await?);
+        self.loading_empty_tables.store(fresh, Ordering::Release);
+        let loaded = self.put_graph_rows_inner(graph, rows).await;
+        self.loading_empty_tables.store(false, Ordering::Release);
+        loaded
+    }
+
+    async fn put_graph_rows_inner(&self, graph: &Graph, rows: usize) -> Result<LoadReport> {
         if self.config.journal_mode == TursoJournalMode::Mvcc
             && self.bulk_load_via_wal.load(Ordering::Acquire)
         {
@@ -964,9 +1018,13 @@ impl TursoGraphStore {
         rows: usize,
     ) -> Result<()> {
         self.invalidate_snapshot();
+        // A load into tables that were empty when it began cannot collide, so
+        // its batches skip the upsert's conflict clause (and its index probe
+        // per row). A batch that collides anyway — duplicate keys inside the
+        // same load — is replayed as an upsert, which is always correct.
+        let fresh = self.loading_empty_tables.load(Ordering::Acquire);
         let nodes_table = self.nodes_table();
         for chunk in nodes.chunks(rows) {
-            let sql = prepared_upsert_nodes_sql(&nodes_table, chunk.len());
             let mut params = Vec::with_capacity(chunk.len() * 3);
             for node in chunk {
                 params.push(turso::Value::Text(node.id.as_str().to_string()));
@@ -975,11 +1033,22 @@ impl TursoGraphStore {
                     &node.props,
                 )?));
             }
-            self.execute_prepared_unlocked(&sql, params).await?;
+            let upsert = prepared_upsert_nodes_sql(&nodes_table, chunk.len());
+            if fresh {
+                let insert = prepared_insert_nodes_sql(&nodes_table, chunk.len());
+                match self
+                    .execute_prepared_unlocked(&insert, params.clone())
+                    .await
+                {
+                    Ok(()) => continue,
+                    Err(err) if is_key_collision(&err) => {}
+                    Err(err) => return Err(err),
+                }
+            }
+            self.execute_prepared_unlocked(&upsert, params).await?;
         }
         let edges_table = self.edges_table();
         for chunk in edges.chunks(rows) {
-            let sql = prepared_upsert_edges_sql(&edges_table, chunk.len());
             let mut params = Vec::with_capacity(chunk.len() * 6);
             for edge in chunk {
                 params.push(match &edge.id {
@@ -994,7 +1063,19 @@ impl TursoGraphStore {
                 )?));
                 params.push(turso::Value::Text(edge_identity_key(edge)));
             }
-            self.execute_prepared_unlocked(&sql, params).await?;
+            let upsert = prepared_upsert_edges_sql(&edges_table, chunk.len());
+            if fresh {
+                let insert = prepared_insert_edges_sql(&edges_table, chunk.len());
+                match self
+                    .execute_prepared_unlocked(&insert, params.clone())
+                    .await
+                {
+                    Ok(()) => continue,
+                    Err(err) if is_key_collision(&err) => {}
+                    Err(err) => return Err(err),
+                }
+            }
+            self.execute_prepared_unlocked(&upsert, params).await?;
         }
         Ok(())
     }
