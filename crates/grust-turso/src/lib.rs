@@ -804,8 +804,35 @@ impl TursoGraphStore {
             handle
                 .execute_discarding_rows("PRAGMA synchronous = NORMAL")
                 .await?;
+            handle
+                .execute_discarding_rows(&format!(
+                    "PRAGMA cache_size = -{MVCC_LOAD_WRITER_CACHE_KIB}"
+                ))
+                .await?;
             handles.push(Arc::new(handle));
         }
+        // Turso runs an inline garbage-collection pass on the commit path
+        // every mvcc_gc_threshold new row versions; a bulk load leaves nothing
+        // worth collecting, and the round checkpoints below drain the versions
+        // anyway. The store's own threshold is restored after the load.
+        let gc = self.query_scalar_i64("PRAGMA mvcc_gc_threshold").await?;
+        self.execute_discarding_rows("PRAGMA mvcc_gc_threshold = -1")
+            .await?;
+        let loaded = self.put_mvcc_parallel_phases(graph, rows, &handles).await;
+        self.execute_discarding_rows(&format!("PRAGMA mvcc_gc_threshold = {gc}"))
+            .await?;
+        loaded
+    }
+
+    /// The rounds of a parallel MVCC load: nodes, then edges, each writer
+    /// taking one slice per round, with a checkpoint between rounds.
+    async fn put_mvcc_parallel_phases(
+        &self,
+        graph: &Graph,
+        rows: usize,
+        handles: &[Arc<TursoGraphStore>],
+    ) -> Result<()> {
+        let writers = handles.len();
         let slices = |len: usize| -> Vec<std::ops::Range<usize>> {
             let per = len.div_ceil(writers).max(1);
             (0..len)
@@ -1309,6 +1336,11 @@ pub const MVCC_LOAD_COMMIT_STATEMENTS: usize = 20;
 /// Commit groups each parallel MVCC load writer runs between the checkpoints
 /// that bound the load's resident row versions (see `put_mvcc_parallel`).
 pub const MVCC_PARALLEL_ROUND_GROUPS: usize = 5;
+
+/// Page cache for one parallel load writer's connection. A writer streams
+/// rows in and re-reads almost nothing, so it does not need the store's
+/// `PAGE_CACHE_KIB`; eight writers at that size budget 8 GiB of cache alone.
+pub const MVCC_LOAD_WRITER_CACHE_KIB: u64 = 128 * 1024;
 
 pub fn upsert_nodes_sql(table: &str, nodes: &[Node]) -> Result<String> {
     TursoDialect.upsert_nodes_sql(table, nodes)
