@@ -590,6 +590,14 @@ impl TursoGraphStore {
                         )));
                     }
                     if concurrent && is_mvcc_conflict(&err) && attempt < MAX_ATTEMPTS {
+                        // Back off before retrying: a Busy here means another
+                        // writer holds the commit or checkpoint lock, and an
+                        // immediate BEGIN CONCURRENT would spin against it.
+                        // The workspace tokio has no timer, so yield to the
+                        // runtime once per attempt so far instead of sleeping.
+                        for _ in 0..attempt {
+                            tokio::task::yield_now().await;
+                        }
                         continue;
                     }
                     return Err(err);
@@ -987,6 +995,14 @@ impl TursoGraphStore {
                         )));
                     }
                     if concurrent && is_mvcc_conflict(&err) && attempt < MAX_ATTEMPTS {
+                        // Back off before retrying: a Busy here means another
+                        // writer holds the commit or checkpoint lock, and an
+                        // immediate BEGIN CONCURRENT would spin against it.
+                        // The workspace tokio has no timer, so yield to the
+                        // runtime once per attempt so far instead of sleeping.
+                        for _ in 0..attempt {
+                            tokio::task::yield_now().await;
+                        }
                         continue;
                     }
                     return Err(err);
@@ -1294,6 +1310,14 @@ impl CypherMutationExecutor for TursoGraphStore {
                         )));
                     }
                     if concurrent && is_mvcc_conflict(&err) && attempt < MAX_ATTEMPTS {
+                        // Back off before retrying: a Busy here means another
+                        // writer holds the commit or checkpoint lock, and an
+                        // immediate BEGIN CONCURRENT would spin against it.
+                        // The workspace tokio has no timer, so yield to the
+                        // runtime once per attempt so far instead of sleeping.
+                        for _ in 0..attempt {
+                            tokio::task::yield_now().await;
+                        }
                         continue;
                     }
                     return Err(err);
