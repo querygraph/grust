@@ -176,6 +176,9 @@ pub struct TursoGraphStore {
     /// Concurrent writers an MVCC `put_graph` uses (see
     /// `set_mvcc_load_parallelism`); 1 loads on this connection alone.
     mvcc_load_parallelism: AtomicUsize,
+    /// Commit groups a parallel load writer runs between round checkpoints
+    /// (see `set_mvcc_load_round_groups`); 0 means `MVCC_PARALLEL_ROUND_GROUPS`.
+    mvcc_load_round_groups: AtomicUsize,
     /// Set for the duration of a `put_graph` whose target tables were empty
     /// when it began: its batches insert without a conflict clause, and a
     /// batch that does collide is replayed as an upsert.
@@ -211,6 +214,7 @@ impl TursoGraphStore {
             group: None,
             bulk_load_via_wal: AtomicBool::new(false),
             mvcc_load_parallelism: AtomicUsize::new(1),
+            mvcc_load_round_groups: AtomicUsize::new(0),
             loading_empty_tables: Arc::new(AtomicBool::new(false)),
         };
         store.apply_journal_mode().await?;
@@ -251,6 +255,9 @@ impl TursoGraphStore {
             bulk_load_via_wal: AtomicBool::new(self.bulk_load_via_wal.load(Ordering::Acquire)),
             mvcc_load_parallelism: AtomicUsize::new(
                 self.mvcc_load_parallelism.load(Ordering::Acquire),
+            ),
+            mvcc_load_round_groups: AtomicUsize::new(
+                self.mvcc_load_round_groups.load(Ordering::Acquire),
             ),
             // Shared, not copied: a parallel load sets the flag on the store
             // and its writer handles must see it.
@@ -389,6 +396,14 @@ impl TursoGraphStore {
             .store(writers.max(1), Ordering::Release);
     }
 
+    /// Commit groups each parallel load writer runs between the checkpoints
+    /// that bound the load's resident row versions. Fewer, larger rounds mean
+    /// fewer checkpoints and more memory; 0 restores
+    /// `MVCC_PARALLEL_ROUND_GROUPS`.
+    pub fn set_mvcc_load_round_groups(&self, groups: usize) {
+        self.mvcc_load_round_groups.store(groups, Ordering::Release);
+    }
+
     pub async fn in_memory() -> Result<Self> {
         Self::connect(TursoConfig::default()).await
     }
@@ -425,6 +440,7 @@ impl TursoGraphStore {
             group: None,
             bulk_load_via_wal: AtomicBool::new(false),
             mvcc_load_parallelism: AtomicUsize::new(1),
+            mvcc_load_round_groups: AtomicUsize::new(0),
             loading_empty_tables: Arc::new(AtomicBool::new(false)),
         })
     }
@@ -894,7 +910,11 @@ impl TursoGraphStore {
                 .map(|s| s..(s + per).min(len))
                 .collect()
         };
-        let round = MVCC_PARALLEL_ROUND_GROUPS * MVCC_LOAD_COMMIT_STATEMENTS * rows;
+        let groups = match self.mvcc_load_round_groups.load(Ordering::Acquire) {
+            0 => MVCC_PARALLEL_ROUND_GROUPS,
+            n => n,
+        };
+        let round = groups * MVCC_LOAD_COMMIT_STATEMENTS * rows;
         for phase in [false, true] {
             let len = if phase {
                 graph.edges.len()
