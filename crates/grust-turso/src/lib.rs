@@ -366,6 +366,23 @@ impl TursoGraphStore {
             .await
     }
 
+    /// Set Turso's engine-level group commit (`PRAGMA mvcc_group_commit`).
+    /// Store-wide: one setting covers every connection on the database,
+    /// including handles from `connect_shared` and parallel load writers.
+    ///
+    /// Turso 0.8 (upstream `main`) has this and enables it by default; there
+    /// it batches concurrent single-statement commits into one fsync, and
+    /// [`Self::with_group_commit`] on top of it measured ~19% slower, so on
+    /// 0.8 leave this on and skip the client-side committer. Turso 0.7.2 has
+    /// no such pragma and returns an error; on 0.7.2 the client-side
+    /// committer is the only group commit and is worth ~6.6x on hot-node
+    /// writes. Bulk loads are unaffected either way (measured within drift).
+    pub async fn set_mvcc_group_commit(&self, enabled: bool) -> Result<()> {
+        let value = if enabled { "on" } else { "off" };
+        self.execute_discarding_rows(&format!("PRAGMA mvcc_group_commit = {value}"))
+            .await
+    }
+
     /// Run this MVCC store's `put_graph` calls through WAL: each switches the
     /// database to `journal_mode = wal`, loads in one transaction (WAL's load
     /// path, several times faster than MVCC's, which keeps every index entry
