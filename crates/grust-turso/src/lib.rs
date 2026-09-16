@@ -714,8 +714,29 @@ fn prepared_upsert_edges_sql(table: &str, rows: usize) -> String {
 }
 
 impl TursoGraphStore {
-    /// `put_graph`: the rows of `graph` as prepared multi-row upserts.
+    /// `put_graph`: the rows of `graph` as prepared multi-row upserts, loaded
+    /// with foreign keys off, like the Memory reference: an edge whose
+    /// endpoint node is not stored is kept, and the endpoint exists only as
+    /// that edge's end. The schema's `REFERENCES nodes(id) ON DELETE CASCADE`
+    /// stays in force for every other write on this connection, and cascade
+    /// fires on the connection that deletes, so serving semantics are
+    /// unchanged. Before this, only the parallel MVCC writers loaded without
+    /// the check (they never had `PRAGMA foreign_keys` set), so whether a
+    /// dangling edge was accepted depended on the writer count; now every
+    /// path agrees, and WAL and single-writer loads skip the two endpoint
+    /// probes per edge that parallel loads already skipped.
     async fn put_graph_rows(&self, graph: &Graph) -> Result<LoadReport> {
+        // Set outside any transaction: SQLite ignores the pragma inside one.
+        let foreign_keys = self.query_scalar_i64("PRAGMA foreign_keys").await?;
+        self.execute_discarding_rows("PRAGMA foreign_keys = OFF")
+            .await?;
+        let loaded = self.put_graph_rows_unchecked(graph).await;
+        self.execute_discarding_rows(&format!("PRAGMA foreign_keys = {foreign_keys}"))
+            .await?;
+        loaded
+    }
+
+    async fn put_graph_rows_unchecked(&self, graph: &Graph) -> Result<LoadReport> {
         let rows = self.config.batch_size.max(1);
         if self.config.journal_mode == TursoJournalMode::Mvcc
             && self.bulk_load_via_wal.load(Ordering::Acquire)
