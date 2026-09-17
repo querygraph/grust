@@ -214,8 +214,10 @@ Neo4j 5.26 Community over Bolt in a 6 GiB container, quegee, zero steal:
 | soc-LiveJournal1 A1 / A2 | 41.8 s / 2,501 s | 29.5 s / 1,065 s | 19.5 s / 773 s |
 | soc-LiveJournal1 A4 | 2.90 s, 3,200/3,200 | 4.81 s, 3,200/3,200 | 1.29 s, 119/3,200 |
 
-Turso wins traversal on every graph and passes A7, which Neo4j reports as
-unsupported. Load splits by graph: on com-Orkut the MVCC store matches
+Turso wins traversal on every graph. A7, guarded-commit replay, is not
+compared: it runs only on stores with a Grust `GraphCommitStore`, and the
+harness drives Neo4j through its own Cypher without one, which is a gap in
+the harness path, not in Neo4j. Load splits by graph: on com-Orkut the MVCC store matches
 Neo4j's load; on soc-LiveJournal1 Neo4j loads 1.4 times faster. The A4
 column is not a durability-matched comparison, because Neo4j commits durably
 and these MVCC rows ran at `synchronous = NORMAL`; in the durable same-host
