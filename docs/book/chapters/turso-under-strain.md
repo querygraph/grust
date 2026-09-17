@@ -159,13 +159,18 @@ facade must not force a pre-release on downstream crates.
 
 ## Allocator
 
-`grust-turso` exposes `mimalloc = ["turso/mimalloc"]`, and the facade
-forwards it as `turso-mimalloc`. It installs Turso's allocator as the global
-allocator of the whole process, which is an application decision, so it is
-off by default. Measured on four-writer MVCC loads of web-Google, same host,
-alternating pairs: +14% on `main` and +16% on 0.7.2; on WAL loads +9% and
-+16%. No harness number in this chapter used it; a deployment that owns its
-binary should turn it on.
+The `turso` crate enables `mimalloc` in its default features, on 0.7.2 and
+on `main`: it installs mimalloc as the `#[global_allocator]` of the whole
+process. `grust-turso` depends on `turso` with default features off, because
+a library should not choose the process allocator, and exposes the feature
+as `mimalloc = ["turso/mimalloc"]`; the facade forwards it as
+`turso-mimalloc`. So a Grust application runs Turso on the platform
+allocator unless it opts in, while a plain Turso build does not. Measured on
+four-writer MVCC loads of web-Google, same host, alternating pairs: +14% on
+`main` and +16% on 0.7.2; on WAL loads +9% and +16%. Every number in this
+chapter was taken on the platform allocator; the strain harness has since
+made mimalloc its process-wide default and tags such rows `alloc=mimalloc`.
+A deployment that owns its binary should turn it on.
 
 ## What was measured
 
