@@ -49,25 +49,19 @@ fn batch(cols: Vec<(Field, ArrayRef)>) -> RecordBatch {
     RecordBatch::try_new(Arc::new(Schema::new(fields)), arrays).expect("batch")
 }
 
-struct Bench<'a> {
-    conn: &'a lbug::Connection<'a>,
+fn q(conn: &lbug::Connection<'_>, sql: &str) -> Result<(), String> {
+    conn.query(sql).map(drop).map_err(|e| e.to_string())
 }
 
-impl Bench<'_> {
-    fn q(&self, sql: &str) -> Result<(), String> {
-        self.conn.query(sql).map(drop).map_err(|e| e.to_string())
-    }
-
-    /// Runs `f`, prints the variant's rate or the error it returned.
-    fn time(&self, label: &str, rows: usize, f: impl FnOnce() -> Result<(), String>) {
-        let t = Instant::now();
-        match f() {
-            Ok(()) => {
-                let s = t.elapsed().as_secs_f64();
-                println!("{label:58} {rows:>9} rows {s:8.2} s {:>10.0} rows/s", rows as f64 / s);
-            }
-            Err(e) => println!("{label:58} ERROR {}", e.lines().next().unwrap_or("")),
+/// Runs `f`, prints the variant's rate or the error it returned.
+fn time(label: &str, rows: usize, f: impl FnOnce() -> Result<(), String>) {
+    let t = Instant::now();
+    match f() {
+        Ok(()) => {
+            let s = t.elapsed().as_secs_f64();
+            println!("{label:58} {rows:>9} rows {s:8.2} s {:>10.0} rows/s", rows as f64 / s);
         }
+        Err(e) => println!("{label:58} ERROR {}", e.lines().next().unwrap_or("")),
     }
 }
 
@@ -77,7 +71,6 @@ fn main() {
     let dir = tempfile::tempdir().expect("tempdir");
     let db = lbug::Database::new(dir.path().join("db"), lbug::SystemConfig::default()).expect("db");
     let conn = lbug::Connection::new(&db).expect("conn");
-    let b = Bench { conn: &conn };
     println!(
         "lbug {} · {n} nodes, {m} edges · db in {}",
         env!("CARGO_PKG_VERSION"),
@@ -96,17 +89,17 @@ fn main() {
 
     // ---- string-keyed tables, the adapter's schema
     for t in ["N", "N2", "N3"] {
-        b.q(&format!("CREATE NODE TABLE {t}(id STRING, props STRING, PRIMARY KEY(id));")).unwrap();
+        q(&conn, &format!("CREATE NODE TABLE {t}(id STRING, props STRING, PRIMARY KEY(id));")).unwrap();
     }
     for (e, t) in [("E", "N"), ("E2", "N"), ("E3", "N")] {
-        b.q(&format!("CREATE REL TABLE {e}(FROM {t} TO {t}, id STRING, props STRING);")).unwrap();
+        q(&conn, &format!("CREATE REL TABLE {e}(FROM {t} TO {t}, id STRING, props STRING);")).unwrap();
     }
 
     // A. registered Arrow + COPY FROM (MATCH …): the adapter today
     let node_batch = batch(vec![strings("id", &ids), strings("props", &empty)]);
-    b.time("A nodes: arrow table, COPY FROM (MATCH …)", n, || {
+    time("A nodes: arrow table, COPY FROM (MATCH …)", n, || {
         conn.create_arrow_table("s_nodes", &[node_batch.clone()]).map_err(|e| e.to_string())?;
-        let r = b.q("COPY N FROM (MATCH (x:s_nodes) RETURN x.id, x.props);");
+        let r = q(&conn, "COPY N FROM (MATCH (x:s_nodes) RETURN x.id, x.props);");
         conn.drop_arrow_table("s_nodes").map_err(|e| e.to_string())?;
         r
     });
@@ -116,25 +109,25 @@ fn main() {
         strings("id", &eids),
         strings("props", &eprops),
     ]);
-    b.time("A edges: arrow rel table, COPY FROM (MATCH …)", m, || {
+    time("A edges: arrow rel table, COPY FROM (MATCH …)", m, || {
         conn.create_arrow_rel_table("s_rels", &[rel_batch.clone()], "N", "N")
             .map_err(|e| e.to_string())?;
-        let r = b.q("COPY E FROM (MATCH (a:N)-[r:s_rels]->(b:N) RETURN a.id, b.id, r.id, r.props);");
+        let r = q(&conn, "COPY E FROM (MATCH (a:N)-[r:s_rels]->(b:N) RETURN a.id, b.id, r.id, r.props);");
         conn.drop_arrow_table("s_rels").map_err(|e| e.to_string())?;
         r
     });
 
     // B. COPY t FROM <registered table> directly
-    b.time("B nodes: arrow table, COPY FROM s_nodes", n, || {
+    time("B nodes: arrow table, COPY FROM s_nodes", n, || {
         conn.create_arrow_table("s_nodes", &[node_batch.clone()]).map_err(|e| e.to_string())?;
-        let r = b.q("COPY N2 FROM s_nodes;");
+        let r = q(&conn, "COPY N2 FROM s_nodes;");
         conn.drop_arrow_table("s_nodes").map_err(|e| e.to_string())?;
         r
     });
-    b.time("B edges: arrow rel table, COPY FROM s_rels", m, || {
+    time("B edges: arrow rel table, COPY FROM s_rels", m, || {
         conn.create_arrow_rel_table("s_rels", &[rel_batch.clone()], "N2", "N2")
             .map_err(|e| e.to_string())?;
-        let r = b.q("COPY E2 FROM s_rels;");
+        let r = q(&conn, "COPY E2 FROM s_rels;");
         conn.drop_arrow_table("s_rels").map_err(|e| e.to_string())?;
         r
     });
@@ -152,17 +145,17 @@ fn main() {
             writeln!(f, "{},{},{},{{}}", from_s[i], to_s[i], eids[i]).unwrap();
         }
     }
-    b.time("C nodes: COPY FROM 'nodes.csv' (STRING keys)", n, || {
-        b.q(&format!("COPY N3 FROM '{}';", nodes_csv.display()))
+    time("C nodes: COPY FROM 'nodes.csv' (STRING keys)", n, || {
+        q(&conn, &format!("COPY N3 FROM '{}';", nodes_csv.display()))
     });
-    b.time("C edges: COPY FROM 'rels.csv' (STRING keys)", m, || {
-        b.q(&format!("COPY E3 FROM '{}';", rels_csv.display()))
+    time("C edges: COPY FROM 'rels.csv' (STRING keys)", m, || {
+        q(&conn, &format!("COPY E3 FROM '{}';", rels_csv.display()))
     });
 
     // D. CSV files, INT64 keys, no properties: the CSR-parquet shape
-    b.q("CREATE NODE TABLE NI(id INT64, PRIMARY KEY(id));").unwrap();
+    q(&conn, "CREATE NODE TABLE NI(id INT64, PRIMARY KEY(id));").unwrap();
     for e in ["EI", "EI2", "EI3"] {
-        b.q(&format!("CREATE REL TABLE {e}(FROM NI TO NI);")).unwrap();
+        q(&conn, &format!("CREATE REL TABLE {e}(FROM NI TO NI);")).unwrap();
     }
     let nodes_i_csv = dir.path().join("nodes_i.csv");
     let rels_i_csv = dir.path().join("rels_i.csv");
@@ -176,11 +169,11 @@ fn main() {
             writeln!(f, "{},{}", from_i[i], to_i[i]).unwrap();
         }
     }
-    b.time("D nodes: COPY FROM 'nodes_i.csv' (INT64 keys)", n, || {
-        b.q(&format!("COPY NI FROM '{}';", nodes_i_csv.display()))
+    time("D nodes: COPY FROM 'nodes_i.csv' (INT64 keys)", n, || {
+        q(&conn, &format!("COPY NI FROM '{}';", nodes_i_csv.display()))
     });
-    b.time("D edges: COPY FROM 'rels_i.csv' (INT64 keys, no props)", m, || {
-        b.q(&format!("COPY EI FROM '{}';", rels_i_csv.display()))
+    time("D edges: COPY FROM 'rels_i.csv' (INT64 keys, no props)", m, || {
+        q(&conn, &format!("COPY EI FROM '{}';", rels_i_csv.display()))
     });
 
     // E. CSR registration with INT64 keys: indices sorted by source, indptr offsets
@@ -196,17 +189,17 @@ fn main() {
     }
     let indices_batch = batch(vec![ints("to", &indices)]);
     let indptr_batch = batch(vec![ints("offset", &indptr)]);
-    b.time("E edges: CSR arrow rel table, COPY FROM (MATCH …)", m, || {
+    time("E edges: CSR arrow rel table, COPY FROM (MATCH …)", m, || {
         conn.create_arrow_rel_table_csr("s_csr", &[indices_batch.clone()], &[indptr_batch.clone()], "NI", "NI", "to")
             .map_err(|e| e.to_string())?;
-        let r = b.q("COPY EI2 FROM (MATCH (a:NI)-[r:s_csr]->(b:NI) RETURN a.id, b.id);");
+        let r = q(&conn, "COPY EI2 FROM (MATCH (a:NI)-[r:s_csr]->(b:NI) RETURN a.id, b.id);");
         conn.drop_arrow_table("s_csr").map_err(|e| e.to_string())?;
         r
     });
-    b.time("E edges: CSR arrow rel table, COPY FROM s_csr", m, || {
+    time("E edges: CSR arrow rel table, COPY FROM s_csr", m, || {
         conn.create_arrow_rel_table_csr("s_csr", &[indices_batch.clone()], &[indptr_batch.clone()], "NI", "NI", "to")
             .map_err(|e| e.to_string())?;
-        let r = b.q("COPY EI3 FROM s_csr;");
+        let r = q(&conn, "COPY EI3 FROM s_csr;");
         conn.drop_arrow_table("s_csr").map_err(|e| e.to_string())?;
         r
     });
