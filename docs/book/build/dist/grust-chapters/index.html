@@ -5,7 +5,7 @@
   <meta name="generator" content="pandoc" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
   <meta name="author" content="Alexy Khrabrov" />
-  <meta name="dcterms.date" content="2026-09-14" />
+  <meta name="dcterms.date" content="2026-09-17" />
   <title>Grust</title>
   <style>
     div.sitenav { display: flex; flex-direction: row; flex-wrap: wrap; }
@@ -55,7 +55,7 @@
 <h1 class="title">Grust</h1>
 <p class="subtitle">A Rust Property Graph Architecture</p>
 <p class="author">Alexy Khrabrov</p>
-<p class="date">2026-09-14</p>
+<p class="date">2026-09-17</p>
 </header>
 <nav id="TOC" role="doc-toc">
 <ul>
@@ -186,52 +186,80 @@ href="chapter-016.html#compact-snapshots-and-multigraph-persistence"
 id="toc-compact-snapshots-and-multigraph-persistence"><span
 class="toc-section-number">14</span> Compact snapshots and multigraph
 persistence</a></li>
+<li><a href="chapter-017.html#turso-under-strain"
+id="toc-turso-under-strain"><span class="toc-section-number">15</span>
+Turso under strain</a>
+<ul>
+<li><a href="chapter-017.html#two-journal-modes-two-contracts"
+id="toc-two-journal-modes-two-contracts"><span
+class="toc-section-number">15.1</span> Two journal modes, two
+contracts</a></li>
+<li><a href="chapter-017.html#loading-an-mvcc-store"
+id="toc-loading-an-mvcc-store"><span
+class="toc-section-number">15.2</span> Loading an MVCC store</a></li>
+<li><a href="chapter-017.html#concurrent-writes-and-group-commit"
+id="toc-concurrent-writes-and-group-commit"><span
+class="toc-section-number">15.3</span> Concurrent writes and group
+commit</a></li>
+<li><a href="chapter-017.html#allocator" id="toc-allocator"><span
+class="toc-section-number">15.4</span> Allocator</a></li>
+<li><a href="chapter-017.html#what-was-measured"
+id="toc-what-was-measured"><span class="toc-section-number">15.5</span>
+What was measured</a></li>
 <li><a
-href="chapter-017.html#graph-analytics-through-one-rust-implementation"
+href="chapter-017.html#methodology-because-it-decided-several-numbers"
+id="toc-methodology-because-it-decided-several-numbers"><span
+class="toc-section-number">15.6</span> Methodology, because it decided
+several numbers</a></li>
+<li><a href="chapter-017.html#limitations" id="toc-limitations"><span
+class="toc-section-number">15.7</span> Limitations</a></li>
+</ul></li>
+<li><a
+href="chapter-018.html#graph-analytics-through-one-rust-implementation"
 id="toc-graph-analytics-through-one-rust-implementation"><span
-class="toc-section-number">15</span> Graph analytics through one Rust
+class="toc-section-number">16</span> Graph analytics through one Rust
 implementation</a>
 <ul>
-<li><a href="chapter-017.html#starting-from-the-facade"
+<li><a href="chapter-018.html#starting-from-the-facade"
 id="toc-starting-from-the-facade"><span
-class="toc-section-number">15.1</span> Starting from the facade</a></li>
-<li><a href="chapter-017.html#available-operations"
+class="toc-section-number">16.1</span> Starting from the facade</a></li>
+<li><a href="chapter-018.html#available-operations"
 id="toc-available-operations"><span
-class="toc-section-number">15.2</span> Available operations</a></li>
-<li><a href="chapter-017.html#full-paths-and-incremental-consumption"
+class="toc-section-number">16.2</span> Available operations</a></li>
+<li><a href="chapter-018.html#full-paths-and-incremental-consumption"
 id="toc-full-paths-and-incremental-consumption"><span
-class="toc-section-number">15.3</span> Full paths and incremental
+class="toc-section-number">16.3</span> Full paths and incremental
 consumption</a></li>
 <li><a
-href="chapter-017.html#discovery-preparation-reuse-and-execution-classes"
+href="chapter-018.html#discovery-preparation-reuse-and-execution-classes"
 id="toc-discovery-preparation-reuse-and-execution-classes"><span
-class="toc-section-number">15.4</span> Discovery, preparation reuse and
+class="toc-section-number">16.4</span> Discovery, preparation reuse and
 execution classes</a></li>
 </ul></li>
-<li><a href="chapter-018.html#arrow-pipelines-adbc-and-datafusion"
+<li><a href="chapter-019.html#arrow-pipelines-adbc-and-datafusion"
 id="toc-arrow-pipelines-adbc-and-datafusion"><span
-class="toc-section-number">16</span> Arrow pipelines, ADBC and
+class="toc-section-number">17</span> Arrow pipelines, ADBC and
 DataFusion</a>
 <ul>
-<li><a href="chapter-018.html#native-tables-and-readers"
+<li><a href="chapter-019.html#native-tables-and-readers"
 id="toc-native-tables-and-readers"><span
-class="toc-section-number">16.1</span> Native tables and
+class="toc-section-number">17.1</span> Native tables and
 readers</a></li>
-<li><a href="chapter-018.html#property-graph-interchange"
+<li><a href="chapter-019.html#property-graph-interchange"
 id="toc-property-graph-interchange"><span
-class="toc-section-number">16.2</span> Property-graph
+class="toc-section-number">17.2</span> Property-graph
 interchange</a></li>
-<li><a href="chapter-018.html#database-ingestion"
-id="toc-database-ingestion"><span class="toc-section-number">16.3</span>
+<li><a href="chapter-019.html#database-ingestion"
+id="toc-database-ingestion"><span class="toc-section-number">17.3</span>
 Database ingestion</a></li>
-<li><a href="chapter-018.html#adbc-and-extension"
-id="toc-adbc-and-extension"><span class="toc-section-number">16.4</span>
+<li><a href="chapter-019.html#adbc-and-extension"
+id="toc-adbc-and-extension"><span class="toc-section-number">17.4</span>
 ADBC and extension</a></li>
-<li><a href="chapter-018.html#typed-cypher-execution"
+<li><a href="chapter-019.html#typed-cypher-execution"
 id="toc-typed-cypher-execution"><span
-class="toc-section-number">16.5</span> Typed Cypher execution</a></li>
+class="toc-section-number">17.5</span> Typed Cypher execution</a></li>
 </ul></li>
-<li><a href="chapter-019.html#conclusion"
+<li><a href="chapter-020.html#conclusion"
 id="toc-conclusion">Conclusion</a></li>
 </ul>
 </nav>
