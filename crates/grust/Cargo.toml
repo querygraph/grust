@@ -34,6 +34,10 @@ sail = ["dep:grust-sail", "cypher"]
 surreal = ["dep:grust-surreal"]
 turso = ["dep:grust-turso"]
 turso-sync = ["turso", "grust-turso/sync"]
+# Turso's own allocator (mimalloc) as the process's global allocator. Off by
+# default: a global allocator is the application's decision. Measured +14%
+# (Turso 0.8) and +16% (0.7.2) on 4-writer MVCC bulk loads, +9-16% on WAL.
+turso-mimalloc = ["turso", "grust-turso/mimalloc"]
 typed-garde = ["grust-core/typed-garde"]
 typed-zod-rs = ["typed-garde", "grust-core/typed-zod-rs"]
 
