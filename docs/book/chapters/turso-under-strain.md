@@ -188,7 +188,11 @@ CPU steal per run), the three largest graphs, same binary:
 WAL loads 1.5 to 1.7 times faster and then refuses 96 to 98% of concurrent
 hot-node writes. MVCC with group commit accepts every one. These WAL rows
 enforced foreign keys and the parallel MVCC rows did not, so the load ratio
-understates WAL; with both sides unchecked, WAL's lead is larger.
+understates WAL; with both sides unchecked, WAL's lead is larger. The MVCC
+rows in this table and the next ran eight writers at `synchronous = NORMAL`;
+their A4 times measure conflict retries rather than the commit path and are
+shown for the acceptance count only. The durable four-writer lane did
+com-Orkut's A4 in 5.29 s, all 3,200 accepted, on a different host.
 
 The durable seven-graph MVCC ladder on grust (the harness default:
 `synchronous = FULL`, group commit, four writers) is clean on all four core
@@ -211,10 +215,13 @@ Neo4j 5.26 Community over Bolt in a 6 GiB container, quegee, zero steal:
 | soc-LiveJournal1 A4 | 2.90 s, 3,200/3,200 | 4.81 s, 3,200/3,200 | 1.29 s, 119/3,200 |
 
 Turso wins traversal on every graph and passes A7, which Neo4j reports as
-unsupported. Load and hot-node writes split by graph: on com-Orkut the MVCC
-store matches Neo4j's load and beats its A4; on soc-LiveJournal1 Neo4j loads
-1.4 times faster and wins A4. Neo4j is three to five times leaner in memory
-throughout. Neo4j has no rows for the two smallest graphs, and the
+unsupported. Load splits by graph: on com-Orkut the MVCC store matches
+Neo4j's load; on soc-LiveJournal1 Neo4j loads 1.4 times faster. The A4
+column is not a durability-matched comparison, because Neo4j commits durably
+and these MVCC rows ran at `synchronous = NORMAL`; in the durable same-host
+pairs the strain page counts, Neo4j wins every hot-node-write pair against
+the MVCC store and loses five of six against WAL, which accepts far fewer
+writes. Neo4j is three to five times leaner in memory throughout. Neo4j has no rows for the two smallest graphs, and the
 cit-Patents deep-path cell is vacuous on every backend (no path reaches the
 depth), so it is never cited.
 
