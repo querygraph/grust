@@ -109,6 +109,14 @@ pub struct LadybugGraphStore {
     db: Arc<lbug::Database>,
     lock: Mutex<()>,
     schema: RwLock<Option<GraphSchema>>,
+    /// See [`LadybugGraphStore::set_bulk_load_trusts_fresh_rows`].
+    bulk_load_trusts_fresh_rows: std::sync::atomic::AtomicBool,
+    /// Node ids this store copied under the fresh-rows mode, per table: a
+    /// later batch that carries an already-copied node (an edge batch
+    /// carrying its endpoints) skips it instead of failing the COPY on a
+    /// duplicate primary key.
+    fresh_copied_node_ids:
+        Mutex<std::collections::HashMap<String, std::collections::HashSet<String>>>,
 }
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
@@ -145,11 +153,37 @@ impl LadybugGraphStore {
             db: Arc::new(db),
             lock: Mutex::new(()),
             schema: RwLock::new(None),
+            bulk_load_trusts_fresh_rows: std::sync::atomic::AtomicBool::new(false),
+            fresh_copied_node_ids: Mutex::new(std::collections::HashMap::new()),
         })
     }
 
     pub fn in_memory() -> Result<Self> {
         Self::new(LadybugConfig::default())
+    }
+
+    /// Bulk loads (`put_graph`) normally read back every existing node id and
+    /// `(from, to)` pair of a target table before copying, so that rows which
+    /// already exist take the per-row upsert path. That read-back is a full
+    /// scan per call, and a caller that feeds one graph as many chunks pays it
+    /// on every chunk after the first: quadratic in the chunk count, hours at
+    /// a hundred million edges. A caller that knows its chunks carry no key the
+    /// store already holds — a fresh graph loaded once, in disjoint pieces —
+    /// can turn the read-back off. Every relationship row is then copied (a
+    /// repeated pair becomes a parallel edge). Node ids the store copied in
+    /// this mode are remembered in memory, per table, so a later batch that
+    /// carries an already-copied node — an edge batch carrying its endpoints —
+    /// skips it, props unchanged; a node id the store held before this mode
+    /// was entered is the caller's error and fails the COPY. Off by default;
+    /// single-row writes and non-bulk paths are unaffected.
+    pub fn set_bulk_load_trusts_fresh_rows(&self, trusts: bool) {
+        self.bulk_load_trusts_fresh_rows
+            .store(trusts, std::sync::atomic::Ordering::Relaxed);
+    }
+
+    pub(crate) fn bulk_load_trusts_fresh_rows(&self) -> bool {
+        self.bulk_load_trusts_fresh_rows
+            .load(std::sync::atomic::Ordering::Relaxed)
     }
 
     pub fn open(path: impl Into<PathBuf>) -> Result<Self> {

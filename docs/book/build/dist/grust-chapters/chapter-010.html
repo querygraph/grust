@@ -5,7 +5,7 @@
   <meta name="generator" content="pandoc" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
   <meta name="author" content="Alexy Khrabrov" />
-  <meta name="dcterms.date" content="2026-09-14" />
+  <meta name="dcterms.date" content="2026-09-17" />
   <title>Backend Architecture</title>
   <style>
     div.sitenav { display: flex; flex-direction: row; flex-wrap: wrap; }
@@ -365,10 +365,17 @@ a Turso transaction.</p>
 <p>The <code>journal_mode</code> option selects the concurrency model.
 The default <code>Wal</code> is Turso’s single-writer write-ahead log.
 Selecting <code>Mvcc</code> enables Turso’s multi-version concurrency
-control (<code>PRAGMA journal_mode = mvcc</code>, a database-header mode
-applied to a fresh database); data writes then run inside
-<code>BEGIN CONCURRENT</code> transactions with bounded conflict retry,
-so concurrent writers make progress.</p>
+control (<code>PRAGMA journal_mode = mvcc</code>); data writes then run
+inside <code>BEGIN CONCURRENT</code> transactions with bounded conflict
+retry, so concurrent writers make progress. Turso 0.7.2 converts a live
+database between the two modes in either direction. MVCC loads run over
+several writer connections (<code>set_mvcc_load_parallelism</code>) or
+fill through WAL and switch back (<code>set_bulk_load_via_wal</code>);
+every load path runs with foreign keys off; and concurrent
+single-statement writes can share one durable commit
+(<code>with_group_commit</code>). The chapter “Turso under strain”
+covers each of these, what they measured against WAL and against Neo4j,
+and how the advice changes on Turso 0.8.</p>
 <p>With the <code>turso-sync</code> facade feature, callers can
 construct a synced store from a local path, remote URL, and optional
 auth token. The <code>GraphStore</code> API continues to operate on the

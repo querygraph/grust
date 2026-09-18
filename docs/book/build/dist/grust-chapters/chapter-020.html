@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
   <meta name="author" content="Alexy Khrabrov" />
   <meta name="dcterms.date" content="2026-09-17" />
-  <title>Design Tradeoffs</title>
+  <title>Conclusion</title>
   <style>
     div.sitenav { display: flex; flex-direction: row; flex-wrap: wrap; }
     span.navlink { flex: 1; }
@@ -47,27 +47,26 @@
 </div>
 <div class="sitenav">
 <span class="navlink">
-<span class="navlink-label">Next:</span> <a href="chapter-015.html" accesskey="n" rel="next">Where Grust Can Grow</a>
 </span>
 <span class="navlink">
-<span class="navlink-label">Previous:</span> <a href="chapter-013.html" accesskey="p" rel="previous">Schema and Validation Direction</a>
+<span class="navlink-label">Previous:</span> <a href="chapter-019.html" accesskey="p" rel="previous">Arrow pipelines, ADBC and DataFusion</a>
 </span>
 </div>
 </nav>
-<h1 data-number="12" id="design-tradeoffs"><span
-class="header-section-number">12</span> Design Tradeoffs</h1>
-<p>The universal node/edge layout appears in multiple backend plans
-because it is the easiest way to preserve arbitrary property graphs:</p>
-<figure>
-<img src="diagrams/diagram-07.png" alt="Diagram 7" />
-<figcaption aria-hidden="true">Diagram 7</figcaption>
-</figure>
-<p>The cost is that property typing and label-specific optimization
-require extra work. A label-partitioned backend can use stronger types
-and better indexes, but it needs schema, migrations, and more
-planning.</p>
-<p>Grust’s current architecture keeps both paths open. Core stays
-universal. Backends choose their storage layout. Schema support can
-become richer without forcing every backend to look the same.</p>
+<h1 class="unnumbered" id="conclusion">Conclusion</h1>
+<p>Grust is small by design. Its core model is easy to hold in your
+head, and its backend contract is narrow enough that very different
+systems can implement it. That is the source of its leverage.</p>
+<p>The project says: build your graph once, keep the domain model in
+Rust, and let the backend translate. Sometimes that translation is a map
+scan. Sometimes it is Arrow and LanceDB. Sometimes it is PostgreSQL,
+Spark SQL, Redis graph commands, SurrealQL, Helix SDK calls, or
+CocoIndex target state. And sometimes it is a capability-secured agent
+memory path in which TypeSec guards authority while Grust persists
+opaque records and their entity graph durably in Turso.</p>
+<p>The more Grust grows, the more important that center becomes: a
+stable property graph model, a backend-neutral traversal IR, explicit
+errors, feature-gated integrations, and enough Rust type structure to
+make the right path feel natural.</p>
 </body>
 </html>

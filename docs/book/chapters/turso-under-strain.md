@@ -159,13 +159,18 @@ facade must not force a pre-release on downstream crates.
 
 ## Allocator
 
-`grust-turso` exposes `mimalloc = ["turso/mimalloc"]`, and the facade
-forwards it as `turso-mimalloc`. It installs Turso's allocator as the global
-allocator of the whole process, which is an application decision, so it is
-off by default. Measured on four-writer MVCC loads of web-Google, same host,
-alternating pairs: +14% on `main` and +16% on 0.7.2; on WAL loads +9% and
-+16%. No harness number in this chapter used it; a deployment that owns its
-binary should turn it on.
+The `turso` crate enables `mimalloc` in its default features, on 0.7.2 and
+on `main`: it installs mimalloc as the `#[global_allocator]` of the whole
+process. `grust-turso` depends on `turso` with default features off, because
+a library should not choose the process allocator, and exposes the feature
+as `mimalloc = ["turso/mimalloc"]`; the facade forwards it as
+`turso-mimalloc`. So a Grust application runs Turso on the platform
+allocator unless it opts in, while a plain Turso build does not. Measured on
+four-writer MVCC loads of web-Google, same host, alternating pairs: +14% on
+`main` and +16% on 0.7.2; on WAL loads +9% and +16%. Every number in this
+chapter was taken on the platform allocator; the strain harness has since
+made mimalloc its process-wide default and tags such rows `alloc=mimalloc`.
+A deployment that owns its binary should turn it on.
 
 ## What was measured
 
@@ -188,7 +193,11 @@ CPU steal per run), the three largest graphs, same binary:
 WAL loads 1.5 to 1.7 times faster and then refuses 96 to 98% of concurrent
 hot-node writes. MVCC with group commit accepts every one. These WAL rows
 enforced foreign keys and the parallel MVCC rows did not, so the load ratio
-understates WAL; with both sides unchecked, WAL's lead is larger.
+understates WAL; with both sides unchecked, WAL's lead is larger. The MVCC
+rows in this table and the next ran eight writers at `synchronous = NORMAL`;
+their A4 times measure conflict retries rather than the commit path and are
+shown for the acceptance count only. The durable four-writer lane did
+com-Orkut's A4 in 5.29 s, all 3,200 accepted, on a different host.
 
 The durable seven-graph MVCC ladder on grust (the harness default:
 `synchronous = FULL`, group commit, four writers) is clean on all four core
@@ -210,11 +219,16 @@ Neo4j 5.26 Community over Bolt in a 6 GiB container, quegee, zero steal:
 | soc-LiveJournal1 A1 / A2 | 41.8 s / 2,501 s | 29.5 s / 1,065 s | 19.5 s / 773 s |
 | soc-LiveJournal1 A4 | 2.90 s, 3,200/3,200 | 4.81 s, 3,200/3,200 | 1.29 s, 119/3,200 |
 
-Turso wins traversal on every graph and passes A7, which Neo4j reports as
-unsupported. Load and hot-node writes split by graph: on com-Orkut the MVCC
-store matches Neo4j's load and beats its A4; on soc-LiveJournal1 Neo4j loads
-1.4 times faster and wins A4. Neo4j is three to five times leaner in memory
-throughout. Neo4j has no rows for the two smallest graphs, and the
+Turso wins traversal on every graph. A7, guarded-commit replay, is not
+compared: it runs only on stores with a Grust `GraphCommitStore`, and the
+harness drives Neo4j through its own Cypher without one, which is a gap in
+the harness path, not in Neo4j. Load splits by graph: on com-Orkut the MVCC store matches
+Neo4j's load; on soc-LiveJournal1 Neo4j loads 1.4 times faster. The A4
+column is not a durability-matched comparison, because Neo4j commits durably
+and these MVCC rows ran at `synchronous = NORMAL`; in the durable same-host
+pairs the strain page counts, Neo4j wins every hot-node-write pair against
+the MVCC store and loses five of six against WAL, which accepts far fewer
+writes. Neo4j is three to five times leaner in memory throughout. Neo4j has no rows for the two smallest graphs, and the
 cit-Patents deep-path cell is vacuous on every backend (no path reaches the
 depth), so it is never cited.
 

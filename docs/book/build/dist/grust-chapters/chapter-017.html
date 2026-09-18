@@ -5,8 +5,8 @@
   <meta name="generator" content="pandoc" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
   <meta name="author" content="Alexy Khrabrov" />
-  <meta name="dcterms.date" content="2026-09-14" />
-  <title>Graph analytics through one Rust implementation</title>
+  <meta name="dcterms.date" content="2026-09-17" />
+  <title>Turso under strain</title>
   <style>
     div.sitenav { display: flex; flex-direction: row; flex-wrap: wrap; }
     span.navlink { flex: 1; }
@@ -32,71 +32,6 @@
       vertical-align: middle;
     }
     .display.math{display: block; text-align: center; margin: 0.5rem auto;}
-    /* CSS for syntax highlighting */
-    html { -webkit-text-size-adjust: 100%; }
-    pre > code.sourceCode { white-space: pre; position: relative; }
-    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
-    pre > code.sourceCode > span:empty { height: 1.2em; }
-    .sourceCode { overflow: visible; }
-    code.sourceCode > span { color: inherit; text-decoration: inherit; }
-    div.sourceCode { margin: 1em 0; }
-    pre.sourceCode { margin: 0; }
-    @media screen {
-    div.sourceCode { overflow: auto; }
-    }
-    @media print {
-    pre > code.sourceCode { white-space: pre-wrap; }
-    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
-    }
-    pre.numberSource code
-      { counter-reset: source-line 0; }
-    pre.numberSource code > span
-      { position: relative; left: -4em; counter-increment: source-line; }
-    pre.numberSource code > span > a:first-child::before
-      { content: counter(source-line);
-        position: relative; left: -1em; text-align: right; vertical-align: baseline;
-        border: none; display: inline-block;
-        -webkit-touch-callout: none; -webkit-user-select: none;
-        -khtml-user-select: none; -moz-user-select: none;
-        -ms-user-select: none; user-select: none;
-        padding: 0 4px; width: 4em;
-        color: #aaaaaa;
-      }
-    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
-    div.sourceCode
-      {   }
-    @media screen {
-    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
-    }
-    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
-    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
-    code span.at { color: #7d9029; } /* Attribute */
-    code span.bn { color: #40a070; } /* BaseN */
-    code span.bu { color: #008000; } /* BuiltIn */
-    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
-    code span.ch { color: #4070a0; } /* Char */
-    code span.cn { color: #880000; } /* Constant */
-    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
-    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
-    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
-    code span.dt { color: #902000; } /* DataType */
-    code span.dv { color: #40a070; } /* DecVal */
-    code span.er { color: #ff0000; font-weight: bold; } /* Error */
-    code span.ex { } /* Extension */
-    code span.fl { color: #40a070; } /* Float */
-    code span.fu { color: #06287e; } /* Function */
-    code span.im { color: #008000; font-weight: bold; } /* Import */
-    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
-    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
-    code span.op { color: #666666; } /* Operator */
-    code span.ot { color: #007020; } /* Other */
-    code span.pp { color: #bc7a00; } /* Preprocessor */
-    code span.sc { color: #4070a0; } /* SpecialChar */
-    code span.ss { color: #bb6688; } /* SpecialString */
-    code span.st { color: #4070a0; } /* String */
-    code span.va { color: #19177c; } /* Variable */
-    code span.vs { color: #4070a0; } /* VerbatimString */
-    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
   </style>
   <link rel="stylesheet" href="book.css" />
 </head>
@@ -112,258 +47,444 @@
 </div>
 <div class="sitenav">
 <span class="navlink">
-<span class="navlink-label">Next:</span> <a href="chapter-018.html" accesskey="n" rel="next">Arrow pipelines, ADBC and DataFusion</a>
+<span class="navlink-label">Next:</span> <a href="chapter-018.html" accesskey="n" rel="next">Graph analytics through one Rust implementation</a>
 </span>
 <span class="navlink">
 <span class="navlink-label">Previous:</span> <a href="chapter-016.html" accesskey="p" rel="previous">Compact snapshots and multigraph persistence</a>
 </span>
 </div>
 </nav>
-<h1 data-number="15"
-id="graph-analytics-through-one-rust-implementation"><span
-class="header-section-number">15</span> Graph analytics through one Rust
-implementation</h1>
-<p>Acorn adds graph analytics to Grust’s backend-neutral property-graph
-API. Applications prepare an explicit immutable snapshot, run a Rust
-kernel, and choose Rust, Arrow or ordinary Cypher consumption.
-Algorithms do not own a database connection or choose another graph.
-Memory and private Turso snapshots demonstrate the same prepared query
-against two independently captured sources.</p>
-<figure>
-<img src="diagrams/diagram-08.png" alt="Diagram 8" />
-<figcaption aria-hidden="true">Diagram 8</figcaption>
-</figure>
-<p><code>grust-algorithms</code> has no Cypher dependency.
-<code>grust-procedures</code> owns signatures, providers, checked
-cursors and the shared execution budget. The
-<code>grust-algorithm-procedures</code> crate connects them. An
-application can register an independent provider without changing the
-parser, analyzer or executor. The facade exposes these through
-<code>algorithms</code>, <code>cypher</code> and optional
-<code>arrow</code> features.</p>
-<h2 data-number="15.1" id="starting-from-the-facade"><span
-class="header-section-number">15.1</span> Starting from the facade</h2>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode toml"><code class="sourceCode toml"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[dependencies]</span></span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="dt">grust</span> <span class="op">=</span> <span class="op">{ </span><span class="dt">package</span><span class="op"> =</span> <span class="st">&quot;grust-graph&quot;</span><span class="op">, </span><span class="dt">version</span><span class="op"> =</span> <span class="st">&quot;0.20.0&quot;</span><span class="op">, </span><span class="dt">features</span><span class="op"> =</span> <span class="op">[</span><span class="st">&quot;algorithms&quot;</span><span class="op">,</span> <span class="st">&quot;cypher&quot;</span><span class="op">,</span> <span class="st">&quot;arrow&quot;</span><span class="op">] }</span></span></code></pre></div>
-<p>Register the desired providers once and retain the immutable
-registry:</p>
-<div class="sourceCode" id="cb2"><pre
-class="sourceCode rust"><code class="sourceCode rust"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">use</span> <span class="pp">grust::</span><span class="op">{</span>algorithm_procedures<span class="op">,</span> procedures<span class="op">,</span> CypherParameters<span class="op">};</span></span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> <span class="kw">mut</span> builder <span class="op">=</span> <span class="pp">procedures::RegistryBuilder::</span><span class="kw">default</span>()<span class="op">;</span></span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="pp">procedures::</span>register_builtins(<span class="op">&amp;</span><span class="kw">mut</span> builder)<span class="op">?;</span></span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="pp">algorithm_procedures::</span>register_algorithms(<span class="op">&amp;</span><span class="kw">mut</span> builder)<span class="op">?;</span></span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> registry <span class="op">=</span> builder<span class="op">.</span>build()<span class="op">;</span></span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> result <span class="op">=</span> <span class="pp">grust::</span>run_read_query_with_registry(</span>
-<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>    <span class="op">&amp;</span>graph<span class="op">,</span></span>
-<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;roads&quot;</span><span class="op">,</span></span>
-<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;CALL grust.algorithms.dijkstra(&#39;start&#39;, {weightProperty: &#39;cost&#39;}) </span><span class="sc">\</span></span>
-<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="st">     YIELD nodeId, distance RETURN nodeId, distance&quot;</span><span class="op">,</span></span>
-<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>    <span class="op">&amp;</span><span class="pp">CypherParameters::</span>new()<span class="op">,</span></span>
-<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>    <span class="op">&amp;</span>registry<span class="op">,</span></span>
-<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>)<span class="op">?;</span></span></code></pre></div>
-<p>Here <code>graph</code> is a caller-owned <code>grust::Graph</code>.
-A bounded query additionally opts into
-<code>ReadQueryPolicy::allow_read_procedures</code>; catalog permission
-alone cannot admit analytics. For a backend capture, construct a
-<code>LocalSnapshot</code> after access checks, with an explicit graph,
-revision and principal. A prepared plan rejects a different graph name
-before invoking a provider. The capability pins data; the identity
-strings do not grant access.</p>
-<p>For direct Rust, create an <code>ExecutionContext</code> with
-memory/work limits, batch size and optional deadline.
-<code>GraphProjection::from_graph</code> accepts label selection,
-orientation and a weight policy. <code>from_topology</code> accepts
-external IDs and typed edges; <code>from_arrow_batches</code> reads
-typed columns directly. Kernel results share the projection, so dropping
-the caller’s projection handle cannot invalidate IDs. Runnable source
-examples are <code>weighted_paths</code> in
-<code>grust-algorithms</code> and <code>custom_procedure</code> in
-<code>grust-cypher</code>.</p>
-<h2 data-number="15.2" id="available-operations"><span
-class="header-section-number">15.2</span> Available operations</h2>
-<p>All procedure names below have the prefix
-<code>grust.algorithms.</code>. They call the same kernels as direct
-Rust and have typed Arrow result adapters.</p>
+<h1 data-number="15" id="turso-under-strain"><span
+class="header-section-number">15</span> Turso under strain</h1>
+<p>This chapter documents the Turso adapter as it stands on the
+<code>turso-mvcc-concurrency</code> branch (pull request #6, head
+<code>abea518</code>), which is the adapter the next release ships.
+Everything here was measured; where a number depends on the engine
+version, the chapter says which version. The pinned engine is Turso
+0.7.2 from crates.io. Upstream <code>main</code> (0.8.0-pre.11 at the
+time of measurement) is discussed separately, because it changes two of
+the conclusions.</p>
+<h2 data-number="15.1" id="two-journal-modes-two-contracts"><span
+class="header-section-number">15.1</span> Two journal modes, two
+contracts</h2>
+<p><code>TursoConfig::journal_mode</code> selects the concurrency model,
+and the choice decides what the store does when several writers touch
+the same node.</p>
+<p><code>TursoJournalMode::Wal</code> is Turso’s write-ahead log: one
+writer at a time. It is the faster loader by a wide margin, and under
+contention it does the honest single-writer thing: it accepts one
+writer’s transaction and refuses the rest with a typed busy error. A
+refusal is not a lost write, so a WAL store passes the harness’s
+hot-node scenario, but it does so by accepting between 20 and 120 of
+3,200 attempted writes.</p>
+<p><code>TursoJournalMode::Mvcc</code> enables multi-version concurrency
+control (<code>PRAGMA journal_mode = mvcc</code>). Writes run inside
+<code>BEGIN CONCURRENT</code> transactions with bounded conflict retry,
+so concurrent writers make progress. On every graph measured, an MVCC
+store accepted all 3,200 hot-node writes. It loads more slowly, and it
+holds more memory while loading, because every row version of an open
+transaction stays resident until it commits.</p>
+<p>Turso 0.7.2 converts between the modes on a live database. A database
+loaded in WAL mode and reopened as MVCC is accepted; a live MVCC store
+switches to WAL and back with <code>PRAGMA journal_mode</code>.
+<code>tests/wal_to_mvcc.rs</code> and
+<code>tests/wal_bulk_load.rs</code> pin both directions, and both pass
+against upstream <code>main</code> as well. The earlier documentation
+that said an existing WAL database is not converted was wrong for 0.7.2
+and has been removed.</p>
+<p>Choose by workload. A store that is loaded once and then read is a
+WAL store. A store that takes concurrent writes after loading is an MVCC
+store, and the rest of this chapter is about making its load cost
+bearable.</p>
+<h2 data-number="15.2" id="loading-an-mvcc-store"><span
+class="header-section-number">15.2</span> Loading an MVCC store</h2>
+<p><code>put_graph</code> on an MVCC store no longer runs one
+transaction around the whole graph. That design kept every row version
+of the load in memory until the end and retried all of it on a conflict;
+the strain harness measured about 1,500 edges per second that way. Loads
+now commit in groups of <code>MVCC_LOAD_COMMIT_STATEMENTS</code>
+batches, so a failure leaves the groups committed before it, and an MVCC
+<code>put_graph</code> is no longer all-or-nothing. WAL keeps its
+whole-load transaction.</p>
+<h3 data-number="15.2.1" id="parallel-writers"><span
+class="header-section-number">15.2.1</span> Parallel writers</h3>
+<p><code>set_mvcc_load_parallelism(writers)</code> runs the load over
+<code>writers</code> connections, each opened through
+<code>connect_shared()</code>, each taking a disjoint slice of the nodes
+and then of the edges under its own <code>BEGIN CONCURRENT</code>
+transactions. Turso executes one connection on one thread, so this is
+how a load uses more than one core; it needs a multi-threaded Tokio
+runtime. The harness default is four writers.</p>
+<p>Free-running writers defeat Turso’s automatic checkpoints: a
+checkpoint needs the checkpoint lock, every open transaction holds it in
+read mode, and with several writers there is always one open, so the
+checkpoint returns busy and row versions accumulate. A web-Google load
+reached 14 to 15 GB that way. The writers therefore advance in rounds of
+<code>MVCC_PARALLEL_ROUND_GROUPS</code> commit groups; between rounds,
+with nothing in flight, one <code>TRUNCATE</code> checkpoint folds the
+round into the database file. <code>set_mvcc_load_round_groups</code>
+adjusts the round size; smaller rounds trade time for memory, and the
+sweep found no speed to be gained from larger ones.</p>
+<p>The effect, on one host with four writers, against the single-writer
+loader:</p>
 <table>
-<colgroup>
-<col style="width: 50%" />
-<col style="width: 50%" />
-</colgroup>
 <thead>
 <tr>
-<th>Operation</th>
-<th>Contract</th>
+<th>graph</th>
+<th>edges</th>
+<th>one writer</th>
+<th>four writers</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>bfs</code></td>
-<td>Hop distances from one external source ID</td>
+<td>web-Google</td>
+<td>5.1 M</td>
+<td>16,013 edges/s</td>
+<td>30,985</td>
 </tr>
 <tr>
-<td><code>multiSourceBfs</code></td>
-<td>Minimum hop distance from a nonempty source array</td>
+<td>cit-Patents</td>
+<td>16.5 M</td>
+<td>5,526</td>
+<td>26,661</td>
 </tr>
 <tr>
-<td><code>dfs</code></td>
-<td>Deterministic reachable-node discovery order</td>
+<td>soc-Pokec</td>
+<td>30.6 M</td>
+<td>4,698</td>
+<td>26,385</td>
 </tr>
 <tr>
-<td><code>dijkstra</code></td>
-<td>Distances with finite nonnegative weights</td>
+<td>GAP-road</td>
+<td>57.7 M</td>
+<td>2,928</td>
+<td>27,708</td>
 </tr>
 <tr>
-<td><code>shortestPaths</code></td>
-<td>One selected full shortest path per reachable target</td>
-</tr>
-<tr>
-<td><code>wcc</code></td>
-<td>Weak components, including isolates</td>
-</tr>
-<tr>
-<td><code>scc</code></td>
-<td>Directed strong components with iterative traversal</td>
-</tr>
-<tr>
-<td><code>degree</code></td>
-<td>Exact projected arc counts and optional weighted strength</td>
-</tr>
-<tr>
-<td><code>pagerank</code></td>
-<td>Weighted scores, residual, iterations and convergence status</td>
-</tr>
-<tr>
-<td><code>topologicalSort</code></td>
-<td>Complete DAG order or a concrete closed cycle witness</td>
+<td>sx-stackoverflow</td>
+<td>63.5 M</td>
+<td>2,929</td>
+<td>13,464</td>
 </tr>
 </tbody>
 </table>
-<p><code>projectionStats</code> inspects selected topology.
-<code>estimateCsr</code> reports nominal adjacency-buffer upper bounds
-from snapshot counts, excluding graph storage, ID maps, original edge
-tables, kernel scratch, output and allocator overhead. Selection can
-reduce those counts. The estimate is not total memory admission.</p>
-<p>The common configuration keys are <code>orientation</code>,
-<code>nodeLabels</code>, <code>relationshipTypes</code>,
-<code>weightProperty</code> and <code>defaultWeight</code>. Unknown keys
-fail. Null label arrays select all labels; empty arrays select none.
-Edges crossing outside the selected node set are excluded, while
-selected isolates remain. Orientations are outgoing, incoming and
-undirected. Undirected loops contribute one traversal arc; other
-undirected edges contribute two. Parallel edges remain distinct.
-Topology algorithms ignore weights after projection validation.</p>
-<p>Weights must be finite and nonnegative. Integer weights outside
-<code>0..=2^53</code> are rejected rather than rounded. Missing or null
-weights fail unless a finite nonnegative default is explicitly supplied.
-Unit projections omit weight storage. Dijkstra uses strict improvement
-and stable adjacency order for equal costs; zero-weight ties cannot
-create predecessor cycles. Reachable cost overflow is an error.
-Unreachable distances are infinity in direct Rust and null in
-Cypher/Arrow. Component IDs are the external ID at the minimum
-projection row in each component.</p>
-<p><code>degree</code> returns every selected node, including isolates.
-Direct Rust <code>degree(&amp;projection)</code> exposes exact
-<code>usize</code> counts and optional <code>f64</code> strengths. Arrow
-columns are <code>nodeId: Utf8</code>, <code>degree: UInt64</code>, and
-nullable <code>strength: Float64</code>; Cypher returns an exact checked
-integer count and null strength for unweighted projections. No
-normalization is implicit.</p>
-<pre class="cypher"><code>CALL grust.algorithms.degree({orientation: &#39;incoming&#39;, weightProperty: &#39;cost&#39;})
-YIELD nodeId, degree, strength
-RETURN nodeId, degree, strength</code></pre>
-<p>Counts include parallel and zero-weight arcs. Undirected loops count
-once under this projection contract. Weighted strength sums finite
-nonnegative weights; overflow fails explicitly. Negative weights remain
-unsupported. Unweighted execution reads existing CSR offsets in O(V);
-weighted execution takes O(V+A). Result buffers retain the shared memory
-admission, and bounded work-accounting chunks preserve cancellation
-polling without a lock per scalar. This contract does not establish
-universal degree-centrality compatibility with other engines.</p>
-<p>PageRank defaults to damping .85, L1 tolerance 1e-8 and 1000
-iterations. Scores start uniformly. Optional personalization controls
-teleportation and dangling mass; zero outgoing weight is dangling.
-Parallel edges contribute separately. Finite large weights are scaled
-before sums. Iteration-limit results explicitly report non-convergence.
-Seeds, community algorithms, negative-weight paths, all-pairs/k-shortest
-paths, flow, similarity and ML are deferred; the current catalog is not
-universal GDS compatibility.</p>
-<h2 data-number="15.3" id="full-paths-and-incremental-consumption"><span
-class="header-section-number">15.3</span> Full paths and incremental
-consumption</h2>
-<p>A full path contains source-first external node IDs and cumulative
-costs beginning at zero. Original edge ordinals identify the selected
-multigraph edges. The zero-hop source path is included; unreachable
-targets are omitted.</p>
-<pre class="cypher"><code>CALL grust.algorithms.shortestPaths(&#39;start&#39;, {weightProperty: &#39;cost&#39;})
-YIELD nodeIds, costs
-UNWIND range(0, size(costs) - 1) AS i
-RETURN count(nodeIds[i]), sum(costs[i])
-LIMIT 1</code></pre>
-<p>This query consumes every actual requested array element. LIMIT
-bounds the final aggregate output, not its input. The executor
-incrementally handles CALL/YIELD filters, simple WITH, UNWIND, plain
-RETURN and ungrouped COUNT/SUM/AVG. Generic array/index aggregation
-avoids allocating a binding row for every path element. It does not
-recognize a benchmark graph or substitute a closed-form answer. Other
-shapes use the existing budgeted materializing executor. Grouping,
-sorting, DISTINCT and collecting have no spill implementation and may
-exceed admission. Early LIMIT can stop consumption, but a global kernel
-may already have computed its result before producing the first
-batch.</p>
-<p>One shared execution context accounts for projection buffers,
-scratch, provider results and downstream intermediates. Reservations
-stay attached through internal ownership transfers. Temporary consumed
-values release live admission; legacy materializing operators retain
-cumulative-copy accounting. Cancellation, deadline and work checks span
-preparation, kernels, reconstruction and consumption. Execution is
-synchronous without prefetch or parallel kernel workers.</p>
-<p>Borrowed path visitor slices expire when the callback returns. Pull
-cursors reuse scratch storage. Owned scalar batches retain admission
-through wrapper clones. Brine 0.20.0’s Arrow ownership extension also
-retains algorithm-result admission through raw batches, buffer slices
-and nested children; shared physical buffers keep the original
-reservation without charging each clone again. Full paths and
-cycle/order arrays use LargeList offsets with explicit limits. An
-individual oversized path fails instead of truncating. Caller-owned
-input and externally retained legacy result tables require caller
-admission; logical accounting is not a process RSS sandbox for untrusted
-provider code.</p>
-<h2 data-number="15.4"
-id="discovery-preparation-reuse-and-execution-classes"><span
-class="header-section-number">15.4</span> Discovery, preparation reuse
-and execution classes</h2>
-<p><code>db.procedures</code> describes the final registry generation,
-including argument and option defaults, outputs, provider identity,
-modes, correlation and computation boundary. Prepared explanations use
-the same definitions and consumer classifier.
-<code>explain_snapshot</code> also identifies the admitted revision and
-principal without running algorithms. These are Rust planning methods; a
-literal Cypher EXPLAIN prefix is not added by this extension.</p>
-<p>Projection reuse is query-scoped and keyed by snapshot, principal,
-representation, selection, orientation and weight policy. Correlated
-CALL still executes once per incoming row; caching preparation does not
-cache algorithm answers. Reverse SCC adjacency is built lazily and
-stores only topology, without duplicate weights or edge identities.
-Projections retain their selection policy for inspection.</p>
-<p>The current procedure executor accepts an explicitly selected local
-snapshot. Backend-native execution is rejected when unsupported, with no
-automatic whole- graph download. Memory and a private Turso database
-have snapshot integration proofs, including reads from old captures
-after later writes. Arbitrary external writers, remote snapshot
-stability and native analytics are not thereby qualified.
-Mutation/write-back needs a separate atomic transaction design and
-remains absent.</p>
-<p>Both local direct Rust and ordinary Cypher completed the 65,536-node
-full-path chain, consuming 2,147,516,416 entries in each array. Those
-single observations have disclosed process envelopes and differ from the
-frozen Docker protocol. The repository retains independent small-graph
-oracles, source/binary receipts, frozen baseline results and current
-qualification status. See the <a
-href="https://github.com/querygraph/grust/blob/main/docs/GENERALIZED_ALGORITHMS.md">coverage
-and resource contracts</a> and <a
-href="https://github.com/querygraph/grust/tree/main/benchmarks/algorithms">benchmark
-evidence</a>.</p>
+<p>Peak memory during a load fell from about 15 GB to 3 to 7 GB at
+web-Google scale. Scaling from one to eight writers measured 326, 220,
+171 and 142 seconds for web-Google on an 8-vCPU host: about 35% of the
+load is serialized, in the engine’s commit path.</p>
+<h3 data-number="15.2.2" id="the-fastest-fill-through-wal"><span
+class="header-section-number">15.2.2</span> The fastest fill: through
+WAL</h3>
+<p><code>set_bulk_load_via_wal(true)</code> makes an MVCC store’s
+<code>put_graph</code> switch the database to WAL, load everything in
+one transaction, checkpoint, and switch back to MVCC, whether or not the
+load succeeds. Journal mode is database-wide, so nothing else may write
+during the load; a bulk load before serving is the intended use. Handles
+opened later with <code>connect_shared</code> inherit the setting.</p>
+<p>This is exactly WAL speed, and WAL loads are 1.5 to 1.7 times faster
+than four MVCC writers on Turso 0.7.2. On upstream <code>main</code> the
+gap is wider (see below), and the via-WAL fill is 2.65 to 3.1 times the
+parallel MVCC load. The round trip costs nothing measurable over a plain
+WAL load at five to seventeen million edges.</p>
+<h3 data-number="15.2.3" id="foreign-keys-are-off-during-a-load"><span
+class="header-section-number">15.2.3</span> Foreign keys are off during
+a load</h3>
+<p>The Turso schema declares edge endpoints as
+<code>REFERENCES nodes(id) ON DELETE CASCADE</code>, and
+<code>bootstrap</code> turns <code>PRAGMA foreign_keys</code> on for the
+bootstrap connection. Until commit <code>3f1ed19</code>, that made the
+result of a load depend on the writer count: WAL and single-writer MVCC
+loads ran on the bootstrap connection and rejected an edge whose
+endpoint node was not stored, while parallel MVCC writers, which never
+set the pragma, accepted it.</p>
+<p><code>put_graph</code> now turns foreign keys off on the bootstrap
+connection for the duration of the load, outside any transaction, and
+restores the previous setting afterwards, whether or not the load
+succeeded. Every path agrees, and the behavior matches the Memory
+reference, where a vertex can exist only as an edge endpoint.
+<code>ON DELETE CASCADE</code> fires on the connection that deletes,
+which keeps the pragma on, so serving semantics do not change: a single
+<code>put_edge</code> to a missing node is still refused.
+<code>tests/dangling_edges.rs</code> loads a dangling edge through WAL,
+one MVCC writer and four MVCC writers, reads it back identically on
+each, and checks the restored strictness.</p>
+<p>The two endpoint probes per edge were costing more than a third of
+WAL’s load throughput. With foreign keys off, WAL loads of web-Google
+rose from 42.9 k to 70.3 k edges per second on Turso 0.7.2 (about 60%);
+the parallel MVCC path, whose writers were already unchecked, did not
+move.</p>
+<h2 data-number="15.3" id="concurrent-writes-and-group-commit"><span
+class="header-section-number">15.3</span> Concurrent writes and group
+commit</h2>
+<p>Under the default <code>synchronous = FULL</code>, every MVCC commit
+fsyncs the logical log while holding Turso’s global commit lock. Sixteen
+writers each attaching 200 edges to one hot node took about 22 seconds
+on 0.7.2; Neo4j does the same work in three to four.</p>
+<p><code>with_group_commit()</code> batches concurrent single-statement
+writes into one transaction: one fsync per batch of up to
+<code>GROUP_COMMIT_MAX_STATEMENTS</code> statements, and every
+acknowledged write is durable when it is acknowledged. It is not a
+relaxation of <code>synchronous</code>. Handles from
+<code>connect_shared</code> share the store’s committer. On 0.7.2 it
+takes that workload from 21.1 to 3.2 seconds on one host, with all 3,200
+writes accepted and no conflicts.</p>
+<p><code>set_synchronous</code> exposes the fsync policy per connection.
+Bulk loads already run at <code>NORMAL</code> internally (they commit
+rarely and end in a <code>TRUNCATE</code> checkpoint that fsyncs, so the
+load is durable when <code>put_graph</code> returns), so the setting
+matters for single-statement writes, where <code>NORMAL</code> removes
+the per-commit fsync at the cost of durability on power loss.</p>
+<h3 data-number="15.3.1"
+id="version-scoping-this-changes-on-turso-0.8"><span
+class="header-section-number">15.3.1</span> Version scoping: this
+changes on Turso 0.8</h3>
+<p>Upstream <code>main</code> has engine-level group commit, on by
+default (<code>PRAGMA mvcc_group_commit</code>, store-wide). There,
+Grust’s client-side committer becomes a second coordination layer and
+costs about 19%: the same 16-by-200 workload takes 2.62 seconds with the
+engine’s group commit alone and 3.2 seconds with
+<code>with_group_commit</code> on top. The client committer’s numbers
+are identical on both engine versions, which is the point: it sets the
+ceiling.</p>
+<p><code>set_mvcc_group_commit(enabled)</code> exposes the pragma. It
+errors on 0.7.2, which has no such pragma. The intended policy is: on
+0.7.2, use <code>with_group_commit</code>; on 0.8, leave the engine’s
+group commit on and do not wrap. The default of
+<code>with_group_commit</code> should flip when the pinned engine moves.
+The pin stays at 0.7.2 until 0.8.0 is a stable release, because the
+facade must not force a pre-release on downstream crates.</p>
+<h2 data-number="15.4" id="allocator"><span
+class="header-section-number">15.4</span> Allocator</h2>
+<p>The <code>turso</code> crate enables <code>mimalloc</code> in its
+default features, on 0.7.2 and on <code>main</code>: it installs
+mimalloc as the <code>#[global_allocator]</code> of the whole process.
+<code>grust-turso</code> depends on <code>turso</code> with default
+features off, because a library should not choose the process allocator,
+and exposes the feature as <code>mimalloc = ["turso/mimalloc"]</code>;
+the facade forwards it as <code>turso-mimalloc</code>. So a Grust
+application runs Turso on the platform allocator unless it opts in,
+while a plain Turso build does not. Measured on four-writer MVCC loads
+of web-Google, same host, alternating pairs: +14% on <code>main</code>
+and +16% on 0.7.2; on WAL loads +9% and +16%. Every number in this
+chapter was taken on the platform allocator; the strain harness has
+since made mimalloc its process-wide default and tags such rows
+<code>alloc=mimalloc</code>. A deployment that owns its binary should
+turn it on.</p>
+<h2 data-number="15.5" id="what-was-measured"><span
+class="header-section-number">15.5</span> What was measured</h2>
+<p>The adversarial-graph strain harness loads real SNAP graphs and runs
+hot-node fan-out (A1), deep paths (A2), sixteen concurrent writers
+against one hub (A4), guarded-commit replay (A7) and an operability
+probe (A12), under nine hard gates. Every cell in this section passed
+with every gate at zero.</p>
+<h3 data-number="15.5.1" id="turso-against-turso-same-host"><span
+class="header-section-number">15.5.1</span> Turso against Turso, same
+host</h3>
+<p>On quegee (a c5n.4xlarge with no burst credits and less than half a
+second of CPU steal per run), the three largest graphs, same binary:</p>
+<table>
+<colgroup>
+<col style="width: 20%" />
+<col style="width: 20%" />
+<col style="width: 20%" />
+<col style="width: 20%" />
+<col style="width: 20%" />
+</colgroup>
+<thead>
+<tr>
+<th>graph</th>
+<th>MVCC load</th>
+<th>WAL load</th>
+<th>MVCC A4</th>
+<th>WAL A4</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>com-Orkut, 117.2 M edges</td>
+<td>16,046 edges/s</td>
+<td>24,666</td>
+<td>3,200/3,200 in 1.82 s</td>
+<td>61/3,200</td>
+</tr>
+<tr>
+<td>soc-LiveJournal1, 69.0 M</td>
+<td>19,749</td>
+<td>31,256</td>
+<td>3,200/3,200 in 4.81 s</td>
+<td>119/3,200</td>
+</tr>
+<tr>
+<td>sx-stackoverflow, 63.5 M</td>
+<td>18,504</td>
+<td>31,243</td>
+<td>3,200/3,200 in 6.54 s</td>
+<td>50/3,200</td>
+</tr>
+</tbody>
+</table>
+<p>WAL loads 1.5 to 1.7 times faster and then refuses 96 to 98% of
+concurrent hot-node writes. MVCC with group commit accepts every one.
+These WAL rows enforced foreign keys and the parallel MVCC rows did not,
+so the load ratio understates WAL; with both sides unchecked, WAL’s lead
+is larger. The MVCC rows in this table and the next ran eight writers at
+<code>synchronous = NORMAL</code>; their A4 times measure conflict
+retries rather than the commit path and are shown for the acceptance
+count only. The durable four-writer lane did com-Orkut’s A4 in 5.29 s,
+all 3,200 accepted, on a different host.</p>
+<p>The durable seven-graph MVCC ladder on grust (the harness default:
+<code>synchronous = FULL</code>, group commit, four writers) is clean on
+all four core families on every whole graph up to com-Orkut. It was the
+first MVCC run to reach com-Orkut at all: the single-writer loader would
+have taken most of a day.</p>
+<h3 data-number="15.5.2" id="against-neo4j-same-host"><span
+class="header-section-number">15.5.2</span> Against Neo4j, same
+host</h3>
+<p>Neo4j 5.26 Community over Bolt in a 6 GiB container, quegee, zero
+steal:</p>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr>
+<th></th>
+<th>Neo4j</th>
+<th>Turso MVCC</th>
+<th>Turso WAL</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>com-Orkut load</td>
+<td>16,800 edges/s</td>
+<td>16,046</td>
+<td>24,666</td>
+</tr>
+<tr>
+<td>com-Orkut A1 / A2</td>
+<td>144.5 s / 4,082 s</td>
+<td>138.1 s / 1,312 s</td>
+<td>96.8 s / 943 s</td>
+</tr>
+<tr>
+<td>com-Orkut A4</td>
+<td>2.90 s, 3,200/3,200</td>
+<td>1.82 s, 3,200/3,200</td>
+<td>1.05 s, 61/3,200</td>
+</tr>
+<tr>
+<td>com-Orkut peak RSS</td>
+<td>4.9 GB</td>
+<td>22.5 GB</td>
+<td>12.4 GB</td>
+</tr>
+<tr>
+<td>soc-LiveJournal1 load</td>
+<td>28,062</td>
+<td>19,749</td>
+<td>31,256</td>
+</tr>
+<tr>
+<td>soc-LiveJournal1 A1 / A2</td>
+<td>41.8 s / 2,501 s</td>
+<td>29.5 s / 1,065 s</td>
+<td>19.5 s / 773 s</td>
+</tr>
+<tr>
+<td>soc-LiveJournal1 A4</td>
+<td>2.90 s, 3,200/3,200</td>
+<td>4.81 s, 3,200/3,200</td>
+<td>1.29 s, 119/3,200</td>
+</tr>
+</tbody>
+</table>
+<p>Turso wins traversal on every graph. A7, guarded-commit replay, is
+not compared: it runs only on stores with a Grust
+<code>GraphCommitStore</code>, and the harness drives Neo4j through its
+own Cypher without one, which is a gap in the harness path, not in
+Neo4j. Load splits by graph: on com-Orkut the MVCC store matches Neo4j’s
+load; on soc-LiveJournal1 Neo4j loads 1.4 times faster. The A4 column is
+not a durability-matched comparison, because Neo4j commits durably and
+these MVCC rows ran at <code>synchronous = NORMAL</code>; in the durable
+same-host pairs the strain page counts, Neo4j wins every hot-node-write
+pair against the MVCC store and loses five of six against WAL, which
+accepts far fewer writes. Neo4j is three to five times leaner in memory
+throughout. Neo4j has no rows for the two smallest graphs, and the
+cit-Patents deep-path cell is vacuous on every backend (no path reaches
+the depth), so it is never cited.</p>
+<h3 data-number="15.5.3" id="upstream-main"><span
+class="header-section-number">15.5.3</span> Upstream
+<code>main</code></h3>
+<p>Grust compiles and passes all 80 <code>grust-turso</code> tests
+unchanged against Turso <code>main</code> at <code>19710d58d</code>
+(0.8.0-pre.11, 1,859 commits past 0.7.2). Measured against 0.7.2 on the
+same host with alternating pairs and the engine version asserted in
+every probe:</p>
+<ul>
+<li>WAL loads are 22% faster on <code>main</code>; the B-tree write path
+improved.</li>
+<li>Concurrent single-statement writes are better on <code>main</code>,
+as described above.</li>
+<li>MVCC bulk loads are slower on <code>main</code>, and the gap grows
+with the graph: 5% at one writer and 15% at four on web-Google, 26% at
+four on cit-Patents, and 20 to 23% at four writers on sx-stackoverflow,
+soc-LiveJournal1 and com-Orkut on the same host. Reads on those stores
+are 4 to 24% faster on <code>main</code>; only the write path
+regressed.</li>
+<li>The cause is not group commit, not checkpointing and not the
+allocator; each was ruled out by A/B. A profile puts it in the value
+comparison inside the MVCC index-key compare
+(<code>types::cmp_in_column</code> and
+<code>read_value_serial_type</code>, about 31% of the load on
+<code>main</code> against 25.5% on 0.7.2). Upstream pull request #8385
+rewrites exactly that path: against its own base it is 29 to 30% faster
+on this load, and under it the index-key share collapses to a single 12%
+symbol.</li>
+</ul>
+<p>The recommended configuration on <code>main</code>, all of it
+existing switches: fill MVCC stores through WAL, serve with the engine’s
+group commit and without <code>with_group_commit</code>, build with
+<code>turso-mimalloc</code>, and load with foreign keys off, which the
+branch already does.</p>
+<h2 data-number="15.6"
+id="methodology-because-it-decided-several-numbers"><span
+class="header-section-number">15.6</span> Methodology, because it
+decided several numbers</h2>
+<p>Benchmark hosts that are burstable instances (<code>t2</code> on AWS)
+throttle silently once their CPU credits are spent; the throttling shows
+up as CPU steal, not as an error. One seven-graph lane ran a second
+engine “1.7 times slower” for that reason alone and was discarded. Every
+number in this chapter was taken with steal recorded, and every engine
+or configuration comparison on a burstable host was run as alternating
+pairs within one run so both sides saw the same throttling. Absolute
+throughput comes from the non-burstable host only.</p>
+<p>Hot-node write times at <code>synchronous = NORMAL</code> vary from
+1.4 to 5.2 seconds on both engines with no consistent direction; they
+measure conflict-retry luck, not the commit path, and are not cited. The
+write-contention comparison is the <code>FULL</code>-sync alternating
+A/B.</p>
+<p><code>/tmp</code> is a RAM filesystem on the benchmark hosts; every
+load timing here is on disk. Run-to-run drift on the same host is about
+2%, so any effect under about 4% needs alternating pairs, and several
+plausible ideas were rejected on that basis: deferring secondary indexes
+during a load (slower), a plain <code>INSERT</code> for loads into empty
+tables (4% slower), a smaller writer page cache with GC off (flat),
+larger rounds (memory, not time), and dropping the edge identity column
+from the key (a real 2 to 4%, not worth a stateful dialect).</p>
+<h2 data-number="15.7" id="limitations"><span
+class="header-section-number">15.7</span> Limitations</h2>
+<p>The MVCC store holds more memory than the graph: 13 to 23 GB at 60 to
+120 million edges with four writers, against 5 to 7 GB for Neo4j. The
+via-WAL fill needs exclusive use of the database for the duration of the
+load. A parallel MVCC load is not all-or-nothing. Foreign keys are not
+enforced during loads, by design. <code>set_mvcc_group_commit</code> is
+meaningful only on Turso 0.8. And the engine’s global commit lock, not
+Grust, is what caps parallel MVCC loads at roughly 80% of WAL speed on
+0.7.2.</p>
 </body>
 </html>
