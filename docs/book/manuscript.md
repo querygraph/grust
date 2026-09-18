@@ -1108,9 +1108,16 @@ application creates label-specific SQL views and expression indexes using
 
 The `journal_mode` option selects the concurrency model. The default `Wal` is
 Turso's single-writer write-ahead log. Selecting `Mvcc` enables Turso's
-multi-version concurrency control (`PRAGMA journal_mode = mvcc`, a database-header
-mode applied to a fresh database); data writes then run inside `BEGIN CONCURRENT`
-transactions with bounded conflict retry, so concurrent writers make progress.
+multi-version concurrency control (`PRAGMA journal_mode = mvcc`); data writes
+then run inside `BEGIN CONCURRENT` transactions with bounded conflict retry, so
+concurrent writers make progress. Turso 0.7.2 converts a live database between
+the two modes in either direction. MVCC loads run over several writer
+connections (`set_mvcc_load_parallelism`) or fill through WAL and switch back
+(`set_bulk_load_via_wal`); every load path runs with foreign keys off; and
+concurrent single-statement writes can share one durable commit
+(`with_group_commit`). The chapter "Turso under strain" covers each of these,
+what they measured against WAL and against Neo4j, and how the advice changes
+on Turso 0.8.
 
 With the `turso-sync` facade feature, callers can construct a synced store
 from a local path, remote URL, and optional auth token. The `GraphStore` API
@@ -2179,6 +2186,8 @@ intermediate bindings; it is not a whole-statement atomicity boundary. Explicit
 transaction scripts batch supported mutations when atomicity is required.
 
 <!-- include: chapters/compact-memory-and-turso.md -->
+
+<!-- include: chapters/turso-under-strain.md -->
 
 <!-- include: chapters/generalized-algorithms.md -->
 

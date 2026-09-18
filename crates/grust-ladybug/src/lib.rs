@@ -34,7 +34,17 @@ pub struct LadybugConfig {
     /// concurrent writers queue on it. On, the engine resolves conflicting
     /// write transactions and a losing writer gets its error back.
     pub concurrent_writes: bool,
+    /// Cap on the database size in bytes. `None` keeps the engine's default of
+    /// 8 TiB, which the engine reserves as virtual address space per open
+    /// database; on x86-64 Linux (128 TiB of user address space) that allows
+    /// only about fifteen databases open at once in one process.
+    pub max_db_bytes: Option<u64>,
 }
+
+/// Unit tests open many databases in parallel threads; like Ladybug's own
+/// test configuration, they cap each at 16 GiB so reservations cannot exhaust
+/// the process address space.
+const TEST_MAX_DB_BYTES: u64 = 16 * 1024 * 1024 * 1024;
 
 impl Default for LadybugConfig {
     fn default() -> Self {
@@ -45,6 +55,7 @@ impl Default for LadybugConfig {
             query_timeout_ms: None,
             buffer_pool_bytes: None,
             concurrent_writes: false,
+            max_db_bytes: cfg!(test).then_some(TEST_MAX_DB_BYTES),
         }
     }
 }
@@ -116,11 +127,14 @@ struct RelTable {
 
 impl LadybugGraphStore {
     pub fn new(config: LadybugConfig) -> Result<Self> {
-        let system = match config.buffer_pool_bytes {
-            Some(bytes) => lbug::SystemConfig::default().buffer_pool_size(bytes),
-            None => lbug::SystemConfig::default(),
+        let mut system =
+            lbug::SystemConfig::default().enable_multi_writes(config.concurrent_writes);
+        if let Some(bytes) = config.buffer_pool_bytes {
+            system = system.buffer_pool_size(bytes);
         }
-        .enable_multi_writes(config.concurrent_writes);
+        if let Some(bytes) = config.max_db_bytes {
+            system = system.max_db_size(bytes);
+        }
         let db = match &config.path {
             LadybugPath::InMemory => lbug::Database::in_memory(system),
             LadybugPath::Directory(path) => lbug::Database::new(path, system),

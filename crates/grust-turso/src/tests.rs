@@ -28,6 +28,11 @@ fn bootstrap_creates_universal_turso_tables() {
     assert!(sql.contains("props TEXT NOT NULL"));
     assert!(sql.contains("identity_key text NOT NULL DEFAULT ''"));
     assert!(sql.contains("PRIMARY KEY (from_id, label, to_id, identity_key)"));
+    assert!(
+        !sql.contains("edges_from_idx"),
+        "Turso reads source lookups from the edge primary key"
+    );
+    assert!(sql.contains("CREATE INDEX IF NOT EXISTS \"grust_edges_to_idx\""));
 }
 
 #[test]
@@ -715,5 +720,228 @@ async fn prepared_bulk_load_writes_exactly_the_rows_of_the_sql_text_upserts() {
             // "id:a", the F edge and one id-less n3->n1.
             assert_eq!(expected.len(), 3 + 6, "{journal_mode:?} batch {batch_size}");
         }
+    }
+}
+
+/// A load large enough to span many commit groups, with repeated keys and
+/// every kind of edge identity, over a `rewriting_graph` prefix.
+fn bulk_rewriting_graph() -> Graph {
+    let base = rewriting_graph();
+    let mut nodes = base.nodes;
+    let mut edges = base.edges;
+    for i in 0..300 {
+        nodes.push(Node::new("N", format!("b{i}"), weight(i)));
+    }
+    for i in 0..300i64 {
+        for k in 1..=6i64 {
+            let to = format!("b{}", (i * 7 + k * 13) % 300);
+            let edge = Edge::new("E", format!("b{i}"), to, weight(i * 10 + k));
+            edges.push(match k % 4 {
+                0 => edge,
+                1 => edge.with_id(format!("e{i}-{k}")),
+                2 => edge.with_id(format!("id:e{i}")),
+                _ => edge.with_id(""),
+            });
+        }
+    }
+    // Re-put a slice of the nodes and edges with new props: the last row wins.
+    for i in (0..300).step_by(17) {
+        nodes.push(Node::new("M", format!("b{i}"), weight(-i)));
+        edges.push(
+            Edge::new(
+                "E",
+                format!("b{i}"),
+                format!("b{}", (i * 7 + 13) % 300),
+                weight(-i),
+            )
+            .with_id(format!("e{i}-1")),
+        );
+    }
+    Graph::new(nodes, edges)
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn mvcc_bulk_load_stores_the_rows_of_the_wal_load_and_keeps_concurrent_writers() {
+    let dir = tempfile::tempdir().unwrap();
+    let graph = bulk_rewriting_graph();
+    let config = |name: &str, journal_mode| TursoConfig {
+        path: dir.path().join(name).to_string_lossy().into_owned(),
+        journal_mode,
+        batch_size: 7,
+        ..TursoConfig::default()
+    };
+
+    let wal = TursoGraphStore::connect(config("wal.db", TursoJournalMode::Wal))
+        .await
+        .unwrap();
+    wal.bootstrap().await.unwrap();
+    wal.put_graph(&graph).await.unwrap();
+    let expected = raw_rows(&wal).await;
+
+    let mvcc_config = config("mvcc.db", TursoJournalMode::Mvcc);
+    let mvcc = TursoGraphStore::connect(mvcc_config.clone()).await.unwrap();
+    mvcc.bootstrap().await.unwrap();
+    // A tiny checkpoint threshold makes the automatic checkpoints run in the
+    // middle of the load, between commit groups, as they do in a large one.
+    mvcc.execute_discarding_rows("PRAGMA mvcc_checkpoint_threshold = 8192")
+        .await
+        .unwrap();
+    // Load in two calls, as the harness does: nodes, then edges.
+    mvcc.put_graph(&Graph::new(graph.nodes.clone(), Vec::new()))
+        .await
+        .unwrap();
+    mvcc.put_graph(&Graph::new(Vec::new(), graph.edges.clone()))
+        .await
+        .unwrap();
+    let mode = mvcc.query_scalar_text("PRAGMA journal_mode").await.unwrap();
+    assert_eq!(mode.as_deref(), Some("mvcc"), "the load stays an MVCC load");
+    assert_eq!(
+        mvcc.query_scalar_i64("PRAGMA synchronous").await.unwrap(),
+        2,
+        "a load runs at synchronous = NORMAL and restores FULL afterwards"
+    );
+    assert_eq!(raw_rows(&mvcc).await, expected, "MVCC rows equal WAL rows");
+    assert!(
+        expected.iter().any(|row| row.len() == 6
+            && row[5]
+                .as_deref()
+                .is_some_and(|key| key.starts_with("id:id:"))),
+        "the identity keys of prefix-like ids are part of the comparison"
+    );
+    drop(mvcc);
+
+    // The load ended in a TRUNCATE checkpoint: a fresh connection reads every
+    // row, and the store still takes concurrent BEGIN CONCURRENT writers.
+    let reopened = TursoGraphStore::connect(mvcc_config.clone()).await.unwrap();
+    reopened.bootstrap().await.unwrap();
+    assert_eq!(raw_rows(&reopened).await, expected, "rows survive a reopen");
+    let second = TursoGraphStore::connect(mvcc_config.clone()).await.unwrap();
+    let writers = [reopened, second].map(|store| {
+        tokio::spawn(async move {
+            for i in 0..20 {
+                store
+                    .put_edge(&Edge::new("W", "b0", format!("b{i}"), Props::new()))
+                    .await
+                    .expect("concurrent put");
+            }
+        })
+    });
+    for writer in writers {
+        writer.await.unwrap();
+    }
+    let verify = TursoGraphStore::connect(mvcc_config).await.unwrap();
+    let written = verify
+        .get_edges(EdgeQuery {
+            from: Some(NodeId::new("b0")),
+            label: Some(Label::new("W")),
+            ..Default::default()
+        })
+        .await
+        .unwrap();
+    assert_eq!(written.len(), 20, "both writers' edges land once each");
+}
+
+async fn index_names(store: &TursoGraphStore) -> Vec<Option<String>> {
+    store
+        .run_text_rows(
+            "SELECT name FROM sqlite_schema WHERE type = 'index' ORDER BY name",
+            1,
+        )
+        .await
+        .unwrap()
+        .concat()
+}
+
+#[tokio::test]
+async fn bootstrap_omits_the_edge_source_index_and_drops_a_legacy_one() {
+    let store = TursoGraphStore::in_memory().await.unwrap();
+    store.bootstrap().await.unwrap();
+    let names = index_names(&store).await;
+    assert!(!names.contains(&Some("grust_edges_from_idx".to_string())));
+    assert!(names.contains(&Some("grust_edges_to_idx".to_string())));
+
+    store
+        .execute("CREATE INDEX grust_edges_from_idx ON grust_edges(from_id)")
+        .await
+        .unwrap();
+    store.bootstrap().await.unwrap();
+    let names = index_names(&store).await;
+    assert!(!names.contains(&Some("grust_edges_from_idx".to_string())));
+}
+
+/// Feasibility probe: can a live MVCC store, with a group committer and a
+/// shared handle open, switch to WAL for a bulk load and back to MVCC?
+/// Records what the engine does; asserts correctness only when it switches.
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn a_live_mvcc_store_switched_to_wal_and_back() {
+    let dir = tempfile::tempdir().unwrap();
+    let store = TursoGraphStore::connect(TursoConfig {
+        path: dir.path().join("switch.db").display().to_string(),
+        table_prefix: "s".to_string(),
+        batch_size: 500,
+        journal_mode: TursoJournalMode::Mvcc,
+    })
+    .await
+    .unwrap();
+    store.bootstrap().await.unwrap();
+    let store = store.with_group_commit().await.unwrap();
+    let other = Arc::new(store.connect_shared().await.unwrap());
+
+    let to_wal = store.query_scalar_text("PRAGMA journal_mode = wal").await;
+    eprintln!("MVCC -> WAL on a live store: {to_wal:?}");
+    if !matches!(to_wal.as_ref().map(|m| m.as_deref()), Ok(Some("wal"))) {
+        return;
+    }
+    let nodes: Vec<Node> = (0..50)
+        .map(|i| Node::new("Node", format!("w{i}"), Props::new()))
+        .collect();
+    store
+        .execute(&upsert_nodes_sql(&store.nodes_table(), &nodes).unwrap())
+        .await
+        .unwrap();
+    let back = store.query_scalar_text("PRAGMA journal_mode = mvcc").await;
+    eprintln!("WAL -> MVCC on a live store: {back:?}");
+    assert!(
+        matches!(back.as_ref().map(|m| m.as_deref()), Ok(Some("mvcc"))),
+        "a store that switched to WAL must switch back"
+    );
+
+    for i in 0..50 {
+        assert!(
+            other
+                .get_node(&NodeId::new(format!("w{i}")))
+                .await
+                .unwrap()
+                .is_some(),
+            "row w{i} written under WAL reads back on another handle"
+        );
+    }
+    let writer = {
+        let other = other.clone();
+        tokio::spawn(async move {
+            for i in 0..20 {
+                other
+                    .put_node(&Node::new("Node", format!("c{i}"), Props::new()))
+                    .await
+                    .unwrap();
+            }
+        })
+    };
+    for i in 0..20 {
+        store
+            .put_node(&Node::new("Node", format!("d{i}"), Props::new()))
+            .await
+            .unwrap();
+    }
+    writer.await.unwrap();
+    for id in (0..20).flat_map(|i| [format!("c{i}"), format!("d{i}")]) {
+        assert!(
+            store
+                .get_node(&NodeId::new(id.clone()))
+                .await
+                .unwrap()
+                .is_some(),
+            "concurrent MVCC write {id} landed after switching back"
+        );
     }
 }

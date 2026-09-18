@@ -43,10 +43,10 @@ pub use grust_cypher::{
     ensure_query_uses_graph, execute_cypher_mutation_returning_with_options_on_store,
     query_graph_selection, run_bounded_read_query, run_bounded_read_query_indexed,
     run_bounded_read_query_on_snapshot, run_bounded_read_query_with_registry,
-    run_read_query_on_named_graph, run_read_query_with_registry, sail_cypher_constraints,
-    sail_cypher_ddl, sail_cypher_mutation_plan, sail_cypher_mutation_plan_with_options,
-    sail_cypher_mutation_plan_with_return_options, validate_read_query,
-    validate_read_query_with_registry,
+    run_prepared_read_query_indexed, run_read_query_on_named_graph, run_read_query_with_registry,
+    sail_cypher_constraints, sail_cypher_ddl, sail_cypher_mutation_plan,
+    sail_cypher_mutation_plan_with_options, sail_cypher_mutation_plan_with_return_options,
+    validate_read_query, validate_read_query_with_registry,
 };
 
 #[cfg(feature = "falkor")]

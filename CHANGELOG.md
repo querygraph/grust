@@ -6,9 +6,42 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ## Unreleased
 
+- Sample the deadline on work charges instead of reading the clock for every
+  unit. Kernels charge once per visited entry, so a per-unit `Instant::now()`
+  costs more than the work it guards wherever the clocksource is paravirtualised:
+  on such a host it was about 83% of a full-path Cypher query, which now runs
+  8.4x faster with identical results. Expiry is observed within 1024 charges;
+  `checkpoint` still reads the clock exactly, and cancellation and budget limits
+  are never sampled.
+- Charge cooperative work units and observe cancellation without taking the
+  execution mutex: `ExecutionContext` now holds `work_units` and `cancelled` as
+  atomics, admitting each charge through a compare-exchange that recomputes the
+  budget against the value it replaces. Exact budget enforcement, per-unit
+  granularity and cancellation visibility are unchanged; memory reservations,
+  peak accounting and wakers still hold the lock. Profiling attributed 72.8% of
+  full-path Dijkstra kernel time on a 16384-node chain to the previous
+  lock-per-unit accounting.
 - Validate row-to-Arrow conversion with borrowed identity membership instead of
   constructing discarded adjacency, and copy string properties directly into
   Arrow buffers without temporary owned String clones.
+- Add automatic Cypher routing through `grust_datafusion::cypher::RoutedGraph`:
+  one graph captured as a typed index and an Arrow snapshot, one bounded-read
+  admission per query, and DataFusion execution for single-node scan plans
+  whose every physical operator charges candidate work and intermediate bytes
+  against the caller's `ReadQueryPolicy`. Relationship joins, unsupported
+  shapes, small graphs and plans over a limit stay on the reference executor;
+  explain reports the chosen route and why DataFusion was declined.
+- Add `run_prepared_read_query_indexed`, so a declined route keeps the original
+  admission and deadline instead of re-preparing the query.
+- Split large single-batch Arrow tables into contiguous zero-copy partitions.
+  Upstream round-robin repartitioning charged every queued slice the full size
+  of its shared parent buffers, which intermittently exhausted a 256 MiB pool on
+  a one-million-node scan with nothing copied.
+- Add `LadybugConfig::max_db_bytes`. Ladybug reserves its maximum database
+  size (8 TiB by default) as virtual address space per open database, so one
+  x86-64 Linux process can hold only about fifteen at once. `grust-ladybug`
+  unit tests now cap each database at 16 GiB, as Ladybug's own tests do;
+  parallel test threads previously failed intermittently with `Mmap ... failed`.
 
 ## 0.20.0 — Brine — 2026-09-14
 
@@ -21,6 +54,19 @@ reconstructed from Git history, release commits, and the shipped docs.
 - Admit snapshot relationship-ordinal payload and construction work before
   allocation, retaining reservations with emitted buffers. Combined input-policy
   capture preserves the prepared request deadline and exact serialized limits.
+- grust-turso no longer creates `<prefix>_edges_from_idx`, and bootstrap
+  drops it from existing stores. The edge primary key
+  `(from_id, label, to_id, identity_key)` leads with `from_id`, and Turso's
+  planner already answered every source lookup and traversal hop from that
+  key, so the index only cost a write per edge. Query plans and results are
+  unchanged. Other SQL dialects keep the index (`GraphSqlDialect::
+  edge_source_index`, default `true`). With the bulk_load example on a
+  4-core host, 1M edges: MVCC 12.7k -> 15.9k edges/s, WAL 43.6k -> 51.5k.
+- MVCC loads end in a `TRUNCATE` checkpoint inside `put_graph`, as WAL loads
+  already did, so a load returns durable in the database file with the MVCC
+  in-memory store drained.
+- Optional `mimalloc` feature on grust-turso: Turso's own default allocator,
+  installed as the binary's global allocator (MVCC loads about 9% faster).
 
 ## 0.19.0 — Mantis — 2026-09-14
 

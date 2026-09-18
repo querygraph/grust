@@ -1,5 +1,6 @@
 //! Shared cooperative limits with reservations retained by buffer owners.
 
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
 
@@ -34,15 +35,35 @@ pub struct ResourceUsage {
 
 #[derive(Debug, Default)]
 struct State {
-    usage: ResourceUsage,
-    cancelled: bool,
+    live_bytes: usize,
+    peak_bytes: usize,
     waiters: Vec<Option<std::task::Waker>>,
 }
 
+/// Charges sample the deadline instead of reading the clock for every unit.
+/// Kernels charge once per visited entry, so a per-unit read costs more than the
+/// work it guards wherever the clocksource is paravirtualised rather than a
+/// register read. Cancellation is never sampled, and `checkpoint` always reads
+/// the clock, so a caller that needs an exact poll has one.
+const DEADLINE_SAMPLE_UNITS: usize = 1024;
+
+/// Work and cancellation are lock-free because kernels charge per unit of work,
+/// once per visited entry or reconstructed path step. Memory reservations and
+/// wakers stay behind the mutex: they are rare and need multi-field atomicity.
 #[derive(Debug)]
 struct Shared {
     limits: ExecutionLimits,
+    work_units: AtomicUsize,
+    cancelled: AtomicBool,
+    charges_since_deadline_read: AtomicUsize,
     state: Mutex<State>,
+}
+
+/// Whether a state check must read the clock or may rely on the sampled read.
+#[derive(Clone, Copy)]
+enum DeadlineCheck {
+    Exact,
+    Sampled,
 }
 
 /// Cloneable handle to one query's resource state; no global state or worker pool.
@@ -65,6 +86,9 @@ impl ExecutionContext {
         }
         Ok(Self(Arc::new(Shared {
             limits,
+            work_units: AtomicUsize::new(0),
+            cancelled: AtomicBool::new(false),
+            charges_since_deadline_read: AtomicUsize::new(0),
             state: Mutex::new(State::default()),
         })))
     }
@@ -76,12 +100,14 @@ impl ExecutionContext {
 
     /// Signal cancellation to all owners. Cancellation never resets.
     pub fn cancel(&self) -> Result<()> {
+        // Publish cancellation before collecting wakers, so a registration that
+        // races this call either observes the flag or is woken by it.
+        self.0.cancelled.store(true, Ordering::Release);
         let mut state = self
             .0
             .state
             .lock()
             .map_err(|_| ProcedureError::ResourceStatePoisoned)?;
-        state.cancelled = true;
         let waiters = std::mem::take(&mut state.waiters);
         drop(state);
         for waker in waiters.into_iter().flatten() {
@@ -90,34 +116,52 @@ impl ExecutionContext {
         Ok(())
     }
 
-    /// Poll cancellation and deadline without charging work.
+    /// Poll cancellation and deadline without charging work. Unlike a charge,
+    /// this always reads the clock, so an explicit poll is exact.
     pub fn checkpoint(&self) -> Result<()> {
-        self.charge_work(0)
+        self.check_state(DeadlineCheck::Exact)
     }
 
     /// Charge work before performing it. Counter overflow is a budget failure.
     pub fn charge_work(&self, units: usize) -> Result<()> {
-        let mut state = self
-            .0
-            .state
-            .lock()
-            .map_err(|_| ProcedureError::ResourceStatePoisoned)?;
-        self.check_state(&state)?;
-        state.usage.work_units = state
-            .usage
-            .work_units
-            .checked_add(units)
-            .filter(|next| *next <= self.0.limits.work_units)
-            .ok_or(ProcedureError::BudgetExceeded {
-                resource: "work",
-                limit: self.0.limits.work_units,
-            })?;
-        Ok(())
+        self.check_state(DeadlineCheck::Sampled)?;
+        // Admit exactly, never overshooting the budget: the compare-exchange
+        // recomputes admission against the value it actually replaces, so a
+        // concurrent charge cannot slip past the limit between load and store.
+        let mut current = self.0.work_units.load(Ordering::Relaxed);
+        loop {
+            let next = current
+                .checked_add(units)
+                .filter(|next| *next <= self.0.limits.work_units)
+                .ok_or(ProcedureError::BudgetExceeded {
+                    resource: "work",
+                    limit: self.0.limits.work_units,
+                })?;
+            match self.0.work_units.compare_exchange_weak(
+                current,
+                next,
+                Ordering::Relaxed,
+                Ordering::Relaxed,
+            ) {
+                Ok(_) => return Ok(()),
+                Err(observed) => current = observed,
+            }
+        }
     }
 
-    fn check_state(&self, state: &State) -> Result<()> {
-        if state.cancelled {
+    fn check_state(&self, deadline: DeadlineCheck) -> Result<()> {
+        if self.0.cancelled.load(Ordering::Acquire) {
             return Err(ProcedureError::Cancelled);
+        }
+        if matches!(deadline, DeadlineCheck::Sampled)
+            && self
+                .0
+                .charges_since_deadline_read
+                .fetch_add(1, Ordering::Relaxed)
+                % DEADLINE_SAMPLE_UNITS
+                != 0
+        {
+            return Ok(());
         }
         if self
             .0
@@ -150,9 +194,8 @@ impl ExecutionContext {
             .state
             .lock()
             .map_err(|_| ProcedureError::ResourceStatePoisoned)?;
-        self.check_state(&state)?;
+        self.check_state(DeadlineCheck::Exact)?;
         state
-            .usage
             .live_bytes
             .checked_add(bytes)
             .filter(|next| *next <= self.0.limits.memory_bytes)
@@ -187,9 +230,8 @@ impl ExecutionContext {
             .state
             .lock()
             .map_err(|_| ProcedureError::ResourceStatePoisoned)?;
-        self.check_state(&state)?;
+        self.check_state(DeadlineCheck::Exact)?;
         let next = state
-            .usage
             .live_bytes
             .checked_add(bytes)
             .filter(|next| *next <= self.0.limits.memory_bytes)
@@ -197,19 +239,23 @@ impl ExecutionContext {
                 resource: "memory",
                 limit: self.0.limits.memory_bytes,
             })?;
-        state.usage.live_bytes = next;
-        state.usage.peak_bytes = state.usage.peak_bytes.max(next);
+        state.live_bytes = next;
+        state.peak_bytes = state.peak_bytes.max(next);
         Ok(())
     }
 
     /// Current accounted usage, including batches retained by a consumer.
     pub fn usage(&self) -> Result<ResourceUsage> {
-        Ok(self
+        let state = self
             .0
             .state
             .lock()
-            .map_err(|_| ProcedureError::ResourceStatePoisoned)?
-            .usage)
+            .map_err(|_| ProcedureError::ResourceStatePoisoned)?;
+        Ok(ResourceUsage {
+            live_bytes: state.live_bytes,
+            peak_bytes: state.peak_bytes,
+            work_units: self.0.work_units.load(Ordering::Relaxed),
+        })
     }
 }
 
@@ -246,7 +292,7 @@ impl Drop for MemoryAccount {
             .state
             .lock()
             .unwrap_or_else(|poison| poison.into_inner());
-        state.usage.live_bytes -= self.bytes;
+        state.live_bytes -= self.bytes;
     }
 }
 
@@ -265,7 +311,7 @@ impl Drop for Reservation {
             .state
             .lock()
             .unwrap_or_else(|poison| poison.into_inner());
-        state.usage.live_bytes -= self.bytes;
+        state.live_bytes -= self.bytes;
     }
 }
 

@@ -1,13 +1,18 @@
 //! Incremental portable result collection with explicit output limits.
 use super::{decode_result_batch, decode_result_batch_with_context};
 use datafusion::{
+    arrow::datatypes::SchemaRef,
     common::{DataFusionError, Result},
     dataframe::DataFrame,
+    execution::SendableRecordBatchStream,
 };
 use futures::TryStreamExt;
 use grust_cypher::CypherResultTable;
 use grust_procedures::ExecutionContext;
-use std::io::{self, Write};
+use std::{
+    io::{self, Write},
+    sync::Arc,
+};
 
 /// Collect a typed plan while enforcing cumulative result rows and serialized
 /// JSON bytes (`{"columns":...,"rows":...}`, matching the Cypher read policy).
@@ -47,26 +52,42 @@ async fn collect(
     max_output_bytes: usize,
     execution: Option<&ExecutionContext>,
 ) -> Result<CypherResultTable> {
+    let schema = Arc::new(frame.schema().as_arrow().clone());
+    collect_stream(
+        schema,
+        frame.execute_stream(),
+        max_rows,
+        max_output_bytes,
+        execution,
+    )
+    .await
+}
+
+/// Collect a stream whose planning already happened elsewhere, such as an
+/// instrumented physical plan. Output columns come from `schema`; the stream is
+/// opened only after the column-name copies have been admitted.
+pub(super) async fn collect_stream(
+    schema: SchemaRef,
+    stream: impl Future<Output = Result<SendableRecordBatchStream>>,
+    max_rows: usize,
+    max_output_bytes: usize,
+    execution: Option<&ExecutionContext>,
+) -> Result<CypherResultTable> {
     if let Some(execution) = execution {
-        let bytes = frame
-            .schema()
-            .fields()
-            .iter()
-            .try_fold(0usize, |bytes, field| {
-                bytes
-                    .checked_add(std::mem::size_of::<String>())
-                    .and_then(|bytes| bytes.checked_add(field.name().len()))
-                    .ok_or_else(|| {
-                        DataFusionError::Execution("Cypher column copy size overflow".into())
-                    })
-            })?;
+        let bytes = schema.fields().iter().try_fold(0usize, |bytes, field| {
+            bytes
+                .checked_add(std::mem::size_of::<String>())
+                .and_then(|bytes| bytes.checked_add(field.name().len()))
+                .ok_or_else(|| {
+                    DataFusionError::Execution("Cypher column copy size overflow".into())
+                })
+        })?;
         execution
             .charge_cumulative_memory(bytes)
             .map_err(|error| DataFusionError::External(Box::new(error)))?;
     }
     let mut table = CypherResultTable {
-        columns: frame
-            .schema()
+        columns: schema
             .fields()
             .iter()
             .map(|field| field.name().clone())
@@ -86,7 +107,7 @@ async fn collect(
     counter
         .write_all(b",\"rows\":[]}")
         .map_err(|e| error(e.to_string()))?;
-    let mut stream = frame.execute_stream().await?;
+    let mut stream = stream.await?;
     while let Some(batch) = stream.try_next().await? {
         if batch.num_rows() > max_rows.saturating_sub(table.rows.len()) {
             return Err(DataFusionError::Execution(format!(

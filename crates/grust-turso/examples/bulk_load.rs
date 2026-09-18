@@ -28,6 +28,10 @@ struct Args {
     mode: TursoJournalMode,
     path: String,
     snap: Option<String>,
+    wal_load: bool,
+    load_threads: usize,
+    batch: usize,
+    round_groups: usize,
 }
 
 fn parse_args() -> Args {
@@ -41,6 +45,10 @@ fn parse_args() -> Args {
             .display()
             .to_string(),
         snap: None,
+        wal_load: false,
+        load_threads: 1,
+        batch: 500,
+        round_groups: 0,
     };
     let mut it = std::env::args().skip(1);
     while let Some(flag) = it.next() {
@@ -58,6 +66,16 @@ fn parse_args() -> Args {
             }
             "--path" => args.path = value,
             "--snap" => args.snap = Some(value),
+            "--load-threads" => args.load_threads = value.parse().expect("--load-threads"),
+            "--batch" => args.batch = value.parse().expect("--batch"),
+            "--round-groups" => args.round_groups = value.parse().expect("--round-groups"),
+            "--wal-load" => {
+                args.wal_load = match value.as_str() {
+                    "on" => true,
+                    "off" => false,
+                    other => panic!("unknown wal-load {other}"),
+                }
+            }
             other => panic!("unknown flag {other}"),
         }
     }
@@ -190,7 +208,7 @@ impl Csr {
     }
 }
 
-#[tokio::main(flavor = "current_thread")]
+#[tokio::main(flavor = "multi_thread")]
 async fn main() -> Result<()> {
     let args = parse_args();
     let started = Instant::now();
@@ -211,11 +229,14 @@ async fn main() -> Result<()> {
     let store = TursoGraphStore::connect(TursoConfig {
         path: args.path.clone(),
         table_prefix: "ag".to_string(),
-        batch_size: 500,
+        batch_size: args.batch,
         journal_mode: args.mode,
     })
     .await?;
     store.bootstrap().await?;
+    store.set_bulk_load_via_wal(args.wal_load);
+    store.set_mvcc_load_parallelism(args.load_threads);
+    store.set_mvcc_load_round_groups(args.round_groups);
 
     let load = Instant::now();
     for graph in csr.node_chunks(args.chunk.max(1)) {

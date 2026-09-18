@@ -47,8 +47,8 @@ pub use read::{
 pub use read_budget::MAX_RANGE_ITEMS;
 pub use read_policy::{
     PreparedReadRequest, ReadQueryPolicy, run_bounded_read_query, run_bounded_read_query_indexed,
-    run_bounded_read_query_on_snapshot, run_bounded_read_query_with_registry, validate_read_query,
-    validate_read_query_with_registry,
+    run_bounded_read_query_on_snapshot, run_bounded_read_query_with_registry,
+    run_prepared_read_query_indexed, validate_read_query, validate_read_query_with_registry,
 };
 pub mod semantics;
 pub mod session;
