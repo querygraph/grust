@@ -113,7 +113,7 @@ fn slot_keys_cannot_collide_with_json_but_graph_free_bindings_remain_value_keyed
     let value = graph_edge_value(&edge).unwrap();
     let physical = Row::from([("r".into(), Bound::Edge(edge.clone().into(), Some(0)))]);
     let pushed = Row::from([("r".into(), Bound::Edge(edge.into(), None))]);
-    let computed = Row::from([("r".into(), Bound::Value(value))]);
+    let computed = Row::from([("r".into(), Bound::value(value))]);
     assert_ne!(bindings(&physical).unwrap(), bindings(&computed).unwrap());
     assert_eq!(bindings(&pushed).unwrap(), bindings(&computed).unwrap());
 }

@@ -202,7 +202,7 @@ impl ProcedureExecution {
                     for (column, &index) in columns.iter().zip(&indices) {
                         next.insert(
                             column.clone(),
-                            Bound::Value(clone_value(
+                            Bound::value(clone_value(
                                 &values[index],
                                 "binding procedure result values",
                             )?),

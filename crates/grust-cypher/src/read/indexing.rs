@@ -10,7 +10,7 @@ pub(super) fn evaluate(
 ) -> Result<Value> {
     let borrowed = match base {
         Expr::Variable(name) => match row.get(name) {
-            Some(Bound::Value(value)) => Some(value),
+            Some(Bound::Value(value)) => Some(value.as_ref()),
             _ => None,
         },
         Expr::Parameter(name) => params.get(name),

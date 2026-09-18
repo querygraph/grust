@@ -124,12 +124,19 @@ impl PathBuffers {
             self.nodes.values.clear();
             self.costs.values.clear();
             self.edges.values.clear();
+            // One unit per step, as `reverse` charges: in blocks of at most 1024
+            // steps, because a per-step admit cost more than the step.
             let mut node = target;
+            let mut uncharged = 0usize;
             loop {
-                context.charge_work(1)?;
+                uncharged += 1;
+                if uncharged == 1024 {
+                    context.charge_work(std::mem::take(&mut uncharged))?;
+                }
                 self.nodes.values.push(node);
                 self.costs.values.push(paths.distances.values()[node]);
                 if node == paths.source {
+                    context.charge_work(uncharged)?;
                     break;
                 }
                 let (parent, edge) = paths.parents.values[node].ok_or_else(|| {

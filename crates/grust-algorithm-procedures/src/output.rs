@@ -163,8 +163,10 @@ fn path_batch(
                 .saturating_mul(size_of::<String>() + size_of::<f64>()),
         )
         .saturating_add(path.edges.len().saturating_mul(size_of::<i64>()));
+    // One unit per entry, admitted for the whole path before it is walked: a
+    // per-entry admit cost more than the entry it guarded.
+    context.charge_work(path.nodes.len())?;
     for &node in path.nodes {
-        context.charge_work(1)?;
         bytes = bytes.saturating_add(graph.node_ids()[node].as_str().len());
     }
     let reservation = context.reserve(bytes)?;
@@ -174,13 +176,13 @@ fn path_batch(
     costs.try_reserve_exact(path.costs.len())?;
     let mut ordinals = Vec::new();
     ordinals.try_reserve_exact(path.edges.len())?;
+    context.charge_work(path.nodes.len().min(path.costs.len()))?;
     for (&node, &cost) in path.nodes.iter().zip(path.costs) {
-        context.charge_work(1)?;
         node_ids.push(graph.node_ids()[node].as_str().into());
         costs.push(cost);
     }
+    context.charge_work(path.edges.len())?;
     for &edge in path.edges {
-        context.charge_work(1)?;
         ordinals.push(integer(graph.edges()[edge].ordinal)?);
     }
     let mut row = Vec::new();

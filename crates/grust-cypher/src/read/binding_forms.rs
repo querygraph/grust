@@ -16,10 +16,12 @@ pub(super) fn reduce(
     if matches!(list, Value::Null) {
         return Ok(Value::Null);
     }
-    for value in elements(list, "reduce")? {
-        read_budget::charge_candidate_work(1, "evaluating reduce element")?;
-        let acc = Bound::Value(result);
-        let element = Bound::Value(value);
+    let values = elements(list, "reduce")?;
+    let length = values.len();
+    for (index, value) in values.enumerate() {
+        charge_block(index, length, "evaluating reduce element")?;
+        let acc = Bound::value(result);
+        let element = Bound::value(value);
         let child = scope.bind(accumulator, &acc);
         let child = child.bind(item, &element);
         result = eval_scoped(body, &child, params)?;
@@ -66,9 +68,11 @@ pub(super) fn comprehension(
         return Ok(Value::Null);
     }
     let mut out = Vec::new();
-    for value in elements(list, "list comprehension")? {
-        read_budget::charge_candidate_work(1, "evaluating list comprehension element")?;
-        let element = Bound::Value(value);
+    let values = elements(list, "list comprehension")?;
+    let length = values.len();
+    for (index, value) in values.enumerate() {
+        charge_block(index, length, "evaluating list comprehension element")?;
+        let element = Bound::value(value);
         let child = scope.bind(item, &element);
         if let Some(predicate) = predicate
             && as_bool(eval_scoped(predicate, &child, params)?)? != Some(true)
@@ -90,7 +94,19 @@ pub(super) fn comprehension(
 
 // Iterate owned lists without collecting a second full vector before charging
 // the per-element budget. NULL is handled by each form before this conversion.
-fn elements(value: Value, form: &str) -> Result<Box<dyn Iterator<Item = Value>>> {
+/// Work is one unit per element, admitted a block at a time before the block
+/// is evaluated: a per-element admit cost more than most bodies. A budget,
+/// cancellation or deadline still stops a form between blocks.
+const ELEMENT_CHARGE_BLOCK: usize = 1024;
+
+fn charge_block(index: usize, length: usize, context: &str) -> Result<()> {
+    if index.is_multiple_of(ELEMENT_CHARGE_BLOCK) {
+        read_budget::charge_candidate_work((length - index).min(ELEMENT_CHARGE_BLOCK), context)?;
+    }
+    Ok(())
+}
+
+fn elements(value: Value, form: &str) -> Result<Box<dyn ExactSizeIterator<Item = Value>>> {
     Ok(match value {
         Value::StringArray(values) => Box::new(values.into_iter().map(Value::String)),
         Value::IntArray(values) => Box::new(values.into_iter().map(Value::Int)),
@@ -137,10 +153,11 @@ pub(super) fn quantifier(
             error
         }
     })?;
-    for value in values {
-        read_budget::charge_candidate_work(1, "evaluating quantifier element")?;
+    let length = values.len();
+    for (index, value) in values.enumerate() {
+        charge_block(index, length, "evaluating quantifier element")?;
         let legacy_match = legacy_needle.as_ref().map(|needle| value == *needle);
-        let element = Bound::Value(value);
+        let element = Bound::value(value);
         let child = scope.bind(item, &element);
         total += 1;
         let decision = match legacy_match {

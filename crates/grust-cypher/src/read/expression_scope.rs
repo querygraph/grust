@@ -60,11 +60,11 @@ mod tests {
 
     #[test]
     fn nested_frames_share_resolution_without_modifying_row() {
-        let row = Row::from([("base".into(), Bound::Value(Value::Int(7)))]);
+        let row = Row::from([("base".into(), Bound::value(Value::Int(7)))]);
         let root = ExpressionScope::row(&row);
-        let item = Bound::Value(Value::Json(serde_json::json!({"xs": [2, 3]})));
+        let item = Bound::value(Value::Json(serde_json::json!({"xs": [2, 3]})));
         let outer = root.bind("item", &item);
-        let offset = Bound::Value(Value::Int(1));
+        let offset = Bound::value(Value::Int(1));
         let inner = outer.bind("offset", &offset);
         let expression = parse_expression("base + item.xs[offset]").unwrap();
         assert_eq!(

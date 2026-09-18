@@ -160,10 +160,10 @@ impl Pipeline<'_> {
                                 for (column, &index) in columns.iter().zip(&indices) {
                                     next.insert(
                                         column.clone(),
-                                        Bound::Value(clone_value(
+                                        borrow_value(
                                             &values[index],
                                             "binding streaming procedure values",
-                                        )?),
+                                        )?,
                                     );
                                 }
                                 if let Some(predicate) = &call.where_clause
@@ -211,17 +211,17 @@ impl Pipeline<'_> {
                     // Keep one row and update only the scalar binding. Retained
                     // arrays are never cloned once per expanded list element.
                     let mut next = clone_row(row, "streaming UNWIND input")?;
-                    next.insert(unwind.alias.clone(), Bound::Value(Value::Null));
+                    next.insert(unwind.alias.clone(), Bound::value(Value::Null));
                     let mut consume = |value| {
                         read_budget::with_live_intermediates(context, || {
                             read_budget::charge_candidate_work(1, "expanding UNWIND rows")?;
                             let binding = next
                                 .get_mut(&unwind.alias)
                                 .ok_or_else(|| gql_execution("missing UNWIND binding"))?;
-                            *binding = Bound::Value(value);
+                            *binding = Bound::value(value);
                             let outcome = self.walk(position + 1, &next, sink);
                             if let Some(binding) = next.get_mut(&unwind.alias) {
-                                *binding = Bound::Value(Value::Null);
+                                *binding = Bound::value(Value::Null);
                             }
                             outcome
                         })

@@ -73,7 +73,7 @@ pub(super) fn fixed_binding_matches(row: &Row, name: Option<&str>, slot: usize) 
     match row.get(name) {
         None => Ok(true),
         Some(Bound::Edge(_, Some(bound))) => Ok(*bound == slot),
-        Some(Bound::Value(Value::Null)) => Ok(false),
+        Some(Bound::Value(value)) if matches!(value.as_ref(), Value::Null) => Ok(false),
         _ => Err(gql_execution(
             "cannot rebind a relationship without physical edge provenance",
         )),

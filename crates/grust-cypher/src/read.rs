@@ -85,7 +85,16 @@ enum Bound<'g> {
     Node(NodeBinding<'g>),
     // Graph-free pushed bindings have no slot; graph MATCH bindings do.
     Edge(EdgeBinding<'g>, Option<usize>),
-    Value(Value),
+    // Computed values are owned; a value a procedure batch yields is borrowed
+    // from that batch for as long as the row it is bound in.
+    Value(Cow<'g, Value>),
+}
+
+impl Bound<'_> {
+    /// Bind a computed value, which the row owns.
+    fn value(value: Value) -> Self {
+        Self::Value(Cow::Owned(value))
+    }
 }
 
 /// A bound graph element. An owned graph outlives every row of the query
@@ -228,6 +237,13 @@ fn clone_row<'g>(row: &Row<'g>, context: &str) -> Result<Row<'g>> {
         .iter()
         .map(|(name, bound)| (name.clone(), clone_bound_unaccounted(bound)))
         .collect())
+}
+
+/// Bind a value that outlives the row, such as one a procedure batch yields:
+/// charged as a full copy, held by reference.
+fn borrow_value<'g>(value: &'g Value, context: &str) -> Result<Bound<'g>> {
+    charge_intermediate_copy(context, || read_budget::value_copy_bytes(value))?;
+    Ok(Bound::Value(Cow::Borrowed(value)))
 }
 
 fn clone_value(value: &Value, context: &str) -> Result<Value> {
@@ -506,7 +522,7 @@ fn advance_rows<'g>(
                     let mut padded = row;
                     for var in &new_vars {
                         if !padded.contains_key(var) {
-                            padded.insert(var.clone(), Bound::Value(Value::Null));
+                            padded.insert(var.clone(), Bound::value(Value::Null));
                         }
                     }
                     read_budget::charge_candidate_work(1, "producing OPTIONAL MATCH rows")?;
@@ -566,7 +582,7 @@ fn execute_subquery_clause<'g>(
             for col in &columns {
                 let bound = match inner.get(col) {
                     Some(bound) => clone_bound(bound, "joining subquery bindings")?,
-                    None => Bound::Value(Value::Null),
+                    None => Bound::value(Value::Null),
                 };
                 next.insert(col.clone(), bound);
             }
@@ -792,7 +808,7 @@ fn unwind_rows<'g>(
                     "expanding UNWIND rows",
                 )?
             };
-            next.insert(unwind.alias.clone(), Bound::Value(element));
+            next.insert(unwind.alias.clone(), Bound::value(element));
             out.push(next);
         }
     }
@@ -871,7 +887,7 @@ fn binding_for_item<'g>(
         Expr::Variable(v) => {
             let bound = match row.get(v) {
                 Some(bound) => clone_bound(bound, "projecting WITH variable bindings")?,
-                None => Bound::Value(Value::Null),
+                None => Bound::value(Value::Null),
             };
             Ok((item.alias.clone().unwrap_or_else(|| v.clone()), bound))
         }
@@ -879,7 +895,7 @@ fn binding_for_item<'g>(
             let name = item.alias.clone().ok_or_else(|| {
                 gql_name("WITH requires an alias (AS ...) for non-variable expressions")
             })?;
-            Ok((name, Bound::Value(eval(other, row, params)?)))
+            Ok((name, Bound::value(eval(other, row, params)?)))
         }
     }
 }
@@ -930,7 +946,7 @@ fn grouped_bindings<'g>(
                 })?;
                 next.insert(
                     name,
-                    Bound::Value(eval_aggregate(&item.expr, &group_rows, params)?),
+                    Bound::value(eval_aggregate(&item.expr, &group_rows, params)?),
                 );
             } else {
                 let (name, bound) = binding_for_item(item, representative, params)?;
@@ -1112,7 +1128,7 @@ fn bound_from_pushed<'g>(binding: PushedBinding) -> Bound<'g> {
     match binding {
         PushedBinding::Node(node) => Bound::Node(node.into()),
         PushedBinding::Edge(edge) => Bound::Edge(edge.into(), None),
-        PushedBinding::Null => Bound::Value(Value::Null),
+        PushedBinding::Null => Bound::value(Value::Null),
     }
 }
 
@@ -1181,7 +1197,7 @@ pub(crate) fn project_procedure_pipeline(
         for (col, &i) in out_cols.iter().zip(indices.iter()) {
             row.insert(
                 col.clone(),
-                Bound::Value(clone_value(&vals[i], "binding pushed procedure values")?),
+                Bound::value(clone_value(&vals[i], "binding pushed procedure values")?),
             );
         }
         rows.push(row);
@@ -1286,7 +1302,7 @@ pub(crate) fn project_subquery_join_pipeline(
             for col in &columns {
                 let bound = match prow.get(col) {
                     Some(bound) => clone_bound(bound, "joining pushed subquery bindings")?,
-                    None => Bound::Value(Value::Null),
+                    None => Bound::value(Value::Null),
                 };
                 next.insert(col.clone(), bound);
             }
@@ -1318,7 +1334,7 @@ pub(crate) fn project_correlated_procedure_pipeline(
         for (col, &i) in out_cols.iter().zip(indices.iter()) {
             row.insert(
                 col.clone(),
-                Bound::Value(clone_value(
+                Bound::value(clone_value(
                     &vals[i],
                     "binding correlated procedure values",
                 )?),
@@ -1907,12 +1923,12 @@ fn expand_shortest<'g>(
                         }
                         next_row.insert(
                             var.clone(),
-                            Bound::Value(Value::Json(serde_json::Value::Array(arr))),
+                            Bound::value(Value::Json(serde_json::Value::Array(arr))),
                         );
                     }
                     if let Some(path_var) = &pattern.variable {
                         let nodes = walk_path_nodes(graph, index, &start, edges, rel.direction)?;
-                        next_row.insert(path_var.clone(), Bound::Value(path_value(&nodes, edges)?));
+                        next_row.insert(path_var.clone(), Bound::value(path_value(&nodes, edges)?));
                     }
                     read_budget::charge_candidate_work(1, "producing shortest-path rows")?;
                     out.push(next_row);
@@ -1985,7 +2001,7 @@ fn expand_segments<'g>(
         if let Some(p) = path_var {
             row.insert(
                 p.to_string(),
-                Bound::Value(path_value(&acc_nodes, &acc_edges)?),
+                Bound::value(path_value(&acc_nodes, &acc_edges)?),
             );
         }
         read_budget::charge_candidate_work(1, "producing MATCH rows")?;
@@ -2041,7 +2057,7 @@ fn expand_segments<'g>(
                 }
                 next_row.insert(
                     var.clone(),
-                    Bound::Value(Value::Json(serde_json::Value::Array(arr))),
+                    Bound::value(Value::Json(serde_json::Value::Array(arr))),
                 );
             }
             if let Some(var) = &segment.node.variable {
@@ -2980,7 +2996,20 @@ fn eval(expr: &Expr, row: &Row, params: &CypherParameters) -> Result<Value> {
 }
 
 fn eval_scoped(expr: &Expr, row: &ExpressionScope<'_>, params: &CypherParameters) -> Result<Value> {
-    read_budget::checkpoint()?;
+    // A leaf does no work of its own, and the expression that contains it has
+    // already observed the deadline.
+    if !matches!(
+        expr,
+        Expr::Variable(_)
+            | Expr::Parameter(_)
+            | Expr::Null
+            | Expr::Boolean(_)
+            | Expr::Integer(_)
+            | Expr::Float(_)
+            | Expr::String(_)
+    ) {
+        read_budget::checkpoint()?;
+    }
     let value = match expr {
         Expr::Quantifier {
             kind,
@@ -3496,11 +3525,13 @@ fn eval_property(
                 Some(value) => clone_value(value, "projecting relationship properties"),
                 None => Ok(Value::Null),
             },
-            Some(Bound::Value(Value::Json(serde_json::Value::Object(map)))) => match map.get(key) {
-                Some(value) => clone_json_value(value, "projecting map properties"),
-                None => Ok(Value::Null),
+            Some(Bound::Value(value)) => match value.as_ref() {
+                Value::Json(serde_json::Value::Object(map)) => match map.get(key) {
+                    Some(value) => clone_json_value(value, "projecting map properties"),
+                    None => Ok(Value::Null),
+                },
+                _ => Ok(Value::Null),
             },
-            Some(Bound::Value(_)) => Ok(Value::Null),
             None => Err(gql_name(format!("variable `{name}` is not bound"))),
         };
     }

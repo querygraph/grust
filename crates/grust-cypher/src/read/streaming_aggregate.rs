@@ -4,7 +4,7 @@ use super::*;
 
 pub(super) enum AggregateState {
     Count(usize),
-    Sum { value: Value, count: usize },
+    Sum(SumAccumulator),
     Average { sum: f64, count: usize },
 }
 
@@ -21,10 +21,7 @@ impl AggregateState {
         };
         match name.to_ascii_lowercase().as_str() {
             "count" => Ok(Self::Count(0)),
-            "sum" => Ok(Self::Sum {
-                value: Value::Int(0),
-                count: 0,
-            }),
+            "sum" => Ok(Self::Sum(SumAccumulator::default())),
             "avg" => Ok(Self::Average { sum: 0.0, count: 0 }),
             _ => Err(gql_type("aggregate has no incremental state")),
         }
@@ -53,10 +50,7 @@ impl AggregateState {
         };
         match self {
             Self::Count(count) => *count = increment(*count)?,
-            Self::Sum { value: sum, count } => {
-                *sum = sum_return_values(&[sum.clone(), value])?;
-                *count = increment(*count)?;
-            }
+            Self::Sum(sum) => sum.add(&value)?,
             Self::Average { sum, count } => {
                 *sum += match value {
                     Value::Int(value) => value as f64,
@@ -76,7 +70,7 @@ impl AggregateState {
     pub(super) fn finish(self) -> Result<Value> {
         match self {
             Self::Count(count) => count_value(count),
-            Self::Sum { value, .. } => Ok(value),
+            Self::Sum(sum) => Ok(sum.finish()),
             Self::Average { sum, count } => Ok(if count == 0 {
                 Value::Null
             } else {

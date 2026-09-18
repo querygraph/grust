@@ -27,7 +27,7 @@ pub(crate) async fn evaluate_write_expression<S: GraphStore + Sync>(
                     .await?;
             Bound::Edge(edge.clone().into(), None)
         } else if evaluation.row_path_bindings.contains_key(name) {
-            Bound::Value(
+            Bound::value(
                 materialize_return_path_value_at(
                     evaluation.store,
                     evaluation.node_bindings,
