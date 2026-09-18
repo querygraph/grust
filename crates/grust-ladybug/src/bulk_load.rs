@@ -278,8 +278,12 @@ mod tests {
 
             // A second load of the same ids takes the merge path (the tables
             // are no longer empty) and must not duplicate anything.
+            // A put carries its edges' endpoints, as every caller's batches do.
             let again = Graph::new(
-                vec![Node::new("Thing", "n1", props(&[("v", json!(2))]))],
+                vec![
+                    Node::new("Thing", "n0", nasty.clone()),
+                    Node::new("Thing", "n1", props(&[("v", json!(2))])),
+                ],
                 vec![Edge::new("REL", "n0", "n1", props(&[("v", json!(2))]))],
             );
             store.put_graph(&again).await?;
