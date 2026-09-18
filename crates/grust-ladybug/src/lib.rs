@@ -109,6 +109,8 @@ pub struct LadybugGraphStore {
     db: Arc<lbug::Database>,
     lock: Mutex<()>,
     schema: RwLock<Option<GraphSchema>>,
+    /// See [`LadybugGraphStore::set_bulk_load_trusts_fresh_rows`].
+    bulk_load_trusts_fresh_rows: std::sync::atomic::AtomicBool,
 }
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
@@ -145,11 +147,33 @@ impl LadybugGraphStore {
             db: Arc::new(db),
             lock: Mutex::new(()),
             schema: RwLock::new(None),
+            bulk_load_trusts_fresh_rows: std::sync::atomic::AtomicBool::new(false),
         })
     }
 
     pub fn in_memory() -> Result<Self> {
         Self::new(LadybugConfig::default())
+    }
+
+    /// Bulk loads (`put_graph`) normally read back every existing node id and
+    /// `(from, to)` pair of a target table before copying, so that rows which
+    /// already exist take the per-row upsert path. That read-back is a full
+    /// scan per call, and a caller that feeds one graph as many chunks pays it
+    /// on every chunk after the first: quadratic in the chunk count, hours at
+    /// a hundred million edges. A caller that knows its chunks carry no key the
+    /// store already holds — a fresh graph loaded once, in disjoint pieces —
+    /// can turn the read-back off; every row is then copied, and a duplicate
+    /// key in the input is the caller's error (a node COPY fails on it; a
+    /// relationship table takes the duplicate as a parallel edge). Off by
+    /// default; single-row writes and non-bulk paths are unaffected.
+    pub fn set_bulk_load_trusts_fresh_rows(&self, trusts: bool) {
+        self.bulk_load_trusts_fresh_rows
+            .store(trusts, std::sync::atomic::Ordering::Relaxed);
+    }
+
+    pub(crate) fn bulk_load_trusts_fresh_rows(&self) -> bool {
+        self.bulk_load_trusts_fresh_rows
+            .load(std::sync::atomic::Ordering::Relaxed)
     }
 
     pub fn open(path: impl Into<PathBuf>) -> Result<Self> {

@@ -36,7 +36,9 @@ impl LadybugGraphStore {
         table: &str,
         nodes: &[&Node],
     ) -> Result<usize> {
-        let existing = if Self::count(conn, &format!("MATCH (n:{table}) RETURN count(n);"))? == 0 {
+        let existing = if self.bulk_load_trusts_fresh_rows()
+            || Self::count(conn, &format!("MATCH (n:{table}) RETURN count(n);"))? == 0
+        {
             HashSet::new()
         } else {
             self.existing_node_ids(conn, table)?
@@ -76,10 +78,11 @@ impl LadybugGraphStore {
         to_table: &str,
         edges: &[&Edge],
     ) -> Result<usize> {
-        let existing = if Self::count(
-            conn,
-            &format!("MATCH ()-[r:{rel_table}]->() RETURN count(r);"),
-        )? == 0
+        let existing = if self.bulk_load_trusts_fresh_rows()
+            || Self::count(
+                conn,
+                &format!("MATCH ()-[r:{rel_table}]->() RETURN count(r);"),
+            )? == 0
         {
             HashSet::new()
         } else {
