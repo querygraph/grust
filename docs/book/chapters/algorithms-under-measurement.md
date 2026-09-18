@@ -94,8 +94,9 @@ Charges now sample the deadline every 1024 units. An interval sweep showed the
 gain complete by 256 and flat thereafter, so the interval stays tight and
 remains an order of magnitude stricter than the 10,000-unit interval it is
 measured against. Cancellation is never sampled, budget limits still fail
-exactly at their limit, memory admission keeps an exact check, and `checkpoint`
-reads the clock every time.
+exactly at their limit, a memory reservation keeps an exact check while the
+per-copied-row memory charges sample as work charges do, and `checkpoint` reads
+the clock every time.
 
 The first version of that change tracked its sampling counter even when no
 deadline existed, so kernels that set none — every direct, Arrow and DataFusion
