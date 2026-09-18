@@ -155,10 +155,22 @@ that engine's projection is built before its timer starts and this one's is
 inside it.
 
 The reference-executor work that followed improved ordinary Cypher between 88.6%
-and 97.5% across every graph family at 4,096 nodes. The full-path chain is the
-one case it does not reach, and it regresses there by 2.0% at 4,096, 9.8% at
-16,384 and 11.0% at 65,536. That case materialises one heap-allocated string per
-path entry, which is not the per-row overhead that work removed.
+and 97.5% across every graph family at 4,096 nodes. The full-path chain was the
+one case it did not reach: it regressed there by 2.0% at 4,096, 9.8% at 16,384
+and 11.0% at 65,536, because that case is dominated by materialising one
+heap-allocated string per path entry rather than by the per-row overhead the
+work removed.
+
+Reporting that case led to the next change, which stopped deep-copying each
+yielded value into every row and began admitting work per path, or per 1024
+steps, instead of per entry. Both the regression and the original cost went with
+it. On the 16,384-node chain, ordinary Cypher fell from 36,913 ms to 20,255 ms,
+direct execution from 3,190 ms to 1,298 ms, and Arrow from 11,612 ms to
+9,397 ms, while the frozen C++ participant moved 0.4% in the same runs. At 4,096
+nodes with five measured samples, direct execution improved 58.7% and ordinary
+Cypher 45.2%. The per-entry charge that the first profile found was therefore
+worth roughly a further 2.4x on direct execution once it was charged per path;
+the 65,536 case has not been re-run at that pin.
 
 ## Limitations
 
