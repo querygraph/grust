@@ -11,7 +11,7 @@
 //!   E. the CSR registration (`create_arrow_rel_table_csr`) with INT64 keys,
 //!      copied through MATCH and directly.
 //!
-//!   cargo run --release -p grust-ladybug --example copy_bench -- [nodes] [edges]
+//!   VARIANTS=ABCDE cargo run --release -p grust-ladybug --example copy_bench -- [nodes] [edges]
 //!
 //! Prints one line per variant: rows, seconds, rows per second, or the
 //! engine's error text.
@@ -55,6 +55,11 @@ fn q(conn: &lbug::Connection<'_>, sql: &str) -> Result<(), String> {
 
 /// Runs `f`, prints the variant's rate or the error it returned.
 fn time(label: &str, rows: usize, f: impl FnOnce() -> Result<(), String>) {
+    let wanted = std::env::var("VARIANTS").unwrap_or_else(|_| "ABCDE".into());
+    if !wanted.contains(&label[..1]) {
+        println!("{label:58} skipped (VARIANTS={wanted})");
+        return;
+    }
     let t = Instant::now();
     match f() {
         Ok(()) => {
