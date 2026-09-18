@@ -198,6 +198,87 @@
       "expectation": "rejected",
       "errorKind": "syntax",
       "notes": "shortestPath(…) covers exactly one relationship segment."
+    },
+    {
+      "id": "list-reduce-fold",
+      "feature": "list-reduce",
+      "requirement": "required",
+      "statement": "MATCH (n:Person) RETURN n.name, reduce(s = 0, x IN [n.age, 1] | s + x) AS total",
+      "expectation": "supported",
+      "notes": "A fold over any list expression; empty lists yield the seed and a NULL list yields NULL."
+    },
+    {
+      "id": "list-reduce-inside-aggregate",
+      "feature": "list-reduce",
+      "requirement": "required",
+      "statement": "MATCH (n:Person) RETURN sum(reduce(s = 0, x IN [n.age, 1] | s + x)) AS total",
+      "expectation": "supported",
+      "notes": "The shape binding forms exist to express: a per-row fold inside an aggregate."
+    },
+    {
+      "id": "list-reduce-shadowing-rejected",
+      "feature": "list-reduce",
+      "requirement": "required",
+      "statement": "MATCH (n:Person) RETURN reduce(n = 0, x IN [1] | n + x)",
+      "expectation": "rejected",
+      "errorKind": "name",
+      "notes": "A binding that shadows a row variable is an error, never resolved by precedence."
+    },
+    {
+      "id": "list-reduce-malformed-rejected",
+      "feature": "list-reduce",
+      "requirement": "required",
+      "statement": "RETURN reduce(s = 0, x IN [1])",
+      "expectation": "rejected",
+      "errorKind": "syntax",
+      "notes": "The syntax error names the form instead of a generic unclosed call."
+    },
+    {
+      "id": "list-comprehension-filter-and-map",
+      "feature": "list-comprehension",
+      "requirement": "required",
+      "statement": "MATCH (n:Person) RETURN [x IN [n.age, 1, 2] WHERE x > 1 | x * 2] AS xs",
+      "expectation": "supported",
+      "notes": "WHERE and the projection are each optional."
+    },
+    {
+      "id": "list-comprehension-nested",
+      "feature": "list-comprehension",
+      "requirement": "optional",
+      "statement": "RETURN [x IN [1, 2] | [y IN [10, 20] WHERE y > x | x + y]] AS xs",
+      "expectation": "supported",
+      "notes": "Inner forms see outer bindings through the lexical scope."
+    },
+    {
+      "id": "list-comprehension-unbound-rejected",
+      "feature": "list-comprehension",
+      "requirement": "required",
+      "statement": "RETURN [x IN [1, 2] | y]",
+      "expectation": "rejected",
+      "errorKind": "name"
+    },
+    {
+      "id": "list-quantifier-general-predicate",
+      "feature": "list-quantifier-predicate",
+      "requirement": "required",
+      "statement": "MATCH (n:Person) WHERE any(x IN [n.age, 0] WHERE x % 2 = 0 AND x > 10) RETURN n.name",
+      "expectation": "supported",
+      "notes": "Arbitrary list expressions and predicates, not only item = value over a property."
+    },
+    {
+      "id": "list-quantifier-all-none-single",
+      "feature": "list-quantifier-predicate",
+      "requirement": "required",
+      "statement": "RETURN all(x IN [1, 2] WHERE x > 0) AS a, none(x IN [1, 2] WHERE x > 5) AS n, single(x IN [1, 2] WHERE x = 1) AS s",
+      "expectation": "supported"
+    },
+    {
+      "id": "list-quantifier-shadowing-rejected",
+      "feature": "list-quantifier-predicate",
+      "requirement": "required",
+      "statement": "MATCH (n:Person) RETURN any(n IN [1] WHERE n = 1)",
+      "expectation": "rejected",
+      "errorKind": "name"
     }
   ]
 }

@@ -21,10 +21,24 @@ reconstructed from Git history, release commits, and the shipped docs.
   peak accounting and wakers still hold the lock. Profiling attributed 72.8% of
   full-path Dijkstra kernel time on a 16384-node chain to the previous
   lock-per-unit accounting.
-- Add `reduce`, list comprehensions and general list quantifiers to the portable
-  read expression evaluator, with lexical scope validation and per-element work
-  accounting. Queries containing these forms use reference execution until
-  dialect lowering is implemented. Write-return integration is still in progress.
+- Add `reduce(acc = seed, item IN list | body)`, list comprehensions
+  `[item IN list WHERE predicate | projection]` and general
+  `any`/`all`/`none`/`single` quantifiers over arbitrary lists and predicates.
+  One scoped `Expr` evaluator serves read `RETURN`/`WHERE`/`WITH` and write
+  `RETURN`: bindings push an immutable lexical scope, shadowing a row variable
+  is a semantic error, and every element charges one work unit so budgets,
+  cancellation and deadlines stop a fold between elements. Every read pushdown
+  planner declines these forms and stores fall back to the reference executor
+  (covered by the Turso differential oracle). The catalog gains `list-reduce`,
+  `list-comprehension` and `list-quantifier-predicate` (72 supported of 77).
+- **Changed:** write `RETURN` quantifiers are parsed by the general expression
+  parser. `CypherReturnTarget::PropertyListPredicate` and
+  `CypherReturnListPredicateProjection` are replaced by
+  `CypherReturnTarget::Expression(CypherReturnExpression)`. The previously
+  admitted `item IN variable.property WHERE item = value` shape keeps its
+  exact-equality and NULL-needle results; computed predicates that were
+  rejected now evaluate, and a wrong item variable is reported as an unbound
+  name instead of an unsupported cardinality.
 - Validate row-to-Arrow conversion with borrowed identity membership instead of
   constructing discarded adjacency, and copy string properties directly into
   Arrow buffers without temporary owned String clones.

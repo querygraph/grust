@@ -1,7 +1,8 @@
 # Grust Binding Forms Goal — `reduce`, comprehensions and general quantifiers
 
-Status: **ACTIVE — B0/B1 verified; read binding forms implemented; write migration pending.** Reviewed 2026-09-18 in
-`work/gql-binding-forms`, based on `origin/main` at `f168551`.
+Status: **B0–B5 implemented and tested in `work/gql-binding-forms`; not merged, not released.**
+Reviewed 2026-09-18, rebased onto `main` at `45c93ea`. The book rebuild, release
+post, tag and crates.io publication belong to a named release under `PUBLISH.md`.
 
 ## Why
 
@@ -109,14 +110,38 @@ No performance improvement is an acceptance criterion.
   three-valued logic, malformed syntax, scope/type errors, fold budget exhaustion
   and pushdown rejection. Full Cypher tests pass with the existing ignored tests.
   `cargo clippy -p grust-cypher --all-targets -- -D warnings` also passes.
-- Remaining: write-RETURN bridge and removal of the legacy quantifier parser;
-  compatibility for its typed equality and NULL behavior; cancellation/deadline
-  tests; broader resource and pushdown coverage including the Turso oracle;
-  catalog/corpus, book/changelog and release validation/delivery. This checkpoint
-  is not a completed milestone or release.
-- Integration: the Grust host is merging concurrent work. Latest fetch still
-  reports `origin/main` at `f168551`. Work remains isolated and must be rebased
-  when the merge lands, then retested because accounting code may have changed.
+- B4 write bridge: `returning/expression.rs` parses any RETURN projection that
+  contains a binding form with `parser::parse_expression`, validates it with the
+  read scope rules, and stores `CypherReturnTarget::Expression`.
+  `read/write_expression.rs` materializes only the free variables of that
+  expression into a row and calls the shared scoped evaluator.
+  `parse_return_list_predicate_projection`, `CypherReturnListPredicate` and the
+  `ListPredicate` kind are deleted; the catalog still has sixteen kinds, one of
+  which is now the general `Expression`. The old restricted-quantifier tests keep
+  their result expectations. Two error expectations changed deliberately: a
+  wrong item variable is now an unbound-name error, and a computed predicate
+  evaluates instead of being rejected.
+- Compatibility wart, recorded rather than hidden: the old write shape compared
+  with exact `Value` equality (`1 = 1.0` is false) and returned NULL for a NULL
+  needle even over an empty list, which differs from read three-valued
+  semantics. `ExpressionScope::WriteRow` keeps that contract only for the
+  formerly admitted shape (`item IN variable.property WHERE item = rhs` with
+  `rhs` over the same variable); every other write predicate uses ordinary
+  semantics. Removing the divergence is a behaviour change for a person to decide.
+- Resources: `read/binding_forms_resource_tests.rs` proves cancellation from
+  another thread and deadline expiry stop all three forms mid-evaluation on the
+  live `ExecutionContext` path (work admitted is nonzero and below the total),
+  and that the thread-local bounded budget's deadline does the same.
+- Pushdown: `binding_forms_decline_pushdown_and_match_reference` in the Turso
+  oracle checks every planner declines eight queries (RETURN, aggregate, WHERE,
+  WITH, segment) and the real store returns reference-identical rows.
+- B5: `list-reduce`, `list-comprehension`, `list-quantifier-predicate` in
+  `GqlFeature::ALL` (72 supported of 77); ten corpus cases including shadowing,
+  unbound-name and malformed-syntax rejections; profile statement, `CLAUDE.md`,
+  book manuscript and `CHANGELOG.md` updated.
+- Not done: live-service backends were not run (binding forms never reach a
+  backend planner, and only the embedded Turso store was exercised); the book
+  was not rebuilt; nothing was published.
 
 ## Architecture invariants
 
