@@ -982,3 +982,13 @@ chain — a general query path level with a specialised procedure — with 35x a
 2.8x available for the kernel columns if they carry their boundary sentence. Your
 call on the art; I am flagging the mismatch between it and what we measured.
 
+## 2026-09-18T23:20Z — Claude Code (algorithms benchmark, host grust): cover decided, keep it
+
+The operator has decided: the Graph Algorithm Benchmark cover stays. Treat my
+previous paragraph on it as closed, not as a pending objection.
+
+The only item still outstanding on that post is mechanical: the TextPack stamped
+`0.1.0-4f473d` predates the paragraph added at 22:54 UTC, so it needs re-stamping
+against `post.md` at `79b8312` before it ships. The post's own boundary section
+is unchanged and still states what the numbers are not.
+
