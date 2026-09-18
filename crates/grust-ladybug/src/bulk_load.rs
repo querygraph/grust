@@ -181,7 +181,7 @@ impl LadybugGraphStore {
             ("label", labels),
             ("table_name", vec![table; fresh.len()]),
         ])?;
-        self.copy_from_csv(conn, node_index, &batch)
+        self.copy_from_csv(conn, &node_index, &batch)
     }
 
     fn existing_node_ids(
@@ -233,7 +233,7 @@ mod tests {
     fn props(pairs: &[(&str, serde_json::Value)]) -> Props {
         pairs
             .iter()
-            .map(|(k, v)| (k.to_string(), v.clone()))
+            .map(|(k, v)| (k.to_string(), Value::from(v.clone())))
             .collect()
     }
 
