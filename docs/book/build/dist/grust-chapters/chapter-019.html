@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
   <meta name="author" content="Alexy Khrabrov" />
   <meta name="dcterms.date" content="2026-09-18" />
-  <title>Arrow pipelines, ADBC and DataFusion</title>
+  <title>Graph algorithms under measurement</title>
   <style>
     div.sitenav { display: flex; flex-direction: row; flex-wrap: wrap; }
     span.navlink { flex: 1; }
@@ -32,71 +32,6 @@
       vertical-align: middle;
     }
     .display.math{display: block; text-align: center; margin: 0.5rem auto;}
-    /* CSS for syntax highlighting */
-    html { -webkit-text-size-adjust: 100%; }
-    pre > code.sourceCode { white-space: pre; position: relative; }
-    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
-    pre > code.sourceCode > span:empty { height: 1.2em; }
-    .sourceCode { overflow: visible; }
-    code.sourceCode > span { color: inherit; text-decoration: inherit; }
-    div.sourceCode { margin: 1em 0; }
-    pre.sourceCode { margin: 0; }
-    @media screen {
-    div.sourceCode { overflow: auto; }
-    }
-    @media print {
-    pre > code.sourceCode { white-space: pre-wrap; }
-    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
-    }
-    pre.numberSource code
-      { counter-reset: source-line 0; }
-    pre.numberSource code > span
-      { position: relative; left: -4em; counter-increment: source-line; }
-    pre.numberSource code > span > a:first-child::before
-      { content: counter(source-line);
-        position: relative; left: -1em; text-align: right; vertical-align: baseline;
-        border: none; display: inline-block;
-        -webkit-touch-callout: none; -webkit-user-select: none;
-        -khtml-user-select: none; -moz-user-select: none;
-        -ms-user-select: none; user-select: none;
-        padding: 0 4px; width: 4em;
-        color: #aaaaaa;
-      }
-    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
-    div.sourceCode
-      {   }
-    @media screen {
-    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
-    }
-    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
-    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
-    code span.at { color: #7d9029; } /* Attribute */
-    code span.bn { color: #40a070; } /* BaseN */
-    code span.bu { color: #008000; } /* BuiltIn */
-    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
-    code span.ch { color: #4070a0; } /* Char */
-    code span.cn { color: #880000; } /* Constant */
-    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
-    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
-    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
-    code span.dt { color: #902000; } /* DataType */
-    code span.dv { color: #40a070; } /* DecVal */
-    code span.er { color: #ff0000; font-weight: bold; } /* Error */
-    code span.ex { } /* Extension */
-    code span.fl { color: #40a070; } /* Float */
-    code span.fu { color: #06287e; } /* Function */
-    code span.im { color: #008000; font-weight: bold; } /* Import */
-    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
-    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
-    code span.op { color: #666666; } /* Operator */
-    code span.ot { color: #007020; } /* Other */
-    code span.pp { color: #bc7a00; } /* Preprocessor */
-    code span.sc { color: #4070a0; } /* SpecialChar */
-    code span.ss { color: #bb6688; } /* SpecialString */
-    code span.st { color: #4070a0; } /* String */
-    code span.va { color: #19177c; } /* Variable */
-    code span.vs { color: #4070a0; } /* VerbatimString */
-    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
   </style>
   <link rel="stylesheet" href="book.css" />
 </head>
@@ -112,50 +47,33 @@
 </div>
 <div class="sitenav">
 <span class="navlink">
-<span class="navlink-label">Next:</span> <a href="chapter-020.html" accesskey="n" rel="next">Conclusion</a>
+<span class="navlink-label">Next:</span> <a href="chapter-020.html" accesskey="n" rel="next">Arrow pipelines, ADBC and DataFusion</a>
 </span>
 <span class="navlink">
 <span class="navlink-label">Previous:</span> <a href="chapter-018.html" accesskey="p" rel="previous">Graph analytics through one Rust implementation</a>
 </span>
 </div>
 </nav>
-<h1 data-number="17" id="arrow-pipelines-adbc-and-datafusion"><span
-class="header-section-number">17</span> Arrow pipelines, ADBC and
-DataFusion</h1>
-<p>Grust’s Arrow-based adapters use <code>grust-arrow</code> for common
-batch and IPC operations. The graph core and other adapters remain
-independent of Arrow. LanceDB and Sail select Arrow 58; the private
-Ladybug adapter selects Arrow 55. The default interchange and ADBC
-helper use Arrow 59. These modules compile the same implementation
-against the native SDK types.</p>
-<figure>
-<img src="diagrams/diagram-09.png" alt="Diagram 9" />
-<figcaption aria-hidden="true">Diagram 9</figcaption>
-</figure>
-<h2 data-number="17.1" id="native-tables-and-readers"><span
-class="header-section-number">17.1</span> Native tables and readers</h2>
-<p><code>ArrowTable</code> retains arbitrary native Arrow columns,
-metadata and batch boundaries. Its schema is checked when constructed.
-Its <code>into_reader</code> method transfers ownership into the
-standard <code>RecordBatchReader</code> interface without concatenating
-batches or serializing their contents.</p>
-<p><code>BatchReader</code> wraps a standard reader with a row limit and
-an input-batch memory limit. It pulls on demand and slices without
-copying buffers. Errors terminate the stream after one error result. A
-slice can retain its complete original allocation. The memory limit
-applies to decoded Arrow arrays, not process RSS or the upstream
-decoder’s temporary allocations. <code>ByteLimitWriter</code> separately
-bounds encoded output, including schema bytes, before the sink grows
-past its limit.</p>
-<p>The shared IPC functions accept standard readers and caller-owned
-sinks. They support multiple batches and schema-only empty streams. IPC
-remains an explicit encoding boundary; it is not needed when producer
-and consumer already share native Arrow types.</p>
-<h2 data-number="17.2" id="property-graph-interchange"><span
-class="header-section-number">17.2</span> Property-graph
-interchange</h2>
-<p>The original <code>ArrowGraph</code> is a validated pair of
-scalar-property batches:</p>
+<h1 data-number="17" id="graph-algorithms-under-measurement"><span
+class="header-section-number">17</span> Graph algorithms under
+measurement</h1>
+<p>This chapter documents what the companion algorithms benchmark
+measured about this library, on current sources rather than a frozen
+snapshot. Everything here was measured on one host — an 8-vCPU Xeon
+E5-2686 v4 instance, two CPUs and 4 GiB per service, algorithm
+concurrency one — and where a number depends on that host, the chapter
+says so. Results from three source pins are kept apart and never
+pooled.</p>
+<p>The benchmark’s job is not to rank engines. It runs several execution
+classes over identical graphs and states what each timer contains, so a
+difference can be attributed to something specific. Twice in this round
+the attribution overturned the obvious explanation, which is the reason
+the chapter exists.</p>
+<h2 data-number="17.1" id="execution-classes-not-engines"><span
+class="header-section-number">17.1</span> Execution classes, not
+engines</h2>
+<p>Six current columns run the same algorithms through different
+machinery.</p>
 <table>
 <colgroup>
 <col style="width: 50%" />
@@ -163,343 +81,226 @@ scalar-property batches:</p>
 </colgroup>
 <thead>
 <tr>
-<th>Table</th>
-<th>Structural columns</th>
+<th>Column</th>
+<th>What its timer contains</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>Nodes</td>
-<td>non-null UTF-8 <code>node_id</code>, <code>label</code></td>
+<td>direct</td>
+<td>kernel and result conversion, projection timed separately</td>
 </tr>
 <tr>
-<td>Edges</td>
-<td>non-null UTF-8 <code>source</code>, <code>target</code>,
-<code>label</code>; nullable UTF-8 <code>edge_id</code></td>
+<td>ordinary Cypher</td>
+<td>parse, policy validation, projection, row consumption, with
+full-path distance verification timed apart</td>
+</tr>
+<tr>
+<td>Arrow</td>
+<td>row-to-Arrow conversion, native Arrow projection, Arrow result
+consumption</td>
+</tr>
+<tr>
+<td>DataFusion</td>
+<td>complete node and edge scan plans, then the same native kernels</td>
+</tr>
+<tr>
+<td>Turso direct and Cypher</td>
+<td>Grust kernels over a verified snapshot from a durable Turso
+database</td>
 </tr>
 </tbody>
 </table>
-<p>Property columns use <code>property.&lt;key&gt;</code> and a non-null
-Boolean <code>present.&lt;key&gt;</code>. The marker distinguishes a
-missing property from an explicit null. Scalar properties support Null,
-Boolean, Int64, Float64 and UTF-8, preserving integer precision. Mixed
-non-null types and complex graph properties are rejected by this scalar
-interchange contract rather than silently coerced.</p>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode rust"><code class="sourceCode rust"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">use</span> <span class="pp">grust::arrow::</span>ArrowGraph<span class="op">;</span></span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="kw">use</span> <span class="pp">std::fs::</span>File<span class="op">;</span></span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> main() <span class="op">-&gt;</span> <span class="dt">Result</span><span class="op">&lt;</span>()<span class="op">,</span> <span class="dt">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="pp">std::error::</span><span class="bu">Error</span><span class="op">&gt;&gt;</span> <span class="op">{</span></span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> graph <span class="op">=</span> <span class="pp">grust::Graph::</span><span class="kw">default</span>()<span class="op">;</span></span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> tables <span class="op">=</span> <span class="pp">ArrowGraph::</span>from_graph(<span class="op">&amp;</span>graph)<span class="op">?;</span></span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>    tables<span class="op">.</span>write_ipc(</span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>        <span class="pp">File::</span>create(<span class="st">&quot;nodes.arrow&quot;</span>)<span class="op">?,</span></span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>        <span class="pp">File::</span>create(<span class="st">&quot;edges.arrow&quot;</span>)<span class="op">?,</span></span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>    )<span class="op">?;</span></span>
-<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> restored <span class="op">=</span> <span class="pp">ArrowGraph::</span>read_ipc(</span>
-<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>        <span class="pp">File::</span>open(<span class="st">&quot;nodes.arrow&quot;</span>)<span class="op">?,</span></span>
-<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>        <span class="pp">File::</span>open(<span class="st">&quot;edges.arrow&quot;</span>)<span class="op">?,</span></span>
-<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>    )<span class="op">?.</span>to_graph()<span class="op">?;</span></span>
-<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>    <span class="pp">assert_eq!</span>(graph<span class="op">,</span> restored)<span class="op">;</span></span>
-<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Ok</span>(())</span>
-<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
-<p>This legacy file-format API still stores one batch in each of two
-Arrow files. <code>ArrowGraphTables</code> supports the same graph
-contract across multiple batches. It validates global node identity and
-edge endpoints without building property rows or adjacency. It preserves
-isolates, loops, parallel edges and row order.
-<code>ArrowGraph::into_tables</code> and
-<code>ArrowGraphTables::into_tables</code> expose general Arrow tables
-whose readers compose with other consumers.</p>
-<p>These graph restrictions do not constrain arbitrary
-<code>ArrowTable</code> values passed to ADBC or backend-native
-registration. Those pipelines retain nested, dictionary, temporal and
-extension columns according to the destination’s capabilities.</p>
-<h2 data-number="17.3" id="database-ingestion"><span
-class="header-section-number">17.3</span> Database ingestion</h2>
-<p>The shared universal storage layout uses <code>id,label,props</code>
-for nodes and <code>key,id,from_id,to_id,label,props</code> for edges.
-The property payload preserves Grust’s tagged serialization, including
-complex values. Native storage encoders and decoders share the stable
-edge-key validation rule. Projection can rename columns without copying
-their arrays.</p>
-<p>LanceDB’s <code>load_arrow</code> takes standard readers in that
-storage layout and merges native batches, maintaining typed mirrors.
-Sail’s <code>load_arrow</code> accepts its existing SQL column names and
-plain-JSON property representation. It reuses identity columns and
-performs required property normalization and endpoint-label resolution.
-Spark Connect transports the staged batches as IPC. Sail’s graph IPC
-convenience loader now uses the same streaming path.</p>
-<p>Stream graph loads validate a batch before writing it. Nodes precede
-edges, and earlier batches can remain committed if a later operation
-fails or is cancelled. They do not promise atomic whole-import
-replacement. Consult the adapter contract for existing-row upserts,
-constraints and typed mirror behavior.</p>
-<p>Ladybug can register native readers without IPC, and visit query
-batches without collecting all output. Registration requires all input
-batches simultaneously; a conservative retained-memory bound applies
-before registering the table. Registration creates a queryable Arrow
-table, not an implicit persisted graph upsert. Persisted graph loading
-continues through the adapter’s Arrow-backed COPY path and transaction
-policy.</p>
-<h2 data-number="17.4" id="adbc-and-extension"><span
-class="header-section-number">17.4</span> ADBC and extension</h2>
-<p>Enable the facade’s <code>adbc</code> feature, or
-<code>grust-arrow</code>’s optional <code>adbc</code> feature, to bind
-an Arrow 59 reader to a caller-owned ADBC statement with
-<code>grust_arrow::adbc::ingest</code>. ADBC controls connection
-lifecycle, target catalog/schema, ingestion mode, transactions and
-cancellation. The helper preserves driver errors and unknown
-affected-row counts. An ingestion mode such as append is not
-reinterpreted as graph upsert.</p>
-<p>The optional <code>ffi</code> feature exports standard Arrow C
-streams through upstream Arrow’s implementation and release callbacks.
-Grust adds no unsafe FFI code. Rust callers using the same Arrow major
-can share readers directly; IPC is an explicit option for serialized
-cross-language or cross-version boundaries.</p>
-<p>New adapters should reuse the standard reader and shared batch
-operations, keeping only their schema and backend semantics locally.
-Enable the facade’s <code>datafusion</code> feature for the shared
-DataFusion 55 foundation. It registers native Arrow 59 tables and
-validated graph catalogs without re-encoding their buffers, accepts
-upstream table providers, and exposes DataFrames and streaming SQL
-results. Working-memory, parallelism, batch size and spill policy are
-explicit. Input buffers and retained results remain caller-owned
-admission; the working pool is not a process RSS limit.</p>
-<p><code>BlockingReader</code> connects a result stream to synchronous
-Arrow and ADBC consumers on an ordinary thread or
-<code>spawn_blocking</code>, using a caller-owned live Tokio runtime. It
-adds no worker, prefetch queue or IPC boundary. Existing backend SDKs
-keep their own compatible Arrow and execution-engine versions. Cypher
-lowering and algorithm kernel selection require separate semantic and
-performance qualification; this foundation does not automatically change
-them.</p>
-<p>See the repository’s <code>docs/arrow-pipelines.md</code> for
-detailed admission, compatibility and testing contracts. Reproducible
-pipeline benchmarks measure native slicing, explicit IPC boundaries and
-graph validation separately from backend load and algorithm timings.</p>
-<h2 data-number="17.5" id="typed-cypher-execution"><span
-class="header-section-number">17.5</span> Typed Cypher execution</h2>
-<p>Combining facade features <code>cypher</code> and
-<code>datafusion</code> enables the bridge at
-<code>grust::datafusion::cypher</code>. Direct consumers can enable
-<code>grust-datafusion</code> feature <code>cypher</code>. It provides
-an explicit execution bridge over native Arrow graph tables.
-<code>GraphSnapshot::execute</code> accepts Cypher text, parameters and
-<code>OutputLimits</code>; it uses the existing parser and semantic
-analyzer, builds DataFusion 55 expressions directly, and returns an
-ordinary <code>CypherResultTable</code>. No SQL text or intermediate
-row-oriented graph is generated. Isopod 0.17.0 adds this explicit
-surface. Ordinary Cypher entrypoints do not yet select it automatically,
-and it does not implement the complete bounded read policy.</p>
-<h3 data-number="17.5.1" id="snapshot-and-composition"><span
-class="header-section-number">17.5.1</span> Snapshot and
-composition</h3>
-<p><code>GraphSnapshot</code> captures validated immutable node/edge
-providers, independent of session catalog replacement. Existing Arrow
-buffers remain shared. An additional UInt64 ordinal, costing eight bytes
-per edge, supplies physical relationship identity within the snapshot.
-Parallel edges and optional/repeated external edge IDs remain distinct.
-Backend transaction and authorization identity, input storage and
-ordinal allocation remain caller responsibilities.</p>
-<p><code>GraphSnapshot::plan</code> selects the node or relationship
-compiler from the parsed query shape. <code>QueryPlan</code> records its
-<code>PlanKind</code> and either a DataFrame or an unsupported reason.
-<code>CypherExecution</code> distinguishes completed execution from an
-unsupported query that never executed. Parse, semantic, planning,
-execution and output-limit errors propagate without retrying another
-executor or snapshot.</p>
-<p>Applications can also use <code>plan_node_scan</code>,
-<code>plan_relationship_scan</code>, and the snapshot’s
-directed/undirected relationship operators directly. The shared
-<code>ExpressionBindings</code> contract resolves graph variables to
-typed physical expressions for scalar and aggregate compilation. Missing
-properties become null; unknown variables remain errors. This allows
-composition without copying the scalar semantics into each pattern
-planner.</p>
-<h3 data-number="17.5.2" id="qualified-language-surface"><span
-class="header-section-number">17.5.2</span> Qualified language
-surface</h3>
-<p>The current compiler supports node scans and fixed-length
-relationship paths in either direction or undirected form; labels,
-relationship types and scalar inline maps; named, anonymous and repeated
-endpoint bindings; WHERE, projection, DISTINCT, count variants/grouping,
-integer/string MIN/MAX, node identity, projected ordering, and
-literal/parameter pagination. Scalar domains are Boolean, Int64, UTF-8
-and null. Only Boolean true retains a WHERE row.</p>
-<p>Undirected matching emits both orientations of non-loop edges and
-each self-loop once. Repeated endpoints constrain matching to self-loops
-using one node join; the undirected form omits its reverse branch.
-Anonymous names are generated after semantic analysis and cannot collide
-with explicit pattern bindings.</p>
-<p>Variable-length paths, OPTIONAL MATCH, correlated maps,
-floating-point and mixed numeric expressions, arithmetic, additional
-aggregates and duplicate projection names still need mappings or result
-remapping. Integer SUM requires particular care: preserving an equal
-final total does not preserve sequential overflow behavior across
-partitions. Unsupported cases are not silently coerced.</p>
-<h3 data-number="17.5.3" id="output-and-remaining-policy-work"><span
-class="header-section-number">17.5.3</span> Output and remaining policy
-work</h3>
-<p><code>decode_result_batch</code> preserves column order/names, row
-multiplicity, nulls and exact Int64 values when converting native scalar
-batches to portable rows. Types are resolved once per column;
-unsupported types fail before allocating rows. Arrow/ADBC consumers can
-retain native batches and avoid owned row conversion.</p>
-<p><code>collect_result</code> checks cumulative row counts before
-decoding each batch and counts exact serialized JSON output bytes
-without allocating a JSON buffer. The count includes column metadata,
-delimiters, escaping and inter-row commas, including empty results.
-Exceeding either limit returns an error with no partial result. One
-decoded batch still requires separate memory admission.</p>
-<p>Mantis 0.19.0’s <code>decode_result_batch_with_context</code> charges
-cumulative logical copy bytes before creating portable rows and strings.
-It measures the actual Arrow slice, including null-aware UTF-8 lengths,
-column names and row/value containers.
-<code>collect_result_with_context</code> also charges collection
-metadata and moved row containers, and shares cancellation/deadline
-control. Controlled <code>GraphSnapshot::execute_with_context</code> now
-uses this collector. The charge stays consumed after output is dropped;
-it is not a live-heap or allocator-capacity measurement. Arrow input,
-validation descriptors and operator allocations remain separate. No
-query is automatically routed on this basis.</p>
-<p>DataFusion’s working-memory pool and these output checks do not
-enforce Cypher’s candidate-work, intermediate-copy, query/input or
-deadline contracts. Automatic selection remains pending until those
-boundaries and measured cost decisions are integrated. The completed
-scan profile reports conversion/preparation costs separately; the
-parallel-ring path profile also retains preparation and admission
-boundaries. Passing explicit execution tests does not establish
-backend-wide speed or resource-policy parity.</p>
-<p><code>RelationshipPlan::join_trail</code> composes plans through
-shared node bindings and excludes physical edge reuse across all joined
-parts. Parallel edges remain distinct. Plans must come from the same
-captured snapshot; cloned handles retain that identity. Physical columns
-are renamed before composition to avoid alias collisions. The parsed
-path planner composes these operators for fixed-length paths;
-variable-length lowering and path-resource admission remain separate
-work.</p>
-<p>Fixed-length paths reuse the shared RETURN and predicate compilers
-after trail composition. Labels, relationship types, inline maps and
-repeated nodes constrain the complete path, with physical edge
-uniqueness across all segments. Direction may differ per segment.
-Variable-length bounds and named path values remain unsupported; the
-pinned parallel-ring profile measures two- and three-hop execution with
-separate preparation costs; it is not a general routing threshold.</p>
-<h3 data-number="17.5.4"
-id="shared-cancellation-and-deadlines-ostracod-0.18.0"><span
-class="header-section-number">17.5.4</span> Shared cancellation and
-deadlines (Ostracod 0.18.0)</h3>
-<p><code>ExecutionContext::cancelled()</code> is a runtime-independent
-notification shared by procedures and relational execution.
-<code>grust_datafusion::run_cancellable</code> races an operation with
-that notification and the context’s absolute deadline.
-<code>GraphSnapshot::execute_with_context</code> applies it through
-complete Cypher result consumption. The operation and its owned streams
-are dropped on cancellation or deadline; errors are never retried.
-Dropping one wrapper unregisters its waiter without cancelling sibling
-work. A deadline needs Tokio’s time driver.</p>
-<p>Control is cooperative: synchronous work within one poll is not
-preempted, and providers/kernels must checkpoint during computation.
-Wrapping stream creation alone does not control later consumption. These
-methods do not charge candidate work or intermediate allocations and do
-not establish complete read-policy admission or automatic routing.</p>
-<p><code>control_stream</code> retains cancellation and deadline control
-for an Arrow stream’s whole lifetime.
-<code>DataFusionEngine::execute_stream_with_context</code> controls both
-SQL preparation and the returned stream. Batches pass through without
-buffer copies, queues or worker tasks. Completion or the first error
-immediately drops the provider stream and timer; subsequent polls remain
-finished. The controlled stream can feed <code>BlockingReader</code> and
-ADBC ingestion directly.</p>
-<h3 data-number="17.5.5"
-id="prepared-read-admission-ostracod-0.18.0"><span
-class="header-section-number">17.5.5</span> Prepared read admission
-(Ostracod 0.18.0)</h3>
-<p><code>grust_cypher::PreparedReadRequest</code> owns the validated
-AST, policy and original absolute deadline, borrows the admitted
-immutable parameters, and retains any application registry generation.
-The bounded reference executor uses its request, graph/index and output
-checks. Indexed graph checks reuse the cached exact serialized size;
-parameter/output counting does not allocate encoded JSON. Oversized
-parameters fail before graph inspection. Preparation does not authorize
-or bind a backend snapshot, install execution budgets, or qualify a
-DataFusion route. Route-specific candidate/intermediate accounting must
-still be enforced.</p>
-<h3 data-number="17.5.6"
-id="exact-snapshot-statistics-ostracod-0.18.0"><span
-class="header-section-number">17.5.6</span> Exact snapshot statistics
-(Ostracod 0.18.0)</h3>
-<p><code>GraphSnapshot::statistics()</code> returns exact node/edge row
-counts, original input batch counts and the logical bytes added for
-UInt64 relationship ordinals. These are cached during capture and read
-in constant time without a provider scan or graph export. Cloned
-snapshots keep identical statistics; session catalog replacement cannot
-change them. Batch counts do not claim execution parallelism.
-Selectivity, join cardinalities, serialized graph size and total memory
-are not inferred from these counts. Automatic routing still requires
-qualified costs and complete resource admission.</p>
-<h3 data-number="17.5.7"
-id="borrowed-graph-serialization-ostracod-0.18.0"><span
-class="header-section-number">17.5.7</span> Borrowed graph serialization
-(Ostracod 0.18.0)</h3>
-<p><code>ArrowGraphTables::as_serializable_graph()</code> presents the
-ordinary Grust graph serde contract directly over native Arrow 55/58/59
-columns. It preserves row and batch order, identity, sorted property
-keys, scalar tags, and missing versus null properties. It builds only
-per-batch column descriptors, without row graphs, property maps or
-string-value copies. The caller selects the serializer and sink; a
-bounded writer over <code>std::io::sink()</code> can count exact JSON
-bytes without keeping the encoded output. Writer errors propagate and
-may leave a prefix in a real sink. This enables native input-size
-admission; automatic routing and full query resource-policy integration
-remain separate work.</p>
-<h3 data-number="17.5.8"
-id="native-arrow-input-admission-ostracod-0.18.0"><span
-class="header-section-number">17.5.8</span> Native Arrow input admission
-(Ostracod 0.18.0)</h3>
-<p><code>GraphSnapshot::try_new_with_input_policy</code> checks a
-prepared request’s node/edge limits and exact graph JSON size before
-capturing native providers. It uses the borrowed Arrow serialization
-view and bounded counting writer, with no row graph or encoded JSON
-buffer. Row rejection precedes serialization; the original request
-deadline also covers capture.
-<code>SnapshotStatistics::serialized_graph_bytes</code> is
-<code>Some(exact_bytes)</code> after measured capture and
-<code>None</code> for ordinary capture, including an unmeasured empty
-graph. Clones retain the measurement.</p>
-<p><code>PreparedReadRequest::check_serializable_graph</code> shares
-these checks with trusted native adapters.
-<code>check_measured_graph</code> reuses exact cached measurements for
-the same immutable projection; estimates are not admissible substitutes.
-Backend snapshot authority, pre-existing input buffers, ordinal
-allocation and execution work/intermediates remain separate obligations.
-This is input-size admission, not a complete bounded DataFusion executor
-or automatic routing.</p>
-<h3 data-number="17.5.9" id="owned-buffer-admission-brine-0.20.0"><span
-class="header-section-number">17.5.9</span> Owned buffer admission
-(Brine 0.20.0)</h3>
-<p><code>retain_buffer_owner</code> attaches an application token to an
-immutable Arrow buffer through safe <code>bytes::Bytes</code> ownership.
-Native slices, array clones and C Data exports retain that owner without
-copying bytes. Existing clones made before attachment do not acquire the
-token. Reserve storage before allocation; this helper preserves
-ownership and does not itself measure memory.</p>
-<p><code>GraphSnapshot::try_new_with_context</code> admits the added
-UInt64 ordinal payload and construction work. Reservations stay with the
-buffers after the snapshot, provider or result stream disappears. The
-combined <code>try_new_with_input_policy_and_context</code> also checks
-exact input size and requires an execution deadline no later than the
-prepared request’s deadline. Input buffers, provider/schema metadata and
-allocator capacity remain outside the logical ordinal-payload bound.
-These capture checks do not establish backend authority, full operator
-accounting or automatic execution selection.</p>
-<p><code>retain_array_owner</code> extends buffer ownership through an
-array’s validity bits and nested children. It rebuilds and validates
-metadata without copying payload bytes. Arrays with no physical buffers
-retain no token; a wrapper remains necessary when metadata-only lifetime
-must be admitted. Algorithm result batches use the same mechanism so raw
-batch clones and retained child slices keep their original reservation.
-New reservations are not charged for each clone.</p>
+<p>The Turso columns are not Turso-native SQL graph algorithms, and
+their database loading is not an ingestion comparison against another
+engine’s projection. The Arrow and DataFusion columns do not claim
+DataFusion executes graph kernels; DataFusion prepares input, and the
+kernels that follow are the same ones direct execution runs.</p>
+<p>Because the classes do unequal work by construction, a ratio between
+two of them is a statement about machinery, not about speed in the
+abstract.</p>
+<h2 data-number="17.2" id="full-paths-are-an-output-contract"><span
+class="header-section-number">17.2</span> Full paths are an output
+contract</h2>
+<p>A shortest-distance query returns one number per destination. A
+full-path query returns the intermediate nodes and the accumulated cost
+along the route. On a chain, the path to the first node holds one entry,
+the next holds two, and across all destinations each array holds
+<code>n(n + 1) / 2</code> entries: 134,225,920 at 16,384 nodes and
+<strong>2,147,516,416 at 65,536</strong>. Every entry is constructed and
+consumed. Nothing is summed in closed form, no family is special-cased,
+and paths are reconstructed one at a time into reused buffers rather
+than retained together.</p>
+<p>That contract is what makes the benchmark informative about this
+library, since it exercises reconstruction, the work meter and result
+conversion at a scale where each of them is visible.</p>
+<h2 data-number="17.3"
+id="the-cooperative-budget-was-the-kernels-largest-cost"><span
+class="header-section-number">17.3</span> The cooperative budget was the
+kernel’s largest cost</h2>
+<p>Kernels charge the shared budget once per unit of graph work — per
+visited entry and per path step — which is what makes an exhausted
+allowance stop a kernel where it stands. On the 16,384-node chain the
+meter is entered about 134 million times, and profiling attributed
+<strong>72.8% of kernel self time to <code>charge_work</code></strong>,
+against 14.8% for visiting paths and 6.6% for advancing path buffers.
+The meter took a mutex on every call, in a single-threaded kernel.</p>
+<p>The counter and the cancellation flag are now atomics, with each
+charge admitted through a compare-exchange that recomputes admission
+against the value it replaces, so budgets are still enforced exactly and
+granularity is still per unit. Full-path Dijkstra improved by up to
+29.4% on direct execution, except on the hub family, where it was flat
+at -2.9% and +1.1%; PageRank improved between 22.5% and 29.1% across
+every family.</p>
+<p>A share of self time is not a share of removable wall time. The
+atomic still costs and the surrounding work is real, so a 72.8% profile
+share produced a 20 to 29% improvement, not a threefold one.</p>
+<h2 data-number="17.4"
+id="deadline-enforcement-is-a-policy-and-policies-differ"><span
+class="header-section-number">17.4</span> Deadline enforcement is a
+policy, and policies differ</h2>
+<p>Ordinary Cypher’s full-path query measured about ninety times direct
+execution. The query text was not the cause: removing the row expansion
+entirely, asking only for <code>count(*)</code> and
+<code>sum(size(nodeIds))</code> rather than one <code>UNWIND</code> row
+per entry, saved about 4%.</p>
+<p>Profiling put roughly 83% of the remainder in the clock. A bounded
+read policy requires a finite deadline, the benchmark’s Cypher
+participant disclosed a 24-hour ceiling, and the execution context
+therefore read the clock on every charge — about 8.4 million times at
+4,096 nodes. Direct execution passes no deadline, never reads the clock,
+and completed the same work in 197 ms.</p>
+<p>Two facts turn that into a policy difference rather than an engine
+difference. The host’s clocksource is <code>xen</code> rather than
+<code>tsc</code>, so each read goes through a paravirtual clock instead
+of a register, which inflates any per-unit check on this machine
+specifically. And the compared engine samples its own termination check:
+its shipped artifact carries a 10,000-node check interval and a
+10,000-millisecond flag interval, so it consults a cached flag between
+samples. This library checked every unit. The resulting difference was
+in how often each system asks, not in how fast either computes.</p>
+<p>Charges now sample the deadline every 1024 units. An interval sweep
+showed the gain complete by 256 and flat thereafter, so the interval
+stays tight and remains an order of magnitude stricter than the
+10,000-unit interval it is measured against. Cancellation is never
+sampled, budget limits still fail exactly at their limit, a memory
+reservation keeps an exact check while the per-copied-row memory charges
+sample as work charges do, and <code>checkpoint</code> reads the clock
+every time.</p>
+<p>The first version of that change tracked its sampling counter even
+when no deadline existed, so kernels that set none — every direct, Arrow
+and DataFusion path — paid an atomic they had never paid before, and
+measured 13 to 46% slower until a paired run caught it. An execution
+without a deadline now returns before both the counter and the
+clock.</p>
+<h2 data-number="17.5"
+id="correctness-is-an-oracle-not-an-afterthought"><span
+class="header-section-number">17.5</span> Correctness is an oracle, not
+an afterthought</h2>
+<p>Every sample in every sweep is validated against an independent C++
+reference, and failures are retained rather than discarded. That is how
+a defect unrelated to performance surfaced.</p>
+<p>A durable-loading experiment failed all 36 of its samples. Results
+were being associated with nodes by position in the snapshot rather than
+by node identifier. Bulk loading and single-writer loading insert in
+input order, so position and identifier coincided and the defect was
+invisible; four concurrent writers scrambled insertion order, and every
+distance landed on the wrong node. The values were an exact permutation
+of the reference — identical multisets, wrong positions.</p>
+<p>Snapshot verification could not catch it, by construction: it
+compares sorted records because database scan order is legitimately
+arbitrary, which makes it blind to a permutation. The adapter now
+restores input order after verification, in a separately reported phase
+outside every algorithm timer. No published measurement was affected,
+because every published run used bulk loading.</p>
+<h2 data-number="17.6" id="allocator-and-durable-loading"><span
+class="header-section-number">17.6</span> Allocator and durable
+loading</h2>
+<p>The global allocator is a measured default rather than an assumption.
+A matched control differing only in six global allocator declarations
+found mimalloc faster in 41 of 48 cells, by as much as 27.8% on sparse
+random graphs, with three cells slower and reported, led by DataFusion
+on the chain at +5.4%.</p>
+<p>Group commit is a property of durable loading, not of kernels, and is
+measured as its own preparation workload. Engine grouping roughly halves
+durable load time — 9,962 ms to 4,232 ms at 1,024 nodes — while the
+algorithm timers do not move at all. No group-commit setting may be
+credited as a kernel optimization. WAL declines the four-writer workload
+outright with a locked database, which is why the experiment is
+specified for MVCC only.</p>
+<h2 data-number="17.7" id="what-the-whole-set-moved"><span
+class="header-section-number">17.7</span> What the whole set moved</h2>
+<p>On the 65,536-node chain, across three pins, with the frozen
+historical binaries byte-identical throughout and moving by at most 1.4%
+— the control that makes the rest attributable to code rather than to
+the machine:</p>
+<table>
+<colgroup>
+<col style="width: 20%" />
+<col style="width: 26%" />
+<col style="width: 26%" />
+<col style="width: 26%" />
+</colgroup>
+<thead>
+<tr>
+<th>Column</th>
+<th style="text-align: right;">baseline</th>
+<th style="text-align: right;">with the meter and deadline work</th>
+<th style="text-align: right;">with the executor work</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>direct</td>
+<td style="text-align: right;">66,477</td>
+<td style="text-align: right;">52,142</td>
+<td style="text-align: right;">51,869</td>
+</tr>
+<tr>
+<td>Arrow</td>
+<td style="text-align: right;">241,622</td>
+<td style="text-align: right;">184,957</td>
+<td style="text-align: right;">184,291</td>
+</tr>
+<tr>
+<td>ordinary Cypher</td>
+<td style="text-align: right;">5,808,625</td>
+<td style="text-align: right;">535,450</td>
+<td style="text-align: right;">594,419</td>
+</tr>
+</tbody>
+</table>
+<p>The full run fell from 3 hours 32 minutes to 35 minutes of wall time.
+Ordinary Cypher on that case moved from roughly fifteen times the
+compared engine’s server query to about 1.55 times it, while remaining a
+different measurement: that engine’s projection is built before its
+timer starts and this one’s is inside it.</p>
+<p>The reference-executor work that followed improved ordinary Cypher
+between 88.6% and 98.1% across every graph family at 4,096 nodes. The
+full-path chain was the one case it did not reach: it regressed there by
+2.0% at 4,096, 9.8% at 16,384 and 11.0% at 65,536, because that case is
+dominated by materialising one heap-allocated string per path entry
+rather than by the per-row overhead the work removed.</p>
+<p>Reporting that case led to the next change, which stopped
+deep-copying each yielded value into every row and began admitting work
+per path, or per 1024 steps, instead of per entry. Both the regression
+and the original cost went with it. On the 16,384-node chain, ordinary
+Cypher fell from 36,913 ms to 20,255 ms, direct execution from 3,190 ms
+to 1,298 ms, and Arrow from 11,612 ms to 9,397 ms, while the frozen C++
+participant moved 0.4% in the same runs. At 4,096 nodes with five
+measured samples, direct execution improved 58.7% and ordinary Cypher
+45.2%. The per-entry charge that the first profile found was therefore
+worth roughly a further 2.4x on direct execution once it was charged per
+path; the 65,536 case has not been re-run at that pin.</p>
+<h2 data-number="17.8" id="limitations-1"><span
+class="header-section-number">17.8</span> Limitations</h2>
+<p>These numbers are not portable. The deadline and clock findings are
+shaped by a paravirtual clocksource, and the same code on a host with a
+register clock would show a smaller penalty. The 16,384 and 65,536
+results are single samples and establish completion, not stable ranking.
+Container memory peaks are whole-container figures including file cache
+and are never presented as per-participant resident memory. Results from
+different source pins are kept in separate sets. No result from the
+separate graph-query or strain benchmarks is combined with these.</p>
 </body>
 </html>
