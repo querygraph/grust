@@ -52,6 +52,8 @@ pub use procedure_plan::{
     ProcedureCallPlan, ProcedureExecutionTarget, ProcedureQueryPlan, ProcedureRowExecution,
 };
 mod binding_forms;
+#[cfg(test)]
+mod binding_forms_resource_tests;
 mod expression_scope;
 mod string_functions;
 mod write_expression;
