@@ -1,5 +1,6 @@
 //! Shared cooperative limits with reservations retained by buffer owners.
 
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
 
@@ -34,14 +35,19 @@ pub struct ResourceUsage {
 
 #[derive(Debug, Default)]
 struct State {
-    usage: ResourceUsage,
-    cancelled: bool,
+    live_bytes: usize,
+    peak_bytes: usize,
     waiters: Vec<Option<std::task::Waker>>,
 }
 
+/// Work and cancellation are lock-free because kernels charge per unit of work,
+/// once per visited entry or reconstructed path step. Memory reservations and
+/// wakers stay behind the mutex: they are rare and need multi-field atomicity.
 #[derive(Debug)]
 struct Shared {
     limits: ExecutionLimits,
+    work_units: AtomicUsize,
+    cancelled: AtomicBool,
     state: Mutex<State>,
 }
 
@@ -65,6 +71,8 @@ impl ExecutionContext {
         }
         Ok(Self(Arc::new(Shared {
             limits,
+            work_units: AtomicUsize::new(0),
+            cancelled: AtomicBool::new(false),
             state: Mutex::new(State::default()),
         })))
     }
@@ -76,12 +84,14 @@ impl ExecutionContext {
 
     /// Signal cancellation to all owners. Cancellation never resets.
     pub fn cancel(&self) -> Result<()> {
+        // Publish cancellation before collecting wakers, so a registration that
+        // races this call either observes the flag or is woken by it.
+        self.0.cancelled.store(true, Ordering::Release);
         let mut state = self
             .0
             .state
             .lock()
             .map_err(|_| ProcedureError::ResourceStatePoisoned)?;
-        state.cancelled = true;
         let waiters = std::mem::take(&mut state.waiters);
         drop(state);
         for waker in waiters.into_iter().flatten() {
@@ -97,26 +107,33 @@ impl ExecutionContext {
 
     /// Charge work before performing it. Counter overflow is a budget failure.
     pub fn charge_work(&self, units: usize) -> Result<()> {
-        let mut state = self
-            .0
-            .state
-            .lock()
-            .map_err(|_| ProcedureError::ResourceStatePoisoned)?;
-        self.check_state(&state)?;
-        state.usage.work_units = state
-            .usage
-            .work_units
-            .checked_add(units)
-            .filter(|next| *next <= self.0.limits.work_units)
-            .ok_or(ProcedureError::BudgetExceeded {
-                resource: "work",
-                limit: self.0.limits.work_units,
-            })?;
-        Ok(())
+        self.check_state()?;
+        // Admit exactly, never overshooting the budget: the compare-exchange
+        // recomputes admission against the value it actually replaces, so a
+        // concurrent charge cannot slip past the limit between load and store.
+        let mut current = self.0.work_units.load(Ordering::Relaxed);
+        loop {
+            let next = current
+                .checked_add(units)
+                .filter(|next| *next <= self.0.limits.work_units)
+                .ok_or(ProcedureError::BudgetExceeded {
+                    resource: "work",
+                    limit: self.0.limits.work_units,
+                })?;
+            match self.0.work_units.compare_exchange_weak(
+                current,
+                next,
+                Ordering::Relaxed,
+                Ordering::Relaxed,
+            ) {
+                Ok(_) => return Ok(()),
+                Err(observed) => current = observed,
+            }
+        }
     }
 
-    fn check_state(&self, state: &State) -> Result<()> {
-        if state.cancelled {
+    fn check_state(&self) -> Result<()> {
+        if self.0.cancelled.load(Ordering::Acquire) {
             return Err(ProcedureError::Cancelled);
         }
         if self
@@ -150,9 +167,8 @@ impl ExecutionContext {
             .state
             .lock()
             .map_err(|_| ProcedureError::ResourceStatePoisoned)?;
-        self.check_state(&state)?;
+        self.check_state()?;
         state
-            .usage
             .live_bytes
             .checked_add(bytes)
             .filter(|next| *next <= self.0.limits.memory_bytes)
@@ -187,9 +203,8 @@ impl ExecutionContext {
             .state
             .lock()
             .map_err(|_| ProcedureError::ResourceStatePoisoned)?;
-        self.check_state(&state)?;
+        self.check_state()?;
         let next = state
-            .usage
             .live_bytes
             .checked_add(bytes)
             .filter(|next| *next <= self.0.limits.memory_bytes)
@@ -197,19 +212,23 @@ impl ExecutionContext {
                 resource: "memory",
                 limit: self.0.limits.memory_bytes,
             })?;
-        state.usage.live_bytes = next;
-        state.usage.peak_bytes = state.usage.peak_bytes.max(next);
+        state.live_bytes = next;
+        state.peak_bytes = state.peak_bytes.max(next);
         Ok(())
     }
 
     /// Current accounted usage, including batches retained by a consumer.
     pub fn usage(&self) -> Result<ResourceUsage> {
-        Ok(self
+        let state = self
             .0
             .state
             .lock()
-            .map_err(|_| ProcedureError::ResourceStatePoisoned)?
-            .usage)
+            .map_err(|_| ProcedureError::ResourceStatePoisoned)?;
+        Ok(ResourceUsage {
+            live_bytes: state.live_bytes,
+            peak_bytes: state.peak_bytes,
+            work_units: self.0.work_units.load(Ordering::Relaxed),
+        })
     }
 }
 
@@ -246,7 +265,7 @@ impl Drop for MemoryAccount {
             .state
             .lock()
             .unwrap_or_else(|poison| poison.into_inner());
-        state.usage.live_bytes -= self.bytes;
+        state.live_bytes -= self.bytes;
     }
 }
 
@@ -265,7 +284,7 @@ impl Drop for Reservation {
             .state
             .lock()
             .unwrap_or_else(|poison| poison.into_inner());
-        state.usage.live_bytes -= self.bytes;
+        state.live_bytes -= self.bytes;
     }
 }
 

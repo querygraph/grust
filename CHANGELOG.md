@@ -6,6 +6,14 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ## Unreleased
 
+- Charge cooperative work units and observe cancellation without taking the
+  execution mutex: `ExecutionContext` now holds `work_units` and `cancelled` as
+  atomics, admitting each charge through a compare-exchange that recomputes the
+  budget against the value it replaces. Exact budget enforcement, per-unit
+  granularity and cancellation visibility are unchanged; memory reservations,
+  peak accounting and wakers still hold the lock. Profiling attributed 72.8% of
+  full-path Dijkstra kernel time on a 16384-node chain to the previous
+  lock-per-unit accounting.
 - Validate row-to-Arrow conversion with borrowed identity membership instead of
   constructing discarded adjacency, and copy string properties directly into
   Arrow buffers without temporary owned String clones.
