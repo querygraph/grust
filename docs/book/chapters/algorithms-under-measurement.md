@@ -60,8 +60,9 @@ took a mutex on every call, in a single-threaded kernel.
 The counter and the cancellation flag are now atomics, with each charge admitted
 through a compare-exchange that recomputes admission against the value it
 replaces, so budgets are still enforced exactly and granularity is still per
-unit. Full-path Dijkstra improved 14 to 29% on direct execution and PageRank 23
-to 29% across graph families.
+unit. Full-path Dijkstra improved by up to 29.4% on direct execution, except on the
+hub family, where it was flat at -2.9% and +1.1%; PageRank improved between
+22.5% and 29.1% across every family.
 
 A share of self time is not a share of removable wall time. The atomic still
 costs and the surrounding work is real, so a 72.8% profile share produced a 20
@@ -155,7 +156,7 @@ that engine's projection is built before its timer starts and this one's is
 inside it.
 
 The reference-executor work that followed improved ordinary Cypher between 88.6%
-and 97.5% across every graph family at 4,096 nodes. The full-path chain was the
+and 98.1% across every graph family at 4,096 nodes. The full-path chain was the
 one case it did not reach: it regressed there by 2.0% at 4,096, 9.8% at 16,384
 and 11.0% at 65,536, because that case is dominated by materialising one
 heap-allocated string per path entry rather than by the per-row overhead the
