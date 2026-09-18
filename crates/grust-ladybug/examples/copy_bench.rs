@@ -18,7 +18,7 @@
 use std::{fs::File, io::Write, sync::Arc, time::Instant};
 
 use arrow::{
-    array::{ArrayRef, Int64Array, StringArray},
+    array::{ArrayRef, Int64Array, StringArray, UInt64Array},
     datatypes::{DataType, Field, Schema},
     record_batch::RecordBatch,
 };
@@ -41,6 +41,14 @@ fn ints(name: &str, values: &[i64]) -> (Field, ArrayRef) {
     (
         Field::new(name, DataType::Int64, false),
         Arc::new(Int64Array::from(values.to_vec())),
+    )
+}
+
+/// CSR node offsets: the engine wants UINT64 row offsets, not key values.
+fn uints(name: &str, values: &[i64]) -> (Field, ArrayRef) {
+    (
+        Field::new(name, DataType::UInt64, false),
+        Arc::new(UInt64Array::from(values.iter().map(|v| *v as u64).collect::<Vec<_>>())),
     )
 }
 
@@ -96,7 +104,7 @@ fn main() {
     for t in ["N", "N2", "N3"] {
         q(&conn, &format!("CREATE NODE TABLE {t}(id STRING, props STRING, PRIMARY KEY(id));")).unwrap();
     }
-    for (e, t) in [("E", "N"), ("E2", "N"), ("E3", "N")] {
+    for (e, t) in [("E", "N"), ("E2", "N2"), ("E3", "N3")] {
         q(&conn, &format!("CREATE REL TABLE {e}(FROM {t} TO {t}, id STRING, props STRING);")).unwrap();
     }
 
@@ -192,8 +200,8 @@ fn main() {
     for i in 0..n {
         indptr[i + 1] += indptr[i];
     }
-    let indices_batch = batch(vec![ints("to", &indices)]);
-    let indptr_batch = batch(vec![ints("offset", &indptr)]);
+    let indices_batch = batch(vec![uints("to", &indices)]);
+    let indptr_batch = batch(vec![uints("offset", &indptr)]);
     time("E edges: CSR arrow rel table, COPY FROM (MATCH …)", m, || {
         conn.create_arrow_rel_table_csr("s_csr", &[indices_batch.clone()], &[indptr_batch.clone()], "NI", "NI", "to")
             .map_err(|e| e.to_string())?;
