@@ -160,12 +160,11 @@ impl ExecutionContext {
             return Ok(());
         };
         if matches!(deadline, DeadlineCheck::Sampled)
-            && self
+            && !self
                 .0
                 .charges_since_deadline_read
                 .fetch_add(1, Ordering::Relaxed)
-                % DEADLINE_SAMPLE_UNITS
-                != 0
+                .is_multiple_of(DEADLINE_SAMPLE_UNITS)
         {
             return Ok(());
         }
@@ -180,7 +179,7 @@ impl ExecutionContext {
     /// Cloning a token shares its charge. Only dropping its last owner releases
     /// memory admission; dropping the context/cursor alone does not.
     pub fn reserve(&self, bytes: usize) -> Result<MemoryReservation> {
-        self.charge_memory(bytes)?;
+        self.charge_memory(bytes, DeadlineCheck::Exact)?;
         Ok(MemoryReservation(Arc::new(Reservation {
             context: self.clone(),
             bytes,
@@ -221,17 +220,21 @@ impl ExecutionContext {
     /// of this query. Unlike a live reservation, this cumulative charge is never
     /// refunded. Both forms consume the same memory envelope, so alternating
     /// provider allocations and downstream copies cannot acquire two allowances.
+    ///
+    /// A materializing consumer charges once per copied row, so this samples the
+    /// deadline as [`Self::charge_work`] does. The byte limit and cancellation
+    /// are exact; [`Self::reserve`] and [`Self::checkpoint`] read the clock.
     pub fn charge_cumulative_memory(&self, bytes: usize) -> Result<()> {
-        self.charge_memory(bytes)
+        self.charge_memory(bytes, DeadlineCheck::Sampled)
     }
 
-    fn charge_memory(&self, bytes: usize) -> Result<()> {
+    fn charge_memory(&self, bytes: usize, deadline: DeadlineCheck) -> Result<()> {
         let mut state = self
             .0
             .state
             .lock()
             .map_err(|_| ProcedureError::ResourceStatePoisoned)?;
-        self.check_state(DeadlineCheck::Exact)?;
+        self.check_state(deadline)?;
         let next = state
             .live_bytes
             .checked_add(bytes)
@@ -274,7 +277,7 @@ impl MemoryAccount {
     }
     /// Admit another temporary allocation before constructing it.
     pub fn charge(&mut self, bytes: usize) -> Result<()> {
-        self.context.charge_memory(bytes)?;
+        self.context.charge_memory(bytes, DeadlineCheck::Sampled)?;
         // Shared admission already checked the sum of all live accounts.
         self.bytes += bytes;
         Ok(())

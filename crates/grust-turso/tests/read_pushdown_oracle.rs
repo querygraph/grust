@@ -431,6 +431,51 @@ async fn overlapping_join_queries_keep_real_store_fallback_and_exact_rows() {
     );
 }
 
+/// Binding forms have no dialect lowering: every planner declines, wherever
+/// the form appears, and the real store answers from the reference executor.
+#[tokio::test]
+async fn binding_forms_decline_pushdown_and_match_reference() {
+    let graph = fixture();
+    let store = TursoGraphStore::in_memory().await.unwrap();
+    store.bootstrap().await.unwrap();
+    store.put_graph(&graph).await.unwrap();
+    let params = CypherParameters::from([("bonus".into(), Value::IntArray(vec![1, 2, 3]))]);
+    for source in [
+        "MATCH (p:Person) RETURN p.name, reduce(s = p.age, x IN $bonus | s + x) AS total ORDER BY p.name",
+        "MATCH (p:Person) RETURN sum(reduce(s = 0, x IN [p.age, 1] | s + x)) AS total",
+        "MATCH (p:Person) WHERE reduce(s = 0, x IN $bonus | s + x) < p.age RETURN p.name ORDER BY p.name",
+        "MATCH (p:Person) RETURN p.name, [x IN $bonus WHERE x > 1 | x * p.age] AS scaled ORDER BY p.name",
+        "MATCH (p:Person) WHERE any(x IN $bonus WHERE x * 20 > p.age) RETURN p.name ORDER BY p.name",
+        "MATCH (p:Person) WHERE none(x IN [p.age, p.score] WHERE x > 45) RETURN p.name ORDER BY p.name",
+        "MATCH (a:Person)-[:KNOWS]->(b) WHERE single(x IN [a.age, b.age] WHERE x > 45) RETURN a.name, b.name ORDER BY a.name, b.name",
+        "MATCH (p:Person) WITH p, [x IN $bonus | x + p.age] AS xs WHERE all(x IN xs WHERE x > 40) RETURN p.name, reduce(s = 0, x IN xs | s + x) AS total ORDER BY p.name",
+    ] {
+        assert!(
+            plan_node_read(source, &params).unwrap().is_none(),
+            "{source}"
+        );
+        assert!(
+            plan_segment_read(source, &params).unwrap().is_none(),
+            "{source}"
+        );
+        assert!(
+            plan_var_length_read(source, &params).unwrap().is_none(),
+            "{source}"
+        );
+        assert!(
+            plan_read(source, &params, &OracleHints).unwrap().is_none(),
+            "{source}"
+        );
+        let expected = run_read_query(&graph, source, &params).unwrap();
+        assert!(!expected.rows.is_empty(), "{source}");
+        assert_same(
+            source,
+            &store.run_read_query(source, &params).await.unwrap(),
+            &expected,
+        );
+    }
+}
+
 #[tokio::test]
 async fn segment_pushed_ordering_preserves_sequence() {
     // Segment ORDER BY / SKIP / LIMIT pushed into SQLite must reproduce the

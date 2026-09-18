@@ -2,6 +2,9 @@
 
 use crate::*;
 
+pub(crate) mod expression;
+pub use expression::CypherReturnExpression;
+
 pub(crate) fn split_match_delete(statement: &str) -> Result<(&str, &str)> {
     if let Some(index) = find_unquoted_keyword(statement, "DELETE") {
         let pattern = statement[..index].trim();
@@ -204,7 +207,7 @@ pub enum CypherReturnTarget {
     PropertyListIndex(CypherReturnListIndexProjection),
     PropertyListSlice(CypherReturnListSlice),
     PropertyListContains(CypherReturnListContains),
-    PropertyListPredicate(CypherReturnListPredicateProjection),
+    Expression(CypherReturnExpression),
     PropertyListElement(CypherReturnListElementProjection),
     PropertyListTail(CypherReturnListTailProjection),
     PropertyAbs(CypherReturnAbsProjection),
@@ -439,23 +442,6 @@ pub struct CypherReturnListContains {
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(crate) enum CypherReturnListPredicate {
-    Any,
-    All,
-    None,
-    Single,
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub struct CypherReturnListPredicateProjection {
-    pub(crate) key: String,
-    pub(crate) predicate: CypherReturnListPredicate,
-    pub(crate) item_variable: String,
-    pub(crate) equals_variable: Option<String>,
-    pub(crate) equals: Box<CypherReturnTarget>,
-}
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum CypherReturnStringSliceSide {
     Left,
     Right,
@@ -527,7 +513,7 @@ pub(crate) enum CypherReturnScalarProjectionKind {
     Coalesce,
     Introspection,
     ListAccess,
-    ListPredicate,
+    Expression,
     Numeric,
     Conversion,
     String,
@@ -562,7 +548,7 @@ pub(crate) enum CypherReturnScalarAst<'a> {
     PropertyListIndex(&'a CypherReturnListIndexProjection),
     PropertyListSlice(&'a CypherReturnListSlice),
     PropertyListContains(&'a CypherReturnListContains),
-    PropertyListPredicate(&'a CypherReturnListPredicateProjection),
+    Expression(&'a CypherReturnExpression),
     PropertyListElement(&'a CypherReturnListElementProjection),
     PropertyListTail(&'a CypherReturnListTailProjection),
     PropertyAbs(&'a CypherReturnAbsProjection),
@@ -624,6 +610,12 @@ pub(crate) fn parse_cypher_return_clause(
             return Err(cypher_syntax("RETURN contains an empty projection"));
         }
         let (expression, alias) = split_return_alias(projection)?;
+        if let Some(general) =
+            expression::parse_projection(expression, alias.clone(), scope, parameters)?
+        {
+            projections.push(general);
+            continue;
+        }
         if let Some(ParsedAggregateProjection {
             aggregate,
             variable,
@@ -1092,14 +1084,6 @@ pub(crate) fn parse_restricted_return_target_expression(
             CypherReturnTarget::PropertyListSlice(slice),
         )));
     }
-    if let Some((variable, predicate)) =
-        parse_return_list_predicate_projection(expression, parameters)?
-    {
-        return Ok(Some((
-            Some(variable),
-            CypherReturnTarget::PropertyListPredicate(predicate),
-        )));
-    }
     if let Some((variable, contains)) =
         parse_return_list_contains_projection(expression, parameters)?
     {
@@ -1462,102 +1446,6 @@ pub(crate) fn parse_return_list_contains_projection(
             )
         })?;
     Ok(Some((variable, CypherReturnListContains { key, needle })))
-}
-
-pub(crate) fn parse_return_list_predicate_projection(
-    expression: &str,
-    parameters: &CypherParameters,
-) -> Result<Option<(String, CypherReturnListPredicateProjection)>> {
-    let expression = expression.trim();
-    let Some(open) = expression.find('(') else {
-        return Ok(None);
-    };
-    let predicate = match expression[..open].trim().to_ascii_lowercase().as_str() {
-        "any" => CypherReturnListPredicate::Any,
-        "all" => CypherReturnListPredicate::All,
-        "none" => CypherReturnListPredicate::None,
-        "single" => CypherReturnListPredicate::Single,
-        _ => return Ok(None),
-    };
-    if !expression.ends_with(')') {
-        return Err(cypher_syntax(
-            "RETURN list predicate projection is missing ')'",
-        ));
-    }
-    let body = expression[open + 1..expression.len() - 1].trim();
-    if body.is_empty() {
-        return Err(cypher_syntax(
-            "RETURN list predicate projection requires item IN variable.property WHERE item = value",
-        ));
-    }
-    let Some(in_index) = find_unquoted_keyword(body, "IN") else {
-        return Err(cypher_syntax(
-            "RETURN list predicate projection requires item IN variable.property WHERE item = value",
-        ));
-    };
-    let item_variable = parse_required_cypher_variable(
-        body[..in_index].trim(),
-        "RETURN list predicate item variable",
-    )?;
-    let rest = body[in_index + "IN".len()..].trim();
-    let Some(where_index) = find_unquoted_keyword(rest, "WHERE") else {
-        return Err(cypher_syntax(
-            "RETURN list predicate projection requires WHERE item = value",
-        ));
-    };
-    let haystack = rest[..where_index].trim();
-    let condition = rest[where_index + "WHERE".len()..].trim();
-    let Some(equals_index) = find_unquoted(condition, '=') else {
-        return Err(cypher_unsupported_cardinality(
-            "writable Cypher RETURN list predicates only support equality predicates",
-        ));
-    };
-    if find_unquoted(&condition[equals_index + 1..], '=').is_some() {
-        return Err(cypher_unsupported_cardinality(
-            "writable Cypher RETURN list predicates only support one equality predicate",
-        ));
-    }
-    let left = condition[..equals_index].trim();
-    let right = condition[equals_index + 1..].trim();
-    if left != item_variable {
-        return Err(cypher_unsupported_cardinality(
-            "writable Cypher RETURN list predicates require the WHERE left side to be the list item variable",
-        ));
-    }
-    if right.is_empty() {
-        return Err(cypher_syntax(
-            "RETURN list predicate projection requires an equality value",
-        ));
-    }
-    let (variable, key) = parse_property_ref(haystack, "RETURN list predicate projection")
-        .map_err(|_| {
-            cypher_unsupported_cardinality(
-                "writable Cypher RETURN list predicates require a variable.property haystack",
-            )
-        })?;
-    let (equals_variable, equals) = parse_nested_restricted_scalar_target(
-        right,
-        parameters,
-        "RETURN list predicate equality value",
-        "writable Cypher RETURN list predicate equality value must be a restricted scalar value",
-    )?;
-    if let Some(equals_variable) = equals_variable.as_ref()
-        && equals_variable != &variable
-    {
-        return Err(cypher_unsupported_cardinality(
-            "writable Cypher RETURN list predicate equality value must reference the haystack variable",
-        ));
-    }
-    Ok(Some((
-        variable,
-        CypherReturnListPredicateProjection {
-            key,
-            predicate,
-            item_variable,
-            equals_variable,
-            equals: Box::new(equals),
-        },
-    )))
 }
 
 pub(crate) fn parse_return_list_index_projection(

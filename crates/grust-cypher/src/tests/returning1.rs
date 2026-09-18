@@ -2738,7 +2738,7 @@ fn cypher_returning_projects_restricted_list_predicates_on_memory_facade() {
             ))
             .expect_err("list predicates should require the same WHERE item variable");
     assert!(
-        matches!(wrong_item, GrustError::CypherUnsupportedCardinality(_)),
+        wrong_item.to_string().contains("not bound"),
         "{wrong_item:?}"
     );
 
@@ -2754,14 +2754,8 @@ fn cypher_returning_projects_restricted_list_predicates_on_memory_facade() {
                     ..CypherMutationOptions::default()
                 },
             ))
-            .expect_err("computed list predicate expressions should stay rejected");
-    assert!(
-        matches!(
-            computed_predicate,
-            GrustError::CypherUnsupportedCardinality(_)
-        ),
-        "{computed_predicate:?}"
-    );
+            .expect("computed list predicates use the general expression evaluator");
+    assert_eq!(computed_predicate.table.rows, vec![vec![Value::Bool(true)]]);
 }
 
 #[test]

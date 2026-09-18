@@ -580,7 +580,7 @@ pub(crate) fn classify_return_target_materialization(
         | CypherReturnTarget::PropertyListIndex(_)
         | CypherReturnTarget::PropertyListSlice(_)
         | CypherReturnTarget::PropertyListContains(_)
-        | CypherReturnTarget::PropertyListPredicate(_)
+        | CypherReturnTarget::Expression(_)
         | CypherReturnTarget::PropertyListElement(_)
         | CypherReturnTarget::PropertyListTail(_)
         | CypherReturnTarget::PropertyAbs(_)
@@ -630,9 +630,7 @@ pub(crate) fn classify_return_scalar_projection(
         | CypherReturnScalarAst::PropertyListTail(_) => {
             CypherReturnScalarProjectionKind::ListAccess
         }
-        CypherReturnScalarAst::PropertyListPredicate(_) => {
-            CypherReturnScalarProjectionKind::ListPredicate
-        }
+        CypherReturnScalarAst::Expression(_) => CypherReturnScalarProjectionKind::Expression,
         CypherReturnScalarAst::PropertyAbs(_)
         | CypherReturnScalarAst::PropertyNumericRound(_)
         | CypherReturnScalarAst::PropertyNumericSign(_) => {
@@ -681,7 +679,7 @@ pub(crate) fn classify_return_scalar_ast_family(
         CypherReturnScalarAst::PropertyListIndex(_)
         | CypherReturnScalarAst::PropertyListSlice(_)
         | CypherReturnScalarAst::PropertyListContains(_)
-        | CypherReturnScalarAst::PropertyListPredicate(_)
+        | CypherReturnScalarAst::Expression(_)
         | CypherReturnScalarAst::PropertyListElement(_)
         | CypherReturnScalarAst::PropertyListTail(_) => CypherReturnScalarAstFamily::List,
         CypherReturnScalarAst::PropertyAbs(_)
@@ -724,9 +722,7 @@ pub(crate) fn scalar_return_ast(target: &CypherReturnTarget) -> CypherReturnScal
         CypherReturnTarget::PropertyListContains(contains) => {
             CypherReturnScalarAst::PropertyListContains(contains)
         }
-        CypherReturnTarget::PropertyListPredicate(predicate) => {
-            CypherReturnScalarAst::PropertyListPredicate(predicate)
-        }
+        CypherReturnTarget::Expression(predicate) => CypherReturnScalarAst::Expression(predicate),
         CypherReturnTarget::PropertyListElement(element) => {
             CypherReturnScalarAst::PropertyListElement(element)
         }
@@ -1197,26 +1193,32 @@ pub(crate) fn distinct_return_values(values: Vec<Value>) -> Result<Vec<Value>> {
     Ok(distinct)
 }
 
-pub(crate) fn sum_return_values(values: &[Value]) -> Result<Value> {
-    let mut int_sum = 0i64;
-    let mut float_sum = 0.0f64;
-    let mut saw_float = false;
-    for value in values {
+/// The numeric SUM contract as a left fold, so a caller can add values as it
+/// produces them instead of collecting them first.
+#[derive(Default)]
+pub(crate) struct SumAccumulator {
+    int_sum: i64,
+    float_sum: f64,
+    saw_float: bool,
+}
+
+impl SumAccumulator {
+    pub(crate) fn add(&mut self, value: &Value) -> Result<()> {
         match value {
-            Value::Int(value) if !saw_float => {
-                int_sum = int_sum.checked_add(*value).ok_or_else(|| {
+            Value::Int(value) if !self.saw_float => {
+                self.int_sum = self.int_sum.checked_add(*value).ok_or_else(|| {
                     GrustError::CypherExecution("RETURN SUM integer overflow".to_string())
                 })?;
             }
             Value::Int(value) => {
-                float_sum += *value as f64;
+                self.float_sum += *value as f64;
             }
             Value::Float(value) => {
-                if !saw_float {
-                    float_sum = int_sum as f64;
-                    saw_float = true;
+                if !self.saw_float {
+                    self.float_sum = self.int_sum as f64;
+                    self.saw_float = true;
                 }
-                float_sum += *value;
+                self.float_sum += *value;
             }
             other => {
                 return Err(cypher_unsupported_cardinality(format!(
@@ -1225,23 +1227,38 @@ pub(crate) fn sum_return_values(values: &[Value]) -> Result<Value> {
                 )));
             }
         }
+        Ok(())
     }
-    if saw_float {
-        Ok(Value::Float(float_sum))
-    } else {
-        Ok(Value::Int(int_sum))
+
+    pub(crate) fn finish(self) -> Value {
+        if self.saw_float {
+            Value::Float(self.float_sum)
+        } else {
+            Value::Int(self.int_sum)
+        }
     }
 }
 
-pub(crate) fn avg_return_values(values: &[Value]) -> Result<Value> {
-    if values.is_empty() {
-        return Ok(Value::Null);
-    }
-    let mut sum = 0.0f64;
+pub(crate) fn sum_return_values(values: &[Value]) -> Result<Value> {
+    let mut sum = SumAccumulator::default();
     for value in values {
+        sum.add(value)?;
+    }
+    Ok(sum.finish())
+}
+
+/// The numeric AVG contract as a left fold; no values yields NULL.
+#[derive(Default)]
+pub(crate) struct AvgAccumulator {
+    sum: f64,
+    count: usize,
+}
+
+impl AvgAccumulator {
+    pub(crate) fn add(&mut self, value: &Value) -> Result<()> {
         match value {
-            Value::Int(value) => sum += *value as f64,
-            Value::Float(value) => sum += *value,
+            Value::Int(value) => self.sum += *value as f64,
+            Value::Float(value) => self.sum += *value,
             other => {
                 return Err(cypher_unsupported_cardinality(format!(
                     "RETURN AVG only supports numeric values, got {:?}",
@@ -1249,8 +1266,25 @@ pub(crate) fn avg_return_values(values: &[Value]) -> Result<Value> {
                 )));
             }
         }
+        self.count += 1;
+        Ok(())
     }
-    Ok(Value::Float(sum / values.len() as f64))
+
+    pub(crate) fn finish(self) -> Value {
+        if self.count == 0 {
+            Value::Null
+        } else {
+            Value::Float(self.sum / self.count as f64)
+        }
+    }
+}
+
+pub(crate) fn avg_return_values(values: &[Value]) -> Result<Value> {
+    let mut avg = AvgAccumulator::default();
+    for value in values {
+        avg.add(value)?;
+    }
+    Ok(avg.finish())
 }
 
 pub(crate) fn count_distinct_elements(

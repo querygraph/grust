@@ -51,7 +51,15 @@ mod procedure_plan;
 pub use procedure_plan::{
     ProcedureCallPlan, ProcedureExecutionTarget, ProcedureQueryPlan, ProcedureRowExecution,
 };
+mod binding_forms;
+#[cfg(test)]
+mod binding_forms_resource_tests;
+mod expression_scope;
+mod string_functions;
+mod write_expression;
+pub(crate) use write_expression::evaluate_write_expression;
 mod indexing;
+use expression_scope::ExpressionScope;
 mod procedures;
 mod streaming;
 mod streaming_aggregate;
@@ -73,15 +81,62 @@ pub use procedures::run_read_query_with_registry;
 /// immutable shared `Node`/`Edge`; `WITH`/`UNWIND` bind computed `Value`s.
 /// Candidate copies share graph elements; projection still produces owned values.
 #[derive(Debug)]
-enum Bound {
-    Node(Arc<Node>),
+enum Bound<'g> {
+    Node(NodeBinding<'g>),
     // Graph-free pushed bindings have no slot; graph MATCH bindings do.
-    Edge(Arc<Edge>, Option<usize>),
+    Edge(EdgeBinding<'g>, Option<usize>),
     Value(Value),
 }
 
-/// One candidate solution: pattern variable -> bound graph element.
-type Row = BTreeMap<String, Bound>;
+/// A bound graph element. An owned graph outlives every row of the query
+/// reading it, so its elements are bound by reference; an element built on
+/// demand is shared instead. Either way binding charges the logical copy and
+/// never clones a property map.
+#[derive(Debug)]
+enum Element<'g, T> {
+    Borrowed(&'g T),
+    Shared(Arc<T>),
+}
+
+type NodeBinding<'g> = Element<'g, Node>;
+type EdgeBinding<'g> = Element<'g, Edge>;
+
+impl<T> Clone for Element<'_, T> {
+    fn clone(&self) -> Self {
+        match self {
+            Self::Borrowed(element) => Self::Borrowed(element),
+            Self::Shared(element) => Self::Shared(Arc::clone(element)),
+        }
+    }
+}
+
+impl<T> std::ops::Deref for Element<'_, T> {
+    type Target = T;
+    fn deref(&self) -> &T {
+        match self {
+            Self::Borrowed(element) => element,
+            Self::Shared(element) => element,
+        }
+    }
+}
+
+impl<T> From<T> for Element<'_, T> {
+    fn from(element: T) -> Self {
+        Self::Shared(Arc::new(element))
+    }
+}
+
+impl<'g, T: Clone> From<Cow<'g, T>> for Element<'g, T> {
+    fn from(element: Cow<'g, T>) -> Self {
+        match element {
+            Cow::Borrowed(element) => Self::Borrowed(element),
+            Cow::Owned(element) => element.into(),
+        }
+    }
+}
+
+mod row;
+use row::Row;
 
 /// The graph a read executes over: an owned [`Graph`], or a typed index whose
 /// source may build nodes and edges on demand instead of holding a copy of
@@ -154,7 +209,7 @@ fn row_copy_bytes(row: &Row) -> usize {
         })
 }
 
-fn clone_bound_unaccounted(bound: &Bound) -> Bound {
+fn clone_bound_unaccounted<'g>(bound: &Bound<'g>) -> Bound<'g> {
     match bound {
         Bound::Node(node) => Bound::Node(node.clone()),
         Bound::Edge(edge, slot) => Bound::Edge(edge.clone(), *slot),
@@ -162,12 +217,12 @@ fn clone_bound_unaccounted(bound: &Bound) -> Bound {
     }
 }
 
-fn clone_bound(bound: &Bound, context: &str) -> Result<Bound> {
+fn clone_bound<'g>(bound: &Bound<'g>, context: &str) -> Result<Bound<'g>> {
     charge_intermediate_copy(context, || bound_copy_bytes(bound))?;
     Ok(clone_bound_unaccounted(bound))
 }
 
-fn clone_row(row: &Row, context: &str) -> Result<Row> {
+fn clone_row<'g>(row: &Row<'g>, context: &str) -> Result<Row<'g>> {
     charge_intermediate_copy(context, || row_copy_bytes(row))?;
     Ok(row
         .iter()
@@ -199,17 +254,34 @@ fn clone_json_value(value: &serde_json::Value, context: &str) -> Result<Value> {
     Ok(Value::from_json(value.clone()))
 }
 
-fn clone_node(node: &Node, context: &str) -> Result<Node> {
+/// Bind an element that is already built. The logical copy is charged in full,
+/// exactly as a deep copy would be; only the storage is shared.
+fn share_node<'g>(node: &NodeBinding<'g>, context: &str) -> Result<NodeBinding<'g>> {
     charge_intermediate_copy(context, || read_budget::node_copy_bytes(node))?;
     Ok(node.clone())
 }
 
-fn clone_edge(edge: &Edge, context: &str) -> Result<Edge> {
+/// Bind a looked-up node, charged as a full copy: by reference when the owned
+/// graph holds it, otherwise by moving the node the index built.
+fn bind_node<'g>(node: Cow<'g, Node>, context: &str) -> Result<NodeBinding<'g>> {
+    charge_intermediate_copy(context, || read_budget::node_copy_bytes(&node))?;
+    Ok(node.into())
+}
+
+/// Bind a candidate relationship, charged as a full copy. One the index built
+/// is moved into the binding rather than copied again.
+fn bind_edge<'g>(edge: Cow<'g, Edge>, context: &str) -> Result<EdgeBinding<'g>> {
+    charge_intermediate_copy(context, || read_budget::edge_copy_bytes(&edge))?;
+    Ok(edge.into())
+}
+
+fn share_edge<'g>(edge: &EdgeBinding<'g>, context: &str) -> Result<EdgeBinding<'g>> {
     charge_intermediate_copy(context, || read_budget::edge_copy_bytes(edge))?;
     Ok(edge.clone())
 }
 
-fn clone_nodes(nodes: &[Node], context: &str) -> Result<Vec<Node>> {
+/// Copy a list of bound nodes: charged as full copies, stored shared.
+fn share_nodes<'g>(nodes: &[NodeBinding<'g>], context: &str) -> Result<Vec<NodeBinding<'g>>> {
     charge_intermediate_copy(context, || {
         nodes.iter().fold(
             nodes.len().saturating_mul(std::mem::size_of::<Node>()),
@@ -219,7 +291,8 @@ fn clone_nodes(nodes: &[Node], context: &str) -> Result<Vec<Node>> {
     Ok(nodes.to_vec())
 }
 
-fn clone_edges(edges: &[Edge], context: &str) -> Result<Vec<Edge>> {
+/// Copy a list of bound relationships: charged as full copies, stored shared.
+fn share_edges<'g>(edges: &[EdgeBinding<'g>], context: &str) -> Result<Vec<EdgeBinding<'g>>> {
     charge_intermediate_copy(context, || {
         edges.iter().fold(
             edges.len().saturating_mul(std::mem::size_of::<Edge>()),
@@ -227,6 +300,12 @@ fn clone_edges(edges: &[Edge], context: &str) -> Result<Vec<Edge>> {
         )
     })?;
     Ok(edges.to_vec())
+}
+
+/// Bind a node of the owned graph by reference, charged as a full copy.
+fn borrow_node<'g>(node: &'g Node, context: &str) -> Result<NodeBinding<'g>> {
+    charge_intermediate_copy(context, || read_budget::node_copy_bytes(node))?;
+    Ok(NodeBinding::Borrowed(node))
 }
 
 /// Parse, analyze, and execute a read-only query against an in-memory graph.
@@ -385,14 +464,14 @@ fn execute_single(
 /// Apply one non-`RETURN` clause to the binding-row stream. Returns the new
 /// rows plus, for a `CALL <proc>`, the procedure's output columns (so a
 /// standalone trailing `CALL` can shape the result table).
-fn advance_rows(
-    graph: GraphRef<'_>,
+fn advance_rows<'g>(
+    graph: GraphRef<'g>,
     index: &NodeIndex,
     clause: &Clause,
-    rows: Vec<Row>,
+    rows: Vec<Row<'g>>,
     params: &CypherParameters,
     procedures: &ProcedureExecution,
-) -> Result<(Vec<Row>, Option<Vec<String>>)> {
+) -> Result<(Vec<Row<'g>>, Option<Vec<String>>)> {
     match clause {
         Clause::Use(_) => Ok((rows, None)),
         Clause::Match(m) if !m.optional => {
@@ -426,9 +505,9 @@ fn advance_rows(
                 if matched.is_empty() {
                     let mut padded = row;
                     for var in &new_vars {
-                        padded
-                            .entry(var.clone())
-                            .or_insert(Bound::Value(Value::Null));
+                        if !padded.contains_key(var) {
+                            padded.insert(var.clone(), Bound::Value(Value::Null));
+                        }
                     }
                     read_budget::charge_candidate_work(1, "producing OPTIONAL MATCH rows")?;
                     out.push(padded);
@@ -465,13 +544,13 @@ fn advance_rows(
 /// `CALL { … }`: execute the inline subquery once per incoming row (the outer
 /// bindings are visible inside), joining its returned columns onto the row.
 /// A row whose subquery returns no rows is dropped.
-fn execute_subquery_clause(
-    graph: GraphRef<'_>,
+fn execute_subquery_clause<'g>(
+    graph: GraphRef<'g>,
     subquery: &SubqueryClause,
-    rows: Vec<Row>,
+    rows: Vec<Row<'g>>,
     params: &CypherParameters,
     procedures: &ProcedureExecution,
-) -> Result<Vec<Row>> {
+) -> Result<Vec<Row<'g>>> {
     let mut out = Vec::new();
     for row in rows {
         let (columns, inner_rows) = run_subquery(graph, &subquery.query, &row, params, procedures)?;
@@ -500,13 +579,13 @@ fn execute_subquery_clause(
 
 /// Run a subquery (possibly `UNION`-composed) seeded with the outer row's
 /// bindings. Returns the output column names and one binding row per result.
-fn run_subquery(
-    graph: GraphRef<'_>,
+fn run_subquery<'g>(
+    graph: GraphRef<'g>,
     query: &Query,
-    seed: &Row,
+    seed: &Row<'g>,
     params: &CypherParameters,
     procedures: &ProcedureExecution,
-) -> Result<(Vec<String>, Vec<Row>)> {
+) -> Result<(Vec<String>, Vec<Row<'g>>)> {
     let mut columns: Option<Vec<String>> = None;
     let mut all: Vec<Row> = Vec::new();
     let mut distinct = false;
@@ -547,13 +626,13 @@ fn run_subquery(
     Ok((columns, all))
 }
 
-fn run_subquery_single(
-    graph: GraphRef<'_>,
+fn run_subquery_single<'g>(
+    graph: GraphRef<'g>,
     query: &SingleQuery,
-    seed: &Row,
+    seed: &Row<'g>,
     params: &CypherParameters,
     procedures: &ProcedureExecution,
-) -> Result<(Vec<String>, Vec<Row>)> {
+) -> Result<(Vec<String>, Vec<Row<'g>>)> {
     let requirements = query_adjacency_requirements(query);
     read_budget::charge_candidate_work(graph.node_count(), "building a subquery node index")?;
     if requirements.outgoing || requirements.incoming {
@@ -578,11 +657,11 @@ fn run_subquery_single(
 /// Project a subquery's terminal `RETURN` to named binding rows (WITH-style:
 /// bare variables keep their node/edge binding; computed items bind values
 /// under their alias or derived column name).
-fn project_subquery_return(
+fn project_subquery_return<'g>(
     projection: &Projection,
-    rows: Vec<Row>,
+    rows: Vec<Row<'g>>,
     params: &CypherParameters,
-) -> Result<(Vec<String>, Vec<Row>)> {
+) -> Result<(Vec<String>, Vec<Row<'g>>)> {
     if projection.star {
         return Err(unsupported_gql_feature(
             GqlFeature::Subquery,
@@ -651,7 +730,11 @@ fn yield_projection(
 
 /// Keep rows whose `where_expr` evaluates to TRUE (NULL/FALSE drop), surfacing
 /// evaluation errors instead of silently dropping rows.
-fn filter_rows(rows: Vec<Row>, where_expr: &Expr, params: &CypherParameters) -> Result<Vec<Row>> {
+fn filter_rows<'g>(
+    rows: Vec<Row<'g>>,
+    where_expr: &Expr,
+    params: &CypherParameters,
+) -> Result<Vec<Row<'g>>> {
     let mut kept = Vec::with_capacity(rows.len());
     for row in rows {
         read_budget::charge_candidate_work(1, "filtering candidate rows")?;
@@ -664,11 +747,11 @@ fn filter_rows(rows: Vec<Row>, where_expr: &Expr, params: &CypherParameters) -> 
 
 /// `UNWIND list AS x`: expand each row into one row per list element. A NULL or
 /// empty list yields no rows for that input row.
-fn unwind_rows(
-    rows: Vec<Row>,
+fn unwind_rows<'g>(
+    rows: Vec<Row<'g>>,
     unwind: &UnwindClause,
     params: &CypherParameters,
-) -> Result<Vec<Row>> {
+) -> Result<Vec<Row<'g>>> {
     let mut out = Vec::new();
     for row in rows {
         // A list literal is evaluated element-wise (round-tripping a list
@@ -690,9 +773,25 @@ fn unwind_rows(
                 other => return Err(gql_type(format!("UNWIND expects a list, got {other:?}"))),
             }
         };
-        for element in elements {
+        // Every element is charged a full row copy; the last one takes the
+        // row itself instead of a copy of it.
+        let mut row = Some(row);
+        let last = elements.len().saturating_sub(1);
+        for (position, element) in elements.into_iter().enumerate() {
             read_budget::charge_candidate_work(1, "expanding UNWIND rows")?;
-            let mut next = clone_row(&row, "expanding UNWIND rows")?;
+            let mut next = if position == last {
+                let row = row
+                    .take()
+                    .expect("the row is taken once, by the last element");
+                charge_intermediate_copy("expanding UNWIND rows", || row_copy_bytes(&row))?;
+                row
+            } else {
+                clone_row(
+                    row.as_ref()
+                        .expect("the row outlives every earlier element"),
+                    "expanding UNWIND rows",
+                )?
+            };
             next.insert(unwind.alias.clone(), Bound::Value(element));
             out.push(next);
         }
@@ -703,11 +802,11 @@ fn unwind_rows(
 /// `WITH` horizon: project the binding-row stream into a new binding-row stream
 /// (bare variables keep their node/edge/value binding; computed items bind a
 /// value), then apply DISTINCT / ORDER BY / SKIP / LIMIT.
-fn project_to_bindings(
+fn project_to_bindings<'g>(
     projection: &Projection,
-    rows: Vec<Row>,
+    rows: Vec<Row<'g>>,
     params: &CypherParameters,
-) -> Result<Vec<Row>> {
+) -> Result<Vec<Row<'g>>> {
     let has_aggregate = projection.items.iter().any(|i| expr_has_aggregate(&i.expr));
 
     let mut out: Vec<Row> = if has_aggregate {
@@ -763,11 +862,11 @@ fn project_to_bindings(
 /// The (name, binding) a `WITH`/`RETURN` item contributes. A bare variable keeps
 /// its existing binding (so a node stays a node downstream); anything else binds
 /// a computed value under its alias.
-fn binding_for_item(
+fn binding_for_item<'g>(
     item: &ReturnItem,
-    row: &Row,
+    row: &Row<'g>,
     params: &CypherParameters,
-) -> Result<(String, Bound)> {
+) -> Result<(String, Bound<'g>)> {
     match &item.expr {
         Expr::Variable(v) => {
             let bound = match row.get(v) {
@@ -785,11 +884,11 @@ fn binding_for_item(
     }
 }
 
-fn grouped_bindings(
+fn grouped_bindings<'g>(
     items: &[ReturnItem],
-    rows: &[Row],
+    rows: &[Row<'g>],
     params: &CypherParameters,
-) -> Result<Vec<Row>> {
+) -> Result<Vec<Row<'g>>> {
     // Group by the non-aggregate items; carry bare-variable keys as their
     // original binding, computed keys/aggregates as values.
     let key_items: Vec<&ReturnItem> = items
@@ -996,7 +1095,7 @@ pub(crate) fn project_bindings(
     project(GraphRef::Owned(&empty), &rows, projection, params)
 }
 
-fn binding_rows_to_rows(binding_rows: Vec<Vec<(String, PushedBinding)>>) -> Vec<Row> {
+fn binding_rows_to_rows<'g>(binding_rows: Vec<Vec<(String, PushedBinding)>>) -> Vec<Row<'g>> {
     binding_rows
         .into_iter()
         .map(|bindings| {
@@ -1009,7 +1108,7 @@ fn binding_rows_to_rows(binding_rows: Vec<Vec<(String, PushedBinding)>>) -> Vec<
         .collect()
 }
 
-fn bound_from_pushed(binding: PushedBinding) -> Bound {
+fn bound_from_pushed<'g>(binding: PushedBinding) -> Bound<'g> {
     match binding {
         PushedBinding::Node(node) => Bound::Node(node.into()),
         PushedBinding::Edge(edge) => Bound::Edge(edge.into(), None),
@@ -1119,11 +1218,11 @@ fn standalone_call_table(rows: &[Row], out_cols: Vec<String>) -> Result<CypherRe
 /// Run a subquery's inner clause tail (`WITH`/`UNWIND` steps ending in the
 /// subquery `RETURN`) over seeded rows — the reference's inner pipeline core,
 /// shared with subquery pushdown.
-fn run_subquery_tail(
-    mut rows: Vec<Row>,
+fn run_subquery_tail<'g>(
+    mut rows: Vec<Row<'g>>,
     clauses: &[Clause],
     params: &CypherParameters,
-) -> Result<(Vec<String>, Vec<Row>)> {
+) -> Result<(Vec<String>, Vec<Row<'g>>)> {
     for clause in clauses {
         match clause {
             Clause::Return(r) => return project_subquery_return(&r.projection, rows, params),
@@ -1335,13 +1434,13 @@ impl NodeIndex {
     /// still visited, so the caller's per-slot checks charge and fail exactly
     /// as over the owned graph; otherwise nothing can observe the rejected
     /// slots and only the touching edges are visited.
-    fn edges_of<'a>(
-        &'a self,
-        graph: GraphRef<'a>,
+    fn edges_of<'i, 'g>(
+        &'i self,
+        graph: GraphRef<'g>,
         node: &Node,
         direction: ast::Direction,
         exact_scan: bool,
-    ) -> Result<EdgeCandidates<'a>> {
+    ) -> Result<EdgeCandidates<'i, 'g>> {
         let index = match graph {
             GraphRef::Owned(graph) => {
                 return Ok(match self.indexed_edges(graph, node, direction) {
@@ -1399,12 +1498,12 @@ impl NodeIndex {
         })
     }
 
-    fn indexed_edges<'a>(
-        &'a self,
-        graph: &'a Graph,
+    fn indexed_edges<'i, 'g>(
+        &'i self,
+        graph: &'g Graph,
         node: &Node,
         direction: ast::Direction,
-    ) -> Option<IndexedEdges<'a>> {
+    ) -> Option<IndexedEdges<'i, 'g>> {
         let &vertex = self.by_id.get(node.id.as_str())?;
         let (first, second, skip_second_self_loops) = match direction {
             ast::Direction::Outgoing => (
@@ -1461,15 +1560,15 @@ fn build_compressed_adjacency(
     }
 }
 
-struct IndexedEdges<'a> {
-    graph: &'a Graph,
-    first: std::slice::Iter<'a, usize>,
-    second: Option<std::slice::Iter<'a, usize>>,
+struct IndexedEdges<'i, 'g> {
+    graph: &'g Graph,
+    first: std::slice::Iter<'i, usize>,
+    second: Option<std::slice::Iter<'i, usize>>,
     skip_second_self_loops: bool,
 }
 
-impl<'a> Iterator for IndexedEdges<'a> {
-    type Item = (usize, &'a Edge);
+impl<'g> Iterator for IndexedEdges<'_, 'g> {
+    type Item = (usize, &'g Edge);
 
     fn next(&mut self) -> Option<Self::Item> {
         if let Some(index) = self.first.next() {
@@ -1508,22 +1607,22 @@ fn typed_edge_slots(index: &TypedGraphIndex, vertex: u32, reverse: bool) -> Vec<
 /// time from a typed index's source. A `None` edge is a slot visited only for
 /// the checks the owned scan makes before rejecting an edge that does not
 /// touch the current node.
-enum EdgeCandidates<'a> {
-    Adjacent(IndexedEdges<'a>),
-    Scan(std::iter::Enumerate<std::slice::Iter<'a, Edge>>),
+enum EdgeCandidates<'i, 'g> {
+    Adjacent(IndexedEdges<'i, 'g>),
+    Scan(std::iter::Enumerate<std::slice::Iter<'g, Edge>>),
     /// Only the listed slots, each built.
-    Slots(&'a TypedGraphIndex, std::vec::IntoIter<u32>),
+    Slots(&'g TypedGraphIndex, std::vec::IntoIter<u32>),
     /// Every slot in edge-vector order; only the sorted `incident` ones built.
     ScanOrder {
-        index: &'a TypedGraphIndex,
+        index: &'g TypedGraphIndex,
         incident: std::iter::Peekable<std::vec::IntoIter<u32>>,
         next: u32,
         end: u32,
     },
 }
 
-impl<'a> EdgeCandidates<'a> {
-    fn scan_order(index: &'a TypedGraphIndex, incident: Vec<u32>) -> Self {
+impl<'g> EdgeCandidates<'_, 'g> {
+    fn scan_order(index: &'g TypedGraphIndex, incident: Vec<u32>) -> Self {
         Self::ScanOrder {
             index,
             incident: incident.into_iter().peekable(),
@@ -1534,8 +1633,8 @@ impl<'a> EdgeCandidates<'a> {
     }
 }
 
-impl<'a> Iterator for EdgeCandidates<'a> {
-    type Item = (usize, Option<Cow<'a, Edge>>);
+impl<'g> Iterator for EdgeCandidates<'_, 'g> {
+    type Item = (usize, Option<Cow<'g, Edge>>);
 
     fn next(&mut self) -> Option<Self::Item> {
         match self {
@@ -1627,13 +1726,13 @@ fn pattern_variables(patterns: &[PathPattern]) -> Vec<String> {
     vars
 }
 
-fn expand_pattern(
-    graph: GraphRef<'_>,
+fn expand_pattern<'g>(
+    graph: GraphRef<'g>,
     index: &NodeIndex,
     pattern: &PathPattern,
-    base_rows: Vec<MatchRow>,
+    base_rows: Vec<MatchRow<'g>>,
     params: &CypherParameters,
-) -> Result<Vec<MatchRow>> {
+) -> Result<Vec<MatchRow<'g>>> {
     if let Some(kind) = pattern.shortest {
         return expand_shortest(graph, index, pattern, kind, base_rows, params);
     }
@@ -1657,11 +1756,11 @@ fn expand_pattern(
             if let Some(var) = &pattern.start.variable {
                 next_row.insert(
                     var.clone(),
-                    Bound::Node(clone_node(&start, "binding MATCH start nodes")?.into()),
+                    Bound::Node(share_node(&start, "binding MATCH start nodes")?),
                 );
             }
             let acc_nodes = if path_var.is_some() {
-                vec![clone_node(&start, "starting path-node accumulation")?]
+                vec![share_node(&start, "starting path-node accumulation")?]
             } else {
                 Vec::new()
             };
@@ -1690,14 +1789,14 @@ fn expand_pattern(
 /// existing bounded var-length enumeration), so the first hit per endpoint is
 /// shortest by construction; ties are kept for `All`, first-found (in
 /// deterministic edge order) for `Single`.
-fn expand_shortest(
-    graph: GraphRef<'_>,
+fn expand_shortest<'g>(
+    graph: GraphRef<'g>,
     index: &NodeIndex,
     pattern: &PathPattern,
     kind: ShortestKind,
-    base_rows: Vec<MatchRow>,
+    base_rows: Vec<MatchRow<'g>>,
     params: &CypherParameters,
-) -> Result<Vec<MatchRow>> {
+) -> Result<Vec<MatchRow<'g>>> {
     let [segment] = pattern.segments.as_slice() else {
         return Err(unsupported_gql_feature(
             GqlFeature::ShortestPath,
@@ -1729,7 +1828,7 @@ fn expand_shortest(
                 if length > cap {
                     break;
                 }
-                let mut paths: Vec<(Node, EdgeTrail)> = Vec::new();
+                let mut paths: Vec<(NodeBinding<'g>, EdgeTrail<'g>)> = Vec::new();
                 let mut visited = std::collections::HashSet::new();
                 visited.insert(start.id.as_str().to_string());
                 collect_var_length_paths(
@@ -1771,6 +1870,7 @@ fn expand_shortest(
                 let Some(end_node) = index.get(graph, &end_id) else {
                     continue;
                 };
+                let end_node = NodeBinding::from(end_node);
                 let picked: Vec<&EdgeTrail> = match kind {
                     ShortestKind::Single => edge_lists.iter().take(1).collect(),
                     ShortestKind::All => edge_lists.iter().collect(),
@@ -1788,17 +1888,13 @@ fn expand_shortest(
                     if let Some(var) = &pattern.start.variable {
                         next_row.insert(
                             var.clone(),
-                            Bound::Node(
-                                clone_node(&start, "binding shortest-path start nodes")?.into(),
-                            ),
+                            Bound::Node(share_node(&start, "binding shortest-path start nodes")?),
                         );
                     }
                     if let Some(var) = &segment.node.variable {
                         next_row.insert(
                             var.clone(),
-                            Bound::Node(
-                                clone_node(&end_node, "binding shortest-path end nodes")?.into(),
-                            ),
+                            Bound::Node(share_node(&end_node, "binding shortest-path end nodes")?),
                         );
                     }
                     if let Some(var) = &rel.variable {
@@ -1828,30 +1924,32 @@ fn expand_shortest(
 }
 
 /// Reconstruct the node sequence of a path from its start node and edge list.
-fn walk_path_nodes(
-    graph: GraphRef<'_>,
+fn walk_path_nodes<'g>(
+    graph: GraphRef<'g>,
     index: &NodeIndex,
-    start: &Node,
-    edges: &[Edge],
+    start: &NodeBinding<'g>,
+    edges: &[EdgeBinding<'g>],
     direction: ast::Direction,
-) -> Result<Vec<Node>> {
-    let mut nodes = vec![clone_node(start, "reconstructing shortest-path nodes")?];
-    let mut current = clone_node(start, "tracking shortest-path endpoints")?;
+) -> Result<Vec<NodeBinding<'g>>> {
+    // Two logical copies per node, as before: one kept, one tracked.
+    let mut nodes = vec![share_node(start, "reconstructing shortest-path nodes")?];
+    let mut current = share_node(start, "tracking shortest-path endpoints")?;
     for edge in edges {
         let next_id = edge_other_endpoint(edge, &current, direction)
             .ok_or_else(|| gql_execution("shortest path edge does not connect to the path"))?;
         let next = index
             .get(graph, next_id)
             .ok_or_else(|| gql_execution("shortest path endpoint node not found"))?;
-        nodes.push(clone_node(&next, "reconstructing shortest-path nodes")?);
-        current = clone_node(&next, "tracking shortest-path endpoints")?;
+        let next = bind_node(next, "reconstructing shortest-path nodes")?;
+        current = share_node(&next, "tracking shortest-path endpoints")?;
+        nodes.push(next);
     }
     Ok(nodes)
 }
 
 /// A bound first-class path value. `Value::to_json` preserves the historical
 /// `{ "nodes": [...], "relationships": [...] }` serialization shape.
-fn path_value(nodes: &[Node], edges: &[Edge]) -> Result<Value> {
+fn path_value(nodes: &[NodeBinding<'_>], edges: &[EdgeBinding<'_>]) -> Result<Value> {
     charge_intermediate_copy("materializing path values", || {
         nodes
             .iter()
@@ -1862,22 +1960,25 @@ fn path_value(nodes: &[Node], edges: &[Edge]) -> Result<Value> {
                 bytes.saturating_add(read_budget::edge_copy_bytes(edge))
             }))
     })?;
-    Ok(Value::Path(PathValue::from_graph_parts(nodes, edges)))
+    Ok(Value::Path(PathValue::from_graph_elements(
+        nodes.iter().map(|node| &**node),
+        edges.iter().map(|edge| &**edge),
+    )))
 }
 
 #[allow(clippy::too_many_arguments)]
-fn expand_segments(
-    graph: GraphRef<'_>,
+fn expand_segments<'g>(
+    graph: GraphRef<'g>,
     index: &NodeIndex,
     segments: &[PathSegment],
     idx: usize,
-    current: &Node,
-    row: MatchRow,
+    current: &NodeBinding<'g>,
+    row: MatchRow<'g>,
     params: &CypherParameters,
     path_var: Option<&str>,
-    acc_nodes: Vec<Node>,
-    acc_edges: Vec<Edge>,
-    out: &mut Vec<MatchRow>,
+    acc_nodes: Vec<NodeBinding<'g>>,
+    acc_edges: Vec<EdgeBinding<'g>>,
+    out: &mut Vec<MatchRow<'g>>,
 ) -> Result<()> {
     if idx == segments.len() {
         let mut row = row;
@@ -1901,7 +2002,7 @@ fn expand_segments(
         match_scope::require_unbound_trail(&row, rel.variable.as_deref())?;
         let min = range.min.unwrap_or(1) as usize;
         let max = range.max.map(|m| m as usize);
-        let mut paths: Vec<(Node, EdgeTrail)> = Vec::new();
+        let mut paths: Vec<(NodeBinding<'g>, EdgeTrail<'g>)> = Vec::new();
         let mut visited = std::collections::HashSet::new();
         visited.insert(current.id.as_str().to_string());
         collect_var_length_paths(
@@ -1946,9 +2047,10 @@ fn expand_segments(
             if let Some(var) = &segment.node.variable {
                 next_row.insert(
                     var.clone(),
-                    Bound::Node(
-                        clone_node(&end_node, "binding variable-length path endpoints")?.into(),
-                    ),
+                    Bound::Node(share_node(
+                        &end_node,
+                        "binding variable-length path endpoints",
+                    )?),
                 );
             }
             // path_var is guaranteed None here (rejected with variable-length).
@@ -1961,8 +2063,8 @@ fn expand_segments(
                 next_row,
                 params,
                 path_var,
-                clone_nodes(&acc_nodes, "carrying path-node accumulators")?,
-                clone_edges(&acc_edges, "carrying path-edge accumulators")?,
+                share_nodes(&acc_nodes, "carrying path-node accumulators")?,
+                share_edges(&acc_edges, "carrying path-edge accumulators")?,
                 out,
             )?;
         }
@@ -1984,19 +2086,19 @@ fn expand_segments(
 }
 
 #[allow(clippy::too_many_arguments)]
-fn expand_fixed_edges<'a>(
-    edges: impl Iterator<Item = (usize, Option<Cow<'a, Edge>>)>,
-    graph: GraphRef<'_>,
+fn expand_fixed_edges<'g>(
+    edges: impl Iterator<Item = (usize, Option<Cow<'g, Edge>>)>,
+    graph: GraphRef<'g>,
     index: &NodeIndex,
     segments: &[PathSegment],
     idx: usize,
     current: &Node,
-    row: &MatchRow,
+    row: &MatchRow<'g>,
     params: &CypherParameters,
     path_var: Option<&str>,
-    acc_nodes: &[Node],
-    acc_edges: &[Edge],
-    out: &mut Vec<MatchRow>,
+    acc_nodes: &[NodeBinding<'g>],
+    acc_edges: &[EdgeBinding<'g>],
+    out: &mut Vec<MatchRow<'g>>,
 ) -> Result<()> {
     let segment = &segments[idx];
     let rel = &segment.relationship;
@@ -2034,13 +2136,17 @@ fn expand_fixed_edges<'a>(
         {
             continue;
         }
+        // Hold the matched elements once; every binding below shares them and
+        // is still charged as a full copy.
+        let next_node = NodeBinding::from(next_node);
+        let edge = EdgeBinding::from(edge);
         let mut next_row = row.copy("expanding fixed relationship segments")?;
         next_row.record(&[slot])?;
         if let Some(var) = &rel.variable {
             next_row.insert(
                 var.clone(),
                 Bound::Edge(
-                    clone_edge(&edge, "binding matched relationships")?.into(),
+                    share_edge(&edge, "binding matched relationships")?,
                     Some(slot),
                 ),
             );
@@ -2048,14 +2154,14 @@ fn expand_fixed_edges<'a>(
         if let Some(var) = &segment.node.variable {
             next_row.insert(
                 var.clone(),
-                Bound::Node(clone_node(&next_node, "binding matched nodes")?.into()),
+                Bound::Node(share_node(&next_node, "binding matched nodes")?),
             );
         }
         let (na, ea) = if path_var.is_some() {
-            let mut na = clone_nodes(acc_nodes, "carrying path-node accumulators")?;
-            na.push(clone_node(&next_node, "extending path-node accumulators")?);
-            let mut ea = clone_edges(acc_edges, "carrying path-edge accumulators")?;
-            ea.push(clone_edge(&edge, "extending path-edge accumulators")?);
+            let mut na = share_nodes(acc_nodes, "carrying path-node accumulators")?;
+            na.push(share_node(&next_node, "extending path-node accumulators")?);
+            let mut ea = share_edges(acc_edges, "carrying path-edge accumulators")?;
+            ea.push(share_edge(&edge, "extending path-edge accumulators")?);
             (na, ea)
         } else {
             (Vec::new(), Vec::new())
@@ -2081,24 +2187,24 @@ fn expand_fixed_edges<'a>(
 /// edges)` for every prefix whose length is within `[min, max]`. Nodes are not
 /// revisited within a path, so the search terminates even when `max` is open.
 #[allow(clippy::too_many_arguments)]
-fn collect_var_length_paths(
-    graph: GraphRef<'_>,
+fn collect_var_length_paths<'g>(
+    graph: GraphRef<'g>,
     index: &NodeIndex,
     rel: &RelationshipPattern,
-    node: &Node,
+    node: &NodeBinding<'g>,
     min: usize,
     max: Option<usize>,
-    edges_so_far: &mut EdgeTrail,
+    edges_so_far: &mut EdgeTrail<'g>,
     visited: &mut std::collections::HashSet<String>,
     used_slots: &[usize],
     params: &CypherParameters,
-    results: &mut Vec<(Node, EdgeTrail)>,
+    results: &mut Vec<(NodeBinding<'g>, EdgeTrail<'g>)>,
 ) -> Result<()> {
     let depth = edges_so_far.edges.len();
     if depth >= min {
         read_budget::charge_candidate_work(1, "collecting variable-length paths")?;
         results.push((
-            clone_node(node, "collecting variable-length path endpoints")?,
+            share_node(node, "collecting variable-length path endpoints")?,
             edges_so_far.copy()?,
         ));
     }
@@ -2124,19 +2230,19 @@ fn collect_var_length_paths(
 }
 
 #[allow(clippy::too_many_arguments)]
-fn collect_var_length_edges<'a>(
-    edges: impl Iterator<Item = (usize, Option<Cow<'a, Edge>>)>,
-    graph: GraphRef<'_>,
+fn collect_var_length_edges<'g>(
+    edges: impl Iterator<Item = (usize, Option<Cow<'g, Edge>>)>,
+    graph: GraphRef<'g>,
     index: &NodeIndex,
     rel: &RelationshipPattern,
-    node: &Node,
+    node: &NodeBinding<'g>,
     min: usize,
     max: Option<usize>,
-    edges_so_far: &mut EdgeTrail,
+    edges_so_far: &mut EdgeTrail<'g>,
     visited: &mut std::collections::HashSet<String>,
     used_slots: &[usize],
     params: &CypherParameters,
-    results: &mut Vec<(Node, EdgeTrail)>,
+    results: &mut Vec<(NodeBinding<'g>, EdgeTrail<'g>)>,
 ) -> Result<()> {
     for (slot, edge) in edges {
         read_budget::charge_candidate_work(1, "searching variable-length paths")?;
@@ -2162,8 +2268,9 @@ fn collect_var_length_edges<'a>(
         let Some(next_node) = index.get(graph, next_id) else {
             continue;
         };
-        edges_so_far.push(slot, &edge)?;
+        let next_node = NodeBinding::from(next_node);
         visited.insert(next_id.to_string());
+        edges_so_far.push(slot, edge)?;
         collect_var_length_paths(
             graph,
             index,
@@ -2177,7 +2284,7 @@ fn collect_var_length_edges<'a>(
             params,
             results,
         )?;
-        visited.remove(next_id);
+        visited.remove(next_node.id.as_str());
         edges_so_far.pop();
     }
     Ok(())
@@ -2208,19 +2315,19 @@ fn edge_other_endpoint<'e>(
     }
 }
 
-fn node_candidates(
-    graph: GraphRef<'_>,
+fn node_candidates<'g>(
+    graph: GraphRef<'g>,
     np: &NodePattern,
-    row: &Row,
+    row: &Row<'g>,
     params: &CypherParameters,
-) -> Result<Vec<Node>> {
+) -> Result<Vec<NodeBinding<'g>>> {
     // Already bound? Filter to the bound node if it still matches.
     if let Some(var) = &np.variable
         && let Some(Bound::Node(bound)) = row.get(var)
     {
         read_budget::charge_candidate_work(1, "checking a bound node candidate")?;
         return Ok(if node_matches(bound, np, params)? {
-            vec![clone_node(bound, "retaining bound node candidates")?]
+            vec![share_node(bound, "retaining bound node candidates")?]
         } else {
             vec![]
         });
@@ -2231,7 +2338,7 @@ fn node_candidates(
             for node in &graph.nodes {
                 read_budget::charge_candidate_work(1, "scanning node candidates")?;
                 if node_matches(node, np, params)? {
-                    out.push(clone_node(node, "collecting matched node candidates")?);
+                    out.push(borrow_node(node, "collecting matched node candidates")?);
                 }
             }
         }
@@ -2240,8 +2347,8 @@ fn node_candidates(
             for slot in 0..index.node_count() as u32 {
                 read_budget::charge_candidate_work(1, "scanning node candidates")?;
                 if node_slot_matches(index, slot, np, params)? {
-                    out.push(clone_node(
-                        &index.node(slot),
+                    out.push(bind_node(
+                        index.node(slot),
                         "collecting matched node candidates",
                     )?);
                 }
@@ -2421,10 +2528,9 @@ fn project(
 
 /// Aggregate function names recognized by the read reference executor.
 fn is_aggregate_name(name: &str) -> bool {
-    matches!(
-        name.to_ascii_lowercase().as_str(),
-        "count" | "sum" | "avg" | "min" | "max" | "collect"
-    )
+    ["count", "sum", "avg", "min", "max", "collect"]
+        .iter()
+        .any(|aggregate| name.eq_ignore_ascii_case(aggregate))
 }
 
 /// True if `expr` contains an aggregate function call anywhere.
@@ -2433,6 +2539,22 @@ pub(crate) fn expr_has_aggregate(expr: &Expr) -> bool {
         Expr::Function { name, args, .. } => {
             is_aggregate_name(name) || args.iter().any(expr_has_aggregate)
         }
+        Expr::Quantifier {
+            list, predicate, ..
+        } => expr_has_aggregate(list) || expr_has_aggregate(predicate),
+        Expr::ListComprehension {
+            list,
+            predicate,
+            projection,
+            ..
+        } => {
+            expr_has_aggregate(list)
+                || predicate.as_deref().is_some_and(expr_has_aggregate)
+                || projection.as_deref().is_some_and(expr_has_aggregate)
+        }
+        Expr::Reduce {
+            seed, list, body, ..
+        } => expr_has_aggregate(seed) || expr_has_aggregate(list) || expr_has_aggregate(body),
         Expr::Property { base, .. } => expr_has_aggregate(base),
         Expr::Index { base, index } => expr_has_aggregate(base) || expr_has_aggregate(index),
         Expr::List(items) => items.iter().any(expr_has_aggregate),
@@ -2495,7 +2617,25 @@ fn grouped_project(
     // Group rows, preserving first-seen order for deterministic output.
     let mut order: Vec<String> = Vec::new();
     let mut groups: HashMap<String, (Vec<Value>, Vec<&Row>)> = HashMap::new();
-    for row in rows {
+    // Without grouping keys every row has the key `[]`. Charge what serializing
+    // and recording that key charges, and skip building it once per row.
+    const EMPTY_KEY: &str = "[]";
+    let keyless = key_exprs.is_empty();
+    if keyless && !rows.is_empty() {
+        for position in 0..rows.len() {
+            read_budget::charge_candidate_work(1, "grouping RETURN rows")?;
+            read_budget::charge_intermediate_bytes(EMPTY_KEY.len(), "serializing GROUP BY keys")?;
+            if position == 0 {
+                read_budget::charge_intermediate_bytes(
+                    EMPTY_KEY.len(),
+                    "recording RETURN grouping order",
+                )?;
+            }
+        }
+        order.push(EMPTY_KEY.to_string());
+        groups.insert(EMPTY_KEY.to_string(), (Vec::new(), rows.iter().collect()));
+    }
+    for row in rows.iter().filter(|_| !keyless) {
         read_budget::charge_candidate_work(1, "grouping RETURN rows")?;
         let key_values: Vec<Value> = key_exprs
             .iter()
@@ -2568,6 +2708,33 @@ fn eval_aggregate(expr: &Expr, group_rows: &[&Row], params: &CypherParameters) -
         )));
     }
     let arg = &args[0];
+
+    // COUNT, SUM and AVG are left folds over the non-NULL arguments in row
+    // order, so fold them as they are evaluated instead of collecting first.
+    if !*distinct && matches!(name.as_str(), "count" | "sum" | "avg") {
+        let mut count = 0usize;
+        let mut sum = SumAccumulator::default();
+        let mut avg = AvgAccumulator::default();
+        for row in group_rows {
+            let Some(value) = non_null_return_value(eval(arg, row, params)?) else {
+                continue;
+            };
+            match name.as_str() {
+                "count" => count += 1,
+                "sum" => sum.add(&value)?,
+                _ => avg.add(&value)?,
+            }
+        }
+        let value = match name.as_str() {
+            "count" => count_value(count)?,
+            "sum" => sum.finish(),
+            _ => avg.finish(),
+        };
+        charge_intermediate_copy("materializing aggregate results", || {
+            read_budget::value_copy_bytes(&value)
+        })?;
+        return Ok(value);
+    }
 
     // Evaluate the argument per row, dropping NULLs (standard aggregate rule).
     let mut values: Vec<Value> = Vec::with_capacity(group_rows.len());
@@ -2809,8 +2976,38 @@ fn eval_usize(expr: &Expr, params: &CypherParameters, what: &str) -> Result<usiz
 }
 
 fn eval(expr: &Expr, row: &Row, params: &CypherParameters) -> Result<Value> {
+    eval_scoped(expr, &ExpressionScope::row(row), params)
+}
+
+fn eval_scoped(expr: &Expr, row: &ExpressionScope<'_>, params: &CypherParameters) -> Result<Value> {
     read_budget::checkpoint()?;
     let value = match expr {
+        Expr::Quantifier {
+            kind,
+            item,
+            list,
+            predicate,
+        } => binding_forms::quantifier(*kind, item, list, predicate, row, params),
+        Expr::ListComprehension {
+            item,
+            list,
+            predicate,
+            projection,
+        } => binding_forms::comprehension(
+            item,
+            list,
+            predicate.as_deref(),
+            projection.as_deref(),
+            row,
+            params,
+        ),
+        Expr::Reduce {
+            accumulator,
+            seed,
+            item,
+            list,
+            body,
+        } => binding_forms::reduce(accumulator, seed, item, list, body, row, params),
         Expr::Null => Ok(Value::Null),
         Expr::Boolean(b) => Ok(Value::Bool(*b)),
         Expr::Integer(n) => Ok(Value::Int(*n)),
@@ -2828,14 +3025,14 @@ fn eval(expr: &Expr, row: &Row, params: &CypherParameters) -> Result<Value> {
         Expr::List(items) => {
             let mut out = Vec::new();
             for item in items {
-                out.push(value_into_json(eval(item, row, params)?));
+                out.push(value_into_json(eval_scoped(item, row, params)?));
             }
             Ok(Value::Json(serde_json::Value::Array(out)))
         }
         Expr::Unary { op, operand } => eval_unary(*op, operand, row, params),
         Expr::Binary { op, lhs, rhs } => eval_binary(*op, lhs, rhs, row, params),
         Expr::IsNull { operand, negated } => {
-            let is_null = matches!(eval(operand, row, params)?, Value::Null);
+            let is_null = matches!(eval_scoped(operand, row, params)?, Value::Null);
             Ok(Value::Bool(is_null != *negated))
         }
         Expr::Function {
@@ -2872,7 +3069,10 @@ fn eval(expr: &Expr, row: &Row, params: &CypherParameters) -> Result<Value> {
         Expr::Map(entries) => {
             let mut out = serde_json::Map::new();
             for (key, expr) in entries {
-                out.insert(key.clone(), value_into_json(eval(expr, row, params)?));
+                out.insert(
+                    key.clone(),
+                    value_into_json(eval_scoped(expr, row, params)?),
+                );
             }
             Ok(Value::Json(serde_json::Value::Object(out)))
         }
@@ -2898,14 +3098,18 @@ fn list_elements(value: Value) -> Vec<Value> {
 }
 
 /// `range(start, end[, step])` -> inclusive integer list.
-fn eval_range(args: &[Expr], row: &Row, params: &CypherParameters) -> Result<Value> {
+fn eval_range(
+    args: &[Expr],
+    row: &ExpressionScope<'_>,
+    params: &CypherParameters,
+) -> Result<Value> {
     if args.len() < 2 || args.len() > 3 {
         return Err(gql_type(
             "range() expects 2 or 3 integer arguments".to_string(),
         ));
     }
     let int_arg = |e: &Expr| -> Result<i64> {
-        match eval(e, row, params)? {
+        match eval_scoped(e, row, params)? {
             Value::Int(n) => Ok(n),
             other => Err(gql_type(format!("range() expects integers, got {other:?}"))),
         }
@@ -2956,7 +3160,7 @@ fn eval_range(args: &[Expr], row: &Row, params: &CypherParameters) -> Result<Val
 fn eval_element_function(
     name: &str,
     arg: &Expr,
-    row: &Row,
+    row: &ExpressionScope<'_>,
     params: &CypherParameters,
 ) -> Result<Value> {
     if let Expr::Variable(v) = arg {
@@ -2987,7 +3191,7 @@ fn eval_element_function(
         }
     }
     // Fallback: evaluate to the element's JSON and read its fields.
-    match eval(arg, row, params)? {
+    match eval_scoped(arg, row, params)? {
         Value::Null => Ok(Value::Null),
         Value::Json(serde_json::Value::Object(mut map)) => match name {
             "labels" => Ok(map
@@ -3037,14 +3241,18 @@ fn path_component(value: Value, key: &str) -> Result<Value> {
 /// `graph(nodes, relationships)` -> a first-class graph value (Full39075 F7).
 /// Each argument is a (possibly empty or NULL) list of node/relationship
 /// elements, e.g. from `collect(n)`; construction deduplicates by identity.
-fn eval_graph_constructor(args: &[Expr], row: &Row, params: &CypherParameters) -> Result<Value> {
+fn eval_graph_constructor(
+    args: &[Expr],
+    row: &ExpressionScope<'_>,
+    params: &CypherParameters,
+) -> Result<Value> {
     let [nodes_expr, rels_expr] = args else {
         return Err(gql_type(
             "graph() expects exactly two arguments: (nodes, relationships)".to_string(),
         ));
     };
-    let nodes = graph_element_list(eval(nodes_expr, row, params)?, "nodes")?;
-    let relationships = graph_element_list(eval(rels_expr, row, params)?, "relationships")?;
+    let nodes = graph_element_list(eval_scoped(nodes_expr, row, params)?, "nodes")?;
+    let relationships = graph_element_list(eval_scoped(rels_expr, row, params)?, "relationships")?;
     Ok(Value::Graph(GraphValue::new(nodes, relationships)))
 }
 
@@ -3065,43 +3273,60 @@ fn eval_case(
     operand: Option<&Expr>,
     branches: &[CaseBranch],
     default: Option<&Expr>,
-    row: &Row,
+    row: &ExpressionScope<'_>,
     params: &CypherParameters,
 ) -> Result<Value> {
     match operand {
         Some(op) => {
-            let target = eval(op, row, params)?;
+            let target = eval_scoped(op, row, params)?;
             for branch in branches {
-                let candidate = eval(&branch.when, row, params)?;
+                let candidate = eval_scoped(&branch.when, row, params)?;
                 if values_equal(&target, &candidate) == Some(true) {
-                    return eval(&branch.then, row, params);
+                    return eval_scoped(&branch.then, row, params);
                 }
             }
         }
         None => {
             for branch in branches {
-                if matches!(eval(&branch.when, row, params)?, Value::Bool(true)) {
-                    return eval(&branch.then, row, params);
+                if matches!(eval_scoped(&branch.when, row, params)?, Value::Bool(true)) {
+                    return eval_scoped(&branch.then, row, params);
                 }
             }
         }
     }
     match default {
-        Some(d) => eval(d, row, params),
+        Some(d) => eval_scoped(d, row, params),
         None => Ok(Value::Null),
     }
 }
 
 /// Scalar function registry for the read reference executor. Reuses the crate's
 /// existing `restricted_*_value` evaluators rather than reimplementing them.
+/// Function names match case-insensitively on every evaluated call, so
+/// lowercase them on the stack rather than allocating a `String` per row.
 fn eval_scalar_function(
     name: &str,
     args: &[Expr],
-    row: &Row,
+    row: &ExpressionScope<'_>,
     params: &CypherParameters,
 ) -> Result<Value> {
-    let lower = name.to_ascii_lowercase();
+    let mut buffer = [0u8; 48];
+    if let Some(bytes) = buffer.get_mut(..name.len()) {
+        bytes.copy_from_slice(name.as_bytes());
+        bytes.make_ascii_lowercase();
+        let lower = std::str::from_utf8(bytes).expect("ASCII lowercasing preserves UTF-8");
+        return eval_lowercase_scalar_function(name, lower, args, row, params);
+    }
+    eval_lowercase_scalar_function(name, &name.to_ascii_lowercase(), args, row, params)
+}
 
+fn eval_lowercase_scalar_function(
+    name: &str,
+    lower: &str,
+    args: &[Expr],
+    row: &ExpressionScope<'_>,
+    params: &CypherParameters,
+) -> Result<Value> {
     // `coalesce` is variadic and null-aware; handle it before the unary helpers.
     if lower == "coalesce" {
         if args.is_empty() {
@@ -3110,7 +3335,7 @@ fn eval_scalar_function(
             ));
         }
         for arg in args {
-            let value = eval(arg, row, params)?;
+            let value = eval_scoped(arg, row, params)?;
             if !matches!(value, Value::Null) {
                 return Ok(value);
             }
@@ -3129,11 +3354,15 @@ fn eval_scalar_function(
     }
 
     // Element-introspection functions need the binding (or the element's JSON).
-    if matches!(lower.as_str(), "labels" | "type" | "id") {
+    if matches!(lower, "labels" | "type" | "id") {
         let [arg] = args else {
             return Err(gql_type(format!("{lower}() expects exactly one argument")));
         };
-        return eval_element_function(&lower, arg, row, params);
+        return eval_element_function(lower, arg, row, params);
+    }
+
+    if matches!(lower, "split" | "substring" | "left" | "right" | "replace") {
+        return string_functions::evaluate(lower, args, row, params);
     }
 
     // All remaining functions are unary.
@@ -3147,13 +3376,13 @@ fn eval_scalar_function(
             ),
         ));
     };
-    let value = eval(arg, row, params)?;
+    let value = eval_scoped(arg, row, params)?;
     // Cypher scalar functions are null-propagating.
     if matches!(value, Value::Null) {
         return Ok(Value::Null);
     }
 
-    match lower.as_str() {
+    match lower {
         "toupper" => restricted_string_transform_value(value, CypherReturnStringTransform::Upper),
         "tolower" => restricted_string_transform_value(value, CypherReturnStringTransform::Lower),
         "trim" => restricted_string_trim_value(value, CypherReturnStringTrim::Both),
@@ -3175,7 +3404,7 @@ fn eval_scalar_function(
         },
         "sqrt" => unary_float_fn(value, "sqrt", f64::sqrt),
         "exp" => unary_float_fn(value, "exp", f64::exp),
-        "log" | "ln" => unary_float_fn(value, &lower, f64::ln),
+        "log" | "ln" => unary_float_fn(value, lower, f64::ln),
         "log10" => unary_float_fn(value, "log10", f64::log10),
         "sin" => unary_float_fn(value, "sin", f64::sin),
         "cos" => unary_float_fn(value, "cos", f64::cos),
@@ -3201,6 +3430,11 @@ fn eval_scalar_function(
             .last()
             .unwrap_or(Value::Null)),
         "isempty" => restricted_is_empty_value(value),
+        "tail" => restricted_list_tail_value(value),
+        "tostringlist" => restricted_list_cast_value(value, CypherReturnListCast::String),
+        "tointegerlist" => restricted_list_cast_value(value, CypherReturnListCast::Integer),
+        "tofloatlist" => restricted_list_cast_value(value, CypherReturnListCast::Float),
+        "tobooleanlist" => restricted_list_cast_value(value, CypherReturnListCast::Boolean),
         // Temporal/decimal constructors (Unit T). `duration` takes an ISO 8601
         // string; `decimal` accepts a numeral string or coerces an int/float.
         "duration" => match value {
@@ -3239,7 +3473,12 @@ fn unary_float_fn(value: Value, name: &str, f: fn(f64) -> f64) -> Result<Value> 
     }
 }
 
-fn eval_property(base: &Expr, key: &str, row: &Row, params: &CypherParameters) -> Result<Value> {
+fn eval_property(
+    base: &Expr,
+    key: &str,
+    row: &ExpressionScope<'_>,
+    params: &CypherParameters,
+) -> Result<Value> {
     if let Expr::Variable(name) = base {
         return match row.get(name) {
             Some(Bound::Node(node)) if key == "label" => {
@@ -3266,7 +3505,7 @@ fn eval_property(base: &Expr, key: &str, row: &Row, params: &CypherParameters) -
         };
     }
     // Nested access: evaluate the base to a JSON object and index it.
-    match eval(base, row, params)? {
+    match eval_scoped(base, row, params)? {
         Value::Json(serde_json::Value::Object(mut map)) => {
             Ok(map.remove(key).map(Value::from_json).unwrap_or(Value::Null))
         }
@@ -3274,8 +3513,13 @@ fn eval_property(base: &Expr, key: &str, row: &Row, params: &CypherParameters) -
     }
 }
 
-fn eval_unary(op: UnaryOp, operand: &Expr, row: &Row, params: &CypherParameters) -> Result<Value> {
-    let value = eval(operand, row, params)?;
+fn eval_unary(
+    op: UnaryOp,
+    operand: &Expr,
+    row: &ExpressionScope<'_>,
+    params: &CypherParameters,
+) -> Result<Value> {
+    let value = eval_scoped(operand, row, params)?;
     match op {
         UnaryOp::Not => match value {
             Value::Bool(b) => Ok(Value::Bool(!b)),
@@ -3299,27 +3543,27 @@ fn eval_binary(
     op: BinaryOp,
     lhs: &Expr,
     rhs: &Expr,
-    row: &Row,
+    row: &ExpressionScope<'_>,
     params: &CypherParameters,
 ) -> Result<Value> {
     use BinaryOp::*;
     // Boolean connectives implement three-valued logic with short-circuit-free
     // evaluation (both sides are pure here).
     if matches!(op, And | Or | Xor) {
-        let a = as_bool(eval(lhs, row, params)?)?;
-        let b = as_bool(eval(rhs, row, params)?)?;
+        let a = as_bool(eval_scoped(lhs, row, params)?)?;
+        let b = as_bool(eval_scoped(rhs, row, params)?)?;
         return Ok(three_valued(op, a, b));
     }
 
     // `IN` is handled before evaluating the right side so a list literal stays a
     // list of `Value`s (round-tripping through JSON would be lossy).
     if op == In {
-        let a = eval(lhs, row, params)?;
+        let a = eval_scoped(lhs, row, params)?;
         return membership(&a, rhs, row, params);
     }
 
-    let a = eval(lhs, row, params)?;
-    let b = eval(rhs, row, params)?;
+    let a = eval_scoped(lhs, row, params)?;
+    let b = eval_scoped(rhs, row, params)?;
     match op {
         Add | Subtract | Multiply | Divide | Modulo | Power => arithmetic(op, a, b),
         Eq | Ne | Lt | Le | Gt | Ge => Ok(comparison(op, &a, &b)),
@@ -3385,7 +3629,12 @@ fn to_bool_or_null(b: Option<bool>) -> Value {
     }
 }
 
-fn membership(a: &Value, list_expr: &Expr, row: &Row, params: &CypherParameters) -> Result<Value> {
+fn membership(
+    a: &Value,
+    list_expr: &Expr,
+    row: &ExpressionScope<'_>,
+    params: &CypherParameters,
+) -> Result<Value> {
     if matches!(a, Value::Null) {
         return Ok(Value::Null);
     }
@@ -3393,9 +3642,9 @@ fn membership(a: &Value, list_expr: &Expr, row: &Row, params: &CypherParameters)
     let candidates: Vec<Value> = match list_expr {
         Expr::List(items) => items
             .iter()
-            .map(|e| eval(e, row, params))
+            .map(|e| eval_scoped(e, row, params))
             .collect::<Result<_>>()?,
-        other => match eval(other, row, params)? {
+        other => match eval_scoped(other, row, params)? {
             Value::StringArray(xs) => xs.into_iter().map(Value::String).collect(),
             Value::IntArray(xs) => xs.into_iter().map(Value::Int).collect(),
             Value::FloatArray(xs) => xs.into_iter().map(Value::Float).collect(),

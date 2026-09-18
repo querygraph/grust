@@ -28,7 +28,7 @@ historical execution records, including old branch names, test floors, and stop
 points.
 
 `Full39075` is the name of Grust's widest internal feature profile. It means the
-69 supported entries in Grust's 74-entry catalog are implemented and tested;
+72 supported entries in Grust's 77-entry catalog are implemented and tested;
 the other five are intentional strict-write rejections. It does not mean formal
 or exhaustive ISO/IEC 39075 certification, and it does not imply identical
 execution on every backend. Memory defines the reference behavior; backend

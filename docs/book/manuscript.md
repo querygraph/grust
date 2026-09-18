@@ -1681,9 +1681,31 @@ a grouped query with no input produces no groups. The same rules apply to
 DISTINCT sums and the streaming aggregate path. These individual contracts do
 not imply complete Cypher compatibility for every aggregate type or function.
 
+Lists have three binding forms, usable anywhere an expression is: a fold
+`reduce(acc = seed, item IN list | body)`, a comprehension
+`[item IN list WHERE predicate | projection]` with either clause optional, and
+the quantifiers `any`/`all`/`none`/`single(item IN list WHERE predicate)` over
+arbitrary lists and predicates. Each form pushes an immutable lexical scope over
+the row rather than modifying it, so inner forms see outer bindings and
+`sum(reduce(...))` folds per row inside an aggregate. A binding name that
+already exists in the row is rejected during semantic analysis, not resolved by
+precedence. An empty list folds to its seed, a `NULL` list yields `NULL`, a
+`NULL` element is handed to the body, and quantifiers follow three-valued
+logic. Every element charges one work unit, so a budget, cancellation, or
+deadline stops a long fold between elements. No dialect lowering exists yet:
+every pushdown planner declines a query containing a binding form and the
+store answers from the reference executor. A write statement's `RETURN`
+evaluates the same forms through the same evaluator over its materialized
+bindings; the earlier restricted write shape `item IN variable.property WHERE
+item = value` keeps its exact-equality results.
+
 Candidate rows share immutable node and edge bindings as patterns expand.
-Copying a candidate therefore shares the bound element instead of cloning its
-property map again. Projected results remain owned, and edge-slot identity and
+Over an owned graph a matched node or relationship is bound by reference into
+that graph, which outlives every row of the query; an element that a typed
+index builds on demand is moved into one shared binding. Variable-length trails,
+shortest-path reconstruction and path accumulators hold elements the same way,
+so copying a candidate or a trail never clones a property map. A row itself is
+a small key-sorted vector of bindings. Projected results remain owned, and edge-slot identity and
 row order remain unchanged. Logical full-element copy charges remain conservative
 even when the physical representation shares storage. This reduces repeated
 allocation; it does not make the complete MATCH pipeline streaming or impose a
@@ -1879,7 +1901,7 @@ What the layer claims to support is stated precisely in
 `docs/GQL_PROFILE_STATEMENT.md`: the realized profile is the set of `Supported`
 features in Grust's scoped manifest. The internal profile is named
 `Full39075`, but it is not a claim of complete ISO/IEC 39075 certification or
-uniform backend execution. Sixty-nine of the 74 Grust-catalogued features are
+uniform backend execution. Seventy-two of the 77 Grust-catalogued features are
 implemented; the other five are intentional strict-write rejections. A test
 pins that scoped-out set to the feature manifest, while backend descriptors and
 integration tests record which execution paths are reference, pushed, native,

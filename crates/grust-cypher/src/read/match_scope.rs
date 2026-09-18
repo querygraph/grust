@@ -4,25 +4,25 @@
 use super::*;
 use std::ops::{Deref, DerefMut};
 
-pub(super) struct MatchRow {
-    bindings: Row,
+pub(super) struct MatchRow<'g> {
+    bindings: Row<'g>,
     slots: Vec<usize>,
 }
 
-impl Deref for MatchRow {
-    type Target = Row;
-    fn deref(&self) -> &Row {
+impl<'g> Deref for MatchRow<'g> {
+    type Target = Row<'g>;
+    fn deref(&self) -> &Row<'g> {
         &self.bindings
     }
 }
 
-impl DerefMut for MatchRow {
-    fn deref_mut(&mut self) -> &mut Row {
+impl<'g> DerefMut for MatchRow<'g> {
+    fn deref_mut(&mut self) -> &mut Row<'g> {
         &mut self.bindings
     }
 }
 
-impl MatchRow {
+impl<'g> MatchRow<'g> {
     pub(super) fn copy(&self, context: &str) -> Result<Self> {
         charge_slots(self.slots.len(), context)?;
         Ok(Self {
@@ -134,20 +134,22 @@ pub(super) fn finish(rows: Vec<MatchRow>) -> Result<Vec<Row>> {
 }
 
 #[derive(Default)]
-pub(super) struct EdgeTrail {
-    pub(super) edges: Vec<Edge>,
+pub(super) struct EdgeTrail<'g> {
+    pub(super) edges: Vec<EdgeBinding<'g>>,
     pub(super) slots: Vec<usize>,
 }
 
-impl EdgeTrail {
-    pub(super) fn push(&mut self, slot: usize, edge: &Edge) -> Result<()> {
+impl<'g> EdgeTrail<'g> {
+    /// Charged as a full copy of the relationship; an owned graph's
+    /// relationship is held by reference.
+    pub(super) fn push(&mut self, slot: usize, edge: Cow<'g, Edge>) -> Result<()> {
         reserve_slot_copy(
             &mut self.slots,
             1,
             "tracking variable-length relationship identities",
         )?;
         self.edges
-            .push(clone_edge(edge, "searching variable-length paths")?);
+            .push(bind_edge(edge, "searching variable-length paths")?);
         self.slots.push(slot);
         Ok(())
     }
@@ -157,13 +159,14 @@ impl EdgeTrail {
         self.slots.pop();
     }
 
+    /// Charged as a full copy of every relationship; the copy shares them.
     pub(super) fn copy(&self) -> Result<Self> {
         charge_slots(
             self.slots.len(),
             "collecting variable-length relationship identities",
         )?;
         Ok(Self {
-            edges: clone_edges(&self.edges, "collecting variable-length path edges")?,
+            edges: share_edges(&self.edges, "collecting variable-length path edges")?,
             slots: self.slots.clone(),
         })
     }

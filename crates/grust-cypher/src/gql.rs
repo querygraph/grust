@@ -226,6 +226,9 @@ pub enum GqlFeature {
     OrderedComparisonPredicate,
     NestedNegatedOrPredicateGroups,
     GeneralExpressionTree,
+    ListReduce,
+    ListComprehension,
+    ListQuantifierPredicate,
     ThreeValuedLogic,
     ScalarFunctionRegistry,
     AggregateFunctionRegistry,
@@ -325,6 +328,9 @@ impl GqlFeature {
         GqlFeature::OrderedComparisonPredicate,
         GqlFeature::NestedNegatedOrPredicateGroups,
         GqlFeature::GeneralExpressionTree,
+        GqlFeature::ListReduce,
+        GqlFeature::ListComprehension,
+        GqlFeature::ListQuantifierPredicate,
         GqlFeature::ThreeValuedLogic,
         GqlFeature::ScalarFunctionRegistry,
         GqlFeature::AggregateFunctionRegistry,
@@ -648,6 +654,27 @@ impl GqlFeature {
                 Supported,
                 PortableGql,
                 "General expression evaluator in the read reference (arithmetic, boolean, comparison, null, list, map literals, list/map indexing, CASE, property/parameter)"
+            ),
+            GqlFeature::ListReduce => d!(
+                "list-reduce",
+                PredicatesAndExpressions,
+                Supported,
+                PortableGql,
+                "reduce(acc = seed, item IN list | body) over any list expression with lexical scope, shadowing rejection and per-element work accounting (read reference and write RETURN; pushdown declines)"
+            ),
+            GqlFeature::ListComprehension => d!(
+                "list-comprehension",
+                PredicatesAndExpressions,
+                Supported,
+                PortableGql,
+                "[item IN list WHERE predicate | projection] with either clause optional, sharing the binding-form scope and accounting (read reference and write RETURN; pushdown declines)"
+            ),
+            GqlFeature::ListQuantifierPredicate => d!(
+                "list-quantifier-predicate",
+                PredicatesAndExpressions,
+                Supported,
+                PortableGql,
+                "any/all/none/single(item IN list WHERE predicate) over arbitrary lists and predicates with three-valued results (read reference and write RETURN; pushdown declines)"
             ),
             GqlFeature::ThreeValuedLogic => d!(
                 "three-valued-logic",

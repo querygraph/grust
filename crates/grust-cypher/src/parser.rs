@@ -11,6 +11,8 @@
 //! plans, and swapping the legacy entrypoints to compatibility wrappers over
 //! this path, is sequenced for review per GQL_GOAL.md.
 
+mod binding_forms;
+
 use grust_core::GrustError;
 
 use crate::ast::*;
@@ -1120,6 +1122,10 @@ impl Parser {
                 Ok(Expr::Map(map.entries))
             }
             Token::Keyword(Keyword::Case) => self.parse_case(),
+            Token::Keyword(Keyword::All) if self.peek_at(1) == &Token::LParen => {
+                self.advance();
+                self.parse_call_args("all", false)
+            }
             Token::Keyword(Keyword::Exists) if self.peek_at(1) == &Token::LParen => {
                 self.advance();
                 self.parse_call_args("exists", false)
@@ -1145,6 +1151,25 @@ impl Parser {
     }
 
     fn parse_call_args(&mut self, name: &str, allow_distinct: bool) -> PResult<Expr> {
+        let quantifier = match name.to_ascii_lowercase().as_str() {
+            "any" => Some(ListQuantifier::Any),
+            "all" => Some(ListQuantifier::All),
+            "none" => Some(ListQuantifier::None),
+            "single" => Some(ListQuantifier::Single),
+            _ => None,
+        };
+        if let Some(kind) = quantifier {
+            return self.parse_quantifier(kind).map_err(|mut error| {
+                error.message = format!("{name} quantifier: {}", error.message);
+                error
+            });
+        }
+        if name.eq_ignore_ascii_case("reduce") {
+            return self.parse_reduce().map_err(|mut error| {
+                error.message = format!("reduce: {}", error.message);
+                error
+            });
+        }
         self.expect(&Token::LParen, "'(' for a function call")?;
         let mut distinct = false;
         let mut star = false;
@@ -1172,6 +1197,16 @@ impl Parser {
 
     fn parse_list_literal(&mut self) -> PResult<Expr> {
         self.expect(&Token::LBracket, "'[' to start a list")?;
+        if matches!(
+            self.peek(),
+            Token::Identifier(_) | Token::QuotedIdentifier(_)
+        ) && self.peek_at(1).is_keyword(Keyword::In)
+        {
+            return self.parse_list_comprehension().map_err(|mut error| {
+                error.message = format!("list comprehension: {}", error.message);
+                error
+            });
+        }
         let mut items = Vec::new();
         if self.peek() != &Token::RBracket {
             items.push(self.parse_expr()?);

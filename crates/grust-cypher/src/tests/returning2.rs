@@ -3079,16 +3079,15 @@ fn cypher_returning_classifies_scalar_projection_kinds() {
         CypherReturnScalarProjectionKind::ListAccess
     );
     assert_eq!(
-        classify_return_scalar_projection(&CypherReturnTarget::PropertyListPredicate(
-            CypherReturnListPredicateProjection {
-                key: "tags".into(),
-                predicate: CypherReturnListPredicate::Any,
-                item_variable: "tag".into(),
-                equals_variable: None,
-                equals: Box::new(CypherReturnTarget::Literal(Value::from("speaker"))),
-            },
+        classify_return_scalar_projection(&CypherReturnTarget::Expression(
+            CypherReturnExpression {
+                expr: crate::parser::parse_expression("any(tag IN n.tags WHERE tag = 'speaker')")
+                    .unwrap(),
+                parameters: CypherParameters::new(),
+                variables: BTreeSet::from(["n".into()]),
+            }
         )),
-        CypherReturnScalarProjectionKind::ListPredicate
+        CypherReturnScalarProjectionKind::Expression
     );
     assert_eq!(
         classify_return_scalar_projection(&CypherReturnTarget::PropertyAbs(

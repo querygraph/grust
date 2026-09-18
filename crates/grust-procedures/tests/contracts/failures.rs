@@ -245,7 +245,10 @@ fn cancellation_and_budgets_are_never_sampled() {
         execution.charge_work(1),
         Err(ProcedureError::Cancelled)
     ));
-    assert!(matches!(execution.checkpoint(), Err(ProcedureError::Cancelled)));
+    assert!(matches!(
+        execution.checkpoint(),
+        Err(ProcedureError::Cancelled)
+    ));
 }
 
 #[test]

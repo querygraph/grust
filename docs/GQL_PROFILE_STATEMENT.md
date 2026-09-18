@@ -35,11 +35,13 @@ fails if the scoped-out set below drifts from the manifest.
 
 ## Realized profile (today): Full39075
 
-**69 of 74 Grust-catalogued features are `Supported`** (implemented + tested); the
+**72 of 77 Grust-catalogued features are `Supported`** (implemented + tested); the
 remaining 5 are intentional rejections. By family (run `support_summary()` for
 the live list): parser/semantics, resolved writes, broad matched writes,
 row-producing relationship writes, returning & aggregates, predicates &
-expressions, read-only matching, path matching (incl. `shortestPath` /
+expressions (incl. the list binding forms `reduce`, list comprehensions and
+general `any`/`all`/`none`/`single`, evaluated by the reference; pushdown
+declines them), read-only matching, path matching (incl. `shortestPath` /
 `allShortestPaths`), query composition (incl. `CALL { … }` subqueries), type
 system (temporal/duration/decimal/path/graph incl. arithmetic, ordering, and
 stable serialization where applicable), constraints and index metadata, graph
@@ -48,7 +50,7 @@ surface, capability reporting, and atomic batch execution on transactional
 stores), session state commands, catalog procedures and
 table-valued functions, backend-native passthrough.
 
-Counts: **supported 69 · rejected 5 · planned 0 · future 0 · total 74.**
+Counts: **supported 72 · rejected 5 · planned 0 · future 0 · total 77.**
 
 ## Scoped OUT of the profile: intentional rejections (5)
 

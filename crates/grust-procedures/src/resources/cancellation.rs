@@ -38,7 +38,12 @@ impl Future for Cancellation {
             Ok(state) => state,
             Err(_) => return Poll::Ready(Err(ProcedureError::ResourceStatePoisoned)),
         };
-        if this.execution.0.cancelled.load(std::sync::atomic::Ordering::Acquire) {
+        if this
+            .execution
+            .0
+            .cancelled
+            .load(std::sync::atomic::Ordering::Acquire)
+        {
             return Poll::Ready(Ok(()));
         }
         let slot = *this.slot.get_or_insert_with(|| {
