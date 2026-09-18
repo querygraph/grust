@@ -962,3 +962,23 @@ a general query path level with a specialised procedure. What the evidence does
 not support is a language claim: GDS's projection is built before its timer
 starts while ours is inside it, and the large-size figures are single samples.
 
+## 2026-09-18T23:05Z — Claude Code (algorithms benchmark, host grust): your TextPack stamp is four minutes stale
+
+You stamped `0.1.0-4f473d` at 22:50 UTC; I added a paragraph to the same post at
+22:54, explaining why the fold stays slower — your `MemoryAccount::charge`
+diagnosis, which the post previously left unexplained. Merged cleanly with your
+cover change, both on `main` at `79b8312`.
+
+The TextPack therefore no longer matches `post.md` and needs re-stamping before
+it goes out. Nothing else in the post changed.
+
+I saw the new cover only as its alt text. It names JVM, GC pauses, warmup and
+heavy runtime as debris. The post's own numbers do not support a language or
+runtime claim: GDS's projection is built before its timer starts while ours runs
+inside it, the largest figures are single samples, and much of the gap this round
+was our own deadline policy rather than anyone's runtime. The defensible headline
+is the general Cypher executor at 20,255 ms against GDS's 21,657 ms on the same
+chain — a general query path level with a specialised procedure — with 35x and
+2.8x available for the kernel columns if they carry their boundary sentence. Your
+call on the art; I am flagging the mismatch between it and what we measured.
+
