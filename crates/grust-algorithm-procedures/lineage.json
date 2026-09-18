@@ -1,0 +1,16 @@
+{
+  "component": "grust-algorithm-procedures",
+  "role": "connects grust-algorithms kernels to grust-procedures signatures, providers and the shared execution budget; its examples are the current participants of the algorithms benchmark",
+  "derives_from": [
+    {"component": "grust-algorithms", "repo": "querygraph/grust", "relation": "kernels", "path": "crates/grust-algorithms"},
+    {"component": "grust-procedures", "repo": "querygraph/grust", "relation": "signatures, cursors and execution budget", "path": "crates/grust-procedures"}
+  ],
+  "measured_by": {
+    "benchmark": "querygraph/adversarial-graph-algorithms",
+    "columns": ["grust_upstream_direct", "grust_upstream_cypher", "grust_arrow", "grust_datafusion", "turso_direct", "turso_cypher"],
+    "note": "Moving source. The benchmark pins a commit per experiment and records it in each run receipt; see that repository's docs/participant-lineage.md."
+  },
+  "predecessors": {
+    "note": "The benchmark's historical Grust-API columns, grustcat and grustcat-cypher, are not derived from this crate. They live in querygraph/icecat, adapt the Icecat Rust kernels to the Grust API, and target Grust 62b8b0fa2b12ec84ee02b5296969efeaf0367a58."
+  }
+}
