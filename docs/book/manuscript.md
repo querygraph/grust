@@ -2213,6 +2213,8 @@ transaction scripts batch supported mutations when atomicity is required.
 
 <!-- include: chapters/generalized-algorithms.md -->
 
+<!-- include: chapters/algorithms-under-measurement.md -->
+
 <!-- include: chapters/arrow-pipelines.md -->
 
 # Conclusion {.unnumbered}
