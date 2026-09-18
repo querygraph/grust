@@ -6,6 +6,13 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ## Unreleased
 
+- Sample the deadline on work charges instead of reading the clock for every
+  unit. Kernels charge once per visited entry, so a per-unit `Instant::now()`
+  costs more than the work it guards wherever the clocksource is paravirtualised:
+  on such a host it was about 83% of a full-path Cypher query, which now runs
+  8.4x faster with identical results. Expiry is observed within 1024 charges;
+  `checkpoint` still reads the clock exactly, and cancellation and budget limits
+  are never sampled.
 - Charge cooperative work units and observe cancellation without taking the
   execution mutex: `ExecutionContext` now holds `work_units` and `cancelled` as
   atomics, admitting each charge through a compare-exchange that recomputes the

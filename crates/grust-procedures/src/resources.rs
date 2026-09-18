@@ -40,6 +40,13 @@ struct State {
     waiters: Vec<Option<std::task::Waker>>,
 }
 
+/// Charges sample the deadline instead of reading the clock for every unit.
+/// Kernels charge once per visited entry, so a per-unit read costs more than the
+/// work it guards wherever the clocksource is paravirtualised rather than a
+/// register read. Cancellation is never sampled, and `checkpoint` always reads
+/// the clock, so a caller that needs an exact poll has one.
+const DEADLINE_SAMPLE_UNITS: usize = 1024;
+
 /// Work and cancellation are lock-free because kernels charge per unit of work,
 /// once per visited entry or reconstructed path step. Memory reservations and
 /// wakers stay behind the mutex: they are rare and need multi-field atomicity.
@@ -48,7 +55,15 @@ struct Shared {
     limits: ExecutionLimits,
     work_units: AtomicUsize,
     cancelled: AtomicBool,
+    charges_since_deadline_read: AtomicUsize,
     state: Mutex<State>,
+}
+
+/// Whether a state check must read the clock or may rely on the sampled read.
+#[derive(Clone, Copy)]
+enum DeadlineCheck {
+    Exact,
+    Sampled,
 }
 
 /// Cloneable handle to one query's resource state; no global state or worker pool.
@@ -73,6 +88,7 @@ impl ExecutionContext {
             limits,
             work_units: AtomicUsize::new(0),
             cancelled: AtomicBool::new(false),
+            charges_since_deadline_read: AtomicUsize::new(0),
             state: Mutex::new(State::default()),
         })))
     }
@@ -100,14 +116,15 @@ impl ExecutionContext {
         Ok(())
     }
 
-    /// Poll cancellation and deadline without charging work.
+    /// Poll cancellation and deadline without charging work. Unlike a charge,
+    /// this always reads the clock, so an explicit poll is exact.
     pub fn checkpoint(&self) -> Result<()> {
-        self.charge_work(0)
+        self.check_state(DeadlineCheck::Exact)
     }
 
     /// Charge work before performing it. Counter overflow is a budget failure.
     pub fn charge_work(&self, units: usize) -> Result<()> {
-        self.check_state()?;
+        self.check_state(DeadlineCheck::Sampled)?;
         // Admit exactly, never overshooting the budget: the compare-exchange
         // recomputes admission against the value it actually replaces, so a
         // concurrent charge cannot slip past the limit between load and store.
@@ -132,9 +149,19 @@ impl ExecutionContext {
         }
     }
 
-    fn check_state(&self) -> Result<()> {
+    fn check_state(&self, deadline: DeadlineCheck) -> Result<()> {
         if self.0.cancelled.load(Ordering::Acquire) {
             return Err(ProcedureError::Cancelled);
+        }
+        if matches!(deadline, DeadlineCheck::Sampled)
+            && self
+                .0
+                .charges_since_deadline_read
+                .fetch_add(1, Ordering::Relaxed)
+                % DEADLINE_SAMPLE_UNITS
+                != 0
+        {
+            return Ok(());
         }
         if self
             .0
@@ -167,7 +194,7 @@ impl ExecutionContext {
             .state
             .lock()
             .map_err(|_| ProcedureError::ResourceStatePoisoned)?;
-        self.check_state()?;
+        self.check_state(DeadlineCheck::Exact)?;
         state
             .live_bytes
             .checked_add(bytes)
@@ -203,7 +230,7 @@ impl ExecutionContext {
             .state
             .lock()
             .map_err(|_| ProcedureError::ResourceStatePoisoned)?;
-        self.check_state()?;
+        self.check_state(DeadlineCheck::Exact)?;
         let next = state
             .live_bytes
             .checked_add(bytes)

@@ -170,6 +170,85 @@ fn cancellation_during_consumption_releases_cursor_state() {
 }
 
 #[test]
+fn a_deadline_that_expires_mid_run_is_observed_within_the_sampling_interval() {
+    // Charges sample the clock, so expiry is observed within the interval rather
+    // than on the first charge after it passes. It must still be observed.
+    let execution = ExecutionContext::new(ExecutionLimits {
+        memory_bytes: 4096,
+        work_units: usize::MAX,
+        batch_rows: 1,
+        deadline: Some(std::time::Instant::now() + std::time::Duration::from_millis(50)),
+    })
+    .expect("valid limits");
+    execution.charge_work(1).expect("before the deadline");
+    std::thread::sleep(std::time::Duration::from_millis(80));
+    let mut charges = 0usize;
+    let outcome = loop {
+        match execution.charge_work(1) {
+            Ok(()) => charges += 1,
+            Err(error) => break error,
+        }
+        assert!(charges <= 4096, "expiry was never observed");
+    };
+    assert!(matches!(outcome, ProcedureError::DeadlineExceeded));
+    assert!(charges < 2048, "observed after {charges} charges");
+}
+
+#[test]
+fn an_explicit_checkpoint_observes_expiry_without_waiting_for_a_sample() {
+    let execution = ExecutionContext::new(ExecutionLimits {
+        memory_bytes: 4096,
+        work_units: usize::MAX,
+        batch_rows: 1,
+        deadline: Some(std::time::Instant::now() + std::time::Duration::from_millis(50)),
+    })
+    .expect("valid limits");
+    // Land between samples, so only an exact check can observe the deadline.
+    for _ in 0..8 {
+        execution.charge_work(1).expect("before the deadline");
+    }
+    std::thread::sleep(std::time::Duration::from_millis(80));
+    assert!(matches!(
+        execution.checkpoint(),
+        Err(ProcedureError::DeadlineExceeded)
+    ));
+}
+
+#[test]
+fn cancellation_and_budgets_are_never_sampled() {
+    let execution = ExecutionContext::new(ExecutionLimits {
+        memory_bytes: 4096,
+        work_units: 10,
+        batch_rows: 1,
+        deadline: Some(std::time::Instant::now() + std::time::Duration::from_secs(3600)),
+    })
+    .expect("valid limits");
+    // An exhausted budget fails exactly at its limit, at any sampling offset.
+    for _ in 0..10 {
+        execution.charge_work(1).expect("within budget");
+    }
+    assert!(matches!(
+        execution.charge_work(1),
+        Err(ProcedureError::BudgetExceeded { .. })
+    ));
+    let execution = ExecutionContext::new(ExecutionLimits {
+        memory_bytes: 4096,
+        work_units: usize::MAX,
+        batch_rows: 1,
+        deadline: Some(std::time::Instant::now() + std::time::Duration::from_secs(3600)),
+    })
+    .expect("valid limits");
+    execution.charge_work(1).expect("before cancellation");
+    execution.cancel().expect("cancel");
+    // Immediately, not at the next sample.
+    assert!(matches!(
+        execution.charge_work(1),
+        Err(ProcedureError::Cancelled)
+    ));
+    assert!(matches!(execution.checkpoint(), Err(ProcedureError::Cancelled)));
+}
+
+#[test]
 fn expired_deadline_rejects_before_provider_invocation() {
     let provider = Arc::new(Echo::default());
     let mut builder = RegistryBuilder::default();
