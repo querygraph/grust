@@ -263,7 +263,9 @@ mod tests {
             ];
             let report = store.put_graph(&Graph::new(nodes, edges)).await?;
             assert_eq!((report.nodes, report.edges), (3, 2));
-            let got = store.get_node(&NodeId::new("n1")).await?.expect("n1");
+            // Reads add the id into the props; compare the stored values only.
+            let mut got = store.get_node(&NodeId::new("n1")).await?.expect("n1");
+            got.props.remove("id");
             assert_eq!(got.props, nasty);
             let out = store
                 .get_edges(EdgeQuery {
@@ -281,7 +283,8 @@ mod tests {
                 vec![Edge::new("REL", "n0", "n1", props(&[("v", json!(2))]))],
             );
             store.put_graph(&again).await?;
-            let got = store.get_node(&NodeId::new("n1")).await?.expect("n1");
+            let mut got = store.get_node(&NodeId::new("n1")).await?.expect("n1");
+            got.props.remove("id");
             assert_eq!(got.props, props(&[("v", json!(2))]));
             let out = store
                 .get_edges(EdgeQuery {
