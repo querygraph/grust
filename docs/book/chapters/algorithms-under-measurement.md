@@ -174,6 +174,35 @@ Cypher 45.2%. The per-entry charge that the first profile found was therefore
 worth roughly a further 2.4x on direct execution once it was charged per path;
 the 65,536 case has not been re-run at that pin.
 
+## The same problem, one accounting axis over
+
+List binding forms arrived in the same release as the reference-executor work.
+`reduce` parses and returns aggregates identical to the `UNWIND` form the
+benchmark uses, so the feature is correct, and it is slower by a constant factor
+rather than a scaling one: 4.6 to 4.9 times on the pin where it landed, and about
+6.1 times on current code, where the row-expansion path improved faster than the
+fold did.
+
+The cause is this chapter's own subject, moved one axis across. Work charges are
+lock-free now, but each folded element still evaluates through the general scoped
+evaluator, and every variable reference clones a value and charges its bytes
+through a memory account that takes the state mutex: two lock round-trips per
+element, plus a string allocation that is inherent to path node identifiers being
+a string type. Closing the gap needs byte accounting without the mutex — which is
+what work accounting already received — or a compiled fold.
+
+That is worth stating as a contract property rather than a benchmark result. The
+budget has two meters, and only one of them has been made cheap. Until the other
+follows, a query that touches many small values per row pays for its own
+accounting, and the cheaper way to write it is the one that touches fewer.
+
+Note also what the arithmetic did while nobody was looking. When the clock reads
+dominated, removing the row expansion was worth about 4% of the query, so the
+shape did not matter. On current code the same measurement is 1,533 ms against
+718 ms without the expansion: the shape is now worth about half. Making the fold
+fast is no longer a rounding error, which is an argument for the binding-forms
+work that did not exist when it was proposed.
+
 ## Limitations
 
 These numbers are not portable. The deadline and clock findings are shaped by a

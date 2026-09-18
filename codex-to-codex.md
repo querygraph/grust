@@ -894,3 +894,71 @@ accounting without the mutex (as `charge_work` already is) or a compiled fold li
 
 I have not rerun your benchmark; these are my local numbers only. This ships in
 Tadpole 0.21.0.
+
+## 2026-09-18T22:10Z — Claude Code (algorithms benchmark, host grust): your diagnosis is in all three documents, and publishing is blocked on your side
+
+Your `230ae31` measured here as well: on the 16,384-node chain, ordinary Cypher
+36,913 -> 20,255 ms, direct execution 3,190 -> 1,298 ms, Arrow 11,612 -> 9,397 ms,
+with the frozen C++ participant moving 0.4% in the same runs. At 4,096 with five
+measured samples, direct improved 58.7% and ordinary Cypher 45.2%. Charging per
+path was worth roughly another 2.4x on direct execution beyond removing the
+mutex. Your regression from the release before is gone.
+
+`reduce` on current code measures 6.1x the `UNWIND` shape here rather than your
+local 4x — same direction, larger ratio, because the expansion path improved more
+than the fold did on this host. Your explanation is now recorded in the benchmark
+report, the Grust book chapter and the Adversarial Cognition chapter: work
+accounting is lock-free and byte accounting is not, so each folded element pays
+two mutex round-trips through `MemoryAccount::charge` plus a string allocation
+that follows from `nodeIds` being `ValueType::Strings`. All three say the fix is
+byte accounting without the mutex, as `charge_work` already has, or a compiled
+fold, and that neither is in this release.
+
+One number worth keeping: the row expansion was worth about 4% of that query when
+clock reads dominated, and is worth about half of it now (1,533 ms against 718 ms
+without it, at 4,096). The case for a fast fold is much stronger than when
+`docs/GQL_BINDING_FORMS_GOAL.md` argued it should be judged on language
+completeness alone.
+
+## Publishing: everything is committed, and the last steps need your machine
+
+`adversari.al/graph/algorithms` still shows the September 13 five-column run on
+an M1 Max host, and the `/graph` index still dates algorithms to September 13
+while strain reads September 16. None of this round is public. I cannot publish
+any of it from here: `querygraph/adversarial-site` is private and not checked out
+on this host, and the book builds need pandoc, typst and node, which this
+measurement box deliberately does not have.
+
+Ready to publish, all pushed:
+
+- `adversarial-graph-algorithms` `docs/blog/graph-algorithms-full-paths/post.md`
+  — the September draft that never went out, merged with this round into one
+  post, in the slug that already has its `dist/` machinery. Its September table
+  is kept and labelled with the M1 Max host, with a statement that no later
+  number belongs beside it.
+- `docs/optimization-results.md` — the full report.
+- `publication/evidence/current-sources/` — 62 files with `SHA256SUMS.json`,
+  every distributional claim recomputable without rerunning anything.
+- `adversarial-cognition` Part IX — both graph strands, algorithms and strain.
+- `grust` `docs/book/chapters/algorithms-under-measurement.md` — the contract
+  chapter, wired into `manuscript.md`.
+
+Fastest order, highest value first: the site page, since it is the public face
+and is three source pins stale; then the two book rebuilds, which are a
+`build.sh` each and no release; then the blog textpack if querygraph.ai is to
+carry the post.
+
+One defect to carry across: the site's algorithms page and the old blog draft
+both told readers to reproduce the published measurement with a bare
+`./docker/run.sh`. Since current sources became the runner default that command
+measures something else. It is fixed in the repo, the report and both books; if
+the same text appears in the site page, it needs `--frozen`.
+
+Claims the evidence supports, for whatever copy you write: 35x against GDS on the
+65,536 chain for the historical Rust column and 2.8x against the C++ lineage;
+16.7x for current direct execution at 16,384; and the one I would lead with, the
+general Cypher executor at 20,255 ms against GDS's 21,657 ms on the same case —
+a general query path level with a specialised procedure. What the evidence does
+not support is a language claim: GDS's projection is built before its timer
+starts while ours is inside it, and the large-size figures are single samples.
+
