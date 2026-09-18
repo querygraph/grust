@@ -278,7 +278,9 @@ afterthought</a></li>
 <li><a href="#allocator-and-durable-loading" id="toc-allocator-and-durable-loading"><span class="toc-section-number">17.6</span> Allocator and durable
 loading</a></li>
 <li><a href="#what-the-whole-set-moved" id="toc-what-the-whole-set-moved"><span class="toc-section-number">17.7</span> What the whole set moved</a></li>
-<li><a href="#limitations-1" id="toc-limitations-1"><span class="toc-section-number">17.8</span> Limitations</a></li>
+<li><a href="#the-same-problem-one-accounting-axis-over" id="toc-the-same-problem-one-accounting-axis-over"><span class="toc-section-number">17.8</span> The same problem, one accounting
+axis over</a></li>
+<li><a href="#limitations-1" id="toc-limitations-1"><span class="toc-section-number">17.9</span> Limitations</a></li>
 </ul></li>
 <li><a href="#arrow-pipelines-adbc-and-datafusion" id="toc-arrow-pipelines-adbc-and-datafusion"><span class="toc-section-number">18</span> Arrow pipelines, ADBC and
 DataFusion</a>
@@ -3346,7 +3348,36 @@ measured samples, direct execution improved 58.7% and ordinary Cypher
 45.2%. The per-entry charge that the first profile found was therefore
 worth roughly a further 2.4x on direct execution once it was charged per
 path; the 65,536 case has not been re-run at that pin.</p>
-<h2 data-number="17.8" id="limitations-1"><span class="header-section-number">17.8</span> Limitations</h2>
+<h2 data-number="17.8" id="the-same-problem-one-accounting-axis-over"><span class="header-section-number">17.8</span> The same problem, one
+accounting axis over</h2>
+<p>List binding forms arrived in the same release as the
+reference-executor work. <code>reduce</code> parses and returns
+aggregates identical to the <code>UNWIND</code> form the benchmark uses,
+so the feature is correct, and it is slower by a constant factor rather
+than a scaling one: 4.6 to 4.9 times on the pin where it landed, and
+about 6.1 times on current code, where the row-expansion path improved
+faster than the fold did.</p>
+<p>The cause is this chapter’s own subject, moved one axis across. Work
+charges are lock-free now, but each folded element still evaluates
+through the general scoped evaluator, and every variable reference
+clones a value and charges its bytes through a memory account that takes
+the state mutex: two lock round-trips per element, plus a string
+allocation that is inherent to path node identifiers being a string
+type. Closing the gap needs byte accounting without the mutex — which is
+what work accounting already received — or a compiled fold.</p>
+<p>That is worth stating as a contract property rather than a benchmark
+result. The budget has two meters, and only one of them has been made
+cheap. Until the other follows, a query that touches many small values
+per row pays for its own accounting, and the cheaper way to write it is
+the one that touches fewer.</p>
+<p>Note also what the arithmetic did while nobody was looking. When the
+clock reads dominated, removing the row expansion was worth about 4% of
+the query, so the shape did not matter. On current code the same
+measurement is 1,533 ms against 718 ms without the expansion: the shape
+is now worth about half. Making the fold fast is no longer a rounding
+error, which is an argument for the binding-forms work that did not
+exist when it was proposed.</p>
+<h2 data-number="17.9" id="limitations-1"><span class="header-section-number">17.9</span> Limitations</h2>
 <p>These numbers are not portable. The deadline and clock findings are
 shaped by a paravirtual clocksource, and the same code on a host with a
 register clock would show a smaller penalty. The 16,384 and 65,536
