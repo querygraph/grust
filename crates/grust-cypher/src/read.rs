@@ -119,8 +119,8 @@ impl From<Arc<Node>> for NodeBinding<'_> {
     }
 }
 
-/// One candidate solution: pattern variable -> bound graph element.
-type Row<'g> = BTreeMap<String, Bound<'g>>;
+mod row;
+use row::Row;
 
 /// The graph a read executes over: an owned [`Graph`], or a typed index whose
 /// source may build nodes and edges on demand instead of holding a copy of
@@ -487,9 +487,9 @@ fn advance_rows<'g>(
                 if matched.is_empty() {
                     let mut padded = row;
                     for var in &new_vars {
-                        padded
-                            .entry(var.clone())
-                            .or_insert(Bound::Value(Value::Null));
+                        if !padded.contains_key(var) {
+                            padded.insert(var.clone(), Bound::Value(Value::Null));
+                        }
                     }
                     read_budget::charge_candidate_work(1, "producing OPTIONAL MATCH rows")?;
                     out.push(padded);
@@ -755,9 +755,25 @@ fn unwind_rows<'g>(
                 other => return Err(gql_type(format!("UNWIND expects a list, got {other:?}"))),
             }
         };
-        for element in elements {
+        // Every element is charged a full row copy; the last one takes the
+        // row itself instead of a copy of it.
+        let mut row = Some(row);
+        let last = elements.len().saturating_sub(1);
+        for (position, element) in elements.into_iter().enumerate() {
             read_budget::charge_candidate_work(1, "expanding UNWIND rows")?;
-            let mut next = clone_row(&row, "expanding UNWIND rows")?;
+            let mut next = if position == last {
+                let row = row
+                    .take()
+                    .expect("the row is taken once, by the last element");
+                charge_intermediate_copy("expanding UNWIND rows", || row_copy_bytes(&row))?;
+                row
+            } else {
+                clone_row(
+                    row.as_ref()
+                        .expect("the row outlives every earlier element"),
+                    "expanding UNWIND rows",
+                )?
+            };
             next.insert(unwind.alias.clone(), Bound::Value(element));
             out.push(next);
         }
@@ -2570,7 +2586,25 @@ fn grouped_project(
     // Group rows, preserving first-seen order for deterministic output.
     let mut order: Vec<String> = Vec::new();
     let mut groups: HashMap<String, (Vec<Value>, Vec<&Row>)> = HashMap::new();
-    for row in rows {
+    // Without grouping keys every row has the key `[]`. Charge what serializing
+    // and recording that key charges, and skip building it once per row.
+    const EMPTY_KEY: &str = "[]";
+    let keyless = key_exprs.is_empty();
+    if keyless && !rows.is_empty() {
+        for position in 0..rows.len() {
+            read_budget::charge_candidate_work(1, "grouping RETURN rows")?;
+            read_budget::charge_intermediate_bytes(EMPTY_KEY.len(), "serializing GROUP BY keys")?;
+            if position == 0 {
+                read_budget::charge_intermediate_bytes(
+                    EMPTY_KEY.len(),
+                    "recording RETURN grouping order",
+                )?;
+            }
+        }
+        order.push(EMPTY_KEY.to_string());
+        groups.insert(EMPTY_KEY.to_string(), (Vec::new(), rows.iter().collect()));
+    }
+    for row in rows.iter().filter(|_| !keyless) {
         read_budget::charge_candidate_work(1, "grouping RETURN rows")?;
         let key_values: Vec<Value> = key_exprs
             .iter()
@@ -2643,6 +2677,33 @@ fn eval_aggregate(expr: &Expr, group_rows: &[&Row], params: &CypherParameters) -
         )));
     }
     let arg = &args[0];
+
+    // COUNT, SUM and AVG are left folds over the non-NULL arguments in row
+    // order, so fold them as they are evaluated instead of collecting first.
+    if !*distinct && matches!(name.as_str(), "count" | "sum" | "avg") {
+        let mut count = 0usize;
+        let mut sum = SumAccumulator::default();
+        let mut avg = AvgAccumulator::default();
+        for row in group_rows {
+            let Some(value) = non_null_return_value(eval(arg, row, params)?) else {
+                continue;
+            };
+            match name.as_str() {
+                "count" => count += 1,
+                "sum" => sum.add(&value)?,
+                _ => avg.add(&value)?,
+            }
+        }
+        let value = match name.as_str() {
+            "count" => count_value(count)?,
+            "sum" => sum.finish(),
+            _ => avg.finish(),
+        };
+        charge_intermediate_copy("materializing aggregate results", || {
+            read_budget::value_copy_bytes(&value)
+        })?;
+        return Ok(value);
+    }
 
     // Evaluate the argument per row, dropping NULLs (standard aggregate rule).
     let mut values: Vec<Value> = Vec::with_capacity(group_rows.len());
