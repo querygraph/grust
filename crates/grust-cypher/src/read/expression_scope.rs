@@ -4,17 +4,17 @@
 use super::{Bound, Row};
 
 pub(super) enum ExpressionScope<'a> {
-    Row(&'a Row),
-    WriteRow(&'a Row),
+    Row(&'a Row<'a>),
+    WriteRow(&'a Row<'a>),
     Binding {
         parent: &'a ExpressionScope<'a>,
         name: &'a str,
-        value: &'a Bound,
+        value: &'a Bound<'a>,
     },
 }
 
 impl<'a> ExpressionScope<'a> {
-    pub(super) fn row(row: &'a Row) -> Self {
+    pub(super) fn row(row: &'a Row<'a>) -> Self {
         Self::Row(row)
     }
 
@@ -26,7 +26,7 @@ impl<'a> ExpressionScope<'a> {
         }
     }
 
-    pub(super) fn bind(&'a self, name: &'a str, value: &'a Bound) -> Self {
+    pub(super) fn bind(&'a self, name: &'a str, value: &'a Bound<'a>) -> Self {
         Self::Binding {
             parent: self,
             name,
@@ -34,7 +34,7 @@ impl<'a> ExpressionScope<'a> {
         }
     }
 
-    pub(super) fn get(&self, name: &str) -> Option<&Bound> {
+    pub(super) fn get(&self, name: &str) -> Option<&Bound<'a>> {
         match self {
             Self::Row(row) | Self::WriteRow(row) => row.get(name),
             Self::Binding {

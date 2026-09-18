@@ -4,25 +4,25 @@
 use super::*;
 use std::ops::{Deref, DerefMut};
 
-pub(super) struct MatchRow {
-    bindings: Row,
+pub(super) struct MatchRow<'g> {
+    bindings: Row<'g>,
     slots: Vec<usize>,
 }
 
-impl Deref for MatchRow {
-    type Target = Row;
-    fn deref(&self) -> &Row {
+impl<'g> Deref for MatchRow<'g> {
+    type Target = Row<'g>;
+    fn deref(&self) -> &Row<'g> {
         &self.bindings
     }
 }
 
-impl DerefMut for MatchRow {
-    fn deref_mut(&mut self) -> &mut Row {
+impl<'g> DerefMut for MatchRow<'g> {
+    fn deref_mut(&mut self) -> &mut Row<'g> {
         &mut self.bindings
     }
 }
 
-impl MatchRow {
+impl<'g> MatchRow<'g> {
     pub(super) fn copy(&self, context: &str) -> Result<Self> {
         charge_slots(self.slots.len(), context)?;
         Ok(Self {

@@ -152,13 +152,13 @@ impl ProcedureExecution {
         }
     }
 
-    pub(super) fn advance(
+    pub(super) fn advance<'g>(
         &self,
-        graph: GraphRef<'_>,
+        graph: GraphRef<'g>,
         call: &CallClause,
-        rows: Vec<Row>,
+        rows: Vec<Row<'g>>,
         params: &CypherParameters,
-    ) -> Result<(Vec<Row>, Option<Vec<String>>)> {
+    ) -> Result<(Vec<Row<'g>>, Option<Vec<String>>)> {
         let procedure = self.resolve(call)?;
         let full_columns = procedure
             .definition()

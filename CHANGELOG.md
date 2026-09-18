@@ -6,6 +6,15 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ## Unreleased
 
+- Bind matched nodes of an owned graph by reference in the Cypher reference
+  executor. A `MATCH` start candidate was deep-copied into the candidate list
+  and again into the row, and every matched neighbour was deep-copied once; rows
+  now carry `&Node` into the graph they read, and only nodes a typed index
+  builds on demand are shared copies. Logical copy charges are unchanged, so
+  budgets admit and reject exactly the same queries. Scalar function dispatch
+  also stops allocating a lowercased name per evaluated call. On a 200,000-node
+  graph a filtered scan went from 282 ms to 145 ms and a one-hop match from
+  510 ms to 241 ms (single release-mode runs, not a benchmark suite).
 - Sample the deadline in bounded Cypher reads. Admission measured a graph's
   serialized size through a writer that read the clock on every `serde_json`
   token, and the thread-local read budget read it on every charge and every
