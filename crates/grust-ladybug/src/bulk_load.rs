@@ -104,7 +104,8 @@ impl LadybugGraphStore {
         to_table: &str,
         edges: &[&Edge],
     ) -> Result<usize> {
-        let existing = if self.bulk_load_trusts_fresh_rows()
+        let trusts_fresh = self.bulk_load_trusts_fresh_rows();
+        let existing = if trusts_fresh
             || Self::count(
                 conn,
                 &format!("MATCH ()-[r:{rel_table}]->() RETURN count(r);"),
@@ -114,29 +115,38 @@ impl LadybugGraphStore {
         } else {
             self.existing_edge_pairs(conn, rel_table, from_table, to_table)?
         };
-        let mut fresh: BTreeMap<(&str, &str), &Edge> = BTreeMap::new();
-        for edge in edges {
-            let pair = (edge.from.as_str(), edge.to.as_str());
-            if existing.contains(&(pair.0.to_string(), pair.1.to_string())) {
-                self.write_edge_locked(conn, edge, rel_table, from_table, to_table)?;
-            } else {
-                fresh.insert(pair, edge);
+        // Rows to copy, in input order. With the read-back on, one row per
+        // (from, to) pair, the last one winning, as a sequence of MERGEs
+        // would leave; with the caller vouching for fresh rows, every row,
+        // so parallel edges stay parallel edges.
+        let fresh: Vec<&Edge> = if trusts_fresh {
+            edges.to_vec()
+        } else {
+            let mut by_pair: BTreeMap<(&str, &str), &Edge> = BTreeMap::new();
+            for edge in edges {
+                let pair = (edge.from.as_str(), edge.to.as_str());
+                if existing.contains(&(pair.0.to_string(), pair.1.to_string())) {
+                    self.write_edge_locked(conn, edge, rel_table, from_table, to_table)?;
+                } else {
+                    by_pair.insert(pair, edge);
+                }
             }
-        }
+            by_pair.into_values().collect()
+        };
         if fresh.is_empty() {
             return Ok(edges.len());
         }
         let ids = fresh
-            .values()
+            .iter()
             .map(|edge| checked_edge_key(edge))
             .collect::<Result<Vec<_>>>()?;
         let props = fresh
-            .values()
+            .iter()
             .map(|edge| props_to_string(&edge.props))
             .collect::<Result<Vec<_>>>()?;
         let batch = string_batch(&[
-            ("from", fresh.keys().map(|(from, _)| *from).collect()),
-            ("to", fresh.keys().map(|(_, to)| *to).collect()),
+            ("from", fresh.iter().map(|e| e.from.as_str()).collect()),
+            ("to", fresh.iter().map(|e| e.to.as_str()).collect()),
             ("id", ids.iter().map(String::as_str).collect()),
             ("props", props.iter().map(String::as_str).collect()),
         ])?;
@@ -368,6 +378,24 @@ mod tests {
                     .len();
             }
             assert_eq!(total, 4, "every edge landed exactly once");
+            // A multigraph chunk: two parallel edges on one pair, distinct ids,
+            // must both land and both read back.
+            let multi = Graph::new(
+                vec![node(0), node(1)],
+                vec![
+                    Edge::new("REL", "n0", "n1", props(&[("t", json!(1))])).with_id("p1"),
+                    Edge::new("REL", "n0", "n1", props(&[("t", json!(2))])).with_id("p2"),
+                ],
+            );
+            store.put_graph(&multi).await?;
+            let out = store
+                .get_edges(EdgeQuery {
+                    from: Some(NodeId::new("n0")),
+                    to: Some(NodeId::new("n1")),
+                    ..Default::default()
+                })
+                .await?;
+            assert_eq!(out.len(), 3, "the original edge plus two parallel edges");
             for i in 0..4 {
                 assert!(
                     store
