@@ -319,6 +319,9 @@ struct EncodedResultSize<'a> {
     rows: &'a [Vec<grust_core::Value>],
 }
 
+/// Serialized bytes between deadline reads while measuring an admission size.
+const DEADLINE_SAMPLE_BYTES: usize = 64 * 1024;
+
 struct LimitWriter {
     written: usize,
     maximum: usize,
@@ -329,14 +332,20 @@ struct LimitWriter {
 
 impl Write for LimitWriter {
     fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
-        if Instant::now() >= self.deadline {
-            self.timed_out = true;
-            return Err(io::Error::new(io::ErrorKind::TimedOut, "deadline elapsed"));
-        }
         let Some(next) = self.written.checked_add(bytes.len()) else {
             self.exceeded = true;
             return Err(io::Error::other("serialized-size counter overflowed"));
         };
+        // serde_json writes once per token, so reading the clock per write costs
+        // more than the serialization it guards. Read it on the first write and
+        // whenever the running size crosses a sampling boundary.
+        if (self.written == 0
+            || self.written / DEADLINE_SAMPLE_BYTES != next / DEADLINE_SAMPLE_BYTES)
+            && Instant::now() >= self.deadline
+        {
+            self.timed_out = true;
+            return Err(io::Error::new(io::ErrorKind::TimedOut, "deadline elapsed"));
+        }
         if next > self.maximum {
             self.exceeded = true;
             return Err(io::Error::other("serialized-size limit exceeded"));

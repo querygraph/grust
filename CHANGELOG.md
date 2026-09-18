@@ -6,6 +6,14 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ## Unreleased
 
+- Sample the deadline in bounded Cypher reads. Admission measured a graph's
+  serialized size through a writer that read the clock on every `serde_json`
+  token, and the thread-local read budget read it on every charge and every
+  expression checkpoint. The writer now reads it on the first write and once per
+  64 KiB; the budget reads it on the first tick and every 1024 ticks, and an
+  observed expiry stays observed. Work and byte limits are never sampled. On a
+  200,000-node scan this took a bounded `count(*)` from 937 ms to 488 ms against
+  282 ms unbounded, on a host with a cheap clock.
 - Sample the deadline on work charges instead of reading the clock for every
   unit. Kernels charge once per visited entry, so a per-unit `Instant::now()`
   costs more than the work it guards wherever the clocksource is paravirtualised:

@@ -34,6 +34,32 @@ pub(crate) struct ReadExecutionBudgetLimits {
 struct ReadExecutionBudget {
     limits: ReadExecutionBudgetLimits,
     execution: ExecutionContext,
+    ticks_since_deadline_read: std::cell::Cell<usize>,
+    deadline_expired: std::cell::Cell<bool>,
+}
+
+/// Charges and expression checkpoints sample the deadline instead of reading
+/// the clock each time: the evaluator checkpoints once per expression node, so
+/// a per-tick read costs more than the work it guards. The first tick always
+/// reads, an observed expiry stays observed, and work and byte limits are never
+/// sampled.
+const DEADLINE_SAMPLE_TICKS: usize = 1024;
+
+impl ReadExecutionBudget {
+    fn observe_deadline(&self) -> Result<()> {
+        let ticks = self.ticks_since_deadline_read.get();
+        self.ticks_since_deadline_read.set(ticks.wrapping_add(1));
+        if !self.deadline_expired.get()
+            && ticks.is_multiple_of(DEADLINE_SAMPLE_TICKS)
+            && Instant::now() >= self.limits.deadline
+        {
+            self.deadline_expired.set(true);
+        }
+        if self.deadline_expired.get() {
+            return Err(gql_execution("bounded read execution timed out"));
+        }
+        Ok(())
+    }
 }
 
 thread_local! {
@@ -62,9 +88,12 @@ pub(crate) fn with_budget<T>(
     })
     .map_err(|error| gql_execution(error.to_string()))?;
     BUDGETS.with(|budgets| {
-        budgets
-            .borrow_mut()
-            .push(ReadExecutionBudget { limits, execution });
+        budgets.borrow_mut().push(ReadExecutionBudget {
+            limits,
+            execution,
+            ticks_since_deadline_read: std::cell::Cell::new(0),
+            deadline_expired: std::cell::Cell::new(false),
+        });
     });
     let _guard = BudgetGuard;
     checkpoint()?;
@@ -85,9 +114,7 @@ pub(crate) fn charge_intermediate_bytes(bytes: usize, context: &str) -> Result<(
         let Some(budget) = budgets.last_mut() else {
             return Ok(());
         };
-        if Instant::now() >= budget.limits.deadline {
-            return Err(gql_execution("bounded read execution timed out"));
-        }
+        budget.observe_deadline()?;
         budget
             .execution
             .charge_cumulative_memory(bytes)
@@ -113,9 +140,7 @@ pub(crate) fn check_intermediate_bytes_available(bytes: usize, context: &str) ->
         let Some(budget) = budgets.last() else {
             return Ok(());
         };
-        if Instant::now() >= budget.limits.deadline {
-            return Err(gql_execution("bounded read execution timed out"));
-        }
+        budget.observe_deadline()?;
         budget
             .execution
             .check_memory_available(bytes)
@@ -224,9 +249,7 @@ pub(crate) fn checkpoint() -> Result<()> {
         let Some(budget) = budgets.last() else {
             return Ok(());
         };
-        if Instant::now() >= budget.limits.deadline {
-            return Err(gql_execution("bounded read execution timed out"));
-        }
+        budget.observe_deadline()?;
         Ok(())
     })
 }
@@ -246,9 +269,7 @@ pub(crate) fn charge_candidate_work(units: usize, context: &str) -> Result<()> {
         let Some(budget) = budgets.last_mut() else {
             return Ok(());
         };
-        if Instant::now() >= budget.limits.deadline {
-            return Err(gql_execution("bounded read execution timed out"));
-        }
+        budget.observe_deadline()?;
         budget.execution.charge_work(units).map_err(|error| {
             gql_execution(format!(
                 "bounded read candidate-work units ({error}) while {context}"
