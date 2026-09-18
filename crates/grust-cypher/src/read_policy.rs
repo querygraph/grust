@@ -330,9 +330,9 @@ struct LimitWriter {
     timed_out: bool,
 }
 
-impl Write for LimitWriter {
-    fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
-        let Some(next) = self.written.checked_add(bytes.len()) else {
+impl LimitWriter {
+    fn admit(&mut self, bytes: usize) -> io::Result<()> {
+        let Some(next) = self.written.checked_add(bytes) else {
             self.exceeded = true;
             return Err(io::Error::other("serialized-size counter overflowed"));
         };
@@ -351,6 +351,13 @@ impl Write for LimitWriter {
             return Err(io::Error::other("serialized-size limit exceeded"));
         }
         self.written = next;
+        Ok(())
+    }
+}
+
+impl Write for LimitWriter {
+    fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
+        self.admit(bytes.len())?;
         Ok(bytes.len())
     }
 
@@ -372,7 +379,23 @@ fn ensure_serialized_size<T: Serialize + ?Sized>(
         exceeded: false,
         timed_out: false,
     };
-    let encoded = serde_json::to_writer(&mut writer, value);
+    // Add the lengths up directly, under the same limit and sampled deadline.
+    // An encoding the counter does not model, or a serializer error, is
+    // measured again through `serde_json`, which also owns the error text.
+    let counted = grust_core::count_json_bytes(value, |bytes| writer.admit(bytes).is_ok());
+    if matches!(
+        counted,
+        Err(grust_core::JsonSizeError::Unsupported | grust_core::JsonSizeError::Message(_))
+    ) {
+        writer.written = 0;
+    } else if counted.is_ok() {
+        return Ok(writer.written);
+    }
+    let encoded = if writer.timed_out || writer.exceeded {
+        Ok(())
+    } else {
+        serde_json::to_writer(&mut writer, value)
+    };
     if writer.timed_out {
         return Err(gql_execution("bounded read execution timed out"));
     }

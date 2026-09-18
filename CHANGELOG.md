@@ -6,6 +6,19 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ## Unreleased
 
+- Measure serialized size without formatting JSON. `grust-core` gains
+  `count_json_bytes` and `json_byte_len`, a byte-counting serializer that mirrors
+  `serde_json`'s compact encoding, delegates floats to `serde_json` itself, and
+  reports an encoding it does not model so the caller measures through the
+  `serde_json` writer instead; a differential test pins the two. Bounded Cypher
+  admission and `TypedGraphIndex::serialized_graph_bytes` use it, under the same
+  limit and sampled deadline.
+- `ExecutionContext::charge_cumulative_memory` and `MemoryAccount::charge`, the
+  per-copied-row charges, sample the deadline as `charge_work` does instead of
+  reading the clock for every charge. The byte limit and cancellation remain
+  exact, and `reserve` and `checkpoint` still read the clock. Together these took
+  a bounded 200,000-node scan from 340 ms to 237 ms (937 ms before this series;
+  101 ms unbounded).
 - Stop deep-copying relationships and path elements in the Cypher reference
   executor. Bound relationships, variable-length trails and their endpoints,
   shortest-path reconstruction and fixed-path accumulators now hold an owned

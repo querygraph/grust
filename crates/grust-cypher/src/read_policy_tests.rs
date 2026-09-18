@@ -258,3 +258,40 @@ fn execution_deadline_is_enforced() {
     .unwrap_err();
     assert!(error.to_string().contains("timed out"));
 }
+
+#[test]
+fn serialized_size_is_exact_whether_counted_or_written() {
+    use grust_core::{Edge, Node, Props};
+    let deadline = Instant::now() + Duration::from_secs(60);
+    // A graph is counted directly; a boolean-keyed map is not modelled by the
+    // counter and is measured through `serde_json`. Both must be exact.
+    let graph = Graph::new(
+        vec![Node::new("P", "a\"b", Props::new())],
+        vec![Edge::new("R", "a\"b", "a\"b", Props::new())],
+    );
+    let exact = serde_json::to_vec(&graph).unwrap().len();
+    assert_eq!(
+        ensure_serialized_size("graph", &graph, exact, deadline).unwrap(),
+        exact
+    );
+    let error = ensure_serialized_size("graph", &graph, exact - 1, deadline).unwrap_err();
+    assert!(
+        error
+            .to_string()
+            .contains(&format!("graph exceeds {} serialized bytes", exact - 1)),
+        "{error}"
+    );
+
+    let unmodelled = std::collections::BTreeMap::from([(true, 1), (false, 2)]);
+    assert!(grust_core::json_byte_len(&unmodelled).is_none());
+    let exact = serde_json::to_vec(&unmodelled).unwrap().len();
+    assert_eq!(
+        ensure_serialized_size("parameters", &unmodelled, exact, deadline).unwrap(),
+        exact
+    );
+    assert!(ensure_serialized_size("parameters", &unmodelled, exact - 1, deadline).is_err());
+
+    let expired = Instant::now() - Duration::from_secs(1);
+    let error = ensure_serialized_size("graph", &graph, usize::MAX, expired).unwrap_err();
+    assert!(error.to_string().contains("timed out"), "{error}");
+}

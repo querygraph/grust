@@ -11,12 +11,14 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer, de};
 
 mod graph_source;
 mod guarded_commit;
+mod json_size;
 mod typed_graph_index;
 mod unique_values;
 pub use graph_source::GraphSnapshotSource;
 pub use guarded_commit::{
     GraphCommitReceipt, GraphCommitStore, GraphExpectation, GuardedGraphCommit,
 };
+pub use json_size::{JsonSizeError, count_json_bytes, json_byte_len};
 pub use typed_graph_index::{TypedAdjacencyView, TypedGraphIndex, TypedNeighbor};
 pub use unique_values::UniqueValueIndex;
 

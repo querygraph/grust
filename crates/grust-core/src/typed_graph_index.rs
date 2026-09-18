@@ -389,8 +389,7 @@ impl TypedGraphIndex {
         *self.serialized_graph_bytes.get_or_init(|| {
             let mut size = SerializedSize(0);
             match self.source.as_graph() {
-                Some(graph) => serde_json::to_writer(&mut size, graph)
-                    .expect("measuring a graph through a counting writer cannot fail"),
+                Some(graph) => size.measure(graph),
                 None => self.measure_elements(&mut size),
             }
             size.0
@@ -409,8 +408,7 @@ impl TypedGraphIndex {
                 if slot > 0 {
                     size.add(1);
                 }
-                serde_json::to_writer(&mut *size, &element(slot))
-                    .expect("measuring an element through a counting writer cannot fail");
+                size.measure(&element(slot));
             }
         }
         size.add(r#"{"nodes":["#.len());
@@ -474,6 +472,16 @@ impl SerializedSize {
             .0
             .checked_add(bytes)
             .expect("serialized graph size exceeds usize");
+    }
+
+    /// Add `value`'s compact JSON length: counted directly, or through the
+    /// `serde_json` writer for an encoding the counter does not model.
+    fn measure<T: serde::Serialize + ?Sized>(&mut self, value: &T) {
+        match crate::json_byte_len(value) {
+            Some(bytes) => self.add(bytes),
+            None => serde_json::to_writer(&mut *self, value)
+                .expect("measuring through a counting writer cannot fail"),
+        }
     }
 }
 
