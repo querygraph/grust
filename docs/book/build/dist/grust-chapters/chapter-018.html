@@ -5,7 +5,7 @@
   <meta name="generator" content="pandoc" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
   <meta name="author" content="Alexy Khrabrov" />
-  <meta name="dcterms.date" content="2026-09-17" />
+  <meta name="dcterms.date" content="2026-09-18" />
   <title>Graph analytics through one Rust implementation</title>
   <style>
     div.sitenav { display: flex; flex-direction: row; flex-wrap: wrap; }
@@ -145,7 +145,7 @@ parser, analyzer or executor. The facade exposes these through
 class="header-section-number">16.1</span> Starting from the facade</h2>
 <div class="sourceCode" id="cb1"><pre
 class="sourceCode toml"><code class="sourceCode toml"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[dependencies]</span></span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="dt">grust</span> <span class="op">=</span> <span class="op">{ </span><span class="dt">package</span><span class="op"> =</span> <span class="st">&quot;grust-graph&quot;</span><span class="op">, </span><span class="dt">version</span><span class="op"> =</span> <span class="st">&quot;0.20.0&quot;</span><span class="op">, </span><span class="dt">features</span><span class="op"> =</span> <span class="op">[</span><span class="st">&quot;algorithms&quot;</span><span class="op">,</span> <span class="st">&quot;cypher&quot;</span><span class="op">,</span> <span class="st">&quot;arrow&quot;</span><span class="op">] }</span></span></code></pre></div>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="dt">grust</span> <span class="op">=</span> <span class="op">{ </span><span class="dt">package</span><span class="op"> =</span> <span class="st">&quot;grust-graph&quot;</span><span class="op">, </span><span class="dt">version</span><span class="op"> =</span> <span class="st">&quot;0.21.0&quot;</span><span class="op">, </span><span class="dt">features</span><span class="op"> =</span> <span class="op">[</span><span class="st">&quot;algorithms&quot;</span><span class="op">,</span> <span class="st">&quot;cypher&quot;</span><span class="op">,</span> <span class="st">&quot;arrow&quot;</span><span class="op">] }</span></span></code></pre></div>
 <p>Register the desired providers once and retain the immutable
 registry:</p>
 <div class="sourceCode" id="cb2"><pre
@@ -365,5 +365,57 @@ href="https://github.com/querygraph/grust/blob/main/docs/GENERALIZED_ALGORITHMS.
 and resource contracts</a> and <a
 href="https://github.com/querygraph/grust/tree/main/benchmarks/algorithms">benchmark
 evidence</a>.</p>
+<h2 data-number="16.5" id="what-the-cooperative-budget-costs"><span
+class="header-section-number">16.5</span> What the cooperative budget
+costs</h2>
+<p>Kernels charge the shared execution budget once per unit of graph
+work: per visited entry, and per step of a reconstructed path. That
+granularity is what makes a budget meaningful — an exhausted allowance
+stops the kernel where it stands rather than after the next batch — and
+it means the meter runs as often as the work it guards. On a 16384-node
+weighted chain with full path reconstruction, the meter is entered about
+134 million times.</p>
+<p>Two properties of that meter are therefore part of the algorithm
+contract.</p>
+<p><strong>Admission is lock-free and exact.</strong> The cumulative
+work counter and the cancellation flag are atomics. Each charge admits
+through a compare-exchange that recomputes admission against the value
+it actually replaces, so a concurrent charge cannot overshoot the limit
+between load and store, and an exhausted budget still fails exactly at
+its limit. Memory reservations, peak accounting and cancellation wakers
+keep a mutex: they are rare and need several fields to move
+together.</p>
+<p>That is true of kernels, which reserve memory per batch. It is not
+true of a materializing Cypher consumer, which charges the logical bytes
+of every value it copies and so takes that mutex once or more per row.
+Those per-copy charges, <code>charge_cumulative_memory</code> and
+<code>MemoryAccount::charge</code>, sample the deadline as work charges
+do; <code>reserve</code> still reads the clock. Moving the byte counters
+to atomics is planned in <code>docs/lock-free.md</code> and is not part
+of this release.</p>
+<p><strong>The deadline is sampled; everything else is not.</strong> An
+execution that sets no deadline pays nothing for deadline enforcement —
+neither a clock read nor a counter. An execution that sets one has its
+deadline observed within 1024 charges rather than on every charge,
+because reading the clock per unit of work costs more than the work
+itself wherever the host clocksource is paravirtualised rather than a
+register read. Cancellation remains an unconditional atomic load and is
+observed immediately. Budget limits remain exact.
+<code>checkpoint</code> reads the clock every time, so a caller that
+needs a precise poll has one.</p>
+<p>The practical consequence for callers: choose a deadline
+deliberately. A bounded read policy requires a finite one, and a kernel
+that charges per entry will consult it often. If a caller needs expiry
+observed more tightly than 1024 units of work, <code>checkpoint</code>
+is the exact instrument; the sampled path is for the charges
+themselves.</p>
+<p>These are contract properties rather than tuning knobs, and they are
+visible in measurements. In the companion algorithms benchmark,
+replacing per-charge mutex locking improved full-path Dijkstra by 14 to
+29% on direct execution and PageRank by 23 to 29% across graph families,
+and sampling the deadline reduced a full-path Cypher query on a
+4096-node chain from 21,721 ms to about 2,300 ms. Both figures come from
+one host with a Xen clocksource and are not portable constants; the
+boundary statements and raw evidence accompany them there.</p>
 </body>
 </html>

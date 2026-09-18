@@ -5,7 +5,7 @@
   <meta name="generator" content="pandoc 3.10.1" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
   <meta name="author" content="Alexy Khrabrov" />
-  <meta name="dcterms.date" content="2026-09-17" />
+  <meta name="dcterms.date" content="2026-09-18" />
   <title>Grust</title>
   <style>
 
@@ -173,7 +173,7 @@ height: auto;
 <h1 class="title">Grust</h1>
 <p class="subtitle">A Rust Property Graph Architecture</p>
 <p class="author">Alexy Khrabrov</p>
-<p class="date">2026-09-17</p>
+<p class="date">2026-09-18</p>
 </header>
 <nav id="TOC" role="doc-toc">
 <ul>
@@ -259,6 +259,8 @@ implementation</a>
 consumption</a></li>
 <li><a href="#discovery-preparation-reuse-and-execution-classes" id="toc-discovery-preparation-reuse-and-execution-classes"><span class="toc-section-number">16.4</span> Discovery, preparation reuse and
 execution classes</a></li>
+<li><a href="#what-the-cooperative-budget-costs" id="toc-what-the-cooperative-budget-costs"><span class="toc-section-number">16.5</span> What the cooperative budget
+costs</a></li>
 </ul></li>
 <li><a href="#arrow-pipelines-adbc-and-datafusion" id="toc-arrow-pipelines-adbc-and-datafusion"><span class="toc-section-number">17</span> Arrow pipelines, ADBC and
 DataFusion</a>
@@ -524,12 +526,12 @@ Grust’s typed ingestion layer connects those two worlds.</p>
 <p>The typed layer is optional. It is enabled through Cargo
 features:</p>
 <div class="sourceCode" id="cb9"><pre class="sourceCode toml"><code class="sourceCode toml"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[dependencies]</span></span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="dt">grust</span> <span class="op">=</span> <span class="op">{ </span><span class="dt">package</span><span class="op"> =</span> <span class="st">&quot;grust-graph&quot;</span><span class="op">, </span><span class="dt">version</span><span class="op"> =</span> <span class="st">&quot;0.20.0&quot;</span><span class="op">, </span><span class="dt">features</span><span class="op"> =</span> <span class="op">[</span><span class="st">&quot;typed-garde&quot;</span><span class="op">] }</span></span></code></pre></div>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="dt">grust</span> <span class="op">=</span> <span class="op">{ </span><span class="dt">package</span><span class="op"> =</span> <span class="st">&quot;grust-graph&quot;</span><span class="op">, </span><span class="dt">version</span><span class="op"> =</span> <span class="st">&quot;0.21.0&quot;</span><span class="op">, </span><span class="dt">features</span><span class="op"> =</span> <span class="op">[</span><span class="st">&quot;typed-garde&quot;</span><span class="op">] }</span></span></code></pre></div>
 <p><code>typed-garde</code> adds Rust-struct validation and typed
 lowering. A second feature, <code>typed-zod-rs</code>, layers raw JSON
 shape validation on top:</p>
 <div class="sourceCode" id="cb10"><pre class="sourceCode toml"><code class="sourceCode toml"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[dependencies]</span></span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="dt">grust</span> <span class="op">=</span> <span class="op">{ </span><span class="dt">package</span><span class="op"> =</span> <span class="st">&quot;grust-graph&quot;</span><span class="op">, </span><span class="dt">version</span><span class="op"> =</span> <span class="st">&quot;0.20.0&quot;</span><span class="op">, </span><span class="dt">features</span><span class="op"> =</span> <span class="op">[</span><span class="st">&quot;typed-zod-rs&quot;</span><span class="op">] }</span></span></code></pre></div>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="dt">grust</span> <span class="op">=</span> <span class="op">{ </span><span class="dt">package</span><span class="op"> =</span> <span class="st">&quot;grust-graph&quot;</span><span class="op">, </span><span class="dt">version</span><span class="op"> =</span> <span class="st">&quot;0.21.0&quot;</span><span class="op">, </span><span class="dt">features</span><span class="op"> =</span> <span class="op">[</span><span class="st">&quot;typed-zod-rs&quot;</span><span class="op">] }</span></span></code></pre></div>
 <p><code>typed-zod-rs</code> implies <code>typed-garde</code>. That
 relationship matters: zod-rs checks untrusted JSON shape first, Serde
 turns the JSON into Rust values, and garde checks typed domain
@@ -1090,7 +1092,7 @@ evidence must disclose dataset, concurrency, indexing, load cost and
 peak-memory boundaries separately from correctness qualification.</p>
 <h2 data-number="8.3" id="ladybugdb"><span class="header-section-number">8.3</span> LadybugDB</h2>
 <p><code>grust-ladybug</code> embeds LadybugDB directly through the Rust
-<code>lbug</code> 0.20.2 crate. It is the durable local graph-database
+<code>lbug</code> 0.20.4 crate. It is the durable local graph-database
 backend: no Docker service, no HTTP bridge, and no separate daemon. The
 store opens either an in-memory Ladybug database or an on-disk Ladybug
 directory and creates Grust-managed Ladybug node and relationship tables
@@ -1808,14 +1810,39 @@ ungrouped empty aggregate produces one result row; a grouped query with
 no input produces no groups. The same rules apply to DISTINCT sums and
 the streaming aggregate path. These individual contracts do not imply
 complete Cypher compatibility for every aggregate type or function.</p>
+<p>Lists have three binding forms, usable anywhere an expression is: a
+fold <code>reduce(acc = seed, item IN list | body)</code>, a
+comprehension <code>[item IN list WHERE predicate | projection]</code>
+with either clause optional, and the quantifiers
+<code>any</code>/<code>all</code>/<code>none</code>/<code>single(item IN list WHERE predicate)</code>
+over arbitrary lists and predicates. Each form pushes an immutable
+lexical scope over the row rather than modifying it, so inner forms see
+outer bindings and <code>sum(reduce(...))</code> folds per row inside an
+aggregate. A binding name that already exists in the row is rejected
+during semantic analysis, not resolved by precedence. An empty list
+folds to its seed, a <code>NULL</code> list yields <code>NULL</code>, a
+<code>NULL</code> element is handed to the body, and quantifiers follow
+three-valued logic. Every element charges one work unit, so a budget,
+cancellation, or deadline stops a long fold between elements. No dialect
+lowering exists yet: every pushdown planner declines a query containing
+a binding form and the store answers from the reference executor. A
+write statement’s <code>RETURN</code> evaluates the same forms through
+the same evaluator over its materialized bindings; the earlier
+restricted write shape
+<code>item IN variable.property WHERE item = value</code> keeps its
+exact-equality results.</p>
 <p>Candidate rows share immutable node and edge bindings as patterns
-expand. Copying a candidate therefore shares the bound element instead
-of cloning its property map again. Projected results remain owned, and
-edge-slot identity and row order remain unchanged. Logical full-element
-copy charges remain conservative even when the physical representation
-shares storage. This reduces repeated allocation; it does not make the
-complete MATCH pipeline streaming or impose a whole-process memory
-cap.</p>
+expand. Over an owned graph a matched node or relationship is bound by
+reference into that graph, which outlives every row of the query; an
+element that a typed index builds on demand is moved into one shared
+binding. Variable-length trails, shortest-path reconstruction and path
+accumulators hold elements the same way, so copying a candidate or a
+trail never clones a property map. A row itself is a small key-sorted
+vector of bindings. Projected results remain owned, and edge-slot
+identity and row order remain unchanged. Logical full-element copy
+charges remain conservative even when the physical representation shares
+storage. This reduces repeated allocation; it does not make the complete
+MATCH pipeline streaming or impose a whole-process memory cap.</p>
 <p>The read core also composes: <code>CALL { … }</code> subqueries
 execute once per incoming row with the outer bindings visible
 (correlated import-all scoping) and join their <code>RETURN</code>
@@ -2025,7 +2052,7 @@ cross-variable correlated <code>SET</code>.</p>
 set of <code>Supported</code> features in Grust’s scoped manifest. The
 internal profile is named <code>Full39075</code>, but it is not a claim
 of complete ISO/IEC 39075 certification or uniform backend execution.
-Sixty-nine of the 74 Grust-catalogued features are implemented; the
+Seventy-two of the 77 Grust-catalogued features are implemented; the
 other five are intentional strict-write rejections. A test pins that
 scoped-out set to the feature manifest, while backend descriptors and
 integration tests record which execution paths are reference, pushed,
@@ -2810,7 +2837,7 @@ parser, analyzer or executor. The facade exposes these through
 <code>arrow</code> features.</p>
 <h2 data-number="16.1" id="starting-from-the-facade"><span class="header-section-number">16.1</span> Starting from the facade</h2>
 <div class="sourceCode" id="cb41"><pre class="sourceCode toml"><code class="sourceCode toml"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[dependencies]</span></span>
-<span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a><span class="dt">grust</span> <span class="op">=</span> <span class="op">{ </span><span class="dt">package</span><span class="op"> =</span> <span class="st">&quot;grust-graph&quot;</span><span class="op">, </span><span class="dt">version</span><span class="op"> =</span> <span class="st">&quot;0.20.0&quot;</span><span class="op">, </span><span class="dt">features</span><span class="op"> =</span> <span class="op">[</span><span class="st">&quot;algorithms&quot;</span><span class="op">,</span> <span class="st">&quot;cypher&quot;</span><span class="op">,</span> <span class="st">&quot;arrow&quot;</span><span class="op">] }</span></span></code></pre></div>
+<span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a><span class="dt">grust</span> <span class="op">=</span> <span class="op">{ </span><span class="dt">package</span><span class="op"> =</span> <span class="st">&quot;grust-graph&quot;</span><span class="op">, </span><span class="dt">version</span><span class="op"> =</span> <span class="st">&quot;0.21.0&quot;</span><span class="op">, </span><span class="dt">features</span><span class="op"> =</span> <span class="op">[</span><span class="st">&quot;algorithms&quot;</span><span class="op">,</span> <span class="st">&quot;cypher&quot;</span><span class="op">,</span> <span class="st">&quot;arrow&quot;</span><span class="op">] }</span></span></code></pre></div>
 <p>Register the desired providers once and retain the immutable
 registry:</p>
 <div class="sourceCode" id="cb42"><pre class="sourceCode rust"><code class="sourceCode rust"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a><span class="kw">use</span> <span class="pp">grust::</span><span class="op">{</span>algorithm_procedures<span class="op">,</span> procedures<span class="op">,</span> CypherParameters<span class="op">};</span></span>
@@ -3023,6 +3050,57 @@ oracles, source/binary receipts, frozen baseline results and current
 qualification status. See the <a href="https://github.com/querygraph/grust/blob/main/docs/GENERALIZED_ALGORITHMS.md">coverage
 and resource contracts</a> and <a href="https://github.com/querygraph/grust/tree/main/benchmarks/algorithms">benchmark
 evidence</a>.</p>
+<h2 data-number="16.5" id="what-the-cooperative-budget-costs"><span class="header-section-number">16.5</span> What the cooperative budget
+costs</h2>
+<p>Kernels charge the shared execution budget once per unit of graph
+work: per visited entry, and per step of a reconstructed path. That
+granularity is what makes a budget meaningful — an exhausted allowance
+stops the kernel where it stands rather than after the next batch — and
+it means the meter runs as often as the work it guards. On a 16384-node
+weighted chain with full path reconstruction, the meter is entered about
+134 million times.</p>
+<p>Two properties of that meter are therefore part of the algorithm
+contract.</p>
+<p><strong>Admission is lock-free and exact.</strong> The cumulative
+work counter and the cancellation flag are atomics. Each charge admits
+through a compare-exchange that recomputes admission against the value
+it actually replaces, so a concurrent charge cannot overshoot the limit
+between load and store, and an exhausted budget still fails exactly at
+its limit. Memory reservations, peak accounting and cancellation wakers
+keep a mutex: they are rare and need several fields to move
+together.</p>
+<p>That is true of kernels, which reserve memory per batch. It is not
+true of a materializing Cypher consumer, which charges the logical bytes
+of every value it copies and so takes that mutex once or more per row.
+Those per-copy charges, <code>charge_cumulative_memory</code> and
+<code>MemoryAccount::charge</code>, sample the deadline as work charges
+do; <code>reserve</code> still reads the clock. Moving the byte counters
+to atomics is planned in <code>docs/lock-free.md</code> and is not part
+of this release.</p>
+<p><strong>The deadline is sampled; everything else is not.</strong> An
+execution that sets no deadline pays nothing for deadline enforcement —
+neither a clock read nor a counter. An execution that sets one has its
+deadline observed within 1024 charges rather than on every charge,
+because reading the clock per unit of work costs more than the work
+itself wherever the host clocksource is paravirtualised rather than a
+register read. Cancellation remains an unconditional atomic load and is
+observed immediately. Budget limits remain exact.
+<code>checkpoint</code> reads the clock every time, so a caller that
+needs a precise poll has one.</p>
+<p>The practical consequence for callers: choose a deadline
+deliberately. A bounded read policy requires a finite one, and a kernel
+that charges per entry will consult it often. If a caller needs expiry
+observed more tightly than 1024 units of work, <code>checkpoint</code>
+is the exact instrument; the sampled path is for the charges
+themselves.</p>
+<p>These are contract properties rather than tuning knobs, and they are
+visible in measurements. In the companion algorithms benchmark,
+replacing per-charge mutex locking improved full-path Dijkstra by 14 to
+29% on direct execution and PageRank by 23 to 29% across graph families,
+and sampling the deadline reduced a full-path Cypher query on a
+4096-node chain from 21,721 ms to about 2,300 ms. Both figures come from
+one host with a Xen clocksource and are not portable constants; the
+boundary statements and raw evidence accompany them there.</p>
 <h1 data-number="17" id="arrow-pipelines-adbc-and-datafusion"><span class="header-section-number">17</span> Arrow pipelines, ADBC and
 DataFusion</h1>
 <p>Grust’s Arrow-based adapters use <code>grust-arrow</code> for common
