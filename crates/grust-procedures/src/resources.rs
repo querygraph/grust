@@ -153,6 +153,12 @@ impl ExecutionContext {
         if self.0.cancelled.load(Ordering::Acquire) {
             return Err(ProcedureError::Cancelled);
         }
+        // An execution without a deadline pays nothing here: no clock, and no
+        // sampling counter either. Ticking one unconditionally cost the
+        // deadline-free kernels more than the check it was meant to amortise.
+        let Some(limit) = self.0.limits.deadline else {
+            return Ok(());
+        };
         if matches!(deadline, DeadlineCheck::Sampled)
             && self
                 .0
@@ -163,12 +169,7 @@ impl ExecutionContext {
         {
             return Ok(());
         }
-        if self
-            .0
-            .limits
-            .deadline
-            .is_some_and(|deadline| Instant::now() >= deadline)
-        {
+        if Instant::now() >= limit {
             return Err(ProcedureError::DeadlineExceeded);
         }
         Ok(())
