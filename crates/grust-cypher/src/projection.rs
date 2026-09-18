@@ -580,7 +580,7 @@ pub(crate) fn classify_return_target_materialization(
         | CypherReturnTarget::PropertyListIndex(_)
         | CypherReturnTarget::PropertyListSlice(_)
         | CypherReturnTarget::PropertyListContains(_)
-        | CypherReturnTarget::PropertyListPredicate(_)
+        | CypherReturnTarget::Expression(_)
         | CypherReturnTarget::PropertyListElement(_)
         | CypherReturnTarget::PropertyListTail(_)
         | CypherReturnTarget::PropertyAbs(_)
@@ -630,9 +630,7 @@ pub(crate) fn classify_return_scalar_projection(
         | CypherReturnScalarAst::PropertyListTail(_) => {
             CypherReturnScalarProjectionKind::ListAccess
         }
-        CypherReturnScalarAst::PropertyListPredicate(_) => {
-            CypherReturnScalarProjectionKind::ListPredicate
-        }
+        CypherReturnScalarAst::Expression(_) => CypherReturnScalarProjectionKind::Expression,
         CypherReturnScalarAst::PropertyAbs(_)
         | CypherReturnScalarAst::PropertyNumericRound(_)
         | CypherReturnScalarAst::PropertyNumericSign(_) => {
@@ -681,7 +679,7 @@ pub(crate) fn classify_return_scalar_ast_family(
         CypherReturnScalarAst::PropertyListIndex(_)
         | CypherReturnScalarAst::PropertyListSlice(_)
         | CypherReturnScalarAst::PropertyListContains(_)
-        | CypherReturnScalarAst::PropertyListPredicate(_)
+        | CypherReturnScalarAst::Expression(_)
         | CypherReturnScalarAst::PropertyListElement(_)
         | CypherReturnScalarAst::PropertyListTail(_) => CypherReturnScalarAstFamily::List,
         CypherReturnScalarAst::PropertyAbs(_)
@@ -724,9 +722,7 @@ pub(crate) fn scalar_return_ast(target: &CypherReturnTarget) -> CypherReturnScal
         CypherReturnTarget::PropertyListContains(contains) => {
             CypherReturnScalarAst::PropertyListContains(contains)
         }
-        CypherReturnTarget::PropertyListPredicate(predicate) => {
-            CypherReturnScalarAst::PropertyListPredicate(predicate)
-        }
+        CypherReturnTarget::Expression(predicate) => CypherReturnScalarAst::Expression(predicate),
         CypherReturnTarget::PropertyListElement(element) => {
             CypherReturnScalarAst::PropertyListElement(element)
         }

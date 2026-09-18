@@ -518,6 +518,17 @@ fn require_entity(name: &str, scope: &Scope, action: &str) -> Result<()> {
     }
 }
 
+/// Validate a materialized write RETURN with the same lexical rules as reads.
+pub(crate) fn check_return_expression(
+    expr: &Expr,
+    names: impl Iterator<Item = String>,
+) -> Result<()> {
+    let scope = Scope {
+        vars: names.map(|name| (name, ElementKind::Value)).collect(),
+    };
+    check_expr_bound(expr, &scope)
+}
+
 /// Ensure every variable referenced by `expr` is bound in `scope`.
 fn check_expr_bound(expr: &Expr, scope: &Scope) -> Result<()> {
     match expr {

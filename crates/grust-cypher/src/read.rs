@@ -53,6 +53,9 @@ pub use procedure_plan::{
 };
 mod binding_forms;
 mod expression_scope;
+mod string_functions;
+mod write_expression;
+pub(crate) use write_expression::evaluate_write_expression;
 mod indexing;
 use expression_scope::ExpressionScope;
 mod procedures;
@@ -3196,6 +3199,13 @@ fn eval_scalar_function(
         return eval_element_function(&lower, arg, row, params);
     }
 
+    if matches!(
+        lower.as_str(),
+        "split" | "substring" | "left" | "right" | "replace"
+    ) {
+        return string_functions::evaluate(&lower, args, row, params);
+    }
+
     // All remaining functions are unary.
     let [arg] = args else {
         return Err(unsupported_gql_feature(
@@ -3261,6 +3271,11 @@ fn eval_scalar_function(
             .last()
             .unwrap_or(Value::Null)),
         "isempty" => restricted_is_empty_value(value),
+        "tail" => restricted_list_tail_value(value),
+        "tostringlist" => restricted_list_cast_value(value, CypherReturnListCast::String),
+        "tointegerlist" => restricted_list_cast_value(value, CypherReturnListCast::Integer),
+        "tofloatlist" => restricted_list_cast_value(value, CypherReturnListCast::Float),
+        "tobooleanlist" => restricted_list_cast_value(value, CypherReturnListCast::Boolean),
         // Temporal/decimal constructors (Unit T). `duration` takes an ISO 8601
         // string; `decimal` accepts a numeral string or coerces an int/float.
         "duration" => match value {

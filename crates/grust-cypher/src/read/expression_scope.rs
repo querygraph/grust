@@ -5,6 +5,7 @@ use super::{Bound, Row};
 
 pub(super) enum ExpressionScope<'a> {
     Row(&'a Row),
+    WriteRow(&'a Row),
     Binding {
         parent: &'a ExpressionScope<'a>,
         name: &'a str,
@@ -17,6 +18,14 @@ impl<'a> ExpressionScope<'a> {
         Self::Row(row)
     }
 
+    pub(super) fn legacy_quantifier_equality(&self) -> bool {
+        match self {
+            Self::WriteRow(_) => true,
+            Self::Row(_) => false,
+            Self::Binding { parent, .. } => parent.legacy_quantifier_equality(),
+        }
+    }
+
     pub(super) fn bind(&'a self, name: &'a str, value: &'a Bound) -> Self {
         Self::Binding {
             parent: self,
@@ -27,7 +36,7 @@ impl<'a> ExpressionScope<'a> {
 
     pub(super) fn get(&self, name: &str) -> Option<&Bound> {
         match self {
-            Self::Row(row) => row.get(name),
+            Self::Row(row) | Self::WriteRow(row) => row.get(name),
             Self::Binding {
                 parent,
                 name: bound_name,

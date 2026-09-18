@@ -1218,8 +1218,8 @@ where
             )
             .await
         }
-        CypherReturnScalarAst::PropertyListPredicate(predicate) => {
-            materialize_return_property_list_predicate_value_at(
+        CypherReturnScalarAst::Expression(expression) => {
+            let mut evaluation = CypherReturnEvaluation {
                 store,
                 node_bindings,
                 edge_bindings,
@@ -1228,11 +1228,8 @@ where
                 row_path_bindings,
                 nodes,
                 edges,
-                projection,
-                predicate,
-                row_index,
-            )
-            .await
+            };
+            crate::read::evaluate_write_expression(&mut evaluation, expression, row_index).await
         }
         CypherReturnScalarAst::PropertyListElement(element) => {
             materialize_return_property_list_element_value_at(

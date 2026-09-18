@@ -110,7 +110,17 @@ pub(super) fn quantifier(
     scope: &ExpressionScope<'_>,
     params: &CypherParameters,
 ) -> Result<Value> {
+    let legacy_needle = if scope.legacy_quantifier_equality() {
+        legacy_equality_operand(item, list, predicate)
+            .map(|operand| eval_scoped(operand, scope, params))
+            .transpose()?
+    } else {
+        None
+    };
     let list = eval_scoped(list, scope, params)?;
+    if matches!(legacy_needle, Some(Value::Null)) {
+        return Ok(Value::Null);
+    }
     if matches!(list, Value::Null) {
         return Ok(Value::Null);
     }
@@ -118,12 +128,26 @@ pub(super) fn quantifier(
     let mut total = 0usize;
     let mut saw_null = false;
     let mut saw_false = false;
-    for value in elements(list, "quantifier")? {
+    let values = elements(list, "quantifier").map_err(|error| {
+        if legacy_needle.is_some() {
+            cypher_unsupported_cardinality(
+                "writable Cypher RETURN list predicates only support array values",
+            )
+        } else {
+            error
+        }
+    })?;
+    for value in values {
         read_budget::charge_candidate_work(1, "evaluating quantifier element")?;
+        let legacy_match = legacy_needle.as_ref().map(|needle| value == *needle);
         let element = Bound::Value(value);
         let child = scope.bind(item, &element);
         total += 1;
-        match as_bool(eval_scoped(predicate, &child, params)?)? {
+        let decision = match legacy_match {
+            Some(equal) => Some(equal),
+            None => as_bool(eval_scoped(predicate, &child, params)?)?,
+        };
+        match decision {
             Some(true) => matched += 1,
             Some(false) => saw_false = true,
             None => saw_null = true,
@@ -144,4 +168,44 @@ pub(super) fn quantifier(
         ListQuantifier::All => Some(false),
     };
     Ok(to_bool_or_null(known))
+}
+
+// The formerly admitted write shape used exact Value equality and returned NULL
+// for a NULL needle even on an empty list. Preserve that contract in the shared
+// loop; arbitrary predicates retain ordinary three-valued expression semantics.
+fn legacy_equality_operand<'a>(item: &str, list: &Expr, predicate: &'a Expr) -> Option<&'a Expr> {
+    let Expr::Property { base, .. } = list else {
+        return None;
+    };
+    let Expr::Variable(variable) = base.as_ref() else {
+        return None;
+    };
+    let Expr::Binary {
+        op: BinaryOp::Eq,
+        lhs,
+        rhs,
+    } = predicate
+    else {
+        return None;
+    };
+    if !matches!(lhs.as_ref(), Expr::Variable(name) if name == item) {
+        return None;
+    }
+    fn references_only(expr: &Expr, allowed: &str) -> bool {
+        if let Expr::Variable(name) = expr {
+            return name == allowed;
+        }
+        if matches!(
+            expr,
+            Expr::Reduce { .. } | Expr::ListComprehension { .. } | Expr::Quantifier { .. }
+        ) {
+            return false;
+        }
+        let mut valid = true;
+        crate::semantics::visit_children(expr, &mut |child| {
+            valid &= references_only(child, allowed)
+        });
+        valid
+    }
+    references_only(rhs, variable).then_some(rhs)
 }
