@@ -111,6 +111,12 @@ pub struct LadybugGraphStore {
     schema: RwLock<Option<GraphSchema>>,
     /// See [`LadybugGraphStore::set_bulk_load_trusts_fresh_rows`].
     bulk_load_trusts_fresh_rows: std::sync::atomic::AtomicBool,
+    /// Node ids this store copied under the fresh-rows mode, per table: a
+    /// later batch that carries an already-copied node (an edge batch
+    /// carrying its endpoints) skips it instead of failing the COPY on a
+    /// duplicate primary key.
+    fresh_copied_node_ids:
+        Mutex<std::collections::HashMap<String, std::collections::HashSet<String>>>,
 }
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
@@ -148,6 +154,7 @@ impl LadybugGraphStore {
             lock: Mutex::new(()),
             schema: RwLock::new(None),
             bulk_load_trusts_fresh_rows: std::sync::atomic::AtomicBool::new(false),
+            fresh_copied_node_ids: Mutex::new(std::collections::HashMap::new()),
         })
     }
 
@@ -162,10 +169,13 @@ impl LadybugGraphStore {
     /// on every chunk after the first: quadratic in the chunk count, hours at
     /// a hundred million edges. A caller that knows its chunks carry no key the
     /// store already holds — a fresh graph loaded once, in disjoint pieces —
-    /// can turn the read-back off; every row is then copied, and a duplicate
-    /// key in the input is the caller's error (a node COPY fails on it; a
-    /// relationship table takes the duplicate as a parallel edge). Off by
-    /// default; single-row writes and non-bulk paths are unaffected.
+    /// can turn the read-back off. Every relationship row is then copied (a
+    /// repeated pair becomes a parallel edge). Node ids the store copied in
+    /// this mode are remembered in memory, per table, so a later batch that
+    /// carries an already-copied node — an edge batch carrying its endpoints —
+    /// skips it, props unchanged; a node id the store held before this mode
+    /// was entered is the caller's error and fails the COPY. Off by default;
+    /// single-row writes and non-bulk paths are unaffected.
     pub fn set_bulk_load_trusts_fresh_rows(&self, trusts: bool) {
         self.bulk_load_trusts_fresh_rows
             .store(trusts, std::sync::atomic::Ordering::Relaxed);

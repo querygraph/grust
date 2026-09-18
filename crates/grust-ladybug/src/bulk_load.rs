@@ -36,7 +36,8 @@ impl LadybugGraphStore {
         table: &str,
         nodes: &[&Node],
     ) -> Result<usize> {
-        let existing = if self.bulk_load_trusts_fresh_rows()
+        let trusts_fresh = self.bulk_load_trusts_fresh_rows();
+        let existing = if trusts_fresh
             || Self::count(conn, &format!("MATCH (n:{table}) RETURN count(n);"))? == 0
         {
             HashSet::new()
@@ -44,11 +45,26 @@ impl LadybugGraphStore {
             self.existing_node_ids(conn, table)?
         };
         let mut fresh: BTreeMap<&str, &Node> = BTreeMap::new();
-        for node in nodes {
-            if existing.contains(node.id.as_str()) {
-                self.write_node_locked(conn, node, table)?;
-            } else {
-                fresh.insert(node.id.as_str(), node);
+        if trusts_fresh {
+            // Already-copied ids (this store, this mode) are carried endpoints:
+            // skip them; everything else is new by the caller's word.
+            let copied = self
+                .fresh_copied_node_ids
+                .lock()
+                .map_err(|_| GrustError::Backend("Ladybug fresh-copy set poisoned".into()))?;
+            let seen = copied.get(table);
+            for node in nodes {
+                if !seen.is_some_and(|s| s.contains(node.id.as_str())) {
+                    fresh.insert(node.id.as_str(), node);
+                }
+            }
+        } else {
+            for node in nodes {
+                if existing.contains(node.id.as_str()) {
+                    self.write_node_locked(conn, node, table)?;
+                } else {
+                    fresh.insert(node.id.as_str(), node);
+                }
             }
         }
         if fresh.is_empty() {
@@ -65,6 +81,16 @@ impl LadybugGraphStore {
         ])?;
         self.copy_from_csv(conn, table, &batch)?;
         self.bulk_write_node_index(conn, table, &fresh)?;
+        if trusts_fresh {
+            let mut copied = self
+                .fresh_copied_node_ids
+                .lock()
+                .map_err(|_| GrustError::Backend("Ladybug fresh-copy set poisoned".into()))?;
+            copied
+                .entry(table.to_string())
+                .or_default()
+                .extend(fresh.keys().map(|id| id.to_string()));
+        }
         Ok(nodes.len())
     }
 
@@ -301,6 +327,55 @@ mod tests {
                 .await?;
             assert_eq!(out.len(), 1, "upsert must not add a parallel edge");
             assert_eq!(out[0].props, props(&[("v", json!(2))]));
+            Ok(())
+        })
+    }
+
+    /// The chunked-load shape: every edge batch carries its endpoint nodes
+    /// again. In fresh-rows mode the carried nodes must be skipped, not fail
+    /// the COPY on a duplicate primary key, and every edge must land.
+    #[test]
+    fn fresh_rows_mode_skips_carried_endpoints_across_chunks() -> Result<()> {
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        rt.block_on(async {
+            let store = LadybugGraphStore::in_memory()?;
+            store.set_bulk_load_trusts_fresh_rows(true);
+            let node = |i: usize| Node::new("Thing", format!("n{i}"), props(&[]));
+            // nodes first, as the harness does, then edge chunks carrying endpoints
+            store
+                .put_graph(&Graph::new((0..4).map(node).collect(), vec![]))
+                .await?;
+            for (a, b) in [(0usize, 1usize), (1, 2), (2, 3), (0, 3)] {
+                let chunk = Graph::new(
+                    vec![node(a), node(b)],
+                    vec![Edge::new(
+                        "REL",
+                        format!("n{a}"),
+                        format!("n{b}"),
+                        props(&[]),
+                    )],
+                );
+                store.put_graph(&chunk).await?;
+            }
+            let mut total = 0;
+            for i in 0..4 {
+                total += store
+                    .get_edges(EdgeQuery {
+                        from: Some(NodeId::new(format!("n{i}"))),
+                        ..Default::default()
+                    })
+                    .await?
+                    .len();
+            }
+            assert_eq!(total, 4, "every edge landed exactly once");
+            for i in 0..4 {
+                assert!(
+                    store
+                        .get_node(&NodeId::new(format!("n{i}")))
+                        .await?
+                        .is_some()
+                );
+            }
             Ok(())
         })
     }
