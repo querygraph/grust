@@ -1700,10 +1700,12 @@ bindings; the earlier restricted write shape `item IN variable.property WHERE
 item = value` keeps its exact-equality results.
 
 Candidate rows share immutable node and edge bindings as patterns expand.
-Over an owned graph a matched node is bound by reference into that graph, which
-outlives every row of the query; a node that a typed index builds on demand is
-bound as one shared copy. Copying a candidate therefore never clones a bound
-node's property map. Projected results remain owned, and edge-slot identity and
+Over an owned graph a matched node or relationship is bound by reference into
+that graph, which outlives every row of the query; an element that a typed
+index builds on demand is moved into one shared binding. Variable-length trails,
+shortest-path reconstruction and path accumulators hold elements the same way,
+so copying a candidate or a trail never clones a property map. A row itself is
+a small key-sorted vector of bindings. Projected results remain owned, and edge-slot identity and
 row order remain unchanged. Logical full-element copy charges remain conservative
 even when the physical representation shares storage. This reduces repeated
 allocation; it does not make the complete MATCH pipeline streaming or impose a

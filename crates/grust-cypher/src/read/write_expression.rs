@@ -17,7 +17,7 @@ pub(crate) async fn evaluate_write_expression<S: GraphStore + Sync>(
             let edge = values
                 .get(row_index)
                 .ok_or_else(|| gql_cardinality("write RETURN edge row missing"))?;
-            Bound::Edge(Arc::new(edge.clone()), None)
+            Bound::Edge(edge.clone().into(), None)
         } else if let Some(id) = evaluation.node_bindings.get(name) {
             let node = resolve_bound_node(evaluation.store, evaluation.nodes, name, id).await?;
             Bound::Node(node.clone().into())
@@ -25,7 +25,7 @@ pub(crate) async fn evaluate_write_expression<S: GraphStore + Sync>(
             let edge =
                 resolve_bound_edge_cached(evaluation.store, evaluation.edges, identity, name)
                     .await?;
-            Bound::Edge(Arc::new(edge.clone()), None)
+            Bound::Edge(edge.clone().into(), None)
         } else if evaluation.row_path_bindings.contains_key(name) {
             Bound::Value(
                 materialize_return_path_value_at(

@@ -579,9 +579,18 @@ impl PathValue {
     }
 
     pub fn from_graph_parts(nodes: &[Node], relationships: &[Edge]) -> Self {
+        Self::from_graph_elements(nodes, relationships)
+    }
+
+    /// [`Self::from_graph_parts`] over elements that are not held in slices,
+    /// such as a traversal that borrows them from a graph.
+    pub fn from_graph_elements<'a>(
+        nodes: impl IntoIterator<Item = &'a Node>,
+        relationships: impl IntoIterator<Item = &'a Edge>,
+    ) -> Self {
         Self {
-            nodes: nodes.iter().map(node_to_json).collect(),
-            relationships: relationships.iter().map(edge_to_json).collect(),
+            nodes: nodes.into_iter().map(node_to_json).collect(),
+            relationships: relationships.into_iter().map(edge_to_json).collect(),
         }
     }
 }

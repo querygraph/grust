@@ -6,6 +6,19 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ## Unreleased
 
+- Stop deep-copying relationships and path elements in the Cypher reference
+  executor. Bound relationships, variable-length trails and their endpoints,
+  shortest-path reconstruction and fixed-path accumulators now hold an owned
+  graph's elements by reference and share elements a typed index builds, moving
+  rather than copying those. A variable-length trail was copied in full, edge
+  properties included, for every result. Candidate rows are a key-sorted vector
+  instead of a B-tree, which allocated a full leaf per row; `COUNT`, `SUM` and
+  `AVG` fold their arguments as they are evaluated; and `UNWIND` moves the row
+  into its last element. Logical copy charges are unchanged. On a 200,000-node
+  ring, `[:KNOWS*1..3]` went from 1.1 s to 0.54 s and an eight-element `UNWIND`
+  with `sum` from 1.3 s to 0.57 s (single release-mode runs).
+- Add `PathValue::from_graph_elements`, which builds a path value from borrowed
+  nodes and relationships that are not held in slices.
 - Bind matched nodes of an owned graph by reference in the Cypher reference
   executor. A `MATCH` start candidate was deep-copied into the candidate list
   and again into the row, and every matched neighbour was deep-copied once; rows

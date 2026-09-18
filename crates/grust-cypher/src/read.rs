@@ -84,38 +84,54 @@ pub use procedures::run_read_query_with_registry;
 enum Bound<'g> {
     Node(NodeBinding<'g>),
     // Graph-free pushed bindings have no slot; graph MATCH bindings do.
-    Edge(Arc<Edge>, Option<usize>),
+    Edge(EdgeBinding<'g>, Option<usize>),
     Value(Value),
 }
 
-/// A bound node. An owned graph outlives every row of the query reading it, so
-/// its nodes are bound by reference; a node built on demand is shared instead.
-/// Either way binding charges the logical copy and never clones a property map.
-#[derive(Clone, Debug)]
-enum NodeBinding<'g> {
-    Borrowed(&'g Node),
-    Shared(Arc<Node>),
+/// A bound graph element. An owned graph outlives every row of the query
+/// reading it, so its elements are bound by reference; an element built on
+/// demand is shared instead. Either way binding charges the logical copy and
+/// never clones a property map.
+#[derive(Debug)]
+enum Element<'g, T> {
+    Borrowed(&'g T),
+    Shared(Arc<T>),
 }
 
-impl std::ops::Deref for NodeBinding<'_> {
-    type Target = Node;
-    fn deref(&self) -> &Node {
+type NodeBinding<'g> = Element<'g, Node>;
+type EdgeBinding<'g> = Element<'g, Edge>;
+
+impl<T> Clone for Element<'_, T> {
+    fn clone(&self) -> Self {
         match self {
-            Self::Borrowed(node) => node,
-            Self::Shared(node) => node,
+            Self::Borrowed(element) => Self::Borrowed(element),
+            Self::Shared(element) => Self::Shared(Arc::clone(element)),
         }
     }
 }
 
-impl From<Node> for NodeBinding<'_> {
-    fn from(node: Node) -> Self {
-        Self::Shared(Arc::new(node))
+impl<T> std::ops::Deref for Element<'_, T> {
+    type Target = T;
+    fn deref(&self) -> &T {
+        match self {
+            Self::Borrowed(element) => element,
+            Self::Shared(element) => element,
+        }
     }
 }
 
-impl From<Arc<Node>> for NodeBinding<'_> {
-    fn from(node: Arc<Node>) -> Self {
-        Self::Shared(node)
+impl<T> From<T> for Element<'_, T> {
+    fn from(element: T) -> Self {
+        Self::Shared(Arc::new(element))
+    }
+}
+
+impl<'g, T: Clone> From<Cow<'g, T>> for Element<'g, T> {
+    fn from(element: Cow<'g, T>) -> Self {
+        match element {
+            Cow::Borrowed(element) => Self::Borrowed(element),
+            Cow::Owned(element) => element.into(),
+        }
     }
 }
 
@@ -238,11 +254,6 @@ fn clone_json_value(value: &serde_json::Value, context: &str) -> Result<Value> {
     Ok(Value::from_json(value.clone()))
 }
 
-fn clone_node(node: &Node, context: &str) -> Result<Node> {
-    charge_intermediate_copy(context, || read_budget::node_copy_bytes(node))?;
-    Ok(node.clone())
-}
-
 /// Bind an element that is already built. The logical copy is charged in full,
 /// exactly as a deep copy would be; only the storage is shared.
 fn share_node<'g>(node: &NodeBinding<'g>, context: &str) -> Result<NodeBinding<'g>> {
@@ -250,27 +261,27 @@ fn share_node<'g>(node: &NodeBinding<'g>, context: &str) -> Result<NodeBinding<'
     Ok(node.clone())
 }
 
-/// Bind a looked-up node: by reference when the owned graph holds it, otherwise
-/// as one shared copy of the node the index built.
-fn bind_node<'g>(node: &Cow<'g, Node>, context: &str) -> Result<NodeBinding<'g>> {
-    match node {
-        Cow::Borrowed(node) => borrow_node(node, context),
-        Cow::Owned(node) => Ok(clone_node(node, context)?.into()),
-    }
+/// Bind a looked-up node, charged as a full copy: by reference when the owned
+/// graph holds it, otherwise by moving the node the index built.
+fn bind_node<'g>(node: Cow<'g, Node>, context: &str) -> Result<NodeBinding<'g>> {
+    charge_intermediate_copy(context, || read_budget::node_copy_bytes(&node))?;
+    Ok(node.into())
 }
 
-/// Bind a node of the owned graph by reference, charged as a full copy.
-fn borrow_node<'g>(node: &'g Node, context: &str) -> Result<NodeBinding<'g>> {
-    charge_intermediate_copy(context, || read_budget::node_copy_bytes(node))?;
-    Ok(NodeBinding::Borrowed(node))
+/// Bind a candidate relationship, charged as a full copy. One the index built
+/// is moved into the binding rather than copied again.
+fn bind_edge<'g>(edge: Cow<'g, Edge>, context: &str) -> Result<EdgeBinding<'g>> {
+    charge_intermediate_copy(context, || read_budget::edge_copy_bytes(&edge))?;
+    Ok(edge.into())
 }
 
-fn clone_edge(edge: &Edge, context: &str) -> Result<Edge> {
+fn share_edge<'g>(edge: &EdgeBinding<'g>, context: &str) -> Result<EdgeBinding<'g>> {
     charge_intermediate_copy(context, || read_budget::edge_copy_bytes(edge))?;
     Ok(edge.clone())
 }
 
-fn clone_nodes(nodes: &[Node], context: &str) -> Result<Vec<Node>> {
+/// Copy a list of bound nodes: charged as full copies, stored shared.
+fn share_nodes<'g>(nodes: &[NodeBinding<'g>], context: &str) -> Result<Vec<NodeBinding<'g>>> {
     charge_intermediate_copy(context, || {
         nodes.iter().fold(
             nodes.len().saturating_mul(std::mem::size_of::<Node>()),
@@ -280,7 +291,8 @@ fn clone_nodes(nodes: &[Node], context: &str) -> Result<Vec<Node>> {
     Ok(nodes.to_vec())
 }
 
-fn clone_edges(edges: &[Edge], context: &str) -> Result<Vec<Edge>> {
+/// Copy a list of bound relationships: charged as full copies, stored shared.
+fn share_edges<'g>(edges: &[EdgeBinding<'g>], context: &str) -> Result<Vec<EdgeBinding<'g>>> {
     charge_intermediate_copy(context, || {
         edges.iter().fold(
             edges.len().saturating_mul(std::mem::size_of::<Edge>()),
@@ -288,6 +300,12 @@ fn clone_edges(edges: &[Edge], context: &str) -> Result<Vec<Edge>> {
         )
     })?;
     Ok(edges.to_vec())
+}
+
+/// Bind a node of the owned graph by reference, charged as a full copy.
+fn borrow_node<'g>(node: &'g Node, context: &str) -> Result<NodeBinding<'g>> {
+    charge_intermediate_copy(context, || read_budget::node_copy_bytes(node))?;
+    Ok(NodeBinding::Borrowed(node))
 }
 
 /// Parse, analyze, and execute a read-only query against an in-memory graph.
@@ -1416,13 +1434,13 @@ impl NodeIndex {
     /// still visited, so the caller's per-slot checks charge and fail exactly
     /// as over the owned graph; otherwise nothing can observe the rejected
     /// slots and only the touching edges are visited.
-    fn edges_of<'a>(
-        &'a self,
-        graph: GraphRef<'a>,
+    fn edges_of<'i, 'g>(
+        &'i self,
+        graph: GraphRef<'g>,
         node: &Node,
         direction: ast::Direction,
         exact_scan: bool,
-    ) -> Result<EdgeCandidates<'a>> {
+    ) -> Result<EdgeCandidates<'i, 'g>> {
         let index = match graph {
             GraphRef::Owned(graph) => {
                 return Ok(match self.indexed_edges(graph, node, direction) {
@@ -1480,12 +1498,12 @@ impl NodeIndex {
         })
     }
 
-    fn indexed_edges<'a>(
-        &'a self,
-        graph: &'a Graph,
+    fn indexed_edges<'i, 'g>(
+        &'i self,
+        graph: &'g Graph,
         node: &Node,
         direction: ast::Direction,
-    ) -> Option<IndexedEdges<'a>> {
+    ) -> Option<IndexedEdges<'i, 'g>> {
         let &vertex = self.by_id.get(node.id.as_str())?;
         let (first, second, skip_second_self_loops) = match direction {
             ast::Direction::Outgoing => (
@@ -1542,15 +1560,15 @@ fn build_compressed_adjacency(
     }
 }
 
-struct IndexedEdges<'a> {
-    graph: &'a Graph,
-    first: std::slice::Iter<'a, usize>,
-    second: Option<std::slice::Iter<'a, usize>>,
+struct IndexedEdges<'i, 'g> {
+    graph: &'g Graph,
+    first: std::slice::Iter<'i, usize>,
+    second: Option<std::slice::Iter<'i, usize>>,
     skip_second_self_loops: bool,
 }
 
-impl<'a> Iterator for IndexedEdges<'a> {
-    type Item = (usize, &'a Edge);
+impl<'g> Iterator for IndexedEdges<'_, 'g> {
+    type Item = (usize, &'g Edge);
 
     fn next(&mut self) -> Option<Self::Item> {
         if let Some(index) = self.first.next() {
@@ -1589,22 +1607,22 @@ fn typed_edge_slots(index: &TypedGraphIndex, vertex: u32, reverse: bool) -> Vec<
 /// time from a typed index's source. A `None` edge is a slot visited only for
 /// the checks the owned scan makes before rejecting an edge that does not
 /// touch the current node.
-enum EdgeCandidates<'a> {
-    Adjacent(IndexedEdges<'a>),
-    Scan(std::iter::Enumerate<std::slice::Iter<'a, Edge>>),
+enum EdgeCandidates<'i, 'g> {
+    Adjacent(IndexedEdges<'i, 'g>),
+    Scan(std::iter::Enumerate<std::slice::Iter<'g, Edge>>),
     /// Only the listed slots, each built.
-    Slots(&'a TypedGraphIndex, std::vec::IntoIter<u32>),
+    Slots(&'g TypedGraphIndex, std::vec::IntoIter<u32>),
     /// Every slot in edge-vector order; only the sorted `incident` ones built.
     ScanOrder {
-        index: &'a TypedGraphIndex,
+        index: &'g TypedGraphIndex,
         incident: std::iter::Peekable<std::vec::IntoIter<u32>>,
         next: u32,
         end: u32,
     },
 }
 
-impl<'a> EdgeCandidates<'a> {
-    fn scan_order(index: &'a TypedGraphIndex, incident: Vec<u32>) -> Self {
+impl<'g> EdgeCandidates<'_, 'g> {
+    fn scan_order(index: &'g TypedGraphIndex, incident: Vec<u32>) -> Self {
         Self::ScanOrder {
             index,
             incident: incident.into_iter().peekable(),
@@ -1615,8 +1633,8 @@ impl<'a> EdgeCandidates<'a> {
     }
 }
 
-impl<'a> Iterator for EdgeCandidates<'a> {
-    type Item = (usize, Option<Cow<'a, Edge>>);
+impl<'g> Iterator for EdgeCandidates<'_, 'g> {
+    type Item = (usize, Option<Cow<'g, Edge>>);
 
     fn next(&mut self) -> Option<Self::Item> {
         match self {
@@ -1742,7 +1760,7 @@ fn expand_pattern<'g>(
                 );
             }
             let acc_nodes = if path_var.is_some() {
-                vec![clone_node(&start, "starting path-node accumulation")?]
+                vec![share_node(&start, "starting path-node accumulation")?]
             } else {
                 Vec::new()
             };
@@ -1810,7 +1828,7 @@ fn expand_shortest<'g>(
                 if length > cap {
                     break;
                 }
-                let mut paths: Vec<(Node, EdgeTrail)> = Vec::new();
+                let mut paths: Vec<(NodeBinding<'g>, EdgeTrail<'g>)> = Vec::new();
                 let mut visited = std::collections::HashSet::new();
                 visited.insert(start.id.as_str().to_string());
                 collect_var_length_paths(
@@ -1852,6 +1870,7 @@ fn expand_shortest<'g>(
                 let Some(end_node) = index.get(graph, &end_id) else {
                     continue;
                 };
+                let end_node = NodeBinding::from(end_node);
                 let picked: Vec<&EdgeTrail> = match kind {
                     ShortestKind::Single => edge_lists.iter().take(1).collect(),
                     ShortestKind::All => edge_lists.iter().collect(),
@@ -1875,7 +1894,7 @@ fn expand_shortest<'g>(
                     if let Some(var) = &segment.node.variable {
                         next_row.insert(
                             var.clone(),
-                            Bound::Node(bind_node(&end_node, "binding shortest-path end nodes")?),
+                            Bound::Node(share_node(&end_node, "binding shortest-path end nodes")?),
                         );
                     }
                     if let Some(var) = &rel.variable {
@@ -1905,30 +1924,32 @@ fn expand_shortest<'g>(
 }
 
 /// Reconstruct the node sequence of a path from its start node and edge list.
-fn walk_path_nodes(
-    graph: GraphRef<'_>,
+fn walk_path_nodes<'g>(
+    graph: GraphRef<'g>,
     index: &NodeIndex,
-    start: &Node,
-    edges: &[Edge],
+    start: &NodeBinding<'g>,
+    edges: &[EdgeBinding<'g>],
     direction: ast::Direction,
-) -> Result<Vec<Node>> {
-    let mut nodes = vec![clone_node(start, "reconstructing shortest-path nodes")?];
-    let mut current = clone_node(start, "tracking shortest-path endpoints")?;
+) -> Result<Vec<NodeBinding<'g>>> {
+    // Two logical copies per node, as before: one kept, one tracked.
+    let mut nodes = vec![share_node(start, "reconstructing shortest-path nodes")?];
+    let mut current = share_node(start, "tracking shortest-path endpoints")?;
     for edge in edges {
         let next_id = edge_other_endpoint(edge, &current, direction)
             .ok_or_else(|| gql_execution("shortest path edge does not connect to the path"))?;
         let next = index
             .get(graph, next_id)
             .ok_or_else(|| gql_execution("shortest path endpoint node not found"))?;
-        nodes.push(clone_node(&next, "reconstructing shortest-path nodes")?);
-        current = clone_node(&next, "tracking shortest-path endpoints")?;
+        let next = bind_node(next, "reconstructing shortest-path nodes")?;
+        current = share_node(&next, "tracking shortest-path endpoints")?;
+        nodes.push(next);
     }
     Ok(nodes)
 }
 
 /// A bound first-class path value. `Value::to_json` preserves the historical
 /// `{ "nodes": [...], "relationships": [...] }` serialization shape.
-fn path_value(nodes: &[Node], edges: &[Edge]) -> Result<Value> {
+fn path_value(nodes: &[NodeBinding<'_>], edges: &[EdgeBinding<'_>]) -> Result<Value> {
     charge_intermediate_copy("materializing path values", || {
         nodes
             .iter()
@@ -1939,7 +1960,10 @@ fn path_value(nodes: &[Node], edges: &[Edge]) -> Result<Value> {
                 bytes.saturating_add(read_budget::edge_copy_bytes(edge))
             }))
     })?;
-    Ok(Value::Path(PathValue::from_graph_parts(nodes, edges)))
+    Ok(Value::Path(PathValue::from_graph_elements(
+        nodes.iter().map(|node| &**node),
+        edges.iter().map(|edge| &**edge),
+    )))
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -1948,12 +1972,12 @@ fn expand_segments<'g>(
     index: &NodeIndex,
     segments: &[PathSegment],
     idx: usize,
-    current: &Node,
+    current: &NodeBinding<'g>,
     row: MatchRow<'g>,
     params: &CypherParameters,
     path_var: Option<&str>,
-    acc_nodes: Vec<Node>,
-    acc_edges: Vec<Edge>,
+    acc_nodes: Vec<NodeBinding<'g>>,
+    acc_edges: Vec<EdgeBinding<'g>>,
     out: &mut Vec<MatchRow<'g>>,
 ) -> Result<()> {
     if idx == segments.len() {
@@ -1978,7 +2002,7 @@ fn expand_segments<'g>(
         match_scope::require_unbound_trail(&row, rel.variable.as_deref())?;
         let min = range.min.unwrap_or(1) as usize;
         let max = range.max.map(|m| m as usize);
-        let mut paths: Vec<(Node, EdgeTrail)> = Vec::new();
+        let mut paths: Vec<(NodeBinding<'g>, EdgeTrail<'g>)> = Vec::new();
         let mut visited = std::collections::HashSet::new();
         visited.insert(current.id.as_str().to_string());
         collect_var_length_paths(
@@ -2023,9 +2047,10 @@ fn expand_segments<'g>(
             if let Some(var) = &segment.node.variable {
                 next_row.insert(
                     var.clone(),
-                    Bound::Node(
-                        clone_node(&end_node, "binding variable-length path endpoints")?.into(),
-                    ),
+                    Bound::Node(share_node(
+                        &end_node,
+                        "binding variable-length path endpoints",
+                    )?),
                 );
             }
             // path_var is guaranteed None here (rejected with variable-length).
@@ -2038,8 +2063,8 @@ fn expand_segments<'g>(
                 next_row,
                 params,
                 path_var,
-                clone_nodes(&acc_nodes, "carrying path-node accumulators")?,
-                clone_edges(&acc_edges, "carrying path-edge accumulators")?,
+                share_nodes(&acc_nodes, "carrying path-node accumulators")?,
+                share_edges(&acc_edges, "carrying path-edge accumulators")?,
                 out,
             )?;
         }
@@ -2061,8 +2086,8 @@ fn expand_segments<'g>(
 }
 
 #[allow(clippy::too_many_arguments)]
-fn expand_fixed_edges<'g, 'a>(
-    edges: impl Iterator<Item = (usize, Option<Cow<'a, Edge>>)>,
+fn expand_fixed_edges<'g>(
+    edges: impl Iterator<Item = (usize, Option<Cow<'g, Edge>>)>,
     graph: GraphRef<'g>,
     index: &NodeIndex,
     segments: &[PathSegment],
@@ -2071,8 +2096,8 @@ fn expand_fixed_edges<'g, 'a>(
     row: &MatchRow<'g>,
     params: &CypherParameters,
     path_var: Option<&str>,
-    acc_nodes: &[Node],
-    acc_edges: &[Edge],
+    acc_nodes: &[NodeBinding<'g>],
+    acc_edges: &[EdgeBinding<'g>],
     out: &mut Vec<MatchRow<'g>>,
 ) -> Result<()> {
     let segment = &segments[idx];
@@ -2111,13 +2136,17 @@ fn expand_fixed_edges<'g, 'a>(
         {
             continue;
         }
+        // Hold the matched elements once; every binding below shares them and
+        // is still charged as a full copy.
+        let next_node = NodeBinding::from(next_node);
+        let edge = EdgeBinding::from(edge);
         let mut next_row = row.copy("expanding fixed relationship segments")?;
         next_row.record(&[slot])?;
         if let Some(var) = &rel.variable {
             next_row.insert(
                 var.clone(),
                 Bound::Edge(
-                    clone_edge(&edge, "binding matched relationships")?.into(),
+                    share_edge(&edge, "binding matched relationships")?,
                     Some(slot),
                 ),
             );
@@ -2125,14 +2154,14 @@ fn expand_fixed_edges<'g, 'a>(
         if let Some(var) = &segment.node.variable {
             next_row.insert(
                 var.clone(),
-                Bound::Node(bind_node(&next_node, "binding matched nodes")?),
+                Bound::Node(share_node(&next_node, "binding matched nodes")?),
             );
         }
         let (na, ea) = if path_var.is_some() {
-            let mut na = clone_nodes(acc_nodes, "carrying path-node accumulators")?;
-            na.push(clone_node(&next_node, "extending path-node accumulators")?);
-            let mut ea = clone_edges(acc_edges, "carrying path-edge accumulators")?;
-            ea.push(clone_edge(&edge, "extending path-edge accumulators")?);
+            let mut na = share_nodes(acc_nodes, "carrying path-node accumulators")?;
+            na.push(share_node(&next_node, "extending path-node accumulators")?);
+            let mut ea = share_edges(acc_edges, "carrying path-edge accumulators")?;
+            ea.push(share_edge(&edge, "extending path-edge accumulators")?);
             (na, ea)
         } else {
             (Vec::new(), Vec::new())
@@ -2158,24 +2187,24 @@ fn expand_fixed_edges<'g, 'a>(
 /// edges)` for every prefix whose length is within `[min, max]`. Nodes are not
 /// revisited within a path, so the search terminates even when `max` is open.
 #[allow(clippy::too_many_arguments)]
-fn collect_var_length_paths(
-    graph: GraphRef<'_>,
+fn collect_var_length_paths<'g>(
+    graph: GraphRef<'g>,
     index: &NodeIndex,
     rel: &RelationshipPattern,
-    node: &Node,
+    node: &NodeBinding<'g>,
     min: usize,
     max: Option<usize>,
-    edges_so_far: &mut EdgeTrail,
+    edges_so_far: &mut EdgeTrail<'g>,
     visited: &mut std::collections::HashSet<String>,
     used_slots: &[usize],
     params: &CypherParameters,
-    results: &mut Vec<(Node, EdgeTrail)>,
+    results: &mut Vec<(NodeBinding<'g>, EdgeTrail<'g>)>,
 ) -> Result<()> {
     let depth = edges_so_far.edges.len();
     if depth >= min {
         read_budget::charge_candidate_work(1, "collecting variable-length paths")?;
         results.push((
-            clone_node(node, "collecting variable-length path endpoints")?,
+            share_node(node, "collecting variable-length path endpoints")?,
             edges_so_far.copy()?,
         ));
     }
@@ -2201,19 +2230,19 @@ fn collect_var_length_paths(
 }
 
 #[allow(clippy::too_many_arguments)]
-fn collect_var_length_edges<'a>(
-    edges: impl Iterator<Item = (usize, Option<Cow<'a, Edge>>)>,
-    graph: GraphRef<'_>,
+fn collect_var_length_edges<'g>(
+    edges: impl Iterator<Item = (usize, Option<Cow<'g, Edge>>)>,
+    graph: GraphRef<'g>,
     index: &NodeIndex,
     rel: &RelationshipPattern,
-    node: &Node,
+    node: &NodeBinding<'g>,
     min: usize,
     max: Option<usize>,
-    edges_so_far: &mut EdgeTrail,
+    edges_so_far: &mut EdgeTrail<'g>,
     visited: &mut std::collections::HashSet<String>,
     used_slots: &[usize],
     params: &CypherParameters,
-    results: &mut Vec<(Node, EdgeTrail)>,
+    results: &mut Vec<(NodeBinding<'g>, EdgeTrail<'g>)>,
 ) -> Result<()> {
     for (slot, edge) in edges {
         read_budget::charge_candidate_work(1, "searching variable-length paths")?;
@@ -2239,8 +2268,9 @@ fn collect_var_length_edges<'a>(
         let Some(next_node) = index.get(graph, next_id) else {
             continue;
         };
-        edges_so_far.push(slot, &edge)?;
+        let next_node = NodeBinding::from(next_node);
         visited.insert(next_id.to_string());
+        edges_so_far.push(slot, edge)?;
         collect_var_length_paths(
             graph,
             index,
@@ -2254,7 +2284,7 @@ fn collect_var_length_edges<'a>(
             params,
             results,
         )?;
-        visited.remove(next_id);
+        visited.remove(next_node.id.as_str());
         edges_so_far.pop();
     }
     Ok(())
@@ -2317,9 +2347,10 @@ fn node_candidates<'g>(
             for slot in 0..index.node_count() as u32 {
                 read_budget::charge_candidate_work(1, "scanning node candidates")?;
                 if node_slot_matches(index, slot, np, params)? {
-                    out.push(
-                        clone_node(&index.node(slot), "collecting matched node candidates")?.into(),
-                    );
+                    out.push(bind_node(
+                        index.node(slot),
+                        "collecting matched node candidates",
+                    )?);
                 }
             }
         }
