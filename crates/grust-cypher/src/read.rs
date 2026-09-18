@@ -212,6 +212,13 @@ fn clone_node(node: &Node, context: &str) -> Result<Node> {
     Ok(node.clone())
 }
 
+/// Bind an element that is already built. The logical copy is charged in full,
+/// exactly as a deep copy would be; only the storage is shared.
+fn share_node(node: &Arc<Node>, context: &str) -> Result<Arc<Node>> {
+    charge_intermediate_copy(context, || read_budget::node_copy_bytes(node))?;
+    Ok(Arc::clone(node))
+}
+
 fn clone_edge(edge: &Edge, context: &str) -> Result<Edge> {
     charge_intermediate_copy(context, || read_budget::edge_copy_bytes(edge))?;
     Ok(edge.clone())
@@ -1665,7 +1672,7 @@ fn expand_pattern(
             if let Some(var) = &pattern.start.variable {
                 next_row.insert(
                     var.clone(),
-                    Bound::Node(clone_node(&start, "binding MATCH start nodes")?.into()),
+                    Bound::Node(share_node(&start, "binding MATCH start nodes")?),
                 );
             }
             let acc_nodes = if path_var.is_some() {
@@ -2221,14 +2228,14 @@ fn node_candidates(
     np: &NodePattern,
     row: &Row,
     params: &CypherParameters,
-) -> Result<Vec<Node>> {
+) -> Result<Vec<Arc<Node>>> {
     // Already bound? Filter to the bound node if it still matches.
     if let Some(var) = &np.variable
         && let Some(Bound::Node(bound)) = row.get(var)
     {
         read_budget::charge_candidate_work(1, "checking a bound node candidate")?;
         return Ok(if node_matches(bound, np, params)? {
-            vec![clone_node(bound, "retaining bound node candidates")?]
+            vec![share_node(bound, "retaining bound node candidates")?]
         } else {
             vec![]
         });
@@ -2239,7 +2246,7 @@ fn node_candidates(
             for node in &graph.nodes {
                 read_budget::charge_candidate_work(1, "scanning node candidates")?;
                 if node_matches(node, np, params)? {
-                    out.push(clone_node(node, "collecting matched node candidates")?);
+                    out.push(clone_node(node, "collecting matched node candidates")?.into());
                 }
             }
         }
@@ -2248,10 +2255,9 @@ fn node_candidates(
             for slot in 0..index.node_count() as u32 {
                 read_budget::charge_candidate_work(1, "scanning node candidates")?;
                 if node_slot_matches(index, slot, np, params)? {
-                    out.push(clone_node(
-                        &index.node(slot),
-                        "collecting matched node candidates",
-                    )?);
+                    out.push(
+                        clone_node(&index.node(slot), "collecting matched node candidates")?.into(),
+                    );
                 }
             }
         }
@@ -2429,10 +2435,9 @@ fn project(
 
 /// Aggregate function names recognized by the read reference executor.
 fn is_aggregate_name(name: &str) -> bool {
-    matches!(
-        name.to_ascii_lowercase().as_str(),
-        "count" | "sum" | "avg" | "min" | "max" | "collect"
-    )
+    ["count", "sum", "avg", "min", "max", "collect"]
+        .iter()
+        .any(|aggregate| name.eq_ignore_ascii_case(aggregate))
 }
 
 /// True if `expr` contains an aggregate function call anywhere.
@@ -3159,14 +3164,31 @@ fn eval_case(
 
 /// Scalar function registry for the read reference executor. Reuses the crate's
 /// existing `restricted_*_value` evaluators rather than reimplementing them.
+/// Function names match case-insensitively on every evaluated call, so
+/// lowercase them on the stack rather than allocating a `String` per row.
 fn eval_scalar_function(
     name: &str,
     args: &[Expr],
     row: &ExpressionScope<'_>,
     params: &CypherParameters,
 ) -> Result<Value> {
-    let lower = name.to_ascii_lowercase();
+    let mut buffer = [0u8; 48];
+    if let Some(bytes) = buffer.get_mut(..name.len()) {
+        bytes.copy_from_slice(name.as_bytes());
+        bytes.make_ascii_lowercase();
+        let lower = std::str::from_utf8(bytes).expect("ASCII lowercasing preserves UTF-8");
+        return eval_lowercase_scalar_function(name, lower, args, row, params);
+    }
+    eval_lowercase_scalar_function(name, &name.to_ascii_lowercase(), args, row, params)
+}
 
+fn eval_lowercase_scalar_function(
+    name: &str,
+    lower: &str,
+    args: &[Expr],
+    row: &ExpressionScope<'_>,
+    params: &CypherParameters,
+) -> Result<Value> {
     // `coalesce` is variadic and null-aware; handle it before the unary helpers.
     if lower == "coalesce" {
         if args.is_empty() {
@@ -3194,18 +3216,15 @@ fn eval_scalar_function(
     }
 
     // Element-introspection functions need the binding (or the element's JSON).
-    if matches!(lower.as_str(), "labels" | "type" | "id") {
+    if matches!(lower, "labels" | "type" | "id") {
         let [arg] = args else {
             return Err(gql_type(format!("{lower}() expects exactly one argument")));
         };
-        return eval_element_function(&lower, arg, row, params);
+        return eval_element_function(lower, arg, row, params);
     }
 
-    if matches!(
-        lower.as_str(),
-        "split" | "substring" | "left" | "right" | "replace"
-    ) {
-        return string_functions::evaluate(&lower, args, row, params);
+    if matches!(lower, "split" | "substring" | "left" | "right" | "replace") {
+        return string_functions::evaluate(lower, args, row, params);
     }
 
     // All remaining functions are unary.
@@ -3225,7 +3244,7 @@ fn eval_scalar_function(
         return Ok(Value::Null);
     }
 
-    match lower.as_str() {
+    match lower {
         "toupper" => restricted_string_transform_value(value, CypherReturnStringTransform::Upper),
         "tolower" => restricted_string_transform_value(value, CypherReturnStringTransform::Lower),
         "trim" => restricted_string_trim_value(value, CypherReturnStringTrim::Both),
@@ -3247,7 +3266,7 @@ fn eval_scalar_function(
         },
         "sqrt" => unary_float_fn(value, "sqrt", f64::sqrt),
         "exp" => unary_float_fn(value, "exp", f64::exp),
-        "log" | "ln" => unary_float_fn(value, &lower, f64::ln),
+        "log" | "ln" => unary_float_fn(value, lower, f64::ln),
         "log10" => unary_float_fn(value, "log10", f64::log10),
         "sin" => unary_float_fn(value, "sin", f64::sin),
         "cos" => unary_float_fn(value, "cos", f64::cos),
