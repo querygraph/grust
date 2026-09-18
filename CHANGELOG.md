@@ -21,6 +21,10 @@ reconstructed from Git history, release commits, and the shipped docs.
   peak accounting and wakers still hold the lock. Profiling attributed 72.8% of
   full-path Dijkstra kernel time on a 16384-node chain to the previous
   lock-per-unit accounting.
+- Add `reduce`, list comprehensions and general list quantifiers to the portable
+  read expression evaluator, with lexical scope validation and per-element work
+  accounting. Queries containing these forms use reference execution until
+  dialect lowering is implemented. Write-return integration is still in progress.
 - Validate row-to-Arrow conversion with borrowed identity membership instead of
   constructing discarded adjacency, and copy string properties directly into
   Arrow buffers without temporary owned String clones.

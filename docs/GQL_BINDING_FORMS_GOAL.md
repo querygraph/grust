@@ -1,6 +1,6 @@
 # Grust Binding Forms Goal — `reduce`, comprehensions and general quantifiers
 
-Status: **ACTIVE — B0 recorded; B1 scope refactor verified.** Reviewed 2026-09-18 in
+Status: **ACTIVE — B0/B1 verified; read binding forms implemented; write migration pending.** Reviewed 2026-09-18 in
 `work/gql-binding-forms`, based on `origin/main` at `f168551`.
 
 ## Why
@@ -99,14 +99,24 @@ No performance improvement is an acceptance criterion.
   and after the refactor (826 unit tests passed after, one ignored; integration
   targets also pass with one existing ignored test). The new test checks nested
   frame lookup, map/list access and isolation from the candidate row.
-- The child-frame constructor is intentionally unused outside tests until B2;
-  the compiler reports two dead-code warnings at this checkpoint.
-- Remaining: syntax and semantic checks, binding evaluation and resource tests,
-  write-RETURN bridge, quantifier migration, pushdown tests, catalog/corpus,
-  documentation and release validation. No new syntax is delivered yet.
-- Integration: the Grust host is merging concurrent work. Rebase this isolated
-  branch onto the merged `origin/main` before further feature implementation,
-  and rerun the baseline because resource-accounting code may have changed.
+- B2/B3 and the read portion of B4: added AST/parser forms, immutable scope
+  evaluation, semantic shadowing/unbound-name checks, fold seed/body type checks,
+  and per-element work charging. Shared list iteration avoids collecting another
+  full vector before charging. Every public read pushdown planner declines forms
+  anywhere in read clauses, including projections and nested subqueries.
+- Nine integration tests cover folds inside aggregates, WITH/WHERE, nested forms,
+  empty and NULL lists, NULL elements, optional comprehension clauses, predicate
+  three-valued logic, malformed syntax, scope/type errors, fold budget exhaustion
+  and pushdown rejection. Full Cypher tests pass with the existing ignored tests.
+  `cargo clippy -p grust-cypher --all-targets -- -D warnings` also passes.
+- Remaining: write-RETURN bridge and removal of the legacy quantifier parser;
+  compatibility for its typed equality and NULL behavior; cancellation/deadline
+  tests; broader resource and pushdown coverage including the Turso oracle;
+  catalog/corpus, book/changelog and release validation/delivery. This checkpoint
+  is not a completed milestone or release.
+- Integration: the Grust host is merging concurrent work. Latest fetch still
+  reports `origin/main` at `f168551`. Work remains isolated and must be rebased
+  when the merge lands, then retested because accounting code may have changed.
 
 ## Architecture invariants
 

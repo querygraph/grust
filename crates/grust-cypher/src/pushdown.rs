@@ -39,6 +39,8 @@
 //! arithmetic predicates, functions in WHERE) yields `Ok(None)` → reference
 //! fallback. Wider pushdown lands in later commits, gated by the oracle.
 
+mod binding_forms;
+
 use crate::ast::*;
 use crate::parser::parse_query;
 use crate::{CypherParameters, CypherResultTable, Result};
@@ -654,6 +656,9 @@ pub fn plan_node_read_with_hints(
 ) -> Result<Option<NodeReadPushdown>> {
     let query = parse_query(cypher).map_err(|e| e.into_grust(cypher))?;
     crate::semantics::analyze(&query)?;
+    if binding_forms::query_has_bindings(&query) {
+        return Ok(None);
+    }
     Ok(single_query(&query).and_then(|s| lower_node_single(s, params, hints)))
 }
 
@@ -1582,6 +1587,9 @@ pub fn plan_segment_read_with_hints(
 ) -> Result<Option<SegmentReadPushdown>> {
     let query = parse_query(cypher).map_err(|e| e.into_grust(cypher))?;
     crate::semantics::analyze(&query)?;
+    if binding_forms::query_has_bindings(&query) {
+        return Ok(None);
+    }
     Ok(single_query(&query).and_then(|s| lower_segment_single(s, params, hints)))
 }
 
@@ -2455,6 +2463,9 @@ pub fn plan_var_length_read_with_hints(
 ) -> Result<Option<VarLengthReadPushdown>> {
     let query = parse_query(cypher).map_err(|e| e.into_grust(cypher))?;
     crate::semantics::analyze(&query)?;
+    if binding_forms::query_has_bindings(&query) {
+        return Ok(None);
+    }
     Ok(single_query(&query).and_then(|s| lower_var_length_single(s, params, hints)))
 }
 
@@ -4387,6 +4398,9 @@ pub fn plan_read(
 ) -> Result<Option<ReadPushdown>> {
     let query = parse_query(cypher).map_err(|e| e.into_grust(cypher))?;
     crate::semantics::analyze(&query)?;
+    if binding_forms::query_has_bindings(&query) {
+        return Ok(None);
+    }
 
     if query.parts.len() == 1 && query.parts[0].union.is_none() {
         return Ok(lower_single(&query.parts[0].query, params, hints));

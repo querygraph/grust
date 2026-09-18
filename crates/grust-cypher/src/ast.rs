@@ -364,6 +364,28 @@ pub enum Expr {
         base: Box<Expr>,
         key: String,
     },
+    /// `reduce(accumulator = seed, item IN list | body)`.
+    Reduce {
+        accumulator: String,
+        seed: Box<Expr>,
+        item: String,
+        list: Box<Expr>,
+        body: Box<Expr>,
+    },
+    /// `[item IN list [WHERE predicate] [| projection]]`.
+    ListComprehension {
+        item: String,
+        list: Box<Expr>,
+        predicate: Option<Box<Expr>>,
+        projection: Option<Box<Expr>>,
+    },
+    /// `any`/`all`/`none`/`single(item IN list WHERE predicate)`.
+    Quantifier {
+        kind: ListQuantifier,
+        item: String,
+        list: Box<Expr>,
+        predicate: Box<Expr>,
+    },
     /// `[a, b, c]`
     List(Vec<Expr>),
     /// `{ k: v, ... }`
@@ -401,6 +423,14 @@ pub enum Expr {
         base: Box<Expr>,
         index: Box<Expr>,
     },
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum ListQuantifier {
+    Any,
+    All,
+    None,
+    Single,
 }
 
 #[derive(Clone, Debug, PartialEq)]

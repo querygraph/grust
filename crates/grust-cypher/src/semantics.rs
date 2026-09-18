@@ -520,17 +520,75 @@ fn require_entity(name: &str, scope: &Scope, action: &str) -> Result<()> {
 
 /// Ensure every variable referenced by `expr` is bound in `scope`.
 fn check_expr_bound(expr: &Expr, scope: &Scope) -> Result<()> {
-    let mut unbound = None;
-    visit_variables(expr, &mut |name| {
-        if unbound.is_none() && scope.get(name).is_none() {
-            unbound = Some(name.to_string());
+    match expr {
+        Expr::Variable(name) => require_bound(name, scope),
+        Expr::Quantifier {
+            item,
+            list,
+            predicate,
+            ..
+        } => {
+            check_expr_bound(list, scope)?;
+            if scope.get(item).is_some() {
+                return Err(name_error(format!(
+                    "quantifier binding `{item}` shadows an existing variable"
+                )));
+            }
+            let mut child = scope.clone();
+            child.vars.insert(item.clone(), ElementKind::Value);
+            check_expr_bound(predicate, &child)
         }
-    });
-    match unbound {
-        Some(name) => Err(name_error(format!(
-            "variable `{name}` is not bound in this scope"
-        ))),
-        None => Ok(()),
+        Expr::ListComprehension {
+            item,
+            list,
+            predicate,
+            projection,
+        } => {
+            check_expr_bound(list, scope)?;
+            if scope.get(item).is_some() {
+                return Err(name_error(format!(
+                    "list comprehension binding `{item}` shadows an existing variable"
+                )));
+            }
+            let mut child = scope.clone();
+            child.vars.insert(item.clone(), ElementKind::Value);
+            if let Some(predicate) = predicate {
+                check_expr_bound(predicate, &child)?;
+            }
+            if let Some(projection) = projection {
+                check_expr_bound(projection, &child)?;
+            }
+            Ok(())
+        }
+        Expr::Reduce {
+            accumulator,
+            seed,
+            item,
+            list,
+            body,
+        } => {
+            check_expr_bound(seed, scope)?;
+            check_expr_bound(list, scope)?;
+            let mut child = scope.clone();
+            for name in [accumulator, item] {
+                if child.get(name).is_some() {
+                    return Err(name_error(format!(
+                        "reduce binding `{name}` shadows an existing variable"
+                    )));
+                }
+                child.vars.insert(name.clone(), ElementKind::Value);
+            }
+            check_expr_bound(body, &child)
+        }
+        _ => {
+            let mut result = Ok(());
+            visit_children(expr, &mut |child| {
+                if result.is_ok() {
+                    result = check_expr_bound(child, scope);
+                }
+            });
+            result
+        }
     }
 }
 
@@ -551,42 +609,67 @@ fn root_variable(expr: &Expr) -> Option<&str> {
     }
 }
 
-/// Invoke `f` for every free variable reference in `expr`. Property keys and map
-/// keys are identifiers, not variables, so they are not visited.
-fn visit_variables(expr: &Expr, f: &mut impl FnMut(&str)) {
+/// Visit immediate operands; binding declarations are handled by scope checking.
+pub(crate) fn visit_children(expr: &Expr, f: &mut impl FnMut(&Expr)) {
     match expr {
-        Expr::Variable(name) => f(name),
-        Expr::Property { base, .. } => visit_variables(base, f),
+        Expr::Property { base, .. } => f(base),
         Expr::Index { base, index } => {
-            visit_variables(base, f);
-            visit_variables(index, f);
+            f(base);
+            f(index);
         }
-        Expr::List(items) => items.iter().for_each(|e| visit_variables(e, f)),
-        Expr::Map(entries) => entries.iter().for_each(|(_, e)| visit_variables(e, f)),
-        Expr::Function { args, .. } => args.iter().for_each(|e| visit_variables(e, f)),
-        Expr::Unary { operand, .. } => visit_variables(operand, f),
+        Expr::List(items) => items.iter().for_each(f),
+        Expr::Map(entries) => entries.iter().for_each(|(_, e)| f(e)),
+        Expr::Function { args, .. } => args.iter().for_each(f),
+        Expr::Unary { operand, .. } | Expr::IsNull { operand, .. } => f(operand),
         Expr::Binary { lhs, rhs, .. } => {
-            visit_variables(lhs, f);
-            visit_variables(rhs, f);
+            f(lhs);
+            f(rhs);
         }
-        Expr::IsNull { operand, .. } => visit_variables(operand, f),
         Expr::Case {
             operand,
             branches,
             default,
         } => {
             if let Some(op) = operand {
-                visit_variables(op, f);
+                f(op);
             }
             for branch in branches {
-                visit_variables(&branch.when, f);
-                visit_variables(&branch.then, f);
+                f(&branch.when);
+                f(&branch.then);
             }
             if let Some(d) = default {
-                visit_variables(d, f);
+                f(d);
             }
         }
-        Expr::Null
+        Expr::Quantifier {
+            list, predicate, ..
+        } => {
+            f(list);
+            f(predicate);
+        }
+        Expr::Reduce {
+            seed, list, body, ..
+        } => {
+            f(seed);
+            f(list);
+            f(body);
+        }
+        Expr::ListComprehension {
+            list,
+            predicate,
+            projection,
+            ..
+        } => {
+            f(list);
+            if let Some(predicate) = predicate {
+                f(predicate);
+            }
+            if let Some(projection) = projection {
+                f(projection);
+            }
+        }
+        Expr::Variable(_)
+        | Expr::Null
         | Expr::Boolean(_)
         | Expr::Integer(_)
         | Expr::Float(_)

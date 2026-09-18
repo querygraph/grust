@@ -51,8 +51,9 @@ mod procedure_plan;
 pub use procedure_plan::{
     ProcedureCallPlan, ProcedureExecutionTarget, ProcedureQueryPlan, ProcedureRowExecution,
 };
-mod indexing;
+mod binding_forms;
 mod expression_scope;
+mod indexing;
 use expression_scope::ExpressionScope;
 mod procedures;
 mod streaming;
@@ -2435,6 +2436,22 @@ pub(crate) fn expr_has_aggregate(expr: &Expr) -> bool {
         Expr::Function { name, args, .. } => {
             is_aggregate_name(name) || args.iter().any(expr_has_aggregate)
         }
+        Expr::Quantifier {
+            list, predicate, ..
+        } => expr_has_aggregate(list) || expr_has_aggregate(predicate),
+        Expr::ListComprehension {
+            list,
+            predicate,
+            projection,
+            ..
+        } => {
+            expr_has_aggregate(list)
+                || predicate.as_deref().is_some_and(expr_has_aggregate)
+                || projection.as_deref().is_some_and(expr_has_aggregate)
+        }
+        Expr::Reduce {
+            seed, list, body, ..
+        } => expr_has_aggregate(seed) || expr_has_aggregate(list) || expr_has_aggregate(body),
         Expr::Property { base, .. } => expr_has_aggregate(base),
         Expr::Index { base, index } => expr_has_aggregate(base) || expr_has_aggregate(index),
         Expr::List(items) => items.iter().any(expr_has_aggregate),
@@ -2817,6 +2834,32 @@ fn eval(expr: &Expr, row: &Row, params: &CypherParameters) -> Result<Value> {
 fn eval_scoped(expr: &Expr, row: &ExpressionScope<'_>, params: &CypherParameters) -> Result<Value> {
     read_budget::checkpoint()?;
     let value = match expr {
+        Expr::Quantifier {
+            kind,
+            item,
+            list,
+            predicate,
+        } => binding_forms::quantifier(*kind, item, list, predicate, row, params),
+        Expr::ListComprehension {
+            item,
+            list,
+            predicate,
+            projection,
+        } => binding_forms::comprehension(
+            item,
+            list,
+            predicate.as_deref(),
+            projection.as_deref(),
+            row,
+            params,
+        ),
+        Expr::Reduce {
+            accumulator,
+            seed,
+            item,
+            list,
+            body,
+        } => binding_forms::reduce(accumulator, seed, item, list, body, row, params),
         Expr::Null => Ok(Value::Null),
         Expr::Boolean(b) => Ok(Value::Bool(*b)),
         Expr::Integer(n) => Ok(Value::Int(*n)),
@@ -2878,7 +2921,10 @@ fn eval_scoped(expr: &Expr, row: &ExpressionScope<'_>, params: &CypherParameters
         Expr::Map(entries) => {
             let mut out = serde_json::Map::new();
             for (key, expr) in entries {
-                out.insert(key.clone(), value_into_json(eval_scoped(expr, row, params)?));
+                out.insert(
+                    key.clone(),
+                    value_into_json(eval_scoped(expr, row, params)?),
+                );
             }
             Ok(Value::Json(serde_json::Value::Object(out)))
         }
@@ -2904,7 +2950,11 @@ fn list_elements(value: Value) -> Vec<Value> {
 }
 
 /// `range(start, end[, step])` -> inclusive integer list.
-fn eval_range(args: &[Expr], row: &ExpressionScope<'_>, params: &CypherParameters) -> Result<Value> {
+fn eval_range(
+    args: &[Expr],
+    row: &ExpressionScope<'_>,
+    params: &CypherParameters,
+) -> Result<Value> {
     if args.len() < 2 || args.len() > 3 {
         return Err(gql_type(
             "range() expects 2 or 3 integer arguments".to_string(),
@@ -3043,7 +3093,11 @@ fn path_component(value: Value, key: &str) -> Result<Value> {
 /// `graph(nodes, relationships)` -> a first-class graph value (Full39075 F7).
 /// Each argument is a (possibly empty or NULL) list of node/relationship
 /// elements, e.g. from `collect(n)`; construction deduplicates by identity.
-fn eval_graph_constructor(args: &[Expr], row: &ExpressionScope<'_>, params: &CypherParameters) -> Result<Value> {
+fn eval_graph_constructor(
+    args: &[Expr],
+    row: &ExpressionScope<'_>,
+    params: &CypherParameters,
+) -> Result<Value> {
     let [nodes_expr, rels_expr] = args else {
         return Err(gql_type(
             "graph() expects exactly two arguments: (nodes, relationships)".to_string(),
@@ -3245,7 +3299,12 @@ fn unary_float_fn(value: Value, name: &str, f: fn(f64) -> f64) -> Result<Value> 
     }
 }
 
-fn eval_property(base: &Expr, key: &str, row: &ExpressionScope<'_>, params: &CypherParameters) -> Result<Value> {
+fn eval_property(
+    base: &Expr,
+    key: &str,
+    row: &ExpressionScope<'_>,
+    params: &CypherParameters,
+) -> Result<Value> {
     if let Expr::Variable(name) = base {
         return match row.get(name) {
             Some(Bound::Node(node)) if key == "label" => {
@@ -3280,7 +3339,12 @@ fn eval_property(base: &Expr, key: &str, row: &ExpressionScope<'_>, params: &Cyp
     }
 }
 
-fn eval_unary(op: UnaryOp, operand: &Expr, row: &ExpressionScope<'_>, params: &CypherParameters) -> Result<Value> {
+fn eval_unary(
+    op: UnaryOp,
+    operand: &Expr,
+    row: &ExpressionScope<'_>,
+    params: &CypherParameters,
+) -> Result<Value> {
     let value = eval_scoped(operand, row, params)?;
     match op {
         UnaryOp::Not => match value {
@@ -3391,7 +3455,12 @@ fn to_bool_or_null(b: Option<bool>) -> Value {
     }
 }
 
-fn membership(a: &Value, list_expr: &Expr, row: &ExpressionScope<'_>, params: &CypherParameters) -> Result<Value> {
+fn membership(
+    a: &Value,
+    list_expr: &Expr,
+    row: &ExpressionScope<'_>,
+    params: &CypherParameters,
+) -> Result<Value> {
     if matches!(a, Value::Null) {
         return Ok(Value::Null);
     }
