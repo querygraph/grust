@@ -305,7 +305,7 @@ The typed layer is optional. It is enabled through Cargo features:
 
 ```toml
 [dependencies]
-grust = { package = "grust-graph", version = "0.20.0", features = ["typed-garde"] }
+grust = { package = "grust-graph", version = "0.21.0", features = ["typed-garde"] }
 ```
 
 `typed-garde` adds Rust-struct validation and typed lowering. A second feature,
@@ -313,7 +313,7 @@ grust = { package = "grust-graph", version = "0.20.0", features = ["typed-garde"
 
 ```toml
 [dependencies]
-grust = { package = "grust-graph", version = "0.20.0", features = ["typed-zod-rs"] }
+grust = { package = "grust-graph", version = "0.21.0", features = ["typed-zod-rs"] }
 ```
 
 `typed-zod-rs` implies `typed-garde`. That relationship matters: zod-rs checks
@@ -967,7 +967,7 @@ load cost and peak-memory boundaries separately from correctness qualification.
 
 ## LadybugDB
 
-`grust-ladybug` embeds LadybugDB directly through the Rust `lbug` 0.20.2 crate.
+`grust-ladybug` embeds LadybugDB directly through the Rust `lbug` 0.20.4 crate.
 It is the durable local graph-database backend: no Docker service, no HTTP bridge,
 and no separate daemon. The store opens either an in-memory Ladybug database or
 an on-disk Ladybug directory and creates Grust-managed Ladybug node and

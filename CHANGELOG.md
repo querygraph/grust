@@ -6,6 +6,31 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ## Unreleased
 
+## 0.21.0 — Tadpole — 2026-09-18
+
+### Cypher language
+
+- Add `reduce(acc = seed, item IN list | body)`, list comprehensions
+  `[item IN list WHERE predicate | projection]` and general
+  `any`/`all`/`none`/`single` quantifiers over arbitrary lists and predicates.
+  One scoped `Expr` evaluator serves read `RETURN`/`WHERE`/`WITH` and write
+  `RETURN`: bindings push an immutable lexical scope, shadowing a row variable
+  is a semantic error, and every element charges one work unit so budgets,
+  cancellation and deadlines stop a fold between elements. Every read pushdown
+  planner declines these forms and stores fall back to the reference executor
+  (covered by the Turso differential oracle). The catalog gains `list-reduce`,
+  `list-comprehension` and `list-quantifier-predicate` (72 supported of 77).
+- **Changed:** write `RETURN` quantifiers are parsed by the general expression
+  parser. `CypherReturnTarget::PropertyListPredicate` and
+  `CypherReturnListPredicateProjection` are replaced by
+  `CypherReturnTarget::Expression(CypherReturnExpression)`. The previously
+  admitted `item IN variable.property WHERE item = value` shape keeps its
+  exact-equality and NULL-needle results; computed predicates that were
+  rejected now evaluate, and a wrong item variable is reported as an unbound
+  name instead of an unsupported cardinality.
+
+### Cypher reference executor performance
+
 - Measure serialized size without formatting JSON. `grust-core` gains
   `count_json_bytes` and `json_byte_len`, a byte-counting serializer that mirrors
   `serde_json`'s compact encoding, delegates floats to `serde_json` itself, and
@@ -13,12 +38,6 @@ reconstructed from Git history, release commits, and the shipped docs.
   `serde_json` writer instead; a differential test pins the two. Bounded Cypher
   admission and `TypedGraphIndex::serialized_graph_bytes` use it, under the same
   limit and sampled deadline.
-- `ExecutionContext::charge_cumulative_memory` and `MemoryAccount::charge`, the
-  per-copied-row charges, sample the deadline as `charge_work` does instead of
-  reading the clock for every charge. The byte limit and cancellation remain
-  exact, and `reserve` and `checkpoint` still read the clock. Together these took
-  a bounded 200,000-node scan from 340 ms to 237 ms (937 ms before this series;
-  101 ms unbounded).
 - Stop deep-copying relationships and path elements in the Cypher reference
   executor. Bound relationships, variable-length trails and their endpoints,
   shortest-path reconstruction and fixed-path accumulators now hold an owned
@@ -49,6 +68,29 @@ reconstructed from Git history, release commits, and the shipped docs.
   observed expiry stays observed. Work and byte limits are never sampled. On a
   200,000-node scan this took a bounded `count(*)` from 937 ms to 488 ms against
   282 ms unbounded, on a host with a cheap clock.
+
+### Execution accounting
+
+- Full-path procedure results cost less to consume from Cypher. A streaming
+  `CALL` deep-copied every yielded value into each row, so a path's `nodeIds`
+  list was cloned once per path; a yielded value is now borrowed from its batch
+  and still charged as a full copy. The shortest-path output cursor and its
+  parent walk admit work per path, or per 1024 steps, instead of once per entry;
+  the streaming `SUM` state folds without rebuilding a slice per value; binding
+  forms admit their elements in blocks of 1024; and leaf expressions no longer
+  checkpoint the deadline, which their enclosing expression has already done.
+  Totals charged are unchanged, and a budget, cancellation or deadline still
+  stops a fold between blocks. On a 1024-node chain (524,800 path entries) the
+  `UNWIND range(...)` full-path aggregate went from 88 ms to 58 ms and the
+  equivalent `reduce` form from 298 ms to 254 ms; `reduce` remains about four
+  times the `UNWIND` form because each element still pays general expression
+  evaluation and per-value byte accounting.
+- `ExecutionContext::charge_cumulative_memory` and `MemoryAccount::charge`, the
+  per-copied-row charges, sample the deadline as `charge_work` does instead of
+  reading the clock for every charge. The byte limit and cancellation remain
+  exact, and `reserve` and `checkpoint` still read the clock. Together these took
+  a bounded 200,000-node scan from 340 ms to 237 ms (937 ms before this series;
+  101 ms unbounded).
 - Sample the deadline on work charges instead of reading the clock for every
   unit. Kernels charge once per visited entry, so a per-unit `Instant::now()`
   costs more than the work it guards wherever the clocksource is paravirtualised:
@@ -64,24 +106,9 @@ reconstructed from Git history, release commits, and the shipped docs.
   peak accounting and wakers still hold the lock. Profiling attributed 72.8% of
   full-path Dijkstra kernel time on a 16384-node chain to the previous
   lock-per-unit accounting.
-- Add `reduce(acc = seed, item IN list | body)`, list comprehensions
-  `[item IN list WHERE predicate | projection]` and general
-  `any`/`all`/`none`/`single` quantifiers over arbitrary lists and predicates.
-  One scoped `Expr` evaluator serves read `RETURN`/`WHERE`/`WITH` and write
-  `RETURN`: bindings push an immutable lexical scope, shadowing a row variable
-  is a semantic error, and every element charges one work unit so budgets,
-  cancellation and deadlines stop a fold between elements. Every read pushdown
-  planner declines these forms and stores fall back to the reference executor
-  (covered by the Turso differential oracle). The catalog gains `list-reduce`,
-  `list-comprehension` and `list-quantifier-predicate` (72 supported of 77).
-- **Changed:** write `RETURN` quantifiers are parsed by the general expression
-  parser. `CypherReturnTarget::PropertyListPredicate` and
-  `CypherReturnListPredicateProjection` are replaced by
-  `CypherReturnTarget::Expression(CypherReturnExpression)`. The previously
-  admitted `item IN variable.property WHERE item = value` shape keeps its
-  exact-equality and NULL-needle results; computed predicates that were
-  rejected now evaluate, and a wrong item variable is reported as an unbound
-  name instead of an unsupported cardinality.
+
+### Arrow and DataFusion
+
 - Validate row-to-Arrow conversion with borrowed identity membership instead of
   constructing discarded adjacency, and copy string properties directly into
   Arrow buffers without temporary owned String clones.
@@ -98,6 +125,17 @@ reconstructed from Git history, release commits, and the shipped docs.
   Upstream round-robin repartitioning charged every queued slice the full size
   of its shared parent buffers, which intermittently exhausted a 256 MiB pool on
   a one-million-node scan with nothing copied.
+
+### Ladybug (internal adapter)
+
+- `grust-ladybug` bulk loads `COPY` from a temporary CSV instead of inserting
+  row by row, and skip the read-back of an empty table. A caller that loads one
+  fresh graph in disjoint chunks can call
+  `LadybugGraphStore::set_bulk_load_trusts_fresh_rows(true)` to skip the per-chunk
+  scan of stored keys, which was quadratic in the chunk count; node ids copied in
+  that mode are remembered so an edge batch carrying its endpoints does not
+  collide. The mode is off by default, and a key the store already held is then
+  the caller's error. `lbug` moves to 0.20.4. The crate remains `publish = false`.
 - Add `LadybugConfig::max_db_bytes`. Ladybug reserves its maximum database
   size (8 TiB by default) as virtual address space per open database, so one
   x86-64 Linux process can hold only about fifteen at once. `grust-ladybug`

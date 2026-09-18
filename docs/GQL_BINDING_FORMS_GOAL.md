@@ -1,8 +1,8 @@
 # Grust Binding Forms Goal — `reduce`, comprehensions and general quantifiers
 
-Status: **B0–B5 implemented and tested in `work/gql-binding-forms`; not merged, not released.**
-Reviewed 2026-09-18, rebased onto `main` at `45c93ea`. The book rebuild, release
-post, tag and crates.io publication belong to a named release under `PUBLISH.md`.
+Status: **COMPLETE — B0–B5 merged to `main` and released in Tadpole 0.21.0
+(2026-09-18).** This file is a historical execution record; branch names, test
+counts and checkpoints below describe the work as it happened.
 
 ## Why
 

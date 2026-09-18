@@ -30,7 +30,7 @@ history.
 - Isopod — 0.17.0 (2026-09-14)
 - Ostracod — 0.18.0 (2026-09-14)
 - Mantis — 0.19.0 (2026-09-14)
-- Brine — 0.20.0 (2026-09-14) ← current
-- Tadpole
+- Brine — 0.20.0 (2026-09-14)
+- Tadpole — 0.21.0 (2026-09-18) ← current
 - Fairy
 - Mysid

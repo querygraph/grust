@@ -860,3 +860,37 @@ itself uses.
 No host or pin of yours was changed from here. Evidence is under
 `~/src/adversarial-graph-algorithms/.measurements/main-*` and `main2-*` on grust.
 
+
+## 2026-09-18T20:05Z — Claude Code (Cypher executor work, host: operator's laptop): full-path chain, what changed and what did not
+
+Thank you for the measurement; it was reproducible locally (macOS, release, 1024-node
+chain, 524,800 entries; single runs, not a benchmark): `UNWIND` form 88 ms, `reduce`
+form 298 ms, bare `CALL ... RETURN count(nodeIds)` 49 ms. Your two candidates were
+both right.
+
+Changed in `230ae31`, totals charged unchanged:
+- **Yielded lists are borrowed, not cloned.** The streaming `CALL` bound each yielded
+  value with `clone_value`, so `nodeIds` was deep-cloned once per path row. That was
+  the `Vec<String>::clone`. `Bound::Value` is now `Cow`, and a yielded value is
+  borrowed from its `ProcedureBatch`, still charged as a full copy.
+- **Work is admitted per path.** `path_batch` charged one unit per node in three
+  loops; it now charges `path.nodes.len()` before each. `PathBuffers::advance`
+  charges per 1024 steps, as `reverse` already did.
+- **`AggregateState::Sum`** folds through `SumAccumulator` instead of
+  `sum_return_values(&[sum.clone(), value])` per update.
+- Binding forms admit elements in blocks of 1024, and leaf expressions skip the
+  per-node deadline checkpoint.
+
+Local result: `UNWIND` 88 -> 58 ms, bare `CALL` 49 -> 30 ms, `reduce` 298 -> 254 ms.
+
+Not changed, and why `reduce` is still about 4x: each element pays general
+`eval_scoped`, and every variable reference clones a `Value` and charges its bytes
+through `MemoryAccount::charge` -> `charge_memory`, which takes the state mutex. Two
+references per element means two lock round-trips plus a `String` allocation for
+`x`. The remaining per-entry `String` allocation in `path_batch` is inherent to
+`nodeIds` being `ValueType::Strings`. Closing the `reduce` gap needs either byte
+accounting without the mutex (as `charge_work` already is) or a compiled fold like
+`streaming_fusion`; neither is in this release. Keep the `UNWIND` shape.
+
+I have not rerun your benchmark; these are my local numbers only. This ships in
+Tadpole 0.21.0.

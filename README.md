@@ -2,10 +2,12 @@
 
 Grust is a modern property graph API for Rust.
 
-**Brine 0.20.0** retains execution admission through shared Arrow buffers,
-raw algorithm result arrays and policy-controlled DataFusion snapshot capture.
-Automatic Cypher routing and complete operator accounting remain active work.
-The versioned examples below target Brine.
+**Tadpole 0.21.0** adds list binding forms to Cypher — `reduce`, list
+comprehensions and general `any`/`all`/`none`/`single` — through one scoped
+evaluator for reads and write `RETURN`, adds `RoutedGraph` routing of
+single-node Cypher scan plans through DataFusion, and removes per-row copying and per-charge clock reads
+from the reference executor. Pushdown of binding forms and complete operator
+accounting remain active work. The versioned examples below target Tadpole.
 
 It gives Rust applications one small, backend-neutral way to build, validate,
 traverse, and eventually persist graph data. The core model is intentionally
@@ -376,7 +378,7 @@ Enable the `memory` feature to use `MemoryGraphStore` from the public facade:
 
 ```toml
 [dependencies]
-grust = { package = "grust-graph", version = "0.20.0", features = ["memory"] }
+grust = { package = "grust-graph", version = "0.21.0", features = ["memory"] }
 ```
 
 The facade re-exports the full `grust-memory` crate surface when the feature is
@@ -507,7 +509,7 @@ Backend crates are optional facade features:
 ```toml
 [dependencies.grust]
 package = "grust-graph"
-version = "0.20.0"
+version = "0.21.0"
 features = [
   "cocoindex", "cypher", "falkor", "lancedb", "memory", "postgres",
   "postgres-pgq", "pggraph", "sail", "surreal", "turso",
@@ -522,7 +524,7 @@ The additional `turso-sync` feature enables Turso Cloud synchronization and
 implies `turso`; `typed-garde` and `typed-zod-rs` enable typed ingestion rather
 than storage backends.
 
-Brine 0.20.0 uses a lockstep version for all publishable Grust crates. The optional
+Tadpole 0.21.0 uses a lockstep version for all publishable Grust crates. The optional
 `algorithms` feature adds graph kernels and their procedure adapters; `arrow`
 adds typed interchange and, with algorithms enabled, native result batches.
 
@@ -547,7 +549,7 @@ names, normalized relationship-name collisions, and attempts to overwrite
 structural node or edge metadata before sending a write. Transport errors omit
 the configured URL and any embedded credentials or query secrets.
 
-`grust-ladybug` embeds LadybugDB directly through the Rust `lbug` 0.20.2 crate.
+`grust-ladybug` embeds LadybugDB directly through the Rust `lbug` 0.20.4 crate.
 It creates Grust-managed Ladybug node and relationship tables from graph labels,
 persists label/table metadata for readback, writes graph loads in transactions,
 and exposes backend-neutral reads and bounded traversal without starting a
@@ -1044,7 +1046,7 @@ backend-specific extension traits later.
 
 ## Status
 
-Grust 0.20.0 "Brine" is the current source release line, with lockstep publishable
+Grust 0.21.0 "Tadpole" is the current source release line, with lockstep publishable
 crates, generalized Rust/Cypher graph analytics and optional typed Arrow results.
 The backend matrix distinguishes local projection from backend-native execution;
 unsupported algorithms, modes and representations remain explicit.

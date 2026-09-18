@@ -18,7 +18,7 @@
 use std::{fs::File, io::Write, sync::Arc, time::Instant};
 
 use arrow::{
-    array::{ArrayRef, Int64Array, StringArray, UInt64Array},
+    array::{ArrayRef, StringArray, UInt64Array},
     datatypes::{DataType, Field, Schema},
     record_batch::RecordBatch,
 };
@@ -36,13 +36,6 @@ fn strings(name: &str, values: &[String]) -> (Field, ArrayRef) {
         Arc::new(StringArray::from_iter_values(
             values.iter().map(String::as_str),
         )),
-    )
-}
-
-fn ints(name: &str, values: &[i64]) -> (Field, ArrayRef) {
-    (
-        Field::new(name, DataType::Int64, false),
-        Arc::new(Int64Array::from(values.to_vec())),
     )
 }
 
@@ -126,7 +119,7 @@ fn main() {
     // A. registered Arrow + COPY FROM (MATCH …): the adapter today
     let node_batch = batch(vec![strings("id", &ids), strings("props", &empty)]);
     time("A nodes: arrow table, COPY FROM (MATCH …)", n, || {
-        conn.create_arrow_table("s_nodes", &[node_batch.clone()])
+        conn.create_arrow_table("s_nodes", std::slice::from_ref(&node_batch))
             .map_err(|e| e.to_string())?;
         let r = q(
             &conn,
@@ -143,7 +136,7 @@ fn main() {
         strings("props", &eprops),
     ]);
     time("A edges: arrow rel table, COPY FROM (MATCH …)", m, || {
-        conn.create_arrow_rel_table("s_rels", &[rel_batch.clone()], "N", "N")
+        conn.create_arrow_rel_table("s_rels", std::slice::from_ref(&rel_batch), "N", "N")
             .map_err(|e| e.to_string())?;
         let r = q(
             &conn,
@@ -155,7 +148,7 @@ fn main() {
 
     // B. COPY t FROM <registered table> directly
     time("B nodes: arrow table, COPY FROM s_nodes", n, || {
-        conn.create_arrow_table("s_nodes", &[node_batch.clone()])
+        conn.create_arrow_table("s_nodes", std::slice::from_ref(&node_batch))
             .map_err(|e| e.to_string())?;
         let r = q(&conn, "COPY N2 FROM s_nodes;");
         conn.drop_arrow_table("s_nodes")
@@ -163,7 +156,7 @@ fn main() {
         r
     });
     time("B edges: arrow rel table, COPY FROM s_rels", m, || {
-        conn.create_arrow_rel_table("s_rels", &[rel_batch.clone()], "N2", "N2")
+        conn.create_arrow_rel_table("s_rels", std::slice::from_ref(&rel_batch), "N2", "N2")
             .map_err(|e| e.to_string())?;
         let r = q(&conn, "COPY E2 FROM s_rels;");
         conn.drop_arrow_table("s_rels").map_err(|e| e.to_string())?;
@@ -235,8 +228,8 @@ fn main() {
         || {
             conn.create_arrow_rel_table_csr(
                 "s_csr",
-                &[indices_batch.clone()],
-                &[indptr_batch.clone()],
+                std::slice::from_ref(&indices_batch),
+                std::slice::from_ref(&indptr_batch),
                 "NI",
                 "NI",
                 "to",
@@ -253,8 +246,8 @@ fn main() {
     time("E edges: CSR arrow rel table, COPY FROM s_csr", m, || {
         conn.create_arrow_rel_table_csr(
             "s_csr",
-            &[indices_batch.clone()],
-            &[indptr_batch.clone()],
+            std::slice::from_ref(&indices_batch),
+            std::slice::from_ref(&indptr_batch),
             "NI",
             "NI",
             "to",
