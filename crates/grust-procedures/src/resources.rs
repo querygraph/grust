@@ -160,12 +160,11 @@ impl ExecutionContext {
             return Ok(());
         };
         if matches!(deadline, DeadlineCheck::Sampled)
-            && self
+            && !self
                 .0
                 .charges_since_deadline_read
                 .fetch_add(1, Ordering::Relaxed)
-                % DEADLINE_SAMPLE_UNITS
-                != 0
+                .is_multiple_of(DEADLINE_SAMPLE_UNITS)
         {
             return Ok(());
         }
