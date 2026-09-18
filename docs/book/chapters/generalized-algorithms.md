@@ -202,3 +202,45 @@ The repository retains independent small-graph oracles, source/binary receipts,
 frozen baseline results and current qualification status. See the
 [coverage and resource contracts](https://github.com/querygraph/grust/blob/main/docs/GENERALIZED_ALGORITHMS.md)
 and [benchmark evidence](https://github.com/querygraph/grust/tree/main/benchmarks/algorithms).
+
+## What the cooperative budget costs
+
+Kernels charge the shared execution budget once per unit of graph work: per
+visited entry, and per step of a reconstructed path. That granularity is what
+makes a budget meaningful — an exhausted allowance stops the kernel where it
+stands rather than after the next batch — and it means the meter runs as often
+as the work it guards. On a 16384-node weighted chain with full path
+reconstruction, the meter is entered about 134 million times.
+
+Two properties of that meter are therefore part of the algorithm contract.
+
+**Admission is lock-free and exact.** The cumulative work counter and the
+cancellation flag are atomics. Each charge admits through a compare-exchange
+that recomputes admission against the value it actually replaces, so a
+concurrent charge cannot overshoot the limit between load and store, and an
+exhausted budget still fails exactly at its limit. Memory reservations, peak
+accounting and cancellation wakers keep a mutex: they are rare and need several
+fields to move together.
+
+**The deadline is sampled; everything else is not.** An execution that sets no
+deadline pays nothing for deadline enforcement — neither a clock read nor a
+counter. An execution that sets one has its deadline observed within 1024
+charges rather than on every charge, because reading the clock per unit of work
+costs more than the work itself wherever the host clocksource is paravirtualised
+rather than a register read. Cancellation remains an unconditional atomic load
+and is observed immediately. Budget limits remain exact. `checkpoint` reads the
+clock every time, so a caller that needs a precise poll has one.
+
+The practical consequence for callers: choose a deadline deliberately. A bounded
+read policy requires a finite one, and a kernel that charges per entry will
+consult it often. If a caller needs expiry observed more tightly than 1024 units
+of work, `checkpoint` is the exact instrument; the sampled path is for the
+charges themselves.
+
+These are contract properties rather than tuning knobs, and they are visible in
+measurements. In the companion algorithms benchmark, replacing per-charge mutex
+locking improved full-path Dijkstra by 14 to 29% on direct execution and
+PageRank by 23 to 29% across graph families, and sampling the deadline reduced a
+full-path Cypher query on a 4096-node chain from 21,721 ms to about 2,300 ms.
+Both figures come from one host with a Xen clocksource and are not portable
+constants; the boundary statements and raw evidence accompany them there.
