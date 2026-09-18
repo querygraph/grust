@@ -1,31 +1,31 @@
-//! Bulk loading through registered Arrow tables.
+//! Bulk loading through the engine's file `COPY`.
 //!
 //! One `MERGE` per node or edge costs the engine a full statement each,
 //! measured at about 50 ms of CPU for a relationship `MERGE … SET` on a 4-vCPU
-//! host, so a 200,000-edge slice took five hours. The `lbug` crate can register
-//! Arrow record batches as tables; `COPY … FROM (MATCH …)` over such a table
-//! loads the same 100,000 nodes in a quarter of a second and 112,000 edges in
-//! eight.
+//! host, so a 200,000-edge slice took five hours. Registering the rows as an
+//! Arrow table and running `COPY … FROM (MATCH …)` over it fixed the nodes
+//! (a million rows a second) but not the edges: that probe is superlinear in
+//! the engine, 4,100 edges a second at 500,000 and unfinished after two hours
+//! at five million, which is why cit-Patents never loaded. The engine's own
+//! `COPY … FROM 'file.csv'` takes the same rows, STRING keys and JSON props
+//! included, at 1.3 million edges a second (five million in 3.9 s; 2.2 million
+//! nodes a second), so every bulk write goes through a temporary CSV file.
+//! The `lbug` crate has no equivalent of Python's `COPY … FROM $df`, and the
+//! binder rejects `COPY … FROM <registered arrow table>`.
 //!
 //! `put_graph` keeps its upsert semantics: rows whose node id, or whose
 //! `(from, to)` pair for a relationship table, already exists go through the
 //! per-row `MERGE` path exactly as before; every other row is copied. Within
 //! one load the last row for an id or pair wins, which is what a sequence of
-//! `MERGE`s would leave behind.
+//! `MERGE`s would leave behind. An empty target table skips the read-back of
+//! existing keys, so a fresh load costs nothing beyond the copy.
 
-use std::{
-    collections::{BTreeMap, HashSet},
-    sync::atomic::AtomicU64,
-};
+use std::collections::{BTreeMap, HashSet};
 
 use arrow::record_batch::RecordBatch;
 use grust_core::prelude::*;
 
 use super::{LadybugGraphStore, ladybug_error, props_to_string};
-
-/// A registered Arrow table's name is unique per process so two loads on the
-/// same connection never collide.
-static SCRATCH_TABLES: AtomicU64 = AtomicU64::new(0);
 
 impl LadybugGraphStore {
     /// Write `nodes` into `table`, copying rows whose id is new and merging
@@ -36,7 +36,11 @@ impl LadybugGraphStore {
         table: &str,
         nodes: &[&Node],
     ) -> Result<usize> {
-        let existing = self.existing_node_ids(conn, table)?;
+        let existing = if Self::count(conn, &format!("MATCH (n:{table}) RETURN count(n);"))? == 0 {
+            HashSet::new()
+        } else {
+            self.existing_node_ids(conn, table)?
+        };
         let mut fresh: BTreeMap<&str, &Node> = BTreeMap::new();
         for node in nodes {
             if existing.contains(node.id.as_str()) {
@@ -57,7 +61,7 @@ impl LadybugGraphStore {
             ("id", ids.clone()),
             ("props", props.iter().map(String::as_str).collect()),
         ])?;
-        self.copy_from_arrow_nodes(conn, table, batch)?;
+        self.copy_from_csv(conn, table, &batch)?;
         self.bulk_write_node_index(conn, table, &fresh)?;
         Ok(nodes.len())
     }
@@ -72,7 +76,15 @@ impl LadybugGraphStore {
         to_table: &str,
         edges: &[&Edge],
     ) -> Result<usize> {
-        let existing = self.existing_edge_pairs(conn, rel_table, from_table, to_table)?;
+        let existing = if Self::count(
+            conn,
+            &format!("MATCH ()-[r:{rel_table}]->() RETURN count(r);"),
+        )? == 0
+        {
+            HashSet::new()
+        } else {
+            self.existing_edge_pairs(conn, rel_table, from_table, to_table)?
+        };
         let mut fresh: BTreeMap<(&str, &str), &Edge> = BTreeMap::new();
         for edge in edges {
             let pair = (edge.from.as_str(), edge.to.as_str());
@@ -99,35 +111,59 @@ impl LadybugGraphStore {
             ("id", ids.iter().map(String::as_str).collect()),
             ("props", props.iter().map(String::as_str).collect()),
         ])?;
-        let scratch = scratch_table_name(&self.config.table_prefix);
-        conn.create_arrow_rel_table(&scratch, &[batch], from_table, to_table)
-            .map_err(ladybug_error)?;
-        let copy = Self::exec(
-            conn,
-            &format!(
-                "COPY {rel_table} FROM (MATCH (a:{from_table})-[r:{scratch}]->(b:{to_table}) RETURN a.id, b.id, r.id, r.props);"
-            ),
-        );
-        conn.drop_arrow_table(&scratch).map_err(ladybug_error)?;
-        copy?;
+        // Positional: FROM, TO, then the rel table's own columns.
+        self.copy_from_csv(conn, rel_table, &batch)?;
         Ok(edges.len())
     }
 
-    fn copy_from_arrow_nodes(
+    /// Writes `batch` to a temporary CSV and runs the engine's `COPY` over it,
+    /// columns positional. The file lives only for the statement.
+    fn copy_from_csv(
         &self,
         conn: &lbug::Connection<'_>,
         table: &str,
-        batch: RecordBatch,
+        batch: &RecordBatch,
     ) -> Result<()> {
-        let scratch = scratch_table_name(&self.config.table_prefix);
-        conn.create_arrow_table(&scratch, &[batch])
-            .map_err(ladybug_error)?;
-        let copy = Self::exec(
+        let io = |err: std::io::Error| {
+            GrustError::Backend(format!("Ladybug bulk copy file error: {err}"))
+        };
+        let dir = tempfile::Builder::new()
+            .prefix("grust-ladybug-copy-")
+            .tempdir()
+            .map_err(io)?;
+        let path = dir.path().join("rows.csv");
+        {
+            let file = std::fs::File::create(&path).map_err(io)?;
+            let mut writer = arrow::csv::WriterBuilder::new()
+                .with_header(false)
+                .build(file);
+            writer.write(batch).map_err(|err| {
+                GrustError::Serialization(format!("Ladybug bulk copy CSV error: {err}"))
+            })?;
+        }
+        let path = path.display().to_string();
+        if path.contains('\'') {
+            return Err(GrustError::Backend(format!(
+                "Ladybug bulk copy: temp path has a quote: {path}"
+            )));
+        }
+        Self::exec(
             conn,
-            &format!("COPY {table} FROM (MATCH (n:{scratch}) RETURN n.id, n.props);"),
-        );
-        conn.drop_arrow_table(&scratch).map_err(ladybug_error)?;
-        copy
+            &format!(
+                "COPY {table} FROM '{path}' (HEADER=false, DELIM=',', QUOTE='\"', ESCAPE='\"');"
+            ),
+        )
+    }
+
+    /// One integer from a `RETURN count(…)` query.
+    fn count(conn: &lbug::Connection<'_>, query: &str) -> Result<i64> {
+        let mut rows = conn.query(query).map_err(ladybug_error)?;
+        match rows.next().as_deref() {
+            Some([lbug::Value::Int64(n), ..]) => Ok(*n),
+            other => Err(GrustError::Serialization(format!(
+                "Ladybug count returned {other:?}"
+            ))),
+        }
     }
 
     /// The metadata index gets one row per new node, copied the same way.
@@ -145,17 +181,7 @@ impl LadybugGraphStore {
             ("label", labels),
             ("table_name", vec![table; fresh.len()]),
         ])?;
-        let scratch = scratch_table_name(&self.config.table_prefix);
-        conn.create_arrow_table(&scratch, &[batch])
-            .map_err(ladybug_error)?;
-        let copy = Self::exec(
-            conn,
-            &format!(
-                "COPY {node_index} FROM (MATCH (n:{scratch}) RETURN n.id, n.kind, n.label, n.table_name);"
-            ),
-        );
-        conn.drop_arrow_table(&scratch).map_err(ladybug_error)?;
-        copy
+        self.copy_from_csv(conn, node_index, &batch)
     }
 
     fn existing_node_ids(
@@ -192,13 +218,80 @@ impl LadybugGraphStore {
     }
 }
 
-fn scratch_table_name(prefix: &str) -> String {
-    let n = SCRATCH_TABLES.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-    format!("{prefix}_arrow_in_{}_{n}", std::process::id())
-}
-
 /// A record batch of non-null UTF-8 columns.
 fn string_batch(columns: &[(&str, Vec<&str>)]) -> Result<RecordBatch> {
     grust_arrow::v55::string_batch(columns)
         .map_err(|err| GrustError::Serialization(format!("Ladybug Arrow batch error: {err}")))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::super::LadybugGraphStore;
+    use grust_core::prelude::*;
+    use serde_json::json;
+
+    fn props(pairs: &[(&str, serde_json::Value)]) -> Props {
+        pairs
+            .iter()
+            .map(|(k, v)| (k.to_string(), v.clone()))
+            .collect()
+    }
+
+    /// Values that break naive CSV: commas, double quotes, newlines, a
+    /// backslash, a quote-only string, an empty string, unicode.
+    #[test]
+    fn bulk_copy_round_trips_hostile_props_and_then_upserts() -> Result<()> {
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        rt.block_on(async {
+            let store = LadybugGraphStore::in_memory()?;
+            let nasty = props(&[
+                ("comma", json!("a,b")),
+                ("quote", json!("say \"hi\"")),
+                ("newline", json!("line1\nline2")),
+                ("backslash", json!("c:\\path")),
+                ("only_quote", json!("\"")),
+                ("empty", json!("")),
+                ("unicode", json!("naïve 日本 🚀")),
+                ("nested", json!({"k": ["x,y", "\"z\""]})),
+            ]);
+            let nodes: Vec<Node> = (0..3)
+                .map(|i| Node::new("Thing", format!("n{i}"), nasty.clone()))
+                .collect();
+            let edges = vec![
+                Edge::new("REL", "n0", "n1", nasty.clone()),
+                Edge::new("REL", "n1", "n2", props(&[("plain", json!(1))])),
+            ];
+            let report = store.put_graph(&Graph::new(nodes, edges)).await?;
+            assert_eq!((report.nodes, report.edges), (3, 2));
+            let got = store.get_node(&NodeId::new("n1")).await?.expect("n1");
+            assert_eq!(got.props, nasty);
+            let out = store
+                .get_edges(EdgeQuery {
+                    from: Some(NodeId::new("n0")),
+                    ..Default::default()
+                })
+                .await?;
+            assert_eq!(out.len(), 1);
+            assert_eq!(out[0].props, nasty);
+
+            // A second load of the same ids takes the merge path (the tables
+            // are no longer empty) and must not duplicate anything.
+            let again = Graph::new(
+                vec![Node::new("Thing", "n1", props(&[("v", json!(2))]))],
+                vec![Edge::new("REL", "n0", "n1", props(&[("v", json!(2))]))],
+            );
+            store.put_graph(&again).await?;
+            let got = store.get_node(&NodeId::new("n1")).await?.expect("n1");
+            assert_eq!(got.props, props(&[("v", json!(2))]));
+            let out = store
+                .get_edges(EdgeQuery {
+                    from: Some(NodeId::new("n0")),
+                    ..Default::default()
+                })
+                .await?;
+            assert_eq!(out.len(), 1, "upsert must not add a parallel edge");
+            assert_eq!(out[0].props, props(&[("v", json!(2))]));
+            Ok(())
+        })
+    }
 }
