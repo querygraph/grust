@@ -52,6 +52,8 @@ pub use procedure_plan::{
     ProcedureCallPlan, ProcedureExecutionTarget, ProcedureQueryPlan, ProcedureRowExecution,
 };
 mod indexing;
+mod expression_scope;
+use expression_scope::ExpressionScope;
 mod procedures;
 mod streaming;
 mod streaming_aggregate;
@@ -2809,6 +2811,10 @@ fn eval_usize(expr: &Expr, params: &CypherParameters, what: &str) -> Result<usiz
 }
 
 fn eval(expr: &Expr, row: &Row, params: &CypherParameters) -> Result<Value> {
+    eval_scoped(expr, &ExpressionScope::row(row), params)
+}
+
+fn eval_scoped(expr: &Expr, row: &ExpressionScope<'_>, params: &CypherParameters) -> Result<Value> {
     read_budget::checkpoint()?;
     let value = match expr {
         Expr::Null => Ok(Value::Null),
@@ -2828,14 +2834,14 @@ fn eval(expr: &Expr, row: &Row, params: &CypherParameters) -> Result<Value> {
         Expr::List(items) => {
             let mut out = Vec::new();
             for item in items {
-                out.push(value_into_json(eval(item, row, params)?));
+                out.push(value_into_json(eval_scoped(item, row, params)?));
             }
             Ok(Value::Json(serde_json::Value::Array(out)))
         }
         Expr::Unary { op, operand } => eval_unary(*op, operand, row, params),
         Expr::Binary { op, lhs, rhs } => eval_binary(*op, lhs, rhs, row, params),
         Expr::IsNull { operand, negated } => {
-            let is_null = matches!(eval(operand, row, params)?, Value::Null);
+            let is_null = matches!(eval_scoped(operand, row, params)?, Value::Null);
             Ok(Value::Bool(is_null != *negated))
         }
         Expr::Function {
@@ -2872,7 +2878,7 @@ fn eval(expr: &Expr, row: &Row, params: &CypherParameters) -> Result<Value> {
         Expr::Map(entries) => {
             let mut out = serde_json::Map::new();
             for (key, expr) in entries {
-                out.insert(key.clone(), value_into_json(eval(expr, row, params)?));
+                out.insert(key.clone(), value_into_json(eval_scoped(expr, row, params)?));
             }
             Ok(Value::Json(serde_json::Value::Object(out)))
         }
@@ -2898,14 +2904,14 @@ fn list_elements(value: Value) -> Vec<Value> {
 }
 
 /// `range(start, end[, step])` -> inclusive integer list.
-fn eval_range(args: &[Expr], row: &Row, params: &CypherParameters) -> Result<Value> {
+fn eval_range(args: &[Expr], row: &ExpressionScope<'_>, params: &CypherParameters) -> Result<Value> {
     if args.len() < 2 || args.len() > 3 {
         return Err(gql_type(
             "range() expects 2 or 3 integer arguments".to_string(),
         ));
     }
     let int_arg = |e: &Expr| -> Result<i64> {
-        match eval(e, row, params)? {
+        match eval_scoped(e, row, params)? {
             Value::Int(n) => Ok(n),
             other => Err(gql_type(format!("range() expects integers, got {other:?}"))),
         }
@@ -2956,7 +2962,7 @@ fn eval_range(args: &[Expr], row: &Row, params: &CypherParameters) -> Result<Val
 fn eval_element_function(
     name: &str,
     arg: &Expr,
-    row: &Row,
+    row: &ExpressionScope<'_>,
     params: &CypherParameters,
 ) -> Result<Value> {
     if let Expr::Variable(v) = arg {
@@ -2987,7 +2993,7 @@ fn eval_element_function(
         }
     }
     // Fallback: evaluate to the element's JSON and read its fields.
-    match eval(arg, row, params)? {
+    match eval_scoped(arg, row, params)? {
         Value::Null => Ok(Value::Null),
         Value::Json(serde_json::Value::Object(mut map)) => match name {
             "labels" => Ok(map
@@ -3037,14 +3043,14 @@ fn path_component(value: Value, key: &str) -> Result<Value> {
 /// `graph(nodes, relationships)` -> a first-class graph value (Full39075 F7).
 /// Each argument is a (possibly empty or NULL) list of node/relationship
 /// elements, e.g. from `collect(n)`; construction deduplicates by identity.
-fn eval_graph_constructor(args: &[Expr], row: &Row, params: &CypherParameters) -> Result<Value> {
+fn eval_graph_constructor(args: &[Expr], row: &ExpressionScope<'_>, params: &CypherParameters) -> Result<Value> {
     let [nodes_expr, rels_expr] = args else {
         return Err(gql_type(
             "graph() expects exactly two arguments: (nodes, relationships)".to_string(),
         ));
     };
-    let nodes = graph_element_list(eval(nodes_expr, row, params)?, "nodes")?;
-    let relationships = graph_element_list(eval(rels_expr, row, params)?, "relationships")?;
+    let nodes = graph_element_list(eval_scoped(nodes_expr, row, params)?, "nodes")?;
+    let relationships = graph_element_list(eval_scoped(rels_expr, row, params)?, "relationships")?;
     Ok(Value::Graph(GraphValue::new(nodes, relationships)))
 }
 
@@ -3065,29 +3071,29 @@ fn eval_case(
     operand: Option<&Expr>,
     branches: &[CaseBranch],
     default: Option<&Expr>,
-    row: &Row,
+    row: &ExpressionScope<'_>,
     params: &CypherParameters,
 ) -> Result<Value> {
     match operand {
         Some(op) => {
-            let target = eval(op, row, params)?;
+            let target = eval_scoped(op, row, params)?;
             for branch in branches {
-                let candidate = eval(&branch.when, row, params)?;
+                let candidate = eval_scoped(&branch.when, row, params)?;
                 if values_equal(&target, &candidate) == Some(true) {
-                    return eval(&branch.then, row, params);
+                    return eval_scoped(&branch.then, row, params);
                 }
             }
         }
         None => {
             for branch in branches {
-                if matches!(eval(&branch.when, row, params)?, Value::Bool(true)) {
-                    return eval(&branch.then, row, params);
+                if matches!(eval_scoped(&branch.when, row, params)?, Value::Bool(true)) {
+                    return eval_scoped(&branch.then, row, params);
                 }
             }
         }
     }
     match default {
-        Some(d) => eval(d, row, params),
+        Some(d) => eval_scoped(d, row, params),
         None => Ok(Value::Null),
     }
 }
@@ -3097,7 +3103,7 @@ fn eval_case(
 fn eval_scalar_function(
     name: &str,
     args: &[Expr],
-    row: &Row,
+    row: &ExpressionScope<'_>,
     params: &CypherParameters,
 ) -> Result<Value> {
     let lower = name.to_ascii_lowercase();
@@ -3110,7 +3116,7 @@ fn eval_scalar_function(
             ));
         }
         for arg in args {
-            let value = eval(arg, row, params)?;
+            let value = eval_scoped(arg, row, params)?;
             if !matches!(value, Value::Null) {
                 return Ok(value);
             }
@@ -3147,7 +3153,7 @@ fn eval_scalar_function(
             ),
         ));
     };
-    let value = eval(arg, row, params)?;
+    let value = eval_scoped(arg, row, params)?;
     // Cypher scalar functions are null-propagating.
     if matches!(value, Value::Null) {
         return Ok(Value::Null);
@@ -3239,7 +3245,7 @@ fn unary_float_fn(value: Value, name: &str, f: fn(f64) -> f64) -> Result<Value> 
     }
 }
 
-fn eval_property(base: &Expr, key: &str, row: &Row, params: &CypherParameters) -> Result<Value> {
+fn eval_property(base: &Expr, key: &str, row: &ExpressionScope<'_>, params: &CypherParameters) -> Result<Value> {
     if let Expr::Variable(name) = base {
         return match row.get(name) {
             Some(Bound::Node(node)) if key == "label" => {
@@ -3266,7 +3272,7 @@ fn eval_property(base: &Expr, key: &str, row: &Row, params: &CypherParameters) -
         };
     }
     // Nested access: evaluate the base to a JSON object and index it.
-    match eval(base, row, params)? {
+    match eval_scoped(base, row, params)? {
         Value::Json(serde_json::Value::Object(mut map)) => {
             Ok(map.remove(key).map(Value::from_json).unwrap_or(Value::Null))
         }
@@ -3274,8 +3280,8 @@ fn eval_property(base: &Expr, key: &str, row: &Row, params: &CypherParameters) -
     }
 }
 
-fn eval_unary(op: UnaryOp, operand: &Expr, row: &Row, params: &CypherParameters) -> Result<Value> {
-    let value = eval(operand, row, params)?;
+fn eval_unary(op: UnaryOp, operand: &Expr, row: &ExpressionScope<'_>, params: &CypherParameters) -> Result<Value> {
+    let value = eval_scoped(operand, row, params)?;
     match op {
         UnaryOp::Not => match value {
             Value::Bool(b) => Ok(Value::Bool(!b)),
@@ -3299,27 +3305,27 @@ fn eval_binary(
     op: BinaryOp,
     lhs: &Expr,
     rhs: &Expr,
-    row: &Row,
+    row: &ExpressionScope<'_>,
     params: &CypherParameters,
 ) -> Result<Value> {
     use BinaryOp::*;
     // Boolean connectives implement three-valued logic with short-circuit-free
     // evaluation (both sides are pure here).
     if matches!(op, And | Or | Xor) {
-        let a = as_bool(eval(lhs, row, params)?)?;
-        let b = as_bool(eval(rhs, row, params)?)?;
+        let a = as_bool(eval_scoped(lhs, row, params)?)?;
+        let b = as_bool(eval_scoped(rhs, row, params)?)?;
         return Ok(three_valued(op, a, b));
     }
 
     // `IN` is handled before evaluating the right side so a list literal stays a
     // list of `Value`s (round-tripping through JSON would be lossy).
     if op == In {
-        let a = eval(lhs, row, params)?;
+        let a = eval_scoped(lhs, row, params)?;
         return membership(&a, rhs, row, params);
     }
 
-    let a = eval(lhs, row, params)?;
-    let b = eval(rhs, row, params)?;
+    let a = eval_scoped(lhs, row, params)?;
+    let b = eval_scoped(rhs, row, params)?;
     match op {
         Add | Subtract | Multiply | Divide | Modulo | Power => arithmetic(op, a, b),
         Eq | Ne | Lt | Le | Gt | Ge => Ok(comparison(op, &a, &b)),
@@ -3385,7 +3391,7 @@ fn to_bool_or_null(b: Option<bool>) -> Value {
     }
 }
 
-fn membership(a: &Value, list_expr: &Expr, row: &Row, params: &CypherParameters) -> Result<Value> {
+fn membership(a: &Value, list_expr: &Expr, row: &ExpressionScope<'_>, params: &CypherParameters) -> Result<Value> {
     if matches!(a, Value::Null) {
         return Ok(Value::Null);
     }
@@ -3393,9 +3399,9 @@ fn membership(a: &Value, list_expr: &Expr, row: &Row, params: &CypherParameters)
     let candidates: Vec<Value> = match list_expr {
         Expr::List(items) => items
             .iter()
-            .map(|e| eval(e, row, params))
+            .map(|e| eval_scoped(e, row, params))
             .collect::<Result<_>>()?,
-        other => match eval(other, row, params)? {
+        other => match eval_scoped(other, row, params)? {
             Value::StringArray(xs) => xs.into_iter().map(Value::String).collect(),
             Value::IntArray(xs) => xs.into_iter().map(Value::Int).collect(),
             Value::FloatArray(xs) => xs.into_iter().map(Value::Float).collect(),

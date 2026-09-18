@@ -1,9 +1,7 @@
 # Grust Binding Forms Goal — `reduce`, comprehensions and general quantifiers
 
-Status: **PROPOSED, not started.** Written 2026-09-18 on host `grust` for
-continuation on Mac. No code has been written for this goal; the only related
-work in flight is the deadline-sampling change on `work/algorithms-performance`,
-which is unrelated except that it is how the gap below was discovered.
+Status: **ACTIVE — B0 recorded; B1 scope refactor verified.** Reviewed 2026-09-18 in
+`work/gql-binding-forms`, based on `origin/main` at `f168551`.
 
 ## Why
 
@@ -65,6 +63,50 @@ bespoke shape. Adding another shape is how the catalog reached sixteen. A fold
 whose body is a general expression (`s + toInteger(x)`) cannot be expressed as a
 shape without effectively reimplementing expression evaluation inside it, so the
 recommendation is the former: **unify first, then add the forms.**
+
+## B0 decision — shared scoped expression evaluation (2026-09-18)
+
+Use the existing `Expr` evaluator with an immutable lexical scope layered over
+row bindings. All recursive evaluation, including property access, element
+functions and borrowed list indexing, must consult that same scope. Each binding
+form supplies a child scope; it never modifies the candidate row.
+
+Review correction: the general read executor already evaluates RETURN, WHERE
+and WITH using `Expr`. The classified RETURN catalog belongs to the writable
+query pipeline. Its existing sixteen kinds remain compatibility adapters during
+migration; there will be no Reduce-specific catalog kind or body parser.
+`returning.rs` will parse general expression targets using `parser::parse_expression`;
+`projection.rs` and `eval_rows.rs` will bridge materialized write bindings to the
+shared evaluator. `where_clause.rs` need not acquire an independent evaluator.
+The existing restricted quantifier adapter will be replaced by the general AST
+path, preserving its established results in regression tests.
+
+B1 introduces and verifies the scope machinery before grammar changes. Later
+milestones must integrate scope-aware semantic validation, aggregate traversal,
+resource accounting and conservative pushdown rejection, including nested forms.
+A catalog count or source-site count above is a snapshot, not an acceptance test.
+
+Performance figures above are historical observations from the proposal, not
+independently reproduced evidence or a prediction for this implementation.
+No performance improvement is an acceptance criterion.
+
+## Implementation checkpoint — 2026-09-18
+
+- B1: `read/expression_scope.rs` adds borrowed lexical frames. Recursive
+  expression evaluation, property lookup, element functions and list indexing
+  share their resolution. The row-facing evaluator remains a compatibility entry.
+- Validation: `cargo test -p grust-cypher --lib --tests --quiet` passes before
+  and after the refactor (826 unit tests passed after, one ignored; integration
+  targets also pass with one existing ignored test). The new test checks nested
+  frame lookup, map/list access and isolation from the candidate row.
+- The child-frame constructor is intentionally unused outside tests until B2;
+  the compiler reports two dead-code warnings at this checkpoint.
+- Remaining: syntax and semantic checks, binding evaluation and resource tests,
+  write-RETURN bridge, quantifier migration, pushdown tests, catalog/corpus,
+  documentation and release validation. No new syntax is delivered yet.
+- Integration: the Grust host is merging concurrent work. Rebase this isolated
+  branch onto the merged `origin/main` before further feature implementation,
+  and rerun the baseline because resource-accounting code may have changed.
 
 ## Architecture invariants
 
@@ -168,6 +210,6 @@ person, not discovered in review.
 ## What this goal will not deliver
 
 Measurable benchmark improvement. The algorithms benchmark's Cypher participant
-will get a query it can express more naturally and will run about 4% faster for
-it. Every other reason to want this is a language-completeness reason, and those
+will get a query it can express more naturally. Its runtime effect requires
+measurement after implementation; the earlier probe does not establish it. Every other reason to want this is a language-completeness reason, and those
 are the ones worth arguing.

@@ -5,7 +5,7 @@ use super::*;
 pub(super) fn evaluate(
     base: &Expr,
     index: &Expr,
-    row: &Row,
+    row: &ExpressionScope<'_>,
     params: &CypherParameters,
 ) -> Result<Value> {
     let borrowed = match base {
@@ -17,11 +17,11 @@ pub(super) fn evaluate(
         _ => None,
     };
     if let Some(base) = borrowed {
-        return element(base, eval(index, row, params)?);
+        return element(base, eval_scoped(index, row, params)?);
     }
     // Preserve left-to-right evaluation for computed and volatile expressions.
-    let base = eval(base, row, params)?;
-    element(&base, eval(index, row, params)?)
+    let base = eval_scoped(base, row, params)?;
+    element(&base, eval_scoped(index, row, params)?)
 }
 
 fn element(base: &Value, index: Value) -> Result<Value> {
