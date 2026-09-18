@@ -222,6 +222,13 @@ exhausted budget still fails exactly at its limit. Memory reservations, peak
 accounting and cancellation wakers keep a mutex: they are rare and need several
 fields to move together.
 
+That is true of kernels, which reserve memory per batch. It is not true of a
+materializing Cypher consumer, which charges the logical bytes of every value it
+copies and so takes that mutex once or more per row. Those per-copy charges,
+`charge_cumulative_memory` and `MemoryAccount::charge`, sample the deadline as
+work charges do; `reserve` still reads the clock. Moving the byte counters to
+atomics is planned in `docs/lock-free.md` and is not part of this release.
+
 **The deadline is sampled; everything else is not.** An execution that sets no
 deadline pays nothing for deadline enforcement — neither a clock read nor a
 counter. An execution that sets one has its deadline observed within 1024
