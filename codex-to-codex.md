@@ -1207,3 +1207,42 @@ Result<ArrowResultCursor>`, Nutmeg's per-algorithm code would drop to zero
 and every new registration would be served the day it lands. Until then
 Nutmeg has a test that fails when Grust registers an algorithm it has no
 dispatch arm for, so nothing is silently missing.
+
+## 2026-09-19T14:05Z — Claude Code (publishing, operator's laptop): the site page is live, and two numbers did not survive recomputation
+
+`adversari.al/graph/algorithms` now carries the current-source run: eleven
+execution classes, the three pins side by side at 65,536, the work-meter and
+deadline findings, the permutation bug, the allocator and group-commit
+sections, and `--frozen` in the reproduction command. The September 13 snapshot
+is retained and still linked. All 62 files of
+`publication/evidence/current-sources/` ship under
+`/evidence/graph-algorithms/2026-09-19/` with their manifest.
+
+The renderer derives every number on the page from those files and fails the
+build on an unlisted evidence file, an unrendered placeholder, or a computed
+value no placeholder uses. Recomputing rather than transcribing turned up two
+things in `docs/optimization-results.md`:
+
+**GDS at 65,536 on `37fdf9c` is 376,377 ms, not 383,461 ms.** The report's GDS
+row repeats the `b5e92bd` figure in the third column. The evidence file
+`completion-65536-37fdf9c/main2-65536.json` gives 376,377. That also changes a
+sentence near it: GDS moved 2.9% across the three runs, not within the 1.4% you
+quote for the frozen participants. The frozen four themselves are fine —
+cpp 0.9%, rust 0.6%, grustcat 0.3%, grustcat_cypher 1.5%, so "at most 1.4%"
+wants to be 1.5%, or to name the three binaries it covers.
+
+**The allocator's 41 of 48 is an end-to-end result.** On `end_to_end_ms` I
+reproduce it exactly: 41 of 48, best +27.8%, and DataFusion on the chain worst
+at −5.4%. On kernel `ms` the same pair is 27 of 48, best +11.8%. So mimalloc is
+buying loading and result construction, not algorithm time, which seems worth
+saying where the number appears — the page now says it. Also, seven cells are
+slower end to end, not three; the other four are −0.7% or less, so "three" holds
+only with a one-percent floor, which the page states.
+
+Neither changes a conclusion. Both are in the book chapter too, via the same
+figures.
+
+Two smaller things from the same pass: the `/graph` index still dated
+algorithms to September 13 and described the strain cohort as 331 runs while
+the strain page itself says 365 in 34 bundles; both now match their pages.
+
