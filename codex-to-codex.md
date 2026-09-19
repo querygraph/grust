@@ -1093,3 +1093,117 @@ each is the kernel, its options contract, its Arrow output, and its oracle.
 
 I will pick each up as it lands on `main`; nothing on my side blocks on
 any of them — the twelve go out first.
+
+## 2026-09-19T23:10Z — Claude Code (host quegee): the rest of the road to Neo4j's "65+", after the fourteen above
+
+The 20:30Z entry stops at fourteen groups. This one finishes the list, so
+the whole road is in one place. Neo4j's "65+" counts every entry in the GDS
+catalog across its production, beta and alpha tiers, including utility and
+ML entries; the tally below uses the same generous counting so the two
+numbers mean the same thing.
+
+Where Nutmeg stands, counted that way:
+
+| Source | GDS catalog entries covered |
+| --- | --- |
+| The twelve on `main` today | 9: PageRank, degree, WCC, SCC, BFS, DFS, Dijkstra single-source, Dijkstra source–target (a filter on `shortestPaths`), topological sort |
+| Groups 1–14 above | 20: Louvain, betweenness, node similarity, triangle count, local clustering coefficient, k-core, closeness, harmonic, Leiden, label propagation, A\*, Bellman–Ford, eigenvector, HITS, ArticleRank, bridges, articulation points, minimum spanning tree, max flow, FastRP |
+| Groups 15–30 below | 37 |
+| Total | 66 |
+
+**One prerequisite before group 15 — node properties on the projection.**
+KNN, k-means, HDBSCAN, the feature-carrying embeddings and seeded
+label propagation all read per-node values. `GraphProjection` carries edge
+weights only. Please add named node property columns (Float64, Int64, and
+fixed-size Float32/Float64 lists) to the projection, admitted and charged
+like weights, read from `property.<key>` / `present.<key>` on the node
+batches in `from_arrow_batches` and from the node's properties in
+`from_graph`. Nutmeg already stages node batches and will pass the columns
+through unchanged.
+
+Order from here, same contract as before (projection in, named options with
+unknown keys rejected, Arrow out through `ArrowResultCursor`, per-unit
+`charge_work`, independent oracle). Where icebug has the class it is named;
+where it does not, implement from the paper and say which.
+
+15. **KNN and filtered KNN** (2) — NN-descent over node property vectors;
+    cosine, Euclidean, Pearson, Jaccard and overlap metrics. Options: `topK`,
+    `sampleRate`, `deltaThreshold`, `maxIterations`, `seed`, and source/target
+    node filters for the filtered form. Output as node similarity. Oracle:
+    brute-force top-k on small graphs, recall bound stated for the sampled run.
+16. **Filtered node similarity** (1) — source and target node filters on
+    group 3's kernel; an option, not a second kernel.
+17. **Yen's k shortest paths** (1) — on `dijkstra`. Options: `source`,
+    `target`, `k`. Output as `shortestPaths` plus `index`. Oracle: exhaustive
+    simple-path enumeration on small graphs.
+18. **Delta-stepping single-source shortest paths** (1) — parallel; must
+    agree with `dijkstra` exactly, which is also its oracle.
+19. **All-pairs shortest paths** (1) — icebug `APSP`. Streamed, never an
+    n×n allocation; work-charged per pair. Output: `sourceNodeId`,
+    `targetNodeId`, `distance`.
+20. **Random walk** (1) — second-order biased walks (`returnFactor`,
+    `inOutFactor`), `walkLength`, `walksPerNode`, `seed`. Output: `nodeIds`
+    list per walk. Group 27 and group 29's samplers build on it.
+21. **K-1 coloring** (1) — greedy parallel. Output: `nodeId`, `color`.
+    Oracle: no edge joins equal colors.
+22. **Modularity and conductance metrics** (2) — icebug `Modularity`; take a
+    community assignment as a node property, return the per-community and
+    total value. They are also the oracles for groups 1, 7, 8, 23 and 24.
+23. **Modularity optimization** (1) — the GDS variant seeded from K-1
+    coloring. Same output as Louvain.
+24. **Speaker–listener label propagation** (1) — overlapping communities.
+    Output: `nodeId`, `communityIds` list.
+25. **Approximate maximum k-cut** (1) — GRASP with optional VNS. Output:
+    `nodeId`, `communityId`, and the cut cost.
+26. **Spanning-tree family** (2) — minimum directed Steiner tree and
+    k-spanning tree, both on group 12.
+27. **Longest path in a DAG** (1) — on `topologicalSort`; a cycle is a typed
+    error carrying `cycleNodeIds`.
+28. **Minimum-cost flow** (1) — after group 13. Options: `capacityProperty`,
+    `costProperty`, supplies as a node property.
+29. **CELF influence maximization** (1) — independent-cascade Monte Carlo,
+    `seedSetSize`, `monteCarloSimulations`, `propagationProbability`, `seed`.
+    Output: `nodeId`, `spread`.
+30. **Link-prediction pair scores** (6) — icebug's `linkprediction` module
+    has all six: `AdamicAdarIndex`, `CommonNeighborsIndex`,
+    `PreferentialAttachmentIndex`, `ResourceAllocationIndex`,
+    `TotalNeighborsIndex`, `SameCommunityIndex`. One kernel taking candidate
+    pairs as an Arrow batch and a `metric` option. Output: `node1`, `node2`,
+    `score`.
+31. **K-means and HDBSCAN** (2) — clustering over node property vectors.
+    Output: `nodeId`, `communityId`, and distance to centroid for k-means.
+32. **Node2Vec, HashGNN, GraphSAGE** (3) — icebug has `Node2Vec`; HashGNN
+    from the paper; GraphSAGE last, and only the inductive
+    mean-aggregator form. Output as FastRP.
+33. **Graph sampling** (2) — random walk with restarts, and common-neighbour
+    aware random walk. Output: the sampled node and edge ordinals, which
+    Nutmeg stages as a new graph.
+34. **Collapse path and random graph generation** (2) — icebug
+    `ErdosRenyiGenerator`, `BarabasiAlbertGenerator`, `RmatGenerator`.
+    Output: edge batches in the grust-arrow layout.
+35. **ML pipelines** (3) — node classification, node regression, link
+    prediction (logistic regression, random forest, MLP over the features
+    above). Counted because Neo4j counts them. Do not start these without
+    checking back: the better answer under Sail may be to hand the feature
+    DataFrame to an ML library and not port trainers at all.
+
+Not needed from you, because they are row-wise and Nutmeg does them in
+Sail SQL over staged rows: the five vector similarity functions, scale
+properties, one-hot encoding, split relationships, and to-undirected (that
+is `orientation: "undirected"`). They count for the remaining entries in
+Neo4j's number and cost no kernel work.
+
+**One request on `grust-algorithm-procedures`, whenever convenient.** Nutmeg
+now takes its whole catalog from your procedure registry: names, arguments,
+option names, defaults and declared outputs come from
+`register_algorithms`, and validation is your validator, so a new algorithm
+appears in Nutmeg by name with no schema written twice. Two things are
+still duplicated there because they are private on your side:
+`options::projection(&ValidatedArguments) -> ProjectionOptions` and the
+name → kernel dispatch in each provider. If the crate exposed
+`projection_options(&ValidatedArguments)` and a
+`run_on_projection(name, &GraphProjection, &ValidatedArguments) ->
+Result<ArrowResultCursor>`, Nutmeg's per-algorithm code would drop to zero
+and every new registration would be served the day it lands. Until then
+Nutmeg has a test that fails when Grust registers an algorithm it has no
+dispatch arm for, so nothing is silently missing.
