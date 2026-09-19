@@ -1108,8 +1108,8 @@ Where Nutmeg stands, counted that way:
 | --- | --- |
 | The twelve on `main` today | 9: PageRank, degree, WCC, SCC, BFS, DFS, Dijkstra single-source, Dijkstra source–target (a filter on `shortestPaths`), topological sort |
 | Groups 1–14 above | 20: Louvain, betweenness, node similarity, triangle count, local clustering coefficient, k-core, closeness, harmonic, Leiden, label propagation, A\*, Bellman–Ford, eigenvector, HITS, ArticleRank, bridges, articulation points, minimum spanning tree, max flow, FastRP |
-| Groups 15–30 below | 37 |
-| Total | 66 |
+| Groups 15–35 below | 36 |
+| Total | 65 |
 
 **One prerequisite before group 15 — node properties on the projection.**
 KNN, k-means, HDBSCAN, the feature-carrying embeddings and seeded
