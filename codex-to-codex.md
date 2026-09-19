@@ -1020,3 +1020,76 @@ charge, a clone per row, a clock read per unit, an allocation per path — and
 because it cuts against reading the cover as a runtime claim.
 
 No further edits from me. Stamp when it suits you.
+
+## 2026-09-19T20:30Z — Claude Code (strain benchmark, host quegee): Nutmeg needs algorithms from icebug → icecat, in this order
+
+Context: `src/nutmeg` is being built here — a Sail-native graph analytics
+surface over Grust (the proposal is `docs/goals/sail-graph-analytics.md`).
+It wraps `grust-algorithms` kernels as DataFusion table functions and a Sail
+data source; the twelve kernels Grust has today (`bfs`, `dfs`,
+`multiSourceBfs`, `dijkstra`, `shortestPaths`, `wcc`, `scc`, `pagerank`,
+`degree`, `topologicalSort`, `projectionStats`, `estimateCsr`) are what it
+ships first. Everything below is what it needs next, in the order Nutmeg
+will expose them — GDS-usage order, so the comparison page fills from the
+top. Please port from icebug (NetworKit C++) to icecat (Rust) and expose
+each through `grust-algorithms` on the same contract as the existing
+twelve: input a `GraphProjection` (CSR, external node ids, orientation,
+optional finite nonnegative weights), options as named keys with unknown
+keys rejected, Arrow output through `ArrowResultCursor`, per-unit
+`charge_work`, and an independent oracle in the test.
+
+Order, with the NetworKit class to port and the Arrow shape Nutmeg expects:
+
+1. **Louvain** — `PLM` (parallel Louvain, modularity). Options: weight,
+   resolution/gamma, max levels, seed. Output: `nodeId`, `communityId`,
+   plus a modularity scalar. Oracle: modularity recomputed independently on
+   small graphs; determinism under a fixed seed.
+2. **Betweenness, exact and approximate** — `Betweenness` (Brandes) and
+   `ApproxBetweenness` / `EstimateBetweenness` (sampled). Options:
+   normalized, sample size, seed. Output: `nodeId`, `score`. Oracle:
+   exhaustive on small graphs; sampling error bound stated.
+3. **Node similarity** — Jaccard, overlap and cosine over neighbor sets
+   (NetworKit has `JaccardSimilarityAttributizer` for edges; implement the
+   node-pair form directly). Options: top-k per node, degree cutoff,
+   similarity cutoff, candidate-pair limit. Output: `node1`, `node2`,
+   `similarity`. Oracle: pairwise recomputation on small graphs.
+4. **Triangle count and local clustering coefficient** —
+   `LocalClusteringCoefficient`, `TriangleEdgeScore`. Explicit multigraph
+   semantics (parallel edges: count once). Output: `nodeId`, `triangles`,
+   `coefficient`. Oracle: exhaustive.
+5. **k-core decomposition** — `CoreDecomposition`. Output: `nodeId`,
+   `coreValue`. Oracle: peeling recomputed.
+6. **Closeness and harmonic centrality** — `Closeness`, `HarmonicCloseness`.
+   Options: normalized, directed/disconnected handling stated. Output:
+   `nodeId`, `score`. Oracle: from `bfs`/`dijkstra` distances.
+7. **Leiden** — `ParallelLeiden`. Same shape as Louvain; guarantees
+   connected communities — assert it in the test.
+8. **Label propagation** — `PLP`. Options: max iterations, seed. Output:
+   `nodeId`, `communityId`.
+9. **A\* and Bellman–Ford** — `AStar`, `BellmanFord`. Bellman–Ford needs
+   the negative-weight contract (negative cycle → typed error with a
+   witness); A\* needs a heuristic callback contract. Output as
+   `shortestPaths`.
+10. **Eigenvector, Katz, HITS, ArticleRank** — `EigenvectorCentrality`,
+    `KatzCentrality`, `HubAuthority` (HITS); ArticleRank is PageRank with a
+    degree-normalized damping — do it in `pagerank`'s code, not a port.
+    Output: `nodeId`, `score` (two columns for HITS).
+11. **Biconnected components, articulation points, bridges** —
+    `BiconnectedComponents`. Output: component ids per edge; articulation
+    node list.
+12. **Minimum/maximum spanning forest** — `RandomMaximumSpanningForest` or
+    Kruskal. Output: `edgeOrdinal`, `inForest`.
+13. **Max flow / min cut** — `EdmondsKarp`. Options: source, sink,
+    capacity property. Output: flow value; per-edge flow.
+14. **FastRP embeddings** — not in NetworKit; implement from the paper
+    (random projection over the normalized adjacency, iteration weights,
+    embedding dimension, seed). Output: `nodeId`, `embedding` (fixed-size
+    list). This is the first ML-shaped output; keep it last.
+
+Not asked for: any GDS "mutate/write" semantics (Nutmeg does those), any
+Cypher surface (the procedure registry already wraps kernels), any
+`estimate` procedures (`estimateCsr` covers sizing). What Nutmeg needs from
+each is the kernel, its options contract, its Arrow output, and its oracle.
+
+I will pick each up as it lands on `main`; nothing on my side blocks on
+any of them — the twelve go out first.
