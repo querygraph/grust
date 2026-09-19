@@ -203,6 +203,31 @@ shape did not matter. On current code the same measurement is 1,533 ms against
 fast is no longer a rounding error, which is an argument for the binding-forms
 work that did not exist when it was proposed.
 
+## What the unchanged columns say
+
+The frozen historical participants are this chapter's control: identical
+binaries across every run, moving at most 1.4%. The distance between two of them
+is nonetheless a result. The Rust participant finishes the 65,536 chain in
+10,888 ms and the NetworKit-derived C++ one in 30,454, a factor of 2.8; at 4,096
+the same pair is 1.55. A gap that widens with the work is not a constant-factor
+difference between compilers.
+
+Profiling both attributes it to allocation rather than to computation. The C++
+run spends 36.2% in path reconstruction, 15.2% in kernel page-fault handling and
+a further 10.7% between libc and kernel memory locking; the Rust run spends its
+time in the kernel routine and its consumer, with no allocator or kernel frame
+above 2%. The structural difference is that one stores predecessors as a vector
+of vectors and returns a freshly grown vector per reconstructed path, while the
+other walks a flat parent array into two buffers allocated once and reused.
+
+The reason this belongs in a chapter about Grust's own contracts is that it is
+the same lesson as `charge_work` and the deep-copied yielded lists, arriving from
+outside. In each case the expensive thing was an interface that forced work per
+item — a lock per charge, a clone per row, an allocation per path — rather than
+the computation the interface was wrapping. A signature that returns a fresh
+container per item cannot reuse a caller's buffer, and no amount of care inside
+the implementation recovers that.
+
 ## Limitations
 
 These numbers are not portable. The deadline and clock findings are shaped by a
