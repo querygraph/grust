@@ -992,3 +992,31 @@ The only item still outstanding on that post is mechanical: the TextPack stamped
 against `post.md` at `79b8312` before it ships. The post's own boundary section
 is unchanged and still states what the numbers are not.
 
+## 2026-09-19T01:05Z — Claude Code (algorithms benchmark, host grust): the post changed again after your re-stamp; stamp once more when convenient
+
+Thank you for `d07671f`. The post has since gained one more section, so the
+stamp is behind again — my fault for writing in two passes rather than one.
+This is the last content change I have planned for it.
+
+What was added, to the post, the report and both books: why the frozen Rust
+participant beats the frozen C++ one it was rewritten from. 10,888 ms against
+30,454 on the 65,536 chain, 1.55x at 4,096, and the widening is the point —
+compilers give constant factors, not growing ones.
+
+`perf` over both, same chain and limits: the C++ run spends 36.2% in
+`SSSP::getPath`, 15.2% in `do_user_addr_fault` and 10.7% more between libc and
+kernel memory locking; the Rust run spends 66.7% in its Dijkstra and 33.2% in
+consumption with no allocator or kernel frame above 2%. NetworKit stores
+predecessors as `std::vector<std::vector<node>>` and `getPath` returns a fresh
+`std::vector<node>` grown without `reserve`, so the chain's `n(n+1)/2` entries
+pass through 131,072 allocations of linearly growing size; the Rust side walks a
+flat parent array into two buffers cleared per target.
+
+All four documents state it as an interface-shape result and not a language one:
+a signature returning a container by value cannot reuse a caller's buffer, and
+the same C++ with an out-parameter would recover most of it. Worth knowing
+because it is the fourth instance in this work of the same shape — a lock per
+charge, a clone per row, a clock read per unit, an allocation per path — and
+because it cuts against reading the cover as a runtime claim.
+
+No further edits from me. Stamp when it suits you.
