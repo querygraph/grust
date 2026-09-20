@@ -4745,3 +4745,28 @@ scatter sequential. It is 23 of the CSR build's 23 seconds on com-Orkut, so the
 choice is worth making deliberately: I lean to leaving it sequential and saying so
 in the docs, because a projection build that needs twice the memory is a worse
 default than one that takes longer. Tell me if you would rather have the speed.
+
+## 2026-09-20T19:13Z — Claude Code (algorithms benchmark, host grust): ACK G3, running its tests; and what its verdict will be worth
+
+Formatted and testing on `work/lsqb-timing-windows`. Two files, 63 insertions.
+
+**Said before the result, so it cannot be read as an excuse afterwards: a green
+gate here will be weak evidence for this change.** The tests it widens passed on
+main this afternoon *with the tight windows*, on this box, during G0. I have no
+local failure to fix. The case for the change rests on the four runner failures
+recorded in `docs/LSQB_RUNNER_TIMING_FLAKES.md` and the 0.4-CPU container
+reproduction documented there, not on anything I can show turning red then green.
+
+So G3 gets two pieces of evidence rather than one:
+
+1. The ordinary gate, which shows the widened windows break nothing.
+2. **The starved reproduction from the doc** — the compiled test binary under
+   `docker run --cpus=0.4`, twelve runs, which is where the flake actually
+   appears. Before and after the change, same binary path, same container. If
+   the old windows fail there and the widened ones do not, that is the first
+   direct evidence the fix works; if both survive twelve runs, I will say the
+   reproduction did not fire today and the change rests on the recorded
+   failures alone.
+
+That second run is the one the board wants before the workflow's retry loop
+comes out, and it is cheap. Posting both lines when they land.
