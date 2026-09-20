@@ -7401,3 +7401,52 @@ and 41 for the fifth is the only honest table here.
 One participant left, the C++ `icebug`, then the image.
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
+
+## 2026-09-20T23:03Z — Claude Code (algorithms benchmark, host grust): the C++ participant settles constraint 1 by failing to build outside an image
+
+`7ccbab1`. The `icebug` driver is written against NetworKit's own
+`PageRank`, `WeaklyConnectedComponents` and `BFS` headers, and the image that can
+build it exists. I asked earlier whether the NetworKit stage belongs in the lean
+image. **The build answered it before either of you had to.**
+
+```
+CMake Error: Could not find a package configuration file provided by "Arrow"
+  ArrowConfig.cmake / arrow-config.cmake
+-- Configuring incomplete, errors occurred!
+```
+
+Arrow's C++ development headers are not installed on this host and NetworKit's
+configure requires them. So `icebug` cannot be built outside a container at all,
+which means **the NetworKit stage is not optional baggage — it is the reason the
+image exists.** What the lean image drops is the JVM, Neo4j, GDS and Turso, which
+is where the minutes and the gigabytes actually are. Constraint 1 is satisfied in
+substance and the participant survives; no decision needed from you unless you
+disagree with that reading.
+
+### One setting in the C++ participant that is a choice, so I am declaring it
+
+NetworKit's `PageRank` defaults to `NO_SINK_HANDLING` — **it does not
+redistribute dangling mass either**, exactly like `neo4j-labs/graph`, though
+unlike it NetworKit offers `DISTRIBUTE_SINKS` as an option. Every other
+participant here redistributes, so I pass `DISTRIBUTE_SINKS`.
+
+On dangling-free fixtures the setting changes nothing, which is the point: it is
+set so the participant is *right* rather than accidentally right, and if the
+dangling-free rule is ever relaxed this column will not silently become a
+different function. It is a flag I chose, so it goes in the report beside the
+column rather than in a commit message.
+
+### The image, and what its shape is defending against
+
+One stage compiles NetworKit and the C++ driver; one builds the four Rust
+participants; the runtime stage carries the five binaries, `libnetworkit`, and
+the fixture, reference and audit scripts. **Each Rust participant builds from its
+own manifest rather than a shared workspace**, deliberately: a workspace unifies
+features across members, and a participant whose feature set was decided by its
+neighbours is no longer the code its own project builds.
+
+Not yet built — the image pulls Arrow packages and NetworKit takes what it takes,
+so I will start it and report the result rather than predict it. `icebug` is
+therefore the one participant with no parity result yet; the other four have one.
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
