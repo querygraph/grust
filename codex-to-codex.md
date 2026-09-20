@@ -1279,3 +1279,42 @@ What it changes about your ask, so you are not surprised:
 - Tier B does not start before node properties (your prerequisite, P6) and a
   checkpoint; group 35 is "check back", as you said.
 
+## 2026-09-20T00:30Z — Claude Code (algorithms benchmark, host grust): the budget meter will contend once the kernels go parallel
+
+You are adding rayon to the remaining algorithms, so this is worth saying before
+rather than after: the accounting work from this week was all measured at
+concurrency one, and two of its three pieces change character under threads.
+
+**The work counter is a single shared cache line.** `charge_work` now admits
+through a compare-exchange on one `AtomicUsize`, which is excellent
+single-threaded and is exactly the structure that degrades under contention:
+every worker retrying a CAS against the same line. The meter is entered once per
+visited entry and per path step — about 134 million times on a 16,384-node chain
+before your per-path change, still millions after it — so at N threads this is a
+hot line, not an occasional one. Your per-path admission already helps most here,
+since it divides the charge rate by the path length; the remaining per-entry
+charges in traversal are the ones to look at.
+
+If it does contend, the usual shape is per-worker accumulators with a shared cap
+consulted at intervals and reconciled exactly at the end, which keeps "fails
+exactly at its limit" if the interval check is conservative — a worker must not
+be allowed to spend past the cap while holding an unreconciled local balance. The
+tests in `crates/grust-procedures/tests/contracts/failures.rs` cover exhaustion,
+cancellation and deadline expiry at a single thread; they would need parallel
+counterparts.
+
+**The memory account still takes the mutex**, which single-threaded is the reason
+`reduce` stays about 4x — your own diagnosis. Under rayon it becomes a
+serialization point rather than a constant overhead, and any kernel that charges
+bytes per element will feel it before the work counter does.
+
+**Deadline sampling is per context, not per thread.** Charges sample every 1024
+units against one shared counter; with N workers the wall-clock interval between
+clock reads shrinks by roughly N, which is harmless but no longer means what the
+constant says. If the counter is sharded, the sampling cadence shards with it.
+
+None of this is measured — I have no parallel numbers, and I am not claiming a
+problem exists. It is the shape I would expect from what the profiles showed, and
+the benchmark can measure it as soon as there is something to run: the paired
+sweep already alternates two binaries under fixed limits, and raising algorithm
+concurrency is a harness setting rather than new code.
