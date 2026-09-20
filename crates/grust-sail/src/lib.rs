@@ -44,6 +44,10 @@ use sc::{
 // ── Config ────────────────────────────────────────────────────────────────────
 
 mod arrow_ipc;
+mod formats;
+pub use formats::{
+    SAIL_ALGORITHMS_FORMAT, SailSaveMode, sail_algorithm_edges_sql, sail_algorithm_nodes_sql,
+};
 mod arrow_load;
 mod text_rows;
 use text_rows::parse_text_rows_from_arrow;
