@@ -5414,3 +5414,80 @@ Q5's protocol keeps your counterbalancing. You are right that it was justified
 against a drift that does not exist; it is still the correct way to measure, and
 a sweep whose variants are built from different commits is exactly the case where
 binary-to-binary differences are the signal rather than the noise.
+
+## 2026-09-20T20:31Z — quegee: `eba0059` gate line, and both arithmetic checks answered — scores return bit-for-bit
+
+```
+ci-local: PASSED every gate at eba0059 on Linux x86_64 in 1086s
+```
+
+Valid verdict: the gate ran in `~/src/grust-gate` detached at `eba0059` with a
+clean tree, and `eba0059` is the pushed head of `fix/pagerank-pull-streams`
+(`eba0059b5fc7bcbf754755f411d75cffe21009c0`).
+
+### Check 1: unweighted scores. You were right to ask, and the answer is clean
+
+I digested every one of the 1,965,206 scores — FNV-1a over each `f64`'s
+`to_bits()`, so the comparison is bit-level rather than eyeball-level — at all
+three commits, twenty iterations, unweighted, same graph:
+
+| commit | sequential push | pull, 1 worker | pull, 16 workers |
+| --- | --- | --- | --- |
+| `579c209` before | `8b39ebb09b2693d7` | `3a5b34d69e2ce3f0` | `3a5b34d69e2ce3f0` |
+| `bca732c` after | `8b39ebb09b2693d7` | `78d638fca78dcae8` | `78d638fca78dcae8` |
+| `eba0059` fix | `8b39ebb09b2693d7` | **`3a5b34d69e2ce3f0`** | **`3a5b34d69e2ce3f0`** |
+
+Three things fall out of that table:
+
+1. **`eba0059` is bit-identical to `579c209`.** Unweighted scores return to what
+   the last release produced. Your reciprocal-versus-division reasoning was
+   exactly right, and it was a real change, not a theoretical one.
+2. **`bca732c` did move them**, so the #10 changelog entry is telling readers the
+   truth today and will be wrong once this merges. It should say the unweighted
+   scores are restored to their released values.
+3. **The sequential push digest is identical at all three commits**, which is the
+   control I wanted: the oracle the pull is tested against never moved, so the
+   digests above are the pull path changing and nothing else. And the pull digest
+   is identical at one worker and sixteen at every commit, so determinism holds
+   on both sides of the change.
+
+**One thing I did not measure, so I will not claim it.** You asked whether
+`bca732c` differs from the others "only in the last place". Per arc contribution
+it can differ by at most one ulp, by construction — `x * (1/d)` against `x / d`,
+where `1/d` is exact-rounded because `totals[source]` accumulates `1.0` exactly
+for integer degrees. But those contributions are then summed over in-arcs and
+iterated twenty times, so the *final* score difference is not bounded by one ulp
+and I have not measured its size. What I can say is that the maximum score agrees
+to all nine printed significant digits at all three commits (0.000001487). If the
+changelog wants a magnitude rather than "restored", say so and I will measure the
+distance properly rather than infer it.
+
+### Check 2: the weighted path is untouched, by inspection
+
+The diff against main on the weighted branch is re-wrapping only:
+`(reverse.weight(arc) / scales[source]) / totals[source]` and
+`sum += scores_now[source] * probability` are character-identical, the
+`totals[source] <= 0.0` guard is unchanged, and the weighted dangling predicate
+is still `scales[node] <= 0.0`. `scales` and `totals` are built by the same two
+passes; the only edit inside them was deleting the `if !weighted` early return
+that is now unreachable. So the pull-against-push oracle compares what it
+compared, which is also why the 160 tests include it passing.
+
+**Ready to merge on your word.** Gate line above, both checks answered, one
+commit touching one file.
+
+### On your note back
+
+"A control is only a control for the comparison it was run on" is the better
+statement of it, and putting it in the recipe alongside the ratio rule is right. I
+would add the practical form that would have saved me the afternoon: **a table
+without the commit that produced it is not evidence, it is a memory.** The only
+reason the bisect happened is that the archive still held which commit each table
+came from.
+
+On the residual 14%: noted, and I agree it is not worth a day. Your `Adjacency`
+observation is the same one I ended on and could not price without `perf`, which
+is not installed here and which I am not going to install on a benchmark host
+mid-campaign.
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
