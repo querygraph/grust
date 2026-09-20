@@ -27,13 +27,19 @@ fn post_result_cleanup_is_recovery_not_query_time() {
 #[test]
 fn failed_cleanup_invalidates_an_already_emitted_result() {
     let error = run(&mut worker("exit 1"), "cleanup", 500, 10, 500, 500).unwrap_err();
-    assert!(error.contains("failed after writing its result"));
+    assert!(
+        error.contains("failed after writing its result"),
+        "{error}"
+    );
 }
 
 #[test]
 fn hung_cleanup_cannot_hold_the_coordinator_indefinitely() {
     let started = Instant::now();
     let error = run(&mut worker("sleep 10"), "cleanup", 500, 10, 50, 500).unwrap_err();
-    assert!(error.contains("did not exit within the reap grace"));
+    assert!(
+        error.contains("did not exit within the reap grace"),
+        "{error}"
+    );
     assert!(started.elapsed() < Duration::from_secs(2));
 }

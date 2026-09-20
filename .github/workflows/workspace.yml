@@ -8,6 +8,12 @@ on:
 permissions:
   contents: read
 
+# A newer push to the same pull request supersedes the run before it. Pushes to
+# main are never cancelled: each one is a commit someone may need a verdict on.
+concurrency:
+  group: workspace-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
+
 env:
   CARGO_TERM_COLOR: always
 
