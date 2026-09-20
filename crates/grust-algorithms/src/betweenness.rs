@@ -117,7 +117,7 @@ pub fn betweenness(graph: &GraphProjection, options: BetweennessOptions) -> Resu
             let last = (first + BLOCK).min(source_count);
             let mut workspace = Workspace::new(n, weighted, context)?;
             for &source in &sources.values[first..last] {
-                workspace.accumulate(graph, source, context)?;
+                workspace.accumulate(graph, source)?;
             }
             Ok(workspace.local)
         },
@@ -182,12 +182,7 @@ impl Workspace {
         })
     }
 
-    fn accumulate(
-        &mut self,
-        graph: &GraphProjection,
-        source: usize,
-        context: &ExecutionContext,
-    ) -> Result<()> {
+    fn accumulate(&mut self, graph: &GraphProjection, source: usize) -> Result<()> {
         let adjacency = graph.outgoing();
         self.order.values.clear();
         self.distance.values[source] = 0.0;
@@ -195,8 +190,8 @@ impl Workspace {
 
         // Forward: settle nodes in nondecreasing distance, counting shortest paths.
         if let Some(heap) = &mut self.heap {
-            heap.improve(source, 0.0, context)?;
-            while let Some((cost, node)) = heap.pop(context)? {
+            heap.improve(source, 0.0, &mut self.meter)?;
+            while let Some((cost, node)) = heap.pop(&mut self.meter)? {
                 self.order.values.push(node);
                 let range = adjacency.range(node);
                 self.meter.charge(1 + range.len())?;
@@ -206,7 +201,7 @@ impl Workspace {
                     if candidate < self.distance.values[next] {
                         self.distance.values[next] = candidate;
                         self.paths.values[next] = self.paths.values[node];
-                        heap.improve(next, candidate, context)?;
+                        heap.improve(next, candidate, &mut self.meter)?;
                     } else if candidate == self.distance.values[next] {
                         self.paths.values[next] += self.paths.values[node];
                     }

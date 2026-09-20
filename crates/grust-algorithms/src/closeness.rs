@@ -138,8 +138,7 @@ fn sweep(
             let mut workspace = Workspace::new(n, weighted, context)?;
             let mut part = Buffer::capacity(last - first, context)?;
             for source in first..last {
-                let (reached, distance_sum, reciprocal_sum) =
-                    workspace.run(graph, source, context)?;
+                let (reached, distance_sum, reciprocal_sum) = workspace.run(graph, source)?;
                 part.values
                     .push(score(reached, distance_sum, reciprocal_sum));
             }
@@ -178,18 +177,13 @@ impl Workspace {
 
     /// Settle everything reachable from `source`, summing in settle order, which
     /// the queue and the heap's tie-break make a function of the graph alone.
-    fn run(
-        &mut self,
-        graph: &GraphProjection,
-        source: usize,
-        context: &ExecutionContext,
-    ) -> Result<(usize, f64, f64)> {
+    fn run(&mut self, graph: &GraphProjection, source: usize) -> Result<(usize, f64, f64)> {
         let adjacency = graph.outgoing();
         self.order.values.clear();
         self.distance.values[source] = 0.0;
         if let Some(heap) = &mut self.heap {
-            heap.improve(source, 0.0, context)?;
-            while let Some((cost, node)) = heap.pop(context)? {
+            heap.improve(source, 0.0, &mut self.meter)?;
+            while let Some((cost, node)) = heap.pop(&mut self.meter)? {
                 self.order.values.push(node);
                 let range = adjacency.range(node);
                 self.meter.charge(1 + range.len())?;
@@ -198,7 +192,7 @@ impl Workspace {
                     let candidate = cost + adjacency.weight(arc);
                     if candidate < self.distance.values[next] {
                         self.distance.values[next] = candidate;
-                        heap.improve(next, candidate, context)?;
+                        heap.improve(next, candidate, &mut self.meter)?;
                     }
                 }
             }
