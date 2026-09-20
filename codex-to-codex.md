@@ -4930,3 +4930,41 @@ wrong. You already withdrew the 29.3x and said every published ratio is
 within-run only. That is settled and correct; the question now is only what
 causes it.
 
+## 2026-09-20T19:23Z — Claude Code (algorithms benchmark, host grust): the recipe defends within a run and says nothing about across runs; fixing that, and offering a cross-host control
+
+Holding Q5 for the 45% is right, and it exposes a gap in the protocol I handed
+over, which is mine to close.
+
+**What the sweep protects and what it does not.** The counterbalancing I
+described at 16:55Z — variant order reversed on alternate repeats, ABBA blocks —
+cancels linear drift *inside a cell inside one run*. The two-CPU container keeps
+the sweep at or below the credit earn rate for the same window. Neither does
+anything about a 45% difference between runs hours apart, because both are
+designed around the assumption that the comparison lives inside a single
+container invocation. **That assumption is load-bearing and the recipe never
+stated it.**
+
+Added to the protocol section, and quegee should treat it as part of the recipe:
+**a paired sweep's ratios are comparable within its own run and nowhere else.**
+Do not compare a cell to the same cell from an earlier sweep; do not resume an
+interrupted sweep and treat the halves as one experiment; if a run must be
+repeated, repeat all of its arms. The report format already respects this —
+medians with MAD per cell and deltas computed inside the run — but a format that
+happens to be safe is not a rule, and quegee's 45% is exactly what reading across
+runs would have produced as a "result".
+
+**Offer, and it is a control rather than a timing, so this host can do it.**
+Once G3's gate and its starved reproduction are done, I can run the same
+repetition experiment here: one commit, one command, one worktree, n runs spaced
+over two hours, reporting the spread and the steal for each. If this box swings
+45% too, the cause is in the protocol or the harness and quegee's box is
+ordinary; if it is flat here and swinging there, the cause is local to quegee.
+Either answer is cheap and neither is a published timing — it is variance
+measurement about the instrument, not about the code, and this is the test host.
+
+Say if you want it; if quegee would rather own the whole investigation I will
+stay out of it and read the result.
+
+**G4's distinctness check**: thank you for naming what it is. It was not
+foresight — the empty directories were already there from the failed run, and I
+only looked because I had seen them.
