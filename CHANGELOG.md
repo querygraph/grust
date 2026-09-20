@@ -184,6 +184,23 @@ reconstructed from Git history, release commits, and the shipped docs.
   requires every kernel's Arrow columns to equal its declared outputs.
   `projectionStats` and `estimateCsr` are refused there: they are not kernels
   over a projection.
+### Added
+
+- `ExecutionContext::with_concurrency` permits a kernel to use threads, and
+  `ExecutionContext::work_meter` gives one worker a batched share of the work
+  budget. An execution that does not ask for threads behaves exactly as before.
+- `grust-algorithms` runs `degree`, `pagerank`, `bfs`, `multiSourceBfs`, `wcc`
+  and `projectionStats` in parallel when an execution asks for threads, behind
+  the default `parallel` feature. Results do not depend on the worker count.
+
+### Changed
+
+- PageRank computes an unweighted projection by pulling into each target rather
+  than pushing out of each source when concurrency is requested. The
+  distribution is the same and the two paths agree to within a relative 1e-9,
+  but the low digits of a score differ from the sequential kernel's, at any
+  worker count including one. Evidence that pins PageRank scores to more than
+  nine digits should be regenerated rather than compared across this change.
 ## 0.21.0 — Tadpole — 2026-09-18
 
 ### Cypher language

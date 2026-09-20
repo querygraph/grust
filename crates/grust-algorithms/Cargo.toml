@@ -12,7 +12,9 @@ categories.workspace = true
 [features]
 default = ["parallel"]
 arrow = ["dep:arrow-array", "dep:grust-arrow"]
-# Run kernels on the caller's rayon pool. Results are identical at any width.
+# Threads for the kernels, bounded by what each execution asks for. Results are
+# identical at any width. Off compiles only the sequential code, which is also
+# the differential oracle the parallel paths are tested against.
 parallel = ["dep:rayon"]
 
 [dependencies]

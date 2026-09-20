@@ -146,7 +146,7 @@ pub fn max_flow(graph: &GraphProjection, source: &str, target: &str) -> Result<M
             head.values[forward] = other;
             capacity.values[forward] = adjacency.weight(arc);
             pair.values[forward] = backward;
-            edge.values[forward] = adjacency.edge_slots.values[arc];
+            edge.values[forward] = adjacency.edge_slot(arc);
             head.values[backward] = node;
             pair.values[backward] = forward;
         }

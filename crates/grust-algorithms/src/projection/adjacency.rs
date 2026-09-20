@@ -5,7 +5,10 @@ use super::*;
 pub(crate) struct Adjacency {
     pub(crate) offsets: Buffer<usize>,
     pub(crate) targets: Buffer<usize>,
-    pub(crate) edge_slots: Buffer<usize>,
+    /// Original edge position per arc. Present on a projection's own adjacency,
+    /// absent on a transpose, whose callers identify arcs by endpoint rather
+    /// than by edge and would otherwise pay eight bytes an arc to ignore.
+    edge_slots: Option<Buffer<usize>>,
     pub(crate) weights: Option<Buffer<f64>>,
 }
 
@@ -43,7 +46,7 @@ impl Adjacency {
         let mut result = Self {
             offsets,
             targets: Buffer::filled(count, 0, context)?,
-            edge_slots: Buffer::filled(count, 0, context)?,
+            edge_slots: Some(Buffer::filled(count, 0, context)?),
             weights: weights
                 .map(|_| Buffer::filled(count, 0.0, context))
                 .transpose()?,
@@ -89,7 +92,9 @@ impl Adjacency {
     ) {
         let index = positions[source];
         self.targets.values[index] = target;
-        self.edge_slots.values[index] = edge;
+        if let Some(slots) = &mut self.edge_slots {
+            slots.values[index] = edge;
+        }
         if let (Some(weights), Some(weight)) = (&mut self.weights, weight) {
             weights.values[index] = weight;
         }
@@ -99,46 +104,34 @@ impl Adjacency {
     pub(crate) fn range(&self, node: usize) -> std::ops::Range<usize> {
         self.offsets.values[node]..self.offsets.values[node + 1]
     }
+    /// Original edge position of an arc, on an adjacency that carries them.
+    ///
+    /// # Panics
+    /// A transpose carries no edge slots. Every construction that a kernel
+    /// reaches through `outgoing()` fills them, so a panic here would mean a
+    /// kernel read a transpose as if it were the projection's own adjacency.
+    #[track_caller]
+    pub(crate) fn edge_slot(&self, arc: usize) -> usize {
+        self.edge_slots
+            .as_ref()
+            .expect("arc slots belong to a projection's own adjacency, not a transpose")
+            .values[arc]
+    }
+
     pub(crate) fn weight(&self, arc: usize) -> f64 {
         self.weights
             .as_ref()
             .map_or(1.0, |weights| weights.values[arc])
     }
 
-    pub(crate) fn reversed(&self, context: &ExecutionContext) -> Result<ReverseTopology> {
-        let n = self.offsets.values.len() - 1;
-        let mut offsets = Buffer::filled(n + 1, 0usize, context)?;
-        for &target in &self.targets.values {
-            context.charge_work(1)?;
-            offsets.values[target + 1] += 1;
-        }
-        prefix(&mut offsets.values, context)?;
-        let mut reverse = ReverseTopology {
-            offsets,
-            targets: Buffer::filled(self.targets.values.len(), 0, context)?,
-        };
-        let mut positions = Buffer::capacity(n, context)?;
-        for chunk in reverse.offsets.values[..n].chunks(1024) {
-            context.charge_work(chunk.len())?;
-            positions.values.extend_from_slice(chunk);
-        }
-        for source in 0..n {
-            context.charge_work(1)?;
-            for arc in self.range(source) {
-                context.charge_work(1)?;
-                let target = self.targets.values[arc];
-                reverse.targets.values[positions.values[target]] = source;
-                positions.values[target] += 1;
-            }
-        }
-        Ok(reverse)
-    }
-}
-
-impl Adjacency {
     /// The same arcs grouped by target: row `v` lists the sources of arcs into
-    /// `v`, each with its weight and original edge slot. Within a row, arcs keep
-    /// the order of their sources, so the result is a function of this CSR alone.
+    /// `v`, each with its weight. Within a row, arcs keep the order of their
+    /// sources, so the result is a function of this CSR alone.
+    ///
+    /// This is the projection's only reverse index. Reachability alone once had
+    /// a second, narrower one; one build that carries weights costs less than
+    /// two builds over the same arcs, and no caller of a transpose reads edge
+    /// slots, so those are left out rather than duplicated.
     pub(crate) fn transposed(&self, context: &ExecutionContext) -> Result<Adjacency> {
         let n = self.offsets.values.len() - 1;
         let arcs = self.targets.values.len();
@@ -153,7 +146,6 @@ impl Adjacency {
         let mut positions = Buffer::capacity(n, context)?;
         positions.values.extend_from_slice(&offsets.values[..n]);
         let mut targets = Buffer::filled(arcs, 0usize, context)?;
-        let mut edge_slots = Buffer::filled(arcs, 0usize, context)?;
         let mut weights = self
             .weights
             .as_ref()
@@ -166,7 +158,6 @@ impl Adjacency {
                 let slot = positions.values[self.targets.values[arc]];
                 positions.values[self.targets.values[arc]] += 1;
                 targets.values[slot] = source;
-                edge_slots.values[slot] = self.edge_slots.values[arc];
                 if let (Some(into), Some(from)) = (&mut weights, &self.weights) {
                     into.values[slot] = from.values[arc];
                 }
@@ -175,7 +166,7 @@ impl Adjacency {
         Ok(Adjacency {
             offsets,
             targets,
-            edge_slots,
+            edge_slots: None,
             weights,
         })
     }
@@ -189,16 +180,4 @@ fn prefix(offsets: &mut [usize], context: &ExecutionContext) -> Result<()> {
             .ok_or_else(|| ProcedureError::Numerical("arc count overflow".into()))?;
     }
     Ok(())
-}
-
-/// SCC needs reverse reachability only. No duplicated weights or edge IDs.
-pub(crate) struct ReverseTopology {
-    offsets: Buffer<usize>,
-    pub(crate) targets: Buffer<usize>,
-}
-
-impl ReverseTopology {
-    pub(crate) fn range(&self, node: usize) -> std::ops::Range<usize> {
-        self.offsets.values[node]..self.offsets.values[node + 1]
-    }
 }

@@ -11,7 +11,7 @@ use crate::buffer::Buffer;
 
 mod adjacency;
 mod origin;
-pub(crate) use adjacency::{Adjacency, ReverseTopology};
+pub(crate) use adjacency::Adjacency;
 pub use origin::{ProjectionRepresentation, ProjectionSelection};
 
 /// Explicit orientation applied once while preparing topology.
@@ -59,7 +59,6 @@ struct ProjectionData {
     node_by_id: HashMap<NodeId, usize>,
     edges: Buffer<ProjectionEdge>,
     outgoing: Adjacency,
-    reverse: Mutex<Option<Arc<ReverseTopology>>>,
     incoming: Mutex<Option<Arc<Adjacency>>>,
     context: ExecutionContext,
     _retained: MemoryReservation,
@@ -189,7 +188,6 @@ impl GraphProjection {
                 node_by_id,
                 edges,
                 outgoing,
-                reverse: Mutex::new(None),
                 incoming: Mutex::new(None),
                 context: context.clone(),
                 _retained: retained,
@@ -266,20 +264,6 @@ impl GraphProjection {
         let incoming = Arc::new(self.inner.outgoing.transposed(&self.inner.context)?);
         *cached = Some(Arc::clone(&incoming));
         Ok(InArcs::Built(incoming))
-    }
-    pub(crate) fn reverse(&self) -> Result<Arc<ReverseTopology>> {
-        self.inner.context.checkpoint()?;
-        let mut cached = self
-            .inner
-            .reverse
-            .lock()
-            .map_err(|_| ProcedureError::ResourceStatePoisoned)?;
-        if let Some(reverse) = &*cached {
-            return Ok(Arc::clone(reverse));
-        }
-        let reverse = Arc::new(self.inner.outgoing.reversed(&self.inner.context)?);
-        *cached = Some(Arc::clone(&reverse));
-        Ok(reverse)
     }
 }
 

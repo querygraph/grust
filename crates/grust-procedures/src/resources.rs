@@ -1,7 +1,7 @@
 //! Shared cooperative limits with reservations retained by buffer owners.
 
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, RwLock};
 use std::time::Instant;
 
 use crate::{ProcedureError, Result};
@@ -53,11 +53,24 @@ const DEADLINE_SAMPLE_UNITS: usize = 1024;
 #[derive(Debug)]
 struct Shared {
     limits: ExecutionLimits,
+    concurrency: Option<usize>,
     work_units: AtomicUsize,
     cancelled: AtomicBool,
     charges_since_deadline_read: AtomicUsize,
+    /// Unspent balances of the live work meters, so a meter that runs out can
+    /// take back what idle ones hold. Never touched on a charge. A meter
+    /// admitting a block holds it shared; creating, dropping and refusing hold
+    /// it exclusively. See [`WorkMeter`]'s admission for why.
+    grants: RwLock<Vec<Arc<AtomicUsize>>>,
     state: Mutex<State>,
 }
+
+/// Units a [`WorkMeter`] admits in one shared-counter operation while the budget
+/// has room for a whole block. Kernels charge once per visited entry, so at N
+/// workers the shared counter would otherwise be a contended cache line rather
+/// than an occasional one. Near the limit the meter drops to exact admission,
+/// so a budget still fails at exactly the unit that exceeds it.
+pub const WORK_BLOCK_UNITS: usize = 1024;
 
 /// Whether a state check must read the clock or may rely on the sampled read.
 #[derive(Clone, Copy)]
@@ -86,11 +99,55 @@ impl ExecutionContext {
         }
         Ok(Self(Arc::new(Shared {
             limits,
+            concurrency: None,
             work_units: AtomicUsize::new(0),
             cancelled: AtomicBool::new(false),
             charges_since_deadline_read: AtomicUsize::new(0),
+            grants: RwLock::new(Vec::new()),
             state: Mutex::new(State::default()),
         })))
+    }
+
+    /// Permit kernels to use up to `workers` threads for this execution, and
+    /// with it the parallel implementation of each kernel, even at one worker.
+    ///
+    /// Concurrency is a property of one execution, not of the process: an
+    /// embedder that runs kernels inside a server with its own runtime and
+    /// thread pool decides here how many threads a query may add, and the
+    /// default of one keeps existing callers single-threaded. Set it before
+    /// the context is shared, so no worker can observe it changing.
+    ///
+    /// # Errors
+    /// Rejects zero workers, and a context that is already shared.
+    pub fn with_concurrency(mut self, workers: usize) -> Result<Self> {
+        if workers == 0 {
+            return Err(ProcedureError::InvalidArguments(
+                "concurrency must be at least one".into(),
+            ));
+        }
+        let shared = Arc::get_mut(&mut self.0).ok_or_else(|| {
+            ProcedureError::InvalidArguments(
+                "concurrency must be set before the context is shared".into(),
+            )
+        })?;
+        shared.concurrency = Some(workers);
+        Ok(self)
+    }
+
+    /// Threads kernels may use for this execution; one unless set.
+    pub fn concurrency(&self) -> usize {
+        self.0.concurrency.unwrap_or(1)
+    }
+
+    /// The concurrency the caller asked for, or `None` when it never asked.
+    ///
+    /// Kernels distinguish the two: an execution that says nothing about
+    /// threads runs exactly the code it ran before parallel paths existed,
+    /// while an execution that explicitly asks for one worker runs the parallel
+    /// implementation on one thread. Keeping those apart is what lets a
+    /// benchmark separate the cost of threading from the change of algorithm.
+    pub fn concurrency_requested(&self) -> Option<usize> {
+        self.0.concurrency
     }
 
     /// Read immutable limits.
@@ -122,9 +179,50 @@ impl ExecutionContext {
         self.check_state(DeadlineCheck::Exact)
     }
 
+    /// A batched work meter for one worker inside a parallel region.
+    ///
+    /// The meter admits [`WORK_BLOCK_UNITS`] at a time from the shared counter
+    /// and spends them locally, so N workers do not contend on one cache line
+    /// per visited entry. Admission stays exact: when a block does not fit, the
+    /// meter admits precisely the units asked for, so the budget fails at the
+    /// same unit it would fail at single-threaded. Unspent units are returned
+    /// when the meter drops, so final usage counts work actually performed;
+    /// [`Self::usage`] read while meters are live can exceed it by less than
+    /// one block per worker.
+    ///
+    /// Cancellation is still observed per charge. The deadline is sampled per
+    /// block, which is the same cadence per worker as a single-threaded charge.
+    pub fn work_meter(&self) -> WorkMeter {
+        let balance = Arc::new(AtomicUsize::new(0));
+        // Registration is per meter, not per charge: a kernel creates one per
+        // chunk of work, so this lock is taken a handful of times per region.
+        self.0
+            .grants
+            .write()
+            .unwrap_or_else(|poison| poison.into_inner())
+            .push(Arc::clone(&balance));
+        WorkMeter {
+            context: self.clone(),
+            balance,
+        }
+    }
+
+    fn release_meter(&self, own: &Arc<AtomicUsize>) {
+        self.refund_work(own.swap(0, Ordering::Relaxed));
+        self.0
+            .grants
+            .write()
+            .unwrap_or_else(|poison| poison.into_inner())
+            .retain(|balance| !Arc::ptr_eq(balance, own));
+    }
+
     /// Charge work before performing it. Counter overflow is a budget failure.
     pub fn charge_work(&self, units: usize) -> Result<()> {
         self.check_state(DeadlineCheck::Sampled)?;
+        self.admit_work(units)
+    }
+
+    fn admit_work(&self, units: usize) -> Result<()> {
         // Admit exactly, never overshooting the budget: the compare-exchange
         // recomputes admission against the value it actually replaces, so a
         // concurrent charge cannot slip past the limit between load and store.
@@ -147,6 +245,21 @@ impl ExecutionContext {
                 Err(observed) => current = observed,
             }
         }
+    }
+
+    /// Return admitted units that were never spent. Only a meter calls this,
+    /// and only with units it admitted, so the counter cannot underflow.
+    fn refund_work(&self, units: usize) {
+        if units != 0 {
+            self.0.work_units.fetch_sub(units, Ordering::Relaxed);
+        }
+    }
+
+    fn check_cancelled(&self) -> Result<()> {
+        if self.0.cancelled.load(Ordering::Acquire) {
+            return Err(ProcedureError::Cancelled);
+        }
+        Ok(())
     }
 
     fn check_state(&self, deadline: DeadlineCheck) -> Result<()> {
@@ -184,6 +297,30 @@ impl ExecutionContext {
             context: self.clone(),
             bytes,
         })))
+    }
+
+    /// Reserve one worker's scratch times the number of workers, before the
+    /// parallel region starts.
+    ///
+    /// Memory admission takes a lock, which single-threaded is a constant
+    /// overhead and under threads would be a serialization point. Kernels that
+    /// need per-worker scratch admit all of it here, once, so admission is
+    /// exact and does not depend on how work happens to be scheduled.
+    ///
+    /// # Errors
+    /// Reports a memory budget the total would exceed, including on overflow.
+    pub fn reserve_for_workers(
+        &self,
+        workers: usize,
+        bytes_each: usize,
+    ) -> Result<MemoryReservation> {
+        let bytes = workers
+            .checked_mul(bytes_each)
+            .ok_or(ProcedureError::BudgetExceeded {
+                resource: "memory",
+                limit: self.0.limits.memory_bytes,
+            })?;
+        self.reserve(bytes)
     }
 
     /// Check admission without reserving or changing measured peak usage.
@@ -260,6 +397,143 @@ impl ExecutionContext {
             peak_bytes: state.peak_bytes,
             work_units: self.0.work_units.load(Ordering::Relaxed),
         })
+    }
+}
+
+/// One worker's share of the work budget, admitted in blocks.
+///
+/// Created by [`ExecutionContext::work_meter`], used by one thread, and dropped
+/// at the end of that thread's chunk. Charge before performing the work, as with
+/// [`ExecutionContext::charge_work`].
+pub struct WorkMeter {
+    context: ExecutionContext,
+    /// Admitted but unspent units. Shared, not local, because a meter that runs
+    /// out must be able to take back what idle meters are sitting on.
+    balance: Arc<AtomicUsize>,
+}
+
+impl WorkMeter {
+    /// Charge work this worker is about to perform.
+    ///
+    /// # Errors
+    /// Reports cancellation, an expired deadline, and a work budget that the
+    /// charge would exceed.
+    pub fn charge(&mut self, units: usize) -> Result<()> {
+        self.context.check_cancelled()?;
+        // The balance can be taken by another meter between the load and the
+        // exchange, so this retries rather than subtracting blindly.
+        let mut held = self.balance.load(Ordering::Relaxed);
+        while held >= units {
+            match self.balance.compare_exchange_weak(
+                held,
+                held - units,
+                Ordering::Relaxed,
+                Ordering::Relaxed,
+            ) {
+                Ok(_) => return Ok(()),
+                Err(observed) => held = observed,
+            }
+        }
+        self.admit(units)
+    }
+
+    /// Admit a block; failing that, exactly what was asked for; failing that,
+    /// take back every idle grant and ask once more.
+    ///
+    /// The last step is what keeps admission independent of the number of
+    /// meters. Without it, a block granted to a meter that has stopped charging
+    /// counts against the budget until that meter drops, so work that fits
+    /// could be refused because of who else exists — the failure the contract
+    /// test `an_idle_meters_unspent_block_does_not_refuse_work_that_fits`
+    /// reproduces.
+    ///
+    /// **Why a refusal here is exact, not merely unlikely.** A refusal is
+    /// right only if every admitted, unspent unit has been found and handed
+    /// back first. Units are invisible for one moment: after a meter's block
+    /// has been added to the shared counter and before it appears in that
+    /// meter's balance. So a meter admitting a block holds the registry
+    /// *shared* across exactly that moment, and a meter about to be refused
+    /// holds it *exclusively*. Under the exclusive hold no block is in
+    /// transit, every unspent unit sits in some balance, reclaiming empties
+    /// them all, and the counter then holds only work performed. The refusal
+    /// that follows is the one a single thread would have met at the same unit.
+    ///
+    /// An earlier version retried three times with no exclusion and refused
+    /// work that fitted in most runs of
+    /// `many_meters_racing_for_the_last_of_a_budget_that_exactly_fits` on a
+    /// ten-core host: meters that ran out together each emptied their own
+    /// balance onto their stack, found the others' empty, and gave up.
+    ///
+    /// Shared holders never wait for each other, so while the budget has room
+    /// this costs one uncontended acquisition per [`WORK_BLOCK_UNITS`] per
+    /// worker. Exclusive holds happen only when a block no longer fits, which
+    /// is the end of the budget, and when a meter is created or dropped.
+    #[cold]
+    fn admit(&mut self, units: usize) -> Result<()> {
+        self.context.check_state(DeadlineCheck::Sampled)?;
+        // A block on top of the need, while the budget has room for one. What
+        // this meter already holds stays in its balance, where it can be seen.
+        // The only failure `admit_work` reports is an exceeded budget, which
+        // the exclusive path handles, so it is discarded here.
+        let block = units.saturating_add(WORK_BLOCK_UNITS);
+        if block > units {
+            let shared = self
+                .context
+                .0
+                .grants
+                .read()
+                .unwrap_or_else(|poison| poison.into_inner());
+            if self.context.admit_work(block).is_ok() {
+                self.balance.fetch_add(block - units, Ordering::Relaxed);
+                return Ok(());
+            }
+            drop(shared);
+        }
+        let grants = self
+            .context
+            .0
+            .grants
+            .write()
+            .unwrap_or_else(|poison| poison.into_inner());
+        // Hand back what this meter holds and ask for exactly the charge, so
+        // the budget fails at the unit that exceeds it rather than a block early.
+        self.context
+            .refund_work(self.balance.swap(0, Ordering::Relaxed));
+        if self.context.admit_work(units).is_ok() {
+            return Ok(());
+        }
+        // Take back what idle meters hold. A meter charging from its balance at
+        // this moment loses the exchange, finds too little, and waits its turn.
+        let mut reclaimed = 0usize;
+        for balance in grants.iter() {
+            reclaimed = reclaimed.saturating_add(balance.swap(0, Ordering::Relaxed));
+        }
+        self.context.refund_work(reclaimed);
+        self.context.admit_work(units)
+    }
+
+    /// Shared execution state, for an exact poll or a nested reservation.
+    pub fn execution(&self) -> &ExecutionContext {
+        &self.context
+    }
+
+    /// Poll cancellation and the deadline exactly, as [`ExecutionContext::checkpoint`].
+    ///
+    /// # Errors
+    /// Reports cancellation and an expired deadline.
+    pub fn checkpoint(&self) -> Result<()> {
+        self.context.checkpoint()
+    }
+
+    /// Return unspent units now rather than at drop.
+    pub fn finish(self) {
+        drop(self);
+    }
+}
+
+impl Drop for WorkMeter {
+    fn drop(&mut self) {
+        self.context.release_meter(&self.balance);
     }
 }
 

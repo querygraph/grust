@@ -66,12 +66,40 @@ impl GraphProjection {
     /// Inspect this selected projection. Scanning loops is O(E), cancellable and
     /// charged as work; this does not execute an analytics kernel or build reverse CSR.
     pub fn statistics(&self) -> Result<ProjectionStatistics> {
-        let mut self_loops = 0;
-        for edge in self.edges() {
-            self.execution().charge_work(1)?;
-            self_loops += usize::from(edge.source == edge.target);
-        }
-        self.execution().checkpoint()?;
+        let context = self.execution();
+        // Counting loops is a sum over edges, so workers count their own ranges
+        // and the partials are added in chunk order. Integer addition is
+        // associative, so the total is the same however the edges were divided.
+        let self_loops = match crate::parallel::workers(context, self.edge_count()) {
+            Some(workers) => {
+                // An integer sum is the same however it is grouped, so these
+                // chunks may follow the worker count.
+                let chunk = crate::parallel::chunk_len(self.edge_count(), workers);
+                let parts = crate::parallel::map_chunks_sized(
+                    context,
+                    workers,
+                    self.edges(),
+                    chunk,
+                    |_, slice, meter| {
+                        meter.charge(slice.len())?;
+                        Ok(slice
+                            .iter()
+                            .filter(|edge| edge.source == edge.target)
+                            .count())
+                    },
+                )?;
+                crate::parallel::reduce_in_order(&parts, 0usize, |total, part| total + part)
+            }
+            None => {
+                let mut self_loops = 0;
+                for edge in self.edges() {
+                    context.charge_work(1)?;
+                    self_loops += usize::from(edge.source == edge.target);
+                }
+                self_loops
+            }
+        };
+        context.checkpoint()?;
         let arcs = self.outgoing().targets.values.len();
         Ok(ProjectionStatistics {
             nodes: self.node_count(),

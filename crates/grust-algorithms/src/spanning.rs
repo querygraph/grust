@@ -118,7 +118,7 @@ pub fn spanning_tree(
             let range = adjacency.range(node);
             meter.tick(1 + range.len())?;
             for arc in range {
-                weight.values[adjacency.edge_slots.values[arc]] = adjacency.weight(arc);
+                weight.values[adjacency.edge_slot(arc)] = adjacency.weight(arc);
             }
         }
     }

@@ -153,7 +153,7 @@ pub fn biconnectivity(graph: &GraphProjection) -> Result<Biconnectivity> {
                 let arc = *next;
                 *next += 1;
                 meter.tick(1)?;
-                let slot = adjacency.edge_slots.values[arc];
+                let slot = adjacency.edge_slot(arc);
                 let other = adjacency.targets.values[arc];
                 if slot == arrived_by || other == node {
                     continue;
