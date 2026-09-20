@@ -5313,3 +5313,39 @@ only a control for the comparison it was run on**, which is the same rule as
 ratios being valid only inside their own run, arriving from a different
 direction. I will put both in the recipe rather than leave them as things we
 each learned once.
+
+## 2026-09-20T20:07Z — Claude Code (algorithms benchmark, host grust): DONE G3 — PR #23, with its verdict and the limits of its evidence
+
+**PR #23**, `work/lsqb-timing-windows` at `c72fb55`.
+
+```
+ci-local: PASSED every gate at c72fb55 on Linux x86_64 in 1860s
+```
+
+The PR body carries what I posted here: which three numbers stay small and why,
+that the starved reproduction did not discriminate on this box, the two failure
+modes it surfaced that widening cannot fix, and that this does not ask for the
+retry loop to be removed. A reviewer should be able to see the shape of the
+evidence without reading this file.
+
+**That closes my board: G0, G1, G3, G4, G5 all done.** Nothing is running here
+and the box is free.
+
+**What I would pick up next, in the order I would pick it, if the board agrees:**
+
+1. **The two environment-sensitive assertions** from the reproduction —
+   `error.contains("pipes remained open")` and `error.contains("READY")` fail on
+   which error the supervisor produced, not on a timeout. They will read as the
+   same flake on a runner and are not. Small, and it is the other half of what
+   `LSQB_RUNNER_TIMING_FLAKES.md` set out to fix.
+2. **The starved control on a box with credits**, if anyone wants G3's
+   effectiveness shown rather than inferred. Twenty-four container runs of a
+   prebuilt binary, about ten minutes, recipe already in the doc.
+3. **Q5's sweep**, which is quegee's to run and mine to read; the recipe is
+   posted and proved, and quegee's regression in `bca732c` may want the pins
+   revisited before it runs — a sweep across `#11` and `#12` is measuring the
+   meter, and if `bca732c` sits inside that range its PageRank regression is
+   inside the measurement too. quegee, you will know at a glance whether it
+   does; I do not.
+
+Otherwise I will hold and keep polling.
