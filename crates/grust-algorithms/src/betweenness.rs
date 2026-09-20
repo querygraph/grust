@@ -44,9 +44,22 @@ impl Betweenness {
     }
 }
 
-/// Sources per block. Fixed, so which sums are formed, and in what order, does
-/// not depend on the worker count.
-const BLOCK: usize = 64;
+/// Blocks to aim for, and the most sources any one block may hold.
+///
+/// A block of a fixed 64 sources left a sampled run with one block and therefore
+/// one thread: `samplingSize` of 64, the size a sampled betweenness is usually
+/// asked for, is exactly one block. Measured on facebook_combined at sixteen
+/// workers, 64 sampled sources: 1.00x before, because there was nothing to
+/// spread. The block size is now derived from the number of sources alone, never
+/// from the worker count, so which sums are formed and in what order still does
+/// not depend on how many threads run them.
+const BLOCKS: usize = 64;
+const MAX_SOURCES_PER_BLOCK: usize = 64;
+
+/// Sources per block for `count` sources.
+fn block_size(count: usize) -> usize {
+    count.div_ceil(BLOCKS).clamp(1, MAX_SOURCES_PER_BLOCK)
+}
 
 /// For every node `v`, the sum over ordered pairs `s != v != t` of the share of
 /// shortest `s`-`t` paths that pass through `v`.
@@ -109,12 +122,13 @@ pub fn betweenness(graph: &GraphProjection, options: BetweennessOptions) -> Resu
         context,
         source_count.saturating_mul(n.saturating_add(adjacency.targets.values.len())),
     );
+    let block = block_size(source_count);
     parallel::ordered_blocks(
         workers,
-        source_count.div_ceil(BLOCK),
-        |block| {
-            let first = block * BLOCK;
-            let last = (first + BLOCK).min(source_count);
+        source_count.div_ceil(block),
+        |block_index| {
+            let first = block_index * block;
+            let last = (first + block).min(source_count);
             let mut workspace = Workspace::new(n, weighted, context)?;
             for &source in &sources.values[first..last] {
                 workspace.accumulate(graph, source)?;

@@ -17,9 +17,25 @@ use std::collections::HashMap;
 use std::time::Instant;
 
 use grust_algorithms::{
-    ExecutionContext, ExecutionLimits, GraphProjection, Orientation, PageRankOptions,
-    ProjectionEdge, SnapshotIdentity, bfs, degree, pagerank, weakly_connected_components,
+    BetweennessOptions, ClosenessOptions, ExecutionContext, ExecutionLimits, FastRpOptions,
+    GraphProjection, HarmonicOptions, IterationOptions, KatzOptions, LabelPropagationOptions,
+    LouvainOptions, NodeSimilarityOptions, Orientation, PageRankOptions, ProjectionEdge,
+    SnapshotIdentity, SpanningTreeOptions, TriangleOptions, betweenness, bfs, biconnectivity,
+    closeness, degree, eigenvector, fast_rp, harmonic, hits, k_core, katz, label_propagation,
+    leiden, louvain, max_flow, node_similarity, pagerank, spanning_tree, triangles,
+    weakly_connected_components,
 };
+
+/// Largest score, as a checksum that does not depend on summation order.
+fn top(values: &[f64]) -> f64 {
+    values.iter().copied().fold(0.0f64, f64::max)
+}
+
+/// The iteration count and largest value of one column of an iterated result.
+fn scored(scores: &grust_algorithms::IteratedScores, column: &str) -> String {
+    let values = scores.values(column).unwrap_or(&[]);
+    format!("iterations {} top {:.9}", scores.iterations(), top(values))
+}
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut args = std::env::args().skip(1);
@@ -180,6 +196,86 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         labels.sort_unstable();
                         labels.dedup();
                         format!("components {}", labels.len())
+                    }
+                    // The catalog kernels. Each prints something the kernel
+                    // computed, so a speedup cannot come from doing less.
+                    "kcore" => {
+                        let cores = k_core(&graph)?;
+                        format!("degeneracy {}", cores.degeneracy())
+                    }
+                    "triangles" => {
+                        let counts = triangles(&graph, TriangleOptions::default())?;
+                        format!("triangles {}", counts.triangles().iter().sum::<i64>())
+                    }
+                    "betweenness" => {
+                        // Exact betweenness is O(V·E); sample on anything large.
+                        let options = BetweennessOptions {
+                            sampling_size: Some(64),
+                            seed: 42,
+                            normalized: false,
+                        };
+                        let scores = betweenness(&graph, options)?;
+                        format!("total {:.6}", scores.values().iter().sum::<f64>())
+                    }
+                    "closeness" => {
+                        let scores = closeness(&graph, ClosenessOptions::default())?;
+                        format!("total {:.6}", scores.values().iter().sum::<f64>())
+                    }
+                    "harmonic" => {
+                        let scores = harmonic(&graph, HarmonicOptions::default())?;
+                        format!("total {:.6}", scores.values().iter().sum::<f64>())
+                    }
+                    "similarity" => {
+                        let pairs = node_similarity(&graph, NodeSimilarityOptions::default())?;
+                        format!(
+                            "pairs {} total {:.6}",
+                            pairs.first().len(),
+                            pairs.similarity().iter().sum::<f64>()
+                        )
+                    }
+                    "louvain" => {
+                        let communities = louvain(&graph, LouvainOptions::default())?;
+                        format!("modularity {:.9}", communities.modularity())
+                    }
+                    "leiden" => {
+                        let communities = leiden(&graph, LouvainOptions::default())?;
+                        format!("modularity {:.9}", communities.modularity())
+                    }
+                    "labelprop" => {
+                        let communities =
+                            label_propagation(&graph, LabelPropagationOptions::default())?;
+                        let mut labels: Vec<usize> = communities.communities().to_vec();
+                        labels.sort_unstable();
+                        labels.dedup();
+                        format!("communities {}", labels.len())
+                    }
+                    "eigenvector" => {
+                        let scores = eigenvector(&graph, IterationOptions::default())?;
+                        scored(&scores, "score")
+                    }
+                    "katz" => {
+                        let scores = katz(&graph, KatzOptions::default())?;
+                        scored(&scores, "score")
+                    }
+                    "hits" => {
+                        let scores = hits(&graph, IterationOptions::default())?;
+                        scored(&scores, "hub")
+                    }
+                    "biconnected" => {
+                        let parts = biconnectivity(&graph)?;
+                        format!("articulation {}", parts.articulation_points().len())
+                    }
+                    "spanning" => {
+                        let forest = spanning_tree(&graph, SpanningTreeOptions::default())?;
+                        format!("edges {}", forest.edges().len())
+                    }
+                    "fastrp" => {
+                        let embedding = fast_rp(&graph, FastRpOptions::default())?;
+                        format!("dimension {}", embedding.dimension())
+                    }
+                    "maxflow" => {
+                        let flow = max_flow(&graph, names[0], names[names.len() / 2])?;
+                        format!("value {:.6}", flow.value())
                     }
                     other => return Err(format!("unknown kernel `{other}`").into()),
                 };

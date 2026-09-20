@@ -302,12 +302,31 @@ fn pool(workers: usize) -> crate::Result<std::sync::Arc<rayon::ThreadPool>> {
     Ok(pool)
 }
 
+/// Work units below which a kernel that dispatches once per iteration stays
+/// sequential.
+///
+/// Measured on quegee with `examples/scaling`, undirected: eigenvector centrality
+/// ran at 0.94x of sequential on facebook_combined (4,039 nodes, 176k arcs, 79
+/// iterations), 3.36x on a 200,000-edge road prefix (444k units), 5.43x at 1M
+/// arcs and 7.7x on the whole of roadNet-CA. A pass over a few hundred thousand
+/// units is tens of microseconds of work, which is the same order as entering
+/// the pool, and a kernel that pays that on every iteration loses what it gains.
+/// It is the same number as the breadth-first floor below, for a different
+/// reason: there, a small frontier; here, a small pass repeated.
+pub(crate) const ITERATION_SEQUENTIAL_BELOW_UNITS: usize = 1 << 18;
+
 /// Workers for a kernel that has one implementation rather than a sequential
 /// and a parallel one: what the execution asked for, above the shared floor, and
 /// otherwise one. At one worker the helpers below run on the calling thread and
 /// touch no pool, so a caller that never asked for threads never starts any.
 pub(crate) fn concurrency(context: &ExecutionContext, units: usize) -> usize {
     workers(context, units).unwrap_or(1).max(1)
+}
+
+/// As [`concurrency`], for a kernel whose own crossover is higher than the
+/// shared floor.
+pub(crate) fn concurrency_above(context: &ExecutionContext, units: usize, floor: usize) -> usize {
+    workers_above(context, units, floor).unwrap_or(1).max(1)
 }
 
 /// Run `body` inside the pool for `workers`. Callers take this path only above
