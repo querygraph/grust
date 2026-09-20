@@ -39,6 +39,7 @@ pub type Leiden = Louvain;
 /// Orientation, multigraph and self-loop semantics, options and determinism are
 /// Louvain's. Its modularity is often, but not always, higher than Louvain's.
 pub fn leiden(graph: &GraphProjection, options: LeidenOptions) -> Result<Leiden> {
+    graph.require_nonnegative("leiden")?;
     let context = graph.execution();
     context.checkpoint()?;
     louvain::validate(&options)?;

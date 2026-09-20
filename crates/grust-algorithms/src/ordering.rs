@@ -29,6 +29,7 @@ pub enum TopologicalOrder {
 /// Depth-first discovery order from one external source. Adjacency order breaks
 /// ties; each reachable node appears once. Weights are ignored.
 pub fn depth_first(graph: &GraphProjection, source: &str) -> Result<NodeOrder> {
+    graph.require_nonnegative("dfs")?;
     let context = graph.execution();
     let mut meter = context.work_meter();
     context.checkpoint()?;
@@ -71,6 +72,7 @@ enum Color {
 /// projection; undirected non-loop edges consequently produce a two-edge cycle.
 /// On cyclic input returns the first back-edge witness in node/adjacency order.
 pub fn topological_sort(graph: &GraphProjection) -> Result<TopologicalOrder> {
+    graph.require_nonnegative("topologicalSort")?;
     let context = graph.execution();
     let mut meter = context.work_meter();
     let n = graph.node_count();

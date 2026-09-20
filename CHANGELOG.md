@@ -6,6 +6,27 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ## Unreleased
 
+- Add **Bellman-Ford**: `bellman_ford` and `grust.algorithms.bellmanFord(source)`,
+  single-source shortest paths when weights may be negative. A negative cycle
+  reachable from the source is a **result, not an error**: distances are then
+  withheld, because none past the cycle is a minimum, and the cycle is returned
+  as a witness a caller can check (`cycleIndex` orders its nodes; the arcs exist
+  and sum below zero). An undirected edge of negative weight is a negative cycle
+  of two arcs and is reported as one. Queue-based, sequential, deterministic,
+  every arc scan charged. Tested on 12,000 small signed graphs against exhaustive
+  enumeration of simple paths and cycles, with each reported witness verified
+  independently, and against `dijkstra` wherever Dijkstra is allowed.
+- **Projections can admit negative weights, by opt-in only.**
+  `WeightSelection::SignedProperty` and `GraphProjection::from_signed_topology`
+  build a *signed* projection. Only `bellman_ford` runs on one. Every other
+  kernel refuses it first thing, because a negative weight would not make them
+  fail, it would make them wrong; a catalog test runs all of them on a signed
+  projection and demands the refusal, so a kernel added without the guard fails
+  it. `projection_options_for(name, args)` gives an embedder the options for a
+  named kernel, signed only for `bellmanFord`; the procedure path does the same,
+  and signed and unsigned projections never share a cache entry. Nothing is
+  signed unless asked for, so no existing caller changes. `WeightSelection`
+  gains a variant: code that matches it exhaustively needs the new arm.
 - **Memory accounting no longer takes a lock.** `ExecutionContext` holds
   accounted bytes and their high-water mark as atomics and admits a memory
   charge through the same compare-exchange as a work charge, so a byte limit

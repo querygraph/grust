@@ -1,7 +1,7 @@
 //! Retained adapter selection provenance, separate from kernel topology.
 
 use super::*;
-use crate::{MissingWeight, ProjectionOptions, WeightSelection};
+use crate::{MissingWeight, ProjectionOptions};
 
 /// Input representation used to build owned CSR. Each representation constructs owned topology.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -41,13 +41,13 @@ impl GraphProjection {
                 bytes = bytes.saturating_add(label.len());
             }
         }
-        if let WeightSelection::Property { key, .. } = options.weight {
+        if let Some((key, _, _)) = options.weight.property() {
             bytes = bytes.saturating_add(key.len());
         }
         let reservation = context.reserve(bytes)?;
-        let (weight_property, missing_weight) = match options.weight {
-            WeightSelection::Unit => (None, None),
-            WeightSelection::Property { key, missing } => (Some(text(key)?), Some(missing)),
+        let (weight_property, missing_weight) = match options.weight.property() {
+            None => (None, None),
+            Some((key, missing, _)) => (Some(text(key)?), Some(missing)),
         };
         let selection = ProjectionSelection {
             node_labels: labels(options.node_labels, context)?,

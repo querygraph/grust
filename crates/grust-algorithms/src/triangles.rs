@@ -79,6 +79,7 @@ impl Triangles {
 /// per-node counters; the counts, and the work charged, are the same at any
 /// worker count.
 pub fn triangles(graph: &GraphProjection, options: TriangleOptions) -> Result<Triangles> {
+    graph.require_nonnegative("triangleCount and localClusteringCoefficient")?;
     let context = graph.execution();
     context.checkpoint()?;
     if graph.orientation() != Orientation::Undirected {

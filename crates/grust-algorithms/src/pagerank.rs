@@ -65,6 +65,7 @@ impl PageRank {
 /// weight is dangling even if structural edges exist. Parallel edges contribute
 /// independently; isolates receive teleportation and redistributed dangling mass.
 pub fn pagerank(graph: &GraphProjection, options: PageRankOptions<'_>) -> Result<PageRank> {
+    graph.require_nonnegative("pagerank")?;
     let context = graph.execution();
     context.checkpoint()?;
     if !options.damping.is_finite()

@@ -95,6 +95,7 @@ const CHUNK: usize = 1024;
 /// width. The embedding is not a function of the graph alone — it depends on
 /// the seed and on node rows — so compare embeddings only within one run.
 pub fn fast_rp(graph: &GraphProjection, options: FastRpOptions<'_>) -> Result<FastRp> {
+    graph.require_nonnegative("fastRP")?;
     let context = graph.execution();
     context.checkpoint()?;
     let d = options.dimension;

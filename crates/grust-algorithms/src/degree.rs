@@ -41,6 +41,7 @@ impl Degrees {
 /// sums stay in CSR order within a node, which is why the result does not depend
 /// on how the nodes were divided.
 pub fn degree(graph: &GraphProjection) -> Result<Degrees> {
+    graph.require_nonnegative("degree")?;
     let context = graph.execution();
     context.checkpoint()?;
     let adjacency = graph.outgoing();

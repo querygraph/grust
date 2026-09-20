@@ -28,6 +28,26 @@ pub enum WeightSelection<'a> {
         key: &'a str,
         missing: MissingWeight,
     },
+    /// As `Property`, but a weight may be negative. The projection is then
+    /// *signed*: only a kernel that says it handles negative weights,
+    /// `bellman_ford`, will run on it, and every other kernel refuses it rather
+    /// than return an answer that assumed weights it did not have.
+    SignedProperty {
+        key: &'a str,
+        missing: MissingWeight,
+    },
+}
+
+impl<'a> WeightSelection<'a> {
+    /// The property read, what stands in for an absent value, and whether
+    /// negative values are admitted; `None` for unit weights.
+    pub(crate) fn property(self) -> Option<(&'a str, MissingWeight, bool)> {
+        match self {
+            Self::Unit => None,
+            Self::Property { key, missing } => Some((key, missing, false)),
+            Self::SignedProperty { key, missing } => Some((key, missing, true)),
+        }
+    }
 }
 
 /// Explicit projection selection. `None` selects every label; an empty slice
@@ -91,9 +111,13 @@ impl GraphProjection {
             }
         }
         let mut edges = Buffer::capacity(graph.edges.len(), context)?;
-        let mut weights = match options.weight {
-            WeightSelection::Unit => None,
-            WeightSelection::Property { .. } => Some(Buffer::capacity(graph.edges.len(), context)?),
+        let signed = options
+            .weight
+            .property()
+            .is_some_and(|(_, _, signed)| signed);
+        let mut weights = match options.weight.property() {
+            None => None,
+            Some(_) => Some(Buffer::capacity(graph.edges.len(), context)?),
         };
         for (ordinal, edge) in graph.edges.iter().enumerate() {
             context.charge_work(1)?;
@@ -115,7 +139,7 @@ impl GraphProjection {
             if !selects(options.relationship_labels, edge.label.as_str(), context)? {
                 continue;
             }
-            if let WeightSelection::Property { key, missing } = options.weight {
+            if let Some((key, missing, signed)) = options.weight.property() {
                 let value = match edge.props.get(key) {
                     None | Some(Value::Null) => missing_weight(missing, key, ordinal)?,
                     Some(Value::Float(value)) => *value,
@@ -126,7 +150,7 @@ impl GraphProjection {
                         )));
                     }
                 };
-                validate_weight(value)?;
+                validate_weight(value, signed)?;
                 if let Some(weights) = &mut weights {
                     weights.values.push(value);
                 }
@@ -147,6 +171,7 @@ impl GraphProjection {
             nodes,
             edges,
             weights,
+            signed,
             options.orientation,
             context,
         )?
@@ -172,24 +197,26 @@ pub(crate) fn selects(
 }
 
 pub(crate) fn validate_weight_selection(selection: WeightSelection<'_>) -> Result<()> {
-    if let WeightSelection::Property { key, missing } = selection {
+    if let Some((key, missing, signed)) = selection.property() {
         if key.is_empty() {
             return Err(AlgorithmError::InvalidArguments(
                 "weight property must be nonempty".into(),
             ));
         }
         if let MissingWeight::Default(value) = missing {
-            validate_weight(value)?;
+            validate_weight(value, signed)?;
         }
     }
     Ok(())
 }
 
-pub(crate) fn validate_weight(value: f64) -> Result<()> {
-    if !value.is_finite() || value < 0.0 {
-        return Err(AlgorithmError::InvalidArguments(
-            "weights must be finite and nonnegative".into(),
-        ));
+pub(crate) fn validate_weight(value: f64, signed: bool) -> Result<()> {
+    if !value.is_finite() || (!signed && value < 0.0) {
+        return Err(AlgorithmError::InvalidArguments(if signed {
+            "weights must be finite".into()
+        } else {
+            "weights must be finite and nonnegative".into()
+        }));
     }
     Ok(())
 }

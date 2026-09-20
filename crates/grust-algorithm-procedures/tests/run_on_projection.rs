@@ -4,7 +4,8 @@
 
 use arrow_array::RecordBatch;
 use grust_algorithm_procedures::{
-    projection_kernel_names, projection_options, register_algorithms, run_on_projection,
+    projection_kernel_names, projection_options, projection_options_for, register_algorithms,
+    run_on_projection,
 };
 use grust_algorithms::{GraphProjection, Orientation, ProjectionEdge, WeightSelection};
 use grust_core::Value;
@@ -163,4 +164,103 @@ fn projection_options_read_what_the_procedure_would() {
     let options = projection_options(&defaults).unwrap();
     assert_eq!(options.orientation, Orientation::Outgoing);
     assert!(matches!(options.weight, WeightSelection::Unit));
+}
+
+fn arguments(
+    registry: &ProcedureRegistry,
+    name: &str,
+    options: serde_json::Value,
+) -> grust_procedures::ValidatedArguments {
+    let resolved = registry
+        .resolve(&format!("grust.algorithms.{name}"))
+        .unwrap();
+    let mut ids = ["a", "b", "c"].into_iter();
+    let mut args = Vec::new();
+    for argument in &resolved.definition().arguments {
+        args.push(match argument.field.value_type {
+            ValueType::String => Value::from(ids.next().unwrap()),
+            ValueType::Strings => Value::StringArray(vec![ids.next().unwrap().into()]),
+            ValueType::Map => Value::Json(options.clone()),
+            ref other => panic!("{name}: unexpected argument type {other:?}"),
+        });
+    }
+    resolved.validate_arguments(args).unwrap()
+}
+
+#[test]
+fn every_kernel_but_bellman_ford_refuses_a_signed_projection() {
+    // A negative weight does not make Dijkstra fail; it makes it wrong. So a
+    // projection built to admit negative weights must be refused by every kernel
+    // that does not handle them, in every orientation, and a kernel added
+    // without the guard fails here.
+    let registry = registry();
+    let edge = |source, target, ordinal| ProjectionEdge {
+        source,
+        target,
+        ordinal,
+        id: None,
+    };
+    let mut ran = 0;
+    for orientation in [Orientation::Outgoing, Orientation::Undirected] {
+        let context = context();
+        let graph = GraphProjection::from_signed_topology(
+            SnapshotIdentity::new("g".into(), "r1".into(), "reader".into()).unwrap(),
+            vec!["a".into(), "b".into(), "c".into(), "isolate".into()],
+            vec![edge(0, 1, 0), edge(1, 2, 1)],
+            vec![2.0, -0.5],
+            orientation,
+            &context,
+        )
+        .unwrap();
+        assert!(graph.is_signed());
+        for name in projection_kernel_names() {
+            let args = arguments(&registry, name, serde_json::json!({}));
+            let outcome = run_on_projection(name, &graph, &args);
+            if name == "bellmanFord" {
+                assert!(outcome.is_ok(), "bellmanFord refused a signed projection");
+                ran += 1;
+                continue;
+            }
+            match outcome {
+                Err(ProcedureError::InvalidArguments(message)) => assert!(
+                    message.contains("signed projection"),
+                    "{name} refused for another reason: {message}"
+                ),
+                Err(other) => panic!("{name}: {other}"),
+                Ok(_) => panic!("{name} ran on a signed projection"),
+            }
+        }
+    }
+    assert_eq!(ran, 2);
+}
+
+#[test]
+fn only_bellman_ford_is_offered_a_projection_that_admits_negative_weights() {
+    let registry = registry();
+    let options = serde_json::json!({"weightProperty": "cost"});
+    for name in projection_kernel_names() {
+        let args = arguments(&registry, name, options.clone());
+        let signed = matches!(
+            projection_options_for(name, &args).unwrap().weight,
+            WeightSelection::SignedProperty { key: "cost", .. }
+        );
+        assert_eq!(signed, name == "bellmanFord", "{name}");
+        // The kernel-blind form never asks for signed weights.
+        assert!(matches!(
+            projection_options(&args).unwrap().weight,
+            WeightSelection::Property { key: "cost", .. }
+        ));
+    }
+    let args = arguments(&registry, "bellmanFord", options);
+    // Names match as `run_on_projection` matches them: prefixed, any case.
+    let context = context();
+    let graph = projection(&context, Orientation::Outgoing);
+    let plain = arguments(&registry, "degree", serde_json::json!({}));
+    assert!(run_on_projection("GRUST.ALGORITHMS.DEGREE", &graph, &plain).is_ok());
+    assert!(matches!(
+        projection_options_for("GRUST.ALGORITHMS.BELLMANFORD", &args)
+            .unwrap()
+            .weight,
+        WeightSelection::SignedProperty { .. }
+    ));
 }

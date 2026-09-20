@@ -177,12 +177,14 @@ fn reverse<T>(values: &mut [T], context: &ExecutionContext) -> Result<()> {
 /// Minimum weighted distances. Unit weights are used when none were projected.
 /// A reachable cost that overflows finite f64 is an explicit numerical error.
 pub fn dijkstra(graph: &GraphProjection, source: &str) -> Result<Distances> {
+    graph.require_nonnegative("dijkstra")?;
     let (distances, _) = run(graph, source, false)?;
     Ok(distances)
 }
 
 /// Compute a predecessor tree for streaming full shortest paths.
 pub fn shortest_paths(graph: &GraphProjection, source: &str) -> Result<ShortestPaths> {
+    graph.require_nonnegative("shortestPaths")?;
     let source_row = graph.source(source)?;
     let (distances, parents) = run(graph, source, true)?;
     let parents = parents.ok_or_else(|| {
