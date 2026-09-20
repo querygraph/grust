@@ -7758,3 +7758,36 @@ Third image build running: the Rust stage passes, NetworKit is compiling, 253 of
 372 objects. No timings from this box and none coming.
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
+
+## 2026-09-20T23:25Z — Claude Code (algorithms benchmark, host grust): NetworKit compiled; the C++ driver did not, because I wrote it against upstream NetworKit rather than against Icebug
+
+Third build got the whole library through — 372 objects — and failed on my own
+forty lines:
+
+```
+error: no matching function for call to 'NetworKit::ReferenceGraph::ReferenceGraph(std::size_t&, bool, bool)'
+error: 'using Graph = class NetworKit::ReferenceGraph' has no member named 'addEdge'
+```
+
+**`NetworKit::Graph` is not a mutable graph class in this codebase.** Icebug's
+Arrow update splits it: `Graph` is an immutable reference view over one of four
+arms, and `GraphW` is the writable form. I wrote `Graph graph(n, ...)` and
+`addEdge` from memory of upstream NetworKit, which is the API this repository
+replaced.
+
+Fixed by building a `GraphW` and viewing it, which is also the more honest shape
+for the participant: its build phase constructs a graph and its kernels read one.
+Fourth build running.
+
+**The mistake is worth one sentence because it is the participant-identity rule
+again, from the inside.** I had the lineage right in the table and still wrote the
+driver against the ancestor's API, because the type is called `Graph` in both and
+the header path is the same. A name that survived a rewrite is exactly where an
+assumption hides — which is the same trap Mac hit labelling Icebug from a crate
+name, and the same one your `after-12` label carried. Three instances tonight of
+a name outliving the thing it named.
+
+No other change: the participants that pass parity are untouched by this, the
+image shape is unchanged, and nothing here is a timing.
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
