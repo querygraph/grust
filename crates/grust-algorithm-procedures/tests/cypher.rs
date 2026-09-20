@@ -679,3 +679,61 @@ fn fast_rp_returns_an_embedding_list_per_node() {
     );
     assert_ne!(other[1][0], rows[1][1]);
 }
+
+#[test]
+fn bellman_ford_reads_negative_weights_that_every_other_procedure_refuses() {
+    let graph = Graph::new(
+        ["s", "a", "b", "t", "far"]
+            .map(|id| Node::new("N", id, Props::new()))
+            .into(),
+        vec![
+            Edge::new("R", "s", "a", [("cost".into(), Value::Float(4.0))]),
+            Edge::new("R", "s", "b", [("cost".into(), Value::Float(5.0))]),
+            Edge::new("R", "b", "a", [("cost".into(), Value::Float(-3.0))]),
+            Edge::new("R", "a", "t", [("cost".into(), Value::Int(1))]),
+        ],
+    );
+    let run_on = |query: &str| {
+        run_read_query_with_registry(
+            &graph,
+            "default",
+            query,
+            &CypherParameters::new(),
+            &registry(),
+        )
+    };
+    let text = |value: &str| Value::String(value.into());
+    // Through b is cheaper than the direct arc, by way of a negative weight.
+    assert_eq!(
+        run_on(
+            "CALL grust.algorithms.bellmanFord('s', {weightProperty: 'cost'}) YIELD nodeId, distance, cycleIndex, negativeCycle RETURN nodeId, distance, cycleIndex, negativeCycle"
+        )
+        .unwrap()
+        .rows,
+        vec![
+            vec![text("s"), Value::Float(0.0), Value::Int(-1), Value::Bool(false)],
+            vec![text("a"), Value::Float(2.0), Value::Int(-1), Value::Bool(false)],
+            vec![text("b"), Value::Float(5.0), Value::Int(-1), Value::Bool(false)],
+            vec![text("t"), Value::Float(3.0), Value::Int(-1), Value::Bool(false)],
+            vec![text("far"), Value::Null, Value::Int(-1), Value::Bool(false)],
+        ]
+    );
+    // Undirected, the negative edge is a cycle of two, reported as the result.
+    let rows = run_on(
+        "CALL grust.algorithms.bellmanFord('s', {weightProperty: 'cost', orientation: 'undirected'}) YIELD nodeId, distance, cycleIndex, negativeCycle WHERE cycleIndex >= 0 RETURN nodeId, distance, negativeCycle ORDER BY nodeId",
+    )
+    .unwrap()
+    .rows;
+    assert_eq!(
+        rows,
+        vec![
+            vec![text("a"), Value::Null, Value::Bool(true)],
+            vec![text("b"), Value::Null, Value::Bool(true)],
+        ]
+    );
+    // The same property is refused when the projection is built for any other kernel.
+    let refused = run_on("CALL grust.algorithms.dijkstra('s', {weightProperty: 'cost'}) YIELD distance RETURN distance")
+        .unwrap_err()
+        .to_string();
+    assert!(refused.contains("nonnegative"), "{refused}");
+}

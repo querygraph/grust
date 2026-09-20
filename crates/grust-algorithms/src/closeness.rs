@@ -70,6 +70,7 @@ impl DistanceCentrality {
 /// Scores and charged work are identical at any worker count; memory held at once
 /// is one workspace per running block of 64 sources.
 pub fn closeness(graph: &GraphProjection, options: ClosenessOptions) -> Result<DistanceCentrality> {
+    graph.require_nonnegative("closeness")?;
     let others = graph.node_count().saturating_sub(1) as f64;
     sweep(graph, |reached, distance_sum, _| {
         if reached == 0 {
@@ -90,6 +91,7 @@ pub fn closeness(graph: &GraphProjection, options: ClosenessOptions) -> Result<D
 /// graphs is needed. Direction, weights and determinism are as for
 /// [`closeness`].
 pub fn harmonic(graph: &GraphProjection, options: HarmonicOptions) -> Result<DistanceCentrality> {
+    graph.require_nonnegative("harmonic")?;
     let others = graph.node_count().saturating_sub(1) as f64;
     sweep(graph, |_, _, reciprocal_sum| {
         if options.normalized && others > 0.0 {

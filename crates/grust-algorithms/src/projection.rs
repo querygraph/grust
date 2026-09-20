@@ -55,6 +55,8 @@ struct ProjectionData {
     representation: ProjectionRepresentation,
     selection: Option<ProjectionSelection>,
     orientation: Orientation,
+    /// Weights may be negative; see [`GraphProjection::require_nonnegative`].
+    signed: bool,
     nodes: Buffer<NodeId>,
     node_by_id: HashMap<NodeId, usize>,
     edges: Buffer<ProjectionEdge>,
@@ -84,6 +86,31 @@ impl GraphProjection {
             weights
                 .map(|values| Buffer::adopt(values, context))
                 .transpose()?,
+            false,
+            orientation,
+            context,
+        )
+    }
+
+    /// As [`Self::from_topology`], admitting negative weights. The projection is
+    /// then *signed*: [`crate::bellman_ford`] runs on it, and every other kernel
+    /// refuses it, because each of them assumes what a negative weight breaks —
+    /// that a settled distance is final, that a strength is a total, that a
+    /// capacity can be filled.
+    pub fn from_signed_topology(
+        identity: SnapshotIdentity,
+        nodes: Vec<NodeId>,
+        edges: Vec<ProjectionEdge>,
+        weights: Vec<f64>,
+        orientation: Orientation,
+        context: &ExecutionContext,
+    ) -> Result<Self> {
+        Self::from_buffers(
+            identity,
+            Buffer::adopt(nodes, context)?,
+            Buffer::adopt(edges, context)?,
+            Some(Buffer::adopt(weights, context)?),
+            true,
             orientation,
             context,
         )
@@ -94,6 +121,7 @@ impl GraphProjection {
         nodes: Buffer<NodeId>,
         edges: Buffer<ProjectionEdge>,
         weights: Option<Buffer<f64>>,
+        signed: bool,
         orientation: Orientation,
         context: &ExecutionContext,
     ) -> Result<Self> {
@@ -156,11 +184,13 @@ impl GraphProjection {
                 ));
             }
             if let Some(weights) = &weights
-                && (!weights[index].is_finite() || weights[index] < 0.0)
+                && (!weights[index].is_finite() || (!signed && weights[index] < 0.0))
             {
-                return Err(ProcedureError::InvalidArguments(
-                    "weights must be finite and nonnegative".into(),
-                ));
+                return Err(ProcedureError::InvalidArguments(if signed {
+                    "weights must be finite".into()
+                } else {
+                    "weights must be finite and nonnegative".into()
+                }));
             }
             if !ordinals.insert(edge.ordinal) {
                 return Err(ProcedureError::InvalidArguments(
@@ -184,6 +214,7 @@ impl GraphProjection {
                 representation: ProjectionRepresentation::Topology,
                 selection: None,
                 orientation,
+                signed,
                 nodes,
                 node_by_id,
                 edges,
@@ -231,6 +262,25 @@ impl GraphProjection {
     pub fn edge_count(&self) -> usize {
         self.inner.edges.len()
     }
+    /// Whether the projection was built to admit negative weights.
+    pub fn is_signed(&self) -> bool {
+        self.inner.signed
+    }
+
+    /// Refuse a signed projection on behalf of `kernel`. Every kernel but
+    /// `bellman_ford` calls this first. Without it a negative weight would not
+    /// fail: Dijkstra would settle a node too early, PageRank would divide by a
+    /// strength that is no longer a total, max flow would fill a negative
+    /// capacity — each a confident wrong answer.
+    pub(crate) fn require_nonnegative(&self, kernel: &str) -> Result<()> {
+        if self.inner.signed {
+            return Err(ProcedureError::InvalidArguments(format!(
+                "{kernel} does not accept a signed projection: it was built to admit negative weights, which only bellmanFord handles"
+            )));
+        }
+        Ok(())
+    }
+
     /// Whether a weight buffer was explicitly supplied.
     pub fn is_weighted(&self) -> bool {
         self.inner.outgoing.weights.is_some()

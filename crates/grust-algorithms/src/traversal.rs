@@ -47,12 +47,14 @@ impl Components {
 
 /// Minimum hop counts following the projection orientation. Weights are ignored.
 pub fn bfs(graph: &GraphProjection, source: &str) -> Result<Distances> {
+    graph.require_nonnegative("bfs")?;
     bfs_sources(graph, std::iter::once(source))
 }
 
 /// Minimum hop distance from any supplied external source ID. Duplicate sources
 /// are harmless, source order breaks discovery ties, and an empty set is invalid.
 pub fn multi_source_bfs(graph: &GraphProjection, sources: &[String]) -> Result<Distances> {
+    graph.require_nonnegative("multiSourceBfs")?;
     if sources.is_empty() {
         return Err(crate::AlgorithmError::InvalidArguments(
             "at least one BFS source is required".into(),
@@ -217,6 +219,7 @@ fn levels(graph: &GraphProjection, roots: &[usize], workers: usize) -> Result<Di
 /// Connected components after ignoring edge direction. Union by size and path
 /// halving use O(V) scratch and never require reverse adjacency.
 pub fn weakly_connected_components(graph: &GraphProjection) -> Result<Components> {
+    graph.require_nonnegative("wcc")?;
     let context = graph.execution();
     let mut meter = context.work_meter();
     let n = graph.node_count();
@@ -371,6 +374,7 @@ fn union_find(graph: &GraphProjection, workers: usize) -> Result<Components> {
 /// Strong components via two iterative depth-first passes. Stack usage is O(V)
 /// in admitted heap buffers, including on chains with millions of vertices.
 pub fn strongly_connected_components(graph: &GraphProjection) -> Result<Components> {
+    graph.require_nonnegative("scc")?;
     let context = graph.execution();
     let mut meter = context.work_meter();
     let n = graph.node_count();

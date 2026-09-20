@@ -136,6 +136,7 @@ impl Level {
 /// the worker count: asynchronous parallel moves, which NetworKit's PLM uses, are
 /// not reproducible, and reproducibility is the contract here.
 pub fn louvain(graph: &GraphProjection, options: LouvainOptions) -> Result<Louvain> {
+    graph.require_nonnegative("louvain")?;
     let context = graph.execution();
     context.checkpoint()?;
     validate(&options)?;

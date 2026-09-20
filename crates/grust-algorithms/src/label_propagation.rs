@@ -82,6 +82,7 @@ pub fn label_propagation(
     graph: &GraphProjection,
     options: LabelPropagationOptions,
 ) -> Result<LabelPropagation> {
+    graph.require_nonnegative("labelPropagation")?;
     let context = graph.execution();
     context.checkpoint()?;
     if options.max_iterations == 0 {

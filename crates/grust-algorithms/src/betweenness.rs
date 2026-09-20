@@ -68,6 +68,7 @@ const BLOCK: usize = 64;
 /// block order; scores, and the work charged, are identical at any worker count.
 /// Memory held at once does grow with the workers: one workspace per running block.
 pub fn betweenness(graph: &GraphProjection, options: BetweennessOptions) -> Result<Betweenness> {
+    graph.require_nonnegative("betweenness")?;
     let context = graph.execution();
     context.checkpoint()?;
     let n = graph.node_count();

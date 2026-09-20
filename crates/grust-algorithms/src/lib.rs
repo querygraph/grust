@@ -10,6 +10,8 @@ mod arrow_input;
 mod arrow_output;
 #[cfg(feature = "arrow")]
 pub use arrow_output::{ArrowResultBatch, ArrowResultCursor};
+mod bellman_ford;
+pub use bellman_ford::{BellmanFord, bellman_ford};
 mod betweenness;
 pub use betweenness::{Betweenness, BetweennessOptions, betweenness};
 mod biconnected;

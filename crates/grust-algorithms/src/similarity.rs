@@ -108,6 +108,7 @@ pub fn node_similarity(
     graph: &GraphProjection,
     options: NodeSimilarityOptions,
 ) -> Result<NodeSimilarity> {
+    graph.require_nonnegative("nodeSimilarity")?;
     let context = graph.execution();
     context.checkpoint()?;
     let invalid = |message: &str| Err(AlgorithmError::InvalidArguments(message.into()));

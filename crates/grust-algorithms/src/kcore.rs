@@ -45,6 +45,7 @@ impl KCore {
 /// is rejected rather than silently symmetrized — project with
 /// `orientation: "undirected"`.
 pub fn k_core(graph: &GraphProjection) -> Result<KCore> {
+    graph.require_nonnegative("kCore")?;
     let context = graph.execution();
     context.checkpoint()?;
     if graph.orientation() != Orientation::Undirected {

@@ -64,9 +64,13 @@ impl GraphProjection {
             }
         }
         let mut edges = Buffer::capacity(m, context)?;
-        let mut weights = match options.weight {
-            WeightSelection::Unit => None,
-            WeightSelection::Property { .. } => Some(Buffer::capacity(m, context)?),
+        let signed = options
+            .weight
+            .property()
+            .is_some_and(|(_, _, signed)| signed);
+        let mut weights = match options.weight.property() {
+            None => None,
+            Some(_) => Some(Buffer::capacity(m, context)?),
         };
         let mut ordinal = 0;
         for batch in edge_batches {
@@ -100,11 +104,11 @@ impl GraphProjection {
                 if !selects(options.relationship_labels, label, context)? {
                     continue;
                 }
-                if let WeightSelection::Property { key, missing } = options.weight {
+                if let Some((key, missing, signed)) = options.weight.property() {
                     let value = weight_column
                         .value(row)?
                         .map_or_else(|| missing_weight(missing, key, original), Ok)?;
-                    validate_weight(value)?;
+                    validate_weight(value, signed)?;
                     if let Some(weights) = &mut weights {
                         weights.values.push(value);
                     }
@@ -124,6 +128,7 @@ impl GraphProjection {
             nodes,
             edges,
             weights,
+            signed,
             options.orientation,
             context,
         )?
@@ -195,7 +200,7 @@ enum WeightColumn<'a> {
 
 impl<'a> WeightColumn<'a> {
     fn new(batch: &'a RecordBatch, selection: WeightSelection<'_>) -> Result<Self> {
-        let WeightSelection::Property { key, .. } = selection else {
+        let Some((key, _, _)) = selection.property() else {
             return Ok(Self::Absent);
         };
         let property = format!("property.{key}");

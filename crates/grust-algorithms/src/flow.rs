@@ -91,6 +91,7 @@ impl MaxFlow {
 /// Dinic's algorithm, iteratively, so a long path does not overflow a stack.
 /// Sequential: a blocking flow is built one augmenting path at a time.
 pub fn max_flow(graph: &GraphProjection, source: &str, target: &str) -> Result<MaxFlow> {
+    graph.require_nonnegative("maxFlow")?;
     let context = graph.execution();
     context.checkpoint()?;
     let source = graph.source(source)?;

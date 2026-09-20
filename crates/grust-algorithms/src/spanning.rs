@@ -97,6 +97,7 @@ pub fn spanning_tree(
     graph: &GraphProjection,
     options: SpanningTreeOptions<'_>,
 ) -> Result<SpanningForest> {
+    graph.require_nonnegative("spanningTree")?;
     let context = graph.execution();
     context.checkpoint()?;
     if graph.orientation() != Orientation::Undirected {

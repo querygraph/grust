@@ -228,6 +228,25 @@ fn catalog() -> Vec<Spec> {
             ))
         },
     ));
+    specs.push(
+        Spec::new(
+            "bellmanFord",
+            Some(ValueType::String),
+            vec![
+                field("nodeId", ValueType::String),
+                nullable("distance", ValueType::Number),
+                field("cycleIndex", ValueType::Integer),
+                field("negativeCycle", ValueType::Boolean),
+            ],
+            vec![],
+            |graph, args| {
+                Ok(AlgorithmOutput::Table(
+                    algorithms::bellman_ford(graph, source(args)?)?.into_table()?,
+                ))
+            },
+        )
+        .with_signed_weights(),
+    );
     specs.push(Spec::new(
         "betweenness",
         None,
@@ -520,6 +539,7 @@ fn nullable(name: &str, value_type: ValueType) -> Field {
 type Kernel = fn(&algorithms::GraphProjection, &ValidatedArguments) -> Result<AlgorithmOutput>;
 struct Provider {
     kernel: Kernel,
+    signed: bool,
 }
 
 struct Spec {
@@ -527,6 +547,8 @@ struct Spec {
     source: Option<ValueType>,
     /// A second positional node id, `target`, after `source`.
     target: bool,
+    /// The kernel handles negative weights, so its projection admits them.
+    signed: bool,
     outputs: Vec<Field>,
     extra_options: Vec<OptionField>,
     kernel: Kernel,
@@ -544,6 +566,7 @@ impl Spec {
             name,
             source,
             target: false,
+            signed: false,
             outputs,
             extra_options,
             kernel,
@@ -556,6 +579,11 @@ impl Spec {
         self.target = true;
         self
     }
+
+    fn with_signed_weights(mut self) -> Self {
+        self.signed = true;
+        self
+    }
 }
 
 const PREFIX: &str = "grust.algorithms.";
@@ -566,6 +594,32 @@ const PREFIX: &str = "grust.algorithms.";
 /// projection means what the registered procedure's would.
 pub fn projection_options(args: &ValidatedArguments) -> Result<algorithms::ProjectionOptions<'_>> {
     options::projection(args)
+}
+
+/// As [`projection_options`], for the kernel that will run on the projection.
+/// The difference is weights: a kernel that handles negative ones, `bellmanFord`,
+/// gets a projection that admits them, and every other kernel gets one that
+/// refuses them when it is built, which is where a caller wants to hear of it.
+/// `name` is matched as [`run_on_projection`] matches it.
+pub fn projection_options_for<'a>(
+    name: &str,
+    args: &'a ValidatedArguments,
+) -> Result<algorithms::ProjectionOptions<'a>> {
+    let wanted = name.strip_prefix(PREFIX).unwrap_or(name);
+    let signed = catalog()
+        .iter()
+        .any(|spec| spec.signed && spec.name.eq_ignore_ascii_case(wanted));
+    Ok(admit_signed(options::projection(args)?, signed))
+}
+
+fn admit_signed(
+    mut options: algorithms::ProjectionOptions<'_>,
+    signed: bool,
+) -> algorithms::ProjectionOptions<'_> {
+    if signed && let algorithms::WeightSelection::Property { key, missing } = options.weight {
+        options.weight = algorithms::WeightSelection::SignedProperty { key, missing };
+    }
+    options
 }
 
 /// Run a registered kernel on a projection the caller already holds, and hand
@@ -603,6 +657,7 @@ fn register(builder: &mut RegistryBuilder, spec: Spec) -> Result<()> {
         name,
         source,
         target,
+        signed,
         outputs,
         extra_options,
         kernel,
@@ -650,7 +705,7 @@ fn register(builder: &mut RegistryBuilder, spec: Spec) -> Result<()> {
             graph: GraphRequirement::LocalSnapshot,
             streaming: Streaming::Blocking,
         },
-        Arc::new(Provider { kernel }),
+        Arc::new(Provider { kernel, signed }),
     )
 }
 
@@ -663,7 +718,8 @@ impl ProcedureProvider for Provider {
         let snapshot = invocation.snapshot.ok_or_else(|| {
             ProcedureError::Unsupported("algorithm requires an admitted local snapshot".into())
         })?;
-        let graph = preparation::prepare(snapshot, options::projection(&args)?, &invocation)?;
+        let options = admit_signed(options::projection(&args)?, self.signed);
+        let graph = preparation::prepare(snapshot, options, &invocation)?;
         let output = (self.kernel)(&graph, &args)?;
         Ok(Box::new(AlgorithmCursor::new(graph, output)?))
     }

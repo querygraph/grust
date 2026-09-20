@@ -27,14 +27,18 @@ pub(super) fn prepare(
         Orientation::Incoming => "incoming",
         Orientation::Undirected => "undirected",
     };
-    let (weight_property, default_weight) = match options.weight {
-        WeightSelection::Unit => (None, None),
-        WeightSelection::Property { key, missing } => (
+    // A signed projection admits weights an unsigned one refuses, so the two
+    // must never share a cache entry even over the same property.
+    let (weight_property, default_weight, signed) = match options.weight {
+        WeightSelection::Unit => (None, None, false),
+        WeightSelection::Property { key, missing }
+        | WeightSelection::SignedProperty { key, missing } => (
             Some(key),
             match missing {
                 MissingWeight::Reject => None,
                 MissingWeight::Default(value) => Some(value),
             },
+            matches!(options.weight, WeightSelection::SignedProperty { .. }),
         ),
     };
     // JSON escaping expands a byte by at most six. Serialize borrowed fields
@@ -58,7 +62,7 @@ pub(super) fn prepare(
     serde_json::to_writer(
         &mut encoded,
         &(
-            "grust.projection.v1",
+            "grust.projection.v2",
             identity.graph(),
             identity.revision(),
             identity.principal(),
@@ -67,6 +71,7 @@ pub(super) fn prepare(
             orientation,
             weight_property,
             default_weight,
+            signed,
         ),
     )
     .map_err(|error| ProcedureError::Provider(Box::new(error)))?;

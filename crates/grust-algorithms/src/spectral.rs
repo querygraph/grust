@@ -34,6 +34,12 @@ pub struct KatzOptions {
     /// Attenuation per hop; positive. The series converges only below
     /// `1 / λmax`. `1 / (largest in-strength)` is below that, so it is a safe
     /// choice, not the largest one.
+    ///
+    /// **Choose it from the graph.** The default of 0.1 suits sparse graphs and
+    /// fails on dense ones: a 4,000-node social graph with a hub of degree 1,045
+    /// has `λmax` well above 10, and the run then diverges and says so. Take the
+    /// largest in-strength from `degree`, and start from a fraction of its
+    /// reciprocal.
     pub alpha: f64,
     /// What every node starts from; positive.
     pub beta: f64,
@@ -188,6 +194,7 @@ fn nonfinite(what: &str) -> AlgorithmError {
 ///
 /// Identical at any worker count.
 pub fn eigenvector(graph: &GraphProjection, options: IterationOptions) -> Result<IteratedScores> {
+    graph.require_nonnegative("eigenvector")?;
     let context = graph.execution();
     context.checkpoint()?;
     validate(options)?;
@@ -231,6 +238,7 @@ pub fn eigenvector(graph: &GraphProjection, options: IterationOptions) -> Result
 ///
 /// Identical at any worker count.
 pub fn katz(graph: &GraphProjection, options: KatzOptions) -> Result<IteratedScores> {
+    graph.require_nonnegative("katz")?;
     let context = graph.execution();
     context.checkpoint()?;
     validate(options.iteration)?;
@@ -282,6 +290,7 @@ pub fn katz(graph: &GraphProjection, options: KatzOptions) -> Result<IteratedSco
 ///
 /// Identical at any worker count.
 pub fn hits(graph: &GraphProjection, options: IterationOptions) -> Result<IteratedScores> {
+    graph.require_nonnegative("hits")?;
     let context = graph.execution();
     context.checkpoint()?;
     validate(options)?;

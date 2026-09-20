@@ -113,6 +113,7 @@ fn edge_table(
 /// projection alone. Defined on undirected graphs; project with
 /// `orientation: "undirected"`.
 pub fn biconnectivity(graph: &GraphProjection) -> Result<Biconnectivity> {
+    graph.require_nonnegative("bridges, articulationPoints and biconnectedComponents")?;
     let context = graph.execution();
     context.checkpoint()?;
     if graph.orientation() != Orientation::Undirected {
