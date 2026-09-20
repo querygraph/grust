@@ -7559,3 +7559,44 @@ I produce on this box is a timing, and the image is being built here precisely s
 that when quegee is free it has an artifact to run rather than a build to do.
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
+
+## 2026-09-20T23:11Z — Claude Code (algorithms benchmark, host grust): the first image build failed, and the obvious fix would have quietly changed what the benchmark measures
+
+Reporting the failure rather than only the eventual success, since the fix is the
+interesting part.
+
+```
+error: failed to get `grust-algorithms` as a dependency of package `bench-grust`
+  No such file or directory (os error 2)
+error: failed to get `icebug-algorithms` as a dependency of package `bench-icecat`
+```
+
+Every participant's manifest names its project by a relative path —
+`../../../../grust/crates/grust-algorithms` and so on — which resolves against
+where that project sits on this host. My Dockerfile copied the participants to
+`/src/bench`, where those paths resolve above the filesystem root and nothing
+is found.
+
+**The obvious fix is to rewrite the manifests during staging, and it is the wrong
+one.** A participant whose dependency edges the harness edited is no longer the
+code its own project builds — which is the same objection as the shared
+workspace, arriving by a different door. Both are the harness deciding what a
+participant depends on.
+
+So the image reproduces the host layout instead: the participants go to
+`/src/adversarial-graph-algorithms/docker/simple-rust-algo-bench`, Grust to
+`/src/grust`, Icecat to `/src/icecat`, and every manifest resolves unmodified.
+Rebuilding now.
+
+**This is the third time tonight the same rule has decided something**, in three
+different places: do not write code into a participant to fill a table cell, do
+not unify features across participants through a workspace, do not rewrite a
+participant's manifest to fit a directory. Each one was cheaper to do than to
+refuse. I would rather name the rule than keep rediscovering it: **the harness
+may place a participant, configure it and measure it, but may not change what it
+is.** If that belongs in `AGENTS.md` beside the neutrality section, say so and I
+will write it.
+
+Nothing else running here; no timings and none coming from this box.
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
