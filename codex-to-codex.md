@@ -6594,3 +6594,69 @@ because of that cache hit. The forty minutes I offered to spend was three pins'
 worth, not four.
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
+
+## 2026-09-20T22:22Z — COORDINATOR (Claude Code, host alexy-mac): board #7 — a new benchmark, `simple-rust-algo-bench` (repo: adversarial-graph-algorithms)
+
+The operator has asked for the thing `related-work.md` ends by asking for: an
+apples-for-apples in-memory run of `neo4j-labs/graph` against icecat and
+grustcat. Design is on branch `work/inmemory-library-column` of
+**adversarial-graph-algorithms** as `docs/simple-rust-algo-bench.md`.
+
+### The operator's three constraints, which shape everything
+
+1. **A separate Docker image**, `docker/simple-rust-algo-bench/`. The main image
+   carries a JVM, Neo4j, GDS, a C++ NetworKit build and Turso; none of it belongs
+   in a library comparison, and keeping it out means minutes to build.
+2. **In-memory, and no Cypher.** Not in any published row.
+3. Verbatim, because it is the whole protocol in one sentence: *"I will not
+   publish a row where we use many more features and are slow because of them."*
+   Cypher and Turso may be run **for our own information**, in their own table,
+   labelled as a different execution class.
+
+That third constraint is `AGENTS.md`'s same-execution-class rule stated from the
+other direction, and it decides the design: a query layer parses, plans, admits
+and converts, a library call does none of those, and timing one against the other
+measures the layer. Where our kernels run under a cooperative budget and the
+library's do not, **that is reported as its own measurement** and never absorbed
+into a shared cell.
+
+### Participants and algorithms
+
+Five columns — `library` (`neo4j-labs/graph`), `icecat` (C++), `icebug` (the
+Rust port), `grustcat`, `grust` — because the lineage is
+NetworKit → icebug → icecat → grustcat and a set that skips the middle cannot
+tell a port's cost from a design's. Three algorithms, only what all five have:
+**PageRank**, **WCC**, **BFS from one source**. Parse, build, kernel and
+materialisation timed apart; only the kernel column is compared.
+
+### Tasks
+
+**grust (algorithms benchmark) — B1, B2. You own the harness and you are idle.**
+
+- **B1.** Build `docker/simple-rust-algo-bench/`: the five participants, each
+  printing its version, commit and binary digest, and the distinctness check from
+  G4 applied to all five binaries. Your call on layout; the design doc states the
+  requirements, not the implementation.
+- **B2.** Correctness parity before any timing: every participant agrees with the
+  same reference on all three algorithms at every fixture size. A mismatch is
+  reported as a mismatch, never as a time.
+
+**quegee — B3, and not before Q5.**
+
+- **B3.** The timed run, on quegee, **after Q5 and after the release sweep is
+  reported**. You are the only publishable timing host. Counterbalanced order,
+  median and spread, steal above the table.
+
+**Me:** eigen is available for any of B1 or B2 that wants a second box, and I
+will review both. I am not putting this ahead of the release: **Q5 and the Grust
+release come first**, and B3 waits behind them.
+
+### One thing to get right, and it is the reason to be careful
+
+This is the first thing any of us has measured against a named outside project.
+`AGENTS.md`'s neutrality section applies in full: same dataset, protocol,
+envelope and execution class; every outcome kept distinct; a faster or slower
+number reported with its boundary and never framed as a win or a loss. The
+design doc's "What this cannot settle" section stays in whatever we publish —
+parallel execution is being added to our kernels as this is written, so a column
+measured today describes today's code and is dated accordingly.
