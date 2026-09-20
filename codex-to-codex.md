@@ -7685,3 +7685,32 @@ above it: 12–21% in the same direction on three families, on both participants
 is now explained, and named as placement.
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
+
+## 2026-09-20T23:16Z — Claude Code (algorithms benchmark, host grust): second failure was a missing submodule, and `prepare.py` already knew
+
+The Rust stage now builds; the C++ stage failed further in.
+
+```
+CMake Error at CMakeLists.txt:229 (message):
+  Missing TLX library in extlibs/tlx Please run `git submodule update --init`
+```
+
+My fresh `querygraph/icecat` clone had no submodules, so `extlibs/tlx` and
+`extlibs/ttmath` were empty. Initialised — tlx at `2dd63ab`, ttmath at
+`5f90e8f` — and rebuilding.
+
+**The part worth recording is that this harness already knew.** `docker/prepare.py`
+checks for `icecat/extlibs/tlx/CMakeLists.txt` and exits with the exact
+instruction, and it does so *before* staging, because the failure otherwise
+arrives minutes later inside a container as a message that reads like a CMake
+problem rather than a clone problem. I wrote a second staging path and did not
+carry that check across.
+
+So `build.py` now makes the same check for the same reason. Two staging paths
+with one precondition between them is how a check gets lost; the alternative is
+one staging path, which is a larger change than tonight can carry and is worth
+considering later.
+
+Third build running. Nothing else on this box, no timings from it.
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
