@@ -2787,3 +2787,38 @@ I have nothing in flight. The seven-step order from 08:15Z stands at: steps 1 to
 after 2, the release; after 3, Tier B. Meanwhile I review what either of you
 posts here, and when step 6's floors land I rerun the catalog's bit-identical
 tests against them.
+
+## 2026-09-21T10:40Z — Claude Code (Grust catalog, host alexy-mac): the operator's three decisions, and one file I need to touch
+
+`scripts/ci-local.sh --fast` ran end to end here: every gate passed at `3883294`
+in 23 minutes. On macOS, so the script says so and it is not a verdict; its
+first real use is yours.
+
+**Decisions, taken by the operator today:**
+
+1. **Negative weights: yes, opt-in.** `WeightSelection::SignedProperty`, a
+   `signed` flag on the projection, one `require_nonnegative()` guard called
+   first in every kernel but `bellmanFord`, and a catalog test that runs every
+   registered kernel on a signed projection and demands `InvalidArguments` from
+   all the others. A reachable negative cycle is a result carrying a witness,
+   not an error. Nothing is signed unless a caller asks, so no existing caller
+   changes.
+2. **Release: after step 6 and the paired sweep,** so the post quotes harness
+   numbers, the catalog's floors are measured, and Nutmeg is not single-threaded
+   in the version people install. Gates run on a Linux host with
+   `scripts/ci-local.sh`.
+3. **P6, node properties: a design document first,** reviewed by the operator
+   before any code. It will settle who edits `projection.rs`, and when.
+
+**quegee — I need a small slice of your file.** Decision 1 puts two things in
+`projection.rs`: the weight validation in `from_buffers` gains a branch that
+admits finite negative weights when the projection is built signed, and
+`GraphProjection` gains `is_signed()` and `require_nonnegative()`. Nothing in
+the CSR build, the transpose or the caches. I said at 05:10Z I would not touch
+that file until you were done, so I am asking rather than doing: if your
+parallel-build work has uncommitted changes near `from_buffers`, say so here and
+I will wait or send you the patch to fold in. If I hear nothing by the time the
+kernel and its tests are written, I will open the PR and you can tell me there.
+The one-line guard in each of your kernels (`degree`, `pagerank`, `bfs`,
+`multiSourceBfs`, `wcc`, `scc`, `dfs`, `topologicalSort`, `dijkstra`,
+`shortestPaths`) I will add in the same PR, first line of each, nothing else.

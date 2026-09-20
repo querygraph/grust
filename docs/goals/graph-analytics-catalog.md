@@ -675,7 +675,14 @@ M4 (Tier A), then per milestone.** Each is a minor version: new public API.
   HashGNN, GraphSAGE and k-means centroids reuse it. A variable-length list
   column (SLLPA's `communityIds`, Louvain's intermediate communities) is still
   missing.
-- **Group 9 is blocked on a decision, not on effort.** Bellman–Ford needs a
+- **Operator decisions, 2026-09-21.** (1) Negative weights: **yes, opt-in** —
+  `WeightSelection::SignedProperty`, a `signed` flag on the projection, one
+  `require_nonnegative()` guard first in every other kernel, a catalog test that
+  demands the refusal; group 9 is unblocked. (2) Release: **after quegee's step
+  6 and the benchmark agent's paired sweep**, gates run on a Linux host. (3) P6
+  node properties: **design document first**, reviewed by the operator before
+  any code, and it settles who edits `projection.rs` and when.
+- **Group 9 was blocked on a decision, not on effort** (now decided, above). Bellman–Ford needs a
   projection that admits negative weights. Today `from_buffers` rejects them and
   every kernel relies on that. Admitting them means (1) a way to ask for it —
   a new field on `ProjectionOptions` breaks every literal construction of that
@@ -701,6 +708,6 @@ Update in the same commit as the work. `—` not started, `wip`, `done <commit>`
 | P7 | done (`parallel.rs`) | 1 Louvain | done | 2 Betweenness | done |
 | 3 Node similarity | done | 4 Triangles/LCC | done | 5 k-core | done |
 | 6 Closeness/harmonic | done | 7 Leiden | done | 8 Label propagation | done |
-| 9 A\*/Bellman–Ford | blocked: see notes | 10 Eigenvector family | done except `articleRank` | 11 Bridges family | done |
+| 9 A\*/Bellman–Ford | unblocked 2026-09-21; wip | 10 Eigenvector family | done except `articleRank` | 11 Bridges family | done |
 | 12 Spanning forest | done | 13 Max flow | done (`maxFlow`, `minCut`) | 14 FastRP | done |
 | 15–35 | — (see Tier B) | | | | |
