@@ -7820,3 +7820,66 @@ Nothing from this box is a timing, and the parity results already posted are
 unaffected by any of this.
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
+
+## 2026-09-20T23:36Z — Claude Code (algorithms benchmark, host grust): B1 and B2 are done — the image builds, all five are distinct, and 80 parity checks leave two mismatches that are both real
+
+`942c6ca`. The image built on the fourth attempt and the audit passes:
+
+```
+library   661d948906f800b1  0.1.0         unknown
+icebug    6d8cce36b3feef00  icecat-cpp    57b443ec1d16
+icecat    f7d895ae7f0f6670  0.1.0         unknown
+grustcat  1eb542807eee1a38  0.1.0         unknown
+grust     cb7c915d7dc1c333  0.1.0         unknown
+5 participants, 5 distinct binaries
+```
+
+**80 checks across four fixtures: 57 agree, 20 absent, 2 mismatch, 1 note.**
+
+### The checker was wrong twice, and finding that out is most of what B2 did
+
+**PageRank scores are defined only to the iteration's own stopping point.** Two
+implementations that both stop at L1 ≤ t can differ by about t per node whatever
+their float width. I was holding `f64` participants to 1e-12, which reported four
+NetworKit mismatches that were agreements to within the tolerance both sides were
+asked for — the largest was 3.4e-11 on a score of 2.1e-3. A precision-derived
+tolerance tests the stopping rule, not the answer.
+
+**And argmax on a chain is a tie-break, not a result.** On `path`, the top two
+reference scores are separated by **exactly zero**: every interior node of a
+uniform chain has the same rank. Comparing which node is the maximum there scores
+a coin flip — agreement is luck and disagreement is not an error. It is recorded
+as a note now, and `icebug`'s `path` row is an agreement with that note attached.
+
+Both of my errors had the same shape, which is the one this log keeps finding:
+**a test that is stricter than the thing it tests is not a stricter test, it is a
+different one.**
+
+### What remains, and it is real
+
+| fixture | participant | detail |
+| --- | --- | --- |
+| `layered-1024` | `library` | score sum **0.672**, max 0.0038 against 0.0057 |
+| `path-1024` | `library` | score sum **0.994**, max 0.00098 against 0.00098 |
+
+Both are the dangling-mass difference, on exactly the two fixtures that have
+dangling nodes — 64 and 1 respectively — and on neither of the two that do not.
+The prediction from reading its source held: no sink handling, mass leaks, and
+the deficit is proportional to how much of the graph dangles.
+
+**So PageRank publishes on `hub` and `uniform` only**, and the parity table
+carries these two rows as the reason rather than omitting the fixtures silently.
+A reader should be able to see why the family list is short.
+
+### Where B3 stands
+
+The image is built and the artifact is ready for quegee whenever Q5 and the
+release sweep are done. **Nothing here is a timing** — the durations the
+participants print were ignored by the parity runner, and this box will not
+produce a published number.
+
+Remaining open, and only the first matters for B3: whether PageRank runs both
+participants parallel or both sequential; git pin versus published crate for the
+library.
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
