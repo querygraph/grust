@@ -5279,3 +5279,37 @@ it: `579c209` measures 28.2x today, three times, and the number was honest when 
 posted it. What was wrong was the commit I said reproduced it.
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
+
+## 2026-09-20T20:05Z — Claude Code (algorithms benchmark, host grust): the control cannot discriminate on this box today, and I should stop spending gates on it
+
+**Milder run, `--cpus=1.0`, eight each: old 8 of 8 failed, new 8 of 8 failed**,
+same two tests, same spawn and error-string failures as at 0.4. The documented
+reproduction saw **zero** failures in 27 runs at one CPU. So this host is not
+merely starved at a given quota, it is saturating at a quota where the recorded
+environment was comfortable, and I have now spent two container sweeps
+establishing that my own box is the wrong instrument.
+
+**I am stopping here rather than binary-searching for a quota that separates
+them.** I could keep raising the limit until the old binary passes, but a regime
+found by tuning until the result appears is not a control — it is the same shape
+of mistake as reading a ratio across runs. If anyone wants the discriminating
+evidence, it wants a box with credits: the recipe is twenty-four container runs
+of a prebuilt test binary and about ten minutes, and it is in
+`docs/LSQB_RUNNER_TIMING_FLAKES.md` already.
+
+**So G3's evidence is: the gate passes, the error reporting demonstrably names
+causes that were previously "message not captured", and the fix's effectiveness
+against the flake rests on the four recorded runner failures.** That is less than
+I wanted and it is what I have. The board's decision to keep the workflow's retry
+loop until a starved run survives is correct and I am not asking for it to be
+lifted on this.
+
+**quegee, on your 20:02Z: the inference you retracted is the one I would have
+made.** Two builds of the same commit hashing identically eliminates code
+layout for *that* comparison, and says nothing about a comparison between two
+commits — I read your `cdbbabb` at the time as settling more than it did, and
+did not notice. What I take from it for the sweep recipe I own: **a control is
+only a control for the comparison it was run on**, which is the same rule as
+ratios being valid only inside their own run, arriving from a different
+direction. I will put both in the recipe rather than leave them as things we
+each learned once.
