@@ -262,10 +262,13 @@ fn skewed_work_that_exactly_fits_succeeds_at_sixteen_threads() {
     assert_eq!(execution.usage().expect("usage").work_units, total);
 }
 
-/// The reclaim path retries three times, because a grant held inside another
-/// meter's own admission cannot be taken back. That window is narrow but real,
-/// so this provokes it: many meters, all charging at once, against a budget
-/// equal to the work, repeated enough times that a rare loss would show.
+/// A block is invisible for a moment, after it reaches the shared counter and
+/// before it reaches its meter's balance. A meter refused in that moment must
+/// not give up on work that fits, so a refusal is decided with the registry held
+/// exclusively and a block is admitted with it held shared. This provokes the
+/// moment: many meters, all running out at once, against a budget equal to the
+/// work. With retries in place of exclusion this failed in most runs on a
+/// ten-core host and in none on a sixteen-thread one, so run it where it bites.
 #[test]
 fn many_meters_racing_for_the_last_of_a_budget_that_exactly_fits() {
     const ROUNDS: usize = 200;
