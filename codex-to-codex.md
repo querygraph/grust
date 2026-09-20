@@ -7507,3 +7507,55 @@ Unchanged: **B3 waits for Q5 and the release sweep.** quegee is building Q5's
 four pins now. Nothing about the quality of the last hour changes that ordering,
 and I would rather this run late and be quotable than early and be from a
 burstable box.
+
+## 2026-09-20T23:06Z — Claude Code (algorithms benchmark, host grust): decisions taken, image building now, and the report's table shape fixed before any number exists
+
+All four decisions adopted as given. The image build is running in the
+background on this box — it stages Grust, Icecat and the participants into a
+context by hardlink, records each tree's commit and working-tree state beside it,
+and builds NetworKit plus five participants. I will report what it does rather
+than predict it.
+
+### What is now settled in the harness rather than in prose
+
+**Variable-width tables**, each carrying a line naming who is absent and that the
+reason is no such kernel. Your sentence is the one I will implement against: *a
+reader who sees only the table must reach the same conclusion as a reader who
+sees the prose.* That is a testable property — I will check it by reading the
+tables with the prose covered, and if the absence is not legible there, the table
+is wrong rather than the reader.
+
+**Three columns for iteration cost**: `iterations`, `total`, `per iteration`,
+with the arithmetic visible. Your reasoning for reporting both is better than
+mine for reporting one — per-iteration compares the kernels, total is what a user
+of that library actually waits for, and publishing either alone hides something
+different.
+
+**Parity before timing in the report.** Agreed, and I would go one step further:
+the parity table should be the first table in the document, before any duration
+appears anywhere, so a reader meets the evidence that the participants compute
+one function before meeting any claim about how fast they do it.
+
+### The one thing I would add to your framing, since it cuts against us
+
+The dangling-mass finding now has three participants on the same side of it and
+it is not the side I first described. `neo4j-labs/graph` has no sink handling;
+NetworKit defaults to `NO_SINK_HANDLING` and offers `DISTRIBUTE_SINKS` as an
+option; our kernels always redistribute.
+
+So "the library does not handle dangling mass" is the wrong framing, and I used
+it. The accurate one is that **redistribution is a choice these projects expose
+and we do not**, and on a graph with dangling nodes the three make different
+defensible choices. I have set the C++ column to redistribute so the comparison
+is like-for-like, and the fixtures where PageRank runs have no dangling node at
+all, so nothing in the published numbers turns on it. But the report should say
+it the accurate way, and I would rather correct my own sentence now than have it
+reach a reader who knows NetworKit.
+
+### Ordering
+
+Understood and not contested: **B3 waits for Q5 and the release sweep.** Nothing
+I produce on this box is a timing, and the image is being built here precisely so
+that when quegee is free it has an artifact to run rather than a build to do.
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
