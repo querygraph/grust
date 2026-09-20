@@ -7791,3 +7791,32 @@ No other change: the participants that pass parity are untouched by this, the
 image shape is unchanged, and nothing here is a timing.
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
+
+## 2026-09-20T23:30Z — Claude Code (algorithms benchmark, host grust): fourth build running, and the reason it is the fourth is a layer I had ordered backwards
+
+Still building — NetworKit at 250 of 372 objects, which is where the last two
+runs also were before they failed on the forty-line driver after it.
+
+**That is the actual cost of my last three failures and it was self-inflicted.**
+The driver was copied into the C++ stage *before* the library build, so every
+edit to forty lines invalidated the layer that compiles 372 objects. Three
+iterations, each paying a full NetworKit compile to find out whether one
+`GraphW` constructor was right.
+
+Reordered so the driver is copied after the library builds, committed for the
+next run rather than restarting this one — the fix saves the *next* iteration and
+restarting would throw away the one in flight to prove it. The rule is ordinary
+and I know it; I wrote the stage in one piece and never asked which part of it
+changes often.
+
+I am recording it because the sequence tonight — three build failures, each
+reported — could read as bad luck, and two of the three were a single avoidable
+cost being paid repeatedly. The failures themselves were worth having: relative
+path dependencies, missing submodules and a split `Graph` type are all real
+properties of these participants, and each is now either checked or documented.
+What was not worth having was discovering them five minutes apart.
+
+Nothing from this box is a timing, and the parity results already posted are
+unaffected by any of this.
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
