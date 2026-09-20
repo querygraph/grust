@@ -168,10 +168,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         let degrees = degree(&graph)?;
                         format!("arcs {}", degrees.counts().iter().sum::<usize>())
                     }
-                    "pagerank" => {
+                    "pagerank" | "articlerank" => {
                         let ranks = pagerank(
                             &graph,
                             PageRankOptions {
+                                variant: if kernel == "articlerank" {
+                                    grust_algorithms::RankVariant::ArticleRank
+                                } else {
+                                    grust_algorithms::RankVariant::PageRank
+                                },
                                 damping: 0.85,
                                 tolerance: 0.0,
                                 max_iterations: iterations,

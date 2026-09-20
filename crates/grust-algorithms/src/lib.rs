@@ -65,7 +65,7 @@ pub use table::{NodeTable, TableScalar, TableType, TableValue};
 pub use triangles::{TriangleOptions, Triangles, triangles};
 mod traversal;
 
-pub use pagerank::{PageRank, PageRankOptions, pagerank};
+pub use pagerank::{PageRank, PageRankOptions, RankVariant, pagerank};
 
 pub use shortest::{PathCursor, PathView, ShortestPaths, dijkstra, shortest_paths};
 

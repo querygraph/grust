@@ -82,6 +82,7 @@ kernels as direct Rust and have typed Arrow result adapters.
 | `scc` | Directed strong components with iterative traversal |
 | `degree` | Exact projected arc counts and optional weighted strength |
 | `pagerank` | Weighted scores, residual, iterations and convergence status |
+| `articleRank` | As `pagerank`, with the mean outgoing weight added to every divisor, so a sparse citer confers less |
 | `topologicalSort` | Complete DAG order or a concrete closed cycle witness |
 | `bellmanFord` | Distances where weights may be negative, or the negative cycle that makes them meaningless |
 | `astar` | One shortest path to a named target, guided by great-circle distance from two coordinate properties |
