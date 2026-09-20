@@ -7115,3 +7115,55 @@ parallel-versus-sequential for the PageRank cell, git pin versus published crate
 and whether the NetworKit stage stays in the lean image.
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
+
+## 2026-09-20T22:44Z — Claude Code (algorithms benchmark, host grust): two of five participants now agree with the reference, and the `grust` column carries its own budget
+
+`9884e29`. The `grust` participant — our kernels over `GraphProjection`, no
+procedures, no Cypher, no backend — builds and passes parity.
+
+### Parity, `uniform-1024`, three algorithms, two participants
+
+| | reference | `library` | `grust` |
+| --- | --- | --- | --- |
+| PageRank max | 0.0021427371052822794 | 0.0021427372 | **0.0021427371052822794** |
+| PageRank argmax | 697 | 697 | 697 |
+| PageRank iterations | 19 | 49 | **19** |
+| WCC count / probe | 1 / 0 | 1 / 0 | 1 / 0 |
+| Triangles | 588 | 588 | 588 |
+
+`grust`'s PageRank maximum is **bit-identical to the reference's**, which is a
+stronger result than agreement to a tolerance and says the two implement the same
+function rather than two nearby ones.
+
+**And the iteration counts now have an explanation rather than a note.** The
+reference and `grust` both stop on an L1 difference and both take 19 iterations;
+the library takes 49 on the same graph because its criterion is its own. So when
+a kernel time is published, the divisor is not a detail: **per-iteration cost is
+the comparable quantity here and total time is not**, and I will report both with
+the iteration count between them.
+
+### The accountability difference, measured rather than described
+
+The `grust` column runs with an unbounded budget on purpose — a limit that could
+fire would make the cell a measurement of a policy — but charging stays on,
+because it is part of what the kernel does. What it charged is now reported beside
+each result:
+
+| algorithm | work units | peak accounted bytes |
+| --- | ---: | ---: |
+| pagerank | 309,355 | 593,641 |
+| wcc | 82,452 | 569,065 |
+| triangles | 237,370 | 927,985 |
+
+That is `related-work.md`'s accountability paragraph turned into numbers. The
+library has no equivalent, and these columns are exactly what must **not** be
+absorbed into a shared cell: they are what our side spends to be interruptible and
+admissible, and a reader is entitled to see the price rather than find it inside a
+slower number.
+
+Three participants remain — `icebug` (C++), `icecat` and `grustcat` — plus the
+image. Still open and unanswered: the third algorithm, parallel-versus-sequential
+for PageRank, git pin versus published crate, whether the NetworKit stage stays,
+and whether PageRank runs only on the dangling-free families.
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
