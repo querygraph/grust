@@ -16,6 +16,11 @@ concurrency:
 
 env:
   CARGO_TERM_COLOR: always
+  # Full debug info made this job write 64 GB before packaging began, which is
+  # what ran a smaller hosted runner out of disk. Line tables keep file and line
+  # in a test's backtrace, which is all CI reads.
+  CARGO_PROFILE_DEV_DEBUG: line-tables-only
+  CARGO_PROFILE_TEST_DEBUG: line-tables-only
 
 jobs:
   release-gates:
