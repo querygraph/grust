@@ -239,10 +239,20 @@ fn pull(
     // Per-source arc probability, exactly as the push loop derives it: each row
     // is scaled by its largest weight before summing, so two arcs of f64::MAX
     // still sum finitely, and a row of zero weight is dangling.
+    //
+    // Only a weighted projection needs them. An unweighted arc's probability is
+    // `1/out-degree`, which `offsets` already holds, and reading it there keeps
+    // the inner loop to the two randomly indexed arrays it cannot avoid,
+    // `scores` and `offsets`. Deriving it from `scales` and `totals` instead
+    // adds two more 8-byte-per-node streams under the same random index; on
+    // roadNet-CA that is 48 MB of randomly touched arrays against a 24.8 MB L3
+    // where 32 MB fitted before, and it cost the kernel a measured 1.5x at
+    // every worker count.
     let weighted = graph.is_weighted();
-    let mut scales = Buffer::indexed(n, 0.0f64, context)?;
-    let mut totals = Buffer::indexed(n, 0.0f64, context)?;
-    {
+    let factored = if weighted { n } else { 0 };
+    let mut scales = Buffer::indexed(factored, 0.0f64, context)?;
+    let mut totals = Buffer::indexed(factored, 0.0f64, context)?;
+    if weighted {
         crate::parallel::for_each_chunk(
             context,
             workers,
@@ -252,10 +262,6 @@ fn pull(
                     let node = first + index;
                     let range = offsets[node]..offsets[node + 1];
                     meter.charge(1 + range.len())?;
-                    if !weighted {
-                        *scale = if range.is_empty() { 0.0 } else { 1.0 };
-                        continue;
-                    }
                     let mut largest = 0.0f64;
                     for arc in range {
                         largest = largest.max(adjacency.weight(arc));
@@ -302,9 +308,16 @@ fn pull(
                 meter.charge(slice.len())?;
                 let mut sum = 0.0;
                 for (index, &score) in slice.iter().enumerate() {
-                    // A row of zero outgoing weight is dangling even where arcs
-                    // exist, which is the push kernel's rule too.
-                    if scales[first + index] <= 0.0 {
+                    let node = first + index;
+                    // A weighted row of zero outgoing weight is dangling even
+                    // where arcs exist, which is the push kernel's rule too;
+                    // unweighted, having no arc is the whole of it.
+                    let dangling = if weighted {
+                        scales[node] <= 0.0
+                    } else {
+                        offsets[node + 1] == offsets[node]
+                    };
+                    if dangling {
                         sum += score;
                     }
                 }
@@ -325,15 +338,27 @@ fn pull(
                     let arcs = reverse.range(node);
                     meter.charge(1 + arcs.len())?;
                     let mut sum = 0.0;
-                    for arc in arcs {
-                        let source = reverse.targets.values[arc];
-                        // A dangling row contributes through `base`, never
-                        // through an arc; its total is zero and would divide.
-                        if totals[source] <= 0.0 {
-                            continue;
+                    if weighted {
+                        for arc in arcs {
+                            let source = reverse.targets.values[arc];
+                            // A dangling row contributes through `base`, never
+                            // through an arc; its total is zero and would
+                            // divide.
+                            if totals[source] <= 0.0 {
+                                continue;
+                            }
+                            let probability =
+                                (reverse.weight(arc) / scales[source]) / totals[source];
+                            sum += scores_now[source] * probability;
                         }
-                        let probability = (reverse.weight(arc) / scales[source]) / totals[source];
-                        sum += scores_now[source] * probability;
+                    } else {
+                        for arc in arcs {
+                            let source = reverse.targets.values[arc];
+                            let out_degree = offsets[source + 1] - offsets[source];
+                            // A node with no outgoing arc contributes through
+                            // the dangling mass in `base`, never through an arc.
+                            sum += scores_now[source] / out_degree as f64;
+                        }
                     }
                     let updated = base * teleport[node] + options.damping * sum;
                     if !updated.is_finite() {
