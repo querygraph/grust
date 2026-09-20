@@ -605,11 +605,20 @@ pub fn projection_options_for<'a>(
     name: &str,
     args: &'a ValidatedArguments,
 ) -> Result<algorithms::ProjectionOptions<'a>> {
-    let wanted = name.strip_prefix(PREFIX).unwrap_or(name);
+    let wanted = short_name(name);
     let signed = catalog()
         .iter()
         .any(|spec| spec.signed && spec.name.eq_ignore_ascii_case(wanted));
     Ok(admit_signed(options::projection(args)?, signed))
+}
+
+/// A kernel's name without the `grust.algorithms.` prefix, which, like the name,
+/// is matched whatever its case: the registry resolves names that way.
+fn short_name(name: &str) -> &str {
+    match name.get(..PREFIX.len()) {
+        Some(prefix) if prefix.eq_ignore_ascii_case(PREFIX) => &name[PREFIX.len()..],
+        _ => name,
+    }
 }
 
 fn admit_signed(
@@ -637,7 +646,7 @@ pub fn run_on_projection(
     graph: &algorithms::GraphProjection,
     args: &ValidatedArguments,
 ) -> Result<algorithms::ArrowResultCursor> {
-    let short = name.strip_prefix(PREFIX).unwrap_or(name);
+    let short = short_name(name);
     let spec = catalog()
         .into_iter()
         .find(|spec| spec.name.eq_ignore_ascii_case(short))

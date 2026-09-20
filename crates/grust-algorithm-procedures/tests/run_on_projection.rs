@@ -253,6 +253,10 @@ fn only_bellman_ford_is_offered_a_projection_that_admits_negative_weights() {
     }
     let args = arguments(&registry, "bellmanFord", options);
     // Names match as `run_on_projection` matches them: prefixed, any case.
+    let context = context();
+    let graph = projection(&context, Orientation::Outgoing);
+    let plain = arguments(&registry, "degree", serde_json::json!({}));
+    assert!(run_on_projection("GRUST.ALGORITHMS.DEGREE", &graph, &plain).is_ok());
     assert!(matches!(
         projection_options_for("GRUST.ALGORITHMS.BELLMANFORD", &args)
             .unwrap()
