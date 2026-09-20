@@ -6,6 +6,184 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ## Unreleased
 
+- Add **FastRP node embeddings**: `fast_rp` and `grust.algorithms.fastRP`, with
+  `embeddingDimension`, `iterationWeights`, `nodeSelfInfluence`,
+  `normalizationStrength` and `seed`. Each node draws a very sparse random
+  vector (`±√3` with probability 1/6 each), every round replaces it with the
+  weighted mean of the vectors its arcs reach, and the rounds are summed at unit
+  length with their weights. Entry `j` of node `v` is a pure function of
+  `(seed, v, j)`, so the embedding is identical at any pool width. It is the
+  first vector-valued result: result tables gain a fixed-length `Float32` column,
+  emitted as Arrow `FixedSizeList<Float32>` and as a float list to Cypher. The
+  test rebuilds the random vectors from a round-zero run and repeats the whole
+  computation densely in double precision. No claim is made about embedding
+  quality.
+- Add **maximum flow and minimum cut**: `max_flow`, and
+  `grust.algorithms.maxFlow(source, target)` and `.minCut(source, target)`.
+  Capacities are the projection's weights, parallel edges are separate
+  capacities, and self-loops and zero capacities carry nothing. `maxFlow`
+  returns one row per edge carrying flow, oriented the way the flow runs, so an
+  undirected edge reports its net flow; `minCut` returns each node's side, the
+  source side being what the source still reaches once the flow is in place.
+  Dinic's algorithm, iterative, sequential. With integral capacities every value
+  is exact; with fractional ones the flow is feasible and maximal up to
+  rounding. The test compares the value with the cheapest of every possible cut
+  on 7,500 random networks and checks capacity and conservation on the reported
+  rows. Procedures can now declare a second positional node argument, `target`.
+- Add **Leiden** community detection: `leiden` and `grust.algorithms.leiden`,
+  with Louvain's options and result shape. Between moving and coarsening it
+  refines each community from singletons, merging a node only while it is still
+  alone, only into a neighbour's group, and only when modularity does not fall,
+  so **every community is connected** — weakly, on a directed projection, and
+  never through a zero-weight arc. The result is always the refined partition,
+  so the guarantee holds however the run ends, `maxLevels` included. Refinement
+  is greedy, the zero-temperature limit of the paper's randomised rule: it
+  keeps connectivity and reproducibility and gives up the paper's asymptotic
+  optimality guarantee; there is no `theta`. Tests assert connectivity and
+  honest modularity over 4,500 random runs with zero weights, loops and parallel
+  edges, never above the brute-force optimum, and exact recovery of planted
+  cliques.
+- Add **eigenvector centrality**, **Katz centrality** and **HITS**:
+  `eigenvector`, `katz`, `hits` and the procedures of the same names, each
+  reporting `iterations`, `converged` and `residual` as `pagerank` does, never
+  asserting convergence silently. Influence flows along the projection's arcs.
+  Eigenvector iterates `(A + I)x` rather than `Ax`: same eigenvectors, but it
+  converges on bipartite graphs where plain power iteration oscillates. Katz
+  does not refuse an `alpha` above the cheap `1 / (largest in-strength)` bound,
+  which would reject many valid values; a run that does not settle says so, and
+  one that overflows fails and names `alpha`. Each node pulls from its
+  neighbours over fixed chunks of 4,096 nodes on the caller's rayon pool, so
+  scores, residuals and charged work are bit-identical at any width. Tests check
+  the defining equations with dense linear algebra: `Ax = λx`, `MMᵀa = λa`,
+  and Katz against Gaussian elimination.
+- Add **minimum and maximum spanning forests**: `spanning_tree` and
+  `grust.algorithms.spanningTree`, with `objective` and `sourceNode`. Kruskal
+  with union by size and path halving, on an undirected projection. Ties go to
+  the smaller edge ordinal, so edges are in a total order and the forest is the
+  greedy one for it: the same projection always gives the same edges, not one
+  of several equally light ones. `sourceNode` keeps the tree of that node's
+  component, which is what a Prim run from it returns. Only the sort runs on
+  the rayon pool, and its order is total, so nothing depends on the pool. The
+  test finds the expected forest by exhaustive search over edge subsets, with
+  heavy ties, for both objectives.
+- Add **bridges**, **articulation points** and **biconnected components**:
+  `biconnectivity`, and `grust.algorithms.bridges`, `.articulationPoints` and
+  `.biconnectedComponents`, from one iterative low-link pass on an undirected
+  projection. The pass tracks the edge it arrived by, not the node, so parallel
+  edges are a cycle of two: neither is a bridge and both share a component.
+  Self-loops disconnect nothing and lie in no component. Edge rows carry
+  `sourceNodeId`, `targetNodeId` and `edgeOrdinal`; a component is named by the
+  smallest edge ordinal in it. Each output is checked against its definition —
+  remove the edge or node and recount, or enumerate every simple cycle — on
+  every simple graph of up to five nodes and 4,000 random multigraphs, and a
+  million-node path shows the pass does not recurse.
+- Add **node similarity**: `node_similarity` and
+  `grust.algorithms.nodeSimilarity`, with `metric` (`jaccard`, `overlap`,
+  `cosine`), `topK`, `topN`, `similarityCutoff`, `degreeCutoff` and
+  `upperDegreeCutoff`. Nodes are compared by the *distinct* nodes their arcs
+  reach: parallel edges collapse into one neighbour, present or not without
+  weights and carrying their summed weight with them, which differs from the
+  degree-style kernels. A pair sharing nothing is never emitted; a kept pair
+  appears from both sides because `topK` is per `node1`. Cost is the number of
+  (node, shared neighbour, node) triples, every one charged, so the work budget
+  stops the quadratic hub case. Rows and charged work are identical at any pool
+  width, and the two directions of a pair carry the same bits. Checked row for
+  row, order and bits included, against an O(n²) recomputation over 3,600
+  random runs.
+- Result tables can key their own rows, so a kernel can answer with node pairs
+  (`node1`, `node2`, ...) through the same Arrow and row adapters. A table with
+  no rows now yields one empty Arrow batch carrying its schema instead of no
+  batch at all.
+- Add **label propagation**: `label_propagation` and
+  `grust.algorithms.labelPropagation`, with `maxIterations` and `seed`. A node
+  adopts the label carrying the most weight among the nodes with an arc into it,
+  so labels flow along the projection's arcs. Updates are asynchronous and
+  sequential, in row order or a seeded order per pass, which makes a run
+  reproducible; an asynchronous parallel schedule is not. A node keeps its label
+  when it is among the heaviest and otherwise takes the smallest of them, which
+  guarantees convergence on an undirected projection; a directed run reports
+  `converged` honestly. Tests check that every converged run is a fixed point,
+  straight from the edge list, over 9,000 random runs.
+- Add **closeness** and **harmonic centrality**: `closeness`, `harmonic`,
+  `grust.algorithms.closeness` (`useWassermanFaust`) and
+  `grust.algorithms.harmonic` (`normalized`, on by default). Closeness is the
+  per-component form, `r / Σd` over the `r` nodes reached and zero when none
+  are, with the Wasserman-Faust `r / (n-1)` correction on request; harmonic sums
+  `1/d` and needs no convention for disconnected graphs. Distances run from the
+  node along the projection's arcs, by hop count or by weight; project with the
+  opposite orientation for distances to the node. Zero weights are rejected.
+  One sweep per node on the caller's rayon pool, bit-identical at any width,
+  checked against Floyd-Warshall on every graph of up to five nodes and 600
+  random multigraphs of up to forty.
+- Add **betweenness centrality**: `betweenness` and
+  `grust.algorithms.betweenness`, with `samplingSize`, `seed` and `normalized`.
+  Brandes' algorithm, by hop count on an unweighted projection and by Dijkstra
+  on a weighted one, in every orientation; undirected sums are halved. Parallel
+  edges are distinct shortest paths and each counts. Weighted ties are exact
+  `f64` equality, which is exact for integral weights and approximate otherwise,
+  and a zero weight is rejected because it makes the path count ill-defined.
+  `samplingSize` draws that many sources without replacement and scales the sum
+  by `n / samplingSize`; a sample of every node is the exact result bit for bit.
+  Sources run on the caller's rayon pool in fixed blocks of 64 merged in block
+  order, so scores and charged work are bit-identical at any pool width; memory
+  held at once grows with the pool, one workspace per running block. The oracle
+  is an all-pairs definition with no traversal in it, checked on every graph of
+  up to five nodes and 1,500 random multigraphs, weighted and not, in all three
+  orientations.
+- `GraphProjection` can build in-arcs with weights and edge slots once per
+  projection (crate-internal; label propagation uses them, and the eigenvector,
+  Katz and HITS kernels will).
+- Add **Louvain** community detection: `louvain` and `grust.algorithms.louvain`,
+  with `resolution`, `maxLevels`, `maxIterations`, `tolerance` and `seed`. It
+  works in every orientation: Newman's modularity on an undirected projection,
+  Leicht and Newman's directed modularity otherwise, from one formula. Parallel
+  edges add their weights; an undirected self-loop counts twice in its node's
+  strength, the convention that the two-node test pins. Communities are named by
+  their smallest member, as `wcc` names components, and the reported modularity
+  is recomputed from the projection rather than accumulated from the moves.
+  Moves are applied one at a time in row order or a seeded order, so the result
+  is reproducible and independent of the rayon pool; asynchronous parallel moves
+  are not. The oracle computes modularity from a dense matrix and the true
+  optimum by enumerating every partition: the result is never above the optimum,
+  never below its starting point, and equals the optimum on planted cliques.
+- Add **triangle count** and **local clustering coefficient**: `triangles`,
+  `grust.algorithms.triangleCount` and `grust.algorithms.localClusteringCoefficient`.
+  Triangles belong to the simple graph, so parallel edges count once and
+  self-loops are ignored, unlike `degree` and `kCore`. A coefficient is null,
+  not zero, where it is undefined. `maxDegree` leaves hubs out: such a node
+  reports `-1` and triangles through it are counted for no one. The
+  degree-ordered forward algorithm finds each triangle once and runs on the
+  caller's rayon pool over blocks of equal estimated work; the counts and the
+  work charged are identical at any pool width, which a test checks at 1, 2, 3
+  and 8 threads. The oracle is the O(n^3) definition over every simple graph on
+  six nodes and every four-node multigraph with loops.
+- `grust-algorithms` gains a default `parallel` feature (rayon). A kernel runs on
+  whatever pool the caller installs; without the feature it runs sequentially
+  with the same results.
+- Add **k-core decomposition**, `k_core` and `grust.algorithms.kCore`: bucket
+  peeling in O(V + A), returning `coreValue` per node and the graph's
+  `degeneracy`. Degree counts parallel edges with multiplicity and ignores
+  self-loops. It is defined on undirected graphs and rejects any other
+  orientation instead of symmetrizing silently. The test oracle applies the
+  definition by brute force to all 1,458 four-node multigraphs with up to two
+  edges per pair and to every simple graph on five nodes.
+- Add `NodeTable`, a node-aligned result with typed named columns and repeated
+  whole-result scalars, with one Arrow adapter and one row adapter. Kernels that
+  answer "a value per node" hand it their buffers without copying, so the rest of
+  the analytics catalog needs no adapter code of its own.
+- The workspace CI job tests `grust-ladybug` on its own. It had failed on every
+  push: LadybugDB's prebuilt library bundles zstd, and the unified all-features
+  build linked `zstd-sys` into the same test binary, which `rust-lld` rejects.
+- `grust-algorithm-procedures` gains `run_on_projection(name, &GraphProjection,
+  &ValidatedArguments)`, `projection_options(&ValidatedArguments)` and
+  `projection_kernel_names()`, behind a new `arrow` feature the facade's `arrow`
+  feature forwards. A caller that already holds a projection runs any registered
+  kernel by name and receives its typed Arrow results, so an embedding such as
+  Nutmeg needs no per-algorithm dispatch and serves a kernel the day it is
+  registered. Registration and direct execution read one catalog, and a test
+  requires every kernel's Arrow columns to equal its declared outputs.
+  `projectionStats` and `estimateCsr` are refused there: they are not kernels
+  over a projection.
 ## 0.21.0 — Tadpole — 2026-09-18
 
 ### Cypher language

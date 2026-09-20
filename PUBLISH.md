@@ -65,6 +65,18 @@ scripts/verify-package-attribution.sh
 git diff --check
 ```
 
+On Linux, test `grust-ladybug` separately, as CI does: `cargo test --workspace
+--all-features --exclude grust-ladybug` and then `cargo test -p grust-ladybug`.
+LadybugDB's prebuilt library bundles zstd, and the unified all-features build
+links `zstd-sys` into the same test binary, which `rust-lld` rejects as
+duplicate symbols. macOS's linker accepts it, so the single command works there.
+
+The benchmark runner's offline tests (`cargo test --manifest-path
+benchmarks/lsqb/Cargo.toml`) read the pinned LSQB example dataset from
+`benchmarks/lsqb/upstream/lsqb`, which is not checked in. Run
+`benchmarks/lsqb/fetch-upstream.sh` first, as CI does: it downloads the pinned
+commit's archive and refuses it unless its size and SHA-256 match.
+
 Run [`scripts/integration-test.sh`](scripts/integration-test.sh) for affected
 live backends. A release that changes backend behavior should record the exact
 profile, service/image revisions, and any intentionally unrun backend. An

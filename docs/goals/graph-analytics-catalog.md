@@ -561,20 +561,128 @@ M4 (Tier A), then per milestone.** Each is a minor version: new public API.
   not hidden.
 - **Two implementations.** See D1.
 
-## Open decisions for the operator
+## Decisions (operator, 2026-09-20)
 
-- **D1** — one implementation in Grust, icecat ports only as differential
-  checks? (recommended: yes)
-- **D2** — Grust option names with a GDS alias table applied by Nutmeg?
-  (recommended: yes)
-- **D3** — Louvain/Leiden/triangles/k-core/bridges require an `Undirected`
-  projection in v1 and reject others? (recommended: yes; directed modularity
-  later)
-- **D4** — Dinic for max flow with Edmonds–Karp as its oracle? (recommended)
-- **D5** — `rayon` behind a `parallel` feature, thread count in
-  `ExecutionLimits`, decided at M2 with measurements? (recommended)
-- **D6** — group 35: port trainers, or hand features to an ML library under
-  Sail? (recommended: decide at M9, lean to the latter)
+- **D1 — one implementation, in `grust-algorithms`.** icecat gets a port only
+  where the benchmark wants a second independent implementation.
+- **D2 — Grust option names.** Nutmeg applies the GDS alias table.
+- **D3 — directed modularity now.** Louvain and Leiden accept every
+  orientation: undirected modularity on `Undirected` projections, Leicht–Newman
+  directed modularity otherwise. Triangles, k-core and the bridges family are
+  defined on undirected graphs only and still reject other orientations. This
+  supersedes the "require `Undirected` in v1" sentences in groups 1 and 7.
+- **D4 — Dinic for max flow**, Edmonds–Karp as its oracle (recommendation taken).
+- **D5 — rayon from the start.** Kernels are written parallel where the
+  algorithm allows, behind a `parallel` feature that is on by default, with the
+  thread count taken from `ExecutionLimits`. Rule 4 still binds: a kernel whose
+  parallel schedule cannot be made deterministic runs that phase sequentially.
+  Every parallel kernel keeps a one-thread path, and the one-thread result is
+  the oracle for the many-thread result. This supersedes P7's "sequential
+  first".
+- **D6 — group 35 decided at M9** (recommendation taken).
+
+## Notes from the build
+
+- **`NodeTable` (added with group 5) replaces P3's bespoke community type and
+  every other per-node result type.** A kernel returns a typed wrapper for Rust
+  callers (`KCore::core_values()`) and `into_table()` for the adapters; the Arrow
+  and row adapters have one arm for all of them. Communities are a `Node` column
+  (the canonical member's row). Pair-shaped results (node similarity, link
+  prediction) and edge-shaped results (bridges, spanning forest, flow) need the
+  same treatment once: a `PairTable` and an `EdgeTable`.
+- **`Meter`** (`meter.rs`) is the block-charging helper rule 5 asks for: `tick`
+  in the loop, `flush` before returning.
+- **Thread count comes from the caller's rayon pool**, not from
+  `ExecutionLimits`: adding a field there breaks 33 construction sites and every
+  downstream crate. A caller installs a pool; rule 4 makes the result identical
+  at any width, and tests run each parallel kernel in a one-thread and a
+  many-thread pool.
+- **Undirected-only kernels refuse a directed projection with a message that
+  contains "undirected".** Nutmeg's schema probe and Grust's catalog test both
+  rely on that word to retry on an undirected projection. Keep it.
+- `run_on_projection` matches names case-insensitively, as the registry does.
+- **Louvain's move phase is sequential by rule 4.** NetworKit's PLM moves nodes
+  asynchronously in parallel and is not reproducible. The kernel visits nodes in
+  row order or a seeded order and applies one move at a time. What can be
+  parallel later without touching the result: strength sums, coarsening's
+  per-community aggregation, the final modularity pass. Leiden (group 7) reuses
+  `Level`, `move_nodes`, `coarsen` and `modularity_of`; make them `pub(crate)`
+  there. `modularity_of` is group 22's kernel. `includeIntermediateCommunities`
+  waits for a list column on `NodeTable`.
+- **`parallel.rs` is the pattern for every parallel kernel**: split nodes into
+  contiguous blocks of equal estimated work (`balanced_ranges`), run one task per
+  block (`map_ranges`), combine in block order. Cross-block writes go through
+  atomic counters (`Buffer::filled_with`), never per-task vectors, so memory and
+  charged work do not depend on the pool width. Each task owns a `Meter`.
+  Triangles proves it: identical counts *and* identical work at 1, 2, 3, 8 threads.
+- **Per-source kernels use `parallel::ordered_blocks`.** Betweenness splits its
+  sources into fixed blocks of 64, runs `width()` blocks at a time, and merges
+  per-block vectors in block order: float sums and charged work are
+  bit-identical at any width, but live memory is one workspace per running
+  block, so it does grow with the pool. Closeness and harmonic (group 6) should
+  reuse it and `shortest::MinHeap` (now `pub(crate)`). Betweenness needs only
+  out-arcs: the backward pass rescans them instead of storing predecessors.
+  GDS's `samplingSeed` maps to `seed`; GDS does not rescale a sampled score and
+  Grust does, which Nutmeg's alias layer must state.
+- **Label propagation keeps the current label on a tie**, then the smallest.
+  The plan said "ties to the smallest"; keeping the current label is what makes
+  the undirected convergence argument go through (each change strictly raises
+  same-label edge weight), and the test asserts that convergence. It is the
+  first user of `GraphProjection::incoming()`.
+- **Pair results are a keyed `NodeTable`, not a new `PairTable`.**
+  `NodeTable::keyed(graph, "node1", rows)` makes a table of any length led by a
+  node column the kernel names; every later pair or list kernel (link
+  prediction, K-nearest neighbours, bridges, articulation points) uses it. A
+  zero-row table emits one empty Arrow batch so the schema is never lost.
+- **Node similarity dropped `candidateLimit`.** Every triple is charged, so the
+  work budget is already that guard. Without weights a neighbour set is a true
+  set; the oracle first shared the kernel's mistake of summing parallel unit
+  weights, and only the hand-computed case caught it. Keep hand-computed cases
+  beside every oracle.
+- **Edge-shaped rows lead with `sourceNodeId`.** A bare `edgeOrdinal` means
+  nothing to a Cypher caller, and a keyed table needs a node first, so bridges
+  and biconnected components return `sourceNodeId`, `targetNodeId`,
+  `edgeOrdinal` (then `componentId`). Spanning tree and max flow should do the
+  same.
+- **Iterative kernels pull, in fixed chunks.** `parallel::for_chunks` cuts a
+  vector into chunks of 4,096 whatever the pool, each node pulls its next value
+  from `incoming()`, and per-chunk partial sums are folded in chunk order. That
+  is what makes a float reduction bit-identical at any width; `balanced_ranges`
+  cannot, because its boundaries move with the width. `articleRank` is not done:
+  it is an option inside `pagerank.rs`, which is push-based and sequential and
+  which the Nutmeg agent may be parallelising. Do it when that file's owner is
+  settled, preferably by moving PageRank onto `spectral::pull`.
+- **Leiden returns the refined partition, always.** In the paper the final
+  answer is the move phase's partition of the last aggregate graph, which is
+  connected only because the loop ran until that partition was all singletons.
+  Under a level cap that is not so; returning the composition of refined
+  partitions keeps the guarantee unconditionally. Refinement is greedy (no
+  `theta`). `louvain.rs` exposes `Level`, `move_nodes` (now with an initial
+  partition), `renumber`, `coarsen`, `validate` and `finish` as `pub(super)`.
+- **Two-ended kernels use `Spec::with_target()`**: a second positional String
+  argument after `source`. Schema probes must pass different nodes for the two
+  (Grust's catalog test and Nutmeg's `probe_args` now do). Max flow did not need
+  P2's reverse-arc index: it builds its own residual CSR, grouped by tail, in
+  which each arc knows its pair.
+- **Vector results are `NodeColumn::Vector { values, dimension }`**: row-major
+  `f32`, Arrow `FixedSizeList<Float32>`, `Value::FloatArray` to Cypher. Node2Vec,
+  HashGNN, GraphSAGE and k-means centroids reuse it. A variable-length list
+  column (SLLPA's `communityIds`, Louvain's intermediate communities) is still
+  missing.
+- **Group 9 is blocked on a decision, not on effort.** Bellman–Ford needs a
+  projection that admits negative weights. Today `from_buffers` rejects them and
+  every kernel relies on that. Admitting them means (1) a way to ask for it —
+  a new field on `ProjectionOptions` breaks every literal construction of that
+  public struct, in Nutmeg too, so prefer a new `WeightSelection::SignedProperty`
+  variant; (2) a `signed` flag on `GraphProjection`; and (3) **every existing
+  kernel refusing a signed projection**, which edits the ten original kernel
+  files whose ownership is open in `codex-to-codex.md`. The safe central form
+  of (3) is one `GraphProjection::require_nonnegative()` called first in each
+  kernel, with a catalog test that runs every registered kernel on a signed
+  projection and demands `InvalidArguments` from all but `bellmanFord`. The
+  negative cycle is a result with a witness (P4), not an error. A\* needs P6
+  (latitude/longitude node properties) to be registered at all; a Rust-only
+  `astar` over `Fn(usize) -> f64` is possible now but reaches no caller.
 
 ## Progress ledger
 
@@ -582,11 +690,11 @@ Update in the same commit as the work. `—` not started, `wip`, `done <commit>`
 
 | Item | State | Item | State | Item | State |
 | --- | --- | --- | --- | --- | --- |
-| P1 | — | P2 | — | P3 | — |
-| P4 | — | P5 | — | P6 | — |
-| P7 | — | 1 Louvain | — | 2 Betweenness | — |
-| 3 Node similarity | — | 4 Triangles/LCC | — | 5 k-core | — |
-| 6 Closeness/harmonic | — | 7 Leiden | — | 8 Label propagation | — |
-| 9 A\*/Bellman–Ford | — | 10 Eigenvector family | — | 11 Bridges family | — |
-| 12 Spanning forest | — | 13 Max flow | — | 14 FastRP | — |
+| P1 | done (Grust and Nutmeg) | P2 | done (`incoming()`) | P3 | done (`NodeTable`) |
+| P4 | — | P5 | done (`random.rs`) | P6 | — |
+| P7 | done (`parallel.rs`) | 1 Louvain | done | 2 Betweenness | done |
+| 3 Node similarity | done | 4 Triangles/LCC | done | 5 k-core | done |
+| 6 Closeness/harmonic | done | 7 Leiden | done | 8 Label propagation | done |
+| 9 A\*/Bellman–Ford | blocked: see notes | 10 Eigenvector family | done except `articleRank` | 11 Bridges family | done |
+| 12 Spanning forest | done | 13 Max flow | done (`maxFlow`, `minCut`) | 14 FastRP | done |
 | 15–35 | — (see Tier B) | | | | |

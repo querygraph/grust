@@ -9,6 +9,11 @@ description = "Registry adapters for Grust's reusable property-graph algorithms.
 keywords.workspace = true
 categories.workspace = true
 
+[features]
+default = []
+# Typed Arrow results for callers that hold a projection (`run_on_projection`).
+arrow = ["grust-algorithms/arrow"]
+
 [dependencies]
 grust-algorithms = { version = "0.21.0", path = "../grust-algorithms" }
 grust-procedures = { version = "0.21.0", path = "../grust-procedures" }
@@ -16,7 +21,12 @@ grust-core = { version = "0.21.0", path = "../grust-core" }
 serde_json.workspace = true
 
 [dev-dependencies]
+arrow-array = "59.3.0"
 grust-cypher = { version = "0.21.0", path = "../grust-cypher" }
 
 [lints.rust]
 unsafe_code = "forbid"
+
+[[test]]
+name = "run_on_projection"
+required-features = ["arrow"]

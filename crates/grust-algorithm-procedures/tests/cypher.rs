@@ -261,3 +261,421 @@ fn degree_counts_and_strengths_use_projection_orientation() {
         ]
     );
 }
+
+#[test]
+fn k_core_is_an_ordinary_procedure_with_explicit_orientation() {
+    // The fixture's b<->c pair is two edges, so undirected b and c form a
+    // 2-core; a hangs off it, and the isolate has core 0.
+    assert_eq!(
+        run(
+            "CALL grust.algorithms.kCore({orientation: 'undirected'}) YIELD nodeId, coreValue, degeneracy RETURN nodeId, coreValue, degeneracy"
+        ),
+        vec![
+            vec![Value::String("a".into()), Value::Int(1), Value::Int(2)],
+            vec![Value::String("b".into()), Value::Int(2), Value::Int(2)],
+            vec![Value::String("c".into()), Value::Int(2), Value::Int(2)],
+            vec![
+                Value::String("isolate".into()),
+                Value::Int(0),
+                Value::Int(2)
+            ],
+        ]
+    );
+    // Aggregation over the result is ordinary Cypher.
+    assert_eq!(
+        run(
+            "CALL grust.algorithms.kCore({orientation: 'undirected'}) YIELD coreValue RETURN max(coreValue), count(coreValue)"
+        ),
+        vec![vec![Value::Int(2), Value::Int(4)]]
+    );
+}
+
+#[test]
+fn triangles_and_clustering_are_ordinary_procedures_on_the_simple_graph() {
+    // Undirected, the fixture is the path a-b-c with b-c doubled: no triangle,
+    // and the doubled edge does not invent one.
+    assert_eq!(
+        run(
+            "CALL grust.algorithms.triangleCount({orientation: 'undirected'}) YIELD nodeId, triangles, triangleCount RETURN nodeId, triangles, triangleCount"
+        ),
+        vec![
+            vec![Value::String("a".into()), Value::Int(0), Value::Int(0)],
+            vec![Value::String("b".into()), Value::Int(0), Value::Int(0)],
+            vec![Value::String("c".into()), Value::Int(0), Value::Int(0)],
+            vec![
+                Value::String("isolate".into()),
+                Value::Int(0),
+                Value::Int(0)
+            ],
+        ]
+    );
+    // b has two distinct neighbours and no triangle: coefficient 0. The others
+    // have fewer than two neighbours: no coefficient, which is null, not 0.
+    assert_eq!(
+        run(
+            "CALL grust.algorithms.localClusteringCoefficient({orientation: 'undirected'}) YIELD nodeId, coefficient RETURN nodeId, coefficient"
+        ),
+        vec![
+            vec![Value::String("a".into()), Value::Null],
+            vec![Value::String("b".into()), Value::Float(0.0)],
+            vec![Value::String("c".into()), Value::Null],
+            vec![Value::String("isolate".into()), Value::Null],
+        ]
+    );
+    // maxDegree 1 leaves b out: -1 triangles, no coefficient.
+    assert_eq!(
+        run(
+            "CALL grust.algorithms.triangleCount({orientation: 'undirected', maxDegree: 1}) YIELD nodeId, triangles RETURN nodeId, triangles"
+        )[1],
+        vec![Value::String("b".into()), Value::Int(-1)]
+    );
+}
+
+#[test]
+fn louvain_is_an_ordinary_procedure_in_every_orientation() {
+    // Undirected, the fixture is a-b with b-c doubled: the heavy pair b,c is one
+    // community and a joins it or not by modularity; the isolate stays alone.
+    let rows = run(
+        "CALL grust.algorithms.louvain({orientation: 'undirected'}) YIELD nodeId, communityId, modularity, converged RETURN nodeId, communityId, modularity, converged",
+    );
+    assert_eq!(rows.len(), 4);
+    assert_eq!(rows[1][1], rows[2][1], "b and c share a community");
+    assert_eq!(rows[3][1], Value::String("isolate".into()));
+    assert!(rows.iter().all(|row| row[3] == Value::Bool(true)));
+    // The default orientation is directed: Leicht-Newman modularity, not an error.
+    let directed =
+        run("CALL grust.algorithms.louvain() YIELD communityId RETURN count(communityId)");
+    assert_eq!(directed, vec![vec![Value::Int(4)]]);
+    // Options are named and typed; a huge resolution leaves every node alone.
+    assert_eq!(
+        run(
+            "CALL grust.algorithms.louvain({orientation: 'undirected', resolution: 1000000.0, seed: 7}) YIELD nodeId, communityId WHERE nodeId <> communityId RETURN count(nodeId)"
+        ),
+        vec![vec![Value::Int(0)]]
+    );
+}
+
+#[test]
+fn betweenness_is_an_ordinary_procedure_exact_or_sampled() {
+    // a-b, b-c doubled, and an isolate: only b lies between two other nodes.
+    let expected = vec![
+        vec![Value::String("a".into()), Value::Float(0.0)],
+        vec![Value::String("b".into()), Value::Float(1.0)],
+        vec![Value::String("c".into()), Value::Float(0.0)],
+        vec![Value::String("isolate".into()), Value::Float(0.0)],
+    ];
+    let query = |options: &str| {
+        run(&format!(
+            "CALL grust.algorithms.betweenness({options}) YIELD nodeId, score RETURN nodeId, score"
+        ))
+    };
+    assert_eq!(query("{orientation: 'undirected'}"), expected);
+    // A sample of every node is the exact answer.
+    assert_eq!(
+        query("{orientation: 'undirected', samplingSize: 4, seed: 3}"),
+        expected
+    );
+    // One pair of three possible: a-c, normalised by (n-1)(n-2)/2 = 3.
+    assert_eq!(
+        query("{orientation: 'undirected', normalized: true}")[1][1],
+        Value::Float(1.0 / 3.0)
+    );
+    assert!(
+        run_read_query_with_registry(
+            &graph(),
+            "default",
+            "CALL grust.algorithms.betweenness({samplingSize: 0}) YIELD score RETURN score",
+            &CypherParameters::new(),
+            &registry(),
+        )
+        .is_err()
+    );
+}
+
+#[test]
+fn closeness_and_harmonic_are_ordinary_procedures() {
+    // Undirected a-b-c plus an isolate, so n-1 = 3.
+    let scores = |call: &str| {
+        run(&format!(
+            "CALL grust.algorithms.{call} YIELD nodeId, score RETURN nodeId, score"
+        ))
+        .into_iter()
+        .map(|row| row[1].clone())
+        .collect::<Vec<_>>()
+    };
+    let floats = |values: [f64; 4]| values.map(Value::Float).to_vec();
+    assert_eq!(
+        scores("closeness({orientation: 'undirected'})"),
+        floats([2.0 / 3.0, 1.0, 2.0 / 3.0, 0.0])
+    );
+    assert_eq!(
+        scores("closeness({orientation: 'undirected', useWassermanFaust: true})"),
+        floats([4.0 / 9.0, 2.0 / 3.0, 4.0 / 9.0, 0.0])
+    );
+    assert_eq!(
+        scores("harmonic({orientation: 'undirected', normalized: false})"),
+        floats([1.5, 2.0, 1.5, 0.0])
+    );
+    assert_eq!(
+        scores("harmonic({orientation: 'undirected'})"),
+        floats([0.5, 2.0 / 3.0, 0.5, 0.0])
+    );
+}
+
+#[test]
+fn label_propagation_is_an_ordinary_procedure() {
+    let rows = run(
+        "CALL grust.algorithms.labelPropagation({orientation: 'undirected', maxIterations: 20, seed: 5}) YIELD nodeId, communityId, iterations, converged RETURN nodeId, communityId, converged",
+    );
+    // a-b-c is one connected piece and ends as one community; the isolate is its own.
+    let community = |row: usize| rows[row][1].clone();
+    assert_eq!(community(0), community(1));
+    assert_eq!(community(1), community(2));
+    assert_eq!(community(3), Value::String("isolate".into()));
+    assert!(rows.iter().all(|row| row[2] == Value::Bool(true)));
+    // Directed by default, and still an answer rather than an error.
+    assert_eq!(
+        run("CALL grust.algorithms.labelPropagation() YIELD communityId RETURN count(communityId)"),
+        vec![vec![Value::Int(4)]]
+    );
+}
+
+#[test]
+fn node_similarity_returns_pair_rows_through_ordinary_cypher() {
+    // Undirected a-b-c: a and c share their only neighbour, b.
+    let pairs = vec![
+        vec![
+            Value::String("a".into()),
+            Value::String("c".into()),
+            Value::Float(1.0),
+        ],
+        vec![
+            Value::String("c".into()),
+            Value::String("a".into()),
+            Value::Float(1.0),
+        ],
+    ];
+    assert_eq!(
+        run(
+            "CALL grust.algorithms.nodeSimilarity({orientation: 'undirected'}) YIELD node1, node2, similarity RETURN node1, node2, similarity"
+        ),
+        pairs
+    );
+    assert_eq!(
+        run(
+            "CALL grust.algorithms.nodeSimilarity({orientation: 'undirected', metric: 'cosine', topN: 1}) YIELD node1, node2, similarity RETURN node1, node2, similarity"
+        ),
+        pairs[..1]
+    );
+    // Directed, a and c still both point at b, and b shares nothing with them.
+    assert_eq!(
+        run(
+            "CALL grust.algorithms.nodeSimilarity() YIELD node1, node2, similarity RETURN node1, node2, similarity"
+        ),
+        pairs
+    );
+    // A degree floor of two leaves no one to compare.
+    assert_eq!(
+        run(
+            "CALL grust.algorithms.nodeSimilarity({degreeCutoff: 2}) YIELD node1 RETURN count(node1)"
+        ),
+        vec![vec![Value::Int(0)]]
+    );
+    assert!(
+        run_read_query_with_registry(
+            &graph(),
+            "default",
+            "CALL grust.algorithms.nodeSimilarity({metric: 'pearson'}) YIELD node1 RETURN node1",
+            &CypherParameters::new(),
+            &registry(),
+        )
+        .is_err()
+    );
+}
+
+#[test]
+fn bridges_articulation_points_and_components_are_ordinary_procedures() {
+    // Undirected: a-b is edge 0; b-c and c-b are edges 1 and 2, a cycle of two.
+    let text = |value: &str| Value::String(value.into());
+    assert_eq!(
+        run(
+            "CALL grust.algorithms.bridges({orientation: 'undirected'}) YIELD sourceNodeId, targetNodeId, edgeOrdinal RETURN sourceNodeId, targetNodeId, edgeOrdinal"
+        ),
+        vec![vec![text("a"), text("b"), Value::Int(0)]]
+    );
+    assert_eq!(
+        run(
+            "CALL grust.algorithms.articulationPoints({orientation: 'undirected'}) YIELD nodeId RETURN nodeId"
+        ),
+        vec![vec![text("b")]]
+    );
+    assert_eq!(
+        run(
+            "CALL grust.algorithms.biconnectedComponents({orientation: 'undirected'}) YIELD edgeOrdinal, componentId RETURN edgeOrdinal, componentId"
+        ),
+        vec![
+            vec![Value::Int(0), Value::Int(0)],
+            vec![Value::Int(1), Value::Int(1)],
+            vec![Value::Int(2), Value::Int(1)],
+        ]
+    );
+    assert!(
+        run_read_query_with_registry(
+            &graph(),
+            "default",
+            "CALL grust.algorithms.bridges() YIELD edgeOrdinal RETURN edgeOrdinal",
+            &CypherParameters::new(),
+            &registry(),
+        )
+        .unwrap_err()
+        .to_string()
+        .contains("undirected")
+    );
+}
+
+#[test]
+fn spanning_tree_is_an_ordinary_procedure() {
+    // Undirected with costs: a-b 2.0, b-c 0.5, c-b 0.0. The lighter of the
+    // parallel pair is taken.
+    let query = |options: &str| {
+        run(&format!(
+            "CALL grust.algorithms.spanningTree({{orientation: 'undirected', weightProperty: 'cost'{options}}}) YIELD edgeOrdinal, weight, totalWeight RETURN edgeOrdinal, weight, totalWeight"
+        ))
+    };
+    assert_eq!(
+        query(""),
+        vec![
+            vec![Value::Int(0), Value::Float(2.0), Value::Float(2.0)],
+            vec![Value::Int(2), Value::Float(0.0), Value::Float(2.0)],
+        ]
+    );
+    assert_eq!(
+        query(", objective: 'maximum'"),
+        vec![
+            vec![Value::Int(0), Value::Float(2.0), Value::Float(2.5)],
+            vec![Value::Int(1), Value::Float(0.5), Value::Float(2.5)],
+        ]
+    );
+    // The isolate's component has no edges.
+    assert!(query(", sourceNode: 'isolate'").is_empty());
+    assert_eq!(query(", sourceNode: 'c'").len(), 2);
+}
+
+#[test]
+fn eigenvector_katz_and_hits_are_ordinary_procedures_with_convergence_evidence() {
+    // Directed a->b, b->c, c->b. Nothing points at a, so a = 1; b and c solve
+    // b = 1 + 0.25(a + c) and c = 1 + 0.25 b: 1.6 and 1.4.
+    let rows = run(
+        "CALL grust.algorithms.katz({alpha: 0.25, tolerance: 0.000000000001}) YIELD nodeId, score, converged RETURN nodeId, score, converged",
+    );
+    let score = |row: usize| match rows[row][1] {
+        Value::Float(value) => value,
+        ref other => panic!("{other:?}"),
+    };
+    assert!(rows.iter().all(|row| row[2] == Value::Bool(true)));
+    assert_eq!(score(0), 1.0);
+    assert!((score(1) - 1.6).abs() < 1e-9 && (score(2) - 1.4).abs() < 1e-9);
+    assert_eq!(score(3), 1.0);
+
+    // HITS: b is pointed at by a and c, so it is the authority.
+    let rows = run(
+        "CALL grust.algorithms.hits() YIELD nodeId, hub, authority, converged WHERE authority > 0.9 RETURN nodeId, converged",
+    );
+    assert_eq!(
+        rows,
+        vec![vec![Value::String("b".into()), Value::Bool(true)]]
+    );
+
+    // Eigenvector: a limit of one iteration is reported, not hidden.
+    let rows = run(
+        "CALL grust.algorithms.eigenvector({orientation: 'undirected', maxIterations: 1}) YIELD iterations, converged RETURN DISTINCT iterations, converged",
+    );
+    assert_eq!(rows, vec![vec![Value::Int(1), Value::Bool(false)]]);
+}
+
+#[test]
+fn leiden_is_an_ordinary_procedure_with_louvains_shape() {
+    let rows = run(
+        "CALL grust.algorithms.leiden({orientation: 'undirected', seed: 7}) YIELD nodeId, communityId, modularity, converged RETURN nodeId, communityId, modularity, converged",
+    );
+    assert_eq!(rows.len(), 4);
+    assert_eq!(rows[1][1], rows[2][1], "b and c share a community");
+    assert_eq!(rows[3][1], Value::String("isolate".into()));
+    assert!(rows.iter().all(|row| row[3] == Value::Bool(true)));
+    // On this graph the two searches agree.
+    let plain = run(
+        "CALL grust.algorithms.louvain({orientation: 'undirected', seed: 7}) YIELD nodeId, communityId, modularity, converged RETURN nodeId, communityId, modularity, converged",
+    );
+    assert_eq!(rows, plain);
+}
+
+#[test]
+fn max_flow_and_min_cut_take_a_source_and_a_target() {
+    // Directed with costs as capacities: a->b 2.0, b->c 0.5, c->b 0.0.
+    let text = |value: &str| Value::String(value.into());
+    assert_eq!(
+        run(
+            "CALL grust.algorithms.maxFlow('a', 'c', {weightProperty: 'cost'}) YIELD sourceNodeId, targetNodeId, edgeOrdinal, flow, maxFlow RETURN sourceNodeId, targetNodeId, edgeOrdinal, flow, maxFlow"
+        ),
+        vec![
+            vec![
+                text("a"),
+                text("b"),
+                Value::Int(0),
+                Value::Float(0.5),
+                Value::Float(0.5)
+            ],
+            vec![
+                text("b"),
+                text("c"),
+                Value::Int(1),
+                Value::Float(0.5),
+                Value::Float(0.5)
+            ],
+        ]
+    );
+    // The bottleneck b->c is the cut: a and b stay with the source.
+    assert_eq!(
+        run(
+            "CALL grust.algorithms.minCut('a', 'c', {weightProperty: 'cost'}) YIELD nodeId, sourceSide WHERE sourceSide RETURN nodeId"
+        ),
+        vec![vec![text("a")], vec![text("b")]]
+    );
+    // Nothing reaches the isolate: no rows, and that is an answer.
+    assert!(run("CALL grust.algorithms.maxFlow('a', 'isolate') YIELD flow RETURN flow").is_empty());
+    assert!(
+        run_read_query_with_registry(
+            &graph(),
+            "default",
+            "CALL grust.algorithms.maxFlow('a', 'a') YIELD flow RETURN flow",
+            &CypherParameters::new(),
+            &registry(),
+        )
+        .is_err()
+    );
+}
+
+#[test]
+fn fast_rp_returns_an_embedding_list_per_node() {
+    let rows = run(
+        "CALL grust.algorithms.fastRP({orientation: 'undirected', embeddingDimension: 16, seed: 4}) YIELD nodeId, embedding RETURN nodeId, embedding",
+    );
+    assert_eq!(rows.len(), 4);
+    let vector = |row: usize| match &rows[row][1] {
+        Value::FloatArray(values) => values.clone(),
+        other => panic!("{other:?}"),
+    };
+    assert!((0..4).all(|row| vector(row).len() == 16));
+    // The isolate averages nothing, so with no self-influence it is zero.
+    assert!(vector(3).iter().all(|&value| value == 0.0));
+    assert!(vector(1).iter().any(|&value| value != 0.0));
+    // Seeded: the same call gives the same list; another seed does not.
+    let again = run(
+        "CALL grust.algorithms.fastRP({orientation: 'undirected', embeddingDimension: 16, seed: 4}) YIELD nodeId, embedding RETURN nodeId, embedding",
+    );
+    assert_eq!(rows, again);
+    let other = run(
+        "CALL grust.algorithms.fastRP({orientation: 'undirected', embeddingDimension: 16, seed: 5, iterationWeights: [1.0]}) YIELD embedding RETURN embedding",
+    );
+    assert_ne!(other[1][0], rows[1][1]);
+}

@@ -135,6 +135,52 @@ impl Adjacency {
     }
 }
 
+impl Adjacency {
+    /// The same arcs grouped by target: row `v` lists the sources of arcs into
+    /// `v`, each with its weight and original edge slot. Within a row, arcs keep
+    /// the order of their sources, so the result is a function of this CSR alone.
+    pub(crate) fn transposed(&self, context: &ExecutionContext) -> Result<Adjacency> {
+        let n = self.offsets.values.len() - 1;
+        let arcs = self.targets.values.len();
+        let mut offsets = Buffer::filled(n + 1, 0usize, context)?;
+        for chunk in self.targets.values.chunks(1024) {
+            context.charge_work(chunk.len())?;
+            for &target in chunk {
+                offsets.values[target + 1] += 1;
+            }
+        }
+        prefix(&mut offsets.values, context)?;
+        let mut positions = Buffer::capacity(n, context)?;
+        positions.values.extend_from_slice(&offsets.values[..n]);
+        let mut targets = Buffer::filled(arcs, 0usize, context)?;
+        let mut edge_slots = Buffer::filled(arcs, 0usize, context)?;
+        let mut weights = self
+            .weights
+            .as_ref()
+            .map(|_| Buffer::filled(arcs, 0.0f64, context))
+            .transpose()?;
+        for source in 0..n {
+            let range = self.range(source);
+            context.charge_work(1 + range.len())?;
+            for arc in range {
+                let slot = positions.values[self.targets.values[arc]];
+                positions.values[self.targets.values[arc]] += 1;
+                targets.values[slot] = source;
+                edge_slots.values[slot] = self.edge_slots.values[arc];
+                if let (Some(into), Some(from)) = (&mut weights, &self.weights) {
+                    into.values[slot] = from.values[arc];
+                }
+            }
+        }
+        Ok(Adjacency {
+            offsets,
+            targets,
+            edge_slots,
+            weights,
+        })
+    }
+}
+
 fn prefix(offsets: &mut [usize], context: &ExecutionContext) -> Result<()> {
     for index in 1..offsets.len() {
         context.charge_work(1)?;

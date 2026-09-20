@@ -7,9 +7,35 @@ pub(super) enum AlgorithmOutput {
     Components(algorithms::Components),
     PageRank(algorithms::PageRank),
     Degrees(algorithms::Degrees),
-    Paths(algorithms::PathCursor),
+    Paths(algorithms::ShortestPaths),
+    /// Paths being streamed as rows; never produced by a kernel.
+    PathRows(algorithms::PathCursor),
     Order(algorithms::NodeOrder),
     Topology(algorithms::TopologicalOrder),
+    /// A value per node: the shape most of the catalog returns.
+    Table(algorithms::NodeTable),
+}
+
+#[cfg(feature = "arrow")]
+impl AlgorithmOutput {
+    /// The same result as typed Arrow, for callers that hold a projection.
+    pub(super) fn into_arrow_results(self) -> Result<algorithms::ArrowResultCursor> {
+        Ok(match self {
+            Self::Distances(result) => result.into_arrow_results(),
+            Self::Components(result) => result.into_arrow_results(),
+            Self::PageRank(result) => result.into_arrow_results(),
+            Self::Degrees(result) => result.into_arrow_results(),
+            Self::Paths(result) => result.into_arrow_results()?,
+            Self::Order(result) => result.into_arrow_results(),
+            Self::Topology(result) => result.into_arrow_results(),
+            Self::Table(result) => result.into_arrow_results(),
+            Self::PathRows(_) => {
+                return Err(ProcedureError::OutputContract(
+                    "a kernel returned a row cursor instead of its result".into(),
+                ));
+            }
+        })
+    }
 }
 
 pub(super) struct AlgorithmCursor {
@@ -19,12 +45,16 @@ pub(super) struct AlgorithmCursor {
 }
 
 impl AlgorithmCursor {
-    pub(super) fn new(graph: algorithms::GraphProjection, output: AlgorithmOutput) -> Self {
-        Self {
+    pub(super) fn new(graph: algorithms::GraphProjection, output: AlgorithmOutput) -> Result<Self> {
+        let output = match output {
+            AlgorithmOutput::Paths(paths) => AlgorithmOutput::PathRows(paths.into_cursor()?),
+            other => other,
+        };
+        Ok(Self {
             graph,
             output,
             next: 0,
-        }
+        })
     }
 }
 
@@ -32,7 +62,7 @@ impl ProcedureCursor for AlgorithmCursor {
     fn next_batch(&mut self) -> Result<Option<ProcedureBatch>> {
         let context = self.graph.execution();
         context.checkpoint()?;
-        if let AlgorithmOutput::Paths(cursor) = &mut self.output {
+        if let AlgorithmOutput::PathRows(cursor) = &mut self.output {
             return match cursor.next_path()? {
                 Some(path) => path_batch(&self.graph, path).map(Some),
                 None => Ok(None),
@@ -48,6 +78,7 @@ impl ProcedureCursor for AlgorithmCursor {
         }
         let count = match &self.output {
             AlgorithmOutput::Order(result) => result.values().len(),
+            AlgorithmOutput::Table(table) => table.rows(),
             _ => self.graph.node_count(),
         };
         if self.next == count {
@@ -57,6 +88,7 @@ impl ProcedureCursor for AlgorithmCursor {
         context.charge_work(1)?;
         let node = match &self.output {
             AlgorithmOutput::Order(result) => result.values()[index],
+            AlgorithmOutput::Table(table) => table.key(index),
             _ => index,
         };
         let id = self.graph.node_ids()[node].as_str();
@@ -68,7 +100,21 @@ impl ProcedureCursor for AlgorithmCursor {
             ),
             AlgorithmOutput::PageRank(_) => (5, 0),
             AlgorithmOutput::Degrees(_) => (3, 0),
-            AlgorithmOutput::Paths(_) | AlgorithmOutput::Topology(_) => {
+            AlgorithmOutput::Table(table) => (
+                1 + table.width(),
+                (0..table.width())
+                    .map(|column| match table.value(column, index) {
+                        algorithms::TableValue::Node(id) => id.as_str().len(),
+                        algorithms::TableValue::Vector(vector) => {
+                            vector.len().saturating_mul(size_of::<f64>())
+                        }
+                        _ => 0,
+                    })
+                    .sum(),
+            ),
+            AlgorithmOutput::Paths(_)
+            | AlgorithmOutput::PathRows(_)
+            | AlgorithmOutput::Topology(_) => {
                 return Err(ProcedureError::OutputContract(
                     "path output reached scalar adapter".into(),
                 ));
@@ -105,13 +151,32 @@ impl ProcedureCursor for AlgorithmCursor {
                         .map_or(Value::Null, |values| Value::Float(values[index])),
                 );
             }
+            AlgorithmOutput::Table(table) => {
+                for column in 0..table.width() {
+                    row.push(match table.value(column, index) {
+                        algorithms::TableValue::Integer(value) => Value::Int(value),
+                        algorithms::TableValue::Number(value) => Value::Float(value),
+                        algorithms::TableValue::Boolean(value) => Value::Bool(value),
+                        algorithms::TableValue::Node(id) => Value::String(id.as_str().into()),
+                        algorithms::TableValue::Vector(vector) => {
+                            let mut values = Vec::new();
+                            values.try_reserve_exact(vector.len())?;
+                            values.extend(vector.iter().map(|&value| f64::from(value)));
+                            Value::FloatArray(values)
+                        }
+                        algorithms::TableValue::Null => Value::Null,
+                    });
+                }
+            }
             AlgorithmOutput::PageRank(result) => {
                 row.push(Value::Float(result.values()[index]));
                 row.push(Value::Int(integer(result.iterations())?));
                 row.push(Value::Bool(result.converged()));
                 row.push(Value::Float(result.residual()));
             }
-            AlgorithmOutput::Paths(_) | AlgorithmOutput::Topology(_) => {
+            AlgorithmOutput::Paths(_)
+            | AlgorithmOutput::PathRows(_)
+            | AlgorithmOutput::Topology(_) => {
                 return Err(ProcedureError::OutputContract(
                     "path output reached scalar adapter".into(),
                 ));
