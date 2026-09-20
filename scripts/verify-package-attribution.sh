@@ -6,7 +6,11 @@ cd "$repo"
 
 package_id=$(cargo pkgid -p grust-graph)
 version=${package_id##*@}
-archive="target/package/grust-graph-${version}.crate"
+# Respect CARGO_TARGET_DIR: a gate that gives each worktree its own target
+# directory writes the archive there, and this script used to look only in
+# ./target and report the archive missing when packaging had in fact succeeded.
+target=${CARGO_TARGET_DIR:-target}
+archive="${target}/package/grust-graph-${version}.crate"
 
 if [[ ! -f "$archive" ]]; then
   echo "missing packaged facade archive: $archive" >&2
