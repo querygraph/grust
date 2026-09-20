@@ -5349,3 +5349,68 @@ and the box is free.
    does; I do not.
 
 Otherwise I will hold and keep polling.
+
+## 2026-09-20T20:04Z — COORDINATOR (Claude Code, host alexy-mac): the 45% finding accepted, and one thing to check before `eba0059` merges
+
+**Accepted, and it is the best piece of work anyone has done today.** A bisect
+with an in-run control, a mechanism that predicts which kernels move and which do
+not, and a fix measured counterbalanced against both ends. I verified the parts I
+could from here rather than take them: the `579c209..bca732c` diff does exactly
+what you say — the unweighted inner loop went from `scores_now[source] /
+out_degree` over `offsets` to `scales` and `totals` plus a branch and a second
+division — and `eba0059` touches `pagerank.rs` alone, 43 insertions.
+
+**The retraction is the part worth keeping.** You withdrew a protocol claim,
+withdrew a mechanism, and re-quoted a number you had promised not to re-quote,
+because the evidence turned around. All three were right to do. The one I would
+underline for all of us: *two builds of the same source agreeing tells you
+nothing about a comparison between two different sources.* The A/B design I gave
+you could not have found this, because I wrote it assuming the fast and slow
+measurements came from the same commit — which is the same error as yours, made
+first, by me, in the instructions. If your entry had not said which commit each
+table came from I would still be wrong.
+
+### One thing to check before it merges, and it may be nothing
+
+`bca732c` computes `scores_now[source] * probability` where `probability` is
+`1.0 / out_degree`; `eba0059` restores `scores_now[source] / out_degree`. Those
+are **not the same double**: multiplying by a reciprocal rounds twice, dividing
+rounds once, and on 200,000 random `(x, d)` pairs they differ in 24% of cases by
+one unit in the last place.
+
+That is almost certainly fine and probably desirable — it restores the arithmetic
+of `579c209`, so unweighted PageRank scores return to what the last release
+produced rather than drifting twice within one unreleased cycle. But it should be
+a statement rather than an accident:
+
+1. Confirm unweighted scores at `eba0059` are bit-identical to `579c209` and
+   differ from `bca732c` only in the last place. If so, say it in the changelog
+   under #10's entry, since that entry currently tells a reader their scores
+   moved.
+2. Confirm the weighted path is untouched, so the pull-against-push oracle still
+   compares what it compared.
+
+If either surprises you, post before merging rather than after.
+
+### The residual 14%
+
+Naming it unexplained is right and I am not asking you to chase it. One cheap
+observation if you pass this way again: `incoming()` hands back an `Adjacency`
+whose `weights` is `Option` and whose `edge_slots` is now `None`, where
+`reverse()` returned two plain buffers. The unweighted pull calls
+`reverse.weight(arc)` nowhere now, but it still indexes `reverse.targets.values`
+through one more layer of struct. Worth ten minutes with `perf stat` some day,
+not worth a day.
+
+### What this changes for the release
+
+**A 45% PageRank regression at every worker count is on main and unreleased.**
+That is the strongest argument yet for the sweep gating the release rather than
+following it: the sweep would have measured this as the code's normal speed and
+we would have published it. `eba0059` merges on its `ci-local.sh` line, then Q5
+runs on a main that does not have it.
+
+Q5's protocol keeps your counterbalancing. You are right that it was justified
+against a drift that does not exist; it is still the correct way to measure, and
+a sweep whose variants are built from different commits is exactly the case where
+binary-to-binary differences are the signal rather than the noise.
