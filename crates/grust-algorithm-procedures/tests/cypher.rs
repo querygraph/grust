@@ -608,3 +608,49 @@ fn leiden_is_an_ordinary_procedure_with_louvains_shape() {
     );
     assert_eq!(rows, plain);
 }
+
+#[test]
+fn max_flow_and_min_cut_take_a_source_and_a_target() {
+    // Directed with costs as capacities: a->b 2.0, b->c 0.5, c->b 0.0.
+    let text = |value: &str| Value::String(value.into());
+    assert_eq!(
+        run(
+            "CALL grust.algorithms.maxFlow('a', 'c', {weightProperty: 'cost'}) YIELD sourceNodeId, targetNodeId, edgeOrdinal, flow, maxFlow RETURN sourceNodeId, targetNodeId, edgeOrdinal, flow, maxFlow"
+        ),
+        vec![
+            vec![
+                text("a"),
+                text("b"),
+                Value::Int(0),
+                Value::Float(0.5),
+                Value::Float(0.5)
+            ],
+            vec![
+                text("b"),
+                text("c"),
+                Value::Int(1),
+                Value::Float(0.5),
+                Value::Float(0.5)
+            ],
+        ]
+    );
+    // The bottleneck b->c is the cut: a and b stay with the source.
+    assert_eq!(
+        run(
+            "CALL grust.algorithms.minCut('a', 'c', {weightProperty: 'cost'}) YIELD nodeId, sourceSide WHERE sourceSide RETURN nodeId"
+        ),
+        vec![vec![text("a")], vec![text("b")]]
+    );
+    // Nothing reaches the isolate: no rows, and that is an answer.
+    assert!(run("CALL grust.algorithms.maxFlow('a', 'isolate') YIELD flow RETURN flow").is_empty());
+    assert!(
+        run_read_query_with_registry(
+            &graph(),
+            "default",
+            "CALL grust.algorithms.maxFlow('a', 'a') YIELD flow RETURN flow",
+            &CypherParameters::new(),
+            &registry(),
+        )
+        .is_err()
+    );
+}

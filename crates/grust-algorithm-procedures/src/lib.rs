@@ -414,6 +414,44 @@ fn catalog() -> Vec<Spec> {
             ))
         },
     ));
+    specs.push(
+        Spec::new(
+            "maxFlow",
+            Some(ValueType::String),
+            vec![
+                field("sourceNodeId", ValueType::String),
+                field("targetNodeId", ValueType::String),
+                field("edgeOrdinal", ValueType::Integer),
+                field("flow", ValueType::Number),
+                field("maxFlow", ValueType::Number),
+            ],
+            vec![],
+            |graph, args| {
+                Ok(AlgorithmOutput::Table(
+                    algorithms::max_flow(graph, source(args)?, target(args)?)?.into_flow_table()?,
+                ))
+            },
+        )
+        .with_target(),
+    );
+    specs.push(
+        Spec::new(
+            "minCut",
+            Some(ValueType::String),
+            vec![
+                field("nodeId", ValueType::String),
+                field("sourceSide", ValueType::Boolean),
+                field("maxFlow", ValueType::Number),
+            ],
+            vec![],
+            |graph, args| {
+                Ok(AlgorithmOutput::Table(
+                    algorithms::max_flow(graph, source(args)?, target(args)?)?.into_cut_table()?,
+                ))
+            },
+        )
+        .with_target(),
+    );
     specs.push(Spec::new(
         "leiden",
         None,
@@ -473,6 +511,8 @@ struct Provider {
 struct Spec {
     name: &'static str,
     source: Option<ValueType>,
+    /// A second positional node id, `target`, after `source`.
+    target: bool,
     outputs: Vec<Field>,
     extra_options: Vec<OptionField>,
     kernel: Kernel,
@@ -489,10 +529,18 @@ impl Spec {
         Self {
             name,
             source,
+            target: false,
             outputs,
             extra_options,
             kernel,
         }
+    }
+}
+
+impl Spec {
+    fn with_target(mut self) -> Self {
+        self.target = true;
+        self
     }
 }
 
@@ -540,6 +588,7 @@ fn register(builder: &mut RegistryBuilder, spec: Spec) -> Result<()> {
     let Spec {
         name,
         source,
+        target,
         outputs,
         extra_options,
         kernel,
@@ -555,6 +604,12 @@ fn register(builder: &mut RegistryBuilder, spec: Spec) -> Result<()> {
                 },
                 source_type,
             ),
+            default: None,
+        });
+    }
+    if target {
+        arguments.push(Argument {
+            field: field("target", ValueType::String),
             default: None,
         });
     }
@@ -597,6 +652,15 @@ impl ProcedureProvider for Provider {
         let graph = preparation::prepare(snapshot, options::projection(&args)?, &invocation)?;
         let output = (self.kernel)(&graph, &args)?;
         Ok(Box::new(AlgorithmCursor::new(graph, output)?))
+    }
+}
+
+fn target(args: &ValidatedArguments) -> Result<&str> {
+    match args.positional().get(1) {
+        Some(Value::String(target)) => Ok(target),
+        _ => Err(ProcedureError::InvalidArguments(
+            "target must be an external node ID string".into(),
+        )),
     }
 }
 

@@ -1607,3 +1607,15 @@ Catalog status: 10 original projection kernels + `kCore`, `triangleCount`,
 `articulationPoints`, `biconnectedComponents`, `spanningTree`, `eigenvector`,
 `katz`, `hits` = 27 projection kernels, counted from the registry. M4 is next: Bellman-Ford and A*,
 max flow, FastRP.
+
+### 2026-09-20 — Grust catalog branch: `maxFlow`, `minCut`; a Nutmeg change was needed
+
+These are the first kernels with **two** positional node arguments, `source`
+and `target`, and they refuse the same node twice. Your schema probe passed
+`"a"` for every String argument, so `every_algorithm_grust_registers_...`
+failed. I fixed it on `run-on-projection` (`35fa2d0`): successive positional
+arguments get `a`, `b`, `c`. Alias table: GDS names these `sourceNodes` /
+`targetNodes` and takes lists with `capacityProperty`; Grust takes one of each
+and reads capacity from `weightProperty`. Rows: `maxFlow` is per edge carrying
+flow (`sourceNodeId`, `targetNodeId`, `edgeOrdinal`, `flow`, `maxFlow`), oriented
+the way the flow runs; `minCut` is per node (`nodeId`, `sourceSide`, `maxFlow`).

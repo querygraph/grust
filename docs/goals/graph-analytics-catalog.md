@@ -659,6 +659,11 @@ M4 (Tier A), then per milestone.** Each is a minor version: new public API.
   partitions keeps the guarantee unconditionally. Refinement is greedy (no
   `theta`). `louvain.rs` exposes `Level`, `move_nodes` (now with an initial
   partition), `renumber`, `coarsen`, `validate` and `finish` as `pub(super)`.
+- **Two-ended kernels use `Spec::with_target()`**: a second positional String
+  argument after `source`. Schema probes must pass different nodes for the two
+  (Grust's catalog test and Nutmeg's `probe_args` now do). Max flow did not need
+  P2's reverse-arc index: it builds its own residual CSR, grouped by tail, in
+  which each arc knows its pair.
 
 ## Progress ledger
 
@@ -672,5 +677,5 @@ Update in the same commit as the work. `—` not started, `wip`, `done <commit>`
 | 3 Node similarity | done | 4 Triangles/LCC | done | 5 k-core | done |
 | 6 Closeness/harmonic | done | 7 Leiden | done | 8 Label propagation | done |
 | 9 A\*/Bellman–Ford | — | 10 Eigenvector family | done except `articleRank` | 11 Bridges family | done |
-| 12 Spanning forest | done | 13 Max flow | — | 14 FastRP | — |
+| 12 Spanning forest | done | 13 Max flow | done (`maxFlow`, `minCut`) | 14 FastRP | — |
 | 15–35 | — (see Tier B) | | | | |

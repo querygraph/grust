@@ -69,9 +69,11 @@ fn every_registered_projection_kernel_runs_by_name_with_its_declared_columns() {
         let definition = resolved.definition();
         // The configuration map is always last; a source argument, if any, precedes it.
         let mut args = Vec::new();
+        // Successive node arguments name different nodes: a flow needs two ends.
+        let mut ids = ["a", "b", "c"].into_iter();
         for argument in &definition.arguments {
             args.push(match argument.field.value_type {
-                ValueType::String => Value::from("a"),
+                ValueType::String => Value::from(ids.next().unwrap()),
                 ValueType::Strings => Value::StringArray(vec!["a".into()]),
                 ValueType::Map => Value::Json(serde_json::json!({})),
                 ref other => panic!("{name}: unexpected argument type {other:?}"),

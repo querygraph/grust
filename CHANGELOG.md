@@ -6,6 +6,18 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ## Unreleased
 
+- Add **maximum flow and minimum cut**: `max_flow`, and
+  `grust.algorithms.maxFlow(source, target)` and `.minCut(source, target)`.
+  Capacities are the projection's weights, parallel edges are separate
+  capacities, and self-loops and zero capacities carry nothing. `maxFlow`
+  returns one row per edge carrying flow, oriented the way the flow runs, so an
+  undirected edge reports its net flow; `minCut` returns each node's side, the
+  source side being what the source still reaches once the flow is in place.
+  Dinic's algorithm, iterative, sequential. With integral capacities every value
+  is exact; with fractional ones the flow is feasible and maximal up to
+  rounding. The test compares the value with the cheapest of every possible cut
+  on 7,500 random networks and checks capacity and conservation on the reported
+  rows. Procedures can now declare a second positional node argument, `target`.
 - Add **Leiden** community detection: `leiden` and `grust.algorithms.leiden`,
   with Louvain's options and result shape. Between moving and coarsening it
   refines each community from singletons, merging a node only while it is still
