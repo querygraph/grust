@@ -6,6 +6,19 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ## Unreleased
 
+- Add **Louvain** community detection: `louvain` and `grust.algorithms.louvain`,
+  with `resolution`, `maxLevels`, `maxIterations`, `tolerance` and `seed`. It
+  works in every orientation: Newman's modularity on an undirected projection,
+  Leicht and Newman's directed modularity otherwise, from one formula. Parallel
+  edges add their weights; an undirected self-loop counts twice in its node's
+  strength, the convention that the two-node test pins. Communities are named by
+  their smallest member, as `wcc` names components, and the reported modularity
+  is recomputed from the projection rather than accumulated from the moves.
+  Moves are applied one at a time in row order or a seeded order, so the result
+  is reproducible and independent of the rayon pool; asynchronous parallel moves
+  are not. The oracle computes modularity from a dense matrix and the true
+  optimum by enumerating every partition: the result is never above the optimum,
+  never below its starting point, and equals the optimum on planted cliques.
 - Add **triangle count** and **local clustering coefficient**: `triangles`,
   `grust.algorithms.triangleCount` and `grust.algorithms.localClusteringCoefficient`.
   Triangles belong to the simple graph, so parallel edges count once and

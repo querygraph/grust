@@ -228,6 +228,23 @@ fn catalog() -> Vec<Spec> {
             ))
         },
     ));
+    specs.push(Spec::new(
+        "louvain",
+        None,
+        vec![
+            field("nodeId", ValueType::String),
+            field("communityId", ValueType::String),
+            field("modularity", ValueType::Number),
+            field("levels", ValueType::Integer),
+            field("converged", ValueType::Boolean),
+        ],
+        options::louvain_fields(),
+        |graph, args| {
+            Ok(AlgorithmOutput::Table(
+                algorithms::louvain(graph, options::louvain(args)?)?.into_table()?,
+            ))
+        },
+    ));
     specs
 }
 

@@ -1,7 +1,7 @@
 use super::*;
 use algorithms::{
-    MissingWeight, Orientation, PageRankOptions, ProjectionOptions, TriangleOptions,
-    WeightSelection,
+    LouvainOptions, MissingWeight, Orientation, PageRankOptions, ProjectionOptions,
+    TriangleOptions, WeightSelection,
 };
 
 fn option(name: &str, value_type: ValueType, default: Value, nullable: bool) -> OptionField {
@@ -151,4 +151,44 @@ pub(super) fn triangles(args: &ValidatedArguments) -> Result<TriangleOptions> {
         }
     };
     Ok(TriangleOptions { max_degree })
+}
+
+pub(super) fn louvain_fields() -> Vec<OptionField> {
+    vec![
+        option("resolution", ValueType::Number, Value::Float(1.0), false),
+        option("maxLevels", ValueType::Integer, Value::Int(10), false),
+        option("maxIterations", ValueType::Integer, Value::Int(10), false),
+        option("tolerance", ValueType::Number, Value::Float(1e-4), false),
+        option("seed", ValueType::Integer, Value::Null, true),
+    ]
+}
+
+fn positive(args: &ValidatedArguments, key: &str) -> Result<usize> {
+    match value(args, key)? {
+        Value::Int(value) if *value > 0 => usize::try_from(*value)
+            .map_err(|_| ProcedureError::InvalidArguments(format!("{key} is too large"))),
+        _ => Err(ProcedureError::InvalidArguments(format!(
+            "{key} must be a positive integer"
+        ))),
+    }
+}
+
+pub(super) fn louvain(args: &ValidatedArguments) -> Result<LouvainOptions> {
+    let seed = match value(args, "seed")? {
+        Value::Null => None,
+        // Any integer is a seed; its bits are what matter.
+        Value::Int(value) => Some(*value as u64),
+        _ => {
+            return Err(ProcedureError::InvalidArguments(
+                "seed must be an integer".into(),
+            ));
+        }
+    };
+    Ok(LouvainOptions {
+        resolution: number(value(args, "resolution")?)?,
+        max_levels: positive(args, "maxLevels")?,
+        max_iterations: positive(args, "maxIterations")?,
+        tolerance: number(value(args, "tolerance")?)?,
+        seed,
+    })
 }

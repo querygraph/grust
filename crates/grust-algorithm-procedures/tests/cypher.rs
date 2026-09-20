@@ -330,3 +330,27 @@ fn triangles_and_clustering_are_ordinary_procedures_on_the_simple_graph() {
         vec![Value::String("b".into()), Value::Int(-1)]
     );
 }
+
+#[test]
+fn louvain_is_an_ordinary_procedure_in_every_orientation() {
+    // Undirected, the fixture is a-b with b-c doubled: the heavy pair b,c is one
+    // community and a joins it or not by modularity; the isolate stays alone.
+    let rows = run(
+        "CALL grust.algorithms.louvain({orientation: 'undirected'}) YIELD nodeId, communityId, modularity, converged RETURN nodeId, communityId, modularity, converged",
+    );
+    assert_eq!(rows.len(), 4);
+    assert_eq!(rows[1][1], rows[2][1], "b and c share a community");
+    assert_eq!(rows[3][1], Value::String("isolate".into()));
+    assert!(rows.iter().all(|row| row[3] == Value::Bool(true)));
+    // The default orientation is directed: Leicht-Newman modularity, not an error.
+    let directed =
+        run("CALL grust.algorithms.louvain() YIELD communityId RETURN count(communityId)");
+    assert_eq!(directed, vec![vec![Value::Int(4)]]);
+    // Options are named and typed; a huge resolution leaves every node alone.
+    assert_eq!(
+        run(
+            "CALL grust.algorithms.louvain({orientation: 'undirected', resolution: 1000000.0, seed: 7}) YIELD nodeId, communityId WHERE nodeId <> communityId RETURN count(nodeId)"
+        ),
+        vec![vec![Value::Int(0)]]
+    );
+}

@@ -601,6 +601,14 @@ M4 (Tier A), then per milestone.** Each is a minor version: new public API.
   contains "undirected".** Nutmeg's schema probe and Grust's catalog test both
   rely on that word to retry on an undirected projection. Keep it.
 - `run_on_projection` matches names case-insensitively, as the registry does.
+- **Louvain's move phase is sequential by rule 4.** NetworKit's PLM moves nodes
+  asynchronously in parallel and is not reproducible. The kernel visits nodes in
+  row order or a seeded order and applies one move at a time. What can be
+  parallel later without touching the result: strength sums, coarsening's
+  per-community aggregation, the final modularity pass. Leiden (group 7) reuses
+  `Level`, `move_nodes`, `coarsen` and `modularity_of`; make them `pub(crate)`
+  there. `modularity_of` is group 22's kernel. `includeIntermediateCommunities`
+  waits for a list column on `NodeTable`.
 - **`parallel.rs` is the pattern for every parallel kernel**: split nodes into
   contiguous blocks of equal estimated work (`balanced_ranges`), run one task per
   block (`map_ranges`), combine in block order. Cross-block writes go through
@@ -614,9 +622,9 @@ Update in the same commit as the work. `—` not started, `wip`, `done <commit>`
 
 | Item | State | Item | State | Item | State |
 | --- | --- | --- | --- | --- | --- |
-| P1 | done (Grust and Nutmeg) | P2 | — | P3 | — |
-| P4 | — | P5 | — | P6 | — |
-| P7 | done (`parallel.rs`) | 1 Louvain | — | 2 Betweenness | — |
+| P1 | done (Grust and Nutmeg) | P2 | — | P3 | done (`NodeTable`) |
+| P4 | — | P5 | done (`random.rs`) | P6 | — |
+| P7 | done (`parallel.rs`) | 1 Louvain | done | 2 Betweenness | — |
 | 3 Node similarity | — | 4 Triangles/LCC | done | 5 k-core | done |
 | 6 Closeness/harmonic | — | 7 Leiden | — | 8 Label propagation | — |
 | 9 A\*/Bellman–Ford | — | 10 Eigenvector family | — | 11 Bridges family | — |
