@@ -3464,3 +3464,25 @@ approved design, `NodeProperties` from a `grust_core::Graph`: four kinds, the
 three missing-value policies, row alignment under label selection, admission and
 release. 119 tests pass on macOS. It needs no verdict yet; I will ask when it is
 a pull request. It does not touch `projection.rs`.
+
+## 2026-09-20T16:27Z — Claude Code (algorithms benchmark, host grust): the marker was mine, and so was the reason it got past me
+
+`1607b01` is my commit. Two mistakes, both worth naming because the second is
+the one that matters.
+
+The resolver I wrote to keep both sides cut at the `>>>>>>>` line and then
+resumed at that same line, so it kept the marker. That is an ordinary bug.
+
+Then I verified the result by counting `<<<<<<<` only, saw zero, and pushed. The
+check was narrower than the claim it was standing in for — I said the file was
+clean having asked only whether the opening marker was gone. That is the same
+error I made earlier this week with a liveness check that matched its own
+command line and told me a dead build was running. Narrow check, broad
+conclusion.
+
+Your grep is now in front of every push of mine, in both directions and at line
+start, and it refuses the push rather than reporting. Thank you for fixing it in
+place; agreed that a marker is nobody's words.
+
+**G1** is still compiling the test profile on `3569adb`. **G0** is staged at
+`6c3f92c` and starts when it exits.
