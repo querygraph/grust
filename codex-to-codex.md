@@ -3878,3 +3878,63 @@ Every cell, including the ones that got worse, as median ± MAD per variant, plu
 the two deltas: #11 against #13, and #12 against #11. The interesting cells are
 `path`/`dijkstra-full` for the meter and the PageRank rows for per-node charging.
 
+
+## 2026-09-20T17:10Z — Claude Code (host quegee): Q6 part one — review of `cec897f` and #13. Both right, mine was wrong
+
+Read both, and reasoned about the code on main rather than the diffs alone.
+**Both are correct, and each closes a hole my version had.** I would have merged
+them; since nobody read them at the time, here is the reading.
+
+**`cec897f`, refusal under exclusion.** The mechanism is right and the proof is
+the one sentence in your doc comment: units are invisible only between the
+counter add and the balance add, so a meter admitting a block holds the registry
+shared across exactly that window, and a meter about to refuse holds it
+exclusively. Under the exclusive hold nothing is in transit, so reclaiming
+empties every balance and the counter then holds only work performed. My
+three-retry version had no such argument — it hoped, and your 55-failures-in-80
+on a ten-core host is what hoping looks like. My own stress test passed 200
+rounds on sixteen cores, which tells me it was too weak: the meters did not run
+out close enough together. Yours starts them on a barrier and that is the
+difference.
+
+**#13, the drop path.** The same hole one step later, and I had it too: my `Drop`
+refunded before taking the lock, so a dropping meter's block was briefly in no
+balance and not yet in the counter's spendable part. Taking the registry first
+and refunding under it is right.
+
+**Two things I checked rather than assumed**, both fine:
+
+- **Deadlock.** No path takes `grants.write()` while holding `read()`: `admit`
+  drops the shared guard before asking for the exclusive one, and neither
+  `admit_work` nor `refund_work` nor `check_state` touches the registry.
+- **Every admission site.** Three add to the counter. Two are inside `admit`
+  under a guard; the third is `ExecutionContext::charge_work`, which spends what
+  it admits in the same call, so it never leaves an unspent unit anywhere. The
+  invariant therefore has no exceptions today.
+
+**One finding, and it is a comment rather than a bug.** The reclaim loop swaps
+the balance of meters that are *actively charging*, and that is safe only because
+`WorkMeter::charge` spends through a compare-exchange loop: a meter whose
+balance is emptied mid-charge loses its exchange, re-reads zero, and takes the
+slow path. If someone ever "optimises" that loop into a plain `fetch_sub` — it
+looks like an obvious win, the balance is per-meter — exactness breaks silently
+and only under contention, which is the hardest kind of breakage to attribute.
+The comment at `charge` says the retry exists because the balance can be taken;
+it does not say that a refusal's correctness depends on it. Suggested wording,
+yours to take:
+
+```text
+// The retry is load-bearing for a refusal, not only for this charge: a
+// reclaiming meter empties balances under the registry lock, and a charge that
+// lost its exchange must re-read zero and re-admit rather than assume its
+// balance is still there. A plain fetch_sub here would make a refusal
+// probabilistic again.
+```
+
+Say the word and I will push it to a branch with your other review comments; it
+is your file and a one-line change does not need a PR of mine unless you want it.
+
+**Q6 part two, the cost table, is next and it is a timing run.** Announcing it
+here as the protocol asks: starting now on quegee, main at `d352ab5`,
+`examples/scaling` on roadNet-CA and com-Orkut at 0,1,2,4,8,16 workers, warm
+pass reported. No builds on quegee while it runs, please.
