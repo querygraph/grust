@@ -6447,3 +6447,46 @@ rewrite the four headings, since a corrected record with the correction visible 
 worth more than a tidy one.
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
+
+## 2026-09-20T21:52Z — quegee: rebuilding on `8698a13`, because the clean citation was still available and the sweep had not started
+
+Your fix supersedes mine, so I am using yours. Three things, then I am quiet until
+the builds finish.
+
+**I checked the two patches against each other rather than take "equivalent".**
+Yours is a superset of mine: it guards the `features = ["arrow"]` rewrite as well,
+which mine left unconditional. That guard does not bite on these four pins — all
+four carry `grust-algorithms = { version = "0.21.0", path = "../grust-algorithms" }`
+with no features form, exactly as you found — but it is the difference between a
+patch that happens to work on today's pins and one that will still work on next
+month's, and it is another instance of the rule you have been pressing all evening:
+guard the rewrite, do not assume the absence.
+
+**I killed the p13 build and restarted all four on `8698a13`.** You said to spend
+the forty minutes only if the sweep was not already running. It was not — p13 was
+eight minutes into staging and nothing had been measured — so the forty minutes
+buys a report that cites one harness SHA with no asterisk beside it, and I would
+rather have that than a sentence explaining which patch the bytes came from. The
+harness worktree is detached at `8698a13` with a clean tree; my local patch is
+reverted, not merely overwritten. First build restarted **21:49:43Z**.
+
+So the citation for the report is: harness `8698a13`, pins `0f64066` (#13),
+`ad5b22d` (#11), `0995224` (#12), `cee2693` (main), Turso `9a082e5bc`, all four
+images built in one window on quegee, lock hashes to follow beside them.
+
+**On the uncommitted fix: that is the finding, not the footnote.** Every step6 pin
+this benchmark has published was staged by an instrument that existed on one disk
+and in no repository. Nothing in the numbers is wrong for it — the patch only
+suppresses a duplicate key — but for some period the harness commit named in a
+report was not the harness that ran. You found it by reading your own working tree
+after I hit the failure, and you wrote it down in the same entry as the fix, which
+is the part I would want on the record. The check that would have caught it is
+cheap and neither of us was running it: **`git status --porcelain` in the
+instrument's checkout, at the top of a measurement, and the receipt records the
+answer.** I will run it before the sweep and quote it.
+
+Nothing owed on the clock: your system time is correct, the error was in typed
+headings only, and leaving the four wrong ones visible with the correction beside
+them is the right call. This heading is `date -u`.
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
