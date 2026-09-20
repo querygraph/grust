@@ -16,8 +16,17 @@ use output::{AlgorithmCursor, AlgorithmOutput};
 /// hardcoded name dispatcher are needed when applications register more providers.
 pub fn register_algorithms(builder: &mut RegistryBuilder) -> Result<()> {
     statistics::register(builder)?;
-    register(
-        builder,
+    for spec in catalog() {
+        register(builder, spec)?;
+    }
+    Ok(())
+}
+
+/// Every projection kernel, once: registration and direct execution both read
+/// this list, so a kernel cannot be registered without being runnable.
+fn catalog() -> Vec<Spec> {
+    let mut specs = Vec::new();
+    specs.push(Spec::new(
         "degree",
         None,
         vec![
@@ -27,9 +36,8 @@ pub fn register_algorithms(builder: &mut RegistryBuilder) -> Result<()> {
         ],
         vec![],
         |graph, _| Ok(AlgorithmOutput::Degrees(algorithms::degree(graph)?)),
-    )?;
-    register(
-        builder,
+    ));
+    specs.push(Spec::new(
         "bfs",
         Some(ValueType::String),
         vec![
@@ -43,9 +51,8 @@ pub fn register_algorithms(builder: &mut RegistryBuilder) -> Result<()> {
                 source(args)?,
             )?))
         },
-    )?;
-    register(
-        builder,
+    ));
+    specs.push(Spec::new(
         "dijkstra",
         Some(ValueType::String),
         vec![
@@ -59,9 +66,8 @@ pub fn register_algorithms(builder: &mut RegistryBuilder) -> Result<()> {
                 source(args)?,
             )?))
         },
-    )?;
-    register(
-        builder,
+    ));
+    specs.push(Spec::new(
         "shortestPaths",
         Some(ValueType::String),
         vec![
@@ -74,13 +80,13 @@ pub fn register_algorithms(builder: &mut RegistryBuilder) -> Result<()> {
         ],
         vec![],
         |graph, args| {
-            Ok(AlgorithmOutput::Paths(
-                algorithms::shortest_paths(graph, source(args)?)?.into_cursor()?,
-            ))
+            Ok(AlgorithmOutput::Paths(algorithms::shortest_paths(
+                graph,
+                source(args)?,
+            )?))
         },
-    )?;
-    register(
-        builder,
+    ));
+    specs.push(Spec::new(
         "wcc",
         None,
         vec![
@@ -93,9 +99,8 @@ pub fn register_algorithms(builder: &mut RegistryBuilder) -> Result<()> {
                 algorithms::weakly_connected_components(graph)?,
             ))
         },
-    )?;
-    register(
-        builder,
+    ));
+    specs.push(Spec::new(
         "scc",
         None,
         vec![
@@ -108,9 +113,8 @@ pub fn register_algorithms(builder: &mut RegistryBuilder) -> Result<()> {
                 algorithms::strongly_connected_components(graph)?,
             ))
         },
-    )?;
-    register(
-        builder,
+    ));
+    specs.push(Spec::new(
         "pagerank",
         None,
         vec![
@@ -127,9 +131,8 @@ pub fn register_algorithms(builder: &mut RegistryBuilder) -> Result<()> {
                 options::pagerank(args)?,
             )?))
         },
-    )?;
-    register(
-        builder,
+    ));
+    specs.push(Spec::new(
         "dfs",
         Some(ValueType::String),
         vec![
@@ -143,9 +146,8 @@ pub fn register_algorithms(builder: &mut RegistryBuilder) -> Result<()> {
                 source(args)?,
             )?))
         },
-    )?;
-    register(
-        builder,
+    ));
+    specs.push(Spec::new(
         "multiSourceBfs",
         Some(ValueType::Strings),
         vec![
@@ -163,9 +165,8 @@ pub fn register_algorithms(builder: &mut RegistryBuilder) -> Result<()> {
                 graph, sources,
             )?))
         },
-    )?;
-    register(
-        builder,
+    ));
+    specs.push(Spec::new(
         "topologicalSort",
         None,
         vec![
@@ -179,7 +180,8 @@ pub fn register_algorithms(builder: &mut RegistryBuilder) -> Result<()> {
                 graph,
             )?))
         },
-    )
+    ));
+    specs
 }
 
 fn field(name: &str, value_type: ValueType) -> Field {
@@ -201,14 +203,80 @@ struct Provider {
     kernel: Kernel,
 }
 
-fn register(
-    builder: &mut RegistryBuilder,
-    name: &str,
+struct Spec {
+    name: &'static str,
     source: Option<ValueType>,
     outputs: Vec<Field>,
     extra_options: Vec<OptionField>,
     kernel: Kernel,
-) -> Result<()> {
+}
+
+impl Spec {
+    fn new(
+        name: &'static str,
+        source: Option<ValueType>,
+        outputs: Vec<Field>,
+        extra_options: Vec<OptionField>,
+        kernel: Kernel,
+    ) -> Self {
+        Self {
+            name,
+            source,
+            outputs,
+            extra_options,
+            kernel,
+        }
+    }
+}
+
+const PREFIX: &str = "grust.algorithms.";
+
+/// The projection options a validated call carries: orientation, label and
+/// relationship-type selection, and the weight property with its default. A
+/// caller that builds its own `GraphProjection` reads them with this, so its
+/// projection means what the registered procedure's would.
+pub fn projection_options(args: &ValidatedArguments) -> Result<algorithms::ProjectionOptions<'_>> {
+    options::projection(args)
+}
+
+/// Run a registered kernel on a projection the caller already holds, and hand
+/// back its typed Arrow results. `name` is the registered name, with or without
+/// the `grust.algorithms.` prefix. `args` must have been validated against that
+/// procedure's definition, exactly as the registry validates a `CALL`.
+///
+/// `projectionStats` and `estimateCsr` are not kernels over a projection: one
+/// reads projection metadata and the other sizes a graph before it is built.
+/// They are refused here; call `GraphProjection::statistics` or
+/// `CsrEstimate::upper_bound`.
+#[cfg(feature = "arrow")]
+pub fn run_on_projection(
+    name: &str,
+    graph: &algorithms::GraphProjection,
+    args: &ValidatedArguments,
+) -> Result<algorithms::ArrowResultCursor> {
+    let short = name.strip_prefix(PREFIX).unwrap_or(name);
+    let spec = catalog()
+        .into_iter()
+        .find(|spec| spec.name == short)
+        .ok_or_else(|| {
+            ProcedureError::Unsupported(format!("`{name}` is not a registered projection kernel"))
+        })?;
+    (spec.kernel)(graph, args)?.into_arrow_results()
+}
+
+/// Names `run_on_projection` serves, without the prefix, in registration order.
+pub fn projection_kernel_names() -> Vec<&'static str> {
+    catalog().into_iter().map(|spec| spec.name).collect()
+}
+
+fn register(builder: &mut RegistryBuilder, spec: Spec) -> Result<()> {
+    let Spec {
+        name,
+        source,
+        outputs,
+        extra_options,
+        kernel,
+    } = spec;
     let mut arguments = Vec::new();
     if let Some(source_type) = source {
         arguments.push(Argument {
@@ -232,7 +300,7 @@ fn register(
     options.extend(extra_options);
     builder.register(
         ProcedureDefinition {
-            name: format!("grust.algorithms.{name}"),
+            name: format!("{PREFIX}{name}"),
             aliases: vec![],
             version: 1,
             provider: "grust.algorithms".into(),
@@ -261,7 +329,7 @@ impl ProcedureProvider for Provider {
         })?;
         let graph = preparation::prepare(snapshot, options::projection(&args)?, &invocation)?;
         let output = (self.kernel)(&graph, &args)?;
-        Ok(Box::new(AlgorithmCursor::new(graph, output)))
+        Ok(Box::new(AlgorithmCursor::new(graph, output)?))
     }
 }
 

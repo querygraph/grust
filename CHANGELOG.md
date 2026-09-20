@@ -6,6 +6,16 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ## Unreleased
 
+- `grust-algorithm-procedures` gains `run_on_projection(name, &GraphProjection,
+  &ValidatedArguments)`, `projection_options(&ValidatedArguments)` and
+  `projection_kernel_names()`, behind a new `arrow` feature the facade's `arrow`
+  feature forwards. A caller that already holds a projection runs any registered
+  kernel by name and receives its typed Arrow results, so an embedding such as
+  Nutmeg needs no per-algorithm dispatch and serves a kernel the day it is
+  registered. Registration and direct execution read one catalog, and a test
+  requires every kernel's Arrow columns to equal its declared outputs.
+  `projectionStats` and `estimateCsr` are refused there: they are not kernels
+  over a projection.
 ## 0.21.0 — Tadpole — 2026-09-18
 
 ### Cypher language

@@ -587,7 +587,7 @@ Update in the same commit as the work. `—` not started, `wip`, `done <commit>`
 
 | Item | State | Item | State | Item | State |
 | --- | --- | --- | --- | --- | --- |
-| P1 | — | P2 | — | P3 | — |
+| P1 | done (Grust side) | P2 | — | P3 | — |
 | P4 | — | P5 | — | P6 | — |
 | P7 | — | 1 Louvain | — | 2 Betweenness | — |
 | 3 Node similarity | — | 4 Triangles/LCC | — | 5 k-core | — |

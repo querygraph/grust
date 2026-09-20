@@ -7,9 +7,32 @@ pub(super) enum AlgorithmOutput {
     Components(algorithms::Components),
     PageRank(algorithms::PageRank),
     Degrees(algorithms::Degrees),
-    Paths(algorithms::PathCursor),
+    Paths(algorithms::ShortestPaths),
+    /// Paths being streamed as rows; never produced by a kernel.
+    PathRows(algorithms::PathCursor),
     Order(algorithms::NodeOrder),
     Topology(algorithms::TopologicalOrder),
+}
+
+#[cfg(feature = "arrow")]
+impl AlgorithmOutput {
+    /// The same result as typed Arrow, for callers that hold a projection.
+    pub(super) fn into_arrow_results(self) -> Result<algorithms::ArrowResultCursor> {
+        Ok(match self {
+            Self::Distances(result) => result.into_arrow_results(),
+            Self::Components(result) => result.into_arrow_results(),
+            Self::PageRank(result) => result.into_arrow_results(),
+            Self::Degrees(result) => result.into_arrow_results(),
+            Self::Paths(result) => result.into_arrow_results()?,
+            Self::Order(result) => result.into_arrow_results(),
+            Self::Topology(result) => result.into_arrow_results(),
+            Self::PathRows(_) => {
+                return Err(ProcedureError::OutputContract(
+                    "a kernel returned a row cursor instead of its result".into(),
+                ));
+            }
+        })
+    }
 }
 
 pub(super) struct AlgorithmCursor {
@@ -19,12 +42,16 @@ pub(super) struct AlgorithmCursor {
 }
 
 impl AlgorithmCursor {
-    pub(super) fn new(graph: algorithms::GraphProjection, output: AlgorithmOutput) -> Self {
-        Self {
+    pub(super) fn new(graph: algorithms::GraphProjection, output: AlgorithmOutput) -> Result<Self> {
+        let output = match output {
+            AlgorithmOutput::Paths(paths) => AlgorithmOutput::PathRows(paths.into_cursor()?),
+            other => other,
+        };
+        Ok(Self {
             graph,
             output,
             next: 0,
-        }
+        })
     }
 }
 
@@ -32,7 +59,7 @@ impl ProcedureCursor for AlgorithmCursor {
     fn next_batch(&mut self) -> Result<Option<ProcedureBatch>> {
         let context = self.graph.execution();
         context.checkpoint()?;
-        if let AlgorithmOutput::Paths(cursor) = &mut self.output {
+        if let AlgorithmOutput::PathRows(cursor) = &mut self.output {
             return match cursor.next_path()? {
                 Some(path) => path_batch(&self.graph, path).map(Some),
                 None => Ok(None),
@@ -68,7 +95,9 @@ impl ProcedureCursor for AlgorithmCursor {
             ),
             AlgorithmOutput::PageRank(_) => (5, 0),
             AlgorithmOutput::Degrees(_) => (3, 0),
-            AlgorithmOutput::Paths(_) | AlgorithmOutput::Topology(_) => {
+            AlgorithmOutput::Paths(_)
+            | AlgorithmOutput::PathRows(_)
+            | AlgorithmOutput::Topology(_) => {
                 return Err(ProcedureError::OutputContract(
                     "path output reached scalar adapter".into(),
                 ));
@@ -111,7 +140,9 @@ impl ProcedureCursor for AlgorithmCursor {
                 row.push(Value::Bool(result.converged()));
                 row.push(Value::Float(result.residual()));
             }
-            AlgorithmOutput::Paths(_) | AlgorithmOutput::Topology(_) => {
+            AlgorithmOutput::Paths(_)
+            | AlgorithmOutput::PathRows(_)
+            | AlgorithmOutput::Topology(_) => {
                 return Err(ProcedureError::OutputContract(
                     "path output reached scalar adapter".into(),
                 ));
