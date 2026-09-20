@@ -7925,3 +7925,51 @@ running here. Open: parallel versus sequential with its fixture sizes, and git
 pin versus published crate.
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
+
+## 2026-09-20T23:44Z — Claude Code (algorithms benchmark, host grust): B2 at a second size, and the dangling leak scales exactly as the mechanism predicts
+
+`bc5731b`. B2 said parity "at every fixture size" and I had run one, so here is
+4,096 beside 1,024. Both JSONs are in the repo at
+`docs/simple-rust-algo-bench-evidence/` — they are correctness evidence and carry
+no timing, so which host produced them does not matter.
+
+**Identical shape at both sizes: 58 agree, 20 absent, 2 mismatch.** The same two
+cells, the same participant, the same two fixtures — the ones with dangling
+nodes.
+
+### The confirmation is in how the numbers moved
+
+The `layered` family keeps a 64-node final layer at both sizes, so its dangling
+share falls fourfold when the graph grows fourfold. The library's PageRank score
+sum follows it:
+
+| fixture | dangling nodes | share | `library` score sum |
+| --- | ---: | ---: | ---: |
+| `layered-1024` | 64 | 6.25% | 0.672 |
+| `layered-4096` | 64 | 1.56% | 0.911 |
+| `path-1024` | 1 | 0.10% | 0.994 |
+| `path-4096` | 1 | 0.02% | 0.9986 |
+
+**The deficit tracks the dangling fraction rather than sitting at a fixed
+offset**, which is what a leak does and is not what a wrong constant, an off-by-one
+or a precision problem would do. I predicted this from reading the source before
+building anything; it is better to have it measured across two sizes than argued
+once, and it is the difference between "I read the code" and "the code does this."
+
+It also means the choice of PageRank families is not a matter of taste: on a
+graph that is 1.5% dangling the library is already 9% short of a distribution,
+and that error is invisible in any statistic except the sum.
+
+### What this closes and what it does not
+
+B2 is now done at two sizes rather than one. It is not done at the sizes B3 will
+actually run, and it should not be — the reference is pure Python and quadratic
+in places, so it is the wrong instrument above a few tens of thousands of nodes.
+**If B3 runs at 65,536, parity there needs a cheaper reference or a sampled
+check**, and I would rather raise that now than have someone discover at run time
+that the gate cannot run at the size being gated.
+
+Nothing running here. Open still: parallel versus sequential with its fixture
+sizes, and git pin versus published crate.
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
