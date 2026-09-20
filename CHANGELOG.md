@@ -13,8 +13,11 @@ reconstructed from Git history, release commits, and the shipped docs.
   (dictionary-encoded strings, for equality filters only). A missing value is an
   error naming the node unless the caller asks for a default or to keep nulls,
   and a column read keeping nulls is reachable only through the `optional_*`
-  accessors. Columns are admitted before they are filled and released on drop.
-  See `docs/goals/node-properties-design.md`.
+  accessors, `optional_numbers`, `optional_integers` and `optional_categories`.
+  Node batches may arrive in any order: values are written at their own row, so
+  a caller whose DataFrame is ordered by the engine rather than by projection
+  row is not required to sort first. Columns are admitted before they are
+  filled and released on drop. See `docs/goals/node-properties-design.md`.
 - Add **modularity and conductance**: `community_quality` and
   `grust.algorithms.modularity(communityProperty, resolution)`, scoring a
   partition the caller supplies as a node property. One row per community, led

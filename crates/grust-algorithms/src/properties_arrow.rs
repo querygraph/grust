@@ -75,13 +75,11 @@ impl NodeProperties {
                     };
                     meter.charge(1)?;
                     let id = ids.value(row);
-                    match source.cell(row) {
+                    let extra = match source.cell(row) {
                         None => builder.absent(projected, id)?,
-                        Some(cell) => {
-                            let extra = builder.present(projected, id, cell.borrow())?;
-                            meter.charge(extra)?;
-                        }
-                    }
+                        Some(cell) => builder.present(projected, id, cell.borrow())?,
+                    };
+                    meter.charge(extra)?;
                 }
                 offset += batch.num_rows();
             }

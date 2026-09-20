@@ -545,7 +545,7 @@ mod arrow {
         ]
     }
 
-    fn people(batches: &[RecordBatch], context: &ExecutionContext) -> GraphProjection {
+    pub fn people(batches: &[RecordBatch], context: &ExecutionContext) -> GraphProjection {
         let labels = ["Person".to_string()];
         GraphProjection::from_arrow_batches(
             identity(),
@@ -709,5 +709,174 @@ mod arrow {
             &[PropertyRequest::required("age", PropertyKind::Integer)],
             "1 of the projection's 3",
         );
+    }
+}
+
+/// Reproductions from quegee's review of the first version of this module
+/// (`review/node-properties-repros`), turned round to pin the fixed behaviour.
+mod reviewed {
+    use super::*;
+
+    /// A category column read keeping nulls was reachable and then unreadable:
+    /// `validate` allowed the pair, and the only accessor for its kind refused
+    /// it and named a method that did not exist.
+    #[test]
+    fn a_category_keeping_nulls_is_readable() {
+        let graph = graph();
+        let context = context();
+        let projection = people(&graph, &context);
+        let properties = NodeProperties::from_graph(
+            &graph,
+            &projection,
+            &[request(
+                "team",
+                PropertyKind::Category,
+                MissingProperty::Null,
+            )],
+        )
+        .unwrap();
+        let (teams, present) = properties.optional_categories("team").unwrap();
+        assert_eq!(teams.dictionary, ["red", "blue"]);
+        assert_eq!(teams.codes, [0, 1, 0]);
+        assert_eq!(present, [true, true, true]);
+        // The kind-and-nullness rules hold both ways round, as for the others.
+        assert!(properties.categories("team").is_err());
+        assert!(properties.optional_integers("team").is_err());
+
+        // A node without the property keeps its absence rather than inventing a
+        // string, and code zero on that row means nothing.
+        let sparse = Graph::new(
+            vec![
+                node("Person", "a", &[("team", Value::String("red".into()))]),
+                node("Person", "b", &[]),
+            ],
+            vec![],
+        );
+        let projection = people(&sparse, &context);
+        let properties = NodeProperties::from_graph(
+            &sparse,
+            &projection,
+            &[request(
+                "team",
+                PropertyKind::Category,
+                MissingProperty::Null,
+            )],
+        )
+        .unwrap();
+        let (teams, present) = properties.optional_categories("team").unwrap();
+        assert_eq!(teams.dictionary, ["red"]);
+        assert_eq!(present, [true, false]);
+    }
+}
+
+#[cfg(feature = "arrow")]
+mod reviewed_arrow {
+    use std::sync::Arc;
+
+    use super::arrow::people as arrow_people;
+    use super::*;
+    use arrow_array::{ArrayRef, Int64Array, RecordBatch, StringArray};
+
+    fn rows(ids: &[&str], ages: &[i64]) -> RecordBatch {
+        RecordBatch::try_from_iter(vec![
+            (
+                "node_id",
+                Arc::new(StringArray::from(ids.to_vec())) as ArrayRef,
+            ),
+            (
+                "label",
+                Arc::new(StringArray::from(vec!["Person"; ids.len()])),
+            ),
+            ("property.age", Arc::new(Int64Array::from(ages.to_vec()))),
+        ])
+        .unwrap()
+    }
+
+    /// Batch order used to be load-bearing: vectors were appended, so a caller
+    /// whose only mistake was not sorting got an internal contract error. The
+    /// Arrow path is Nutmeg's, where batches come from a DataFrame ordered as
+    /// the engine likes, so the order requirement is gone rather than documented.
+    #[test]
+    fn arrow_batches_may_arrive_in_any_order() {
+        let context = context();
+        let ordered = [rows(&["ann", "bob", "cy"], &[31, 45, 19])];
+        let projection = arrow_people(&ordered, &context);
+        let wanted = [PropertyRequest::required("age", PropertyKind::Integer)];
+        let expected = [31, 45, 19];
+
+        for batches in [
+            vec![rows(&["cy", "bob", "ann"], &[19, 45, 31])],
+            // A near-identity permutation: only two rows move.
+            vec![rows(&["ann", "cy", "bob"], &[31, 19, 45])],
+            // Split across batches, and the second batch first.
+            vec![rows(&["bob", "cy"], &[45, 19]), rows(&["ann"], &[31])],
+        ] {
+            let properties =
+                NodeProperties::from_arrow_batches(&batches, &projection, &wanted).unwrap();
+            assert_eq!(properties.integers("age").unwrap(), expected);
+        }
+    }
+
+    /// The same, for vectors, which is where the ordering was load-bearing:
+    /// their width is not known until the first value arrives.
+    #[test]
+    fn vectors_survive_any_order_including_a_defaulted_first_row() {
+        use arrow_array::builder::{FixedSizeListBuilder, Float32Builder};
+        let context = context();
+        let vectors = |present: &[Option<[f32; 2]>]| {
+            let mut builder = FixedSizeListBuilder::new(Float32Builder::new(), 2);
+            for row in present {
+                match row {
+                    Some(values) => {
+                        builder.values().append_slice(values);
+                        builder.append(true);
+                    }
+                    None => {
+                        builder.values().append_nulls(2);
+                        builder.append(false);
+                    }
+                }
+            }
+            Arc::new(builder.finish()) as ArrayRef
+        };
+        let batch = |ids: &[&str], vs: ArrayRef| {
+            vec![
+                RecordBatch::try_from_iter(vec![
+                    (
+                        "node_id",
+                        Arc::new(StringArray::from(ids.to_vec())) as ArrayRef,
+                    ),
+                    (
+                        "label",
+                        Arc::new(StringArray::from(vec!["Person"; ids.len()])),
+                    ),
+                    ("property.v", vs),
+                ])
+                .unwrap(),
+            ]
+        };
+        let projection = arrow_people(
+            &batch(&["ann", "bob", "cy"], vectors(&[Some([0.0; 2]); 3])),
+            &context,
+        );
+        let wanted = [request(
+            "v",
+            PropertyKind::Vector,
+            MissingProperty::Default(9.0),
+        )];
+
+        // ann has no vector and arrives last, so the width is known before her
+        // row is written; bob's and cy's land at their own offsets either way.
+        let shuffled = batch(
+            &["cy", "bob", "ann"],
+            vectors(&[Some([5.0, 6.0]), Some([3.0, 4.0]), None]),
+        );
+        let properties =
+            NodeProperties::from_arrow_batches(&shuffled, &projection, &wanted).unwrap();
+        let read = properties.vectors("v").unwrap();
+        assert_eq!(read.dimension, 2);
+        assert_eq!(read.row(0), [9.0, 9.0], "ann is defaulted");
+        assert_eq!(read.row(1), [3.0, 4.0]);
+        assert_eq!(read.row(2), [5.0, 6.0]);
     }
 }

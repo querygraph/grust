@@ -28,7 +28,9 @@ pub enum PropertyKind {
     Vector,
     /// A string, dictionary-encoded, for **equality filters only**: no order,
     /// no arithmetic. Codes are assigned in order of first appearance by row,
-    /// so they do not depend on how the read was scheduled.
+    /// so they do not depend on how the read was scheduled. A category has no
+    /// default — there is no string to invent — so a missing one is rejected or
+    /// kept as a null.
     Category,
 }
 
@@ -77,6 +79,8 @@ pub(crate) enum Cell<'a> {
     Bool(bool),
     Text(&'a str),
     Floats(&'a [f64]),
+    /// Only Arrow produces single-precision lists; `Value` has no such array.
+    #[cfg(feature = "arrow")]
     Singles(&'a [f32]),
     Ints(&'a [i64]),
     /// A value of a type no kind accepts.
@@ -205,7 +209,9 @@ impl NodeProperties {
                 let Some(row) = *row else { continue };
                 meter.charge(1)?;
                 match node.props.get(request.key) {
-                    None | Some(Value::Null) => builder.absent(row, node.id.as_str())?,
+                    None | Some(Value::Null) => {
+                        meter.charge(builder.absent(row, node.id.as_str())?)?
+                    }
                     Some(value) => {
                         let extra = builder.present(row, node.id.as_str(), Cell::of(value))?;
                         meter.charge(extra)?;
@@ -302,6 +308,31 @@ impl NodeProperties {
         }
     }
 
+    /// Categories where absence was kept; see [`Self::optional_integers`]. A
+    /// row without a value holds code zero, which is a real code for some other
+    /// row, so it means nothing here: consult `present`.
+    pub fn optional_categories(&self, key: &str) -> Result<(Categories<'_>, &[bool])> {
+        let column = self.column(key)?;
+        match (&column.values, &column.valid) {
+            (
+                Values::Category {
+                    codes, dictionary, ..
+                },
+                Some(valid),
+            ) => Ok((
+                Categories {
+                    codes: &codes.values,
+                    dictionary,
+                },
+                &valid.values,
+            )),
+            (Values::Category { .. }, None) => Err(invalid(format!(
+                "node property {key} was not read keeping nulls"
+            ))),
+            _ => Err(wrong_kind(key, "a category")),
+        }
+    }
+
     /// Numbers where absence was kept; see [`Self::optional_integers`].
     pub fn optional_numbers(&self, key: &str) -> Result<(&[f64], &[bool])> {
         let column = self.column(key)?;
@@ -374,10 +405,6 @@ pub(crate) struct Builder<'a> {
     rows: usize,
     graph: &'a GraphProjection,
     codes: HashMap<String, u32>,
-    /// Rows seen so far without a value, waiting for the dimension.
-    pending_vectors: usize,
-    /// Vectors are appended, so rows must arrive in order; this is the next one.
-    next_row: usize,
 }
 
 impl<'a> Builder<'a> {
@@ -412,54 +439,44 @@ impl<'a> Builder<'a> {
             rows,
             graph,
             codes: HashMap::new(),
-            pending_vectors: 0,
-            next_row: 0,
         })
     }
 
-    /// Snapshot order is projection row order; appending vectors depends on it.
-    fn in_order(&mut self, row: usize) -> Result<()> {
-        if row != self.next_row {
-            return Err(AlgorithmError::OutputContract(format!(
-                "projection row {row} arrived where {} was expected",
-                self.next_row
-            )));
-        }
-        self.next_row += 1;
-        Ok(())
-    }
-
-    pub(crate) fn absent(&mut self, row: usize, node: &str) -> Result<()> {
-        self.in_order(row)?;
+    /// Record that `row` has no value; returns extra work to charge.
+    pub(crate) fn absent(&mut self, row: usize, node: &str) -> Result<usize> {
         let key = self.request.key;
         match self.request.missing {
             MissingProperty::Reject => Err(invalid(format!(
                 "node {node} has no value for property {key}"
             ))),
-            MissingProperty::Null => Ok(()),
+            MissingProperty::Null => Ok(0),
             MissingProperty::Default(default) => {
                 match &mut self.values {
                     Values::Number(values) => values.values[row] = default,
                     Values::Integer(values) => values.values[row] = default as i64,
                     Values::Vector { values, dimension } => {
-                        if *dimension == 0 {
-                            self.pending_vectors += 1;
-                        } else {
-                            values
-                                .values
-                                .extend(std::iter::repeat_n(default as f32, *dimension));
+                        // Nothing to do while the width is unknown: the column
+                        // is allocated already filled with the default, so a
+                        // row that arrives before the first value is covered.
+                        if *dimension != 0 {
+                            let start = row * *dimension;
+                            values.values[start..start + *dimension].fill(default as f32);
                         }
                     }
                     Values::Category { .. } => unreachable!("validated: no category default"),
                 }
-                Ok(())
+                // A defaulted vector writes `dimension` components, the same
+                // work a present one charges for the same number.
+                Ok(match &self.values {
+                    Values::Vector { dimension, .. } => *dimension,
+                    _ => 0,
+                })
             }
         }
     }
 
     /// Store one value; returns extra work to charge (vector components).
     pub(crate) fn present(&mut self, row: usize, node: &str, value: Cell<'_>) -> Result<usize> {
-        self.in_order(row)?;
         let key = self.request.key;
         let mismatch =
             |wanted: &str| invalid(format!("node {node}: property {key} is not {wanted}"));
@@ -491,6 +508,7 @@ impl<'a> Builder<'a> {
                 };
                 let length = match value {
                     Cell::Floats(items) => items.len(),
+                    #[cfg(feature = "arrow")]
                     Cell::Singles(items) => items.len(),
                     Cell::Ints(items) => items.len(),
                     _ => return Err(mismatch("a numeric list")),
@@ -499,38 +517,42 @@ impl<'a> Builder<'a> {
                     return Err(mismatch("a nonempty list"));
                 }
                 if *dimension == 0 {
-                    // First value: now the column's size is known, admit it all,
-                    // and give the rows already defaulted their vectors.
+                    // First value: the width is now known, so admit the whole
+                    // column and fill the rows that arrived before it.
                     let total = self.rows.checked_mul(length).ok_or_else(|| {
                         invalid(format!("node property {key} overflows the address space"))
                     })?;
-                    *values = Buffer::capacity(total, self.graph.execution())?;
+                    let fill = match self.request.missing {
+                        MissingProperty::Default(default) => default as f32,
+                        _ => 0.0,
+                    };
+                    *values = Buffer::filled(total, fill, self.graph.execution())?;
                     *dimension = length;
-                    if let MissingProperty::Default(default) = self.request.missing {
-                        values.values.extend(std::iter::repeat_n(
-                            default as f32,
-                            self.pending_vectors * length,
-                        ));
-                    }
                 } else if length != *dimension {
                     return Err(invalid(format!(
                         "node {node}: property {key} has {length} components where earlier nodes have {dimension}"
                     )));
                 }
+                // Written at the row's own offset, so batches may arrive in
+                // any order: the Arrow path takes them from a caller's
+                // DataFrame, whose order is not ours to dictate.
+                let start = row * length;
+                let slot = &mut values.values[start..start + length];
                 match value {
                     Cell::Floats(items) => {
-                        for &item in items {
-                            values.values.push(narrowed(item)?);
+                        for (into, &item) in slot.iter_mut().zip(items) {
+                            *into = narrowed(item)?;
                         }
                     }
+                    #[cfg(feature = "arrow")]
                     Cell::Singles(items) => {
-                        for &item in items {
-                            values.values.push(narrowed(f64::from(item))?);
+                        for (into, &item) in slot.iter_mut().zip(items) {
+                            *into = narrowed(f64::from(item))?;
                         }
                     }
                     Cell::Ints(items) => {
-                        for &item in items {
-                            values.values.push(narrowed(item as f64)?);
+                        for (into, &item) in slot.iter_mut().zip(items) {
+                            *into = narrowed(item as f64)?;
                         }
                     }
                     _ => unreachable!("matched above"),
@@ -569,16 +591,11 @@ impl<'a> Builder<'a> {
     }
 
     pub(crate) fn finish(self) -> Result<Column> {
-        if let Values::Vector { values, dimension } = &self.values
-            && values.values.len() != self.rows * dimension
-        {
-            return Err(AlgorithmError::OutputContract(format!(
-                "node property {} filled {} of {} values",
-                self.request.key,
-                values.values.len(),
-                self.rows * dimension
-            )));
-        }
+        debug_assert!(
+            !matches!(&self.values, Values::Vector { values, dimension }
+                if values.values.len() != self.rows * dimension),
+            "a vector column is allocated whole, so it cannot be part-filled"
+        );
         Ok(Column {
             key: self.request.key.into(),
             values: self.values,
