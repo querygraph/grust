@@ -228,6 +228,33 @@ fn catalog() -> Vec<Spec> {
             ))
         },
     ));
+    // The community ids come from a node property, so these are the first
+    // kernels the registry serves with `NodeProperties`.
+    const COMMUNITY: &[PropertyOption] = &[PropertyOption {
+        option: "communityProperty",
+        kind: algorithms::PropertyKind::Integer,
+        missing: algorithms::MissingProperty::Reject,
+    }];
+    specs.push(Spec::with_properties(
+        "modularity",
+        vec![
+            field("nodeId", ValueType::String),
+            field("communityId", ValueType::Integer),
+            field("size", ValueType::Integer),
+            field("modularity", ValueType::Number),
+            nullable("conductance", ValueType::Number),
+            field("totalModularity", ValueType::Number),
+        ],
+        options::community_quality_fields(),
+        COMMUNITY,
+        |properties, args| {
+            let key = community_key(args)?;
+            Ok(AlgorithmOutput::Table(
+                algorithms::community_quality(properties, key, options::resolution(args)?)?
+                    .into_table()?,
+            ))
+        },
+    ));
     specs.push(
         Spec::new(
             "bellmanFord",
@@ -681,6 +708,16 @@ pub fn projection_options_for<'a>(
 
 /// A kernel's name without the `grust.algorithms.` prefix, which, like the name,
 /// is matched whatever its case: the registry resolves names that way.
+/// The node property a community call names.
+fn community_key(args: &ValidatedArguments) -> Result<&str> {
+    match args.options().get("communityProperty") {
+        Some(Value::String(key)) => Ok(key),
+        _ => Err(ProcedureError::InvalidArguments(
+            "communityProperty must name a node property".into(),
+        )),
+    }
+}
+
 fn short_name(name: &str) -> &str {
     match name.get(..PREFIX.len()) {
         Some(prefix) if prefix.eq_ignore_ascii_case(PREFIX) => &name[PREFIX.len()..],

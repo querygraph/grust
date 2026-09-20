@@ -88,9 +88,7 @@ pub fn community_quality(
     resolution: f64,
 ) -> Result<CommunityQuality> {
     let graph = properties.projection();
-    // When PR #18 lands: `graph.require_nonnegative("modularity")?;` goes here.
-    // Its catalog test runs every registered kernel on a signed projection and
-    // fails until this one refuses.
+    graph.require_nonnegative("modularity and conductance")?;
     let context = graph.execution();
     context.checkpoint()?;
     if !resolution.is_finite() || resolution < 0.0 {

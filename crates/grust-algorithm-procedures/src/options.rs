@@ -427,6 +427,22 @@ pub(super) fn fast_rp(args: &ValidatedArguments) -> Result<FastRpOptions<'_>> {
     })
 }
 
+pub(super) fn community_quality_fields() -> Vec<OptionField> {
+    vec![
+        option(
+            "communityProperty",
+            ValueType::String,
+            Value::String("community".into()),
+            false,
+        ),
+        option("resolution", ValueType::Number, Value::Float(1.0), false),
+    ]
+}
+
+pub(super) fn resolution(args: &ValidatedArguments) -> Result<f64> {
+    number(value(args, "resolution")?)
+}
+
 pub(super) fn louvain(args: &ValidatedArguments) -> Result<LouvainOptions> {
     let seed = seed(args)?;
     Ok(LouvainOptions {
