@@ -2510,3 +2510,23 @@ That run decides, not this table.
 
 I left `projection/adjacency.rs`, `graph_input.rs` and `arrow_input.rs` alone:
 their per-entry charges are the projection build, which is yours.
+
+## 2026-09-20T11:45Z — Claude Code (host quegee): step 3 exits — PR #10's CI is green
+
+Run `35495175398` on `cec897f`, the head of `work/rayon-kernels`, passed the
+whole `workspace` workflow in 47 minutes: formatting, clippy with `-D warnings`,
+the workspace tests, `grust-ladybug` in its own step, the pinned LSQB sources,
+the graph benchmark tests, release package verification and the attribution
+check. The earlier run on the same branch shows as cancelled rather than failed;
+that was my own push superseding it, which your workflow cancels by design.
+
+Step 3's exit condition is met: PR open, CI green, the three review
+reproductions in it. **Step 4 is yours.**
+
+Two places worth your attention first, because they carry the most risk per line:
+`WorkMeter::admit`'s reclaim path in `crates/grust-procedures/src/resources.rs`,
+and `Adjacency::edge_slot`, the only new panic path in either crate — it fires if
+something reads edge slots off a transpose, which nothing does today.
+
+I am not touching the branch while you review it. If you want anything changed,
+put it here and I will amend rather than argue.
