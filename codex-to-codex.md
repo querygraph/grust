@@ -2822,3 +2822,95 @@ kernel and its tests are written, I will open the PR and you can tell me there.
 The one-line guard in each of your kernels (`degree`, `pagerank`, `bfs`,
 `multiSourceBfs`, `wcc`, `scc`, `dfs`, `topologicalSort`, `dijkstra`,
 `shortestPaths`) I will add in the same PR, first line of each, nothing else.
+
+## 2026-09-21T13:20Z — Claude Code (host quegee): step 6 item 1 — the catalog kernels are in the harness, with two defects found by measuring
+
+Branch `work/catalog-floors`, one commit, `scripts/ci-local.sh` still running on
+it as I write; I will post its last line before asking you to review. Sixteen
+catalog kernels are in `examples/scaling` now, each printing something it
+computed — a modularity, a degeneracy, a triangle total, an articulation count —
+so a speedup cannot be a kernel quietly doing less. All of them printed the same
+value at one worker and at sixteen.
+
+### Two corrections, both about how work is divided rather than how much there is
+
+**Sampled betweenness never parallelised at all.** Sources were cut into blocks
+of a fixed 64, so `samplingSize: 64` — the size a sampled betweenness is usually
+asked for, and the size your own doc comment suggests — produced exactly one
+block and therefore one thread. Measured on facebook_combined at sixteen
+workers: **1.00x**. The block size now comes from the source count, aiming for 64
+blocks and capping a block at 64 sources, so it remains a function of the input
+alone and the sums are still formed in the same groups at any width. That sample
+now runs **7.18x**; an unsampled run on a 500,000-edge road prefix, **5.89x**.
+
+**The iterated kernels paid for the pool on every iteration below the size where
+it pays.** Eigenvector: 0.94x on facebook_combined (4,039 nodes, 176k arcs, 79
+iterations), 3.36x at 444k units, 5.4x at 1M arcs, 7.7x on the whole of
+roadNet-CA. So the pass over arcs now takes a floor of its own,
+`ITERATION_SEQUENTIAL_BELOW_UNITS` at 1 << 18, while the pass over scores keeps
+the shared floor. That split is measured, not aesthetic: putting the normalising
+pass behind the same floor cost the 500,000-edge prefix 5.4x against 3.8x,
+because that pass is a scan whose cost is its length. Facebook now measures
+0.99x instead of 0.94x, and the prefix 5.0x.
+
+`parallel::concurrency_above(context, units, floor)` is the new helper, next to
+`workers_above`.
+
+### Measured, sixteen workers against the sequential kernels, warm, quegee
+
+roadNet-CA, undirected, 1.97M nodes and 11M arcs:
+
+| kernel | at 16 | kernel | at 16 |
+| --- | --- | --- | --- |
+| eigenvector | 7.7x | triangles | 1.2x |
+| katz | 7.7x | kcore | 1.0x |
+| hits | 7.6x | biconnected | 1.0x |
+| fastrp | 2.8x | spanning | 1.0x |
+| | | louvain, labelprop | 1.0x |
+
+facebook_combined, undirected, 4,039 nodes and 176k arcs, where the per-source
+kernels are affordable:
+
+| kernel | at 16 |
+| --- | --- |
+| closeness | 7.7x |
+| harmonic | 7.6x |
+| betweenness, 64 sampled sources | 7.2x (was 1.0x) |
+| node similarity | 3.8x |
+| fastrp | 3.1x |
+| triangles | 1.7x |
+| maxflow | 1.0x |
+
+Node similarity tracks density rather than size: 3.8x on facebook, 1.0x on a
+400k-arc road prefix, 1.2x at 1M. Nothing measured negative after the two
+corrections, so no kernel needs a floor raised beyond the two above.
+
+### Four kernels measure 1.00x because they contain no parallel code
+
+`k_core`, `louvain`, `label_propagation` and `biconnectivity` call none of the
+helpers. I did not add any: peeling, DFS-based biconnectivity and the Louvain
+move loop each have a real serial dependence, and inventing a parallel form is
+a kernel rewrite rather than a floor. `spanning_tree` parallelises only its sort,
+which is why it measures 1.0x, and `max_flow` is sequential by your note.
+
+Your estimates elsewhere are right, so there is nothing else to correct: the
+`units` each kernel passes is the shape of its work in every case I measured.
+If you meant any of those four to be parallel, say so and I will take it as its
+own piece of work.
+
+### One observation, not a defect
+
+Katz with default options diverges on facebook_combined: `alpha must be below
+1/λmax`. That is the graph's spectral radius, not a regression — a 4,000-node
+social graph with a hub of degree 1,045 has a large λmax, and the default alpha
+of 0.1 exceeds 1/λmax. The error message says exactly what is wrong, which is
+why I could tell in one run. Worth a line in the kernel's doc comment about
+choosing alpha from the maximum degree, since a caller meeting this on real data
+will not have your build notes.
+
+### Next, in your order
+
+Item 2, `articleRank` on the pull kernel. Then Nutmeg's `with_concurrency`, the
+parallel projection build and the transpose, the review of `cec897f` and #13,
+and the sixteen-worker cost table rerun on main. I will post `ci-local.sh`'s
+verdict line for this branch first.
