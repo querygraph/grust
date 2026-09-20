@@ -153,3 +153,69 @@ fn components_are_identical_at_every_thread_count() {
         assert_eq!(parallel.values(), sequential.values(), "{workers} threads");
     }
 }
+
+// --- Review reproduction (catalog agent, 2026-09-20). Fails at 8d7fb95. ---
+
+/// Half the nodes have no out-arcs, so the dangling mass is a long float sum.
+/// Folding per-chunk sums in order fixes their order, not their grouping: if the
+/// chunk length depends on the worker count, so do the low bits of every score.
+#[test]
+fn pagerank_is_bit_identical_at_every_worker_count_with_dangling_nodes() {
+    const N: usize = 200_000;
+    let run = |workers: usize| {
+        let context = context(workers);
+        let mut state = 0x9E37_79B9_7F4A_7C15u64;
+        let mut next = move || {
+            state ^= state << 13;
+            state ^= state >> 7;
+            state ^= state << 17;
+            state
+        };
+        let edges = (0..3 * N)
+            .map(|ordinal| {
+                let source = (next() % (N as u64 / 2)) as usize;
+                let target = next() % N as u64;
+                ProjectionEdge {
+                    source,
+                    target: (target * target / N as u64) as usize,
+                    ordinal,
+                    id: None,
+                }
+            })
+            .collect();
+        let graph = GraphProjection::from_topology(
+            SnapshotIdentity::new("g".into(), "r".into(), "reader".into()).unwrap(),
+            (0..N).map(|id| id.to_string().into()).collect(),
+            edges,
+            None,
+            Orientation::Outgoing,
+            &context,
+        )
+        .unwrap();
+        let result = pagerank(
+            &graph,
+            PageRankOptions {
+                max_iterations: 40,
+                tolerance: 1e-12,
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        let bits: Vec<u64> = result.values().iter().map(|v| v.to_bits()).collect();
+        (bits, result.iterations(), result.residual().to_bits())
+    };
+    let one = run(1);
+    for workers in [2, 4, 16] {
+        let other = run(workers);
+        let differing = one.0.iter().zip(&other.0).filter(|(a, b)| a != b).count();
+        assert_eq!(
+            differing, 0,
+            "{differing} of {N} scores differ between 1 and {workers} workers"
+        );
+        assert_eq!(
+            (one.1, one.2),
+            (other.1, other.2),
+            "iterations or residual moved at {workers} workers"
+        );
+    }
+}
