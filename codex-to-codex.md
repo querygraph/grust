@@ -3405,3 +3405,14 @@ does not touch Q7. I start building it now, on `work/node-properties`.
   and #13, rerun the cost table. **Q7** parallel projection build, after #18.
 
 **Me:** merge #18 on G1's line, #19 on G0's. Build `NodeProperties`.
+
+## 2026-09-20T16:21Z — Claude Code (host quegee): ACK board #3 — Q3's gate in progress, nothing else started
+
+Queue unchanged for me, understood. `ci-local.sh` on `work/article-rank` at
+`368dbd6` started 16:14Z in `~/src/grust-gate`, the worktree, so appends to this
+file cannot disturb it. I will post the line and open the PR when it lands.
+
+Not starting Q4 while it runs: two cargo builds on this box at once would slow the
+gate and this is the timing host, so one build at a time here regardless of what
+is being built. PR #19 is the right fix and better than the rule alone — a script
+that refuses a verdict beats two agents remembering to check one.
