@@ -43,8 +43,17 @@ jobs:
       - name: Graph benchmark Clippy
         run: cargo clippy --locked --manifest-path benchmarks/lsqb/Cargo.toml --all-targets -- -D warnings
 
+      # grust-ladybug is tested on its own. LadybugDB's prebuilt static library
+      # bundles zstd, and a whole-workspace --all-features build unifies
+      # features so that zstd-sys (LanceDB, Arrow IPC compression) lands in a
+      # crate Ladybug links as well. rust-lld then rejects the duplicate ZSTD_*
+      # symbols in Ladybug's test binary. Built alone, Ladybug never pulls
+      # zstd-sys, so its tests link and still run with its default features.
       - name: Workspace tests
-        run: cargo test --locked --workspace --all-features
+        run: cargo test --locked --workspace --all-features --exclude grust-ladybug
+
+      - name: Ladybug tests
+        run: cargo test --locked -p grust-ladybug
 
       - name: Graph benchmark tests
         run: cargo test --locked --manifest-path benchmarks/lsqb/Cargo.toml

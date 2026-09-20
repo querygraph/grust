@@ -65,6 +65,12 @@ scripts/verify-package-attribution.sh
 git diff --check
 ```
 
+On Linux, test `grust-ladybug` separately, as CI does: `cargo test --workspace
+--all-features --exclude grust-ladybug` and then `cargo test -p grust-ladybug`.
+LadybugDB's prebuilt library bundles zstd, and the unified all-features build
+links `zstd-sys` into the same test binary, which `rust-lld` rejects as
+duplicate symbols. macOS's linker accepts it, so the single command works there.
+
 Run [`scripts/integration-test.sh`](scripts/integration-test.sh) for affected
 live backends. A release that changes backend behavior should record the exact
 profile, service/image revisions, and any intentionally unrun backend. An
