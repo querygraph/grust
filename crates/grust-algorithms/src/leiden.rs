@@ -5,7 +5,6 @@ use crate::{
     GraphProjection, Orientation, Result,
     buffer::Buffer,
     louvain::{self, Level, Louvain, LouvainOptions},
-    meter::Meter,
     random,
 };
 use grust_procedures::ExecutionContext;
@@ -78,9 +77,9 @@ pub fn leiden(graph: &GraphProjection, options: LeidenOptions) -> Result<Leiden>
             break;
         }
         levels += 1;
-        let mut meter = Meter::new(context);
+        let mut meter = context.work_meter();
         for slot in &mut assignment.values {
-            meter.tick(1)?;
+            meter.charge(1)?;
             *slot = dense.values[*slot];
         }
         // The next level's nodes are these groups; each starts in the community
@@ -88,7 +87,7 @@ pub fn leiden(graph: &GraphProjection, options: LeidenOptions) -> Result<Leiden>
         let mut first_group = Buffer::filled(level.nodes(), usize::MAX, context)?;
         let mut next_initial = Buffer::filled(count, 0usize, context)?;
         for node in 0..level.nodes() {
-            meter.tick(1)?;
+            meter.charge(1)?;
             let community = outcome.community.values[node];
             let group = dense.values[node];
             if first_group.values[community] == usize::MAX {
@@ -96,7 +95,6 @@ pub fn leiden(graph: &GraphProjection, options: LeidenOptions) -> Result<Leiden>
             }
             next_initial.values[group] = first_group.values[community];
         }
-        meter.flush()?;
         level = louvain::coarsen(&level, &dense, count, directed, context)?;
         initial = Some(next_initial);
     }
@@ -120,7 +118,7 @@ fn refine(
     context: &ExecutionContext,
 ) -> Result<Buffer<usize>> {
     let n = level.nodes();
-    let mut meter = Meter::new(context);
+    let mut meter = context.work_meter();
     let gamma = options.resolution;
     // Both matrix entries of an undirected arc, as in the move phase.
     let scale = if directed { 1.0 } else { 2.0 };
@@ -138,7 +136,7 @@ fn refine(
     let mut community_in = Buffer::filled(n, 0.0f64, context)?;
     for node in 0..n {
         let row = level.row(node);
-        meter.tick(1 + row.len() + in_rows(node).len())?;
+        meter.charge(1 + row.len() + in_rows(node).len())?;
         let own = level.inside.values[node];
         let mut out = own;
         for arc in row {
@@ -198,7 +196,7 @@ fn refine(
 
     for &node in &order.values {
         let home = community.values[node];
-        meter.tick(1 + level.row(node).len() + in_rows(node).len())?;
+        meter.charge(1 + level.row(node).len() + in_rows(node).len())?;
         if !alone.values[node]
             || !well_connected(
                 external.values[node],
@@ -268,6 +266,5 @@ fn refine(
         }
         touched.values.clear();
     }
-    meter.flush()?;
     Ok(group)
 }

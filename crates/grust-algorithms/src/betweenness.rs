@@ -3,7 +3,6 @@
 use crate::{
     AlgorithmError, GraphProjection, Orientation, Result,
     buffer::Buffer,
-    meter::Meter,
     parallel, random,
     shortest::MinHeap,
     table::{NodeColumn, NodeTable},
@@ -46,7 +45,7 @@ impl Betweenness {
 }
 
 /// Sources per block. Fixed, so which sums are formed, and in what order, does
-/// not depend on the pool width.
+/// not depend on the worker count.
 const BLOCK: usize = 64;
 
 /// For every node `v`, the sum over ordered pairs `s != v != t` of the share of
@@ -65,9 +64,9 @@ const BLOCK: usize = 64;
 /// otherwise. A zero weight makes the number of shortest paths ill-defined and
 /// is rejected.
 ///
-/// Sources run in blocks of 64 on the caller's rayon pool and are merged in
-/// block order; scores, and the work charged, are identical at any pool width.
-/// Memory held at once does grow with the pool: one workspace per running block.
+/// Sources run in blocks of 64 on as many workers as the execution asked for and are merged in
+/// block order; scores, and the work charged, are identical at any worker count.
+/// Memory held at once does grow with the workers: one workspace per running block.
 pub fn betweenness(graph: &GraphProjection, options: BetweennessOptions) -> Result<Betweenness> {
     let context = graph.execution();
     context.checkpoint()?;
@@ -80,16 +79,15 @@ pub fn betweenness(graph: &GraphProjection, options: BetweennessOptions) -> Resu
     }
     let weighted = adjacency.weights.is_some();
     if let Some(weights) = &adjacency.weights {
-        let mut meter = Meter::new(context);
+        let mut meter = context.work_meter();
         for &weight in &weights.values {
-            meter.tick(1)?;
+            meter.charge(1)?;
             if weight == 0.0 {
                 return Err(AlgorithmError::InvalidArguments(
                     "betweenness needs positive weights: a zero weight makes the number of shortest paths ill-defined".into(),
                 ));
             }
         }
-        meter.flush()?;
     }
 
     // The sources, ascending, so an exhaustive sample is the exact run bit for bit.
@@ -107,14 +105,19 @@ pub fn betweenness(graph: &GraphProjection, options: BetweennessOptions) -> Resu
     let source_count = sources.values.len();
 
     let mut scores = Buffer::filled(n, 0.0f64, context)?;
+    let workers = parallel::concurrency(
+        context,
+        source_count.saturating_mul(n.saturating_add(adjacency.targets.values.len())),
+    );
     parallel::ordered_blocks(
+        workers,
         source_count.div_ceil(BLOCK),
         |block| {
             let first = block * BLOCK;
             let last = (first + BLOCK).min(source_count);
             let mut workspace = Workspace::new(n, weighted, context)?;
             for &source in &sources.values[first..last] {
-                workspace.accumulate(graph, source, context)?;
+                workspace.accumulate(graph, source)?;
             }
             Ok(workspace.local)
         },
@@ -155,6 +158,9 @@ pub fn betweenness(graph: &GraphProjection, options: BetweennessOptions) -> Resu
 
 /// Per-block scratch: one single-source pass at a time, summed into `local`.
 struct Workspace {
+    /// One meter for the block: creating a meter registers it, which is too
+    /// much to pay per node.
+    meter: grust_procedures::WorkMeter,
     distance: Buffer<f64>,
     paths: Buffer<f64>,
     dependency: Buffer<f64>,
@@ -166,6 +172,7 @@ struct Workspace {
 impl Workspace {
     fn new(n: usize, weighted: bool, context: &ExecutionContext) -> Result<Self> {
         Ok(Self {
+            meter: context.work_meter(),
             distance: Buffer::filled(n, f64::INFINITY, context)?,
             paths: Buffer::filled(n, 0.0, context)?,
             dependency: Buffer::filled(n, 0.0, context)?,
@@ -175,32 +182,26 @@ impl Workspace {
         })
     }
 
-    fn accumulate(
-        &mut self,
-        graph: &GraphProjection,
-        source: usize,
-        context: &ExecutionContext,
-    ) -> Result<()> {
+    fn accumulate(&mut self, graph: &GraphProjection, source: usize) -> Result<()> {
         let adjacency = graph.outgoing();
-        let mut meter = Meter::new(context);
         self.order.values.clear();
         self.distance.values[source] = 0.0;
         self.paths.values[source] = 1.0;
 
         // Forward: settle nodes in nondecreasing distance, counting shortest paths.
         if let Some(heap) = &mut self.heap {
-            heap.improve(source, 0.0, context)?;
-            while let Some((cost, node)) = heap.pop(context)? {
+            heap.improve(source, 0.0, &mut self.meter)?;
+            while let Some((cost, node)) = heap.pop(&mut self.meter)? {
                 self.order.values.push(node);
                 let range = adjacency.range(node);
-                meter.tick(1 + range.len())?;
+                self.meter.charge(1 + range.len())?;
                 for arc in range {
                     let next = adjacency.targets.values[arc];
                     let candidate = cost + adjacency.weight(arc);
                     if candidate < self.distance.values[next] {
                         self.distance.values[next] = candidate;
                         self.paths.values[next] = self.paths.values[node];
-                        heap.improve(next, candidate, context)?;
+                        heap.improve(next, candidate, &mut self.meter)?;
                     } else if candidate == self.distance.values[next] {
                         self.paths.values[next] += self.paths.values[node];
                     }
@@ -213,7 +214,7 @@ impl Workspace {
                 let node = self.order.values[head];
                 head += 1;
                 let range = adjacency.range(node);
-                meter.tick(1 + range.len())?;
+                self.meter.charge(1 + range.len())?;
                 let candidate = self.distance.values[node] + 1.0;
                 for arc in range {
                     let next = adjacency.targets.values[arc];
@@ -232,7 +233,7 @@ impl Workspace {
         // share of that successor's paths that came through it.
         for &node in self.order.values.iter().rev() {
             let range = adjacency.range(node);
-            meter.tick(1 + range.len())?;
+            self.meter.charge(1 + range.len())?;
             for arc in range {
                 let next = adjacency.targets.values[arc];
                 if next != node
@@ -255,6 +256,6 @@ impl Workspace {
             self.paths.values[node] = 0.0;
             self.dependency.values[node] = 0.0;
         }
-        meter.flush()
+        Ok(())
     }
 }

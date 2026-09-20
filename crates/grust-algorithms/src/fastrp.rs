@@ -4,7 +4,6 @@
 use crate::{
     AlgorithmError, GraphProjection, Result,
     buffer::Buffer,
-    meter::Meter,
     parallel, random,
     table::{NodeColumn, NodeTable},
 };
@@ -74,7 +73,7 @@ impl FastRp {
     }
 }
 
-/// Nodes per chunk; fixed, so nothing depends on the pool width.
+/// Nodes per chunk; fixed, so nothing depends on the worker count.
 const CHUNK: usize = 1024;
 
 /// Embed every node.
@@ -83,7 +82,7 @@ const CHUNK: usize = 1024;
 /// with probabilities 1/6, 2/3, 1/6, scaled by `degree ^ normalization_strength`
 /// (a node of degree zero scales by zero unless the strength is zero). Entry
 /// `j` of node `v` is a pure function of `(seed, v, j)`, so neither the order
-/// of work nor the pool can change it.
+/// of work nor the worker count can change it.
 ///
 /// **Each round** replaces a node's vector with the weighted mean of the
 /// vectors of the nodes its arcs reach, so after `k` rounds a node reflects its
@@ -128,11 +127,16 @@ pub fn fast_rp(graph: &GraphProjection, options: FastRpOptions<'_>) -> Result<Fa
 
     // Round zero.
     let root3 = 3.0f32.sqrt();
-    parallel::for_chunks(&mut current.values, CHUNK * d, |first, chunk| {
-        let mut meter = Meter::new(context);
+    // Chunks are fixed, so the worker count cannot change a value.
+    let workers = parallel::concurrency(
+        context,
+        length.saturating_add(adjacency.targets.values.len().saturating_mul(d)),
+    );
+    parallel::for_chunks(workers, &mut current.values, CHUNK * d, |first, chunk| {
+        let mut meter = context.work_meter();
         for (offset, row) in chunk.chunks_mut(d).enumerate() {
             let node = first / d + offset;
-            meter.tick(d + adjacency.range(node).len())?;
+            meter.charge(d + adjacency.range(node).len())?;
             let scale = if options.normalization_strength == 0.0 {
                 1.0
             } else {
@@ -147,7 +151,7 @@ pub fn fast_rp(graph: &GraphProjection, options: FastRpOptions<'_>) -> Result<Fa
                 };
             }
         }
-        meter.flush()
+        Ok(())
     })?;
     accumulate(
         &mut result.values,
@@ -159,12 +163,12 @@ pub fn fast_rp(graph: &GraphProjection, options: FastRpOptions<'_>) -> Result<Fa
 
     for &weight in options.iteration_weights {
         let previous = &current.values;
-        parallel::for_chunks(&mut next.values, CHUNK * d, |first, chunk| {
-            let mut meter = Meter::new(context);
+        parallel::for_chunks(workers, &mut next.values, CHUNK * d, |first, chunk| {
+            let mut meter = context.work_meter();
             for (offset, row) in chunk.chunks_mut(d).enumerate() {
                 let node = first / d + offset;
                 let range = adjacency.range(node);
-                meter.tick(d * (1 + range.len()))?;
+                meter.charge(d * (1 + range.len()))?;
                 row.fill(0.0);
                 let mut total = 0.0f32;
                 for arc in range {
@@ -183,7 +187,7 @@ pub fn fast_rp(graph: &GraphProjection, options: FastRpOptions<'_>) -> Result<Fa
                     }
                 }
             }
-            meter.flush()
+            Ok(())
         })?;
         std::mem::swap(&mut current, &mut next);
         accumulate(
@@ -217,7 +221,8 @@ fn accumulate(
     if weight == 0.0 {
         return Ok(());
     }
-    parallel::for_chunks(into, CHUNK * d, |first, chunk| {
+    let workers = parallel::concurrency(context, into.len());
+    parallel::for_chunks(workers, into, CHUNK * d, |first, chunk| {
         context.charge_work(chunk.len())?;
         for (offset, row) in chunk.chunks_mut(d).enumerate() {
             let source = &from[first + offset * d..first + (offset + 1) * d];

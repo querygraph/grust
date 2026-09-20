@@ -30,6 +30,7 @@ pub enum TopologicalOrder {
 /// ties; each reachable node appears once. Weights are ignored.
 pub fn depth_first(graph: &GraphProjection, source: &str) -> Result<NodeOrder> {
     let context = graph.execution();
+    let mut meter = context.work_meter();
     context.checkpoint()?;
     let source = graph.source(source)?;
     let adjacency = graph.outgoing();
@@ -40,7 +41,7 @@ pub fn depth_first(graph: &GraphProjection, source: &str) -> Result<NodeOrder> {
     nodes.values.push(source);
     stack.values.push((source, adjacency.range(source).start));
     while let Some(&mut (node, ref mut next)) = stack.values.last_mut() {
-        context.charge_work(1)?;
+        meter.charge(1)?;
         if *next == adjacency.range(node).end {
             stack.values.pop();
             continue;
@@ -71,20 +72,21 @@ enum Color {
 /// On cyclic input returns the first back-edge witness in node/adjacency order.
 pub fn topological_sort(graph: &GraphProjection) -> Result<TopologicalOrder> {
     let context = graph.execution();
+    let mut meter = context.work_meter();
     let n = graph.node_count();
     let adjacency = graph.outgoing();
     let mut colors = Buffer::filled(n, Color::Unseen, context)?;
     let mut finished = Buffer::capacity(n, context)?;
     let mut stack = Buffer::capacity(n, context)?;
     for seed in 0..n {
-        context.charge_work(1)?;
+        meter.charge(1)?;
         if colors.values[seed] != Color::Unseen {
             continue;
         }
         colors.values[seed] = Color::Active;
         stack.values.push((seed, adjacency.range(seed).start));
         while let Some(&mut (node, ref mut next)) = stack.values.last_mut() {
-            context.charge_work(1)?;
+            meter.charge(1)?;
             if *next == adjacency.range(node).end {
                 colors.values[node] = Color::Finished;
                 finished.values.push(node);
@@ -102,7 +104,7 @@ pub fn topological_sort(graph: &GraphProjection) -> Result<TopologicalOrder> {
                     let mut witness = Buffer::capacity(n.saturating_add(1), context)?;
                     let mut inside = false;
                     for &(ancestor, _) in &stack.values {
-                        context.charge_work(1)?;
+                        meter.charge(1)?;
                         inside |= ancestor == target;
                         if inside {
                             witness.values.push(ancestor);
@@ -119,7 +121,7 @@ pub fn topological_sort(graph: &GraphProjection) -> Result<TopologicalOrder> {
         }
     }
     for index in 0..finished.values.len() / 2 {
-        context.charge_work(1)?;
+        meter.charge(1)?;
         finished.values.swap(index, n - index - 1);
     }
     Ok(TopologicalOrder::Acyclic(NodeOrder {

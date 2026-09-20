@@ -302,16 +302,19 @@ fn pool(workers: usize) -> crate::Result<std::sync::Arc<rayon::ThreadPool>> {
     Ok(pool)
 }
 
-/// Tasks the caller's pool can run at once; 1 without the `parallel` feature.
-pub(crate) fn width() -> usize {
-    #[cfg(feature = "parallel")]
-    {
-        rayon::current_num_threads().max(1)
-    }
-    #[cfg(not(feature = "parallel"))]
-    {
-        1
-    }
+/// Workers for a kernel that has one implementation rather than a sequential
+/// and a parallel one: what the execution asked for, above the shared floor, and
+/// otherwise one. At one worker the helpers below run on the calling thread and
+/// touch no pool, so a caller that never asked for threads never starts any.
+pub(crate) fn concurrency(context: &ExecutionContext, units: usize) -> usize {
+    workers(context, units).unwrap_or(1).max(1)
+}
+
+/// Run `body` inside the pool for `workers`. Callers take this path only above
+/// one worker.
+#[cfg(feature = "parallel")]
+fn inside<R: Send>(workers: usize, body: impl FnOnce() -> Result<R> + Send) -> Result<R> {
+    pool(workers)?.install(body)
 }
 
 /// Split `0..weights.len()` into at most `parts` contiguous ranges of roughly
@@ -341,52 +344,54 @@ pub(crate) fn balanced_ranges(weights: &[usize], parts: usize) -> Vec<std::ops::
 
 /// Run `task` on every range and return the results in range order.
 pub(crate) fn map_ranges<T: Send>(
+    workers: usize,
     ranges: &[std::ops::Range<usize>],
-    task: impl Fn(std::ops::Range<usize>) -> Result<T> + Sync,
+    task: impl Fn(std::ops::Range<usize>) -> Result<T> + Sync + Send,
 ) -> Result<Vec<T>> {
     #[cfg(feature = "parallel")]
-    {
+    if workers > 1 {
         use rayon::prelude::*;
-        ranges
-            .par_iter()
-            .map(|range| task(range.clone()))
-            .collect::<Result<Vec<T>>>()
+        return inside(workers, || {
+            ranges
+                .par_iter()
+                .map(|range| task(range.clone()))
+                .collect::<Result<Vec<T>>>()
+        });
     }
-    #[cfg(not(feature = "parallel"))]
-    {
-        ranges.iter().map(|range| task(range.clone())).collect()
-    }
+    let _ = workers;
+    ranges.iter().map(|range| task(range.clone())).collect()
 }
 
 /// Run `task(block)` for `0..blocks` and hand each result to `merge` **in block
-/// order**. Blocks run `width()` at a time, so at most that many results are
+/// order**. Blocks run `workers` at a time, so at most that many results are
 /// alive at once; which blocks exist, what each computes and the order they are
 /// merged in do not depend on the pool, so neither does a floating-point sum
 /// built by `merge`.
 pub(crate) fn ordered_blocks<T: Send>(
+    workers: usize,
     blocks: usize,
-    task: impl Fn(usize) -> Result<T> + Sync,
+    task: impl Fn(usize) -> Result<T> + Sync + Send,
     mut merge: impl FnMut(usize, T) -> Result<()>,
 ) -> Result<()> {
-    let wave = width();
+    let wave = workers.max(1);
     let mut first = 0;
     while first < blocks {
         let last = (first + wave).min(blocks);
-        let indices: Vec<usize> = (first..last).collect();
         #[cfg(feature = "parallel")]
-        let results = {
+        let results = if wave > 1 {
             use rayon::prelude::*;
-            indices
-                .par_iter()
-                .map(|&block| task(block))
-                .collect::<Result<Vec<T>>>()?
+            inside(wave, || {
+                (first..last)
+                    .into_par_iter()
+                    .map(&task)
+                    .collect::<Result<Vec<T>>>()
+            })?
+        } else {
+            (first..last).map(&task).collect::<Result<Vec<T>>>()?
         };
         #[cfg(not(feature = "parallel"))]
-        let results = indices
-            .iter()
-            .map(|&block| task(block))
-            .collect::<Result<Vec<T>>>()?;
-        for (block, result) in indices.into_iter().zip(results) {
+        let results = (first..last).map(&task).collect::<Result<Vec<T>>>()?;
+        for (block, result) in (first..last).zip(results) {
             merge(block, result)?;
         }
         first = last;
@@ -399,20 +404,23 @@ pub(crate) fn ordered_blocks<T: Send>(
 /// the caller folds over the returned vector groups its terms the same way at
 /// any pool width.
 pub(crate) fn for_chunks<T: Send, R: Send>(
+    workers: usize,
     values: &mut [T],
     size: usize,
-    task: impl Fn(usize, &mut [T]) -> Result<R> + Sync,
+    task: impl Fn(usize, &mut [T]) -> Result<R> + Sync + Send,
 ) -> Result<Vec<R>> {
     #[cfg(feature = "parallel")]
-    {
+    if workers > 1 {
         use rayon::prelude::*;
-        values
-            .par_chunks_mut(size)
-            .enumerate()
-            .map(|(index, chunk)| task(index * size, chunk))
-            .collect()
+        return inside(workers, || {
+            values
+                .par_chunks_mut(size)
+                .enumerate()
+                .map(|(index, chunk)| task(index * size, chunk))
+                .collect()
+        });
     }
-    #[cfg(not(feature = "parallel"))]
+    let _ = workers;
     values
         .chunks_mut(size)
         .enumerate()
@@ -423,16 +431,21 @@ pub(crate) fn for_chunks<T: Send, R: Send>(
 /// Sort by a **total** order. The result is then the same whatever the pool
 /// does, so the parallel sort is safe to use where a result must not vary.
 pub(crate) fn sort_total<T: Send>(
+    workers: usize,
     values: &mut [T],
-    order: impl Fn(&T, &T) -> std::cmp::Ordering + Sync,
-) {
+    order: impl Fn(&T, &T) -> std::cmp::Ordering + Sync + Send,
+) -> Result<()> {
     #[cfg(feature = "parallel")]
-    {
+    if workers > 1 {
         use rayon::prelude::*;
-        values.par_sort_unstable_by(order);
+        return inside(workers, || {
+            values.par_sort_unstable_by(order);
+            Ok(())
+        });
     }
-    #[cfg(not(feature = "parallel"))]
+    let _ = workers;
     values.sort_unstable_by(order);
+    Ok(())
 }
 
 #[cfg(test)]

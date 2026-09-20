@@ -3,7 +3,6 @@
 use crate::{
     AlgorithmError, GraphProjection, Result,
     buffer::Buffer,
-    meter::Meter,
     parallel,
     table::{NodeColumn, NodeTable},
 };
@@ -104,7 +103,7 @@ impl NodeSimilarity {
 /// so the work budget is the guard; `upper_degree_cutoff` does not help there,
 /// as it bounds a node's own neighbours, not how many point at it.
 ///
-/// Rows and charged work are identical at any pool width.
+/// Rows and charged work are identical at any worker count.
 pub fn node_similarity(
     graph: &GraphProjection,
     options: NodeSimilarityOptions,
@@ -133,7 +132,12 @@ pub fn node_similarity(
     let blocks = n.div_ceil(BLOCK);
     let mut chunks: Buffer<Buffer<Row>> = Buffer::capacity(blocks, context)?;
     let mut total = 0usize;
+    // Cost is the number of (node, shared neighbour, node) triples; the entries
+    // squared over the nodes is its order of magnitude.
+    let entries = sets.entries.values.len();
+    let workers = parallel::concurrency(context, entries.saturating_mul(entries / n.max(1) + 1));
     parallel::ordered_blocks(
+        workers,
         blocks,
         |block| {
             let first = block * BLOCK;
@@ -154,15 +158,15 @@ pub fn node_similarity(
         },
     )?;
 
-    let mut meter = Meter::new(context);
+    let mut meter = context.work_meter();
     let mut rows = Buffer::capacity(total, context)?;
     for chunk in chunks.values.drain(..) {
-        meter.tick(chunk.values.len())?;
+        meter.charge(chunk.values.len())?;
         rows.values.extend_from_slice(&chunk.values);
     }
     drop(chunks);
     if options.top_n > 0 {
-        meter.tick(total.saturating_mul(total.max(2).ilog2() as usize))?;
+        meter.charge(total.saturating_mul(total.max(2).ilog2() as usize))?;
         rows.values.sort_unstable_by(|a, b| {
             b.similarity
                 .total_cmp(&a.similarity)
@@ -172,7 +176,7 @@ pub fn node_similarity(
         rows.values.truncate(options.top_n);
     }
     let count = rows.values.len();
-    meter.tick(count)?;
+    meter.charge(count)?;
     let mut first = Buffer::capacity(count, context)?;
     let mut second = Buffer::capacity(count, context)?;
     let mut similarity = Buffer::capacity(count, context)?;
@@ -181,7 +185,6 @@ pub fn node_similarity(
         second.values.push(row.second);
         similarity.values.push(row.similarity);
     }
-    meter.flush()?;
     Ok(NodeSimilarity {
         graph: graph.clone(),
         first,
@@ -190,7 +193,7 @@ pub fn node_similarity(
     })
 }
 
-/// Nodes per block; fixed, so nothing depends on the pool width.
+/// Nodes per block; fixed, so nothing depends on the worker count.
 const BLOCK: usize = 64;
 
 #[derive(Clone, Copy)]
@@ -227,7 +230,7 @@ impl Sets {
         let adjacency = graph.outgoing();
         let weighted = adjacency.weights.is_some();
         let n = graph.node_count();
-        let mut meter = Meter::new(context);
+        let mut meter = context.work_meter();
         let mut offsets = Buffer::capacity(n + 1, context)?;
         let mut entries: Buffer<(usize, f64)> =
             Buffer::capacity(adjacency.targets.values.len(), context)?;
@@ -238,7 +241,7 @@ impl Sets {
         for node in 0..n {
             let range = adjacency.range(node);
             let degree = range.len();
-            meter.tick(1 + degree.saturating_mul(degree.max(2).ilog2() as usize))?;
+            meter.charge(1 + degree.saturating_mul(degree.max(2).ilog2() as usize))?;
             let start = entries.values.len();
             for arc in range {
                 let target = adjacency.targets.values[arc];
@@ -286,7 +289,7 @@ impl Sets {
         for index in 1..=n {
             member_offsets.values[index] += member_offsets.values[index - 1];
         }
-        meter.tick(n + entries.values.len())?;
+        meter.charge(n + entries.values.len())?;
         let mut members = Buffer::filled(member_offsets.values[n], (0usize, 0.0f64), context)?;
         let mut position = Buffer::capacity(n, context)?;
         position
@@ -302,7 +305,6 @@ impl Sets {
                 position.values[target] += 1;
             }
         }
-        meter.flush()?;
         Ok(Self {
             offsets,
             entries,
@@ -315,6 +317,9 @@ impl Sets {
 }
 
 struct Workspace {
+    /// One meter for the block: creating a meter registers it, which is too
+    /// much to pay per node.
+    meter: grust_procedures::WorkMeter,
     /// `S` per candidate for the node in hand.
     shared: Buffer<f64>,
     seen: Buffer<bool>,
@@ -326,6 +331,7 @@ struct Workspace {
 impl Workspace {
     fn new(n: usize, top_k: usize, context: &ExecutionContext) -> Result<Self> {
         Ok(Self {
+            meter: context.work_meter(),
             shared: Buffer::filled(n, 0.0, context)?,
             seen: Buffer::filled(n, false, context)?,
             candidates: Buffer::capacity(n, context)?,
@@ -346,14 +352,13 @@ impl Workspace {
         if !sets.admitted.values[node] {
             return Ok(());
         }
-        let mut meter = Meter::new(context);
         let cosine = options.metric == SimilarityMetric::Cosine;
         for &(target, weight) in
             &sets.entries.values[sets.offsets.values[node]..sets.offsets.values[node + 1]]
         {
             let members = &sets.members.values
                 [sets.member_offsets.values[target]..sets.member_offsets.values[target + 1]];
-            meter.tick(1 + members.len())?;
+            self.meter.charge(1 + members.len())?;
             for &(other, other_weight) in members {
                 if other == node {
                     continue;
@@ -392,7 +397,7 @@ impl Workspace {
             }
         }
         let found = self.ranked.values.len();
-        meter.tick(
+        self.meter.charge(
             self.candidates.values.len() + found.saturating_mul(found.max(2).ilog2() as usize),
         )?;
         self.candidates.values.clear();
@@ -419,6 +424,6 @@ impl Workspace {
         }
         self.rows.values.extend_from_slice(&self.ranked.values);
         self.ranked.values.clear();
-        meter.flush()
+        Ok(())
     }
 }

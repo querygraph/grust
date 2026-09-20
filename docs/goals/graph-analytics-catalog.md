@@ -592,11 +592,15 @@ M4 (Tier A), then per milestone.** Each is a minor version: new public API.
   same treatment once: a `PairTable` and an `EdgeTable`.
 - **`Meter`** (`meter.rs`) is the block-charging helper rule 5 asks for: `tick`
   in the loop, `flush` before returning.
-- **Thread count comes from the caller's rayon pool**, not from
-  `ExecutionLimits`: adding a field there breaks 33 construction sites and every
-  downstream crate. A caller installs a pool; rule 4 makes the result identical
-  at any width, and tests run each parallel kernel in a one-thread and a
-  many-thread pool.
+- **Thread count comes from the execution**:
+  `ExecutionContext::with_concurrency(n)`, read through
+  `parallel::concurrency(context, units)`. A caller that asks for nothing gets
+  one worker on its own thread and no pool is ever started; nothing reads the
+  CPU count. (The first version read the installed rayon pool, which outside a
+  pool is the whole machine — wrong inside Sail.) Rule 4 makes the result
+  identical at any count, and each parallel kernel's test asserts it at 1, 2, 3
+  and 8 on a fixture large enough to clear the sequential floor, because a
+  smaller one passes by never going parallel.
 - **Undirected-only kernels refuse a directed projection with a message that
   contains "undirected".** Nutmeg's schema probe and Grust's catalog test both
   rely on that word to retry on an undirected projection. Keep it.
@@ -613,13 +617,15 @@ M4 (Tier A), then per milestone.** Each is a minor version: new public API.
   contiguous blocks of equal estimated work (`balanced_ranges`), run one task per
   block (`map_ranges`), combine in block order. Cross-block writes go through
   atomic counters (`Buffer::filled_with`), never per-task vectors, so memory and
-  charged work do not depend on the pool width. Each task owns a `Meter`.
+  charged work do not depend on the worker count. Each task owns a `WorkMeter`
+  (`context.work_meter()`), created per block, never per node: creating one
+  registers it under a lock.
   Triangles proves it: identical counts *and* identical work at 1, 2, 3, 8 threads.
 - **Per-source kernels use `parallel::ordered_blocks`.** Betweenness splits its
   sources into fixed blocks of 64, runs `width()` blocks at a time, and merges
   per-block vectors in block order: float sums and charged work are
   bit-identical at any width, but live memory is one workspace per running
-  block, so it does grow with the pool. Closeness and harmonic (group 6) should
+  block, so it does grow with the workers. Closeness and harmonic (group 6) should
   reuse it and `shortest::MinHeap` (now `pub(crate)`). Betweenness needs only
   out-arcs: the backward pass rescans them instead of storing predecessors.
   GDS's `samplingSeed` maps to `seed`; GDS does not rescale a sampled score and
@@ -645,7 +651,7 @@ M4 (Tier A), then per milestone.** Each is a minor version: new public API.
   `edgeOrdinal` (then `componentId`). Spanning tree and max flow should do the
   same.
 - **Iterative kernels pull, in fixed chunks.** `parallel::for_chunks` cuts a
-  vector into chunks of 4,096 whatever the pool, each node pulls its next value
+  vector into chunks of 4,096 whatever the worker count, each node pulls its next value
   from `incoming()`, and per-chunk partial sums are folded in chunk order. That
   is what makes a float reduction bit-identical at any width; `balanced_ranges`
   cannot, because its boundaries move with the width. `articleRank` is not done:

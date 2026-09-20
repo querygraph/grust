@@ -6,7 +6,6 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use crate::{
     AlgorithmError, GraphProjection, Orientation, Result,
     buffer::Buffer,
-    meter::Meter,
     parallel,
     table::{NodeColumn, NodeTable, TableScalar},
 };
@@ -76,9 +75,9 @@ impl Triangles {
 ///
 /// Each triangle is found once, at its lowest-ranked corner, where rank orders
 /// nodes by (degree, row): O(A^1.5) intersections. Nodes are split into blocks
-/// of equal estimated work and counted on the caller's rayon pool into atomic
+/// of equal estimated work and counted on as many workers as the execution asked for into atomic
 /// per-node counters; the counts, and the work charged, are the same at any
-/// pool width.
+/// worker count.
 pub fn triangles(graph: &GraphProjection, options: TriangleOptions) -> Result<Triangles> {
     let context = graph.execution();
     context.checkpoint()?;
@@ -90,14 +89,14 @@ pub fn triangles(graph: &GraphProjection, options: TriangleOptions) -> Result<Tr
     }
     let n = graph.node_count();
     let adjacency = graph.outgoing();
-    let mut meter = Meter::new(context);
+    let mut meter = context.work_meter();
 
     // Distinct neighbours per node, sorted, loops removed.
     let mut simple_offsets = Buffer::filled(n + 1, 0usize, context)?;
     let mut simple = Buffer::capacity(adjacency.targets.values.len(), context)?;
     for node in 0..n {
         let range = adjacency.range(node);
-        meter.tick(1 + range.len())?;
+        meter.charge(1 + range.len())?;
         let first = simple.values.len();
         simple.values.extend(
             adjacency.targets.values[range]
@@ -124,7 +123,7 @@ pub fn triangles(graph: &GraphProjection, options: TriangleOptions) -> Result<Tr
     let mut forward_offsets = Buffer::filled(n + 1, 0usize, context)?;
     let mut forward = Buffer::capacity(simple.values.len() / 2 + 1, context)?;
     for node in 0..n {
-        meter.tick(1 + degree(node))?;
+        meter.charge(1 + degree(node))?;
         if included(node) {
             let row = &simple.values[simple_offsets.values[node]..simple_offsets.values[node + 1]];
             forward.values.extend(
@@ -135,7 +134,6 @@ pub fn triangles(graph: &GraphProjection, options: TriangleOptions) -> Result<Tr
         }
         forward_offsets.values[node + 1] = forward.values.len();
     }
-    meter.flush()?;
     let forward_row = |node: usize| {
         &forward.values[forward_offsets.values[node]..forward_offsets.values[node + 1]]
     };
@@ -146,16 +144,17 @@ pub fn triangles(graph: &GraphProjection, options: TriangleOptions) -> Result<Tr
         let len = forward_row(node).len();
         weights.values.push(len.saturating_mul(len));
     }
-    let ranges = parallel::balanced_ranges(&weights.values, parallel::width());
+    let workers = parallel::concurrency(context, n.saturating_add(adjacency.targets.values.len()));
+    let ranges = parallel::balanced_ranges(&weights.values, workers);
     let counts = Buffer::filled_with(n, || AtomicU64::new(0), context)?;
 
-    parallel::map_ranges(&ranges, |range| {
-        let mut meter = Meter::new(context);
+    parallel::map_ranges(workers, &ranges, |range| {
+        let mut meter = context.work_meter();
         for u in range {
             let row_u = forward_row(u);
             for &v in row_u {
                 let row_v = forward_row(v);
-                meter.tick(1 + row_u.len() + row_v.len())?;
+                meter.charge(1 + row_u.len() + row_v.len())?;
                 // Both rows are sorted by node row: a plain merge finds every
                 // common forward neighbour w, closing the triangle u-v-w once.
                 let (mut i, mut j) = (0, 0);
@@ -174,7 +173,7 @@ pub fn triangles(graph: &GraphProjection, options: TriangleOptions) -> Result<Tr
                 }
             }
         }
-        meter.flush()
+        Ok(())
     })?;
 
     let mut triangles = Buffer::capacity(n, context)?;
@@ -182,9 +181,9 @@ pub fn triangles(graph: &GraphProjection, options: TriangleOptions) -> Result<Tr
     let mut corners: u128 = 0;
     let mut coefficient_sum = 0.0f64;
     let mut coefficient_count = 0usize;
-    let mut meter = Meter::new(context);
+    let mut meter = context.work_meter();
     for node in 0..n {
-        meter.tick(1)?;
+        meter.charge(1)?;
         if !included(node) {
             triangles.values.push(-1);
             coefficients.values.push(f64::NAN);
@@ -206,7 +205,6 @@ pub fn triangles(graph: &GraphProjection, options: TriangleOptions) -> Result<Tr
             coefficients.values.push(coefficient);
         }
     }
-    meter.flush()?;
     let total = i64::try_from(corners / 3)
         .map_err(|_| AlgorithmError::Numerical("triangle count exceeds Int64".into()))?;
     Ok(Triangles {

@@ -233,24 +233,21 @@ fn scrambled(n: usize, edges: usize) -> Vec<(usize, usize)> {
 
 #[test]
 fn triangles_are_identical_at_any_pool_width_and_charge_the_same_work() {
-    let edges = scrambled(400, 6000);
+    // Large enough to clear the floor below which a kernel stays on one worker;
+    // a smaller fixture would pass by never going parallel.
+    const N: usize = 700;
+    let edges = scrambled(N, 14_000);
     let run = |threads: usize| {
-        let pool = rayon::ThreadPoolBuilder::new()
-            .num_threads(threads)
-            .build()
-            .unwrap();
-        pool.install(|| {
-            let context = context();
-            let projection = graph(400, &edges, Orientation::Undirected, &context);
-            let before = context.usage().unwrap().work_units;
-            let result = triangles(&projection, TriangleOptions::default()).unwrap();
-            let work = context.usage().unwrap().work_units - before;
-            (result.triangles().to_vec(), result.triangle_count(), work)
-        })
+        let context = context().with_concurrency(threads).unwrap();
+        let projection = graph(N, &edges, Orientation::Undirected, &context);
+        let before = context.usage().unwrap().work_units;
+        let result = triangles(&projection, TriangleOptions::default()).unwrap();
+        let work = context.usage().unwrap().work_units - before;
+        (result.triangles().to_vec(), result.triangle_count(), work)
     };
     let (counts, total, work) = run(1);
     assert!(total > 0, "the fixture should contain triangles");
-    let (expected, _, expected_total) = by_definition(400, &edges);
+    let (expected, _, expected_total) = by_definition(N, &edges);
     assert_eq!(counts, expected);
     assert_eq!(total, expected_total);
     for threads in [2, 3, 8] {

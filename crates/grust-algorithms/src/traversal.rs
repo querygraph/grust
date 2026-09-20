@@ -66,6 +66,7 @@ fn bfs_sources<'a>(
     sources: impl Iterator<Item = &'a str>,
 ) -> Result<Distances> {
     let context = graph.execution();
+    let mut meter = context.work_meter();
     context.checkpoint()?;
     let adjacency = graph.outgoing();
     let workers = crate::parallel::workers_above(
@@ -79,7 +80,7 @@ fn bfs_sources<'a>(
     {
         let mut seen = Buffer::filled(graph.node_count(), false, context)?;
         for source in sources {
-            context.charge_work(1)?;
+            meter.charge(1)?;
             let source = graph.source(source)?;
             if !seen.values[source] {
                 seen.values[source] = true;
@@ -98,11 +99,11 @@ fn bfs_sources<'a>(
     }
     let mut head = 0;
     while head < queue.values.len() {
-        context.charge_work(1)?;
+        meter.charge(1)?;
         let node = queue.values[head];
         head += 1;
         for arc in adjacency.range(node) {
-            context.charge_work(1)?;
+            meter.charge(1)?;
             let next = adjacency.targets.values[arc];
             if distances.values[next].is_infinite() {
                 distances.values[next] = distances.values[node] + 1.0;
@@ -217,6 +218,7 @@ fn levels(graph: &GraphProjection, roots: &[usize], workers: usize) -> Result<Di
 /// halving use O(V) scratch and never require reverse adjacency.
 pub fn weakly_connected_components(graph: &GraphProjection) -> Result<Components> {
     let context = graph.execution();
+    let mut meter = context.work_meter();
     let n = graph.node_count();
     let workers = crate::parallel::workers(
         context,
@@ -227,14 +229,14 @@ pub fn weakly_connected_components(graph: &GraphProjection) -> Result<Components
     }
     let mut parents = Buffer::capacity(n, context)?;
     for node in 0..n {
-        context.charge_work(1)?;
+        meter.charge(1)?;
         parents.values.push(node);
     }
     let mut sizes = Buffer::filled(n, 1usize, context)?;
     for edge in graph.edges() {
-        context.charge_work(1)?;
-        let mut left = root(&mut parents.values, edge.source, context)?;
-        let mut right = root(&mut parents.values, edge.target, context)?;
+        meter.charge(1)?;
+        let mut left = root(&mut parents.values, edge.source, &mut meter)?;
+        let mut right = root(&mut parents.values, edge.target, &mut meter)?;
         if left == right {
             continue;
         }
@@ -247,13 +249,13 @@ pub fn weakly_connected_components(graph: &GraphProjection) -> Result<Components
     // Reuse the size buffer for each root's canonical minimum row.
     sizes.values.fill(usize::MAX);
     for node in 0..n {
-        context.charge_work(1)?;
-        let representative = root(&mut parents.values, node, context)?;
+        meter.charge(1)?;
+        let representative = root(&mut parents.values, node, &mut meter)?;
         parents.values[node] = representative;
         sizes.values[representative] = sizes.values[representative].min(node);
     }
     for representative in &mut parents.values {
-        context.charge_work(1)?;
+        meter.charge(1)?;
         *representative = sizes.values[*representative];
     }
     Ok(Components {
@@ -265,10 +267,10 @@ pub fn weakly_connected_components(graph: &GraphProjection) -> Result<Components
 fn root(
     parents: &mut [usize],
     mut node: usize,
-    context: &crate::ExecutionContext,
+    meter: &mut grust_procedures::WorkMeter,
 ) -> Result<usize> {
     while parents[node] != node {
-        context.charge_work(1)?;
+        meter.charge(1)?;
         parents[node] = parents[parents[node]];
         node = parents[node];
     }
@@ -370,20 +372,21 @@ fn union_find(graph: &GraphProjection, workers: usize) -> Result<Components> {
 /// in admitted heap buffers, including on chains with millions of vertices.
 pub fn strongly_connected_components(graph: &GraphProjection) -> Result<Components> {
     let context = graph.execution();
+    let mut meter = context.work_meter();
     let n = graph.node_count();
     let adjacency = graph.outgoing();
     let mut seen = Buffer::filled(n, false, context)?;
     let mut order = Buffer::capacity(n, context)?;
     let mut stack = Buffer::capacity(n, context)?;
     for seed in 0..n {
-        context.charge_work(1)?;
+        meter.charge(1)?;
         if seen.values[seed] {
             continue;
         }
         seen.values[seed] = true;
         stack.values.push((seed, adjacency.range(seed).start));
         while let Some(&mut (node, ref mut next_arc)) = stack.values.last_mut() {
-            context.charge_work(1)?;
+            meter.charge(1)?;
             if *next_arc == adjacency.range(node).end {
                 order.values.push(node);
                 stack.values.pop();
@@ -405,7 +408,7 @@ pub fn strongly_connected_components(graph: &GraphProjection) -> Result<Componen
     let mut labels = Buffer::filled(n, usize::MAX, context)?;
     let mut members = Buffer::capacity(n, context)?;
     for &seed in order.values.iter().rev() {
-        context.charge_work(1)?;
+        meter.charge(1)?;
         if labels.values[seed] != usize::MAX {
             continue;
         }
@@ -415,11 +418,11 @@ pub fn strongly_connected_components(graph: &GraphProjection) -> Result<Componen
         let mut minimum = seed;
         let mut head = 0;
         while head < members.values.len() {
-            context.charge_work(1)?;
+            meter.charge(1)?;
             let node = members.values[head];
             head += 1;
             for arc in reverse.range(node) {
-                context.charge_work(1)?;
+                meter.charge(1)?;
                 let next = reverse.targets.values[arc];
                 if labels.values[next] == usize::MAX {
                     labels.values[next] = seed;
@@ -429,7 +432,7 @@ pub fn strongly_connected_components(graph: &GraphProjection) -> Result<Componen
             }
         }
         for &node in &members.values {
-            context.charge_work(1)?;
+            meter.charge(1)?;
             labels.values[node] = minimum;
         }
     }

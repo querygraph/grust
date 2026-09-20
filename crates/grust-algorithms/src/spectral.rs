@@ -4,7 +4,6 @@
 use crate::{
     AlgorithmError, GraphProjection, Result,
     buffer::Buffer,
-    meter::Meter,
     parallel,
     projection::Adjacency,
     table::{NodeColumn, NodeTable, TableScalar},
@@ -104,7 +103,7 @@ impl IteratedScores {
 }
 
 /// Nodes per chunk. Fixed, so every sum groups its terms the same way whatever
-/// the pool, and results are identical at any width.
+/// the worker count, and results are identical at any.
 const CHUNK: usize = 4096;
 
 fn validate(options: IterationOptions) -> Result<()> {
@@ -125,13 +124,19 @@ fn pull(
     (keep, beta, alpha): (f64, f64, f64),
     context: &ExecutionContext,
 ) -> Result<f64> {
-    let sums = parallel::for_chunks(into, CHUNK, |first, chunk| {
-        let mut meter = Meter::new(context);
+    // Chunks are fixed, so the worker count cannot change a sum; it only
+    // decides how many chunks run at once.
+    let workers = parallel::concurrency(
+        context,
+        into.len().saturating_add(arcs.targets.values.len()),
+    );
+    let sums = parallel::for_chunks(workers, into, CHUNK, |first, chunk| {
+        let mut meter = context.work_meter();
         let mut squares = 0.0;
         for (offset, value) in chunk.iter_mut().enumerate() {
             let node = first + offset;
             let range = arcs.range(node);
-            meter.tick(1 + range.len())?;
+            meter.charge(1 + range.len())?;
             let mut sum = 0.0;
             for arc in range {
                 sum += arcs.weight(arc) * from[arcs.targets.values[arc]];
@@ -139,7 +144,6 @@ fn pull(
             *value = keep * from[node] + beta + alpha * sum;
             squares += *value * *value;
         }
-        meter.flush()?;
         Ok(squares)
     })?;
     Ok(sums.into_iter().sum())
@@ -152,7 +156,8 @@ fn settle(
     divisor: f64,
     context: &ExecutionContext,
 ) -> Result<f64> {
-    let sums = parallel::for_chunks(values, CHUNK, |first, chunk| {
+    let workers = parallel::concurrency(context, values.len());
+    let sums = parallel::for_chunks(workers, values, CHUNK, |first, chunk| {
         context.charge_work(chunk.len())?;
         let mut change = 0.0;
         for (offset, value) in chunk.iter_mut().enumerate() {
@@ -181,7 +186,7 @@ fn nonfinite(what: &str) -> AlgorithmError {
 /// graph with no cycle there is nothing to be principal; the iteration drifts
 /// toward the sinks and usually stops at the limit with `converged == false`.
 ///
-/// Identical at any pool width.
+/// Identical at any worker count.
 pub fn eigenvector(graph: &GraphProjection, options: IterationOptions) -> Result<IteratedScores> {
     let context = graph.execution();
     context.checkpoint()?;
@@ -224,7 +229,7 @@ pub fn eigenvector(graph: &GraphProjection, options: IterationOptions) -> Result
 /// valid values. Instead a run that does not settle returns
 /// `converged == false`, and one whose scores overflow fails and says why.
 ///
-/// Identical at any pool width.
+/// Identical at any worker count.
 pub fn katz(graph: &GraphProjection, options: KatzOptions) -> Result<IteratedScores> {
     let context = graph.execution();
     context.checkpoint()?;
@@ -275,7 +280,7 @@ pub fn katz(graph: &GraphProjection, options: KatzOptions) -> Result<IteratedSco
 /// pointed at by good hubs. Both have unit Euclidean length; a graph with no
 /// arcs scores zero everywhere. The residual is the L1 change of both together.
 ///
-/// Identical at any pool width.
+/// Identical at any worker count.
 pub fn hits(graph: &GraphProjection, options: IterationOptions) -> Result<IteratedScores> {
     let context = graph.execution();
     context.checkpoint()?;

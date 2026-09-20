@@ -17,7 +17,6 @@
 use crate::{
     AlgorithmError, GraphProjection, Orientation, Result,
     buffer::Buffer,
-    meter::Meter,
     random,
     table::{NodeColumn, NodeTable, TableScalar},
 };
@@ -134,7 +133,7 @@ impl Level {
 /// **Determinism.** Nodes are visited in row order, or in the order `seed`
 /// fixes; ties go to staying put, then to the community whose current id is
 /// smallest. Moves are applied one at a time, so the result does not depend on
-/// the rayon pool: asynchronous parallel moves, which NetworKit's PLM uses, are
+/// the worker count: asynchronous parallel moves, which NetworKit's PLM uses, are
 /// not reproducible, and reproducibility is the contract here.
 pub fn louvain(graph: &GraphProjection, options: LouvainOptions) -> Result<Louvain> {
     let context = graph.execution();
@@ -158,12 +157,11 @@ pub fn louvain(graph: &GraphProjection, options: LouvainOptions) -> Result<Louva
         }
         levels += 1;
         let (dense, count) = renumber(&outcome.community, context)?;
-        let mut meter = Meter::new(context);
+        let mut meter = context.work_meter();
         for slot in &mut assignment.values {
-            meter.tick(1)?;
+            meter.charge(1)?;
             *slot = dense.values[*slot];
         }
-        meter.flush()?;
         if count == level.nodes() {
             // Every node moved into a community of one: nothing left to merge.
             converged = true;
@@ -247,10 +245,10 @@ pub(crate) fn modularity_of(
     let mut out = Buffer::filled(n, 0.0f64, context)?;
     let mut into = Buffer::filled(n, 0.0f64, context)?;
     let mut total = 0.0f64;
-    let mut meter = Meter::new(context);
+    let mut meter = context.work_meter();
     for source in 0..n {
         let range = adjacency.range(source);
-        meter.tick(1 + range.len())?;
+        meter.charge(1 + range.len())?;
         for arc in range {
             let target = adjacency.targets.values[arc];
             // An undirected loop occupies one arc but is two matrix entries' worth.
@@ -267,7 +265,6 @@ pub(crate) fn modularity_of(
             }
         }
     }
-    meter.flush()?;
     if total <= 0.0 {
         return Ok(0.0);
     }
@@ -294,10 +291,10 @@ pub(super) fn first_level(
     let mut targets = Buffer::capacity(arcs, context)?;
     let mut weights = Buffer::capacity(arcs, context)?;
     let mut inside = Buffer::filled(n, 0.0f64, context)?;
-    let mut meter = Meter::new(context);
+    let mut meter = context.work_meter();
     for node in 0..n {
         let range = adjacency.range(node);
-        meter.tick(1 + range.len())?;
+        meter.charge(1 + range.len())?;
         for arc in range {
             let target = adjacency.targets.values[arc];
             let weight = adjacency.weight(arc);
@@ -310,7 +307,6 @@ pub(super) fn first_level(
         }
         offsets.values[node + 1] = targets.values.len();
     }
-    meter.flush()?;
     let incoming = directed
         .then(|| transpose(&offsets, &targets, &weights, context))
         .transpose()?;
@@ -333,7 +329,7 @@ fn transpose(
 ) -> Result<Csr> {
     let n = offsets.values.len() - 1;
     let arcs = targets.values.len();
-    let mut meter = Meter::new(context);
+    let mut meter = context.work_meter();
     let mut reversed = Buffer::filled(n + 1, 0usize, context)?;
     for &target in &targets.values {
         reversed.values[target + 1] += 1;
@@ -347,7 +343,7 @@ fn transpose(
     let mut carried = Buffer::filled(arcs, 0.0f64, context)?;
     for source in 0..n {
         let range = offsets.values[source]..offsets.values[source + 1];
-        meter.tick(1 + range.len())?;
+        meter.charge(1 + range.len())?;
         for arc in range {
             let slot = next.values[targets.values[arc]];
             next.values[targets.values[arc]] += 1;
@@ -355,7 +351,6 @@ fn transpose(
             carried.values[slot] = weights.values[arc];
         }
     }
-    meter.flush()?;
     Ok((reversed, sources, carried))
 }
 
@@ -380,14 +375,14 @@ pub(super) fn move_nodes(
     context: &ExecutionContext,
 ) -> Result<Moves> {
     let n = level.nodes();
-    let mut meter = Meter::new(context);
+    let mut meter = context.work_meter();
 
     // Strengths, and the total M they sum to.
     let mut k_out = Buffer::capacity(n, context)?;
     let mut k_in = Buffer::capacity(n, context)?;
     for node in 0..n {
         let row = level.row(node);
-        meter.tick(1 + row.len())?;
+        meter.charge(1 + row.len())?;
         let own = level.inside.values[node];
         k_out
             .values
@@ -452,7 +447,7 @@ pub(super) fn move_nodes(
             seen.values[home] = true;
             touched.values.push(home);
             let row = level.row(node);
-            meter.tick(1 + row.len())?;
+            meter.charge(1 + row.len())?;
             for arc in row {
                 let other = community.values[level.targets.values[arc]];
                 if !seen.values[other] {
@@ -465,7 +460,7 @@ pub(super) fn move_nodes(
             }
             if let Some((offsets, sources, weights)) = &level.incoming {
                 let row = offsets.values[node]..offsets.values[node + 1];
-                meter.tick(row.len())?;
+                meter.charge(row.len())?;
                 for arc in row {
                     let other = community.values[sources.values[arc]];
                     if !seen.values[other] {
@@ -519,7 +514,6 @@ pub(super) fn move_nodes(
             break;
         }
     }
-    meter.flush()?;
     Ok(Moves {
         community,
         moved,
@@ -555,7 +549,7 @@ pub(super) fn coarsen(
     context: &ExecutionContext,
 ) -> Result<Level> {
     let n = level.nodes();
-    let mut meter = Meter::new(context);
+    let mut meter = context.work_meter();
 
     // Members grouped by community, by counting sort.
     let mut start = Buffer::filled(count + 1, 0usize, context)?;
@@ -573,7 +567,7 @@ pub(super) fn coarsen(
         members.values[next.values[community]] = node;
         next.values[community] += 1;
     }
-    meter.tick(n)?;
+    meter.charge(n)?;
 
     let mut offsets = Buffer::filled(count + 1, 0usize, context)?;
     let mut targets = Buffer::capacity(level.targets.values.len(), context)?;
@@ -587,7 +581,7 @@ pub(super) fn coarsen(
         for &node in &members.values[start.values[community]..start.values[community + 1]] {
             inside.values[community] += level.inside.values[node];
             let row = level.row(node);
-            meter.tick(1 + row.len())?;
+            meter.charge(1 + row.len())?;
             for arc in row {
                 let other = dense.values[level.targets.values[arc]];
                 let weight = level.weights.values[arc];
@@ -613,7 +607,6 @@ pub(super) fn coarsen(
         }
         offsets.values[community + 1] = targets.values.len();
     }
-    meter.flush()?;
     let incoming = directed
         .then(|| transpose(&offsets, &targets, &weights, context))
         .transpose()?;

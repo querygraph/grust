@@ -321,23 +321,17 @@ fn resolution_moves_between_components_and_singletons() {
 fn louvain_is_deterministic_under_a_fixed_seed_and_any_pool_width() {
     let edges = pseudo_random_edges(300, 1500, 99);
     let run = |seed: Option<u64>, threads: usize| {
-        let pool = rayon::ThreadPoolBuilder::new()
-            .num_threads(threads)
-            .build()
-            .unwrap();
-        pool.install(|| {
-            let context = context();
-            let projection = graph(300, &edges, Orientation::Undirected, &context);
-            let result = louvain(
-                &projection,
-                LouvainOptions {
-                    seed,
-                    ..Default::default()
-                },
-            )
-            .unwrap();
-            (result.communities().to_vec(), result.modularity().to_bits())
-        })
+        let context = context().with_concurrency(threads).unwrap();
+        let projection = graph(300, &edges, Orientation::Undirected, &context);
+        let result = louvain(
+            &projection,
+            LouvainOptions {
+                seed,
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        (result.communities().to_vec(), result.modularity().to_bits())
     };
     assert_eq!(run(None, 1), run(None, 8));
     assert_eq!(run(Some(7), 1), run(Some(7), 8));

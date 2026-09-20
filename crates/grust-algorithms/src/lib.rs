@@ -32,7 +32,6 @@ pub use leiden::{Leiden, LeidenOptions, leiden};
 mod louvain;
 pub use kcore::{KCore, k_core};
 pub use louvain::{Louvain, LouvainOptions, louvain};
-mod meter;
 mod ordering;
 mod parallel;
 pub use ordering::{NodeOrder, TopologicalOrder, depth_first, topological_sort};

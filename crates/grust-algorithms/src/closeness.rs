@@ -3,7 +3,6 @@
 use crate::{
     AlgorithmError, GraphProjection, Result,
     buffer::Buffer,
-    meter::Meter,
     parallel,
     shortest::MinHeap,
     table::{NodeColumn, NodeTable},
@@ -68,7 +67,7 @@ impl DistanceCentrality {
 /// rejected, because a zero distance between distinct nodes has no reciprocal.
 /// Parallel edges and self-loops change no distance.
 ///
-/// Scores and charged work are identical at any pool width; memory held at once
+/// Scores and charged work are identical at any worker count; memory held at once
 /// is one workspace per running block of 64 sources.
 pub fn closeness(graph: &GraphProjection, options: ClosenessOptions) -> Result<DistanceCentrality> {
     let others = graph.node_count().saturating_sub(1) as f64;
@@ -101,7 +100,7 @@ pub fn harmonic(graph: &GraphProjection, options: HarmonicOptions) -> Result<Dis
     })
 }
 
-/// Sources per block; fixed, so nothing depends on the pool width.
+/// Sources per block; fixed, so nothing depends on the worker count.
 const BLOCK: usize = 64;
 
 /// Run one sweep per node and score it from (nodes reached, Σ d, Σ 1/d).
@@ -115,19 +114,23 @@ fn sweep(
     let adjacency = graph.outgoing();
     let weighted = adjacency.weights.is_some();
     if let Some(weights) = &adjacency.weights {
-        let mut meter = Meter::new(context);
+        let mut meter = context.work_meter();
         for &weight in &weights.values {
-            meter.tick(1)?;
+            meter.charge(1)?;
             if weight == 0.0 {
                 return Err(AlgorithmError::InvalidArguments(
                     "distance centralities need positive weights: a zero distance between distinct nodes has no reciprocal".into(),
                 ));
             }
         }
-        meter.flush()?;
     }
     let mut scores = Buffer::filled(n, 0.0f64, context)?;
+    let workers = parallel::concurrency(
+        context,
+        n.saturating_mul(n.saturating_add(adjacency.targets.values.len())),
+    );
     parallel::ordered_blocks(
+        workers,
         n.div_ceil(BLOCK),
         |block| {
             let first = block * BLOCK;
@@ -135,8 +138,7 @@ fn sweep(
             let mut workspace = Workspace::new(n, weighted, context)?;
             let mut part = Buffer::capacity(last - first, context)?;
             for source in first..last {
-                let (reached, distance_sum, reciprocal_sum) =
-                    workspace.run(graph, source, context)?;
+                let (reached, distance_sum, reciprocal_sum) = workspace.run(graph, source)?;
                 part.values
                     .push(score(reached, distance_sum, reciprocal_sum));
             }
@@ -155,6 +157,9 @@ fn sweep(
 }
 
 struct Workspace {
+    /// One meter for the block: creating a meter registers it, which is too
+    /// much to pay per node.
+    meter: grust_procedures::WorkMeter,
     distance: Buffer<f64>,
     order: Buffer<usize>,
     heap: Option<MinHeap>,
@@ -163,6 +168,7 @@ struct Workspace {
 impl Workspace {
     fn new(n: usize, weighted: bool, context: &ExecutionContext) -> Result<Self> {
         Ok(Self {
+            meter: context.work_meter(),
             distance: Buffer::filled(n, f64::INFINITY, context)?,
             order: Buffer::capacity(n, context)?,
             heap: weighted.then(|| MinHeap::new(n, context)).transpose()?,
@@ -171,28 +177,22 @@ impl Workspace {
 
     /// Settle everything reachable from `source`, summing in settle order, which
     /// the queue and the heap's tie-break make a function of the graph alone.
-    fn run(
-        &mut self,
-        graph: &GraphProjection,
-        source: usize,
-        context: &ExecutionContext,
-    ) -> Result<(usize, f64, f64)> {
+    fn run(&mut self, graph: &GraphProjection, source: usize) -> Result<(usize, f64, f64)> {
         let adjacency = graph.outgoing();
-        let mut meter = Meter::new(context);
         self.order.values.clear();
         self.distance.values[source] = 0.0;
         if let Some(heap) = &mut self.heap {
-            heap.improve(source, 0.0, context)?;
-            while let Some((cost, node)) = heap.pop(context)? {
+            heap.improve(source, 0.0, &mut self.meter)?;
+            while let Some((cost, node)) = heap.pop(&mut self.meter)? {
                 self.order.values.push(node);
                 let range = adjacency.range(node);
-                meter.tick(1 + range.len())?;
+                self.meter.charge(1 + range.len())?;
                 for arc in range {
                     let next = adjacency.targets.values[arc];
                     let candidate = cost + adjacency.weight(arc);
                     if candidate < self.distance.values[next] {
                         self.distance.values[next] = candidate;
-                        heap.improve(next, candidate, context)?;
+                        heap.improve(next, candidate, &mut self.meter)?;
                     }
                 }
             }
@@ -203,7 +203,7 @@ impl Workspace {
                 let node = self.order.values[head];
                 head += 1;
                 let range = adjacency.range(node);
-                meter.tick(1 + range.len())?;
+                self.meter.charge(1 + range.len())?;
                 for arc in range {
                     let next = adjacency.targets.values[arc];
                     if self.distance.values[next].is_infinite() {
@@ -222,7 +222,6 @@ impl Workspace {
         for &node in &self.order.values {
             self.distance.values[node] = f64::INFINITY;
         }
-        meter.flush()?;
         Ok((reached, distance_sum, reciprocal_sum))
     }
 }

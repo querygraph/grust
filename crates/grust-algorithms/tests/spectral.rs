@@ -359,45 +359,39 @@ fn the_iterations_are_identical_at_any_pool_width_and_charge_the_same_work() {
     let edges = scrambled(n, 60_000);
     let weights: Vec<f64> = (0..edges.len()).map(|i| (1 + i % 7) as f64 / 3.0).collect();
     let run = |threads: usize| {
-        let pool = rayon::ThreadPoolBuilder::new()
-            .num_threads(threads)
-            .build()
-            .unwrap();
-        pool.install(|| {
-            let context = context();
-            let projection = graph(n, &edges, Some(&weights), Orientation::Outgoing, &context);
-            let before = context.usage().unwrap().work_units;
-            let options = IterationOptions {
-                max_iterations: 30,
-                ..Default::default()
-            };
-            let results = [
-                eigenvector(&projection, options).unwrap(),
-                hits(&projection, options).unwrap(),
-                katz(
-                    &projection,
-                    KatzOptions {
-                        alpha: 0.001,
-                        iteration: options,
-                        ..Default::default()
-                    },
-                )
-                .unwrap(),
-            ];
-            let bits: Vec<u64> = results
-                .iter()
-                .flat_map(|result| {
-                    ["score", "hub", "authority"]
-                        .into_iter()
-                        .filter_map(|name| result.values(name))
-                        .flatten()
-                        .map(|v| v.to_bits())
-                        .chain([result.residual().to_bits(), result.iterations() as u64])
-                        .collect::<Vec<_>>()
-                })
-                .collect();
-            (bits, context.usage().unwrap().work_units - before)
-        })
+        let context = context().with_concurrency(threads).unwrap();
+        let projection = graph(n, &edges, Some(&weights), Orientation::Outgoing, &context);
+        let before = context.usage().unwrap().work_units;
+        let options = IterationOptions {
+            max_iterations: 30,
+            ..Default::default()
+        };
+        let results = [
+            eigenvector(&projection, options).unwrap(),
+            hits(&projection, options).unwrap(),
+            katz(
+                &projection,
+                KatzOptions {
+                    alpha: 0.001,
+                    iteration: options,
+                    ..Default::default()
+                },
+            )
+            .unwrap(),
+        ];
+        let bits: Vec<u64> = results
+            .iter()
+            .flat_map(|result| {
+                ["score", "hub", "authority"]
+                    .into_iter()
+                    .filter_map(|name| result.values(name))
+                    .flatten()
+                    .map(|v| v.to_bits())
+                    .chain([result.residual().to_bits(), result.iterations() as u64])
+                    .collect::<Vec<_>>()
+            })
+            .collect();
+        (bits, context.usage().unwrap().work_units - before)
     };
     let first = run(1);
     for threads in [2, 3, 8] {

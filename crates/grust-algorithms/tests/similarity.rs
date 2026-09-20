@@ -327,28 +327,21 @@ fn node_similarity_is_identical_at_any_pool_width_and_charges_the_same_work() {
     let weights: Vec<f64> = (0..edges.len()).map(|i| (1 + i % 5) as f64 / 3.0).collect();
     for metric in METRICS {
         let run_with = |threads: usize| {
-            let pool = rayon::ThreadPoolBuilder::new()
-                .num_threads(threads)
-                .build()
-                .unwrap();
-            pool.install(|| {
-                let context = context();
-                let projection =
-                    graph(600, &edges, Some(&weights), Orientation::Outgoing, &context);
-                let before = context.usage().unwrap().work_units;
-                let rows: Vec<_> = run(
-                    &projection,
-                    NodeSimilarityOptions {
-                        metric,
-                        top_k: 5,
-                        ..Default::default()
-                    },
-                )
-                .into_iter()
-                .map(|(a, b, s)| (a, b, s.to_bits()))
-                .collect();
-                (rows, context.usage().unwrap().work_units - before)
-            })
+            let context = context().with_concurrency(threads).unwrap();
+            let projection = graph(600, &edges, Some(&weights), Orientation::Outgoing, &context);
+            let before = context.usage().unwrap().work_units;
+            let rows: Vec<_> = run(
+                &projection,
+                NodeSimilarityOptions {
+                    metric,
+                    top_k: 5,
+                    ..Default::default()
+                },
+            )
+            .into_iter()
+            .map(|(a, b, s)| (a, b, s.to_bits()))
+            .collect();
+            (rows, context.usage().unwrap().work_units - before)
         };
         let first = run_with(1);
         assert!(first.0.len() > 1000);

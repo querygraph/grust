@@ -199,6 +199,7 @@ type Parents = Buffer<Option<(usize, usize)>>;
 
 fn run(graph: &GraphProjection, source: &str, paths: bool) -> Result<(Distances, Option<Parents>)> {
     let context = graph.execution();
+    let mut meter = context.work_meter();
     context.checkpoint()?;
     let source = graph.source(source)?;
     let n = graph.node_count();
@@ -208,12 +209,12 @@ fn run(graph: &GraphProjection, source: &str, paths: bool) -> Result<(Distances,
         .transpose()?;
     let mut heap = MinHeap::new(n, context)?;
     distances.values[source] = 0.0;
-    heap.improve(source, 0.0, context)?;
+    heap.improve(source, 0.0, &mut meter)?;
     let adjacency = graph.outgoing();
-    while let Some((cost, node)) = heap.pop(context)? {
-        context.charge_work(1)?;
+    while let Some((cost, node)) = heap.pop(&mut meter)? {
+        meter.charge(1)?;
         for arc in adjacency.range(node) {
-            context.charge_work(1)?;
+            meter.charge(1)?;
             let next = adjacency.targets.values[arc];
             let candidate = cost + adjacency.weight(arc);
             if !candidate.is_finite() {
@@ -226,7 +227,7 @@ fn run(graph: &GraphProjection, source: &str, paths: bool) -> Result<(Distances,
                 if let Some(parents) = &mut parents {
                     parents.values[next] = Some((node, adjacency.edge_slot(arc)));
                 }
-                heap.improve(next, candidate, context)?;
+                heap.improve(next, candidate, &mut meter)?;
             }
         }
     }
@@ -264,7 +265,7 @@ impl MinHeap {
         &mut self,
         node: usize,
         cost: f64,
-        context: &ExecutionContext,
+        meter: &mut grust_procedures::WorkMeter,
     ) -> Result<()> {
         let mut index = self.positions.values[node];
         if index == usize::MAX {
@@ -275,7 +276,7 @@ impl MinHeap {
             self.entries.values[index].0 = cost;
         }
         while index > 0 {
-            context.charge_work(1)?;
+            meter.charge(1)?;
             let parent = (index - 1) / 2;
             if !self.less(index, parent) {
                 break;
@@ -286,7 +287,10 @@ impl MinHeap {
         Ok(())
     }
 
-    pub(crate) fn pop(&mut self, context: &ExecutionContext) -> Result<Option<(f64, usize)>> {
+    pub(crate) fn pop(
+        &mut self,
+        meter: &mut grust_procedures::WorkMeter,
+    ) -> Result<Option<(f64, usize)>> {
         if self.entries.values.is_empty() {
             return Ok(None);
         }
@@ -298,7 +302,7 @@ impl MinHeap {
         self.positions.values[self.entries.values[0].1] = 0;
         let mut index = 0;
         while index < self.entries.values.len() / 2 {
-            context.charge_work(1)?;
+            meter.charge(1)?;
             let left = index * 2 + 1;
             let right = left + 1;
             let child = if right < self.entries.values.len() && self.less(right, left) {

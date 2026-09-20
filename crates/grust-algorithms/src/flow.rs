@@ -3,7 +3,6 @@
 use crate::{
     AlgorithmError, GraphProjection, Result,
     buffer::Buffer,
-    meter::Meter,
     table::{NodeColumn, NodeTable, TableScalar},
 };
 
@@ -103,7 +102,7 @@ pub fn max_flow(graph: &GraphProjection, source: &str, target: &str) -> Result<M
     }
     let n = graph.node_count();
     let adjacency = graph.outgoing();
-    let mut meter = Meter::new(context);
+    let mut meter = context.work_meter();
     let carries = |node: usize, arc: usize| {
         adjacency.targets.values[arc] != node && adjacency.weight(arc) > 0.0
     };
@@ -112,7 +111,7 @@ pub fn max_flow(graph: &GraphProjection, source: &str, target: &str) -> Result<M
     let mut offsets = Buffer::filled(n + 1, 0usize, context)?;
     for node in 0..n {
         let range = adjacency.range(node);
-        meter.tick(1 + range.len())?;
+        meter.charge(1 + range.len())?;
         for arc in range {
             if carries(node, arc) {
                 offsets.values[node + 1] += 1;
@@ -133,7 +132,7 @@ pub fn max_flow(graph: &GraphProjection, source: &str, target: &str) -> Result<M
     cursor.values.extend_from_slice(&offsets.values[..n]);
     for node in 0..n {
         let range = adjacency.range(node);
-        meter.tick(1 + range.len())?;
+        meter.charge(1 + range.len())?;
         for arc in range {
             if !carries(node, arc) {
                 continue;
@@ -163,12 +162,12 @@ pub fn max_flow(graph: &GraphProjection, source: &str, target: &str) -> Result<M
         level.values[source] = 0;
         queue.values.push(source);
         let mut front = 0;
-        meter.tick(n)?;
+        meter.charge(n)?;
         while front < queue.values.len() {
             let node = queue.values[front];
             front += 1;
             let range = offsets.values[node]..offsets.values[node + 1];
-            meter.tick(1 + range.len())?;
+            meter.charge(1 + range.len())?;
             for arc in range {
                 let next = head.values[arc];
                 if capacity.values[arc] > 0.0 && level.values[next] == UNSEEN {
@@ -187,7 +186,7 @@ pub fn max_flow(graph: &GraphProjection, source: &str, target: &str) -> Result<M
             path.values.clear();
             let mut node = source;
             while node != target {
-                meter.tick(1)?;
+                meter.charge(1)?;
                 let arc = cursor.values[node];
                 if arc < offsets.values[node + 1] {
                     let next = head.values[arc];
@@ -213,7 +212,7 @@ pub fn max_flow(graph: &GraphProjection, source: &str, target: &str) -> Result<M
                 .iter()
                 .map(|&arc| capacity.values[arc])
                 .fold(f64::INFINITY, f64::min);
-            meter.tick(path.values.len())?;
+            meter.charge(path.values.len())?;
             for &arc in &path.values {
                 capacity.values[arc] -= bottleneck;
                 capacity.values[pair.values[arc]] += bottleneck;
@@ -233,7 +232,7 @@ pub fn max_flow(graph: &GraphProjection, source: &str, target: &str) -> Result<M
     let mut along = Buffer::filled(edges.len(), (UNSEEN, UNSEEN), context)?;
     for node in 0..n {
         let range = offsets.values[node]..offsets.values[node + 1];
-        meter.tick(1 + range.len())?;
+        meter.charge(1 + range.len())?;
         for arc in range {
             let slot = edge.values[arc];
             if slot == UNSEEN {
@@ -249,7 +248,7 @@ pub fn max_flow(graph: &GraphProjection, source: &str, target: &str) -> Result<M
         }
     }
     let used = net.values.iter().filter(|&&flow| flow != 0.0).count();
-    meter.tick(edges.len() + n)?;
+    meter.charge(edges.len() + n)?;
     let mut from = Buffer::capacity(used, context)?;
     let mut to = Buffer::capacity(used, context)?;
     let mut slots = Buffer::capacity(used, context)?;
@@ -270,7 +269,6 @@ pub fn max_flow(graph: &GraphProjection, source: &str, target: &str) -> Result<M
     source_side
         .values
         .extend(level.values.iter().map(|&depth| depth != UNSEEN));
-    meter.flush()?;
     Ok(MaxFlow {
         graph: graph.clone(),
         value,

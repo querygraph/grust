@@ -3,7 +3,6 @@
 use crate::{
     AlgorithmError, GraphProjection, Orientation, Result,
     buffer::Buffer,
-    meter::Meter,
     parallel,
     table::{NodeColumn, NodeTable, TableScalar},
 };
@@ -92,7 +91,7 @@ impl SpanningForest {
 /// what a Prim run from that node would return.
 ///
 /// Kruskal with union by size and path halving. Only the sort runs on the
-/// caller's rayon pool; its order is total, so the result does not depend on it.
+/// execution's workers; its order is total, so the result does not depend on them.
 /// Defined on undirected graphs; project with `orientation: "undirected"`.
 pub fn spanning_tree(
     graph: &GraphProjection,
@@ -109,14 +108,14 @@ pub fn spanning_tree(
     let n = graph.node_count();
     let edges = graph.edges();
     let adjacency = graph.outgoing();
-    let mut meter = Meter::new(context);
+    let mut meter = context.work_meter();
 
     // Weight per edge, read off either of its arcs.
     let mut weight = Buffer::filled(edges.len(), 1.0f64, context)?;
     if adjacency.weights.is_some() {
         for node in 0..n {
             let range = adjacency.range(node);
-            meter.tick(1 + range.len())?;
+            meter.charge(1 + range.len())?;
             for arc in range {
                 weight.values[adjacency.edge_slot(arc)] = adjacency.weight(arc);
             }
@@ -126,10 +125,11 @@ pub fn spanning_tree(
     let mut order = Buffer::capacity(edges.len(), context)?;
     order.values.extend(0..edges.len());
     let count = edges.len();
-    meter.tick(count.saturating_mul(count.max(2).ilog2() as usize))?;
-    meter.flush()?;
+    meter.charge(count.saturating_mul(count.max(2).ilog2() as usize))?;
     let maximum = options.objective == SpanningObjective::Maximum;
-    parallel::sort_total(&mut order.values, |&a: &usize, &b: &usize| {
+    let workers =
+        parallel::concurrency(context, count.saturating_mul(count.max(2).ilog2() as usize));
+    parallel::sort_total(workers, &mut order.values, |&a: &usize, &b: &usize| {
         let by_weight = weight.values[a].total_cmp(&weight.values[b]);
         let by_weight = if maximum {
             by_weight.reverse()
@@ -137,7 +137,7 @@ pub fn spanning_tree(
             by_weight
         };
         by_weight.then(edges[a].ordinal.cmp(&edges[b].ordinal))
-    });
+    })?;
 
     let mut parent = Buffer::capacity(n, context)?;
     parent.values.extend(0..n);
@@ -155,7 +155,7 @@ pub fn spanning_tree(
         if remaining == 0 {
             break;
         }
-        meter.tick(1)?;
+        meter.charge(1)?;
         let a = find(&mut parent.values, edges[slot].source);
         let b = find(&mut parent.values, edges[slot].target);
         if a == b {
@@ -173,7 +173,7 @@ pub fn spanning_tree(
     }
 
     let wanted = source.map(|node| find(&mut parent.values, node));
-    meter.tick(edges.len())?;
+    meter.charge(edges.len())?;
     let mut kept = Buffer::capacity(n.saturating_sub(1).min(edges.len()), context)?;
     let mut weights = Buffer::capacity(n.saturating_sub(1).min(edges.len()), context)?;
     let mut total = 0.0;
@@ -186,7 +186,6 @@ pub fn spanning_tree(
             total += weight.values[slot];
         }
     }
-    meter.flush()?;
     Ok(SpanningForest {
         graph: graph.clone(),
         edges: kept,

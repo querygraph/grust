@@ -4,7 +4,6 @@
 use crate::{
     AlgorithmError, GraphProjection, Orientation, Result,
     buffer::Buffer,
-    meter::Meter,
     table::{NodeColumn, NodeTable},
 };
 
@@ -124,7 +123,7 @@ pub fn biconnectivity(graph: &GraphProjection) -> Result<Biconnectivity> {
     let n = graph.node_count();
     let edges = graph.edges();
     let adjacency = graph.outgoing();
-    let mut meter = Meter::new(context);
+    let mut meter = context.work_meter();
 
     let mut discovered = Buffer::filled(n, UNSEEN, context)?;
     let mut low = Buffer::filled(n, UNSEEN, context)?;
@@ -138,7 +137,7 @@ pub fn biconnectivity(graph: &GraphProjection) -> Result<Biconnectivity> {
     let mut clock = 0usize;
 
     for root in 0..n {
-        meter.tick(1)?;
+        meter.charge(1)?;
         if discovered.values[root] != UNSEEN {
             continue;
         }
@@ -152,7 +151,7 @@ pub fn biconnectivity(graph: &GraphProjection) -> Result<Biconnectivity> {
             if *next < adjacency.range(node).end {
                 let arc = *next;
                 *next += 1;
-                meter.tick(1)?;
+                meter.charge(1)?;
                 let slot = adjacency.edge_slot(arc);
                 let other = adjacency.targets.values[arc];
                 if slot == arrived_by || other == node {
@@ -196,7 +195,7 @@ pub fn biconnectivity(graph: &GraphProjection) -> Result<Biconnectivity> {
                             "tree edge missing from its component".into(),
                         )
                     })?;
-                meter.tick(pending.values.len() - start)?;
+                meter.charge(pending.values.len() - start)?;
                 let name = pending.values[start..]
                     .iter()
                     .map(|&slot| edges[slot].ordinal)
@@ -210,7 +209,7 @@ pub fn biconnectivity(graph: &GraphProjection) -> Result<Biconnectivity> {
         is_articulation.values[root] = root_children > 1;
     }
 
-    meter.tick(n + edges.len())?;
+    meter.charge(n + edges.len())?;
     let count = |flags: &[bool]| flags.iter().filter(|&&flag| flag).count();
     let mut bridges = Buffer::capacity(count(&is_bridge.values), context)?;
     bridges
@@ -220,7 +219,6 @@ pub fn biconnectivity(graph: &GraphProjection) -> Result<Biconnectivity> {
     articulation
         .values
         .extend((0..n).filter(|&node| is_articulation.values[node]));
-    meter.flush()?;
     Ok(Biconnectivity {
         graph: graph.clone(),
         components,

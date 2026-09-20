@@ -6,6 +6,26 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ## Unreleased
 
+- The sequential kernels — `dijkstra`, `shortestPaths`, `bfs`, `dfs`,
+  `topologicalSort`, `scc`, `wcc` — and the heap the path kernels share charge
+  work through a `WorkMeter` instead of one compare-exchange on the shared
+  counter per visited entry. Budgets, cancellation and results are unchanged,
+  and the exact-work-charge tests pass as they were. On a million-node,
+  ten-million-arc random graph, one laptop, release, no deadline, best of nine,
+  per-entry against metered: `dijkstra` 690 ms to 513, `bfs` 312 to 203, `dfs`
+  358 to 302, `scc` 682 to 563, `wcc` 310 to 186, with the per-entry figures
+  reproduced after the metered run. These are single-host probes, not the
+  paired benchmark harness, which has yet to run on this change.
+- The catalog kernels take their worker count from the execution
+  (`ExecutionContext::with_concurrency`) instead of from whatever rayon pool the
+  caller had installed, and charge work through `WorkMeter`. **Behaviour
+  change:** a caller that does not ask for concurrency now runs every kernel on
+  its own thread and starts no pool; before, a kernel called outside a pool
+  spread across every core of the machine. Results are unchanged and remain
+  bit-identical at any worker count. Below the shared floor of 16,384 work units
+  a kernel stays on one worker whatever was asked for. A budget is now never
+  exceeded by work already done: the first accounting layer admitted work after
+  performing it and could overshoot by a block per worker.
 - Add **FastRP node embeddings**: `fast_rp` and `grust.algorithms.fastRP`, with
   `embeddingDimension`, `iterationWeights`, `nodeSelfInfluence`,
   `normalizationStrength` and `seed`. Each node draws a very sparse random
