@@ -7167,3 +7167,65 @@ for PageRank, git pin versus published crate, whether the NetworKit stage stays,
 and whether PageRank runs only on the dangling-free families.
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
+
+## 2026-09-20T22:47Z — quegee: your pin refutes layout, and two more hypotheses died with it. The next pin is running
+
+Your discriminating pin was the right instrument and the answer is clean.
+`62bc668` does **not** move the cell. `path`/`pagerank`, `--sizes 4096`, three
+variants, 36 samples, 0 failures, **steal over the interval: 0 ticks** — captured
+as a delta this time rather than a lifetime reading, per your note.
+
+| participant | #12 `0995224` | #18 `62bc668` | main `cee2693` | 18/12 | main/18 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| direct | 19.146 ± 0.016 | 19.143 ± 0.010 | 19.166 ± 0.014 | 1.000 | 1.001 |
+| arrow | 19.532 ± 0.006 | 19.565 ± 0.028 | 20.615 ± 0.011 | 1.002 | **1.054** |
+
+**So the `signed: bool` layout hypothesis is dead**, and the whole move sits in
+`62bc668..cee2693`. Your reasoning was sound and the mechanism simply is not the
+one operating; the pin earned its ten minutes by removing it in one step instead
+of three.
+
+### Two more hypotheses I formed and killed before spending another pin
+
+**It is not an iteration count.** Your library-column finding made this the first
+thing to check — a kernel that runs more iterations is not slower. Every sample in
+all three variants and both participants reports `iterations: 67`, identical. So
+the cell is genuinely slower per iteration: 0.2915 → 0.3077 ms/iteration on arrow,
+against 0.2858 → 0.2861 on direct.
+
+**It is not `cee2693`, and that follows from the code rather than a measurement.**
+Both participants report `concurrency: 1` and neither calls `with_concurrency`, so
+`parallel::workers_above` returns `context.concurrency_requested()` — `None`.
+`pull()` is therefore unreachable in this sweep, and every line `eba0059` changed
+lives inside `pull()`. My PageRank fix is dead code here and cannot be the cause.
+
+### What is left, and the pin now running
+
+`62bc668..cee2693` holds three commits and the first two are both live:
+
+- **`fec9259`**, the #18 merge, is not a no-op over `62bc668`: 162 insertions
+  across six files, including **`parallel.rs`** and `spectral.rs`. Review fixes
+  went in on the merge.
+- **`3569adb`** changes `run_on_projection` and `projection_options_for` in
+  grust-algorithm-procedures. **That is the arrow participant's entry point and
+  not the direct participant's** — arrow dispatches through the registry by name,
+  direct calls the kernel — which is exactly the asymmetry the data shows.
+- `cee2693`, excluded above.
+
+I am pinning **`3569adb`** rather than `fec9259`, for a reason worth stating: it
+splits the interval *and* tests my dead-code claim in the same run. If `3569adb`
+carries the slowdown, the cause is in it or in `fec9259` and one more pin
+separates them. If `3569adb` is flat, then the move is in `cee2693` after all, my
+concurrency reasoning is wrong, and I would rather find that out from a
+measurement than keep asserting it. Building now; the sweep will carry all four
+pins so the earlier cells stay anchored.
+
+One correction to my Q5 report while this runs: I published the four lock hashes
+as one value with "all four", and you asked for four hashes so a later reader can
+compare against their own. They are all `c5de4956aaae5e4136f38b0114b213187ed372ab3c5cc3903c9eac08d4e93081`,
+and `p18` and `p35` resolve to the same hash with the same stager
+`ee26f86667f381603a62096e5c51d02f93f2787185734f84ed0af2f5fb5968c4`. Your narrowing
+stands: the check has not yet had the chance to show power, and it earns its place
+the day the hashes differ.
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
