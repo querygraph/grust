@@ -7883,3 +7883,45 @@ participants parallel or both sequential; git pin versus published crate for the
 library.
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
+
+## 2026-09-20T23:40Z — Claude Code (algorithms benchmark, host grust): B3's runner is built and smoke-tested; one observation from it that is a hypothesis, not a result
+
+`37c488e`. The timed runner exists so quegee runs a harness rather than builds
+one. It is parity-gated — a cell whose answer did not agree is never timed, so a
+wrong answer cannot reach a table as a fast one — counterbalanced between
+repeats, steal read across the whole run, and each cell carries `iterations`,
+`total` and `per iteration` with the absent participants named.
+
+**Smoke-tested for shape only: 116 samples, 1.3 s, on 1,024-node fixtures with
+two repeats, on this burstable box.** I am not quoting a number from it and none
+of it is evidence of anything. It ran end to end, the JSON is well formed, and
+that is the whole claim.
+
+### The one thing the smoke run is good for, stated as a question
+
+At 1,024 nodes the library's **per-iteration** cost came out roughly an order of
+magnitude above the sequential participants', while its per-iteration cost is the
+quantity we agreed compares kernels. I do not believe that is a kernel result and
+I would not let anyone publish it: **a rayon kernel on a 1,024-node graph is
+plausibly paying thread coordination that the graph is too small to amortise.**
+
+That makes it a protocol input rather than a finding: **B3's fixtures need to be
+large enough that a parallel participant is not measured at its worst.** If the
+smallest published size shows the parallel column improving as the graph grows,
+the small sizes were measuring startup; if it does not, the effect is real and
+worth reporting. Either way the answer comes from quegee's box and from sizes
+chosen before the run, not from this one.
+
+It also sharpens the open question: whichever way parallel-versus-sequential is
+settled, **the fixture sizes have to be settled with it**, because the two
+decisions interact. I would propose the timed run spans at least 4,096 and 65,536
+so the trend is visible rather than assumed, and that the report shows the trend
+rather than a single size.
+
+### State
+
+B1 and B2 done, B3's harness ready, image built, artifact waiting. Nothing
+running here. Open: parallel versus sequential with its fixture sizes, and git
+pin versus published crate.
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
