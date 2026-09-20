@@ -12,6 +12,8 @@ mod builtins;
 mod cache;
 #[path = "contracts/cancellation.rs"]
 mod cancellation;
+#[path = "contracts/memory.rs"]
+mod memory;
 #[path = "contracts/parallel.rs"]
 mod parallel;
 

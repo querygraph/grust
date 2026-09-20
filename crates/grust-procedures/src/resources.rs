@@ -35,8 +35,6 @@ pub struct ResourceUsage {
 
 #[derive(Debug, Default)]
 struct State {
-    live_bytes: usize,
-    peak_bytes: usize,
     waiters: Vec<Option<std::task::Waker>>,
 }
 
@@ -47,9 +45,10 @@ struct State {
 /// the clock, so a caller that needs an exact poll has one.
 const DEADLINE_SAMPLE_UNITS: usize = 1024;
 
-/// Work and cancellation are lock-free because kernels charge per unit of work,
-/// once per visited entry or reconstructed path step. Memory reservations and
-/// wakers stay behind the mutex: they are rare and need multi-field atomicity.
+/// Work, memory and cancellation are lock-free: kernels charge work once per
+/// visited entry, and the reference Cypher executor charges memory once per
+/// copied value. Only the cancellation wakers stay behind the mutex; they are
+/// rare, and they are the one place that needs several fields to move together.
 #[derive(Debug)]
 struct Shared {
     limits: ExecutionLimits,
@@ -62,6 +61,14 @@ struct Shared {
     /// admitting a block holds it shared; creating, dropping and refusing hold
     /// it exclusively. See [`WorkMeter`]'s admission for why.
     grants: RwLock<Vec<Arc<AtomicUsize>>>,
+    /// Accounted memory now, and its high-water mark. Atomics, like
+    /// `work_units`: the reference Cypher executor charges the logical bytes of
+    /// every copied value, so a streaming query charges memory per element and
+    /// a lock here was a tenth of its profile. Nothing waits for memory to be
+    /// freed, so a release needs no waker and no lock either.
+    live_bytes: AtomicUsize,
+    peak_bytes: AtomicUsize,
+    /// Cancellation wakers only.
     state: Mutex<State>,
 }
 
@@ -104,6 +111,8 @@ impl ExecutionContext {
             cancelled: AtomicBool::new(false),
             charges_since_deadline_read: AtomicUsize::new(0),
             grants: RwLock::new(Vec::new()),
+            live_bytes: AtomicUsize::new(0),
+            peak_bytes: AtomicUsize::new(0),
             state: Mutex::new(State::default()),
         })))
     }
@@ -333,14 +342,10 @@ impl ExecutionContext {
     /// Check admission without reserving or changing measured peak usage.
     /// The actual owner must still reserve before allocating.
     pub fn check_memory_available(&self, bytes: usize) -> Result<()> {
-        let state = self
-            .0
-            .state
-            .lock()
-            .map_err(|_| ProcedureError::ResourceStatePoisoned)?;
         self.check_state(DeadlineCheck::Exact)?;
-        state
+        self.0
             .live_bytes
+            .load(Ordering::Relaxed)
             .checked_add(bytes)
             .filter(|next| *next <= self.0.limits.memory_bytes)
             .ok_or(ProcedureError::BudgetExceeded {
@@ -373,35 +378,57 @@ impl ExecutionContext {
     }
 
     fn charge_memory(&self, bytes: usize, deadline: DeadlineCheck) -> Result<()> {
-        let mut state = self
-            .0
-            .state
-            .lock()
-            .map_err(|_| ProcedureError::ResourceStatePoisoned)?;
         self.check_state(deadline)?;
-        let next = state
-            .live_bytes
-            .checked_add(bytes)
-            .filter(|next| *next <= self.0.limits.memory_bytes)
-            .ok_or(ProcedureError::BudgetExceeded {
-                resource: "memory",
-                limit: self.0.limits.memory_bytes,
-            })?;
-        state.live_bytes = next;
-        state.peak_bytes = state.peak_bytes.max(next);
-        Ok(())
+        // Admit exactly, as `admit_work` does: the exchange recomputes admission
+        // against the value it actually replaces, so concurrent charges cannot
+        // slip past the limit between them.
+        let mut current = self.0.live_bytes.load(Ordering::Relaxed);
+        loop {
+            let next = current
+                .checked_add(bytes)
+                .filter(|next| *next <= self.0.limits.memory_bytes)
+                .ok_or(ProcedureError::BudgetExceeded {
+                    resource: "memory",
+                    limit: self.0.limits.memory_bytes,
+                })?;
+            match self.0.live_bytes.compare_exchange_weak(
+                current,
+                next,
+                Ordering::Relaxed,
+                Ordering::Relaxed,
+            ) {
+                Ok(_) => {
+                    // The peak can trail `live_bytes` for the instant between
+                    // these two lines; it never misses a completed charge.
+                    self.0.peak_bytes.fetch_max(next, Ordering::Relaxed);
+                    return Ok(());
+                }
+                Err(observed) => current = observed,
+            }
+        }
+    }
+
+    /// Release bytes a reservation or account admitted. Only their `Drop`
+    /// calls this, with what they hold, so the counter cannot underflow.
+    fn release_memory(&self, bytes: usize) {
+        if bytes != 0 {
+            self.0.live_bytes.fetch_sub(bytes, Ordering::Relaxed);
+        }
     }
 
     /// Current accounted usage, including batches retained by a consumer.
+    ///
+    /// The three figures are read one after another, not as one snapshot: a
+    /// reader racing a charge can see a peak newer than the live figure beside
+    /// it. Live is read first and the peak only grows, so `peak_bytes >=
+    /// live_bytes` holds for every reader. Read after execution for exact
+    /// totals.
     pub fn usage(&self) -> Result<ResourceUsage> {
-        let state = self
-            .0
-            .state
-            .lock()
-            .map_err(|_| ProcedureError::ResourceStatePoisoned)?;
+        let live_bytes = self.0.live_bytes.load(Ordering::Relaxed);
+        let peak_bytes = self.0.peak_bytes.load(Ordering::Relaxed).max(live_bytes);
         Ok(ResourceUsage {
-            live_bytes: state.live_bytes,
-            peak_bytes: state.peak_bytes,
+            live_bytes,
+            peak_bytes,
             work_units: self.0.work_units.load(Ordering::Relaxed),
         })
     }
@@ -573,13 +600,7 @@ impl MemoryAccount {
 
 impl Drop for MemoryAccount {
     fn drop(&mut self) {
-        let mut state = self
-            .context
-            .0
-            .state
-            .lock()
-            .unwrap_or_else(|poison| poison.into_inner());
-        state.live_bytes -= self.bytes;
+        self.context.release_memory(self.bytes);
     }
 }
 
@@ -591,14 +612,7 @@ struct Reservation {
 
 impl Drop for Reservation {
     fn drop(&mut self) {
-        // Recover only for cleanup; operational calls still report poisoning.
-        let mut state = self
-            .context
-            .0
-            .state
-            .lock()
-            .unwrap_or_else(|poison| poison.into_inner());
-        state.live_bytes -= self.bytes;
+        self.context.release_memory(self.bytes);
     }
 }
 

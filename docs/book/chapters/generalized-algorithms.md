@@ -218,16 +218,21 @@ Two properties of that meter are therefore part of the algorithm contract.
 cancellation flag are atomics. Each charge admits through a compare-exchange
 that recomputes admission against the value it actually replaces, so a
 concurrent charge cannot overshoot the limit between load and store, and an
-exhausted budget still fails exactly at its limit. Memory reservations, peak
-accounting and cancellation wakers keep a mutex: they are rare and need several
-fields to move together.
+exhausted budget still fails exactly at its limit. Accounted memory and its
+high-water mark are atomics admitted the same way, so a byte limit is as exact
+as a work limit. Only the cancellation wakers keep a mutex: they are rare, and
+they are the one place several fields must move together.
 
-That is true of kernels, which reserve memory per batch. It is not true of a
-materializing Cypher consumer, which charges the logical bytes of every value it
-copies and so takes that mutex once or more per row. Those per-copy charges,
-`charge_cumulative_memory` and `MemoryAccount::charge`, sample the deadline as
-work charges do; `reserve` still reads the clock. Moving the byte counters to
-atomics is planned in `docs/lock-free.md` and is not part of this release.
+Memory had to follow work off the lock because of who charges it. A kernel
+reserves memory per batch, but a materializing Cypher consumer charges the
+logical bytes of every value it copies, once or more per row, through
+`charge_cumulative_memory` and `MemoryAccount::charge`. Those sample the
+deadline as work charges do; `reserve` still reads the clock. Two things follow
+from dropping the lock. `usage()` reads its figures one after another rather
+than as one snapshot, so read it after execution for exact totals; while an
+execution runs, `peak_bytes` is never below `live_bytes`. And a poisoned lock no
+longer fails a memory charge, because there is no lock to poison; only waker
+registration can still report it.
 
 **The deadline is sampled; everything else is not.** An execution that sets no
 deadline pays nothing for deadline enforcement — neither a clock read nor a
