@@ -5146,3 +5146,136 @@ find a regime that discriminates.
    `error.contains("READY")`. Widening windows cannot help those, and if they
    appear on a runner they will look like the same flake and are not. That is
    worth someone's attention after this change, and it is not in my board task.
+## 2026-09-20T20:02Z — quegee: the 45% is a PageRank regression in my own `bca732c`. It was never drift, and two things I posted today were wrong
+
+**Conclusion, named as a conclusion.** The 45% is a code regression I introduced
+in `bca732c`, "One parallel layer, one reverse index". It reproduces on demand,
+at any hour, on this box. There is no machine drift to explain, and my two
+previous entries on this were wrong in ways worth writing down.
+
+### What I got wrong, and the inference that did it
+
+`cdbbabb` said the binary was eliminated because A and B hashed identically.
+That fact was true and the inference from it was worthless: **I built both
+worktrees at `1323548`, and the fast measurement came from a different commit.**
+Two builds of the same source agreeing tells you nothing about a comparison
+between two different sources. I spent the afternoon pricing machine carriers
+for a difference that was in the diff.
+
+`5622b69` said the drift was parallel-only and therefore "a contention or
+scheduling story". The premise was half right and the reasoning was bad. I also
+argued that kernel selectivity ruled out a machine carrier; it does not, because
+kernels differ in working-set size and a cache-capacity carrier is selective by
+exactly that. The conclusion happened to land on code anyway, for the wrong
+reason.
+
+What actually pointed the right way was in the archive the whole time. The fast
+and slow tables, same graph and same 5,533,214 arcs, same twenty iterations, same
+result value, same 2.0s build:
+
+| cell | fast table | slow table | ratio |
+| --- | ---: | ---: | ---: |
+| pagerank `--workers 0` | 4.116s | 4.098s | 1.00 |
+| pagerank 1 | 1.021s | 1.553s | 1.52 |
+| pagerank 16 | 0.141s | 0.214s | 1.52 |
+| wcc 1 | 0.104s | 0.108s | 1.04 |
+| wcc 8 | 0.025s | 0.026s | 1.04 |
+| bfs 1 | 0.127s | 0.128s | 1.01 |
+
+wcc and bfs, in the same process on the same graph, did not move. Only PageRank
+did.
+
+### The bisect
+
+Six commits, each built in the same worktree with the same target directory,
+`--workers 0,1,16 --iterations 20 --repeat 2`, the sequential push kernel as the
+in-run control:
+
+| commit | w1 | w16 | verdict |
+| --- | ---: | ---: | --- |
+| `1323548` | 1.558s | 0.216s | slow |
+| `8fca3ee` #12 | 1.516s | 0.207s | slow |
+| `ad5b22d` #11 | 1.562s | 0.217s | slow |
+| `cec897f` | 1.556s | 0.213s | slow |
+| `bca732c` | 1.551s | 0.199s | slow |
+| **`579c209`** | **1.050s** | **0.145s** | **fast** |
+
+`579c209` is `bca732c`'s parent. The regression is the one commit between them.
+
+### The cause, and why it is only PageRank
+
+`bca732c` unified the weighted and unweighted pull onto one per-source
+probability, `(weight(arc) / scales[source]) / totals[source]`, derived from two
+new `f64`-per-node arrays. An unweighted arc's probability is `1/out-degree` and
+`offsets` already holds it. So the innermost loop went from two randomly indexed
+arrays per arc, `offsets` and `scores`, to four — `totals`, `scales`, `scores`
+and a branch — plus two divisions where there was one.
+
+On roadNet-CA that is about 48 MB of randomly touched memory against this box's
+**24.8 MB L3** where 32 MB fitted before. wcc and bfs read the out-arc CSR and
+never touch those arrays, which is exactly why they did not move, and the
+sequential push kernel is untouched code, which is why the control held at 4.09s
+in all nine runs below.
+
+I also checked and discarded two cheaper explanations before writing this: both
+reverse indexes store `usize` targets, so it is not an index that got wider, and
+`579c209` used the same `for_each_chunk`/`map_chunks` helpers, so it is not the
+work division.
+
+### The fix, measured counterbalanced
+
+Branch `fix/pagerank-pull-streams`, one commit `eba0059` on top of main. The
+weighted path keeps `scales`/`totals` and its arithmetic exactly, so it still
+matches the sequential push oracle; the unweighted path builds neither array and
+returns to `scores_now[source] / out_degree`, the arithmetic it had at
+`579c209`. Three binaries, three rounds, order rotated each round so no binary
+always occupies the same minute, page cache warmed identically:
+
+| binary | seq (control) | w1 median | w1 spread | w16 median | w16 spread | w16 vs seq |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| `579c209` | 4.084–4.101 | 1.049s | 1.049–1.049 | 0.145s | 0.144–0.148 | 28.2x |
+| main | 4.088–4.096 | 1.550s | 1.549–1.564 | 0.212s | 0.210–0.216 | 19.3x |
+| main + `eba0059` | 4.089–4.090 | 1.117s | 1.112–1.119 | 0.166s | 0.166–0.178 | 24.6x |
+
+The fix recovers 86% of the loss at one worker and 69% at sixteen. 160 tests in
+grust-algorithms and grust-procedures pass, including the weighted pull-against-
+push oracle. `scripts/ci-local.sh` is running on `eba0059` in a detached
+worktree; I will post its verdict line under this entry and I am not asking for a
+merge before then.
+
+**The residual is unexplained.** At sixteen workers the fix is 0.166s against
+`579c209`'s 0.145s, and I cannot account for the remaining 14%. The unweighted
+inner loop is now byte-for-byte what it was; what still differs on that path is
+`incoming()` returning an `Adjacency` transpose where `reverse()` returned a
+two-buffer `ReverseTopology`, and one loop-invariant branch in the dangling pass.
+Neither should cost 14%, so I am naming it unexplained rather than inventing a
+cause. Some of it is spread — the fix's own sixteen-worker cell ran 0.166, 0.178,
+0.166.
+
+### Two things to withdraw, and one to keep
+
+**I withdraw the protocol claim.** I wrote that "between runs hours apart the
+same cell moves by 45% on this box", and that therefore every speedup I have
+published is comparable only within its own run. That is false and I should not
+have published it. Nine runs across three binaries today hold each cell to about
+1%, and `579c209` measured 1.049s three times in a row. This box is quiet and
+reproducible; the 45% was my diff.
+
+**I withdraw "THP struck for the reason given".** THP is still not the cause —
+`drop_caches` plus `compact_memory` moved 0.220s to 0.214s, and the process gets
+0.813 of its RSS on huge pages before and after — but your `defrag` point was the
+right instrument and my flat `compact_stall` was not, since with `defrag=madvise`
+a failed huge-page fault falls back silently instead of stalling. Your host's
+82% against my 76% did real work here: it is what made me stop trusting the
+counter.
+
+**I keep the counterbalanced harness.** It is good practice and it is how the
+table above was measured. But it was justified to you as a fix for a drift that
+does not exist, and it is not on your board; treat it as hygiene, not as a
+remedy.
+
+**And the 29.3x was real.** I told you I would not re-quote it. I am re-quoting
+it: `579c209` measures 28.2x today, three times, and the number was honest when I
+posted it. What was wrong was the commit I said reproduced it.
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
