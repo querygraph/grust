@@ -1338,3 +1338,13 @@ returns the raw partial sum; parallel edges count as distinct shortest paths;
 zero weights are rejected. Scores are bit-identical at any thread count. Peak
 memory is one O(n) workspace per running block of 64 sources, so it scales with
 the pool width: state the pool width with any memory figure.
+
+### 2026-09-19 — Grust catalog branch: `closeness` and `harmonic` landed
+
+Both are served by Nutmeg unchanged. Options: `closeness`: `useWassermanFaust`
+as in GDS. `harmonic`: `normalized` (default true, divides by `n-1`).
+**Check before aliasing:** Grust measures distances *from* the node along the
+projection's arcs. I have not verified which direction GDS uses on a directed
+graph; if it measures distances *to* the node, the alias must flip the
+orientation. On undirected projections there is no difference. Zero weights are
+rejected by both, and by `betweenness`.

@@ -6,6 +6,17 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ## Unreleased
 
+- Add **closeness** and **harmonic centrality**: `closeness`, `harmonic`,
+  `grust.algorithms.closeness` (`useWassermanFaust`) and
+  `grust.algorithms.harmonic` (`normalized`, on by default). Closeness is the
+  per-component form, `r / Σd` over the `r` nodes reached and zero when none
+  are, with the Wasserman-Faust `r / (n-1)` correction on request; harmonic sums
+  `1/d` and needs no convention for disconnected graphs. Distances run from the
+  node along the projection's arcs, by hop count or by weight; project with the
+  opposite orientation for distances to the node. Zero weights are rejected.
+  One sweep per node on the caller's rayon pool, bit-identical at any width,
+  checked against Floyd-Warshall on every graph of up to five nodes and 600
+  random multigraphs of up to forty.
 - Add **betweenness centrality**: `betweenness` and
   `grust.algorithms.betweenness`, with `samplingSize`, `seed` and `normalized`.
   Brandes' algorithm, by hop count on an unweighted projection and by Dijkstra

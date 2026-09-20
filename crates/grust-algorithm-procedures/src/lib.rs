@@ -243,6 +243,34 @@ fn catalog() -> Vec<Spec> {
         },
     ));
     specs.push(Spec::new(
+        "closeness",
+        None,
+        vec![
+            field("nodeId", ValueType::String),
+            field("score", ValueType::Number),
+        ],
+        options::closeness_fields(),
+        |graph, args| {
+            Ok(AlgorithmOutput::Table(
+                algorithms::closeness(graph, options::closeness(args)?)?.into_table()?,
+            ))
+        },
+    ));
+    specs.push(Spec::new(
+        "harmonic",
+        None,
+        vec![
+            field("nodeId", ValueType::String),
+            field("score", ValueType::Number),
+        ],
+        options::harmonic_fields(),
+        |graph, args| {
+            Ok(AlgorithmOutput::Table(
+                algorithms::harmonic(graph, options::harmonic(args)?)?.into_table()?,
+            ))
+        },
+    ));
+    specs.push(Spec::new(
         "louvain",
         None,
         vec![

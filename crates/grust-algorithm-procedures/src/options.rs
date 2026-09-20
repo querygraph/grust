@@ -1,7 +1,7 @@
 use super::*;
 use algorithms::{
-    BetweennessOptions, LouvainOptions, MissingWeight, Orientation, PageRankOptions,
-    ProjectionOptions, TriangleOptions, WeightSelection,
+    BetweennessOptions, ClosenessOptions, HarmonicOptions, LouvainOptions, MissingWeight,
+    Orientation, PageRankOptions, ProjectionOptions, TriangleOptions, WeightSelection,
 };
 
 fn option(name: &str, value_type: ValueType, default: Value, nullable: bool) -> OptionField {
@@ -199,6 +199,36 @@ pub(super) fn betweenness(args: &ValidatedArguments) -> Result<BetweennessOption
             _ => Some(positive(args, "samplingSize")?),
         },
         seed: seed(args)?.unwrap_or(0),
+        normalized: matches!(value(args, "normalized")?, Value::Bool(true)),
+    })
+}
+
+pub(super) fn closeness_fields() -> Vec<OptionField> {
+    vec![option(
+        "useWassermanFaust",
+        ValueType::Boolean,
+        Value::Bool(false),
+        false,
+    )]
+}
+
+pub(super) fn closeness(args: &ValidatedArguments) -> Result<ClosenessOptions> {
+    Ok(ClosenessOptions {
+        wasserman_faust: matches!(value(args, "useWassermanFaust")?, Value::Bool(true)),
+    })
+}
+
+pub(super) fn harmonic_fields() -> Vec<OptionField> {
+    vec![option(
+        "normalized",
+        ValueType::Boolean,
+        Value::Bool(true),
+        false,
+    )]
+}
+
+pub(super) fn harmonic(args: &ValidatedArguments) -> Result<HarmonicOptions> {
+    Ok(HarmonicOptions {
         normalized: matches!(value(args, "normalized")?, Value::Bool(true)),
     })
 }

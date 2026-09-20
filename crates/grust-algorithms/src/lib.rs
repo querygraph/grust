@@ -13,6 +13,8 @@ pub use arrow_output::{ArrowResultBatch, ArrowResultCursor};
 mod betweenness;
 pub use betweenness::{Betweenness, BetweennessOptions, betweenness};
 mod buffer;
+mod closeness;
+pub use closeness::{ClosenessOptions, DistanceCentrality, HarmonicOptions, closeness, harmonic};
 mod degree;
 pub use degree::{Degrees, degree};
 mod graph_input;

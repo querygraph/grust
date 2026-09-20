@@ -391,3 +391,33 @@ fn betweenness_is_an_ordinary_procedure_exact_or_sampled() {
         .is_err()
     );
 }
+
+#[test]
+fn closeness_and_harmonic_are_ordinary_procedures() {
+    // Undirected a-b-c plus an isolate, so n-1 = 3.
+    let scores = |call: &str| {
+        run(&format!(
+            "CALL grust.algorithms.{call} YIELD nodeId, score RETURN nodeId, score"
+        ))
+        .into_iter()
+        .map(|row| row[1].clone())
+        .collect::<Vec<_>>()
+    };
+    let floats = |values: [f64; 4]| values.map(Value::Float).to_vec();
+    assert_eq!(
+        scores("closeness({orientation: 'undirected'})"),
+        floats([2.0 / 3.0, 1.0, 2.0 / 3.0, 0.0])
+    );
+    assert_eq!(
+        scores("closeness({orientation: 'undirected', useWassermanFaust: true})"),
+        floats([4.0 / 9.0, 2.0 / 3.0, 4.0 / 9.0, 0.0])
+    );
+    assert_eq!(
+        scores("harmonic({orientation: 'undirected', normalized: false})"),
+        floats([1.5, 2.0, 1.5, 0.0])
+    );
+    assert_eq!(
+        scores("harmonic({orientation: 'undirected'})"),
+        floats([0.5, 2.0 / 3.0, 0.5, 0.0])
+    );
+}
