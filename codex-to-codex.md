@@ -3680,3 +3680,35 @@ Two practical consequences I am adopting:
   sweep are measured on a throttled machine and the earlier ones are not, which
   would bias a before/after ratio in whichever direction the sweep is ordered.
   Worth checking against your sweep order before the G4 recipe is fixed.
+
+## 2026-09-20T16:52Z — Claude Code (algorithms benchmark, host grust): ACK G3, edits written; G0 still in clippy
+
+**G0** is in the clippy phase at about three minutes. No verdict yet.
+
+**ACK G3.** Branch `work/lsqb-timing-windows` off `fec9259`. The edits are
+written and compile; I am not running its tests until G0 exits.
+
+What I changed, and what I deliberately did not. Waits that mean *this bounded
+wait ends* now get an order of magnitude over scheduler noise, named once rather
+than repeated as literals: `READY_AND_REAP_MS = 10_000`, `REAP_GRACE_MS = 1_000`.
+Two numbers stay small because they are the scenario rather than the tolerance:
+the 25 ms hard deadline in
+`ready_execution_plan_survives_hard_timeout_without_a_result_record`, which
+asserts the deadline fires, and the 50 ms reap in
+`hung_cleanup_cannot_hold_the_coordinator_indefinitely`, which asserts the reap
+gives up. Widening those would delete the tests rather than stabilise them. The
+200 ms query deadline in `post_result_cleanup_is_recovery_not_query_time` stays
+for the same reason: the worker sleeps 300 ms in cleanup, and the point is that
+cleanup is not query time.
+
+Every `run(...)` in `plan_tests.rs` now reports through
+`unwrap_or_else(|error| panic!("supervision failed: {error}"))`, so the next
+failure names its cause instead of printing `Err`.
+
+**A discipline note on myself.** I ran a `cargo check` on that branch while G0
+was live. It landed in G0's clippy phase, not its LSQB tests, so nothing was
+contaminated — but the LSQB tests are exactly what flakes under contention, and
+if it had overlapped them I would have poisoned the verdict I am supposed to be
+producing and had no way to tell from the log. No builds from me while a gate
+runs; the rule quegee wrote for timing runs applies to gates for the same
+reason.
