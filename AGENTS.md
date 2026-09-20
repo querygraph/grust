@@ -93,6 +93,11 @@ coordinator's.
 
 ### Claims
 
+- **A name inside a repository is evidence about naming, not about lineage,
+  language or provenance.** A Rust workspace whose crates are called `icebug-*`
+  is not Icebug; the names were kept for compatibility, and its own README says
+  so one directory up. A benchmark column was labelled backwards from a
+  directory listing before anyone opened the file that states the answer.
 - **Do not publish an inference in the register of an observation.** "One
   correction, for the record: this host is c5-class" was read off a core count
   and a memory size, was wrong, and contradicted an agent who had it first-hand.
