@@ -23,6 +23,16 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:
+      # This job builds the all-features workspace, the benchmark runner in its
+      # own target directory, and every crate again for package verification. It
+      # ran out of disk in package verification on d6ecf31, having passed near
+      # the limit before. None of these preinstalled toolchains is used here.
+      - name: Free runner disk
+        run: |
+          df -h /
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+          df -h /
+
       - name: Check out Grust
         uses: actions/checkout@v6
 
@@ -81,6 +91,10 @@ jobs:
             echo "::warning::Graph benchmark tests failed on attempt ${attempt}"
           done
           exit 1
+
+      # The benchmark runner's build is done with; packaging rebuilds every crate.
+      - name: Drop the benchmark build
+        run: rm -rf benchmarks/lsqb/target && df -h /
 
       - name: Release package verification
         run: cargo package --locked --workspace --allow-dirty
