@@ -67,6 +67,36 @@ impl<'a> PropertyRequest<'a> {
     }
 }
 
+/// One value as read from a source, before it is checked against the kind asked
+/// for. Both constructors reduce their input to this, so the rules below are
+/// written once.
+#[derive(Clone, Copy)]
+pub(crate) enum Cell<'a> {
+    Float(f64),
+    Int(i64),
+    Bool(bool),
+    Text(&'a str),
+    Floats(&'a [f64]),
+    Singles(&'a [f32]),
+    Ints(&'a [i64]),
+    /// A value of a type no kind accepts.
+    Other,
+}
+
+impl<'a> Cell<'a> {
+    fn of(value: &'a Value) -> Self {
+        match value {
+            Value::Float(value) => Self::Float(*value),
+            Value::Int(value) => Self::Int(*value),
+            Value::Bool(value) => Self::Bool(*value),
+            Value::String(value) => Self::Text(value),
+            Value::FloatArray(values) => Self::Floats(values),
+            Value::IntArray(values) => Self::Ints(values),
+            _ => Self::Other,
+        }
+    }
+}
+
 enum Values {
     Number(Buffer<f64>),
     Integer(Buffer<i64>),
@@ -82,7 +112,7 @@ enum Values {
     },
 }
 
-struct Column {
+pub(crate) struct Column {
     key: String,
     values: Values,
     /// Present per row; `None` when every row has a value.
@@ -91,8 +121,8 @@ struct Column {
 
 /// Property columns for the nodes of one projection, in its row order.
 pub struct NodeProperties {
-    graph: GraphProjection,
-    columns: Vec<Column>,
+    pub(crate) graph: GraphProjection,
+    pub(crate) columns: Vec<Column>,
 }
 
 /// A vector column: `dimension` values per row, row by row.
@@ -147,15 +177,7 @@ impl NodeProperties {
         let context = projection.execution();
         context.checkpoint()?;
         let n = projection.node_count();
-        for (index, request) in wanted.iter().enumerate() {
-            validate(request)?;
-            if wanted[..index].iter().any(|other| other.key == request.key) {
-                return Err(invalid(format!(
-                    "node property {} is requested twice",
-                    request.key
-                )));
-            }
-        }
+        validate_requests(wanted)?;
 
         // Projection row per snapshot node, once, for every column.
         let mut meter = context.work_meter();
@@ -185,7 +207,7 @@ impl NodeProperties {
                 match node.props.get(request.key) {
                     None | Some(Value::Null) => builder.absent(row, node.id.as_str())?,
                     Some(value) => {
-                        let extra = builder.present(row, node.id.as_str(), value)?;
+                        let extra = builder.present(row, node.id.as_str(), Cell::of(value))?;
                         meter.charge(extra)?;
                     }
                 }
@@ -293,12 +315,25 @@ impl NodeProperties {
     }
 }
 
-fn invalid(message: String) -> AlgorithmError {
+pub(crate) fn invalid(message: String) -> AlgorithmError {
     AlgorithmError::InvalidArguments(message)
 }
 
 fn wrong_kind(key: &str, wanted: &str) -> AlgorithmError {
     invalid(format!("node property {key} was not read as {wanted}"))
+}
+
+pub(crate) fn validate_requests(wanted: &[PropertyRequest<'_>]) -> Result<()> {
+    for (index, request) in wanted.iter().enumerate() {
+        validate(request)?;
+        if wanted[..index].iter().any(|other| other.key == request.key) {
+            return Err(invalid(format!(
+                "node property {} is requested twice",
+                request.key
+            )));
+        }
+    }
+    Ok(())
 }
 
 fn validate(request: &PropertyRequest<'_>) -> Result<()> {
@@ -332,7 +367,7 @@ fn validate(request: &PropertyRequest<'_>) -> Result<()> {
 
 /// Fills one column row by row. Rows arrive in snapshot order, which is
 /// projection row order, so vectors are appended rather than indexed.
-struct Builder<'a> {
+pub(crate) struct Builder<'a> {
     request: &'a PropertyRequest<'a>,
     values: Values,
     valid: Option<Buffer<bool>>,
@@ -346,7 +381,7 @@ struct Builder<'a> {
 }
 
 impl<'a> Builder<'a> {
-    fn new(
+    pub(crate) fn new(
         request: &'a PropertyRequest<'a>,
         rows: usize,
         graph: &'a GraphProjection,
@@ -394,7 +429,7 @@ impl<'a> Builder<'a> {
         Ok(())
     }
 
-    fn absent(&mut self, row: usize, node: &str) -> Result<()> {
+    pub(crate) fn absent(&mut self, row: usize, node: &str) -> Result<()> {
         self.in_order(row)?;
         let key = self.request.key;
         match self.request.missing {
@@ -423,7 +458,7 @@ impl<'a> Builder<'a> {
     }
 
     /// Store one value; returns extra work to charge (vector components).
-    fn present(&mut self, row: usize, node: &str, value: &Value) -> Result<usize> {
+    pub(crate) fn present(&mut self, row: usize, node: &str, value: Cell<'_>) -> Result<usize> {
         self.in_order(row)?;
         let key = self.request.key;
         let mismatch =
@@ -432,17 +467,17 @@ impl<'a> Builder<'a> {
         match &mut self.values {
             Values::Number(values) => {
                 values.values[row] = match value {
-                    Value::Float(value) if value.is_finite() => *value,
-                    Value::Int(value) if value.unsigned_abs() <= 9_007_199_254_740_992 => {
-                        *value as f64
+                    Cell::Float(value) if value.is_finite() => value,
+                    Cell::Int(value) if value.unsigned_abs() <= 9_007_199_254_740_992 => {
+                        value as f64
                     }
                     _ => return Err(mismatch("a finite number within the exact f64 range")),
                 };
             }
             Values::Integer(values) => {
                 values.values[row] = match value {
-                    Value::Int(value) => *value,
-                    Value::Bool(value) => i64::from(*value),
+                    Cell::Int(value) => value,
+                    Cell::Bool(value) => i64::from(value),
                     _ => return Err(mismatch("an integer")),
                 };
             }
@@ -455,8 +490,9 @@ impl<'a> Builder<'a> {
                         .ok_or_else(|| mismatch("finite in single precision"))
                 };
                 let length = match value {
-                    Value::FloatArray(items) => items.len(),
-                    Value::IntArray(items) => items.len(),
+                    Cell::Floats(items) => items.len(),
+                    Cell::Singles(items) => items.len(),
+                    Cell::Ints(items) => items.len(),
                     _ => return Err(mismatch("a numeric list")),
                 };
                 if length == 0 {
@@ -482,12 +518,17 @@ impl<'a> Builder<'a> {
                     )));
                 }
                 match value {
-                    Value::FloatArray(items) => {
+                    Cell::Floats(items) => {
                         for &item in items {
                             values.values.push(narrowed(item)?);
                         }
                     }
-                    Value::IntArray(items) => {
+                    Cell::Singles(items) => {
+                        for &item in items {
+                            values.values.push(narrowed(f64::from(item))?);
+                        }
+                    }
+                    Cell::Ints(items) => {
                         for &item in items {
                             values.values.push(narrowed(item as f64)?);
                         }
@@ -501,10 +542,10 @@ impl<'a> Builder<'a> {
                 dictionary,
                 _strings,
             } => {
-                let Value::String(text) = value else {
+                let Cell::Text(text) = value else {
                     return Err(mismatch("a string"));
                 };
-                let code = match self.codes.get(text.as_str()) {
+                let code = match self.codes.get(text) {
                     Some(&code) => code,
                     None => {
                         let code = u32::try_from(dictionary.len()).map_err(|_| {
@@ -513,8 +554,8 @@ impl<'a> Builder<'a> {
                         // Once for the dictionary, once for the lookup key.
                         _strings.charge(2 * (text.len() + size_of::<String>()))?;
                         dictionary.try_reserve(1)?;
-                        dictionary.push(text.clone());
-                        self.codes.insert(text.clone(), code);
+                        dictionary.push(text.to_owned());
+                        self.codes.insert(text.to_owned(), code);
                         code
                     }
                 };
@@ -527,7 +568,7 @@ impl<'a> Builder<'a> {
         Ok(extra)
     }
 
-    fn finish(self) -> Result<Column> {
+    pub(crate) fn finish(self) -> Result<Column> {
         if let Values::Vector { values, dimension } = &self.values
             && values.values.len() != self.rows * dimension
         {
