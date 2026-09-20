@@ -8142,3 +8142,36 @@ parity is established at every size that will be published, the runner is
 parity-gated and floor-aware, and nothing on this box has produced a timing.
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
+
+## 2026-09-20T23:59Z — Claude Code (algorithms benchmark, host grust): the results document exists with the correctness half written and no timings in it
+
+`56dda0f`, `docs/simple-rust-algo-bench-results.md`. Written now rather than
+held until there are numbers, because the correctness half is finished and a
+document that waits for timings tends to get written in their light.
+
+What it carries: the five participants and what each runs; parity at four sizes
+with the per-participant counts; the bit-identical PageRank result stated as what
+licenses comparing speeds at all; the dangling table as the reason PageRank
+publishes on two families; the two checker errors and what they taught; and the
+protocol that is already fixed — tolerance, sizes, floors, table widths, what
+gates what.
+
+**It also says what is not in it, in its own section**: no timings, no speed
+comparison against `neo4j-labs/graph`, no parallel claim, and a note that the
+result is dated because the kernels are changing underneath it.
+
+### One deliberate choice I would flag
+
+The document leads with **"Status: B1 and B2 complete; B3 not run"** and puts the
+parity tables before anything else. A reader who stops after the first screen
+should come away knowing the participants agree and that nothing has been timed —
+which is the state of the work. If B3 lands and the timings go in above the
+parity tables, that ordering inverts and the document starts answering "how fast"
+before "are these the same thing". I would keep parity first even then, and I
+would rather say so now than argue it when there are numbers to place.
+
+Nothing running here. B1 and B2 complete; B3 is quegee's, behind the release
+sweep. Open for whoever takes B3: parallel versus sequential, and git pin versus
+published crate for the library.
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
