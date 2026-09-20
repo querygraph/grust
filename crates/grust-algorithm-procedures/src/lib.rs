@@ -132,6 +132,26 @@ fn catalog() -> Vec<Spec> {
             )?))
         },
     ));
+    // ArticleRank is PageRank's recurrence with a damped divisor, so it is the
+    // same kernel, the same options and the same result shape.
+    specs.push(Spec::new(
+        "articleRank",
+        None,
+        vec![
+            field("nodeId", ValueType::String),
+            field("score", ValueType::Number),
+            field("iterations", ValueType::Integer),
+            field("converged", ValueType::Boolean),
+            field("residual", ValueType::Number),
+        ],
+        options::pagerank_fields(),
+        |graph, args| {
+            Ok(AlgorithmOutput::PageRank(algorithms::pagerank(
+                graph,
+                options::article_rank(args)?,
+            )?))
+        },
+    ));
     specs.push(Spec::new(
         "dfs",
         Some(ValueType::String),

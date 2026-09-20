@@ -27,6 +27,14 @@ reconstructed from Git history, release commits, and the shipped docs.
   and signed and unsigned projections never share a cache entry. Nothing is
   signed unless asked for, so no existing caller changes. `WeightSelection`
   gains a variant: code that matches it exhaustively needs the new arm.
+- **ArticleRank**: `RankVariant::ArticleRank` on `PageRankOptions`, and
+  `grust.algorithms.articleRank` with PageRank's options and result shape. A
+  source divides its score by its outgoing weight plus the mean outgoing weight
+  over all nodes, so a citation from a node that cites little is worth less than
+  PageRank makes it. The inflated divisor means scores do not sum to one, and
+  comparing their magnitudes with PageRank's is meaningless; their order is the
+  point. Weighted and unweighted, sequential and parallel, and the test checks
+  the kernel against the recurrence written out again densely.
 - **Memory accounting no longer takes a lock.** `ExecutionContext` holds
   accounted bytes and their high-water mark as atomics and admits a memory
   charge through the same compare-exchange as a work charge, so a byte limit

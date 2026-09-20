@@ -1,11 +1,31 @@
-//! Weighted PageRank with explicit convergence and dangling-node semantics.
+//! Weighted PageRank and ArticleRank, with explicit convergence and
+//! dangling-node semantics.
 
 use crate::{AlgorithmError, GraphProjection, Result, buffer::Buffer};
+
+/// Which rank to compute. The iteration is the same; the two differ only in what
+/// a source divides its score by before sending it along an arc.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum RankVariant {
+    /// A source divides its score by its own outgoing weight, so every source
+    /// sends all of its score onward and the scores sum to one.
+    #[default]
+    PageRank,
+    /// A source divides by its outgoing weight **plus the mean outgoing weight
+    /// over all nodes**, which damps what a low-degree source can confer: a node
+    /// cited once by a node that cites once gains less than PageRank gives it.
+    /// The inflated divisor means a source sends on less than its whole score,
+    /// so ArticleRank scores do not sum to one, and comparing their magnitudes
+    /// with PageRank's is meaningless. Their order is the point.
+    ArticleRank,
+}
 
 /// PageRank controls. Scores start uniformly and dangling mass is redistributed
 /// according to personalization (uniform when omitted).
 #[derive(Clone, Copy, Debug)]
 pub struct PageRankOptions<'a> {
+    /// PageRank, or ArticleRank's damped divisor.
+    pub variant: RankVariant,
     /// Probability of following an edge; finite and in [0, 1).
     pub damping: f64,
     /// Stop when the L1 difference between iterations is at most this value.
@@ -20,12 +40,33 @@ pub struct PageRankOptions<'a> {
 impl Default for PageRankOptions<'_> {
     fn default() -> Self {
         Self {
+            variant: RankVariant::PageRank,
             damping: 0.85,
             tolerance: 1e-8,
             max_iterations: 1000,
             personalization: None,
         }
     }
+}
+
+/// The mean outgoing weight over all nodes, which is what ArticleRank adds to
+/// each source's divisor. Dangling rows count as zero and still count towards
+/// the mean, so a graph with many dangling nodes damps more, which is the
+/// behaviour ArticleRank is asked for. The sum is taken in node order in fixed
+/// chunks, so it does not depend on the worker count.
+fn mean_outgoing(totals: &[f64]) -> f64 {
+    if totals.is_empty() {
+        return 0.0;
+    }
+    let mut sum = 0.0;
+    for chunk in totals.chunks(crate::parallel::REDUCTION_CHUNK_LEN) {
+        let mut part = 0.0;
+        for &total in chunk {
+            part += total;
+        }
+        sum += part;
+    }
+    sum / totals.len() as f64
 }
 
 /// Scores and convergence evidence. Exhausting the iteration limit returns
@@ -157,6 +198,12 @@ pub fn pagerank(graph: &GraphProjection, options: PageRankOptions<'_>) -> Result
             }
         }
     }
+    // PageRank divides by the source's own outgoing weight; ArticleRank adds the
+    // mean, so a source with few arcs confers less.
+    let damp = match options.variant {
+        RankVariant::PageRank => 0.0,
+        RankVariant::ArticleRank => mean_outgoing(&totals.values),
+    };
     let mut residual = f64::INFINITY;
     for iteration in 1..=options.max_iterations {
         let mut dangling = 0.0;
@@ -179,8 +226,8 @@ pub fn pagerank(graph: &GraphProjection, options: PageRankOptions<'_>) -> Result
             let mass = options.damping * scores.values[source];
             for arc in adjacency.range(source) {
                 context.charge_work(1)?;
-                let probability =
-                    (adjacency.weight(arc) / scales.values[source]) / totals.values[source];
+                let probability = (adjacency.weight(arc) / scales.values[source])
+                    / (totals.values[source] + damp);
                 next.values[adjacency.targets.values[arc]] += mass * probability;
             }
         }
@@ -288,6 +335,10 @@ fn pull(
             },
         )?;
     }
+    let damp = match options.variant {
+        RankVariant::PageRank => 0.0,
+        RankVariant::ArticleRank => mean_outgoing(&totals.values),
+    };
     let scales = &scales.values;
     let totals = &totals.values;
     let mut next = Buffer::indexed(n, 0.0f64, context)?;
@@ -332,7 +383,8 @@ fn pull(
                         if totals[source] <= 0.0 {
                             continue;
                         }
-                        let probability = (reverse.weight(arc) / scales[source]) / totals[source];
+                        let probability =
+                            (reverse.weight(arc) / scales[source]) / (totals[source] + damp);
                         sum += scores_now[source] * probability;
                     }
                     let updated = base * teleport[node] + options.damping * sum;

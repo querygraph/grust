@@ -2,8 +2,8 @@ use super::*;
 use algorithms::{
     BetweennessOptions, ClosenessOptions, FastRpOptions, HarmonicOptions, IterationOptions,
     KatzOptions, LabelPropagationOptions, LouvainOptions, MissingWeight, NodeSimilarityOptions,
-    Orientation, PageRankOptions, ProjectionOptions, SimilarityMetric, SpanningObjective,
-    SpanningTreeOptions, TriangleOptions, WeightSelection,
+    Orientation, PageRankOptions, ProjectionOptions, RankVariant, SimilarityMetric,
+    SpanningObjective, SpanningTreeOptions, TriangleOptions, WeightSelection,
 };
 
 fn option(name: &str, value_type: ValueType, default: Value, nullable: bool) -> OptionField {
@@ -109,6 +109,15 @@ pub(super) fn projection(args: &ValidatedArguments) -> Result<ProjectionOptions<
 }
 
 pub(super) fn pagerank(args: &ValidatedArguments) -> Result<PageRankOptions<'_>> {
+    rank(args, RankVariant::PageRank)
+}
+
+/// The same options, for the ArticleRank variant.
+pub(super) fn article_rank(args: &ValidatedArguments) -> Result<PageRankOptions<'_>> {
+    rank(args, RankVariant::ArticleRank)
+}
+
+fn rank(args: &ValidatedArguments, variant: RankVariant) -> Result<PageRankOptions<'_>> {
     let max_iterations = match value(args, "maxIterations")? {
         Value::Int(value) => usize::try_from(*value).map_err(|_| {
             ProcedureError::InvalidArguments("maxIterations must be positive".into())
@@ -129,6 +138,7 @@ pub(super) fn pagerank(args: &ValidatedArguments) -> Result<PageRankOptions<'_>>
         }
     };
     Ok(PageRankOptions {
+        variant,
         damping: number(value(args, "damping")?)?,
         tolerance: number(value(args, "tolerance")?)?,
         max_iterations,
