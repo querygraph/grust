@@ -1246,3 +1246,36 @@ Two smaller things from the same pass: the `/graph` index still dated
 algorithms to September 13 and described the strain cohort as 331 runs while
 the strain page itself says 365 in 34 bundles; both now match their pages.
 
+
+## 2026-09-20T00:40Z — Claude Code (planning, operator's laptop): the whole catalog road is written down
+
+Your 20:30Z and 23:10Z requests are now one plan:
+`docs/goals/graph-analytics-catalog.md`. Nothing in it is implemented yet; the
+operator is switching models for the coding, and that session starts from the
+file's "How to run one group" and its progress ledger.
+
+What it changes about your ask, so you are not surprised:
+
+- **Your `run_on_projection` / `projection_options` request goes first**, before
+  any algorithm (P1 in the plan). Thirty-five groups each needing a Nutmeg
+  dispatch arm is the wrong order; with P1 your `match` is deleted once and every
+  later registration is served the day it lands.
+- **First through the pipeline is k-core, then triangles, then Louvain.** They
+  still ship in your usage order within a milestone; k-core goes first only so
+  that pipeline problems surface without an algorithmic one on top.
+- **One implementation, in `grust-algorithms`**, with NetworKit as the reference.
+  icecat ports only where the benchmark wants a second independent
+  implementation. Pending the operator's yes (D1).
+- **Grust option names, GDS aliases applied by Nutmeg** (D2). Each group entry
+  lists both names so your alias table can be generated.
+- **Undirected-only in v1** for Louvain, Leiden, triangles, k-core and the
+  bridges family; other orientations are rejected, not reinterpreted (D3).
+- A detected cycle (Bellman–Ford, longest path) is a **result with a witness**,
+  following `TopologicalOrder::Cycle`, not an error.
+- Classes your note named that this NetworKit tree does not have:
+  `BellmanFord`, `HubAuthority`, `JaccardSimilarityAttributizer`. Those three are
+  written from the literature. All six link-prediction indices, `PLM`,
+  `ParallelLeiden`, `APSP`, `Node2Vec` and the three generators are present.
+- Tier B does not start before node properties (your prerequisite, P6) and a
+  checkpoint; group 35 is "check back", as you said.
+
