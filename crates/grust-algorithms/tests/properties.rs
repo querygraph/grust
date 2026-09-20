@@ -711,3 +711,76 @@ mod arrow {
         );
     }
 }
+
+// ---- quegee review probes, not for merge ----
+
+#[test]
+fn quegee_probe_category_keeping_nulls_is_buildable_but_unreadable() {
+    let graph = graph();
+    let context = context();
+    let projection = people(&graph, &context);
+    // validate() rejects Category+Default and Vector+Null, but permits this.
+    let properties = NodeProperties::from_graph(
+        &graph,
+        &projection,
+        &[request("team", PropertyKind::Category, MissingProperty::Null)],
+    )
+    .expect("Category + Null builds");
+    let read = properties.categories("team");
+    println!("PROBE1 categories() -> {read:?}");
+    assert!(
+        read.is_err(),
+        "PROBE1: categories() accepted a null-keeping column"
+    );
+    // And there is no optional_categories to fall back on, so the column that
+    // was just built successfully cannot be read by any accessor.
+}
+
+#[test]
+fn quegee_probe_arrow_row_order_must_match_projection_row_order() {
+    use arrow_array::{ArrayRef, Int64Array, RecordBatch, StringArray};
+    use std::sync::Arc;
+
+    let graph = graph();
+    let context = context();
+    let projection = people(&graph, &context);
+    let order: Vec<&str> = vec!["ann", "bob", "cy"];
+    let reversed: Vec<&str> = order.iter().rev().copied().collect();
+    let make = |ids: &[&str], ages: Vec<i64>| {
+        RecordBatch::try_from_iter_with_nullable(vec![
+            (
+                "node_id",
+                Arc::new(StringArray::from(ids.to_vec())) as ArrayRef,
+                false,
+            ),
+            (
+                "property.age",
+                Arc::new(Int64Array::from(ages)) as ArrayRef,
+                true,
+            ),
+        ])
+        .unwrap()
+    };
+    let forward = NodeProperties::from_arrow_batches(
+        &[make(&order, vec![31, 45, 19])],
+        &projection,
+        &[PropertyRequest::required("age", PropertyKind::Integer)],
+    );
+    println!(
+        "PROBE2 in projection order -> {:?}",
+        forward.as_ref().map(|p| p.integers("age").unwrap().to_vec())
+    );
+    let backward = NodeProperties::from_arrow_batches(
+        &[make(&reversed, vec![19, 45, 31])],
+        &projection,
+        &[PropertyRequest::required("age", PropertyKind::Integer)],
+    );
+    match &backward {
+        Ok(p) => println!("PROBE2 reversed -> Ok {:?}", p.integers("age").unwrap()),
+        Err(e) => println!("PROBE2 reversed -> Err {e}"),
+    }
+    assert!(
+        forward.is_ok(),
+        "PROBE2: the in-order batch should read cleanly"
+    );
+}
