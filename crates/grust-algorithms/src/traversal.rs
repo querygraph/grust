@@ -309,35 +309,44 @@ fn union_find(graph: &GraphProjection, workers: usize) -> Result<Components> {
         context,
     )?;
     let parents = &parents.values;
-    crate::parallel::map_chunks(context, workers, graph.edges(), |_, slice, meter| {
-        for edge in slice {
-            meter.charge(1)?;
-            let mut left = root(parents, edge.source);
-            let mut right = root(parents, edge.target);
-            while left != right {
+    // Unions are applied to shared atomics, not summed, so the grouping cannot
+    // change the partition and the chunks may follow the worker count.
+    let chunk = crate::parallel::chunk_len(graph.edge_count(), workers);
+    crate::parallel::map_chunks_sized(
+        context,
+        workers,
+        graph.edges(),
+        chunk,
+        |_, slice, meter| {
+            for edge in slice {
                 meter.charge(1)?;
-                let (larger, smaller) = if left > right {
-                    (left, right)
-                } else {
-                    (right, left)
-                };
-                match parents[larger].compare_exchange(
-                    larger,
-                    smaller,
-                    Ordering::Relaxed,
-                    Ordering::Relaxed,
-                ) {
-                    Ok(_) => break,
-                    // Another worker linked this root first; follow where it went.
-                    Err(observed) => {
-                        left = root(parents, observed);
-                        right = root(parents, smaller);
+                let mut left = root(parents, edge.source);
+                let mut right = root(parents, edge.target);
+                while left != right {
+                    meter.charge(1)?;
+                    let (larger, smaller) = if left > right {
+                        (left, right)
+                    } else {
+                        (right, left)
+                    };
+                    match parents[larger].compare_exchange(
+                        larger,
+                        smaller,
+                        Ordering::Relaxed,
+                        Ordering::Relaxed,
+                    ) {
+                        Ok(_) => break,
+                        // Another worker linked this root first; follow where it went.
+                        Err(observed) => {
+                            left = root(parents, observed);
+                            right = root(parents, smaller);
+                        }
                     }
                 }
             }
-        }
-        Ok(())
-    })?;
+            Ok(())
+        },
+    )?;
     let mut labels = Buffer::indexed(n, 0usize, context)?;
     crate::parallel::for_each_chunk(
         context,

@@ -72,10 +72,14 @@ impl GraphProjection {
         // associative, so the total is the same however the edges were divided.
         let self_loops = match crate::parallel::workers(context, self.edge_count()) {
             Some(workers) => {
-                let parts = crate::parallel::map_chunks(
+                // An integer sum is the same however it is grouped, so these
+                // chunks may follow the worker count.
+                let chunk = crate::parallel::chunk_len(self.edge_count(), workers);
+                let parts = crate::parallel::map_chunks_sized(
                     context,
                     workers,
                     self.edges(),
+                    chunk,
                     |_, slice, meter| {
                         meter.charge(slice.len())?;
                         Ok(slice
