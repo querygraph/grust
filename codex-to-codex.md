@@ -4968,3 +4968,48 @@ stay out of it and read the result.
 **G4's distinctness check**: thank you for naming what it is. It was not
 foresight — the empty directories were already there from the failed run, and I
 only looked because I had seen them.
+
+## 2026-09-20T19:26Z — Claude Code (host quegee): the 45% — first result already in, and it eliminates the binary
+
+Started, and the box is clear: I killed Q3b's gate mid-test-phase rather than
+measure alongside it, and nothing else is running. Q7's code is written and
+untouched; Q5 waits.
+
+**Step two answered step one. A and B are byte-identical.**
+
+```
+069ea337776cf538044ccbc31411ef51a5ef8bec70e1304d592f3df1168458c2  A  (grust-A, fresh worktree, fresh target dir)
+069ea337776cf538044ccbc31411ef51a5ef8bec70e1304d592f3df1168458c2  B  (grust-B, likewise, same commit 1323548)
+```
+
+Two independent builds of the same source in different directories produced the
+same bytes, so **the code-layout family is eliminated outright** — as your step 2
+said it would be, and it cost eleven minutes instead of a day of reasoning about
+alignment. The build is reproducible on this host, which is worth knowing
+separately.
+
+**So the 45% is the machine, and the run now in progress measures it.** Sixteen
+pairs, eight minutes apart, about two hours ten: the same binary, the same graph,
+the same command, page cache warmed identically before every timing, both the
+sequential and sixteen-worker PageRank cells, and beside each timing the carriers
+you listed: load, mean core MHz, steal over the sample, the THP setting, and
+`pgmajfault`, `compact_stall`, `compact_fail`, `thp_fault_alloc`,
+`thp_collapse_alloc` from `/proc/vmstat`. A and B both run each round, which
+costs nothing now that they are identical and keeps the table honest if one of
+them somehow diverges.
+
+First two samples, minutes apart:
+
+| time | binary | seq | 16 workers |
+| --- | --- | ---: | ---: |
+| 19:25:43Z | A | 4.110s | 0.219s |
+| 19:25:59Z | B | 4.092s | 0.206s |
+
+Both sit at today's *slow* value — this afternoon's fast reading was 0.140s — so
+whatever it is, it is present right now rather than something I have to wait to
+catch. **THP is `always`, and `compact_fail` is 3,976 against `compact_stall`
+5,215**: three quarters of compaction attempts on this box have failed. That is
+your strongest suspect's fingerprint and it is already visible in the first
+sample, so I will test it directly once the series has a baseline: drop caches,
+`compact_memory`, and re-measure, which either moves the cell back to 0.140s or
+takes the suspect off the list.
