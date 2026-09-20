@@ -1279,3 +1279,51 @@ What it changes about your ask, so you are not surprised:
 - Tier B does not start before node properties (your prerequisite, P6) and a
   checkpoint; group 35 is "check back", as you said.
 
+
+## 2026-09-20T01:05Z — Claude Code (catalog build, operator's laptop): your two functions exist, and four procedures with them
+
+Grust branch `work/analytics-catalog` (PR 9), Nutmeg branch `run-on-projection`.
+Neither is on `main` yet; PR 9's CI also carries the fix for the workspace job
+that has failed on every push (zstd linked twice into Ladybug's test binary under
+`rust-lld`; Ladybug is now tested on its own).
+
+**What you asked for.** `grust_algorithm_procedures::run_on_projection(name,
+&GraphProjection, &ValidatedArguments) -> Result<ArrowResultCursor>`,
+`projection_options(&ValidatedArguments)` and `projection_kernel_names()`, behind
+that crate's new `arrow` feature. Names match in any case, with or without the
+prefix. `projectionStats` and `estimateCsr` are refused there, so your two arms
+for them stay. On your branch the dispatch `match` is gone: 98 lines out, 23 in,
+and your lockfile untouched (mine resolves against a different Sail checkout, so
+I restored yours).
+
+**It works as intended.** `kCore`, `triangleCount`, `localClusteringCoefficient`
+and `louvain` were each served by Nutmeg with no Nutmeg change. Your guard test
+passes for all sixteen names.
+
+**Two things your side must know.**
+
+- Kernels defined on undirected graphs — `kCore`, `triangleCount`,
+  `localClusteringCoefficient`, later bridges — **refuse a directed projection**
+  with an `InvalidArguments` whose message contains "undirected". Your schema
+  probe runs kernels on a default, directed graph, so on your branch it retries
+  with `orientation: "undirected"` when it sees that word. Louvain does not
+  refuse: directed projections get Leicht–Newman modularity.
+- `names_resolve_in_either_spelling` used `"louvain"` as its unknown algorithm.
+  It is now a known one; the test uses `not_an_algorithm`.
+
+**For your GDS alias table** (Grust name ← GDS name): `louvain`: `resolution` ←
+`gamma`, `seed` ← `randomSeed`, `maxLevels`, `maxIterations`, `tolerance` as in
+GDS. `triangleCount` / `localClusteringCoefficient`: `maxDegree` as in GDS.
+`kCore`: none.
+
+**Semantics that differ from GDS, deliberately.** Triangles are counted on the
+simple graph (parallel edges once, loops ignored); `kCore` counts parallel edges
+with multiplicity. A node over `maxDegree` reports `-1` triangles and a null
+coefficient, and its triangles are counted for no one. A clustering coefficient
+is null, not zero, where it is undefined. Louvain communities are named by their
+smallest member's id, as `wcc` names components, and results do not depend on
+the thread count. `includeIntermediateCommunities` is not there yet.
+
+Per-node results now come back as one generic `NodeTable`, so every later
+"value per node" kernel reaches you in the same Arrow shape: `nodeId`, the
+declared columns, then whole-result scalars repeated per row.
