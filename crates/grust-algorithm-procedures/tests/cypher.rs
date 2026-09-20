@@ -560,3 +560,35 @@ fn spanning_tree_is_an_ordinary_procedure() {
     assert!(query(", sourceNode: 'isolate'").is_empty());
     assert_eq!(query(", sourceNode: 'c'").len(), 2);
 }
+
+#[test]
+fn eigenvector_katz_and_hits_are_ordinary_procedures_with_convergence_evidence() {
+    // Directed a->b, b->c, c->b. Nothing points at a, so a = 1; b and c solve
+    // b = 1 + 0.25(a + c) and c = 1 + 0.25 b: 1.6 and 1.4.
+    let rows = run(
+        "CALL grust.algorithms.katz({alpha: 0.25, tolerance: 0.000000000001}) YIELD nodeId, score, converged RETURN nodeId, score, converged",
+    );
+    let score = |row: usize| match rows[row][1] {
+        Value::Float(value) => value,
+        ref other => panic!("{other:?}"),
+    };
+    assert!(rows.iter().all(|row| row[2] == Value::Bool(true)));
+    assert_eq!(score(0), 1.0);
+    assert!((score(1) - 1.6).abs() < 1e-9 && (score(2) - 1.4).abs() < 1e-9);
+    assert_eq!(score(3), 1.0);
+
+    // HITS: b is pointed at by a and c, so it is the authority.
+    let rows = run(
+        "CALL grust.algorithms.hits() YIELD nodeId, hub, authority, converged WHERE authority > 0.9 RETURN nodeId, converged",
+    );
+    assert_eq!(
+        rows,
+        vec![vec![Value::String("b".into()), Value::Bool(true)]]
+    );
+
+    // Eigenvector: a limit of one iteration is reported, not hidden.
+    let rows = run(
+        "CALL grust.algorithms.eigenvector({orientation: 'undirected', maxIterations: 1}) YIELD iterations, converged RETURN DISTINCT iterations, converged",
+    );
+    assert_eq!(rows, vec![vec![Value::Int(1), Value::Bool(false)]]);
+}

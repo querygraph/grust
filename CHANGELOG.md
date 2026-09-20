@@ -6,6 +6,19 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ## Unreleased
 
+- Add **eigenvector centrality**, **Katz centrality** and **HITS**:
+  `eigenvector`, `katz`, `hits` and the procedures of the same names, each
+  reporting `iterations`, `converged` and `residual` as `pagerank` does, never
+  asserting convergence silently. Influence flows along the projection's arcs.
+  Eigenvector iterates `(A + I)x` rather than `Ax`: same eigenvectors, but it
+  converges on bipartite graphs where plain power iteration oscillates. Katz
+  does not refuse an `alpha` above the cheap `1 / (largest in-strength)` bound,
+  which would reject many valid values; a run that does not settle says so, and
+  one that overflows fails and names `alpha`. Each node pulls from its
+  neighbours over fixed chunks of 4,096 nodes on the caller's rayon pool, so
+  scores, residuals and charged work are bit-identical at any width. Tests check
+  the defining equations with dense linear algebra: `Ax = λx`, `MMᵀa = λa`,
+  and Katz against Gaussian elimination.
 - Add **minimum and maximum spanning forests**: `spanning_tree` and
   `grust.algorithms.spanningTree`, with `objective` and `sourceNode`. Kruskal
   with union by size and path halving, on an undirected projection. Ties go to

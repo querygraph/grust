@@ -99,6 +99,32 @@ pub(crate) fn ordered_blocks<T: Send>(
     Ok(())
 }
 
+/// Run `task(first_index, chunk)` over fixed-size chunks of `values` and return
+/// the results in chunk order. Chunks are cut by `size` alone, so a reduction
+/// the caller folds over the returned vector groups its terms the same way at
+/// any pool width.
+pub(crate) fn for_chunks<T: Send, R: Send>(
+    values: &mut [T],
+    size: usize,
+    task: impl Fn(usize, &mut [T]) -> Result<R> + Sync,
+) -> Result<Vec<R>> {
+    #[cfg(feature = "parallel")]
+    {
+        use rayon::prelude::*;
+        values
+            .par_chunks_mut(size)
+            .enumerate()
+            .map(|(index, chunk)| task(index * size, chunk))
+            .collect()
+    }
+    #[cfg(not(feature = "parallel"))]
+    values
+        .chunks_mut(size)
+        .enumerate()
+        .map(|(index, chunk)| task(index * size, chunk))
+        .collect()
+}
+
 /// Sort by a **total** order. The result is then the same whatever the pool
 /// does, so the parallel sort is safe to use where a result must not vary.
 pub(crate) fn sort_total<T: Send>(

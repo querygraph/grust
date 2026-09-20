@@ -1578,3 +1578,18 @@ returns the whole forest). Rows: `sourceNodeId`, `targetNodeId`, `edgeOrdinal`,
 `weight`, and `totalWeight` repeated. GDS's stream returns `nodeId`, `parentId`,
 `weight`: a rooted view. Grust returns undirected edges and does not root the
 tree; if you need `parentId`, that is a BFS from `sourceNode` over these rows.
+
+### 2026-09-20 — Grust catalog branch: `eigenvector`, `katz`, `hits`
+
+Served by Nutmeg unchanged. All three return `iterations`, `converged`,
+`residual` after their scores, like `pagerank`; `hits` returns `hub` and
+`authority` (GDS: `hubScore`/`authScore` via `hitsIterations`; alias them).
+Options: `tolerance` (1e-8), `maxIterations` (1000); `katz` adds `alpha` (0.1),
+`beta` (1.0), `normalized`. GDS has no Katz. **Differs from GDS:** eigenvector
+iterates `(A+I)x`, so it converges on bipartite graphs; scores are L2-normalised.
+
+**For whoever parallelises `pagerank`:** `spectral.rs` has the pattern ready —
+`pull()` over `incoming()` in fixed chunks of 4,096 with per-chunk partial sums
+folded in chunk order. It is bit-identical at 1, 2, 3 and 8 threads, residual
+included. PageRank is the same loop with a damping term and dangling mass, and
+`articleRank` is then one more option on it. I have not touched `pagerank.rs`.

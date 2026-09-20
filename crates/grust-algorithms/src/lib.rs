@@ -39,6 +39,8 @@ mod statistics;
 pub use similarity::{NodeSimilarity, NodeSimilarityOptions, SimilarityMetric, node_similarity};
 mod spanning;
 pub use spanning::{SpanningForest, SpanningObjective, SpanningTreeOptions, spanning_tree};
+mod spectral;
+pub use spectral::{IteratedScores, IterationOptions, KatzOptions, eigenvector, hits, katz};
 mod table;
 mod triangles;
 pub use statistics::{CsrEstimate, ProjectionStatistics};

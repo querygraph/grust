@@ -644,6 +644,14 @@ M4 (Tier A), then per milestone.** Each is a minor version: new public API.
   and biconnected components return `sourceNodeId`, `targetNodeId`,
   `edgeOrdinal` (then `componentId`). Spanning tree and max flow should do the
   same.
+- **Iterative kernels pull, in fixed chunks.** `parallel::for_chunks` cuts a
+  vector into chunks of 4,096 whatever the pool, each node pulls its next value
+  from `incoming()`, and per-chunk partial sums are folded in chunk order. That
+  is what makes a float reduction bit-identical at any width; `balanced_ranges`
+  cannot, because its boundaries move with the width. `articleRank` is not done:
+  it is an option inside `pagerank.rs`, which is push-based and sequential and
+  which the Nutmeg agent may be parallelising. Do it when that file's owner is
+  settled, preferably by moving PageRank onto `spectral::pull`.
 
 ## Progress ledger
 
@@ -656,6 +664,6 @@ Update in the same commit as the work. `—` not started, `wip`, `done <commit>`
 | P7 | done (`parallel.rs`) | 1 Louvain | done | 2 Betweenness | done |
 | 3 Node similarity | done | 4 Triangles/LCC | done | 5 k-core | done |
 | 6 Closeness/harmonic | done | 7 Leiden | — | 8 Label propagation | done |
-| 9 A\*/Bellman–Ford | — | 10 Eigenvector family | — | 11 Bridges family | done |
+| 9 A\*/Bellman–Ford | — | 10 Eigenvector family | done except `articleRank` | 11 Bridges family | done |
 | 12 Spanning forest | done | 13 Max flow | — | 14 FastRP | — |
 | 15–35 | — (see Tier B) | | | | |

@@ -363,6 +363,58 @@ fn catalog() -> Vec<Spec> {
         },
     ));
     specs.push(Spec::new(
+        "eigenvector",
+        None,
+        vec![
+            field("nodeId", ValueType::String),
+            field("score", ValueType::Number),
+            field("iterations", ValueType::Integer),
+            field("converged", ValueType::Boolean),
+            field("residual", ValueType::Number),
+        ],
+        options::iteration_fields(),
+        |graph, args| {
+            Ok(AlgorithmOutput::Table(
+                algorithms::eigenvector(graph, options::iteration(args)?)?.into_table()?,
+            ))
+        },
+    ));
+    specs.push(Spec::new(
+        "katz",
+        None,
+        vec![
+            field("nodeId", ValueType::String),
+            field("score", ValueType::Number),
+            field("iterations", ValueType::Integer),
+            field("converged", ValueType::Boolean),
+            field("residual", ValueType::Number),
+        ],
+        options::katz_fields(),
+        |graph, args| {
+            Ok(AlgorithmOutput::Table(
+                algorithms::katz(graph, options::katz(args)?)?.into_table()?,
+            ))
+        },
+    ));
+    specs.push(Spec::new(
+        "hits",
+        None,
+        vec![
+            field("nodeId", ValueType::String),
+            field("hub", ValueType::Number),
+            field("authority", ValueType::Number),
+            field("iterations", ValueType::Integer),
+            field("converged", ValueType::Boolean),
+            field("residual", ValueType::Number),
+        ],
+        options::iteration_fields(),
+        |graph, args| {
+            Ok(AlgorithmOutput::Table(
+                algorithms::hits(graph, options::iteration(args)?)?.into_table()?,
+            ))
+        },
+    ));
+    specs.push(Spec::new(
         "louvain",
         None,
         vec![

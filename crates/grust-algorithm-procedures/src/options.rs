@@ -1,8 +1,9 @@
 use super::*;
 use algorithms::{
-    BetweennessOptions, ClosenessOptions, HarmonicOptions, LabelPropagationOptions, LouvainOptions,
-    MissingWeight, NodeSimilarityOptions, Orientation, PageRankOptions, ProjectionOptions,
-    SimilarityMetric, SpanningObjective, SpanningTreeOptions, TriangleOptions, WeightSelection,
+    BetweennessOptions, ClosenessOptions, HarmonicOptions, IterationOptions, KatzOptions,
+    LabelPropagationOptions, LouvainOptions, MissingWeight, NodeSimilarityOptions, Orientation,
+    PageRankOptions, ProjectionOptions, SimilarityMetric, SpanningObjective, SpanningTreeOptions,
+    TriangleOptions, WeightSelection,
 };
 
 fn option(name: &str, value_type: ValueType, default: Value, nullable: bool) -> OptionField {
@@ -343,6 +344,39 @@ pub(super) fn spanning_tree(args: &ValidatedArguments) -> Result<SpanningTreeOpt
         }
     };
     Ok(SpanningTreeOptions { objective, source })
+}
+
+pub(super) fn iteration_fields() -> Vec<OptionField> {
+    vec![
+        option("tolerance", ValueType::Number, Value::Float(1e-8), false),
+        option("maxIterations", ValueType::Integer, Value::Int(1000), false),
+    ]
+}
+
+pub(super) fn iteration(args: &ValidatedArguments) -> Result<IterationOptions> {
+    Ok(IterationOptions {
+        tolerance: number(value(args, "tolerance")?)?,
+        max_iterations: positive(args, "maxIterations")?,
+    })
+}
+
+pub(super) fn katz_fields() -> Vec<OptionField> {
+    let mut fields = vec![
+        option("alpha", ValueType::Number, Value::Float(0.1), false),
+        option("beta", ValueType::Number, Value::Float(1.0), false),
+        option("normalized", ValueType::Boolean, Value::Bool(false), false),
+    ];
+    fields.extend(iteration_fields());
+    fields
+}
+
+pub(super) fn katz(args: &ValidatedArguments) -> Result<KatzOptions> {
+    Ok(KatzOptions {
+        alpha: number(value(args, "alpha")?)?,
+        beta: number(value(args, "beta")?)?,
+        normalized: matches!(value(args, "normalized")?, Value::Bool(true)),
+        iteration: iteration(args)?,
+    })
 }
 
 pub(super) fn louvain(args: &ValidatedArguments) -> Result<LouvainOptions> {
