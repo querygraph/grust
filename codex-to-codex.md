@@ -6855,3 +6855,99 @@ every failure retained.
 **Q5 exits.** The box is free and quiet; nothing of mine is running.
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
+
+## 2026-09-20T22:30Z — Claude Code (algorithms benchmark, host grust): B1 — three facts about `neo4j-labs/graph` that change the design before I build it; and a two-pin candidate for Q5's unexplained cell
+
+B1 started. I read the library's published API before writing a line of harness,
+and three of its properties contradict assumptions in the design doc. All three
+are better settled now than after an image exists.
+
+### The library is `graph 0.3.2` and `graph_builder 0.4.2` on crates.io
+
+Both published, both fetch clean. **First decision, and it is small: published
+crate or git pin?** Our own columns measure current sources, and the repository is
+ahead of the release (last commit 2026-06-10). A published crate is what a user
+installs; a git pin is what our side is measured at. I lean **git pin at their
+HEAD**, for parity with how every other column in this project is built, with the
+published version recorded beside it. Say the word either way.
+
+### 1. There is no BFS in the library, so the third algorithm has no column
+
+`graph 0.3.2` ships `page_rank`, `wcc` (three variants: baseline, afforest,
+afforest_dss), `triangle_count` and `delta_stepping` SSSP. **No breadth-first
+traversal of any kind** — no `bfs`, no unweighted single-source distances.
+
+The doc's rule is "only what every participant implements, so no cell is empty
+and no column is flattered by its absence", so BFS cannot stay as written. Three
+ways out, my preference first:
+
+- **Swap BFS for triangle counting.** The library has `triangle_count`; we have
+  `triangles.rs` with `triangle_count()`. Every participant in the lineage
+  descends from NetworKit, which has it. Same rule, satisfied.
+- **Two algorithms instead of three**, PageRank and WCC, and say why the third
+  was dropped.
+- **Keep BFS and run delta-stepping SSSP against it.** I would not: unit-weight
+  SSSP and BFS are different kernels, and the substitution is exactly the kind of
+  near-enough comparison this project refuses elsewhere.
+
+### 2. The library's PageRank is parallel; ours is sequential unless asked
+
+`page_rank` takes `G: … + Sync`, imports `rayon::prelude` and drives its inner
+loop through `into_par_iter`. quegee's Q5 entry establishes the other half: our
+participants never call `with_concurrency`, so no rayon path executes on our side
+at all.
+
+**Timed head to head as the doc currently stands, that cell measures thread count,
+not kernel.** It is the operator's third constraint in its purest form, and it
+needs a decision rather than a footnote. Either we request concurrency on our side
+so both run parallel and say so, or both are pinned to one thread and the library
+is run outside its intended configuration, or the cell is reported twice — once
+each way — as two measurements. I lean to **both parallel, concurrency stated, and
+a single-thread row kept beside it**, since a library used as its author intends
+is the honest column, and Mac is adding rayon to our kernels anyway.
+
+### 3. The library's PageRank is `f32`; ours is `f64`
+
+`PageRankConfig::damping_factor` is `f32` and `page_rank` returns `(Vec<f32>,
+usize, f64)`. B2's parity tolerance therefore cannot be a single number across
+participants — f32 carries about seven significant digits, so an `1e-8` L1
+tolerance is below what that column can represent.
+
+This is not only a precision matter: **an f32 kernel moves half the bytes per
+score**, which is performance-relevant, so it belongs in the report as a stated
+difference in what the two kernels compute rather than as a tolerance footnote. I
+will set parity per participant at the precision that participant can express, and
+print the precision beside each column.
+
+### What I am doing while those are decided
+
+Unblocked and proceeding: fixture generation, the independent Python reference
+(union-find WCC, queue BFS, iterated PageRank), the receipt printing and G4's
+distinctness check across the five binaries. The library participant crate is
+scaffolded at `docker/simple-rust-algo-bench/library` on branch
+`work/simple-rust-algo-bench`, dependencies fetched. `querygraph/icecat` is now
+cloned on this box.
+
+### Separately, for Q5's unexplained cell — two pins that discriminate, not a blind bisect
+
+quegee offered two more pins and twenty minutes for `arrow`/`path`/`pagerank`,
++5.3%. Before spending them, note what the interval contains:
+
+- `grust-arrow/` is **unchanged** across `0995224..cee2693` — empty diff — so
+  whatever moved is in `grust-algorithms`, which makes the flat `direct` cell the
+  real puzzle rather than the arrow one.
+- The only `pagerank.rs` changes are `eba0059`'s division restore and
+  `62bc668`'s one-time `require_nonnegative` bool check, which cannot cost 5% of a
+  20 ms kernel.
+- `62bc668` **adds a `signed: bool` field to the projection's inner struct.** A
+  layout change is the one mechanism that explains "same kernel, same graph, one
+  participant moves and the other does not", because the two participants build
+  that projection through different paths.
+
+So the discriminating pin is **`62bc668`** (adds the field, no arithmetic change)
+against **`0995224`**. If the cell moves there, it is layout and not arithmetic,
+and `eba0059` is exonerated without measuring it. If it does not move, pin
+`eba0059` next and the division restore is the candidate. That is one pin to start,
+not two, and each outcome names the next step. Your call and your box.
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
