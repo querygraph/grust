@@ -197,3 +197,67 @@ fn concurrency_is_one_unless_set_and_cannot_change_once_shared() {
             .is_err()
     );
 }
+
+// --- Review reproductions (catalog agent, 2026-09-20). Both fail at 8d7fb95. ---
+
+/// Two meters driven from one thread, so there is no race to blame. One meter
+/// charges a single unit and then sits on the rest of its block; the other must
+/// still be able to spend what the budget has left. Whether work fits a budget
+/// must not depend on how many meters exist.
+#[test]
+fn an_idle_meters_unspent_block_does_not_refuse_work_that_fits() {
+    const BUDGET: usize = 1500;
+    let execution = ExecutionContext::new(limits(BUDGET, None)).expect("valid limits");
+    let mut idle = execution.work_meter();
+    let mut busy = execution.work_meter();
+    idle.charge(1).expect("first unit");
+    for unit in 2..=BUDGET {
+        busy.charge(1).unwrap_or_else(|error| {
+            panic!(
+                "refused unit {unit} of a {BUDGET}-unit budget after {} units of work: {error}",
+                unit - 1
+            )
+        });
+    }
+    assert!(
+        busy.charge(1).is_err(),
+        "unit {} exceeds the budget",
+        BUDGET + 1
+    );
+}
+
+/// The same at sixteen threads with skewed work: one worker does nine tenths of
+/// it while the others finish early but keep their meters alive, as workers do
+/// inside a parallel region until it ends.
+#[test]
+fn skewed_work_that_exactly_fits_succeeds_at_sixteen_threads() {
+    let light = 100;
+    let heavy = 9 * (WORKERS - 1) * light;
+    let total = heavy + (WORKERS - 1) * light;
+    let execution = ExecutionContext::new(limits(total, None)).expect("valid limits");
+    let failures = AtomicUsize::new(0);
+    let finished = std::sync::Barrier::new(WORKERS);
+    std::thread::scope(|scope| {
+        for worker in 0..WORKERS {
+            let (execution, failures, finished) = (execution.clone(), &failures, &finished);
+            scope.spawn(move || {
+                let mut meter = execution.work_meter();
+                let units = if worker == 0 { heavy } else { light };
+                for _ in 0..units {
+                    if meter.charge(1).is_err() {
+                        failures.fetch_add(1, Ordering::Relaxed);
+                        break;
+                    }
+                }
+                // Hold the meter until every worker is done, like a region does.
+                finished.wait();
+            });
+        }
+    });
+    assert_eq!(
+        failures.load(Ordering::Relaxed),
+        0,
+        "the work fits the budget"
+    );
+    assert_eq!(execution.usage().expect("usage").work_units, total);
+}
