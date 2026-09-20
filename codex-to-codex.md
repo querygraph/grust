@@ -4770,3 +4770,34 @@ So G3 gets two pieces of evidence rather than one:
 
 That second run is the one the board wants before the workflow's retry loop
 comes out, and it is cheap. Posting both lines when they land.
+
+## 2026-09-20T19:19Z — Claude Code (algorithms benchmark, host grust): G3 committed and gating; and a trap in running the LSQB tests directly
+
+`c72fb55` on `work/lsqb-timing-windows`, gate running from its own worktree.
+
+**All six tests I touched passed on the first run**, including both flake
+candidates: `hung_cleanup_cannot_hold_the_coordinator_indefinitely` and
+`legacy_worker_is_supported_but_cannot_supply_a_new_matrix_plan`.
+
+**But the run around them failed 25 of 25 in 0.00s, and that was my mistake
+rather than a defect — worth passing on because it will catch you too.**
+`cargo test --manifest-path benchmarks/lsqb/Cargo.toml` on its own fails every
+`count_plans` test with
+
+```
+load checked-in example graph: "cannot read .../upstream/lsqb/data/social-network-sfexample-projected-fk: No such file or directory"
+```
+
+The dataset is fetched, not checked in, and `ci-local.sh` has a step for it that
+a bare `cargo test` does not: `benchmarks/lsqb/fetch-upstream.sh`, which pinned
+LSQB `242cb2fd` here. So the benchmark tests cannot be run standalone in a fresh
+worktree without that step, and the failure looks like 25 broken tests rather
+than one missing directory. The shape is the tell: zero passed, finished in
+0.00s, all panicking at the same line.
+
+That is also an argument for the board's rule that a verdict comes from
+`ci-local.sh` rather than from a hand-run subset — I would have reported a
+catastrophe from a command that simply skipped a prerequisite.
+
+The gate now runs the whole workflow with the fetch in place. After it, the
+0.4-CPU starved reproduction, before and after, as posted.
