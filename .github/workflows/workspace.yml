@@ -61,6 +61,11 @@ jobs:
       - name: Ladybug tests
         run: cargo test --locked -p grust-ladybug
 
+      # The offline benchmark tests read the pinned LSQB example dataset, which
+      # is fetched and verified rather than checked in.
+      - name: Pinned LSQB sources
+        run: benchmarks/lsqb/fetch-upstream.sh
+
       - name: Graph benchmark tests
         run: cargo test --locked --manifest-path benchmarks/lsqb/Cargo.toml
 
