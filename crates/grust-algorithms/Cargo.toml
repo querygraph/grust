@@ -10,14 +10,18 @@ keywords.workspace = true
 categories.workspace = true
 
 [features]
-default = []
+default = ["parallel"]
 arrow = ["dep:arrow-array", "dep:grust-arrow"]
+# Threads for the kernels. Off gives exactly the sequential code, which is also
+# the differential oracle the parallel paths are tested against.
+parallel = ["dep:rayon"]
 
 [dependencies]
 grust-arrow = { version = "0.21.0", path = "../grust-arrow", optional = true }
 grust-core = { version = "0.21.0", path = "../grust-core" }
 grust-procedures = { version = "0.21.0", path = "../grust-procedures" }
 arrow-array = { version = "59.3.0", optional = true }
+rayon = { version = "1.11", optional = true }
 
 [lints.rust]
 unsafe_code = "forbid"

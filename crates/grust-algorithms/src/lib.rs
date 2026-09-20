@@ -15,6 +15,7 @@ mod degree;
 pub use degree::{Degrees, degree};
 mod graph_input;
 mod ordering;
+mod parallel;
 pub use ordering::{NodeOrder, TopologicalOrder, depth_first, topological_sort};
 mod pagerank;
 mod projection;

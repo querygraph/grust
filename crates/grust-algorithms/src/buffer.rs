@@ -39,6 +39,36 @@ impl<T> Buffer<T> {
         })
     }
 
+    /// A buffer the caller will fill by index, initialized without charging
+    /// work, for kernels that charge the same elements in their own pass.
+    ///
+    /// [`Self::filled`] charges initialization because its caller does not
+    /// otherwise visit the elements. A kernel that writes every element and
+    /// charges as it goes would charge twice, which would change what a work
+    /// budget means for no change in the work performed.
+    pub(crate) fn indexed(count: usize, value: T, context: &ExecutionContext) -> Result<Self>
+    where
+        T: Clone,
+    {
+        let mut buffer = Self::capacity(count, context)?;
+        context.checkpoint()?;
+        buffer.values.resize(count, value);
+        Ok(buffer)
+    }
+
+    /// As [`Self::indexed`], for elements that cannot be cloned, such as the
+    /// atomics a parallel kernel claims entries in.
+    pub(crate) fn indexed_with(
+        count: usize,
+        make: impl FnMut() -> T,
+        context: &ExecutionContext,
+    ) -> Result<Self> {
+        let mut buffer = Self::capacity(count, context)?;
+        context.checkpoint()?;
+        buffer.values.resize_with(count, make);
+        Ok(buffer)
+    }
+
     pub(crate) fn filled(count: usize, value: T, context: &ExecutionContext) -> Result<Self>
     where
         T: Clone,
