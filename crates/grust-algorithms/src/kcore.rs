@@ -3,7 +3,6 @@
 use crate::{
     AlgorithmError, GraphProjection, Orientation, Result,
     buffer::Buffer,
-    meter::Meter,
     table::{NodeColumn, NodeTable, TableScalar},
 };
 
@@ -55,7 +54,7 @@ pub fn k_core(graph: &GraphProjection) -> Result<KCore> {
     }
     let n = graph.node_count();
     let adjacency = graph.outgoing();
-    let mut meter = Meter::new(context);
+    let mut meter = context.work_meter();
 
     // Degree without self-loops. Under the undirected arc contract a loop
     // appears once in its node's row, every other edge once in each endpoint's.
@@ -63,7 +62,7 @@ pub fn k_core(graph: &GraphProjection) -> Result<KCore> {
     let mut maximum = 0usize;
     for node in 0..n {
         let range = adjacency.range(node);
-        meter.tick(1 + range.len())?;
+        meter.charge(1 + range.len())?;
         let loops = adjacency.targets.values[range.clone()]
             .iter()
             .filter(|&&target| target == node)
@@ -93,7 +92,7 @@ pub fn k_core(graph: &GraphProjection) -> Result<KCore> {
             position.values[node] = slot;
         }
     }
-    meter.tick(n)?;
+    meter.charge(n)?;
 
     // Peel in nondecreasing degree. Removing `node` lowers each heavier
     // neighbour by one per arc, moving it one bin down by swapping it with the
@@ -101,7 +100,7 @@ pub fn k_core(graph: &GraphProjection) -> Result<KCore> {
     for index in 0..n {
         let node = order.values[index];
         let range = adjacency.range(node);
-        meter.tick(1 + range.len())?;
+        meter.charge(1 + range.len())?;
         for arc in range {
             let other = adjacency.targets.values[arc];
             if other == node || degree.values[other] <= degree.values[node] {
@@ -121,7 +120,6 @@ pub fn k_core(graph: &GraphProjection) -> Result<KCore> {
             degree.values[other] -= 1;
         }
     }
-    meter.flush()?;
 
     let mut cores = Buffer::capacity(n, context)?;
     let mut degeneracy = 0i64;

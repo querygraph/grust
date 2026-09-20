@@ -218,21 +218,15 @@ fn the_forest_is_identical_at_any_pool_width_and_charges_the_same_work() {
         .collect();
     let weights: Vec<f64> = (0..edges.len()).map(|_| random.below(50) as f64).collect();
     let run = |threads: usize| {
-        let pool = rayon::ThreadPoolBuilder::new()
-            .num_threads(threads)
-            .build()
-            .unwrap();
-        pool.install(|| {
-            let context = context();
-            let projection = graph(n, &edges, Some(&weights), Orientation::Undirected, &context);
-            let before = context.usage().unwrap().work_units;
-            let result = spanning_tree(&projection, SpanningTreeOptions::default()).unwrap();
-            (
-                result.edges().to_vec(),
-                result.total_weight().to_bits(),
-                context.usage().unwrap().work_units - before,
-            )
-        })
+        let context = context().with_concurrency(threads).unwrap();
+        let projection = graph(n, &edges, Some(&weights), Orientation::Undirected, &context);
+        let before = context.usage().unwrap().work_units;
+        let result = spanning_tree(&projection, SpanningTreeOptions::default()).unwrap();
+        (
+            result.edges().to_vec(),
+            result.total_weight().to_bits(),
+            context.usage().unwrap().work_units - before,
+        )
     };
     let first = run(1);
     assert!(first.0.len() > 19_000);

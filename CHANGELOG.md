@@ -6,6 +6,16 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ## Unreleased
 
+- The catalog kernels take their worker count from the execution
+  (`ExecutionContext::with_concurrency`) instead of from whatever rayon pool the
+  caller had installed, and charge work through `WorkMeter`. **Behaviour
+  change:** a caller that does not ask for concurrency now runs every kernel on
+  its own thread and starts no pool; before, a kernel called outside a pool
+  spread across every core of the machine. Results are unchanged and remain
+  bit-identical at any worker count. Below the shared floor of 16,384 work units
+  a kernel stays on one worker whatever was asked for. A budget is now never
+  exceeded by work already done: the first accounting layer admitted work after
+  performing it and could overshoot by a block per worker.
 - Add **FastRP node embeddings**: `fast_rp` and `grust.algorithms.fastRP`, with
   `embeddingDimension`, `iterationWeights`, `nodeSelfInfluence`,
   `normalizationStrength` and `seed`. Each node draws a very sparse random

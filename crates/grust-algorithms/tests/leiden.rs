@@ -290,25 +290,19 @@ fn leiden_is_reproducible_and_stays_connected_on_a_larger_graph() {
         edges.push((random.below(n), random.below(n), 1.0));
     }
     let run = |threads: usize, seed| {
-        let pool = rayon::ThreadPoolBuilder::new()
-            .num_threads(threads)
-            .build()
-            .unwrap();
-        pool.install(|| {
-            let context = context();
-            let projection = graph(n, &edges, Orientation::Undirected, &context);
-            let options = LouvainOptions {
-                seed,
-                ..Default::default()
-            };
-            let result = leiden(&projection, options).unwrap();
-            let plain = louvain(&projection, options).unwrap();
-            (
-                result.communities().to_vec(),
-                result.modularity().to_bits(),
-                plain.modularity(),
-            )
-        })
+        let context = context().with_concurrency(threads).unwrap();
+        let projection = graph(n, &edges, Orientation::Undirected, &context);
+        let options = LouvainOptions {
+            seed,
+            ..Default::default()
+        };
+        let result = leiden(&projection, options).unwrap();
+        let plain = louvain(&projection, options).unwrap();
+        (
+            result.communities().to_vec(),
+            result.modularity().to_bits(),
+            plain.modularity(),
+        )
     };
     let first = run(1, Some(5));
     assert_eq!(run(8, Some(5)), first);

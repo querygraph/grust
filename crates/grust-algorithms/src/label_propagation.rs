@@ -3,7 +3,6 @@
 use crate::{
     AlgorithmError, GraphProjection, Result,
     buffer::Buffer,
-    meter::Meter,
     random,
     table::{NodeColumn, NodeTable, TableScalar},
 };
@@ -99,20 +98,20 @@ pub fn label_propagation(
     // Weight per label for the node in hand, and which labels it touched.
     let mut support = Buffer::filled(n, 0.0f64, context)?;
     let mut touched = Buffer::<usize>::capacity(n, context)?;
-    let mut meter = Meter::new(context);
+    let mut meter = context.work_meter();
 
     let mut iterations = 0;
     let mut converged = false;
     while iterations < options.max_iterations && !converged {
         if let Some(seed) = options.seed {
-            meter.tick(n)?;
+            meter.charge(n)?;
             random::shuffle(&mut order.values, seed, iterations as u64);
         }
         iterations += 1;
         let mut changed = false;
         for &node in &order.values {
             let range = incoming.range(node);
-            meter.tick(1 + range.len())?;
+            meter.charge(1 + range.len())?;
             for arc in range {
                 let weight = incoming.weight(arc);
                 if weight == 0.0 {
@@ -151,7 +150,7 @@ pub fn label_propagation(
 
     // Name each community by its smallest member: a label's first owner may
     // have left it.
-    meter.tick(2 * n)?;
+    meter.charge(2 * n)?;
     let mut smallest = Buffer::filled(n, usize::MAX, context)?;
     for (node, &label) in labels.values.iter().enumerate() {
         smallest.values[label] = smallest.values[label].min(node);
@@ -159,7 +158,6 @@ pub fn label_propagation(
     for label in &mut labels.values {
         *label = smallest.values[*label];
     }
-    meter.flush()?;
     Ok(LabelPropagation {
         graph: graph.clone(),
         communities: labels,

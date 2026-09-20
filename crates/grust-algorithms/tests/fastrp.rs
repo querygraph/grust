@@ -297,27 +297,21 @@ fn fast_rp_is_identical_at_any_pool_width_and_charges_the_same_work() {
         .map(|_| (random.below(n), random.below(n)))
         .collect();
     let run = |threads: usize| {
-        let pool = rayon::ThreadPoolBuilder::new()
-            .num_threads(threads)
-            .build()
-            .unwrap();
-        pool.install(|| {
-            let context = context();
-            let projection = graph(n, &edges, None, Orientation::Undirected, &context);
-            let before = context.usage().unwrap().work_units;
-            let result = fast_rp(
-                &projection,
-                FastRpOptions {
-                    dimension: 32,
-                    normalization_strength: -0.5,
-                    self_influence: 0.2,
-                    ..Default::default()
-                },
-            )
-            .unwrap();
-            let bits: Vec<u32> = result.values().iter().map(|v| v.to_bits()).collect();
-            (bits, context.usage().unwrap().work_units - before)
-        })
+        let context = context().with_concurrency(threads).unwrap();
+        let projection = graph(n, &edges, None, Orientation::Undirected, &context);
+        let before = context.usage().unwrap().work_units;
+        let result = fast_rp(
+            &projection,
+            FastRpOptions {
+                dimension: 32,
+                normalization_strength: -0.5,
+                self_influence: 0.2,
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        let bits: Vec<u32> = result.values().iter().map(|v| v.to_bits()).collect();
+        (bits, context.usage().unwrap().work_units - before)
     };
     let first = run(1);
     for threads in [2, 3, 8] {

@@ -259,27 +259,21 @@ fn scrambled(n: usize, edges: usize) -> Vec<(usize, usize)> {
 fn a_seed_reproduces_its_result_at_any_pool_width() {
     let edges = scrambled(2000, 6000);
     let run = |threads: usize, seed| {
-        let pool = rayon::ThreadPoolBuilder::new()
-            .num_threads(threads)
-            .build()
-            .unwrap();
-        pool.install(|| {
-            let context = context();
-            let projection = graph(2000, &edges, None, Orientation::Undirected, &context);
-            let before = context.usage().unwrap().work_units;
-            let result = label_propagation(
-                &projection,
-                LabelPropagationOptions {
-                    max_iterations: 50,
-                    seed,
-                },
-            )
-            .unwrap();
-            (
-                result.communities().to_vec(),
-                context.usage().unwrap().work_units - before,
-            )
-        })
+        let context = context().with_concurrency(threads).unwrap();
+        let projection = graph(2000, &edges, None, Orientation::Undirected, &context);
+        let before = context.usage().unwrap().work_units;
+        let result = label_propagation(
+            &projection,
+            LabelPropagationOptions {
+                max_iterations: 50,
+                seed,
+            },
+        )
+        .unwrap();
+        (
+            result.communities().to_vec(),
+            context.usage().unwrap().work_units - before,
+        )
     };
     let first = run(1, Some(7));
     assert_eq!(run(8, Some(7)), first);

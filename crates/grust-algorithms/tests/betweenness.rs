@@ -348,25 +348,19 @@ fn betweenness_is_identical_at_any_pool_width_and_charges_the_same_work() {
     let weights: Vec<f64> = (0..edges.len()).map(|i| (1 + i % 4) as f64).collect();
     for weighted in [false, true] {
         let run = |threads: usize| {
-            let pool = rayon::ThreadPoolBuilder::new()
-                .num_threads(threads)
-                .build()
-                .unwrap();
-            pool.install(|| {
-                let context = context();
-                let projection = graph(
-                    500,
-                    &edges,
-                    weighted.then_some(&weights[..]),
-                    Orientation::Undirected,
-                    &context,
-                );
-                let before = context.usage().unwrap().work_units;
-                let result = betweenness(&projection, BetweennessOptions::default()).unwrap();
-                let work = context.usage().unwrap().work_units - before;
-                let bits: Vec<u64> = result.values().iter().map(|v| v.to_bits()).collect();
-                (bits, work)
-            })
+            let context = context().with_concurrency(threads).unwrap();
+            let projection = graph(
+                500,
+                &edges,
+                weighted.then_some(&weights[..]),
+                Orientation::Undirected,
+                &context,
+            );
+            let before = context.usage().unwrap().work_units;
+            let result = betweenness(&projection, BetweennessOptions::default()).unwrap();
+            let work = context.usage().unwrap().work_units - before;
+            let bits: Vec<u64> = result.values().iter().map(|v| v.to_bits()).collect();
+            (bits, work)
         };
         let (bits, work) = run(1);
         for threads in [2, 3, 8] {

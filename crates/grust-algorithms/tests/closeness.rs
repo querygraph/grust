@@ -287,31 +287,25 @@ fn distance_centralities_are_identical_at_any_pool_width_and_charge_the_same_wor
     let weights: Vec<f64> = (0..edges.len()).map(|i| (1 + i % 7) as f64 / 3.0).collect();
     for weighted in [false, true] {
         let run = |threads: usize| {
-            let pool = rayon::ThreadPoolBuilder::new()
-                .num_threads(threads)
-                .build()
-                .unwrap();
-            pool.install(|| {
-                let context = context();
-                let projection = graph(
-                    500,
-                    &edges,
-                    weighted.then_some(&weights[..]),
-                    Orientation::Outgoing,
-                    &context,
-                );
-                let before = context.usage().unwrap().work_units;
-                let close = closeness(&projection, ClosenessOptions::default()).unwrap();
-                let harm = harmonic(&projection, HarmonicOptions::default()).unwrap();
-                let work = context.usage().unwrap().work_units - before;
-                let bits: Vec<u64> = close
-                    .values()
-                    .iter()
-                    .chain(harm.values())
-                    .map(|v| v.to_bits())
-                    .collect();
-                (bits, work)
-            })
+            let context = context().with_concurrency(threads).unwrap();
+            let projection = graph(
+                500,
+                &edges,
+                weighted.then_some(&weights[..]),
+                Orientation::Outgoing,
+                &context,
+            );
+            let before = context.usage().unwrap().work_units;
+            let close = closeness(&projection, ClosenessOptions::default()).unwrap();
+            let harm = harmonic(&projection, HarmonicOptions::default()).unwrap();
+            let work = context.usage().unwrap().work_units - before;
+            let bits: Vec<u64> = close
+                .values()
+                .iter()
+                .chain(harm.values())
+                .map(|v| v.to_bits())
+                .collect();
+            (bits, work)
         };
         let (bits, work) = run(1);
         for threads in [2, 3, 8] {
