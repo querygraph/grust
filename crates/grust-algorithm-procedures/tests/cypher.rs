@@ -421,3 +421,21 @@ fn closeness_and_harmonic_are_ordinary_procedures() {
         floats([0.5, 2.0 / 3.0, 0.5, 0.0])
     );
 }
+
+#[test]
+fn label_propagation_is_an_ordinary_procedure() {
+    let rows = run(
+        "CALL grust.algorithms.labelPropagation({orientation: 'undirected', maxIterations: 20, seed: 5}) YIELD nodeId, communityId, iterations, converged RETURN nodeId, communityId, converged",
+    );
+    // a-b-c is one connected piece and ends as one community; the isolate is its own.
+    let community = |row: usize| rows[row][1].clone();
+    assert_eq!(community(0), community(1));
+    assert_eq!(community(1), community(2));
+    assert_eq!(community(3), Value::String("isolate".into()));
+    assert!(rows.iter().all(|row| row[2] == Value::Bool(true)));
+    // Directed by default, and still an answer rather than an error.
+    assert_eq!(
+        run("CALL grust.algorithms.labelPropagation() YIELD communityId RETURN count(communityId)"),
+        vec![vec![Value::Int(4)]]
+    );
+}

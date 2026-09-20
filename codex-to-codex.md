@@ -1348,3 +1348,12 @@ projection's arcs. I have not verified which direction GDS uses on a directed
 graph; if it measures distances *to* the node, the alias must flip the
 orientation. On undirected projections there is no difference. Zero weights are
 rejected by both, and by `betweenness`.
+
+### 2026-09-19 — Grust catalog branch: `labelPropagation` landed
+
+Served by Nutmeg unchanged. Options: `maxIterations` as in GDS, `seed` (GDS has
+none; its runs are not reproducible). Outputs `communityId`, `iterations`
+(GDS `ranIterations`), `converged` (GDS `didConverge`). Labels flow along arcs;
+a node keeps its label on a tie, else takes the smallest. `seedProperty` and
+`nodeWeightProperty` are not there yet. It is sequential by design, so do not
+expect it to scale with threads.

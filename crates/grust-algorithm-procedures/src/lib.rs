@@ -271,6 +271,23 @@ fn catalog() -> Vec<Spec> {
         },
     ));
     specs.push(Spec::new(
+        "labelPropagation",
+        None,
+        vec![
+            field("nodeId", ValueType::String),
+            field("communityId", ValueType::String),
+            field("iterations", ValueType::Integer),
+            field("converged", ValueType::Boolean),
+        ],
+        options::label_propagation_fields(),
+        |graph, args| {
+            Ok(AlgorithmOutput::Table(
+                algorithms::label_propagation(graph, options::label_propagation(args)?)?
+                    .into_table()?,
+            ))
+        },
+    ));
+    specs.push(Spec::new(
         "louvain",
         None,
         vec![

@@ -1,7 +1,8 @@
 use super::*;
 use algorithms::{
-    BetweennessOptions, ClosenessOptions, HarmonicOptions, LouvainOptions, MissingWeight,
-    Orientation, PageRankOptions, ProjectionOptions, TriangleOptions, WeightSelection,
+    BetweennessOptions, ClosenessOptions, HarmonicOptions, LabelPropagationOptions, LouvainOptions,
+    MissingWeight, Orientation, PageRankOptions, ProjectionOptions, TriangleOptions,
+    WeightSelection,
 };
 
 fn option(name: &str, value_type: ValueType, default: Value, nullable: bool) -> OptionField {
@@ -230,6 +231,20 @@ pub(super) fn harmonic_fields() -> Vec<OptionField> {
 pub(super) fn harmonic(args: &ValidatedArguments) -> Result<HarmonicOptions> {
     Ok(HarmonicOptions {
         normalized: matches!(value(args, "normalized")?, Value::Bool(true)),
+    })
+}
+
+pub(super) fn label_propagation_fields() -> Vec<OptionField> {
+    vec![
+        option("maxIterations", ValueType::Integer, Value::Int(10), false),
+        option("seed", ValueType::Integer, Value::Null, true),
+    ]
+}
+
+pub(super) fn label_propagation(args: &ValidatedArguments) -> Result<LabelPropagationOptions> {
+    Ok(LabelPropagationOptions {
+        max_iterations: positive(args, "maxIterations")?,
+        seed: seed(args)?,
     })
 }
 

@@ -139,7 +139,6 @@ impl Adjacency {
     /// The same arcs grouped by target: row `v` lists the sources of arcs into
     /// `v`, each with its weight and original edge slot. Within a row, arcs keep
     /// the order of their sources, so the result is a function of this CSR alone.
-    #[allow(dead_code)] // first used by the eigenvector, Katz and HITS kernels
     pub(crate) fn transposed(&self, context: &ExecutionContext) -> Result<Adjacency> {
         let n = self.offsets.values.len() - 1;
         let arcs = self.targets.values.len();

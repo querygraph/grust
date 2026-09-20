@@ -60,7 +60,6 @@ struct ProjectionData {
     edges: Buffer<ProjectionEdge>,
     outgoing: Adjacency,
     reverse: Mutex<Option<Arc<ReverseTopology>>>,
-    #[allow(dead_code)] // first used by the eigenvector, Katz and HITS kernels
     incoming: Mutex<Option<Arc<Adjacency>>>,
     context: ExecutionContext,
     _retained: MemoryReservation,
@@ -251,7 +250,6 @@ impl GraphProjection {
     /// undirected projection every row already mirrors itself, so this is the
     /// outgoing adjacency and nothing is built. Otherwise it is built once,
     /// admitted and charged, and shared by every kernel on this projection.
-    #[allow(dead_code)] // first used by the eigenvector, Katz and HITS kernels
     pub(crate) fn incoming(&self) -> Result<InArcs<'_>> {
         self.inner.context.checkpoint()?;
         if self.inner.orientation == Orientation::Undirected {
@@ -286,7 +284,6 @@ impl GraphProjection {
 }
 
 /// In-arcs of a projection: its own rows when undirected, else a built transpose.
-#[allow(dead_code)] // first used by the eigenvector, Katz and HITS kernels
 pub(crate) enum InArcs<'a> {
     Mirror(&'a Adjacency),
     Built(Arc<Adjacency>),

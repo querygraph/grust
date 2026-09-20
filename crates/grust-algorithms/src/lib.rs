@@ -19,6 +19,8 @@ mod degree;
 pub use degree::{Degrees, degree};
 mod graph_input;
 mod kcore;
+mod label_propagation;
+pub use label_propagation::{LabelPropagation, LabelPropagationOptions, label_propagation};
 mod louvain;
 pub use kcore::{KCore, k_core};
 pub use louvain::{Louvain, LouvainOptions, louvain};

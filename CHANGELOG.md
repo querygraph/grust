@@ -6,6 +6,16 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ## Unreleased
 
+- Add **label propagation**: `label_propagation` and
+  `grust.algorithms.labelPropagation`, with `maxIterations` and `seed`. A node
+  adopts the label carrying the most weight among the nodes with an arc into it,
+  so labels flow along the projection's arcs. Updates are asynchronous and
+  sequential, in row order or a seeded order per pass, which makes a run
+  reproducible; an asynchronous parallel schedule is not. A node keeps its label
+  when it is among the heaviest and otherwise takes the smallest of them, which
+  guarantees convergence on an undirected projection; a directed run reports
+  `converged` honestly. Tests check that every converged run is a fixed point,
+  straight from the edge list, over 9,000 random runs.
 - Add **closeness** and **harmonic centrality**: `closeness`, `harmonic`,
   `grust.algorithms.closeness` (`useWassermanFaust`) and
   `grust.algorithms.harmonic` (`normalized`, on by default). Closeness is the
@@ -33,7 +43,8 @@ reconstructed from Git history, release commits, and the shipped docs.
   up to five nodes and 1,500 random multigraphs, weighted and not, in all three
   orientations.
 - `GraphProjection` can build in-arcs with weights and edge slots once per
-  projection (crate-internal; for the coming eigenvector, Katz and HITS kernels).
+  projection (crate-internal; label propagation uses them, and the eigenvector,
+  Katz and HITS kernels will).
 - Add **Louvain** community detection: `louvain` and `grust.algorithms.louvain`,
   with `resolution`, `maxLevels`, `maxIterations`, `tolerance` and `seed`. It
   works in every orientation: Newman's modularity on an undirected projection,

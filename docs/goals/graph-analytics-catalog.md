@@ -624,6 +624,11 @@ M4 (Tier A), then per milestone.** Each is a minor version: new public API.
   out-arcs: the backward pass rescans them instead of storing predecessors.
   GDS's `samplingSeed` maps to `seed`; GDS does not rescale a sampled score and
   Grust does, which Nutmeg's alias layer must state.
+- **Label propagation keeps the current label on a tie**, then the smallest.
+  The plan said "ties to the smallest"; keeping the current label is what makes
+  the undirected convergence argument go through (each change strictly raises
+  same-label edge weight), and the test asserts that convergence. It is the
+  first user of `GraphProjection::incoming()`.
 
 ## Progress ledger
 
@@ -635,7 +640,7 @@ Update in the same commit as the work. `—` not started, `wip`, `done <commit>`
 | P4 | — | P5 | done (`random.rs`) | P6 | — |
 | P7 | done (`parallel.rs`) | 1 Louvain | done | 2 Betweenness | done |
 | 3 Node similarity | — | 4 Triangles/LCC | done | 5 k-core | done |
-| 6 Closeness/harmonic | done | 7 Leiden | — | 8 Label propagation | — |
+| 6 Closeness/harmonic | done | 7 Leiden | — | 8 Label propagation | done |
 | 9 A\*/Bellman–Ford | — | 10 Eigenvector family | — | 11 Bridges family | — |
 | 12 Spanning forest | — | 13 Max flow | — | 14 FastRP | — |
 | 15–35 | — (see Tier B) | | | | |
