@@ -784,3 +784,63 @@ fn quegee_probe_arrow_row_order_must_match_projection_row_order() {
         "PROBE2: the in-order batch should read cleanly"
     );
 }
+
+#[test]
+fn quegee_probe_a_near_identity_permutation_is_also_caught() {
+    use arrow_array::{ArrayRef, Int64Array, RecordBatch, StringArray};
+    use std::sync::Arc;
+
+    let graph = graph();
+    let context = context();
+    let projection = people(&graph, &context);
+    let make = |ids: Vec<&str>, ages: Vec<i64>| {
+        RecordBatch::try_from_iter_with_nullable(vec![
+            (
+                "node_id",
+                Arc::new(StringArray::from(ids)) as ArrayRef,
+                false,
+            ),
+            (
+                "property.age",
+                Arc::new(Int64Array::from(ages)) as ArrayRef,
+                true,
+            ),
+        ])
+        .unwrap()
+    };
+    // Row 0 in place, the last two swapped: the set is complete, only two
+    // positions move. This is the case a positional guard is said not to see.
+    let swapped = NodeProperties::from_arrow_batches(
+        &[make(vec!["ann", "cy", "bob"], vec![31, 19, 45])],
+        &projection,
+        &[PropertyRequest::required("age", PropertyKind::Integer)],
+    );
+    match &swapped {
+        Ok(p) => println!("PROBE3 one swap -> Ok {:?}", p.integers("age").unwrap()),
+        Err(e) => println!("PROBE3 one swap -> Err {e}"),
+    }
+    // Two batches, each internally ordered, the batches themselves swapped.
+    let split = NodeProperties::from_arrow_batches(
+        &[
+            make(vec!["bob", "cy"], vec![45, 19]),
+            make(vec!["ann"], vec![31]),
+        ],
+        &projection,
+        &[PropertyRequest::required("age", PropertyKind::Integer)],
+    );
+    match &split {
+        Ok(p) => println!("PROBE3 batches swapped -> Ok {:?}", p.integers("age").unwrap()),
+        Err(e) => println!("PROBE3 batches swapped -> Err {e}"),
+    }
+    // A duplicate standing in for a missing node: the count check alone would
+    // pass this if positions were not also checked.
+    let duplicated = NodeProperties::from_arrow_batches(
+        &[make(vec!["ann", "ann", "bob"], vec![31, 31, 45])],
+        &projection,
+        &[PropertyRequest::required("age", PropertyKind::Integer)],
+    );
+    match &duplicated {
+        Ok(p) => println!("PROBE3 duplicate -> Ok {:?}", p.integers("age").unwrap()),
+        Err(e) => println!("PROBE3 duplicate -> Err {e}"),
+    }
+}
