@@ -437,3 +437,277 @@ fn columns_are_admitted_charged_and_released() {
         Err(AlgorithmError::Cancelled)
     ));
 }
+
+#[cfg(feature = "arrow")]
+mod arrow {
+    use std::sync::Arc;
+
+    use super::*;
+    use arrow_array::{
+        ArrayRef, BooleanArray, Float32Array, Float64Array, Int32Array, Int64Array,
+        LargeStringArray, RecordBatch, StringArray,
+        builder::{FixedSizeListBuilder, Float32Builder, Float64Builder, ListBuilder},
+    };
+
+    fn batch(columns: Vec<(&str, ArrayRef)>) -> RecordBatch {
+        RecordBatch::try_from_iter(columns).unwrap()
+    }
+
+    fn fixed(rows: &[Option<[f32; 3]>]) -> ArrayRef {
+        let mut builder = FixedSizeListBuilder::new(Float32Builder::new(), 3);
+        for row in rows {
+            match row {
+                Some(values) => {
+                    builder.values().append_slice(values);
+                    builder.append(true);
+                }
+                None => {
+                    builder.values().append_nulls(3);
+                    builder.append(false);
+                }
+            }
+        }
+        Arc::new(builder.finish()) as ArrayRef
+    }
+
+    fn ragged(rows: &[&[f64]]) -> ArrayRef {
+        let mut builder = ListBuilder::new(Float64Builder::new());
+        for row in rows {
+            builder.values().append_slice(row);
+            builder.append(true);
+        }
+        Arc::new(builder.finish()) as ArrayRef
+    }
+
+    /// The same people as `graph()`, split across two batches, with the place
+    /// between them and the column types varied on purpose.
+    fn batches() -> Vec<RecordBatch> {
+        vec![
+            batch(vec![
+                ("node_id", Arc::new(StringArray::from(vec!["ann", "rome"]))),
+                (
+                    "label",
+                    Arc::new(StringArray::from(vec!["Person", "Place"])),
+                ),
+                ("property.age", Arc::new(Int64Array::from(vec![31, 2700]))),
+                (
+                    "property.score",
+                    Arc::new(Float64Array::from(vec![Some(0.5), None])),
+                ),
+                (
+                    "property.team",
+                    Arc::new(StringArray::from(vec![Some("red"), None])),
+                ),
+                ("property.vec", fixed(&[Some([1.0, 2.0, 3.0]), None])),
+                (
+                    "property.seed",
+                    Arc::new(Int64Array::from(vec![Some(7), None])),
+                ),
+                (
+                    "property.active",
+                    Arc::new(BooleanArray::from(vec![Some(true), None])),
+                ),
+            ]),
+            batch(vec![
+                ("node_id", Arc::new(StringArray::from(vec!["bob", "cy"]))),
+                (
+                    "label",
+                    Arc::new(StringArray::from(vec!["Person", "Person"])),
+                ),
+                // Narrower and wider types than the first batch, same column.
+                ("property.age", Arc::new(Int32Array::from(vec![45, 19]))),
+                (
+                    "property.score",
+                    Arc::new(Float32Array::from(vec![2.0, -1.25])),
+                ),
+                (
+                    "property.team",
+                    Arc::new(LargeStringArray::from(vec!["blue", "red"])),
+                ),
+                (
+                    "property.vec",
+                    ragged(&[&[4.0, 5.0, 6.0], &[7.0, 8.0, 9.0]]),
+                ),
+                // Present says Cy has no seed although the column holds a number.
+                (
+                    "property.seed",
+                    Arc::new(Int64Array::from(vec![None, Some(99)])),
+                ),
+                (
+                    "present.seed",
+                    Arc::new(BooleanArray::from(vec![false, false])),
+                ),
+                (
+                    "property.active",
+                    Arc::new(BooleanArray::from(vec![false, true])),
+                ),
+            ]),
+        ]
+    }
+
+    fn people(batches: &[RecordBatch], context: &ExecutionContext) -> GraphProjection {
+        let labels = ["Person".to_string()];
+        GraphProjection::from_arrow_batches(
+            identity(),
+            batches,
+            &[],
+            ProjectionOptions {
+                node_labels: Some(&labels),
+                ..Default::default()
+            },
+            context,
+        )
+        .unwrap()
+    }
+
+    #[test]
+    fn arrow_batches_read_exactly_what_the_graph_reads() {
+        let context = context();
+        let batches = batches();
+        let projection = people(&batches, &context);
+        let wanted = [
+            PropertyRequest::required("age", PropertyKind::Integer),
+            PropertyRequest::required("score", PropertyKind::Number),
+            PropertyRequest::required("team", PropertyKind::Category),
+            PropertyRequest::required("vec", PropertyKind::Vector),
+            PropertyRequest::required("active", PropertyKind::Integer),
+            request("seed", PropertyKind::Integer, MissingProperty::Null),
+        ];
+        let from_arrow =
+            NodeProperties::from_arrow_batches(&batches, &projection, &wanted).unwrap();
+
+        let graph = graph();
+        let graph_projection = super::people(&graph, &context);
+        let from_graph = NodeProperties::from_graph(&graph, &graph_projection, &wanted).unwrap();
+
+        assert_eq!(
+            from_arrow.integers("age").unwrap(),
+            from_graph.integers("age").unwrap()
+        );
+        assert_eq!(
+            from_arrow.numbers("score").unwrap(),
+            from_graph.numbers("score").unwrap()
+        );
+        assert_eq!(
+            from_arrow.integers("active").unwrap(),
+            from_graph.integers("active").unwrap()
+        );
+        let (arrow_teams, graph_teams) = (
+            from_arrow.categories("team").unwrap(),
+            from_graph.categories("team").unwrap(),
+        );
+        assert_eq!(arrow_teams.codes, graph_teams.codes);
+        assert_eq!(arrow_teams.dictionary, graph_teams.dictionary);
+        let (arrow_vectors, graph_vectors) = (
+            from_arrow.vectors("vec").unwrap(),
+            from_graph.vectors("vec").unwrap(),
+        );
+        assert_eq!(arrow_vectors.dimension, 3);
+        assert_eq!(arrow_vectors.values, graph_vectors.values);
+        // Null in the column and `present = false` are both absence.
+        assert_eq!(
+            from_arrow.optional_integers("seed").unwrap(),
+            from_graph.optional_integers("seed").unwrap()
+        );
+    }
+
+    #[test]
+    fn arrow_reads_fail_rather_than_guess() {
+        let context = context();
+        let batches = batches();
+        let projection = people(&batches, &context);
+        let held = context.usage().unwrap().live_bytes;
+        let fails = |batches: &[RecordBatch], wanted: &[PropertyRequest<'_>], needle: &str| {
+            match NodeProperties::from_arrow_batches(batches, &projection, wanted) {
+                Err(AlgorithmError::InvalidArguments(message))
+                | Err(AlgorithmError::Unsupported(message)) => {
+                    assert!(message.contains(needle), "{message:?} lacks {needle:?}")
+                }
+                other => panic!("{needle}: {:?}", other.map(|_| ())),
+            }
+        };
+        // Bob's seed is absent, and absence is an error unless asked otherwise.
+        fails(
+            &batches,
+            &[PropertyRequest::required("seed", PropertyKind::Integer)],
+            "bob",
+        );
+        // A column no batch has is absent everywhere.
+        fails(
+            &batches,
+            &[PropertyRequest::required("height", PropertyKind::Number)],
+            "ann",
+        );
+        // A string is not a number, and a list of strings is not a vector.
+        fails(
+            &batches,
+            &[PropertyRequest::required("team", PropertyKind::Number)],
+            "not a finite number",
+        );
+        fails(
+            &batches,
+            &[PropertyRequest::required("team", PropertyKind::Vector)],
+            "not a numeric list",
+        );
+        assert_eq!(context.usage().unwrap().live_bytes, held);
+
+        // A ragged list, a null inside a list, and batches that are not the
+        // projection's.
+        let with_vectors = |vectors: ArrayRef| {
+            vec![batch(vec![
+                (
+                    "node_id",
+                    Arc::new(StringArray::from(vec!["ann", "bob", "cy"])) as ArrayRef,
+                ),
+                ("label", Arc::new(StringArray::from(vec!["Person"; 3]))),
+                ("property.vec", vectors),
+            ])]
+        };
+        let ragged_batches = with_vectors(ragged(&[&[1.0, 2.0], &[1.0], &[1.0, 2.0]]));
+        let ragged_projection = people(&ragged_batches, &context);
+        match NodeProperties::from_arrow_batches(
+            &ragged_batches,
+            &ragged_projection,
+            &[PropertyRequest::required("vec", PropertyKind::Vector)],
+        ) {
+            Err(AlgorithmError::InvalidArguments(message)) => {
+                assert!(
+                    message.contains("bob") && message.contains("1 components"),
+                    "{message}"
+                )
+            }
+            other => panic!("{:?}", other.map(|_| ())),
+        }
+        let mut holes = ListBuilder::new(Float64Builder::new());
+        for row in [
+            [Some(1.0), Some(2.0)],
+            [Some(1.0), None],
+            [Some(3.0), Some(4.0)],
+        ] {
+            for item in row {
+                holes.values().append_option(item);
+            }
+            holes.append(true);
+        }
+        let hole_batches = with_vectors(Arc::new(holes.finish()));
+        let hole_projection = people(&hole_batches, &context);
+        match NodeProperties::from_arrow_batches(
+            &hole_batches,
+            &hole_projection,
+            &[PropertyRequest::required("vec", PropertyKind::Vector)],
+        ) {
+            Err(AlgorithmError::InvalidArguments(message)) => {
+                assert!(
+                    message.contains("bob") && message.contains("single precision"),
+                    "{message}"
+                )
+            }
+            other => panic!("{:?}", other.map(|_| ())),
+        }
+        fails(
+            &batches[..1],
+            &[PropertyRequest::required("age", PropertyKind::Integer)],
+            "1 of the projection's 3",
+        );
+    }
+}

@@ -39,6 +39,8 @@ mod parallel;
 pub use ordering::{NodeOrder, TopologicalOrder, depth_first, topological_sort};
 mod pagerank;
 mod properties;
+#[cfg(feature = "arrow")]
+mod properties_arrow;
 pub use properties::{
     Categories, MissingProperty, NodeProperties, PropertyKind, PropertyRequest, Vectors,
 };
