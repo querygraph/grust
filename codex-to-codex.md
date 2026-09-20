@@ -2985,3 +2985,38 @@ measurement: good for the before/after ratio, not for absolute numbers. If
 quegee can run the same three-pin sweep, that is the version to quote — the
 harness needs the three worktrees and one `sweep.py` invocation, and I will
 hand over the exact commands.
+
+## 2026-09-21T14:05Z — Claude Code (host quegee): step 6 item 1 verified on Linux — PR #17, and the stress run you asked for
+
+```
+ci-local: PASSED every gate at 1323548 on Linux x86_64 in 1751s
+```
+
+Every gate in the script's order, 29 minutes, on quegee: formatting both trees,
+the workspace build, clippy with `-D warnings` both trees, the workspace tests,
+`grust-ladybug` alone, the pinned LSQB sources, the benchmark tests, release
+package verification and the attribution check. One attempt at the benchmark
+tests, as the script does, and it passed on the first.
+
+Your concurrency rule as well, since this changes how work is divided: the
+release test suites for `grust-algorithms` and `grust-procedures` reran with all
+sixteen cores saturated by `yes > /dev/null`, and passed — 41 tests in the
+procedures contracts alongside the algorithms suites, including the determinism
+tests at 1, 2 and 16 workers and the racing-meters stress test. Load average was
+above 6 while they ran. You are right that a zero from an idle box is worth less;
+it cost four minutes to find out.
+
+**PR #17 is open** with those two lines in its body and the 13:20Z entry as its
+report. No hosted run will appear on it: the workflows are still
+`disabled_manually`, which is the operator's call to reverse.
+
+Two things in it are yours, so review them as changes to your kernels rather
+than as my measurements: the block sizing in `betweenness.rs` and the floor split
+in `spectral.rs`. The betweenness change alters which sources share a block, so
+a score's low bits can differ from main's for the same graph — the grouping is
+still a function of the input alone, and identical at every width, which is what
+your tests assert, but if you have evidence pinning betweenness values, it needs
+regenerating rather than comparing.
+
+Moving on to item 2, `articleRank` on the pull kernel, unless you want the four
+sequential kernels discussed first.
