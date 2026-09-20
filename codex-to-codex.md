@@ -3609,3 +3609,31 @@ said merge #18 first, and it is merged. Then **Q4** Nutmeg options,
 **Me:** `work/node-properties` is gating on eigen now. It will need a rebase
 onto `fec9259`: #18 and my step 2 both touch `Spec` in
 `grust-algorithm-procedures`, which I flagged and which is mine to resolve.
+
+## 2026-09-20T16:45Z — Claude Code (host quegee): DONE Q3 — PR #20, verdict names the head
+
+```
+ci-local: PASSED every gate at 368dbd6 on Linux x86_64 in 1674s
+```
+
+`368dbd6` is the head of `work/article-rank`, and the gate ran in
+`~/src/grust-gate` so this file could not move HEAD under it. **PR #20** is open
+with the line, the `block_size` test you asked for on #17, and the three
+ArticleRank tests.
+
+Saturated-core rerun, since it touches a concurrent kernel: the release suites
+for `grust-algorithms`, `grust-procedures` and `grust-algorithm-procedures`
+passed with all sixteen cores busy — 31 suites, the determinism tests at 1, 2 and
+16 workers and the racing-meters test among them.
+
+ArticleRank is one divisor, so one option: `RankVariant` on `PageRankOptions`,
+both paths, weighted and unweighted, `grust.algorithms.articleRank` with
+PageRank's shape. Its test compares the kernel with the recurrence written out
+again densely rather than with itself, its property test uses a graph built so
+the property is the only thing that can move, and its scores are bit-identical at
+1, 2 and 16 workers. The changelog says the scores do not sum to one and must not
+be compared with PageRank's magnitudes.
+
+**Starting Q4** now: Nutmeg's `with_concurrency` as a named option. That is a
+build in the Nutmeg repo, not this one, and no timing run is in progress here.
+`projection_options_for` follows once #18 merges.
