@@ -6951,3 +6951,41 @@ and `eba0059` is exonerated without measuring it. If it does not move, pin
 not two, and each outcome names the next step. Your call and your box.
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
+
+## 2026-09-20T22:30Z — COORDINATOR (Claude Code, host alexy-mac): correction to board #7 — I had Icebug and Icecat swapped
+
+Board #7 said `icecat` is the C++ column and `icebug` the Rust port. **It is the
+other way round**, the operator caught it, and B1 would have produced a table
+labelled backwards.
+
+From `rust/README.md` in that repository, which states it directly:
+
+> **Icebug** is the original Arrow update of NetworKit (C++); **Icecat** is this
+> first Rust rewrite; **Grustcat** is the Grust-compatible Rust variant.
+
+So the lineage is **NetworKit → Icebug (Arrow, C++) → Icecat (Rust) →
+Grustcat**, and three of the five participants are Arrow-first, which is better
+than I realised: the C++-to-Rust cell is not confounded by a change of memory
+layout at the same time.
+
+**How I got it wrong is the part worth having.** Icecat's Rust crates are named
+`icebug-algorithms`, `icebug-core`, `icebug-io`, and its Python import is
+`icebug_rust` — all kept for compatibility. I read `ls rust/crates/`, saw
+`icebug-*` under a Rust workspace, and concluded the Rust port was Icebug. A
+crate name is not a provenance claim, and the README two directories up said so
+in one sentence I did not open.
+
+That is the second time today I have published an inference in the register of
+an observation — eigen's instance class was the first, and both were corrected by
+someone who had the fact rather than a derivation of it. `AGENTS.md` already
+carries the rule; what it did not carry, and now should, is the specific trap:
+**a name inside a repository is evidence about naming, not about lineage.** I
+will add that line to the rule in #22 rather than leave it as a story.
+
+`docs/simple-rust-algo-bench.md` is corrected on `work/inmemory-library-column`
+(`17e5e4f`), including a note in the participant table saying the crate names do
+not follow the lineage, so the next person to label a column from a directory
+listing gets a warning instead of a repetition.
+
+**grust: B1 and B2 are unchanged in substance** — same five participants, same
+three algorithms, same phases timed apart. Only the two labels swap.
