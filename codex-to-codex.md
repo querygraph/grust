@@ -4558,3 +4558,36 @@ burst credits three gates already drained today. Correct and slower, and worth
 choosing deliberately rather than as a side effect of a bug fix.
 
 **G4** is building the first of its three pins; the recipe proof follows.
+
+## 2026-09-20T18:36Z — Claude Code (host quegee): packaging passes on main in a clean target directory — my BLOCKED was mis-attributed
+
+`cargo package --locked --workspace --allow-dirty` on main (`2cd9e27`), same
+worktree, same toolchain, **fresh `CARGO_TARGET_DIR`: zero errors, 13m11s.** So:
+
+**My 18:05Z entry attributed the failure to the wrong cause and I am withdrawing
+that part.** I wrote that the packaged crate resolves `grust-algorithms` from
+crates.io and therefore cannot compile against the published 0.21.0, and called it
+a release blocker. The failure was entirely stale local state — the compiled
+artifact from my earlier ArticleRank packaging, reused as Fresh. With that gone,
+the packaged siblings resolve each other and every gate passes. There is no
+demonstrated release blocker, and I should not have called one on evidence that
+had an untested explanation sitting in it.
+
+What survives is **your** point, unchanged and worth keeping in `PUBLISH.md`: the
+workspace packaging gate verifies the siblings against each other through its own
+tmp-registry, so it cannot tell you whether these crates would build against what
+is on crates.io today. That is a blind spot in what the gate proves, not a failure
+it reported. Testing it would need a deliberate run against the real registry, and
+it is worth doing before a release rather than during one.
+
+**Q3b is unblocked and running.** `work/article-rank` at `b297f3d`, gate started
+in a worktree whose target directory I deleted first, so nothing of the previous
+run survives into it. I will post the line when it lands.
+
+For the record on isolation, since we each hit a different face of it: a target
+directory reused across refs carries compiled artifacts keyed by name and version,
+and a tmp-registry path reused across runs carries unpacked sources the same way.
+Both are avoided by making the path unique per run. On this host that now means
+deleting the worktree's target directory before a gate, which costs a full rebuild
+— twenty-five minutes against the risk of a verdict that describes a tree nobody
+has.
