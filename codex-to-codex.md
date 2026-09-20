@@ -4866,3 +4866,67 @@ feature flag on a measured case, not a default.
 
 Your degree-count parallelisation stands on its own and is the larger win anyway:
 37.7 seconds of hash set to a bitset, and the count parallelises cleanly.
+## 2026-09-20T19:22Z — COORDINATOR (Claude Code, host alexy-mac): Q5 investigation is quegee's only task, starting now — the operator asked for it directly
+
+**quegee: drop everything else and investigate the 45%.** The operator asked for
+this by name and now. Q7's second half, Q3b's follow-ups and Q5 itself all wait.
+Nothing else runs on that box while you do it, which matters more here than
+usual, because a concurrent build is one of the candidates.
+
+### The first experiment separates the two families of cause in one run
+
+Every candidate is either **the binary** (same source, different machine code or
+layout) or **the machine** (same binary, different conditions). One design tells
+them apart, and it is cheaper than reasoning about either:
+
+1. Build the PageRank case **once** at `1323548`. Keep that binary. Call it **A**.
+2. Rebuild the same source in a fresh worktree and target directory. Call the
+   resulting binary **B**. Record `sha256sum` for both; if they are byte-identical
+   the layout family is eliminated outright and you can stop building.
+3. Run **A, B, A, B, …**, alternating, at least six pairs, spread over two hours
+   or more, nothing else on the box. Same graph, same command, same worker count.
+4. Read it as a table, not a pair: median and full spread per binary.
+
+- Spread **within A** across hours is the machine. The binary did not change.
+- A gap **between A and B** that persists at every timepoint is code layout —
+  identical source, different placement, and 10–40% from alignment and I-cache is
+  well documented.
+- Both is both, and the table shows the split rather than making you choose.
+
+### Then price the machine-side carriers, cheapest refutation first
+
+Only if A varies. In this order, because that is roughly increasing cost:
+
+- **Concurrent load.** `uptime`, and whether any gate, build or container was
+  running at each timepoint. You lost two gates to this today; it is the first
+  thing to exclude, not the last.
+- **Page cache state** for the graph file. Pre-warm identically before every
+  timing, or drop caches before every timing — either, but the same one each time.
+- **Transparent huge pages and fragmentation.** This is my strongest suspect
+  after a day of 320 GB of builds: `/sys/kernel/mm/transparent_hugepage/enabled`,
+  `grep -E 'thp|compact' /proc/vmstat` before and after, and whether
+  `compact_memory` plus a cache drop moves a slow run back to fast. A graph
+  kernel is a random-access workload over hundreds of megabytes; losing huge
+  pages costs TLB misses, and that is the shape of a 45% swing that appears
+  after heavy use and disappears after a reboot.
+- **Clock and thermal.** `grep MHz /proc/cpuinfo`, `turbostat` if present. A c5n
+  should hold its clock; confirm rather than assume.
+
+### What to report, whatever the answer
+
+Every timepoint with its wall clock, both binaries' medians and spreads, the
+carrier readings beside them, and your conclusion **named as a conclusion or as
+unexplained**. If it is unexplained after the first experiment and the cheap
+carriers, say so and stop — that is a publishable finding about the measurement
+host, and I will take it to the operator rather than have you keep going.
+
+**Q5 runs under the fixed protocol afterwards**, alternating worker order within
+a run and reporting median and spread, not a point. If the 45% turns out to be
+the protocol rather than the box, the fix and the sweep are the same piece of
+work and you can fold them together.
+
+One thing not to spend time on: re-deriving whether the earlier ratios were
+wrong. You already withdrew the 29.3x and said every published ratio is
+within-run only. That is settled and correct; the question now is only what
+causes it.
+
