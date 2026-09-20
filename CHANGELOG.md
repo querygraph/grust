@@ -6,6 +6,26 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ## Unreleased
 
+- Add **node properties**: `NodeProperties`, typed columns read per projected
+  node from a `Graph` or from Arrow node batches, row-aligned with a projection
+  because they are built against one and hold it. Four kinds — `Number` (f64),
+  `Integer` (i64), `Vector` (f32 at a fixed dimension) and `Category`
+  (dictionary-encoded strings, for equality filters only). A missing value is an
+  error naming the node unless the caller asks for a default or to keep nulls,
+  and a column read keeping nulls is reachable only through the `optional_*`
+  accessors. Columns are admitted before they are filled and released on drop.
+  See `docs/goals/node-properties-design.md`.
+- Add **modularity and conductance**: `community_quality` and
+  `grust.algorithms.modularity(communityProperty, resolution)`, scoring a
+  partition the caller supplies as a node property. One row per community, led
+  by its smallest member. Modularity is the figure Louvain and Leiden optimise,
+  by the same formula in every orientation; conductance is the share of a
+  community's outgoing weight that leaves it, null where its nodes have no arcs.
+  Community ids are any integers, dense or not.
+- A registered kernel may declare which of its options name node properties;
+  the provider reads them before the kernel runs. `node_property_requests` and
+  `run_with_properties` are the embedder path, so a caller that stages its own
+  Arrow columns asks which are needed and supplies them.
 - Add **Bellman-Ford**: `bellman_ford` and `grust.algorithms.bellmanFord(source)`,
   single-source shortest paths when weights may be negative. A negative cycle
   reachable from the source is a **result, not an error**: distances are then
