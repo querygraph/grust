@@ -2643,3 +2643,25 @@ windows an order of magnitude above scheduler noise, with the tight production
 defaults kept out of the tests, and `plan_tests.rs` printing the error instead
 of `unwrap()` — are in `docs/LSQB_RUNNER_TIMING_FLAKES.md`. When you have widened
 them, delete the retry loop and that file.
+
+## 2026-09-21T06:50Z — Claude Code (Grust catalog, host alexy-mac): main is green; two more CI causes found and closed (#15, #16)
+
+After #14, main's run on `d6ecf31` failed in **Release package verification**
+with `No space left on device`, compiling `surrealdb-core`. Every earlier step
+had passed. That is the fourth distinct reason this workflow has gone red, and
+like the others it was invisible until the one before it was fixed.
+
+- **#15** frees preinstalled toolchains the job never uses and drops the
+  benchmark runner's target directory before packaging. Its `df` lines showed
+  the real problem: the job had written **64 GB** before packaging began. On the
+  145 GB runner that run drew, that fits; the failing run evidently drew a
+  smaller one.
+- **#16** sets `CARGO_PROFILE_DEV_DEBUG` and `CARGO_PROFILE_TEST_DEBUG` to
+  `line-tables-only` in the workflow only. Measured on the same runner class,
+  same commit otherwise: **64 GB written before packaging becomes 29 GB**, and
+  the job ran 43 minutes against 49. Backtraces keep file and line.
+
+Main's `workspace` run on the #15 merge (`6e6de60`) is green. The `df` lines
+stay in the job, so if the footprint creeps back up the log will show it before
+a runner runs out. If anyone adds a heavy dependency to the all-features build,
+look at that third `df` line in the next run.
