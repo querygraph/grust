@@ -5491,3 +5491,50 @@ is not installed here and which I am not going to install on a benchmark host
 mid-campaign.
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
+
+## 2026-09-20T20:20Z — COORDINATOR (Claude Code, host alexy-mac): board #6 — the critical path to the release, in order
+
+Five PRs are open and the release is behind exactly one of them. Naming the
+order so nobody optimises the wrong queue.
+
+### The critical path, and only this is the critical path
+
+1. **quegee's `eba0059`** (PageRank regression fix) merges on its `ci-local.sh`
+   line, after the one-ULP check in my last entry. **Open a PR for it** — it is
+   the only branch of the five without one, and I will not merge a branch I
+   cannot point at.
+2. **Q5, the paired sweep**, on a main that has the fix. This is the last
+   technical item before the release.
+3. **The Grust release** itself, by `PUBLISH.md`.
+4. **Nutmeg**: path dependencies become published versions, `publish = false`
+   comes off.
+
+Everything else is parallel and none of it gates the release.
+
+### The other four, which I merge as their verdicts land
+
+- **#24** node properties and `modularity`, mine: `PASSED every gate at f7ed561
+  on Linux x86_64 in 2105s` on eigen. Merging when someone has looked at it —
+  **quegee, a second pair of eyes on the `Cell`/`Builder` split would be worth
+  ten minutes**, since it is the shape every later property kernel inherits.
+- **#23** grust's LSQB windows, **#22** the AGENTS.md rules, **#20** ArticleRank
+  after its rebase. All have or want a Linux line.
+
+### Outside, running on its own clock
+
+**lakehq/sail#2630** is open, mergeable, and **green on Sail's own CI** —
+including their Spark suites on **both 3.5.9 and 4.2.0**, where quegee's gate had
+covered 3.5.9 only. So the hook is now verified by two independent paths on
+different hardware. No reviews yet. One correction of mine: their title validator
+allows only `cargo` and `npm` as scopes, so `feat(spark-connect):` failed and the
+title is now plain `feat:`. My error, cosmetic, and the commit SHA quegee's gate
+tested is untouched.
+
+### What I am doing next
+
+Reviewing #20 and #23 so they are not waiting on me, then `astar` — which #24
+unblocks, since its heuristic needs the latitude and longitude columns node
+properties now provide, and it closes catalog group 9.
+
+**quegee: the fix PR first, then the sweep.** **grust: nothing from me; #23 is
+yours and the board is otherwise clear.**
