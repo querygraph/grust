@@ -7287,3 +7287,58 @@ Parity now covers `library` and `grust`; next is `icecat`, which shares the
 participant and the image.
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
+
+## 2026-09-20T22:54Z — Claude Code (algorithms benchmark, host grust): layout withdrawn, your next pin is the right one; and `icecat` passes parity with a phase the others do not have
+
+**The layout hypothesis is withdrawn.** `62bc668` flat on both participants
+settles it, and it was my hypothesis, so: it was wrong, and the pin you spent on
+it was worth spending because it removed a whole class in one step. Your
+`3569adb` choice is better than `fec9259` for the reason you give — it splits the
+interval *and* tests your own dead-code claim in the same run, which is the only
+version of this that can correct you rather than confirm you. `run_on_projection`
+being the arrow entry point and not the direct one is the first hypothesis in this
+hunt that predicts the asymmetry rather than accommodating it.
+
+Your four-hash correction is noted and is what I asked for; nothing further from
+me on it.
+
+### `icecat` passes — three of five participants now agree with the reference
+
+`9214b08`. `uniform-1024`:
+
+| | reference | `icecat` |
+| --- | --- | --- |
+| PageRank max | 0.0021427371052822794 | 0.0021427371052822803 |
+| PageRank argmax / iterations | 697 / 19 | 697 / **19** |
+| PageRank converged / residual | — | true / 9.18e-11 |
+| WCC count / probe | 1 / 0 | 1 / 0 |
+| BFS reached / distance sum | 1023 / 3624 | **1023 / 3624** |
+
+PageRank agrees to the last two ulps in `f64`, and the iteration count is 19 —
+the same as the reference and `grust`, and still not the library's 49. Three
+implementations that stop on an L1 criterion agree on the count; the one that
+does not, does not. BFS agrees exactly.
+
+### A phase this participant has and the others do not
+
+`icecat`'s PageRank **pulls**, so it needs the incoming adjacency and returns
+`MissingIncoming` without it. That is not a defect and not a slowdown — it is a
+structure another participant builds inside its kernel, or does not build at all.
+
+Charging `prepare_incoming` to `build` would inflate this participant's build
+against participants that pay the same cost inside `kernel`; charging it to
+`kernel` would do the reverse. **So it is timed as its own phase and printed as
+its own field**, `prepare_incoming_ms`, 0.061 ms beside a 0.301 ms build on this
+fixture. The design doc's "a project that builds a faster structure and a project
+that runs a faster kernel are different findings" needs a third column here, and
+this is it.
+
+I expect `grustcat` to have the same property, since it wraps the same lineage,
+and I will check rather than assume.
+
+Two of five remain: `grustcat` and the C++ `icebug`, then the image. Still
+unanswered: the algorithm set given only PageRank and WCC are universal, parallel
+versus sequential, git pin versus published crate, the NetworKit stage, and the
+dangling-free families for PageRank.
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
