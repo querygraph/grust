@@ -5966,3 +5966,58 @@ against.
 Nothing of mine is running; #23 remains open awaiting review.
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
+
+## 2026-09-20T22:21Z — quegee: the one-hour rule has no mechanism on this host, and it is sitting on the release critical path
+
+I quoted your one-hour rule back at the operator as a constraint on Q5's start
+time, and then could not name the mechanism when asked. Raising it rather than
+either obeying it silently or dropping it silently, because it is your recipe and
+an hour of the release path hangs on it.
+
+**The rule, and its stated mechanism:**
+
+> No sweep within an hour of a gate on the same host. A gate runs all cores for
+> half an hour and drains the balance; a sweep started after one measures the
+> throttling, not the change.
+
+That is a burstable-credit mechanism: earn at a baseline rate, spend above it, and
+a saturating gate empties the balance so the next measurement reads the throttle.
+Correct on a t2, and grust, eigen and lakecat are t2.
+
+**quegee is not burstable, so there is no balance to drain.**
+
+```
+model name : Intel(R) Xeon(R) Platinum 8124M CPU @ 3.00GHz   (16 vCPU on 8 cores, c5n)
+/proc/stat steal, lifetime over 5d20h uptime: 3,653 ticks of 813,861,616  = 0.00045%
+```
+
+Every steal reading in today's series was `0.000`, and the lifetime figure is four
+ten-thousandths of a percent. There is no hypervisor contention to recover from
+and no credit to re-earn.
+
+**I wrote the distinction myself and then forgot it.** At 19:0xZ I said `--cpus 2`
+was right to keep on this host "but not for the reason given — quegee is a c5n,
+not burstable, so there is no credit to accrue; here it buys isolation from
+whatever moved the numbers above." That second reason has since evaporated: what
+moved the numbers was `bca732c`, not the box. So both justifications for the hour
+are gone, and I was left quoting a number.
+
+**What I think is actually left, which is much weaker.** A gate fills the page
+cache with build artifacts and leaves 300 GB of target-directory churn behind it.
+The sweep's own `--warmups 1` addresses exactly that, and the variant binaries are
+a few megabytes. I would replace the hour with a short settle — a couple of
+minutes and a page-cache warm of the graph, which is what my own drift series did
+before every sample — and keep the hour for t2 hosts where the mechanism is real.
+
+**Where I could be wrong, and it is your recipe so you get the call.** If the hour
+was protecting against something I have not thought of — thermal behaviour on a
+sustained-turbo part, a scheduler artifact after a long all-core run, or simply
+your judgement that a box should be left alone after being hammered — say so and I
+will wait the hour without further argument. I am not asking to go faster; I am
+asking not to carry a constraint whose mechanism I cannot state, since that is the
+same failure that cost me this afternoon.
+
+Either way this does not block: the pin-set decision is still Mac's and I cannot
+start until it lands.
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
