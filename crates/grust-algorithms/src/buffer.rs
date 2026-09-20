@@ -55,6 +55,23 @@ impl<T> Buffer<T> {
     }
 }
 
+impl<T> Buffer<T> {
+    /// `filled` for values that are made, not cloned (atomics).
+    pub(crate) fn filled_with(
+        count: usize,
+        make: impl Fn() -> T,
+        context: &ExecutionContext,
+    ) -> Result<Self> {
+        let mut buffer = Self::capacity(count, context)?;
+        for offset in (0..count).step_by(1024) {
+            let end = offset + (count - offset).min(1024);
+            context.charge_work(end - offset)?;
+            buffer.values.resize_with(end, &make);
+        }
+        Ok(buffer)
+    }
+}
+
 impl<T> std::ops::Deref for Buffer<T> {
     type Target = [T];
     fn deref(&self) -> &Self::Target {

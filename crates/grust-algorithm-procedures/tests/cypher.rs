@@ -289,3 +289,44 @@ fn k_core_is_an_ordinary_procedure_with_explicit_orientation() {
         vec![vec![Value::Int(2), Value::Int(4)]]
     );
 }
+
+#[test]
+fn triangles_and_clustering_are_ordinary_procedures_on_the_simple_graph() {
+    // Undirected, the fixture is the path a-b-c with b-c doubled: no triangle,
+    // and the doubled edge does not invent one.
+    assert_eq!(
+        run(
+            "CALL grust.algorithms.triangleCount({orientation: 'undirected'}) YIELD nodeId, triangles, triangleCount RETURN nodeId, triangles, triangleCount"
+        ),
+        vec![
+            vec![Value::String("a".into()), Value::Int(0), Value::Int(0)],
+            vec![Value::String("b".into()), Value::Int(0), Value::Int(0)],
+            vec![Value::String("c".into()), Value::Int(0), Value::Int(0)],
+            vec![
+                Value::String("isolate".into()),
+                Value::Int(0),
+                Value::Int(0)
+            ],
+        ]
+    );
+    // b has two distinct neighbours and no triangle: coefficient 0. The others
+    // have fewer than two neighbours: no coefficient, which is null, not 0.
+    assert_eq!(
+        run(
+            "CALL grust.algorithms.localClusteringCoefficient({orientation: 'undirected'}) YIELD nodeId, coefficient RETURN nodeId, coefficient"
+        ),
+        vec![
+            vec![Value::String("a".into()), Value::Null],
+            vec![Value::String("b".into()), Value::Float(0.0)],
+            vec![Value::String("c".into()), Value::Null],
+            vec![Value::String("isolate".into()), Value::Null],
+        ]
+    );
+    // maxDegree 1 leaves b out: -1 triangles, no coefficient.
+    assert_eq!(
+        run(
+            "CALL grust.algorithms.triangleCount({orientation: 'undirected', maxDegree: 1}) YIELD nodeId, triangles RETURN nodeId, triangles"
+        )[1],
+        vec![Value::String("b".into()), Value::Int(-1)]
+    );
+}

@@ -6,6 +6,20 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ## Unreleased
 
+- Add **triangle count** and **local clustering coefficient**: `triangles`,
+  `grust.algorithms.triangleCount` and `grust.algorithms.localClusteringCoefficient`.
+  Triangles belong to the simple graph, so parallel edges count once and
+  self-loops are ignored, unlike `degree` and `kCore`. A coefficient is null,
+  not zero, where it is undefined. `maxDegree` leaves hubs out: such a node
+  reports `-1` and triangles through it are counted for no one. The
+  degree-ordered forward algorithm finds each triangle once and runs on the
+  caller's rayon pool over blocks of equal estimated work; the counts and the
+  work charged are identical at any pool width, which a test checks at 1, 2, 3
+  and 8 threads. The oracle is the O(n^3) definition over every simple graph on
+  six nodes and every four-node multigraph with loops.
+- `grust-algorithms` gains a default `parallel` feature (rayon). A kernel runs on
+  whatever pool the caller installs; without the feature it runs sequentially
+  with the same results.
 - Add **k-core decomposition**, `k_core` and `grust.algorithms.kCore`: bucket
   peeling in O(V + A), returning `coreValue` per node and the graph's
   `degeneracy`. Degree counts parallel edges with multiplicity and ignores

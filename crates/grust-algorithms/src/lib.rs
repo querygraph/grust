@@ -18,14 +18,17 @@ mod kcore;
 pub use kcore::{KCore, k_core};
 mod meter;
 mod ordering;
+mod parallel;
 pub use ordering::{NodeOrder, TopologicalOrder, depth_first, topological_sort};
 mod pagerank;
 mod projection;
 mod shortest;
 mod statistics;
 mod table;
+mod triangles;
 pub use statistics::{CsrEstimate, ProjectionStatistics};
 pub use table::{NodeTable, TableScalar, TableType, TableValue};
+pub use triangles::{TriangleOptions, Triangles, triangles};
 mod traversal;
 
 pub use pagerank::{PageRank, PageRankOptions, pagerank};

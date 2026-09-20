@@ -601,6 +601,12 @@ M4 (Tier A), then per milestone.** Each is a minor version: new public API.
   contains "undirected".** Nutmeg's schema probe and Grust's catalog test both
   rely on that word to retry on an undirected projection. Keep it.
 - `run_on_projection` matches names case-insensitively, as the registry does.
+- **`parallel.rs` is the pattern for every parallel kernel**: split nodes into
+  contiguous blocks of equal estimated work (`balanced_ranges`), run one task per
+  block (`map_ranges`), combine in block order. Cross-block writes go through
+  atomic counters (`Buffer::filled_with`), never per-task vectors, so memory and
+  charged work do not depend on the pool width. Each task owns a `Meter`.
+  Triangles proves it: identical counts *and* identical work at 1, 2, 3, 8 threads.
 
 ## Progress ledger
 
@@ -610,8 +616,8 @@ Update in the same commit as the work. `—` not started, `wip`, `done <commit>`
 | --- | --- | --- | --- | --- | --- |
 | P1 | done (Grust and Nutmeg) | P2 | — | P3 | — |
 | P4 | — | P5 | — | P6 | — |
-| P7 | — | 1 Louvain | — | 2 Betweenness | — |
-| 3 Node similarity | — | 4 Triangles/LCC | — | 5 k-core | done |
+| P7 | done (`parallel.rs`) | 1 Louvain | — | 2 Betweenness | — |
+| 3 Node similarity | — | 4 Triangles/LCC | done | 5 k-core | done |
 | 6 Closeness/harmonic | — | 7 Leiden | — | 8 Label propagation | — |
 | 9 A\*/Bellman–Ford | — | 10 Eigenvector family | — | 11 Bridges family | — |
 | 12 Spanning forest | — | 13 Max flow | — | 14 FastRP | — |

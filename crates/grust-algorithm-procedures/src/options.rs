@@ -1,5 +1,8 @@
 use super::*;
-use algorithms::{MissingWeight, Orientation, PageRankOptions, ProjectionOptions, WeightSelection};
+use algorithms::{
+    MissingWeight, Orientation, PageRankOptions, ProjectionOptions, TriangleOptions,
+    WeightSelection,
+};
 
 fn option(name: &str, value_type: ValueType, default: Value, nullable: bool) -> OptionField {
     OptionField {
@@ -129,4 +132,23 @@ pub(super) fn pagerank(args: &ValidatedArguments) -> Result<PageRankOptions<'_>>
         max_iterations,
         personalization,
     })
+}
+
+pub(super) fn triangle_fields() -> Vec<OptionField> {
+    vec![option("maxDegree", ValueType::Integer, Value::Null, true)]
+}
+
+pub(super) fn triangles(args: &ValidatedArguments) -> Result<TriangleOptions> {
+    let max_degree = match value(args, "maxDegree")? {
+        Value::Null => None,
+        Value::Int(value) => Some(usize::try_from(*value).map_err(|_| {
+            ProcedureError::InvalidArguments("maxDegree must not be negative".into())
+        })?),
+        _ => {
+            return Err(ProcedureError::InvalidArguments(
+                "maxDegree must be an integer".into(),
+            ));
+        }
+    };
+    Ok(TriangleOptions { max_degree })
 }

@@ -196,6 +196,38 @@ fn catalog() -> Vec<Spec> {
             ))
         },
     ));
+    specs.push(Spec::new(
+        "triangleCount",
+        None,
+        vec![
+            field("nodeId", ValueType::String),
+            field("triangles", ValueType::Integer),
+            field("triangleCount", ValueType::Integer),
+        ],
+        options::triangle_fields(),
+        |graph, args| {
+            Ok(AlgorithmOutput::Table(
+                algorithms::triangles(graph, options::triangles(args)?)?.into_triangle_table()?,
+            ))
+        },
+    ));
+    specs.push(Spec::new(
+        "localClusteringCoefficient",
+        None,
+        vec![
+            field("nodeId", ValueType::String),
+            nullable("coefficient", ValueType::Number),
+            field("triangles", ValueType::Integer),
+            field("averageCoefficient", ValueType::Number),
+        ],
+        options::triangle_fields(),
+        |graph, args| {
+            Ok(AlgorithmOutput::Table(
+                algorithms::triangles(graph, options::triangles(args)?)?
+                    .into_coefficient_table()?,
+            ))
+        },
+    ));
     specs
 }
 
