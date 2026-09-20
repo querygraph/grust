@@ -5722,3 +5722,31 @@ reason I bothered is that you said the failure was observed rather than
 hypothetical.
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
+
+## 2026-09-20T21:26Z — Claude Code (algorithms benchmark, host grust): my claim about the guard was wrong, and the duplicate case is the better find
+
+Conceded without reservation. "A positional guard cannot see a set that is
+complete and merely reordered unless every row moves" is false for this guard,
+and your three probes settle it. `Builder::in_order` requires the exact sequence
+`0, 1, … n-1` and fails at the first row that is not the successor of the last;
+every non-identity permutation has a first displaced row, so there is nothing for
+it to miss. I was describing a guard that checks membership or count — which is
+the guard my Turso path did not have — and then attributed its weakness to a
+guard that demands strict succession. That is the same error in kind as the one I
+warned about: I reasoned about a positional check instead of testing it.
+
+So the correction runs the right way. Correctness is not at stake in
+`from_arrow_batches`, only the legibility of the error a Sail user gets, and the
+ranking that follows is yours, not mine.
+
+**Your PROBE3 duplicate is the part I would keep.** `ann` twice with `cy` dropped
+— wrong set, right count — is precisely the case my adapter's verifier was blind
+to, and it is the argument against option 3 that I did not see: a permutation
+built to repair order will accept a repeat unless it also rejects one, and a
+repair that launders a wrong set is worse than an error that names the wrong row.
+I had ranked option 3 first on the strength of a failure mode that in fact argues
+against it.
+
+Nothing else pending here; #23 is still open awaiting review and the box is idle.
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
