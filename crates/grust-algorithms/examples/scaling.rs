@@ -27,6 +27,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // threads, which is what an embedder gets by default.
     let mut workers = vec![0usize, 1, 2, 4, 8, 16];
     let mut iterations = 10usize;
+    // A kernel that builds a cached structure on first use (PageRank builds the
+    // reverse topology) pays for it once. Timing a second call separates that
+    // one-off cost from the iteration it amortises over.
+    let mut repeat = 1usize;
     let mut orientation = Orientation::Outgoing;
     let mut kernels = vec![
         "degree".to_string(),
@@ -44,6 +48,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     .collect::<Result<_, _>>()?;
             }
             "--iterations" => iterations = value()?.parse()?,
+            "--repeat" => repeat = value()?.parse()?,
             "--undirected" => orientation = Orientation::Undirected,
             "--kernels" => kernels = value()?.split(',').map(String::from).collect(),
             other => return Err(format!("unknown argument `{other}`").into()),
@@ -129,59 +134,67 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         )?;
         let build = build.elapsed().as_secs_f64();
         for kernel in &kernels {
-            let started = Instant::now();
-            let result = match kernel.as_str() {
-                "degree" => {
-                    let degrees = degree(&graph)?;
-                    format!("arcs {}", degrees.counts().iter().sum::<usize>())
-                }
-                "pagerank" => {
-                    let ranks = pagerank(
-                        &graph,
-                        PageRankOptions {
-                            damping: 0.85,
-                            tolerance: 0.0,
-                            max_iterations: iterations,
-                            personalization: None,
-                        },
-                    )?;
-                    format!(
-                        "iterations {} top {:.9}",
-                        ranks.iterations(),
-                        ranks.values().iter().copied().fold(0.0f64, f64::max)
-                    )
-                }
-                "bfs" => {
-                    let distances = bfs(&graph, names[0])?;
-                    let reached = distances.values().iter().filter(|d| d.is_finite()).count();
-                    let sum: f64 = distances.values().iter().filter(|d| d.is_finite()).sum();
-                    format!("reached {reached} sum {sum}")
-                }
-                "wcc" => {
-                    let components = weakly_connected_components(&graph)?;
-                    let mut labels: Vec<usize> = components.values().to_vec();
-                    labels.sort_unstable();
-                    labels.dedup();
-                    format!("components {}", labels.len())
-                }
-                other => return Err(format!("unknown kernel `{other}`").into()),
-            };
-            let seconds = started.elapsed().as_secs_f64();
-            let speedup = match baseline.get(kernel) {
-                Some(&first) => format!("{:.2}x", first / seconds),
-                None => {
-                    baseline.insert(kernel.clone(), seconds);
-                    "-".to_string()
-                }
-            };
-            let label = if threads == 0 {
-                "sequential".to_string()
-            } else {
-                threads.to_string()
-            };
-            println!(
-                "{kernel:<10} {label:>10} {build:>10.1} {seconds:>10.3} {speedup:>9}  {result}"
-            );
+            for pass in 1..=repeat {
+                let started = Instant::now();
+                let result = match kernel.as_str() {
+                    "degree" => {
+                        let degrees = degree(&graph)?;
+                        format!("arcs {}", degrees.counts().iter().sum::<usize>())
+                    }
+                    "pagerank" => {
+                        let ranks = pagerank(
+                            &graph,
+                            PageRankOptions {
+                                damping: 0.85,
+                                tolerance: 0.0,
+                                max_iterations: iterations,
+                                personalization: None,
+                            },
+                        )?;
+                        format!(
+                            "iterations {} top {:.9}",
+                            ranks.iterations(),
+                            ranks.values().iter().copied().fold(0.0f64, f64::max)
+                        )
+                    }
+                    "bfs" => {
+                        let distances = bfs(&graph, names[0])?;
+                        let reached = distances.values().iter().filter(|d| d.is_finite()).count();
+                        let sum: f64 = distances.values().iter().filter(|d| d.is_finite()).sum();
+                        format!("reached {reached} sum {sum}")
+                    }
+                    "wcc" => {
+                        let components = weakly_connected_components(&graph)?;
+                        let mut labels: Vec<usize> = components.values().to_vec();
+                        labels.sort_unstable();
+                        labels.dedup();
+                        format!("components {}", labels.len())
+                    }
+                    other => return Err(format!("unknown kernel `{other}`").into()),
+                };
+                let seconds = started.elapsed().as_secs_f64();
+                let key = format!("{kernel}/{pass}");
+                let speedup = match baseline.get(&key) {
+                    Some(&first) => format!("{:.2}x", first / seconds),
+                    None => {
+                        baseline.insert(key, seconds);
+                        "-".to_string()
+                    }
+                };
+                let label = if threads == 0 {
+                    "sequential".to_string()
+                } else {
+                    threads.to_string()
+                };
+                let name = if repeat > 1 {
+                    format!("{kernel}#{pass}")
+                } else {
+                    kernel.clone()
+                };
+                println!(
+                    "{name:<10} {label:>10} {build:>10.1} {seconds:>10.3} {speedup:>9}  {result}"
+                );
+            }
         }
     }
     Ok(())

@@ -68,11 +68,12 @@ fn bfs_sources<'a>(
     let context = graph.execution();
     context.checkpoint()?;
     let adjacency = graph.outgoing();
-    let workers = crate::parallel::workers(
+    let workers = crate::parallel::workers_above(
         context,
         graph
             .node_count()
             .saturating_add(adjacency.targets.values.len()),
+        crate::parallel::BREADTH_FIRST_SEQUENTIAL_BELOW_UNITS,
     );
     let mut roots = Vec::new();
     {
@@ -144,29 +145,38 @@ fn levels(graph: &GraphProjection, roots: &[usize], workers: usize) -> Result<Di
     while !frontier.is_empty() {
         context.checkpoint()?;
         let next_level = level.saturating_add(1);
-        let lists = crate::parallel::map_chunks(context, workers, &frontier, |_, slice, meter| {
-            let mut discovered: Vec<usize> = Vec::new();
-            for &node in slice {
-                let arcs = offsets[node]..offsets[node + 1];
-                meter.charge(1 + arcs.len())?;
-                for arc in arcs {
-                    let next = targets[arc];
-                    if level_of.values[next]
-                        .compare_exchange(
-                            UNVISITED,
-                            next_level,
-                            Ordering::Relaxed,
-                            Ordering::Relaxed,
-                        )
-                        .is_ok()
-                    {
-                        discovered.try_reserve(1)?;
-                        discovered.push(next);
+        // A level with a small frontier is expanded in place: spreading a few
+        // hundred nodes over sixteen workers costs more than it saves, which is
+        // what the measurements on road networks showed.
+        let level_workers = if frontier.len() < crate::parallel::SEQUENTIAL_FRONTIER_BELOW {
+            1
+        } else {
+            workers
+        };
+        let lists =
+            crate::parallel::map_chunks(context, level_workers, &frontier, |_, slice, meter| {
+                let mut discovered: Vec<usize> = Vec::new();
+                for &node in slice {
+                    let arcs = offsets[node]..offsets[node + 1];
+                    meter.charge(1 + arcs.len())?;
+                    for arc in arcs {
+                        let next = targets[arc];
+                        if level_of.values[next]
+                            .compare_exchange(
+                                UNVISITED,
+                                next_level,
+                                Ordering::Relaxed,
+                                Ordering::Relaxed,
+                            )
+                            .is_ok()
+                        {
+                            discovered.try_reserve(1)?;
+                            discovered.push(next);
+                        }
                     }
                 }
-            }
-            Ok(discovered)
-        })?;
+                Ok(discovered)
+            })?;
         frontier.clear();
         for list in &lists {
             frontier.try_reserve(list.len())?;
