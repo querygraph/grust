@@ -12,6 +12,8 @@ mod builtins;
 mod cache;
 #[path = "contracts/cancellation.rs"]
 mod cancellation;
+#[path = "contracts/parallel.rs"]
+mod parallel;
 
 #[test]
 fn temporary_memory_accounts_release_only_their_own_admission() {

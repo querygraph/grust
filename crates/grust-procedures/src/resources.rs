@@ -53,11 +53,19 @@ const DEADLINE_SAMPLE_UNITS: usize = 1024;
 #[derive(Debug)]
 struct Shared {
     limits: ExecutionLimits,
+    concurrency: usize,
     work_units: AtomicUsize,
     cancelled: AtomicBool,
     charges_since_deadline_read: AtomicUsize,
     state: Mutex<State>,
 }
+
+/// Units a [`WorkMeter`] admits in one shared-counter operation while the budget
+/// has room for a whole block. Kernels charge once per visited entry, so at N
+/// workers the shared counter would otherwise be a contended cache line rather
+/// than an occasional one. Near the limit the meter drops to exact admission,
+/// so a budget still fails at exactly the unit that exceeds it.
+pub const WORK_BLOCK_UNITS: usize = 1024;
 
 /// Whether a state check must read the clock or may rely on the sampled read.
 #[derive(Clone, Copy)]
@@ -86,11 +94,42 @@ impl ExecutionContext {
         }
         Ok(Self(Arc::new(Shared {
             limits,
+            concurrency: 1,
             work_units: AtomicUsize::new(0),
             cancelled: AtomicBool::new(false),
             charges_since_deadline_read: AtomicUsize::new(0),
             state: Mutex::new(State::default()),
         })))
+    }
+
+    /// Permit kernels to use up to `workers` threads for this execution.
+    ///
+    /// Concurrency is a property of one execution, not of the process: an
+    /// embedder that runs kernels inside a server with its own runtime and
+    /// thread pool decides here how many threads a query may add, and the
+    /// default of one keeps existing callers single-threaded. Set it before
+    /// the context is shared, so no worker can observe it changing.
+    ///
+    /// # Errors
+    /// Rejects zero workers, and a context that is already shared.
+    pub fn with_concurrency(mut self, workers: usize) -> Result<Self> {
+        if workers == 0 {
+            return Err(ProcedureError::InvalidArguments(
+                "concurrency must be at least one".into(),
+            ));
+        }
+        let shared = Arc::get_mut(&mut self.0).ok_or_else(|| {
+            ProcedureError::InvalidArguments(
+                "concurrency must be set before the context is shared".into(),
+            )
+        })?;
+        shared.concurrency = workers;
+        Ok(self)
+    }
+
+    /// Threads kernels may use for this execution; one unless set.
+    pub fn concurrency(&self) -> usize {
+        self.0.concurrency
     }
 
     /// Read immutable limits.
@@ -122,9 +161,33 @@ impl ExecutionContext {
         self.check_state(DeadlineCheck::Exact)
     }
 
+    /// A batched work meter for one worker inside a parallel region.
+    ///
+    /// The meter admits [`WORK_BLOCK_UNITS`] at a time from the shared counter
+    /// and spends them locally, so N workers do not contend on one cache line
+    /// per visited entry. Admission stays exact: when a block does not fit, the
+    /// meter admits precisely the units asked for, so the budget fails at the
+    /// same unit it would fail at single-threaded. Unspent units are returned
+    /// when the meter drops, so final usage counts work actually performed;
+    /// [`Self::usage`] read while meters are live can exceed it by less than
+    /// one block per worker.
+    ///
+    /// Cancellation is still observed per charge. The deadline is sampled per
+    /// block, which is the same cadence per worker as a single-threaded charge.
+    pub fn work_meter(&self) -> WorkMeter {
+        WorkMeter {
+            context: self.clone(),
+            granted: 0,
+        }
+    }
+
     /// Charge work before performing it. Counter overflow is a budget failure.
     pub fn charge_work(&self, units: usize) -> Result<()> {
         self.check_state(DeadlineCheck::Sampled)?;
+        self.admit_work(units)
+    }
+
+    fn admit_work(&self, units: usize) -> Result<()> {
         // Admit exactly, never overshooting the budget: the compare-exchange
         // recomputes admission against the value it actually replaces, so a
         // concurrent charge cannot slip past the limit between load and store.
@@ -147,6 +210,21 @@ impl ExecutionContext {
                 Err(observed) => current = observed,
             }
         }
+    }
+
+    /// Return admitted units that were never spent. Only a meter calls this,
+    /// and only with units it admitted, so the counter cannot underflow.
+    fn refund_work(&self, units: usize) {
+        if units != 0 {
+            self.0.work_units.fetch_sub(units, Ordering::Relaxed);
+        }
+    }
+
+    fn check_cancelled(&self) -> Result<()> {
+        if self.0.cancelled.load(Ordering::Acquire) {
+            return Err(ProcedureError::Cancelled);
+        }
+        Ok(())
     }
 
     fn check_state(&self, deadline: DeadlineCheck) -> Result<()> {
@@ -184,6 +262,30 @@ impl ExecutionContext {
             context: self.clone(),
             bytes,
         })))
+    }
+
+    /// Reserve one worker's scratch times the number of workers, before the
+    /// parallel region starts.
+    ///
+    /// Memory admission takes a lock, which single-threaded is a constant
+    /// overhead and under threads would be a serialization point. Kernels that
+    /// need per-worker scratch admit all of it here, once, so admission is
+    /// exact and does not depend on how work happens to be scheduled.
+    ///
+    /// # Errors
+    /// Reports a memory budget the total would exceed, including on overflow.
+    pub fn reserve_for_workers(
+        &self,
+        workers: usize,
+        bytes_each: usize,
+    ) -> Result<MemoryReservation> {
+        let bytes = workers
+            .checked_mul(bytes_each)
+            .ok_or(ProcedureError::BudgetExceeded {
+                resource: "memory",
+                limit: self.0.limits.memory_bytes,
+            })?;
+        self.reserve(bytes)
     }
 
     /// Check admission without reserving or changing measured peak usage.
@@ -260,6 +362,73 @@ impl ExecutionContext {
             peak_bytes: state.peak_bytes,
             work_units: self.0.work_units.load(Ordering::Relaxed),
         })
+    }
+}
+
+/// One worker's share of the work budget, admitted in blocks.
+///
+/// Created by [`ExecutionContext::work_meter`], used by one thread, and dropped
+/// at the end of that thread's chunk. Charge before performing the work, as with
+/// [`ExecutionContext::charge_work`].
+pub struct WorkMeter {
+    context: ExecutionContext,
+    granted: usize,
+}
+
+impl WorkMeter {
+    /// Charge work this worker is about to perform.
+    ///
+    /// # Errors
+    /// Reports cancellation, an expired deadline, and a work budget that the
+    /// charge would exceed.
+    pub fn charge(&mut self, units: usize) -> Result<()> {
+        self.context.check_cancelled()?;
+        if let Some(left) = self.granted.checked_sub(units) {
+            self.granted = left;
+            return Ok(());
+        }
+        self.admit(units)
+    }
+
+    /// Admit a block, or exactly what was asked for when a block does not fit.
+    #[cold]
+    fn admit(&mut self, units: usize) -> Result<()> {
+        self.context.check_state(DeadlineCheck::Sampled)?;
+        let wanted = units.saturating_add(WORK_BLOCK_UNITS);
+        if wanted > units && self.context.admit_work(wanted - self.granted).is_ok() {
+            self.granted = wanted - units;
+            return Ok(());
+        }
+        // Near the limit, spend the remaining budget one charge at a time so
+        // that the failure happens at the same unit as it would at one thread.
+        self.context.admit_work(units - self.granted)?;
+        self.granted = 0;
+        Ok(())
+    }
+
+    /// Shared execution state, for an exact poll or a nested reservation.
+    pub fn execution(&self) -> &ExecutionContext {
+        &self.context
+    }
+
+    /// Poll cancellation and the deadline exactly, as [`ExecutionContext::checkpoint`].
+    ///
+    /// # Errors
+    /// Reports cancellation and an expired deadline.
+    pub fn checkpoint(&self) -> Result<()> {
+        self.context.checkpoint()
+    }
+
+    /// Return unspent units now rather than at drop.
+    pub fn finish(self) {
+        drop(self);
+    }
+}
+
+impl Drop for WorkMeter {
+    fn drop(&mut self) {
+        self.context.refund_work(self.granted);
+        self.granted = 0;
     }
 }
 

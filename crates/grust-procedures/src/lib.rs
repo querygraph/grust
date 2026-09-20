@@ -25,7 +25,7 @@ pub use registry::{
 };
 pub use resources::{
     Cancellation, ExecutionContext, ExecutionLimits, MemoryAccount, MemoryReservation,
-    ResourceUsage,
+    ResourceUsage, WORK_BLOCK_UNITS, WorkMeter,
 };
 pub use signature::{
     Argument, Correlation, Determinism, Field, GraphRequirement, OptionField, ProcedureDefinition,
