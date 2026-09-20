@@ -2710,3 +2710,80 @@ runner: `35508939264` on main failed in **Release package verification**, not in
 the wall-clock tests that commit was addressing, and the three runs after it
 passed. So either it was transient or that commit fixed it; with Actions off, the
 way to know is `cargo package --locked --workspace --allow-dirty` locally.
+
+## 2026-09-21T09:30Z — Claude Code (Grust catalog, host alexy-mac): hosted CI is paused — verify on Linux here; and who owns what remains
+
+**From the operator:** GitHub workflows are being stopped because the account is
+running out of Actions minutes; the operator will resume them later. quegee and
+grust are Linux, so verification moves to those two hosts.
+
+### The rule while hosted CI is off
+
+Nothing merges to main on a macOS pass, mine included. Two defects this week
+showed only on a Linux runner: the zstd double link, and the dropping-meter
+window, which passed 360 runs on this laptop.
+
+- **`scripts/ci-local.sh`** (new, on main) runs the `workspace` workflow's gates
+  in the workflow's order with the workflow's environment, and ends with one
+  line naming the commit, the platform and the time. `--fast` stops before
+  package verification. **Run it on grust or quegee and paste that last line
+  into the pull request**; that line is the verdict a green check used to be.
+  Keep the script and `.github/workflows/workspace.yml` in step: a gate added to
+  one goes into the other in the same commit.
+- It makes **one** attempt at the benchmark runner's tests, not the workflow's
+  three. On a box you control a timing failure is information.
+- For anything concurrent, also stress it in release with every core saturated
+  (`yes > /dev/null` times the core count) before believing a zero. That is what
+  the hosted runner was doing for us by accident.
+- I am on macOS. I can build, test and review, and I have a Linux container
+  (`rust:1` under Docker, which reproduced the runner's timing flake at
+  `--cpus=0.4`), but a change of mine needs one of you to run `ci-local.sh` on
+  it before it merges. Ask the same of me for review, not for the verdict.
+- When the workflows come back: trigger one run on main first. The last two
+  runs on main (`67ca19d`, `d2c83da`) were cancelled, not failed; the last
+  completed one, `6e6de60`, was green, and #16 was green on its own branch.
+
+### State
+
+Main is `d2c83da` plus this commit. PRs #9 to #16 are merged, none is open, and
+I have nothing in flight. The seven-step order from 08:15Z stands at: steps 1 to
+5 done, step 6 open, step 7 partly done (lock-free memory, #12).
+
+### Who owns what remains
+
+**quegee — step 6, in this order:**
+1. The seventeen catalog kernels in `examples/scaling`, with measured floors,
+   and corrections to the `units` each passes to `parallel::concurrency` where
+   my estimates are off.
+2. `articleRank` on the pull PageRank kernel.
+3. Nutmeg passing `with_concurrency` through as a named option. Until then every
+   kernel Nutmeg serves runs on one thread.
+4. Parallel projection build, then the transpose.
+5. Review `cec897f` and #13 together: both are my changes to your meter and both
+   merged without a second reader.
+6. The sixteen-worker cost table rerun on main, which now has the shared and
+   exclusive registry holds and the drop under them.
+
+**Algorithms-benchmark agent, host grust:**
+1. The paired sweep, direct and Arrow participants, for the sequential-kernel
+   metering (#11) and lock-free memory accounting (#12), main before against
+   main after. Every figure I have posted for them is one laptop and one
+   synthetic graph; yours is the number that gets quoted.
+2. Widen the wall-clock windows in the LSQB runner's process tests, make
+   `plan_tests.rs` print the error instead of `unwrap()`, then delete the retry
+   loop in the workflow and `docs/LSQB_RUNNER_TIMING_FLAKES.md`, which holds the
+   evidence and the reproduction.
+
+**Operator — three decisions, none urgent:**
+1. May a projection admit negative weights? `bellmanFord` and `astar` wait on
+   it; the design question is in the build notes of
+   `docs/goals/graph-analytics-catalog.md`.
+2. When to cut the milestone release. It needs the full `PUBLISH.md` gates, so a
+   Linux host or the workflows back.
+3. Whether to start P6, node properties, which every Tier-B kernel needs and
+   which the plan puts behind a checkpoint with you.
+
+**Me:** blocked on those three. After decision 1, `bellmanFord` and `astar`;
+after 2, the release; after 3, Tier B. Meanwhile I review what either of you
+posts here, and when step 6's floors land I rerun the catalog's bit-identical
+tests against them.
