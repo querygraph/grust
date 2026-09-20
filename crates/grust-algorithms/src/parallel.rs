@@ -63,6 +63,42 @@ pub(crate) fn map_ranges<T: Send>(
     }
 }
 
+/// Run `task(block)` for `0..blocks` and hand each result to `merge` **in block
+/// order**. Blocks run `width()` at a time, so at most that many results are
+/// alive at once; which blocks exist, what each computes and the order they are
+/// merged in do not depend on the pool, so neither does a floating-point sum
+/// built by `merge`.
+pub(crate) fn ordered_blocks<T: Send>(
+    blocks: usize,
+    task: impl Fn(usize) -> Result<T> + Sync,
+    mut merge: impl FnMut(usize, T) -> Result<()>,
+) -> Result<()> {
+    let wave = width();
+    let mut first = 0;
+    while first < blocks {
+        let last = (first + wave).min(blocks);
+        let indices: Vec<usize> = (first..last).collect();
+        #[cfg(feature = "parallel")]
+        let results = {
+            use rayon::prelude::*;
+            indices
+                .par_iter()
+                .map(|&block| task(block))
+                .collect::<Result<Vec<T>>>()?
+        };
+        #[cfg(not(feature = "parallel"))]
+        let results = indices
+            .iter()
+            .map(|&block| task(block))
+            .collect::<Result<Vec<T>>>()?;
+        for (block, result) in indices.into_iter().zip(results) {
+            merge(block, result)?;
+        }
+        first = last;
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::balanced_ranges;

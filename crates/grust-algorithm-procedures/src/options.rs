@@ -1,7 +1,7 @@
 use super::*;
 use algorithms::{
-    LouvainOptions, MissingWeight, Orientation, PageRankOptions, ProjectionOptions,
-    TriangleOptions, WeightSelection,
+    BetweennessOptions, LouvainOptions, MissingWeight, Orientation, PageRankOptions,
+    ProjectionOptions, TriangleOptions, WeightSelection,
 };
 
 fn option(name: &str, value_type: ValueType, default: Value, nullable: bool) -> OptionField {
@@ -173,17 +173,38 @@ fn positive(args: &ValidatedArguments, key: &str) -> Result<usize> {
     }
 }
 
+/// `null` is no seed; any integer is one, and its bits are what matter.
+fn seed(args: &ValidatedArguments) -> Result<Option<u64>> {
+    match value(args, "seed")? {
+        Value::Null => Ok(None),
+        Value::Int(value) => Ok(Some(*value as u64)),
+        _ => Err(ProcedureError::InvalidArguments(
+            "seed must be an integer".into(),
+        )),
+    }
+}
+
+pub(super) fn betweenness_fields() -> Vec<OptionField> {
+    vec![
+        option("samplingSize", ValueType::Integer, Value::Null, true),
+        option("seed", ValueType::Integer, Value::Null, true),
+        option("normalized", ValueType::Boolean, Value::Bool(false), false),
+    ]
+}
+
+pub(super) fn betweenness(args: &ValidatedArguments) -> Result<BetweennessOptions> {
+    Ok(BetweennessOptions {
+        sampling_size: match value(args, "samplingSize")? {
+            Value::Null => None,
+            _ => Some(positive(args, "samplingSize")?),
+        },
+        seed: seed(args)?.unwrap_or(0),
+        normalized: matches!(value(args, "normalized")?, Value::Bool(true)),
+    })
+}
+
 pub(super) fn louvain(args: &ValidatedArguments) -> Result<LouvainOptions> {
-    let seed = match value(args, "seed")? {
-        Value::Null => None,
-        // Any integer is a seed; its bits are what matter.
-        Value::Int(value) => Some(*value as u64),
-        _ => {
-            return Err(ProcedureError::InvalidArguments(
-                "seed must be an integer".into(),
-            ));
-        }
-    };
+    let seed = seed(args)?;
     Ok(LouvainOptions {
         resolution: number(value(args, "resolution")?)?,
         max_levels: positive(args, "maxLevels")?,

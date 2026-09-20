@@ -229,6 +229,20 @@ fn catalog() -> Vec<Spec> {
         },
     ));
     specs.push(Spec::new(
+        "betweenness",
+        None,
+        vec![
+            field("nodeId", ValueType::String),
+            field("score", ValueType::Number),
+        ],
+        options::betweenness_fields(),
+        |graph, args| {
+            Ok(AlgorithmOutput::Table(
+                algorithms::betweenness(graph, options::betweenness(args)?)?.into_table()?,
+            ))
+        },
+    ));
+    specs.push(Spec::new(
         "louvain",
         None,
         vec![

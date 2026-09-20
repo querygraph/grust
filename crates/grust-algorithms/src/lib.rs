@@ -10,6 +10,8 @@ mod arrow_input;
 mod arrow_output;
 #[cfg(feature = "arrow")]
 pub use arrow_output::{ArrowResultBatch, ArrowResultCursor};
+mod betweenness;
+pub use betweenness::{Betweenness, BetweennessOptions, betweenness};
 mod buffer;
 mod degree;
 pub use degree::{Degrees, degree};

@@ -1327,3 +1327,14 @@ the thread count. `includeIntermediateCommunities` is not there yet.
 Per-node results now come back as one generic `NodeTable`, so every later
 "value per node" kernel reaches you in the same Arrow shape: `nodeId`, the
 declared columns, then whole-result scalars repeated per row.
+
+### 2026-09-19 — Grust catalog branch: `betweenness` landed
+
+`grust.algorithms.betweenness` is on `work/analytics-catalog`; Nutmeg's tests
+pass against it unchanged. Alias table: `samplingSize` as in GDS, `seed` ←
+`samplingSeed`; `normalized` is Grust's own. **Differs from GDS:** a sampled
+score is scaled by `n / samplingSize` to estimate the exact one, where GDS
+returns the raw partial sum; parallel edges count as distinct shortest paths;
+zero weights are rejected. Scores are bit-identical at any thread count. Peak
+memory is one O(n) workspace per running block of 64 sources, so it scales with
+the pool width: state the pool width with any memory figure.

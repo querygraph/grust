@@ -6,6 +6,23 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ## Unreleased
 
+- Add **betweenness centrality**: `betweenness` and
+  `grust.algorithms.betweenness`, with `samplingSize`, `seed` and `normalized`.
+  Brandes' algorithm, by hop count on an unweighted projection and by Dijkstra
+  on a weighted one, in every orientation; undirected sums are halved. Parallel
+  edges are distinct shortest paths and each counts. Weighted ties are exact
+  `f64` equality, which is exact for integral weights and approximate otherwise,
+  and a zero weight is rejected because it makes the path count ill-defined.
+  `samplingSize` draws that many sources without replacement and scales the sum
+  by `n / samplingSize`; a sample of every node is the exact result bit for bit.
+  Sources run on the caller's rayon pool in fixed blocks of 64 merged in block
+  order, so scores and charged work are bit-identical at any pool width; memory
+  held at once grows with the pool, one workspace per running block. The oracle
+  is an all-pairs definition with no traversal in it, checked on every graph of
+  up to five nodes and 1,500 random multigraphs, weighted and not, in all three
+  orientations.
+- `GraphProjection` can build in-arcs with weights and edge slots once per
+  projection (crate-internal; for the coming eigenvector, Katz and HITS kernels).
 - Add **Louvain** community detection: `louvain` and `grust.algorithms.louvain`,
   with `resolution`, `maxLevels`, `maxIterations`, `tolerance` and `seed`. It
   works in every orientation: Newman's modularity on an undirected projection,

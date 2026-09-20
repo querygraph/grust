@@ -235,13 +235,13 @@ fn run(graph: &GraphProjection, source: &str, paths: bool) -> Result<(Distances,
 
 // Each vertex occupies at most one heap entry. Dense inverse positions avoid
 // unbounded stale entries on graphs with many parallel edges or relaxations.
-struct MinHeap {
+pub(crate) struct MinHeap {
     entries: Buffer<(f64, usize)>,
     positions: Buffer<usize>,
 }
 
 impl MinHeap {
-    fn new(n: usize, context: &ExecutionContext) -> Result<Self> {
+    pub(crate) fn new(n: usize, context: &ExecutionContext) -> Result<Self> {
         Ok(Self {
             entries: Buffer::capacity(n, context)?,
             positions: Buffer::filled(n, usize::MAX, context)?,
@@ -260,7 +260,12 @@ impl MinHeap {
         self.positions.values[self.entries.values[right].1] = right;
     }
 
-    fn improve(&mut self, node: usize, cost: f64, context: &ExecutionContext) -> Result<()> {
+    pub(crate) fn improve(
+        &mut self,
+        node: usize,
+        cost: f64,
+        context: &ExecutionContext,
+    ) -> Result<()> {
         let mut index = self.positions.values[node];
         if index == usize::MAX {
             index = self.entries.values.len();
@@ -281,7 +286,7 @@ impl MinHeap {
         Ok(())
     }
 
-    fn pop(&mut self, context: &ExecutionContext) -> Result<Option<(f64, usize)>> {
+    pub(crate) fn pop(&mut self, context: &ExecutionContext) -> Result<Option<(f64, usize)>> {
         if self.entries.values.is_empty() {
             return Ok(None);
         }

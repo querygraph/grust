@@ -615,6 +615,15 @@ M4 (Tier A), then per milestone.** Each is a minor version: new public API.
   atomic counters (`Buffer::filled_with`), never per-task vectors, so memory and
   charged work do not depend on the pool width. Each task owns a `Meter`.
   Triangles proves it: identical counts *and* identical work at 1, 2, 3, 8 threads.
+- **Per-source kernels use `parallel::ordered_blocks`.** Betweenness splits its
+  sources into fixed blocks of 64, runs `width()` blocks at a time, and merges
+  per-block vectors in block order: float sums and charged work are
+  bit-identical at any width, but live memory is one workspace per running
+  block, so it does grow with the pool. Closeness and harmonic (group 6) should
+  reuse it and `shortest::MinHeap` (now `pub(crate)`). Betweenness needs only
+  out-arcs: the backward pass rescans them instead of storing predecessors.
+  GDS's `samplingSeed` maps to `seed`; GDS does not rescale a sampled score and
+  Grust does, which Nutmeg's alias layer must state.
 
 ## Progress ledger
 
@@ -622,9 +631,9 @@ Update in the same commit as the work. `—` not started, `wip`, `done <commit>`
 
 | Item | State | Item | State | Item | State |
 | --- | --- | --- | --- | --- | --- |
-| P1 | done (Grust and Nutmeg) | P2 | — | P3 | done (`NodeTable`) |
+| P1 | done (Grust and Nutmeg) | P2 | done (`incoming()`) | P3 | done (`NodeTable`) |
 | P4 | — | P5 | done (`random.rs`) | P6 | — |
-| P7 | done (`parallel.rs`) | 1 Louvain | done | 2 Betweenness | — |
+| P7 | done (`parallel.rs`) | 1 Louvain | done | 2 Betweenness | done |
 | 3 Node similarity | — | 4 Triangles/LCC | done | 5 k-core | done |
 | 6 Closeness/harmonic | — | 7 Leiden | — | 8 Label propagation | — |
 | 9 A\*/Bellman–Ford | — | 10 Eigenvector family | — | 11 Bridges family | — |

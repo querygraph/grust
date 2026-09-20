@@ -354,3 +354,40 @@ fn louvain_is_an_ordinary_procedure_in_every_orientation() {
         vec![vec![Value::Int(0)]]
     );
 }
+
+#[test]
+fn betweenness_is_an_ordinary_procedure_exact_or_sampled() {
+    // a-b, b-c doubled, and an isolate: only b lies between two other nodes.
+    let expected = vec![
+        vec![Value::String("a".into()), Value::Float(0.0)],
+        vec![Value::String("b".into()), Value::Float(1.0)],
+        vec![Value::String("c".into()), Value::Float(0.0)],
+        vec![Value::String("isolate".into()), Value::Float(0.0)],
+    ];
+    let query = |options: &str| {
+        run(&format!(
+            "CALL grust.algorithms.betweenness({options}) YIELD nodeId, score RETURN nodeId, score"
+        ))
+    };
+    assert_eq!(query("{orientation: 'undirected'}"), expected);
+    // A sample of every node is the exact answer.
+    assert_eq!(
+        query("{orientation: 'undirected', samplingSize: 4, seed: 3}"),
+        expected
+    );
+    // One pair of three possible: a-c, normalised by (n-1)(n-2)/2 = 3.
+    assert_eq!(
+        query("{orientation: 'undirected', normalized: true}")[1][1],
+        Value::Float(1.0 / 3.0)
+    );
+    assert!(
+        run_read_query_with_registry(
+            &graph(),
+            "default",
+            "CALL grust.algorithms.betweenness({samplingSize: 0}) YIELD score RETURN score",
+            &CypherParameters::new(),
+            &registry(),
+        )
+        .is_err()
+    );
+}
