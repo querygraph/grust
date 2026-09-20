@@ -181,6 +181,21 @@ fn catalog() -> Vec<Spec> {
             )?))
         },
     ));
+    specs.push(Spec::new(
+        "kCore",
+        None,
+        vec![
+            field("nodeId", ValueType::String),
+            field("coreValue", ValueType::Integer),
+            field("degeneracy", ValueType::Integer),
+        ],
+        vec![],
+        |graph, _| {
+            Ok(AlgorithmOutput::Table(
+                algorithms::k_core(graph)?.into_table(),
+            ))
+        },
+    ));
     specs
 }
 
@@ -240,8 +255,8 @@ pub fn projection_options(args: &ValidatedArguments) -> Result<algorithms::Proje
 }
 
 /// Run a registered kernel on a projection the caller already holds, and hand
-/// back its typed Arrow results. `name` is the registered name, with or without
-/// the `grust.algorithms.` prefix. `args` must have been validated against that
+/// back its typed Arrow results. `name` is the registered name, in any ASCII
+/// case, with or without the `grust.algorithms.` prefix. `args` must have been validated against that
 /// procedure's definition, exactly as the registry validates a `CALL`.
 ///
 /// `projectionStats` and `estimateCsr` are not kernels over a projection: one
@@ -257,7 +272,7 @@ pub fn run_on_projection(
     let short = name.strip_prefix(PREFIX).unwrap_or(name);
     let spec = catalog()
         .into_iter()
-        .find(|spec| spec.name == short)
+        .find(|spec| spec.name.eq_ignore_ascii_case(short))
         .ok_or_else(|| {
             ProcedureError::Unsupported(format!("`{name}` is not a registered projection kernel"))
         })?;

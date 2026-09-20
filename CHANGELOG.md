@@ -6,6 +6,20 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ## Unreleased
 
+- Add **k-core decomposition**, `k_core` and `grust.algorithms.kCore`: bucket
+  peeling in O(V + A), returning `coreValue` per node and the graph's
+  `degeneracy`. Degree counts parallel edges with multiplicity and ignores
+  self-loops. It is defined on undirected graphs and rejects any other
+  orientation instead of symmetrizing silently. The test oracle applies the
+  definition by brute force to all 1,458 four-node multigraphs with up to two
+  edges per pair and to every simple graph on five nodes.
+- Add `NodeTable`, a node-aligned result with typed named columns and repeated
+  whole-result scalars, with one Arrow adapter and one row adapter. Kernels that
+  answer "a value per node" hand it their buffers without copying, so the rest of
+  the analytics catalog needs no adapter code of its own.
+- The workspace CI job tests `grust-ladybug` on its own. It had failed on every
+  push: LadybugDB's prebuilt library bundles zstd, and the unified all-features
+  build linked `zstd-sys` into the same test binary, which `rust-lld` rejects.
 - `grust-algorithm-procedures` gains `run_on_projection(name, &GraphProjection,
   &ValidatedArguments)`, `projection_options(&ValidatedArguments)` and
   `projection_kernel_names()`, behind a new `arrow` feature the facade's `arrow`

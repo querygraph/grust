@@ -14,13 +14,18 @@ mod buffer;
 mod degree;
 pub use degree::{Degrees, degree};
 mod graph_input;
+mod kcore;
+pub use kcore::{KCore, k_core};
+mod meter;
 mod ordering;
 pub use ordering::{NodeOrder, TopologicalOrder, depth_first, topological_sort};
 mod pagerank;
 mod projection;
 mod shortest;
 mod statistics;
+mod table;
 pub use statistics::{CsrEstimate, ProjectionStatistics};
+pub use table::{NodeTable, TableScalar, TableType, TableValue};
 mod traversal;
 
 pub use pagerank::{PageRank, PageRankOptions, pagerank};

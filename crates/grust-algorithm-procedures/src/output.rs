@@ -12,6 +12,8 @@ pub(super) enum AlgorithmOutput {
     PathRows(algorithms::PathCursor),
     Order(algorithms::NodeOrder),
     Topology(algorithms::TopologicalOrder),
+    /// A value per node: the shape most of the catalog returns.
+    Table(algorithms::NodeTable),
 }
 
 #[cfg(feature = "arrow")]
@@ -26,6 +28,7 @@ impl AlgorithmOutput {
             Self::Paths(result) => result.into_arrow_results()?,
             Self::Order(result) => result.into_arrow_results(),
             Self::Topology(result) => result.into_arrow_results(),
+            Self::Table(result) => result.into_arrow_results(),
             Self::PathRows(_) => {
                 return Err(ProcedureError::OutputContract(
                     "a kernel returned a row cursor instead of its result".into(),
@@ -95,6 +98,15 @@ impl ProcedureCursor for AlgorithmCursor {
             ),
             AlgorithmOutput::PageRank(_) => (5, 0),
             AlgorithmOutput::Degrees(_) => (3, 0),
+            AlgorithmOutput::Table(table) => (
+                1 + table.width(),
+                (0..table.width())
+                    .map(|column| match table.value(column, index) {
+                        algorithms::TableValue::Node(id) => id.as_str().len(),
+                        _ => 0,
+                    })
+                    .sum(),
+            ),
             AlgorithmOutput::Paths(_)
             | AlgorithmOutput::PathRows(_)
             | AlgorithmOutput::Topology(_) => {
@@ -133,6 +145,17 @@ impl ProcedureCursor for AlgorithmCursor {
                         .strengths()
                         .map_or(Value::Null, |values| Value::Float(values[index])),
                 );
+            }
+            AlgorithmOutput::Table(table) => {
+                for column in 0..table.width() {
+                    row.push(match table.value(column, index) {
+                        algorithms::TableValue::Integer(value) => Value::Int(value),
+                        algorithms::TableValue::Number(value) => Value::Float(value),
+                        algorithms::TableValue::Boolean(value) => Value::Bool(value),
+                        algorithms::TableValue::Node(id) => Value::String(id.as_str().into()),
+                        algorithms::TableValue::Null => Value::Null,
+                    });
+                }
             }
             AlgorithmOutput::PageRank(result) => {
                 row.push(Value::Float(result.values()[index]));

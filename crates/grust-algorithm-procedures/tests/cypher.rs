@@ -261,3 +261,31 @@ fn degree_counts_and_strengths_use_projection_orientation() {
         ]
     );
 }
+
+#[test]
+fn k_core_is_an_ordinary_procedure_with_explicit_orientation() {
+    // The fixture's b<->c pair is two edges, so undirected b and c form a
+    // 2-core; a hangs off it, and the isolate has core 0.
+    assert_eq!(
+        run(
+            "CALL grust.algorithms.kCore({orientation: 'undirected'}) YIELD nodeId, coreValue, degeneracy RETURN nodeId, coreValue, degeneracy"
+        ),
+        vec![
+            vec![Value::String("a".into()), Value::Int(1), Value::Int(2)],
+            vec![Value::String("b".into()), Value::Int(2), Value::Int(2)],
+            vec![Value::String("c".into()), Value::Int(2), Value::Int(2)],
+            vec![
+                Value::String("isolate".into()),
+                Value::Int(0),
+                Value::Int(2)
+            ],
+        ]
+    );
+    // Aggregation over the result is ordinary Cypher.
+    assert_eq!(
+        run(
+            "CALL grust.algorithms.kCore({orientation: 'undirected'}) YIELD coreValue RETURN max(coreValue), count(coreValue)"
+        ),
+        vec![vec![Value::Int(2), Value::Int(4)]]
+    );
+}

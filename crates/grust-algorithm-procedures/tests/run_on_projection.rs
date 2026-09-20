@@ -30,7 +30,7 @@ fn context() -> ExecutionContext {
 }
 
 /// a -> b -> c, plus an isolate: acyclic, so every kernel has a plain answer.
-fn projection(context: &ExecutionContext) -> GraphProjection {
+fn projection(context: &ExecutionContext, orientation: Orientation) -> GraphProjection {
     let edge = |source, target, ordinal| ProjectionEdge {
         source,
         target,
@@ -42,7 +42,7 @@ fn projection(context: &ExecutionContext) -> GraphProjection {
         vec!["a".into(), "b".into(), "c".into(), "isolate".into()],
         vec![edge(0, 1, 0), edge(1, 2, 1)],
         Some(vec![2.0, 0.5]),
-        Orientation::Outgoing,
+        orientation,
         context,
     )
     .unwrap()
@@ -79,8 +79,16 @@ fn every_registered_projection_kernel_runs_by_name_with_its_declared_columns() {
         }
         let args = resolved.validate_arguments(args).unwrap();
 
+        // Kernels defined on undirected graphs refuse a directed projection;
+        // that refusal is theirs to state, and they then run on an undirected one.
         let context = context();
-        let graph = projection(&context);
+        let mut graph = projection(&context, Orientation::Outgoing);
+        if let Err(ProcedureError::InvalidArguments(message)) =
+            run_on_projection(name, &graph, &args)
+        {
+            assert!(message.contains("undirected"), "{name}: {message}");
+            graph = projection(&context, Orientation::Undirected);
+        }
         let batches = drain(run_on_projection(name, &graph, &args).unwrap());
         assert!(!batches.is_empty(), "{name} produced no batches");
 
@@ -100,6 +108,9 @@ fn every_registered_projection_kernel_runs_by_name_with_its_declared_columns() {
         let prefixed =
             drain(run_on_projection(&format!("grust.algorithms.{name}"), &graph, &args).unwrap());
         assert_eq!(prefixed, batches, "{name}");
+        // Case is not significant, as in the registry.
+        let lowered = drain(run_on_projection(&name.to_ascii_lowercase(), &graph, &args).unwrap());
+        assert_eq!(lowered, batches, "{name}");
     }
 }
 
@@ -107,7 +118,7 @@ fn every_registered_projection_kernel_runs_by_name_with_its_declared_columns() {
 fn metadata_procedures_and_unknown_names_are_refused() {
     let registry = registry();
     let context = context();
-    let graph = projection(&context);
+    let graph = projection(&context, Orientation::Outgoing);
     let args = registry
         .resolve("grust.algorithms.wcc")
         .unwrap()

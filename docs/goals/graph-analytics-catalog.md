@@ -581,16 +581,37 @@ M4 (Tier A), then per milestone.** Each is a minor version: new public API.
   first".
 - **D6 — group 35 decided at M9** (recommendation taken).
 
+## Notes from the build
+
+- **`NodeTable` (added with group 5) replaces P3's bespoke community type and
+  every other per-node result type.** A kernel returns a typed wrapper for Rust
+  callers (`KCore::core_values()`) and `into_table()` for the adapters; the Arrow
+  and row adapters have one arm for all of them. Communities are a `Node` column
+  (the canonical member's row). Pair-shaped results (node similarity, link
+  prediction) and edge-shaped results (bridges, spanning forest, flow) need the
+  same treatment once: a `PairTable` and an `EdgeTable`.
+- **`Meter`** (`meter.rs`) is the block-charging helper rule 5 asks for: `tick`
+  in the loop, `flush` before returning.
+- **Thread count comes from the caller's rayon pool**, not from
+  `ExecutionLimits`: adding a field there breaks 33 construction sites and every
+  downstream crate. A caller installs a pool; rule 4 makes the result identical
+  at any width, and tests run each parallel kernel in a one-thread and a
+  many-thread pool.
+- **Undirected-only kernels refuse a directed projection with a message that
+  contains "undirected".** Nutmeg's schema probe and Grust's catalog test both
+  rely on that word to retry on an undirected projection. Keep it.
+- `run_on_projection` matches names case-insensitively, as the registry does.
+
 ## Progress ledger
 
 Update in the same commit as the work. `—` not started, `wip`, `done <commit>`.
 
 | Item | State | Item | State | Item | State |
 | --- | --- | --- | --- | --- | --- |
-| P1 | done (Grust side) | P2 | — | P3 | — |
+| P1 | done (Grust and Nutmeg) | P2 | — | P3 | — |
 | P4 | — | P5 | — | P6 | — |
 | P7 | — | 1 Louvain | — | 2 Betweenness | — |
-| 3 Node similarity | — | 4 Triangles/LCC | — | 5 k-core | — |
+| 3 Node similarity | — | 4 Triangles/LCC | — | 5 k-core | done |
 | 6 Closeness/harmonic | — | 7 Leiden | — | 8 Label propagation | — |
 | 9 A\*/Bellman–Ford | — | 10 Eigenvector family | — | 11 Bridges family | — |
 | 12 Spanning forest | — | 13 Max flow | — | 14 FastRP | — |

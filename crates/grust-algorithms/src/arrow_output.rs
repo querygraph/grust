@@ -4,13 +4,16 @@ use std::sync::Arc;
 
 use arrow_array::{
     ArrayRef, RecordBatch,
-    builder::{BooleanBuilder, Float64Builder, LargeListBuilder, StringBuilder, UInt64Builder},
+    builder::{
+        BooleanBuilder, Float64Builder, Int64Builder, LargeListBuilder, StringBuilder,
+        UInt64Builder,
+    },
 };
 use grust_procedures::MemoryReservation;
 
 use crate::{
-    AlgorithmError, Components, Degrees, Distances, GraphProjection, NodeOrder, PageRank,
-    PathCursor, PathView, Result, ShortestPaths, TopologicalOrder,
+    AlgorithmError, Components, Degrees, Distances, GraphProjection, NodeOrder, NodeTable,
+    PageRank, PathCursor, PathView, Result, ShortestPaths, TableType, TableValue, TopologicalOrder,
 };
 
 /// A bounded Arrow batch retaining its query memory reservation. Clone this
@@ -44,6 +47,7 @@ enum Output {
     PageRank(PageRank),
     Degrees(Degrees),
     Paths(PathCursor),
+    Table(NodeTable),
 }
 
 /// Pull Arrow results in projection row order. Scalar batches honor the query's
@@ -89,6 +93,14 @@ impl PageRank {
         ArrowResultCursor::new(self.projection().clone(), Output::PageRank(self))
     }
 }
+impl NodeTable {
+    /// Convert without copying the result buffers; each batch is admitted.
+    /// Columns are `nodeId`, then the table's columns in declared order.
+    pub fn into_arrow_results(self) -> ArrowResultCursor {
+        ArrowResultCursor::new(self.projection().clone(), Output::Table(self))
+    }
+}
+
 impl Degrees {
     /// Transfer exact UInt64 `degree` and nullable Float64 `strength` columns.
     pub fn into_arrow_results(self) -> ArrowResultCursor {
@@ -175,11 +187,24 @@ impl ArrowResultCursor {
                 component_bytes = component_bytes
                     .saturating_add(graph.node_ids()[result.values()[index]].as_str().len());
             }
+            if let Output::Table(table) = output {
+                for column in 0..table.width() {
+                    if let TableValue::Node(id) = table.value(column, index) {
+                        component_bytes = component_bytes.saturating_add(id.as_str().len());
+                    }
+                }
+            }
         }
+        // The fixed overhead covers six arrays; a wider table admits its own.
+        let width_bytes = match output {
+            Output::Table(table) => count.saturating_mul(16).saturating_mul(table.width()),
+            _ => 0,
+        };
         let reservation = context.reserve(
             overhead(count)
                 .saturating_add(id_bytes)
-                .saturating_add(component_bytes),
+                .saturating_add(component_bytes)
+                .saturating_add(width_bytes),
         )?;
         utf8_size(id_bytes)?;
         utf8_size(component_bytes)?;
@@ -250,6 +275,55 @@ impl ArrowResultCursor {
                     ("converged", Arc::new(converged.finish())),
                     ("residual", Arc::new(residual.finish())),
                 ]);
+            }
+            Output::Table(table) => {
+                for column in 0..table.width() {
+                    context.charge_work(count)?;
+                    let (name, kind) = table.field(column);
+                    let array: ArrayRef = match kind {
+                        TableType::Integer => {
+                            let mut values = Int64Builder::with_capacity(count);
+                            for row in start..end {
+                                match table.value(column, row) {
+                                    TableValue::Integer(value) => values.append_value(value),
+                                    _ => values.append_null(),
+                                }
+                            }
+                            Arc::new(values.finish())
+                        }
+                        TableType::Number => {
+                            let mut values = Float64Builder::with_capacity(count);
+                            for row in start..end {
+                                match table.value(column, row) {
+                                    TableValue::Number(value) => values.append_value(value),
+                                    _ => values.append_null(),
+                                }
+                            }
+                            Arc::new(values.finish())
+                        }
+                        TableType::Boolean => {
+                            let mut values = BooleanBuilder::with_capacity(count);
+                            for row in start..end {
+                                match table.value(column, row) {
+                                    TableValue::Boolean(value) => values.append_value(value),
+                                    _ => values.append_null(),
+                                }
+                            }
+                            Arc::new(values.finish())
+                        }
+                        TableType::Node => {
+                            let mut values = StringBuilder::with_capacity(count, component_bytes);
+                            for row in start..end {
+                                match table.value(column, row) {
+                                    TableValue::Node(id) => values.append_value(id.as_str()),
+                                    _ => values.append_null(),
+                                }
+                            }
+                            Arc::new(values.finish())
+                        }
+                    };
+                    columns.push((name, array));
+                }
             }
             Output::Paths(_) | Output::Topology(_) => {
                 return Err(AlgorithmError::OutputContract(
