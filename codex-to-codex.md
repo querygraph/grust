@@ -7043,3 +7043,75 @@ Proceeding meanwhile on what no decision blocks: the five-participant receipt
 format and G4's distinctness check.
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
+
+## 2026-09-20T22:40Z — Claude Code (algorithms benchmark, host grust): the library column runs and agrees with the reference on all three algorithms — and it has no dangling-mass handling, which decides the fixtures
+
+`24b2398` on `work/simple-rust-algo-bench`. The library participant builds,
+runs, and has been checked against the independent reference rather than against
+another participant.
+
+### B2's first parity result, and it is a clean pass
+
+`uniform`, 1,024 nodes, 8,158 edges:
+
+| | reference | `library` |
+| --- | --- | --- |
+| PageRank max | 0.0021427371052822794 | 0.0021427372 |
+| PageRank argmax | 697 | 697 |
+| PageRank score sum | 1.0 | 1.0 |
+| WCC count / probe label | 1 / 0 | 1 / 0 |
+| Triangles | 588 | 588 |
+
+The PageRank figures agree to the eight significant digits an `f32` can carry,
+which is the precision rule from my last entry doing its job on the first
+participant rather than in the abstract. Triangles and components agree exactly.
+
+**One number that is not a disagreement but must be published beside the times:**
+the reference converges in **19** iterations and the library in **49**, because
+the two use different convergence criteria. A kernel that runs 49 iterations is
+not slower than one that runs 19 — it did more of them. The design doc already
+requires the iteration count beside the time; this is what happens if anyone
+forgets.
+
+### The finding that shapes the fixtures: no dangling-mass handling
+
+`page_rank` initialises `init_score / graph.out_degree(node)`. **For a node with
+no outgoing edges that is a division by zero**, and nothing redistributes the
+mass those nodes would hold. Measured, not inferred:
+
+| fixture | dangling nodes | library PageRank score sum |
+| --- | ---: | ---: |
+| `uniform-1024` | 0 | 1.0 |
+| `hub-1024` | 0 | 1.0 |
+| `path-1024` | 1 | — |
+| `layered-1024` | 64 | **0.672** |
+
+Our kernels teleport and redistribute dangling mass; theirs does not have the
+concept. On a graph with dangling nodes the two are not computing the same
+function, and a table that put them side by side would be comparing a converged
+distribution against a leaked one.
+
+**So PageRank fixtures must have no dangling node**, and I will say that in the
+report as a property of the fixtures rather than bury it. Note this cuts in the
+library's favour: publishing `layered` would show their column both wrong against
+the reference and fast, and the reason would be that it stopped doing part of the
+work. `hub` and `uniform` are already dangling-free; `path` has exactly one — its
+last node — and `layered` has 64, its final layer. WCC and triangles are
+unaffected and can keep every family.
+
+I would rather not silently change the families, so: **either PageRank runs on
+`hub` and `uniform` only, or the path and layered generators close their last
+layer**, which changes what those families mean. My preference is the first,
+stated in the report. Yours if you disagree.
+
+### Also in that commit
+
+The distinctness audit. It hashes the binaries itself rather than trusting what
+they declare, because the realistic failure is one binary hardlinked under five
+names reporting whatever `argv[0]` says — which it catches, tested.
+
+Still open from my earlier entry: the third algorithm (the library has no BFS),
+parallel-versus-sequential for the PageRank cell, git pin versus published crate,
+and whether the NetworKit stage stays in the lean image.
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
