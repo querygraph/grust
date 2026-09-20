@@ -20,7 +20,9 @@
 //! **Results are combined in index order, never in completion order**, so a
 //! kernel's answer is bit-for-bit the same at one worker and at sixteen, and
 //! identifiers and orderings a kernel emits come from node rows rather than
-//! from worker identity.
+//! from worker identity. The fixed reduction chunk is [`REDUCTION_CHUNK_LEN`];
+//! [`map_chunks_sized`] takes its own size, for a pass where grouping cannot
+//! change an answer.
 //!
 //! **The sequential path stays.** Below a measured floor a kernel runs its
 //! sequential code, because a pool costs more than it saves on small inputs,
@@ -105,15 +107,29 @@ pub(crate) fn workers_above(
     }
 }
 
-/// Number of items per chunk so that `workers` threads each get a few chunks,
-/// which keeps a skewed workload balanced without making chunks so small that
-/// the per-chunk work meter dominates.
+/// Items per chunk for a pass that writes each item's own output slot.
+///
+/// Sized from the worker count, so threads each get a few chunks and a skewed
+/// workload stays balanced. Safe here because the chunking cannot change any
+/// result: every item's value depends on that item alone.
 pub(crate) fn chunk_len(items: usize, workers: usize) -> usize {
     if workers <= 1 {
         return items.max(1);
     }
     items.div_ceil(workers.saturating_mul(4)).max(1024)
 }
+
+/// Items per chunk for a pass whose results are reduced.
+///
+/// Fixed, and deliberately not a function of the worker count. Folding
+/// per-chunk values in chunk order fixes the order of a float sum but not its
+/// grouping, and regrouping a float sum changes its low bits. A dangling mass
+/// summed in chunks of 4,096 is therefore the same number at one worker and at
+/// sixteen, which a chunk length derived from the worker count would not be —
+/// the defect `pagerank_is_bit_identical_at_every_worker_count_with_dangling_nodes`
+/// reproduces. The constant matches the catalog kernels' `spectral.rs`, whose
+/// residuals are bit-identical across widths.
+pub(crate) const REDUCTION_CHUNK_LEN: usize = 4096;
 
 /// Combine per-chunk results in chunk order, so the combination is independent
 /// of the order in which the chunks finished.
@@ -150,14 +166,13 @@ pub(crate) fn for_each_chunk<T: Send>(
         return Ok(());
     }
     use rayon::prelude::*;
+    // One meter per worker task rather than per chunk: registering a meter takes
+    // a lock, and a fixed reduction chunk makes chunks many and small.
     pool(workers)?.install(|| {
-        output
-            .par_chunks_mut(chunk)
-            .enumerate()
-            .try_for_each(|(index, slice)| {
-                let mut meter = context.work_meter();
-                body(index * chunk, slice, &mut meter)
-            })
+        output.par_chunks_mut(chunk).enumerate().try_for_each_init(
+            || context.work_meter(),
+            |meter, (index, slice)| body(index * chunk, slice, meter),
+        )
     })
 }
 
@@ -181,13 +196,14 @@ pub(crate) fn for_each_chunk<T>(
 /// Map each chunk of `items` to one value, in parallel when `workers > 1`, and
 /// return the values in chunk order for an ordered reduction.
 #[cfg(feature = "parallel")]
-pub(crate) fn map_chunks<T: Send + Sync, R: Send>(
+pub(crate) fn map_chunks_sized<T: Send + Sync, R: Send>(
     context: &ExecutionContext,
     workers: usize,
     items: &[T],
+    chunk: usize,
     body: impl Fn(usize, &[T], &mut grust_procedures::WorkMeter) -> crate::Result<R> + Send + Sync,
 ) -> crate::Result<Vec<R>> {
-    let chunk = chunk_len(items.len(), workers);
+    let chunk = chunk.max(1);
     if workers <= 1 {
         let mut meter = context.work_meter();
         return items
@@ -201,23 +217,24 @@ pub(crate) fn map_chunks<T: Send + Sync, R: Send>(
         items
             .par_chunks(chunk)
             .enumerate()
-            .map(|(index, slice)| {
-                let mut meter = context.work_meter();
-                body(index * chunk, slice, &mut meter)
-            })
+            .map_init(
+                || context.work_meter(),
+                |meter, (index, slice)| body(index * chunk, slice, meter),
+            )
             .collect()
     })
 }
 
 #[cfg(not(feature = "parallel"))]
-pub(crate) fn map_chunks<T, R>(
+pub(crate) fn map_chunks_sized<T, R>(
     context: &ExecutionContext,
     workers: usize,
     items: &[T],
+    chunk: usize,
     body: impl Fn(usize, &[T], &mut grust_procedures::WorkMeter) -> crate::Result<R>,
 ) -> crate::Result<Vec<R>> {
     let _ = workers;
-    let chunk = chunk_len(items.len(), 1);
+    let chunk = chunk.max(1);
     let mut meter = context.work_meter();
     items
         .chunks(chunk)
@@ -226,12 +243,38 @@ pub(crate) fn map_chunks<T, R>(
         .collect()
 }
 
+/// Map each chunk of `items` to one value and return the values in chunk order,
+/// for a caller that reduces them. The grouping is fixed by
+/// [`REDUCTION_CHUNK_LEN`], so a float reduction is identical at every worker
+/// count; a pass whose results do not depend on grouping can pick its own chunk
+/// size with [`map_chunks_sized`].
+pub(crate) fn map_chunks<T: Send + Sync, R: Send>(
+    context: &ExecutionContext,
+    workers: usize,
+    items: &[T],
+    body: impl Fn(usize, &[T], &mut grust_procedures::WorkMeter) -> crate::Result<R> + Send + Sync,
+) -> crate::Result<Vec<R>> {
+    map_chunks_sized(context, workers, items, REDUCTION_CHUNK_LEN, body)
+}
+
 /// One pool per worker count, built on first use and reused afterwards.
 ///
 /// A pool per kernel call would pay thread creation on every query; a pool
 /// sized to the machine would ignore the execution's limit. Keying the cache by
-/// worker count gives each distinct limit its own bounded pool, shared by every
-/// query that asks for that many threads.
+/// worker count gives each distinct limit its own bounded pool.
+///
+/// Two things follow, and both are deliberate. Pools are shared: two executions
+/// that each ask for eight workers run on the same eight threads, so the bound
+/// is per distinct count per process rather than per query — which is what an
+/// embedded server wants, since a hundred concurrent queries asking for eight
+/// each should not start eight hundred threads. And the cache is capped, so an
+/// embedder passing a user-supplied count cannot accumulate a pool per value:
+/// past [`MAX_CACHED_POOLS`] distinct counts the cache is emptied and refilled.
+/// Emptying it does not stop a pool that is running; its last user drops it.
+/// Distinct worker counts whose pools are kept alive between queries.
+#[cfg(feature = "parallel")]
+const MAX_CACHED_POOLS: usize = 8;
+
 #[cfg(feature = "parallel")]
 fn pool(workers: usize) -> crate::Result<std::sync::Arc<rayon::ThreadPool>> {
     use std::collections::HashMap;
@@ -253,6 +296,9 @@ fn pool(workers: usize) -> crate::Result<std::sync::Arc<rayon::ThreadPool>> {
         .build()
         .map_err(|error| ProcedureError::Provider(Box::new(error)))?;
     let pool = Arc::new(pool);
+    if pools.len() >= MAX_CACHED_POOLS {
+        pools.clear();
+    }
     pools.insert(workers, Arc::clone(&pool));
     Ok(pool)
 }

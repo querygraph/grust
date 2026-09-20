@@ -57,6 +57,10 @@ struct Shared {
     work_units: AtomicUsize,
     cancelled: AtomicBool,
     charges_since_deadline_read: AtomicUsize,
+    /// Unspent balances of the live work meters, so a meter that runs out can
+    /// take back what idle ones hold. Touched only when a meter is created,
+    /// dropped, or refused, never on a charge.
+    grants: Mutex<Vec<Arc<AtomicUsize>>>,
     state: Mutex<State>,
 }
 
@@ -98,6 +102,7 @@ impl ExecutionContext {
             work_units: AtomicUsize::new(0),
             cancelled: AtomicBool::new(false),
             charges_since_deadline_read: AtomicUsize::new(0),
+            grants: Mutex::new(Vec::new()),
             state: Mutex::new(State::default()),
         })))
     }
@@ -187,10 +192,47 @@ impl ExecutionContext {
     /// Cancellation is still observed per charge. The deadline is sampled per
     /// block, which is the same cadence per worker as a single-threaded charge.
     pub fn work_meter(&self) -> WorkMeter {
+        let balance = Arc::new(AtomicUsize::new(0));
+        // Registration is per meter, not per charge: a kernel creates one per
+        // chunk of work, so this lock is taken a handful of times per region.
+        self.0
+            .grants
+            .lock()
+            .unwrap_or_else(|poison| poison.into_inner())
+            .push(Arc::clone(&balance));
         WorkMeter {
             context: self.clone(),
-            granted: 0,
+            balance,
         }
+    }
+
+    /// Return every other live meter's unspent grant to the budget, and report
+    /// how much came back.
+    fn reclaim_grants(&self, own: &Arc<AtomicUsize>) -> usize {
+        let grants = self
+            .0
+            .grants
+            .lock()
+            .unwrap_or_else(|poison| poison.into_inner());
+        let mut reclaimed = 0usize;
+        for balance in grants.iter() {
+            if Arc::ptr_eq(balance, own) {
+                continue;
+            }
+            reclaimed = reclaimed.saturating_add(balance.swap(0, Ordering::Relaxed));
+        }
+        drop(grants);
+        self.refund_work(reclaimed);
+        reclaimed
+    }
+
+    fn release_meter(&self, own: &Arc<AtomicUsize>) {
+        self.refund_work(own.swap(0, Ordering::Relaxed));
+        self.0
+            .grants
+            .lock()
+            .unwrap_or_else(|poison| poison.into_inner())
+            .retain(|balance| !Arc::ptr_eq(balance, own));
     }
 
     /// Charge work before performing it. Counter overflow is a budget failure.
@@ -384,7 +426,9 @@ impl ExecutionContext {
 /// [`ExecutionContext::charge_work`].
 pub struct WorkMeter {
     context: ExecutionContext,
-    granted: usize,
+    /// Admitted but unspent units. Shared, not local, because a meter that runs
+    /// out must be able to take back what idle meters are sitting on.
+    balance: Arc<AtomicUsize>,
 }
 
 impl WorkMeter {
@@ -395,27 +439,73 @@ impl WorkMeter {
     /// charge would exceed.
     pub fn charge(&mut self, units: usize) -> Result<()> {
         self.context.check_cancelled()?;
-        if let Some(left) = self.granted.checked_sub(units) {
-            self.granted = left;
-            return Ok(());
+        // The balance can be taken by another meter between the load and the
+        // exchange, so this retries rather than subtracting blindly.
+        let mut held = self.balance.load(Ordering::Relaxed);
+        while held >= units {
+            match self.balance.compare_exchange_weak(
+                held,
+                held - units,
+                Ordering::Relaxed,
+                Ordering::Relaxed,
+            ) {
+                Ok(_) => return Ok(()),
+                Err(observed) => held = observed,
+            }
         }
         self.admit(units)
     }
 
-    /// Admit a block, or exactly what was asked for when a block does not fit.
+    /// Admit a block; failing that, exactly what was asked for; failing that,
+    /// take back every idle grant and try once more.
+    ///
+    /// The last step is what keeps admission independent of the number of
+    /// meters. Without it, a block granted to a meter that has stopped charging
+    /// counts against the budget until that meter drops, so work that fits
+    /// could be refused because of who else exists — the failure the contract
+    /// test `an_idle_meters_unspent_block_does_not_refuse_work_that_fits`
+    /// reproduces.
     #[cold]
     fn admit(&mut self, units: usize) -> Result<()> {
         self.context.check_state(DeadlineCheck::Sampled)?;
-        let wanted = units.saturating_add(WORK_BLOCK_UNITS);
-        if wanted > units && self.context.admit_work(wanted - self.granted).is_ok() {
-            self.granted = wanted - units;
-            return Ok(());
+        // Three attempts: grant, exact, and one more of each after reclaiming.
+        // A grant in transit inside another meter's own admission cannot be
+        // reclaimed, so a retry covers that window instead of a lock.
+        for attempt in 0..3 {
+            let held = self.balance.swap(0, Ordering::Relaxed);
+            let needed = units.saturating_sub(held);
+            let block = needed.saturating_add(WORK_BLOCK_UNITS);
+            // A block on top of the need, while the budget has room for one.
+            // The only failure `admit_work` reports is an exceeded budget, which
+            // is exactly the case the next attempt handles, so it is discarded
+            // here rather than returned.
+            if block > needed && self.context.admit_work(block).is_ok() {
+                self.balance
+                    .fetch_add(held + block - units, Ordering::Relaxed);
+                return Ok(());
+            }
+            // Exactly what this charge needs, so the budget fails at the unit
+            // that exceeds it rather than a block early.
+            match self.context.admit_work(needed) {
+                Ok(()) => {
+                    self.balance
+                        .fetch_add(held + needed - units, Ordering::Relaxed);
+                    return Ok(());
+                }
+                Err(exceeded) => {
+                    // Give back this meter's own idle remainder first, then take
+                    // back what other idle meters hold, and try again.
+                    self.context.refund_work(held);
+                    if attempt == 2 || self.context.reclaim_grants(&self.balance) == 0 {
+                        return Err(exceeded);
+                    }
+                }
+            }
         }
-        // Near the limit, spend the remaining budget one charge at a time so
-        // that the failure happens at the same unit as it would at one thread.
-        self.context.admit_work(units - self.granted)?;
-        self.granted = 0;
-        Ok(())
+        Err(ProcedureError::BudgetExceeded {
+            resource: "work",
+            limit: self.context.0.limits.work_units,
+        })
     }
 
     /// Shared execution state, for an exact poll or a nested reservation.
@@ -439,8 +529,7 @@ impl WorkMeter {
 
 impl Drop for WorkMeter {
     fn drop(&mut self) {
-        self.context.refund_work(self.granted);
-        self.granted = 0;
+        self.context.release_meter(&self.balance);
     }
 }
 

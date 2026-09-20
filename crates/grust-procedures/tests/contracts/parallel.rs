@@ -66,7 +66,7 @@ fn a_budget_one_unit_short_fails_at_one_worker() {
     let (failures, usage) = charge_everywhere(&execution, PER_WORKER);
     assert_eq!(failures, 1, "exactly the worker that ran out should fail");
     assert!(
-        usage.work_units <= total - 1,
+        usage.work_units < total,
         "spent {} of a {} unit budget",
         usage.work_units,
         total - 1

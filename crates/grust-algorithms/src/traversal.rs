@@ -153,8 +153,15 @@ fn levels(graph: &GraphProjection, roots: &[usize], workers: usize) -> Result<Di
         } else {
             workers
         };
-        let lists =
-            crate::parallel::map_chunks(context, level_workers, &frontier, |_, slice, meter| {
+        // A frontier's expansion writes each discovered node once, so its
+        // chunking cannot change the answer and may follow the worker count.
+        let chunk = crate::parallel::chunk_len(frontier.len(), level_workers);
+        let lists = crate::parallel::map_chunks_sized(
+            context,
+            level_workers,
+            &frontier,
+            chunk,
+            |_, slice, meter| {
                 let mut discovered: Vec<usize> = Vec::new();
                 for &node in slice {
                     let arcs = offsets[node]..offsets[node + 1];
@@ -176,7 +183,8 @@ fn levels(graph: &GraphProjection, roots: &[usize], workers: usize) -> Result<Di
                     }
                 }
                 Ok(discovered)
-            })?;
+            },
+        )?;
         frontier.clear();
         for list in &lists {
             frontier.try_reserve(list.len())?;
