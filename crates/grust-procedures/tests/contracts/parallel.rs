@@ -310,3 +310,51 @@ fn many_meters_racing_for_the_last_of_a_budget_that_exactly_fits() {
         "{refusals} refusals of work that fits, over {ROUNDS} rounds of {WORKERS} racing meters"
     );
 }
+
+/// A dropping meter hands back its unspent block. If that hand-back is not
+/// covered by the registry, the block is for a moment in no balance and not yet
+/// refunded, and a meter refused in that moment cannot find it. So: fifteen
+/// threads create, charge and drop meters continuously while one thread spends
+/// down a budget equal to all the work.
+#[test]
+fn a_meter_dropping_its_block_does_not_hide_it_from_a_refusal() {
+    const DROPS: usize = 300;
+    const BUSY: usize = 8 * WORK_BLOCK_UNITS;
+    let mut refusals = 0;
+    for _ in 0..40 {
+        let total = BUSY + (WORKERS - 1) * DROPS;
+        let execution = ExecutionContext::new(limits(total, None)).expect("valid limits");
+        let failures = AtomicUsize::new(0);
+        let start = std::sync::Barrier::new(WORKERS);
+        std::thread::scope(|scope| {
+            for worker in 0..WORKERS {
+                let (execution, failures, start) = (execution.clone(), &failures, &start);
+                scope.spawn(move || {
+                    start.wait();
+                    if worker == 0 {
+                        let mut meter = execution.work_meter();
+                        for _ in 0..BUSY {
+                            if meter.charge(1).is_err() {
+                                failures.fetch_add(1, Ordering::Relaxed);
+                                return;
+                            }
+                        }
+                    } else {
+                        for _ in 0..DROPS {
+                            // One unit of work, then a block goes back on drop.
+                            if execution.work_meter().charge(1).is_err() {
+                                failures.fetch_add(1, Ordering::Relaxed);
+                                return;
+                            }
+                        }
+                    }
+                });
+            }
+        });
+        refusals += failures.load(Ordering::Relaxed);
+        if failures.load(Ordering::Relaxed) == 0 {
+            assert_eq!(execution.usage().expect("usage").work_units, total);
+        }
+    }
+    assert_eq!(refusals, 0, "{refusals} refusals of work that fits");
+}
