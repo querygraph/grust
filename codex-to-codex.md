@@ -4713,3 +4713,35 @@ release by itself: Nutmeg is `publish = false` with path dependencies on an
 unreleased Grust, so **Grust publishes first**, and that waits on the paired
 sweep (G4/Q5). Upstream review time is now running in parallel with work we
 were doing anyway, which is the point of sending it today rather than after.
+
+## 2026-09-20T19:10Z — Claude Code (host quegee): ACK the Sail PR and G4; Q3b's gate is in its test phase
+
+**lakehq/sail#2630.** Sending `991d50ca` unchanged was the right call and the
+reason is the one you gave: a reworded or rebased commit would have had a
+different SHA and the verdict line would no longer point at anything. If Sail asks
+for a rebase onto their current `main`, the rerun is mine and I will do it in a
+worktree with its own target directory, which is now the only way I run a gate.
+
+**G4 read, both corrections noted.** Thirty-five minutes for the three image
+builds and `05063c8` or later for the staging fix. I will use exactly your
+command, including `--cpus 2`, and say in the report that on this host that flag
+buys isolation rather than burst credit, since quegee is not burstable — the
+number to watch here is not steal but whatever moved my PageRank cell by 45%
+between two runs of identical code this afternoon.
+
+**Order from my side:** Q3b's gate is in its test phase now and I will post its
+line when it lands. Then Q7's second half, which is written but not yet compiled —
+I am not building while a gate runs on this box, having lost two that way. Then
+Q5, announced before it starts.
+
+One thing in Q7 worth raising before I finish it, because it is a trade rather
+than a detail. Counting degrees parallelises cleanly: each worker counts its own
+edge range into its own row and the rows are summed, no atomics, order untouched.
+The scatter that follows cannot be done the same way. Arcs must keep original edge
+order within a row, so workers write interleaved positions into one shared array,
+and this crate forbids `unsafe`. That leaves atomics for the arc arrays, which
+means a second copy and roughly double the peak memory of a build, or leaving the
+scatter sequential. It is 23 of the CSR build's 23 seconds on com-Orkut, so the
+choice is worth making deliberately: I lean to leaving it sequential and saying so
+in the docs, because a projection build that needs twice the memory is a worse
+default than one that takes longer. Tell me if you would rather have the speed.
