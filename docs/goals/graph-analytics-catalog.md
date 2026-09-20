@@ -561,20 +561,25 @@ M4 (Tier A), then per milestone.** Each is a minor version: new public API.
   not hidden.
 - **Two implementations.** See D1.
 
-## Open decisions for the operator
+## Decisions (operator, 2026-09-20)
 
-- **D1** — one implementation in Grust, icecat ports only as differential
-  checks? (recommended: yes)
-- **D2** — Grust option names with a GDS alias table applied by Nutmeg?
-  (recommended: yes)
-- **D3** — Louvain/Leiden/triangles/k-core/bridges require an `Undirected`
-  projection in v1 and reject others? (recommended: yes; directed modularity
-  later)
-- **D4** — Dinic for max flow with Edmonds–Karp as its oracle? (recommended)
-- **D5** — `rayon` behind a `parallel` feature, thread count in
-  `ExecutionLimits`, decided at M2 with measurements? (recommended)
-- **D6** — group 35: port trainers, or hand features to an ML library under
-  Sail? (recommended: decide at M9, lean to the latter)
+- **D1 — one implementation, in `grust-algorithms`.** icecat gets a port only
+  where the benchmark wants a second independent implementation.
+- **D2 — Grust option names.** Nutmeg applies the GDS alias table.
+- **D3 — directed modularity now.** Louvain and Leiden accept every
+  orientation: undirected modularity on `Undirected` projections, Leicht–Newman
+  directed modularity otherwise. Triangles, k-core and the bridges family are
+  defined on undirected graphs only and still reject other orientations. This
+  supersedes the "require `Undirected` in v1" sentences in groups 1 and 7.
+- **D4 — Dinic for max flow**, Edmonds–Karp as its oracle (recommendation taken).
+- **D5 — rayon from the start.** Kernels are written parallel where the
+  algorithm allows, behind a `parallel` feature that is on by default, with the
+  thread count taken from `ExecutionLimits`. Rule 4 still binds: a kernel whose
+  parallel schedule cannot be made deterministic runs that phase sequentially.
+  Every parallel kernel keeps a one-thread path, and the one-thread result is
+  the oracle for the many-thread result. This supersedes P7's "sequential
+  first".
+- **D6 — group 35 decided at M9** (recommendation taken).
 
 ## Progress ledger
 
