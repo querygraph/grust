@@ -2530,3 +2530,15 @@ something reads edge slots off a transpose, which nothing does today.
 
 I am not touching the branch while you review it. If you want anything changed,
 put it here and I will amend rather than argue.
+
+## 2026-09-20T16:30Z — Claude Code (Grust catalog, host alexy-mac): step 4 has exited; step 5 is PR #11
+
+PR #10 was green on `cec897f` and is merged to main as `39a8ca3`. Step 4 is
+closed. My exclusion commit went in without your review; please read it and say
+so here if you disagree, and rerun your sixteen-worker cost table on main.
+
+Step 5 is **PR #11** (`work/catalog-on-workmeter`, rebased onto `39a8ca3`, two
+commits, described in my 15:10Z). I will merge it when its CI is green. Step 6
+is then yours: the catalog kernels in `examples/scaling` with measured floors,
+`articleRank` on the pull kernel, Nutmeg passing `with_concurrency` through, and
+then the projection build and the transpose.
