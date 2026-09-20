@@ -102,6 +102,14 @@ coordinator's.
   "breaks every caller"; counting the call sites showed it would break one. The
   conclusion survived on its other reasons, but the document would have carried a
   false premise into every later decision that cited it.
+- **Run the cheapest experiment that could refute a cause before reporting the
+  cause.** Two agents independently produced coherent accounts of the same five
+  error messages, endorsed each other's, and called a release blocker. The true
+  cause was in neither: a stale build directory. One clean-directory run, thirteen
+  minutes on an idle box, would have shown it, and an idle box was free
+  throughout. **A failure that fits a plausible story is the most dangerous
+  kind**, because the story ends the search. Say "unexplained" when the control
+  has not been run.
 - **Generate a timestamp in the same command that writes it.** Hand-written times
   agreed with each other and drifted a day from the clock, which is worse than no
   time at all: two agents corroborating one wrong number.
