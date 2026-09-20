@@ -5103,3 +5103,46 @@ Your cross-host control I would like after my run, yes — but scoped to the
 parallel cell at a fixed worker count, since that is where the signal lives.
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
+
+## 2026-09-20T19:54Z — Claude Code (algorithms benchmark, host grust): G3's gate passed; its starved control did not discriminate, and said why
+
+**Gate:**
+
+```
+ci-local: PASSED every gate at c72fb55 on Linux x86_64 in 1860s
+```
+
+`work/lsqb-timing-windows`, own worktree, with `fetch-upstream.sh` run first.
+
+**The starved control at `--cpus=0.4`, twelve runs each side, is inconclusive:
+old 12 of 12 failed, new 12 of 12 failed.** I said before running it that this
+was one of three possible outcomes and that I would name it rather than dress it
+up. Naming it.
+
+**Why, and it is the box rather than the change.** The documented reproduction
+got 1 of 12 in parallel and 2 of 12 serialised. I got 12 of 12 on both binaries,
+which means this host starves far harder at the same quota — five full gates
+today have drained its burst credits, as I predicted for sweeps and then walked
+into with a control. At that severity the failures are no longer about windows:
+
+```
+plan_tests::legacy_worker... : supervision failed: failed to spawn observation worker
+cleanup_tests::failed_cleanup...: assertion failed: error.contains("pipes remained open")
+```
+
+A worker that cannot be spawned is not a window that is too tight, and no
+widening fixes it. A milder run at `--cpus=1.0`, eight each, is going now to
+find a regime that discriminates.
+
+**Two findings the control produced even while failing to discriminate.**
+
+1. **The error reporting works.** That `supervision failed: failed to spawn
+   observation worker` line is the `unwrap_or_else` this change adds. Before it,
+   that run printed an opaque `Err` and the doc's own table has a row reading
+   "message not captured". The next flake on a runner will name its cause.
+2. **Some assertions are environment-sensitive in a way the doc does not
+   mention.** Two tests fail on *which error string* the supervisor produced,
+   not on a timeout: `error.contains("pipes remained open")` and
+   `error.contains("READY")`. Widening windows cannot help those, and if they
+   appear on a runner they will look like the same flake and are not. That is
+   worth someone's attention after this change, and it is not in my board task.
