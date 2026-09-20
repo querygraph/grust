@@ -6745,3 +6745,113 @@ Next entry from me will either be the image building or a question. Nothing else
 of mine is running; #23 remains open.
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
+
+## 2026-09-20T22:25Z — quegee: Q5 DONE. #11 is a large win on three families and a small loss on one, #12 is flat, and the sweep cannot see the parallel work at all
+
+Sweep ran 22:22:08Z to 22:22:50Z, 384 samples across 8 cells, **0 failures**, every
+sample validated against the C++ reference inside the sweep.
+
+**Hypervisor steal during the sweep: 1 tick, `3688` to `3689`.** Above the tables
+as asked, and it is as close to nothing as the counter can express.
+
+Provenance: harness `8698a13`, `git status --porcelain` empty, pins `0f64066`
+(#13) `ad5b22d` (#11) `0995224` (#12) `cee2693` (main), Turso `9a082e5bc`, all four
+stager hashes `ee26f86667f38160…` and all four lock hashes `c5de4956aaae5e41…`,
+so the four pins resolved identically and the deltas are not a dependency bump.
+
+### Every cell, median ± MAD in milliseconds, kernel timer
+
+| participant | algorithm | family | #13 `0f64066` | #11 `ad5b22d` | #12 `0995224` | main `cee2693` | #11/#13 | #12/#11 | main/#12 |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| direct | dijkstra | path | 67.554 ± 0.190 | 70.401 ± 0.125 | 70.474 ± 0.151 | 70.344 ± 0.030 | 1.042 | 1.001 | 0.998 |
+| direct | dijkstra | hub | 2.040 ± 0.007 | 1.694 ± 0.008 | 1.703 ± 0.010 | 1.695 ± 0.003 | 0.830 | 1.006 | 0.995 |
+| direct | dijkstra | layered | 2.290 ± 0.002 | 2.025 ± 0.014 | 2.037 ± 0.003 | 2.025 ± 0.004 | 0.884 | 1.006 | 0.994 |
+| direct | dijkstra | uniform | 2.465 ± 0.002 | 1.942 ± 0.017 | 1.958 ± 0.014 | 1.940 ± 0.011 | 0.788 | 1.008 | 0.991 |
+| direct | pagerank | path | 19.185 ± 0.016 | 19.139 ± 0.002 | 19.143 ± 0.011 | 19.149 ± 0.020 | 0.998 | 1.000 | 1.000 |
+| direct | pagerank | hub | 25.355 ± 0.008 | 25.328 ± 0.006 | 25.330 ± 0.008 | 25.347 ± 0.004 | 0.999 | 1.000 | 1.001 |
+| direct | pagerank | layered | 33.177 ± 0.035 | 33.097 ± 0.011 | 33.093 ± 0.017 | 33.157 ± 0.013 | 0.998 | 1.000 | 1.002 |
+| direct | pagerank | uniform | 13.899 ± 0.019 | 13.829 ± 0.005 | 13.848 ± 0.002 | 13.963 ± 0.093 | 0.995 | 1.001 | 1.008 |
+| arrow | dijkstra | path | 588.929 ± 0.106 | 592.868 ± 0.514 | 592.615 ± 0.414 | 579.938 ± 0.637 | 1.007 | 1.000 | 0.979 |
+| arrow | dijkstra | hub | 34.653 ± 0.130 | 33.864 ± 0.364 | 34.229 ± 0.419 | 33.830 ± 0.231 | 0.977 | 1.011 | 0.988 |
+| arrow | dijkstra | layered | 42.583 ± 0.583 | 41.929 ± 0.258 | 42.048 ± 0.216 | 41.747 ± 0.071 | 0.985 | 1.003 | 0.993 |
+| arrow | dijkstra | uniform | 38.128 ± 0.339 | 37.054 ± 0.116 | 37.067 ± 0.153 | 36.961 ± 0.100 | 0.972 | 1.000 | 0.997 |
+| arrow | pagerank | path | 19.565 ± 0.015 | 19.548 ± 0.002 | 19.554 ± 0.007 | 20.593 ± 0.043 | 0.999 | 1.000 | 1.053 |
+| arrow | pagerank | hub | 25.809 ± 0.020 | 25.743 ± 0.026 | 25.733 ± 0.010 | 25.777 ± 0.025 | 0.997 | 1.000 | 1.002 |
+| arrow | pagerank | layered | 33.573 ± 0.015 | 33.491 ± 0.006 | 33.507 ± 0.014 | 33.550 ± 0.023 | 0.998 | 1.000 | 1.001 |
+| arrow | pagerank | uniform | 14.306 ± 0.004 | 14.228 ± 0.002 | 14.225 ± 0.006 | 14.410 ± 0.025 | 0.995 | 1.000 | 1.013 |
+
+### #11 against #13: a 12–21% win on three families, a 4.2% loss on the fourth
+
+**This is the result Q5 existed to get, and it is larger than anyone predicted.**
+Putting the sequential kernels on a batched `WorkMeter` made `dijkstra-full`
+faster by **17.0% on hub** (2.040 → 1.694), **11.6% on layered** (2.290 → 2.025)
+and **21.2% on uniform** (2.465 → 1.942). The MADs are two to three orders of
+magnitude below the differences, so none of this is noise.
+
+**`path` moves the other way: 4.2% slower** (67.554 → 70.401). One family out of
+four, and the one whose shape is a single long chain, so the kernel does the most
+iterations with the least work in each — exactly where a per-block charge has the
+fewest units to amortise over. I would not file it as a defect; I would file it as
+the shape of the trade, and it is why the table above has four families in it.
+
+`pagerank` is flat across the same change, 0.995–0.999 on both participants: it
+charges per node rather than per arc, so there was less charging to batch.
+
+### #12 against #11: flat, everywhere, on both participants
+
+0.998 to 1.011 across all sixteen rows, with most cells inside 1.000–1.006 and
+MADs that overlap. **Lock-free memory accounting neither helped nor hurt this
+workload measurably.** That is a real answer rather than an absent one: #12 was
+right for the reason it was written — the exactness hole under contention — and it
+costs nothing when nothing contends, which at concurrency 1 is always.
+
+### main against #12: flat except one cell, which I cannot explain
+
+Fifteen of sixteen rows are within ±1.3%. The exception is **`path` / `pagerank` /
+`arrow`, 5.3% slower** (19.554 → 20.593, MAD 0.043 — real, not noise). The phase
+breakdown puts it in the kernel timer alone: loading, preparation, conversion,
+projection and serialization are all flat to three decimals.
+
+I have not isolated it. The `#12`..`main` interval is four commits — `1323548`,
+`62bc668`/`fec9259` (#18, Bellman-Ford and signed weights), `3569adb`, and
+`cee2693` — and separating them needs two more pins and twenty minutes. It is one
+cell of sixteen, it is 1.04 ms, and the same cell on the `direct` participant is
+flat, so I am reporting it as **unexplained** and will bisect it if either of you
+wants it before the release rather than after.
+
+### The limitation, which matters more than any row above
+
+**This sweep runs only sequential kernels, so it says nothing about the parallel
+work.** The participants build their `ExecutionContext` without ever calling
+`with_concurrency`, and their own receipt declares `"concurrency": 1`. Every
+parallel entry point in grust-algorithms goes through
+`parallel::workers_above`, which ends in `context.concurrency_requested()` — `None`
+unless concurrency was asked for. So no rayon path executes in any of the four
+variants, at any size, in any family.
+
+Three consequences, and the third is a correction of my own:
+
+1. **The deltas above are honest and narrow.** They price the metering change on
+   the sequential path, which is exactly what #11 and #12 changed. Q5 answered its
+   question.
+2. **Nothing here may be quoted about parallel speedups.** A release post that
+   cites these numbers as "the benchmark" would be describing single-threaded
+   kernels. The parallel claims have to come from `examples/scaling`, with the
+   counterbalanced protocol, and they should be labelled as a different
+   measurement rather than folded into this table.
+3. **I withdraw the reason I gave for "every absolute from `cee2693` only".** I
+   wrote that the three historical pins all carry `bca732c`, so their PageRank
+   absolutes are measurements of a regression. The rule is still the right rule —
+   quote main — but that reason does not apply here: `bca732c`'s regression is in
+   the parallel pull, and no pin in this sweep ever entered it. The historical
+   pins' PageRank absolutes are sound for what this sweep measures. I should have
+   checked which code path the participants take before explaining a caveat, which
+   is the third time today that checking the path would have saved me a sentence.
+
+Evidence: `~/src/aga-q5/.measurements/step6-pairing/metering/` — `results.md`,
+`summary.json`, `samples.jsonl` and `sweep-processes.jsonl`, with every warmup and
+every failure retained.
+
+**Q5 exits.** The box is free and quiet; nothing of mine is running.
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
