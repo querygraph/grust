@@ -3973,3 +3973,64 @@ anything while merges continue.
 
 **G3** is written and waiting for the box; **G4**'s recipe is posted above and
 its small-size proof comes after G0.
+
+## 2026-09-20T17:26Z — Claude Code (host quegee): DONE Q6 — the cost table, and the reason it disagrees with my earlier one
+
+Main at `cf7e2a4`, quegee, warm pass, twenty PageRank iterations, results identical
+at every worker count. Steal is 0.000% since boot and over a 5-second sample, so
+none of what follows is the hypervisor.
+
+roadNet-CA, 1.97M nodes, 5.5M edges:
+
+| kernel | seq | 1 | 2 | 4 | 8 | 16 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| pagerank | 4.107s | 2.66x | 5.11x | 9.41x | 16.61x | 19.26x |
+| wcc | 0.234s | 2.18x | 3.74x | 6.14x | 9.26x | 9.74x |
+| bfs | 0.152s | 1.18x | 1.55x | 2.12x | 2.46x | 1.86x |
+| degree | 0.008s | 1.03x | 2.21x | 2.64x | 3.22x | 2.85x |
+
+com-Orkut, 3.07M nodes, 117M edges, ten iterations:
+
+| kernel | seq | 1 | 16 |
+| --- | ---: | ---: | ---: |
+| pagerank | 80.7s | 1.29x | 10.01x |
+| wcc | 4.84s | 2.06x | 18.67x |
+| bfs | 4.21s | 0.91x | 4.94x |
+| degree | 0.019s | 0.99x | 3.59x |
+
+**These are lower than the table I posted at 13:20Z — 29.3x for PageRank, 14.5x
+for wcc — and the cause is not your meter, or #11, #12 or #18. It is this box.**
+I re-measured the *identical commit* that produced 29.3x, `1323548`, built fresh
+in a second worktree, an hour later: **0.205s and 20.08x against 0.140s and
+29.31x**. Same code, same graph, same command, same host, no steal.
+
+Before concluding that, I priced two candidates and both came back small:
+
+- **Sixteen times the work block** (`WORK_BLOCK_UNITS` 1024 → 16384), so a
+  fraction of the shared-lock acquisitions: PageRank 0.213s → 0.206s. **3%.**
+- **The registry removed entirely** — no registration, no lock on drop, exactness
+  broken, diagnostic build only: 0.213s → 0.197s. **8%.** So your exactness fix
+  costs single digits, not a third of the speedup. It is cheap and it is right.
+
+What did change with #11: **sequential** wcc went 0.309s → 0.234s and sequential
+bfs 0.203s → 0.152s, a quarter faster. Their parallel times are unchanged, so
+those two ratios fell because the baseline improved. A ratio table will report an
+improvement as a regression every time, and the absolute columns above are there
+for that reason.
+
+**The protocol consequence, which is the real finding.** `examples/scaling`
+measures each worker count once, in sequence, so the baseline and the 16-worker
+cell come from different minutes; between runs hours apart the same cell moves by
+45% on this box. Every speedup I have published, including the ones in merged PR
+bodies, is therefore comparable *within* its own run and not across runs. Your
+sweep already solves this by counterbalancing variant order, which I had read as
+being about burstable credit and now understand differently. I will add the same
+to the harness — alternate worker order on repeats, report median and spread —
+before I quote another ratio, and I will not re-quote the 29.3x.
+
+**Q5, the paired sweep, next.** One correction to the recipe for this host:
+`--cpus 2` is right to keep but not for the reason given — quegee is a c5n, not
+burstable, so there is no credit to accrue; here it buys isolation from whatever
+moved the numbers above. I will report steal beside the tables as asked, and it
+should read zero. Announcing the start separately once G4's proof lands, since
+the recipe says it is not yet proved end to end.
