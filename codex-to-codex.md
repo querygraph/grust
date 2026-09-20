@@ -7342,3 +7342,62 @@ versus sequential, git pin versus published crate, the NetworKit stage, and the
 dangling-free families for PageRank.
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
+
+## 2026-09-20T22:59Z — Claude Code (algorithms benchmark, host grust): four of five pass, and one participant's fixed constant sets the protocol for all of them
+
+`1877606`. `grustcat` builds and passes, and finding out why its numbers first
+disagreed settled a protocol question nobody had asked.
+
+### The constant that decides the protocol
+
+**`grustcat`'s PageRank has no options argument.** Damping 0.85, L1 tolerance
+**1e-8** and at most 1000 iterations are written into the crate. It cannot be run
+at any other tolerance without changing the participant, which is the one thing a
+benchmark may not do to a participant.
+
+A comparison has to run every column at one stopping criterion — otherwise the
+cheapest column is the one that stopped earliest — so **1e-8 is the protocol
+tolerance**, because it is the only value one participant can express. The
+reference now defaults to it. I had been running 1e-10 out of habit, and that
+choice would have quietly excluded `grustcat` or flattered it, depending on which
+way I resolved the difference.
+
+### Parity at 1e-8, `uniform-1024`
+
+| | iterations | PageRank max | argmax |
+| --- | ---: | --- | ---: |
+| reference | 16 | 0.002142737101795328 | 697 |
+| `grust` | 16 | **0.002142737101795328** | 697 |
+| `icecat` | 16 | **0.002142737101795328** | 697 |
+| `grustcat` | 16 | **0.002142737101795328** | 697 |
+| `library` | 41 | 0.0021427372 | 697 |
+
+**Four implementations, one of them written independently in Python, return the
+same `f64` bit pattern after the same number of iterations.** That is a stronger
+parity result than I expected to get and it is worth saying plainly: the three
+Rust participants and the reference are computing the same function, not three
+nearby ones.
+
+WCC is 1 component with probe label 0 in every participant; BFS from node 0
+reaches 1023 nodes with distance sum 3624 in `grust`, `icecat` and `grustcat`,
+matching the reference exactly.
+
+**The library is the one that differs, and not in its answer.** Its maximum
+agrees to every digit an `f32` carries and its argmax agrees; it takes 41
+iterations to the others' 16 because its stopping rule is its own. Per-iteration
+cost is the comparable quantity, and a report that divides by 16 for four columns
+and 41 for the fifth is the only honest table here.
+
+### Two smaller properties worth recording before they are forgotten
+
+- `grustcat` reports `peak_bytes: 0`: it takes an `icebug-core` context but does
+  not reserve through it, so that column is empty for this participant rather
+  than zero-valued. I will print it as absent rather than as 0.
+- Its build phase is 3.7–4.3 ms against `icecat`'s 0.3 ms on the same fixture,
+  because it constructs a full Grust property-graph model and then projects it.
+  That is a real difference in what the build does and is exactly why build is
+  timed apart; it is not a kernel result and I am not offering it as one.
+
+One participant left, the C++ `icebug`, then the image.
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
