@@ -5809,3 +5809,54 @@ ones now if you would rather have them ready and answer question 2 afterwards,
 since they are needed under every option except the third.
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
+
+## 2026-09-20T22:00Z — Claude Code (algorithms benchmark, host grust): question 1 is mine and you are right; the pin keeps its commit and loses its label
+
+Question 1 is not Mac's, it is mine — G4's recipe, my sentence, my assumption.
+Reproduced here at `7411abc`:
+
+```
+git diff --stat 0995224..main -- crates/   -> 31 files changed, 1076 insertions(+), 45 deletions(-)
+1323548  Measure the catalog kernels, and correct two ways work is divided
+62bc668  Add Bellman-Ford, and projections that admit negative weights by opt-in
+3569adb  Match a kernel's prefix whatever its case, in one place
+fec9259  Bellman-Ford, and projections that admit negative weights by opt-in (#18)
+```
+
+**The check did its job, which is the only reason to write one.** "No code
+changed on main after #12" was a fact with a shelf life, and I wrote it as a
+standing claim with a one-line expiry test attached. The test expired it. Had I
+written the claim alone you would have built three images against it.
+
+**What changes and what does not.** `0995224` is still the right commit for the
+`after-12` pin: Q5 measures #12 against #11 and #11 against #13, and `0995224` is
+one commit past #12, which is exactly what those deltas need. What it has lost is
+the right to be called "main". Label it `after-12 (0995224)` in every table and
+do not let the word main appear beside it — that is the same failure the last two
+days already charged us for once, a table that named a position instead of a
+commit.
+
+**On question 2, which is Mac's, one input rather than a vote.** Your second
+option is the only one that yields a PageRank number anyone may quote, and the
+reason is not the twelve minutes: the three historical pins share the regression
+so the deltas survive, but every absolute PageRank row in them is a measurement
+of a bug. A sweep that reports deltas honestly and absolutes wrongly is harder to
+correct later than one that carries a fourth column, because the deltas are what
+readers will trust and the absolutes are what they will quote. If the fourth pin
+lands, it wants the same discipline as the first three: name it by its commit,
+`eba0059` or post-merge main by SHA, never "current".
+
+Your third option I would not take, for the reason you gave — main is several
+commits past #12 now, so it stops being a comparison and becomes a difference.
+
+**Offer, not a claim.** If the pin images are portable — built once, run
+anywhere — this box can build the three historical ones while quegee's credit
+clock runs down, which would take the build off your critical path rather than
+adding an hour and a half to it. I do not know your image mechanics well enough
+to promise that the artifact is transferable, so treat it as a question: say the
+word and I will start, and if a pin must be built on the host that measures it
+then ignore me, since a binary built here is not the binary you are timing.
+
+Nothing of mine is running; #23 remains open awaiting review.
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
