@@ -67,17 +67,34 @@ fn bfs_sources<'a>(
 ) -> Result<Distances> {
     let context = graph.execution();
     context.checkpoint()?;
-    let mut distances = Buffer::filled(graph.node_count(), f64::INFINITY, context)?;
-    let mut queue = Buffer::capacity(graph.node_count(), context)?;
-    for source in sources {
-        context.charge_work(1)?;
-        let source = graph.source(source)?;
-        if distances.values[source].is_infinite() {
-            distances.values[source] = 0.0;
-            queue.values.push(source);
+    let adjacency = graph.outgoing();
+    let workers = crate::parallel::workers(
+        context,
+        graph
+            .node_count()
+            .saturating_add(adjacency.targets.values.len()),
+    );
+    let mut roots = Vec::new();
+    {
+        let mut seen = Buffer::filled(graph.node_count(), false, context)?;
+        for source in sources {
+            context.charge_work(1)?;
+            let source = graph.source(source)?;
+            if !seen.values[source] {
+                seen.values[source] = true;
+                roots.push(source);
+            }
         }
     }
-    let adjacency = graph.outgoing();
+    if let Some(workers) = workers {
+        return levels(graph, &roots, workers);
+    }
+    let mut distances = Buffer::filled(graph.node_count(), f64::INFINITY, context)?;
+    let mut queue = Buffer::capacity(graph.node_count(), context)?;
+    for &source in &roots {
+        distances.values[source] = 0.0;
+        queue.values.push(source);
+    }
     let mut head = 0;
     while head < queue.values.len() {
         context.charge_work(1)?;
@@ -95,11 +112,101 @@ fn bfs_sources<'a>(
     Ok(Distances::new(graph, distances))
 }
 
+/// Level-synchronous breadth-first search.
+///
+/// Each level expands the whole frontier in parallel. A node is claimed by the
+/// one worker whose compare-exchange on its level succeeds, so it enters the
+/// next frontier exactly once, and its distance is the level that claimed it.
+/// Distances therefore do not depend on the order arcs were examined, which is
+/// what makes the parallel result identical to the sequential queue's. The next
+/// frontier is assembled from per-chunk lists in chunk order, so even the
+/// frontier itself is reproducible.
+fn levels(graph: &GraphProjection, roots: &[usize], workers: usize) -> Result<Distances> {
+    use std::sync::atomic::{AtomicU32, Ordering};
+
+    const UNVISITED: u32 = u32::MAX;
+    let context = graph.execution();
+    let n = graph.node_count();
+    let adjacency = graph.outgoing();
+    let offsets = &adjacency.offsets.values;
+    let targets = &adjacency.targets.values;
+    let level_of = Buffer::indexed_with(n, || AtomicU32::new(UNVISITED), context)?;
+    // Every node is claimed at most once, so the frontiers together hold at most
+    // one entry per node. Admit that once rather than per level or per worker.
+    let _frontiers = context.reserve(n.saturating_mul(2 * size_of::<usize>()))?;
+    let mut frontier: Vec<usize> = Vec::new();
+    frontier.try_reserve(roots.len())?;
+    for &root in roots {
+        level_of.values[root].store(0, Ordering::Relaxed);
+        frontier.push(root);
+    }
+    let mut level: u32 = 0;
+    while !frontier.is_empty() {
+        context.checkpoint()?;
+        let next_level = level.saturating_add(1);
+        let lists = crate::parallel::map_chunks(context, workers, &frontier, |_, slice, meter| {
+            let mut discovered: Vec<usize> = Vec::new();
+            for &node in slice {
+                let arcs = offsets[node]..offsets[node + 1];
+                meter.charge(1 + arcs.len())?;
+                for arc in arcs {
+                    let next = targets[arc];
+                    if level_of.values[next]
+                        .compare_exchange(
+                            UNVISITED,
+                            next_level,
+                            Ordering::Relaxed,
+                            Ordering::Relaxed,
+                        )
+                        .is_ok()
+                    {
+                        discovered.try_reserve(1)?;
+                        discovered.push(next);
+                    }
+                }
+            }
+            Ok(discovered)
+        })?;
+        frontier.clear();
+        for list in &lists {
+            frontier.try_reserve(list.len())?;
+            frontier.extend_from_slice(list);
+        }
+        level = next_level;
+    }
+    let mut distances = Buffer::indexed(n, f64::INFINITY, context)?;
+    crate::parallel::for_each_chunk(
+        context,
+        workers,
+        &mut distances.values,
+        |first, slice, meter| {
+            meter.charge(slice.len())?;
+            for (index, distance) in slice.iter_mut().enumerate() {
+                let claimed = level_of.values[first + index].load(Ordering::Relaxed);
+                *distance = if claimed == UNVISITED {
+                    f64::INFINITY
+                } else {
+                    claimed as f64
+                };
+            }
+            Ok(())
+        },
+    )?;
+    Ok(Distances::new(graph, distances))
+}
+
 /// Connected components after ignoring edge direction. Union by size and path
 /// halving use O(V) scratch and never require reverse adjacency.
 pub fn weakly_connected_components(graph: &GraphProjection) -> Result<Components> {
     let context = graph.execution();
     let n = graph.node_count();
+    let workers = crate::parallel::workers(
+        context,
+        n.saturating_add(graph.edge_count().saturating_mul(2)),
+    );
+    if let Some(workers) = workers {
+        return union_find(graph, workers);
+    }
     let mut parents = Buffer::capacity(n, context)?;
     for node in 0..n {
         context.charge_work(1)?;
@@ -148,6 +255,88 @@ fn root(
         node = parents[node];
     }
     Ok(node)
+}
+
+/// Components by concurrent union-find.
+///
+/// Workers union the endpoints of disjoint edge ranges into a shared parent
+/// array. A link always points from the larger root to the smaller one, so the
+/// root that survives in each component is its minimum node row: the same
+/// canonical label the sequential kernel produces, arrived at without depending
+/// on the order edges were merged. A losing compare-exchange re-reads the roots
+/// and retries, which is why one pass over the edges is enough.
+fn union_find(graph: &GraphProjection, workers: usize) -> Result<Components> {
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
+    fn root(parents: &[AtomicUsize], mut node: usize) -> usize {
+        loop {
+            let parent = parents[node].load(Ordering::Relaxed);
+            if parent == node {
+                return node;
+            }
+            node = parent;
+        }
+    }
+
+    let context = graph.execution();
+    let n = graph.node_count();
+    let mut row = 0;
+    let parents = Buffer::indexed_with(
+        n,
+        || {
+            let node = row;
+            row += 1;
+            AtomicUsize::new(node)
+        },
+        context,
+    )?;
+    let parents = &parents.values;
+    crate::parallel::map_chunks(context, workers, graph.edges(), |_, slice, meter| {
+        for edge in slice {
+            meter.charge(1)?;
+            let mut left = root(parents, edge.source);
+            let mut right = root(parents, edge.target);
+            while left != right {
+                meter.charge(1)?;
+                let (larger, smaller) = if left > right {
+                    (left, right)
+                } else {
+                    (right, left)
+                };
+                match parents[larger].compare_exchange(
+                    larger,
+                    smaller,
+                    Ordering::Relaxed,
+                    Ordering::Relaxed,
+                ) {
+                    Ok(_) => break,
+                    // Another worker linked this root first; follow where it went.
+                    Err(observed) => {
+                        left = root(parents, observed);
+                        right = root(parents, smaller);
+                    }
+                }
+            }
+        }
+        Ok(())
+    })?;
+    let mut labels = Buffer::indexed(n, 0usize, context)?;
+    crate::parallel::for_each_chunk(
+        context,
+        workers,
+        &mut labels.values,
+        |first, slice, meter| {
+            meter.charge(slice.len())?;
+            for (index, label) in slice.iter_mut().enumerate() {
+                *label = root(parents, first + index);
+            }
+            Ok(())
+        },
+    )?;
+    Ok(Components {
+        graph: graph.clone(),
+        labels,
+    })
 }
 
 /// Strong components via two iterative depth-first passes. Stack usage is O(V)

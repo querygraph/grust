@@ -53,7 +53,7 @@ const DEADLINE_SAMPLE_UNITS: usize = 1024;
 #[derive(Debug)]
 struct Shared {
     limits: ExecutionLimits,
-    concurrency: usize,
+    concurrency: Option<usize>,
     work_units: AtomicUsize,
     cancelled: AtomicBool,
     charges_since_deadline_read: AtomicUsize,
@@ -94,7 +94,7 @@ impl ExecutionContext {
         }
         Ok(Self(Arc::new(Shared {
             limits,
-            concurrency: 1,
+            concurrency: None,
             work_units: AtomicUsize::new(0),
             cancelled: AtomicBool::new(false),
             charges_since_deadline_read: AtomicUsize::new(0),
@@ -102,7 +102,8 @@ impl ExecutionContext {
         })))
     }
 
-    /// Permit kernels to use up to `workers` threads for this execution.
+    /// Permit kernels to use up to `workers` threads for this execution, and
+    /// with it the parallel implementation of each kernel, even at one worker.
     ///
     /// Concurrency is a property of one execution, not of the process: an
     /// embedder that runs kernels inside a server with its own runtime and
@@ -123,12 +124,23 @@ impl ExecutionContext {
                 "concurrency must be set before the context is shared".into(),
             )
         })?;
-        shared.concurrency = workers;
+        shared.concurrency = Some(workers);
         Ok(self)
     }
 
     /// Threads kernels may use for this execution; one unless set.
     pub fn concurrency(&self) -> usize {
+        self.0.concurrency.unwrap_or(1)
+    }
+
+    /// The concurrency the caller asked for, or `None` when it never asked.
+    ///
+    /// Kernels distinguish the two: an execution that says nothing about
+    /// threads runs exactly the code it ran before parallel paths existed,
+    /// while an execution that explicitly asks for one worker runs the parallel
+    /// implementation on one thread. Keeping those apart is what lets a
+    /// benchmark separate the cost of threading from the change of algorithm.
+    pub fn concurrency_requested(&self) -> Option<usize> {
         self.0.concurrency
     }
 

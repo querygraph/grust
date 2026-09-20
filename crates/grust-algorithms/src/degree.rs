@@ -36,51 +36,69 @@ impl Degrees {
 /// execution takes O(V + A) work and sums weights in stable CSR order. Projection
 /// weights must already be finite and nonnegative; a nonfinite sum is a numerical
 /// error. No reverse index, graph copy, or implicit normalization is built.
+/// Each node's count and strength depend only on its own arc range, so workers
+/// write disjoint slices of the output and need no synchronization. Weighted
+/// sums stay in CSR order within a node, which is why the result does not depend
+/// on how the nodes were divided.
 pub fn degree(graph: &GraphProjection) -> Result<Degrees> {
     let context = graph.execution();
     context.checkpoint()?;
     let adjacency = graph.outgoing();
-    let mut counts = Buffer::capacity(graph.node_count(), context)?;
+    let n = graph.node_count();
+    let mut counts = Buffer::indexed(n, 0usize, context)?;
     let mut strengths = adjacency
         .weights
         .as_ref()
-        .map(|_| Buffer::capacity(graph.node_count(), context))
+        .map(|_| Buffer::indexed(n, 0.0f64, context))
         .transpose()?;
-    // Precharge bounded chunks, as Buffer initialization does, instead of
-    // locking the execution context for every scalar. Arc charges span node
-    // boundaries so low-degree graphs also amortize the accounting lock.
-    let mut arcs_charged_until = 0;
-    for first in (0..graph.node_count()).step_by(1024) {
-        let last = first.saturating_add(1024).min(graph.node_count());
-        context.charge_work(last - first)?;
-        for node in first..last {
-            let start = adjacency.offsets.values[node];
-            let end = adjacency.offsets.values[node + 1];
-            counts.values.push(end - start);
-            if let (Some(weights), Some(strengths)) = (&adjacency.weights, &mut strengths) {
-                let mut sum = 0.0;
-                let mut position = start;
-                while position < end {
-                    if position == arcs_charged_until {
-                        arcs_charged_until =
-                            position.saturating_add(1024).min(weights.values.len());
-                        context.charge_work(arcs_charged_until - position)?;
-                    }
-                    let stop = end.min(arcs_charged_until);
-                    for &weight in &weights.values[position..stop] {
+    let arcs = adjacency.targets.values.len();
+    let workers = crate::parallel::workers(context, n.saturating_add(arcs)).unwrap_or(1);
+    let offsets = &adjacency.offsets.values;
+    let weights = adjacency.weights.as_ref().map(|weights| &weights.values);
+
+    // Counts first: O(V) from the CSR offsets alone.
+    crate::parallel::for_each_chunk(
+        context,
+        workers,
+        &mut counts.values,
+        |first, slice, meter| {
+            meter.charge(slice.len())?;
+            for (index, count) in slice.iter_mut().enumerate() {
+                let node = first + index;
+                *count = offsets[node + 1] - offsets[node];
+            }
+            Ok(())
+        },
+    )?;
+
+    if let (Some(weights), Some(strengths)) = (weights, &mut strengths) {
+        crate::parallel::for_each_chunk(
+            context,
+            workers,
+            &mut strengths.values,
+            |first, slice, meter| {
+                for (index, strength) in slice.iter_mut().enumerate() {
+                    let node = first + index;
+                    let (start, end) = (offsets[node], offsets[node + 1]);
+                    // The counts pass already charged this node; charge its arcs
+                    // before summing them, so a high-degree node cannot run
+                    // unmetered and cancellation stays prompt.
+                    meter.charge(end - start)?;
+                    let mut sum = 0.0;
+                    for &weight in &weights[start..end] {
                         sum += weight;
                     }
-                    position = stop;
+                    // Nonnegative finite inputs cannot recover after overflowing.
+                    if !sum.is_finite() {
+                        return Err(AlgorithmError::Numerical(
+                            "weighted degree exceeds finite Float64 domain".into(),
+                        ));
+                    }
+                    *strength = sum;
                 }
-                // Nonnegative finite inputs cannot recover after overflowing.
-                if !sum.is_finite() {
-                    return Err(AlgorithmError::Numerical(
-                        "weighted degree exceeds finite Float64 domain".into(),
-                    ));
-                }
-                strengths.values.push(sum);
-            }
-        }
+                Ok(())
+            },
+        )?;
     }
     context.checkpoint()?;
     Ok(Degrees {
