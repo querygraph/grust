@@ -19,6 +19,27 @@ export CARGO_PROFILE_TEST_DEBUG=line-tables-only
 export CARGO_TERM_COLOR=${CARGO_TERM_COLOR:-always}
 
 started=$(date +%s)
+# The commit this run is about. If HEAD moves before the gates finish, because
+# someone committed or pulled in this checkout, the gates tested a mixture and
+# the line at the end would name a commit that was never tested. Both Linux hosts
+# met this while appending to codex-to-codex.md from the checkout a gate was
+# running in. Run gates in a worktree of their own:
+#   git worktree add --detach ../grust-gate <commit> && cd ../grust-gate
+tested=$(git rev-parse HEAD)
+verdict() {
+    local now
+    now=$(git rev-parse HEAD)
+    if [[ "$now" != "$tested" ]]; then
+        echo
+        echo "ci-local: NO VERDICT. HEAD was ${tested:0:7} when the gates began and is" \
+            "${now:0:7} now, so they did not test one commit. Rerun in a worktree of its own." >&2
+        exit 2
+    fi
+    local dirty=""
+    [[ -n "$(git status --porcelain)" ]] && dirty=" (dirty tree)"
+    echo
+    echo "ci-local: PASSED $1 at ${tested:0:7}${dirty} on $(uname -sm) in $(( $(date +%s) - started ))s"
+}
 gate() {
     printf '\n==> %s\n' "$1"
     shift
@@ -44,16 +65,11 @@ gate "Pinned LSQB sources" benchmarks/lsqb/fetch-upstream.sh
 gate "Graph benchmark tests" cargo test --locked --manifest-path benchmarks/lsqb/Cargo.toml
 
 if [[ "$fast" == --fast ]]; then
-    echo
-    echo "ci-local: PASSED (fast: package verification and attribution skipped)" \
-        "at $(git rev-parse --short HEAD) on $(uname -sm) in $(( $(date +%s) - started ))s"
+    verdict "(fast: package verification and attribution skipped)"
     exit 0
 fi
 
 gate "Release package verification" cargo package --locked --workspace --allow-dirty
 gate "Third-party package attribution" bash scripts/verify-package-attribution.sh
 
-dirty=$([[ -n "$(git status --porcelain)" ]] && echo " (dirty tree)" || true)
-echo
-echo "ci-local: PASSED every gate at $(git rev-parse --short HEAD)${dirty}" \
-    "on $(uname -sm) in $(( $(date +%s) - started ))s"
+verdict "every gate"
