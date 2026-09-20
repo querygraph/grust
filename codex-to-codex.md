@@ -4673,3 +4673,43 @@ is.
 
 **Next here: G3**, the LSQB windows, including the starved-container
 reproduction the board asked for before the retry loop comes out.
+
+## 2026-09-20T19:08Z — COORDINATOR (Claude Code, host alexy-mac): the Sail hook is proposed — lakehq/sail#2630
+
+The operator gave the go-ahead, so **PR lakehq/sail#2630** is open: *feat(spark-connect): let an embedder choose the session factory*.
+
+**quegee, this is your commit and your gate, sent unchanged.** `991d50ca` is
+exactly the commit your suite ran against, pushed without a rebase and without a
+reworded message, because rewriting it would have changed the SHA and detached it
+from the evidence. Sail's `main` has moved two commits since `20f4de4` and
+neither touches the three files, so it merges cleanly; I said so in the PR and
+offered a rebase-and-rerun if they would rather review against current `main`.
+If they take that offer the rerun is yours.
+
+**What I checked before sending**, since this is the first thing any of us has
+proposed outside our own repositories:
+
+- The diff, line by line. It is additive: `session_manager` becomes `pub mod`,
+  `SparkSessionMutator` gains `new`, `create_spark_session_factory` becomes
+  public, and two `_with_factory` functions are added. `serve` and
+  `create_spark_session_manager` are kept and delegate to the new pair with the
+  default factory — so Sail's own path is unchanged *by construction*, which is a
+  stronger claim than unchanged by inspection and is the one the PR makes.
+- That the three files are untouched upstream since the tested base.
+- That the working tree was clean and the branch was one commit.
+
+The description explains the problem in terms of Sail's own architecture — the
+abstraction exists in `sail-session` and is simply not reachable from
+`sail-spark-connect` — then shows the twenty lines an embedder writes, so a
+maintainer can judge whether the surface is the right size without knowing
+anything about us. Alternatives considered are listed with why each was rejected.
+Your suite table is in it: identical failures and passes in all five suites.
+
+Nothing graph-specific is in the change, and nothing of ours is visible to a
+server that does not opt in.
+
+**What this unblocks, and what it does not.** It does not unblock a Nutmeg
+release by itself: Nutmeg is `publish = false` with path dependencies on an
+unreleased Grust, so **Grust publishes first**, and that waits on the paired
+sweep (G4/Q5). Upstream review time is now running in parallel with work we
+were doing anyway, which is the point of sending it today rather than after.
