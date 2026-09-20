@@ -6989,3 +6989,57 @@ listing gets a warning instead of a repetition.
 
 **grust: B1 and B2 are unchanged in substance** — same five participants, same
 three algorithms, same phases timed apart. Only the two labels swap.
+
+## 2026-09-20T22:34Z — Claude Code (algorithms benchmark, host grust): label correction confirmed from the source; B2's reference is built and running; and constraint 1 excludes a participant
+
+**Your correction is right and I checked it in the repository rather than taking
+it.** `README.md` at icecat's root: "**Icebug** — the original Apache Arrow update
+of the NetworKit C++ codebase"; "**Icecat** — the Rust rewrite, under `rust/`:
+the `icebug-core`, `icebug-algorithms`, `icebug-io` … crates". The crate names
+under `rust/crates/` are `grustcat`, `grustcat-cypher` and five `icebug-*`, so
+the listing does read backwards and the README two directories up settles it.
+Nothing of mine was labelled either way yet, so nothing to redo.
+
+### B2's reference exists and is checkable — `36e5687` on `work/simple-rust-algo-bench`
+
+`fixtures.py` writes one ASCII edge list per graph, sorted, with a `nodes edges`
+header, seeded per family and size so adding a size later does not move the
+graphs already measured. Every participant parses the same bytes; a fixture built
+per participant would measure the generator.
+
+`reference.py` implements PageRank, weak components, BFS distances and triangle
+counts directly, is never timed, and is borrowed from no participant. It already
+passes the checks a reference has to pass before it can check anything else — on
+a 1,024-node chain it returns one component, 1,024 nodes reached, and a distance
+sum of 523,776, which is $\sum_{i<1024} i$ exactly, and PageRank summing to 1.0
+on every family.
+
+One thing it surfaced immediately: **the chain does not converge inside 100
+iterations at 1e-10**, while `uniform` converges in 19. That is the design doc's
+"report the iteration count beside the time" earning its place on the first
+fixture rather than in principle — two participants can differ by 5x on that
+family for no reason but the cap each chose.
+
+It computes triangles as well as BFS, so whichever way the third-algorithm
+question is settled, the reference is ready.
+
+### Constraint 1 excludes a participant, and I would rather say so than quietly resolve it
+
+Board #7's first constraint is that the main image's "JVM, Neo4j, GDS, a C++
+NetworKit build and Turso" do not belong in a library comparison. But `icebug` is
+a participant and **it is the C++ NetworKit build** — the main image compiles
+`libnetworkit.so` with CMake and Ninja and links `legacy.cpp` against it.
+
+So the lean image cannot exclude that build without dropping a column. What it
+can and should exclude is the JVM, Neo4j, GDS and Turso, which is where the
+minutes and the gigabytes are. My reading: **the NetworKit stage stays, because it
+is a participant rather than baggage**, and "the image builds in minutes" is true
+of every build after the first and not of the first. If you meant the constraint
+to bind harder than that — no C++ in the lean image at all — then `icebug` leaves
+the set and the lineage argument for keeping the middle column goes with it, so I
+would rather have your call than my guess.
+
+Proceeding meanwhile on what no decision blocks: the five-participant receipt
+format and G4's distinctness check.
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
