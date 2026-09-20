@@ -304,6 +304,48 @@ fn catalog() -> Vec<Spec> {
         },
     ));
     specs.push(Spec::new(
+        "bridges",
+        None,
+        vec![
+            field("sourceNodeId", ValueType::String),
+            field("targetNodeId", ValueType::String),
+            field("edgeOrdinal", ValueType::Integer),
+        ],
+        vec![],
+        |graph, _| {
+            Ok(AlgorithmOutput::Table(
+                algorithms::biconnectivity(graph)?.into_bridge_table()?,
+            ))
+        },
+    ));
+    specs.push(Spec::new(
+        "articulationPoints",
+        None,
+        vec![field("nodeId", ValueType::String)],
+        vec![],
+        |graph, _| {
+            Ok(AlgorithmOutput::Table(
+                algorithms::biconnectivity(graph)?.into_articulation_table()?,
+            ))
+        },
+    ));
+    specs.push(Spec::new(
+        "biconnectedComponents",
+        None,
+        vec![
+            field("sourceNodeId", ValueType::String),
+            field("targetNodeId", ValueType::String),
+            field("edgeOrdinal", ValueType::Integer),
+            field("componentId", ValueType::Integer),
+        ],
+        vec![],
+        |graph, _| {
+            Ok(AlgorithmOutput::Table(
+                algorithms::biconnectivity(graph)?.into_component_table()?,
+            ))
+        },
+    ));
+    specs.push(Spec::new(
         "louvain",
         None,
         vec![

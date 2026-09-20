@@ -12,6 +12,8 @@ mod arrow_output;
 pub use arrow_output::{ArrowResultBatch, ArrowResultCursor};
 mod betweenness;
 pub use betweenness::{Betweenness, BetweennessOptions, betweenness};
+mod biconnected;
+pub use biconnected::{Biconnectivity, biconnectivity};
 mod buffer;
 mod closeness;
 pub use closeness::{ClosenessOptions, DistanceCentrality, HarmonicOptions, closeness, harmonic};

@@ -6,6 +6,17 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ## Unreleased
 
+- Add **bridges**, **articulation points** and **biconnected components**:
+  `biconnectivity`, and `grust.algorithms.bridges`, `.articulationPoints` and
+  `.biconnectedComponents`, from one iterative low-link pass on an undirected
+  projection. The pass tracks the edge it arrived by, not the node, so parallel
+  edges are a cycle of two: neither is a bridge and both share a component.
+  Self-loops disconnect nothing and lie in no component. Edge rows carry
+  `sourceNodeId`, `targetNodeId` and `edgeOrdinal`; a component is named by the
+  smallest edge ordinal in it. Each output is checked against its definition —
+  remove the edge or node and recount, or enumerate every simple cycle — on
+  every simple graph of up to five nodes and 4,000 random multigraphs, and a
+  million-node path shows the pass does not recurse.
 - Add **node similarity**: `node_similarity` and
   `grust.algorithms.nodeSimilarity`, with `metric` (`jaccard`, `overlap`,
   `cosine`), `topK`, `topN`, `similarityCutoff`, `degreeCutoff` and

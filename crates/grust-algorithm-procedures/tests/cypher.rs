@@ -492,3 +492,43 @@ fn node_similarity_returns_pair_rows_through_ordinary_cypher() {
         .is_err()
     );
 }
+
+#[test]
+fn bridges_articulation_points_and_components_are_ordinary_procedures() {
+    // Undirected: a-b is edge 0; b-c and c-b are edges 1 and 2, a cycle of two.
+    let text = |value: &str| Value::String(value.into());
+    assert_eq!(
+        run(
+            "CALL grust.algorithms.bridges({orientation: 'undirected'}) YIELD sourceNodeId, targetNodeId, edgeOrdinal RETURN sourceNodeId, targetNodeId, edgeOrdinal"
+        ),
+        vec![vec![text("a"), text("b"), Value::Int(0)]]
+    );
+    assert_eq!(
+        run(
+            "CALL grust.algorithms.articulationPoints({orientation: 'undirected'}) YIELD nodeId RETURN nodeId"
+        ),
+        vec![vec![text("b")]]
+    );
+    assert_eq!(
+        run(
+            "CALL grust.algorithms.biconnectedComponents({orientation: 'undirected'}) YIELD edgeOrdinal, componentId RETURN edgeOrdinal, componentId"
+        ),
+        vec![
+            vec![Value::Int(0), Value::Int(0)],
+            vec![Value::Int(1), Value::Int(1)],
+            vec![Value::Int(2), Value::Int(1)],
+        ]
+    );
+    assert!(
+        run_read_query_with_registry(
+            &graph(),
+            "default",
+            "CALL grust.algorithms.bridges() YIELD edgeOrdinal RETURN edgeOrdinal",
+            &CypherParameters::new(),
+            &registry(),
+        )
+        .unwrap_err()
+        .to_string()
+        .contains("undirected")
+    );
+}

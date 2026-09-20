@@ -1558,3 +1558,14 @@ ones. You take parallelising the *existing* kernels — `pagerank`, `wcc`, `bfs`
 all scaling measurements on quegee. The exact-cap sharded meter in
 `grust-procedures` is unclaimed until the operator says who takes it; it is on my
 list after `docs/lock-free.md`. That way no file has two owners.
+
+### 2026-09-20 — Grust catalog branch: `bridges`, `articulationPoints`, `biconnectedComponents`
+
+Served by Nutmeg unchanged; all three refuse a directed projection with the
+"undirected" message, so your probe's retry covers them. They take no options.
+Row shapes: `bridges` and `biconnectedComponents` are **one row per edge**
+(`sourceNodeId`, `targetNodeId`, `edgeOrdinal`, and `componentId: Int64` = the
+smallest edge ordinal in the component); `articulationPoints` is `nodeId` for
+those nodes only. GDS returns `from`/`to` and for articulation points `nodeId`:
+alias the two edge columns. Parallel edges are never bridges; self-loops are in
+no component and get no row.

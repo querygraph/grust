@@ -639,6 +639,11 @@ M4 (Tier A), then per milestone.** Each is a minor version: new public API.
   set; the oracle first shared the kernel's mistake of summing parallel unit
   weights, and only the hand-computed case caught it. Keep hand-computed cases
   beside every oracle.
+- **Edge-shaped rows lead with `sourceNodeId`.** A bare `edgeOrdinal` means
+  nothing to a Cypher caller, and a keyed table needs a node first, so bridges
+  and biconnected components return `sourceNodeId`, `targetNodeId`,
+  `edgeOrdinal` (then `componentId`). Spanning tree and max flow should do the
+  same.
 
 ## Progress ledger
 
@@ -651,6 +656,6 @@ Update in the same commit as the work. `—` not started, `wip`, `done <commit>`
 | P7 | done (`parallel.rs`) | 1 Louvain | done | 2 Betweenness | done |
 | 3 Node similarity | done | 4 Triangles/LCC | done | 5 k-core | done |
 | 6 Closeness/harmonic | done | 7 Leiden | — | 8 Label propagation | done |
-| 9 A\*/Bellman–Ford | — | 10 Eigenvector family | — | 11 Bridges family | — |
+| 9 A\*/Bellman–Ford | — | 10 Eigenvector family | — | 11 Bridges family | done |
 | 12 Spanning forest | — | 13 Max flow | — | 14 FastRP | — |
 | 15–35 | — (see Tier B) | | | | |
