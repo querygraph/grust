@@ -537,8 +537,54 @@ fn nullable(name: &str, value_type: ValueType) -> Field {
 }
 
 type Kernel = fn(&algorithms::GraphProjection, &ValidatedArguments) -> Result<AlgorithmOutput>;
+/// A kernel that also reads node properties. The projection is reachable as
+/// `properties.projection()`, so it is not passed twice.
+type PropertyKernel =
+    fn(&algorithms::NodeProperties, &ValidatedArguments) -> Result<AlgorithmOutput>;
+
+enum Body {
+    Topology(Kernel),
+    WithProperties {
+        kernel: PropertyKernel,
+        /// Which options name node properties, and how to read them.
+        properties: &'static [PropertyOption],
+    },
+}
+
+/// An option whose value is the name of a node property the kernel reads.
+#[derive(Clone, Copy)]
+struct PropertyOption {
+    /// The option's name, as the caller writes it.
+    option: &'static str,
+    kind: algorithms::PropertyKind,
+    missing: algorithms::MissingProperty,
+}
+
+/// Read the property names a call asks for, in declaration order.
+fn requests<'a>(
+    declared: &'static [PropertyOption],
+    args: &'a ValidatedArguments,
+) -> Result<Vec<algorithms::PropertyRequest<'a>>> {
+    let mut wanted = Vec::new();
+    wanted.try_reserve_exact(declared.len())?;
+    for declaration in declared {
+        let Some(Value::String(key)) = args.options().get(declaration.option) else {
+            return Err(ProcedureError::InvalidArguments(format!(
+                "{} must name a node property",
+                declaration.option
+            )));
+        };
+        wanted.push(algorithms::PropertyRequest {
+            key,
+            kind: declaration.kind,
+            missing: declaration.missing,
+        });
+    }
+    Ok(wanted)
+}
+
 struct Provider {
-    kernel: Kernel,
+    body: Body,
     signed: bool,
 }
 
@@ -551,7 +597,7 @@ struct Spec {
     signed: bool,
     outputs: Vec<Field>,
     extra_options: Vec<OptionField>,
-    kernel: Kernel,
+    body: Body,
 }
 
 impl Spec {
@@ -569,7 +615,28 @@ impl Spec {
             signed: false,
             outputs,
             extra_options,
-            kernel,
+            body: Body::Topology(kernel),
+        }
+    }
+
+    /// A kernel that reads node properties named by `properties`.
+    fn with_properties(
+        name: &'static str,
+        outputs: Vec<Field>,
+        extra_options: Vec<OptionField>,
+        properties: &'static [PropertyOption],
+        kernel: PropertyKernel,
+    ) -> Self {
+        Self {
+            name,
+            source: None,
+            target: false,
+            outputs,
+            extra_options,
+            body: Body::WithProperties { kernel, properties },
+            // A kernel that reads node properties still gets the ordinary,
+            // nonnegative weights; only `bellmanFord` asks for signed ones.
+            signed: false,
         }
     }
 }
@@ -639,7 +706,9 @@ fn admit_signed(
 /// `projectionStats` and `estimateCsr` are not kernels over a projection: one
 /// reads projection metadata and the other sizes a graph before it is built.
 /// They are refused here; call `GraphProjection::statistics` or
-/// `CsrEstimate::upper_bound`.
+/// `CsrEstimate::upper_bound`. A kernel that reads node properties is refused
+/// too, and names itself: the caller must supply them, through
+/// [`node_property_requests`] and [`run_with_properties`].
 #[cfg(feature = "arrow")]
 pub fn run_on_projection(
     name: &str,
@@ -653,7 +722,57 @@ pub fn run_on_projection(
         .ok_or_else(|| {
             ProcedureError::Unsupported(format!("`{name}` is not a registered projection kernel"))
         })?;
-    (spec.kernel)(graph, args)?.into_arrow_results()
+    match spec.body {
+        Body::Topology(kernel) => kernel(graph, args)?.into_arrow_results(),
+        Body::WithProperties { .. } => Err(ProcedureError::Unsupported(format!(
+            "`{name}` reads node properties; build them with node_property_requests and call run_with_properties"
+        ))),
+    }
+}
+
+/// The node properties `name` reads for this call: the property keys the
+/// caller's options name, each with the kind and missing-value policy the
+/// kernel declared. Empty for a kernel that reads none.
+///
+/// An embedder that stages its own columns asks with this and supplies them to
+/// [`run_with_properties`].
+pub fn node_property_requests<'a>(
+    name: &str,
+    args: &'a ValidatedArguments,
+) -> Result<Vec<algorithms::PropertyRequest<'a>>> {
+    let short = short_name(name);
+    let spec = catalog()
+        .into_iter()
+        .find(|spec| spec.name.eq_ignore_ascii_case(short))
+        .ok_or_else(|| {
+            ProcedureError::Unsupported(format!("`{name}` is not a registered projection kernel"))
+        })?;
+    match spec.body {
+        Body::Topology(_) => Ok(Vec::new()),
+        Body::WithProperties { properties, .. } => requests(properties, args),
+    }
+}
+
+/// As [`run_on_projection`], for a kernel that reads node properties. The
+/// projection is `properties.projection()`. A kernel that reads none runs here
+/// too, ignoring them, so an embedder may use one path for every name.
+#[cfg(feature = "arrow")]
+pub fn run_with_properties(
+    name: &str,
+    properties: &algorithms::NodeProperties,
+    args: &ValidatedArguments,
+) -> Result<algorithms::ArrowResultCursor> {
+    let short = short_name(name);
+    let spec = catalog()
+        .into_iter()
+        .find(|spec| spec.name.eq_ignore_ascii_case(short))
+        .ok_or_else(|| {
+            ProcedureError::Unsupported(format!("`{name}` is not a registered projection kernel"))
+        })?;
+    match spec.body {
+        Body::Topology(kernel) => kernel(properties.projection(), args)?.into_arrow_results(),
+        Body::WithProperties { kernel, .. } => kernel(properties, args)?.into_arrow_results(),
+    }
 }
 
 /// Names `run_on_projection` serves, without the prefix, in registration order.
@@ -669,7 +788,7 @@ fn register(builder: &mut RegistryBuilder, spec: Spec) -> Result<()> {
         signed,
         outputs,
         extra_options,
-        kernel,
+        body,
     } = spec;
     let mut arguments = Vec::new();
     if let Some(source_type) = source {
@@ -714,7 +833,7 @@ fn register(builder: &mut RegistryBuilder, spec: Spec) -> Result<()> {
             graph: GraphRequirement::LocalSnapshot,
             streaming: Streaming::Blocking,
         },
-        Arc::new(Provider { kernel, signed }),
+        Arc::new(Provider { body, signed }),
     )
 }
 
@@ -729,7 +848,15 @@ impl ProcedureProvider for Provider {
         })?;
         let options = admit_signed(options::projection(&args)?, self.signed);
         let graph = preparation::prepare(snapshot, options, &invocation)?;
-        let output = (self.kernel)(&graph, &args)?;
+        let output = match &self.body {
+            Body::Topology(kernel) => kernel(&graph, &args)?,
+            Body::WithProperties { kernel, properties } => {
+                let wanted = requests(properties, &args)?;
+                let read =
+                    algorithms::NodeProperties::from_graph(snapshot.graph(), &graph, &wanted)?;
+                kernel(&read, &args)?
+            }
+        };
         Ok(Box::new(AlgorithmCursor::new(graph, output)?))
     }
 }
