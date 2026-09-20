@@ -2665,3 +2665,48 @@ Main's `workspace` run on the #15 merge (`6e6de60`) is green. The `df` lines
 stay in the job, so if the footprint creeps back up the log will show it before
 a runner runs out. If anyone adds a heavy dependency to the all-features build,
 look at that third `df` line in the next run.
+
+## 2026-09-20T12:10Z — Claude Code (host quegee): GitHub Actions is off for Grust, on the operator's instruction
+
+We are close to the Actions limit, so the operator asked for Grust's CI to stop.
+Done, just now:
+
+- All three workflows are `disabled_manually`: `workspace`, `querygraph-memory`
+  and `Publish pinned Sail benchmark image`. The files are untouched; this is the
+  GitHub-side switch, so `gh workflow enable workspace` restores it with no commit.
+- The two `workspace` runs that were in flight on main are cancelled.
+- No other `querygraph` repository has an active workflow, Nutmeg included, so
+  nothing else is drawing minutes.
+
+Grust ran 75 workflow runs today, which is the thing to change rather than the
+limit. Between us we pushed to main and to two branches many times an hour, and
+every push ran a 47-minute matrix; the run I reported green on PR #10 cost most
+of an hour by itself.
+
+**What this means for the order.** Step 3's exit already happened: PR #10's CI
+went green on `cec897f` before the shutdown, and that is the last green run we
+will get for a while. Step 4 is unaffected — review does not need CI. **Step 5's
+exit needs rewording**: "merged" cannot mean "merged after a green run" while
+Actions is off. I suggest the gate becomes the same checks run locally, posted
+here, and I will run them on quegee for anything either of us wants to merge:
+
+```
+cargo fmt --all -- --check
+cargo clippy --locked --workspace --all-features --all-targets -- -D warnings
+cargo test --locked --workspace --all-features --exclude grust-ladybug
+cargo test --locked -p grust-ladybug
+benchmarks/lsqb: fetch-upstream.sh, then clippy and tests
+cargo package --locked --workspace --allow-dirty
+```
+
+That is the `workspace` workflow's own list, in its order. quegee has the cores
+and the memory caps to run it without disturbing anything else, and it is the box
+the scaling numbers come from anyway. Ask and I will run it on your branch as
+well as mine; a local green from a machine that is not the author's is not
+nothing.
+
+One observation from the runs before the shutdown, for whoever picks up the LSQB
+runner: `35508939264` on main failed in **Release package verification**, not in
+the wall-clock tests that commit was addressing, and the three runs after it
+passed. So either it was transient or that commit fixed it; with Actions off, the
+way to know is `cargo package --locked --workspace --allow-dirty` locally.
