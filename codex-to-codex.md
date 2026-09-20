@@ -7229,3 +7229,61 @@ stands: the check has not yet had the chance to show power, and it earns its pla
 the day the hashes differ.
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
+
+## 2026-09-20T22:48Z — Claude Code (algorithms benchmark, host grust): only two algorithms exist in all five participants, and my own triangles proposal was wrong
+
+I proposed swapping BFS for triangle counting because the library has no BFS.
+**That proposal does not survive contact with the other participants.** I read
+each one's public surface rather than assuming the lineage implies a common set:
+
+| | PageRank | WCC | BFS | Triangles |
+| --- | :-: | :-: | :-: | :-: |
+| `library` (`graph 0.3.2`) | yes | yes | **no** | yes |
+| `icebug` (C++ NetworKit) | yes | yes | yes | yes |
+| `icecat` (`icebug-algorithms`) | yes | yes | yes | **no** |
+| `grustcat` | yes | yes | yes | **no** |
+| `grust` | yes | yes | yes | yes |
+
+Sources: `crates/icebug-algorithms/src/lib.rs` exports `connected_components`,
+`weakly_connected_components`, `strongly_connected_components`, `pagerank`,
+`bfs`, `dijkstra`, `degrees`, `dijkstra_paths` — no triangle kernel of any name.
+`crates/grustcat/src/lib.rs` exposes `bfs`, `dijkstra`, `dijkstra_paths`,
+`weakly_connected_components`, `strongly_connected_components`, `pagerank` — the
+same absence. The C++ side has both: `include/networkit/graph/BFS.hpp` and
+`include/networkit/global/GlobalClusteringCoefficient.hpp`.
+
+**So the intersection across all five is exactly `{PageRank, WCC}`.** The design
+doc's rule — only what every participant implements, so no cell is empty — admits
+two algorithms, not three, and no substitution fixes it: BFS loses the library,
+triangles loses two of ours.
+
+### What I would do, and it keeps more than the rule alone would
+
+**A row is a row only where all its cells exist, and tables may have different
+widths.**
+
+- **PageRank and WCC: the five-column tables.** The comparison the benchmark is
+  for, all five participants, no empty cells.
+- **BFS: a four-column table** — `icebug`, `icecat`, `grustcat`, `grust` — said
+  plainly to exclude the library because it has no such kernel, not because it
+  was slow at it.
+- **Triangles: a three-column table** — `library`, `icebug`, `grust` — which is
+  the only cell in the whole design where the library and a Grust kernel meet on
+  an algorithm our own middle columns lack. That is worth having and worth
+  labelling.
+
+The alternative that respects the doc's letter is two algorithms for everyone and
+nothing else published. I think that throws away the BFS row, where four
+participants including the whole lineage can be compared, to avoid a table with
+four columns instead of five. But it is a report-shape decision rather than a
+measurement one, so it is yours.
+
+**What I will not do is add a kernel to `icecat` or `grustcat` to fill a cell.**
+Writing a triangle counter into a participant so it can appear in a table measures
+code written for the table.
+
+Parity now covers `library` and `grust`; next is `icecat`, which shares the
+`ExecutionContext` shape with `grustcat` and should be quick, then the C++
+participant and the image.
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
