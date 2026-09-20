@@ -39,11 +39,39 @@ use grust_procedures::{ExecutionContext, Result};
 
 /// Work units below which kernels stay sequential.
 ///
-/// Provisional: this is a starting value, to be replaced by the crossover the
-/// scaling benchmark measures on a machine with real cores. Until that number
-/// exists, the constant is deliberately high, so small inputs keep today's
-/// behavior rather than paying for a pool that may not earn it.
-pub(crate) const SEQUENTIAL_BELOW_UNITS: usize = 1 << 18;
+/// Measured on quegee (Xeon Platinum 8124M, 8 physical cores and 16 threads)
+/// with `examples/scaling`, on prefixes of roadNet-CA at 20,000 to 500,000
+/// edges. PageRank and components were already faster in parallel at the
+/// smallest size measured (4.4x and 4.3x at 20,000 edges), because their
+/// parallel forms are better algorithms as well as threaded ones, so the
+/// crossover for them is below the smallest graph worth measuring. This
+/// constant sits just under that size: small enough not to withhold a win,
+/// large enough that a graph of a few thousand edges never pays for a pool.
+///
+/// Breadth-first search is the exception and does not use this constant alone:
+/// on a high-diameter graph its levels are tiny, and at these sizes the
+/// parallel expansion was 0.16x to 0.94x of sequential. It decides level by
+/// level instead, on the size of the frontier it is about to expand.
+pub(crate) const SEQUENTIAL_BELOW_UNITS: usize = 1 << 14;
+
+/// Work units below which breadth-first search stays sequential.
+///
+/// Measured on roadNet-CA prefixes: at 20,000 edges the parallel expansion ran
+/// at 0.78x of the sequential queue even with every level expanded in place,
+/// because claiming a node with a compare-exchange costs more than testing a
+/// distance when nothing contends. It reached 1.37x at 200,000 edges and 2.7x on
+/// the whole graph, so the crossover is a few hundred thousand units; this sits
+/// at the conservative end of that range.
+pub(crate) const BREADTH_FIRST_SEQUENTIAL_BELOW_UNITS: usize = 1 << 18;
+
+/// Frontier size below which one breadth-first level expands sequentially.
+///
+/// Measured on the same runs: on roadNet-CA, whose levels hold hundreds of
+/// nodes, whole-kernel parallelism lost until the graph reached millions of
+/// edges, while on com-Orkut, whose frontiers reach millions, it gained 7.8x.
+/// Deciding per level keeps both: a small frontier costs nothing to expand in
+/// place, and a large one is worth spreading.
+pub(crate) const SEQUENTIAL_FRONTIER_BELOW: usize = 2048;
 
 /// Worker count for this execution, or `None` when the kernel should run its
 /// sequential path: too little work, no concurrency asked for, or a build
@@ -53,7 +81,17 @@ pub(crate) const SEQUENTIAL_BELOW_UNITS: usize = 1 << 18;
 /// the parallel implementation on one thread. That distinction is what lets the
 /// scaling benchmark separate a change of algorithm from the cost of threads.
 pub(crate) fn workers(context: &ExecutionContext, units: usize) -> Option<usize> {
-    if units < SEQUENTIAL_BELOW_UNITS {
+    workers_above(context, units, SEQUENTIAL_BELOW_UNITS)
+}
+
+/// As [`workers`], for a kernel whose own crossover is higher than the shared
+/// one. Breadth-first search is the one such kernel today.
+pub(crate) fn workers_above(
+    context: &ExecutionContext,
+    units: usize,
+    minimum: usize,
+) -> Option<usize> {
+    if units < minimum {
         return None;
     }
     #[cfg(feature = "parallel")]
