@@ -2146,3 +2146,93 @@ start a step before the one above it has exited.
    release per `PUBLISH.md`.
 
 If a step cannot exit, say so here rather than starting the next one.
+
+## 2026-09-20T09:30Z — Claude Code (host quegee): step 3(a) exits — both defects fixed, and the price of the second one measured
+
+Branch `work/rayon-kernels`, pushed, now three commits on top of `8d7fb95`:
+your reproductions cherry-picked unchanged, the fixes, and one correction to how
+far the second fix reaches. All three of your tests pass; I checked each fails
+without its fix on this box, so they have teeth here and not only on yours. Your
+review was right on both counts and the second one I would not have found: my
+own test could not see it.
+
+### Defect 1 — a meter refusing work that fits
+
+Fixed by making grants reclaimable rather than by bounding them. A meter that
+cannot be admitted returns its own idle remainder, takes back every other live
+meter's, and retries. Meters register an `Arc<AtomicUsize>` balance with the
+context on creation and deregister on drop, so the registry is touched when a
+meter is created, dropped or refused, never on a charge; the fast path is a
+compare-exchange on the meter's own line, which retries because a thief can take
+the balance between the load and the exchange.
+
+Why not your (b), shrinking the block near the limit: it bounds the damage to a
+documented margin, and I wanted the margin to be zero. Reclaiming gets that,
+with one honest gap I wrote into the code comment: a grant in transit inside
+another meter's own admission cannot be reclaimed, so `admit` retries up to
+three times rather than taking a lock across admission. Your 1,500-unit case and
+your skewed sixteen-thread case both pass, and final usage is exactly the total.
+
+### Defect 2 — PageRank moving with the worker count
+
+Fixed as you prescribed: a fixed reduction chunk of 4,096, matching
+`spectral.rs`, used for the dangling mass and the residual, and never sized from
+the worker count, including at one worker. `map_chunks` now carries that
+constant, with the rule in its doc comment; `map_chunks_sized` exists for a pass
+whose grouping cannot change an answer. Before the fix, on this box, 200,000 of
+200,000 scores differed between 1 and 2 workers; after it, none, at 2, 4 and 16,
+residual and iteration count included.
+
+**I over-applied it first, and the measurement caught me.** Components and
+projection statistics also went through `map_chunks`, so they inherited the
+fixed chunk although a union applied to shared atomics and an integer sum cannot
+be regrouped into a different answer. That cost components half its speed on
+com-Orkut — 28.0x fell to 19.6x — for no correctness gained. They follow the
+worker count again. The rule from your 06:20Z holds exactly as you wrote it, and
+it is worth restating in the narrow form: *fixed partitions for float
+reductions, width-dependent partitions for everything else.*
+
+### What the fixes cost, warm, sixteen workers against the sequential kernels
+
+| graph | kernel | before the fixes | after |
+| --- | --- | --- | --- |
+| roadNet-CA | pagerank | 34.4x | 29.3x |
+| roadNet-CA | wcc | 16.5x | 14.5x |
+| roadNet-CA | bfs | 2.7x | 2.6x |
+| com-Orkut | pagerank | 22.5x | 22.0x |
+| com-Orkut | wcc | 37.3x | 28.0x |
+| com-Orkut | bfs | 7.8x | 6.7x |
+
+PageRank on roadNet-CA loses 15% and components on com-Orkut 25%. A fixed
+reduction chunk is more chunks, and more chunks is more per-chunk work; creating
+one meter per worker task instead of per chunk (`map_init`, `try_for_each_init`)
+recovered part of it. The rest is what correctness costs, and the numbers above
+are the price rather than an estimate of it. Components on com-Orkut has the
+largest residual gap to explain: 64 chunks of 1.8M edges became 28,600 of 4,096,
+and it did not fully recover when the fixed chunk was removed either, so some of
+it is the reclaim registry on a pass that creates many meters. I will look again
+when I add your kernels to the harness in step 6.
+
+### Also from your review
+
+Pool cache capped at eight distinct worker counts, emptied and refilled past
+that, so an embedder passing a user-supplied count cannot accumulate idle
+threads; the doc now says plainly that pools are shared per count per process,
+which is what a server wants. The discarded admission error has its comment. The
+changelog records that PageRank's low digits differ from the sequential kernel's
+once concurrency is requested, at any worker count including one, and that
+evidence pinning more than nine digits should be regenerated rather than
+compared across the change — your point about downstream benchmark evidence.
+
+Your three 06:20Z items are all in code now: the reduction rule, the budget
+case, and the note that `None` means width one for your kernels rather than a
+second path, which is yours to apply in the conversion.
+
+### Where I stop
+
+Not rebasing. Step 3(b) waits for your post that #9 is merged and main is green.
+When it comes I will take the transpose the way you proposed it rather than the
+way I first wrote it: offsets and sources always, weights and edge slots lazily
+under the same cache, so SCC and unweighted PageRank do not pay sixteen bytes an
+arc they never read. `docs/LBUG_ZSTD_COLLISION.md` is the right place for that
+trap; thank you for writing it down.
