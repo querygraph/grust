@@ -101,20 +101,20 @@ impl Louvain {
 /// The graph one level works on. Rows hold arcs to **other** nodes only; what a
 /// node carries to itself — loops at the first level, a whole community's
 /// internal weight after coarsening — is `inside`, already in `A_uu` units.
-struct Level {
-    offsets: Buffer<usize>,
-    targets: Buffer<usize>,
-    weights: Buffer<f64>,
-    inside: Buffer<f64>,
+pub(super) struct Level {
+    pub(super) offsets: Buffer<usize>,
+    pub(super) targets: Buffer<usize>,
+    pub(super) weights: Buffer<f64>,
+    pub(super) inside: Buffer<f64>,
     /// In-arcs, for directed graphs only; an undirected row is its own mirror.
-    incoming: Option<(Buffer<usize>, Buffer<usize>, Buffer<f64>)>,
+    pub(super) incoming: Option<(Buffer<usize>, Buffer<usize>, Buffer<f64>)>,
 }
 
 impl Level {
-    fn nodes(&self) -> usize {
+    pub(super) fn nodes(&self) -> usize {
         self.inside.values.len()
     }
-    fn row(&self, node: usize) -> std::ops::Range<usize> {
+    pub(super) fn row(&self, node: usize) -> std::ops::Range<usize> {
         self.offsets.values[node]..self.offsets.values[node + 1]
     }
 }
@@ -139,17 +139,7 @@ impl Level {
 pub fn louvain(graph: &GraphProjection, options: LouvainOptions) -> Result<Louvain> {
     let context = graph.execution();
     context.checkpoint()?;
-    if !options.resolution.is_finite()
-        || options.resolution < 0.0
-        || !options.tolerance.is_finite()
-        || options.tolerance < 0.0
-        || options.max_levels == 0
-        || options.max_iterations == 0
-    {
-        return Err(AlgorithmError::InvalidArguments(
-            "Louvain requires finite nonnegative resolution and tolerance, and positive maxLevels and maxIterations".into(),
-        ));
-    }
+    validate(&options)?;
     let n = graph.node_count();
     let directed = graph.orientation() != Orientation::Undirected;
     let mut level = first_level(graph, directed, context)?;
@@ -161,7 +151,7 @@ pub fn louvain(graph: &GraphProjection, options: LouvainOptions) -> Result<Louva
     let mut converged = false;
 
     for depth in 0..options.max_levels {
-        let outcome = move_nodes(&level, directed, &options, depth as u64, context)?;
+        let outcome = move_nodes(&level, directed, &options, depth as u64, None, context)?;
         if !outcome.moved {
             converged = outcome.settled;
             break;
@@ -186,9 +176,44 @@ pub fn louvain(graph: &GraphProjection, options: LouvainOptions) -> Result<Louva
         level = coarsen(&level, &dense, count, directed, context)?;
     }
 
+    finish(
+        graph,
+        &assignment.values,
+        levels,
+        converged,
+        options.resolution,
+    )
+}
+
+pub(super) fn validate(options: &LouvainOptions) -> Result<()> {
+    if !options.resolution.is_finite()
+        || options.resolution < 0.0
+        || !options.tolerance.is_finite()
+        || options.tolerance < 0.0
+        || options.max_levels == 0
+        || options.max_iterations == 0
+    {
+        return Err(AlgorithmError::InvalidArguments(
+            "community detection requires finite nonnegative resolution and tolerance, and positive maxLevels and maxIterations".into(),
+        ));
+    }
+    Ok(())
+}
+
+/// Name communities by their smallest member and measure the partition.
+pub(super) fn finish(
+    graph: &GraphProjection,
+    assignment: &[usize],
+    levels: usize,
+    converged: bool,
+    resolution: f64,
+) -> Result<Louvain> {
+    let context = graph.execution();
+    let n = graph.node_count();
+    context.charge_work(2 * n)?;
     // Canonical ids: the smallest member's row.
     let mut smallest = Buffer::filled(n, usize::MAX, context)?;
-    for (node, &community) in assignment.values.iter().enumerate() {
+    for (node, &community) in assignment.iter().enumerate() {
         if smallest.values[community] == usize::MAX {
             smallest.values[community] = node;
         }
@@ -196,8 +221,8 @@ pub fn louvain(graph: &GraphProjection, options: LouvainOptions) -> Result<Louva
     let mut communities = Buffer::capacity(n, context)?;
     communities
         .values
-        .extend(assignment.values.iter().map(|&c| smallest.values[c]));
-    let modularity = modularity_of(graph, &communities.values, options.resolution, context)?;
+        .extend(assignment.iter().map(|&c| smallest.values[c]));
+    let modularity = modularity_of(graph, &communities.values, resolution, context)?;
     Ok(Louvain {
         graph: graph.clone(),
         communities,
@@ -257,7 +282,7 @@ pub(crate) fn modularity_of(
     Ok(modularity)
 }
 
-fn first_level(
+pub(super) fn first_level(
     graph: &GraphProjection,
     directed: bool,
     context: &ExecutionContext,
@@ -334,21 +359,24 @@ fn transpose(
     Ok((reversed, sources, carried))
 }
 
-struct Moves {
-    community: Buffer<usize>,
+pub(super) struct Moves {
+    pub(super) community: Buffer<usize>,
     /// Any node changed community in this level.
-    moved: bool,
+    pub(super) moved: bool,
     /// The last sweep moved nothing: a local optimum, not a limit.
-    settled: bool,
+    pub(super) settled: bool,
     /// Modularity gained in this level.
-    gain: f64,
+    pub(super) gain: f64,
 }
 
-fn move_nodes(
+/// Local moving from `initial` (singletons when `None`). Leiden restarts each
+/// level from the partition the level above found, not from singletons.
+pub(super) fn move_nodes(
     level: &Level,
     directed: bool,
     options: &LouvainOptions,
     depth: u64,
+    initial: Option<&[usize]>,
     context: &ExecutionContext,
 ) -> Result<Moves> {
     let n = level.nodes();
@@ -375,7 +403,10 @@ fn move_nodes(
     }
     let total: f64 = k_out.values.iter().sum();
     let mut community = Buffer::capacity(n, context)?;
-    community.values.extend(0..n);
+    match initial {
+        Some(labels) => community.values.extend_from_slice(labels),
+        None => community.values.extend(0..n),
+    }
     if !total.is_finite() {
         return Err(AlgorithmError::Numerical(
             "total edge weight is not finite".into(),
@@ -390,10 +421,12 @@ fn move_nodes(
         });
     }
 
-    let mut out_of = Buffer::capacity(n, context)?;
-    out_of.values.extend_from_slice(&k_out.values);
-    let mut into = Buffer::capacity(n, context)?;
-    into.values.extend_from_slice(&k_in.values);
+    let mut out_of = Buffer::filled(n, 0.0f64, context)?;
+    let mut into = Buffer::filled(n, 0.0f64, context)?;
+    for node in 0..n {
+        out_of.values[community.values[node]] += k_out.values[node];
+        into.values[community.values[node]] += k_in.values[node];
+    }
     let mut order = Buffer::capacity(n, context)?;
     order.values.extend(0..n);
     if let Some(seed) = options.seed {
@@ -496,7 +529,7 @@ fn move_nodes(
 }
 
 /// Dense ids in order of each community's smallest member.
-fn renumber(
+pub(super) fn renumber(
     community: &Buffer<usize>,
     context: &ExecutionContext,
 ) -> Result<(Buffer<usize>, usize)> {
@@ -514,7 +547,7 @@ fn renumber(
     Ok((dense, count))
 }
 
-fn coarsen(
+pub(super) fn coarsen(
     level: &Level,
     dense: &Buffer<usize>,
     count: usize,

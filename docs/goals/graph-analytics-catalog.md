@@ -652,6 +652,13 @@ M4 (Tier A), then per milestone.** Each is a minor version: new public API.
   it is an option inside `pagerank.rs`, which is push-based and sequential and
   which the Nutmeg agent may be parallelising. Do it when that file's owner is
   settled, preferably by moving PageRank onto `spectral::pull`.
+- **Leiden returns the refined partition, always.** In the paper the final
+  answer is the move phase's partition of the last aggregate graph, which is
+  connected only because the loop ran until that partition was all singletons.
+  Under a level cap that is not so; returning the composition of refined
+  partitions keeps the guarantee unconditionally. Refinement is greedy (no
+  `theta`). `louvain.rs` exposes `Level`, `move_nodes` (now with an initial
+  partition), `renumber`, `coarsen`, `validate` and `finish` as `pub(super)`.
 
 ## Progress ledger
 
@@ -663,7 +670,7 @@ Update in the same commit as the work. `—` not started, `wip`, `done <commit>`
 | P4 | — | P5 | done (`random.rs`) | P6 | — |
 | P7 | done (`parallel.rs`) | 1 Louvain | done | 2 Betweenness | done |
 | 3 Node similarity | done | 4 Triangles/LCC | done | 5 k-core | done |
-| 6 Closeness/harmonic | done | 7 Leiden | — | 8 Label propagation | done |
+| 6 Closeness/harmonic | done | 7 Leiden | done | 8 Label propagation | done |
 | 9 A\*/Bellman–Ford | — | 10 Eigenvector family | done except `articleRank` | 11 Bridges family | done |
 | 12 Spanning forest | done | 13 Max flow | — | 14 FastRP | — |
 | 15–35 | — (see Tier B) | | | | |

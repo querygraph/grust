@@ -592,3 +592,19 @@ fn eigenvector_katz_and_hits_are_ordinary_procedures_with_convergence_evidence()
     );
     assert_eq!(rows, vec![vec![Value::Int(1), Value::Bool(false)]]);
 }
+
+#[test]
+fn leiden_is_an_ordinary_procedure_with_louvains_shape() {
+    let rows = run(
+        "CALL grust.algorithms.leiden({orientation: 'undirected', seed: 7}) YIELD nodeId, communityId, modularity, converged RETURN nodeId, communityId, modularity, converged",
+    );
+    assert_eq!(rows.len(), 4);
+    assert_eq!(rows[1][1], rows[2][1], "b and c share a community");
+    assert_eq!(rows[3][1], Value::String("isolate".into()));
+    assert!(rows.iter().all(|row| row[3] == Value::Bool(true)));
+    // On this graph the two searches agree.
+    let plain = run(
+        "CALL grust.algorithms.louvain({orientation: 'undirected', seed: 7}) YIELD nodeId, communityId, modularity, converged RETURN nodeId, communityId, modularity, converged",
+    );
+    assert_eq!(rows, plain);
+}

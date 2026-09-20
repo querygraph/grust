@@ -23,6 +23,8 @@ mod graph_input;
 mod kcore;
 mod label_propagation;
 pub use label_propagation::{LabelPropagation, LabelPropagationOptions, label_propagation};
+mod leiden;
+pub use leiden::{Leiden, LeidenOptions, leiden};
 mod louvain;
 pub use kcore::{KCore, k_core};
 pub use louvain::{Louvain, LouvainOptions, louvain};

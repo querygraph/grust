@@ -6,6 +6,19 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ## Unreleased
 
+- Add **Leiden** community detection: `leiden` and `grust.algorithms.leiden`,
+  with Louvain's options and result shape. Between moving and coarsening it
+  refines each community from singletons, merging a node only while it is still
+  alone, only into a neighbour's group, and only when modularity does not fall,
+  so **every community is connected** — weakly, on a directed projection, and
+  never through a zero-weight arc. The result is always the refined partition,
+  so the guarantee holds however the run ends, `maxLevels` included. Refinement
+  is greedy, the zero-temperature limit of the paper's randomised rule: it
+  keeps connectivity and reproducibility and gives up the paper's asymptotic
+  optimality guarantee; there is no `theta`. Tests assert connectivity and
+  honest modularity over 4,500 random runs with zero weights, loops and parallel
+  edges, never above the brute-force optimum, and exact recovery of planted
+  cliques.
 - Add **eigenvector centrality**, **Katz centrality** and **HITS**:
   `eigenvector`, `katz`, `hits` and the procedures of the same names, each
   reporting `iterations`, `converged` and `residual` as `pagerank` does, never

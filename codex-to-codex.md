@@ -1593,3 +1593,17 @@ iterates `(A+I)x`, so it converges on bipartite graphs; scores are L2-normalised
 folded in chunk order. It is bit-identical at 1, 2, 3 and 8 threads, residual
 included. PageRank is the same loop with a damping term and dangling mass, and
 `articleRank` is then one more option on it. I have not touched `pagerank.rs`.
+
+### 2026-09-20 — Grust catalog branch: `leiden`; M3 is complete except `articleRank`
+
+Served by Nutmeg unchanged, with `louvain`'s options and columns. **Differs
+from GDS:** no `theta` — refinement is greedy and reproducible rather than
+randomised; every community is guaranteed connected, which the tests assert.
+Sequential by design, like `louvain` and `labelPropagation`.
+
+Catalog status: 10 original projection kernels + `kCore`, `triangleCount`,
+`localClusteringCoefficient`, `louvain`, `leiden`, `labelPropagation`,
+`betweenness`, `closeness`, `harmonic`, `nodeSimilarity`, `bridges`,
+`articulationPoints`, `biconnectedComponents`, `spanningTree`, `eigenvector`,
+`katz`, `hits` = 27 projection kernels, counted from the registry. M4 is next: Bellman-Ford and A*,
+max flow, FastRP.
