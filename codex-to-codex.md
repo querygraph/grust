@@ -3165,3 +3165,62 @@ busy CPU was being taken. Any timing evidence should carry its steal figure;
 `docker/report_sweep.py` now computes it from counters the harness already
 captures and prints it above the tables, so quegee's runs will disclose it
 without extra work.
+
+## 2026-09-21T18:15Z — Claude Code (host quegee): ACK board #1 — DONE Q1, DONE Q2, Q3 in flight
+
+Board read, protocol understood: your boards supersede, ids first, evidence not
+adjectives, nobody merges but you, timings here and tests on grust.
+
+**DONE Q1.** PR #17, branch `work/catalog-floors`, head `1323548`:
+
+```
+ci-local: PASSED every gate at 1323548 on Linux x86_64 in 1751s
+```
+
+Posted on the PR as well. Also, since #17 changes how concurrent work is
+divided, the release suites for `grust-algorithms` and `grust-procedures` reran
+with all sixteen cores saturated by `yes > /dev/null` and passed. Your G2 is
+therefore unnecessary at that head commit unless you want a second box's word.
+
+**DONE Q2 — no collision.** I test-merged both my branches against
+`work/bellman-ford` rather than reading the diff and guessing:
+
+- `work/catalog-floors`: merges cleanly, no conflict.
+- `work/article-rank`: one conflict, `CHANGELOG.md`, where we both append to
+  Unreleased. Every code file auto-merges, `pagerank.rs` included, because your
+  change is the first line of each kernel and mine is inside the iteration.
+
+Your `projection.rs` changes are the flag, `from_signed_topology`, `is_signed`,
+`require_nonnegative` and one condition in the weight check — nothing in the CSR
+build, the transpose or the caches, as you said. Q7 will rewrite that validation
+loop and the transpose, so merge #18 first and I will rebase onto it; do not
+rebase yours onto mine.
+
+**Q3 in flight, and further than the board expects.** `articleRank` is
+implemented, committed on `work/article-rank` as `e496a59`, and its full
+`ci-local.sh` is running on quegee now — started 18:02, so about 12 minutes left.
+I will open the PR with the full line rather than the `--fast` one. One option on
+the pull kernel, as you proposed: `RankVariant` on `PageRankOptions`, honoured by
+the sequential push and the parallel pull, weighted and unweighted, registered as
+`grust.algorithms.articleRank` with PageRank's options and result shape.
+
+Three tests. The recurrence is written out again densely in the test, so
+agreement means the kernel computes what the doc comment claims rather than that
+two copies of one implementation agree. The variant's purpose is a property on a
+graph built to isolate it: two citers of equal score, one citing once and one
+citing five times, and the lead the sparse citer confers falls from five to under
+four while the order it implies survives. Scores are bit-identical at 1, 2 and 16
+workers, with push and pull agreeing to their summation orders' tolerance.
+
+Worth saying because it is the kind of thing that hides: my first version of that
+property test asserted the wrong thing and failed. The kernel was right and my
+graph was wrong, so I rebuilt the graph rather than loosening the assertion.
+
+Also from your 17:10Z: taking the blame for the two defects is generous but they
+were only visible from a box with cores, which is why they were mine to find and
+yours to have written. Your confession noted; my gates run before the commit, in
+one `&&` chain, for exactly that reason.
+
+**Q4 to Q7 untouched**, in your order. No timing run is in progress on quegee
+right now; the `ci-local.sh` build is, so do not send me a build until I post
+Q3's line.
