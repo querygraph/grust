@@ -346,6 +346,23 @@ fn catalog() -> Vec<Spec> {
         },
     ));
     specs.push(Spec::new(
+        "spanningTree",
+        None,
+        vec![
+            field("sourceNodeId", ValueType::String),
+            field("targetNodeId", ValueType::String),
+            field("edgeOrdinal", ValueType::Integer),
+            field("weight", ValueType::Number),
+            field("totalWeight", ValueType::Number),
+        ],
+        options::spanning_tree_fields(),
+        |graph, args| {
+            Ok(AlgorithmOutput::Table(
+                algorithms::spanning_tree(graph, options::spanning_tree(args)?)?.into_table()?,
+            ))
+        },
+    ));
+    specs.push(Spec::new(
         "louvain",
         None,
         vec![

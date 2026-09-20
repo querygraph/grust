@@ -6,6 +6,16 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ## Unreleased
 
+- Add **minimum and maximum spanning forests**: `spanning_tree` and
+  `grust.algorithms.spanningTree`, with `objective` and `sourceNode`. Kruskal
+  with union by size and path halving, on an undirected projection. Ties go to
+  the smaller edge ordinal, so edges are in a total order and the forest is the
+  greedy one for it: the same projection always gives the same edges, not one
+  of several equally light ones. `sourceNode` keeps the tree of that node's
+  component, which is what a Prim run from it returns. Only the sort runs on
+  the rayon pool, and its order is total, so nothing depends on the pool. The
+  test finds the expected forest by exhaustive search over edge subsets, with
+  heavy ties, for both objectives.
 - Add **bridges**, **articulation points** and **biconnected components**:
   `biconnectivity`, and `grust.algorithms.bridges`, `.articulationPoints` and
   `.biconnectedComponents`, from one iterative low-link pass on an undirected

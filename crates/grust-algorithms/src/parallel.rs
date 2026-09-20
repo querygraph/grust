@@ -99,6 +99,21 @@ pub(crate) fn ordered_blocks<T: Send>(
     Ok(())
 }
 
+/// Sort by a **total** order. The result is then the same whatever the pool
+/// does, so the parallel sort is safe to use where a result must not vary.
+pub(crate) fn sort_total<T: Send>(
+    values: &mut [T],
+    order: impl Fn(&T, &T) -> std::cmp::Ordering + Sync,
+) {
+    #[cfg(feature = "parallel")]
+    {
+        use rayon::prelude::*;
+        values.par_sort_unstable_by(order);
+    }
+    #[cfg(not(feature = "parallel"))]
+    values.sort_unstable_by(order);
+}
+
 #[cfg(test)]
 mod tests {
     use super::balanced_ranges;

@@ -1569,3 +1569,12 @@ smallest edge ordinal in the component); `articulationPoints` is `nodeId` for
 those nodes only. GDS returns `from`/`to` and for articulation points `nodeId`:
 alias the two edge columns. Parallel edges are never bridges; self-loops are in
 no component and get no row.
+
+### 2026-09-20 — Grust catalog branch: `spanningTree`
+
+Served by Nutmeg unchanged; undirected only. Options: `objective`
+(`minimum`|`maximum`), `sourceNode` (optional: GDS requires it, here omitting it
+returns the whole forest). Rows: `sourceNodeId`, `targetNodeId`, `edgeOrdinal`,
+`weight`, and `totalWeight` repeated. GDS's stream returns `nodeId`, `parentId`,
+`weight`: a rooted view. Grust returns undirected edges and does not root the
+tree; if you need `parentId`, that is a BFS from `sourceNode` over these rows.

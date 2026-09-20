@@ -532,3 +532,31 @@ fn bridges_articulation_points_and_components_are_ordinary_procedures() {
         .contains("undirected")
     );
 }
+
+#[test]
+fn spanning_tree_is_an_ordinary_procedure() {
+    // Undirected with costs: a-b 2.0, b-c 0.5, c-b 0.0. The lighter of the
+    // parallel pair is taken.
+    let query = |options: &str| {
+        run(&format!(
+            "CALL grust.algorithms.spanningTree({{orientation: 'undirected', weightProperty: 'cost'{options}}}) YIELD edgeOrdinal, weight, totalWeight RETURN edgeOrdinal, weight, totalWeight"
+        ))
+    };
+    assert_eq!(
+        query(""),
+        vec![
+            vec![Value::Int(0), Value::Float(2.0), Value::Float(2.0)],
+            vec![Value::Int(2), Value::Float(0.0), Value::Float(2.0)],
+        ]
+    );
+    assert_eq!(
+        query(", objective: 'maximum'"),
+        vec![
+            vec![Value::Int(0), Value::Float(2.0), Value::Float(2.5)],
+            vec![Value::Int(1), Value::Float(0.5), Value::Float(2.5)],
+        ]
+    );
+    // The isolate's component has no edges.
+    assert!(query(", sourceNode: 'isolate'").is_empty());
+    assert_eq!(query(", sourceNode: 'c'").len(), 2);
+}

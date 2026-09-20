@@ -2,7 +2,7 @@ use super::*;
 use algorithms::{
     BetweennessOptions, ClosenessOptions, HarmonicOptions, LabelPropagationOptions, LouvainOptions,
     MissingWeight, NodeSimilarityOptions, Orientation, PageRankOptions, ProjectionOptions,
-    SimilarityMetric, TriangleOptions, WeightSelection,
+    SimilarityMetric, SpanningObjective, SpanningTreeOptions, TriangleOptions, WeightSelection,
 };
 
 fn option(name: &str, value_type: ValueType, default: Value, nullable: bool) -> OptionField {
@@ -302,6 +302,47 @@ pub(super) fn node_similarity(args: &ValidatedArguments) -> Result<NodeSimilarit
             _ => Some(positive(args, "upperDegreeCutoff")?),
         },
     })
+}
+
+pub(super) fn spanning_tree_fields() -> Vec<OptionField> {
+    vec![
+        option(
+            "objective",
+            ValueType::String,
+            Value::String("minimum".into()),
+            false,
+        ),
+        option("sourceNode", ValueType::String, Value::Null, true),
+    ]
+}
+
+pub(super) fn spanning_tree(args: &ValidatedArguments) -> Result<SpanningTreeOptions<'_>> {
+    let objective = match value(args, "objective")? {
+        Value::String(value) => match value.to_ascii_lowercase().as_str() {
+            "minimum" => SpanningObjective::Minimum,
+            "maximum" => SpanningObjective::Maximum,
+            _ => {
+                return Err(ProcedureError::InvalidArguments(
+                    "objective must be minimum or maximum".into(),
+                ));
+            }
+        },
+        _ => {
+            return Err(ProcedureError::InvalidArguments(
+                "objective must be a string".into(),
+            ));
+        }
+    };
+    let source = match value(args, "sourceNode")? {
+        Value::Null => None,
+        Value::String(id) => Some(id.as_str()),
+        _ => {
+            return Err(ProcedureError::InvalidArguments(
+                "sourceNode must be a node id".into(),
+            ));
+        }
+    };
+    Ok(SpanningTreeOptions { objective, source })
 }
 
 pub(super) fn louvain(args: &ValidatedArguments) -> Result<LouvainOptions> {

@@ -37,6 +37,8 @@ mod shortest;
 mod similarity;
 mod statistics;
 pub use similarity::{NodeSimilarity, NodeSimilarityOptions, SimilarityMetric, node_similarity};
+mod spanning;
+pub use spanning::{SpanningForest, SpanningObjective, SpanningTreeOptions, spanning_tree};
 mod table;
 mod triangles;
 pub use statistics::{CsrEstimate, ProjectionStatistics};
