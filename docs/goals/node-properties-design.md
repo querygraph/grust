@@ -1,9 +1,10 @@
 # Node properties for graph kernels (P6) — design for review
 
-Status: **PROPOSED, 2026-09-21. No code exists.** Operator decision 3 of that
-date asks for this document before any implementation. It needs a yes, a no, or
-changes on the five questions at the end. Everything above them is my
-recommendation and the reasoning for it.
+Status: **APPROVED WITH ONE CHANGE, 2026-09-20.** The operator answered the five
+questions at the end: four as recommended, and **strings are in, for filters
+only** (question 4). The answers are recorded at the end, and the "Types"
+section is amended to match. No code exists yet; implementation follows "Order
+of work".
 
 ## Why
 
@@ -78,22 +79,30 @@ the wrong projection because it carries the right one.
 
 ## Types
 
-Three column kinds, chosen from what the table above needs and nothing more:
+Four column kinds. Three are chosen from what the table above needs; the fourth,
+`Category`, was added by the operator for filters:
 
 | Kind | Rust | Arrow in | Used by |
 | --- | --- | --- | --- |
 | Number | `f64` | `Float64`, `Float32`, any integer | coordinates, supplies, scalar features |
 | Integer | `i64` | any integer | community ids, seeds, boolean filters as 0/1 |
 | Vector | `f32` × fixed `d` | `FixedSizeList<Float32\|Float64>`, `List<…>` of constant length | embeddings, feature vectors |
+| Category | `u32` code + dictionary | `Utf8`, `LargeUtf8`, dictionary-encoded `Utf8` | source and target filters, by equality only |
 
 - **`f32` for vectors**, matching `fastRP`'s output, so an embedding written by
   one kernel is read by the next without conversion, and halving the largest
   allocation in the catalog. A `Float64` list is narrowed on read; a value that
   does not survive narrowing as finite is an error, not an infinity.
-- **Strings are out.** A label-valued filter arrives as an integer the caller
-  derived, or as the projection's existing `nodeLabels` selection. Accepting
-  strings means interning them and owning a dictionary, which nothing above
-  needs.
+- **Strings are in for one purpose: equality filters** (operator decision,
+  question 4). A fourth kind, `Category`, reads a `Utf8` column (or
+  `Value::String`) and dictionary-encodes it on read into `u32` codes plus the
+  distinct strings. A kernel may test a node's category for equality or
+  membership — `nodeSimilarity`'s and `knn`'s source and target filters — and
+  nothing else: no ordering, no arithmetic, no use as a feature. The dictionary's
+  strings are admitted against the memory limit like any buffer, and codes are
+  assigned in order of first appearance in row order, so they do not depend on
+  the worker count. What I had recommended, no strings at all, would have made a
+  Nutmeg user pre-encode a category column before filtering by it.
 - **A `List` whose rows differ in length is an error** naming the first row that
   differs. Ragged vectors have no kernel that wants them.
 
@@ -192,20 +201,18 @@ adopts the two functions.
 
 Each step is its own pull request with a Linux `scripts/ci-local.sh` verdict.
 
-## Questions for the operator
+## Questions for the operator, and the answers (2026-09-20)
 
-1. **Sibling object rather than a field on the projection** — agreed? It is the
-   one decision the rest hangs on. The cost is that a property-using kernel has
-   a different signature from a topology-only one. The field would be simpler to
-   explain and would break almost nothing; I prefer the sibling for the cache
-   and for keeping out of `projection.rs`, and would not fight for it.
-2. **Vectors as `f32`** — agreed? The alternative, `f64`, doubles the largest
-   allocations and buys precision no embedding has.
-3. **`Reject` as the default missing policy** — agreed? GDS defaults to a
-   per-type fallback value (NaN for doubles). I think an error is the better
-   default and `Default(NaN)` should be something a caller asks for.
-4. **No strings** — agreed, or is there a Nutmeg use case that needs a
-   string-valued node filter?
-5. **First consumer `modularity`/`conductance`**, rather than `knn` (the one
-   with the most demand) — agreed? My reason is that a small first consumer
-   shakes out the plumbing cheaply.
+1. **Sibling object rather than a field on the projection?** — **Yes, separate
+   object.**
+2. **Vectors as `f32`?** — **Yes.**
+3. **`Reject` as the default missing policy?** — **Yes.** `Default(x)` and `Null`
+   are asked for explicitly.
+4. **No strings?** — **No: strings for filters only.** See `Category` under
+   "Types". This is the one change to the proposal.
+5. **First consumer `modularity` and `conductance`?** — **Yes.** Then `astar`,
+   seeded community detection, and `knn`.
+
+`Category` does not change the order of work: step 1 builds all four kinds, and
+its first consumer is the `nodeSimilarity` filter (catalog group 16), after
+`knn`.
