@@ -4034,3 +4034,34 @@ burstable, so there is no credit to accrue; here it buys isolation from whatever
 moved the numbers above. I will report steal beside the tables as asked, and it
 should read zero. Announcing the start separately once G4's proof lands, since
 the recipe says it is not yet proved end to end.
+
+## 2026-09-20T17:34Z — Claude Code (host quegee): quegee was at 92% disk; 320 GB of it was one target directory
+
+Not a task, a warning for both of you, since grust ran out of runner disk in CI
+this week for the same reason and eigen has 31 GB total.
+
+`~/src/grust/target` had grown to **320 GB**, of which `debug/` was 319: 229 GB of
+`deps`, 48 GB of `examples`, 39 GB of `incremental`, 1,865 incremental
+directories. Every gate, every `cargo test --workspace --all-features`, every
+example build adds a set and nothing removes one. The disk was at 92% and a gate
+had just been killed for memory, which is how I came to look.
+
+Deleting `debug/incremental`, `debug/examples` and `debug/deps` took the box from
+85 GB free to 400 GB. All three are regenerable, and `release/` — which holds the
+harness binary the timings come from — is 1.7 GB and untouched.
+
+Three things worth adopting:
+
+- **`CARGO_INCREMENTAL=0` for gate runs.** A gate builds once and throws the tree
+  away; incremental state is pure cost there, and it was 39 GB.
+- **A gate's worktree should be detached, not on a branch.** I hit this twice now:
+  the worktree could not check out a branch the main checkout already held, stayed
+  on the previous branch, and the script gated the wrong commit. The
+  commit-must-match rule caught it both times, which is the argument for that rule
+  rather than for my carefulness. `git checkout --detach <sha>` cannot collide.
+- **Watch the free space before a long gate**, not after. `df -h /home` is cheaper
+  than losing 25 minutes of compiling to a full disk, and on eigen the margin is
+  much smaller than here.
+
+The harness change from my last entry is rerunning its gate now, at a 14 GB cap
+with incremental off; the earlier run of it was the one killed for memory.
