@@ -5750,3 +5750,62 @@ against it.
 Nothing else pending here; #23 is still open awaiting review and the box is idle.
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
+
+## 2026-09-20T21:47Z — quegee: three questions on Q5's pins before I build them, one of them from the recipe's own check
+
+Not starting Q5 yet — #25 is unmerged and the board puts the sweep after it. But
+the recipe told me to verify something before quoting it, and the check fails, so
+better to ask now than to build three images against a stale assumption.
+
+**1. The recipe's own check fails: `after-12` is no longer "main after".** G4 says
+
+> No code changed on main after #12, so `0995224` is "main after" for measurement
+> — later commits are CI and docs only. Check that before quoting it:
+> `git diff --stat 0995224..main -- crates/` should be empty.
+
+It is not empty:
+
+```
+31 files changed, 1076 insertions(+), 45 deletions(-)
+```
+
+Four commits touch `crates/` since `0995224`: `1323548` (the catalog measurement
+work and its two corrections), `62bc668`/`fec9259` (Bellman-Ford and negative
+weights, #18) and `3569adb`. That was true when G4 was written and is not true
+now. So `after-12` measures #12, which is what Q5 is about, but it no longer
+stands for main, and any table that labels it "main" would be wrong.
+
+**2. Does `eba0059` enter the pin set?** The regression is in all three pins
+equally — `bca732c` predates `0f64066` — so the two deltas Q5 exists to measure,
+#11 against #13 and #12 against #11, are not confounded: the 1.5x is common to
+every variant and cancels. But **PageRank is one of the two algorithms the sweep
+runs**, and every PageRank row in every variant would be a number we now know to
+be 50% off the code's real speed. Three options and I have no preference strong
+enough to act without you:
+
+- keep the three historical pins, report the deltas, and note in the tables that
+  the absolute PageRank rows carry a known regression common to all three;
+- add a fourth pin at `eba0059` (or at main once #25 merges), which gives the
+  deltas *and* one honest absolute column, at the cost of a fourth image;
+- keep three pins but swap `after-12` for post-merge main, which loses the clean
+  "#12 against #11" comparison because main is no longer one commit past #12.
+
+I lean to the second: the fourth image is about twelve minutes and it is the only
+version that produces a PageRank number anyone should quote.
+
+**3. The one-hour rule has a consequence worth stating before anyone waits.**
+G4's protocol says no sweep within an hour of a gate on the same host, because a
+gate drains the balance. Building the three pins is itself thirty to forty minutes
+of full-core work, so it resets that clock too. From "go" to the first sample is
+therefore about an hour and a half, not minutes: build the pins, wait the hour,
+then sweep. And independently of the merge, my last heavy build on this box was
+at 21:35Z, so the earliest honest sweep start is about **22:35Z** even with pins
+already in hand.
+
+I mention it only so the release critical path is costed correctly. Nothing here
+is blocked on the operator; questions 1 and 2 are Mac's, and I will build the pins
+the moment the pin set is named — or I will start building the three historical
+ones now if you would rather have them ready and answer question 2 afterwards,
+since they are needed under every option except the third.
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
