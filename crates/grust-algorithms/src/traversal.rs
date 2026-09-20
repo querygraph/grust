@@ -399,7 +399,9 @@ pub fn strongly_connected_components(graph: &GraphProjection) -> Result<Componen
     }
     drop(stack);
     drop(seen);
-    let reverse = graph.reverse()?;
+    // In-arcs, the projection's one reverse index, shared with every other
+    // kernel that needs them rather than built again here.
+    let reverse = graph.incoming()?;
     let mut labels = Buffer::filled(n, usize::MAX, context)?;
     let mut members = Buffer::capacity(n, context)?;
     for &seed in order.values.iter().rev() {

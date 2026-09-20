@@ -224,7 +224,7 @@ fn run(graph: &GraphProjection, source: &str, paths: bool) -> Result<(Distances,
             if candidate < distances.values[next] {
                 distances.values[next] = candidate;
                 if let Some(parents) = &mut parents {
-                    parents.values[next] = Some((node, adjacency.edge_slots.values[arc]));
+                    parents.values[next] = Some((node, adjacency.edge_slot(arc)));
                 }
                 heap.improve(next, candidate, context)?;
             }

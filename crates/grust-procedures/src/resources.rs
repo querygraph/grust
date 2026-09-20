@@ -465,6 +465,19 @@ impl WorkMeter {
     /// could be refused because of who else exists — the failure the contract
     /// test `an_idle_meters_unspent_block_does_not_refuse_work_that_fits`
     /// reproduces.
+    ///
+    /// One window remains, and a caller should know its shape. A grant being
+    /// moved inside another meter's own admission is held in that meter's stack
+    /// rather than in its balance, so it cannot be reclaimed; three attempts
+    /// cover the moment, and if all three lose, the charge reports
+    /// `BudgetExceeded` although the work would have fitted. The result is a
+    /// query that fails rather than a budget that is exceeded, it needs several
+    /// meters admitting in the same instant with the budget nearly gone, and
+    /// `many_meters_racing_for_the_last_of_a_budget_that_exactly_fits` provokes
+    /// exactly that: two hundred rounds of sixteen meters starting together on
+    /// a budget equal to their work, with no refusal observed. A caller that
+    /// cannot tolerate even a rare spurious refusal should leave one block per
+    /// worker of headroom in the budget.
     #[cold]
     fn admit(&mut self, units: usize) -> Result<()> {
         self.context.check_state(DeadlineCheck::Sampled)?;

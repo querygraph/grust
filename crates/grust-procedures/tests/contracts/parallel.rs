@@ -261,3 +261,49 @@ fn skewed_work_that_exactly_fits_succeeds_at_sixteen_threads() {
     );
     assert_eq!(execution.usage().expect("usage").work_units, total);
 }
+
+/// The reclaim path retries three times, because a grant held inside another
+/// meter's own admission cannot be taken back. That window is narrow but real,
+/// so this provokes it: many meters, all charging at once, against a budget
+/// equal to the work, repeated enough times that a rare loss would show.
+#[test]
+fn many_meters_racing_for_the_last_of_a_budget_that_exactly_fits() {
+    const ROUNDS: usize = 200;
+    const PER_WORKER: usize = 4 * WORK_BLOCK_UNITS;
+    let mut refusals = 0;
+    for _ in 0..ROUNDS {
+        let total = WORKERS * PER_WORKER;
+        let execution = ExecutionContext::new(limits(total, None)).expect("valid limits");
+        let failures = AtomicUsize::new(0);
+        let start = std::sync::Barrier::new(WORKERS);
+        std::thread::scope(|scope| {
+            for _ in 0..WORKERS {
+                let (execution, failures, start) = (execution.clone(), &failures, &start);
+                scope.spawn(move || {
+                    let mut meter = execution.work_meter();
+                    // Charge at the same moment, so admissions collide.
+                    start.wait();
+                    for _ in 0..PER_WORKER {
+                        if meter.charge(1).is_err() {
+                            failures.fetch_add(1, Ordering::Relaxed);
+                            return;
+                        }
+                    }
+                });
+            }
+        });
+        let failed = failures.load(Ordering::Relaxed);
+        refusals += failed;
+        if failed == 0 {
+            assert_eq!(
+                execution.usage().expect("usage").work_units,
+                total,
+                "usage should account for exactly the work performed"
+            );
+        }
+    }
+    assert_eq!(
+        refusals, 0,
+        "{refusals} refusals of work that fits, over {ROUNDS} rounds of {WORKERS} racing meters"
+    );
+}

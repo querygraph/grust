@@ -31,8 +31,26 @@ fn context(workers: usize) -> ExecutionContext {
 /// A deterministic graph: a permutation cycle so every node has a successor,
 /// plus pseudo-random chords from a fixed linear congruential sequence, so the
 /// degree distribution is skewed enough that a naive split would be unbalanced.
+/// The same graph on an execution that never asked for threads, which is what
+/// selects the sequential kernels.
+fn sequential_graph(weighted: bool) -> GraphProjection {
+    build(
+        ExecutionContext::new(ExecutionLimits {
+            memory_bytes: 1 << 30,
+            work_units: usize::MAX,
+            batch_rows: 8192,
+            deadline: None,
+        })
+        .expect("valid limits"),
+        weighted,
+    )
+}
+
 fn graph(workers: usize, weighted: bool) -> GraphProjection {
-    let context = context(workers);
+    build(context(workers), weighted)
+}
+
+fn build(context: ExecutionContext, weighted: bool) -> GraphProjection {
     let nodes = (0..NODES).map(|id| id.to_string().into()).collect();
     let mut edges = Vec::with_capacity(EDGES);
     let mut state = 0x2545_F491_4F6C_DD1Du64;
@@ -117,14 +135,35 @@ fn pagerank_agrees_with_the_sequential_push_and_does_not_move_with_threads() {
 }
 
 #[test]
-fn pagerank_keeps_the_sequential_path_for_weighted_projections() {
-    let options = PageRankOptions::default();
-    let sequential = pagerank(&graph(1, true), options).expect("sequential pagerank");
-    let parallel = pagerank(&graph(16, true), options).expect("pagerank at sixteen threads");
-    // Weighted projections take the push kernel on both paths, so the numbers
-    // are identical rather than merely close.
-    assert_eq!(parallel.values(), sequential.values());
-    assert_eq!(parallel.iterations(), sequential.iterations());
+fn weighted_pagerank_pulls_and_agrees_with_the_sequential_push() {
+    let options = PageRankOptions {
+        tolerance: 1e-10,
+        max_iterations: 100,
+        ..Default::default()
+    };
+    // A weighted projection pulls as well, over in-arcs that carry their weight.
+    let sequential = pagerank(&sequential_graph(true), options).expect("sequential pagerank");
+    let one = pagerank(&graph(1, true), options).expect("pagerank at one worker");
+    let sixteen = pagerank(&graph(16, true), options).expect("pagerank at sixteen threads");
+    for (node, (&pushed, &pulled)) in sequential.values().iter().zip(sixteen.values()).enumerate() {
+        assert!(
+            (pushed - pulled).abs() <= 1e-12 + 1e-9 * pushed.abs(),
+            "node {node}: push {pushed} against pull {pulled}"
+        );
+    }
+    let total: f64 = sixteen.values().iter().sum();
+    assert!((total - 1.0).abs() < 1e-9, "mass {total}");
+    // And the pull is the same number at one worker as at sixteen, bit for bit.
+    let bits = |result: &grust_algorithms::PageRank| -> Vec<u64> {
+        result
+            .values()
+            .iter()
+            .map(|score| score.to_bits())
+            .collect()
+    };
+    assert_eq!(bits(&one), bits(&sixteen));
+    assert_eq!(one.iterations(), sixteen.iterations());
+    assert_eq!(one.residual().to_bits(), sixteen.residual().to_bits());
 }
 
 #[test]

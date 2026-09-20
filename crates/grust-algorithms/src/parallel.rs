@@ -38,7 +38,6 @@
 
 use grust_procedures::{ExecutionContext, Result};
 
-
 /// Work units below which kernels stay sequential.
 ///
 /// Measured on quegee (Xeon Platinum 8124M, 8 physical cores and 16 threads)
@@ -302,7 +301,6 @@ fn pool(workers: usize) -> crate::Result<std::sync::Arc<rayon::ThreadPool>> {
     pools.insert(workers, Arc::clone(&pool));
     Ok(pool)
 }
-
 
 /// Tasks the caller's pool can run at once; 1 without the `parallel` feature.
 pub(crate) fn width() -> usize {

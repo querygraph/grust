@@ -1,7 +1,8 @@
 //! Time the parallel kernels against their sequential paths on a real graph.
 //!
-//!     scaling <edge-list> [--workers 1,2,4,8,16] [--iterations 10]
-//!             [--undirected] [--kernels degree,pagerank,bfs,wcc]
+//!     scaling <edge-list> [--workers 0,1,2,4,8,16] [--iterations 10]
+//!             [--undirected] [--weighted] [--repeat 2]
+//!             [--kernels degree,pagerank,bfs,wcc]
 //!
 //! The edge list is one `source target` pair per line, `#` comments ignored,
 //! as SNAP and the strain harness datasets ship them. The same projection is
@@ -32,6 +33,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // one-off cost from the iteration it amortises over.
     let mut repeat = 1usize;
     let mut orientation = Orientation::Outgoing;
+    let mut weighted = false;
     let mut kernels = vec![
         "degree".to_string(),
         "pagerank".to_string(),
@@ -50,6 +52,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "--iterations" => iterations = value()?.parse()?,
             "--repeat" => repeat = value()?.parse()?,
             "--undirected" => orientation = Orientation::Undirected,
+            // Weights are synthesised from the edge position, so a run is
+            // reproducible and every row has a different scale.
+            "--weighted" => weighted = true,
             "--kernels" => kernels = value()?.split(',').map(String::from).collect(),
             other => return Err(format!("unknown argument `{other}`").into()),
         }
@@ -128,7 +133,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     id: None,
                 })
                 .collect(),
-            None,
+            weighted.then(|| {
+                pairs
+                    .iter()
+                    .enumerate()
+                    .map(|(ordinal, _)| 1.0 + (ordinal % 9) as f64)
+                    .collect()
+            }),
             orientation,
             &context,
         )?;

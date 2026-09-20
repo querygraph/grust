@@ -123,21 +123,19 @@ pub fn pagerank(graph: &GraphProjection, options: PageRankOptions<'_>) -> Result
         });
     }
     let adjacency = graph.outgoing();
-    // An unweighted projection has a probability of 1/out-degree on every arc,
-    // so the iteration can be computed by pulling into each target instead of
+    // The iteration can be computed by pulling into each target instead of
     // pushing out of each source. Pulling is what makes it parallel: targets own
     // their own sums, so no worker writes where another might read, and each sum
-    // stays in reverse-CSR order, so the result does not depend on the division
-    // of work. A weighted projection needs the source's weight total per arc and
-    // keeps the sequential push below.
+    // stays in in-arc order, so the result does not depend on the division of
+    // work. A weighted projection pulls too, because the projection's in-arc
+    // index carries each arc's weight; the push loop below stays as the
+    // sequential path and the oracle the pull is tested against.
     let workers = crate::parallel::workers(
         context,
         n.saturating_add(adjacency.targets.values.len())
             .saturating_mul(2),
     );
-    if let Some(workers) = workers
-        && !graph.is_weighted()
-    {
+    if let Some(workers) = workers {
         return pull(graph, options, &teleport.values, scores, workers);
     }
     let mut next = Buffer::filled(n, 0.0, context)?;
@@ -215,15 +213,16 @@ pub fn pagerank(graph: &GraphProjection, options: PageRankOptions<'_>) -> Result
     })
 }
 
-/// The parallel iteration for an unweighted projection.
+/// The parallel iteration, weighted or not.
 ///
 /// Each iteration computes, for every target `v`,
-/// `next[v] = base * teleport[v] + damping * Σ score[u] / out_degree(u)`
-/// over the in-arcs of `v`, which is the same distribution the push loop above
-/// produces, summed in a different but equally fixed order. Every reduction over
-/// nodes, the dangling mass and the residual, combines per-chunk partial sums in
-/// chunk order, so the sequence of iterations and the final scores are identical
-/// at one worker and at sixteen.
+/// `next[v] = base * teleport[v] + damping * Σ score[u] · p(u → v)`
+/// over the in-arcs of `v`, where `p` is the same arc probability the push loop
+/// derives from the source's scaled weight total. It is therefore the same
+/// distribution, summed in a different but equally fixed order. Every reduction
+/// over nodes, the dangling mass and the residual, combines per-chunk partial
+/// sums in fixed-size chunks in chunk order, so the sequence of iterations and
+/// the final scores are identical at one worker and at sixteen.
 fn pull(
     graph: &GraphProjection,
     options: PageRankOptions<'_>,
@@ -235,7 +234,61 @@ fn pull(
     let n = graph.node_count();
     let adjacency = graph.outgoing();
     let offsets = &adjacency.offsets.values;
-    let reverse = graph.reverse()?;
+    let reverse = graph.incoming()?;
+    // Per-source arc probability, exactly as the push loop derives it: each row
+    // is scaled by its largest weight before summing, so two arcs of f64::MAX
+    // still sum finitely, and a row of zero weight is dangling.
+    let weighted = graph.is_weighted();
+    let mut scales = Buffer::indexed(n, 0.0f64, context)?;
+    let mut totals = Buffer::indexed(n, 0.0f64, context)?;
+    {
+        crate::parallel::for_each_chunk(
+            context,
+            workers,
+            &mut scales.values,
+            |first, slice, meter| {
+                for (index, scale) in slice.iter_mut().enumerate() {
+                    let node = first + index;
+                    let range = offsets[node]..offsets[node + 1];
+                    meter.charge(1 + range.len())?;
+                    if !weighted {
+                        *scale = if range.is_empty() { 0.0 } else { 1.0 };
+                        continue;
+                    }
+                    let mut largest = 0.0f64;
+                    for arc in range {
+                        largest = largest.max(adjacency.weight(arc));
+                    }
+                    *scale = largest;
+                }
+                Ok(())
+            },
+        )?;
+        let scaled = &scales.values;
+        crate::parallel::for_each_chunk(
+            context,
+            workers,
+            &mut totals.values,
+            |first, slice, meter| {
+                for (index, total) in slice.iter_mut().enumerate() {
+                    let node = first + index;
+                    let range = offsets[node]..offsets[node + 1];
+                    meter.charge(range.len())?;
+                    if scaled[node] <= 0.0 {
+                        continue;
+                    }
+                    let mut sum = 0.0;
+                    for arc in range {
+                        sum += adjacency.weight(arc) / scaled[node];
+                    }
+                    *total = sum;
+                }
+                Ok(())
+            },
+        )?;
+    }
+    let scales = &scales.values;
+    let totals = &totals.values;
     let mut next = Buffer::indexed(n, 0.0f64, context)?;
     let mut residual = f64::INFINITY;
     for iteration in 1..=options.max_iterations {
@@ -248,8 +301,9 @@ fn pull(
                 meter.charge(slice.len())?;
                 let mut sum = 0.0;
                 for (index, &score) in slice.iter().enumerate() {
-                    let node = first + index;
-                    if offsets[node + 1] == offsets[node] {
+                    // A row of zero outgoing weight is dangling even where arcs
+                    // exist, which is the push kernel's rule too.
+                    if scales[first + index] <= 0.0 {
                         sum += score;
                     }
                 }
@@ -272,10 +326,13 @@ fn pull(
                     let mut sum = 0.0;
                     for arc in arcs {
                         let source = reverse.targets.values[arc];
-                        let out_degree = offsets[source + 1] - offsets[source];
-                        // A node with no outgoing arc contributes through the
-                        // dangling mass in `base`, never through an arc.
-                        sum += scores_now[source] / out_degree as f64;
+                        // A dangling row contributes through `base`, never
+                        // through an arc; its total is zero and would divide.
+                        if totals[source] <= 0.0 {
+                            continue;
+                        }
+                        let probability = (reverse.weight(arc) / scales[source]) / totals[source];
+                        sum += scores_now[source] * probability;
                     }
                     let updated = base * teleport[node] + options.damping * sum;
                     if !updated.is_finite() {
