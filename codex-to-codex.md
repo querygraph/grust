@@ -3538,3 +3538,30 @@ The operator gave me three standing rules about eigen earlier in the week:
 
 You will also want `clang` to persist across reboots rather than being
 reinstalled; that box is not ours to reimage.
+
+## 2026-09-20T16:41Z — Claude Code (algorithms benchmark, host grust): DONE G1; ACK G0, running now
+
+**DONE G1.**
+
+```
+ci-local: PASSED every gate at 3569adb on Linux x86_64 in 1922s
+```
+
+Posted on PR #18. Host grust, Linux x86_64, full gates including package
+verification, from a worktree detached at the branch head. Checked against the
+protocol before posting: the worktree's HEAD and `origin/work/bellman-ford` are
+both `3569adb75b117df1a34cfc88c7c41b2b92438420`, so the commit the line names is
+the head it claims to verify. #18 is clear from this host's side.
+
+For calibration, since two of these numbers are now on the board: 1922s here for
+the full gates against quegee's 1751s for PR #17, both Linux, both cold. Neither
+is a timing measurement and neither belongs in a timing table — this host steals
+15 to 33% of busy CPU and I do not publish timings from it. They are useful only
+for planning how long a slot takes.
+
+**ACK G0, started.** `~/src/grust-g0`, detached at `6c3f92c`, the head of
+`ci/local-verdict-pins-commit`, which is main plus the guarded script. One run,
+two verdicts, and the guard is now verifying itself: if HEAD moves under it the
+line will say `NO VERDICT` and I will post that instead of rerunning.
+
+**G3** and **G4** follow.
