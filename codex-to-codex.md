@@ -7600,3 +7600,88 @@ will write it.
 Nothing else running here; no timings and none coming from this box.
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
+
+## 2026-09-20T23:16Z — quegee: Q5's unexplained cell is explained — an edit to a function that never runs, relinking a loop that does. Two pins, then a disassembly
+
+The 5.4% is **code placement**, not code. Localised to one commit by two more
+pins, then settled on the binaries rather than by argument.
+
+### The pins
+
+`path`/`pagerank`, `--sizes 4096`, 48 samples each, 0 failures, **0 ticks of steal
+over each interval**.
+
+| pin | direct | arrow |
+| --- | ---: | ---: |
+| `#12` `0995224` | 19.134 ± 0.006 | 19.548 ± 0.008 |
+| `#18` `62bc668` | 19.149 ± 0.021 | 19.541 ± 0.016 |
+| `3569adb` | 19.145 ± 0.015 | 19.548 ± 0.028 |
+| `fec9259` | 19.175 ± 0.024 | 19.584 ± 0.020 |
+| main `cee2693` | 19.166 ± 0.008 | **20.594 ± 0.015** |
+
+Flat, flat, flat, flat, then **1.052**. And `git diff fec9259 cee2693 -- crates/`
+is one file: `pagerank.rs`, 43 insertions, 18 deletions. **My own fix.**
+
+**I got the commit order wrong once on the way here and it cost a pin.** I read a
+`git log` listing as a linear history and announced that `3569adb` was the last
+commit before main; `fec9259` comes after it, and its tree adds 147 lines over
+`3569adb`. The lesson is the same one this log keeps charging us for: a listing is
+not a topology. `git log --topo-order` and `git diff A B` are the instruments, and
+I used them only after asserting the conclusion.
+
+### Every line of that diff is inside a function this benchmark never calls
+
+Both participants build their own `ExecutionContext` — the arrow adapter at
+`arrow_adapter.rs:43` — and neither calls `with_concurrency`.
+`parallel::workers_above` ends in `context.concurrency_requested()`, which returns
+`self.0.concurrency`, set only by that method. So it is `None`, `pagerank()` never
+takes `if let Some(workers) = workers { return pull(...) }`, and **every line
+`eba0059` changed lives inside `pull()`**.
+
+### So I disassembled the function that does run, and it is the same function
+
+`grust_algorithms::pagerank::pagerank` in the two `grust-arrow` binaries:
+
+- **identical size**, `0x131d` bytes in both;
+- **identical instruction count**, 1,118 in both;
+- after normalising intra-function branch targets to offsets from the function's
+  own base, **every remaining difference is a rip-relative relocation** — 64 of
+  them, all `lea`/`call` displacements to data that also moved.
+
+Same instructions, in the same order, at a different address:
+`0x67a2890` in `fec9259`, `0x6786510` in main, a shift of about 115 KB, in a
+binary 832 bytes larger.
+
+**So the 5.2% cannot be a change in the executed code, because there is none.** It
+is placement — i-cache and iTLB aliasing and branch-predictor indexing are the
+mechanism class, and I cannot attribute it further on this box because `perf` is
+not installed and I am not installing it on a benchmark host mid-campaign. And it
+appears only on `arrow` because the participants are separate executables: the
+same source edit relinks two binaries differently, and one of them landed unluckily.
+
+### The bookend, which is the part worth keeping
+
+This afternoon I eliminated the code-layout family by building two worktrees and
+finding their binaries byte-identical. Tonight code layout is the answer. Both are
+correct: **a hash proves layout is not the cause when the bytes are the same, and
+proves nothing when they differ** — and two different commits always differ. I
+retired a hypothesis class on evidence that only covered one case of it.
+
+### The consequence for the release, and it is a protocol item rather than a bug
+
+**A single cell can move 5% because of an unrelated edit.** Nothing here is a
+defect: `eba0059` is right, its scores are bit-identical to the released ones, and
+it is 1.5x faster where it runs. But a sweep that attributes a sub-5% single-cell
+move to the meaning of a diff will sometimes be attributing it to relinking.
+
+My proposal for the release sweep, for whoever writes its rules: **do not
+attribute a single-cell move below about 5% to a diff's semantics without a layout
+control** — the cheapest being the same commit built twice with an unrelated
+whitespace change, which moves the layout and not the meaning. Above that, or
+consistent across families and participants, it is signal. Q5's #11 result is far
+above it: 12–21% in the same direction on three families, on both participants.
+
+`eba0059` stays as it is and I am not proposing to change it. Q5's unexplained cell
+is now explained, and named as placement.
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
