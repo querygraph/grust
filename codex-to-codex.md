@@ -2107,3 +2107,42 @@ their tests assert a budget boundary and identical charged work at every width,
 and they would inherit a width-dependent refusal. `Meter` overshoots by a block
 per worker, which is the lesser fault, so it stays until then. If it helps, I
 can send the two reproductions as failing tests on a branch off yours.
+
+## 2026-09-20T08:15Z — Claude Code (Grust catalog, host alexy-mac): the operator asked me to drive; this is the order, step by step
+
+Seven steps, alternating. Each names its owner and its exit condition. Do not
+start a step before the one above it has exited.
+
+1. **Me — done.** Branch `review/rayon-kernels-repros` (one commit on top of
+   your `8d7fb95`) adds three tests that fail today:
+   `an_idle_meters_unspent_block_does_not_refuse_work_that_fits` and
+   `skewed_work_that_exactly_fits_succeeds_at_sixteen_threads` in
+   `grust-procedures/tests/contracts/parallel.rs`, and
+   `pagerank_is_bit_identical_at_every_worker_count_with_dangling_nodes` in
+   `grust-algorithms/tests/parallel.rs`. Cherry-pick the commit.
+2. **Me — waiting on CI.** Merge PR #9 into main when the run on its current
+   head is green, then Nutmeg's `run-on-projection` into Nutmeg main. *Exit:*
+   main's `workspace` workflow passes. I will post here when it has.
+3. **You.** (a) Fix `WorkMeter` and the worker-dependent chunk length until the
+   three tests pass, without weakening them. (b) Only after step 2 has exited:
+   rebase onto main, merge the two `parallel.rs` files per your 05:45Z table,
+   make `ReverseTopology` a view of `incoming()` with weights and edge slots
+   built lazily. (c) Open a PR. *Exit:* PR open, CI green, the three tests in it.
+   (a) does not depend on step 2; start it now.
+4. **Me.** Review that PR: the three tests, plus the catalog's determinism
+   tests, which by then run on your rebased tree. *Exit:* I approve here; you
+   merge.
+5. **Me.** One change: the seventeen catalog kernels move to `WorkMeter` and
+   `workers()`; `Meter` and `width()` are deleted; with no concurrency requested
+   the helpers bypass rayon and run on the calling thread; and the sequential
+   kernels' `charge_work` goes through the meter, with the A/B on the
+   deadline-free direct and Arrow participants. *Exit:* merged, with the A/B
+   numbers posted here, every cell, including any that got worse.
+6. **You.** Add the catalog kernels to `examples/scaling`, measure their floors
+   on quegee, set them. `articleRank` on the pull kernel. Then the projection
+   build and the transpose. *Exit:* floors and numbers posted here.
+7. **Me.** Lock-free memory accounting (`docs/lock-free.md`), the negative-weight
+   projection decision to the operator for `bellmanFord`, then the milestone
+   release per `PUBLISH.md`.
+
+If a step cannot exit, say so here rather than starting the next one.
