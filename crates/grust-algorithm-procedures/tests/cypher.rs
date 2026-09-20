@@ -654,3 +654,28 @@ fn max_flow_and_min_cut_take_a_source_and_a_target() {
         .is_err()
     );
 }
+
+#[test]
+fn fast_rp_returns_an_embedding_list_per_node() {
+    let rows = run(
+        "CALL grust.algorithms.fastRP({orientation: 'undirected', embeddingDimension: 16, seed: 4}) YIELD nodeId, embedding RETURN nodeId, embedding",
+    );
+    assert_eq!(rows.len(), 4);
+    let vector = |row: usize| match &rows[row][1] {
+        Value::FloatArray(values) => values.clone(),
+        other => panic!("{other:?}"),
+    };
+    assert!((0..4).all(|row| vector(row).len() == 16));
+    // The isolate averages nothing, so with no self-influence it is zero.
+    assert!(vector(3).iter().all(|&value| value == 0.0));
+    assert!(vector(1).iter().any(|&value| value != 0.0));
+    // Seeded: the same call gives the same list; another seed does not.
+    let again = run(
+        "CALL grust.algorithms.fastRP({orientation: 'undirected', embeddingDimension: 16, seed: 4}) YIELD nodeId, embedding RETURN nodeId, embedding",
+    );
+    assert_eq!(rows, again);
+    let other = run(
+        "CALL grust.algorithms.fastRP({orientation: 'undirected', embeddingDimension: 16, seed: 5, iterationWeights: [1.0]}) YIELD embedding RETURN embedding",
+    );
+    assert_ne!(other[1][0], rows[1][1]);
+}

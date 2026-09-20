@@ -1,9 +1,9 @@
 use super::*;
 use algorithms::{
-    BetweennessOptions, ClosenessOptions, HarmonicOptions, IterationOptions, KatzOptions,
-    LabelPropagationOptions, LouvainOptions, MissingWeight, NodeSimilarityOptions, Orientation,
-    PageRankOptions, ProjectionOptions, SimilarityMetric, SpanningObjective, SpanningTreeOptions,
-    TriangleOptions, WeightSelection,
+    BetweennessOptions, ClosenessOptions, FastRpOptions, HarmonicOptions, IterationOptions,
+    KatzOptions, LabelPropagationOptions, LouvainOptions, MissingWeight, NodeSimilarityOptions,
+    Orientation, PageRankOptions, ProjectionOptions, SimilarityMetric, SpanningObjective,
+    SpanningTreeOptions, TriangleOptions, WeightSelection,
 };
 
 fn option(name: &str, value_type: ValueType, default: Value, nullable: bool) -> OptionField {
@@ -376,6 +376,54 @@ pub(super) fn katz(args: &ValidatedArguments) -> Result<KatzOptions> {
         beta: number(value(args, "beta")?)?,
         normalized: matches!(value(args, "normalized")?, Value::Bool(true)),
         iteration: iteration(args)?,
+    })
+}
+
+pub(super) fn fast_rp_fields() -> Vec<OptionField> {
+    vec![
+        option(
+            "embeddingDimension",
+            ValueType::Integer,
+            Value::Int(128),
+            false,
+        ),
+        option(
+            "iterationWeights",
+            ValueType::Numbers,
+            Value::FloatArray(vec![0.0, 1.0, 1.0]),
+            false,
+        ),
+        option(
+            "nodeSelfInfluence",
+            ValueType::Number,
+            Value::Float(0.0),
+            false,
+        ),
+        option(
+            "normalizationStrength",
+            ValueType::Number,
+            Value::Float(0.0),
+            false,
+        ),
+        option("seed", ValueType::Integer, Value::Null, true),
+    ]
+}
+
+pub(super) fn fast_rp(args: &ValidatedArguments) -> Result<FastRpOptions<'_>> {
+    let iteration_weights = match value(args, "iterationWeights")? {
+        Value::FloatArray(values) => values.as_slice(),
+        _ => {
+            return Err(ProcedureError::InvalidArguments(
+                "iterationWeights must be a numeric array".into(),
+            ));
+        }
+    };
+    Ok(FastRpOptions {
+        dimension: positive(args, "embeddingDimension")?,
+        iteration_weights,
+        self_influence: number(value(args, "nodeSelfInfluence")?)?,
+        normalization_strength: number(value(args, "normalizationStrength")?)?,
+        seed: seed(args)?.unwrap_or(0),
     })
 }
 

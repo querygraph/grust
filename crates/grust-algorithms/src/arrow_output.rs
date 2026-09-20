@@ -5,8 +5,8 @@ use std::sync::Arc;
 use arrow_array::{
     ArrayRef, RecordBatch,
     builder::{
-        BooleanBuilder, Float64Builder, Int64Builder, LargeListBuilder, StringBuilder,
-        UInt64Builder,
+        BooleanBuilder, FixedSizeListBuilder, Float32Builder, Float64Builder, Int64Builder,
+        LargeListBuilder, StringBuilder, UInt64Builder,
     },
 };
 use grust_procedures::MemoryReservation;
@@ -204,7 +204,13 @@ impl ArrowResultCursor {
         }
         // The fixed overhead covers six arrays; a wider table admits its own.
         let width_bytes = match output {
-            Output::Table(table) => count.saturating_mul(16).saturating_mul(table.width()),
+            Output::Table(table) => (0..table.width())
+                .map(|column| match table.field(column).1 {
+                    TableType::Vector(dimension) => 16 + 4 * dimension,
+                    _ => 16,
+                })
+                .fold(0usize, usize::saturating_add)
+                .saturating_mul(count),
             _ => 0,
         };
         let reservation = context.reserve(
@@ -319,6 +325,31 @@ impl ArrowResultCursor {
                                 match table.value(column, row) {
                                     TableValue::Boolean(value) => values.append_value(value),
                                     _ => values.append_null(),
+                                }
+                            }
+                            Arc::new(values.finish())
+                        }
+                        TableType::Vector(dimension) => {
+                            let width = i32::try_from(dimension).map_err(|_| {
+                                AlgorithmError::OutputContract(
+                                    "vector dimension exceeds Arrow's list size".into(),
+                                )
+                            })?;
+                            let mut values = FixedSizeListBuilder::with_capacity(
+                                Float32Builder::with_capacity(count * dimension),
+                                width,
+                                count,
+                            );
+                            for row in start..end {
+                                match table.value(column, row) {
+                                    TableValue::Vector(vector) => {
+                                        values.values().append_slice(vector);
+                                        values.append(true);
+                                    }
+                                    _ => {
+                                        values.values().append_nulls(dimension);
+                                        values.append(false);
+                                    }
                                 }
                             }
                             Arc::new(values.finish())

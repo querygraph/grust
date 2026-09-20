@@ -19,6 +19,8 @@ mod closeness;
 pub use closeness::{ClosenessOptions, DistanceCentrality, HarmonicOptions, closeness, harmonic};
 mod degree;
 pub use degree::{Degrees, degree};
+mod fastrp;
+pub use fastrp::{FastRp, FastRpOptions, fast_rp};
 mod flow;
 mod graph_input;
 pub use flow::{MaxFlow, max_flow};

@@ -453,6 +453,20 @@ fn catalog() -> Vec<Spec> {
         .with_target(),
     );
     specs.push(Spec::new(
+        "fastRP",
+        None,
+        vec![
+            field("nodeId", ValueType::String),
+            field("embedding", ValueType::Numbers),
+        ],
+        options::fast_rp_fields(),
+        |graph, args| {
+            Ok(AlgorithmOutput::Table(
+                algorithms::fast_rp(graph, options::fast_rp(args)?)?.into_table()?,
+            ))
+        },
+    ));
+    specs.push(Spec::new(
         "leiden",
         None,
         vec![

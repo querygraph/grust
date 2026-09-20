@@ -23,6 +23,13 @@ pub(crate) enum NodeColumn {
     Node(Buffer<usize>),
     /// Booleans; never null.
     Boolean(Buffer<bool>),
+    /// A fixed number of single-precision floats per row, stored row by row.
+    Vector {
+        /// `rows * dimension` values.
+        values: Buffer<f32>,
+        /// Floats per row; positive.
+        dimension: usize,
+    },
 }
 
 impl NodeColumn {
@@ -32,6 +39,7 @@ impl NodeColumn {
             Self::Number(values) | Self::OptionalNumber(values) => values.values.len(),
             Self::Node(values) => values.values.len(),
             Self::Boolean(values) => values.values.len(),
+            Self::Vector { values, dimension } => values.values.len() / (*dimension).max(1),
         }
     }
 }
@@ -61,6 +69,8 @@ pub enum TableValue<'a> {
     Node(&'a NodeId),
     /// Boolean.
     Boolean(bool),
+    /// A fixed-length vector.
+    Vector(&'a [f32]),
 }
 
 /// The declared type of a column, for adapters that build typed output.
@@ -74,6 +84,8 @@ pub enum TableType {
     Node,
     /// Boolean.
     Boolean,
+    /// Fixed-length list of this many single-precision floats.
+    Vector(usize),
 }
 
 /// Typed per-node results retaining projection identity and memory admission.
@@ -122,6 +134,13 @@ impl NodeTable {
             return Err(AlgorithmError::OutputContract(format!(
                 "column `{name}` has {} rows in a table of {rows}",
                 column.len()
+            )));
+        }
+        if let NodeColumn::Vector { values, dimension } = &column
+            && (*dimension == 0 || values.values.len() != rows * dimension)
+        {
+            return Err(AlgorithmError::OutputContract(format!(
+                "column `{name}` is not {rows} rows of {dimension} values"
             )));
         }
         if let NodeColumn::Node(rows) = &column
@@ -175,6 +194,7 @@ impl NodeTable {
                 NodeColumn::Number(_) | NodeColumn::OptionalNumber(_) => TableType::Number,
                 NodeColumn::Node(_) => TableType::Node,
                 NodeColumn::Boolean(_) => TableType::Boolean,
+                NodeColumn::Vector { dimension, .. } => TableType::Vector(*dimension),
             };
             return (name, kind);
         }
@@ -205,6 +225,9 @@ impl NodeTable {
                     TableValue::Node(&self.graph.node_ids()[values.values[row]])
                 }
                 NodeColumn::Boolean(values) => TableValue::Boolean(values.values[row]),
+                NodeColumn::Vector { values, dimension } => {
+                    TableValue::Vector(&values.values[row * dimension..(row + 1) * dimension])
+                }
             };
         }
         match self.scalars[column - self.columns.len()].1 {
@@ -236,6 +259,16 @@ impl NodeTable {
     pub fn nodes(&self, name: &str) -> Option<&[usize]> {
         self.columns.iter().find_map(|(n, c)| match c {
             NodeColumn::Node(values) if *n == name => Some(values.values.as_slice()),
+            _ => None,
+        })
+    }
+
+    /// A vector column by name: its values row by row, and its dimension.
+    pub fn vectors(&self, name: &str) -> Option<(&[f32], usize)> {
+        self.columns.iter().find_map(|(n, c)| match c {
+            NodeColumn::Vector { values, dimension } if *n == name => {
+                Some((values.values.as_slice(), *dimension))
+            }
             _ => None,
         })
     }

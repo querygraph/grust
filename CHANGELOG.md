@@ -6,6 +6,18 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ## Unreleased
 
+- Add **FastRP node embeddings**: `fast_rp` and `grust.algorithms.fastRP`, with
+  `embeddingDimension`, `iterationWeights`, `nodeSelfInfluence`,
+  `normalizationStrength` and `seed`. Each node draws a very sparse random
+  vector (`±√3` with probability 1/6 each), every round replaces it with the
+  weighted mean of the vectors its arcs reach, and the rounds are summed at unit
+  length with their weights. Entry `j` of node `v` is a pure function of
+  `(seed, v, j)`, so the embedding is identical at any pool width. It is the
+  first vector-valued result: result tables gain a fixed-length `Float32` column,
+  emitted as Arrow `FixedSizeList<Float32>` and as a float list to Cypher. The
+  test rebuilds the random vectors from a round-zero run and repeats the whole
+  computation densely in double precision. No claim is made about embedding
+  quality.
 - Add **maximum flow and minimum cut**: `max_flow`, and
   `grust.algorithms.maxFlow(source, target)` and `.minCut(source, target)`.
   Capacities are the projection's weights, parallel edges are separate

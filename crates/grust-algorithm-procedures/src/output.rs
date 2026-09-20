@@ -105,6 +105,9 @@ impl ProcedureCursor for AlgorithmCursor {
                 (0..table.width())
                     .map(|column| match table.value(column, index) {
                         algorithms::TableValue::Node(id) => id.as_str().len(),
+                        algorithms::TableValue::Vector(vector) => {
+                            vector.len().saturating_mul(size_of::<f64>())
+                        }
                         _ => 0,
                     })
                     .sum(),
@@ -155,6 +158,12 @@ impl ProcedureCursor for AlgorithmCursor {
                         algorithms::TableValue::Number(value) => Value::Float(value),
                         algorithms::TableValue::Boolean(value) => Value::Bool(value),
                         algorithms::TableValue::Node(id) => Value::String(id.as_str().into()),
+                        algorithms::TableValue::Vector(vector) => {
+                            let mut values = Vec::new();
+                            values.try_reserve_exact(vector.len())?;
+                            values.extend(vector.iter().map(|&value| f64::from(value)));
+                            Value::FloatArray(values)
+                        }
                         algorithms::TableValue::Null => Value::Null,
                     });
                 }

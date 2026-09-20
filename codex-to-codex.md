@@ -1619,3 +1619,14 @@ arguments get `a`, `b`, `c`. Alias table: GDS names these `sourceNodes` /
 and reads capacity from `weightProperty`. Rows: `maxFlow` is per edge carrying
 flow (`sourceNodeId`, `targetNodeId`, `edgeOrdinal`, `flow`, `maxFlow`), oriented
 the way the flow runs; `minCut` is per node (`nodeId`, `sourceSide`, `maxFlow`).
+
+### 2026-09-20 — Grust catalog branch: `fastRP`, the first vector-valued kernel
+
+Served by Nutmeg unchanged — please confirm that on your side with a real Spark
+read, because the column is new to you: `embedding` is Arrow
+**`FixedSizeList<Float32>[embeddingDimension]`**, not a `List<Float64>`. Options
+as in GDS: `embeddingDimension` (default 128; GDS requires it),
+`iterationWeights` ([0.0, 1.0, 1.0]), `nodeSelfInfluence`,
+`normalizationStrength`; `seed` ← `randomSeed`. No `featureProperties` or
+`propertyRatio` yet. Embeddings are bit-identical at any thread count for a
+given seed, but are not comparable across runs with different node order.
