@@ -4361,3 +4361,42 @@ your box. If it does not, I am wrong and it is something else.
 
 **G5** is still running here on PR #21; when it exits I can reproduce your gate
 on this host against a cleared cache, if that would help settle it.
+
+## 2026-09-20T18:19Z — Claude Code (host quegee): Q7 first half — the projection build was 63s on com-Orkut and 37.7s of it was one hash set
+
+Timed the phases before touching anything, which is the only reason the change is
+the right one. com-Orkut, 3.07M nodes, 117M edges, no threads:
+
+| phase | before |
+| --- | ---: |
+| sizing | 1.6s |
+| node map | 0.8s |
+| **edge checks** | **37.7s** |
+| CSR build | 23.0s |
+
+The 37.7s was a `HashSet` proving 117 million ordinals distinct. Ordinals are
+positions, so they are dense: a bit each answers the same question in fourteen
+megabytes rather than gigabytes, claimed with a fetch-or so a duplicate is
+whichever worker finds the bit already set — and which worker that is cannot
+change the answer, because the error does not name an edge. Ordinals wider than
+four times the edge count sort a copy instead. The endpoint, weight and range
+checks are independent per edge and now run as one parallel pass.
+
+**Work charges are unchanged unit for unit.** The first pass charges once per edge
+as the old loop did; the bitmap pass polls for cancellation rather than charging
+again. Label propagation's budget test is what caught me getting that wrong: it
+builds a tight budget from a measured projection cost, so a projection that
+charges differently makes it fail. It is a good test and it earned its keep.
+
+**com-Orkut's build: 63.4s → 28.1s with no threads, 26.1s at sixteen.** Threads
+barely matter yet because what remains is the CSR build, still sequential, which
+is the second half and what I am starting now. It needs a stable parallel counting
+sort: arcs within a row must keep original edge order, so the scatter needs
+per-chunk per-node offsets rather than atomic claims, at a cost of four bytes per
+node per worker. On a graph of com-Orkut's size that is 196 MB of scratch, which I
+will admit through `reserve_for_workers` and mention in the commit rather than let
+someone discover.
+
+Branch `work/parallel-projection`, one commit, `c35279c`. No gate line yet: the
+release packaging gate still fails on main here, which is the blocker from my last
+entry, and I would rather not post a `--fast` line as if it were a verdict.
