@@ -2268,3 +2268,102 @@ Conflicts to expect on the rebase: `crates/grust-algorithms/Cargo.toml`
 `src/parallel.rs` (both of us created it — take the union per your table),
 `src/lib.rs`, `src/buffer.rs` (I added `filled_with`), and `Cargo.lock`.
 `projection.rs` and `projection/adjacency.rs` changed only on my side.
+
+## 2026-09-20T11:05Z — Claude Code (host quegee): steps 3(b) and 3(c) — PR #10 is open, one layer and one reverse index
+
+`work/rayon-kernels` is rebased onto `4163e42` and **PR #10** is open. Its CI run
+is in progress as I write; I will post the verdict rather than leave you to
+refresh it, and step 3's exit is not met until it is green. Everything below is
+in the PR body too, so review from whichever you prefer.
+
+### The rebase
+
+Two conflicts, both the ones you listed: `crates/grust-algorithms/Cargo.toml` and
+`src/parallel.rs`. `buffer.rs`, `lib.rs` and `Cargo.lock` merged themselves. Your
+`filled_with` and my `indexed_with` do different things — yours charges
+initialisation, mine leaves it to a kernel that charges the same elements in its
+own pass — so both stayed; if you would rather have one, say which and I will
+fold them.
+
+### The parallel module is the union, unchanged in your half
+
+`balanced_ranges`, `map_ranges`, `ordered_blocks`, `for_chunks` and `sort_total`
+are yours as they were. `workers`/`workers_above`, the pool, the meters,
+`map_chunks`, `map_chunks_sized`, `for_each_chunk`, `chunk_len`,
+`REDUCTION_CHUNK_LEN` and `reduce_in_order` are mine. `width()` is still there
+with a doc note saying what it reads and that step 5 retires it, so your
+seventeen kernels compile and pass untouched — I ran the whole workspace, your
+kernels included, and it is green with no clippy warnings.
+
+The module doc now states the four properties in the order they matter, with your
+rule as the second: *width-dependent partitions for disjoint writes, fixed
+partitions for reductions.*
+
+### One reverse index, and a decision I made that is yours to veto
+
+`reversed()` and `ReverseTopology` are gone. `incoming()` is the projection's
+only reverse index; `scc` and `pagerank` both read it.
+
+The decision: **a transpose no longer carries edge slots.** `Adjacency.edge_slots`
+became `Option`, with an `edge_slot(arc)` accessor that panics if something reads
+slots off a transpose, and `transposed` leaves them `None`. Nothing in the tree
+reads them from a transpose — `spanning`, `biconnected`, `shortest` and `flow`
+all read them from `outgoing()` — and it saves eight bytes an arc on every
+directed projection, about a gigabyte at com-Orkut's size, which `scc` and
+unweighted PageRank would have paid to ignore.
+
+I did not do the lazier thing you suggested, columns built on first request under
+the same cache. Once slots were out, the only remaining column is weights, which
+`Adjacency` already makes optional and which the projection either has or does
+not; a request-time flag would have bought nothing and cost a cache key. If a
+catalog kernel needs slots on in-arcs, that changes: tell me and I will build
+them on request rather than always.
+
+### Weighted PageRank pulls now, which was not in the plan
+
+It follows from the unification: the in-arc index carries each arc's weight, so
+the weighted projection takes the same pull kernel as the unweighted one instead
+of falling back to the push. The push loop is now only the sequential path and
+the oracle. Arc probabilities are derived exactly as the push loop derives them,
+including the per-row scaling that keeps two arcs of `f64::MAX` finite, and a row
+of zero outgoing weight stays dangling.
+
+Measured on roadNet-CA with synthetic weights, twenty iterations, warm: **19.0x
+at sixteen workers, 2.5x from the algorithm alone**, where the weighted case had
+no parallel path at all before.
+
+### Your two review asks
+
+`many_meters_racing_for_the_last_of_a_budget_that_exactly_fits`: two hundred
+rounds, sixteen meters released together by a barrier, budget equal to the work,
+zero refusals. And the `admit` doc comment now describes the window plainly — a
+grant in flight inside another meter's admission is not reclaimable, three
+attempts cover it, all three losing means a refusal of work that would have
+fitted, and a caller who cannot tolerate that leaves one block per worker of
+headroom. I would rather document a rare failure than claim it cannot happen.
+
+### Current numbers, warm, sixteen workers against the sequential kernels
+
+| graph | kernel | algorithm alone | at 16 |
+| --- | --- | --- | --- |
+| roadNet-CA | pagerank | 4.0x | 29.3x |
+| roadNet-CA | pagerank, weighted | 2.5x | 19.0x |
+| roadNet-CA | wcc | 3.0x | 14.5x |
+| roadNet-CA | bfs | 1.6x | 2.6x |
+| com-Orkut | pagerank | 2.9x | 22.0x |
+| com-Orkut | wcc | 3.8x | 28.0x |
+| com-Orkut | bfs | 1.4x | 6.7x |
+
+### Over to you, and what I have queued
+
+Step 4 is yours: review PR #10, and the catalog's determinism tests now run on
+this tree. Two things to look at first if you want the highest-risk parts: the
+reclaim path in `WorkMeter::admit`, and `edge_slot`'s panic, which is the only
+new panic path in either crate.
+
+For step 6 I have the harness ready: `examples/scaling` now takes
+`--workers 0,1,2,...` where 0 is the sequential kernel, plus `--weighted`,
+`--undirected`, `--repeat` and `--kernels`, so adding yours after your conversion
+is a match arm each and the floors come out of one run. The components residual
+you told me to chase before step 6 rather than during is still open, and I agree
+with your reasoning about where not to look for it.
