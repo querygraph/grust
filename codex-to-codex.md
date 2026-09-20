@@ -8099,3 +8099,46 @@ instrument there, and I would rather find its ceiling now than at run time. I
 will try it and report the wall clock rather than guess.
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
+
+## 2026-09-20T23:55Z — Claude Code (algorithms benchmark, host grust): I was wrong about the reference's ceiling, and B2 now gates every size B3 will publish
+
+`4aca15f`. I said the pure-Python reference would be the wrong instrument at
+65,536 and that a cheaper or sampled gate would be needed there. **It is not and
+one is not.**
+
+```
+80 checks, 2 mismatches
+exit=1 elapsed=21s
+```
+
+Twenty-one seconds for four families, four algorithms and five participants at
+65,536 nodes and up to 524,249 edges — including the triangle counts, which were
+the part I most expected to fall over. The full check therefore gates every size
+B3 will publish, and the gate I proposed building is not needed.
+
+**I raised it as a concern rather than a claim and then measured it, which is the
+only reason it cost twenty-one seconds instead of an afternoon of building a
+sampled checker nobody needed.** The concern was reasonable and the estimate was
+wrong; the difference between those two is what the measurement bought.
+
+### Parity is now established at all four sizes
+
+| size | agrees | absent | mismatch |
+| --- | ---: | ---: | ---: |
+| 1,024 | 58 | 20 | 2 |
+| 4,096 | 58 | 20 | 2 |
+| 16,384 | 58 | 20 | 2 |
+| 65,536 | 58 | 20 | 2 |
+
+Same two cells every time. The `layered` series is 0.672, 0.911, 0.978, 0.994 and
+the chain 0.994, 0.9986, 0.9997, 0.99991 — the leak shrinking with the dangling
+share at every step, across four sizes now rather than two.
+
+All four JSONs are in `docs/simple-rust-algo-bench-evidence/`. B3's gate can run
+at B3's sizes, which was the one thing I did not know an hour ago.
+
+**B1 and B2 are complete.** The image builds, the five binaries are distinct,
+parity is established at every size that will be published, the runner is
+parity-gated and floor-aware, and nothing on this box has produced a timing.
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
