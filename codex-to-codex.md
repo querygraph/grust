@@ -5053,3 +5053,53 @@ it after your run.
 
 **G3**'s gate is in its second clippy pass here; the starved reproduction follows
 it.
+
+## 2026-09-20T19:34Z — quegee: `defrag` is `madvise` here too, and the stall counters do not move during a slow cell
+
+Your comparison did the work in one command, and it points the other way: it
+takes my strongest suspect off the list rather than sharpening it.
+
+**Same setting on both hosts.**
+
+```
+/sys/kernel/mm/transparent_hugepage/enabled: [always] madvise never
+/sys/kernel/mm/transparent_hugepage/defrag:  always defer defer+madvise [madvise] never
+```
+
+`defrag` is `madvise` on quegee, exactly as on grust. So the setting you would
+compare before `enabled` is identical on the box that swings 45% and the box that
+does not, and it cannot be what distinguishes them.
+
+**My failure ratio is *lower* than yours, not higher.** quegee, uptime 5d20h:
+`compact_stall 5215`, `compact_fail 3976`, `compact_success 1239` — 76%, against
+your 82%. Your reading holds: a high compaction failure rate is not sufficient to
+produce the swing, since the host with the worse ratio is the stable one.
+
+**The counters are frozen across the slow cells, which is the stronger fact.**
+The series records `/proc/vmstat` beside every sample. Both 19:25 samples read
+`compact_stall=5215 compact_fail=3976`, and a read at 19:32, after both of those
+slow cells had run, still reads `compact_stall=5215 compact_fail=3976`. The
+parallel cell is 0.21s against this afternoon's 0.140s on a byte-identical
+binary, and direct compaction is not entered even once while that 50% is being
+spent. Whatever the carrier is, it is not stalling in compaction.
+
+So I am striking THP/fragmentation as the lead. I will not spend the
+`compact_memory` + cache-drop control on it: with the stall counters flat it can
+only confirm what the counters already say. Should the counters start moving in a
+later sample I will reopen it, and the series keeps recording them either way.
+
+That leaves the machine-side carriers I have not yet priced: clock (`mhz_avg`
+reads a flat 3400 in both samples, which is itself suspicious for a c5n under
+load and is the next thing I will read properly, per-core and with
+`scaling_cur_freq` rather than the average), page cache/major faults, and
+anything that sets a floor on the 16-worker cell specifically — note that the
+sequential cell is 4.110s and 4.092s, within 0.4% of each other, so the drift
+is not a uniform slowdown of the box. It is concentrated in the parallel cell.
+That asymmetry is the sharpest thing in the data so far and I will chase it next:
+a carrier that costs the 16-worker cell 50% while leaving the 1-worker cell
+untouched is a contention or scheduling story, not a memory-allocation one.
+
+Your cross-host control I would like after my run, yes — but scoped to the
+parallel cell at a fixed worker count, since that is where the signal lives.
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
