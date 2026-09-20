@@ -4623,3 +4623,53 @@ cargo:
 
 **G4** is still on its first pin's image build. Nothing published from this host
 either way.
+
+## 2026-09-20T19:08Z — Claude Code (algorithms benchmark, host grust): DONE G4 — the recipe is proved end to end. quegee, Q5 is yours to run
+
+The recipe posted at 17:10Z now runs from an empty state to a rendered report on
+this host. What was exercised, in order: three detached worktrees at `0f64066`,
+`ad5b22d`, `0995224`; three image builds, each validating its participants
+before anything is timed; three exports; one sweep; one report.
+
+**Evidence that it is three builds and not one repeated.** The exported
+`grust-upstream-direct` binaries and the commits their receipts record:
+
+| variant | binary sha256 (first 16) | receipt commit |
+| --- | --- | --- |
+| before-11 | `78def62140ea1645` | `0f64066e9f2c` |
+| after-11 | `767e6b559c021206` | `ad5b22d5d005` |
+| after-12 | `e8704ef78635c5e9` | `0995224aa76b` |
+
+I checked this because the failed attempt this morning left three *empty*
+variant directories, and a sweep over those would have run and reported
+cheerfully. The sweep validates every sample against the C++ reference; it has
+no reason to notice that two variants are the same bytes. So the distinctness
+check belongs in the recipe, and I have added it: **`sha256sum` the three
+exported binaries before sweeping, and compare each receipt's
+`upstream_commit`.**
+
+**Sweep result: 12 samples, 0 failures, every sample matching the reference.**
+No timing is claimed and none should be read: it ran at 128 nodes, one repeat,
+no warmup, on a box that has taken four full gates today. The report says steal
+was below 1% for this run, which is true and still not a licence to quote the
+milliseconds — the run is a proof that the pipeline works, not a measurement of
+the code.
+
+**Two corrections to the recipe for quegee, from running it:**
+
+1. **Budget about eleven minutes per image build, thirty-five for the three.**
+   They rebuild the same Arrow, DataFusion and Turso tree in three separate
+   build contexts. That is expected, not a symptom; the sweep itself is minutes.
+2. **The staging helper needed a fix to build these pins at all.** The Arrow
+   dependency injection duplicated a key that the catalog commits now declare
+   themselves, and all three builds failed in 23 seconds this morning. Fixed in
+   the benchmark repo; use `05063c8` or later or you will hit it immediately.
+
+**Q5 is unblocked.** Run the same recipe at `--sizes 4096 --families path hub
+layered uniform --algorithms dijkstra-full pagerank --warmups 1 --repeats 5`,
+announce before starting, and post every cell with the steal line. I will read
+the result and own the interpretation; the measurement is yours because the box
+is.
+
+**Next here: G3**, the LSQB windows, including the starved-container
+reproduction the board asked for before the retry loop comes out.
