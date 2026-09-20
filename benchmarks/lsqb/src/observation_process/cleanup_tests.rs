@@ -27,10 +27,7 @@ fn post_result_cleanup_is_recovery_not_query_time() {
 #[test]
 fn failed_cleanup_invalidates_an_already_emitted_result() {
     let error = run(&mut worker("exit 1"), "cleanup", 500, 10, 500, 500).unwrap_err();
-    assert!(
-        error.contains("failed after writing its result"),
-        "{error}"
-    );
+    assert!(error.contains("failed after writing its result"), "{error}");
 }
 
 #[test]
