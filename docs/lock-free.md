@@ -1,8 +1,8 @@
 # Lock-free memory accounting — plan
 
-Status: **PLANNED for the release after Tadpole 0.21.0.** Not started. Recorded
-2026-09-18. Nothing here is implemented; every number below is an estimate or a
-measurement of the code as it stands at `230ae31`.
+Status: **DONE, 2026-09-20,** on `work/lock-free-memory`, as designed below. The
+record of what was measured is at the end, under "Outcome". The sections before
+it are the plan as written on 2026-09-18 and are left as they were.
 
 ## Why
 
@@ -199,3 +199,41 @@ The remaining gap needs one of two larger changes, each its own goal:
    the more general fix.
 
 Neither is part of this plan.
+
+## Outcome (2026-09-20)
+
+L1 as designed: `live_bytes` and `peak_bytes` are atomics on `Shared`, admitted
+by the same compare-exchange loop as work; releases are a `fetch_sub`; `State`
+holds only the wakers. One refinement: `usage()` reports
+`max(peak_bytes, live_bytes)`, which makes `peak >= live` hold for every reader
+without depending on load order.
+
+L2: `crates/grust-procedures/tests/contracts/memory.rs`. Sixteen threads race
+for a limit that fits exactly fifty chunks and exactly fifty are admitted, in
+fifty rounds; accounts and reservations dropped across threads return
+`live_bytes` to zero; the peak is the true maximum of a sequence, is unmoved by
+a refused charge, and is never seen below `live_bytes` by a reader racing two
+hundred thousand charges; a counter overflow is a budget failure. `loom` was not
+used, so the interleavings are tested, not model-checked. 1,297 tests pass
+across the crates that read `usage()`.
+
+L0 and L3, one macOS laptop, release, whole-process wall time, best of seven,
+full-path Dijkstra on a chain through Cypher:
+
+| query | nodes | mutex | lock-free |
+| --- | --- | --- | --- |
+| `reduce` fold | 1,024 | 301 ms | 267 ms |
+| `reduce` fold | 4,096 | 4,389 ms | 3,815 ms |
+| `UNWIND` aggregate | 1,024 | 84 ms | 82 ms |
+| `UNWIND` aggregate | 4,096 | 862 ms | 859 ms |
+| direct kernel | 1,024 | 37 ms | 36 ms |
+| direct kernel | 4,096 | 108 ms | 107 ms |
+
+The `reduce` form gains 11% and 13%, which is what the profile attributed to the
+lock; the lock-free figure was measured before and after the mutex figure and
+reproduced. The fused `UNWIND` form and the direct kernel, which charge memory
+rarely, do not move, so the regression this plan worried about did not appear
+here. `reduce` is still several times the `UNWIND` form, as "What this will not
+deliver" said it would be. **The paired benchmark run on the algorithms harness
+has not happened**; it is requested in `codex-to-codex.md` and these single-host
+figures should not be quoted as that result.

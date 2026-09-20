@@ -6,6 +6,19 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ## Unreleased
 
+- **Memory accounting no longer takes a lock.** `ExecutionContext` holds
+  accounted bytes and their high-water mark as atomics and admits a memory
+  charge through the same compare-exchange as a work charge, so a byte limit
+  stays exact under concurrent charges; a release is one atomic subtraction.
+  Only cancellation wakers remain behind the mutex. The reference Cypher
+  executor charges memory per copied value, and on the full-path `reduce` query
+  this removes 11% at 1,024 nodes and 13% at 4,096 on one laptop; the fused
+  `UNWIND` form and the direct kernels do not move. Three behaviours change:
+  `usage()` reads its figures in sequence rather than as one snapshot, so exact
+  totals should be read after execution (`peak_bytes` is never reported below
+  `live_bytes`); the peak can trail a charge by an instant but never misses a
+  completed one; and a poisoned lock can no longer fail a memory charge, only
+  waker registration. See `docs/lock-free.md`.
 - The sequential kernels — `dijkstra`, `shortestPaths`, `bfs`, `dfs`,
   `topologicalSort`, `scc`, `wcc` — and the heap the path kernels share charge
   work through a `WorkMeter` instead of one compare-exchange on the shared
