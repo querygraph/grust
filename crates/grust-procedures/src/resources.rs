@@ -208,12 +208,19 @@ impl ExecutionContext {
     }
 
     fn release_meter(&self, own: &Arc<AtomicUsize>) {
-        self.refund_work(own.swap(0, Ordering::Relaxed));
-        self.0
+        // Take the registry first. Emptying the balance and refunding it are
+        // two steps, and between them the units are in no balance and still in
+        // the counter. A refusal is decided under this same lock, so holding it
+        // across both steps means a refusing meter never looks during them. It
+        // once did: the hand-back ran before the lock, and a slow CI runner
+        // refused work that fitted once in two hundred rounds.
+        let mut grants = self
+            .0
             .grants
             .write()
-            .unwrap_or_else(|poison| poison.into_inner())
-            .retain(|balance| !Arc::ptr_eq(balance, own));
+            .unwrap_or_else(|poison| poison.into_inner());
+        self.refund_work(own.swap(0, Ordering::Relaxed));
+        grants.retain(|balance| !Arc::ptr_eq(balance, own));
     }
 
     /// Charge work before performing it. Counter overflow is a budget failure.
@@ -468,6 +475,8 @@ impl WorkMeter {
     /// this costs one uncontended acquisition per [`WORK_BLOCK_UNITS`] per
     /// worker. Exclusive holds happen only when a block no longer fits, which
     /// is the end of the budget, and when a meter is created or dropped.
+    /// Dropping must be among them: a dropping meter hands its block back in two
+    /// steps, and between them the units are in no balance.
     #[cold]
     fn admit(&mut self, units: usize) -> Result<()> {
         self.context.check_state(DeadlineCheck::Sampled)?;
