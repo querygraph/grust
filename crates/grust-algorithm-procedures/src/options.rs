@@ -1,8 +1,8 @@
 use super::*;
 use algorithms::{
     BetweennessOptions, ClosenessOptions, HarmonicOptions, LabelPropagationOptions, LouvainOptions,
-    MissingWeight, Orientation, PageRankOptions, ProjectionOptions, TriangleOptions,
-    WeightSelection,
+    MissingWeight, NodeSimilarityOptions, Orientation, PageRankOptions, ProjectionOptions,
+    SimilarityMetric, TriangleOptions, WeightSelection,
 };
 
 fn option(name: &str, value_type: ValueType, default: Value, nullable: bool) -> OptionField {
@@ -245,6 +245,62 @@ pub(super) fn label_propagation(args: &ValidatedArguments) -> Result<LabelPropag
     Ok(LabelPropagationOptions {
         max_iterations: positive(args, "maxIterations")?,
         seed: seed(args)?,
+    })
+}
+
+pub(super) fn node_similarity_fields() -> Vec<OptionField> {
+    vec![
+        option(
+            "metric",
+            ValueType::String,
+            Value::String("jaccard".into()),
+            false,
+        ),
+        option("topK", ValueType::Integer, Value::Int(10), false),
+        option("topN", ValueType::Integer, Value::Int(0), false),
+        option(
+            "similarityCutoff",
+            ValueType::Number,
+            Value::Float(0.0),
+            false,
+        ),
+        option("degreeCutoff", ValueType::Integer, Value::Int(1), false),
+        option("upperDegreeCutoff", ValueType::Integer, Value::Null, true),
+    ]
+}
+
+pub(super) fn node_similarity(args: &ValidatedArguments) -> Result<NodeSimilarityOptions> {
+    let metric = match value(args, "metric")? {
+        Value::String(value) => match value.to_ascii_lowercase().as_str() {
+            "jaccard" => SimilarityMetric::Jaccard,
+            "overlap" => SimilarityMetric::Overlap,
+            "cosine" => SimilarityMetric::Cosine,
+            _ => {
+                return Err(ProcedureError::InvalidArguments(
+                    "metric must be jaccard, overlap or cosine".into(),
+                ));
+            }
+        },
+        _ => {
+            return Err(ProcedureError::InvalidArguments(
+                "metric must be a string".into(),
+            ));
+        }
+    };
+    let top_n = match value(args, "topN")? {
+        Value::Int(0) => 0,
+        _ => positive(args, "topN")?,
+    };
+    Ok(NodeSimilarityOptions {
+        metric,
+        top_k: positive(args, "topK")?,
+        top_n,
+        similarity_cutoff: number(value(args, "similarityCutoff")?)?,
+        degree_cutoff: positive(args, "degreeCutoff")?,
+        upper_degree_cutoff: match value(args, "upperDegreeCutoff")? {
+            Value::Null => None,
+            _ => Some(positive(args, "upperDegreeCutoff")?),
+        },
     })
 }
 

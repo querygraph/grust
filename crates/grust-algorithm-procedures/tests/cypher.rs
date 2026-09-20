@@ -439,3 +439,56 @@ fn label_propagation_is_an_ordinary_procedure() {
         vec![vec![Value::Int(4)]]
     );
 }
+
+#[test]
+fn node_similarity_returns_pair_rows_through_ordinary_cypher() {
+    // Undirected a-b-c: a and c share their only neighbour, b.
+    let pairs = vec![
+        vec![
+            Value::String("a".into()),
+            Value::String("c".into()),
+            Value::Float(1.0),
+        ],
+        vec![
+            Value::String("c".into()),
+            Value::String("a".into()),
+            Value::Float(1.0),
+        ],
+    ];
+    assert_eq!(
+        run(
+            "CALL grust.algorithms.nodeSimilarity({orientation: 'undirected'}) YIELD node1, node2, similarity RETURN node1, node2, similarity"
+        ),
+        pairs
+    );
+    assert_eq!(
+        run(
+            "CALL grust.algorithms.nodeSimilarity({orientation: 'undirected', metric: 'cosine', topN: 1}) YIELD node1, node2, similarity RETURN node1, node2, similarity"
+        ),
+        pairs[..1]
+    );
+    // Directed, a and c still both point at b, and b shares nothing with them.
+    assert_eq!(
+        run(
+            "CALL grust.algorithms.nodeSimilarity() YIELD node1, node2, similarity RETURN node1, node2, similarity"
+        ),
+        pairs
+    );
+    // A degree floor of two leaves no one to compare.
+    assert_eq!(
+        run(
+            "CALL grust.algorithms.nodeSimilarity({degreeCutoff: 2}) YIELD node1 RETURN count(node1)"
+        ),
+        vec![vec![Value::Int(0)]]
+    );
+    assert!(
+        run_read_query_with_registry(
+            &graph(),
+            "default",
+            "CALL grust.algorithms.nodeSimilarity({metric: 'pearson'}) YIELD node1 RETURN node1",
+            &CypherParameters::new(),
+            &registry(),
+        )
+        .is_err()
+    );
+}

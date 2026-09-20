@@ -78,6 +78,7 @@ impl ProcedureCursor for AlgorithmCursor {
         }
         let count = match &self.output {
             AlgorithmOutput::Order(result) => result.values().len(),
+            AlgorithmOutput::Table(table) => table.rows(),
             _ => self.graph.node_count(),
         };
         if self.next == count {
@@ -87,6 +88,7 @@ impl ProcedureCursor for AlgorithmCursor {
         context.charge_work(1)?;
         let node = match &self.output {
             AlgorithmOutput::Order(result) => result.values()[index],
+            AlgorithmOutput::Table(table) => table.key(index),
             _ => index,
         };
         let id = self.graph.node_ids()[node].as_str();

@@ -6,6 +6,23 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ## Unreleased
 
+- Add **node similarity**: `node_similarity` and
+  `grust.algorithms.nodeSimilarity`, with `metric` (`jaccard`, `overlap`,
+  `cosine`), `topK`, `topN`, `similarityCutoff`, `degreeCutoff` and
+  `upperDegreeCutoff`. Nodes are compared by the *distinct* nodes their arcs
+  reach: parallel edges collapse into one neighbour, present or not without
+  weights and carrying their summed weight with them, which differs from the
+  degree-style kernels. A pair sharing nothing is never emitted; a kept pair
+  appears from both sides because `topK` is per `node1`. Cost is the number of
+  (node, shared neighbour, node) triples, every one charged, so the work budget
+  stops the quadratic hub case. Rows and charged work are identical at any pool
+  width, and the two directions of a pair carry the same bits. Checked row for
+  row, order and bits included, against an O(n²) recomputation over 3,600
+  random runs.
+- Result tables can key their own rows, so a kernel can answer with node pairs
+  (`node1`, `node2`, ...) through the same Arrow and row adapters. A table with
+  no rows now yields one empty Arrow batch carrying its schema instead of no
+  batch at all.
 - Add **label propagation**: `label_propagation` and
   `grust.algorithms.labelPropagation`, with `maxIterations` and `seed`. A node
   adopts the label carrying the most weight among the nodes with an arc into it,

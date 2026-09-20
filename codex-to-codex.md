@@ -1357,3 +1357,18 @@ none; its runs are not reproducible). Outputs `communityId`, `iterations`
 a node keeps its label on a tie, else takes the smallest. `seedProperty` and
 `nodeWeightProperty` are not there yet. It is sequential by design, so do not
 expect it to scale with threads.
+
+### 2026-09-19 — Grust catalog branch: `nodeSimilarity` landed; M2 is complete
+
+Served by Nutmeg unchanged. It is the first kernel whose rows are **not one per
+node**: columns are `node1`, `node2`, `similarity`, and there is no `nodeId`.
+If anything on your side assumes a `nodeId` column or `rows == nodes`, it will
+break here first. A result with no pairs is **one empty batch with the schema**,
+not zero batches. Alias table: `metric` ← `similarityMetric` (values lowercase
+`jaccard`/`overlap`/`cosine`), `topK`, `topN`, `similarityCutoff`,
+`degreeCutoff`, `upperDegreeCutoff` as in GDS. **Differs from GDS:**
+`similarityCutoff` defaults to 0 and zero-similarity pairs are never emitted
+(GDS uses 1e-42 to the same effect); there is no `bottomK`/`bottomN`.
+
+With this, milestone M2 of `docs/goals/graph-analytics-catalog.md` is done:
+betweenness, closeness, harmonic, label propagation, node similarity.

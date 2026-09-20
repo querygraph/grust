@@ -288,6 +288,22 @@ fn catalog() -> Vec<Spec> {
         },
     ));
     specs.push(Spec::new(
+        "nodeSimilarity",
+        None,
+        vec![
+            field("node1", ValueType::String),
+            field("node2", ValueType::String),
+            field("similarity", ValueType::Number),
+        ],
+        options::node_similarity_fields(),
+        |graph, args| {
+            Ok(AlgorithmOutput::Table(
+                algorithms::node_similarity(graph, options::node_similarity(args)?)?
+                    .into_table()?,
+            ))
+        },
+    ));
+    specs.push(Spec::new(
         "louvain",
         None,
         vec![

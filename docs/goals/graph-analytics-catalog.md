@@ -629,6 +629,16 @@ M4 (Tier A), then per milestone.** Each is a minor version: new public API.
   the undirected convergence argument go through (each change strictly raises
   same-label edge weight), and the test asserts that convergence. It is the
   first user of `GraphProjection::incoming()`.
+- **Pair results are a keyed `NodeTable`, not a new `PairTable`.**
+  `NodeTable::keyed(graph, "node1", rows)` makes a table of any length led by a
+  node column the kernel names; every later pair or list kernel (link
+  prediction, K-nearest neighbours, bridges, articulation points) uses it. A
+  zero-row table emits one empty Arrow batch so the schema is never lost.
+- **Node similarity dropped `candidateLimit`.** Every triple is charged, so the
+  work budget is already that guard. Without weights a neighbour set is a true
+  set; the oracle first shared the kernel's mistake of summing parallel unit
+  weights, and only the hand-computed case caught it. Keep hand-computed cases
+  beside every oracle.
 
 ## Progress ledger
 
@@ -639,7 +649,7 @@ Update in the same commit as the work. `—` not started, `wip`, `done <commit>`
 | P1 | done (Grust and Nutmeg) | P2 | done (`incoming()`) | P3 | done (`NodeTable`) |
 | P4 | — | P5 | done (`random.rs`) | P6 | — |
 | P7 | done (`parallel.rs`) | 1 Louvain | done | 2 Betweenness | done |
-| 3 Node similarity | — | 4 Triangles/LCC | done | 5 k-core | done |
+| 3 Node similarity | done | 4 Triangles/LCC | done | 5 k-core | done |
 | 6 Closeness/harmonic | done | 7 Leiden | — | 8 Label propagation | done |
 | 9 A\*/Bellman–Ford | — | 10 Eigenvector family | — | 11 Bridges family | — |
 | 12 Spanning forest | — | 13 Max flow | — | 14 FastRP | — |

@@ -56,6 +56,7 @@ pub struct ArrowResultCursor {
     graph: Option<GraphProjection>,
     output: Option<Output>,
     next: usize,
+    emitted: bool,
     failed: bool,
 }
 
@@ -125,6 +126,7 @@ impl ArrowResultCursor {
             graph: Some(graph),
             output: Some(output),
             next: 0,
+            emitted: false,
             failed: false,
         }
     }
@@ -166,9 +168,13 @@ impl ArrowResultCursor {
         }
         let total = match output {
             Output::Order(result) => result.values().len(),
+            Output::Table(table) => table.rows(),
             _ => graph.node_count(),
         };
-        if self.next == total {
+        // A table that found nothing still says what its columns are: one empty
+        // batch, so a consumer reading the schema off the first batch has one.
+        let empty_table = total == 0 && !self.emitted && matches!(output, Output::Table(_));
+        if self.next == total && !empty_table {
             return Ok(None);
         }
         let start = self.next;
@@ -180,6 +186,7 @@ impl ArrowResultCursor {
             context.charge_work(1)?;
             let node = match output {
                 Output::Order(result) => result.values()[index],
+                Output::Table(table) => table.key(index),
                 _ => index,
             };
             id_bytes = id_bytes.saturating_add(graph.node_ids()[node].as_str().len());
@@ -213,11 +220,16 @@ impl ArrowResultCursor {
             context.charge_work(1)?;
             let node = match output {
                 Output::Order(result) => result.values()[index],
+                Output::Table(table) => table.key(index),
                 _ => index,
             };
             ids.append_value(graph.node_ids()[node].as_str());
         }
-        let mut columns = vec![("nodeId", Arc::new(ids.finish()) as ArrayRef)];
+        let key_name = match output {
+            Output::Table(table) => table.key_name(),
+            _ => "nodeId",
+        };
+        let mut columns = vec![(key_name, Arc::new(ids.finish()) as ArrayRef)];
         match output {
             Output::Order(_) => {
                 let mut values = UInt64Builder::with_capacity(count);
@@ -332,6 +344,7 @@ impl ArrowResultCursor {
             }
         }
         self.next = end;
+        self.emitted = true;
         finish(columns, reservation).map(Some)
     }
 }

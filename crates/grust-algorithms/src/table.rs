@@ -78,8 +78,13 @@ pub enum TableType {
 
 /// Typed per-node results retaining projection identity and memory admission.
 /// Columns come first, in the order the kernel declared them, then scalars.
+///
+/// A table is usually one row per node, keyed by that node as `nodeId`. A
+/// kernel that answers with a list of nodes or of node pairs keys its rows
+/// itself: any number of rows, each led by the node the kernel names.
 pub struct NodeTable {
     graph: GraphProjection,
+    key: Option<(&'static str, Buffer<usize>)>,
     columns: Vec<(&'static str, NodeColumn)>,
     scalars: Vec<(&'static str, TableScalar)>,
 }
@@ -88,16 +93,34 @@ impl NodeTable {
     pub(crate) fn new(graph: &GraphProjection) -> Self {
         Self {
             graph: graph.clone(),
+            key: None,
             columns: Vec::new(),
             scalars: Vec::new(),
         }
     }
 
+    /// A table with one row per entry of `rows`, led by that node under `name`.
+    pub(crate) fn keyed(
+        graph: &GraphProjection,
+        name: &'static str,
+        rows: Buffer<usize>,
+    ) -> Result<Self> {
+        if rows.values.iter().any(|&row| row >= graph.node_count()) {
+            return Err(AlgorithmError::OutputContract(format!(
+                "key `{name}` refers to a node outside the projection"
+            )));
+        }
+        let mut table = Self::new(graph);
+        table.key = Some((name, rows));
+        Ok(table)
+    }
+
     pub(crate) fn column(mut self, name: &'static str, column: NodeColumn) -> Result<Self> {
         let n = self.graph.node_count();
-        if column.len() != n {
+        let rows = self.rows();
+        if column.len() != rows {
             return Err(AlgorithmError::OutputContract(format!(
-                "column `{name}` has {} rows for {n} nodes",
+                "column `{name}` has {} rows in a table of {rows}",
                 column.len()
             )));
         }
@@ -122,12 +145,24 @@ impl NodeTable {
         &self.graph
     }
 
-    /// Rows: one per projected node.
+    /// Rows: one per projected node, unless the kernel keyed the table itself.
     pub fn rows(&self) -> usize {
-        self.graph.node_count()
+        self.key
+            .as_ref()
+            .map_or(self.graph.node_count(), |(_, rows)| rows.values.len())
     }
 
-    /// Columns after `nodeId`, per-node columns first and then scalars.
+    /// Name of the leading node column: `nodeId` unless the kernel chose one.
+    pub fn key_name(&self) -> &'static str {
+        self.key.as_ref().map_or("nodeId", |(name, _)| name)
+    }
+
+    /// The projection row of the node that leads `row`.
+    pub fn key(&self, row: usize) -> usize {
+        self.key.as_ref().map_or(row, |(_, rows)| rows.values[row])
+    }
+
+    /// Columns after the key, per-node columns first and then scalars.
     pub fn width(&self) -> usize {
         self.columns.len() + self.scalars.len()
     }
