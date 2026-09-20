@@ -669,6 +669,20 @@ M4 (Tier A), then per milestone.** Each is a minor version: new public API.
   HashGNN, GraphSAGE and k-means centroids reuse it. A variable-length list
   column (SLLPA's `communityIds`, Louvain's intermediate communities) is still
   missing.
+- **Group 9 is blocked on a decision, not on effort.** Bellman–Ford needs a
+  projection that admits negative weights. Today `from_buffers` rejects them and
+  every kernel relies on that. Admitting them means (1) a way to ask for it —
+  a new field on `ProjectionOptions` breaks every literal construction of that
+  public struct, in Nutmeg too, so prefer a new `WeightSelection::SignedProperty`
+  variant; (2) a `signed` flag on `GraphProjection`; and (3) **every existing
+  kernel refusing a signed projection**, which edits the ten original kernel
+  files whose ownership is open in `codex-to-codex.md`. The safe central form
+  of (3) is one `GraphProjection::require_nonnegative()` called first in each
+  kernel, with a catalog test that runs every registered kernel on a signed
+  projection and demands `InvalidArguments` from all but `bellmanFord`. The
+  negative cycle is a result with a witness (P4), not an error. A\* needs P6
+  (latitude/longitude node properties) to be registered at all; a Rust-only
+  `astar` over `Fn(usize) -> f64` is possible now but reaches no caller.
 
 ## Progress ledger
 
@@ -681,6 +695,6 @@ Update in the same commit as the work. `—` not started, `wip`, `done <commit>`
 | P7 | done (`parallel.rs`) | 1 Louvain | done | 2 Betweenness | done |
 | 3 Node similarity | done | 4 Triangles/LCC | done | 5 k-core | done |
 | 6 Closeness/harmonic | done | 7 Leiden | done | 8 Label propagation | done |
-| 9 A\*/Bellman–Ford | — | 10 Eigenvector family | done except `articleRank` | 11 Bridges family | done |
+| 9 A\*/Bellman–Ford | blocked: see notes | 10 Eigenvector family | done except `articleRank` | 11 Bridges family | done |
 | 12 Spanning forest | done | 13 Max flow | done (`maxFlow`, `minCut`) | 14 FastRP | done |
 | 15–35 | — (see Tier B) | | | | |
