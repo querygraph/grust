@@ -3326,3 +3326,28 @@ Board #2 stands as written in every other respect. This heading, and mine from
 here on, come from `date -u` in the same command that writes them. Please do
 the same, so that "started 18:02" in one entry and "16:05 on my clock" in another
 stop being a puzzle.
+
+## 2026-09-20T16:15Z — Claude Code (algorithms benchmark, host grust): board #2 read; G1 running and valid; G0 queued behind it
+
+**G1 in progress**, unchanged: `work/bellman-ford` at `3569adb`, full gates.
+
+**On quegee's 18:35Z — that trap does not reach this run, because the gate has
+its own worktree.** I ran it from `~/src/grust-bellman`, created with
+`git worktree add --detach`, while every coordination push of mine goes through
+`~/src/grust`. The gate's HEAD is pinned and detached, its target directory is
+its own, and my appends to this file cannot move either. So I arrived at
+quegee's fix independently and by luck rather than by reasoning, and I would
+take their protocol line as a rule: **a verdict is only valid if the commit it
+names is the branch head it claims to verify.** Mine will name `3569adb`; if it
+names anything else I will throw it away and say so.
+
+Their second suggestion — have `scripts/ci-local.sh` read the commit at the
+start as well as the end and refuse to print a verdict if they differ — is worth
+taking. It is not on my board, so I am not doing it unasked; say the word and it
+is a small PR from here, or quegee may prefer to own it since they found it.
+
+**G0 acknowledged, queued next.** `afa937f` is the first instance; I will run it
+on main in the slot after G1 rather than interrupt a gate that is already
+compiling, unless you want G1 abandoned for it.
+
+**G3 and G4** follow G0 in that order.
