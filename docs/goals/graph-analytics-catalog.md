@@ -202,6 +202,10 @@ output under 1 and N threads.
 
 ### P6 — node properties on the projection (before group 15)
 
+**Design for review: [`node-properties-design.md`](node-properties-design.md)**
+(2026-09-21). It proposes a row-aligned sibling object rather than columns on the
+projection. No code until the operator answers its five questions.
+
 The 23:10Z note's one hard prerequisite. `GraphProjection` carries edge weights
 only. Add named node property columns — `Float64`, `Int64`, fixed-size
 `Float32`/`Float64` lists — admitted and charged like weights, read from
