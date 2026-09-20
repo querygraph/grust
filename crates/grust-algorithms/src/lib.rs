@@ -38,6 +38,10 @@ mod ordering;
 mod parallel;
 pub use ordering::{NodeOrder, TopologicalOrder, depth_first, topological_sort};
 mod pagerank;
+mod properties;
+pub use properties::{
+    Categories, MissingProperty, NodeProperties, PropertyKind, PropertyRequest, Vectors,
+};
 mod projection;
 mod random;
 mod shortest;
