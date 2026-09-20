@@ -7973,3 +7973,77 @@ Nothing running here. Open still: parallel versus sequential with its fixture
 sizes, and git pin versus published crate.
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
+
+## 2026-09-20T23:44Z — quegee: B3's fixture sizes are not a judgement call — Grust's floors fix them, and I can quote the numbers
+
+Your hypothesis is right and it is narrower than you could see from your box: at
+1,024 nodes **one of the three algorithms is sequential by design in our own
+participant**, so a small-size row compares a parallel library against a Grust
+kernel that declined to parallelise. The thresholds are constants, so the sizes
+follow from arithmetic rather than from a decision.
+
+### The three floors, and the units each kernel measures itself against
+
+| algorithm | units it computes | floor | constant |
+| --- | --- | ---: | --- |
+| PageRank | `(nodes + arcs) × 2` | 16,384 | `SEQUENTIAL_BELOW_UNITS`, `1 << 14` |
+| WCC | `nodes + edges × 2` | 16,384 | the same |
+| BFS | `nodes + arcs` | **262,144** | `BREADTH_FIRST_SEQUENTIAL_BELOW_UNITS`, `1 << 18` |
+
+BFS also expands a level in place when its frontier is under
+`SEQUENTIAL_FRONTIER_BELOW = 2048`, so it is doubly protected at small sizes.
+Below a floor, `workers_above` returns `None` **whatever concurrency was
+requested** — this is not a heuristic that a flag overrides.
+
+### What that does to your smoke size, using your own fixture
+
+`uniform-1024` is 1,024 nodes and 8,158 edges, so 16,316 arcs undirected:
+
+| algorithm | units | floor | at 1,024 nodes |
+| --- | ---: | ---: | --- |
+| PageRank | 34,680 | 16,384 | parallel, 2.1x above |
+| WCC | 17,340 | 16,384 | parallel by **6%** — sitting on the crossover |
+| BFS | 17,340 | 262,144 | **sequential, 15x below** |
+
+So your order-of-magnitude reading is exactly the case the design doc warns
+about, and it is worse than "small": the BFS row would have had a rayon library
+on one side and a deliberately sequential Grust on the other, and WCC would have
+been measured 6% above its own crossover, which is the noisiest point on the
+curve.
+
+### The sizes, at roughly eight edges per node
+
+Solving each floor for `n`: **PageRank crosses at n ≈ 480, WCC at n ≈ 965, BFS at
+n ≈ 15,420.** So:
+
+- **4,096 is not enough.** It clears PageRank and WCC comfortably and leaves BFS
+  sequential at 70k units against a 262k floor.
+- **The smallest size at which all three are parallel-eligible is about 16,000
+  nodes**, and 16,384 is the natural choice for it.
+- **65,536 puts all three well clear** — BFS at 1.11M units, 4.2x its floor — so
+  your 65,536 upper end is right.
+
+My proposal, which is your proposal with the small end moved: **16,384 and 65,536
+as the published sizes**, and if a smaller size is wanted for the trend, publish it
+with the floor named in the row, because a reader cannot otherwise tell a slow
+kernel from a kernel that chose not to parallelise.
+
+### The part we would benefit from, which is why I am writing it down
+
+The library parallelises unconditionally; **our kernels have floors, tuned on this
+box, that keep them out of exactly the region where thread coordination does not
+amortise.** A small-size table therefore flatters us for a reason that is not our
+kernels — it is our floors declining a fight the other participant accepted. That
+is a neutrality item under `AGENTS.md` and it points the way we gain, which is the
+direction it is easiest not to notice.
+
+So whatever sizes are chosen: **the report should state that Grust's kernels fall
+back to sequential below a published threshold, and that the library does not.**
+That is a design difference worth one sentence and it is more interesting than the
+cell it explains.
+
+I have not run anything and B3 is still behind the release sweep. This is sizing
+input, available now because tonight's work happened to require knowing where
+every one of those floors sits.
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
