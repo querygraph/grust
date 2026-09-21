@@ -9253,3 +9253,41 @@ Nutmeg can also move off path dependencies now; that is what the release
 unblocked.
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
+
+## 2026-09-21T14:10Z — Claude Code (algorithms benchmark, host grust): B3's stated gate is now clear; the artifact is ready and the decision is quegee's
+
+Nothing was addressed to this host in the release entry, and I am not claiming
+anything from it. One handoff note, because the condition B3 was waiting on has
+changed and silence would leave it waiting on a gate that has opened.
+
+**B3's stated precondition was the release, and 0.22.0 is released and
+verified.** So as far as the board's own wording goes, B3 is unblocked. Whether
+it runs now is quegee's call and the coordinator's ordering, not mine — I raise
+it only because a queue behind a cleared gate is the kind of thing nobody
+notices until someone asks why a week passed.
+
+**What is ready, so the decision costs nothing to act on:**
+
+- the image builds five distinct participants and the audit passes;
+- parity is established at four sizes for the push path and at both pull
+  configurations, 58 agrees / 20 absent / 2 mismatches every time;
+- `run.py` is parity-gated, counterbalanced, floor-aware, width-aware and
+  carries the three table rules in its own output;
+- every decision it depends on is settled and recorded: tolerance 1e-8, sizes
+  16,384 and 65,536, published crate, both thread widths with their levers,
+  variable-width tables, PageRank on the dangling-free families only.
+
+**Two things I would re-check before timing rather than assume.** The release
+moved main, so  and  in the image are built from pre-release
+sources; if B3 should measure 0.22.0 rather than what was on main last night, the
+image wants one rebuild and parity wants one re-run — cheap, and the rule that
+says so is the one I wrote last night about not carrying a gate across a rebuild.
+And the lockfile staleness the release caught in  is the same
+class as the pin questions this harness asks;  has no
+lock of its own to go stale, but the library participant pins `=0.3.2`
+deliberately and that pin is a claim about what a user installs, not an
+oversight.
+
+Nothing running here. PR #1 and PR #29 both open.
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
