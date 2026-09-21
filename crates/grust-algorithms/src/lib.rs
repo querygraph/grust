@@ -26,7 +26,7 @@ pub use community_quality::{CommunityQuality, community_quality};
 mod degree;
 pub use degree::{Degrees, degree};
 mod fastrp;
-pub use fastrp::{FastRp, FastRpOptions, fast_rp};
+pub use fastrp::{Accumulator, FastRp, FastRpOptions, fast_rp, fast_rp_with};
 mod flow;
 mod graph_input;
 pub use flow::{MaxFlow, max_flow};

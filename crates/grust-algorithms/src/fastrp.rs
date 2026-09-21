@@ -37,6 +37,22 @@ impl Default for FastRpOptions<'_> {
     }
 }
 
+/// Width of the registers the neighbourhood sums are formed in. Storage is
+/// `f32` in every case: this names the accumulator, not the column.
+///
+/// This exists to measure whether the accumulator's width is visible in the
+/// embedding. The default path is unchanged.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Accumulator {
+    /// Sum neighbour contributions in `f32`, as the shipped kernel does.
+    Single,
+    /// Sum in `f64` and narrow once per round on store.
+    Double,
+    /// Sum in `f64` with Neumaier compensation; the reference the other two
+    /// are measured against.
+    Compensated,
+}
+
 /// An embedding per node.
 pub struct FastRp {
     graph: GraphProjection,
@@ -95,6 +111,16 @@ const CHUNK: usize = 1024;
 /// width. The embedding is not a function of the graph alone — it depends on
 /// the seed and on node rows — so compare embeddings only within one run.
 pub fn fast_rp(graph: &GraphProjection, options: FastRpOptions<'_>) -> Result<FastRp> {
+    fast_rp_with(graph, options, Accumulator::Single)
+}
+
+/// `fast_rp` with the accumulator width named explicitly. `Accumulator::Single`
+/// is bit-for-bit what `fast_rp` computes.
+pub fn fast_rp_with(
+    graph: &GraphProjection,
+    options: FastRpOptions<'_>,
+    accumulator: Accumulator,
+) -> Result<FastRp> {
     graph.require_nonnegative("fastRP")?;
     let context = graph.execution();
     context.checkpoint()?;
@@ -158,33 +184,98 @@ pub fn fast_rp(graph: &GraphProjection, options: FastRpOptions<'_>) -> Result<Fa
         &mut result.values,
         &current.values,
         d,
-        options.self_influence as f32,
+        options.self_influence,
         context,
+        accumulator,
     )?;
 
     for &weight in options.iteration_weights {
         let previous = &current.values;
         parallel::for_chunks(workers, &mut next.values, CHUNK * d, |first, chunk| {
             let mut meter = context.work_meter();
+            // Scratch registers for the wide paths. One row's worth, reused
+            // down the chunk, so the allocation does not scale with the graph.
+            let mut wide = vec![
+                0.0f64;
+                if accumulator == Accumulator::Single {
+                    0
+                } else {
+                    d
+                }
+            ];
+            let mut carry = vec![
+                0.0f64;
+                if accumulator == Accumulator::Compensated {
+                    d
+                } else {
+                    0
+                }
+            ];
             for (offset, row) in chunk.chunks_mut(d).enumerate() {
                 let node = first / d + offset;
                 let range = adjacency.range(node);
                 meter.charge(d * (1 + range.len()))?;
-                row.fill(0.0);
-                let mut total = 0.0f32;
-                for arc in range {
-                    let arc_weight = adjacency.weight(arc) as f32;
-                    total += arc_weight;
-                    let other = adjacency.targets.values[arc];
-                    for (value, &theirs) in
-                        row.iter_mut().zip(&previous[other * d..(other + 1) * d])
-                    {
-                        *value += arc_weight * theirs;
+                match accumulator {
+                    Accumulator::Single => {
+                        row.fill(0.0);
+                        let mut total = 0.0f32;
+                        for arc in range {
+                            let arc_weight = adjacency.weight(arc) as f32;
+                            total += arc_weight;
+                            let other = adjacency.targets.values[arc];
+                            for (value, &theirs) in
+                                row.iter_mut().zip(&previous[other * d..(other + 1) * d])
+                            {
+                                *value += arc_weight * theirs;
+                            }
+                        }
+                        if total > 0.0 {
+                            for value in row.iter_mut() {
+                                *value /= total;
+                            }
+                        }
                     }
-                }
-                if total > 0.0 {
-                    for value in row.iter_mut() {
-                        *value /= total;
+                    Accumulator::Double => {
+                        wide.fill(0.0);
+                        let mut total = 0.0f64;
+                        for arc in range {
+                            let arc_weight = adjacency.weight(arc);
+                            total += arc_weight;
+                            let other = adjacency.targets.values[arc];
+                            for (value, &theirs) in
+                                wide.iter_mut().zip(&previous[other * d..(other + 1) * d])
+                            {
+                                *value += arc_weight * f64::from(theirs);
+                            }
+                        }
+                        let scale = if total > 0.0 { 1.0 / total } else { 1.0 };
+                        for (value, &sum) in row.iter_mut().zip(wide.iter()) {
+                            *value = (sum * scale) as f32;
+                        }
+                    }
+                    Accumulator::Compensated => {
+                        wide.fill(0.0);
+                        carry.fill(0.0);
+                        let mut total = 0.0f64;
+                        let mut total_carry = 0.0f64;
+                        for arc in range {
+                            let arc_weight = adjacency.weight(arc);
+                            neumaier(&mut total, &mut total_carry, arc_weight);
+                            let other = adjacency.targets.values[arc];
+                            let theirs = &previous[other * d..(other + 1) * d];
+                            for ((value, compensation), &their) in
+                                wide.iter_mut().zip(carry.iter_mut()).zip(theirs)
+                            {
+                                neumaier(value, compensation, arc_weight * f64::from(their));
+                            }
+                        }
+                        let total = total + total_carry;
+                        let scale = if total > 0.0 { 1.0 / total } else { 1.0 };
+                        for ((value, &sum), &compensation) in
+                            row.iter_mut().zip(wide.iter()).zip(carry.iter())
+                        {
+                            *value = ((sum + compensation) * scale) as f32;
+                        }
                     }
                 }
             }
@@ -195,8 +286,9 @@ pub fn fast_rp(graph: &GraphProjection, options: FastRpOptions<'_>) -> Result<Fa
             &mut result.values,
             &current.values,
             d,
-            weight as f32,
+            weight,
             context,
+            accumulator,
         )?;
     }
     if result.values.iter().any(|value| !value.is_finite()) {
@@ -216,8 +308,9 @@ fn accumulate(
     into: &mut [f32],
     from: &[f32],
     d: usize,
-    weight: f32,
+    weight: f64,
     context: &grust_procedures::ExecutionContext,
+    accumulator: Accumulator,
 ) -> Result<()> {
     if weight == 0.0 {
         return Ok(());
@@ -227,14 +320,57 @@ fn accumulate(
         context.charge_work(chunk.len())?;
         for (offset, row) in chunk.chunks_mut(d).enumerate() {
             let source = &from[first + offset * d..first + (offset + 1) * d];
-            let norm = source.iter().map(|v| v * v).sum::<f32>().sqrt();
-            if norm > 0.0 {
-                for (value, &theirs) in row.iter_mut().zip(source) {
-                    *value += weight * theirs / norm;
+            match accumulator {
+                Accumulator::Single => {
+                    let weight = weight as f32;
+                    let norm = source.iter().map(|v| v * v).sum::<f32>().sqrt();
+                    if norm > 0.0 {
+                        for (value, &theirs) in row.iter_mut().zip(source) {
+                            *value += weight * theirs / norm;
+                        }
+                    }
+                }
+                Accumulator::Double => {
+                    let norm = source
+                        .iter()
+                        .map(|v| f64::from(*v) * f64::from(*v))
+                        .sum::<f64>()
+                        .sqrt();
+                    if norm > 0.0 {
+                        for (value, &theirs) in row.iter_mut().zip(source) {
+                            *value = (f64::from(*value) + weight * f64::from(theirs) / norm) as f32;
+                        }
+                    }
+                }
+                Accumulator::Compensated => {
+                    let mut sum = 0.0f64;
+                    let mut carry = 0.0f64;
+                    for &v in source {
+                        neumaier(&mut sum, &mut carry, f64::from(v) * f64::from(v));
+                    }
+                    let norm = (sum + carry).sqrt();
+                    if norm > 0.0 {
+                        for (value, &theirs) in row.iter_mut().zip(source) {
+                            *value = (f64::from(*value) + weight * f64::from(theirs) / norm) as f32;
+                        }
+                    }
                 }
             }
         }
         Ok(())
     })?;
     Ok(())
+}
+
+/// One Neumaier step: add `term` to `sum`, routing the lost low bits into
+/// `carry`. `sum + carry` is the compensated total.
+#[inline]
+fn neumaier(sum: &mut f64, carry: &mut f64, term: f64) {
+    let updated = *sum + term;
+    *carry += if sum.abs() >= term.abs() {
+        (*sum - updated) + term
+    } else {
+        (term - updated) + *sum
+    };
+    *sum = updated;
 }

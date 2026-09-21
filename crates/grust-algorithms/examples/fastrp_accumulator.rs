@@ -1,0 +1,449 @@
+//! Measure what FastRP's accumulator width costs, in accuracy and in time.
+//!
+//!     fastrp_accumulator accuracy [options]
+//!     fastrp_accumulator time     [options]
+//!
+//! The same synthetic generator serves both modes, so an accuracy cell and a
+//! timing cell with the same options describe the same graph. Storage is `f32`
+//! throughout; only the registers the neighbourhood sums are formed in change.
+//!
+//! The generator exists to stress a summation, not to look like a social
+//! network: `--hubs` nodes of out-degree `--hub-degree` are the worst case,
+//! because they sum the most terms, and `--weights mixed` spreads the term
+//! magnitudes over orders of magnitude, which is what actually destroys an
+//! `f32` running total.
+
+use std::time::Instant;
+
+use grust_algorithms::{
+    Accumulator, ExecutionContext, ExecutionLimits, FastRpOptions, GraphProjection, Orientation,
+    ProjectionEdge, SnapshotIdentity, fast_rp_with,
+};
+use rayon::prelude::*;
+
+/// A splitmix64 stream, so a configuration is reproducible from its seed
+/// alone and does not depend on the crate's own random module.
+struct Rng(u64);
+
+impl Rng {
+    fn next(&mut self) -> u64 {
+        self.0 = self.0.wrapping_add(0x9E37_79B9_7F4A_7C15);
+        let mut z = self.0;
+        z = (z ^ (z >> 30)).wrapping_mul(0xBF58_476D_1CE4_E5B9);
+        z = (z ^ (z >> 27)).wrapping_mul(0x94D0_49BB_1331_11EB);
+        z ^ (z >> 31)
+    }
+    fn below(&mut self, bound: usize) -> usize {
+        (self.next() % bound as u64) as usize
+    }
+    fn unit(&mut self) -> f64 {
+        (self.next() >> 11) as f64 / (1u64 << 53) as f64
+    }
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Weights {
+    /// Every arc weighs one: the easiest case for an `f32` total.
+    Uniform,
+    /// Log-uniform over six orders of magnitude, shuffled.
+    Mixed,
+    /// Log-uniform, but laid out largest first inside each node's arc range,
+    /// which is the adversarial order for a running total.
+    Descending,
+}
+
+struct Config {
+    nodes: usize,
+    degree: usize,
+    hubs: usize,
+    hub_degree: usize,
+    dimension: usize,
+    weights: Weights,
+    seed: u64,
+    workers: usize,
+    samples: usize,
+    k: usize,
+    label: String,
+}
+
+impl Default for Config {
+    fn default() -> Self {
+        Self {
+            nodes: 20_000,
+            degree: 16,
+            hubs: 4,
+            hub_degree: 8_000,
+            dimension: 256,
+            weights: Weights::Mixed,
+            seed: 7,
+            workers: 0,
+            samples: 512,
+            k: 10,
+            label: String::new(),
+        }
+    }
+}
+
+/// Build the projection the whole run uses.
+fn build(config: &Config) -> Result<GraphProjection, Box<dyn std::error::Error>> {
+    let mut rng = Rng(config.seed);
+    let mut pairs: Vec<(usize, usize)> = Vec::new();
+    for node in 0..config.nodes {
+        let out = if node < config.hubs {
+            config.hub_degree.min(config.nodes)
+        } else {
+            config.degree
+        };
+        for _ in 0..out {
+            pairs.push((node, rng.below(config.nodes)));
+        }
+    }
+    // Weights are drawn per arc and, for `descending`, sorted inside each
+    // node's own range, which is the order the kernel will sum them in.
+    let mut weights: Vec<f64> = match config.weights {
+        Weights::Uniform => vec![1.0; pairs.len()],
+        _ => (0..pairs.len())
+            .map(|_| 10f64.powf(rng.unit() * 6.0 - 3.0))
+            .collect(),
+    };
+    if config.weights == Weights::Descending {
+        let mut start = 0usize;
+        while start < pairs.len() {
+            let source = pairs[start].0;
+            let mut end = start;
+            while end < pairs.len() && pairs[end].0 == source {
+                end += 1;
+            }
+            weights[start..end].sort_by(|a, b| b.partial_cmp(a).unwrap());
+            start = end;
+        }
+    }
+    let context = ExecutionContext::new(ExecutionLimits {
+        memory_bytes: 48 << 30,
+        work_units: usize::MAX,
+        batch_rows: 8192,
+        deadline: None,
+    })?;
+    let context = if config.workers == 0 {
+        context
+    } else {
+        context.with_concurrency(config.workers)?
+    };
+    let names: Vec<_> = (0..config.nodes).map(|n| n.to_string().into()).collect();
+    let edges: Vec<_> = pairs
+        .iter()
+        .enumerate()
+        .map(|(ordinal, &(source, target))| ProjectionEdge {
+            source,
+            target,
+            ordinal,
+            id: None,
+        })
+        .collect();
+    Ok(GraphProjection::from_topology(
+        SnapshotIdentity::new("accumulator".into(), "r1".into(), "bench".into())?,
+        names,
+        edges,
+        Some(weights),
+        Orientation::Outgoing,
+        &context,
+    )?)
+}
+
+fn options(config: &Config) -> FastRpOptions<'static> {
+    FastRpOptions {
+        dimension: config.dimension,
+        iteration_weights: &[0.0, 1.0, 1.0],
+        self_influence: 0.0,
+        normalization_strength: 0.0,
+        seed: 11,
+    }
+}
+
+fn median(values: &mut [f64]) -> f64 {
+    if values.is_empty() {
+        return 0.0;
+    }
+    values.sort_by(|a, b| a.partial_cmp(b).unwrap());
+    values[values.len() / 2]
+}
+
+/// Cosine between two rows; zero rows give zero, which is then reported as a
+/// worst case rather than hidden.
+fn cosine(a: &[f32], b: &[f32]) -> f64 {
+    let mut dot = 0.0f64;
+    let mut na = 0.0f64;
+    let mut nb = 0.0f64;
+    for (&x, &y) in a.iter().zip(b) {
+        dot += f64::from(x) * f64::from(y);
+        na += f64::from(x) * f64::from(x);
+        nb += f64::from(y) * f64::from(y);
+    }
+    if na == 0.0 || nb == 0.0 {
+        return 0.0;
+    }
+    dot / (na.sqrt() * nb.sqrt())
+}
+
+/// The `k` rows most similar to `row` by cosine, best first.
+fn neighbours(values: &[f32], d: usize, n: usize, row: usize, k: usize) -> Vec<usize> {
+    let mine = &values[row * d..(row + 1) * d];
+    let mut scored: Vec<(f64, usize)> = (0..n)
+        .filter(|&other| other != row)
+        .map(|other| (cosine(mine, &values[other * d..(other + 1) * d]), other))
+        .collect();
+    // Ties break on the row number, so a tie cannot masquerade as a reorder.
+    scored.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap().then(a.1.cmp(&b.1)));
+    scored.truncate(k);
+    scored.into_iter().map(|(_, other)| other).collect()
+}
+
+struct Diff {
+    max_abs: f64,
+    median_abs: f64,
+    max_rel: f64,
+    median_rel: f64,
+    worst_cosine: f64,
+    median_cosine: f64,
+    identical: bool,
+}
+
+fn compare(a: &[f32], b: &[f32], d: usize) -> Diff {
+    let mut abs: Vec<f64> = Vec::with_capacity(a.len());
+    let mut rel: Vec<f64> = Vec::with_capacity(a.len());
+    for (&x, &y) in a.iter().zip(b) {
+        let difference = (f64::from(x) - f64::from(y)).abs();
+        abs.push(difference);
+        let scale = f64::from(x).abs().max(f64::from(y).abs());
+        if scale > 0.0 {
+            rel.push(difference / scale);
+        }
+    }
+    let identical = abs.iter().all(|&v| v == 0.0);
+    let mut cosines: Vec<f64> = a
+        .chunks(d)
+        .zip(b.chunks(d))
+        .map(|(x, y)| cosine(x, y))
+        .collect();
+    let max_abs = abs.iter().copied().fold(0.0f64, f64::max);
+    let max_rel = rel.iter().copied().fold(0.0f64, f64::max);
+    let worst_cosine = cosines.iter().copied().fold(f64::INFINITY, f64::min);
+    Diff {
+        max_abs,
+        median_abs: median(&mut abs),
+        max_rel,
+        median_rel: median(&mut rel),
+        worst_cosine,
+        median_cosine: median(&mut cosines),
+        identical,
+    }
+}
+
+fn accuracy(config: &Config) -> Result<(), Box<dyn std::error::Error>> {
+    let graph = build(config)?;
+    let d = config.dimension;
+    let n = graph.node_count();
+    let single = fast_rp_with(&graph, options(config), Accumulator::Single)?;
+    let double = fast_rp_with(&graph, options(config), Accumulator::Double)?;
+    let exact = fast_rp_with(&graph, options(config), Accumulator::Compensated)?;
+    println!(
+        "== {} | nodes {n} arcs {} dim {d} hubs {}x{} weights {}",
+        config.label,
+        graph.edge_count(),
+        config.hubs,
+        config.hub_degree,
+        match config.weights {
+            Weights::Uniform => "uniform",
+            Weights::Mixed => "mixed",
+            Weights::Descending => "descending",
+        }
+    );
+    for (name, left, right) in [
+        ("f32 vs f64", single.values(), double.values()),
+        ("f32 vs exact", single.values(), exact.values()),
+        ("f64 vs exact", double.values(), exact.values()),
+    ] {
+        let diff = compare(left, right, d);
+        println!(
+            "{name:<13} maxabs {:.3e} medabs {:.3e} maxrel {:.3e} medrel {:.3e} \
+             cos_worst {:.12} cos_med {:.12}{}",
+            diff.max_abs,
+            diff.median_abs,
+            diff.max_rel,
+            diff.median_rel,
+            diff.worst_cosine,
+            diff.median_cosine,
+            if diff.identical {
+                "  IDENTICAL-BIT-FOR-BIT"
+            } else {
+                ""
+            }
+        );
+    }
+
+    // The ranking test. A sample of rows, their k nearest by cosine under each
+    // accumulator, compared as ordered lists and as sets.
+    let mut rng = Rng(config.seed ^ 0xABCD);
+    let sample: Vec<usize> = (0..config.samples.min(n)).map(|_| rng.below(n)).collect();
+    let lists = |values: &[f32]| -> Vec<Vec<usize>> {
+        sample
+            .par_iter()
+            .map(|&row| neighbours(values, d, n, row, config.k))
+            .collect()
+    };
+    let a = lists(single.values());
+    let b = lists(double.values());
+    let c = lists(exact.values());
+    for (name, left, right) in [
+        ("f32 vs f64", &a, &b),
+        ("f32 vs exact", &a, &c),
+        ("f64 vs exact", &b, &c),
+    ] {
+        let mut top1 = 0usize;
+        let mut set_changed = 0usize;
+        let mut order_changed = 0usize;
+        for (x, y) in left.iter().zip(right.iter()) {
+            if x.first() != y.first() {
+                top1 += 1;
+            }
+            if x != y {
+                order_changed += 1;
+            }
+            let mut xs = x.clone();
+            let mut ys = y.clone();
+            xs.sort_unstable();
+            ys.sort_unstable();
+            if xs != ys {
+                set_changed += 1;
+            }
+        }
+        println!(
+            "{name:<13} top{} membership changed {set_changed}/{} order changed \
+             {order_changed}/{} top1 changed {top1}/{}",
+            config.k,
+            sample.len(),
+            sample.len(),
+            sample.len()
+        );
+    }
+    println!();
+    Ok(())
+}
+
+/// Proportion of CPU time stolen since boot, as `/proc/stat` reports it.
+fn steal_ticks() -> Option<(u64, u64)> {
+    let text = std::fs::read_to_string("/proc/stat").ok()?;
+    let line = text.lines().next()?;
+    let fields: Vec<u64> = line
+        .split_whitespace()
+        .skip(1)
+        .filter_map(|f| f.parse().ok())
+        .collect();
+    let steal = *fields.get(7)?;
+    Some((steal, fields.iter().sum()))
+}
+
+fn timing(config: &Config, repeats: usize) -> Result<(), Box<dyn std::error::Error>> {
+    let graph = build(config)?;
+    let before = steal_ticks();
+    // Warmup: one full pair, thrown away, so the first timed sample does not
+    // pay for page faults the allocator has not taken yet.
+    fast_rp_with(&graph, options(config), Accumulator::Single)?;
+    fast_rp_with(&graph, options(config), Accumulator::Double)?;
+    let mut single: Vec<f64> = Vec::new();
+    let mut double: Vec<f64> = Vec::new();
+    for repeat in 0..repeats {
+        // The order alternates so a drift over the run does not land on one
+        // variant only.
+        let order = if repeat % 2 == 0 {
+            [Accumulator::Single, Accumulator::Double]
+        } else {
+            [Accumulator::Double, Accumulator::Single]
+        };
+        for which in order {
+            let started = Instant::now();
+            let result = fast_rp_with(&graph, options(config), which)?;
+            let elapsed = started.elapsed().as_secs_f64();
+            std::hint::black_box(result.values()[0]);
+            match which {
+                Accumulator::Single => single.push(elapsed),
+                _ => double.push(elapsed),
+            }
+        }
+    }
+    let after = steal_ticks();
+    let steal = match (before, after) {
+        (Some((s0, t0)), Some((s1, t1))) if t1 > t0 => {
+            format!("{:.3}%", 100.0 * (s1 - s0) as f64 / (t1 - t0) as f64)
+        }
+        _ => "unavailable".to_string(),
+    };
+    let stat = |samples: &mut Vec<f64>| -> (f64, f64, f64) {
+        let low = samples.iter().copied().fold(f64::INFINITY, f64::min);
+        let high = samples.iter().copied().fold(0.0f64, f64::max);
+        (median(samples), low, high)
+    };
+    let (ms, mn, mx) = stat(&mut single);
+    let (ds, dn, dx) = stat(&mut double);
+    println!(
+        "{:<28} nodes {} arcs {} dim {} | f32 med {:.4}s [{:.4}, {:.4}] | \
+         f64 med {:.4}s [{:.4}, {:.4}] | f64/f32 {:.3} | repeats {} | steal {}",
+        config.label,
+        graph.node_count(),
+        graph.edge_count(),
+        config.dimension,
+        ms,
+        mn,
+        mx,
+        ds,
+        dn,
+        dx,
+        ds / ms,
+        repeats,
+        steal
+    );
+    Ok(())
+}
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mut args = std::env::args().skip(1);
+    let mode = args.next().unwrap_or_else(|| "accuracy".into());
+    let mut config = Config::default();
+    let mut repeats = 5usize;
+    while let Some(flag) = args.next() {
+        let mut value = || args.next().ok_or_else(|| format!("{flag} needs a value"));
+        match flag.as_str() {
+            "--nodes" => config.nodes = value()?.parse()?,
+            "--degree" => config.degree = value()?.parse()?,
+            "--hubs" => config.hubs = value()?.parse()?,
+            "--hub-degree" => config.hub_degree = value()?.parse()?,
+            "--dimension" => config.dimension = value()?.parse()?,
+            "--seed" => config.seed = value()?.parse()?,
+            "--workers" => config.workers = value()?.parse()?,
+            "--samples" => config.samples = value()?.parse()?,
+            "--k" => config.k = value()?.parse()?,
+            "--repeats" => repeats = value()?.parse()?,
+            "--label" => config.label = value()?,
+            "--weights" => {
+                config.weights = match value()?.as_str() {
+                    "uniform" => Weights::Uniform,
+                    "mixed" => Weights::Mixed,
+                    "descending" => Weights::Descending,
+                    other => return Err(format!("unknown weights `{other}`").into()),
+                }
+            }
+            other => return Err(format!("unknown argument `{other}`").into()),
+        }
+    }
+    if config.label.is_empty() {
+        config.label = format!(
+            "n{} d{} hub{}x{}",
+            config.nodes, config.dimension, config.hubs, config.hub_degree
+        );
+    }
+    match mode.as_str() {
+        "accuracy" => accuracy(&config),
+        "time" => timing(&config, repeats),
+        other => Err(format!("unknown mode `{other}`").into()),
+    }
+}
