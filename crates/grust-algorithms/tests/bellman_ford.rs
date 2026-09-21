@@ -335,7 +335,7 @@ fn a_long_negative_chain_and_a_far_cycle_finish_within_budget_or_say_so() {
     let build = ExecutionContext::new(limits(usize::MAX)).unwrap();
     let cost = {
         let _ = signed(n, &edges, &weights, Orientation::Outgoing, &build);
-        build.usage().unwrap().work_units
+        build.usage().unwrap().counted_work().expect("counted")
     };
     let tight = ExecutionContext::new(limits(cost + 1000)).unwrap();
     let projection = signed(n, &edges, &weights, Orientation::Outgoing, &tight);

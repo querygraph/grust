@@ -240,9 +240,9 @@ fn triangles_are_identical_at_any_pool_width_and_charge_the_same_work() {
     let run = |threads: usize| {
         let context = context().with_concurrency(threads).unwrap();
         let projection = graph(N, &edges, Orientation::Undirected, &context);
-        let before = context.usage().unwrap().work_units;
+        let before = context.usage().unwrap().counted_work().expect("counted");
         let result = triangles(&projection, TriangleOptions::default()).unwrap();
-        let work = context.usage().unwrap().work_units - before;
+        let work = context.usage().unwrap().counted_work().expect("counted") - before;
         (result.triangles().to_vec(), result.triangle_count(), work)
     };
     let (counts, total, work) = run(1);
@@ -264,7 +264,7 @@ fn triangles_observe_cancellation_and_budget_and_release_scratch() {
     let edges = scrambled(300, 5000);
     let context = context();
     let projection = graph(300, &edges, Orientation::Undirected, &context);
-    let projection_work = context.usage().unwrap().work_units;
+    let projection_work = context.usage().unwrap().counted_work().expect("counted");
     let held = context.usage().unwrap().live_bytes;
     context.cancel().unwrap();
     assert!(matches!(

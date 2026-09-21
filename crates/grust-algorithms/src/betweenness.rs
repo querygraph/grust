@@ -274,3 +274,40 @@ impl Workspace {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::{BLOCKS, MAX_SOURCES_PER_BLOCK, block_size};
+
+    /// The sizing rule, pinned. A sampled run is the case that regressed: a
+    /// fixed block of 64 gave `samplingSize: 64` one block and therefore one
+    /// thread. It must give 64 blocks of one source instead, and a large run must
+    /// still cap a block at 64 sources rather than growing them without limit.
+    #[test]
+    fn a_small_sample_is_spread_and_a_large_run_is_capped() {
+        assert_eq!(block_size(64), 1, "a 64-source sample needs 64 blocks");
+        assert_eq!(
+            block_size(1_000_000),
+            MAX_SOURCES_PER_BLOCK,
+            "a large run caps the block rather than the block count"
+        );
+        // Nothing asks for zero blocks, and one source is one block of one.
+        assert_eq!(block_size(0), 1);
+        assert_eq!(block_size(1), 1);
+        // Below the target, every source is its own block, so a run with fewer
+        // sources than BLOCKS still spreads across whatever workers exist.
+        for count in 1..=BLOCKS {
+            assert_eq!(block_size(count), 1, "{count} sources");
+            assert_eq!(count.div_ceil(block_size(count)), count);
+        }
+        // The block count never exceeds the target while the cap is not reached.
+        for count in [65usize, 128, 4_095, 4_096] {
+            let blocks = count.div_ceil(block_size(count));
+            assert!(blocks <= BLOCKS, "{count} sources gave {blocks} blocks");
+            assert!(blocks > 1, "{count} sources should spread");
+        }
+        // And the size depends on the source count alone, never on the machine:
+        // the same count gives the same size on every call.
+        assert_eq!(block_size(4_096), block_size(4_096));
+    }
+}

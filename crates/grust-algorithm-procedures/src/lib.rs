@@ -86,6 +86,22 @@ fn catalog() -> Vec<Spec> {
             )?))
         },
     ));
+    // Streamed, never an n×n matrix: the cursor runs one source at a time.
+    specs.push(Spec::new(
+        "allPairsShortestPaths",
+        None,
+        vec![
+            field("sourceNodeId", ValueType::String),
+            field("targetNodeId", ValueType::String),
+            field("distance", ValueType::Number),
+        ],
+        options::all_pairs_fields(),
+        |graph, args| {
+            Ok(AlgorithmOutput::AllPairs(
+                algorithms::all_pairs_shortest_paths(graph, options::all_pairs(args)?)?,
+            ))
+        },
+    ));
     specs.push(Spec::new(
         "wcc",
         None,
@@ -129,6 +145,26 @@ fn catalog() -> Vec<Spec> {
             Ok(AlgorithmOutput::PageRank(algorithms::pagerank(
                 graph,
                 options::pagerank(args)?,
+            )?))
+        },
+    ));
+    // ArticleRank is PageRank's recurrence with a damped divisor, so it is the
+    // same kernel, the same options and the same result shape.
+    specs.push(Spec::new(
+        "articleRank",
+        None,
+        vec![
+            field("nodeId", ValueType::String),
+            field("score", ValueType::Number),
+            field("iterations", ValueType::Integer),
+            field("converged", ValueType::Boolean),
+            field("residual", ValueType::Number),
+        ],
+        options::pagerank_fields(),
+        |graph, args| {
+            Ok(AlgorithmOutput::PageRank(algorithms::pagerank(
+                graph,
+                options::article_rank(args)?,
             )?))
         },
     ));
@@ -179,6 +215,23 @@ fn catalog() -> Vec<Spec> {
             Ok(AlgorithmOutput::Topology(algorithms::topological_sort(
                 graph,
             )?))
+        },
+    ));
+    specs.push(Spec::new(
+        "longestPath",
+        None,
+        vec![
+            field("nodeId", ValueType::String),
+            nullable("distance", ValueType::Number),
+            field("hops", ValueType::Integer),
+            field("cycleIndex", ValueType::Integer),
+            field("cyclic", ValueType::Boolean),
+        ],
+        vec![],
+        |graph, _| {
+            Ok(AlgorithmOutput::Table(
+                algorithms::longest_path(graph)?.into_table()?,
+            ))
         },
     ));
     specs.push(Spec::new(
@@ -234,6 +287,7 @@ fn catalog() -> Vec<Spec> {
         option: "communityProperty",
         kind: algorithms::PropertyKind::Integer,
         missing: algorithms::MissingProperty::Reject,
+        needed: always,
     }];
     specs.push(Spec::with_properties(
         "modularity",
@@ -262,11 +316,13 @@ fn catalog() -> Vec<Spec> {
             option: "latitudeProperty",
             kind: algorithms::PropertyKind::Number,
             missing: algorithms::MissingProperty::Reject,
+            needed: always,
         },
         PropertyOption {
             option: "longitudeProperty",
             kind: algorithms::PropertyKind::Number,
             missing: algorithms::MissingProperty::Reject,
+            needed: always,
         },
     ];
     specs.push(
@@ -296,6 +352,31 @@ fn catalog() -> Vec<Spec> {
             },
         )
         .with_source_and_target(),
+    );
+    specs.push(
+        Spec::new(
+            "yens",
+            Some(ValueType::String),
+            vec![
+                field("sourceNodeId", ValueType::String),
+                field("targetNodeId", ValueType::String),
+                field("totalCost", ValueType::Number),
+                field("nodeIds", ValueType::Strings),
+                field("costs", ValueType::Numbers),
+                field("edgeOrdinals", ValueType::Integers),
+                field("pathIndex", ValueType::Integer),
+            ],
+            options::yens_fields(),
+            |graph, args| {
+                Ok(AlgorithmOutput::RankedPaths(algorithms::yens(
+                    graph,
+                    source(args)?,
+                    target(args)?,
+                    options::yens(args)?,
+                )?))
+            },
+        )
+        .with_target(),
     );
     specs.push(
         Spec::new(
@@ -376,6 +457,23 @@ fn catalog() -> Vec<Spec> {
         },
     ));
     specs.push(Spec::new(
+        "k1Coloring",
+        None,
+        vec![
+            field("nodeId", ValueType::String),
+            field("color", ValueType::Integer),
+            field("colorCount", ValueType::Integer),
+            field("iterations", ValueType::Integer),
+            field("converged", ValueType::Boolean),
+        ],
+        options::k1_coloring_fields(),
+        |graph, args| {
+            Ok(AlgorithmOutput::Table(
+                algorithms::k1_coloring(graph, options::k1_coloring(args)?)?.into_table(),
+            ))
+        },
+    ));
+    specs.push(Spec::new(
         "nodeSimilarity",
         None,
         vec![
@@ -388,6 +486,53 @@ fn catalog() -> Vec<Spec> {
             Ok(AlgorithmOutput::Table(
                 algorithms::node_similarity(graph, options::node_similarity(args)?)?
                     .into_table()?,
+            ))
+        },
+    ));
+    // Only `sameCommunity` reads a property, so the community is requested for
+    // that metric alone: the other five run on a graph without community ids,
+    // and through `run_on_projection`, which supplies no properties.
+    const LINK_COMMUNITY: &[PropertyOption] = &[PropertyOption {
+        option: "communityProperty",
+        kind: algorithms::PropertyKind::Integer,
+        missing: algorithms::MissingProperty::Reject,
+        needed: |args| Ok(options::link_metric(args)? == algorithms::LinkMetric::SameCommunity),
+    }];
+    specs.push(Spec::with_properties(
+        "linkPrediction",
+        vec![
+            field("node1", ValueType::String),
+            field("node2", ValueType::String),
+            field("score", ValueType::Number),
+        ],
+        options::link_prediction_fields(),
+        LINK_COMMUNITY,
+        |properties, args| {
+            let graph = properties.projection();
+            let metric = options::link_metric(args)?;
+            let pairs = options::link_pairs(args)?
+                .map(|(first, second)| algorithms::CandidatePairs::from_ids(graph, first, second))
+                .transpose()?;
+            let candidates = pairs
+                .as_ref()
+                .map_or(algorithms::LinkCandidates::DistanceTwo, |pairs| {
+                    algorithms::LinkCandidates::Pairs(pairs)
+                });
+            let communities = if metric == algorithms::LinkMetric::SameCommunity {
+                Some((properties, community_key(args)?))
+            } else {
+                None
+            };
+            Ok(AlgorithmOutput::Table(
+                algorithms::link_prediction(
+                    graph,
+                    algorithms::LinkPredictionOptions {
+                        metric,
+                        candidates,
+                        communities,
+                    },
+                )?
+                .into_table()?,
             ))
         },
     ));
@@ -622,11 +767,36 @@ enum Body {
 
 /// An option whose value is the name of a node property the kernel reads.
 #[derive(Clone, Copy)]
-struct PropertyOption {
+/// One option through which a kernel names a node property it reads.
+///
+/// Declared by the kernel, so it is known before any call: see
+/// [`node_property_options`].
+pub struct PropertyOption {
     /// The option's name, as the caller writes it.
-    option: &'static str,
-    kind: algorithms::PropertyKind,
-    missing: algorithms::MissingProperty,
+    pub option: &'static str,
+    /// The kind of column the kernel reads through it.
+    pub kind: algorithms::PropertyKind,
+    /// What the kernel does where the value is absent.
+    pub missing: algorithms::MissingProperty,
+    /// Whether this call reads it: a kernel may need a property for some of
+    /// its options only. Private so the declaration's shape stays the
+    /// kernel's; an embedder asks through [`PropertyOption::needed`].
+    needed: fn(&ValidatedArguments) -> Result<bool>,
+}
+
+impl PropertyOption {
+    /// Whether a call with these arguments reads this property. Most options
+    /// are read by every call; `linkPrediction`'s `communityProperty` is read
+    /// only when `metric` is `sameCommunity`. An embedder staging columns
+    /// before it has a call can stage every declared option; one that has
+    /// validated arguments can skip the options this returns `false` for.
+    pub fn needed(&self, args: &ValidatedArguments) -> Result<bool> {
+        (self.needed)(args)
+    }
+}
+
+fn always(_: &ValidatedArguments) -> Result<bool> {
+    Ok(true)
 }
 
 /// Read the property names a call asks for, in declaration order.
@@ -637,6 +807,9 @@ fn requests<'a>(
     let mut wanted = Vec::new();
     wanted.try_reserve_exact(declared.len())?;
     for declaration in declared {
+        if !(declaration.needed)(args)? {
+            continue;
+        }
         let Some(Value::String(key)) = args.options().get(declaration.option) else {
             return Err(ProcedureError::InvalidArguments(format!(
                 "{} must name a node property",
@@ -803,9 +976,10 @@ fn admit_signed(
 /// `projectionStats` and `estimateCsr` are not kernels over a projection: one
 /// reads projection metadata and the other sizes a graph before it is built.
 /// They are refused here; call `GraphProjection::statistics` or
-/// `CsrEstimate::upper_bound`. A kernel that reads node properties is refused
-/// too, and names itself: the caller must supply them, through
-/// [`node_property_requests`] and [`run_with_properties`].
+/// `CsrEstimate::upper_bound`. A kernel that reads node properties for this
+/// call is refused too, and names itself: the caller must supply them, through
+/// [`node_property_requests`] and [`run_with_properties`]. One that reads none
+/// with these options (`linkPrediction` other than `sameCommunity`) runs.
 #[cfg(feature = "arrow")]
 pub fn run_on_projection(
     name: &str,
@@ -821,10 +995,48 @@ pub fn run_on_projection(
         })?;
     match spec.body {
         Body::Topology(kernel) => kernel(graph, args)?.into_arrow_results(),
-        Body::WithProperties { .. } => Err(ProcedureError::Unsupported(format!(
-            "`{name}` reads node properties; build them with node_property_requests and call run_with_properties"
-        ))),
+        Body::WithProperties { kernel, properties } => {
+            if requests(properties, args)?.is_empty() {
+                return kernel(&algorithms::NodeProperties::empty(graph), args)?
+                    .into_arrow_results();
+            }
+            Err(ProcedureError::Unsupported(format!(
+                "`{name}` reads node properties; build them with node_property_requests and call run_with_properties"
+            )))
+        }
     }
+}
+
+/// The options through which `name` names the node properties it reads, as the
+/// kernel declares them. Empty for a kernel that reads none.
+///
+/// This is readable before any call exists. [`node_property_requests`] answers
+/// for one validated call, and validation fills an absent option from its
+/// default — `astar` reads `latitude` and `longitude` unless told otherwise —
+/// so the requests always name *some* column. What a caller cannot learn from
+/// them without first building arguments is which options exist and what
+/// kind of column each must be. An embedder that constructs its own graph, such
+/// as one probing a kernel's result schema, asks here, stages a column of the
+/// declared kind per option, and names those columns in the options it
+/// validates. Otherwise the defaults name columns its graph does not have, and
+/// a property declared [`MissingProperty::Reject`](algorithms::MissingProperty)
+/// refuses the call.
+///
+/// An option is listed even where only some calls read it, such as
+/// `linkPrediction`'s `communityProperty`; [`PropertyOption::needed`] answers
+/// for one call's validated arguments.
+pub fn node_property_options(name: &str) -> Result<&'static [PropertyOption]> {
+    let short = short_name(name);
+    let spec = catalog()
+        .into_iter()
+        .find(|spec| spec.name.eq_ignore_ascii_case(short))
+        .ok_or_else(|| {
+            ProcedureError::Unsupported(format!("`{name}` is not a registered projection kernel"))
+        })?;
+    Ok(match spec.body {
+        Body::Topology(_) => &[],
+        Body::WithProperties { properties, .. } => properties,
+    })
 }
 
 /// The node properties `name` reads for this call: the property keys the
@@ -832,7 +1044,8 @@ pub fn run_on_projection(
 /// kernel declared. Empty for a kernel that reads none.
 ///
 /// An embedder that stages its own columns asks with this and supplies them to
-/// [`run_with_properties`].
+/// [`run_with_properties`]. [`node_property_options`] is how a caller learns
+/// which options exist, and of what kind, before it has a call to ask about.
 pub fn node_property_requests<'a>(
     name: &str,
     args: &'a ValidatedArguments,

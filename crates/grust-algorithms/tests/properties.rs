@@ -405,7 +405,10 @@ fn columns_are_admitted_charged_and_released() {
     // The vector column alone is n * d * 4 bytes, and it is on the books.
     assert!(after.live_bytes - before.live_bytes >= n * d * 4);
     // One unit per node for the row map, one per node per column, one per component.
-    assert!(after.work_units - before.work_units >= n + 2 * n + n * d);
+    assert!(
+        after.counted_work().expect("counted") - before.counted_work().expect("counted")
+            >= n + 2 * n + n * d
+    );
     assert_eq!(properties.categories("team").unwrap().dictionary.len(), 50);
     drop(properties);
     assert_eq!(context.usage().unwrap().live_bytes, before.live_bytes);

@@ -48,7 +48,7 @@ fn cancellation_is_observed_inside_every_binding_form() {
         let error = evaluate(&context, &expr).expect_err("cancelled form must not complete");
         handle.join().unwrap();
         assert!(error.to_string().contains("cancelled"), "{error}");
-        let usage = context.usage().unwrap().work_units;
+        let usage = context.usage().unwrap().counted_work().expect("counted");
         assert!(
             usage > 0 && usage < WIDTH * WIDTH,
             "stopped mid-form: {usage}"
@@ -62,7 +62,7 @@ fn deadline_is_observed_inside_every_binding_form() {
         let context = context(Some(Instant::now() + Duration::from_millis(20)));
         let error = evaluate(&context, &expr).expect_err("expired form must not complete");
         assert!(error.to_string().contains("timed out"), "{error}");
-        let usage = context.usage().unwrap().work_units;
+        let usage = context.usage().unwrap().counted_work().expect("counted");
         assert!(
             usage > 0 && usage < WIDTH * WIDTH,
             "stopped mid-form: {usage}"

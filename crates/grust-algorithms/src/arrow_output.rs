@@ -12,8 +12,9 @@ use arrow_array::{
 use grust_procedures::MemoryReservation;
 
 use crate::{
-    AlgorithmError, Components, Degrees, Distances, GraphProjection, NodeOrder, NodeTable,
-    PageRank, PathCursor, PathView, Result, ShortestPaths, TableType, TableValue, TopologicalOrder,
+    AlgorithmError, AllPairsShortestPaths, Components, Degrees, Distances, GraphProjection,
+    KShortestPaths, NodeOrder, NodeTable, PageRank, PathCursor, PathView, Result, ShortestPair,
+    ShortestPaths, TableType, TableValue, TopologicalOrder, buffer::Buffer,
 };
 
 /// A bounded Arrow batch retaining its query memory reservation. Clone this
@@ -37,6 +38,7 @@ impl ArrowResultBatch {
     }
 }
 
+mod apsp;
 mod ordering;
 
 enum Output {
@@ -47,6 +49,10 @@ enum Output {
     PageRank(PageRank),
     Degrees(Degrees),
     Paths(PathCursor),
+    /// Ranked paths, already materialized: one batch each, in rank order.
+    RankedPaths(KShortestPaths),
+    /// Pairs pulled from the kernel a batch at a time, through one reused block.
+    AllPairs(AllPairsShortestPaths, Buffer<ShortestPair>),
     Table(NodeTable),
 }
 
@@ -119,6 +125,27 @@ impl ShortestPaths {
         ))
     }
 }
+impl KShortestPaths {
+    /// As [`ShortestPaths::into_arrow_results`], with the path's rank in a
+    /// trailing `pathIndex` column. A result with no paths still emits one empty
+    /// batch, so a consumer reading the schema off the first batch has one.
+    pub fn into_arrow_results(self) -> ArrowResultCursor {
+        let graph = self.projection().clone();
+        ArrowResultCursor::new(graph, Output::RankedPaths(self))
+    }
+}
+
+impl AllPairsShortestPaths {
+    /// Stream `sourceNodeId: Utf8, targetNodeId: Utf8, distance: Float64`
+    /// batches. Each batch is computed when it is pulled, so admitted memory is
+    /// the kernel's workspace plus one block of `batch_rows` pairs, whatever
+    /// the total. A result with no pairs still emits one empty batch.
+    pub fn into_arrow_results(self) -> Result<ArrowResultCursor> {
+        let graph = self.projection().clone();
+        let block = Buffer::capacity(graph.execution().limits().batch_rows, graph.execution())?;
+        Ok(ArrowResultCursor::new(graph, Output::AllPairs(self, block)))
+    }
+}
 
 impl ArrowResultCursor {
     fn new(graph: GraphProjection, output: Output) -> Self {
@@ -155,8 +182,23 @@ impl ArrowResultCursor {
         if let Output::Paths(cursor) = output {
             return cursor
                 .next_path()?
-                .map(|path| path_batch(graph, path))
+                .map(|path| path_batch(graph, path, None))
                 .transpose();
+        }
+        if let Output::RankedPaths(paths) = output {
+            let rank = self.next;
+            self.next += 1;
+            return match paths.path(rank) {
+                Some(path) => path_batch(graph, path, Some(unsigned(rank)?)).map(Some),
+                // No paths at all is an answer, and it keeps its schema.
+                None if rank == 0 => empty_path_batch(graph).map(Some),
+                None => Ok(None),
+            };
+        }
+        if let Output::AllPairs(pairs, block) = output {
+            let batch = apsp::pairs_batch(graph, pairs, block, self.emitted)?;
+            self.emitted = true;
+            return Ok(batch);
         }
         if let Output::Topology(result) = output {
             if self.next != 0 {
@@ -368,7 +410,10 @@ impl ArrowResultCursor {
                     columns.push((name, array));
                 }
             }
-            Output::Paths(_) | Output::Topology(_) => {
+            Output::Paths(_)
+            | Output::RankedPaths(_)
+            | Output::AllPairs(..)
+            | Output::Topology(_) => {
                 return Err(AlgorithmError::OutputContract(
                     "path output reached scalar Arrow adapter".into(),
                 ));
@@ -417,7 +462,38 @@ fn finish(
     })
 }
 
-fn path_batch(graph: &GraphProjection, path: PathView<'_>) -> Result<ArrowResultBatch> {
+/// The columns a path row carries, with no rows: what a kernel that found no
+/// path emits so that its schema survives.
+fn empty_path_batch(graph: &GraphProjection) -> Result<ArrowResultBatch> {
+    let reservation = graph.execution().reserve(overhead(0))?;
+    // Zero capacity throughout: a builder's default capacity would allocate
+    // more than the admitted overhead of a batch with nothing in it.
+    let mut sources = StringBuilder::with_capacity(0, 0);
+    let mut targets = StringBuilder::with_capacity(0, 0);
+    let mut totals = Float64Builder::with_capacity(0);
+    let mut nodes = LargeListBuilder::with_capacity(StringBuilder::with_capacity(0, 0), 0);
+    let mut costs = LargeListBuilder::with_capacity(Float64Builder::with_capacity(0), 0);
+    let mut edges = LargeListBuilder::with_capacity(UInt64Builder::with_capacity(0), 0);
+    let mut ranks = UInt64Builder::with_capacity(0);
+    finish(
+        vec![
+            ("sourceNodeId", Arc::new(sources.finish()) as ArrayRef),
+            ("targetNodeId", Arc::new(targets.finish())),
+            ("totalCost", Arc::new(totals.finish())),
+            ("nodeIds", Arc::new(nodes.finish())),
+            ("costs", Arc::new(costs.finish())),
+            ("edgeOrdinals", Arc::new(edges.finish())),
+            ("pathIndex", Arc::new(ranks.finish())),
+        ],
+        reservation,
+    )
+}
+
+fn path_batch(
+    graph: &GraphProjection,
+    path: PathView<'_>,
+    rank: Option<u64>,
+) -> Result<ArrowResultBatch> {
     let context = graph.execution();
     let source = path
         .nodes
@@ -472,17 +548,20 @@ fn path_batch(graph: &GraphProjection, path: PathView<'_>) -> Result<ArrowResult
     nodes.append(true);
     costs.append(true);
     edges.append(true);
-    finish(
-        vec![
-            ("sourceNodeId", Arc::new(sources.finish()) as ArrayRef),
-            ("targetNodeId", Arc::new(targets.finish())),
-            ("totalCost", Arc::new(totals.finish())),
-            ("nodeIds", Arc::new(nodes.finish())),
-            ("costs", Arc::new(costs.finish())),
-            ("edgeOrdinals", Arc::new(edges.finish())),
-        ],
-        reservation,
-    )
+    let mut columns: Vec<(&str, ArrayRef)> = vec![
+        ("sourceNodeId", Arc::new(sources.finish()) as ArrayRef),
+        ("targetNodeId", Arc::new(targets.finish())),
+        ("totalCost", Arc::new(totals.finish())),
+        ("nodeIds", Arc::new(nodes.finish())),
+        ("costs", Arc::new(costs.finish())),
+        ("edgeOrdinals", Arc::new(edges.finish())),
+    ];
+    if let Some(rank) = rank {
+        let mut ranks = UInt64Builder::with_capacity(1);
+        ranks.append_value(rank);
+        columns.push(("pathIndex", Arc::new(ranks.finish())));
+    }
+    finish(columns, reservation)
 }
 
 fn utf8_size(bytes: usize) -> Result<()> {

@@ -4,8 +4,8 @@
 
 use arrow_array::RecordBatch;
 use grust_algorithm_procedures::{
-    node_property_requests, projection_kernel_names, projection_options, projection_options_for,
-    register_algorithms, run_on_projection, run_with_properties,
+    node_property_options, node_property_requests, projection_kernel_names, projection_options,
+    projection_options_for, register_algorithms, run_on_projection, run_with_properties,
 };
 use grust_algorithms::{
     GraphProjection, NodeProperties, Orientation, ProjectionEdge, WeightSelection,
@@ -311,4 +311,266 @@ fn only_bellman_ford_is_offered_a_projection_that_admits_negative_weights() {
             .weight,
         WeightSelection::SignedProperty { .. }
     ));
+}
+
+/// A kernel declares the options through which it names node properties, and
+/// the declaration is readable before any call is built. Validation fills an
+/// absent option from its default, so the requests for a call always name some
+/// column; the declaration is how a caller that builds its own graph learns
+/// which columns to stage, and of what kind, before building that call.
+#[test]
+fn a_kernel_declares_the_options_that_name_its_node_properties() {
+    // Every registered kernel answers, and a topology kernel answers "none".
+    for name in projection_kernel_names() {
+        let declared =
+            node_property_options(name).unwrap_or_else(|error| panic!("{name}: {error}"));
+        for option in declared {
+            assert!(
+                !option.option.is_empty(),
+                "{name} declared a property option with no name"
+            );
+        }
+    }
+
+    assert!(
+        node_property_options("pagerank")
+            .expect("pagerank")
+            .is_empty(),
+        "a topology kernel declares no property options"
+    );
+
+    // A*'s two coordinates, in declaration order, both required.
+    let coordinates: Vec<&str> = node_property_options("astar")
+        .expect("astar")
+        .iter()
+        .map(|option| option.option)
+        .collect();
+    assert_eq!(coordinates, ["latitudeProperty", "longitudeProperty"]);
+
+    // The prefixed spelling resolves to the same kernel.
+    assert_eq!(
+        node_property_options("grust.algorithms.astar")
+            .expect("prefixed")
+            .len(),
+        2
+    );
+
+    assert!(node_property_options("nosuchkernel").is_err());
+
+    // Validation fills each declared option from its default, so a call that
+    // names nothing still requests a column per declared option, in order.
+    let registry = registry();
+    let resolved = registry.resolve("grust.algorithms.astar").expect("astar");
+    let defaults = resolved
+        .validate_arguments(vec![
+            Value::from("a"),
+            Value::from("b"),
+            Value::Json(serde_json::json!({})),
+        ])
+        .expect("astar with defaults");
+    let requested: Vec<&str> = node_property_requests("astar", &defaults)
+        .expect("requests from defaults")
+        .iter()
+        .map(|request| request.key)
+        .collect();
+    assert_eq!(requested, ["latitude", "longitude"]);
+
+    // Naming a column per declared option yields exactly those columns.
+    let named = resolved
+        .validate_arguments(vec![
+            Value::from("a"),
+            Value::from("b"),
+            Value::Json(serde_json::json!({
+                "latitudeProperty": "lat",
+                "longitudeProperty": "lon",
+            })),
+        ])
+        .expect("astar with named columns");
+    let requested: Vec<&str> = node_property_requests("astar", &named)
+        .expect("requests from named columns")
+        .iter()
+        .map(|request| request.key)
+        .collect();
+    assert_eq!(requested, ["lat", "lon"]);
+
+    // A declaration can be conditional: linkPrediction declares its community
+    // for every call, and reads it only under `sameCommunity`.
+    let link = node_property_options("linkPrediction").expect("linkPrediction");
+    assert_eq!(link.len(), 1);
+    assert_eq!(link[0].option, "communityProperty");
+    for (metric, needed) in [("sameCommunity", true), ("adamicAdar", false)] {
+        let args = arguments(
+            &registry,
+            "linkPrediction",
+            serde_json::json!({"metric": metric}),
+        );
+        assert_eq!(link[0].needed(&args).expect(metric), needed, "{metric}");
+    }
+}
+
+/// Rows of a two-string, one-number result.
+fn scored_pairs(batches: &[RecordBatch]) -> Vec<(String, String, f64)> {
+    use arrow_array::{Array, Float64Array, StringArray};
+    let mut rows = Vec::new();
+    for batch in batches {
+        let text = |index: usize| {
+            batch
+                .column(index)
+                .as_any()
+                .downcast_ref::<StringArray>()
+                .unwrap()
+                .clone()
+        };
+        let (first, second) = (text(0), text(1));
+        let score = batch
+            .column(2)
+            .as_any()
+            .downcast_ref::<Float64Array>()
+            .unwrap();
+        for row in 0..batch.num_rows() {
+            rows.push((
+                first.value(row).to_string(),
+                second.value(row).to_string(),
+                score.value(row),
+            ));
+        }
+    }
+    rows
+}
+
+#[test]
+fn link_prediction_runs_every_metric_and_asks_for_the_community_only_when_it_scores_by_it() {
+    let registry = registry();
+    let context = context();
+    // a - b - c undirected, plus an isolate: (a, c) is the one pair at
+    // distance two, sharing b, whose neighbours are a and c. The property graph
+    // puts a and c in community 0.
+    let graph = projection(&context, Orientation::Undirected);
+    let expected = [
+        ("commonNeighbors", 1.0),
+        ("adamicAdar", 1.0 / 2f64.ln()),
+        ("resourceAllocation", 0.5),
+        ("preferentialAttachment", 1.0),
+        ("totalNeighbors", 1.0),
+        ("sameCommunity", 1.0),
+    ];
+    for (metric, score) in expected {
+        let args = arguments(
+            &registry,
+            "linkPrediction",
+            serde_json::json!({"orientation": "undirected", "metric": metric}),
+        );
+        let wanted = node_property_requests("linkPrediction", &args).unwrap();
+        if metric == "sameCommunity" {
+            assert_eq!(wanted.len(), 1);
+            assert_eq!(wanted[0].key, "community");
+            assert_eq!(wanted[0].kind, grust_algorithms::PropertyKind::Integer);
+            // Without its property it cannot run on the projection alone.
+            assert!(matches!(
+                run_on_projection("linkPrediction", &graph, &args),
+                Err(ProcedureError::Unsupported(_))
+            ));
+        } else {
+            assert!(wanted.is_empty(), "{metric} asked for {}", wanted.len());
+            // Reading no property, it runs on the projection alone too.
+            let plain = scored_pairs(&drain(
+                run_on_projection("linkPrediction", &graph, &args).unwrap(),
+            ));
+            assert_eq!(plain, [("a".into(), "c".into(), score)], "{metric}");
+        }
+        // Every metric runs through the property path Nutmeg serves.
+        let properties =
+            NodeProperties::from_graph(&property_graph(graph.node_count()), &graph, &wanted)
+                .unwrap();
+        let rows = scored_pairs(&drain(
+            run_with_properties("linkPrediction", &properties, &args).unwrap(),
+        ));
+        assert_eq!(rows, [("a".into(), "c".into(), score)], "{metric}");
+    }
+
+    // A named community property is the one requested, for sameCommunity only.
+    let named = arguments(
+        &registry,
+        "linkPrediction",
+        serde_json::json!({"metric": "sameCommunity", "communityProperty": "c"}),
+    );
+    assert_eq!(
+        node_property_requests("linkPrediction", &named).unwrap()[0].key,
+        "c"
+    );
+    let ignored = arguments(
+        &registry,
+        "linkPrediction",
+        serde_json::json!({"metric": "adamicAdar", "communityProperty": "c"}),
+    );
+    assert!(
+        node_property_requests("linkPrediction", &ignored)
+            .unwrap()
+            .is_empty()
+    );
+
+    // Explicit candidates are scored as given, in order, adjacent or not: the
+    // adjacent a and b are each in the other's neighbours, so N(a) ∪ N(b) is
+    // {a, b, c}.
+    let explicit = arguments(
+        &registry,
+        "linkPrediction",
+        serde_json::json!({
+            "orientation": "undirected",
+            "metric": "totalNeighbors",
+            "node1": ["c", "a", "isolate"],
+            "node2": ["a", "b", "isolate"],
+        }),
+    );
+    let rows = scored_pairs(&drain(
+        run_on_projection("linkPrediction", &graph, &explicit).unwrap(),
+    ));
+    assert_eq!(
+        rows,
+        [
+            ("c".into(), "a".into(), 1.0),
+            ("a".into(), "b".into(), 3.0),
+            ("isolate".into(), "isolate".into(), 0.0),
+        ]
+    );
+
+    for (options, fragment) in [
+        (
+            serde_json::json!({"orientation": "undirected", "node1": ["a"]}),
+            "together",
+        ),
+        (
+            serde_json::json!({"orientation": "undirected", "node1": ["a"], "node2": ["b", "c"]}),
+            "length",
+        ),
+        (
+            serde_json::json!({"orientation": "undirected", "node1": ["a"], "node2": ["nobody"]}),
+            "nobody",
+        ),
+        (serde_json::json!({"metric": "jaccard"}), "metric must be"),
+        (serde_json::json!({}), "undirected"),
+    ] {
+        let args = arguments(&registry, "linkPrediction", options.clone());
+        let graph = if options["orientation"] == "undirected" {
+            projection(&context, Orientation::Undirected)
+        } else {
+            projection(&context, Orientation::Outgoing)
+        };
+        match run_on_projection("linkPrediction", &graph, &args) {
+            Err(ProcedureError::InvalidArguments(message)) => {
+                assert!(message.contains(fragment), "{options}: {message}")
+            }
+            Err(other) => panic!("{options}: {other}"),
+            Ok(_) => panic!("{options} ran"),
+        }
+    }
+    // The community property has a default and cannot be null.
+    let resolved = registry.resolve("grust.algorithms.linkPrediction").unwrap();
+    assert!(
+        resolved
+            .validate_arguments(vec![Value::Json(
+                serde_json::json!({"communityProperty": null})
+            )])
+            .is_err()
+    );
 }

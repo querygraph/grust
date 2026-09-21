@@ -6,6 +6,232 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ## Unreleased
 
+### Graph algorithms
+
+- **ArticleRank**: `RankVariant::ArticleRank` on `PageRankOptions`, and
+  `grust.algorithms.articleRank` with PageRank's options and result shape. A
+  source divides its score by its outgoing weight plus the mean outgoing weight
+  over all nodes, so a citation from a node that cites little is worth less than
+  PageRank makes it. The inflated divisor means scores do not sum to one, and
+  comparing their magnitudes with PageRank's is meaningless; their order is the
+  point. Weighted and unweighted, sequential and parallel, and the test checks
+  the kernel against the recurrence written out again densely. Unweighted the
+  added mean is the mean out-degree, `arcs / nodes`, taken from the offsets as a
+  scalar so the parallel path keeps the two arrays it was reduced to in 0.22.0
+  and pays one addition per arc: measured 1.2-1.5% over PageRank on roadNet-CA.
+  With the unweighted pull hoist below, that addition is paid once per node per
+  iteration, where each share is formed, rather than per arc; the 1.2-1.5% was
+  measured before the hoist and has not been re-measured.
+- Add **link prediction**: `link_prediction` and
+  `grust.algorithms.linkPrediction({metric, node1, node2, communityProperty})`,
+  one kernel for NetworKit's six predictors, chosen by `metric`:
+  `commonNeighbors` `|N(u) ∩ N(v)|`, `adamicAdar` `Σ 1/ln|N(w)|`,
+  `resourceAllocation` `Σ 1/|N(w)|` (both over shared neighbours `w`),
+  `preferentialAttachment` `|N(u)|·|N(v)|`, `totalNeighbors` `|N(u) ∪ N(v)|`,
+  and `sameCommunity`, 1 when the two nodes carry the same community id.
+  Output `node1`, `node2`, `score`. **Candidates are never all n² pairs.**
+  By default the kernel scores every pair at distance exactly two (not
+  adjacent, at least one shared neighbour; NetworKit's
+  `MissingLinksFinder::findAtDistance(2)`), once each with `node1 < node2`;
+  otherwise the caller supplies the pairs, as `node1`/`node2` string arrays in
+  the procedure, or in Rust as `CandidatePairs` from ids, rows or two Utf8
+  columns of Arrow record batches, and they are scored as given, in order,
+  adjacent pairs and duplicates included. Undirected projections only, as in
+  NetworKit; weights are not read. Neighbours are **sets**, as in
+  `nodeSimilarity`: parallel edges collapse and self-loops are dropped, so
+  every degree is a count of distinct neighbours. A pair `(u, u)` scores 0
+  under every metric, as NetworKit's `LinkPredictor::run` returns; for distinct
+  nodes a shared neighbour has at least two neighbours, so Adamic–Adar never
+  divides by `ln 1`. `sameCommunity` reads the integer property named by
+  `communityProperty` (default `community`, as in `modularity`), rejecting a
+  node without one, where NetworKit runs its own PLM partition and GDS scores
+  0; the property is requested for that metric only, so the other five run on
+  graphs without community ids and through `run_on_projection`. Tested bit for
+  bit against the definitions recomputed from `BTreeSet` neighbour sets on 400
+  random multigraphs with loops and isolates, every ordered pair and every
+  distance-two pair, plus hand-computed cases per metric.
+- **PageRank's default path is faster, with unchanged results.** An execution
+  that sets no concurrency runs the sequential push loop, which charged the
+  work budget once per arc, each charge an atomic exchange on the execution's
+  shared counter. It now charges a source's arcs together, in chunks of at most
+  1,024 arcs, so cancellation is still observed within 1,024 arcs of a
+  high-degree source. The same units are charged in the same order, and a
+  refused budget stops at the same unit it did before. The deadline, which is
+  sampled once per 1,024 charges, is now read about once per 1,024 sources or
+  arc chunks rather than once per 1,024 units.
+- **The unweighted parallel PageRank reads one array per arc instead of two.**
+  Each source's `score / out-degree` is formed once per iteration in the pass
+  that already sums the dangling mass, instead of on every arc. It costs one
+  more f64 per node (about 15.7 MB on roadNet-CA's 1.97 million nodes),
+  admitted like the kernel's other scratch. The weighted pull is unchanged.
+- Scores, iteration counts, residuals, the work charged and the unit at which a
+  budget refuses are pinned to their previous bits by
+  `tests/pagerank_pinned.rs`, on the push loop and on the pull at one, two and
+  sixteen workers.
+- Add **Yen's k shortest paths**: `yens` and
+  `grust.algorithms.yens(source, target, {k})`, the `k` shortest **loopless**
+  paths between two nodes, built on Dijkstra as Yen 1971 describes. Output is
+  `shortestPaths`' shape — `sourceNodeId`, `targetNodeId`, `totalCost`,
+  `nodeIds`, `costs`, `edgeOrdinals` — with a `pathIndex` column carrying the
+  path's rank from zero. GDS calls that column `index`, which is a reserved
+  word in this dialect and so would have to be yielded as `` `index` ``; the
+  column is named `pathIndex` rather than make the spelling every caller
+  reaches for first a syntax error.
+  **Returning fewer than `k` paths is the correct answer** when fewer exist,
+  not an error: the paths are simple, so there are finitely many. `k` must be
+  at least 1. **Ties break toward the smaller node sequence**: paths are ranked
+  by total cost with `f64::total_cmp`, and equal costs by their node rows read
+  from the source, lexicographically. That order is reached rather than
+  approximated — each spur search returns the lexicographically smallest of the
+  minimum-cost paths available to it, walking only arcs that lie on a shortest
+  path and checking, where a zero-weight arc makes it necessary, that the
+  target is still reachable before committing to the smaller row. A path is a
+  sequence of nodes: parallel edges collapse and each hop reports the cheapest
+  edge joining its two nodes, a self-loop can never appear, `source == target`
+  is the zero-hop path of zero cost, and an unreachable target is no paths at
+  all. Costs are summed along the path from the source, so a reported cost is
+  exactly the sum of its hop weights in that order. Weights must be
+  nonnegative, as for every Dijkstra-based kernel. Tested against exhaustive
+  enumeration of all simple paths on 1,800 small graphs in all three
+  orientations — an oracle that shares no code with the kernel — for path
+  identity and not merely for cost, with hand-computed cases beside it.
+- Add **all-pairs shortest paths**: `all_pairs_shortest_paths` and
+  `grust.algorithms.allPairsShortestPaths({sourceNodes})`, the shortest
+  distance for every reachable ordered pair, with columns `sourceNodeId`,
+  `targetNodeId` and `distance`. **It never forms the n×n matrix**: the result
+  is a pull cursor that runs Dijkstra from one source at a time over a single
+  reused workspace and hands that source's pairs out before starting the next,
+  through both the Arrow cursor and the Cypher row cursor. Admitted memory is
+  the projection, four O(n) buffers and the batch being consumed, whatever the
+  number of pairs; the test shows the peak does not move after the first pair,
+  and that four times the nodes (sixteen times the pairs) costs under twice the
+  peak. Work is charged per heap operation and arc as in `dijkstra`, plus one
+  unit per pair produced, so a work budget stops a run partway rather than
+  after it. **Unreachable pairs are omitted**, not returned as null: the set of
+  targets is the projection, so a missing row says the same thing, and nulls
+  would make every source cost O(n) whatever it reaches. Each node reaches
+  itself at zero, as in `dijkstra`. Sources come in projection row order, and
+  targets in row order within a source. `sourceNodes` restricts the sources
+  (targets are always every node); the order it names them in does not matter,
+  a duplicate or an unselected id is rejected, and an empty list selects
+  nothing. Parallel edges count at their cheapest, self-loops change nothing,
+  and weights must be nonnegative, as for every Dijkstra-based kernel.
+  Sequential. Tested pair by pair against `dijkstra` called independently per
+  source on 1,200 small graphs across all three orientations, with
+  hand-computed cases beside it.
+- Add **k1 colouring**: `k1_coloring` and
+  `grust.algorithms.k1Coloring({maxIterations, seed})`, yielding `nodeId`,
+  `color`, and the `colorCount`, `iterations` and `converged` scalars. Each pass
+  gives every uncoloured or conflicted node the smallest colour none of its
+  neighbours holds, reading the colours the previous pass left, and then queues
+  the lower-priority endpoint of every edge whose ends now agree. Priority is
+  row order, or one seeded shuffle of it from the counter-based generator, never
+  thread order; the result is a pure function of the projection and the seed.
+  Because the higher-priority endpoint of a conflict keeps its colour, a graph
+  of `n` nodes is conflict-free within `n` passes, and `iterations` and
+  `converged` report which of that and `maxIterations` ended the run — the
+  default of 10 passes can stop a large graph early, and it says so rather than
+  presenting a colouring with conflicts as final. A node's colour never exceeds
+  its number of distinct neighbours, so at most `Δ + 1` colours are used; the
+  chromatic number is not sought and no claim is made about how near it this
+  comes. **Undirected projections only** — a directed one is rejected rather
+  than silently symmetrized, as `kCore` rejects it. Self-loops are ignored, a
+  node not being its own neighbour here, and parallel edges impose the one
+  constraint their endpoints already impose. Weights are never read, though a
+  signed projection is still refused as every kernel but `bellmanFord` refuses
+  one. Sequential. The test checks the two properties — no edge joining equal
+  colours, and the `Δ + 1` bound against a maximum degree recomputed from the
+  edge list — on 3,000 random multigraphs, alongside a triangle, a path, a star,
+  `K4`, isolates, loops and the empty graph, each checkable by inspection.
+- Add **longest path in a DAG**: `longest_path` and
+  `grust.algorithms.longestPath`, the heaviest directed path ending at each
+  node, by dynamic programming over a topological order. The empty path counts,
+  so every node scores at least zero and a node no arc enters scores exactly
+  zero; weights come from the projection, and without them every arc weighs one,
+  which makes the distance the hop count. Parallel arcs compete like any others
+  and the heaviest wins. Columns are `nodeId`, `distance`, `hops`, `cycleIndex`
+  and the `cyclic` scalar.
+  A **cycle is a result, not an error**, as for `topologicalSort` and
+  `bellmanFord`: with a cycle no path is longest, so distances and hops are
+  withheld as null and the cycle itself is returned as a witness whose arcs a
+  caller can check, ordered by `cycleIndex` and repeating no node. An undirected
+  projection turns each edge into two arcs, so it is almost always answered with
+  a two-arc cycle; a self-loop is a cycle of one. The kernel refuses a signed
+  projection like every kernel but `bellmanFord`, although its recurrence would
+  survive negative weights — the refusal is the catalog's rule, stated in the
+  kernel's documentation rather than implied. Sequential, deterministic,
+  `O(n + m)`, every arc scan charged. Tested against exhaustive enumeration of
+  every path on 9,000 small graphs, against the same recurrence recomputed over
+  an independent Kahn order on larger layered DAGs, and on hand-computed cases
+  where a greedy extension of the best node so far gives the wrong answer.
+
+### Node properties
+
+- Add `node_property_options(name)`: the options through which a kernel names
+  the node properties it reads, each with its declared kind and missing-value
+  policy, readable before any call exists. `PropertyOption` is now public.
+  `node_property_requests` already answers for one validated call, but
+  validation fills an absent option from its default, so its answer always
+  names some column. An embedder that builds its own graph, such as Nutmeg
+  probing a kernel's result schema on a three-node graph, needs to know which
+  columns to stage and of what kind before it builds that call. Otherwise the
+  defaults name columns the graph does not have and a required property
+  refuses the call.
+- The procedure layer can request a node property for some option values only
+  (`linkPrediction` asks for its community under `sameCommunity` alone), and
+  `run_on_projection` now runs a property-reading kernel whose call reads no
+  property, with `NodeProperties::empty`. `node_property_options` still lists
+  such an option for every call; `PropertyOption::needed(args)` says whether a
+  call with those validated arguments reads it.
+
+### Execution accounting
+
+- **An execution can run with work accounting turned off, by name.**
+  `ExecutionContext::with_accounting(limits, accounting)` takes an `Accounting`
+  with two independent switches, `work` (`Counted` or `Disabled`) and
+  `interruption` (`Observed` or `Disabled`), and constants for the useful
+  combinations: `Accounting::COUNTED`, `Accounting::WORK_UNCOUNTED` and
+  `Accounting::UNCHECKED`. `ExecutionContext::new` is unchanged and counts work;
+  `work_units: usize::MAX` still means "no budget, still counted" and never
+  implies an opt-out. The purpose is a like-for-like row when comparing with a
+  library that performs no accounting, reported as an additional row rather than
+  in place of the counted one.
+- **What is given up.** With work uncounted, there is no work budget and no work
+  total: charges skip the shared counter, meters take no block grants and are
+  never registered, and nothing enforces how much work a kernel may do.
+  Cancellation and the deadline are still observed, at the same cadence as
+  before. With interruption disabled as well, **nothing can stop a running
+  kernel**: no charge, checkpoint or reservation reads the cancellation flag or
+  the clock. Memory admission is never disabled; every mode still reserves
+  before allocating and fails at its memory limit.
+- **A limit the mode cannot enforce is refused at construction** rather than
+  accepted and ignored: a finite `work_units` with uncounted work, or a deadline
+  with interruption disabled, is `InvalidArguments`. `cancel()` on an execution
+  with interruption disabled returns `Unsupported`, and a `cancelled()` waiter
+  completes at once with the same error instead of waiting forever.
+- **Breaking:** `ResourceUsage::work_units` is now a `WorkCount`, either
+  `Counted(n)` or `NotCounted`, so an uncounted run cannot be read as zero work.
+  `ResourceUsage::counted_work()` returns `Option<usize>`, and
+  `ResourceUsage::accounting` and `ExecutionContext::accounting()` report the
+  mode, which displays as `counted`, `work-uncounted`, `uninterruptible` or
+  `unchecked`.
+- Kernel results are bit-identical in every mode. The tests compare PageRank
+  (weighted and unweighted), degree, BFS, multi-source BFS and weakly connected
+  components across all four modes sequentially and at one, two and sixteen
+  workers, and check that the fixture reaches the parallel kernels. Timings are
+  not part of this change.
+
+### Projections and results
+
+- Add `GraphProjection::prepare_incoming`: build a projection's transpose now,
+  rather than inside the first kernel that reads it. Until now the first such
+  kernel paid for it — PageRank's pull path among them — so an embedder that
+  caches projections, as Nutmeg does, had the build land inside a user's query,
+  and a timing of one kernel saw a one-off build folded into it. It is admitted
+  and charged exactly as before, just earlier; later kernels share it, a second
+  call builds nothing, and results are bit-identical either way. Free on an
+  undirected projection, whose rows already mirror.
+
 ## 0.22.0 — Mysid — 2026-09-21
 
 ### Graph algorithms

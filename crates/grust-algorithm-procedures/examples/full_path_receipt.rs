@@ -81,7 +81,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 costs_consumed,
                 node_sum,
                 cost_sum,
-                serde_json::json!({"preparation_seconds": preparation_seconds, "accounted_peak_bytes": usage.peak_bytes, "work_units": usage.work_units}),
+                serde_json::json!({"preparation_seconds": preparation_seconds, "accounted_peak_bytes": usage.peak_bytes, "work_units": usage.counted_work()}),
             )
         }
         "cypher" => {

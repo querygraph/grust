@@ -3,6 +3,8 @@ use std::sync::{Arc, Mutex};
 use grust_core::Value;
 use grust_procedures::*;
 
+#[path = "contracts/accounting.rs"]
+mod accounting;
 #[path = "contracts/failures.rs"]
 mod failures;
 
@@ -279,7 +281,14 @@ fn budget_failure_and_cancellation_release_owned_reservations() {
             limit: 100
         })
     ));
-    assert_eq!(execution.usage().expect("usage").work_units, 0);
+    assert_eq!(
+        execution
+            .usage()
+            .expect("usage")
+            .counted_work()
+            .expect("counted"),
+        0
+    );
     execution.cancel().expect("cancel");
     assert!(matches!(
         execution.checkpoint(),

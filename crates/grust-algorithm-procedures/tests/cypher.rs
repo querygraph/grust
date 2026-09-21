@@ -192,6 +192,76 @@ fn catalog_expansion_uses_the_same_registration_and_execution_contracts() {
 }
 
 #[test]
+fn the_longest_path_reports_a_cycle_as_an_answer_rather_than_an_error() {
+    // b and c point at each other, so no path is longest: the call succeeds and
+    // says so, with the witness readable from `cycleIndex` in arc order.
+    assert_eq!(
+        run(
+            "CALL grust.algorithms.longestPath({weightProperty: 'cost'}) YIELD nodeId, distance, hops, cycleIndex, cyclic RETURN nodeId, distance, hops, cycleIndex, cyclic"
+        ),
+        vec![
+            vec![
+                Value::String("a".into()),
+                Value::Null,
+                Value::Int(-1),
+                Value::Int(-1),
+                Value::Bool(true)
+            ],
+            vec![
+                Value::String("b".into()),
+                Value::Null,
+                Value::Int(-1),
+                Value::Int(0),
+                Value::Bool(true)
+            ],
+            vec![
+                Value::String("c".into()),
+                Value::Null,
+                Value::Int(-1),
+                Value::Int(1),
+                Value::Bool(true)
+            ],
+            vec![
+                Value::String("isolate".into()),
+                Value::Null,
+                Value::Int(-1),
+                Value::Int(-1),
+                Value::Bool(true)
+            ],
+        ]
+    );
+
+    // The same call on the same graph without the back edge: a plain answer,
+    // the heaviest path ending at each node, in the same columns.
+    let acyclic = Graph::new(
+        ["a", "b", "c"]
+            .map(|id| Node::new("N", id, Props::new()))
+            .into(),
+        vec![
+            Edge::new("R", "a", "b", [("cost".into(), Value::Float(2.0))]),
+            Edge::new("R", "b", "c", [("cost".into(), Value::Float(0.5))]),
+        ],
+    );
+    let rows = run_read_query_with_registry(
+        &acyclic,
+        "default",
+        "CALL grust.algorithms.longestPath({weightProperty: 'cost'}) YIELD distance, hops, cyclic RETURN distance, hops, cyclic",
+        &CypherParameters::new(),
+        &registry(),
+    )
+    .unwrap()
+    .rows;
+    assert_eq!(
+        rows,
+        vec![
+            vec![Value::Float(0.0), Value::Int(0), Value::Bool(false)],
+            vec![Value::Float(2.0), Value::Int(1), Value::Bool(false)],
+            vec![Value::Float(2.5), Value::Int(2), Value::Bool(false)],
+        ]
+    );
+}
+
+#[test]
 fn projection_inspection_and_csr_estimates_disclose_their_scope() {
     let word = size_of::<usize>() as i64;
     assert_eq!(
@@ -437,6 +507,32 @@ fn label_propagation_is_an_ordinary_procedure() {
     assert_eq!(
         run("CALL grust.algorithms.labelPropagation() YIELD communityId RETURN count(communityId)"),
         vec![vec![Value::Int(4)]]
+    );
+}
+
+#[test]
+fn k1_coloring_is_an_ordinary_procedure_needing_an_undirected_projection() {
+    let rows = run(
+        "CALL grust.algorithms.k1Coloring({orientation: 'undirected', maxIterations: 20, seed: 5}) YIELD nodeId, color, colorCount, iterations, converged RETURN nodeId, color, colorCount, converged",
+    );
+    // a-b and b-c (twice) form a path: the ends may share a colour, b may not,
+    // and the isolate takes the first colour.
+    let color = |row: usize| rows[row][1].clone();
+    assert_eq!(color(0), color(2));
+    assert_ne!(color(0), color(1));
+    assert_eq!(color(3), Value::Int(0));
+    assert!(rows.iter().all(|row| row[2] == Value::Int(2)));
+    assert!(rows.iter().all(|row| row[3] == Value::Bool(true)));
+    // The default projection is directed, which this kernel refuses.
+    assert!(
+        run_read_query_with_registry(
+            &graph(),
+            "default",
+            "CALL grust.algorithms.k1Coloring() YIELD color RETURN color",
+            &CypherParameters::new(),
+            &registry(),
+        )
+        .is_err()
     );
 }
 
@@ -816,6 +912,85 @@ fn modularity_reads_its_communities_from_a_node_property() {
 }
 
 #[test]
+fn link_prediction_scores_pairs_through_ordinary_cypher() {
+    // A square a-b-c-d-a with community ids on some nodes only: the two
+    // diagonals are the pairs at distance two, each sharing two neighbours.
+    let node = |id: &str, community: Option<i64>| match community {
+        Some(c) => Node::new("N", id, [("c".to_string(), Value::Int(c))]),
+        None => Node::new("N", id, Props::new()),
+    };
+    let edge = |a: &str, b: &str| Edge::new("R", a, b, Props::new());
+    let with_ids = |d: Option<i64>| {
+        Graph::new(
+            vec![
+                node("a", Some(1)),
+                node("b", Some(2)),
+                node("c", Some(1)),
+                node("d", d),
+            ],
+            vec![
+                edge("a", "b"),
+                edge("b", "c"),
+                edge("c", "d"),
+                edge("d", "a"),
+            ],
+        )
+    };
+    let run_on = |graph: &Graph, query: &str| {
+        run_read_query_with_registry(
+            graph,
+            "default",
+            query,
+            &CypherParameters::new(),
+            &registry(),
+        )
+    };
+    let partial = with_ids(None);
+    let rows = run_on(
+        &partial,
+        "CALL grust.algorithms.linkPrediction({orientation: 'undirected', metric: 'resourceAllocation'}) YIELD node1, node2, score RETURN node1, node2, score",
+    )
+    .unwrap()
+    .rows;
+    assert_eq!(
+        rows,
+        [
+            vec![Value::from("a"), Value::from("c"), Value::Float(1.0)],
+            vec![Value::from("b"), Value::from("d"), Value::Float(1.0)],
+        ]
+    );
+    // Explicit pairs; a graph where d has no community still serves every
+    // metric but sameCommunity, which reads the property and names the gap.
+    let rows = run_on(
+        &partial,
+        "CALL grust.algorithms.linkPrediction({orientation: 'undirected', metric: 'preferentialAttachment', node1: ['a'], node2: ['b']}) YIELD score RETURN score",
+    )
+    .unwrap()
+    .rows;
+    assert_eq!(rows, [vec![Value::Float(4.0)]]);
+    let missing = run_on(
+        &partial,
+        "CALL grust.algorithms.linkPrediction({orientation: 'undirected', metric: 'sameCommunity', communityProperty: 'c'}) YIELD score RETURN score",
+    )
+    .unwrap_err()
+    .to_string();
+    assert!(missing.contains('d') && missing.contains('c'), "{missing}");
+    let rows = run_on(
+        &with_ids(Some(2)),
+        "CALL grust.algorithms.linkPrediction({orientation: 'undirected', metric: 'sameCommunity', communityProperty: 'c'}) YIELD node1, node2, score RETURN node1, node2, score",
+    )
+    .unwrap()
+    .rows;
+    assert_eq!(
+        rows,
+        [
+            vec![Value::from("a"), Value::from("c"), Value::Float(1.0)],
+            vec![Value::from("b"), Value::from("d"), Value::Float(1.0)],
+        ]
+    );
+}
+
+#[test]
 fn astar_reads_coordinates_and_returns_the_route() {
     // Three points on a line of longitude, so the great-circle distances are
     // easy to reason about: a is north of b, b north of c.
@@ -887,4 +1062,159 @@ fn astar_reads_coordinates_and_returns_the_route() {
     .unwrap_err()
     .to_string();
     assert!(missing.contains("absent"), "{missing}");
+}
+
+#[test]
+fn yens_ranks_its_paths_and_stops_when_there_are_no_more() {
+    // Two routes from a to d, and a third through both middles:
+    //   a b d   1+1 = 2
+    //   a c d   2+1 = 3
+    //   a b c d 1+1+1 = 3, which ties with a c d and ranks *first* of the two:
+    // the tie-break compares node rows, and b comes before c at the second
+    // node. A shorter path is not preferred; a smaller sequence is.
+    //
+    // The rank column is `pathIndex`, not `index`: `index` is a reserved word
+    // in this dialect, so the plain spelling every caller reaches for first
+    // would be a syntax error.
+    let graph = Graph::new(
+        ["a", "b", "c", "d"]
+            .map(|id| Node::new("N", id, Props::new()))
+            .into(),
+        vec![
+            Edge::new("R", "a", "b", [("cost".into(), Value::Float(1.0))]),
+            Edge::new("R", "a", "c", [("cost".into(), Value::Float(2.0))]),
+            Edge::new("R", "b", "d", [("cost".into(), Value::Float(1.0))]),
+            Edge::new("R", "c", "d", [("cost".into(), Value::Float(1.0))]),
+            Edge::new("R", "b", "c", [("cost".into(), Value::Float(1.0))]),
+        ],
+    );
+    let run_on = |query: &str| {
+        run_read_query_with_registry(
+            &graph,
+            "default",
+            query,
+            &CypherParameters::new(),
+            &registry(),
+        )
+    };
+    let rows = run_on(
+        "CALL grust.algorithms.yens('a', 'd', {weightProperty: 'cost', k: 5}) YIELD pathIndex, sourceNodeId, targetNodeId, totalCost, nodeIds RETURN pathIndex, sourceNodeId, targetNodeId, totalCost, nodeIds",
+    )
+    .unwrap()
+    .rows;
+    assert_eq!(
+        rows,
+        vec![
+            vec![
+                Value::Int(0),
+                Value::String("a".into()),
+                Value::String("d".into()),
+                Value::Float(2.0),
+                Value::StringArray(vec!["a".into(), "b".into(), "d".into()]),
+            ],
+            vec![
+                Value::Int(1),
+                Value::String("a".into()),
+                Value::String("d".into()),
+                Value::Float(3.0),
+                Value::StringArray(vec!["a".into(), "b".into(), "c".into(), "d".into()]),
+            ],
+            vec![
+                Value::Int(2),
+                Value::String("a".into()),
+                Value::String("d".into()),
+                Value::Float(3.0),
+                Value::StringArray(vec!["a".into(), "c".into(), "d".into()]),
+            ],
+        ]
+    );
+    // `k` defaults to one path.
+    let one = run_on(
+        "CALL grust.algorithms.yens('a', 'd', {weightProperty: 'cost'}) YIELD pathIndex, costs, edgeOrdinals RETURN pathIndex, costs, edgeOrdinals",
+    )
+    .unwrap()
+    .rows;
+    assert_eq!(
+        one,
+        vec![vec![
+            Value::Int(0),
+            Value::FloatArray(vec![0.0, 1.0, 2.0]),
+            Value::IntArray(vec![0, 2]),
+        ]]
+    );
+    // Nothing reaches a from d: no rows, and that is an answer, not an error.
+    assert!(
+        run_on("CALL grust.algorithms.yens('d', 'a') YIELD pathIndex RETURN pathIndex")
+            .unwrap()
+            .rows
+            .is_empty()
+    );
+    // Asking for no paths is refused rather than answered with nothing.
+    let refused =
+        run_on("CALL grust.algorithms.yens('a', 'd', {k: 0}) YIELD pathIndex RETURN pathIndex")
+            .unwrap_err()
+            .to_string();
+    assert!(
+        refused.contains("k must be a positive integer"),
+        "{refused}"
+    );
+}
+
+#[test]
+fn all_pairs_shortest_paths_streams_reachable_pairs_through_ordinary_cypher() {
+    let row = |source: &str, target: &str, distance: f64| {
+        vec![
+            Value::String(source.into()),
+            Value::String(target.into()),
+            Value::Float(distance),
+        ]
+    };
+    // a -2-> b -0.5-> c -0-> b. Unreachable pairs are omitted, the isolate
+    // reaches itself, and c reaches b at zero through the zero-weight edge.
+    let all = vec![
+        row("a", "a", 0.0),
+        row("a", "b", 2.0),
+        row("a", "c", 2.5),
+        row("b", "b", 0.0),
+        row("b", "c", 0.5),
+        row("c", "b", 0.0),
+        row("c", "c", 0.0),
+        row("isolate", "isolate", 0.0),
+    ];
+    assert_eq!(
+        run(
+            "CALL grust.algorithms.allPairsShortestPaths({weightProperty: 'cost'}) YIELD sourceNodeId, targetNodeId, distance RETURN sourceNodeId, targetNodeId, distance"
+        ),
+        all
+    );
+    // Sources in row order, whatever order the caller names them in.
+    let mut chosen = all[..3].to_vec();
+    chosen.extend_from_slice(&all[5..7]);
+    assert_eq!(
+        run(
+            "CALL grust.algorithms.allPairsShortestPaths({weightProperty: 'cost', sourceNodes: ['c', 'a']}) YIELD sourceNodeId, targetNodeId, distance RETURN sourceNodeId, targetNodeId, distance"
+        ),
+        chosen
+    );
+    // An empty selection is explicit, and selects nothing.
+    assert_eq!(
+        run(
+            "CALL grust.algorithms.allPairsShortestPaths({sourceNodes: []}) YIELD sourceNodeId RETURN count(sourceNodeId)"
+        ),
+        vec![vec![Value::Int(0)]]
+    );
+    for (bad, says) in [("['a', 'a']", "more than once"), ("['nobody']", "nobody")] {
+        let error = run_read_query_with_registry(
+            &graph(),
+            "default",
+            &format!(
+                "CALL grust.algorithms.allPairsShortestPaths({{sourceNodes: {bad}}}) YIELD sourceNodeId RETURN sourceNodeId"
+            ),
+            &CypherParameters::new(),
+            &registry(),
+        )
+        .unwrap_err()
+        .to_string();
+        assert!(error.contains(says), "{bad}: {error}");
+    }
 }

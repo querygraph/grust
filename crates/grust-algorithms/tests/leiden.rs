@@ -323,7 +323,7 @@ fn leiden_observes_cancellation_and_budget_and_releases_scratch() {
     let edges = random_edges(&mut random, 2000, 12_000);
     let context = context();
     let projection = graph(2000, &edges, Orientation::Outgoing, &context);
-    let projection_work = context.usage().unwrap().work_units;
+    let projection_work = context.usage().unwrap().counted_work().expect("counted");
     let held = context.usage().unwrap().live_bytes;
     context.cancel().unwrap();
     assert!(matches!(

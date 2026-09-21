@@ -33,6 +33,13 @@ impl Future for Cancellation {
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         let this = self.get_mut();
+        // An execution that cannot be cancelled would leave this pending
+        // forever; say so instead of hanging the waiter.
+        if !this.execution.0.accounting.observes_interruption() {
+            return Poll::Ready(Err(ProcedureError::Unsupported(
+                "waiting for cancellation of an execution with interruption disabled".into(),
+            )));
+        }
         let replacement = cx.waker().clone();
         let mut state = match this.execution.0.state.lock() {
             Ok(state) => state,

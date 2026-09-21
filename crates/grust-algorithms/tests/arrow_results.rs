@@ -3,8 +3,8 @@
 use arrow_array::{Array, Float64Array, LargeListArray, StringArray, UInt64Array};
 use grust_algorithms::{
     AlgorithmError, ExecutionContext, ExecutionLimits, GraphProjection, Orientation,
-    PageRankOptions, ProjectionEdge, SnapshotIdentity, bfs, pagerank, shortest_paths,
-    weakly_connected_components,
+    PageRankOptions, ProjectionEdge, SnapshotIdentity, YensOptions, bfs, pagerank, shortest_paths,
+    weakly_connected_components, yens,
 };
 
 fn graph(context: &ExecutionContext) -> GraphProjection {
@@ -138,6 +138,75 @@ fn arrow_full_paths_are_typed_and_keep_original_edge_ordinals() {
             .as_ref(),
         &[42]
     );
+    assert!(cursor.next_batch().unwrap().is_none());
+}
+
+#[test]
+fn arrow_ranked_paths_carry_their_rank_and_keep_a_schema_when_empty() {
+    let context = context();
+    let graph = graph(&context);
+    let mut cursor = yens(&graph, "a", "b", YensOptions { k: 3 })
+        .unwrap()
+        .into_arrow_results();
+    let only = cursor.next_batch().unwrap().unwrap();
+    let batch = only.record_batch();
+    // The shape `shortestPaths` emits, with the rank appended.
+    assert_eq!(
+        batch
+            .schema()
+            .fields()
+            .iter()
+            .map(|field| field.name().clone())
+            .collect::<Vec<_>>(),
+        vec![
+            "sourceNodeId",
+            "targetNodeId",
+            "totalCost",
+            "nodeIds",
+            "costs",
+            "edgeOrdinals",
+            "pathIndex"
+        ]
+    );
+    assert_eq!(batch.num_rows(), 1);
+    assert!(only.reserved_bytes() >= batch.get_array_memory_size());
+    assert_eq!(
+        batch
+            .column_by_name("pathIndex")
+            .unwrap()
+            .as_any()
+            .downcast_ref::<UInt64Array>()
+            .unwrap()
+            .values()
+            .as_ref(),
+        &[0]
+    );
+    let ordinals = batch
+        .column_by_name("edgeOrdinals")
+        .unwrap()
+        .as_any()
+        .downcast_ref::<LargeListArray>()
+        .unwrap()
+        .value(0);
+    assert_eq!(
+        ordinals
+            .as_any()
+            .downcast_ref::<UInt64Array>()
+            .unwrap()
+            .values()
+            .as_ref(),
+        &[42]
+    );
+    // One path exists, so the cursor is done after it.
+    assert!(cursor.next_batch().unwrap().is_none());
+
+    // No path at all still says what the columns are, in one empty batch.
+    let mut cursor = yens(&graph, "b", "a", YensOptions { k: 3 })
+        .unwrap()
+        .into_arrow_results();
+    let empty = cursor.next_batch().unwrap().unwrap();
+    assert_eq!(empty.record_batch().num_rows(), 0);
+    assert_eq!(empty.record_batch().num_columns(), 7);
     assert!(cursor.next_batch().unwrap().is_none());
 }
 

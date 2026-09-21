@@ -1,9 +1,10 @@
 use super::*;
 use algorithms::{
     BetweennessOptions, ClosenessOptions, FastRpOptions, HarmonicOptions, IterationOptions,
-    KatzOptions, LabelPropagationOptions, LouvainOptions, MissingWeight, NodeSimilarityOptions,
-    Orientation, PageRankOptions, ProjectionOptions, SimilarityMetric, SpanningObjective,
-    SpanningTreeOptions, TriangleOptions, WeightSelection,
+    K1ColoringOptions, KatzOptions, LabelPropagationOptions, LinkMetric, LouvainOptions,
+    MissingWeight, NodeSimilarityOptions, Orientation, PageRankOptions, ProjectionOptions,
+    RankVariant, SimilarityMetric, SpanningObjective, SpanningTreeOptions, TriangleOptions,
+    WeightSelection, YensOptions,
 };
 
 fn option(name: &str, value_type: ValueType, default: Value, nullable: bool) -> OptionField {
@@ -109,6 +110,15 @@ pub(super) fn projection(args: &ValidatedArguments) -> Result<ProjectionOptions<
 }
 
 pub(super) fn pagerank(args: &ValidatedArguments) -> Result<PageRankOptions<'_>> {
+    rank(args, RankVariant::PageRank)
+}
+
+/// The same options, for the ArticleRank variant.
+pub(super) fn article_rank(args: &ValidatedArguments) -> Result<PageRankOptions<'_>> {
+    rank(args, RankVariant::ArticleRank)
+}
+
+fn rank(args: &ValidatedArguments, variant: RankVariant) -> Result<PageRankOptions<'_>> {
     let max_iterations = match value(args, "maxIterations")? {
         Value::Int(value) => usize::try_from(*value).map_err(|_| {
             ProcedureError::InvalidArguments("maxIterations must be positive".into())
@@ -129,10 +139,29 @@ pub(super) fn pagerank(args: &ValidatedArguments) -> Result<PageRankOptions<'_>>
         }
     };
     Ok(PageRankOptions {
+        variant,
         damping: number(value(args, "damping")?)?,
         tolerance: number(value(args, "tolerance")?)?,
         max_iterations,
         personalization,
+    })
+}
+
+pub(super) fn all_pairs_fields() -> Vec<OptionField> {
+    vec![option("sourceNodes", ValueType::Strings, Value::Null, true)]
+}
+
+pub(super) fn all_pairs(args: &ValidatedArguments) -> Result<algorithms::AllPairsOptions<'_>> {
+    Ok(algorithms::AllPairsOptions {
+        source_nodes: match value(args, "sourceNodes")? {
+            Value::Null => None,
+            Value::StringArray(values) => Some(values),
+            _ => {
+                return Err(ProcedureError::InvalidArguments(
+                    "sourceNodes must be a string array".into(),
+                ));
+            }
+        },
     })
 }
 
@@ -244,6 +273,20 @@ pub(super) fn label_propagation_fields() -> Vec<OptionField> {
 
 pub(super) fn label_propagation(args: &ValidatedArguments) -> Result<LabelPropagationOptions> {
     Ok(LabelPropagationOptions {
+        max_iterations: positive(args, "maxIterations")?,
+        seed: seed(args)?,
+    })
+}
+
+pub(super) fn k1_coloring_fields() -> Vec<OptionField> {
+    vec![
+        option("maxIterations", ValueType::Integer, Value::Int(10), false),
+        option("seed", ValueType::Integer, Value::Null, true),
+    ]
+}
+
+pub(super) fn k1_coloring(args: &ValidatedArguments) -> Result<K1ColoringOptions> {
+    Ok(K1ColoringOptions {
         max_iterations: positive(args, "maxIterations")?,
         seed: seed(args)?,
     })
@@ -443,6 +486,17 @@ pub(super) fn resolution(args: &ValidatedArguments) -> Result<f64> {
     number(value(args, "resolution")?)
 }
 
+pub(super) fn yens_fields() -> Vec<OptionField> {
+    vec![option("k", ValueType::Integer, Value::Int(1), false)]
+}
+
+/// `k` is an upper bound: fewer paths than asked for is a complete answer.
+pub(super) fn yens(args: &ValidatedArguments) -> Result<YensOptions> {
+    Ok(YensOptions {
+        k: positive(args, "k")?,
+    })
+}
+
 pub(super) fn astar_fields() -> Vec<OptionField> {
     vec![
         option(
@@ -469,4 +523,55 @@ pub(super) fn louvain(args: &ValidatedArguments) -> Result<LouvainOptions> {
         tolerance: number(value(args, "tolerance")?)?,
         seed,
     })
+}
+
+pub(super) fn link_prediction_fields() -> Vec<OptionField> {
+    vec![
+        option(
+            "metric",
+            ValueType::String,
+            Value::String("commonNeighbors".into()),
+            false,
+        ),
+        // Read by `sameCommunity` only; the default is the modularity kernel's.
+        option(
+            "communityProperty",
+            ValueType::String,
+            Value::String("community".into()),
+            false,
+        ),
+        option("node1", ValueType::Strings, Value::Null, true),
+        option("node2", ValueType::Strings, Value::Null, true),
+    ]
+}
+
+pub(super) fn link_metric(args: &ValidatedArguments) -> Result<LinkMetric> {
+    match value(args, "metric")? {
+        Value::String(value) => match value.to_ascii_lowercase().as_str() {
+            "commonneighbors" => Ok(LinkMetric::CommonNeighbors),
+            "adamicadar" => Ok(LinkMetric::AdamicAdar),
+            "resourceallocation" => Ok(LinkMetric::ResourceAllocation),
+            "preferentialattachment" => Ok(LinkMetric::PreferentialAttachment),
+            "totalneighbors" => Ok(LinkMetric::TotalNeighbors),
+            "samecommunity" => Ok(LinkMetric::SameCommunity),
+            _ => Err(ProcedureError::InvalidArguments(
+                "metric must be commonNeighbors, adamicAdar, resourceAllocation, preferentialAttachment, totalNeighbors or sameCommunity".into(),
+            )),
+        },
+        _ => Err(ProcedureError::InvalidArguments(
+            "metric must be a string".into(),
+        )),
+    }
+}
+
+/// Explicit candidates: `node1[i]` with `node2[i]`. Neither means every pair at
+/// distance two; one without the other is an error.
+pub(super) fn link_pairs(args: &ValidatedArguments) -> Result<Option<(&[String], &[String])>> {
+    match (value(args, "node1")?, value(args, "node2")?) {
+        (Value::Null, Value::Null) => Ok(None),
+        (Value::StringArray(first), Value::StringArray(second)) => Ok(Some((first, second))),
+        _ => Err(ProcedureError::InvalidArguments(
+            "node1 and node2 are given together, as string arrays of equal length".into(),
+        )),
+    }
 }

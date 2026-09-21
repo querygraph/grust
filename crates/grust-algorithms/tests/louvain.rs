@@ -382,7 +382,7 @@ fn louvain_observes_cancellation_and_budget_and_releases_scratch() {
     let edges = pseudo_random_edges(500, 4000, 5);
     let context = context();
     let projection = graph(500, &edges, Orientation::Undirected, &context);
-    let projection_work = context.usage().unwrap().work_units;
+    let projection_work = context.usage().unwrap().counted_work().expect("counted");
     let held = context.usage().unwrap().live_bytes;
     context.cancel().unwrap();
     assert!(matches!(

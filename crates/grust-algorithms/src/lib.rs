@@ -10,6 +10,8 @@ mod arrow_input;
 mod arrow_output;
 #[cfg(feature = "arrow")]
 pub use arrow_output::{ArrowResultBatch, ArrowResultCursor};
+mod apsp;
+pub use apsp::{AllPairsOptions, AllPairsShortestPaths, ShortestPair, all_pairs_shortest_paths};
 mod bellman_ford;
 pub use bellman_ford::{BellmanFord, bellman_ford};
 mod astar;
@@ -30,11 +32,20 @@ pub use fastrp::{FastRp, FastRpOptions, fast_rp};
 mod flow;
 mod graph_input;
 pub use flow::{MaxFlow, max_flow};
+mod k1_coloring;
+pub use k1_coloring::{K1Coloring, K1ColoringOptions, k1_coloring};
 mod kcore;
 mod label_propagation;
 pub use label_propagation::{LabelPropagation, LabelPropagationOptions, label_propagation};
 mod leiden;
 pub use leiden::{Leiden, LeidenOptions, leiden};
+mod link_prediction;
+pub use link_prediction::{
+    CandidatePairs, LinkCandidates, LinkMetric, LinkPrediction, LinkPredictionOptions,
+    link_prediction,
+};
+mod longest_path;
+pub use longest_path::{LongestPaths, longest_path};
 mod louvain;
 pub use kcore::{KCore, k_core};
 pub use louvain::{Louvain, LouvainOptions, louvain};
@@ -64,8 +75,10 @@ pub use statistics::{CsrEstimate, ProjectionStatistics};
 pub use table::{NodeTable, TableScalar, TableType, TableValue};
 pub use triangles::{TriangleOptions, Triangles, triangles};
 mod traversal;
+mod yens;
+pub use yens::{KShortestPaths, YensOptions, yens};
 
-pub use pagerank::{PageRank, PageRankOptions, pagerank};
+pub use pagerank::{PageRank, PageRankOptions, RankVariant, pagerank};
 
 pub use shortest::{PathCursor, PathView, ShortestPaths, dijkstra, shortest_paths};
 
@@ -76,7 +89,8 @@ pub use traversal::{
 
 pub use graph_input::{MissingWeight, ProjectionOptions, WeightSelection};
 pub use grust_procedures::{
-    ExecutionContext, ExecutionLimits, ProcedureError as AlgorithmError, Result,
+    Accounting, ExecutionContext, ExecutionLimits, Interruption, ProcedureError as AlgorithmError,
+    Result, WorkAccounting, WorkCount,
 };
 pub use projection::{
     GraphProjection, Orientation, ProjectionEdge, ProjectionRepresentation, ProjectionSelection,

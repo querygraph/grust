@@ -1,11 +1,14 @@
 # Graph analytics catalog — the road from twelve kernels to Neo4j's "65+"
 
 Status: **Tier A is complete and released in 0.22.0 "Mysid"**, together with
-every prerequisite P1–P7. The registry holds 33 kernels, against 10 in Tadpole;
-`articleRank` is the one Tier-A entry still outstanding and is targeted at
-0.23.0. Tier B is not started. The sections below are the plan as written, kept
-as the record of what was decided before the work rather than rewritten after
-it; the [progress ledger](#progress-ledger) is the current state.
+every prerequisite P1–P7. The registry holds 39 projection kernels (the length
+of `projection_kernel_names()`), against 10 in Tadpole. `articleRank`, the last
+Tier-A entry, is done for 0.23.0. M6 is complete: group 22 shipped in 0.22.0,
+and groups 17 (`yens`), 19 (`allPairsShortestPaths`), 21 (`k1Coloring`), 27
+(`longestPath`) and 30 (`linkPrediction`) are done for 0.23.0. The sections
+below are the plan as written, kept as the record of what was decided before
+the work rather than rewritten after it; the [progress ledger](#progress-ledger)
+is the current state.
 
 Written 2026-09-20 as a
 long-horizon plan to be executed by a coding model over many sessions. It turns
@@ -456,7 +459,7 @@ expand each into Tier-A detail when its turn comes.
 | 18 | `deltaStepping` | Meyer–Sanders | P7 | **`dijkstra`, exactly** | parallel; bucket width option `delta` |
 | 19 | `allPairsShortestPaths` | NK `distance/APSP` | — | per-source `dijkstra` | streamed; **never n×n**; charge per pair |
 | 20 | `randomWalk` | node2vec walks | P5 | transition frequencies vs exact probabilities, χ² bound | `walkLength`, `walksPerNode`, `returnFactor`, `inOutFactor` |
-| 21 | `k1Coloring` | greedy | P5 | no edge joins equal colours; colours ≤ Δ+1 | |
+| 21 | `k1Coloring` | greedy | P5 | no edge joins equal colours; colours ≤ Δ+1 | **done**: undirected only, self-loops ignored, seeded priority order |
 | 22 | `modularity`, `conductance` | NK `community/Modularity`, `Conductance` | P6 | hand-computed small cases | **the oracle for 1, 7, 8, 23, 24 — extract from group 1's test** |
 | 23 | `modularityOptimization` | GDS variant | 21, 22 | 22 | output as Louvain |
 | 24 | `sllpa` | Xie et al. | P5 | membership sanity | `communityIds: List<Utf8>` |
@@ -522,9 +525,9 @@ Required tests for every kernel, by name:
 | M1 | P3, P5; groups **5, 4, 1** (easy → hard: prove the pipeline on k-core, then triangles, then Louvain) | first Nutmeg comparison rows |
 | M2 | P2; groups 6, 2, 8, 3 | P7 decision, with betweenness timings |
 | M3 | groups 7, 10, 11, 12 | |
-| M4 | P4; groups 9, 13, 14 | **Done. Tier A complete**, released in 0.22.0 "Mysid" — `articleRank` alone outstanding. |
+| M4 | P4; groups 9, 13, 14 | **Done. Tier A complete**, released in 0.22.0 "Mysid"; `articleRank`, the one entry it left outstanding, done for 0.23.0. |
 | M5 | P6 | **Done.** Node properties were reviewed and approved before any Tier-B kernel, then built. |
-| M6 | groups 22, 17, 19, 21, 27, 30 (no randomness, no P7) | **22 done in 0.22.0**, which also gives groups 1, 7, 8, 23 and 24 their oracle. 17, 19, 21, 27, 30 remain. |
+| M6 | groups 22, 17, 19, 21, 27, 30 (no randomness, no P7) | **Done.** 22 in 0.22.0, which also gives groups 1, 7, 8, 23 and 24 their oracle; 17 (`yens`), 19 (`allPairsShortestPaths`), 21 (`k1Coloring`), 27 (`longestPath`) and 30 (`linkPrediction`) since. |
 | M7 | groups 20, 15, 16, 18, 23, 24, 29, 33 | |
 | M8 | groups 25, 26, 28, 31, 32, 34 | |
 | M9 | group 35 | decide, do not assume |
@@ -707,6 +710,27 @@ M4 (Tier A), then per milestone.** Each is a minor version: new public API.
   negative cycle is a result with a witness (P4), not an error. A\* needs P6
   (latitude/longitude node properties) to be registered at all; a Rust-only
   `astar` over `Fn(usize) -> f64` is possible now but reaches no caller.
+- **Link prediction (group 30) never enumerates n² pairs.** Candidates are the
+  pairs at distance two by default, or a caller's list (`CandidatePairs`, from
+  ids, rows or Arrow batches). Only `sameCommunity` reads a property, so a
+  `PropertyOption` now carries `needed`, a predicate on the call's arguments:
+  the community is requested for that metric alone, and `run_on_projection`
+  serves a property kernel whose call requests nothing with
+  `NodeProperties::empty`. Undirected only and unweighted, as in NetworKit.
+
+- **A result of unbounded length is a cursor, not a table.** `NodeTable`
+  holds every row in admitted buffers before the first batch leaves, so a
+  pair-shaped result built on it is materialised. All-pairs shortest paths
+  (group 19) cannot be: it returns `AllPairsShortestPaths`, a pull cursor that
+  runs one Dijkstra per source over one reused O(n) workspace, and
+  `ArrowResultCursor` and the row cursor each gained one arm that pulls from it
+  a batch (or a row) at a time. Its test shows the admitted peak does not move
+  after the first pair, and that four times the nodes costs under twice the
+  peak while a consumer that keeps the batches sees sixteen. Any later kernel
+  whose output can outgrow memory (link prediction over all candidate pairs,
+  k-nearest neighbours at large k, random walks) should follow it. It is
+  sequential: streaming in source order from parallel workers would need a
+  reorder buffer holding the pairs of every source run ahead.
 
 ## Progress ledger
 
@@ -719,6 +743,8 @@ Update in the same commit as the work. `—` not started, `wip`, `done <commit>`
 | P7 | done (`parallel.rs`) | 1 Louvain | done | 2 Betweenness | done |
 | 3 Node similarity | done | 4 Triangles/LCC | done | 5 k-core | done |
 | 6 Closeness/harmonic | done | 7 Leiden | done | 8 Label propagation | done |
-| 9 A\*/Bellman–Ford | done | 10 Eigenvector family | done except `articleRank` | 11 Bridges family | done |
+| 9 A\*/Bellman–Ford | done | 10 Eigenvector family | done (`articleRank` for 0.23.0) | 11 Bridges family | done |
 | 12 Spanning forest | done | 13 Max flow | done (`maxFlow`, `minCut`) | 14 FastRP | done |
-| 22 Modularity/conductance | done (0.22.0) | 15–21, 23–35 | — (see Tier B) | | |
+| 22 Modularity/conductance | done (0.22.0) | 17 Yen's k shortest | done (`yens`) | 19 All-pairs shortest paths | done (`allPairsShortestPaths`, streamed) |
+| 21 k1Coloring | done (`k1Coloring`) | 27 Longest path | done (`longestPath`) | 30 Link prediction | done (`linkPrediction`) |
+| 15, 16, 18, 20, 23–26, 28, 29, 31–35 | — (see Tier B) | | | | |

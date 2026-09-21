@@ -159,11 +159,12 @@ fn chunk_boundaries_preserve_arc_counts_and_exact_successful_work_charges() {
     assert_eq!(result.counts(), &[1026, 1025, 0]);
     assert_eq!(result.strengths(), Some([1026.0, 1025.0, 0.0].as_slice()));
     assert_eq!(
-        context.usage().unwrap().work_units - before.work_units,
+        context.usage().unwrap().counted_work().expect("counted")
+            - before.counted_work().expect("counted"),
         2054
     );
     drop(result);
-    let used = context.usage().unwrap().work_units;
+    let used = context.usage().unwrap().counted_work().expect("counted");
     context
         .charge_work(context.limits().work_units - used - 10)
         .unwrap();
@@ -189,8 +190,11 @@ fn node_chunks_preserve_large_isolate_sets() {
         &context,
     )
     .unwrap();
-    let before = context.usage().unwrap().work_units;
+    let before = context.usage().unwrap().counted_work().expect("counted");
     let result = degree(&graph).unwrap();
     assert_eq!(result.counts(), vec![0; 2049]);
-    assert_eq!(context.usage().unwrap().work_units - before, 2049);
+    assert_eq!(
+        context.usage().unwrap().counted_work().expect("counted") - before,
+        2049
+    );
 }

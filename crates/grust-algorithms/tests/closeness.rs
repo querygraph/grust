@@ -295,10 +295,10 @@ fn distance_centralities_are_identical_at_any_pool_width_and_charge_the_same_wor
                 Orientation::Outgoing,
                 &context,
             );
-            let before = context.usage().unwrap().work_units;
+            let before = context.usage().unwrap().counted_work().expect("counted");
             let close = closeness(&projection, ClosenessOptions::default()).unwrap();
             let harm = harmonic(&projection, HarmonicOptions::default()).unwrap();
-            let work = context.usage().unwrap().work_units - before;
+            let work = context.usage().unwrap().counted_work().expect("counted") - before;
             let bits: Vec<u64> = close
                 .values()
                 .iter()
@@ -321,7 +321,7 @@ fn distance_centralities_observe_cancellation_and_budget_and_release_scratch() {
     let edges = scrambled(300, 3000);
     let context = context();
     let projection = graph(300, &edges, None, Orientation::Undirected, &context);
-    let projection_work = context.usage().unwrap().work_units;
+    let projection_work = context.usage().unwrap().counted_work().expect("counted");
     let held = context.usage().unwrap().live_bytes;
     context.cancel().unwrap();
     assert!(matches!(
