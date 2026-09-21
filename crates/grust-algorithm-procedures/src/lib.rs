@@ -622,11 +622,17 @@ enum Body {
 
 /// An option whose value is the name of a node property the kernel reads.
 #[derive(Clone, Copy)]
-struct PropertyOption {
+/// One option through which a kernel names a node property it reads.
+///
+/// Declared by the kernel, so it is known before any call: see
+/// [`node_property_options`].
+pub struct PropertyOption {
     /// The option's name, as the caller writes it.
-    option: &'static str,
-    kind: algorithms::PropertyKind,
-    missing: algorithms::MissingProperty,
+    pub option: &'static str,
+    /// The kind of column the kernel reads through it.
+    pub kind: algorithms::PropertyKind,
+    /// What the kernel does where the value is absent.
+    pub missing: algorithms::MissingProperty,
 }
 
 /// Read the property names a call asks for, in declaration order.
@@ -827,12 +833,41 @@ pub fn run_on_projection(
     }
 }
 
+/// The options through which `name` names the node properties it reads, as the
+/// kernel declares them. Empty for a kernel that reads none.
+///
+/// This is readable before any call exists. [`node_property_requests`] answers
+/// for one validated call, and validation fills an absent option from its
+/// default — `astar` reads `latitude` and `longitude` unless told otherwise —
+/// so the requests always name *some* column. What a caller cannot learn from
+/// them without first building arguments is which options exist and what
+/// kind of column each must be. An embedder that constructs its own graph, such
+/// as one probing a kernel's result schema, asks here, stages a column of the
+/// declared kind per option, and names those columns in the options it
+/// validates. Otherwise the defaults name columns its graph does not have, and
+/// a property declared [`MissingProperty::Reject`](algorithms::MissingProperty)
+/// refuses the call.
+pub fn node_property_options(name: &str) -> Result<&'static [PropertyOption]> {
+    let short = short_name(name);
+    let spec = catalog()
+        .into_iter()
+        .find(|spec| spec.name.eq_ignore_ascii_case(short))
+        .ok_or_else(|| {
+            ProcedureError::Unsupported(format!("`{name}` is not a registered projection kernel"))
+        })?;
+    Ok(match spec.body {
+        Body::Topology(_) => &[],
+        Body::WithProperties { properties, .. } => properties,
+    })
+}
+
 /// The node properties `name` reads for this call: the property keys the
 /// caller's options name, each with the kind and missing-value policy the
 /// kernel declared. Empty for a kernel that reads none.
 ///
 /// An embedder that stages its own columns asks with this and supplies them to
-/// [`run_with_properties`].
+/// [`run_with_properties`]. [`node_property_options`] is how a caller learns
+/// which options exist, and of what kind, before it has a call to ask about.
 pub fn node_property_requests<'a>(
     name: &str,
     args: &'a ValidatedArguments,

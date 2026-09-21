@@ -4,8 +4,8 @@
 
 use arrow_array::RecordBatch;
 use grust_algorithm_procedures::{
-    node_property_requests, projection_kernel_names, projection_options, projection_options_for,
-    register_algorithms, run_on_projection, run_with_properties,
+    node_property_options, node_property_requests, projection_kernel_names, projection_options,
+    projection_options_for, register_algorithms, run_on_projection, run_with_properties,
 };
 use grust_algorithms::{
     GraphProjection, NodeProperties, Orientation, ProjectionEdge, WeightSelection,
@@ -311,4 +311,85 @@ fn only_bellman_ford_is_offered_a_projection_that_admits_negative_weights() {
             .weight,
         WeightSelection::SignedProperty { .. }
     ));
+}
+
+/// A kernel declares the options through which it names node properties, and
+/// the declaration is readable before any call is built. Validation fills an
+/// absent option from its default, so the requests for a call always name some
+/// column; the declaration is how a caller that builds its own graph learns
+/// which columns to stage, and of what kind, before building that call.
+#[test]
+fn a_kernel_declares_the_options_that_name_its_node_properties() {
+    // Every registered kernel answers, and a topology kernel answers "none".
+    for name in projection_kernel_names() {
+        let declared =
+            node_property_options(name).unwrap_or_else(|error| panic!("{name}: {error}"));
+        for option in declared {
+            assert!(
+                !option.option.is_empty(),
+                "{name} declared a property option with no name"
+            );
+        }
+    }
+
+    assert!(
+        node_property_options("pagerank")
+            .expect("pagerank")
+            .is_empty(),
+        "a topology kernel declares no property options"
+    );
+
+    // A*'s two coordinates, in declaration order, both required.
+    let coordinates: Vec<&str> = node_property_options("astar")
+        .expect("astar")
+        .iter()
+        .map(|option| option.option)
+        .collect();
+    assert_eq!(coordinates, ["latitudeProperty", "longitudeProperty"]);
+
+    // The prefixed spelling resolves to the same kernel.
+    assert_eq!(
+        node_property_options("grust.algorithms.astar")
+            .expect("prefixed")
+            .len(),
+        2
+    );
+
+    assert!(node_property_options("nosuchkernel").is_err());
+
+    // Validation fills each declared option from its default, so a call that
+    // names nothing still requests a column per declared option, in order.
+    let registry = registry();
+    let resolved = registry.resolve("grust.algorithms.astar").expect("astar");
+    let defaults = resolved
+        .validate_arguments(vec![
+            Value::from("a"),
+            Value::from("b"),
+            Value::Json(serde_json::json!({})),
+        ])
+        .expect("astar with defaults");
+    let requested: Vec<&str> = node_property_requests("astar", &defaults)
+        .expect("requests from defaults")
+        .iter()
+        .map(|request| request.key)
+        .collect();
+    assert_eq!(requested, ["latitude", "longitude"]);
+
+    // Naming a column per declared option yields exactly those columns.
+    let named = resolved
+        .validate_arguments(vec![
+            Value::from("a"),
+            Value::from("b"),
+            Value::Json(serde_json::json!({
+                "latitudeProperty": "lat",
+                "longitudeProperty": "lon",
+            })),
+        ])
+        .expect("astar with named columns");
+    let requested: Vec<&str> = node_property_requests("astar", &named)
+        .expect("requests from named columns")
+        .iter()
+        .map(|request| request.key)
+        .collect();
+    assert_eq!(requested, ["lat", "lon"]);
 }
