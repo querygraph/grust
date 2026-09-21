@@ -297,15 +297,8 @@ fn pull(
     let scales = &scales.values;
     let totals = &totals.values;
     let mut next = Buffer::indexed(n, 0.0f64, context)?;
-    // GAP EXPERIMENT VM: reciprocal degree precomputed once; the arc body keeps
-    // two randomly indexed lines (scores, inverse) but loses the divide.
-    let inverse: Vec<f64> = (0..if weighted { 0 } else { n })
-        .map(|node| {
-            let degree = offsets[node + 1] - offsets[node];
-            if degree == 0 { 0.0 } else { 1.0 / degree as f64 }
-        })
-        .collect();
-    let inverse = &inverse;
+    // GAP EXPERIMENT V2: per-source contribution, hoisted out of the arc loop.
+    let mut contribution = vec![0.0f64; if weighted { 0 } else { n }];
     let mut residual = f64::INFINITY;
     for iteration in 1..=options.max_iterations {
         // Dangling mass: scores of nodes with no outgoing arc.
@@ -335,6 +328,17 @@ fn pull(
         )?;
         let dangling = crate::parallel::reduce_in_order(&dangling, 0.0, |total, part| total + part);
         let base = (1.0 - options.damping) + options.damping * dangling;
+        if !weighted {
+            for (node, value) in contribution.iter_mut().enumerate() {
+                let degree = offsets[node + 1] - offsets[node];
+                *value = if degree == 0 {
+                    0.0
+                } else {
+                    scores.values[node] / degree as f64
+                };
+            }
+        }
+        let contribution_now = &contribution;
         let scores_now = &scores.values;
         let nonfinite = std::sync::atomic::AtomicBool::new(false);
         crate::parallel::for_each_chunk(
@@ -361,9 +365,10 @@ fn pull(
                             sum += scores_now[source] * probability;
                         }
                     } else {
-                        for arc in arcs {
-                            let source = reverse.targets.values[arc];
-                            sum += scores_now[source] * inverse[source];
+                        // GAP EXPERIMENT V2S: slice once per node, no per-arc bounds checks.
+                        for &source in &reverse.targets.values[arcs] {
+                            debug_assert!(source < contribution_now.len());
+                            sum += unsafe { *contribution_now.get_unchecked(source) };
                         }
                     }
                     let updated = base * teleport[node] + options.damping * sum;
