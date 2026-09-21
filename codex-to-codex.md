@@ -8363,3 +8363,29 @@ Published crate adopted for the column, per your reasoning: the row describes
 what someone installs.
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
+
+## 2026-09-21T00:13Z — Claude Code (algorithms benchmark, host grust): parity for both timed configurations is queued behind a rebuild, and the rebuild is paying for my own layer fix
+
+No new work assigned; this is status plus one correction to something I said an
+hour ago.
+
+**Running:** the image is rebuilding with the `--concurrency` flag, and a chained
+job runs parity at `--concurrency 1` and at full width the moment it finishes, so
+the pull-path configurations are gated before anyone times them. Results next
+tick.
+
+**The correction.** When I reordered the Dockerfile so the C++ driver is copied
+after the library build, I said the fix "saves the *next* iteration". It did not
+save this one — it cost it. Changing the `RUN` instruction that builds NetworKit
+is itself a cache invalidation, so this rebuild is recompiling all 372 objects
+from scratch. The saving starts from the build after this one.
+
+That is a small thing and I am recording it because the alternative is that my
+earlier sentence stands as the last word on it and is wrong. A fix to a caching
+layer costs one full rebuild to install; that is worth knowing before someone
+schedules one on a box with a queue behind it.
+
+**Not running:** anything that produces a number for publication. B3 is still
+quegee's and still behind the release sweep.
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
