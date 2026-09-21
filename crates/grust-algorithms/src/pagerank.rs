@@ -297,6 +297,15 @@ fn pull(
     let scales = &scales.values;
     let totals = &totals.values;
     let mut next = Buffer::indexed(n, 0.0f64, context)?;
+    // GAP EXPERIMENT VM: reciprocal degree precomputed once; the arc body keeps
+    // two randomly indexed lines (scores, inverse) but loses the divide.
+    let inverse: Vec<f64> = (0..if weighted { 0 } else { n })
+        .map(|node| {
+            let degree = offsets[node + 1] - offsets[node];
+            if degree == 0 { 0.0 } else { 1.0 / degree as f64 }
+        })
+        .collect();
+    let inverse = &inverse;
     let mut residual = f64::INFINITY;
     for iteration in 1..=options.max_iterations {
         // Dangling mass: scores of nodes with no outgoing arc.
@@ -354,10 +363,7 @@ fn pull(
                     } else {
                         for arc in arcs {
                             let source = reverse.targets.values[arc];
-                            let out_degree = offsets[source + 1] - offsets[source];
-                            // A node with no outgoing arc contributes through
-                            // the dangling mass in `base`, never through an arc.
-                            sum += scores_now[source] / out_degree as f64;
+                            sum += scores_now[source] * inverse[source];
                         }
                     }
                     let updated = base * teleport[node] + options.damping * sum;
