@@ -440,6 +440,23 @@ fn catalog() -> Vec<Spec> {
         },
     ));
     specs.push(Spec::new(
+        "k1Coloring",
+        None,
+        vec![
+            field("nodeId", ValueType::String),
+            field("color", ValueType::Integer),
+            field("colorCount", ValueType::Integer),
+            field("iterations", ValueType::Integer),
+            field("converged", ValueType::Boolean),
+        ],
+        options::k1_coloring_fields(),
+        |graph, args| {
+            Ok(AlgorithmOutput::Table(
+                algorithms::k1_coloring(graph, options::k1_coloring(args)?)?.into_table(),
+            ))
+        },
+    ));
+    specs.push(Spec::new(
         "nodeSimilarity",
         None,
         vec![

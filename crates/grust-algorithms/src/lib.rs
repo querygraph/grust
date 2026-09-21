@@ -32,6 +32,8 @@ pub use fastrp::{FastRp, FastRpOptions, fast_rp};
 mod flow;
 mod graph_input;
 pub use flow::{MaxFlow, max_flow};
+mod k1_coloring;
+pub use k1_coloring::{K1Coloring, K1ColoringOptions, k1_coloring};
 mod kcore;
 mod label_propagation;
 pub use label_propagation::{LabelPropagation, LabelPropagationOptions, label_propagation};

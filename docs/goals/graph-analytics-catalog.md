@@ -456,7 +456,7 @@ expand each into Tier-A detail when its turn comes.
 | 18 | `deltaStepping` | Meyer–Sanders | P7 | **`dijkstra`, exactly** | parallel; bucket width option `delta` |
 | 19 | `allPairsShortestPaths` | NK `distance/APSP` | — | per-source `dijkstra` | streamed; **never n×n**; charge per pair |
 | 20 | `randomWalk` | node2vec walks | P5 | transition frequencies vs exact probabilities, χ² bound | `walkLength`, `walksPerNode`, `returnFactor`, `inOutFactor` |
-| 21 | `k1Coloring` | greedy | P5 | no edge joins equal colours; colours ≤ Δ+1 | |
+| 21 | `k1Coloring` | greedy | P5 | no edge joins equal colours; colours ≤ Δ+1 | **done**: undirected only, self-loops ignored, seeded priority order |
 | 22 | `modularity`, `conductance` | NK `community/Modularity`, `Conductance` | P6 | hand-computed small cases | **the oracle for 1, 7, 8, 23, 24 — extract from group 1's test** |
 | 23 | `modularityOptimization` | GDS variant | 21, 22 | 22 | output as Louvain |
 | 24 | `sllpa` | Xie et al. | P5 | membership sanity | `communityIds: List<Utf8>` |
@@ -524,7 +524,7 @@ Required tests for every kernel, by name:
 | M3 | groups 7, 10, 11, 12 | |
 | M4 | P4; groups 9, 13, 14 | **Done. Tier A complete**, released in 0.22.0 "Mysid" — `articleRank` alone outstanding. |
 | M5 | P6 | **Done.** Node properties were reviewed and approved before any Tier-B kernel, then built. |
-| M6 | groups 22, 17, 19, 21, 27, 30 (no randomness, no P7) | **22 done in 0.22.0**, which also gives groups 1, 7, 8, 23 and 24 their oracle. **17 done** (`yens`). **19 done** (`allPairsShortestPaths`). **30 done** (`linkPrediction`). 21, 27 remain. |
+| M6 | groups 22, 17, 19, 21, 27, 30 (no randomness, no P7) | **22 done in 0.22.0**, which also gives groups 1, 7, 8, 23 and 24 their oracle. **17 done** (`yens`). **19 done** (`allPairsShortestPaths`). **21 done** (`k1Coloring`). **30 done** (`linkPrediction`). 27 remains. |
 | M7 | groups 20, 15, 16, 18, 23, 24, 29, 33 | |
 | M8 | groups 25, 26, 28, 31, 32, 34 | |
 | M9 | group 35 | decide, do not assume |
@@ -743,4 +743,4 @@ Update in the same commit as the work. `—` not started, `wip`, `done <commit>`
 | 9 A\*/Bellman–Ford | done | 10 Eigenvector family | done except `articleRank` | 11 Bridges family | done |
 | 12 Spanning forest | done | 13 Max flow | done (`maxFlow`, `minCut`) | 14 FastRP | done |
 | 22 Modularity/conductance | done (0.22.0) | 17 Yen's k shortest | done (`yens`) | 19 All-pairs shortest paths | done (`allPairsShortestPaths`, streamed) |
-| 30 Link prediction | done (`linkPrediction`) | 15, 16, 18, 20, 21, 23–29, 31–35 | — (see Tier B) | | |
+| 21 k1Coloring | done (`k1Coloring`) | 30 Link prediction | done (`linkPrediction`) | 15, 16, 18, 20, 23–29, 31–35 | — (see Tier B) |

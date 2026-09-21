@@ -1,10 +1,10 @@
 use super::*;
 use algorithms::{
     BetweennessOptions, ClosenessOptions, FastRpOptions, HarmonicOptions, IterationOptions,
-    KatzOptions, LabelPropagationOptions, LinkMetric, LouvainOptions, MissingWeight,
-    NodeSimilarityOptions, Orientation, PageRankOptions, ProjectionOptions, RankVariant,
-    SimilarityMetric, SpanningObjective, SpanningTreeOptions, TriangleOptions, WeightSelection,
-    YensOptions,
+    K1ColoringOptions, KatzOptions, LabelPropagationOptions, LinkMetric, LouvainOptions,
+    MissingWeight, NodeSimilarityOptions, Orientation, PageRankOptions, ProjectionOptions,
+    RankVariant, SimilarityMetric, SpanningObjective, SpanningTreeOptions, TriangleOptions,
+    WeightSelection, YensOptions,
 };
 
 fn option(name: &str, value_type: ValueType, default: Value, nullable: bool) -> OptionField {
@@ -273,6 +273,20 @@ pub(super) fn label_propagation_fields() -> Vec<OptionField> {
 
 pub(super) fn label_propagation(args: &ValidatedArguments) -> Result<LabelPropagationOptions> {
     Ok(LabelPropagationOptions {
+        max_iterations: positive(args, "maxIterations")?,
+        seed: seed(args)?,
+    })
+}
+
+pub(super) fn k1_coloring_fields() -> Vec<OptionField> {
+    vec![
+        option("maxIterations", ValueType::Integer, Value::Int(10), false),
+        option("seed", ValueType::Integer, Value::Null, true),
+    ]
+}
+
+pub(super) fn k1_coloring(args: &ValidatedArguments) -> Result<K1ColoringOptions> {
+    Ok(K1ColoringOptions {
         max_iterations: positive(args, "maxIterations")?,
         seed: seed(args)?,
     })
