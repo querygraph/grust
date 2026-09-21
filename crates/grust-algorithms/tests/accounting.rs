@@ -227,10 +227,32 @@ fn a_running_kernel_with_uncounted_work_can_still_be_cancelled() {
 #[test]
 fn a_running_kernel_with_uncounted_work_still_meets_its_deadline() {
     for workers in [None, Some(2), Some(16)] {
-        let deadline = Instant::now() + Duration::from_millis(300);
+        // The deadline governs the whole execution, so it starts before the
+        // projection is built and the build spends from it. It must fall after
+        // the build and before PageRank converges: `ENDLESS` asks for a residual
+        // of exactly zero, which floating-point PageRank does reach — here in
+        // 264 iterations — so no deadline long enough is safe either. A fixed
+        // 300 ms held that window on a laptop and missed it on a burstable Linux
+        // host running four test binaries at once, where the build alone overran
+        // it. Both ends scale with the same machine and the same load: a build is
+        // a few passes over the graph and convergence is hundreds of them. So the
+        // window is measured here rather than assumed — a throwaway build times
+        // this machine, and the deadline leaves the real build twice that.
+        let started = Instant::now();
+        drop(graph(
+            context(Accounting::WORK_UNCOUNTED, workers, None),
+            false,
+        ));
+        let build = started.elapsed();
+        let deadline = Instant::now() + build * 2 + Duration::from_millis(50);
         let projection = graph(
             context(Accounting::WORK_UNCOUNTED, workers, Some(deadline)),
             false,
+        );
+        assert!(
+            Instant::now() < deadline,
+            "{workers:?} workers: the build spent the whole deadline, so this \
+             would test the projection rather than the kernel"
         );
         let outcome = pagerank(&projection, ENDLESS);
         assert!(
