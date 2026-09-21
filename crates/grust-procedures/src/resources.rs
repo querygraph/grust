@@ -454,11 +454,6 @@ impl WorkMeter {
     /// charge would exceed.
     pub fn charge(&mut self, units: usize) -> Result<()> {
         self.context.check_cancelled()?;
-        // GAP EXPERIMENT V1c: keep the cancellation load, drop the budget CAS.
-        if true {
-            let _ = units;
-            return Ok(());
-        }
         // The balance can be taken by another meter between the load and the
         // exchange, so this retries rather than subtracting blindly.
         let mut held = self.balance.load(Ordering::Relaxed);
