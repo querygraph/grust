@@ -1,12 +1,12 @@
-# Grust Mysid: twenty-two graph algorithms, and the properties they needed
+# Grust Mysid: twenty-three graph algorithms, and the properties they needed
 
 Grust gives Rust applications one property-graph API across memory, embedded databases, SQL systems and remote graph services. Nodes, edges, typed identities, traversals, mutations, schema and graph algorithms are written once against that API; Memory, Sail/Spark, PostgreSQL, pgGraph, PostgreSQL SQL/PGQ, Turso, SurrealDB, FalkorDB, LanceDB and CocoIndex sit behind it, and each adapter states which operations it pushes down, runs natively, answers through the portable reference, or does not support. `grust-cypher` is the portable GQL/Cypher layer over the same model. Mysid 0.22.0 is about what those graphs can now be asked.
 
 See the [repository and API guide](https://github.com/querygraph/grust), the [Grust book](https://firstpair.org/read/grust/), the [GQL profile statement](https://github.com/querygraph/grust/blob/main/docs/GQL_PROFILE_STATEMENT.md) and the full [`CHANGELOG.md`](https://github.com/querygraph/grust/blob/main/CHANGELOG.md).
 
-## Ten kernels became thirty-two
+## Ten kernels became thirty-three
 
-Tadpole shipped ten graph algorithms. Mysid registers thirty-two, and every one is reachable the same three ways: as a Rust function over a projection, as `CALL grust.algorithms.<name>(...)` in Cypher, and as typed Arrow batches for an embedder that holds its own graph.
+Tadpole shipped ten graph algorithms. Mysid registers thirty-three, and every one is reachable the same three ways: as a Rust function over a projection, as `CALL grust.algorithms.<name>(...)` in Cypher, and as typed Arrow batches for an embedder that holds its own graph.
 
 The additions group into four families. **Community detection**: Louvain, Leiden, label propagation, and `modularity` to score a partition somebody else produced. **Centrality**: betweenness with optional sampling, closeness, harmonic, eigenvector, Katz, and HITS. **Structure**: k-core, triangle counting, local clustering coefficient, node similarity, bridges, articulation points, biconnected components, and minimum or maximum spanning forests. **Paths and flow**: Bellman–Ford, A\*, maximum flow and minimum cut. Plus FastRP, which produces an embedding per node rather than a number.
 
