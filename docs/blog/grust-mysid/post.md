@@ -8,7 +8,7 @@ See the [repository and API guide](https://github.com/querygraph/grust), the [Gr
 
 Tadpole shipped ten graph algorithms. Mysid registers thirty-three, and every one is reachable the same three ways: as a Rust function over a projection, as `CALL grust.algorithms.<name>(...)` in Cypher, and as typed Arrow batches for an embedder that holds its own graph.
 
-The additions group into four families. **Community detection**: Louvain, Leiden, label propagation, and `modularity` to score a partition somebody else produced. **Centrality**: betweenness with optional sampling, closeness, harmonic, eigenvector, Katz, and HITS. **Structure**: k-core, triangle counting, local clustering coefficient, node similarity, bridges, articulation points, biconnected components, and minimum or maximum spanning forests. **Paths and flow**: Bellman–Ford, A\*, maximum flow and minimum cut. Plus FastRP, which produces an embedding per node rather than a number.
+The additions group into four families. **Community detection**: Louvain, Leiden, label propagation, and `modularity` to score a partition somebody else produced. **Centrality**: betweenness with optional sampling, closeness, harmonic, eigenvector, Katz, and HITS. **Structure**: k-core, triangle counting, local clustering coefficient, node similarity, bridges, articulation points, biconnected components, and minimum or maximum spanning forests. **Paths and flow**: Bellman–Ford, `A*`, maximum flow and minimum cut. Plus FastRP, which produces an embedding per node rather than a number.
 
 Several of these carry decisions worth stating rather than discovering.
 
@@ -16,7 +16,7 @@ Several of these carry decisions worth stating rather than discovering.
 
 **Bellman–Ford treats a negative cycle as a result, not an error.** If one is reachable from the source, no distance beyond it is a minimum — every lap lowers it. So the kernel withholds distances and returns the cycle itself as a witness the caller can check: the arcs exist and their weights sum below zero. An undirected edge of negative weight is a negative cycle of two arcs and is reported as one.
 
-**A\* cannot check the one thing that would make it wrong.** Its heuristic must never exceed the true remaining cost. Given that, it returns exactly what Dijkstra returns, which is how it is tested. Overestimate and it returns a real path that is not the shortest, and no kernel can tell the difference between an optimistic estimate and a genuinely expensive graph. The registered procedure's heuristic is great-circle distance from two coordinate properties, which is admissible only where the weights are distances in metres — the same metres against weights in seconds is not a lower bound, and is the usual way this goes wrong.
+**`A*` cannot check the one thing that would make it wrong.** Its heuristic must never exceed the true remaining cost. Given that, it returns exactly what Dijkstra returns, which is how it is tested. Overestimate and it returns a real path that is not the shortest, and no kernel can tell the difference between an optimistic estimate and a genuinely expensive graph. The registered procedure's heuristic is great-circle distance from two coordinate properties, which is admissible only where the weights are distances in metres — the same metres against weights in seconds is not a lower bound, and is the usual way this goes wrong.
 
 ## Node properties, and why they are not part of the projection
 
