@@ -65,7 +65,6 @@ impl PageRank {
 /// weight is dangling even if structural edges exist. Parallel edges contribute
 /// independently; isolates receive teleportation and redistributed dangling mass.
 pub fn pagerank(graph: &GraphProjection, options: PageRankOptions<'_>) -> Result<PageRank> {
-    GAP_T0.with(|t| t.set(Some(std::time::Instant::now())));
     graph.require_nonnegative("pagerank")?;
     let context = graph.execution();
     context.checkpoint()?;
@@ -236,32 +235,7 @@ fn pull(
     let n = graph.node_count();
     let adjacency = graph.outgoing();
     let offsets = &adjacency.offsets.values;
-    let gap_in = std::time::Instant::now();
     let reverse = graph.incoming()?;
-    let gap_incoming = gap_in.elapsed();
-    let (mut gap_dangling, mut gap_main, mut gap_residual) = (
-        std::time::Duration::ZERO,
-        std::time::Duration::ZERO,
-        std::time::Duration::ZERO,
-    );
-    let mut gap_setup = std::time::Duration::ZERO;
-    let gap_report = |setup: std::time::Duration,
-                      dangling: std::time::Duration,
-                      main: std::time::Duration,
-                      residual: std::time::Duration,
-                      iterations: usize| {
-        let total = GAP_T0.with(|t| t.get()).map(|t| t.elapsed()).unwrap_or_default();
-        eprintln!(
-            "GAP_PHASES {{\"incoming_ms\":{},\"setup_ms\":{},\"dangling_ms\":{},\"main_ms\":{},\"residual_ms\":{},\"total_ms\":{},\"iterations\":{}}}",
-            gap_incoming.as_secs_f64() * 1e3,
-            setup.as_secs_f64() * 1e3,
-            dangling.as_secs_f64() * 1e3,
-            main.as_secs_f64() * 1e3,
-            residual.as_secs_f64() * 1e3,
-            total.as_secs_f64() * 1e3,
-            iterations
-        );
-    };
     // Per-source arc probability, exactly as the push loop derives it: each row
     // is scaled by its largest weight before summing, so two arcs of f64::MAX
     // still sum finitely, and a row of zero weight is dangling.
@@ -324,10 +298,8 @@ fn pull(
     let totals = &totals.values;
     let mut next = Buffer::indexed(n, 0.0f64, context)?;
     let mut residual = f64::INFINITY;
-    gap_setup = GAP_T0.with(|t| t.get()).map(|t| t.elapsed()).unwrap_or_default();
     for iteration in 1..=options.max_iterations {
         // Dangling mass: scores of nodes with no outgoing arc.
-        let gap_a = std::time::Instant::now();
         let dangling = crate::parallel::map_chunks(
             context,
             workers,
@@ -354,8 +326,6 @@ fn pull(
         )?;
         let dangling = crate::parallel::reduce_in_order(&dangling, 0.0, |total, part| total + part);
         let base = (1.0 - options.damping) + options.damping * dangling;
-        let gap_b = std::time::Instant::now();
-        gap_dangling += gap_b - gap_a;
         let scores_now = &scores.values;
         let nonfinite = std::sync::atomic::AtomicBool::new(false);
         crate::parallel::for_each_chunk(
@@ -404,8 +374,6 @@ fn pull(
                 "PageRank produced a nonfinite score".into(),
             ));
         }
-        let gap_c = std::time::Instant::now();
-        gap_main += gap_c - gap_b;
         let parts = crate::parallel::map_chunks(
             context,
             workers,
@@ -420,10 +388,8 @@ fn pull(
             },
         )?;
         residual = crate::parallel::reduce_in_order(&parts, 0.0, |total, part| total + part);
-        gap_residual += gap_c.elapsed();
         std::mem::swap(&mut scores, &mut next);
         if residual <= options.tolerance {
-            gap_report(gap_setup, gap_dangling, gap_main, gap_residual, iteration);
             return Ok(PageRank {
                 graph: graph.clone(),
                 scores,
@@ -433,7 +399,6 @@ fn pull(
             });
         }
     }
-    gap_report(gap_setup, gap_dangling, gap_main, gap_residual, options.max_iterations);
     Ok(PageRank {
         graph: graph.clone(),
         scores,
@@ -441,8 +406,4 @@ fn pull(
         residual,
         converged: false,
     })
-}
-
-thread_local! {
-    static GAP_T0: std::cell::Cell<Option<std::time::Instant>> = const { std::cell::Cell::new(None) };
 }
