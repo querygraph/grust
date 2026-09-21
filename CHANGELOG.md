@@ -231,6 +231,27 @@ reconstructed from Git history, release commits, and the shipped docs.
   and charged exactly as before, just earlier; later kernels share it, a second
   call builds nothing, and results are bit-identical either way. Free on an
   undirected projection, whose rows already mirror.
+- **Projections build in parallel** when the execution asks for concurrency
+  and the graph clears the parallel floor, with the result byte-identical to
+  the sequential build at every width: offsets, targets, weights and edge slots,
+  for the projection's own adjacency and for the transpose `prepare_incoming`
+  builds. Edge validation proves ordinals distinct with one bit per ordinal
+  instead of a hash set (37.7 s of a 63.4 s com-Orkut build went to that set)
+  and checks endpoints and weights in parallel. Degrees are counted in chunks
+  into per-chunk rows and summed, with no atomics. Arcs are filled by row
+  range: each worker owns a contiguous range of rows, and so a contiguous
+  slice of every array, and walks the whole input in order placing only its
+  own rows' arcs, so every row is written by one worker in the sequential
+  order. Peak accounted memory is the sequential build's, unchanged: the
+  counting table (at most eight bytes per edge) is released before the arrays
+  are allocated. Work totals are unchanged, and a work budget that would run
+  out during a parallel pass takes the sequential pass instead, so it is
+  refused at the same unit with the same count at every width. Laptop ratios
+  (10-core Apple laptop, 1.5M nodes, 30M edges, whole `from_topology`):
+  directed 3.2-3.4 s sequential to 0.8-0.9 s at eight workers; undirected and
+  weighted 5.0 s to 1.2 s; the transpose, read as PageRank's first call less
+  its second, about 0.42 s at one worker to 0.20 s at eight. Not measured on the
+  reference server.
 
 ## 0.22.0 — Mysid — 2026-09-21
 

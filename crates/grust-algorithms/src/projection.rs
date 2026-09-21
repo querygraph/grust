@@ -338,7 +338,18 @@ fn validate_edges(
             "weights must be finite and nonnegative".into()
         })
     };
-    let workers = crate::parallel::workers(context, edges.len());
+    // A budget that can pay for every edge is charged a chunk at a time. One
+    // that cannot takes the sequential pass, charged an edge at a time as the
+    // loop this replaced was, so it refuses at the same edge, with the same
+    // work counted and the same error first, at every width. Chunks charged in
+    // parallel would leave behind however many had got in first, and one
+    // charge for the whole pass would count nothing at all.
+    let fits = crate::parallel::work_fits(context, edges.len())?;
+    let workers = if fits {
+        crate::parallel::workers(context, edges.len())
+    } else {
+        None
+    };
     // The endpoint, weight and range checks are independent per edge, and the
     // largest ordinal is a maximum, so one pass answers all of them. Work is
     // charged once per edge, as the sequential loop charged it.
@@ -346,9 +357,14 @@ fn validate_edges(
                    slice: &[ProjectionEdge],
                    meter: &mut grust_procedures::WorkMeter|
      -> Result<usize> {
-        meter.charge(slice.len())?;
+        if fits {
+            meter.charge(slice.len())?;
+        }
         let mut largest = 0usize;
         for (offset, edge) in slice.iter().enumerate() {
+            if !fits {
+                context.charge_work(1)?;
+            }
             if edge.source >= nodes || edge.target >= nodes {
                 return Err(ProcedureError::InvalidArguments(
                     "edge endpoint outside node table".into(),

@@ -106,6 +106,23 @@ pub(crate) fn workers_above(
     }
 }
 
+/// Whether `units` more work fit the execution's budget, as it stands now.
+///
+/// A parallel pass whose budget runs out mid-way stops wherever its workers
+/// happened to be, so the error is the same at every width but the work counted
+/// before it is not. A pass that asks this first, and runs its sequential code
+/// when the answer is no, exhausts a budget at exactly the unit the sequential
+/// code exhausts it at, with the same count left behind. Exact for an execution
+/// that no other thread is charging meanwhile; an uncounted execution always fits.
+pub(crate) fn work_fits(context: &ExecutionContext, units: usize) -> Result<bool> {
+    Ok(match context.usage()?.counted_work() {
+        None => true,
+        Some(used) => used
+            .checked_add(units)
+            .is_some_and(|total| total <= context.limits().work_units),
+    })
+}
+
 /// Items per chunk for a pass that writes each item's own output slot.
 ///
 /// Sized from the worker count, so threads each get a few chunks and a skewed
@@ -156,7 +173,26 @@ pub(crate) fn for_each_chunk<T: Send>(
     output: &mut [T],
     body: impl Fn(usize, &mut [T], &mut grust_procedures::WorkMeter) -> crate::Result<()> + Send + Sync,
 ) -> crate::Result<()> {
-    let chunk = chunk_len(output.len(), workers);
+    for_each_chunk_sized(
+        context,
+        workers,
+        output,
+        chunk_len(output.len(), workers),
+        body,
+    )
+}
+
+/// As [`for_each_chunk`], for a caller whose chunk length is part of its layout
+/// rather than a scheduling choice — a row per worker, say.
+#[cfg(feature = "parallel")]
+pub(crate) fn for_each_chunk_sized<T: Send>(
+    context: &ExecutionContext,
+    workers: usize,
+    output: &mut [T],
+    chunk: usize,
+    body: impl Fn(usize, &mut [T], &mut grust_procedures::WorkMeter) -> crate::Result<()> + Send + Sync,
+) -> crate::Result<()> {
+    let chunk = chunk.max(1);
     if workers <= 1 {
         let mut meter = context.work_meter();
         for (index, slice) in output.chunks_mut(chunk).enumerate() {
@@ -183,8 +219,19 @@ pub(crate) fn for_each_chunk<T>(
     output: &mut [T],
     body: impl Fn(usize, &mut [T], &mut grust_procedures::WorkMeter) -> crate::Result<()>,
 ) -> crate::Result<()> {
+    for_each_chunk_sized(context, workers, output, chunk_len(output.len(), 1), body)
+}
+
+#[cfg(not(feature = "parallel"))]
+pub(crate) fn for_each_chunk_sized<T>(
+    context: &ExecutionContext,
+    workers: usize,
+    output: &mut [T],
+    chunk: usize,
+    body: impl Fn(usize, &mut [T], &mut grust_procedures::WorkMeter) -> crate::Result<()>,
+) -> crate::Result<()> {
     let _ = workers;
-    let chunk = chunk_len(output.len(), 1);
+    let chunk = chunk.max(1);
     let mut meter = context.work_meter();
     for (index, slice) in output.chunks_mut(chunk).enumerate() {
         body(index * chunk, slice, &mut meter)?;
@@ -379,6 +426,35 @@ pub(crate) fn map_ranges<T: Send>(
     }
     let _ = workers;
     ranges.iter().map(|range| task(range.clone())).collect()
+}
+
+/// Run `task(index, item)` on every item, consuming them, in parallel when
+/// `workers > 1`.
+///
+/// For a pass whose tasks each need several disjoint mutable slices that no one
+/// slice split can express — a column of a row-major table, say. The caller cuts
+/// the slices with `split_at_mut` or `chunks_mut` and hands each task its own,
+/// so the borrow checker, not a lock or an atomic, proves the writes disjoint.
+pub(crate) fn for_each_owned<T: Send>(
+    workers: usize,
+    items: Vec<T>,
+    task: impl Fn(usize, T) -> Result<()> + Sync + Send,
+) -> Result<()> {
+    #[cfg(feature = "parallel")]
+    if workers > 1 {
+        use rayon::prelude::*;
+        return inside(workers, || {
+            items
+                .into_par_iter()
+                .enumerate()
+                .try_for_each(|(index, item)| task(index, item))
+        });
+    }
+    let _ = workers;
+    items
+        .into_iter()
+        .enumerate()
+        .try_for_each(|(index, item)| task(index, item))
 }
 
 /// Run `task(block)` for `0..blocks` and hand each result to `merge` **in block
