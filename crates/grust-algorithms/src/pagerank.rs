@@ -297,8 +297,6 @@ fn pull(
     let scales = &scales.values;
     let totals = &totals.values;
     let mut next = Buffer::indexed(n, 0.0f64, context)?;
-    // GAP EXPERIMENT V2: per-source contribution, hoisted out of the arc loop.
-    let mut contribution = vec![0.0f64; if weighted { 0 } else { n }];
     let mut residual = f64::INFINITY;
     for iteration in 1..=options.max_iterations {
         // Dangling mass: scores of nodes with no outgoing arc.
@@ -328,19 +326,6 @@ fn pull(
         )?;
         let dangling = crate::parallel::reduce_in_order(&dangling, 0.0, |total, part| total + part);
         let base = (1.0 - options.damping) + options.damping * dangling;
-        assert!(options.personalization.is_none(), "V2T experiment is uniform-only");
-        let base_uniform = base * (1.0 / n as f64);
-        if !weighted {
-            for (node, value) in contribution.iter_mut().enumerate() {
-                let degree = offsets[node + 1] - offsets[node];
-                *value = if degree == 0 {
-                    0.0
-                } else {
-                    scores.values[node] / degree as f64
-                };
-            }
-        }
-        let contribution_now = &contribution;
         let scores_now = &scores.values;
         let nonfinite = std::sync::atomic::AtomicBool::new(false);
         crate::parallel::for_each_chunk(
@@ -369,12 +354,13 @@ fn pull(
                     } else {
                         for arc in arcs {
                             let source = reverse.targets.values[arc];
-                            sum += contribution_now[source];
+                            let out_degree = offsets[source + 1] - offsets[source];
+                            // A node with no outgoing arc contributes through
+                            // the dangling mass in `base`, never through an arc.
+                            sum += scores_now[source] / out_degree as f64;
                         }
                     }
-                    // GAP EXPERIMENT V2T: scalar teleport, no per-node array read.
-                    let _ = teleport;
-                    let updated = base_uniform + options.damping * sum;
+                    let updated = base * teleport[node] + options.damping * sum;
                     if !updated.is_finite() {
                         nonfinite.store(true, std::sync::atomic::Ordering::Relaxed);
                     }
