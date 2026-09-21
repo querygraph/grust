@@ -456,7 +456,7 @@ expand each into Tier-A detail when its turn comes.
 | 18 | `deltaStepping` | Meyer–Sanders | P7 | **`dijkstra`, exactly** | parallel; bucket width option `delta` |
 | 19 | `allPairsShortestPaths` | NK `distance/APSP` | — | per-source `dijkstra` | streamed; **never n×n**; charge per pair |
 | 20 | `randomWalk` | node2vec walks | P5 | transition frequencies vs exact probabilities, χ² bound | `walkLength`, `walksPerNode`, `returnFactor`, `inOutFactor` |
-| 21 | `k1Coloring` | greedy | P5 | no edge joins equal colours; colours ≤ Δ+1 | |
+| 21 | `k1Coloring` | greedy | P5 | no edge joins equal colours; colours ≤ Δ+1 | **done**: undirected only, self-loops ignored, seeded priority order |
 | 22 | `modularity`, `conductance` | NK `community/Modularity`, `Conductance` | P6 | hand-computed small cases | **the oracle for 1, 7, 8, 23, 24 — extract from group 1's test** |
 | 23 | `modularityOptimization` | GDS variant | 21, 22 | 22 | output as Louvain |
 | 24 | `sllpa` | Xie et al. | P5 | membership sanity | `communityIds: List<Utf8>` |
@@ -721,4 +721,4 @@ Update in the same commit as the work. `—` not started, `wip`, `done <commit>`
 | 6 Closeness/harmonic | done | 7 Leiden | done | 8 Label propagation | done |
 | 9 A\*/Bellman–Ford | done | 10 Eigenvector family | done except `articleRank` | 11 Bridges family | done |
 | 12 Spanning forest | done | 13 Max flow | done (`maxFlow`, `minCut`) | 14 FastRP | done |
-| 22 Modularity/conductance | done (0.22.0) | 15–21, 23–35 | — (see Tier B) | | |
+| 22 Modularity/conductance | done (0.22.0) | 21 k1Coloring | done (`k1_coloring.rs`) | 15–20, 23–35 | — (see Tier B) |

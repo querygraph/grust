@@ -6,6 +6,33 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ## Unreleased
 
+### Graph algorithms
+
+- Add **k1 colouring**: `k1_coloring` and
+  `grust.algorithms.k1Coloring({maxIterations, seed})`, yielding `nodeId`,
+  `color`, and the `colorCount`, `iterations` and `converged` scalars. Each pass
+  gives every uncoloured or conflicted node the smallest colour none of its
+  neighbours holds, reading the colours the previous pass left, and then queues
+  the lower-priority endpoint of every edge whose ends now agree. Priority is
+  row order, or one seeded shuffle of it from the counter-based generator, never
+  thread order; the result is a pure function of the projection and the seed.
+  Because the higher-priority endpoint of a conflict keeps its colour, a graph
+  of `n` nodes is conflict-free within `n` passes, and `iterations` and
+  `converged` report which of that and `maxIterations` ended the run — the
+  default of 10 passes can stop a large graph early, and it says so rather than
+  presenting a colouring with conflicts as final. A node's colour never exceeds
+  its number of distinct neighbours, so at most `Δ + 1` colours are used; the
+  chromatic number is not sought and no claim is made about how near it this
+  comes. **Undirected projections only** — a directed one is rejected rather
+  than silently symmetrized, as `kCore` rejects it. Self-loops are ignored, a
+  node not being its own neighbour here, and parallel edges impose the one
+  constraint their endpoints already impose. Weights are never read, though a
+  signed projection is still refused as every kernel but `bellmanFord` refuses
+  one. Sequential. The test checks the two properties — no edge joining equal
+  colours, and the `Δ + 1` bound against a maximum degree recomputed from the
+  edge list — on 3,000 random multigraphs, alongside a triangle, a path, a star,
+  `K4`, isolates, loops and the empty graph, each checkable by inspection.
+
 ## 0.22.0 — Mysid — 2026-09-21
 
 ### Graph algorithms

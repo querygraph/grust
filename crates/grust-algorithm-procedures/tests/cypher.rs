@@ -441,6 +441,32 @@ fn label_propagation_is_an_ordinary_procedure() {
 }
 
 #[test]
+fn k1_coloring_is_an_ordinary_procedure_needing_an_undirected_projection() {
+    let rows = run(
+        "CALL grust.algorithms.k1Coloring({orientation: 'undirected', maxIterations: 20, seed: 5}) YIELD nodeId, color, colorCount, iterations, converged RETURN nodeId, color, colorCount, converged",
+    );
+    // a-b and b-c (twice) form a path: the ends may share a colour, b may not,
+    // and the isolate takes the first colour.
+    let color = |row: usize| rows[row][1].clone();
+    assert_eq!(color(0), color(2));
+    assert_ne!(color(0), color(1));
+    assert_eq!(color(3), Value::Int(0));
+    assert!(rows.iter().all(|row| row[2] == Value::Int(2)));
+    assert!(rows.iter().all(|row| row[3] == Value::Bool(true)));
+    // The default projection is directed, which this kernel refuses.
+    assert!(
+        run_read_query_with_registry(
+            &graph(),
+            "default",
+            "CALL grust.algorithms.k1Coloring() YIELD color RETURN color",
+            &CypherParameters::new(),
+            &registry(),
+        )
+        .is_err()
+    );
+}
+
+#[test]
 fn node_similarity_returns_pair_rows_through_ordinary_cypher() {
     // Undirected a-b-c: a and c share their only neighbour, b.
     let pairs = vec![

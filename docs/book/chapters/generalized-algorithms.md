@@ -104,6 +104,7 @@ kernels as direct Rust and have typed Arrow result adapters.
 | `louvain` | Modularity communities, named by their smallest member |
 | `leiden` | As Louvain, with every community guaranteed connected |
 | `labelPropagation` | Communities by weighted majority, on a reproducible schedule |
+| `k1Coloring` | A colour per node so that no edge joins two of the same, greedily |
 | `modularity` | Modularity and conductance of a partition the caller supplies |
 | `kCore` | Core number per node and the graph's degeneracy |
 | `triangleCount` | Triangles per node on the simple graph, and the total |
