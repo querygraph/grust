@@ -59,6 +59,7 @@ struct Config {
     hub_degree: usize,
     dimension: usize,
     weights: Weights,
+    twins: usize,
     seed: u64,
     workers: usize,
     samples: usize,
@@ -75,6 +76,7 @@ impl Default for Config {
             hub_degree: 8_000,
             dimension: 256,
             weights: Weights::Mixed,
+            twins: 0,
             seed: 7,
             workers: 0,
             samples: 512,
@@ -87,37 +89,54 @@ impl Default for Config {
 /// Build the projection the whole run uses.
 fn build(config: &Config) -> Result<GraphProjection, Box<dyn std::error::Error>> {
     let mut rng = Rng(config.seed);
-    let mut pairs: Vec<(usize, usize)> = Vec::new();
+    // Per node first, so twins can be made by copying a neighbourhood.
+    let mut targets: Vec<Vec<usize>> = Vec::with_capacity(config.nodes);
+    let mut weights: Vec<Vec<f64>> = Vec::with_capacity(config.nodes);
     for node in 0..config.nodes {
         let out = if node < config.hubs {
             config.hub_degree.min(config.nodes)
         } else {
             config.degree
         };
-        for _ in 0..out {
-            pairs.push((node, rng.below(config.nodes)));
+        targets.push((0..out).map(|_| rng.below(config.nodes)).collect());
+        weights.push(
+            (0..out)
+                .map(|_| match config.weights {
+                    Weights::Uniform => 1.0,
+                    _ => 10f64.powf(rng.unit() * 6.0 - 3.0),
+                })
+                .collect(),
+        );
+    }
+    // Twins: pairs of rows whose neighbourhoods agree except in one arc, so
+    // their embeddings sit a hair apart and their nearest-neighbour lists have
+    // almost no headroom. Without these the ranking test can only report that
+    // well-separated lists stayed put.
+    for pair in 0..config.twins {
+        let (a, b) = (config.hubs + 2 * pair, config.hubs + 2 * pair + 1);
+        if b >= config.nodes {
+            break;
+        }
+        targets[b] = targets[a].clone();
+        weights[b] = weights[a].clone();
+        if let Some(last) = targets[b].last_mut() {
+            *last = rng.below(config.nodes);
         }
     }
-    // Weights are drawn per arc and, for `descending`, sorted inside each
-    // node's own range, which is the order the kernel will sum them in.
-    let mut weights: Vec<f64> = match config.weights {
-        Weights::Uniform => vec![1.0; pairs.len()],
-        _ => (0..pairs.len())
-            .map(|_| 10f64.powf(rng.unit() * 6.0 - 3.0))
-            .collect(),
-    };
     if config.weights == Weights::Descending {
-        let mut start = 0usize;
-        while start < pairs.len() {
-            let source = pairs[start].0;
-            let mut end = start;
-            while end < pairs.len() && pairs[end].0 == source {
-                end += 1;
-            }
-            weights[start..end].sort_by(|a, b| b.partial_cmp(a).unwrap());
-            start = end;
+        // Largest first inside each node's own arc range, which is the order
+        // the kernel sums them in and the adversarial one for a running total.
+        for row in weights.iter_mut() {
+            row.sort_by(|a, b| b.partial_cmp(a).unwrap());
         }
     }
+    let mut pairs: Vec<(usize, usize)> = Vec::new();
+    for (node, row) in targets.iter().enumerate() {
+        for &target in row {
+            pairs.push((node, target));
+        }
+    }
+    let weights: Vec<f64> = weights.into_iter().flatten().collect();
     let context = ExecutionContext::new(ExecutionLimits {
         memory_bytes: 48 << 30,
         work_units: usize::MAX,
@@ -185,8 +204,10 @@ fn cosine(a: &[f32], b: &[f32]) -> f64 {
     dot / (na.sqrt() * nb.sqrt())
 }
 
-/// The `k` rows most similar to `row` by cosine, best first.
-fn neighbours(values: &[f32], d: usize, n: usize, row: usize, k: usize) -> Vec<usize> {
+/// The `k + 1` rows most similar to `row` by cosine, best first, with their
+/// scores. The extra row is the first one outside the list, which is what the
+/// boundary gap is measured against.
+fn neighbours(values: &[f32], d: usize, n: usize, row: usize, k: usize) -> Vec<(usize, f64)> {
     let mine = &values[row * d..(row + 1) * d];
     let mut scored: Vec<(f64, usize)> = (0..n)
         .filter(|&other| other != row)
@@ -194,8 +215,11 @@ fn neighbours(values: &[f32], d: usize, n: usize, row: usize, k: usize) -> Vec<u
         .collect();
     // Ties break on the row number, so a tie cannot masquerade as a reorder.
     scored.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap().then(a.1.cmp(&b.1)));
-    scored.truncate(k);
-    scored.into_iter().map(|(_, other)| other).collect()
+    scored.truncate(k + 1);
+    scored
+        .into_iter()
+        .map(|(score, other)| (other, score))
+        .collect()
 }
 
 struct Diff {
@@ -253,11 +277,12 @@ fn accuracy(config: &Config) -> Result<(), Box<dyn std::error::Error>> {
     let double = fast_rp_with(&graph, options(config), Accumulator::Double)?;
     let exact = fast_rp_with(&graph, options(config), Accumulator::Compensated)?;
     println!(
-        "== {} | nodes {n} arcs {} dim {d} hubs {}x{} weights {}",
+        "== {} | nodes {n} arcs {} dim {d} hubs {}x{} twins {} weights {}",
         config.label,
         graph.edge_count(),
         config.hubs,
         config.hub_degree,
+        config.twins,
         match config.weights {
             Weights::Uniform => "uniform",
             Weights::Mixed => "mixed",
@@ -289,10 +314,15 @@ fn accuracy(config: &Config) -> Result<(), Box<dyn std::error::Error>> {
     }
 
     // The ranking test. A sample of rows, their k nearest by cosine under each
-    // accumulator, compared as ordered lists and as sets.
+    // accumulator, compared as ordered lists and as sets. The hub rows are put
+    // in the sample by hand: they sum the most terms, so a uniform sample of
+    // twenty thousand rows would almost never contain one.
     let mut rng = Rng(config.seed ^ 0xABCD);
-    let sample: Vec<usize> = (0..config.samples.min(n)).map(|_| rng.below(n)).collect();
-    let lists = |values: &[f32]| -> Vec<Vec<usize>> {
+    let mut sample: Vec<usize> = (0..(config.hubs + 2 * config.twins).min(n)).collect();
+    while sample.len() < config.samples.min(n) {
+        sample.push(rng.below(n));
+    }
+    let lists = |values: &[f32]| -> Vec<Vec<(usize, f64)>> {
         sample
             .par_iter()
             .map(|&row| neighbours(values, d, n, row, config.k))
@@ -310,6 +340,10 @@ fn accuracy(config: &Config) -> Result<(), Box<dyn std::error::Error>> {
         let mut set_changed = 0usize;
         let mut order_changed = 0usize;
         for (x, y) in left.iter().zip(right.iter()) {
+            let rows = |list: &Vec<(usize, f64)>| -> Vec<usize> {
+                list.iter().take(config.k).map(|&(row, _)| row).collect()
+            };
+            let (x, y) = (rows(x), rows(y));
             if x.first() != y.first() {
                 top1 += 1;
             }
@@ -333,6 +367,33 @@ fn accuracy(config: &Config) -> Result<(), Box<dyn std::error::Error>> {
             sample.len()
         );
     }
+
+    // How much headroom the ranking has: the cosine gap a perturbation would
+    // have to exceed to reorder a list. Measured on the compensated reference,
+    // so it describes the graph rather than either accumulator. Compare it
+    // against the `1-cos` figures above: a gap far larger than the
+    // perturbation is why nothing reordered, and saying so is the difference
+    // between a measured negative and an unexamined one.
+    let mut first_gap: Vec<f64> = Vec::new();
+    let mut edge_gap: Vec<f64> = Vec::new();
+    for list in &c {
+        if list.len() > 1 {
+            first_gap.push(list[0].1 - list[1].1);
+        }
+        if list.len() > config.k {
+            edge_gap.push(list[config.k - 1].1 - list[config.k].1);
+        }
+    }
+    let smallest = |v: &[f64]| v.iter().copied().fold(f64::INFINITY, f64::min);
+    println!(
+        "gaps (exact)  rank1-rank2 min {:.3e} med {:.3e} | rank{}-rank{} min {:.3e} med {:.3e}",
+        smallest(&first_gap),
+        median(&mut first_gap.clone()),
+        config.k,
+        config.k + 1,
+        smallest(&edge_gap),
+        median(&mut edge_gap.clone())
+    );
     println!();
     Ok(())
 }
@@ -425,6 +486,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "--hubs" => config.hubs = value()?.parse()?,
             "--hub-degree" => config.hub_degree = value()?.parse()?,
             "--dimension" => config.dimension = value()?.parse()?,
+            "--twins" => config.twins = value()?.parse()?,
             "--seed" => config.seed = value()?.parse()?,
             "--workers" => config.workers = value()?.parse()?,
             "--samples" => config.samples = value()?.parse()?,
