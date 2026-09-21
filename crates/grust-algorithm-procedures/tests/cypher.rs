@@ -192,6 +192,76 @@ fn catalog_expansion_uses_the_same_registration_and_execution_contracts() {
 }
 
 #[test]
+fn the_longest_path_reports_a_cycle_as_an_answer_rather_than_an_error() {
+    // b and c point at each other, so no path is longest: the call succeeds and
+    // says so, with the witness readable from `cycleIndex` in arc order.
+    assert_eq!(
+        run(
+            "CALL grust.algorithms.longestPath({weightProperty: 'cost'}) YIELD nodeId, distance, hops, cycleIndex, cyclic RETURN nodeId, distance, hops, cycleIndex, cyclic"
+        ),
+        vec![
+            vec![
+                Value::String("a".into()),
+                Value::Null,
+                Value::Int(-1),
+                Value::Int(-1),
+                Value::Bool(true)
+            ],
+            vec![
+                Value::String("b".into()),
+                Value::Null,
+                Value::Int(-1),
+                Value::Int(0),
+                Value::Bool(true)
+            ],
+            vec![
+                Value::String("c".into()),
+                Value::Null,
+                Value::Int(-1),
+                Value::Int(1),
+                Value::Bool(true)
+            ],
+            vec![
+                Value::String("isolate".into()),
+                Value::Null,
+                Value::Int(-1),
+                Value::Int(-1),
+                Value::Bool(true)
+            ],
+        ]
+    );
+
+    // The same call on the same graph without the back edge: a plain answer,
+    // the heaviest path ending at each node, in the same columns.
+    let acyclic = Graph::new(
+        ["a", "b", "c"]
+            .map(|id| Node::new("N", id, Props::new()))
+            .into(),
+        vec![
+            Edge::new("R", "a", "b", [("cost".into(), Value::Float(2.0))]),
+            Edge::new("R", "b", "c", [("cost".into(), Value::Float(0.5))]),
+        ],
+    );
+    let rows = run_read_query_with_registry(
+        &acyclic,
+        "default",
+        "CALL grust.algorithms.longestPath({weightProperty: 'cost'}) YIELD distance, hops, cyclic RETURN distance, hops, cyclic",
+        &CypherParameters::new(),
+        &registry(),
+    )
+    .unwrap()
+    .rows;
+    assert_eq!(
+        rows,
+        vec![
+            vec![Value::Float(0.0), Value::Int(0), Value::Bool(false)],
+            vec![Value::Float(2.0), Value::Int(1), Value::Bool(false)],
+            vec![Value::Float(2.5), Value::Int(2), Value::Bool(false)],
+        ]
+    );
+}
+
+#[test]
 fn projection_inspection_and_csr_estimates_disclose_their_scope() {
     let word = size_of::<usize>() as i64;
     assert_eq!(

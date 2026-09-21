@@ -1,9 +1,10 @@
 # Graph analytics catalog — the road from twelve kernels to Neo4j's "65+"
 
 Status: **Tier A is complete and released in 0.22.0 "Mysid"**, together with
-every prerequisite P1–P7. The registry holds 33 kernels, against 10 in Tadpole;
+every prerequisite P1–P7. The registry holds 34 kernels, against 10 in Tadpole;
 `articleRank` is the one Tier-A entry still outstanding and is targeted at
-0.23.0. Tier B is not started. The sections below are the plan as written, kept
+0.23.0. Tier B has begun: group 22 shipped in 0.22.0 and group 27
+(`longestPath`) is merged. The sections below are the plan as written, kept
 as the record of what was decided before the work rather than rewritten after
 it; the [progress ledger](#progress-ledger) is the current state.
 
@@ -524,7 +525,7 @@ Required tests for every kernel, by name:
 | M3 | groups 7, 10, 11, 12 | |
 | M4 | P4; groups 9, 13, 14 | **Done. Tier A complete**, released in 0.22.0 "Mysid" — `articleRank` alone outstanding. |
 | M5 | P6 | **Done.** Node properties were reviewed and approved before any Tier-B kernel, then built. |
-| M6 | groups 22, 17, 19, 21, 27, 30 (no randomness, no P7) | **22 done in 0.22.0**, which also gives groups 1, 7, 8, 23 and 24 their oracle. 17, 19, 21, 27, 30 remain. |
+| M6 | groups 22, 17, 19, 21, 27, 30 (no randomness, no P7) | **22 done in 0.22.0**, which also gives groups 1, 7, 8, 23 and 24 their oracle. **27 done**; 17, 19, 21, 30 remain. |
 | M7 | groups 20, 15, 16, 18, 23, 24, 29, 33 | |
 | M8 | groups 25, 26, 28, 31, 32, 34 | |
 | M9 | group 35 | decide, do not assume |
@@ -721,4 +722,5 @@ Update in the same commit as the work. `—` not started, `wip`, `done <commit>`
 | 6 Closeness/harmonic | done | 7 Leiden | done | 8 Label propagation | done |
 | 9 A\*/Bellman–Ford | done | 10 Eigenvector family | done except `articleRank` | 11 Bridges family | done |
 | 12 Spanning forest | done | 13 Max flow | done (`maxFlow`, `minCut`) | 14 FastRP | done |
-| 22 Modularity/conductance | done (0.22.0) | 15–21, 23–35 | — (see Tier B) | | |
+| 22 Modularity/conductance | done (0.22.0) | 27 Longest path | done (`longestPath`) | | |
+| 15–21, 23–26, 28–35 | — (see Tier B) | | | | |

@@ -182,6 +182,23 @@ fn catalog() -> Vec<Spec> {
         },
     ));
     specs.push(Spec::new(
+        "longestPath",
+        None,
+        vec![
+            field("nodeId", ValueType::String),
+            nullable("distance", ValueType::Number),
+            field("hops", ValueType::Integer),
+            field("cycleIndex", ValueType::Integer),
+            field("cyclic", ValueType::Boolean),
+        ],
+        vec![],
+        |graph, _| {
+            Ok(AlgorithmOutput::Table(
+                algorithms::longest_path(graph)?.into_table()?,
+            ))
+        },
+    ));
+    specs.push(Spec::new(
         "kCore",
         None,
         vec![

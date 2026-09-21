@@ -6,6 +6,30 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ## Unreleased
 
+### Graph algorithms
+
+- Add **longest path in a DAG**: `longest_path` and
+  `grust.algorithms.longestPath`, the heaviest directed path ending at each
+  node, by dynamic programming over a topological order. The empty path counts,
+  so every node scores at least zero and a node no arc enters scores exactly
+  zero; weights come from the projection, and without them every arc weighs one,
+  which makes the distance the hop count. Parallel arcs compete like any others
+  and the heaviest wins. Columns are `nodeId`, `distance`, `hops`, `cycleIndex`
+  and the `cyclic` scalar.
+  A **cycle is a result, not an error**, as for `topologicalSort` and
+  `bellmanFord`: with a cycle no path is longest, so distances and hops are
+  withheld as null and the cycle itself is returned as a witness whose arcs a
+  caller can check, ordered by `cycleIndex` and repeating no node. An undirected
+  projection turns each edge into two arcs, so it is almost always answered with
+  a two-arc cycle; a self-loop is a cycle of one. The kernel refuses a signed
+  projection like every kernel but `bellmanFord`, although its recurrence would
+  survive negative weights — the refusal is the catalog's rule, stated in the
+  kernel's documentation rather than implied. Sequential, deterministic,
+  `O(n + m)`, every arc scan charged. Tested against exhaustive enumeration of
+  every path on 9,000 small graphs, against the same recurrence recomputed over
+  an independent Kahn order on larger layered DAGs, and on hand-computed cases
+  where a greedy extension of the best node so far gives the wrong answer.
+
 ## 0.22.0 — Mysid — 2026-09-21
 
 ### Graph algorithms
