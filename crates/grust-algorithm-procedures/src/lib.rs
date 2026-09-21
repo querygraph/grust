@@ -308,7 +308,7 @@ fn catalog() -> Vec<Spec> {
                 field("nodeIds", ValueType::Strings),
                 field("costs", ValueType::Numbers),
                 field("edgeOrdinals", ValueType::Integers),
-                field("index", ValueType::Integer),
+                field("pathIndex", ValueType::Integer),
             ],
             options::yens_fields(),
             |graph, args| {

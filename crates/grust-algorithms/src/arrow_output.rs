@@ -124,7 +124,7 @@ impl ShortestPaths {
 }
 impl KShortestPaths {
     /// As [`ShortestPaths::into_arrow_results`], with the path's rank in a
-    /// trailing `index` column. A result with no paths still emits one empty
+    /// trailing `pathIndex` column. A result with no paths still emits one empty
     /// batch, so a consumer reading the schema off the first batch has one.
     pub fn into_arrow_results(self) -> ArrowResultCursor {
         let graph = self.projection().clone();
@@ -460,7 +460,7 @@ fn empty_path_batch(graph: &GraphProjection) -> Result<ArrowResultBatch> {
             ("nodeIds", Arc::new(nodes.finish())),
             ("costs", Arc::new(costs.finish())),
             ("edgeOrdinals", Arc::new(edges.finish())),
-            ("index", Arc::new(ranks.finish())),
+            ("pathIndex", Arc::new(ranks.finish())),
         ],
         reservation,
     )
@@ -536,7 +536,7 @@ fn path_batch(
     if let Some(rank) = rank {
         let mut ranks = UInt64Builder::with_capacity(1);
         ranks.append_value(rank);
-        columns.push(("index", Arc::new(ranks.finish())));
+        columns.push(("pathIndex", Arc::new(ranks.finish())));
     }
     finish(columns, reservation)
 }

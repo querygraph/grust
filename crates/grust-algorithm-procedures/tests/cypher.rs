@@ -898,9 +898,9 @@ fn yens_ranks_its_paths_and_stops_when_there_are_no_more() {
     // the tie-break compares node rows, and b comes before c at the second
     // node. A shorter path is not preferred; a smaller sequence is.
     //
-    // `index` is a reserved word in this dialect, so it is yielded as a quoted
-    // identifier. The column keeps that name because it is the name GDS uses
-    // and the one a caller porting a query will look for.
+    // The rank column is `pathIndex`, not `index`: `index` is a reserved word
+    // in this dialect, so the plain spelling every caller reaches for first
+    // would be a syntax error.
     let graph = Graph::new(
         ["a", "b", "c", "d"]
             .map(|id| Node::new("N", id, Props::new()))
@@ -923,7 +923,7 @@ fn yens_ranks_its_paths_and_stops_when_there_are_no_more() {
         )
     };
     let rows = run_on(
-        "CALL grust.algorithms.yens('a', 'd', {weightProperty: 'cost', k: 5}) YIELD `index` AS rank, sourceNodeId, targetNodeId, totalCost, nodeIds RETURN rank, sourceNodeId, targetNodeId, totalCost, nodeIds",
+        "CALL grust.algorithms.yens('a', 'd', {weightProperty: 'cost', k: 5}) YIELD pathIndex, sourceNodeId, targetNodeId, totalCost, nodeIds RETURN pathIndex, sourceNodeId, targetNodeId, totalCost, nodeIds",
     )
     .unwrap()
     .rows;
@@ -955,7 +955,7 @@ fn yens_ranks_its_paths_and_stops_when_there_are_no_more() {
     );
     // `k` defaults to one path.
     let one = run_on(
-        "CALL grust.algorithms.yens('a', 'd', {weightProperty: 'cost'}) YIELD `index` AS rank, costs, edgeOrdinals RETURN rank, costs, edgeOrdinals",
+        "CALL grust.algorithms.yens('a', 'd', {weightProperty: 'cost'}) YIELD pathIndex, costs, edgeOrdinals RETURN pathIndex, costs, edgeOrdinals",
     )
     .unwrap()
     .rows;
@@ -969,14 +969,14 @@ fn yens_ranks_its_paths_and_stops_when_there_are_no_more() {
     );
     // Nothing reaches a from d: no rows, and that is an answer, not an error.
     assert!(
-        run_on("CALL grust.algorithms.yens('d', 'a') YIELD `index` AS rank RETURN rank")
+        run_on("CALL grust.algorithms.yens('d', 'a') YIELD pathIndex RETURN pathIndex")
             .unwrap()
             .rows
             .is_empty()
     );
     // Asking for no paths is refused rather than answered with nothing.
     let refused =
-        run_on("CALL grust.algorithms.yens('a', 'd', {k: 0}) YIELD `index` AS rank RETURN rank")
+        run_on("CALL grust.algorithms.yens('a', 'd', {k: 0}) YIELD pathIndex RETURN pathIndex")
             .unwrap_err()
             .to_string();
     assert!(

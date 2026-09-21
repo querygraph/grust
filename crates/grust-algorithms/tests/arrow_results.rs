@@ -165,14 +165,14 @@ fn arrow_ranked_paths_carry_their_rank_and_keep_a_schema_when_empty() {
             "nodeIds",
             "costs",
             "edgeOrdinals",
-            "index"
+            "pathIndex"
         ]
     );
     assert_eq!(batch.num_rows(), 1);
     assert!(only.reserved_bytes() >= batch.get_array_memory_size());
     assert_eq!(
         batch
-            .column_by_name("index")
+            .column_by_name("pathIndex")
             .unwrap()
             .as_any()
             .downcast_ref::<UInt64Array>()

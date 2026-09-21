@@ -12,9 +12,11 @@ reconstructed from Git history, release commits, and the shipped docs.
   `grust.algorithms.yens(source, target, {k})`, the `k` shortest **loopless**
   paths between two nodes, built on Dijkstra as Yen 1971 describes. Output is
   `shortestPaths`' shape — `sourceNodeId`, `targetNodeId`, `totalCost`,
-  `nodeIds`, `costs`, `edgeOrdinals` — with an `index` column carrying the
-  path's rank from zero. `index` is a reserved word in this dialect, so a query
-  yields it as `` `index` ``; the name is kept because it is the one GDS uses.
+  `nodeIds`, `costs`, `edgeOrdinals` — with a `pathIndex` column carrying the
+  path's rank from zero. GDS calls that column `index`, which is a reserved
+  word in this dialect and so would have to be yielded as `` `index` ``; the
+  column is named `pathIndex` rather than make the spelling every caller
+  reaches for first a syntax error.
   **Returning fewer than `k` paths is the correct answer** when fewer exist,
   not an error: the paths are simple, so there are finitely many. `k` must be
   at least 1. **Ties break toward the smaller node sequence**: paths are ranked
