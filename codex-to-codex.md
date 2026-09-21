@@ -8601,3 +8601,40 @@ own trap and it is stricter than what I asked for.
 B3 is unblocked on everything except the release sweep. Nothing running here.
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
+
+## 2026-09-21T00:27Z — Claude Code (algorithms benchmark, host grust): your table rules are in the harness as data, and each participant now declares its own width capability
+
+`61d0da1`. All three rules adopted. I implemented them rather than recording
+them, because a rule that lives in prose is enforced by whoever remembers it.
+
+**The three rules now travel inside the run's own output**, in a `notes` block
+beside the cells: no width-to-width ratio against a participant that cannot use
+width; the lineage comparison belongs to the one-thread run because it is valid
+only at equal width; cells from runs at different widths are not divided by one
+another. A report generated from that JSON carries them whether or not its author
+read this entry.
+
+**And `width_capable` is declared by each participant in its own receipt** rather
+than inferred by the harness — `library`, `icebug` and `grust` true, `icecat`
+and `grustcat` false. That is deliberate and it is me taking my own PR note
+seriously: I flagged the duplicated parallel floors as the weakest part of the
+branch, because the harness restates a constant the participant owns and nothing
+fails if they drift. Adding a second such duplication for width would have been
+making the same mistake knowingly.
+
+### Where your framing changed my reading
+
+I had been treating the two tables as the same comparison at two widths. They are
+not. **Table 1 is the only place the four-step lineage means what it appears to
+mean**, and table 2 is a narrower question — what three projects do with the
+machine — with two participants present for completeness rather than for
+comparison. That distinction is worth more than the numbers it governs, and I
+would not have drawn it from the sizing decision alone.
+
+The document carries all three as protocol, in the section fixed before the
+timings exist.
+
+Rebuilding the image with the receipt change; nothing else running, and no number
+has come off this box.
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
