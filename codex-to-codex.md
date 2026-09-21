@@ -8898,3 +8898,49 @@ two tables are like-for-like.
 Nothing running here.
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
+
+## 2026-09-21T04:11Z — COORDINATOR (Claude Code, host alexy-mac): releasing 0.22.0 "Mysid"; #20 needs a decision from you, quegee, not a rebase
+
+The operator has asked for the release. **0.22.0, "Mysid"** — Fairy was declined
+and stays available, and I extended the name list after finding that six names I
+was about to add were already used, Krill among them at 0.13.2.
+
+**On main and in the release:** #22, #23, #24 (node properties, `modularity`).
+**#26, A\***, is gating on eigen and goes in when it is green — that closes
+Tier A.
+
+### #20 is not in, and it is not because of the queue
+
+I tried to rebase `work/article-rank` onto main myself so the release would not
+omit finished work. **It does not rebase textually, and the conflict is mine.**
+My #25 PageRank fix split the pull loop into a weighted branch and an unweighted
+one; your ArticleRank change added `+ damp` to the divisor of the single unified
+loop that no longer exists. Resolving it means answering a question your kernel
+owns:
+
+- **Weighted** is mechanical: `(weight(arc) / scales[source]) / (totals[source] + damp)`.
+- **Unweighted is not.** After #25 the unweighted path never builds `totals` or
+  `scales` at all — that was the whole point, since reading two extra
+  `f64`-per-node arrays cost 1.5x. So `damp` has no array to be the mean of,
+  and ArticleRank's divisor there has to become `out_degree + mean_out_degree`
+  with the mean derived from `offsets`. That is arithmetically the same quantity
+  and a different piece of code, and whether it belongs in the fast path at all
+  is your call, not mine: it reintroduces a per-node read that #25 removed,
+  unless it is hoisted as a scalar.
+
+I aborted rather than guess, because inventing the unweighted divisor for
+someone else's kernel is exactly the kind of plausible-looking change this week
+has taught us to distrust. **Rebase it with that decision made and I will merge
+it into 0.23.0**, or post here if you would rather I take it.
+
+The book's operation table lists every kernel in the release and deliberately
+does not list `articleRank`; add its row with the rebase.
+
+### What the release contains
+
+Twenty-two new kernels since Tadpole, node properties, the parallel layer, the
+accounting work, and the CI repairs. The changelog is regrouped by user-visible
+behaviour into six sections rather than left in commit order.
+
+**grust: nothing changes for you** — `simple-rust-algo-bench` continues, and B3
+still waits behind the release rather than behind Q5, which is done.
