@@ -8672,3 +8672,69 @@ construction.
 Nothing running. Board quiet, B3 still quegee's and still behind the sweep.
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
+
+## 2026-09-21T00:40Z — COORDINATOR (Claude Code, host alexy-mac): the library computes PageRank in `f32`, and that is a boundary, not a detail
+
+The operator asked me what the parity result means and whether the comparison is
+meaningful. Checking before answering turned up something that changes a column.
+
+`~/.cargo/registry/src/*/graph-0.3.2/src/page_rank.rs`:
+
+```rust
+pub fn page_rank<NI, G>(graph: &G, config: PageRankConfig) -> (Vec<f32>, usize, f64)
+    let init_score = 1_f32 / node_count as f32;
+    let base_score = (1.0_f32 - damping_factor) / node_count as f32;
+    pub damping_factor: f32,
+    pub const DEFAULT_TOLERANCE: f64 = 1E-4;
+```
+
+**The library accumulates and returns `f32`. Every other participant is `f64`.**
+That explains the "agrees to every digit an `f32` carries" you observed: it is not
+a near-miss, it is the whole precision of its result.
+
+### Why this is not a small thing
+
+**It is a different amount of work.** The score array is half the bytes, so half
+the memory traffic on the one array PageRank touches randomly per arc — the exact
+resource your own 45% investigation showed this kernel is bound by, on a box whose
+L3 is 24.8 MB. A per-iteration comparison between an `f32` kernel and four `f64`
+kernels is not a like-for-like measurement, and at large node counts it will
+favour the `f32` column for a reason that has nothing to do with the code.
+
+**And the 41 iterations may not mean what the table implies.** Its default
+tolerance is `1E-4`; we are running it at `1e-8` because that is the only value
+`grustcat` can express. At 1,024 nodes with scores near 1e-3, an `f32` ULP is
+about 6e-11, so an L1 delta of 1e-8 across 1,024 nodes sits within about two
+orders of magnitude of that participant's arithmetic noise floor. It reached the
+tolerance, so I am not claiming it failed — but "41 iterations" may be describing
+where `f32` rounding settles rather than where the computation converges, and at
+larger sizes that margin shrinks.
+
+### What I want done about it, and it is small
+
+1. **Disclose it as its own boundary**, beside the accountability difference the
+   design already carries: *this participant computes in single precision; the
+   others in double*. One line under every PageRank table.
+2. **Report its residual at the last iteration**, not just the count. If the
+   residual is at its arithmetic floor rather than below the tolerance, the table
+   should say so, and that is a property worth knowing about any `f32` PageRank.
+3. **Consider a second PageRank row at the library's own `1E-4`**, clearly
+   labelled, so it appears once at the protocol tolerance and once where its
+   author put the default. That is more informative than either alone and it
+   costs one more sample.
+4. **Check WCC and triangles for the same thing** before those tables are built.
+   Component labels are integers, so WCC is probably clean; I have not read
+   `triangle_count.rs` and neither of us should assume.
+
+**I am not proposing to exclude the column.** `f32` is a legitimate engineering
+choice for PageRank and arguably the right one for ranking, where the order
+matters and the eighth digit does not. What is not legitimate is putting it in a
+cell next to `f64` columns without saying so, which is the same rule as the
+budget difference: a design difference is reported, never absorbed.
+
+**On the parity result itself, which stands.** Four `f64` implementations
+agreeing bit for bit after 16 iterations — three Rust participants and an
+independent Python reference — is exactly as strong as I said, and it is now
+clearer what it is strong *about*: those four compute one function. The library
+computes the same function in a different precision, and that belongs in the
+report as a stated difference rather than as a rounding footnote.
