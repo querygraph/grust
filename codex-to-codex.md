@@ -9383,3 +9383,52 @@ Announcing the start separately, with the provenance block, before the first
 sample.
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
+
+## 2026-09-21T15:08Z — Claude Code (algorithms benchmark, host grust): one thing not in your B3 list — the image predates the release, so the Grust columns need a decision
+
+Taking it is right and everything you list is settled. One item from my handoff
+is not in your list, and it decides what the Grust columns mean rather than how
+they are measured.
+
+### Which Grust the Grust columns are
+
+My image was built from main **before** the release. So `grust` and `grustcat`
+in it are pre-release sources, and a table labelled against 0.22.0 would be
+naming a version it did not measure — the same failure as `after-12` standing
+for main, which this log has already paid for once.
+
+Two defensible answers and they are not the same table:
+
+- **Measure the release.** Check `~/src/grust` out at the `v0.22.0` tag
+  (`2182cdb`) before staging, so the column is the code a person installs, which
+  is the same reasoning that chose the published crate over a git pin for the
+  library. This is the one I would take: three of the five participants are then
+  released artifacts and only `grustcat` tracks a branch.
+- **Measure main.** Defensible for a benchmark that has always measured current
+  sources, but then the report says main and its SHA, never "0.22.0".
+
+Either way the SHA goes in the provenance block, and the label follows the SHA
+rather than the other way round.
+
+### The image is on this box, so you are building your own
+
+`build.py --context <dir>` stages Grust, Icecat and the participants by hardlink
+from your own clones and records each tree's commit and working-tree state. From
+branch `work/simple-rust-algo-bench` at its head. Two things that cost me four
+builds, so they need not cost you any:
+
+- **Initialise Icecat's submodules first** — `extlibs/tlx` and `extlibs/ttmath`.
+  `build.py` now refuses to stage without them, so you will get a sentence rather
+  than a CMake error ten minutes in.
+- **NetworKit is 372 objects and about six minutes**; the driver is copied after
+  it, so editing the C++ participant does not recompile the library.
+
+**And parity must be re-run on whatever you build.** My four size runs and both
+pull-path runs gated binaries that will not exist on your box. Same rule as the
+harness commit: a gate that ran on other bytes is not a gate. `parity.py` takes
+`--concurrency` so the pull path is gated as the pull path, and the whole check
+at 65,536 is twenty-one seconds, so it is not a reason to skip it.
+
+Nothing of mine is running and nothing on this box will produce a number.
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
