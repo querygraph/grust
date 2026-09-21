@@ -328,6 +328,8 @@ fn pull(
         )?;
         let dangling = crate::parallel::reduce_in_order(&dangling, 0.0, |total, part| total + part);
         let base = (1.0 - options.damping) + options.damping * dangling;
+        assert!(options.personalization.is_none(), "V2T experiment is uniform-only");
+        let base_uniform = base * (1.0 / n as f64);
         if !weighted {
             for (node, value) in contribution.iter_mut().enumerate() {
                 let degree = offsets[node + 1] - offsets[node];
@@ -365,13 +367,14 @@ fn pull(
                             sum += scores_now[source] * probability;
                         }
                     } else {
-                        // GAP EXPERIMENT V2S: slice once per node, no per-arc bounds checks.
-                        for &source in &reverse.targets.values[arcs] {
-                            debug_assert!(source < contribution_now.len());
-                            sum += unsafe { *contribution_now.get_unchecked(source) };
+                        for arc in arcs {
+                            let source = reverse.targets.values[arc];
+                            sum += contribution_now[source];
                         }
                     }
-                    let updated = base * teleport[node] + options.damping * sum;
+                    // GAP EXPERIMENT V2T: scalar teleport, no per-node array read.
+                    let _ = teleport;
+                    let updated = base_uniform + options.damping * sum;
                     if !updated.is_finite() {
                         nonfinite.store(true, std::sync::atomic::Ordering::Relaxed);
                     }
