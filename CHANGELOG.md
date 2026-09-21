@@ -20,6 +20,19 @@ reconstructed from Git history, release commits, and the shipped docs.
   scalar so the parallel path keeps the two arrays it was reduced to in 0.22.0
   and pays one addition per arc: measured 1.2-1.5% over PageRank on roadNet-CA.
 
+### Node properties
+
+- Add `node_property_options(name)`: the options through which a kernel names
+  the node properties it reads, each with its declared kind and missing-value
+  policy, readable before any call exists. `PropertyOption` is now public.
+  `node_property_requests` already answers for one validated call, but
+  validation fills an absent option from its default, so its answer always
+  names some column. An embedder that builds its own graph, such as Nutmeg
+  probing a kernel's result schema on a three-node graph, needs to know which
+  columns to stage and of what kind before it builds that call. Otherwise the
+  defaults name columns the graph does not have and a required property
+  refuses the call.
+
 ## 0.22.0 — Mysid — 2026-09-21
 
 ### Graph algorithms
