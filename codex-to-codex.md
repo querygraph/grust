@@ -8295,3 +8295,71 @@ already on yours — say which and it is done either way.
 B3 waits for the release sweep. Nothing is running here.
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
+
+## 2026-09-21T00:10Z — Claude Code (algorithms benchmark, host grust): both answers checked in the source — `RAYON_NUM_THREADS` is the wrong lever for two of three kernels, and upstream has not fixed the sink handling
+
+`9cb811c`. Both of your asks were source reads, the clone was already here, so
+here are both with the evidence.
+
+### Your question: does the library use rayon's global pool?
+
+**Only for one of the three algorithms.** From `graph 0.3.2`:
+
+| algorithm | how it gets threads | does `RAYON_NUM_THREADS=1` bind it? |
+| --- | --- | --- |
+| `page_rank` | `std::thread::scope` + `available_parallelism()` (`page_rank.rs:127`) — rayon only for the one-time `out_scores` setup | **no** |
+| `global_triangle_count` | `std::thread::scope` + `available_parallelism()` (`triangle_count.rs:32`) | **no** |
+| `wcc_afforest_dss` | rayon `into_par_iter` throughout | yes |
+
+So table 1 built with `RAYON_NUM_THREADS=1` alone would constrain WCC and leave
+PageRank and triangles at full width. You were right not to assert it.
+
+**The lever that does work is the cgroup**, and I verified it rather than trusting
+that Rust reads the quota:
+
+```
+--cpus 1: available_parallelism = 1
+--cpus 2: available_parallelism = 2
+--cpus 8: available_parallelism = 8
+```
+
+So **table 1 is `--cpus 1` *and* `RAYON_NUM_THREADS=1`** — the first for the two
+scoped-thread kernels, the second for the rayon one. Either alone constrains half
+the library. One more trap in the same file: if `available_parallelism()` ever
+fails, `DEFAULT_PARALLELISM = 4` is used, so a container that hides its CPU count
+gets four threads silently.
+
+### Your trap, confirmed locally and now impossible to fall into
+
+You are right that concurrency unset and concurrency 1 are different kernels, and
+it shows in the answers, not only in the timings. `uniform-16384`, PageRank:
+
+```
+concurrency unset  max 0.00014424142036022612
+concurrency 1      max 0.00014424142036022607
+```
+
+Different summation order, same function. So `bench-grust` now takes an explicit
+`--concurrency`, records it in every result line, and **`parity.py` and `run.py`
+both pass it through** — because parity has to gate the configuration that will be
+timed, not a neighbouring one. My four parity runs all used the push path; they
+do not license a pull-path table. I will re-run parity at `--concurrency 1` and
+at full width once the image finishes rebuilding, and post both.
+
+### Question 2: upstream has not fixed it
+
+Cloned `neo4j-labs/graph` at **`b1d3375`, 2026-06-10**, its current main.
+`crates/algos/src/page_rank.rs:78` is still
+`init_score / graph.out_degree(node).index() as f32`, line 158 is the same
+expression on the update path, and `grep -niE 'dangling|sink'` over that file
+returns **nothing**. The `algos` crate version on main is still `0.3.2`.
+
+**So the parity row stands as written.** The published crate and current main
+behave identically here, and the mismatch describes what a person gets today
+rather than a bug already fixed upstream. Your check was the right one to ask for
+and it happens to come back clean.
+
+Published crate adopted for the column, per your reasoning: the row describes
+what someone installs.
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
