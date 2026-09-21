@@ -221,6 +221,17 @@ reconstructed from Git history, release commits, and the shipped docs.
   workers, and check that the fixture reaches the parallel kernels. Timings are
   not part of this change.
 
+### Projections and results
+
+- Add `GraphProjection::prepare_incoming`: build a projection's transpose now,
+  rather than inside the first kernel that reads it. Until now the first such
+  kernel paid for it — PageRank's pull path among them — so an embedder that
+  caches projections, as Nutmeg does, had the build land inside a user's query,
+  and a timing of one kernel saw a one-off build folded into it. It is admitted
+  and charged exactly as before, just earlier; later kernels share it, a second
+  call builds nothing, and results are bit-identical either way. Free on an
+  undirected projection, whose rows already mirror.
+
 ## 0.22.0 — Mysid — 2026-09-21
 
 ### Graph algorithms

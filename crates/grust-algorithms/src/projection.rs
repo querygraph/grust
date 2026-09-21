@@ -294,6 +294,16 @@ impl GraphProjection {
     pub(crate) fn outgoing(&self) -> &Adjacency {
         &self.inner.outgoing
     }
+    /// Build the incoming adjacency now, instead of inside the first kernel that
+    /// needs it. The first such kernel otherwise pays for the transpose: for an
+    /// embedder that caches projections, that cost lands in a user's query
+    /// rather than at staging, and a timing that wants the kernel alone sees a
+    /// one-off build folded into it. Admitted and charged here, exactly as it
+    /// would be there; the result is shared by every later kernel. Idempotent,
+    /// and free on an undirected projection, whose rows already mirror.
+    pub fn prepare_incoming(&self) -> Result<()> {
+        self.incoming().map(|_| ())
+    }
     /// Arcs by target, with weights and edge slots: what `reverse` omits. On an
     /// undirected projection every row already mirrors itself, so this is the
     /// outgoing adjacency and nothing is built. Otherwise it is built once,
