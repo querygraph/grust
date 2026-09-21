@@ -81,7 +81,8 @@ pub use traversal::{
 
 pub use graph_input::{MissingWeight, ProjectionOptions, WeightSelection};
 pub use grust_procedures::{
-    ExecutionContext, ExecutionLimits, ProcedureError as AlgorithmError, Result,
+    Accounting, ExecutionContext, ExecutionLimits, Interruption, ProcedureError as AlgorithmError,
+    Result, WorkAccounting, WorkCount,
 };
 pub use projection::{
     GraphProjection, Orientation, ProjectionEdge, ProjectionRepresentation, ProjectionSelection,

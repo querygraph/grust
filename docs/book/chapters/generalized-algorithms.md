@@ -59,7 +59,8 @@ different graph name before invoking a provider. The capability pins data; the
 identity strings do not grant access.
 
 For direct Rust, create an `ExecutionContext` with memory/work limits, batch size
-and optional deadline. `GraphProjection::from_graph` accepts label selection,
+and optional deadline; `ExecutionContext::with_accounting` runs with less
+checking, as described under "Running without accounting". `GraphProjection::from_graph` accepts label selection,
 orientation and a weight policy. `from_topology` accepts external IDs and typed
 edges; `from_arrow_batches` reads typed columns directly. Kernel results share
 the projection, so dropping the caller's projection handle cannot invalidate IDs.
@@ -291,3 +292,64 @@ PageRank by 23 to 29% across graph families, and sampling the deadline reduced a
 full-path Cypher query on a 4096-node chain from 21,721 ms to about 2,300 ms.
 Both figures come from one host with a Xen clocksource and are not portable
 constants; the boundary statements and raw evidence accompany them there.
+
+## Running without accounting
+
+The budget's cost is real, and a library that does no accounting does not pay
+it. For a comparison with such a library to be like-for-like, an execution can
+be constructed with less checking, explicitly and by name:
+
+```rust
+use grust_algorithms::{Accounting, ExecutionContext, ExecutionLimits};
+
+let context = ExecutionContext::with_accounting(
+    ExecutionLimits {
+        memory_bytes: 1 << 30,
+        work_units: usize::MAX, // required: an uncounted budget cannot be enforced
+        batch_rows: 8192,
+        deadline: None,
+    },
+    Accounting::WORK_UNCOUNTED,
+)?;
+```
+
+`ExecutionContext::new` is unchanged and counts work. An unlimited budget is not
+an opt-out: `work_units: usize::MAX` still counts every unit and still reports
+the total. Two switches, independent because they give up different things:
+
+| Mode | Work counted | Cancellation and deadline | Memory admission |
+| --- | --- | --- | --- |
+| `Accounting::COUNTED` (default) | yes, budget exact | observed | enforced |
+| `Accounting::WORK_UNCOUNTED` | no | observed | enforced |
+| `Accounting { work: Counted, interruption: Disabled }` | yes, budget exact | not observed | enforced |
+| `Accounting::UNCHECKED` | no | not observed | enforced |
+
+**Uncounted work** skips the shared counter, the block grants of work meters and
+the budget comparison, and a meter is never registered, so creating and dropping
+one takes no lock. What is given up is the work budget and the work total.
+Cancellation is still observed at every charge, and the deadline is still
+sampled at the counted cadence: once per 1024 charges on the context, once per
+block on a meter.
+
+**Disabled interruption** additionally stops every charge, checkpoint and
+reservation from reading the cancellation flag or the clock. What is given up is
+the ability to stop a running kernel. It is a separate switch because it is the
+larger trade, and because the check is itself a measurable share of a
+charge-dense loop; neither is implied by the other.
+
+**Memory admission is never switched off.** It is charged per allocation rather
+than per visited entry, so it is not the hot-loop cost, and it is what stops a
+projection from exhausting the host.
+
+A limit the mode cannot enforce is refused when the context is constructed: a
+finite `work_units` with uncounted work, or a deadline with interruption
+disabled. On an execution with interruption disabled, `cancel()` returns
+`Unsupported` instead of accepting a signal nothing will observe, and a
+`cancelled()` waiter completes at once with the same error.
+
+The mode is part of the result. `ExecutionContext::accounting()` and
+`ResourceUsage::accounting` name it, and `Accounting` displays as `counted`,
+`work-uncounted`, `uninterruptible` or `unchecked` for a report row.
+`ResourceUsage::work_units` is a `WorkCount`: `Counted(n)` or `NotCounted`,
+which is not zero; `ResourceUsage::counted_work()` returns it as an `Option`.
+Results are bit-identical in every mode, sequentially and at every worker count.

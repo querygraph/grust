@@ -56,7 +56,7 @@ fn a_budget_that_exactly_fits_succeeds_and_counts_the_work_performed() {
     assert_eq!(failures, 0, "no worker may fail inside its budget");
     // Unspent blocks are returned when each meter drops, so the final count is
     // the work actually charged, not the blocks admitted to charge it.
-    assert_eq!(usage.work_units, total);
+    assert_eq!(usage.counted_work().expect("counted"), total);
 }
 
 #[test]
@@ -66,9 +66,9 @@ fn a_budget_one_unit_short_fails_at_one_worker() {
     let (failures, usage) = charge_everywhere(&execution, PER_WORKER);
     assert_eq!(failures, 1, "exactly the worker that ran out should fail");
     assert!(
-        usage.work_units < total,
+        usage.counted_work().expect("counted") < total,
         "spent {} of a {} unit budget",
-        usage.work_units,
+        usage.counted_work().expect("counted"),
         total - 1
     );
 }
@@ -144,12 +144,21 @@ fn a_dropped_meter_returns_what_it_did_not_spend() {
         let mut meter = execution.work_meter();
         meter.charge(1).expect("first charge admits a block");
         assert!(
-            execution.usage().expect("usage").work_units > 1,
+            execution
+                .usage()
+                .expect("usage")
+                .counted_work()
+                .expect("counted")
+                > 1,
             "a live meter holds more than it has spent"
         );
     }
     assert_eq!(
-        execution.usage().expect("usage").work_units,
+        execution
+            .usage()
+            .expect("usage")
+            .counted_work()
+            .expect("counted"),
         1,
         "dropping the meter leaves only the work performed"
     );
@@ -161,7 +170,11 @@ fn a_dropped_meter_returns_what_it_did_not_spend() {
         }
     }
     assert_eq!(
-        execution.usage().expect("usage").work_units,
+        execution
+            .usage()
+            .expect("usage")
+            .counted_work()
+            .expect("counted"),
         1 + 4 * (WORK_BLOCK_UNITS / 2)
     );
 }
@@ -259,7 +272,14 @@ fn skewed_work_that_exactly_fits_succeeds_at_sixteen_threads() {
         0,
         "the work fits the budget"
     );
-    assert_eq!(execution.usage().expect("usage").work_units, total);
+    assert_eq!(
+        execution
+            .usage()
+            .expect("usage")
+            .counted_work()
+            .expect("counted"),
+        total
+    );
 }
 
 /// A block is invisible for a moment, after it reaches the shared counter and
@@ -299,7 +319,11 @@ fn many_meters_racing_for_the_last_of_a_budget_that_exactly_fits() {
         refusals += failed;
         if failed == 0 {
             assert_eq!(
-                execution.usage().expect("usage").work_units,
+                execution
+                    .usage()
+                    .expect("usage")
+                    .counted_work()
+                    .expect("counted"),
                 total,
                 "usage should account for exactly the work performed"
             );
@@ -353,7 +377,14 @@ fn a_meter_dropping_its_block_does_not_hide_it_from_a_refusal() {
         });
         refusals += failures.load(Ordering::Relaxed);
         if failures.load(Ordering::Relaxed) == 0 {
-            assert_eq!(execution.usage().expect("usage").work_units, total);
+            assert_eq!(
+                execution
+                    .usage()
+                    .expect("usage")
+                    .counted_work()
+                    .expect("counted"),
+                total
+            );
         }
     }
     assert_eq!(refusals, 0, "{refusals} refusals of work that fits");

@@ -596,7 +596,7 @@ fn link_prediction_observes_cancellation_and_budget_and_releases_scratch() {
     let projection_work = {
         let probe = context_with(2_000_000_000);
         project(&graph, Orientation::Undirected, &probe);
-        probe.usage().unwrap().work_units
+        probe.usage().unwrap().counted_work().expect("counted")
     };
 
     let tight = context_with(projection_work + 1_000_000);

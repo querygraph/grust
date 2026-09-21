@@ -220,12 +220,12 @@ fn the_forest_is_identical_at_any_pool_width_and_charges_the_same_work() {
     let run = |threads: usize| {
         let context = context().with_concurrency(threads).unwrap();
         let projection = graph(n, &edges, Some(&weights), Orientation::Undirected, &context);
-        let before = context.usage().unwrap().work_units;
+        let before = context.usage().unwrap().counted_work().expect("counted");
         let result = spanning_tree(&projection, SpanningTreeOptions::default()).unwrap();
         (
             result.edges().to_vec(),
             result.total_weight().to_bits(),
-            context.usage().unwrap().work_units - before,
+            context.usage().unwrap().counted_work().expect("counted") - before,
         )
     };
     let first = run(1);
@@ -240,7 +240,7 @@ fn spanning_tree_observes_cancellation_and_budget_and_releases_scratch() {
     let edges: Vec<_> = (1..5000).map(|node| (node / 2, node)).collect();
     let context = context();
     let projection = graph(5000, &edges, None, Orientation::Undirected, &context);
-    let projection_work = context.usage().unwrap().work_units;
+    let projection_work = context.usage().unwrap().counted_work().expect("counted");
     let held = context.usage().unwrap().live_bytes;
     context.cancel().unwrap();
     assert!(matches!(

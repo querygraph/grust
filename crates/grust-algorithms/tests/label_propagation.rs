@@ -261,7 +261,7 @@ fn a_seed_reproduces_its_result_at_any_pool_width() {
     let run = |threads: usize, seed| {
         let context = context().with_concurrency(threads).unwrap();
         let projection = graph(2000, &edges, None, Orientation::Undirected, &context);
-        let before = context.usage().unwrap().work_units;
+        let before = context.usage().unwrap().counted_work().expect("counted");
         let result = label_propagation(
             &projection,
             LabelPropagationOptions {
@@ -272,7 +272,7 @@ fn a_seed_reproduces_its_result_at_any_pool_width() {
         .unwrap();
         (
             result.communities().to_vec(),
-            context.usage().unwrap().work_units - before,
+            context.usage().unwrap().counted_work().expect("counted") - before,
         )
     };
     let first = run(1, Some(7));
@@ -286,7 +286,7 @@ fn label_propagation_observes_cancellation_and_budget_and_releases_scratch() {
     let edges = scrambled(2000, 20_000);
     let context = context();
     let projection = graph(2000, &edges, None, Orientation::Outgoing, &context);
-    let projection_work = context.usage().unwrap().work_units;
+    let projection_work = context.usage().unwrap().counted_work().expect("counted");
     context.cancel().unwrap();
     assert!(matches!(
         label_propagation(&projection, LabelPropagationOptions::default()),
