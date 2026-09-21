@@ -276,3 +276,105 @@ mod arrow {
         assert_eq!(ctx.usage().unwrap().live_bytes, 0);
     }
 }
+
+/// A projection's transpose is built by the first kernel that needs it, and
+/// that kernel pays for it. `prepare_incoming` moves the build earlier without
+/// changing what is built: the kernel afterwards charges exactly the transpose's
+/// work less than it would have, a second prepare charges nothing, and the
+/// kernel's result is bit-identical either way.
+#[test]
+fn preparing_the_transpose_moves_its_cost_without_changing_the_answer() {
+    use grust_algorithms::{PageRankOptions, pagerank};
+
+    // A directed ring with chords. PageRank pulls, and so reads the transpose,
+    // only above a parallel floor of 1 << 14 units, (nodes + arcs) * 2; below it
+    // the push path runs and never builds one. 5,000 nodes and 10,000 arcs is
+    // 30,000 units, clear of it. A 2,000-node version of this fixture sat under
+    // the floor and tested the push path instead, which is checked below.
+    let n = 5_000usize;
+    let edges: Vec<ProjectionEdge> = (0..n)
+        .flat_map(|node| [(node, (node + 1) % n), (node, (node * 7 + 3) % n)])
+        .enumerate()
+        .map(|(ordinal, (source, target))| ProjectionEdge {
+            source,
+            target,
+            ordinal,
+            id: None,
+        })
+        .collect();
+    let build = |context: &ExecutionContext| {
+        GraphProjection::from_topology(
+            identity(),
+            (0..n).map(|node| format!("{node}").into()).collect(),
+            edges.clone(),
+            None,
+            Orientation::Outgoing,
+            context,
+        )
+        .unwrap()
+    };
+    // One worker selects the pull kernel, which reads the transpose.
+    let pull = || {
+        ExecutionContext::new(ExecutionLimits {
+            memory_bytes: 1 << 26,
+            work_units: usize::MAX,
+            batch_rows: 128,
+            deadline: None,
+        })
+        .unwrap()
+        .with_concurrency(1)
+        .unwrap()
+    };
+    let options = || PageRankOptions {
+        damping: 0.85,
+        tolerance: 1e-10,
+        max_iterations: 50,
+        personalization: None,
+    };
+    let work = |context: &ExecutionContext| context.usage().unwrap().work_units;
+
+    // Lazily: the kernel builds the transpose itself.
+    let lazy_context = pull();
+    let lazy = build(&lazy_context);
+    let before = work(&lazy_context);
+    let lazy_scores = pagerank(&lazy, options()).unwrap();
+    let lazy_kernel = work(&lazy_context) - before;
+    // The fixture reached the pull kernel: it built the transpose, so a prepare
+    // afterwards finds it cached and builds nothing.
+    let before = work(&lazy_context);
+    lazy.prepare_incoming().unwrap();
+    assert_eq!(
+        work(&lazy_context),
+        before,
+        "the lazy kernel did not build the transpose, so it did not pull"
+    );
+
+    // Eagerly: the transpose is built first, and the kernel does not build it.
+    let eager_context = pull();
+    let eager = build(&eager_context);
+    let before = work(&eager_context);
+    eager.prepare_incoming().unwrap();
+    let transpose = work(&eager_context) - before;
+    let before = work(&eager_context);
+    eager.prepare_incoming().unwrap();
+    assert_eq!(
+        work(&eager_context),
+        before,
+        "a second prepare builds nothing"
+    );
+    let before = work(&eager_context);
+    let eager_scores = pagerank(&eager, options()).unwrap();
+    let eager_kernel = work(&eager_context) - before;
+
+    assert!(
+        transpose > 0,
+        "the fixture must make the transpose real work"
+    );
+    assert_eq!(
+        lazy_kernel,
+        eager_kernel + transpose,
+        "the kernel's work falls by exactly the transpose's"
+    );
+    let bits = |scores: &[f64]| scores.iter().map(|s| s.to_bits()).collect::<Vec<_>>();
+    assert_eq!(bits(lazy_scores.values()), bits(eager_scores.values()));
+}
