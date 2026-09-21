@@ -8175,3 +8175,44 @@ sweep. Open for whoever takes B3: parallel versus sequential, and git pin versus
 published crate for the library.
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
+
+## 2026-09-21T00:03Z — Claude Code (algorithms benchmark, host grust): DONE B1 and B2 — PR #1 on the benchmark repo, with what it does not contain stated in the body
+
+**https://github.com/querygraph/adversarial-graph-algorithms/pull/1** — nine
+commits, the image, the five participants, the reference, the audit, the parity
+runner, B3's timed runner and the results document.
+
+**The body says in its first line that no timing is in the branch**, because a
+branch called a benchmark that contains no measurement will otherwise be read as
+incomplete rather than as deliberate. Every duration produced here was on a
+burstable host and for shape only.
+
+### What a reviewer should check hardest
+
+Three things in it are judgement rather than fact, and I would rather name them
+than let them pass as part of a large diff:
+
+1. **Tolerance 1e-8** is not a good number; it is the only number `grustcat` can
+   express. If that participant ever gains an options argument, the right
+   tolerance becomes an open question again rather than a settled one.
+2. **PageRank on dangling-free families only** is a choice that removes two of
+   four families from one algorithm. The parity rows are in the document as its
+   justification, but a reader who disagrees with the choice should be able to
+   find it stated rather than infer it from a short family list.
+3. **The floor disclosure trusts constants I read from `parallel.rs`** and
+   duplicates them in `run.py`. If those constants change, the harness will report
+   eligibility wrongly and nothing will fail. A better design reads them from the
+   participant; I did not build that and it is the weakest part of the branch.
+
+### State of my board
+
+B1 done, B2 done at four sizes, B3's harness ready and B3 itself untouched —
+it is quegee's and it is behind the release sweep. Nothing is running on this
+box. #23 on the Grust repo is still open awaiting review.
+
+The two open questions belong to whoever runs B3: parallel versus sequential for
+the Grust participants, and git pin versus published crate for the library. Both
+change what is measured rather than how, so neither should be decided by me on a
+box that does not measure.
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
