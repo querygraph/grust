@@ -814,3 +814,77 @@ fn modularity_reads_its_communities_from_a_node_property() {
         "{missing}"
     );
 }
+
+#[test]
+fn astar_reads_coordinates_and_returns_the_route() {
+    // Three points on a line of longitude, so the great-circle distances are
+    // easy to reason about: a is north of b, b north of c.
+    let place = |id: &str, lat: f64| {
+        Node::new(
+            "P",
+            id,
+            [
+                ("lat".to_string(), Value::Float(lat)),
+                ("lon".to_string(), Value::Float(0.0)),
+            ],
+        )
+    };
+    // One degree of latitude is about 111.2 km.
+    let degree = 111_194.93;
+    let graph = Graph::new(
+        vec![place("a", 2.0), place("b", 1.0), place("c", 0.0)],
+        vec![
+            Edge::new("R", "a", "b", [("m".to_string(), Value::Float(degree))]),
+            Edge::new("R", "b", "c", [("m".to_string(), Value::Float(degree))]),
+            // A direct edge that is longer than going through b.
+            Edge::new(
+                "R",
+                "a",
+                "c",
+                [("m".to_string(), Value::Float(3.0 * degree))],
+            ),
+        ],
+    );
+    let run_on = |query: &str| {
+        run_read_query_with_registry(
+            &graph,
+            "default",
+            query,
+            &CypherParameters::new(),
+            &registry(),
+        )
+    };
+    let rows = run_on(
+        "CALL grust.algorithms.astar('a', 'c', {orientation: 'undirected', weightProperty: 'm', latitudeProperty: 'lat', longitudeProperty: 'lon'}) YIELD nodeId, costFromSource, edgeOrdinal, totalCost, settled RETURN nodeId, edgeOrdinal, totalCost",
+    )
+    .unwrap()
+    .rows;
+    // The route is a, b, c: one row per node, the source entered by no edge.
+    assert_eq!(rows.len(), 3);
+    assert_eq!(rows[0][0], Value::String("a".into()));
+    assert_eq!(rows[0][1], Value::Int(-1));
+    assert_eq!(rows[1][0], Value::String("b".into()));
+    assert_eq!(rows[1][1], Value::Int(0));
+    assert_eq!(rows[2][0], Value::String("c".into()));
+    assert_eq!(rows[2][1], Value::Int(1));
+    match rows[2][2] {
+        Value::Float(total) => assert!((total - 2.0 * degree).abs() < 1.0, "{total}"),
+        ref other => panic!("{other:?}"),
+    }
+
+    // It agrees with dijkstra, which is the oracle the kernel is written against.
+    let by_dijkstra = run_on(
+        "CALL grust.algorithms.dijkstra('a', {orientation: 'undirected', weightProperty: 'm'}) YIELD nodeId, distance WHERE nodeId = 'c' RETURN distance",
+    )
+    .unwrap()
+    .rows;
+    assert_eq!(by_dijkstra[0][0], rows[2][2]);
+
+    // A coordinate property no node has is an error naming the node.
+    let missing = run_on(
+        "CALL grust.algorithms.astar('a', 'c', {weightProperty: 'm', latitudeProperty: 'absent', longitudeProperty: 'lon'}) YIELD totalCost RETURN totalCost",
+    )
+    .unwrap_err()
+    .to_string();
+    assert!(missing.contains("absent"), "{missing}");
+}

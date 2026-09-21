@@ -6,6 +6,21 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ## Unreleased
 
+- Add **A\***: `astar`, `astar_haversine` and
+  `grust.algorithms.astar(source, target, {latitudeProperty, longitudeProperty})`.
+  Shortest path to one destination, guided by an estimate of the cost still to
+  come. The estimate must never exceed the true remaining cost and must be in
+  the weights' units; given that, the path is the one `dijkstra` returns, which
+  is the oracle the kernel is tested against. A node may be settled twice, so an
+  admissible but inconsistent estimate still yields a shortest path.
+  `AStarPath::settled` reports how many nodes were settled, so the saving is
+  measured rather than assumed. The registered procedure's heuristic is
+  great-circle distance from two coordinate properties, **admissible only where
+  the weights are distances in metres**; a latitude outside ±90° or longitude
+  outside ±180° is rejected, though a latitude and longitude swapped within
+  range cannot be detected. An overestimating heuristic returns a real path that
+  is not the shortest, which the kernel cannot detect and its documentation
+  says so. This closes Tier A of `docs/goals/graph-analytics-catalog.md`.
 - Add **node properties**: `NodeProperties`, typed columns read per projected
   node from a `Graph` or from Arrow node batches, row-aligned with a projection
   because they are built against one and hold it. Four kinds — `Number` (f64),

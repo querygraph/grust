@@ -255,6 +255,48 @@ fn catalog() -> Vec<Spec> {
             ))
         },
     ));
+    // The heuristic is great-circle distance, so the two coordinate columns are
+    // node properties and the kernel is served through the property path.
+    const COORDINATES: &[PropertyOption] = &[
+        PropertyOption {
+            option: "latitudeProperty",
+            kind: algorithms::PropertyKind::Number,
+            missing: algorithms::MissingProperty::Reject,
+        },
+        PropertyOption {
+            option: "longitudeProperty",
+            kind: algorithms::PropertyKind::Number,
+            missing: algorithms::MissingProperty::Reject,
+        },
+    ];
+    specs.push(
+        Spec::with_properties(
+            "astar",
+            vec![
+                field("nodeId", ValueType::String),
+                field("costFromSource", ValueType::Number),
+                field("edgeOrdinal", ValueType::Integer),
+                field("totalCost", ValueType::Number),
+                field("settled", ValueType::Integer),
+            ],
+            options::astar_fields(),
+            COORDINATES,
+            |properties, args| {
+                let (latitude, longitude) = astar_coordinates(args)?;
+                Ok(AlgorithmOutput::Table(
+                    algorithms::astar_haversine(
+                        properties,
+                        source(args)?,
+                        target(args)?,
+                        latitude,
+                        longitude,
+                    )?
+                    .into_table()?,
+                ))
+            },
+        )
+        .with_source_and_target(),
+    );
     specs.push(
         Spec::new(
             "bellmanFord",
@@ -674,6 +716,13 @@ impl Spec {
         self
     }
 
+    /// A property kernel that also takes `source` and `target` positionally.
+    fn with_source_and_target(mut self) -> Self {
+        self.source = Some(ValueType::String);
+        self.target = true;
+        self
+    }
+
     fn with_signed_weights(mut self) -> Self {
         self.signed = true;
         self
@@ -716,6 +765,17 @@ fn community_key(args: &ValidatedArguments) -> Result<&str> {
             "communityProperty must name a node property".into(),
         )),
     }
+}
+
+/// The two coordinate properties an A* call names.
+fn astar_coordinates(args: &ValidatedArguments) -> Result<(&str, &str)> {
+    let read = |key: &str| match args.options().get(key) {
+        Some(Value::String(value)) => Ok(value.as_str()),
+        _ => Err(ProcedureError::InvalidArguments(format!(
+            "{key} must name a node property"
+        ))),
+    };
+    Ok((read("latitudeProperty")?, read("longitudeProperty")?))
 }
 
 fn short_name(name: &str) -> &str {

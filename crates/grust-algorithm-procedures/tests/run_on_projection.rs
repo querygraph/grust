@@ -71,7 +71,10 @@ fn run_any(
 }
 
 /// The projection's nodes, each carrying every property name the catalog asks
-/// for. Communities alternate so a partition is not trivially one community.
+/// for: a community, and a coordinate pair for the kernels with heuristics.
+/// Communities alternate so a partition is not trivially one community. A kernel
+/// that adds a property option adds it here, and the two catalog tests below
+/// fail until it does.
 fn property_graph(nodes: usize) -> grust_core::Graph {
     use grust_core::{Node, Props, Value};
     grust_core::Graph::new(
@@ -82,7 +85,14 @@ fn property_graph(nodes: usize) -> grust_core::Graph {
                 Node::new(
                     "N",
                     *id,
-                    Props::from([("community".to_string(), Value::Int((row % 2) as i64))]),
+                    Props::from([
+                        ("community".to_string(), Value::Int((row % 2) as i64)),
+                        // Distinct, in range, and ordered so no two nodes share
+                        // a point: a zero-distance heuristic would hide an
+                        // ordering bug.
+                        ("latitude".to_string(), Value::Float(row as f64)),
+                        ("longitude".to_string(), Value::Float(row as f64 * 2.0)),
+                    ]),
                 )
             })
             .collect(),
