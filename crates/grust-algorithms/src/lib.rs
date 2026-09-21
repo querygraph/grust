@@ -35,6 +35,11 @@ mod label_propagation;
 pub use label_propagation::{LabelPropagation, LabelPropagationOptions, label_propagation};
 mod leiden;
 pub use leiden::{Leiden, LeidenOptions, leiden};
+mod link_prediction;
+pub use link_prediction::{
+    CandidatePairs, LinkCandidates, LinkMetric, LinkPrediction, LinkPredictionOptions,
+    link_prediction,
+};
 mod louvain;
 pub use kcore::{KCore, k_core};
 pub use louvain::{Louvain, LouvainOptions, louvain};

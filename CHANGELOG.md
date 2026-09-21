@@ -6,6 +6,41 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ## Unreleased
 
+### Graph algorithms
+
+- Add **link prediction**: `link_prediction` and
+  `grust.algorithms.linkPrediction({metric, node1, node2, communityProperty})`,
+  one kernel for NetworKit's six predictors, chosen by `metric`:
+  `commonNeighbors` `|N(u) ∩ N(v)|`, `adamicAdar` `Σ 1/ln|N(w)|`,
+  `resourceAllocation` `Σ 1/|N(w)|` (both over shared neighbours `w`),
+  `preferentialAttachment` `|N(u)|·|N(v)|`, `totalNeighbors` `|N(u) ∪ N(v)|`,
+  and `sameCommunity`, 1 when the two nodes carry the same community id.
+  Output `node1`, `node2`, `score`. **Candidates are never all n² pairs.**
+  By default the kernel scores every pair at distance exactly two (not
+  adjacent, at least one shared neighbour; NetworKit's
+  `MissingLinksFinder::findAtDistance(2)`), once each with `node1 < node2`;
+  otherwise the caller supplies the pairs, as `node1`/`node2` string arrays in
+  the procedure, or in Rust as `CandidatePairs` from ids, rows or two Utf8
+  columns of Arrow record batches, and they are scored as given, in order,
+  adjacent pairs and duplicates included. Undirected projections only, as in
+  NetworKit; weights are not read. Neighbours are **sets**, as in
+  `nodeSimilarity`: parallel edges collapse and self-loops are dropped, so
+  every degree is a count of distinct neighbours. A pair `(u, u)` scores 0
+  under every metric, as NetworKit's `LinkPredictor::run` returns; for distinct
+  nodes a shared neighbour has at least two neighbours, so Adamic–Adar never
+  divides by `ln 1`. `sameCommunity` reads the integer property named by
+  `communityProperty` (default `community`, as in `modularity`), rejecting a
+  node without one, where NetworKit runs its own PLM partition and GDS scores
+  0; the property is requested for that metric only, so the other five run on
+  graphs without community ids and through `run_on_projection`. Tested bit for
+  bit against the definitions recomputed from `BTreeSet` neighbour sets on 400
+  random multigraphs with loops and isolates, every ordered pair and every
+  distance-two pair, plus hand-computed cases per metric.
+- The procedure layer can request a node property for some option values only
+  (`linkPrediction` asks for its community under `sameCommunity` alone), and
+  `run_on_projection` now runs a property-reading kernel whose call reads no
+  property, with `NodeProperties::empty`.
+
 ## 0.22.0 — Mysid — 2026-09-21
 
 ### Graph algorithms

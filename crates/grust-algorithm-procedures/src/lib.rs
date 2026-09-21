@@ -234,6 +234,7 @@ fn catalog() -> Vec<Spec> {
         option: "communityProperty",
         kind: algorithms::PropertyKind::Integer,
         missing: algorithms::MissingProperty::Reject,
+        needed: always,
     }];
     specs.push(Spec::with_properties(
         "modularity",
@@ -262,11 +263,13 @@ fn catalog() -> Vec<Spec> {
             option: "latitudeProperty",
             kind: algorithms::PropertyKind::Number,
             missing: algorithms::MissingProperty::Reject,
+            needed: always,
         },
         PropertyOption {
             option: "longitudeProperty",
             kind: algorithms::PropertyKind::Number,
             missing: algorithms::MissingProperty::Reject,
+            needed: always,
         },
     ];
     specs.push(
@@ -388,6 +391,53 @@ fn catalog() -> Vec<Spec> {
             Ok(AlgorithmOutput::Table(
                 algorithms::node_similarity(graph, options::node_similarity(args)?)?
                     .into_table()?,
+            ))
+        },
+    ));
+    // Only `sameCommunity` reads a property, so the community is requested for
+    // that metric alone: the other five run on a graph without community ids,
+    // and through `run_on_projection`, which supplies no properties.
+    const LINK_COMMUNITY: &[PropertyOption] = &[PropertyOption {
+        option: "communityProperty",
+        kind: algorithms::PropertyKind::Integer,
+        missing: algorithms::MissingProperty::Reject,
+        needed: |args| Ok(options::link_metric(args)? == algorithms::LinkMetric::SameCommunity),
+    }];
+    specs.push(Spec::with_properties(
+        "linkPrediction",
+        vec![
+            field("node1", ValueType::String),
+            field("node2", ValueType::String),
+            field("score", ValueType::Number),
+        ],
+        options::link_prediction_fields(),
+        LINK_COMMUNITY,
+        |properties, args| {
+            let graph = properties.projection();
+            let metric = options::link_metric(args)?;
+            let pairs = options::link_pairs(args)?
+                .map(|(first, second)| algorithms::CandidatePairs::from_ids(graph, first, second))
+                .transpose()?;
+            let candidates = pairs
+                .as_ref()
+                .map_or(algorithms::LinkCandidates::DistanceTwo, |pairs| {
+                    algorithms::LinkCandidates::Pairs(pairs)
+                });
+            let communities = if metric == algorithms::LinkMetric::SameCommunity {
+                Some((properties, community_key(args)?))
+            } else {
+                None
+            };
+            Ok(AlgorithmOutput::Table(
+                algorithms::link_prediction(
+                    graph,
+                    algorithms::LinkPredictionOptions {
+                        metric,
+                        candidates,
+                        communities,
+                    },
+                )?
+                .into_table()?,
             ))
         },
     ));
@@ -627,6 +677,13 @@ struct PropertyOption {
     option: &'static str,
     kind: algorithms::PropertyKind,
     missing: algorithms::MissingProperty,
+    /// Whether this call reads it: a kernel may need a property for some of
+    /// its options only.
+    needed: fn(&ValidatedArguments) -> Result<bool>,
+}
+
+fn always(_: &ValidatedArguments) -> Result<bool> {
+    Ok(true)
 }
 
 /// Read the property names a call asks for, in declaration order.
@@ -637,6 +694,9 @@ fn requests<'a>(
     let mut wanted = Vec::new();
     wanted.try_reserve_exact(declared.len())?;
     for declaration in declared {
+        if !(declaration.needed)(args)? {
+            continue;
+        }
         let Some(Value::String(key)) = args.options().get(declaration.option) else {
             return Err(ProcedureError::InvalidArguments(format!(
                 "{} must name a node property",
@@ -803,9 +863,10 @@ fn admit_signed(
 /// `projectionStats` and `estimateCsr` are not kernels over a projection: one
 /// reads projection metadata and the other sizes a graph before it is built.
 /// They are refused here; call `GraphProjection::statistics` or
-/// `CsrEstimate::upper_bound`. A kernel that reads node properties is refused
-/// too, and names itself: the caller must supply them, through
-/// [`node_property_requests`] and [`run_with_properties`].
+/// `CsrEstimate::upper_bound`. A kernel that reads node properties for this
+/// call is refused too, and names itself: the caller must supply them, through
+/// [`node_property_requests`] and [`run_with_properties`]. One that reads none
+/// with these options (`linkPrediction` other than `sameCommunity`) runs.
 #[cfg(feature = "arrow")]
 pub fn run_on_projection(
     name: &str,
@@ -821,9 +882,15 @@ pub fn run_on_projection(
         })?;
     match spec.body {
         Body::Topology(kernel) => kernel(graph, args)?.into_arrow_results(),
-        Body::WithProperties { .. } => Err(ProcedureError::Unsupported(format!(
-            "`{name}` reads node properties; build them with node_property_requests and call run_with_properties"
-        ))),
+        Body::WithProperties { kernel, properties } => {
+            if requests(properties, args)?.is_empty() {
+                return kernel(&algorithms::NodeProperties::empty(graph), args)?
+                    .into_arrow_results();
+            }
+            Err(ProcedureError::Unsupported(format!(
+                "`{name}` reads node properties; build them with node_property_requests and call run_with_properties"
+            )))
+        }
     }
 }
 

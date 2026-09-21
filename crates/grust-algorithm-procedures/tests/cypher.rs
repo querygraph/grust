@@ -816,6 +816,85 @@ fn modularity_reads_its_communities_from_a_node_property() {
 }
 
 #[test]
+fn link_prediction_scores_pairs_through_ordinary_cypher() {
+    // A square a-b-c-d-a with community ids on some nodes only: the two
+    // diagonals are the pairs at distance two, each sharing two neighbours.
+    let node = |id: &str, community: Option<i64>| match community {
+        Some(c) => Node::new("N", id, [("c".to_string(), Value::Int(c))]),
+        None => Node::new("N", id, Props::new()),
+    };
+    let edge = |a: &str, b: &str| Edge::new("R", a, b, Props::new());
+    let with_ids = |d: Option<i64>| {
+        Graph::new(
+            vec![
+                node("a", Some(1)),
+                node("b", Some(2)),
+                node("c", Some(1)),
+                node("d", d),
+            ],
+            vec![
+                edge("a", "b"),
+                edge("b", "c"),
+                edge("c", "d"),
+                edge("d", "a"),
+            ],
+        )
+    };
+    let run_on = |graph: &Graph, query: &str| {
+        run_read_query_with_registry(
+            graph,
+            "default",
+            query,
+            &CypherParameters::new(),
+            &registry(),
+        )
+    };
+    let partial = with_ids(None);
+    let rows = run_on(
+        &partial,
+        "CALL grust.algorithms.linkPrediction({orientation: 'undirected', metric: 'resourceAllocation'}) YIELD node1, node2, score RETURN node1, node2, score",
+    )
+    .unwrap()
+    .rows;
+    assert_eq!(
+        rows,
+        [
+            vec![Value::from("a"), Value::from("c"), Value::Float(1.0)],
+            vec![Value::from("b"), Value::from("d"), Value::Float(1.0)],
+        ]
+    );
+    // Explicit pairs; a graph where d has no community still serves every
+    // metric but sameCommunity, which reads the property and names the gap.
+    let rows = run_on(
+        &partial,
+        "CALL grust.algorithms.linkPrediction({orientation: 'undirected', metric: 'preferentialAttachment', node1: ['a'], node2: ['b']}) YIELD score RETURN score",
+    )
+    .unwrap()
+    .rows;
+    assert_eq!(rows, [vec![Value::Float(4.0)]]);
+    let missing = run_on(
+        &partial,
+        "CALL grust.algorithms.linkPrediction({orientation: 'undirected', metric: 'sameCommunity', communityProperty: 'c'}) YIELD score RETURN score",
+    )
+    .unwrap_err()
+    .to_string();
+    assert!(missing.contains('d') && missing.contains('c'), "{missing}");
+    let rows = run_on(
+        &with_ids(Some(2)),
+        "CALL grust.algorithms.linkPrediction({orientation: 'undirected', metric: 'sameCommunity', communityProperty: 'c'}) YIELD node1, node2, score RETURN node1, node2, score",
+    )
+    .unwrap()
+    .rows;
+    assert_eq!(
+        rows,
+        [
+            vec![Value::from("a"), Value::from("c"), Value::Float(1.0)],
+            vec![Value::from("b"), Value::from("d"), Value::Float(1.0)],
+        ]
+    );
+}
+
+#[test]
 fn astar_reads_coordinates_and_returns_the_route() {
     // Three points on a line of longitude, so the great-circle distances are
     // easy to reason about: a is north of b, b north of c.

@@ -109,6 +109,7 @@ kernels as direct Rust and have typed Arrow result adapters.
 | `triangleCount` | Triangles per node on the simple graph, and the total |
 | `localClusteringCoefficient` | Triangles over possible triangles, null where undefined |
 | `nodeSimilarity` | Node pairs by Jaccard, overlap or cosine over neighbour sets |
+| `linkPrediction` | A score per node pair — common neighbours, Adamic–Adar, resource allocation, preferential attachment, total neighbours or same community — over every pair at distance two or a supplied list |
 | `bridges` | Edges whose removal disconnects their endpoints |
 | `articulationPoints` | Nodes whose removal disconnects two neighbours |
 | `biconnectedComponents` | Edges grouped by the cycles they share |
