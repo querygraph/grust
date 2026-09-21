@@ -86,7 +86,10 @@ fn projection_reuse_preserves_correlation_options_revision_and_principal() {
     );
     let second = context.usage().unwrap();
     assert_eq!(first.live_bytes, second.live_bytes);
-    assert!(second.work_units - first.work_units < first.work_units);
+    assert!(
+        second.counted_work().expect("counted") - first.counted_work().expect("counted")
+            < first.counted_work().expect("counted")
+    );
     assert_eq!(
         distance(
             &registry,

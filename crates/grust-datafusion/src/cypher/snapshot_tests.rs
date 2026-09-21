@@ -233,7 +233,10 @@ async fn ordinal_admission_follows_emitted_arrays_after_snapshot_drop() {
     );
     drop(ordinal);
     assert_eq!(execution.usage().unwrap().live_bytes, 0);
-    assert_eq!(execution.usage().unwrap().work_units, 1);
+    assert_eq!(
+        execution.usage().unwrap().counted_work().expect("counted"),
+        1
+    );
 
     let cancelled = context(8);
     cancelled.cancel().unwrap();
@@ -257,7 +260,7 @@ async fn ordinal_admission_follows_emitted_arrays_after_snapshot_drop() {
     );
     assert_eq!(partial.usage().unwrap().live_bytes, 0);
     assert_eq!(partial.usage().unwrap().peak_bytes, 8);
-    assert_eq!(partial.usage().unwrap().work_units, 1);
+    assert_eq!(partial.usage().unwrap().counted_work().expect("counted"), 1);
 
     let no_work = ExecutionContext::new(ExecutionLimits {
         work_units: 0,

@@ -6,6 +6,43 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ## Unreleased
 
+### Execution accounting
+
+- **An execution can run with work accounting turned off, by name.**
+  `ExecutionContext::with_accounting(limits, accounting)` takes an `Accounting`
+  with two independent switches, `work` (`Counted` or `Disabled`) and
+  `interruption` (`Observed` or `Disabled`), and constants for the useful
+  combinations: `Accounting::COUNTED`, `Accounting::WORK_UNCOUNTED` and
+  `Accounting::UNCHECKED`. `ExecutionContext::new` is unchanged and counts work;
+  `work_units: usize::MAX` still means "no budget, still counted" and never
+  implies an opt-out. The purpose is a like-for-like row when comparing with a
+  library that performs no accounting, reported as an additional row rather than
+  in place of the counted one.
+- **What is given up.** With work uncounted, there is no work budget and no work
+  total: charges skip the shared counter, meters take no block grants and are
+  never registered, and nothing enforces how much work a kernel may do.
+  Cancellation and the deadline are still observed, at the same cadence as
+  before. With interruption disabled as well, **nothing can stop a running
+  kernel**: no charge, checkpoint or reservation reads the cancellation flag or
+  the clock. Memory admission is never disabled; every mode still reserves
+  before allocating and fails at its memory limit.
+- **A limit the mode cannot enforce is refused at construction** rather than
+  accepted and ignored: a finite `work_units` with uncounted work, or a deadline
+  with interruption disabled, is `InvalidArguments`. `cancel()` on an execution
+  with interruption disabled returns `Unsupported`, and a `cancelled()` waiter
+  completes at once with the same error instead of waiting forever.
+- **Breaking:** `ResourceUsage::work_units` is now a `WorkCount`, either
+  `Counted(n)` or `NotCounted`, so an uncounted run cannot be read as zero work.
+  `ResourceUsage::counted_work()` returns `Option<usize>`, and
+  `ResourceUsage::accounting` and `ExecutionContext::accounting()` report the
+  mode, which displays as `counted`, `work-uncounted`, `uninterruptible` or
+  `unchecked`.
+- Kernel results are bit-identical in every mode. The tests compare PageRank
+  (weighted and unweighted), degree, BFS, multi-source BFS and weakly connected
+  components across all four modes sequentially and at one, two and sixteen
+  workers, and check that the fixture reaches the parallel kernels. Timings are
+  not part of this change.
+
 ## 0.22.0 — Mysid — 2026-09-21
 
 ### Graph algorithms

@@ -6,7 +6,9 @@ use std::time::Instant;
 
 use crate::{ProcedureError, Result};
 
+mod accounting;
 mod cancellation;
+pub use accounting::{Accounting, Interruption, WorkAccounting, WorkCount};
 pub use cancellation::Cancellation;
 
 /// Limits shared by projection preparation, kernels and consumers.
@@ -29,8 +31,18 @@ pub struct ResourceUsage {
     pub live_bytes: usize,
     /// Largest live reservation total so far.
     pub peak_bytes: usize,
-    /// Cumulative admitted work.
-    pub work_units: usize,
+    /// Cumulative admitted work, or [`WorkCount::NotCounted`] when the execution
+    /// disabled work accounting. Never a zero standing in for "not counted".
+    pub work_units: WorkCount,
+    /// The accounting mode the execution ran with, so a report can name it.
+    pub accounting: Accounting,
+}
+
+impl ResourceUsage {
+    /// Counted work, or `None` when the execution did not count work.
+    pub fn counted_work(&self) -> Option<usize> {
+        self.work_units.counted()
+    }
 }
 
 #[derive(Debug, Default)]
@@ -52,6 +64,9 @@ const DEADLINE_SAMPLE_UNITS: usize = 1024;
 #[derive(Debug)]
 struct Shared {
     limits: ExecutionLimits,
+    /// Fixed at construction and never written again, so a charge reads it as
+    /// a plain field and a loop that charges can branch on it without an atomic.
+    accounting: Accounting,
     concurrency: Option<usize>,
     work_units: AtomicUsize,
     cancelled: AtomicBool,
@@ -96,16 +111,50 @@ impl ExecutionContext {
     }
     /// Establish a bounded execution. Zero memory/work limits admit no such work.
     ///
+    /// Work is counted and cancellation observed: this is
+    /// [`Self::with_accounting`] with [`Accounting::COUNTED`].
+    ///
     /// # Errors
     /// Rejects zero batch size.
     pub fn new(limits: ExecutionLimits) -> Result<Self> {
+        Self::with_accounting(limits, Accounting::COUNTED)
+    }
+
+    /// Establish an execution that performs only the cooperative checks named
+    /// by `accounting`. Memory admission is always performed.
+    ///
+    /// A limit that the chosen mode could not enforce is refused here rather
+    /// than accepted and silently ignored: disabling work accounting requires
+    /// `work_units == usize::MAX`, and disabling interruption requires no
+    /// deadline. A caller therefore cannot hold a context whose limits look
+    /// enforced and are not.
+    ///
+    /// # Errors
+    /// Rejects zero batch size, a work budget with uncounted work, and a
+    /// deadline with interruption disabled.
+    pub fn with_accounting(limits: ExecutionLimits, accounting: Accounting) -> Result<Self> {
         if limits.batch_rows == 0 {
             return Err(ProcedureError::InvalidArguments(
                 "batch_rows must be positive".into(),
             ));
         }
+        if !accounting.counts_work() && limits.work_units != usize::MAX {
+            return Err(ProcedureError::InvalidArguments(format!(
+                "work accounting is disabled but a work budget of {} was set; an uncounted \
+                 execution cannot enforce one, so work_units must be usize::MAX",
+                limits.work_units
+            )));
+        }
+        if !accounting.observes_interruption() && limits.deadline.is_some() {
+            return Err(ProcedureError::InvalidArguments(
+                "interruption is disabled but a deadline was set; an execution that never \
+                 reads the clock cannot enforce one"
+                    .into(),
+            ));
+        }
         Ok(Self(Arc::new(Shared {
             limits,
+            accounting,
             concurrency: None,
             work_units: AtomicUsize::new(0),
             cancelled: AtomicBool::new(false),
@@ -164,8 +213,23 @@ impl ExecutionContext {
         self.0.limits
     }
 
+    /// The cooperative checks this execution performs, fixed at construction.
+    pub fn accounting(&self) -> Accounting {
+        self.0.accounting
+    }
+
     /// Signal cancellation to all owners. Cancellation never resets.
+    ///
+    /// # Errors
+    /// Refuses an execution constructed with [`Interruption::Disabled`]: nothing
+    /// in it would observe the signal, and accepting it would let the caller
+    /// believe the execution was stopping.
     pub fn cancel(&self) -> Result<()> {
+        if !self.0.accounting.observes_interruption() {
+            return Err(ProcedureError::Unsupported(
+                "cancelling an execution constructed with interruption disabled".into(),
+            ));
+        }
         // Publish cancellation before collecting wakers, so a registration that
         // races this call either observes the flag or is woken by it.
         self.0.cancelled.store(true, Ordering::Release);
@@ -183,7 +247,9 @@ impl ExecutionContext {
     }
 
     /// Poll cancellation and deadline without charging work. Unlike a charge,
-    /// this always reads the clock, so an explicit poll is exact.
+    /// this always reads the clock, so an explicit poll is exact. With
+    /// interruption disabled it checks nothing.
+    #[inline]
     pub fn checkpoint(&self) -> Result<()> {
         self.check_state(DeadlineCheck::Exact)
     }
@@ -201,16 +267,27 @@ impl ExecutionContext {
     ///
     /// Cancellation is still observed per charge. The deadline is sampled per
     /// block, which is the same cadence per worker as a single-threaded charge.
+    ///
+    /// With work accounting disabled the meter is never registered and never
+    /// holds a balance, so creating and dropping one takes no lock, and a charge
+    /// touches no shared state beyond the cancellation flag, if that is observed.
     pub fn work_meter(&self) -> WorkMeter {
+        let accounting = self.0.accounting;
         let balance = Arc::new(AtomicUsize::new(0));
-        // Registration is per meter, not per charge: a kernel creates one per
-        // chunk of work, so this lock is taken a handful of times per region.
-        self.0
-            .grants
-            .write()
-            .unwrap_or_else(|poison| poison.into_inner())
-            .push(Arc::clone(&balance));
+        if accounting.counts_work() {
+            // Registration is per meter, not per charge: a kernel creates one
+            // per chunk of work, so this lock is taken a handful of times per
+            // region.
+            self.0
+                .grants
+                .write()
+                .unwrap_or_else(|poison| poison.into_inner())
+                .push(Arc::clone(&balance));
+        }
         WorkMeter {
+            counts_work: accounting.counts_work(),
+            observes_interruption: accounting.observes_interruption(),
+            uncounted_since_sample: 0,
             context: self.clone(),
             balance,
         }
@@ -233,8 +310,17 @@ impl ExecutionContext {
     }
 
     /// Charge work before performing it. Counter overflow is a budget failure.
+    ///
+    /// With work accounting disabled this admits and counts nothing; with
+    /// interruption disabled it reads neither the cancellation flag nor the
+    /// clock. With both disabled it is an inlined test of a field that never
+    /// changes, and does nothing else.
+    #[inline]
     pub fn charge_work(&self, units: usize) -> Result<()> {
         self.check_state(DeadlineCheck::Sampled)?;
+        if !self.0.accounting.counts_work() {
+            return Ok(());
+        }
         self.admit_work(units)
     }
 
@@ -278,7 +364,11 @@ impl ExecutionContext {
         Ok(())
     }
 
+    #[inline]
     fn check_state(&self, deadline: DeadlineCheck) -> Result<()> {
+        if !self.0.accounting.observes_interruption() {
+            return Ok(());
+        }
         if self.0.cancelled.load(Ordering::Acquire) {
             return Err(ProcedureError::Cancelled);
         }
@@ -426,10 +516,16 @@ impl ExecutionContext {
     pub fn usage(&self) -> Result<ResourceUsage> {
         let live_bytes = self.0.live_bytes.load(Ordering::Relaxed);
         let peak_bytes = self.0.peak_bytes.load(Ordering::Relaxed).max(live_bytes);
+        let work_units = if self.0.accounting.counts_work() {
+            WorkCount::Counted(self.0.work_units.load(Ordering::Relaxed))
+        } else {
+            WorkCount::NotCounted
+        };
         Ok(ResourceUsage {
             live_bytes,
             peak_bytes,
-            work_units: self.0.work_units.load(Ordering::Relaxed),
+            work_units,
+            accounting: self.0.accounting,
         })
     }
 }
@@ -440,6 +536,14 @@ impl ExecutionContext {
 /// at the end of that thread's chunk. Charge before performing the work, as with
 /// [`ExecutionContext::charge_work`].
 pub struct WorkMeter {
+    /// Copies of the execution's fixed accounting mode, held by value so that a
+    /// kernel loop charging through `&mut WorkMeter` tests its own fields, which
+    /// nothing else can write, and the optimiser can hoist the test out.
+    counts_work: bool,
+    observes_interruption: bool,
+    /// Units charged since the deadline was last sampled, used only when work
+    /// is uncounted and interruption observed. Local, so never contended.
+    uncounted_since_sample: usize,
     context: ExecutionContext,
     /// Admitted but unspent units. Shared, not local, because a meter that runs
     /// out must be able to take back what idle meters are sitting on.
@@ -452,8 +556,25 @@ impl WorkMeter {
     /// # Errors
     /// Reports cancellation, an expired deadline, and a work budget that the
     /// charge would exceed.
+    #[inline]
     pub fn charge(&mut self, units: usize) -> Result<()> {
-        self.context.check_cancelled()?;
+        if self.observes_interruption {
+            self.context.check_cancelled()?;
+        }
+        if !self.counts_work {
+            // A counted meter samples the deadline in `admit`, once per block.
+            // An uncounted one never admits, so without this it would never
+            // read the deadline at all. Count locally and sample at the same
+            // cadence; nothing shared is touched between samples.
+            if self.observes_interruption {
+                self.uncounted_since_sample = self.uncounted_since_sample.saturating_add(units);
+                if self.uncounted_since_sample >= WORK_BLOCK_UNITS {
+                    self.uncounted_since_sample = 0;
+                    self.context.check_state(DeadlineCheck::Sampled)?;
+                }
+            }
+            return Ok(());
+        }
         // The balance can be taken by another meter between the load and the
         // exchange, so this retries rather than subtracting blindly.
         let mut held = self.balance.load(Ordering::Relaxed);
@@ -569,7 +690,10 @@ impl WorkMeter {
 
 impl Drop for WorkMeter {
     fn drop(&mut self) {
-        self.context.release_meter(&self.balance);
+        // An uncounted meter was never registered and never held a balance.
+        if self.counts_work {
+            self.context.release_meter(&self.balance);
+        }
     }
 }
 

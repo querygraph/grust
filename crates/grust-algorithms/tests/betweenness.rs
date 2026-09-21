@@ -356,9 +356,9 @@ fn betweenness_is_identical_at_any_pool_width_and_charges_the_same_work() {
                 Orientation::Undirected,
                 &context,
             );
-            let before = context.usage().unwrap().work_units;
+            let before = context.usage().unwrap().counted_work().expect("counted");
             let result = betweenness(&projection, BetweennessOptions::default()).unwrap();
-            let work = context.usage().unwrap().work_units - before;
+            let work = context.usage().unwrap().counted_work().expect("counted") - before;
             let bits: Vec<u64> = result.values().iter().map(|v| v.to_bits()).collect();
             (bits, work)
         };
@@ -376,7 +376,7 @@ fn betweenness_observes_cancellation_and_budget_and_releases_scratch() {
     let edges = scrambled(300, 3000);
     let context = context();
     let projection = graph(300, &edges, None, Orientation::Undirected, &context);
-    let projection_work = context.usage().unwrap().work_units;
+    let projection_work = context.usage().unwrap().counted_work().expect("counted");
     let held = context.usage().unwrap().live_bytes;
     context.cancel().unwrap();
     assert!(matches!(

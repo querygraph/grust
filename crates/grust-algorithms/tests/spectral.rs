@@ -361,7 +361,7 @@ fn the_iterations_are_identical_at_any_pool_width_and_charge_the_same_work() {
     let run = |threads: usize| {
         let context = context().with_concurrency(threads).unwrap();
         let projection = graph(n, &edges, Some(&weights), Orientation::Outgoing, &context);
-        let before = context.usage().unwrap().work_units;
+        let before = context.usage().unwrap().counted_work().expect("counted");
         let options = IterationOptions {
             max_iterations: 30,
             ..Default::default()
@@ -391,7 +391,10 @@ fn the_iterations_are_identical_at_any_pool_width_and_charge_the_same_work() {
                     .collect::<Vec<_>>()
             })
             .collect();
-        (bits, context.usage().unwrap().work_units - before)
+        (
+            bits,
+            context.usage().unwrap().counted_work().expect("counted") - before,
+        )
     };
     let first = run(1);
     for threads in [2, 3, 8] {
@@ -404,7 +407,7 @@ fn the_iterations_observe_cancellation_and_budget_and_release_scratch() {
     let edges = scrambled(5000, 40_000);
     let context = context();
     let projection = graph(5000, &edges, None, Orientation::Undirected, &context);
-    let projection_work = context.usage().unwrap().work_units;
+    let projection_work = context.usage().unwrap().counted_work().expect("counted");
     let held = context.usage().unwrap().live_bytes;
     context.cancel().unwrap();
     assert!(matches!(

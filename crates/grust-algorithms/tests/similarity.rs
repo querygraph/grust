@@ -329,7 +329,7 @@ fn node_similarity_is_identical_at_any_pool_width_and_charges_the_same_work() {
         let run_with = |threads: usize| {
             let context = context().with_concurrency(threads).unwrap();
             let projection = graph(600, &edges, Some(&weights), Orientation::Outgoing, &context);
-            let before = context.usage().unwrap().work_units;
+            let before = context.usage().unwrap().counted_work().expect("counted");
             let rows: Vec<_> = run(
                 &projection,
                 NodeSimilarityOptions {
@@ -341,7 +341,10 @@ fn node_similarity_is_identical_at_any_pool_width_and_charges_the_same_work() {
             .into_iter()
             .map(|(a, b, s)| (a, b, s.to_bits()))
             .collect();
-            (rows, context.usage().unwrap().work_units - before)
+            (
+                rows,
+                context.usage().unwrap().counted_work().expect("counted") - before,
+            )
         };
         let first = run_with(1);
         assert!(first.0.len() > 1000);
@@ -364,7 +367,7 @@ fn node_similarity_observes_cancellation_and_budget_and_releases_scratch() {
     let edges: Vec<_> = (1..3000).map(|node| (node, 0)).collect();
     let context = context();
     let projection = graph(3000, &edges, None, Orientation::Outgoing, &context);
-    let projection_work = context.usage().unwrap().work_units;
+    let projection_work = context.usage().unwrap().counted_work().expect("counted");
     let held = context.usage().unwrap().live_bytes;
     context.cancel().unwrap();
     assert!(matches!(

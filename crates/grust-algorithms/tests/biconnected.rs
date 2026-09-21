@@ -250,7 +250,7 @@ fn biconnectivity_observes_cancellation_and_budget_and_releases_scratch() {
     let edges: Vec<_> = (1..5000).map(|node| (node / 2, node)).collect();
     let context = context();
     let projection = graph(5000, &edges, Orientation::Undirected, &context);
-    let projection_work = context.usage().unwrap().work_units;
+    let projection_work = context.usage().unwrap().counted_work().expect("counted");
     let held = context.usage().unwrap().live_bytes;
     context.cancel().unwrap();
     assert!(matches!(

@@ -202,7 +202,7 @@ fn k_core_observes_cancellation_and_budget_and_releases_scratch() {
 
     // A budget that admits the projection but not the whole peel fails inside
     // the kernel. The projection's own cost is measured, not guessed.
-    let projection_work = context.usage().unwrap().work_units;
+    let projection_work = context.usage().unwrap().counted_work().expect("counted");
     let tight = ExecutionContext::new(ExecutionLimits {
         memory_bytes: 8 * 1024 * 1024,
         work_units: projection_work + 3000,
