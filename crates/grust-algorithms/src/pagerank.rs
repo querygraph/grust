@@ -204,16 +204,16 @@ pub fn pagerank(graph: &GraphProjection, options: PageRankOptions<'_>) -> Result
     let mut scales = Buffer::filled(n, 0.0f64, context)?;
     let mut totals = Buffer::filled(n, 0.0, context)?;
     for source in 0..n {
-        context.charge_work(1)?;
-        for arc in adjacency.range(source) {
-            context.charge_work(1)?;
-            scales.values[source] = scales.values[source].max(adjacency.weight(arc));
-        }
-        if scales.values[source] > 0.0 {
-            for arc in adjacency.range(source) {
-                context.charge_work(1)?;
-                totals.values[source] += adjacency.weight(arc) / scales.values[source];
-            }
+        let scale = &mut scales.values[source];
+        charged_arcs(context, 1, adjacency.range(source), |arc| {
+            *scale = scale.max(adjacency.weight(arc));
+        })?;
+        let scale = *scale;
+        if scale > 0.0 {
+            let total = &mut totals.values[source];
+            charged_arcs(context, 0, adjacency.range(source), |arc| {
+                *total += adjacency.weight(arc) / scale;
+            })?;
         }
     }
     // PageRank divides by the source's own outgoing weight; ArticleRank adds the
@@ -237,17 +237,21 @@ pub fn pagerank(graph: &GraphProjection, options: PageRankOptions<'_>) -> Result
             *value = base * probability;
         }
         for source in 0..n {
-            context.charge_work(1)?;
-            if scales.values[source] == 0.0 {
+            let scale = scales.values[source];
+            if scale == 0.0 {
+                // A dangling row's arcs are not visited, so they are not charged.
+                context.charge_work(1)?;
                 continue;
             }
+            // `damp` is zero for PageRank; hoisted out of the arc loop, the
+            // divisor is the same `f64` the loop formed per arc.
+            let total = totals.values[source] + damp;
             let mass = options.damping * scores.values[source];
-            for arc in adjacency.range(source) {
-                context.charge_work(1)?;
-                let probability = (adjacency.weight(arc) / scales.values[source])
-                    / (totals.values[source] + damp);
-                next.values[adjacency.targets.values[arc]] += mass * probability;
-            }
+            let next = &mut next.values;
+            charged_arcs(context, 1, adjacency.range(source), |arc| {
+                let probability = (adjacency.weight(arc) / scale) / total;
+                next[adjacency.targets.values[arc]] += mass * probability;
+            })?;
         }
         residual = 0.0;
         for (&before, &after) in scores.values.iter().zip(&next.values) {
@@ -279,6 +283,66 @@ pub fn pagerank(graph: &GraphProjection, options: PageRankOptions<'_>) -> Result
     })
 }
 
+/// Arcs the push loop visits between two charges.
+///
+/// It used to charge every arc, and each charge is a compare-exchange on the
+/// execution's shared counter. Charging a source's arcs together takes that out
+/// of the arc loop; capping a charge at this many arcs keeps cancellation and
+/// the sampled deadline polled within that many arcs, however large a source's
+/// out-degree, where a charge per source would leave a hub unpolled for the
+/// whole of its row.
+const ARC_CHARGE_CHUNK: usize = 1024;
+
+/// Charge `lead` units and then every arc of `arcs` before visiting it, in
+/// chunks of at most [`ARC_CHARGE_CHUNK`] arcs, the first carrying `lead`.
+///
+/// The units are the ones a charge per unit would make, in the same order, so
+/// the total is unchanged and a budget refuses at the same unit: see
+/// [`charge_exactly`].
+fn charged_arcs(
+    context: &crate::ExecutionContext,
+    lead: usize,
+    arcs: std::ops::Range<usize>,
+    mut visit: impl FnMut(usize),
+) -> Result<()> {
+    let mut lead = lead;
+    let mut start = arcs.start;
+    loop {
+        let end = arcs.end.min(start.saturating_add(ARC_CHARGE_CHUNK));
+        charge_exactly(context, lead + (end - start))?;
+        for arc in start..end {
+            visit(arc);
+        }
+        if end >= arcs.end {
+            return Ok(());
+        }
+        lead = 0;
+        start = end;
+    }
+}
+
+/// Charge `units` at once, stopping where charging them one at a time would.
+///
+/// A charge that does not fit is refused whole, which would leave the
+/// execution's counter short of the budget where a unit at a time would have
+/// filled it to the last unit. When the whole charge is refused, the units are
+/// charged singly until one is refused, so the counter a caller reads after the
+/// refusal, and the unit at which it happened, are those of a charge per unit.
+fn charge_exactly(context: &crate::ExecutionContext, units: usize) -> Result<()> {
+    if units == 0 {
+        return Ok(());
+    }
+    match context.charge_work(units) {
+        Err(AlgorithmError::BudgetExceeded { .. }) => {
+            for _ in 0..units {
+                context.charge_work(1)?;
+            }
+            Ok(())
+        }
+        other => other,
+    }
+}
+
 /// The parallel iteration, weighted or not.
 ///
 /// Each iteration computes, for every target `v`,
@@ -306,13 +370,13 @@ fn pull(
     // still sum finitely, and a row of zero weight is dangling.
     //
     // Only a weighted projection needs them. An unweighted arc's probability is
-    // `1/out-degree`, which `offsets` already holds, and reading it there keeps
-    // the inner loop to the two randomly indexed arrays it cannot avoid,
-    // `scores` and `offsets`. Deriving it from `scales` and `totals` instead
-    // adds two more 8-byte-per-node streams under the same random index; on
-    // roadNet-CA that is 48 MB of randomly touched arrays against a 24.8 MB L3
-    // where 32 MB fitted before, and it cost the kernel a measured 1.5x at
-    // every worker count.
+    // `1/out-degree`, which `offsets` already holds. Deriving it from `scales`
+    // and `totals` instead added two more 8-byte-per-node streams under the
+    // same random index as `scores` and `offsets`; on roadNet-CA that is 48 MB
+    // of randomly touched arrays against a 24.8 MB L3 where 32 MB fitted
+    // before, and it cost the kernel a measured 1.5x at every worker count.
+    // The per-source shares below go the other way: one 8-byte stream under
+    // the random index instead of those two.
     let weighted = graph.is_weighted();
     let factored = if weighted { n } else { 0 };
     let mut scales = Buffer::indexed(factored, 0.0f64, context)?;
@@ -365,12 +429,11 @@ fn pull(
     // Unweighted there is no `totals` to take the mean of, and none is needed:
     // every unweighted arc contributes exactly `1.0` to its source's total, so
     // the mean outgoing weight *is* the mean out-degree, `arcs / nodes`. That is
-    // a scalar, computed once here rather than read per arc, which keeps the
-    // inner loop to the two randomly indexed arrays the unweighted path was
-    // reduced to and costs one addition. It is the same `f64`
-    // `mean_outgoing` would return over the array that is no longer built:
-    // summing integer-valued degrees is exact below 2^53, so the chunked sum and
-    // the arc count agree bit for bit.
+    // a scalar, computed once here rather than read per arc, so the arc loop
+    // still reads `shares` alone and forming each share costs one addition. It
+    // is the same `f64` `mean_outgoing` would return over the array that is no
+    // longer built: summing integer-valued degrees is exact below 2^53, so the
+    // chunked sum and the arc count agree bit for bit.
     let damp = match options.variant {
         RankVariant::PageRank => 0.0,
         RankVariant::ArticleRank if weighted => mean_outgoing(&totals.values),
@@ -378,37 +441,75 @@ fn pull(
     };
     let scales = &scales.values;
     let totals = &totals.values;
+    // Unweighted, each source's share of its score, `score / (out-degree +
+    // damp)`, is formed once per iteration, in the dangling pass that already
+    // reads each node's score and `offsets` row in order, so an arc reads one
+    // randomly indexed array, `shares`, instead of `scores` and both ends of
+    // the source's `offsets` row. The quotient is the one the arc loop used to
+    // form per arc, from the same operands, and the arcs add it in the same
+    // order, so every score keeps its bits (`tests/pagerank_pinned.rs`).
+    //
+    // It costs one f64 per node, admitted here. At scale it also narrows the
+    // randomly touched set the comment above measured, from `scores` and
+    // `offsets` to `shares` alone. Forming the shares is not charged: it is part
+    // of visiting a node in the dangling pass, which charges it, so a work
+    // budget still fails at the same unit.
+    let mut shares = Buffer::indexed(if weighted { 0 } else { n }, 0.0f64, context)?;
     let mut next = Buffer::indexed(n, 0.0f64, context)?;
     let mut residual = f64::INFINITY;
     for iteration in 1..=options.max_iterations {
-        // Dangling mass: scores of nodes with no outgoing arc.
-        let dangling = crate::parallel::map_chunks(
-            context,
-            workers,
-            &scores.values,
-            |first, slice, meter| {
+        // Dangling mass: scores of nodes with no outgoing arc, summed in the
+        // fixed chunks of `REDUCTION_CHUNK_LEN` on both branches.
+        let scores_now = &scores.values;
+        let dangling = if weighted {
+            crate::parallel::map_chunks(context, workers, scores_now, |first, slice, meter| {
                 meter.charge(slice.len())?;
                 let mut sum = 0.0;
                 for (index, &score) in slice.iter().enumerate() {
-                    let node = first + index;
-                    // A weighted row of zero outgoing weight is dangling even
-                    // where arcs exist, which is the push kernel's rule too;
-                    // unweighted, having no arc is the whole of it.
-                    let dangling = if weighted {
-                        scales[node] <= 0.0
-                    } else {
-                        offsets[node + 1] == offsets[node]
-                    };
-                    if dangling {
+                    // A row of zero outgoing weight is dangling even where arcs
+                    // exist, which is the push kernel's rule too.
+                    if scales[first + index] <= 0.0 {
                         sum += score;
                     }
                 }
                 Ok(sum)
-            },
-        )?;
+            })?
+        } else {
+            crate::parallel::for_chunks(
+                workers,
+                &mut shares.values,
+                crate::parallel::REDUCTION_CHUNK_LEN,
+                |first, chunk| {
+                    // `for_chunks` hands out no meter, so each fixed chunk is
+                    // charged on the execution directly: one exchange per 4,096
+                    // nodes, which is what a meter did too, since a charge that
+                    // size never fits in its 1,024-unit block. Admission is
+                    // exact either way (`tests/pagerank_pinned.rs`).
+                    context.charge_work(chunk.len())?;
+                    let mut sum = 0.0;
+                    for (index, share) in chunk.iter_mut().enumerate() {
+                        let node = first + index;
+                        let score = scores_now[node];
+                        let out_degree = offsets[node + 1] - offsets[node];
+                        // Unweighted, having no arc is the whole of dangling. A
+                        // dangling node contributes through `base`, never
+                        // through an arc, so its share is never read.
+                        if out_degree == 0 {
+                            sum += score;
+                            *share = 0.0;
+                        } else {
+                            // `damp` is zero for PageRank, so this is one
+                            // add on a divisor that was already being formed.
+                            *share = score / (out_degree as f64 + damp);
+                        }
+                    }
+                    Ok(sum)
+                },
+            )?
+        };
         let dangling = crate::parallel::reduce_in_order(&dangling, 0.0, |total, part| total + part);
         let base = (1.0 - options.damping) + options.damping * dangling;
-        let scores_now = &scores.values;
+        let shares = &shares.values;
         let nonfinite = std::sync::atomic::AtomicBool::new(false);
         crate::parallel::for_each_chunk(
             context,
@@ -435,13 +536,7 @@ fn pull(
                         }
                     } else {
                         for arc in arcs {
-                            let source = reverse.targets.values[arc];
-                            let out_degree = offsets[source + 1] - offsets[source];
-                            // A node with no outgoing arc contributes through
-                            // the dangling mass in `base`, never through an arc.
-                            // `damp` is zero for PageRank, so this is one add on
-                            // a divisor that was already being formed.
-                            sum += scores_now[source] / (out_degree as f64 + damp);
+                            sum += shares[reverse.targets.values[arc]];
                         }
                     }
                     let updated = base * teleport[node] + options.damping * sum;

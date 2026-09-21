@@ -19,6 +19,9 @@ reconstructed from Git history, release commits, and the shipped docs.
   added mean is the mean out-degree, `arcs / nodes`, taken from the offsets as a
   scalar so the parallel path keeps the two arrays it was reduced to in 0.22.0
   and pays one addition per arc: measured 1.2-1.5% over PageRank on roadNet-CA.
+  With the unweighted pull hoist below, that addition is paid once per node per
+  iteration, where each share is formed, rather than per arc; the 1.2-1.5% was
+  measured before the hoist and has not been re-measured.
 - Add **link prediction**: `link_prediction` and
   `grust.algorithms.linkPrediction({metric, node1, node2, communityProperty})`,
   one kernel for NetworKit's six predictors, chosen by `metric`:
@@ -47,6 +50,24 @@ reconstructed from Git history, release commits, and the shipped docs.
   bit against the definitions recomputed from `BTreeSet` neighbour sets on 400
   random multigraphs with loops and isolates, every ordered pair and every
   distance-two pair, plus hand-computed cases per metric.
+- **PageRank's default path is faster, with unchanged results.** An execution
+  that sets no concurrency runs the sequential push loop, which charged the
+  work budget once per arc, each charge an atomic exchange on the execution's
+  shared counter. It now charges a source's arcs together, in chunks of at most
+  1,024 arcs, so cancellation is still observed within 1,024 arcs of a
+  high-degree source. The same units are charged in the same order, and a
+  refused budget stops at the same unit it did before. The deadline, which is
+  sampled once per 1,024 charges, is now read about once per 1,024 sources or
+  arc chunks rather than once per 1,024 units.
+- **The unweighted parallel PageRank reads one array per arc instead of two.**
+  Each source's `score / out-degree` is formed once per iteration in the pass
+  that already sums the dangling mass, instead of on every arc. It costs one
+  more f64 per node (about 15.7 MB on roadNet-CA's 1.97 million nodes),
+  admitted like the kernel's other scratch. The weighted pull is unchanged.
+- Scores, iteration counts, residuals, the work charged and the unit at which a
+  budget refuses are pinned to their previous bits by
+  `tests/pagerank_pinned.rs`, on the push loop and on the pull at one, two and
+  sixteen workers.
 
 ### Node properties
 
