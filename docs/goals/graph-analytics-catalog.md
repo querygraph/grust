@@ -707,6 +707,13 @@ M4 (Tier A), then per milestone.** Each is a minor version: new public API.
   negative cycle is a result with a witness (P4), not an error. A\* needs P6
   (latitude/longitude node properties) to be registered at all; a Rust-only
   `astar` over `Fn(usize) -> f64` is possible now but reaches no caller.
+- **Link prediction (group 30) never enumerates n² pairs.** Candidates are the
+  pairs at distance two by default, or a caller's list (`CandidatePairs`, from
+  ids, rows or Arrow batches). Only `sameCommunity` reads a property, so a
+  `PropertyOption` now carries `needed`, a predicate on the call's arguments:
+  the community is requested for that metric alone, and `run_on_projection`
+  serves a property kernel whose call requests nothing with
+  `NodeProperties::empty`. Undirected only and unweighted, as in NetworKit.
 
 ## Progress ledger
 
@@ -722,3 +729,4 @@ Update in the same commit as the work. `—` not started, `wip`, `done <commit>`
 | 9 A\*/Bellman–Ford | done | 10 Eigenvector family | done except `articleRank` | 11 Bridges family | done |
 | 12 Spanning forest | done | 13 Max flow | done (`maxFlow`, `minCut`) | 14 FastRP | done |
 | 22 Modularity/conductance | done (0.22.0) | 15–21, 23–35 | — (see Tier B) | | |
+| 30 Link prediction | done (`linkPrediction`, branch `work/link-prediction`) | | | | |

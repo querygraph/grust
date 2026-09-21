@@ -226,6 +226,15 @@ impl NodeProperties {
         })
     }
 
+    /// No columns: for a call to a property-reading kernel that, with the
+    /// options it was given, reads none.
+    pub fn empty(projection: &GraphProjection) -> Self {
+        Self {
+            graph: projection.clone(),
+            columns: Vec::new(),
+        }
+    }
+
     /// The projection these rows are aligned with.
     pub fn projection(&self) -> &GraphProjection {
         &self.graph

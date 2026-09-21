@@ -1,9 +1,9 @@
 use super::*;
 use algorithms::{
     BetweennessOptions, ClosenessOptions, FastRpOptions, HarmonicOptions, IterationOptions,
-    KatzOptions, LabelPropagationOptions, LouvainOptions, MissingWeight, NodeSimilarityOptions,
-    Orientation, PageRankOptions, ProjectionOptions, RankVariant, SimilarityMetric,
-    SpanningObjective, SpanningTreeOptions, TriangleOptions, WeightSelection,
+    KatzOptions, LabelPropagationOptions, LinkMetric, LouvainOptions, MissingWeight,
+    NodeSimilarityOptions, Orientation, PageRankOptions, ProjectionOptions, RankVariant,
+    SimilarityMetric, SpanningObjective, SpanningTreeOptions, TriangleOptions, WeightSelection,
 };
 
 fn option(name: &str, value_type: ValueType, default: Value, nullable: bool) -> OptionField {
@@ -479,4 +479,55 @@ pub(super) fn louvain(args: &ValidatedArguments) -> Result<LouvainOptions> {
         tolerance: number(value(args, "tolerance")?)?,
         seed,
     })
+}
+
+pub(super) fn link_prediction_fields() -> Vec<OptionField> {
+    vec![
+        option(
+            "metric",
+            ValueType::String,
+            Value::String("commonNeighbors".into()),
+            false,
+        ),
+        // Read by `sameCommunity` only; the default is the modularity kernel's.
+        option(
+            "communityProperty",
+            ValueType::String,
+            Value::String("community".into()),
+            false,
+        ),
+        option("node1", ValueType::Strings, Value::Null, true),
+        option("node2", ValueType::Strings, Value::Null, true),
+    ]
+}
+
+pub(super) fn link_metric(args: &ValidatedArguments) -> Result<LinkMetric> {
+    match value(args, "metric")? {
+        Value::String(value) => match value.to_ascii_lowercase().as_str() {
+            "commonneighbors" => Ok(LinkMetric::CommonNeighbors),
+            "adamicadar" => Ok(LinkMetric::AdamicAdar),
+            "resourceallocation" => Ok(LinkMetric::ResourceAllocation),
+            "preferentialattachment" => Ok(LinkMetric::PreferentialAttachment),
+            "totalneighbors" => Ok(LinkMetric::TotalNeighbors),
+            "samecommunity" => Ok(LinkMetric::SameCommunity),
+            _ => Err(ProcedureError::InvalidArguments(
+                "metric must be commonNeighbors, adamicAdar, resourceAllocation, preferentialAttachment, totalNeighbors or sameCommunity".into(),
+            )),
+        },
+        _ => Err(ProcedureError::InvalidArguments(
+            "metric must be a string".into(),
+        )),
+    }
+}
+
+/// Explicit candidates: `node1[i]` with `node2[i]`. Neither means every pair at
+/// distance two; one without the other is an error.
+pub(super) fn link_pairs(args: &ValidatedArguments) -> Result<Option<(&[String], &[String])>> {
+    match (value(args, "node1")?, value(args, "node2")?) {
+        (Value::Null, Value::Null) => Ok(None),
+        (Value::StringArray(first), Value::StringArray(second)) => Ok(Some((first, second))),
+        _ => Err(ProcedureError::InvalidArguments(
+            "node1 and node2 are given together, as string arrays of equal length".into(),
+        )),
+    }
 }
