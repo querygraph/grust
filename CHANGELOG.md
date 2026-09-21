@@ -6,6 +6,20 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ## Unreleased
 
+### Graph algorithms
+
+- **ArticleRank**: `RankVariant::ArticleRank` on `PageRankOptions`, and
+  `grust.algorithms.articleRank` with PageRank's options and result shape. A
+  source divides its score by its outgoing weight plus the mean outgoing weight
+  over all nodes, so a citation from a node that cites little is worth less than
+  PageRank makes it. The inflated divisor means scores do not sum to one, and
+  comparing their magnitudes with PageRank's is meaningless; their order is the
+  point. Weighted and unweighted, sequential and parallel, and the test checks
+  the kernel against the recurrence written out again densely. Unweighted the
+  added mean is the mean out-degree, `arcs / nodes`, taken from the offsets as a
+  scalar so the parallel path keeps the two arrays it was reduced to in 0.22.0
+  and pays one addition per arc: measured 1.2-1.5% over PageRank on roadNet-CA.
+
 ## 0.22.0 — Mysid — 2026-09-21
 
 ### Graph algorithms

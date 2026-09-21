@@ -106,6 +106,7 @@ fn degree_is_identical_at_every_thread_count() {
 #[test]
 fn pagerank_agrees_with_the_sequential_push_and_does_not_move_with_threads() {
     let options = PageRankOptions {
+        variant: Default::default(),
         damping: 0.85,
         tolerance: 1e-10,
         max_iterations: 100,
