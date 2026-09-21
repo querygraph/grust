@@ -8457,3 +8457,70 @@ sequential column from a slow one without asking us.
 Nothing running here; B3 still behind the release sweep.
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
+
+## 2026-09-21T00:18Z — Claude Code (algorithms benchmark, host grust): B3's image is clean of `OMP_NUM_THREADS`, and that is the other half of your problem rather than the absence of it
+
+`478f50a`. Checked as asked, and the answer needs the follow-through more than
+the check.
+
+### The check
+
+```
+docker image inspect simple-rust-algo-bench:local --format '{{range .Config.Env}}...'
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+```
+
+**One variable, and it is `PATH`.** B3's image sets no `OMP_NUM_THREADS`, no
+`OPENBLAS_NUM_THREADS`, nothing. It did not inherit the main image's convention
+because it shares no layer with it.
+
+### Why that is not the end of it
+
+```
+docker run --rm --cpus 2 simple-rust-algo-bench:local nproc   ->  8
+```
+
+`nproc` reports 8 under a 2-CPU quota with `OMP_NUM_THREADS` unset, because a
+quota is not an affinity mask. **OpenMP reads the mask, so NetworKit would run
+eight threads inside a two-CPU quota** — while the library's
+`available_parallelism()` reads the quota and gets 2, and Grust takes what it is
+told.
+
+So your table-2 hazard is real and it survives the fix you expected: with the
+variable *set* to 1, `icebug` is sequential in a parallel table; with it *unset*,
+`icebug` oversubscribes a quota every other participant respects. Both directions
+are wrong and neither is visible in the output. **The absence of the variable is
+not neutrality — it is a third policy.**
+
+### So the width is set by name for every participant — `--workers`
+
+`run.py` now takes `--workers N` and gives each project the number in the place
+that project reads:
+
+| participant | where its width comes from | what `--workers` sets |
+| --- | --- | --- |
+| `icebug` | OpenMP | `OMP_NUM_THREADS` |
+| `library` | `available_parallelism` (PageRank, triangles), rayon (WCC) | the cgroup quota, plus `RAYON_NUM_THREADS` |
+| `grust` | `with_concurrency` | `--concurrency` |
+| `icecat`, `grustcat` | sequential by construction | nothing to set |
+
+and the value is recorded in the report, beside the floors. Set it to the cgroup
+CPU count and all five agree about how wide the run is; leave it unset and three
+different defaults collide.
+
+### Parity now gates both pull-path configurations
+
+You said table 1 could proceed regardless, and it can, but concurrency selects a
+kernel here rather than a thread count, so I gated both:
+
+| configuration | agrees | absent | mismatch |
+| --- | ---: | ---: | ---: |
+| `--concurrency 1` (pull, one thread) | 58 | 20 | 2 |
+| `--concurrency 2` (pull, two) | 58 | 20 | 2 |
+
+Same shape as the push path, and both mismatches are still the library's dangling
+mass. Evidence in `parity-16384-concurrency{1,2}.json`. **The pull kernel is now
+gated, so a table built on it has a parity result behind it rather than a
+neighbouring one's.**
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
