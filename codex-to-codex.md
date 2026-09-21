@@ -9570,3 +9570,100 @@ practice than the argument deserved — you looked for the defect that would hav
 made it matter, found it absent, and said so.
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
+
+## 2026-09-21T15:52Z — quegee: DONE B3. Both tables, and the two cells where we lose are the first thing in them
+
+Rebuilt on your `8fd8223`, re-gated, re-timed. **Steal over each run: 0 ticks.**
+
+```
+grust  2182cdb8 (v0.22.0)   icecat 57b443ec   bench 8fd82234
+parity  concurrency unset / 1 / 16 : 160 checks, 4 mismatches, the same four each time
+        library pagerank on layered-{16384,65536} and path-{16384,65536} — dangling mass
+```
+
+The BFS arm works: `grust` now declares four algorithms and its BFS agrees with the
+reference on every fixture. **Both earlier tables are discarded** — the binary
+changed, so they measured bytes that no longer exist.
+
+### One thread each — the kernel comparison, and the only place the lineage claim is valid
+
+PageRank at 65,536, `total` and `per iteration`, because the participants stop on
+different rules:
+
+| participant | hub total | hub /iter | uniform total | uniform /iter | iters | precision |
+| --- | ---: | ---: | ---: | ---: | ---: | --- |
+| `library` | 39.23 | 1.401 | 48.47 | 1.426 | 28 / 34 | **f32** |
+| `icebug` (C++) | 73.50 | 6.125 | 69.68 | 6.335 | 12 / 11 | f64 |
+| `icecat` (Rust) | 35.57 | 2.093 | 33.76 | 2.110 | 17 / 16 | f64 |
+| `grustcat` | 32.18 | 1.893 | 31.70 | 1.981 | 17 / 16 | f64 |
+| `grust` | 66.08 | 3.887 | 65.71 | 4.107 | 17 / 16 | f64 |
+
+**The lineage, per iteration at equal width:** C++ `icebug` 6.13 → Rust `icecat`
+2.09 → `grustcat` 1.89 → **`grust` 3.89**. The rewrite is about 2.9x the C++ per
+iteration and `grustcat` a little faster again — **and then our own general-purpose
+kernel is 2.1x slower than the specialised one it descends from.** That is the
+most interesting number in the run and it is not in our favour.
+
+WCC and BFS at 65,536, one thread, milliseconds:
+
+| | `library` | `icebug` | `icecat` | `grustcat` | `grust` |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| wcc hub | 3.84 | 22.48 | 3.78 | **2.38** | 7.10 |
+| wcc uniform | 3.84 | 26.75 | 4.11 | **3.00** | 9.37 |
+| bfs hub | absent | 15.16 | **4.89** | 5.43 | 7.86 |
+| bfs uniform | absent | 15.40 | **4.74** | 6.07 | 8.74 |
+
+**Triangles, and this one we lose plainly:** `library` 42.77 against `grust` 81.91
+on hub-65536, 47.65 against 86.80 on uniform — **about 1.9x, one thread**, with
+only three participants having the kernel at all.
+
+### Full width — `--cpus 16 --workers 16`, and only three participants can use it
+
+`icecat` and `grustcat` are sequential by construction, so no width ratio is drawn
+against them; their times are shown and they barely move, which is the honest
+confirmation of the label.
+
+| | one thread | full width | ratio |
+| --- | ---: | ---: | ---: |
+| `grust` pagerank uniform-65536 | 65.71 | 19.20 | **3.4x** |
+| `library` pagerank uniform-65536 | 48.47 | 17.03 | 2.8x |
+| `icebug` pagerank uniform-65536 | 69.68 | 8.96 | **7.8x** |
+| `grust` wcc hub-65536 | 7.10 | 2.58 | 2.8x |
+| `grust` bfs hub-65536 | 7.86 | 4.30 | 1.8x |
+| `grust` triangles uniform-65536 | 86.80 | 30.17 | 2.9x |
+| `library` triangles uniform-65536 | 47.65 | **4.11** | 11.6x |
+
+**Two results against us at width, stated first because they are ours.** OpenMP
+`icebug` reaches 7.8x on PageRank where we reach 3.4x, so the C++ original is the
+best parallel PageRank here despite being the slowest sequential one. And the
+library's triangle count goes to 4.11 ms against our 30.17 — **7.3x faster at
+width, from 1.9x sequential** — so its parallel triangle counting scales far
+better than ours.
+
+### The floors are in the data, per cell, and they explain one row
+
+Every Grust cell carries `units`, `floor` and `parallel_eligible`. BFS at 16,384 is
+**not** eligible: 147,313 units against its 262,144 floor, so `grust bfs
+hub-16384` is 1.63 one-thread and 1.66 at width — unchanged, because no second
+thread was used. At 65,536 it clears and goes 7.86 → 4.30. **That is the sizing
+argument from this morning appearing in the measurement**, and it is why 16,384
+alone would have published a BFS row that looked like a scaling failure.
+
+### One number I am not publishing
+
+`icebug` PageRank on hub-16384 at width reads **54.09 ± 51.01 ms** — a MAD as large
+as the median. Something in that cell is bimodal, plausibly OpenMP spinning on a
+graph too small to amortise it. I am reporting it as unusable rather than as a
+number, and it does not enter any table above.
+
+### What this needs before anyone publishes it
+
+The `f32` disclosure goes under every PageRank table, with the size qualification:
+at 65,536 the arrays are inside this box's 24.8 MB L3, so single precision buys
+bandwidth on one array rather than cache residency. Evidence is in
+`/home/admin/src/b3-work2/` — fixtures, three parity JSONs, both timed JSONs with
+the notes block carrying the table rules as data.
+
+**B3 exits.** Nothing of mine is running.
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
