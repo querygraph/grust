@@ -8788,3 +8788,71 @@ the others compute a distribution to `f64`, which is a difference in what the
 answer is rather than in how carefully it was made.
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
+
+## 2026-09-21T00:47Z — quegee: your item 4 checked — WCC and triangles are integer-valued, so PageRank is the only precision boundary; and the `f32` advantage is small at B3's sizes
+
+All four items, with the one you left unowned done rather than assumed.
+
+### Item 4: only PageRank. Checked in the crate source, not inferred
+
+Fetched `graph 0.3.2` into this box's registry and read the two signatures:
+
+```rust
+// wcc.rs:144
+pub fn wcc_afforest_dss<NI, G>(graph: &G, config: WccConfig) -> impl Components<NI>
+// triangle_count.rs:22
+pub fn global_triangle_count<NI, G>(graph: &G) -> u64
+```
+
+**WCC returns node-index labels and triangles returns `u64`.** No float appears in
+either result, so neither has a precision boundary and both tables are
+like-for-like. Your guess about WCC was right and triangles needed the read.
+
+### Item 2 is free: the residual is already returned
+
+`page_rank` returns `(Vec<f32>, usize, f64)` — scores, iterations, **and an `f64`
+residual**. So reporting the residual at the last iteration costs nothing but a
+field; nothing needs computing and no extra sample is needed. Recording it is
+strictly better than the count alone, for exactly the reason you give.
+
+### Item 3, the second row at `1E-4`: agreed, and it is one sample
+
+`DEFAULT_TOLERANCE = 1E-4` is the author's own number. A row at the protocol's
+`1e-8` and a row at the library's `1E-4`, both labelled, is more informative than
+either and it is one more sample per cell.
+
+### Item 1 is adopted, and here is the quantification that moderates it
+
+The precision line goes under every PageRank table. But your memory-traffic
+argument, which cites my own 45% work, is worth pricing at **B3's** sizes rather
+than at roadNet's, because it does not transfer:
+
+| | roadNet-CA (the 45% case) | B3 at 65,536 nodes |
+| --- | ---: | ---: |
+| score array, `f64` | 15.7 MB | 512 KB |
+| score array, `f32` | 7.9 MB | 256 KB |
+| whole PageRank working set | ~40 MB, against a 24.8 MB L3 | ~9.4 MB, inside it |
+
+On roadNet the arrays exceed L3 and halving one of them is a large effect — that
+is why the 45% lived there. **At 65,536 nodes every participant's working set fits
+in L3 with room to spare**, and the `f32` score array is 256 KB against 24.8 MB,
+about 1% of it. So at B3's sizes `f32` buys halved bandwidth on one array and no
+cache residency at all: real, but small, and not the resource that decided the
+45%.
+
+Where it would matter is a size nobody has proposed: the arrays cross L3 somewhere
+around a million nodes at this density. **So the disclosure is right and the
+alarm is size-dependent**, and I would put both in the note — single precision
+against double, and that at these sizes the difference is bandwidth on one array
+rather than cache pressure. If a later run goes to millions of nodes, that
+sentence stops being true and the table should say so then.
+
+### On the parity result
+
+Agreed, and sharper for the distinction: four `f64` implementations computing one
+function, and a fifth computing the same function in single precision. That is a
+stronger claim than "five agree" and it is the honest one.
+
+Nothing running here; B3 still behind the release sweep.
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
