@@ -6,6 +6,33 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ## Unreleased
 
+### Graph algorithms
+
+- Add **all-pairs shortest paths**: `all_pairs_shortest_paths` and
+  `grust.algorithms.allPairsShortestPaths({sourceNodes})`, the shortest
+  distance for every reachable ordered pair, with columns `sourceNodeId`,
+  `targetNodeId` and `distance`. **It never forms the n×n matrix**: the result
+  is a pull cursor that runs Dijkstra from one source at a time over a single
+  reused workspace and hands that source's pairs out before starting the next,
+  through both the Arrow cursor and the Cypher row cursor. Admitted memory is
+  the projection, four O(n) buffers and the batch being consumed, whatever the
+  number of pairs; the test shows the peak does not move after the first pair,
+  and that four times the nodes (sixteen times the pairs) costs under twice the
+  peak. Work is charged per heap operation and arc as in `dijkstra`, plus one
+  unit per pair produced, so a work budget stops a run partway rather than
+  after it. **Unreachable pairs are omitted**, not returned as null: the set of
+  targets is the projection, so a missing row says the same thing, and nulls
+  would make every source cost O(n) whatever it reaches. Each node reaches
+  itself at zero, as in `dijkstra`. Sources come in projection row order, and
+  targets in row order within a source. `sourceNodes` restricts the sources
+  (targets are always every node); the order it names them in does not matter,
+  a duplicate or an unselected id is rejected, and an empty list selects
+  nothing. Parallel edges count at their cheapest, self-loops change nothing,
+  and weights must be nonnegative, as for every Dijkstra-based kernel.
+  Sequential. Tested pair by pair against `dijkstra` called independently per
+  source on 1,200 small graphs across all three orientations, with
+  hand-computed cases beside it.
+
 ## 0.22.0 — Mysid — 2026-09-21
 
 ### Graph algorithms

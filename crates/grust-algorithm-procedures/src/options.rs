@@ -136,6 +136,24 @@ pub(super) fn pagerank(args: &ValidatedArguments) -> Result<PageRankOptions<'_>>
     })
 }
 
+pub(super) fn all_pairs_fields() -> Vec<OptionField> {
+    vec![option("sourceNodes", ValueType::Strings, Value::Null, true)]
+}
+
+pub(super) fn all_pairs(args: &ValidatedArguments) -> Result<algorithms::AllPairsOptions<'_>> {
+    Ok(algorithms::AllPairsOptions {
+        source_nodes: match value(args, "sourceNodes")? {
+            Value::Null => None,
+            Value::StringArray(values) => Some(values),
+            _ => {
+                return Err(ProcedureError::InvalidArguments(
+                    "sourceNodes must be a string array".into(),
+                ));
+            }
+        },
+    })
+}
+
 pub(super) fn triangle_fields() -> Vec<OptionField> {
     vec![option("maxDegree", ValueType::Integer, Value::Null, true)]
 }

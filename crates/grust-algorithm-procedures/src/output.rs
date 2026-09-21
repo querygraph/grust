@@ -10,6 +10,8 @@ pub(super) enum AlgorithmOutput {
     Paths(algorithms::ShortestPaths),
     /// Paths being streamed as rows; never produced by a kernel.
     PathRows(algorithms::PathCursor),
+    /// Reachable pairs, computed as they are pulled; never materialized.
+    AllPairs(algorithms::AllPairsShortestPaths),
     Order(algorithms::NodeOrder),
     Topology(algorithms::TopologicalOrder),
     /// A value per node: the shape most of the catalog returns.
@@ -26,6 +28,7 @@ impl AlgorithmOutput {
             Self::PageRank(result) => result.into_arrow_results(),
             Self::Degrees(result) => result.into_arrow_results(),
             Self::Paths(result) => result.into_arrow_results()?,
+            Self::AllPairs(result) => result.into_arrow_results()?,
             Self::Order(result) => result.into_arrow_results(),
             Self::Topology(result) => result.into_arrow_results(),
             Self::Table(result) => result.into_arrow_results(),
@@ -65,6 +68,12 @@ impl ProcedureCursor for AlgorithmCursor {
         if let AlgorithmOutput::PathRows(cursor) = &mut self.output {
             return match cursor.next_path()? {
                 Some(path) => path_batch(&self.graph, path).map(Some),
+                None => Ok(None),
+            };
+        }
+        if let AlgorithmOutput::AllPairs(pairs) = &mut self.output {
+            return match pairs.next_pair()? {
+                Some(pair) => pair_batch(&self.graph, pair).map(Some),
                 None => Ok(None),
             };
         }
@@ -114,6 +123,7 @@ impl ProcedureCursor for AlgorithmCursor {
             ),
             AlgorithmOutput::Paths(_)
             | AlgorithmOutput::PathRows(_)
+            | AlgorithmOutput::AllPairs(_)
             | AlgorithmOutput::Topology(_) => {
                 return Err(ProcedureError::OutputContract(
                     "path output reached scalar adapter".into(),
@@ -176,6 +186,7 @@ impl ProcedureCursor for AlgorithmCursor {
             }
             AlgorithmOutput::Paths(_)
             | AlgorithmOutput::PathRows(_)
+            | AlgorithmOutput::AllPairs(_)
             | AlgorithmOutput::Topology(_) => {
                 return Err(ProcedureError::OutputContract(
                     "path output reached scalar adapter".into(),
@@ -258,6 +269,28 @@ fn path_batch(
     row.push(Value::StringArray(node_ids));
     row.push(Value::FloatArray(costs));
     row.push(Value::IntArray(ordinals));
+    batch(row, reservation)
+}
+
+/// One pair as one row, admitted for as long as the consumer holds it.
+fn pair_batch(
+    graph: &algorithms::GraphProjection,
+    pair: algorithms::ShortestPair,
+) -> Result<ProcedureBatch> {
+    let context = graph.execution();
+    context.charge_work(1)?;
+    let source = graph.node_ids()[pair.source].as_str();
+    let target = graph.node_ids()[pair.target].as_str();
+    let reservation = context.reserve(
+        row_bytes(3)
+            .saturating_add(source.len())
+            .saturating_add(target.len()),
+    )?;
+    let mut row = Vec::new();
+    row.try_reserve_exact(3)?;
+    row.push(Value::String(source.into()));
+    row.push(Value::String(target.into()));
+    row.push(Value::Float(pair.distance));
     batch(row, reservation)
 }
 
