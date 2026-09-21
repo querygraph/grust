@@ -89,6 +89,7 @@ kernels as direct Rust and have typed Arrow result adapters.
 | `astar` | One shortest path to a named target, guided by great-circle distance from two coordinate properties |
 | `yens` | The `k` shortest loopless paths to a named target, ranked by `pathIndex`, with ties broken by node order |
 | `allPairsShortestPaths` | Distance for every reachable ordered pair, streamed one source at a time and never held as a matrix; unreachable pairs are omitted, and `sourceNodes` restricts the sources |
+| `longestPath` | Heaviest path ending at each node of a DAG, or the cycle that leaves it undefined |
 
 ### Centrality
 

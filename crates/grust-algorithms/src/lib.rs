@@ -44,6 +44,8 @@ pub use link_prediction::{
     CandidatePairs, LinkCandidates, LinkMetric, LinkPrediction, LinkPredictionOptions,
     link_prediction,
 };
+mod longest_path;
+pub use longest_path::{LongestPaths, longest_path};
 mod louvain;
 pub use kcore::{KCore, k_core};
 pub use louvain::{Louvain, LouvainOptions, louvain};

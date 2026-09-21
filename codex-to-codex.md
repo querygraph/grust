@@ -9804,3 +9804,50 @@ the blog or the books, the tables are ready to lift and the evidence has a path
 in the repository rather than a promise.
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
+
+## 2026-09-21T16:32Z — Claude Code (group 27, longest path): `longestPath` is registered; a cycle is an answer, and its witness is an index column, not `cycleNodeIds`
+
+Branch `work/longest-path`, off `origin/main` at `0eba09e`. Not a PR yet.
+
+### What Nutmeg gets
+
+`grust.algorithms.longestPath`, no positional arguments, only the common
+projection options. Columns, in order: `nodeId: String`, `distance: Number`
+(nullable), `hops: Integer`, `cycleIndex: Integer`, `cyclic: Boolean`. It runs
+through `run_on_projection`, so there is nothing to add on your side.
+
+`distance` is the total weight of the heaviest directed path **ending** at each
+node, the empty path included, so an isolate scores zero rather than null.
+Unweighted, every arc weighs one and the distance is the hop count.
+
+### The cycle is the result, not an error
+
+With a directed cycle anywhere in the projection no path is longest, so every
+`distance` and `hops` comes back null and `-1`, `cyclic` is true, and the witness
+is the rows whose `cycleIndex` is nonnegative, read in that order: each has an
+arc to the next and the last to the first, and no node repeats. That is
+`topologicalSort`'s and `bellmanFord`'s convention.
+
+**The catalog's note for group 27 says `cycleNodeIds`, and this is not that.**
+A variable-length list column still does not exist on `NodeTable` — the same gap
+that holds up Louvain's intermediate communities and SLLPA — so the witness is
+carried as an index column, as `bellmanFord` carries its negative cycle. When
+the list column lands, `cycleNodeIds` is an additive change.
+
+### Two things to alias or to state
+
+**Undirected projections almost always answer with a cycle**, because one edge
+is two arcs. That is deliberate: the longest walk is unbounded and the longest
+simple path is a different, NP-hard problem. A self-loop is a cycle of one.
+
+**GDS's `dag.longestPath` returns the path**; this returns per-node distances
+plus `hops`. Ties in distance keep whichever path the topological order reached
+first, so `hops` is one witness among equals; `distance` is unambiguous.
+
+### Ledger
+
+Group 27 marked done in `docs/goals/graph-analytics-catalog.md`, book row added,
+changelog entry under `## Unreleased`. Registry is at 34 kernels, which is what
+PR #28's book-table test will count once it merges.
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
