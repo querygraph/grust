@@ -737,3 +737,80 @@ fn bellman_ford_reads_negative_weights_that_every_other_procedure_refuses() {
         .to_string();
     assert!(refused.contains("nonnegative"), "{refused}");
 }
+
+#[test]
+fn modularity_reads_its_communities_from_a_node_property() {
+    // Two triangles joined by one edge, with the partition on the nodes.
+    let community = |id: &str, c: i64| Node::new("N", id, [("c".to_string(), Value::Int(c))]);
+    let edge = |a: &str, b: &str| Edge::new("R", a, b, Props::new());
+    let graph = Graph::new(
+        vec![
+            community("a", 10),
+            community("b", 10),
+            community("c", 10),
+            community("d", 20),
+            community("e", 20),
+            community("f", 20),
+        ],
+        vec![
+            edge("a", "b"),
+            edge("b", "c"),
+            edge("c", "a"),
+            edge("d", "e"),
+            edge("e", "f"),
+            edge("f", "d"),
+            edge("c", "d"),
+        ],
+    );
+    let run_on = |query: &str| {
+        run_read_query_with_registry(
+            &graph,
+            "default",
+            query,
+            &CypherParameters::new(),
+            &registry(),
+        )
+    };
+    let rows = run_on(
+        "CALL grust.algorithms.modularity({orientation: 'undirected', communityProperty: 'c'}) YIELD nodeId, communityId, size, modularity, conductance, totalModularity RETURN nodeId, communityId, size, conductance, totalModularity",
+    )
+    .unwrap()
+    .rows;
+    // One row per community, led by its smallest member.
+    assert_eq!(rows.len(), 2);
+    assert_eq!(rows[0][0], Value::String("a".into()));
+    assert_eq!(rows[0][1], Value::Int(10));
+    assert_eq!(rows[1][1], Value::Int(20));
+    assert_eq!(rows[0][2], Value::Int(3));
+    // Seven edges, and one of a triangle's seven arc-ends leaves it.
+    assert_eq!(rows[0][3], Value::Float(1.0 / 7.0));
+    // Q = 5/14, reached by summing the two communities' parts rather than by
+    // dividing, so it is one unit in the last place from the literal. The
+    // kernel's own test pins the stronger property: the parts sum to the total.
+    match rows[0][4] {
+        Value::Float(total) => assert!((total - 5.0 / 14.0).abs() < 1e-15, "{total}"),
+        ref other => panic!("{other:?}"),
+    }
+
+    // A resolution high enough makes one big community worse than nothing.
+    let split = run_on(
+        "CALL grust.algorithms.modularity({orientation: 'undirected', communityProperty: 'c', resolution: 10.0}) YIELD totalModularity RETURN DISTINCT totalModularity",
+    )
+    .unwrap()
+    .rows;
+    match split[0][0] {
+        Value::Float(value) => assert!(value < 0.0, "{value}"),
+        ref other => panic!("{other:?}"),
+    }
+
+    // A property no node has is an error naming the node, not a zero.
+    let missing = run_on(
+        "CALL grust.algorithms.modularity({orientation: 'undirected', communityProperty: 'absent'}) YIELD nodeId RETURN nodeId",
+    )
+    .unwrap_err()
+    .to_string();
+    assert!(
+        missing.contains("absent") && missing.contains("a"),
+        "{missing}"
+    );
+}

@@ -4,10 +4,12 @@
 
 use arrow_array::RecordBatch;
 use grust_algorithm_procedures::{
-    projection_kernel_names, projection_options, projection_options_for, register_algorithms,
-    run_on_projection,
+    node_property_requests, projection_kernel_names, projection_options, projection_options_for,
+    register_algorithms, run_on_projection, run_with_properties,
 };
-use grust_algorithms::{GraphProjection, Orientation, ProjectionEdge, WeightSelection};
+use grust_algorithms::{
+    GraphProjection, NodeProperties, Orientation, ProjectionEdge, WeightSelection,
+};
 use grust_core::Value;
 use grust_procedures::{
     ExecutionContext, ExecutionLimits, ProcedureError, ProcedureRegistry, RegistryBuilder,
@@ -49,6 +51,45 @@ fn projection(context: &ExecutionContext, orientation: Orientation) -> GraphProj
     .unwrap()
 }
 
+/// Run a kernel by name whichever path it needs: a kernel that reads node
+/// properties is refused by `run_on_projection` and served by
+/// `run_with_properties`, so an embedder that asks first can use one path for
+/// every name. Property values come from the projection's own rows, which is
+/// all these kernels need to produce a row.
+fn run_any(
+    name: &str,
+    graph: &GraphProjection,
+    args: &grust_procedures::ValidatedArguments,
+) -> Result<grust_algorithms::ArrowResultCursor, ProcedureError> {
+    let wanted = node_property_requests(name, args)?;
+    if wanted.is_empty() {
+        return run_on_projection(name, graph, args);
+    }
+    let graph_with_properties = property_graph(graph.node_count());
+    let properties = NodeProperties::from_graph(&graph_with_properties, graph, &wanted)?;
+    run_with_properties(name, &properties, args)
+}
+
+/// The projection's nodes, each carrying every property name the catalog asks
+/// for. Communities alternate so a partition is not trivially one community.
+fn property_graph(nodes: usize) -> grust_core::Graph {
+    use grust_core::{Node, Props, Value};
+    grust_core::Graph::new(
+        ["a", "b", "c", "isolate"][..nodes]
+            .iter()
+            .enumerate()
+            .map(|(row, id)| {
+                Node::new(
+                    "N",
+                    *id,
+                    Props::from([("community".to_string(), Value::Int((row % 2) as i64))]),
+                )
+            })
+            .collect(),
+        Vec::new(),
+    )
+}
+
 fn drain(mut cursor: grust_algorithms::ArrowResultCursor) -> Vec<RecordBatch> {
     let mut batches = Vec::new();
     while let Some(batch) = cursor.next_batch().unwrap() {
@@ -86,13 +127,11 @@ fn every_registered_projection_kernel_runs_by_name_with_its_declared_columns() {
         // that refusal is theirs to state, and they then run on an undirected one.
         let context = context();
         let mut graph = projection(&context, Orientation::Outgoing);
-        if let Err(ProcedureError::InvalidArguments(message)) =
-            run_on_projection(name, &graph, &args)
-        {
+        if let Err(ProcedureError::InvalidArguments(message)) = run_any(name, &graph, &args) {
             assert!(message.contains("undirected"), "{name}: {message}");
             graph = projection(&context, Orientation::Undirected);
         }
-        let batches = drain(run_on_projection(name, &graph, &args).unwrap());
+        let batches = drain(run_any(name, &graph, &args).unwrap());
         assert!(!batches.is_empty(), "{name} produced no batches");
 
         let declared: Vec<&str> = definition.outputs.iter().map(|f| f.name.as_str()).collect();
@@ -108,11 +147,10 @@ fn every_registered_projection_kernel_runs_by_name_with_its_declared_columns() {
         );
 
         // The prefixed name is the same kernel.
-        let prefixed =
-            drain(run_on_projection(&format!("grust.algorithms.{name}"), &graph, &args).unwrap());
+        let prefixed = drain(run_any(&format!("grust.algorithms.{name}"), &graph, &args).unwrap());
         assert_eq!(prefixed, batches, "{name}");
         // Case is not significant, as in the registry.
-        let lowered = drain(run_on_projection(&name.to_ascii_lowercase(), &graph, &args).unwrap());
+        let lowered = drain(run_any(&name.to_ascii_lowercase(), &graph, &args).unwrap());
         assert_eq!(lowered, batches, "{name}");
     }
 }
@@ -215,7 +253,7 @@ fn every_kernel_but_bellman_ford_refuses_a_signed_projection() {
         assert!(graph.is_signed());
         for name in projection_kernel_names() {
             let args = arguments(&registry, name, serde_json::json!({}));
-            let outcome = run_on_projection(name, &graph, &args);
+            let outcome = run_any(name, &graph, &args);
             if name == "bellmanFord" {
                 assert!(outcome.is_ok(), "bellmanFord refused a signed projection");
                 ran += 1;

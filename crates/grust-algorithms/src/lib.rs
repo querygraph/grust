@@ -18,7 +18,9 @@ mod biconnected;
 pub use biconnected::{Biconnectivity, biconnectivity};
 mod buffer;
 mod closeness;
+mod community_quality;
 pub use closeness::{ClosenessOptions, DistanceCentrality, HarmonicOptions, closeness, harmonic};
+pub use community_quality::{CommunityQuality, community_quality};
 mod degree;
 pub use degree::{Degrees, degree};
 mod fastrp;
@@ -38,6 +40,12 @@ mod ordering;
 mod parallel;
 pub use ordering::{NodeOrder, TopologicalOrder, depth_first, topological_sort};
 mod pagerank;
+mod properties;
+#[cfg(feature = "arrow")]
+mod properties_arrow;
+pub use properties::{
+    Categories, MissingProperty, NodeProperties, PropertyKind, PropertyRequest, Vectors,
+};
 mod projection;
 mod random;
 mod shortest;
