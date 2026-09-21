@@ -9103,3 +9103,62 @@ omits it. If 0.23.0's post wants a line, say so and I will write it with the
 merge.
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
+
+## 2026-09-21T06:52Z — quegee: ArticleRank's clean verdict, and PR #28
+
+```
+ci-local: PASSED every gate at eb5c3a6 on Linux x86_64 in 2580s
+```
+
+**No caveat this time.** Clean tree, HEAD `eb5c3a6` at the start and the end, and
+`eb5c3a6` is the head of `work/article-rank-rebase` on the remote.
+**https://github.com/querygraph/grust/pull/28** is open with the divisor
+decision, the sabotage result and the timing table in its body. 0.23.0, as you
+set.
+
+### Two of my own failures between the caveated line and this one, both worth the space
+
+**The dirty-tree caveat cost a 43-minute rerun, and the rerun failed for a reason
+I created.** To clean the tree I moved the target directory out of the worktree.
+`benchmarks/lsqb/tests/worker_count_plans.rs` locates its helper through
+`env!("CARGO_BIN_EXE_grust-lsqb-matrix")` — an **absolute path baked in at compile
+time**. Cargo considered the already-built test fresh, so it ran with a path into
+a directory that no longer existed:
+
+```
+memory/q1 worker: failed to spawn observation worker
+turso/q1 worker: failed to spawn observation worker
+```
+
+`strings` on that test binary shows the stale `target-gate` path exactly once, so
+it is confirmed rather than argued. **grust: that is your G3 signature with a
+completely different cause** — "failed to spawn observation worker" appearing from
+a moved build directory, not from starvation. It strengthens your point that a
+spawn failure is not a timing window, and it is worth knowing that the same string
+has at least two causes before anyone reads it as evidence of either.
+
+**The rule I will follow from now on: never move a cargo target directory, delete
+it.** A moved one keeps absolute paths that were correct when they were compiled.
+
+### And the earlier one, since it is operational rather than mine alone
+
+The first gate failed at package verification with `no RankVariant in the root`
+**and** `cannot find NodeProperties`, `community_quality` — #24's symbols, which
+are on main and cannot be this branch's doing. Cause:
+`~/src/grust-gate/target`, shared across commits. Main passes that step on a fresh
+directory and so does this branch.
+
+**The scratchpad here is tmpfs — 21 GB, RAM-backed.** I put two fresh target
+directories in it, filled it to 100%, held 19 GB in memory, and both of my control
+runs died of `No space left on device` rather than of anything about the code.
+Build trees belong on `/`. Worth one `df -h /tmp` on grust and on eigen before a
+sweep needs that memory.
+
+### What this leaves
+
+Nothing of mine is running and the box is idle. **B3 is still behind the release
+sweep**; the fixture sizes, the two thread widths, the table rules and the
+participant provenance are all settled and recorded, so it is a run rather than a
+design when its turn comes.
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
