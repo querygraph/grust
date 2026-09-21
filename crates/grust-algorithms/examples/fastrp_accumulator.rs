@@ -206,6 +206,9 @@ struct Diff {
     worst_cosine: f64,
     median_cosine: f64,
     identical: bool,
+    /// Share of components that differ at all. A fixture that leaves this at
+    /// zero has not reached the accumulator and is not evidence.
+    differing: f64,
 }
 
 fn compare(a: &[f32], b: &[f32], d: usize) -> Diff {
@@ -219,7 +222,9 @@ fn compare(a: &[f32], b: &[f32], d: usize) -> Diff {
             rel.push(difference / scale);
         }
     }
-    let identical = abs.iter().all(|&v| v == 0.0);
+    let nonzero = abs.iter().filter(|&&v| v != 0.0).count();
+    let identical = nonzero == 0;
+    let differing = nonzero as f64 / abs.len().max(1) as f64;
     let mut cosines: Vec<f64> = a
         .chunks(d)
         .zip(b.chunks(d))
@@ -236,6 +241,7 @@ fn compare(a: &[f32], b: &[f32], d: usize) -> Diff {
         worst_cosine,
         median_cosine: median(&mut cosines),
         identical,
+        differing,
     }
 }
 
@@ -266,13 +272,14 @@ fn accuracy(config: &Config) -> Result<(), Box<dyn std::error::Error>> {
         let diff = compare(left, right, d);
         println!(
             "{name:<13} maxabs {:.3e} medabs {:.3e} maxrel {:.3e} medrel {:.3e} \
-             cos_worst {:.12} cos_med {:.12}{}",
+             1-cos_worst {:.3e} 1-cos_med {:.3e} differing {:.4}{}",
             diff.max_abs,
             diff.median_abs,
             diff.max_rel,
             diff.median_rel,
-            diff.worst_cosine,
-            diff.median_cosine,
+            1.0 - diff.worst_cosine,
+            1.0 - diff.median_cosine,
+            diff.differing,
             if diff.identical {
                 "  IDENTICAL-BIT-FOR-BIT"
             } else {
