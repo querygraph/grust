@@ -9,6 +9,16 @@ fn ready_record(plan: Option<ExecutionPlan>) -> Vec<u8> {
     bytes
 }
 
+/// Windows for waits that are expected to end. A descheduled process on a
+/// starved host can miss a window of tens of milliseconds without anything
+/// being wrong, and these tests are about supervision, not about how fast the
+/// host is: see `docs/LSQB_RUNNER_TIMING_FLAKES.md`. Production defaults stay
+/// tight; only the tests are generous.
+const READY_AND_REAP_MS: u64 = 10_000;
+const REAP_GRACE_MS: u64 = 1_000;
+/// Deliberately short: this one asserts that the deadline fires.
+const HARD_DEADLINE_MS: u64 = 25;
+
 #[test]
 fn execution_plan_ready_is_additive_and_native_ready_bytes_stay_unchanged() {
     let legacy = ready_record(None);
@@ -97,12 +107,12 @@ fn ready_execution_plan_survives_success_error_and_backend_timeout() {
         let observation = run(
             &mut worker(Some(plan), outcome),
             "plan-test",
-            500,
-            10,
-            1000,
-            1000,
+            READY_AND_REAP_MS,
+            REAP_GRACE_MS,
+            READY_AND_REAP_MS,
+            READY_AND_REAP_MS,
         )
-        .unwrap();
+        .unwrap_or_else(|error| panic!("supervision failed: {error}"));
         assert_eq!(observation.outcome, expected);
         assert_eq!(observation.require_declared_plan().unwrap(), plan);
     }
@@ -114,12 +124,12 @@ fn ready_execution_plan_survives_hard_timeout_without_a_result_record() {
     let observation = run(
         &mut worker(Some(ExecutionPlan::CountFactorized), "hang"),
         "plan-test",
-        25,
-        10,
-        1000,
-        1000,
+        HARD_DEADLINE_MS,
+        REAP_GRACE_MS,
+        READY_AND_REAP_MS,
+        READY_AND_REAP_MS,
     )
-    .unwrap();
+    .unwrap_or_else(|error| panic!("supervision failed: {error}"));
     assert_eq!(observation.outcome, WorkerOutcome::Timeout);
     assert_eq!(
         observation.termination,
@@ -135,7 +145,15 @@ fn ready_execution_plan_survives_hard_timeout_without_a_result_record() {
 #[test]
 #[cfg(unix)]
 fn legacy_worker_is_supported_but_cannot_supply_a_new_matrix_plan() {
-    let observation = run(&mut worker(None, "pass"), "plan-test", 500, 10, 1000, 1000).unwrap();
+    let observation = run(
+        &mut worker(None, "pass"),
+        "plan-test",
+        READY_AND_REAP_MS,
+        REAP_GRACE_MS,
+        READY_AND_REAP_MS,
+        READY_AND_REAP_MS,
+    )
+    .unwrap_or_else(|error| panic!("supervision failed: {error}"));
     assert_eq!(observation.outcome, WorkerOutcome::Pass);
     assert_eq!(observation.plan, None);
     assert!(
