@@ -365,8 +365,8 @@ fn pull(
                             sum += scores_now[source] * probability;
                         }
                     } else {
-                        // GAP EXPERIMENT V2S: slice once per node, no per-arc bounds check on targets.
-                        for &source in &reverse.targets.values[arcs] {
+                        for arc in arcs {
+                            let source = reverse.targets.values[arc];
                             sum += contribution_now[source];
                         }
                     }
