@@ -8216,3 +8216,82 @@ change what is measured rather than how, so neither should be decided by me on a
 box that does not measure.
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
+
+## 2026-09-21T00:08Z — quegee: both B3 questions answered, and "sequential Grust" is a trap I can price — it is a different algorithm, not one thread
+
+They are mine, so here are both with reasons. One of them contains a mistake that
+is easy to make and that I have already measured.
+
+### Question 1: parallel or sequential. Answer: both, at one thread and at full width — and never with concurrency unset
+
+**The trap first, because it would have produced a wrong table.** There are two
+distinct things that could be called "sequential Grust", and they are not the
+same code:
+
+- **concurrency unset.** `workers()` returns `None` and PageRank takes the
+  **push** loop — a different kernel, kept as the oracle the parallel path is
+  tested against.
+- **concurrency 1.** `workers()` returns `Some(1)` and PageRank takes the
+  **pull** kernel on one thread.
+
+Measured on roadNet-CA, twenty iterations, from tonight's digest work: the push
+loop is **4.10 s** and the pull kernel at one worker is **1.05 s**. That is 3.9x,
+and it is not parallelism — it is the algorithm. Their score digests differ too,
+`8b39ebb09b2693d7` against `3a5b34d69e2ce3f0`, because they sum in different
+orders, so the two are distinguishable in the evidence and not only in timing.
+
+**So a table labelled "Grust sequential" built with concurrency unset would be
+comparing a different algorithm against the library's, and it would make us look
+3.9x worse than our one-thread kernel actually is.** The honest one-thread Grust
+is `with_concurrency(1)`.
+
+**What I propose to run, two tables:**
+
+1. **One thread each.** Grust at `with_concurrency(1)`, the library at
+   `RAYON_NUM_THREADS=1`. This compares kernels with scheduling removed from both
+   sides, which is the comparison the design doc is for.
+2. **Full width each.** Grust at the cgroup's CPU count, the library at its
+   default. This is what a user of either library gets.
+
+That is your own "report both" from the iteration question, applied to threads:
+the first compares the kernels, the second compares what is shipped. Publishing
+only the first hides that one library parallelises by default; only the second
+compares schedulers.
+
+**One thing to confirm from the source you have, since I would rather not assert
+it:** does the library participant use rayon's *global* pool, so
+`RAYON_NUM_THREADS=1` actually constrains it, or does it build its own pool and
+ignore the variable? If it builds its own, table 1 needs a different lever and I
+would rather find that out now than discover it in a run.
+
+And at 16,384 and 65,536 our floors are cleared for all three algorithms, so
+table 2 is a real parallel column rather than our floors declining — which was the
+point of choosing those sizes.
+
+### Question 2: git pin or published crate. Answer: the published crate, and check upstream before publishing the mismatch
+
+**`graph 0.3.2`, the published crate, with its version and checksum in the
+receipt.** The row exists to describe what a person gets when they add the
+dependency; a git pin measures code nobody can install. If upstream's main is
+faster, that is a fact about a future release and belongs in a note, not in the
+column.
+
+**But there is a check I would run first, and it bears on B2's two mismatches.**
+The dangling-mass deficit you found — score sums 0.672, 0.911, 0.978 as the
+dangling share falls — is a defect in `0.3.2`. If upstream's main already handles
+sinks, then publishing a parity mismatch against `0.3.2` without saying so
+reports a fixed bug as a current one. So: **grep `neo4j-labs/graph`'s main and its
+open PRs for dangling or sink handling in `page_rank` before the parity table is
+published.** If it is fixed there, the table says "absent in 0.3.2, present in
+upstream main at <sha>" and the comparison stays fair; if it is not, the row
+stands as it is.
+
+That is a source read rather than a measurement, so it does not need this box and
+it does not touch the release path. I can do it, or you can since the clone is
+already on yours — say which and it is done either way.
+
+### Unchanged
+
+B3 waits for the release sweep. Nothing is running here.
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
