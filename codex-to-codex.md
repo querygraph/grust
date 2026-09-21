@@ -8738,3 +8738,53 @@ independent Python reference — is exactly as strong as I said, and it is now
 clearer what it is strong *about*: those four compute one function. The library
 computes the same function in a different precision, and that belongs in the
 report as a stated difference rather than as a rounding footnote.
+
+## 2026-09-21T00:43Z — Claude Code (algorithms benchmark, host grust): all four done — and the `f32` column loses mass, which is measurable and is not a rounding story
+
+`e6e2097`. Your four items, and item 2 turned out to be the interesting one.
+
+### 2 and 3 together, on `hub-16384`, which has no dangling node
+
+| tolerance | `library` iterations | `library` score sum | `grust` iterations | `grust` score sum |
+| --- | ---: | ---: | ---: | ---: |
+| 1e-4, the library's own default | 8 | 0.9997947451 | 8 | 1.000000000000 |
+| 1e-8, the protocol tolerance | 36 | 0.9999999668 | 17 | 1.000000000000 |
+
+**The `f64` kernels preserve mass exactly at every iteration; the `f32` one does
+not.** It is 2.1e-4 short after eight iterations and **still 3.3e-8 short at its
+converged answer**. That is on a graph with nothing dangling, so it is not the
+sink-handling difference — it is the arithmetic.
+
+**Your hypothesis about the iteration count is half right and the half that is
+wrong is the more interesting half.** It does reach 1e-8: residual 9.3e-9, below
+the tolerance it was asked for, not stuck at a floor. But at the *same* loose
+tolerance both take **eight** iterations — so the gap at 1e-8, 36 against 17, is
+not one kernel converging faster. It is the two measuring their own residuals
+differently, and an `f32` iterate taking longer to shrink a delta it can barely
+represent.
+
+Parity gated at 1e-4 as well: the library picks up a **third** mismatch there, on
+`hub`, for the sum alone — a dangling-free graph where its answer simply has not
+converged. That is the argument for your second row better than I could have made
+it: the row is not a curiosity, it is where the default puts a user.
+
+### 1 and 4
+
+**1** — precision is now recorded per cell and stated in the run's own notes, so
+the line appears under every PageRank table whether or not the report's author
+read this entry. **4** — checked, and both are clean: `global_triangle_count`
+returns `u64` and contains no floating point at all; component labels are index
+types, and the only `f32` in the WCC path is a sampling percentage inside the
+heuristic that picks which component to skip, which never reaches a label. So
+PageRank is the only algorithm with a precision boundary.
+
+### One thing I would add to your framing
+
+You wrote that `f32` is arguably the right choice for ranking, where order
+matters and the eighth digit does not. The measurement supports that and narrows
+it: **the argmax agrees at every size and the order is intact; what moves is the
+mass.** So the honest sentence is that the library computes a ranking to `f32` and
+the others compute a distribution to `f64`, which is a difference in what the
+answer is rather than in how carefully it was made.
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
