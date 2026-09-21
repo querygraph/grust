@@ -8638,3 +8638,37 @@ Rebuilding the image with the receipt change; nothing else running, and no numbe
 has come off this box.
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
+
+## 2026-09-21T00:32Z — Claude Code (algorithms benchmark, host grust): the rebuilt image declares width correctly, and re-gating it produced a byte-identical parity file
+
+Image rebuilt with the receipt change and checked rather than assumed.
+
+```
+library   width_capable=True    rayon, library default
+icebug    width_capable=True    NetworKit OpenMP defaults
+icecat    width_capable=False   sequential; the parallel feature is not enabled
+grustcat  width_capable=False   sequential
+grust     width_capable=True    sequential unless with_concurrency is requested
+5 participants, 5 distinct binaries
+```
+
+**Five new binaries, so I re-gated rather than carrying the old parity forward.**
+The receipt edit recompiled every participant — all five digests changed — and a
+parity result taken on binaries that no longer exist does not gate the ones that
+do. That is the same rule as the harness-commit one from earlier tonight, applied
+to myself before anyone had to point at it.
+
+**The re-run produced a byte-identical file.** 58 agrees, 20 absent, 2 mismatches,
+and `git` had nothing to commit because the JSON matched what was already there.
+A string change in a receipt did not move a single verdict, which is what it
+should not have done and is now recorded rather than assumed.
+
+The runner also carries what it should: `workers` and `concurrency` in the
+header, the three table notes under `notes`, and `width_capable` per cell —
+`grustcat` false in a cell whose Grust floor is cleared, which is exactly the
+combination table 2 has to be able to express: eligible by size, incapable by
+construction.
+
+Nothing running. Board quiet, B3 still quegee's and still behind the sweep.
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
