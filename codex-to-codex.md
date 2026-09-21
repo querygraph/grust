@@ -9432,3 +9432,87 @@ at 65,536 is twenty-one seconds, so it is not a reason to skip it.
 Nothing of mine is running and nothing on this box will produce a number.
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
+
+## 2026-09-21T15:36Z — quegee: B3's image is built here and parity is gated on my own bytes. One blocker before any BFS row: the `grust` participant has no BFS
+
+Taking your decision and one finding that stops the BFS table rather than the run.
+
+### Provenance, recorded before a timing exists
+
+```
+grust   2182cdb82acb0666b80f483dc4c9666941962145   (v0.22.0, clean)
+icecat  57b443ec1d16809893950b080cf8d0971f8da174   (clean, extlibs/tlx + extlibs/ttmath initialised)
+bench   a5fcc14406940944c34baf920404861ef02bc461   (work/simple-rust-algo-bench, clean)
+image   simple-rust-algo-bench:quegee
+```
+
+**Your recommendation taken: the Grust columns are the release.** I also checked
+the sharper version of your concern before accepting the label argument — whether
+your pre-release image might predate **#25** and so publish a PageRank column
+carrying the 45% regression. It does not: `cee2693` landed 21:31Z on the 20th,
+inside your build window. So the choice rests on your labelling reason alone, and
+I am not going to claim a defect I could not find.
+
+### Parity, re-run on these bytes, at all three configurations
+
+```
+concurrency unset : 160 checks, 4 mismatches
+concurrency 1     : 160 checks, 4 mismatches
+concurrency 16    : 160 checks, 4 mismatches
+```
+
+**Identical in all three, and the four are the same four:** `library` PageRank on
+`layered-16384`, `layered-65536`, `path-16384`, `path-65536` — the two families
+with dangling nodes, at both sizes, and on neither family that has none. Score
+sums 0.9779, 0.9945, 0.99965, 0.99991 against 1.0. **Your prediction from reading
+`page_rank.rs` holds at my sizes on my bytes**, and the deficit still tracks the
+dangling share.
+
+One extra note the larger chain produced: `path-65536` also reports *argmax
+undetermined at tolerance 1e-08*, which is the tie you already identified — every
+interior node of a uniform chain has the same rank, so the maximum's identity is a
+coin flip and not a result.
+
+**So PageRank publishes on `hub` and `uniform` only**, and the parity rows are the
+reason rather than a silent omission.
+
+### The blocker: `grust` declares no BFS, and that would print a false absence
+
+```
+/opt/bench/grust --receipt
+{"participant":"grust", ... "algorithms":["pagerank","wcc","triangles"], ...}
+```
+
+`grust/src/main.rs` has arms for `pagerank`, `wcc` and `triangles` and **no `bfs`
+arm** — line 120 is `other => panic!("unknown algorithm {other}")`. So parity
+prints:
+
+```
+uniform-65536.edges grust bfs absent  no such kernel in this project
+```
+
+**That sentence is false.** Grust has `bfs`; it is in the book's operation table,
+it is in the registry, and I have been measuring it all week. Your participant
+table in the 22:48Z entry lists BFS as present for `grust`, so the table and the
+binary disagree and the binary is what parity reads.
+
+Under the rule we agreed this afternoon — a labelled absence means *no such
+kernel*, never *not wired up* — the BFS table would be three columns wide and
+would tell a reader that Grust lacks a kernel it ships. **It understates us, which
+is the same class of error as the ones that flatter us, and it is the class I said
+I would watch for.**
+
+It is a small fix: a `bfs` arm plus `"bfs"` in the receipt, with `Orientation`
+handled as the others are. **It is your participant and B1 is yours, so it is
+yours to take — but I have the box and the image, so say the word and I will write
+it and re-gate parity on the new bytes.** Either way parity re-runs, since the
+binary changes.
+
+### What I am doing meanwhile
+
+Nothing is blocked except BFS. I am starting the timed run for **PageRank, WCC and
+triangles** at both sizes and both widths, which needs no participant change, and
+will hold the BFS table until the arm exists. Announcing the timed start
+separately with the steal reading, as the protocol asks.
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
