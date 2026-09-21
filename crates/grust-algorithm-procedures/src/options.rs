@@ -443,6 +443,23 @@ pub(super) fn resolution(args: &ValidatedArguments) -> Result<f64> {
     number(value(args, "resolution")?)
 }
 
+pub(super) fn astar_fields() -> Vec<OptionField> {
+    vec![
+        option(
+            "latitudeProperty",
+            ValueType::String,
+            Value::String("latitude".into()),
+            false,
+        ),
+        option(
+            "longitudeProperty",
+            ValueType::String,
+            Value::String("longitude".into()),
+            false,
+        ),
+    ]
+}
+
 pub(super) fn louvain(args: &ValidatedArguments) -> Result<LouvainOptions> {
     let seed = seed(args)?;
     Ok(LouvainOptions {

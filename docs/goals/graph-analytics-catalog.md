@@ -712,6 +712,6 @@ Update in the same commit as the work. `—` not started, `wip`, `done <commit>`
 | P7 | done (`parallel.rs`) | 1 Louvain | done | 2 Betweenness | done |
 | 3 Node similarity | done | 4 Triangles/LCC | done | 5 k-core | done |
 | 6 Closeness/harmonic | done | 7 Leiden | done | 8 Label propagation | done |
-| 9 A\*/Bellman–Ford | `bellmanFord` done; `astar` waits for P6 | 10 Eigenvector family | done except `articleRank` | 11 Bridges family | done |
+| 9 A\*/Bellman–Ford | done | 10 Eigenvector family | done except `articleRank` | 11 Bridges family | done |
 | 12 Spanning forest | done | 13 Max flow | done (`maxFlow`, `minCut`) | 14 FastRP | done |
 | 15–35 | — (see Tier B) | | | | |

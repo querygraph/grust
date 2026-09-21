@@ -12,6 +12,8 @@ mod arrow_output;
 pub use arrow_output::{ArrowResultBatch, ArrowResultCursor};
 mod bellman_ford;
 pub use bellman_ford::{BellmanFord, bellman_ford};
+mod astar;
+pub use astar::{AStarPath, astar, astar_haversine, haversine_requests};
 mod betweenness;
 pub use betweenness::{Betweenness, BetweennessOptions, betweenness};
 mod biconnected;
