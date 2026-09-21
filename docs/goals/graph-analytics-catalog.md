@@ -524,7 +524,7 @@ Required tests for every kernel, by name:
 | M3 | groups 7, 10, 11, 12 | |
 | M4 | P4; groups 9, 13, 14 | **Done. Tier A complete**, released in 0.22.0 "Mysid" — `articleRank` alone outstanding. |
 | M5 | P6 | **Done.** Node properties were reviewed and approved before any Tier-B kernel, then built. |
-| M6 | groups 22, 17, 19, 21, 27, 30 (no randomness, no P7) | **22 done in 0.22.0**, which also gives groups 1, 7, 8, 23 and 24 their oracle. **17 done** (`yens`). 19, 21, 27, 30 remain. |
+| M6 | groups 22, 17, 19, 21, 27, 30 (no randomness, no P7) | **22 done in 0.22.0**, which also gives groups 1, 7, 8, 23 and 24 their oracle. **17 done** (`yens`). **19 done** (`allPairsShortestPaths`). **30 done** (`linkPrediction`). 21, 27 remain. |
 | M7 | groups 20, 15, 16, 18, 23, 24, 29, 33 | |
 | M8 | groups 25, 26, 28, 31, 32, 34 | |
 | M9 | group 35 | decide, do not assume |
@@ -715,6 +715,20 @@ M4 (Tier A), then per milestone.** Each is a minor version: new public API.
   serves a property kernel whose call requests nothing with
   `NodeProperties::empty`. Undirected only and unweighted, as in NetworKit.
 
+- **A result of unbounded length is a cursor, not a table.** `NodeTable`
+  holds every row in admitted buffers before the first batch leaves, so a
+  pair-shaped result built on it is materialised. All-pairs shortest paths
+  (group 19) cannot be: it returns `AllPairsShortestPaths`, a pull cursor that
+  runs one Dijkstra per source over one reused O(n) workspace, and
+  `ArrowResultCursor` and the row cursor each gained one arm that pulls from it
+  a batch (or a row) at a time. Its test shows the admitted peak does not move
+  after the first pair, and that four times the nodes costs under twice the
+  peak while a consumer that keeps the batches sees sixteen. Any later kernel
+  whose output can outgrow memory (link prediction over all candidate pairs,
+  k-nearest neighbours at large k, random walks) should follow it. It is
+  sequential: streaming in source order from parallel workers would need a
+  reorder buffer holding the pairs of every source run ahead.
+
 ## Progress ledger
 
 Update in the same commit as the work. `—` not started, `wip`, `done <commit>`.
@@ -728,5 +742,5 @@ Update in the same commit as the work. `—` not started, `wip`, `done <commit>`
 | 6 Closeness/harmonic | done | 7 Leiden | done | 8 Label propagation | done |
 | 9 A\*/Bellman–Ford | done | 10 Eigenvector family | done except `articleRank` | 11 Bridges family | done |
 | 12 Spanning forest | done | 13 Max flow | done (`maxFlow`, `minCut`) | 14 FastRP | done |
-| 22 Modularity/conductance | done (0.22.0) | 17 Yen's k shortest | done (`yens`) | 30 Link prediction | done (`linkPrediction`) |
-| 15, 16, 18–21, 23–29, 31–35 | — (see Tier B) | | | | |
+| 22 Modularity/conductance | done (0.22.0) | 17 Yen's k shortest | done (`yens`) | 19 All-pairs shortest paths | done (`allPairsShortestPaths`, streamed) |
+| 30 Link prediction | done (`linkPrediction`) | 15, 16, 18, 20, 21, 23–29, 31–35 | — (see Tier B) | | |

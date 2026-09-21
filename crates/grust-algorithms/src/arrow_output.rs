@@ -12,9 +12,9 @@ use arrow_array::{
 use grust_procedures::MemoryReservation;
 
 use crate::{
-    AlgorithmError, Components, Degrees, Distances, GraphProjection, KShortestPaths, NodeOrder,
-    NodeTable, PageRank, PathCursor, PathView, Result, ShortestPaths, TableType, TableValue,
-    TopologicalOrder,
+    AlgorithmError, AllPairsShortestPaths, Components, Degrees, Distances, GraphProjection,
+    KShortestPaths, NodeOrder, NodeTable, PageRank, PathCursor, PathView, Result, ShortestPair,
+    ShortestPaths, TableType, TableValue, TopologicalOrder, buffer::Buffer,
 };
 
 /// A bounded Arrow batch retaining its query memory reservation. Clone this
@@ -38,6 +38,7 @@ impl ArrowResultBatch {
     }
 }
 
+mod apsp;
 mod ordering;
 
 enum Output {
@@ -50,6 +51,8 @@ enum Output {
     Paths(PathCursor),
     /// Ranked paths, already materialized: one batch each, in rank order.
     RankedPaths(KShortestPaths),
+    /// Pairs pulled from the kernel a batch at a time, through one reused block.
+    AllPairs(AllPairsShortestPaths, Buffer<ShortestPair>),
     Table(NodeTable),
 }
 
@@ -132,6 +135,18 @@ impl KShortestPaths {
     }
 }
 
+impl AllPairsShortestPaths {
+    /// Stream `sourceNodeId: Utf8, targetNodeId: Utf8, distance: Float64`
+    /// batches. Each batch is computed when it is pulled, so admitted memory is
+    /// the kernel's workspace plus one block of `batch_rows` pairs, whatever
+    /// the total. A result with no pairs still emits one empty batch.
+    pub fn into_arrow_results(self) -> Result<ArrowResultCursor> {
+        let graph = self.projection().clone();
+        let block = Buffer::capacity(graph.execution().limits().batch_rows, graph.execution())?;
+        Ok(ArrowResultCursor::new(graph, Output::AllPairs(self, block)))
+    }
+}
+
 impl ArrowResultCursor {
     fn new(graph: GraphProjection, output: Output) -> Self {
         Self {
@@ -179,6 +194,11 @@ impl ArrowResultCursor {
                 None if rank == 0 => empty_path_batch(graph).map(Some),
                 None => Ok(None),
             };
+        }
+        if let Output::AllPairs(pairs, block) = output {
+            let batch = apsp::pairs_batch(graph, pairs, block, self.emitted)?;
+            self.emitted = true;
+            return Ok(batch);
         }
         if let Output::Topology(result) = output {
             if self.next != 0 {
@@ -390,7 +410,10 @@ impl ArrowResultCursor {
                     columns.push((name, array));
                 }
             }
-            Output::Paths(_) | Output::RankedPaths(_) | Output::Topology(_) => {
+            Output::Paths(_)
+            | Output::RankedPaths(_)
+            | Output::AllPairs(..)
+            | Output::Topology(_) => {
                 return Err(AlgorithmError::OutputContract(
                     "path output reached scalar Arrow adapter".into(),
                 ));

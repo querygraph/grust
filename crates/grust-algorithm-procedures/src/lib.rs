@@ -86,6 +86,22 @@ fn catalog() -> Vec<Spec> {
             )?))
         },
     ));
+    // Streamed, never an n×n matrix: the cursor runs one source at a time.
+    specs.push(Spec::new(
+        "allPairsShortestPaths",
+        None,
+        vec![
+            field("sourceNodeId", ValueType::String),
+            field("targetNodeId", ValueType::String),
+            field("distance", ValueType::Number),
+        ],
+        options::all_pairs_fields(),
+        |graph, args| {
+            Ok(AlgorithmOutput::AllPairs(
+                algorithms::all_pairs_shortest_paths(graph, options::all_pairs(args)?)?,
+            ))
+        },
+    ));
     specs.push(Spec::new(
         "wcc",
         None,

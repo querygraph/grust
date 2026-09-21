@@ -1063,3 +1063,62 @@ fn yens_ranks_its_paths_and_stops_when_there_are_no_more() {
         "{refused}"
     );
 }
+
+#[test]
+fn all_pairs_shortest_paths_streams_reachable_pairs_through_ordinary_cypher() {
+    let row = |source: &str, target: &str, distance: f64| {
+        vec![
+            Value::String(source.into()),
+            Value::String(target.into()),
+            Value::Float(distance),
+        ]
+    };
+    // a -2-> b -0.5-> c -0-> b. Unreachable pairs are omitted, the isolate
+    // reaches itself, and c reaches b at zero through the zero-weight edge.
+    let all = vec![
+        row("a", "a", 0.0),
+        row("a", "b", 2.0),
+        row("a", "c", 2.5),
+        row("b", "b", 0.0),
+        row("b", "c", 0.5),
+        row("c", "b", 0.0),
+        row("c", "c", 0.0),
+        row("isolate", "isolate", 0.0),
+    ];
+    assert_eq!(
+        run(
+            "CALL grust.algorithms.allPairsShortestPaths({weightProperty: 'cost'}) YIELD sourceNodeId, targetNodeId, distance RETURN sourceNodeId, targetNodeId, distance"
+        ),
+        all
+    );
+    // Sources in row order, whatever order the caller names them in.
+    let mut chosen = all[..3].to_vec();
+    chosen.extend_from_slice(&all[5..7]);
+    assert_eq!(
+        run(
+            "CALL grust.algorithms.allPairsShortestPaths({weightProperty: 'cost', sourceNodes: ['c', 'a']}) YIELD sourceNodeId, targetNodeId, distance RETURN sourceNodeId, targetNodeId, distance"
+        ),
+        chosen
+    );
+    // An empty selection is explicit, and selects nothing.
+    assert_eq!(
+        run(
+            "CALL grust.algorithms.allPairsShortestPaths({sourceNodes: []}) YIELD sourceNodeId RETURN count(sourceNodeId)"
+        ),
+        vec![vec![Value::Int(0)]]
+    );
+    for (bad, says) in [("['a', 'a']", "more than once"), ("['nobody']", "nobody")] {
+        let error = run_read_query_with_registry(
+            &graph(),
+            "default",
+            &format!(
+                "CALL grust.algorithms.allPairsShortestPaths({{sourceNodes: {bad}}}) YIELD sourceNodeId RETURN sourceNodeId"
+            ),
+            &CypherParameters::new(),
+            &registry(),
+        )
+        .unwrap_err()
+        .to_string();
+        assert!(error.contains(says), "{bad}: {error}");
+    }
+}

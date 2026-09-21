@@ -10,6 +10,8 @@ mod arrow_input;
 mod arrow_output;
 #[cfg(feature = "arrow")]
 pub use arrow_output::{ArrowResultBatch, ArrowResultCursor};
+mod apsp;
+pub use apsp::{AllPairsOptions, AllPairsShortestPaths, ShortestPair, all_pairs_shortest_paths};
 mod bellman_ford;
 pub use bellman_ford::{BellmanFord, bellman_ford};
 mod astar;
