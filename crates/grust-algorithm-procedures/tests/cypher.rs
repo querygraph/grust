@@ -967,3 +967,99 @@ fn astar_reads_coordinates_and_returns_the_route() {
     .to_string();
     assert!(missing.contains("absent"), "{missing}");
 }
+
+#[test]
+fn yens_ranks_its_paths_and_stops_when_there_are_no_more() {
+    // Two routes from a to d, and a third through both middles:
+    //   a b d   1+1 = 2
+    //   a c d   2+1 = 3
+    //   a b c d 1+1+1 = 3, which ties with a c d and ranks *first* of the two:
+    // the tie-break compares node rows, and b comes before c at the second
+    // node. A shorter path is not preferred; a smaller sequence is.
+    //
+    // The rank column is `pathIndex`, not `index`: `index` is a reserved word
+    // in this dialect, so the plain spelling every caller reaches for first
+    // would be a syntax error.
+    let graph = Graph::new(
+        ["a", "b", "c", "d"]
+            .map(|id| Node::new("N", id, Props::new()))
+            .into(),
+        vec![
+            Edge::new("R", "a", "b", [("cost".into(), Value::Float(1.0))]),
+            Edge::new("R", "a", "c", [("cost".into(), Value::Float(2.0))]),
+            Edge::new("R", "b", "d", [("cost".into(), Value::Float(1.0))]),
+            Edge::new("R", "c", "d", [("cost".into(), Value::Float(1.0))]),
+            Edge::new("R", "b", "c", [("cost".into(), Value::Float(1.0))]),
+        ],
+    );
+    let run_on = |query: &str| {
+        run_read_query_with_registry(
+            &graph,
+            "default",
+            query,
+            &CypherParameters::new(),
+            &registry(),
+        )
+    };
+    let rows = run_on(
+        "CALL grust.algorithms.yens('a', 'd', {weightProperty: 'cost', k: 5}) YIELD pathIndex, sourceNodeId, targetNodeId, totalCost, nodeIds RETURN pathIndex, sourceNodeId, targetNodeId, totalCost, nodeIds",
+    )
+    .unwrap()
+    .rows;
+    assert_eq!(
+        rows,
+        vec![
+            vec![
+                Value::Int(0),
+                Value::String("a".into()),
+                Value::String("d".into()),
+                Value::Float(2.0),
+                Value::StringArray(vec!["a".into(), "b".into(), "d".into()]),
+            ],
+            vec![
+                Value::Int(1),
+                Value::String("a".into()),
+                Value::String("d".into()),
+                Value::Float(3.0),
+                Value::StringArray(vec!["a".into(), "b".into(), "c".into(), "d".into()]),
+            ],
+            vec![
+                Value::Int(2),
+                Value::String("a".into()),
+                Value::String("d".into()),
+                Value::Float(3.0),
+                Value::StringArray(vec!["a".into(), "c".into(), "d".into()]),
+            ],
+        ]
+    );
+    // `k` defaults to one path.
+    let one = run_on(
+        "CALL grust.algorithms.yens('a', 'd', {weightProperty: 'cost'}) YIELD pathIndex, costs, edgeOrdinals RETURN pathIndex, costs, edgeOrdinals",
+    )
+    .unwrap()
+    .rows;
+    assert_eq!(
+        one,
+        vec![vec![
+            Value::Int(0),
+            Value::FloatArray(vec![0.0, 1.0, 2.0]),
+            Value::IntArray(vec![0, 2]),
+        ]]
+    );
+    // Nothing reaches a from d: no rows, and that is an answer, not an error.
+    assert!(
+        run_on("CALL grust.algorithms.yens('d', 'a') YIELD pathIndex RETURN pathIndex")
+            .unwrap()
+            .rows
+            .is_empty()
+    );
+    // Asking for no paths is refused rather than answered with nothing.
+    let refused =
+        run_on("CALL grust.algorithms.yens('a', 'd', {k: 0}) YIELD pathIndex RETURN pathIndex")
+            .unwrap_err()
+            .to_string();
+    assert!(
+        refused.contains("k must be a positive integer"),
+        "{refused}"
+    );
+}

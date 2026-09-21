@@ -69,6 +69,8 @@ pub use statistics::{CsrEstimate, ProjectionStatistics};
 pub use table::{NodeTable, TableScalar, TableType, TableValue};
 pub use triangles::{TriangleOptions, Triangles, triangles};
 mod traversal;
+mod yens;
+pub use yens::{KShortestPaths, YensOptions, yens};
 
 pub use pagerank::{PageRank, PageRankOptions, RankVariant, pagerank};
 

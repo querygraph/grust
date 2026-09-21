@@ -87,6 +87,7 @@ kernels as direct Rust and have typed Arrow result adapters.
 | `topologicalSort` | Complete DAG order or a concrete closed cycle witness |
 | `bellmanFord` | Distances where weights may be negative, or the negative cycle that makes them meaningless |
 | `astar` | One shortest path to a named target, guided by great-circle distance from two coordinate properties |
+| `yens` | The `k` shortest loopless paths to a named target, ranked by `pathIndex`, with ties broken by node order |
 
 ### Centrality
 

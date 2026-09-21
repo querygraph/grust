@@ -322,6 +322,31 @@ fn catalog() -> Vec<Spec> {
     );
     specs.push(
         Spec::new(
+            "yens",
+            Some(ValueType::String),
+            vec![
+                field("sourceNodeId", ValueType::String),
+                field("targetNodeId", ValueType::String),
+                field("totalCost", ValueType::Number),
+                field("nodeIds", ValueType::Strings),
+                field("costs", ValueType::Numbers),
+                field("edgeOrdinals", ValueType::Integers),
+                field("pathIndex", ValueType::Integer),
+            ],
+            options::yens_fields(),
+            |graph, args| {
+                Ok(AlgorithmOutput::RankedPaths(algorithms::yens(
+                    graph,
+                    source(args)?,
+                    target(args)?,
+                    options::yens(args)?,
+                )?))
+            },
+        )
+        .with_target(),
+    );
+    specs.push(
+        Spec::new(
             "bellmanFord",
             Some(ValueType::String),
             vec![
