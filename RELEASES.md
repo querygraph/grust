@@ -31,6 +31,17 @@ history.
 - Ostracod — 0.18.0 (2026-09-14)
 - Mantis — 0.19.0 (2026-09-14)
 - Brine — 0.20.0 (2026-09-14)
-- Tadpole — 0.21.0 (2026-09-18) ← current
-- Fairy
-- Mysid
+- Tadpole — 0.21.0 (2026-09-18)
+- Fairy — skipped; the name was declined rather than consumed, so it stays
+  available for a later release.
+- Mysid — 0.22.0 (2026-09-21) ← current
+- Langoustine
+- Tanaid
+- Cumacean
+- Remipede
+- Triops
+- Slipper
+- Squat
+- Fiddler
+- Porcelain
+- Sandhopper

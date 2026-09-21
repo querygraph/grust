@@ -6,29 +6,10 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ## Unreleased
 
-- Add **node properties**: `NodeProperties`, typed columns read per projected
-  node from a `Graph` or from Arrow node batches, row-aligned with a projection
-  because they are built against one and hold it. Four kinds — `Number` (f64),
-  `Integer` (i64), `Vector` (f32 at a fixed dimension) and `Category`
-  (dictionary-encoded strings, for equality filters only). A missing value is an
-  error naming the node unless the caller asks for a default or to keep nulls,
-  and a column read keeping nulls is reachable only through the `optional_*`
-  accessors, `optional_numbers`, `optional_integers` and `optional_categories`.
-  Node batches may arrive in any order: values are written at their own row, so
-  a caller whose DataFrame is ordered by the engine rather than by projection
-  row is not required to sort first. Columns are admitted before they are
-  filled and released on drop. See `docs/goals/node-properties-design.md`.
-- Add **modularity and conductance**: `community_quality` and
-  `grust.algorithms.modularity(communityProperty, resolution)`, scoring a
-  partition the caller supplies as a node property. One row per community, led
-  by its smallest member. Modularity is the figure Louvain and Leiden optimise,
-  by the same formula in every orientation; conductance is the share of a
-  community's outgoing weight that leaves it, null where its nodes have no arcs.
-  Community ids are any integers, dense or not.
-- A registered kernel may declare which of its options name node properties;
-  the provider reads them before the kernel runs. `node_property_requests` and
-  `run_with_properties` are the embedder path, so a caller that stages its own
-  Arrow columns asks which are needed and supplies them.
+## 0.22.0 — Mysid — 2026-09-21
+
+### Graph algorithms
+
 - Add **Bellman-Ford**: `bellman_ford` and `grust.algorithms.bellmanFord(source)`,
   single-source shortest paths when weights may be negative. A negative cycle
   reachable from the source is a **result, not an error**: distances are then
@@ -39,50 +20,6 @@ reconstructed from Git history, release commits, and the shipped docs.
   every arc scan charged. Tested on 12,000 small signed graphs against exhaustive
   enumeration of simple paths and cycles, with each reported witness verified
   independently, and against `dijkstra` wherever Dijkstra is allowed.
-- **Projections can admit negative weights, by opt-in only.**
-  `WeightSelection::SignedProperty` and `GraphProjection::from_signed_topology`
-  build a *signed* projection. Only `bellman_ford` runs on one. Every other
-  kernel refuses it first thing, because a negative weight would not make them
-  fail, it would make them wrong; a catalog test runs all of them on a signed
-  projection and demands the refusal, so a kernel added without the guard fails
-  it. `projection_options_for(name, args)` gives an embedder the options for a
-  named kernel, signed only for `bellmanFord`; the procedure path does the same,
-  and signed and unsigned projections never share a cache entry. Nothing is
-  signed unless asked for, so no existing caller changes. `WeightSelection`
-  gains a variant: code that matches it exhaustively needs the new arm.
-- **Memory accounting no longer takes a lock.** `ExecutionContext` holds
-  accounted bytes and their high-water mark as atomics and admits a memory
-  charge through the same compare-exchange as a work charge, so a byte limit
-  stays exact under concurrent charges; a release is one atomic subtraction.
-  Only cancellation wakers remain behind the mutex. The reference Cypher
-  executor charges memory per copied value, and on the full-path `reduce` query
-  this removes 11% at 1,024 nodes and 13% at 4,096 on one laptop; the fused
-  `UNWIND` form and the direct kernels do not move. Three behaviours change:
-  `usage()` reads its figures in sequence rather than as one snapshot, so exact
-  totals should be read after execution (`peak_bytes` is never reported below
-  `live_bytes`); the peak can trail a charge by an instant but never misses a
-  completed one; and a poisoned lock can no longer fail a memory charge, only
-  waker registration. See `docs/lock-free.md`.
-- The sequential kernels — `dijkstra`, `shortestPaths`, `bfs`, `dfs`,
-  `topologicalSort`, `scc`, `wcc` — and the heap the path kernels share charge
-  work through a `WorkMeter` instead of one compare-exchange on the shared
-  counter per visited entry. Budgets, cancellation and results are unchanged,
-  and the exact-work-charge tests pass as they were. On a million-node,
-  ten-million-arc random graph, one laptop, release, no deadline, best of nine,
-  per-entry against metered: `dijkstra` 690 ms to 513, `bfs` 312 to 203, `dfs`
-  358 to 302, `scc` 682 to 563, `wcc` 310 to 186, with the per-entry figures
-  reproduced after the metered run. These are single-host probes, not the
-  paired benchmark harness, which has yet to run on this change.
-- The catalog kernels take their worker count from the execution
-  (`ExecutionContext::with_concurrency`) instead of from whatever rayon pool the
-  caller had installed, and charge work through `WorkMeter`. **Behaviour
-  change:** a caller that does not ask for concurrency now runs every kernel on
-  its own thread and starts no pool; before, a kernel called outside a pool
-  spread across every core of the machine. Results are unchanged and remain
-  bit-identical at any worker count. Below the shared floor of 16,384 work units
-  a kernel stays on one worker whatever was asked for. A budget is now never
-  exceeded by work already done: the first accounting layer admitted work after
-  performing it and could overshoot by a block per worker.
 - Add **FastRP node embeddings**: `fast_rp` and `grust.algorithms.fastRP`, with
   `embeddingDimension`, `iterationWeights`, `nodeSelfInfluence`,
   `normalizationStrength` and `seed`. Each node draws a very sparse random
@@ -167,10 +104,6 @@ reconstructed from Git history, release commits, and the shipped docs.
   width, and the two directions of a pair carry the same bits. Checked row for
   row, order and bits included, against an O(n²) recomputation over 3,600
   random runs.
-- Result tables can key their own rows, so a kernel can answer with node pairs
-  (`node1`, `node2`, ...) through the same Arrow and row adapters. A table with
-  no rows now yields one empty Arrow batch carrying its schema instead of no
-  batch at all.
 - Add **label propagation**: `label_propagation` and
   `grust.algorithms.labelPropagation`, with `maxIterations` and `seed`. A node
   adopts the label carrying the most weight among the nodes with an arc into it,
@@ -207,9 +140,6 @@ reconstructed from Git history, release commits, and the shipped docs.
   is an all-pairs definition with no traversal in it, checked on every graph of
   up to five nodes and 1,500 random multigraphs, weighted and not, in all three
   orientations.
-- `GraphProjection` can build in-arcs with weights and edge slots once per
-  projection (crate-internal; label propagation uses them, and the eigenvector,
-  Katz and HITS kernels will).
 - Add **Louvain** community detection: `louvain` and `grust.algorithms.louvain`,
   with `resolution`, `maxLevels`, `maxIterations`, `tolerance` and `seed`. It
   works in every orientation: Newman's modularity on an undirected projection,
@@ -234,9 +164,6 @@ reconstructed from Git history, release commits, and the shipped docs.
   work charged are identical at any pool width, which a test checks at 1, 2, 3
   and 8 threads. The oracle is the O(n^3) definition over every simple graph on
   six nodes and every four-node multigraph with loops.
-- `grust-algorithms` gains a default `parallel` feature (rayon). A kernel runs on
-  whatever pool the caller installs; without the feature it runs sequentially
-  with the same results.
 - Add **k-core decomposition**, `k_core` and `grust.algorithms.kCore`: bucket
   peeling in O(V + A), returning `coreValue` per node and the graph's
   `degeneracy`. Degree counts parallel edges with multiplicity and ignores
@@ -244,13 +171,6 @@ reconstructed from Git history, release commits, and the shipped docs.
   orientation instead of symmetrizing silently. The test oracle applies the
   definition by brute force to all 1,458 four-node multigraphs with up to two
   edges per pair and to every simple graph on five nodes.
-- Add `NodeTable`, a node-aligned result with typed named columns and repeated
-  whole-result scalars, with one Arrow adapter and one row adapter. Kernels that
-  answer "a value per node" hand it their buffers without copying, so the rest of
-  the analytics catalog needs no adapter code of its own.
-- The workspace CI job tests `grust-ladybug` on its own. It had failed on every
-  push: LadybugDB's prebuilt library bundles zstd, and the unified all-features
-  build linked `zstd-sys` into the same test binary, which `rust-lld` rejects.
 - `grust-algorithm-procedures` gains `run_on_projection(name, &GraphProjection,
   &ValidatedArguments)`, `projection_options(&ValidatedArguments)` and
   `projection_kernel_names()`, behind a new `arrow` feature the facade's `arrow`
@@ -263,6 +183,47 @@ reconstructed from Git history, release commits, and the shipped docs.
   over a projection.
 ### Added
 
+### Node properties
+
+- Add **node properties**: `NodeProperties`, typed columns read per projected
+  node from a `Graph` or from Arrow node batches, row-aligned with a projection
+  because they are built against one and hold it. Four kinds — `Number` (f64),
+  `Integer` (i64), `Vector` (f32 at a fixed dimension) and `Category`
+  (dictionary-encoded strings, for equality filters only). A missing value is an
+  error naming the node unless the caller asks for a default or to keep nulls,
+  and a column read keeping nulls is reachable only through the `optional_*`
+  accessors, `optional_numbers`, `optional_integers` and `optional_categories`.
+  Node batches may arrive in any order: values are written at their own row, so
+  a caller whose DataFrame is ordered by the engine rather than by projection
+  row is not required to sort first. Columns are admitted before they are
+  filled and released on drop. See `docs/goals/node-properties-design.md`.
+- Add **modularity and conductance**: `community_quality` and
+  `grust.algorithms.modularity(communityProperty, resolution)`, scoring a
+  partition the caller supplies as a node property. One row per community, led
+  by its smallest member. Modularity is the figure Louvain and Leiden optimise,
+  by the same formula in every orientation; conductance is the share of a
+  community's outgoing weight that leaves it, null where its nodes have no arcs.
+  Community ids are any integers, dense or not.
+- A registered kernel may declare which of its options name node properties;
+  the provider reads them before the kernel runs. `node_property_requests` and
+  `run_with_properties` are the embedder path, so a caller that stages its own
+  Arrow columns asks which are needed and supplies them.
+
+### Parallel execution
+
+- The catalog kernels take their worker count from the execution
+  (`ExecutionContext::with_concurrency`) instead of from whatever rayon pool the
+  caller had installed, and charge work through `WorkMeter`. **Behaviour
+  change:** a caller that does not ask for concurrency now runs every kernel on
+  its own thread and starts no pool; before, a kernel called outside a pool
+  spread across every core of the machine. Results are unchanged and remain
+  bit-identical at any worker count. Below the shared floor of 16,384 work units
+  a kernel stays on one worker whatever was asked for. A budget is now never
+  exceeded by work already done: the first accounting layer admitted work after
+  performing it and could overshoot by a block per worker.
+- `grust-algorithms` gains a default `parallel` feature (rayon). A kernel runs on
+  whatever pool the caller installs; without the feature it runs sequentially
+  with the same results.
 - `ExecutionContext::with_concurrency` permits a kernel to use threads, and
   `ExecutionContext::work_meter` gives one worker a batched share of the work
   budget. An execution that does not ask for threads behaves exactly as before.
@@ -271,13 +232,70 @@ reconstructed from Git history, release commits, and the shipped docs.
   the default `parallel` feature. Results do not depend on the worker count.
 
 ### Changed
-
 - PageRank computes an unweighted projection by pulling into each target rather
   than pushing out of each source when concurrency is requested. The
   distribution is the same and the two paths agree to within a relative 1e-9,
   but the low digits of a score differ from the sequential kernel's, at any
   worker count including one. Evidence that pins PageRank scores to more than
   nine digits should be regenerated rather than compared across this change.
+
+### Execution accounting
+
+- **Memory accounting no longer takes a lock.** `ExecutionContext` holds
+  accounted bytes and their high-water mark as atomics and admits a memory
+  charge through the same compare-exchange as a work charge, so a byte limit
+  stays exact under concurrent charges; a release is one atomic subtraction.
+  Only cancellation wakers remain behind the mutex. The reference Cypher
+  executor charges memory per copied value, and on the full-path `reduce` query
+  this removes 11% at 1,024 nodes and 13% at 4,096 on one laptop; the fused
+  `UNWIND` form and the direct kernels do not move. Three behaviours change:
+  `usage()` reads its figures in sequence rather than as one snapshot, so exact
+  totals should be read after execution (`peak_bytes` is never reported below
+  `live_bytes`); the peak can trail a charge by an instant but never misses a
+  completed one; and a poisoned lock can no longer fail a memory charge, only
+  waker registration. See `docs/lock-free.md`.
+- The sequential kernels — `dijkstra`, `shortestPaths`, `bfs`, `dfs`,
+  `topologicalSort`, `scc`, `wcc` — and the heap the path kernels share charge
+  work through a `WorkMeter` instead of one compare-exchange on the shared
+  counter per visited entry. Budgets, cancellation and results are unchanged,
+  and the exact-work-charge tests pass as they were. On a million-node,
+  ten-million-arc random graph, one laptop, release, no deadline, best of nine,
+  per-entry against metered: `dijkstra` 690 ms to 513, `bfs` 312 to 203, `dfs`
+  358 to 302, `scc` 682 to 563, `wcc` 310 to 186, with the per-entry figures
+  reproduced after the metered run. These are single-host probes, not the
+  paired benchmark harness, which has yet to run on this change.
+
+### Projections and results
+
+- **Projections can admit negative weights, by opt-in only.**
+  `WeightSelection::SignedProperty` and `GraphProjection::from_signed_topology`
+  build a *signed* projection. Only `bellman_ford` runs on one. Every other
+  kernel refuses it first thing, because a negative weight would not make them
+  fail, it would make them wrong; a catalog test runs all of them on a signed
+  projection and demands the refusal, so a kernel added without the guard fails
+  it. `projection_options_for(name, args)` gives an embedder the options for a
+  named kernel, signed only for `bellmanFord`; the procedure path does the same,
+  and signed and unsigned projections never share a cache entry. Nothing is
+  signed unless asked for, so no existing caller changes. `WeightSelection`
+  gains a variant: code that matches it exhaustively needs the new arm.
+- Result tables can key their own rows, so a kernel can answer with node pairs
+  (`node1`, `node2`, ...) through the same Arrow and row adapters. A table with
+  no rows now yields one empty Arrow batch carrying its schema instead of no
+  batch at all.
+- `GraphProjection` can build in-arcs with weights and edge slots once per
+  projection (crate-internal; label propagation uses them, and the eigenvector,
+  Katz and HITS kernels will).
+- Add `NodeTable`, a node-aligned result with typed named columns and repeated
+  whole-result scalars, with one Arrow adapter and one row adapter. Kernels that
+  answer "a value per node" hand it their buffers without copying, so the rest of
+  the analytics catalog needs no adapter code of its own.
+
+### Build and CI
+
+- The workspace CI job tests `grust-ladybug` on its own. It had failed on every
+  push: LadybugDB's prebuilt library bundles zstd, and the unified all-features
+  build linked `zstd-sys` into the same test binary, which `rust-lld` rejects.
+
 ## 0.21.0 — Tadpole — 2026-09-18
 
 ### Cypher language
