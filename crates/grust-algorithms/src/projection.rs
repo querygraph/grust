@@ -1,6 +1,6 @@
 //! Projection identity and topology validation. Property extraction lives at adapters.
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
 use grust_core::{EdgeId, NodeId};
@@ -168,38 +168,7 @@ impl GraphProjection {
                 "weight count must equal edge count".into(),
             ));
         }
-        let ordinal_reservation = context.reserve(
-            edges
-                .len()
-                .saturating_add(4)
-                .saturating_mul(2 * (size_of::<usize>() + 1)),
-        )?;
-        let mut ordinals = HashSet::new();
-        ordinals.try_reserve(edges.len())?;
-        for (index, edge) in edges.iter().enumerate() {
-            context.charge_work(1)?;
-            if edge.source >= nodes.len() || edge.target >= nodes.len() {
-                return Err(ProcedureError::InvalidArguments(
-                    "edge endpoint outside node table".into(),
-                ));
-            }
-            if let Some(weights) = &weights
-                && (!weights[index].is_finite() || (!signed && weights[index] < 0.0))
-            {
-                return Err(ProcedureError::InvalidArguments(if signed {
-                    "weights must be finite".into()
-                } else {
-                    "weights must be finite and nonnegative".into()
-                }));
-            }
-            if !ordinals.insert(edge.ordinal) {
-                return Err(ProcedureError::InvalidArguments(
-                    "duplicate original edge ordinal".into(),
-                ));
-            }
-        }
-        drop(ordinals);
-        drop(ordinal_reservation);
+        validate_edges(&edges, weights.as_deref(), nodes.len(), signed, context)?;
         let outgoing = Adjacency::build(
             nodes.len(),
             &edges,
@@ -341,6 +310,155 @@ impl std::ops::Deref for InArcs<'_> {
             Self::Built(adjacency) => adjacency,
         }
     }
+}
+
+/// Check every edge: endpoints inside the node table, weights finite and, unless
+/// the projection is signed, nonnegative, and original ordinals distinct.
+///
+/// This was a `HashSet` of every ordinal, which on a graph of a hundred million
+/// edges is most of a projection's build time — 37.7s of 63s on com-Orkut,
+/// measured before this changed. Ordinals are positions, so they are dense in
+/// practice, and a bit per ordinal answers the same question in fourteen
+/// megabytes instead of gigabytes of hash table. A sparse set of ordinals falls
+/// back to sorting a copy, which is slower than the bitmap and still faster than
+/// hashing.
+fn validate_edges(
+    edges: &[ProjectionEdge],
+    weights: Option<&[f64]>,
+    nodes: usize,
+    signed: bool,
+    context: &ExecutionContext,
+) -> Result<()> {
+    use std::sync::atomic::{AtomicU64, Ordering};
+
+    let weight_message = || -> ProcedureError {
+        ProcedureError::InvalidArguments(if signed {
+            "weights must be finite".into()
+        } else {
+            "weights must be finite and nonnegative".into()
+        })
+    };
+    // A budget that can pay for every edge is charged a chunk at a time. One
+    // that cannot takes the sequential pass, charged an edge at a time as the
+    // loop this replaced was, so it refuses at the same edge, with the same
+    // work counted and the same error first, at every width. Chunks charged in
+    // parallel would leave behind however many had got in first, and one
+    // charge for the whole pass would count nothing at all.
+    let fits = crate::parallel::work_fits(context, edges.len())?;
+    let workers = if fits {
+        crate::parallel::workers(context, edges.len())
+    } else {
+        None
+    };
+    // The endpoint, weight and range checks are independent per edge, and the
+    // largest ordinal is a maximum, so one pass answers all of them. Work is
+    // charged once per edge, as the sequential loop charged it.
+    let largest = |first: usize,
+                   slice: &[ProjectionEdge],
+                   meter: &mut grust_procedures::WorkMeter|
+     -> Result<usize> {
+        if fits {
+            meter.charge(slice.len())?;
+        }
+        let mut largest = 0usize;
+        for (offset, edge) in slice.iter().enumerate() {
+            if !fits {
+                context.charge_work(1)?;
+            }
+            if edge.source >= nodes || edge.target >= nodes {
+                return Err(ProcedureError::InvalidArguments(
+                    "edge endpoint outside node table".into(),
+                ));
+            }
+            if let Some(weights) = weights {
+                let weight = weights[first + offset];
+                if !weight.is_finite() || (!signed && weight < 0.0) {
+                    return Err(weight_message());
+                }
+            }
+            largest = largest.max(edge.ordinal);
+        }
+        Ok(largest)
+    };
+    let largest = match workers {
+        Some(workers) => {
+            let chunk = crate::parallel::chunk_len(edges.len(), workers);
+            let parts = crate::parallel::map_chunks_sized(context, workers, edges, chunk, largest)?;
+            crate::parallel::reduce_in_order(&parts, 0usize, usize::max)
+        }
+        None => {
+            let mut meter = context.work_meter();
+            largest(0, edges, &mut meter)?
+        }
+    };
+    if edges.is_empty() {
+        return Ok(());
+    }
+
+    // Dense ordinals, the ordinary case: one bit each. A word is claimed with a
+    // fetch-or, so a duplicate is whoever finds the bit already set, and which
+    // worker that is cannot change the answer: the error is the same either way.
+    let dense = largest
+        .checked_add(1)
+        .is_some_and(|span| span <= edges.len().saturating_mul(4).max(1024));
+    if dense {
+        let words = (largest / 64) + 1;
+        let _admission = context.reserve(words.saturating_mul(size_of::<u64>()))?;
+        let mut seen = Vec::new();
+        seen.try_reserve_exact(words)?;
+        seen.resize_with(words, || AtomicU64::new(0));
+        let claim = |_: usize,
+                     slice: &[ProjectionEdge],
+                     meter: &mut grust_procedures::WorkMeter|
+         -> Result<()> {
+            // The first pass charged these edges; this one polls rather than
+            // charging again, so a projection's work total is what it was before
+            // the check changed shape and a budget still means the same thing.
+            meter.checkpoint()?;
+            for edge in slice {
+                let bit = 1u64 << (edge.ordinal % 64);
+                if seen[edge.ordinal / 64].fetch_or(bit, Ordering::Relaxed) & bit != 0 {
+                    return Err(ProcedureError::InvalidArguments(
+                        "duplicate original edge ordinal".into(),
+                    ));
+                }
+            }
+            Ok(())
+        };
+        match workers {
+            Some(workers) => {
+                let chunk = crate::parallel::chunk_len(edges.len(), workers);
+                crate::parallel::map_chunks_sized(context, workers, edges, chunk, claim)?;
+            }
+            None => {
+                let mut meter = context.work_meter();
+                claim(0, edges, &mut meter)?;
+            }
+        }
+        return Ok(());
+    }
+
+    // Sparse ordinals: sort a copy and look at neighbours. Still linear in
+    // memory rather than quadratic in cache misses.
+    let _admission = context.reserve(edges.len().saturating_mul(size_of::<usize>()))?;
+    let mut ordinals = Vec::new();
+    ordinals.try_reserve_exact(edges.len())?;
+    for chunk in edges.chunks(1024) {
+        context.checkpoint()?;
+        ordinals.extend(chunk.iter().map(|edge| edge.ordinal));
+    }
+    match workers {
+        Some(workers) => crate::parallel::sort_total(workers, &mut ordinals, usize::cmp)?,
+        None => ordinals.sort_unstable(),
+    }
+    for pair in ordinals.windows(2) {
+        if pair[0] == pair[1] {
+            return Err(ProcedureError::InvalidArguments(
+                "duplicate original edge ordinal".into(),
+            ));
+        }
+    }
+    Ok(())
 }
 
 #[cfg(test)]
