@@ -1,10 +1,20 @@
 # Node properties for graph kernels (P6) — design for review
 
-Status: **APPROVED WITH ONE CHANGE, 2026-09-20.** The operator answered the five
+Status: **IMPLEMENTED AND RELEASED in 0.22.0 "Mysid".** `NodeProperties` lives
+in `crates/grust-algorithms/src/properties.rs`, its Arrow constructor in
+`properties_arrow.rs`, and `community_quality` is its first consumer. The
+design below is kept as the record of what was decided before the code, not as
+a description of it; the crate documentation is authoritative for the shipped
+surface. Two things changed during the build and are noted where they apply:
+vector values are written at their own row rather than appended, so Arrow batch
+order is not load-bearing, and `optional_categories` joined the other
+`optional_*` accessors.
+
+The design was **APPROVED WITH ONE CHANGE, 2026-09-20.** The operator answered the five
 questions at the end: four as recommended, and **strings are in, for filters
 only** (question 4). The answers are recorded at the end, and the "Types"
-section is amended to match. No code exists yet; implementation follows "Order
-of work".
+section is amended to match. Implementation followed "Order of work" and is
+complete.
 
 ## Why
 

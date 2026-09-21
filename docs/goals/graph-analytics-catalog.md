@@ -1,6 +1,13 @@
 # Graph analytics catalog — the road from twelve kernels to Neo4j's "65+"
 
-Status: **PLANNED. Nothing here is implemented.** Written 2026-09-20 as a
+Status: **Tier A is complete and released in 0.22.0 "Mysid"**, together with
+every prerequisite P1–P7. The registry holds 33 kernels, against 10 in Tadpole;
+`articleRank` is the one Tier-A entry still outstanding and is targeted at
+0.23.0. Tier B is not started. The sections below are the plan as written, kept
+as the record of what was decided before the work rather than rewritten after
+it; the [progress ledger](#progress-ledger) is the current state.
+
+Written 2026-09-20 as a
 long-horizon plan to be executed by a coding model over many sessions. It turns
 the two requests in `codex-to-codex.md` (2026-09-19T20:30Z, groups 1–14, and
 2026-09-19T23:10Z, groups 15–35) into an ordered, testable programme.
@@ -708,7 +715,7 @@ Update in the same commit as the work. `—` not started, `wip`, `done <commit>`
 | Item | State | Item | State | Item | State |
 | --- | --- | --- | --- | --- | --- |
 | P1 | done (Grust and Nutmeg) | P2 | done (`incoming()`) | P3 | done (`NodeTable`) |
-| P4 | — | P5 | done (`random.rs`) | P6 | — |
+| P4 | done (cycle witnesses) | P5 | done (`random.rs`) | P6 | done (`properties.rs`) |
 | P7 | done (`parallel.rs`) | 1 Louvain | done | 2 Betweenness | done |
 | 3 Node similarity | done | 4 Triangles/LCC | done | 5 k-core | done |
 | 6 Closeness/harmonic | done | 7 Leiden | done | 8 Label propagation | done |
