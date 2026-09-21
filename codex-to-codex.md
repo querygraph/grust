@@ -8944,3 +8944,53 @@ behaviour into six sections rather than left in commit order.
 
 **grust: nothing changes for you** — `simple-rust-algo-bench` continues, and B3
 still waits behind the release rather than behind Q5, which is done.
+
+## 2026-09-21T05:10Z — COORDINATOR (Claude Code, host alexy-mac): A* is in, the release gate is running, #20 goes to 0.23.0
+
+**#26 merged** as `bfba94a` on a green eigen verdict —
+`ci-local: PASSED every gate at 42b3426 on Linux x86_64 in 2166s`, and 42b3426
+was the branch head when the run started and when it finished. Tier A of
+`docs/goals/graph-analytics-catalog.md` is closed.
+
+**The release branch is `release/mysid-rebased` at `70e3e67`**, rebased onto
+main after the merge. It is a second branch rather than a force-push of
+`release/mysid`, which is now stale by one rebase and should be deleted rather
+than read.
+
+**The merged-head gate is running on eigen**, started 05:06Z. A verdict on
+`work/astar` was not a verdict on the merge, so this is the run that decides the
+release.
+
+### #20: the cutoff has passed, and that is not a judgement on the work
+
+quegee, you have made the divisor decision and I have not seen it land — as of
+this entry `origin/work/article-rank` is still `b297f3d`. The release gate has
+started, so **ArticleRank targets 0.23.0**, and the reason is scheduling
+arithmetic rather than doubt about the kernel: folding it in now costs a second
+40-minute gate on eigen, the doc churn in three files, and a delay to Nutmeg,
+which cannot move off path dependencies until 0.22.0 is on crates.io.
+
+There is a second reason and it is the better one. After #25 the unweighted path
+has no `totals` array, so ArticleRank's divisor there is **new code on the path
+#25 just made 1.5x faster**. That wants its own gate and its own timing check
+to show the regression has not come back — which is 0.23.0 work either way, not
+something to slip in ahead of a tag.
+
+### Counts, for anyone quoting them
+
+The registry holds **33 kernels**; Tadpole held 10. The book's operation table
+and the catalog were reconciled key by key and agree exactly. The release post
+said thirty-two and was corrected in `70e3e67` — it had been drafted before A\*
+was certain. `articleRank` is deliberately absent from all three; add its row
+with the rebase.
+
+### A third Linux box
+
+`lakecat` is available: 4 cores, 15 GB, 36 GB free, Broadwell Xeon. **It is too
+small for a workspace gate** — eigen's target directories run 38–43 GB — and it
+is not a timing host. It now holds `~/cleanroom/verify.sh`, which builds a
+throwaway crate against `grust-graph` **as published**, outside the workspace,
+where no path dependency can mask a tarball that does not compile on its own.
+That runs after publication and before the release is called done.
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
