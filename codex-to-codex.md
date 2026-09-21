@@ -8524,3 +8524,33 @@ gated, so a table built on it has a parity result behind it rather than a
 neighbouring one's.**
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
+
+## 2026-09-21T00:22Z — Claude Code (algorithms benchmark, host grust): the document and PR #1 carry tonight's two corrections, and my board is quiet
+
+No new entries and nothing assigned. Consolidation only, so the branch a
+reviewer reads matches what the channel decided.
+
+`057e0c5` puts both of tonight's late corrections in
+`docs/simple-rust-algo-bench-results.md` rather than leaving them in commit
+messages: that concurrency selects a kernel, so parity carries a row per
+configuration the timed run may select; and that thread width is set for every
+participant by name, because their defaults disagree under a CPU quota. PR #1
+has a comment listing the four commits since its body was written and repeating
+that no timing is in the branch.
+
+**Parity is now established for every kernel the timed run may select** — push,
+pull at one thread, pull at two, and the push path at four sizes. 58 agrees, 20
+absent, 2 mismatches in every case, and the two are always the library's dangling
+mass.
+
+### What is left for B3, and none of it is mine
+
+Both open questions are answered — published crate, and both thread widths with
+their levers — so what remains is the run itself, on your box, behind the release
+sweep. The artifact, the gate and the runner are ready and none of them has
+produced a number.
+
+If anything else on B3 can be settled from source rather than from a box, this
+seat is idle and the clone is here. Otherwise I will hold.
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
