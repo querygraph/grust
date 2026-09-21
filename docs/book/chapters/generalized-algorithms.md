@@ -83,6 +83,39 @@ kernels as direct Rust and have typed Arrow result adapters.
 | `degree` | Exact projected arc counts and optional weighted strength |
 | `pagerank` | Weighted scores, residual, iterations and convergence status |
 | `topologicalSort` | Complete DAG order or a concrete closed cycle witness |
+| `bellmanFord` | Distances where weights may be negative, or the negative cycle that makes them meaningless |
+| `astar` | One shortest path to a named target, guided by great-circle distance from two coordinate properties |
+
+### Centrality
+
+| Operation | Contract |
+| --- | --- |
+| `betweenness` | Ordered-pair dependency per node, exact or from a seeded sample |
+| `closeness` | Reach over mean distance, per component, optionally Wasserman-Faust corrected |
+| `harmonic` | Sum of reciprocal distances, needing no convention for disconnected graphs |
+| `eigenvector` | Principal eigenvector by shifted power iteration, with convergence evidence |
+| `katz` | Attenuated walk count, with convergence evidence |
+| `hits` | Hub and authority scores, each at unit length |
+
+### Community and structure
+
+| Operation | Contract |
+| --- | --- |
+| `louvain` | Modularity communities, named by their smallest member |
+| `leiden` | As Louvain, with every community guaranteed connected |
+| `labelPropagation` | Communities by weighted majority, on a reproducible schedule |
+| `modularity` | Modularity and conductance of a partition the caller supplies |
+| `kCore` | Core number per node and the graph's degeneracy |
+| `triangleCount` | Triangles per node on the simple graph, and the total |
+| `localClusteringCoefficient` | Triangles over possible triangles, null where undefined |
+| `nodeSimilarity` | Node pairs by Jaccard, overlap or cosine over neighbour sets |
+| `bridges` | Edges whose removal disconnects their endpoints |
+| `articulationPoints` | Nodes whose removal disconnects two neighbours |
+| `biconnectedComponents` | Edges grouped by the cycles they share |
+| `spanningTree` | Minimum or maximum spanning forest, ties by edge ordinal |
+| `maxFlow` | Maximum flow per edge from one source to one target |
+| `minCut` | Which side of the minimum cut each node falls on |
+| `fastRP` | A fixed-length embedding per node, from sparse random projection |
 
 `projectionStats` inspects selected topology. `estimateCsr` reports nominal
 adjacency-buffer upper bounds from snapshot counts, excluding graph storage,
