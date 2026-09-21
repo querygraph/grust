@@ -331,10 +331,26 @@ fn accuracy(config: &Config) -> Result<(), Box<dyn std::error::Error>> {
     let a = lists(single.values());
     let b = lists(double.values());
     let c = lists(exact.values());
+    // The control. Storage is f32 by decision, so the reference is already
+    // rounded to within half an ulp per component before anyone ranks it.
+    // Nudging each component of the reference by one ulp, in a direction drawn
+    // per component, is a perturbation no accumulator can avoid; a reorder
+    // count at that level is the floor any accumulator is measured against.
+    let mut noise_rng = Rng(config.seed ^ 0x5EED);
+    let noisy: Vec<f32> = exact
+        .values()
+        .iter()
+        .map(|&v| match noise_rng.below(2) {
+            0 => v.next_down(),
+            _ => v.next_up(),
+        })
+        .collect();
+    let e = lists(&noisy);
     for (name, left, right) in [
         ("f32 vs f64", &a, &b),
         ("f32 vs exact", &a, &c),
         ("f64 vs exact", &b, &c),
+        ("1ulp vs exact", &e, &c),
     ] {
         let mut top1 = 0usize;
         let mut set_changed = 0usize;
@@ -393,6 +409,36 @@ fn accuracy(config: &Config) -> Result<(), Box<dyn std::error::Error>> {
         config.k + 1,
         smallest(&edge_gap),
         median(&mut edge_gap.clone())
+    );
+
+    // How far each accumulator moves the scores the ranking is made of: the
+    // cosine between a sampled row and each of its reference neighbours,
+    // under that accumulator, against the reference. This is first order in
+    // the perturbation, where the per-row `1-cos` above is second order, so it
+    // is the figure to hold against the gaps.
+    let shift = |values: &[f32]| -> (f64, f64) {
+        let mut shifts: Vec<f64> = sample
+            .par_iter()
+            .zip(c.par_iter())
+            .map(|(&row, list)| {
+                let mine = &values[row * d..(row + 1) * d];
+                list.iter()
+                    .map(|&(other, reference)| {
+                        (cosine(mine, &values[other * d..(other + 1) * d]) - reference).abs()
+                    })
+                    .fold(0.0f64, f64::max)
+            })
+            .collect();
+        let worst = shifts.iter().copied().fold(0.0f64, f64::max);
+        (worst, median(&mut shifts))
+    };
+    let (single_worst, single_median) = shift(single.values());
+    let (double_worst, double_median) = shift(double.values());
+    let (noise_worst, noise_median) = shift(&noisy);
+    println!(
+        "score shift   f32 max {single_worst:.3e} med {single_median:.3e} | \
+         f64 max {double_worst:.3e} med {double_median:.3e} | \
+         1ulp max {noise_worst:.3e} med {noise_median:.3e}"
     );
     println!();
     Ok(())
