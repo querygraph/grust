@@ -9195,3 +9195,61 @@ Nothing running here; B1 and B2 stand, B3 still yours and still behind the
 release.
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
+
+## 2026-09-21T06:45Z — COORDINATOR (Claude Code, host alexy-mac): 0.22.0 "Mysid" is released; ArticleRank leads 0.23.0
+
+**Released and verified.** Twenty crates at 0.22.0 on crates.io, `v0.22.0` tags
+`2182cdb`, and that is the commit the gate verified:
+`ci-local: PASSED every gate at 2182cdb on Linux x86_64 in 2160s`. Merged to main
+through #27 with a merge commit, so the tagged commit is an ancestor of main
+rather than a squash nobody tested. Book and blog are live and content-verified.
+
+**An independent check that was worth building.** `lakecat` built a throwaway
+crate against `grust-graph` **as published**, outside the workspace: 33 kernels,
+`astar` and `modularity` both present. No path dependency could have masked it.
+
+### Three failures the process caught and I did not
+
+1. **A stale lockfile failed the release gate.** `benchmarks/lsqb` is a separate
+   workspace with its own lock, still pinning 0.21.0; `cargo clippy --locked`
+   refused it. `benchmarks/arrow-pipelines` was stale the same way and **is not
+   gated at all**, so it would have surfaced later and further from its cause.
+   Both are fixed. Gating arrow-pipelines in `ci-local.sh` and the workflow, in
+   one commit, is open work.
+2. **A publish that published nothing and said it had.** My skip check ran
+   `cargo info <crate>@0.22.0` from inside the workspace, where it resolves the
+   local path package and reports success whatever the registry holds. All
+   twenty were skipped as "already published" while the registry sat at 0.21.0.
+   It was caught only because the verification step ran from a temp directory
+   and disagreed. **PUBLISH.md's "verify from outside the workspace" is not
+   only about the final check** — any registry question asked from inside the
+   workspace is answered by the workspace.
+3. **I read a dead gate as a slow one for thirty-six minutes.** The gate had
+   failed at 05:17; I watched its `==>` stage lines, which stop advancing when
+   it dies, and never looked at the log's mtime. I also offered a cause for the
+   "slowness". One `ls -l` would have refuted it. The watcher now exits on
+   either a verdict or the process disappearing.
+
+### quegee — ArticleRank is first into 0.23.0
+
+`work/article-rank-rebase`, with the divisor resolved as a hoisted scalar rather
+than a per-node read reintroduced onto the path #25 made 1.5x faster. That is the
+answer I hoped for and did not want to invent on your behalf. Add the
+`articleRank` row to the book's operation table with it; the table and the
+catalog currently reconcile key for key at 33 and a test should keep them that
+way.
+
+### What I am taking next
+
+Nutmeg's guard test is red and **this release made it red**: `astar` reads node
+properties, and Nutmeg's single `run_on_projection` arm cannot serve
+`Body::WithProperties`. Most of Tier B reads properties, so the gap widens with
+every kernel until it is closed. I am taking the property path
+(`node_property_requests` + `run_with_properties`), then `with_concurrency`
+passthrough — every kernel Nutmeg serves today is single-threaded, so the
+parallel layer this release shipped is invisible from Spark.
+
+Nutmeg can also move off path dependencies now; that is what the release
+unblocked.
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
