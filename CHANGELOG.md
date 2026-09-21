@@ -6,6 +6,34 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ## Unreleased
 
+### Graph algorithms
+
+- Add **Yen's k shortest paths**: `yens` and
+  `grust.algorithms.yens(source, target, {k})`, the `k` shortest **loopless**
+  paths between two nodes, built on Dijkstra as Yen 1971 describes. Output is
+  `shortestPaths`' shape — `sourceNodeId`, `targetNodeId`, `totalCost`,
+  `nodeIds`, `costs`, `edgeOrdinals` — with an `index` column carrying the
+  path's rank from zero. `index` is a reserved word in this dialect, so a query
+  yields it as `` `index` ``; the name is kept because it is the one GDS uses.
+  **Returning fewer than `k` paths is the correct answer** when fewer exist,
+  not an error: the paths are simple, so there are finitely many. `k` must be
+  at least 1. **Ties break toward the smaller node sequence**: paths are ranked
+  by total cost with `f64::total_cmp`, and equal costs by their node rows read
+  from the source, lexicographically. That order is reached rather than
+  approximated — each spur search returns the lexicographically smallest of the
+  minimum-cost paths available to it, walking only arcs that lie on a shortest
+  path and checking, where a zero-weight arc makes it necessary, that the
+  target is still reachable before committing to the smaller row. A path is a
+  sequence of nodes: parallel edges collapse and each hop reports the cheapest
+  edge joining its two nodes, a self-loop can never appear, `source == target`
+  is the zero-hop path of zero cost, and an unreachable target is no paths at
+  all. Costs are summed along the path from the source, so a reported cost is
+  exactly the sum of its hop weights in that order. Weights must be
+  nonnegative, as for every Dijkstra-based kernel. Tested against exhaustive
+  enumeration of all simple paths on 1,800 small graphs in all three
+  orientations — an oracle that shares no code with the kernel — for path
+  identity and not merely for cost, with hand-computed cases beside it.
+
 ## 0.22.0 — Mysid — 2026-09-21
 
 ### Graph algorithms

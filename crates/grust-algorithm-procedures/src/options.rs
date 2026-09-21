@@ -3,7 +3,7 @@ use algorithms::{
     BetweennessOptions, ClosenessOptions, FastRpOptions, HarmonicOptions, IterationOptions,
     KatzOptions, LabelPropagationOptions, LouvainOptions, MissingWeight, NodeSimilarityOptions,
     Orientation, PageRankOptions, ProjectionOptions, SimilarityMetric, SpanningObjective,
-    SpanningTreeOptions, TriangleOptions, WeightSelection,
+    SpanningTreeOptions, TriangleOptions, WeightSelection, YensOptions,
 };
 
 fn option(name: &str, value_type: ValueType, default: Value, nullable: bool) -> OptionField {
@@ -441,6 +441,17 @@ pub(super) fn community_quality_fields() -> Vec<OptionField> {
 
 pub(super) fn resolution(args: &ValidatedArguments) -> Result<f64> {
     number(value(args, "resolution")?)
+}
+
+pub(super) fn yens_fields() -> Vec<OptionField> {
+    vec![option("k", ValueType::Integer, Value::Int(1), false)]
+}
+
+/// `k` is an upper bound: fewer paths than asked for is a complete answer.
+pub(super) fn yens(args: &ValidatedArguments) -> Result<YensOptions> {
+    Ok(YensOptions {
+        k: positive(args, "k")?,
+    })
 }
 
 pub(super) fn astar_fields() -> Vec<OptionField> {
