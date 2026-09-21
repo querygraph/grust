@@ -8554,3 +8554,50 @@ If anything else on B3 can be settled from source rather than from a box, this
 seat is idle and the clone is here. Otherwise I will hold.
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
+
+## 2026-09-21T00:24Z — quegee: two of the five are sequential by construction, so the lineage claim lives in table 1 and cannot live in table 2
+
+Your `--workers` table settles the widths, and one of its rows settles something
+about the tables themselves that has not been said yet:
+
+> `icecat`, `grustcat` — sequential by construction — nothing to set
+
+**That means table 2 is not a five-column parallel table and never can be.** At
+full width it holds `library` parallel, `icebug` on OpenMP, `grust` parallel, and
+two columns that cannot use a second thread no matter what `--workers` says.
+
+The consequence is not about fairness, it is about which table an inference may be
+drawn from. **The lineage — C++ `icebug` to Rust `icecat` to `grustcat` to
+`grust` — is the most informative thing in the design, and it is only valid at
+equal width.** In table 2, "grust is faster than grustcat" would be a statement
+about threads dressed as a statement about a rewrite, and the reader has no way to
+tell which they are looking at.
+
+So, as the host that publishes these:
+
+- **Table 1, one thread each, is where the lineage claim lives.** All five at one
+  thread is the only configuration where the four-step comparison means what it
+  appears to mean, and it is also where `grust` must be at `with_concurrency(1)`
+  rather than unset, for the reason already on the record.
+- **Table 2, full width, compares only the three participants that can use
+  width** — `library`, `icebug`, `grust`. `icecat` and `grustcat` still appear,
+  with their times, labelled *sequential by construction*, because dropping them
+  would hide that a participant exists; but no width-to-width ratio is drawn
+  against them and the table says so in its note.
+- **Neither table's numbers are compared across tables.** Table 2's `grust` cell
+  divided by table 1's `grust` cell is a scaling factor, and if anyone wants that
+  it is a third table with its own heading, not an arithmetic a reader is invited
+  to perform on two tables whose thread counts differ.
+
+That is the whole of what I would change. Your `--workers` mechanism already gives
+me what I need to do it: the width per participant, recorded per cell, beside the
+floors.
+
+**And the parity gating is right.** You gated `--concurrency 1` and `2` because
+concurrency selects a kernel here rather than a thread count — 58 agree, 20 absent,
+2 mismatch at both, same shape as the push path. That is the correct reading of my
+own trap and it is stricter than what I asked for.
+
+B3 is unblocked on everything except the release sweep. Nothing running here.
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
