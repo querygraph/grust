@@ -5,7 +5,7 @@
   <meta name="generator" content="pandoc 3.10.1" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
   <meta name="author" content="Alexy Khrabrov" />
-  <meta name="dcterms.date" content="2026-09-18" />
+  <meta name="dcterms.date" content="2026-09-21" />
   <title>Grust</title>
   <style>
 
@@ -173,7 +173,7 @@ height: auto;
 <h1 class="title">Grust</h1>
 <p class="subtitle">A Rust Property Graph Architecture</p>
 <p class="author">Alexy Khrabrov</p>
-<p class="date">2026-09-18</p>
+<p class="date">2026-09-21</p>
 </header>
 <nav id="TOC" role="doc-toc">
 <ul>
@@ -280,7 +280,9 @@ loading</a></li>
 <li><a href="#what-the-whole-set-moved" id="toc-what-the-whole-set-moved"><span class="toc-section-number">17.7</span> What the whole set moved</a></li>
 <li><a href="#the-same-problem-one-accounting-axis-over" id="toc-the-same-problem-one-accounting-axis-over"><span class="toc-section-number">17.8</span> The same problem, one accounting
 axis over</a></li>
-<li><a href="#limitations-1" id="toc-limitations-1"><span class="toc-section-number">17.9</span> Limitations</a></li>
+<li><a href="#what-the-unchanged-columns-say" id="toc-what-the-unchanged-columns-say"><span class="toc-section-number">17.9</span> What the unchanged columns
+say</a></li>
+<li><a href="#limitations-1" id="toc-limitations-1"><span class="toc-section-number">17.10</span> Limitations</a></li>
 </ul></li>
 <li><a href="#arrow-pipelines-adbc-and-datafusion" id="toc-arrow-pipelines-adbc-and-datafusion"><span class="toc-section-number">18</span> Arrow pipelines, ADBC and
 DataFusion</a>
@@ -2948,6 +2950,134 @@ Rust and have typed Arrow result adapters.</p>
 <td><code>topologicalSort</code></td>
 <td>Complete DAG order or a concrete closed cycle witness</td>
 </tr>
+<tr>
+<td><code>bellmanFord</code></td>
+<td>Distances where weights may be negative, or the negative cycle that
+makes them meaningless</td>
+</tr>
+<tr>
+<td><code>astar</code></td>
+<td>One shortest path to a named target, guided by great-circle distance
+from two coordinate properties</td>
+</tr>
+</tbody>
+</table>
+<h3 data-number="16.2.1" id="centrality"><span class="header-section-number">16.2.1</span> Centrality</h3>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Operation</th>
+<th>Contract</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>betweenness</code></td>
+<td>Ordered-pair dependency per node, exact or from a seeded sample</td>
+</tr>
+<tr>
+<td><code>closeness</code></td>
+<td>Reach over mean distance, per component, optionally Wasserman-Faust
+corrected</td>
+</tr>
+<tr>
+<td><code>harmonic</code></td>
+<td>Sum of reciprocal distances, needing no convention for disconnected
+graphs</td>
+</tr>
+<tr>
+<td><code>eigenvector</code></td>
+<td>Principal eigenvector by shifted power iteration, with convergence
+evidence</td>
+</tr>
+<tr>
+<td><code>katz</code></td>
+<td>Attenuated walk count, with convergence evidence</td>
+</tr>
+<tr>
+<td><code>hits</code></td>
+<td>Hub and authority scores, each at unit length</td>
+</tr>
+</tbody>
+</table>
+<h3 data-number="16.2.2" id="community-and-structure"><span class="header-section-number">16.2.2</span> Community and structure</h3>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Operation</th>
+<th>Contract</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>louvain</code></td>
+<td>Modularity communities, named by their smallest member</td>
+</tr>
+<tr>
+<td><code>leiden</code></td>
+<td>As Louvain, with every community guaranteed connected</td>
+</tr>
+<tr>
+<td><code>labelPropagation</code></td>
+<td>Communities by weighted majority, on a reproducible schedule</td>
+</tr>
+<tr>
+<td><code>modularity</code></td>
+<td>Modularity and conductance of a partition the caller supplies</td>
+</tr>
+<tr>
+<td><code>kCore</code></td>
+<td>Core number per node and the graph’s degeneracy</td>
+</tr>
+<tr>
+<td><code>triangleCount</code></td>
+<td>Triangles per node on the simple graph, and the total</td>
+</tr>
+<tr>
+<td><code>localClusteringCoefficient</code></td>
+<td>Triangles over possible triangles, null where undefined</td>
+</tr>
+<tr>
+<td><code>nodeSimilarity</code></td>
+<td>Node pairs by Jaccard, overlap or cosine over neighbour sets</td>
+</tr>
+<tr>
+<td><code>bridges</code></td>
+<td>Edges whose removal disconnects their endpoints</td>
+</tr>
+<tr>
+<td><code>articulationPoints</code></td>
+<td>Nodes whose removal disconnects two neighbours</td>
+</tr>
+<tr>
+<td><code>biconnectedComponents</code></td>
+<td>Edges grouped by the cycles they share</td>
+</tr>
+<tr>
+<td><code>spanningTree</code></td>
+<td>Minimum or maximum spanning forest, ties by edge ordinal</td>
+</tr>
+<tr>
+<td><code>maxFlow</code></td>
+<td>Maximum flow per edge from one source to one target</td>
+</tr>
+<tr>
+<td><code>minCut</code></td>
+<td>Which side of the minimum cut each node falls on</td>
+</tr>
+<tr>
+<td><code>fastRP</code></td>
+<td>A fixed-length embedding per node, from sparse random
+projection</td>
+</tr>
 </tbody>
 </table>
 <p><code>projectionStats</code> inspects selected topology.
@@ -3086,17 +3216,22 @@ work counter and the cancellation flag are atomics. Each charge admits
 through a compare-exchange that recomputes admission against the value
 it actually replaces, so a concurrent charge cannot overshoot the limit
 between load and store, and an exhausted budget still fails exactly at
-its limit. Memory reservations, peak accounting and cancellation wakers
-keep a mutex: they are rare and need several fields to move
-together.</p>
-<p>That is true of kernels, which reserve memory per batch. It is not
-true of a materializing Cypher consumer, which charges the logical bytes
-of every value it copies and so takes that mutex once or more per row.
-Those per-copy charges, <code>charge_cumulative_memory</code> and
-<code>MemoryAccount::charge</code>, sample the deadline as work charges
-do; <code>reserve</code> still reads the clock. Moving the byte counters
-to atomics is planned in <code>docs/lock-free.md</code> and is not part
-of this release.</p>
+its limit. Accounted memory and its high-water mark are atomics admitted
+the same way, so a byte limit is as exact as a work limit. Only the
+cancellation wakers keep a mutex: they are rare, and they are the one
+place several fields must move together.</p>
+<p>Memory had to follow work off the lock because of who charges it. A
+kernel reserves memory per batch, but a materializing Cypher consumer
+charges the logical bytes of every value it copies, once or more per
+row, through <code>charge_cumulative_memory</code> and
+<code>MemoryAccount::charge</code>. Those sample the deadline as work
+charges do; <code>reserve</code> still reads the clock. Two things
+follow from dropping the lock. <code>usage()</code> reads its figures
+one after another rather than as one snapshot, so read it after
+execution for exact totals; while an execution runs,
+<code>peak_bytes</code> is never below <code>live_bytes</code>. And a
+poisoned lock no longer fails a memory charge, because there is no lock
+to poison; only waker registration can still report it.</p>
 <p><strong>The deadline is sampled; everything else is not.</strong> An
 execution that sets no deadline pays nothing for deadline enforcement —
 neither a clock read nor a counter. An execution that sets one has its
@@ -3377,7 +3512,33 @@ measurement is 1,533 ms against 718 ms without the expansion: the shape
 is now worth about half. Making the fold fast is no longer a rounding
 error, which is an argument for the binding-forms work that did not
 exist when it was proposed.</p>
-<h2 data-number="17.9" id="limitations-1"><span class="header-section-number">17.9</span> Limitations</h2>
+<h2 data-number="17.9" id="what-the-unchanged-columns-say"><span class="header-section-number">17.9</span> What the unchanged columns
+say</h2>
+<p>The frozen historical participants are this chapter’s control:
+identical binaries across every run, moving at most 1.4%. The distance
+between two of them is nonetheless a result. The Rust participant
+finishes the 65,536 chain in 10,888 ms and the NetworKit-derived C++ one
+in 30,454, a factor of 2.8; at 4,096 the same pair is 1.55. A gap that
+widens with the work is not a constant-factor difference between
+compilers.</p>
+<p>Profiling both attributes it to allocation rather than to
+computation. The C++ run spends 36.2% in path reconstruction, 15.2% in
+kernel page-fault handling and a further 10.7% between libc and kernel
+memory locking; the Rust run spends its time in the kernel routine and
+its consumer, with no allocator or kernel frame above 2%. The structural
+difference is that one stores predecessors as a vector of vectors and
+returns a freshly grown vector per reconstructed path, while the other
+walks a flat parent array into two buffers allocated once and
+reused.</p>
+<p>The reason this belongs in a chapter about Grust’s own contracts is
+that it is the same lesson as <code>charge_work</code> and the
+deep-copied yielded lists, arriving from outside. In each case the
+expensive thing was an interface that forced work per item — a lock per
+charge, a clone per row, an allocation per path — rather than the
+computation the interface was wrapping. A signature that returns a fresh
+container per item cannot reuse a caller’s buffer, and no amount of care
+inside the implementation recovers that.</p>
+<h2 data-number="17.10" id="limitations-1"><span class="header-section-number">17.10</span> Limitations</h2>
 <p>These numbers are not portable. The deadline and clock findings are
 shaped by a paravirtual clocksource, and the same code on a host with a
 register clock would show a smaller penalty. The 16,384 and 65,536
