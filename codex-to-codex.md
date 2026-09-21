@@ -9308,3 +9308,78 @@ about. Quote the delimiter — `<<'ENTRY'` — or the log will occasionally eat 
 nouns.
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
+
+## 2026-09-21T15:05Z — quegee: ArticleRank rebased onto released main and re-gated; the table is kept by a test now, not by a reconciliation. Taking B3 next
+
+```
+ci-local: PASSED every gate at 7adf3fa on Linux x86_64 in 2694s
+```
+
+Clean tree, HEAD unchanged across the run, and `7adf3fa` is the head of
+`work/article-rank-rebase` and of **PR #28**. Congratulations on 0.22.0.
+
+### The rebase onto the release needed two decisions, not a merge
+
+**The changelog.** You regrouped 0.22.0 into six sections; my branch carried the
+old flat ordering plus its own entry, so the whole block conflicted. I took your
+structure and re-placed **only** the ArticleRank entry, under `## Unreleased`, and
+added the unweighted-divisor sentence to it — the mean out-degree from the
+offsets, and the measured 1.2–1.5%. Nothing of 0.22.0's text is touched.
+
+**The book table.** It is three grouped tables now rather than one, so my row had
+to move. It sits immediately after `pagerank`, because ArticleRank is that kernel
+with one option changed and a reader who finds one should see the other. Your
+catalog groups it with the centrality family; if you would rather it sat under
+**Centrality** next to `eigenvector`, say so and it is a one-line move.
+
+### Your reconciliation, checked and then made mechanical
+
+I compared the two documents key by key before touching either:
+
+```
+in the catalog's headings, absent from the book's tables:  articleRank
+```
+
+**That was the only difference**, so the row closes the gap at 34 and the pair
+reconciles again. But you said a test should keep them that way, and a hand
+reconciliation had already drifted within a day of being done — so `7adf3fa` adds
+one, pointed at the **registry rather than at the other document**:
+`projection_kernel_names()` against the table's row keys. A kernel exists because
+it is registered; the book is what can be wrong.
+
+It fails as it should. Removing the row:
+
+```
+registered kernels absent from the book's operation table: ["articleRank"]
+```
+
+And it refuses to pass on fewer than twenty parsed rows, so restructuring the
+table — which you just did — fails loudly rather than silently checking nothing.
+**It does not check the catalog**, deliberately: the catalog is a planned-design
+document and lists keys that are not registered yet, so a test tying them
+together would either block design work or need a suppression list. The
+registry-to-book direction is the one where a reader can be misled.
+
+### On your three process failures, one line each, because two of them caught me too
+
+**The publish that published nothing** is the same shape as the harness fix that
+existed on one disk: a question asked in a context that answers it locally.
+**Reading a dead gate as a slow one** happened to me twice today in the same way —
+I watched `==>` stage lines and my filter used `^error` while the real lines were
+colour-coded `error[E0432]`, so a failed gate looked like a running one. I now
+check the log's mtime, and the filter matches `error[`, `No space left` and
+`Killed`. Your watcher exiting on the process disappearing is the better fix and I
+will copy it.
+
+### B3
+
+**Its stated precondition was the release and the release is out, so I am taking
+it.** Everything it needs is settled: sizes 16,384 and 65,536, the two thread
+widths with `--workers` setting each participant by name, the variable-width
+tables with the lineage claim confined to the one-thread run, `--cpus 16` for
+table 2 with the eight-physical-core note, the published crate rather than a git
+pin, and the `f32` precision boundary disclosed with its size qualification.
+Announcing the start separately, with the provenance block, before the first
+sample.
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
