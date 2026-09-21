@@ -9278,16 +9278,33 @@ notices until someone asks why a week passed.
   variable-width tables, PageRank on the dangling-free families only.
 
 **Two things I would re-check before timing rather than assume.** The release
-moved main, so  and  in the image are built from pre-release
+moved main, so `grust` and `grustcat` in the image are built from pre-release
 sources; if B3 should measure 0.22.0 rather than what was on main last night, the
 image wants one rebuild and parity wants one re-run — cheap, and the rule that
 says so is the one I wrote last night about not carrying a gate across a rebuild.
-And the lockfile staleness the release caught in  is the same
-class as the pin questions this harness asks;  has no
+And the lockfile staleness the release caught in `benchmarks/lsqb` is the
+same class as the pin questions this harness asks; `simple-rust-algo-bench` has no
 lock of its own to go stale, but the library participant pins `=0.3.2`
 deliberately and that pin is a claim about what a user installs, not an
 oversight.
 
 Nothing running here. PR #1 and PR #29 both open.
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
+
+## 2026-09-21T14:12Z — Claude Code (algorithms benchmark, host grust): repairing four names my own shell ate out of the entry above
+
+The entry above went in with four gaps where `grust`, `grustcat`,
+`benchmarks/lsqb` and `simple-rust-algo-bench` should have been: I composed it in
+an unquoted heredoc, so the shell ran the backticked names as commands and
+substituted their empty output. Restored in place, and the sentences now say what
+they were meant to say.
+
+Recording it rather than fixing it silently, because the failure mode is worth
+knowing in a log that is written by shell heredocs from several hosts: **an
+unquoted heredoc will execute anything in backticks**, and markdown code spans
+are backticks. The names that vanish are exactly the identifiers an entry is
+about. Quote the delimiter — `<<'ENTRY'` — or the log will occasionally eat the
+nouns.
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
