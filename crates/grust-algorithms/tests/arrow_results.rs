@@ -1,6 +1,6 @@
 #![cfg(feature = "arrow")]
 
-use arrow_array::{Array, Float64Array, LargeListArray, StringArray, UInt64Array};
+use arrow_array::{Array, Float64Array, Int64Array, LargeListArray, StringArray};
 use grust_algorithms::{
     AlgorithmError, ExecutionContext, ExecutionLimits, GraphProjection, Orientation,
     PageRankOptions, ProjectionEdge, SnapshotIdentity, YensOptions, bfs, pagerank, shortest_paths,
@@ -132,7 +132,7 @@ fn arrow_full_paths_are_typed_and_keep_original_edge_ordinals() {
     assert_eq!(
         edges
             .as_any()
-            .downcast_ref::<UInt64Array>()
+            .downcast_ref::<Int64Array>()
             .unwrap()
             .values()
             .as_ref(),
@@ -175,7 +175,7 @@ fn arrow_ranked_paths_carry_their_rank_and_keep_a_schema_when_empty() {
             .column_by_name("pathIndex")
             .unwrap()
             .as_any()
-            .downcast_ref::<UInt64Array>()
+            .downcast_ref::<Int64Array>()
             .unwrap()
             .values()
             .as_ref(),
@@ -191,7 +191,7 @@ fn arrow_ranked_paths_carry_their_rank_and_keep_a_schema_when_empty() {
     assert_eq!(
         ordinals
             .as_any()
-            .downcast_ref::<UInt64Array>()
+            .downcast_ref::<Int64Array>()
             .unwrap()
             .values()
             .as_ref(),
@@ -260,7 +260,7 @@ fn arrow_order_and_cycle_contracts_keep_external_ids() {
         .column_by_name("visitIndex")
         .unwrap()
         .as_any()
-        .downcast_ref::<UInt64Array>()
+        .downcast_ref::<Int64Array>()
         .unwrap();
     assert_eq!(visits.values().as_ref(), &[0, 1]);
     assert!(discovery.next_batch().unwrap().is_none());
@@ -314,7 +314,7 @@ fn degree_arrow_batches_keep_exact_counts_and_weighted_strengths() {
             .record_batch()
             .column(1)
             .as_any()
-            .downcast_ref::<UInt64Array>()
+            .downcast_ref::<Int64Array>()
             .unwrap();
         let w = batch
             .record_batch()
@@ -355,7 +355,7 @@ fn unweighted_degree_arrow_nulls_and_retained_batches_keep_admission() {
         .record_batch()
         .column(1)
         .as_any()
-        .downcast_ref::<UInt64Array>()
+        .downcast_ref::<Int64Array>()
         .unwrap();
     assert_eq!(counts.values().as_ref(), &[1, 0]);
     assert_eq!(batch.record_batch().column(2).null_count(), 2);
@@ -363,4 +363,64 @@ fn unweighted_degree_arrow_nulls_and_retained_batches_keep_admission() {
     assert!(context.usage().unwrap().live_bytes > retained);
     drop(batch);
     assert_eq!(context.usage().unwrap().live_bytes, retained);
+}
+
+fn nullability(batch: &grust_algorithms::ArrowResultBatch) -> Vec<bool> {
+    batch
+        .record_batch()
+        .schema_ref()
+        .fields()
+        .iter()
+        .map(|field| field.is_nullable())
+        .collect()
+}
+
+#[test]
+fn arrow_nullability_is_fixed_before_the_rows_and_a_declaration_is_enforced() {
+    // bfs from a: the first batch (a, b) is full, the second (isolate) holds a
+    // null. Undeclared, both say every column may be null: the schema is the
+    // same whatever the rows hold.
+    let context = context();
+    let graph = graph(&context);
+    let mut cursor = bfs(&graph, "a").unwrap().into_arrow_results();
+    let full = cursor.next_batch().unwrap().unwrap();
+    let holed = cursor.next_batch().unwrap().unwrap();
+    assert_eq!(full.record_batch().column(1).null_count(), 0);
+    assert_eq!(holed.record_batch().column(1).null_count(), 1);
+    assert_eq!(nullability(&full), [true, true]);
+    assert_eq!(full.record_batch().schema(), holed.record_batch().schema());
+
+    // Declared, both carry the declaration.
+    let mut cursor = bfs(&graph, "a")
+        .unwrap()
+        .into_arrow_results()
+        .with_declared_columns([("nodeId", false), ("distance", true)]);
+    let full = cursor.next_batch().unwrap().unwrap();
+    let holed = cursor.next_batch().unwrap().unwrap();
+    assert_eq!(nullability(&full), [false, true]);
+    assert_eq!(nullability(&holed), [false, true]);
+
+    // A null in a column declared non-nullable fails the cursor, as does a
+    // declaration naming other columns.
+    let mut cursor = bfs(&graph, "a")
+        .unwrap()
+        .into_arrow_results()
+        .with_declared_columns([("nodeId", false), ("distance", false)]);
+    assert!(cursor.next_batch().unwrap().is_some());
+    assert!(matches!(
+        cursor.next_batch(),
+        Err(AlgorithmError::OutputContract(message)) if message.contains("distance")
+    ));
+    assert!(matches!(
+        cursor.next_batch(),
+        Err(AlgorithmError::CursorFailed)
+    ));
+    let mut cursor = bfs(&graph, "a")
+        .unwrap()
+        .into_arrow_results()
+        .with_declared_columns([("nodeId", false), ("cost", true)]);
+    assert!(matches!(
+        cursor.next_batch(),
+        Err(AlgorithmError::OutputContract(message)) if message.contains("cost")
+    ));
 }

@@ -12,9 +12,10 @@ use grust_algorithms::{
 };
 use grust_core::Value;
 use grust_procedures::{
-    ExecutionContext, ExecutionLimits, ProcedureError, ProcedureRegistry, RegistryBuilder,
-    SnapshotIdentity, ValueType,
+    ExecutionContext, ExecutionLimits, ProcedureDefinition, ProcedureError, ProcedureRegistry,
+    RegistryBuilder, SnapshotIdentity, ValueType,
 };
+use std::collections::BTreeMap;
 
 fn registry() -> ProcedureRegistry {
     let mut builder = RegistryBuilder::default();
@@ -151,6 +152,8 @@ fn every_registered_projection_kernel_runs_by_name_with_its_declared_columns() {
             columns, declared,
             "{name}: Arrow columns differ from the registry"
         );
+        assert_declared_nullability(name, definition, &batches);
+        assert_declared_types(name, definition, &batches);
         assert!(
             batches.iter().all(|batch| batch.num_rows() <= 2),
             "{name} ignored the batch row bound"
@@ -162,6 +165,231 @@ fn every_registered_projection_kernel_runs_by_name_with_its_declared_columns() {
         // Case is not significant, as in the registry.
         let lowered = drain(run_any(&name.to_ascii_lowercase(), &graph, &args).unwrap());
         assert_eq!(lowered, batches, "{name}");
+    }
+}
+
+/// Every batch, empty or not, says of each column exactly what the registry
+/// declares: nullable where declared nullable, and never nullable otherwise.
+fn assert_declared_nullability(
+    name: &str,
+    definition: &ProcedureDefinition,
+    batches: &[RecordBatch],
+) {
+    let declared: Vec<(&str, bool)> = definition
+        .outputs
+        .iter()
+        .map(|f| (f.name.as_str(), f.nullable))
+        .collect();
+    for (index, batch) in batches.iter().enumerate() {
+        let produced: Vec<(&str, bool)> = batch
+            .schema_ref()
+            .fields()
+            .iter()
+            .map(|f| (f.name().as_str(), f.is_nullable()))
+            .collect();
+        assert_eq!(
+            produced,
+            declared,
+            "{name}: batch {index} of {} rows reports other nullability than the registry",
+            batch.num_rows()
+        );
+    }
+}
+
+/// Every column's Arrow type is the one its declared `ValueType` names:
+/// `Integer` is signed 64-bit, so an integer column is Int64 and never
+/// unsigned, which Spark and most SQL engines cannot represent.
+fn assert_declared_types(name: &str, definition: &ProcedureDefinition, batches: &[RecordBatch]) {
+    use arrow_schema::DataType;
+    let element = |data_type: &DataType| match data_type {
+        DataType::LargeList(item) | DataType::List(item) | DataType::FixedSizeList(item, _) => {
+            Some(item.data_type().clone())
+        }
+        _ => None,
+    };
+    for batch in batches {
+        for (field, output) in batch.schema_ref().fields().iter().zip(&definition.outputs) {
+            let data_type = field.data_type();
+            let agrees = match output.value_type {
+                ValueType::Integer => *data_type == DataType::Int64,
+                ValueType::Number => *data_type == DataType::Float64,
+                ValueType::Boolean => *data_type == DataType::Boolean,
+                ValueType::String => *data_type == DataType::Utf8,
+                ValueType::Integers => element(data_type) == Some(DataType::Int64),
+                ValueType::Strings => element(data_type) == Some(DataType::Utf8),
+                // fastRP's embedding is a fixed-width Float32 vector.
+                ValueType::Numbers => matches!(
+                    element(data_type),
+                    Some(DataType::Float64 | DataType::Float32)
+                ),
+                ref other => panic!("{name}: undeclarable output type {other:?}"),
+            };
+            assert!(
+                agrees,
+                "{name}.{}: declared {:?}, Arrow {data_type}",
+                output.name, output.value_type
+            );
+        }
+    }
+}
+
+/// Four nodes, `a`, `b`, `c` and `isolate`, with these edges, weighted 1.0
+/// each or unweighted. No edges means no nodes either: the empty graph.
+fn fixture(
+    context: &ExecutionContext,
+    orientation: Orientation,
+    edges: &[(usize, usize)],
+    weighted: bool,
+) -> GraphProjection {
+    let nodes: Vec<_> = if edges.is_empty() {
+        Vec::new()
+    } else {
+        vec!["a".into(), "b".into(), "c".into(), "isolate".into()]
+    };
+    GraphProjection::from_topology(
+        SnapshotIdentity::new("g".into(), "r1".into(), "reader".into()).unwrap(),
+        nodes,
+        edges
+            .iter()
+            .enumerate()
+            .map(|(ordinal, &(source, target))| ProjectionEdge {
+                source,
+                target,
+                ordinal,
+                id: None,
+            })
+            .collect(),
+        weighted.then(|| vec![1.0; edges.len()]),
+        orientation,
+        context,
+    )
+    .unwrap()
+}
+
+/// Run `name` on a fixture with the generic arguments the catalog test uses,
+/// on an undirected projection if the kernel refuses a directed one.
+fn run_on_fixture(
+    registry: &ProcedureRegistry,
+    name: &str,
+    edges: &[(usize, usize)],
+    weighted: bool,
+) -> Vec<RecordBatch> {
+    let args = arguments(registry, name, serde_json::json!({}));
+    let context = context();
+    let graph = fixture(&context, Orientation::Outgoing, edges, weighted);
+    match run_any(name, &graph, &args) {
+        Err(ProcedureError::InvalidArguments(message)) if message.contains("undirected") => {
+            let graph = fixture(&context, Orientation::Undirected, edges, weighted);
+            drain(run_any(name, &graph, &args).unwrap_or_else(|e| panic!("{name}: {e}")))
+        }
+        outcome => drain(outcome.unwrap_or_else(|e| panic!("{name}: {e}"))),
+    }
+}
+
+type Edges<'a> = &'a [(usize, usize)];
+/// The fixtures where a column held a null, and those where it held none.
+type Coverage<'a> = (Vec<&'a str>, Vec<&'a str>);
+
+/// A column's nullability is the registration's, not the rows': a nullable
+/// column reports nullable when it is full, a non-nullable one never does, and
+/// an empty batch reports the same as a full one. Each of the fixtures is
+/// chosen so that every declared-nullable column is seen holding a null on one
+/// and holding none on another; the test fails if a fixture change loses one of
+/// those, or if a kernel declares a nullable column the fixtures do not cover.
+#[test]
+fn every_batch_reports_the_declared_nullability_whether_or_not_it_holds_nulls() {
+    let registry = registry();
+    // A path a -> b -> c and an isolate: the isolate is unreachable, and a, c
+    // and the isolate have fewer than two neighbours.
+    let path: &[(usize, usize)] = &[(0, 1), (1, 2)];
+    // A triangle a, b, c, with the isolate joined to c and a: every node is
+    // reachable from a and has two or more neighbours, and there is a cycle.
+    let covered: &[(usize, usize)] = &[(0, 1), (1, 2), (2, 0), (2, 3), (3, 0)];
+    // Only a - c: the community {b, isolate} (the property graph alternates
+    // communities) has no edge, so its conductance is undefined.
+    let lonely: &[(usize, usize)] = &[(0, 2)];
+    let fixtures: [(&str, Edges, bool); 4] = [
+        ("weighted path", path, true),
+        ("unweighted path", path, false),
+        ("covered", covered, true),
+        ("lonely community", lonely, true),
+    ];
+
+    // (kernel, declared-nullable column) -> (fixtures where it held a null,
+    // fixtures where it held none).
+    let mut seen: BTreeMap<(String, String), Coverage> = BTreeMap::new();
+    let mut empty_checked = Vec::new();
+    for name in projection_kernel_names() {
+        let definition = registry
+            .resolve(&format!("grust.algorithms.{name}"))
+            .unwrap()
+            .definition()
+            .clone();
+        for (fixture_name, edges, weighted) in fixtures {
+            let batches = run_on_fixture(&registry, name, edges, weighted);
+            assert_declared_nullability(name, &definition, &batches);
+            for (column, output) in definition.outputs.iter().enumerate() {
+                if !output.nullable {
+                    continue;
+                }
+                let nulls: usize = batches.iter().map(|b| b.column(column).null_count()).sum();
+                let rows: usize = batches.iter().map(RecordBatch::num_rows).sum();
+                let entry = seen
+                    .entry((name.to_string(), output.name.clone()))
+                    .or_default();
+                if nulls > 0 {
+                    entry.0.push(fixture_name);
+                } else if rows > 0 {
+                    entry.1.push(fixture_name);
+                }
+            }
+        }
+        // No nodes at all. A kernel that takes a node argument cannot be
+        // called; a table kernel emits one empty batch, which must still carry
+        // the declared schema.
+        let takes_node = definition
+            .arguments
+            .iter()
+            .any(|a| matches!(a.field.value_type, ValueType::String | ValueType::Strings));
+        if !takes_node {
+            let batches = run_on_fixture(&registry, name, &[], false);
+            assert_declared_nullability(name, &definition, &batches);
+            if batches.iter().any(|b| b.num_rows() == 0) {
+                empty_checked.push(name);
+            }
+        }
+    }
+
+    let expected = [
+        ("bellmanFord", "distance"),
+        ("bfs", "distance"),
+        ("degree", "strength"),
+        ("dijkstra", "distance"),
+        ("localClusteringCoefficient", "coefficient"),
+        ("longestPath", "distance"),
+        ("modularity", "conductance"),
+        ("multiSourceBfs", "distance"),
+    ];
+    let declared: Vec<(&str, &str)> = seen
+        .keys()
+        .map(|(kernel, column)| (kernel.as_str(), column.as_str()))
+        .collect();
+    assert_eq!(
+        declared, expected,
+        "the kernels that declare a nullable output"
+    );
+    for ((kernel, column), (with_nulls, without)) in &seen {
+        assert!(
+            !with_nulls.is_empty() && !without.is_empty(),
+            "{kernel}.{column}: held a null on {with_nulls:?}, none on {without:?}; \
+             the fixtures must show it both ways"
+        );
+    }
+    for kernel in ["longestPath", "localClusteringCoefficient", "modularity"] {
+        assert!(
+            empty_checked.contains(&kernel),
+            "{kernel} emitted no empty batch on the empty graph; checked {empty_checked:?}"
+        );
     }
 }
 

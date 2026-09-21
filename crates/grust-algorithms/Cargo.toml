@@ -11,7 +11,7 @@ categories.workspace = true
 
 [features]
 default = ["parallel"]
-arrow = ["dep:arrow-array", "dep:grust-arrow"]
+arrow = ["dep:arrow-array", "dep:arrow-schema", "dep:grust-arrow"]
 # Threads for the kernels, bounded by what each execution asks for. Results are
 # identical at any width. Off compiles only the sequential code, which is also
 # the differential oracle the parallel paths are tested against.
@@ -22,6 +22,7 @@ grust-arrow = { version = "0.22.0", path = "../grust-arrow", optional = true }
 grust-core = { version = "0.22.0", path = "../grust-core" }
 grust-procedures = { version = "0.22.0", path = "../grust-procedures" }
 arrow-array = { version = "59.3.0", optional = true }
+arrow-schema = { version = "59.3.0", optional = true }
 rayon = { version = "1.11", optional = true }
 
 [lints.rust]

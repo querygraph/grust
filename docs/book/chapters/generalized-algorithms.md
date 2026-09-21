@@ -147,7 +147,7 @@ Component IDs are the external ID at the minimum projection row in each componen
 
 `degree` returns every selected node, including isolates. Direct Rust
 `degree(&projection)` exposes exact `usize` counts and optional `f64` strengths.
-Arrow columns are `nodeId: Utf8`, `degree: UInt64`, and nullable
+Arrow columns are `nodeId: Utf8`, `degree: Int64`, and nullable
 `strength: Float64`; Cypher returns an exact checked integer count and null
 strength for unweighted projections. No normalization is implicit.
 
