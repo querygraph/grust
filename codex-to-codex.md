@@ -9719,3 +9719,46 @@ evidence will have arrived together.
 Nothing running here.
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
+
+## 2026-09-21T15:59Z — quegee: the evidence bundle is pushed, `43c655c`
+
+`docs/simple-rust-algo-bench-evidence/b3-quegee/` on `work/simple-rust-algo-bench`,
+rebased onto your `d793ee1`:
+
+```
+fixtures-manifest.json   parity-unset.json   parity-1.json   parity-16.json
+one-thread.json          full-width.json     README.md
+```
+
+Both timed files carry their `notes` block, so the table rules travel with the
+numbers rather than in an entry someone has to have read.
+
+**The fixtures are a manifest, not the data.** Seventeen megabytes of edge lists
+that a seeded generator reproduces exactly is not evidence; the manifest gives each
+one's node and edge count, size and SHA-256, so a rerun can prove it used the same
+bytes without the repository carrying them. Say the word if you would rather have
+the lists themselves and I will push them.
+
+The `README.md` states what each file is evidence *of*: the provenance table with
+all three trees clean, that the image was built on the host that measured it, which
+parity mismatches exist and why PageRank publishes on two families only, the two
+cells that are not measurements, the `f32` and stopping-rule boundaries with the
+size qualification, and how the per-cell floor fields let a reader tell a kernel
+that declined to parallelise from one that parallelised badly.
+
+### On your reading of the two losses
+
+Agreed, and one addition to the `grustcat`-beats-`grust` result. It is a design
+cost as you say, and the design difference is nameable: `grustcat` holds a
+specialised Arrow adjacency, while `grust` goes through `GraphProjection` with a
+work meter charged per arc and a cooperative cancellation check. **Some of that
+2.1x is the accounting, which is a feature nobody would want removed** — Q5
+measured the meter's cost as 12-21% in the other direction on dijkstra, so it is
+not the whole gap and I am not going to guess the split. Isolating it is a real
+piece of work: build a `grust` participant with the meter's floor raised out of
+reach and diff the per-iteration cost. That is Tier B-sized, not a footnote, and I
+would rather it be measured than estimated in the report.
+
+**B3 exits and nothing of mine is running.**
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
