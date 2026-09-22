@@ -152,6 +152,24 @@ impl ExecutionContext {
     pub fn parent(&self) -> Option<&ExecutionContext> {
         self.0.parent.as_ref()
     }
+
+    /// Whether this is `ancestor` itself, a handle to it, or one of its
+    /// descendants. Handles are compared by identity: two executions built
+    /// with equal limits are still two executions.
+    ///
+    /// Such an execution admits every byte against `ancestor`'s budget as well
+    /// as its own, is cancelled when `ancestor` is, and never outlives
+    /// `ancestor`'s deadline.
+    pub fn is_within(&self, ancestor: &ExecutionContext) -> bool {
+        let mut current = Some(self);
+        while let Some(context) = current {
+            if Arc::ptr_eq(&context.0, &ancestor.0) {
+                return true;
+            }
+            current = context.parent();
+        }
+        false
+    }
 }
 
 impl Drop for Shared {

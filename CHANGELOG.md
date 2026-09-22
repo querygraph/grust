@@ -261,6 +261,46 @@ reconstructed from Git history, release commits, and the shipped docs.
   children created while the parent is cancelled, per-child work budgets
   racing meters, deadlines, modes, and PageRank on racing children
   bit-identical to a root at one and four workers.
+- **A cached projection runs its kernels on a query's own execution.**
+  Every kernel takes its execution from `GraphProjection::execution()`, which
+  was the execution the projection was built on, so a cached projection ran
+  every query's kernel on one shared cancellation flag and one shared work
+  counter, and child executions could not help. `GraphProjection::with_execution(
+  &context)` returns a view that shares the projection's data — adjacency,
+  weights, node and edge tables, and the transpose, built or not — and copies
+  none of it; kernels on the view admit their scratch and results against
+  `context`, charge their work to its counter and budget, and stop at its
+  cancellation and deadline. `GraphProjection::owner()` names the execution
+  the projection was built on; `execution()` is the owner unless the handle is
+  a view. `context` must be the owner or a descendant of it, and anything else
+  is `InvalidArguments`: a descendant admits every byte against the owner's
+  budget too, is cancelled when the owner is, and never outlives its deadline,
+  so the budget the projection lives in still bounds, and stopping the owner
+  still stops, everything done with its data. `ExecutionContext::is_within(
+  &ancestor)` answers that question by identity.
+- **State a projection keeps is its owner's, whichever view builds it.** The
+  transpose that in-arc kernels build on first use is cached in the shared
+  data and outlives the query that built it, so every byte of it, and of the
+  build's scratch, is admitted by the owner and released only when the
+  projection's last handle drops; a query with a one-byte memory sub-limit can
+  build it. The build itself is the query's: its work is charged to the view's
+  execution, it uses the view's worker count, and cancelling the view, or a
+  work budget that runs out, stops it, keeps nothing, and returns every byte
+  to the owner, and the next kernel that needs it builds it again. The
+  transpose is the only lazily built state a projection holds.
+  `prepare_incoming()` on the owner still builds it at staging, charged to the
+  owner, where no query pays for it.
+- Tests (`tests/projection_views.rs`): which executions may run a view; the
+  transpose built through a child's view, by `prepare_incoming` and inside a
+  kernel, held by none of the query and all of the owner after the child is
+  gone, and released with the projection (charging it to the child instead
+  fails both); a build refused by the query's work budget keeping nothing;
+  PageRank through a view bit-identical to the owner, with the same work, on
+  the push loop and on the pull at one and four workers; two concurrent
+  PageRanks on one cached projection through two children, one cancelled while
+  both run and the other finishing with the owner's bits and exactly its own
+  work, the owner charged nothing; a view's deadline its own, and cancelling
+  the owner reaching every view.
 - **An execution can run with work accounting turned off, by name.**
   `ExecutionContext::with_accounting(limits, accounting)` takes an `Accounting`
   with two independent switches, `work` (`Counted` or `Disabled`) and
