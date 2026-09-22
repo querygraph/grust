@@ -117,7 +117,7 @@ struct Shared {
 /// workers the shared counter would otherwise be a contended cache line rather
 /// than an occasional one. Near the limit the meter drops to exact admission,
 /// so a budget still fails at exactly the unit that exceeds it.
-pub const WORK_BLOCK_UNITS: usize = 1024;
+pub const WORK_BLOCK_UNITS: usize = 16384;
 
 /// Whether a state check must read the clock or may rely on the sampled read.
 #[derive(Clone, Copy)]
