@@ -1023,6 +1023,7 @@ impl MemoryReservation {
 /// its own cache line, to test whether the pull kernel's per-node charge is
 /// slow because the balance shares a line with something another core writes.
 #[repr(align(64))]
+#[derive(Debug)]
 pub struct Balance(AtomicUsize);
 
 impl std::ops::Deref for Balance {
