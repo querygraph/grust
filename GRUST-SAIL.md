@@ -296,6 +296,48 @@ with the verification table and draft comment, is
 
 ---
 
+## 7. Cluster mode — why no Sail change is proposed
+
+Nutmeg does not work in Sail's cluster modes. In `local-cluster`, staging fails
+with `unsupported data sink node` and reads fail with `unsupported physical plan
+node` or `no graph named ...`. Investigated at Sail main `51b57bc2`, 2026-09-22.
+**The conclusion is to propose nothing to Sail.**
+
+**Why a codec hook is the wrong fix.** Cluster mode serialises every stage through
+`RemoteExecutionCodec`, which is hard-wired
+(`sail-execution/src/driver/job_scheduler/mod.rs:37`), and places stages on workers
+except for a hard-coded driver list (`job_graph/planner.rs:460-472`). Nutmeg's
+staged graphs live in one process (`static STORE` in `nutmeg-graph`). On Kubernetes,
+worker pods run the stock `sail worker` binary, which has no Nutmeg code and no
+graph (`worker_manager/kubernetes.rs:380`). Letting an embedder serialise its nodes
+would only move the failure from the codec to the worker. A correct Sail change
+needs two seams: driver placement for an embedder's node, and a driver-side codec
+for it. Sail pins its own commit nodes to the driver (#2192), but only from a fixed
+list.
+
+**The maintainer's stated direction.** Discussion
+[#2001](https://github.com/lakehq/sail/discussions/2001), "Extension API for
+third-party DataFusion integrations", is open with no design decided. From it:
+"since DataFusion has an FFI, we won't use Rust trait as the API", and "The session
+mutator is something not very stable and I'd consider it a deep implementation
+detail." From #1991: "There is no plan to publish it as Rust crates for use in other
+Rust projects." **#2630, which Nutmeg is built on, is therefore a hook the
+maintainer regards as unstable.** Nutmeg's long-term path is the FFI extension API,
+if and when it exists. Its requirements (driver placement, re-resolving on remote
+workers) belong in #2001, not in a `feat:` PR.
+
+**What works without Sail.** A Nutmeg-only change stages on the driver while the
+write is planned (`create_physical_plan`, then `execute_stream`, then return an
+empty plan). With it, staging, joined staging, listing and reads all succeed in
+`local-cluster` on unmodified Sail, identical to local mode. Its trade-offs, in
+cluster mode only: the write's input is computed on the driver, not distributed;
+an `EXPLAIN` of such a write would execute it (inferred, not tested); materialised
+read results travel inside the plan, so results above Sail's 128 MiB message limit
+may fail (`sail-common/src/config/mod.rs:8`, inferred, not tested); and streaming
+reads fall back to materialised ones.
+
+---
+
 ## Checklist before proposing a new Sail change
 
 Derived from what actually happened above, in the order that catches the most.
