@@ -82,6 +82,18 @@ coordinator's.
   test in release with every core saturated (`yes > /dev/null` per core, or a
   container capped to a fraction of a CPU) before treating a passing run as
   evidence.
+- **A test that races the clock must hold its window on the fastest machine as
+  well as the slowest.** A deadline test gave a fixed 300 ms to a projection build
+  followed by a PageRank "that never converges". It passed on a laptop and failed
+  the Linux gate, because the build alone overran 300 ms on a loaded burstable
+  host. It was then fixed by measuring the build and allowing twice that, which
+  passed the saturated laptop, the gate and quegee's first run, and then failed on
+  16 cores. There the "endless" kernel reached an exact floating-point fixed
+  point in 264 iterations, inside the window. Saturating cores tests only the slow
+  end. A window that must fall after one event and before another needs both ends
+  argued: prove the second event cannot happen on test timescales at any width,
+  by arithmetic about its work, rather than observing that it usually does not.
+  Tolerance 0 is a stopping rule PageRank can meet, not a guarantee it never will.
 - **A test that passes because its fixture is too small is not a test.** A
   determinism test had become vacuous: its graph sat below the threshold at which
   the kernel goes parallel, so it verified the sequential path at every thread
