@@ -17,7 +17,10 @@ optional `arrow` feature's `from_arrow_batches`. Arrow ingestion reads typed
 columns directly, including across multiple batches, without converting them
 to Grust `Value` or property maps. Result `into_arrow_results` methods provide
 bounded typed Arrow batches with retained admission. Full paths use LargeList
-arrays; ordinals and iteration counts use UInt64. The companion
+arrays; ordinals, counts and iteration counts use Int64, the signed integer
+the registry declares. A column's nullability does not depend on the rows:
+undeclared, every column is nullable; `with_declared_columns` fixes it to a
+declaration, as `grust-algorithm-procedures` does from each registration. The companion
 `grust-algorithm-procedures` crate registers these operations for ordinary Cypher.
 
 Every projection takes a nonempty graph/revision/principal identity asserted by
@@ -57,7 +60,7 @@ and optional Float64 strengths when weights were selected. Incoming/outgoing
 orientation is inherited from the projection; undirected loops count once.
 Zero-weight and parallel arcs count independently. Negative/nonfinite inputs
 remain rejected by projection validation; a nonfinite strength sum is an error.
-The Arrow cursor emits `nodeId`, UInt64 `degree`, and nullable Float64 `strength`.
+The Arrow cursor emits `nodeId`, Int64 `degree`, and nullable Float64 `strength`.
 
 `cargo bench -p grust-algorithms --bench degree` measures prepared-projection
 kernel allocation, execution and result disposal at 4,096 and 65,536 nodes. It

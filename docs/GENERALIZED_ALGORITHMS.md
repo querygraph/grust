@@ -109,7 +109,7 @@ once under the existing projection convention. Nonfinite accumulated strength
 is a numerical error. This is not a claim of GDS negative-weight handling:
 Grust rejects negative projection weights, whereas [GDS degree](https://neo4j.com/docs/graph-data-science/current/algorithms/degree-centrality/)
 ignores non-positive weights. Rust exposes `Degrees::counts()` and `strengths()`;
-Arrow uses UInt64 counts and nullable Float64 strength. No normalization,
+Arrow uses Int64 counts and nullable Float64 strength. No normalization,
 backend-native execution, or result write-back is implied.
 
 PageRank additionally accepts damping (default .85, in [0,1)), L1 tolerance
@@ -188,7 +188,7 @@ node offsets and targets; SCC does not duplicate weights or edge slots.
 `from_arrow_batches` reads structural Utf8 columns and selected numeric properties
 without constructing Graph, Value or property maps. `present.<key>` distinguishes
 absence from explicit null in `property.<key>`. Topology validation/indexing/CSR
-still copy. Typed output uses bounded RecordBatches, UInt64 ordinals/iterations,
+still copy. Typed output uses bounded RecordBatches, Int64 ordinals/iterations,
 nullable distances, and LargeList path/order arrays. Utf8 and LargeList offset
 bounds are checked. `grust-arrow` IPC remains two single-batch Arrow **files**,
 not streaming IPC, mmap, spill or a hard untrusted-input allocation sandbox.

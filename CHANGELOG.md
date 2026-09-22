@@ -8,6 +8,34 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ### Graph algorithms
 
+- **Arrow results carry the registered schema, not one read off the rows.**
+  Result batches were built with `RecordBatch::try_from_iter`, which marks a
+  column nullable exactly when that batch holds a null, so the schema changed
+  with the data and two batches of one result could disagree: `bfs` reported
+  `distance` non-nullable on a batch where every node was reachable, and an
+  unweighted `degree` reported `strength` nullable where a weighted one did
+  not. `run_on_projection` and `run_with_properties` now hand each cursor the
+  kernel's registered outputs through the new
+  `ArrowResultCursor::with_declared_columns`, and every batch, empty ones
+  included, carries that nullability: nullable for the eight declared-nullable
+  columns (`distance` of `bfs`, `dijkstra`, `multiSourceBfs`, `bellmanFord`
+  and `longestPath`; `coefficient` of `localClusteringCoefficient`;
+  `conductance` of `modularity`; `strength` of `degree`) and non-nullable for
+  every other. The registration stays the only statement of it. A batch whose
+  columns differ from the declaration, or that holds a null in a column
+  declared non-nullable, fails the cursor with `OutputContract`. A cursor used
+  directly, without a declaration, reports every column nullable, the one
+  claim true of any rows.
+- **Integer Arrow columns are Int64, as declared.** `degree`'s `degree`,
+  `dfs`'s `visitIndex`, `pagerank`'s and `articleRank`'s `iterations`, `yens`'s
+  `pathIndex`, and the `edgeOrdinals` list items of `shortestPaths` and `yens`
+  were UInt64, although the registry declares them `Integer` (`i64`). Spark
+  has no unsigned types, and the Spark Connect Python client refused the
+  column, so `pagerank` and `degree` could not be read from PySpark through
+  Nutmeg. The values are indexes, counts and ordinals, far below `i64::MAX`;
+  one that did not fit would fail the batch with an error naming the column
+  and the value, never wrap. The catalog test now checks every column's Arrow
+  type against its declared `ValueType`.
 - **ArticleRank**: `RankVariant::ArticleRank` on `PageRankOptions`, and
   `grust.algorithms.articleRank` with PageRank's options and result shape. A
   source divides its score by its outgoing weight plus the mean outgoing weight

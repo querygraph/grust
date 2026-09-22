@@ -993,18 +993,34 @@ pub fn run_on_projection(
         .ok_or_else(|| {
             ProcedureError::Unsupported(format!("`{name}` is not a registered projection kernel"))
         })?;
-    match spec.body {
-        Body::Topology(kernel) => kernel(graph, args)?.into_arrow_results(),
+    let cursor = match spec.body {
+        Body::Topology(kernel) => kernel(graph, args)?.into_arrow_results()?,
         Body::WithProperties { kernel, properties } => {
-            if requests(properties, args)?.is_empty() {
-                return kernel(&algorithms::NodeProperties::empty(graph), args)?
-                    .into_arrow_results();
+            if !requests(properties, args)?.is_empty() {
+                return Err(ProcedureError::Unsupported(format!(
+                    "`{name}` reads node properties; build them with node_property_requests and call run_with_properties"
+                )));
             }
-            Err(ProcedureError::Unsupported(format!(
-                "`{name}` reads node properties; build them with node_property_requests and call run_with_properties"
-            )))
+            kernel(&algorithms::NodeProperties::empty(graph), args)?.into_arrow_results()?
         }
-    }
+    };
+    Ok(declared(cursor, &spec.outputs))
+}
+
+/// Give an Arrow cursor the outputs this kernel was registered with, so each
+/// batch's nullability is the registration's and not whatever its rows hold.
+/// The registration is the only statement of it: the Arrow layer is told, and
+/// keeps no list of its own.
+#[cfg(feature = "arrow")]
+fn declared(
+    cursor: algorithms::ArrowResultCursor,
+    outputs: &[Field],
+) -> algorithms::ArrowResultCursor {
+    cursor.with_declared_columns(
+        outputs
+            .iter()
+            .map(|output| (output.name.as_str(), output.nullable)),
+    )
 }
 
 /// The options through which `name` names the node properties it reads, as the
@@ -1079,10 +1095,11 @@ pub fn run_with_properties(
         .ok_or_else(|| {
             ProcedureError::Unsupported(format!("`{name}` is not a registered projection kernel"))
         })?;
-    match spec.body {
-        Body::Topology(kernel) => kernel(properties.projection(), args)?.into_arrow_results(),
-        Body::WithProperties { kernel, .. } => kernel(properties, args)?.into_arrow_results(),
-    }
+    let cursor = match spec.body {
+        Body::Topology(kernel) => kernel(properties.projection(), args)?.into_arrow_results()?,
+        Body::WithProperties { kernel, .. } => kernel(properties, args)?.into_arrow_results()?,
+    };
+    Ok(declared(cursor, &spec.outputs))
 }
 
 /// Names `run_on_projection` serves, without the prefix, in registration order.

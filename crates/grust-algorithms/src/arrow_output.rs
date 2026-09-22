@@ -6,9 +6,10 @@ use arrow_array::{
     ArrayRef, RecordBatch,
     builder::{
         BooleanBuilder, FixedSizeListBuilder, Float32Builder, Float64Builder, Int64Builder,
-        LargeListBuilder, StringBuilder, UInt64Builder,
+        LargeListBuilder, StringBuilder,
     },
 };
+use arrow_schema::{Field, Schema};
 use grust_procedures::MemoryReservation;
 
 use crate::{
@@ -58,12 +59,21 @@ enum Output {
 
 /// Pull Arrow results in projection row order. Scalar batches honor the query's
 /// batch row bound. Each full path occupies one row with LargeList arrays.
+///
+/// A column's nullability is never read off the rows: a batch whose nullable
+/// column happens to be full has the same schema as one where it is not, and
+/// so does an empty batch. Without a declaration every top-level column is
+/// nullable, the one claim that holds whatever the rows are. A caller that
+/// knows which columns can hold nulls states it once, through
+/// [`ArrowResultCursor::with_declared_columns`], and every batch then carries
+/// exactly that.
 pub struct ArrowResultCursor {
     graph: Option<GraphProjection>,
     output: Option<Output>,
     next: usize,
     emitted: bool,
     failed: bool,
+    declared: Option<Vec<(String, bool)>>,
 }
 
 impl Distances {
@@ -74,7 +84,7 @@ impl Distances {
     }
 }
 impl NodeOrder {
-    /// Transfer discovery/order rows into external `nodeId` and UInt64 `visitIndex`.
+    /// Transfer discovery/order rows into external `nodeId` and Int64 `visitIndex`.
     pub fn into_arrow_results(self) -> ArrowResultCursor {
         ArrowResultCursor::new(self.projection().clone(), Output::Order(self))
     }
@@ -109,14 +119,14 @@ impl NodeTable {
 }
 
 impl Degrees {
-    /// Transfer exact UInt64 `degree` and nullable Float64 `strength` columns.
+    /// Transfer exact Int64 `degree` and nullable Float64 `strength` columns.
     pub fn into_arrow_results(self) -> ArrowResultCursor {
         ArrowResultCursor::new(self.projection().clone(), Output::Degrees(self))
     }
 }
 impl ShortestPaths {
     /// Transfer full paths into Arrow lists, preserving external node IDs and
-    /// original UInt64 edge ordinals. No generic Value conversion occurs.
+    /// original Int64 edge ordinals. No generic Value conversion occurs.
     pub fn into_arrow_results(self) -> Result<ArrowResultCursor> {
         let graph = self.distances().projection().clone();
         Ok(ArrowResultCursor::new(
@@ -155,7 +165,29 @@ impl ArrowResultCursor {
             next: 0,
             emitted: false,
             failed: false,
+            declared: None,
         }
+    }
+
+    /// Declare the result's columns, in order, each with whether it may hold
+    /// nulls; every batch then carries this nullability, whatever its rows
+    /// hold, and an empty batch carries it too. A registry that declares a
+    /// kernel's outputs passes that declaration here, so the schema a caller
+    /// reads is the one the kernel was registered with. A batch whose column
+    /// names differ from the declaration, or that holds a null in a column
+    /// declared non-nullable, fails the cursor with
+    /// [`AlgorithmError::OutputContract`] instead of being handed on.
+    pub fn with_declared_columns<N: Into<String>>(
+        mut self,
+        columns: impl IntoIterator<Item = (N, bool)>,
+    ) -> Self {
+        self.declared = Some(
+            columns
+                .into_iter()
+                .map(|(name, nullable)| (name.into(), nullable))
+                .collect(),
+        );
+        self
     }
 
     /// Produce a batch or finish. Errors are terminal and immediately release
@@ -164,7 +196,10 @@ impl ArrowResultCursor {
         if self.failed {
             return Err(AlgorithmError::CursorFailed);
         }
-        let outcome = self.advance();
+        let outcome = self.advance().and_then(|batch| match &self.declared {
+            Some(declared) => batch.map(|batch| declare(batch, declared)).transpose(),
+            None => Ok(batch),
+        });
         if !matches!(outcome, Ok(Some(_))) {
             self.graph = None;
             self.output = None;
@@ -189,7 +224,7 @@ impl ArrowResultCursor {
             let rank = self.next;
             self.next += 1;
             return match paths.path(rank) {
-                Some(path) => path_batch(graph, path, Some(unsigned(rank)?)).map(Some),
+                Some(path) => path_batch(graph, path, Some(signed(rank, "pathIndex")?)).map(Some),
                 // No paths at all is an answer, and it keeps its schema.
                 None if rank == 0 => empty_path_batch(graph).map(Some),
                 None => Ok(None),
@@ -280,10 +315,10 @@ impl ArrowResultCursor {
         let mut columns = vec![(key_name, Arc::new(ids.finish()) as ArrayRef)];
         match output {
             Output::Order(_) => {
-                let mut values = UInt64Builder::with_capacity(count);
+                let mut values = Int64Builder::with_capacity(count);
                 for index in start..end {
                     context.charge_work(1)?;
-                    values.append_value(unsigned(index)?);
+                    values.append_value(signed(index, "visitIndex")?);
                 }
                 columns.push(("visitIndex", Arc::new(values.finish())));
             }
@@ -304,11 +339,11 @@ impl ArrowResultCursor {
                 columns.push(("componentId", Arc::new(values.finish())));
             }
             Output::Degrees(result) => {
-                let mut counts = UInt64Builder::with_capacity(count);
+                let mut counts = Int64Builder::with_capacity(count);
                 let mut strengths = Float64Builder::with_capacity(count);
                 for index in start..end {
                     context.charge_work(1)?;
-                    counts.append_value(unsigned(result.counts()[index])?);
+                    counts.append_value(signed(result.counts()[index], "degree")?);
                     strengths.append_option(result.strengths().map(|values| values[index]));
                 }
                 columns.extend([
@@ -318,10 +353,10 @@ impl ArrowResultCursor {
             }
             Output::PageRank(result) => {
                 let mut scores = Float64Builder::with_capacity(count);
-                let mut iterations = UInt64Builder::with_capacity(count);
+                let mut iterations = Int64Builder::with_capacity(count);
                 let mut converged = BooleanBuilder::with_capacity(count);
                 let mut residual = Float64Builder::with_capacity(count);
-                let iteration = unsigned(result.iterations())?;
+                let iteration = signed(result.iterations(), "iterations")?;
                 for &score in &result.values()[start..end] {
                     context.charge_work(1)?;
                     scores.append_value(score);
@@ -431,34 +466,87 @@ fn overhead(rows: usize) -> usize {
     32_768usize.saturating_add(rows.saturating_mul(64))
 }
 
-fn unsigned(value: usize) -> Result<u64> {
-    u64::try_from(value)
-        .map_err(|_| AlgorithmError::Numerical("Arrow result exceeds UInt64 domain".into()))
+/// Integer columns are Int64, as the registry declares them (`Integer` is
+/// `i64`): Arrow's unsigned types have no counterpart in Spark, SQL or most
+/// dataframe libraries. Every value written through here is an index, a count
+/// or an ordinal bounded by memory, far below `i64::MAX`, so this refuses
+/// rather than wraps only a value no graph that fits in memory produces.
+fn signed(value: usize, column: &str) -> Result<i64> {
+    i64::try_from(value).map_err(|_| {
+        AlgorithmError::Numerical(format!(
+            "`{column}` value {value} exceeds Arrow's Int64 domain"
+        ))
+    })
 }
 
+/// Build a batch whose schema is fixed by its column names and data types,
+/// never by its rows: every top-level column is nullable until a declaration
+/// narrows it (see [`declare`]). `RecordBatch::try_from_iter` would instead
+/// mark a column nullable only where that batch holds a null.
 fn finish(
     columns: Vec<(&str, ArrayRef)>,
     reservation: MemoryReservation,
 ) -> Result<ArrowResultBatch> {
-    let batch = RecordBatch::try_from_iter(columns)
-        .map_err(|error| AlgorithmError::Provider(Box::new(error)))?;
-    if batch.get_array_memory_size() > reservation.bytes() {
+    let bytes = columns
+        .iter()
+        .map(|(_, array)| array.get_array_memory_size())
+        .fold(0usize, usize::saturating_add);
+    if bytes > reservation.bytes() {
         return Err(AlgorithmError::OutputContract(
             "Arrow result exceeds admitted buffer bound".into(),
         ));
     }
     let owner = Arc::new(reservation.clone());
-    let columns = batch
-        .columns()
-        .iter()
-        .map(|array| grust_arrow::retain_array_owner(array, Arc::clone(&owner)))
-        .collect::<std::result::Result<Vec<_>, _>>()
-        .map_err(|error| AlgorithmError::Provider(Box::new(error)))?;
-    let batch = RecordBatch::try_new(batch.schema(), columns)
+    let mut fields = Vec::with_capacity(columns.len());
+    let mut arrays = Vec::with_capacity(columns.len());
+    for (name, array) in columns {
+        fields.push(Field::new(name, array.data_type().clone(), true));
+        arrays.push(
+            grust_arrow::retain_array_owner(&array, Arc::clone(&owner))
+                .map_err(|error| AlgorithmError::Provider(Box::new(error)))?,
+        );
+    }
+    let batch = RecordBatch::try_new(Arc::new(Schema::new(fields)), arrays)
         .map_err(|error| AlgorithmError::Provider(Box::new(error)))?;
     Ok(ArrowResultBatch {
         batch,
         _reservation: reservation,
+    })
+}
+
+/// Restate a batch with the declared nullability of each column. The arrays
+/// and their retained admission are shared, not copied.
+fn declare(batch: ArrowResultBatch, declared: &[(String, bool)]) -> Result<ArrowResultBatch> {
+    let schema = batch.batch.schema();
+    let names: Vec<&str> = schema.fields().iter().map(|f| f.name().as_str()).collect();
+    let expected: Vec<&str> = declared.iter().map(|(name, _)| name.as_str()).collect();
+    if names != expected {
+        return Err(AlgorithmError::OutputContract(format!(
+            "Arrow columns {names:?} differ from the declared {expected:?}"
+        )));
+    }
+    let fields: Vec<Field> = schema
+        .fields()
+        .iter()
+        .zip(declared)
+        .map(|(field, (_, nullable))| field.as_ref().clone().with_nullable(*nullable))
+        .collect();
+    for ((name, nullable), array) in declared.iter().zip(batch.batch.columns()) {
+        if !nullable && array.null_count() > 0 {
+            return Err(AlgorithmError::OutputContract(format!(
+                "column `{name}` is declared non-nullable and holds {} null(s)",
+                array.null_count()
+            )));
+        }
+    }
+    let restated = RecordBatch::try_new(
+        Arc::new(Schema::new_with_metadata(fields, schema.metadata().clone())),
+        batch.batch.columns().to_vec(),
+    )
+    .map_err(|error| AlgorithmError::Provider(Box::new(error)))?;
+    Ok(ArrowResultBatch {
+        batch: restated,
+        _reservation: batch._reservation,
     })
 }
 
@@ -473,8 +561,8 @@ fn empty_path_batch(graph: &GraphProjection) -> Result<ArrowResultBatch> {
     let mut totals = Float64Builder::with_capacity(0);
     let mut nodes = LargeListBuilder::with_capacity(StringBuilder::with_capacity(0, 0), 0);
     let mut costs = LargeListBuilder::with_capacity(Float64Builder::with_capacity(0), 0);
-    let mut edges = LargeListBuilder::with_capacity(UInt64Builder::with_capacity(0), 0);
-    let mut ranks = UInt64Builder::with_capacity(0);
+    let mut edges = LargeListBuilder::with_capacity(Int64Builder::with_capacity(0), 0);
+    let mut ranks = Int64Builder::with_capacity(0);
     finish(
         vec![
             ("sourceNodeId", Arc::new(sources.finish()) as ArrayRef),
@@ -492,7 +580,7 @@ fn empty_path_batch(graph: &GraphProjection) -> Result<ArrowResultBatch> {
 fn path_batch(
     graph: &GraphProjection,
     path: PathView<'_>,
-    rank: Option<u64>,
+    rank: Option<i64>,
 ) -> Result<ArrowResultBatch> {
     let context = graph.execution();
     let source = path
@@ -533,7 +621,7 @@ fn path_batch(
     let mut costs =
         LargeListBuilder::with_capacity(Float64Builder::with_capacity(path.costs.len()), 1);
     let mut edges =
-        LargeListBuilder::with_capacity(UInt64Builder::with_capacity(path.edges.len()), 1);
+        LargeListBuilder::with_capacity(Int64Builder::with_capacity(path.edges.len()), 1);
     for (&node, &cost) in path.nodes.iter().zip(path.costs) {
         context.charge_work(1)?;
         nodes.values().append_value(graph.node_ids()[node].as_str());
@@ -543,7 +631,7 @@ fn path_batch(
         context.charge_work(1)?;
         edges
             .values()
-            .append_value(unsigned(graph.edges()[edge].ordinal)?);
+            .append_value(signed(graph.edges()[edge].ordinal, "edgeOrdinals")?);
     }
     nodes.append(true);
     costs.append(true);
@@ -557,7 +645,7 @@ fn path_batch(
         ("edgeOrdinals", Arc::new(edges.finish())),
     ];
     if let Some(rank) = rank {
-        let mut ranks = UInt64Builder::with_capacity(1);
+        let mut ranks = Int64Builder::with_capacity(1);
         ranks.append_value(rank);
         columns.push(("pathIndex", Arc::new(ranks.finish())));
     }
