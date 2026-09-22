@@ -83,7 +83,7 @@ struct Shared {
     /// take back what idle ones hold. Never touched on a charge. A meter
     /// admitting a block holds it shared; creating, dropping and refusing hold
     /// it exclusively. See [`WorkMeter`]'s admission for why.
-    grants: RwLock<Vec<Arc<AtomicUsize>>>,
+    grants: RwLock<Vec<Arc<Balance>>>,
     /// Accounted memory now, and its high-water mark. Atomics, like
     /// `work_units`: the reference Cypher executor charges the logical bytes of
     /// every copied value, so a streaming query charges memory per element and
@@ -364,7 +364,7 @@ impl ExecutionContext {
     /// touches no shared state beyond the cancellation flag, if that is observed.
     pub fn work_meter(&self) -> WorkMeter {
         let accounting = self.0.accounting;
-        let balance = Arc::new(AtomicUsize::new(0));
+        let balance = Arc::new(Balance(AtomicUsize::new(0)));
         if accounting.counts_work() {
             // Registration is per meter, not per charge: a kernel creates one
             // per chunk of work, so this lock is taken a handful of times per
@@ -384,7 +384,7 @@ impl ExecutionContext {
         }
     }
 
-    fn release_meter(&self, own: &Arc<AtomicUsize>) {
+    fn release_meter(&self, own: &Arc<Balance>) {
         // Take the registry first. Emptying the balance and refunding it are
         // two steps, and between them the units are in no balance and still in
         // the counter. A refusal is decided under this same lock, so holding it
@@ -748,7 +748,7 @@ pub struct WorkMeter {
     context: ExecutionContext,
     /// Admitted but unspent units. Shared, not local, because a meter that runs
     /// out must be able to take back what idle meters are sitting on.
-    balance: Arc<AtomicUsize>,
+    balance: Arc<Balance>,
 }
 
 impl WorkMeter {
@@ -1016,5 +1016,18 @@ impl MemoryReservation {
 
     pub(crate) fn belongs_to(&self, context: &ExecutionContext) -> bool {
         Arc::ptr_eq(&self.0.context.0, &context.0)
+    }
+}
+
+/// EXPERIMENT (work/pagerank-path-experiments, never merge): a meter balance on
+/// its own cache line, to test whether the pull kernel's per-node charge is
+/// slow because the balance shares a line with something another core writes.
+#[repr(align(64))]
+pub struct Balance(AtomicUsize);
+
+impl std::ops::Deref for Balance {
+    type Target = AtomicUsize;
+    fn deref(&self) -> &AtomicUsize {
+        &self.0
     }
 }
