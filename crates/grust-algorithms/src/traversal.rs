@@ -267,6 +267,10 @@ pub fn weakly_connected_components(graph: &GraphProjection) -> Result<Components
     })
 }
 
+/// Called on both endpoints of every edge, so a call here is paid twice per
+/// edge. v0.22.0 inlined it by default; when `charge` grew, it stopped being
+/// inlined, and `#[inline]` alone did not restore that. `always` does.
+#[inline(always)]
 fn root(
     parents: &mut [usize],
     mut node: usize,

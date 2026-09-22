@@ -556,7 +556,21 @@ impl WorkMeter {
     /// # Errors
     /// Reports cancellation, an expired deadline, and a work budget that the
     /// charge would exceed.
-    #[inline]
+    ///
+    /// # Why the body is shaped like this
+    ///
+    /// Kernels call this once per visited entry, and are fast only if it is
+    /// inlined into them. v0.22.0's body was a cancellation check and the
+    /// balance exchange, and LLVM inlined it everywhere. The accounting modes
+    /// added two flag tests and the uncounted meter's deadline sample, whose
+    /// clock read made the body large enough that sixteen kernels called it
+    /// out of line, and that union-find's path-halving `root`, into which it
+    /// was still inlined, was no longer inlined into sequential WCC: 11–14%
+    /// slower in the default counted mode. The sample is now a cold call and
+    /// the body is `always` inlined. Testing the work mode before the
+    /// cancellation flag, or both modes with one combined flag, measured no
+    /// better across sequential WCC, BFS and PageRank.
+    #[inline(always)]
     pub fn charge(&mut self, units: usize) -> Result<()> {
         if self.observes_interruption {
             self.context.check_cancelled()?;
@@ -570,7 +584,7 @@ impl WorkMeter {
                 self.uncounted_since_sample = self.uncounted_since_sample.saturating_add(units);
                 if self.uncounted_since_sample >= WORK_BLOCK_UNITS {
                     self.uncounted_since_sample = 0;
-                    self.context.check_state(DeadlineCheck::Sampled)?;
+                    return Self::sample_deadline(&self.context);
                 }
             }
             return Ok(());
@@ -590,6 +604,16 @@ impl WorkMeter {
             }
         }
         self.admit(units)
+    }
+
+    /// The uncounted meter's once-per-block deadline sample, out of line so
+    /// that the clock read is not inlined into every kernel loop with `charge`.
+    /// It takes the context rather than the meter, so the call cannot write the
+    /// meter's fields as far as the loop around it can tell.
+    #[cold]
+    #[inline(never)]
+    fn sample_deadline(context: &ExecutionContext) -> Result<()> {
+        context.check_state(DeadlineCheck::Sampled)
     }
 
     /// Admit a block; failing that, exactly what was asked for; failing that,
