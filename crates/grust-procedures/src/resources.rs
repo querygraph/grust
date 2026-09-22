@@ -272,22 +272,13 @@ impl ExecutionContext {
     /// holds a balance, so creating and dropping one takes no lock, and a charge
     /// touches no shared state beyond the cancellation flag, if that is observed.
     pub fn work_meter(&self) -> WorkMeter {
-        let accounting = self.0.accounting;
         let balance = Arc::new(AtomicUsize::new(0));
-        if accounting.counts_work() {
-            // Registration is per meter, not per charge: a kernel creates one
-            // per chunk of work, so this lock is taken a handful of times per
-            // region.
-            self.0
-                .grants
-                .write()
-                .unwrap_or_else(|poison| poison.into_inner())
-                .push(Arc::clone(&balance));
-        }
+        self.0
+            .grants
+            .write()
+            .unwrap_or_else(|poison| poison.into_inner())
+            .push(Arc::clone(&balance));
         WorkMeter {
-            counts_work: accounting.counts_work(),
-            observes_interruption: accounting.observes_interruption(),
-            uncounted_since_sample: 0,
             context: self.clone(),
             balance,
         }
@@ -318,9 +309,6 @@ impl ExecutionContext {
     #[inline]
     pub fn charge_work(&self, units: usize) -> Result<()> {
         self.check_state(DeadlineCheck::Sampled)?;
-        if !self.0.accounting.counts_work() {
-            return Ok(());
-        }
         self.admit_work(units)
     }
 
@@ -366,9 +354,6 @@ impl ExecutionContext {
 
     #[inline]
     fn check_state(&self, deadline: DeadlineCheck) -> Result<()> {
-        if !self.0.accounting.observes_interruption() {
-            return Ok(());
-        }
         if self.0.cancelled.load(Ordering::Acquire) {
             return Err(ProcedureError::Cancelled);
         }
@@ -539,11 +524,6 @@ pub struct WorkMeter {
     /// Copies of the execution's fixed accounting mode, held by value so that a
     /// kernel loop charging through `&mut WorkMeter` tests its own fields, which
     /// nothing else can write, and the optimiser can hoist the test out.
-    counts_work: bool,
-    observes_interruption: bool,
-    /// Units charged since the deadline was last sampled, used only when work
-    /// is uncounted and interruption observed. Local, so never contended.
-    uncounted_since_sample: usize,
     context: ExecutionContext,
     /// Admitted but unspent units. Shared, not local, because a meter that runs
     /// out must be able to take back what idle meters are sitting on.
@@ -558,23 +538,7 @@ impl WorkMeter {
     /// charge would exceed.
     #[inline]
     pub fn charge(&mut self, units: usize) -> Result<()> {
-        if self.observes_interruption {
-            self.context.check_cancelled()?;
-        }
-        if !self.counts_work {
-            // A counted meter samples the deadline in `admit`, once per block.
-            // An uncounted one never admits, so without this it would never
-            // read the deadline at all. Count locally and sample at the same
-            // cadence; nothing shared is touched between samples.
-            if self.observes_interruption {
-                self.uncounted_since_sample = self.uncounted_since_sample.saturating_add(units);
-                if self.uncounted_since_sample >= WORK_BLOCK_UNITS {
-                    self.uncounted_since_sample = 0;
-                    self.context.check_state(DeadlineCheck::Sampled)?;
-                }
-            }
-            return Ok(());
-        }
+        self.context.check_cancelled()?;
         // The balance can be taken by another meter between the load and the
         // exchange, so this retries rather than subtracting blindly.
         let mut held = self.balance.load(Ordering::Relaxed);
@@ -691,9 +655,7 @@ impl WorkMeter {
 impl Drop for WorkMeter {
     fn drop(&mut self) {
         // An uncounted meter was never registered and never held a balance.
-        if self.counts_work {
-            self.context.release_meter(&self.balance);
-        }
+        self.context.release_meter(&self.balance);
     }
 }
 
