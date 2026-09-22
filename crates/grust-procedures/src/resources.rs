@@ -558,22 +558,13 @@ impl WorkMeter {
     /// charge would exceed.
     #[inline]
     pub fn charge(&mut self, units: usize) -> Result<()> {
+        // Branch on the mode once, first, so the counted path is the v0.22.0
+        // body and the uncounted path's deadline sample stays out of line.
+        if !self.counts_work {
+            return self.charge_uncounted(units);
+        }
         if self.observes_interruption {
             self.context.check_cancelled()?;
-        }
-        if !self.counts_work {
-            // A counted meter samples the deadline in `admit`, once per block.
-            // An uncounted one never admits, so without this it would never
-            // read the deadline at all. Count locally and sample at the same
-            // cadence; nothing shared is touched between samples.
-            if self.observes_interruption {
-                self.uncounted_since_sample = self.uncounted_since_sample.saturating_add(units);
-                if self.uncounted_since_sample >= WORK_BLOCK_UNITS {
-                    self.uncounted_since_sample = 0;
-                    self.context.check_state(DeadlineCheck::Sampled)?;
-                }
-            }
-            return Ok(());
         }
         // The balance can be taken by another meter between the load and the
         // exchange, so this retries rather than subtracting blindly.
@@ -590,6 +581,26 @@ impl WorkMeter {
             }
         }
         self.admit(units)
+    }
+
+    /// Uncounted charge: nothing shared is touched between deadline samples.
+    #[inline]
+    fn charge_uncounted(&mut self, units: usize) -> Result<()> {
+        if self.observes_interruption {
+            self.context.check_cancelled()?;
+            self.uncounted_since_sample = self.uncounted_since_sample.saturating_add(units);
+            if self.uncounted_since_sample >= WORK_BLOCK_UNITS {
+                return self.sample_deadline();
+            }
+        }
+        Ok(())
+    }
+
+    #[cold]
+    #[inline(never)]
+    fn sample_deadline(&mut self) -> Result<()> {
+        self.uncounted_since_sample = 0;
+        self.context.check_state(DeadlineCheck::Sampled)
     }
 
     /// Admit a block; failing that, exactly what was asked for; failing that,
