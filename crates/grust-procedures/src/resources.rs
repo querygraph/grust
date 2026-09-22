@@ -117,7 +117,7 @@ struct Shared {
 /// workers the shared counter would otherwise be a contended cache line rather
 /// than an occasional one. Near the limit the meter drops to exact admission,
 /// so a budget still fails at exactly the unit that exceeds it.
-pub const WORK_BLOCK_UNITS: usize = 16384;
+pub const WORK_BLOCK_UNITS: usize = 1024;
 
 /// Whether a state check must read the clock or may rely on the sampled read.
 #[derive(Clone, Copy)]
@@ -364,7 +364,7 @@ impl ExecutionContext {
     /// touches no shared state beyond the cancellation flag, if that is observed.
     pub fn work_meter(&self) -> WorkMeter {
         let accounting = self.0.accounting;
-        let balance = Arc::new(Balance(AtomicUsize::new(0)));
+        let balance = Arc::new(Balance(AtomicUsize::new(0), [0; 56]));
         if accounting.counts_work() {
             // Registration is per meter, not per charge: a kernel creates one
             // per chunk of work, so this lock is taken a handful of times per
@@ -1022,9 +1022,9 @@ impl MemoryReservation {
 /// EXPERIMENT (work/pagerank-path-experiments, never merge): a meter balance on
 /// its own cache line, to test whether the pull kernel's per-node charge is
 /// slow because the balance shares a line with something another core writes.
-#[repr(align(64))]
+
 #[derive(Debug)]
-pub struct Balance(AtomicUsize);
+pub struct Balance(AtomicUsize, [u8; 56]);
 
 impl std::ops::Deref for Balance {
     type Target = AtomicUsize;
