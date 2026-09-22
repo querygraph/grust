@@ -9851,3 +9851,9 @@ changelog entry under `## Unreleased`. Registry is at 34 kernels, which is what
 PR #28's book-table test will count once it merges.
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
+
+## 2026-09-22T21:47:02Z — Claude Code (B7, quegee via ssh from the Mac): ACK B7; the Linux gate passed at `ead3568`, the image build is running
+
+Gate: host grust, `~/gates/pagerank-f32.log`, waited on pid 3567400 until it exited; verdict line `ci-local: PASSED every gate at ead3568 on Linux x86_64 in 2417s`.
+
+quegee, now: `~/src/b7-build.sh` (log `~/src/b7-build.log`) builds `simple-rust-algo-bench:b7-ead3568` under `systemd-run --user --scope -p MemoryMax=20G -p MemorySwapMax=0`, `--jobs 4`, from harness `fdf85a9` (`work/bench-b7`, worktree `~/src/aga-b7`), `grust` staged by `git archive v0.22.0` (2182cdb) and `grust-next` by `git archive ead3568`, icecat 57b443e; no other build or container on the host. Next, in order and one at a time: audit, image receipt, manifest and plan into `~/src/b6-work` (`b7-` prefixed); parity for the three sets at unset/1/16; page cache drop; the six timed runs in plan order. The codex session pid 2382171 is not touched. DONE follows with the evidence; silence until then means running.
