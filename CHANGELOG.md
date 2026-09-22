@@ -214,6 +214,53 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ### Execution accounting
 
+- **Child executions: one memory budget, many independently stopped queries.**
+  `ExecutionContext::child(ChildLimits)` makes an execution that draws memory
+  from its parent's budget and keeps its own work counter, work budget,
+  cancellation and deadline, so an embedder serving concurrent queries can
+  bound the whole process by one budget without every query sharing one
+  cancellation flag and one contended work counter. `ChildLimits` sets an
+  optional memory sub-limit (no larger than the parent's limit), a work
+  budget, a deadline (clipped to the parent's), an accounting mode, and
+  optionally batch rows and concurrency; the rest is inherited.
+  `ExecutionContext::parent()` names the parent. Children nest.
+- **Memory is admitted at every level in one decision.** A child's charge
+  counts against its own sub-limit, if it has one, and against every
+  ancestor, and siblings cannot jointly exceed their parent. A child without
+  a sub-limit asks its parent first and counts the bytes only once admitted;
+  one with a sub-limit claims them against its own limit, asks the parent,
+  and withdraws the claim if the parent refuses, so the root is only ever
+  changed by admitted bytes. A charge that fails at a sub-limit retries once
+  under that child's exclusive admission lock, so a claim the parent was
+  about to refuse cannot make a charge that fits fail; a root still admits
+  with one compare-exchange and takes no lock. Bytes return to every level
+  when a reservation or account drops, and a child's cumulative charges return
+  to the parent when the child drops. Each level reports its own live and peak
+  bytes, a parent's including its children's.
+- **Cancellation reaches down, never up.** Cancelling an execution cancels
+  every descendant and wakes their `cancelled()` waiters; a child created after
+  its parent was cancelled starts cancelled. Cancelling a child reaches neither
+  its parent nor its siblings. A child of an interruptible execution must
+  itself be interruptible, and asking otherwise is `InvalidArguments`; under an
+  uninterruptible parent a child may be either.
+- **Work is not aggregated.** A child's work is counted on its own counter
+  against its own budget; the parent's usage and work budget cover only the
+  work charged to the parent. Aggregating exactly would put every child back on
+  one shared counter.
+- **`MemoryReservation::shrink(bytes)`** lowers a reservation's charge and
+  returns the excess at once, through every level of a child, for a caller that
+  reserved an upper bound and now knows the real size. The peak keeps the
+  bound. Clones share the charge, so racing shrinks release each byte once. A
+  reservation never grows.
+- Tests: siblings racing a parent's budget, and threads racing one child's
+  sub-limit, each with a monitor checking every level and holdings kept until
+  every thread is done so the pressure does not depend on the scheduler;
+  replacing the two-level admission with two separate checks fails both. Exact
+  admission across racing children, a claim the parent refuses
+  never refusing a charge that fits, cancellation in both directions including
+  children created while the parent is cancelled, per-child work budgets
+  racing meters, deadlines, modes, and PageRank on racing children
+  bit-identical to a root at one and four workers.
 - **An execution can run with work accounting turned off, by name.**
   `ExecutionContext::with_accounting(limits, accounting)` takes an `Accounting`
   with two independent switches, `work` (`Counted` or `Disabled`) and
