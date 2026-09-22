@@ -187,7 +187,11 @@ mod tests {
                 for _ in 0..10 * super::super::WORK_BLOCK_UNITS {
                     meter.charge(1).expect("uncounted");
                 }
-                assert_eq!(meter.balance.load(Ordering::Relaxed), 0, "{accounting}");
+                assert_eq!(
+                    meter.balance.units.load(Ordering::Relaxed),
+                    0,
+                    "{accounting}"
+                );
             }
             drop(meters);
             assert_eq!(
