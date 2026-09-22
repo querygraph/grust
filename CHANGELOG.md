@@ -8,6 +8,37 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ### Graph algorithms
 
+- **PageRank and ArticleRank can run with `f32` scores.** `pagerank_f32`
+  returns `PageRank<f32>`; `PageRank` is now `PageRank<F = f64>`, so every
+  existing caller is unchanged, and `values()` is `&[F]`. One implementation
+  serves both, generic over the sealed `Score` trait, which `f64` and `f32`
+  implement: every score, per-arc probability, dangling mass, teleport share
+  and `base` is formed and accumulated in the score type, the personalization
+  is normalized in `f64` and rounded once, and the L1 residual is summed in
+  `f64` from the score differences at either precision, which is the
+  arrangement `neo4j-labs/graph` uses for its `f32` PageRank, so the two can
+  be compared at one precision under one stopping rule. The stop stays
+  `residual <= tolerance`; `neo4j-labs/graph` stops at `<`, which differs only
+  at a residual exactly equal to the tolerance. The `f64` kernel's bits, work
+  charges and refusal units are unchanged (`tests/pagerank_pinned.rs`), and
+  the `f32` kernel charges the same work and is bit-identical at one, two,
+  three and sixteen workers on the parallel pull, through the same fixed-chunk
+  reductions. `grust.algorithms.pagerank` and `articleRank` take
+  `precision: 'f64' | 'f32'`, default `'f64'`, refusing any other value;
+  at `'f32'` the `score` column is Float32 on every batch, and `iterations`,
+  `converged` and `residual` keep their types. Observed on the 120,000-node,
+  600,000-arc test fixture: at tolerance 1e-8 the `f32` and `f64` runs both
+  stop at iteration 93, the `f32` residual tracking the `f64` residual to a
+  few percent; at tolerance zero `f32` reaches an exact fixed point in 147
+  iterations against `f64`'s 261; and on a fixture with half its 200,000 nodes
+  dangling, `f32` needed about twice the iterations at every tolerance of 1e-6
+  and below, most of which an experimental `f64` dangling sum recovered. The
+  kernel keeps that sum in `f32`, as asked. A tolerance below one `f32` ulp of
+  a moving score is met only at an exact fixed point: on the four-node Cypher
+  test graph, whose two largest scores are near 0.45 (ulp 2^-25), the default
+  1e-8 is never reached, the residual is exactly 2^-24 for all 1000 iterations
+  and `converged` is false, while 1e-6 is met in 80 iterations; the test pins
+  this rather than loosening the tolerance.
 - **Each work meter's balance is padded to a whole cache line.** The balance a
   `WorkMeter` spends its admitted block from was a bare `Arc<AtomicUsize>`: a
   32-byte heap chunk sharing a 64-byte line with whatever glibc's tcache had
