@@ -156,7 +156,26 @@ pub(crate) fn for_each_chunk<T: Send>(
     output: &mut [T],
     body: impl Fn(usize, &mut [T], &mut grust_procedures::WorkMeter) -> crate::Result<()> + Send + Sync,
 ) -> crate::Result<()> {
-    let chunk = chunk_len(output.len(), workers);
+    for_each_chunk_sized(
+        context,
+        workers,
+        output,
+        chunk_len(output.len(), workers),
+        body,
+    )
+}
+
+/// As [`for_each_chunk`], for a caller whose chunk length is part of its layout
+/// rather than a scheduling choice — a row per worker, say.
+#[cfg(feature = "parallel")]
+pub(crate) fn for_each_chunk_sized<T: Send>(
+    context: &ExecutionContext,
+    workers: usize,
+    output: &mut [T],
+    chunk: usize,
+    body: impl Fn(usize, &mut [T], &mut grust_procedures::WorkMeter) -> crate::Result<()> + Send + Sync,
+) -> crate::Result<()> {
+    let chunk = chunk.max(1);
     if workers <= 1 {
         let mut meter = context.work_meter();
         for (index, slice) in output.chunks_mut(chunk).enumerate() {
@@ -183,8 +202,19 @@ pub(crate) fn for_each_chunk<T>(
     output: &mut [T],
     body: impl Fn(usize, &mut [T], &mut grust_procedures::WorkMeter) -> crate::Result<()>,
 ) -> crate::Result<()> {
+    for_each_chunk_sized(context, workers, output, chunk_len(output.len(), 1), body)
+}
+
+#[cfg(not(feature = "parallel"))]
+pub(crate) fn for_each_chunk_sized<T>(
+    context: &ExecutionContext,
+    workers: usize,
+    output: &mut [T],
+    chunk: usize,
+    body: impl Fn(usize, &mut [T], &mut grust_procedures::WorkMeter) -> crate::Result<()>,
+) -> crate::Result<()> {
     let _ = workers;
-    let chunk = chunk_len(output.len(), 1);
+    let chunk = chunk.max(1);
     let mut meter = context.work_meter();
     for (index, slice) in output.chunks_mut(chunk).enumerate() {
         body(index * chunk, slice, &mut meter)?;

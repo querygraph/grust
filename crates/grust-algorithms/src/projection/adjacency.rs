@@ -26,19 +26,83 @@ impl Adjacency {
             0usize,
             context,
         )?;
-        for edge in edges {
-            context.charge_work(1)?;
-            let source = match orientation {
-                Orientation::Outgoing | Orientation::Undirected => edge.source,
-                Orientation::Incoming => edge.target,
-            };
-            offsets.values[source + 1] = offsets.values[source + 1]
-                .checked_add(1)
-                .ok_or_else(|| ProcedureError::Numerical("degree overflow".into()))?;
-            if orientation == Orientation::Undirected && edge.source != edge.target {
-                offsets.values[edge.target + 1] = offsets.values[edge.target + 1]
+        // Counting is a sum per node, so it parallelises without touching the
+        // order anything ends up in. Each worker counts its own edge range into
+        // its own row, and the rows are added up afterwards: no atomics, and the
+        // totals cannot depend on how the edges were divided.
+        let workers = crate::parallel::workers(context, n.saturating_add(edges.len()));
+        let counted = match workers {
+            // A chunk contributes at most one arc per edge to any one node, so
+            // a count fits `u32` whenever the edge list does; above that the
+            // sequential path, which carries its own overflow check, takes over.
+            Some(workers) if n > 0 && edges.len() <= u32::MAX as usize => {
+                let chunk = crate::parallel::chunk_len(edges.len(), workers);
+                let rows = edges.len().div_ceil(chunk.max(1));
+                // A row of counts per chunk. Four bytes a node a chunk, admitted
+                // before it is allocated: on a graph of three million nodes with
+                // sixteen chunks that is under two hundred megabytes, and it is
+                // released before the CSR arrays are filled.
+                let _admission =
+                    context.reserve_for_workers(rows, n.saturating_mul(size_of::<u32>()))?;
+                let mut counts: Vec<u32> = Vec::new();
+                counts.try_reserve_exact(rows.saturating_mul(n))?;
+                counts.resize(rows.saturating_mul(n), 0);
+                crate::parallel::for_each_chunk_sized(
+                    context,
+                    workers,
+                    &mut counts,
+                    n,
+                    |first, row, meter| {
+                        let index = first / n;
+                        let start = index * chunk;
+                        let slice = &edges[start..(start + chunk).min(edges.len())];
+                        meter.charge(slice.len())?;
+                        for edge in slice {
+                            let source = match orientation {
+                                Orientation::Outgoing | Orientation::Undirected => edge.source,
+                                Orientation::Incoming => edge.target,
+                            };
+                            row[source] += 1;
+                            if orientation == Orientation::Undirected && edge.source != edge.target
+                            {
+                                row[edge.target] += 1;
+                            }
+                        }
+                        Ok(())
+                    },
+                )?;
+                // Sum the rows into the degrees. A node's arcs are counted at
+                // most twice per edge, so the total cannot exceed the arc count,
+                // which the sequential path already proved fits a usize.
+                for node in 0..n {
+                    context.charge_work(1)?;
+                    let mut total = 0usize;
+                    for row in 0..rows {
+                        total = total
+                            .checked_add(counts[row * n + node] as usize)
+                            .ok_or_else(|| ProcedureError::Numerical("degree overflow".into()))?;
+                    }
+                    offsets.values[node + 1] = total;
+                }
+                true
+            }
+            _ => false,
+        };
+        if !counted {
+            for edge in edges {
+                context.charge_work(1)?;
+                let source = match orientation {
+                    Orientation::Outgoing | Orientation::Undirected => edge.source,
+                    Orientation::Incoming => edge.target,
+                };
+                offsets.values[source + 1] = offsets.values[source + 1]
                     .checked_add(1)
                     .ok_or_else(|| ProcedureError::Numerical("degree overflow".into()))?;
+                if orientation == Orientation::Undirected && edge.source != edge.target {
+                    offsets.values[edge.target + 1] = offsets.values[edge.target + 1]
+                        .checked_add(1)
+                        .ok_or_else(|| ProcedureError::Numerical("degree overflow".into()))?;
+                }
             }
         }
         prefix(&mut offsets.values, context)?;
