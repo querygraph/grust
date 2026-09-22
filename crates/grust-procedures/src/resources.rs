@@ -7,9 +7,11 @@ use std::time::Instant;
 use crate::{ProcedureError, Result};
 
 mod accounting;
+mod balance;
 mod cancellation;
 mod child;
 pub use accounting::{Accounting, Interruption, WorkAccounting, WorkCount};
+use balance::MeterBalance;
 pub use cancellation::Cancellation;
 pub use child::ChildLimits;
 
@@ -82,8 +84,9 @@ struct Shared {
     /// Unspent balances of the live work meters, so a meter that runs out can
     /// take back what idle ones hold. Never touched on a charge. A meter
     /// admitting a block holds it shared; creating, dropping and refusing hold
-    /// it exclusively. See [`WorkMeter`]'s admission for why.
-    grants: RwLock<Vec<Arc<AtomicUsize>>>,
+    /// it exclusively. See [`WorkMeter`]'s admission for why. Each balance
+    /// is padded to a whole cache line; see [`MeterBalance`] for why.
+    grants: RwLock<Vec<Arc<MeterBalance>>>,
     /// Accounted memory now, and its high-water mark. Atomics, like
     /// `work_units`: the reference Cypher executor charges the logical bytes of
     /// every copied value, so a streaming query charges memory per element and
@@ -364,7 +367,7 @@ impl ExecutionContext {
     /// touches no shared state beyond the cancellation flag, if that is observed.
     pub fn work_meter(&self) -> WorkMeter {
         let accounting = self.0.accounting;
-        let balance = Arc::new(AtomicUsize::new(0));
+        let balance = Arc::new(MeterBalance::new());
         if accounting.counts_work() {
             // Registration is per meter, not per charge: a kernel creates one
             // per chunk of work, so this lock is taken a handful of times per
@@ -384,7 +387,7 @@ impl ExecutionContext {
         }
     }
 
-    fn release_meter(&self, own: &Arc<AtomicUsize>) {
+    fn release_meter(&self, own: &Arc<MeterBalance>) {
         // Take the registry first. Emptying the balance and refunding it are
         // two steps, and between them the units are in no balance and still in
         // the counter. A refusal is decided under this same lock, so holding it
@@ -396,7 +399,7 @@ impl ExecutionContext {
             .grants
             .write()
             .unwrap_or_else(|poison| poison.into_inner());
-        self.refund_work(own.swap(0, Ordering::Relaxed));
+        self.refund_work(own.units.swap(0, Ordering::Relaxed));
         grants.retain(|balance| !Arc::ptr_eq(balance, own));
     }
 
@@ -747,8 +750,11 @@ pub struct WorkMeter {
     uncounted_since_sample: usize,
     context: ExecutionContext,
     /// Admitted but unspent units. Shared, not local, because a meter that runs
-    /// out must be able to take back what idle meters are sitting on.
-    balance: Arc<AtomicUsize>,
+    /// out must be able to take back what idle meters are sitting on. Padded
+    /// to a whole cache line, because this worker exchanges it once per
+    /// visited entry and a neighbour's writes to the same line cost it the
+    /// line each time; see [`MeterBalance`].
+    balance: Arc<MeterBalance>,
 }
 
 impl WorkMeter {
@@ -792,9 +798,9 @@ impl WorkMeter {
         }
         // The balance can be taken by another meter between the load and the
         // exchange, so this retries rather than subtracting blindly.
-        let mut held = self.balance.load(Ordering::Relaxed);
+        let mut held = self.balance.units.load(Ordering::Relaxed);
         while held >= units {
-            match self.balance.compare_exchange_weak(
+            match self.balance.units.compare_exchange_weak(
                 held,
                 held - units,
                 Ordering::Relaxed,
@@ -866,7 +872,9 @@ impl WorkMeter {
                 .read()
                 .unwrap_or_else(|poison| poison.into_inner());
             if self.context.admit_work(block).is_ok() {
-                self.balance.fetch_add(block - units, Ordering::Relaxed);
+                self.balance
+                    .units
+                    .fetch_add(block - units, Ordering::Relaxed);
                 return Ok(());
             }
             drop(shared);
@@ -880,7 +888,7 @@ impl WorkMeter {
         // Hand back what this meter holds and ask for exactly the charge, so
         // the budget fails at the unit that exceeds it rather than a block early.
         self.context
-            .refund_work(self.balance.swap(0, Ordering::Relaxed));
+            .refund_work(self.balance.units.swap(0, Ordering::Relaxed));
         if self.context.admit_work(units).is_ok() {
             return Ok(());
         }
@@ -888,7 +896,7 @@ impl WorkMeter {
         // this moment loses the exchange, finds too little, and waits its turn.
         let mut reclaimed = 0usize;
         for balance in grants.iter() {
-            reclaimed = reclaimed.saturating_add(balance.swap(0, Ordering::Relaxed));
+            reclaimed = reclaimed.saturating_add(balance.units.swap(0, Ordering::Relaxed));
         }
         self.context.refund_work(reclaimed);
         self.context.admit_work(units)

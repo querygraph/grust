@@ -8,6 +8,35 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ### Graph algorithms
 
+- **Each work meter's balance is padded to a whole cache line.** The balance a
+  `WorkMeter` spends its admitted block from was a bare `Arc<AtomicUsize>`: a
+  32-byte heap chunk sharing a 64-byte line with whatever glibc's tcache had
+  freed beside it, and since the projection build went parallel (`db00ee7`)
+  that neighbour was the pool's own bookkeeping, written by other cores. Every
+  such write took the line from the worker, whose next `lock cmpxchg` on the
+  balance had to fetch it back: on the attribution host, 56% of PageRank's
+  pull-arc loop sat on that exchange, `path-65536` at sixteen workers ran 2.5
+  times slower than 0.22.0 (32.7 ms against 13.1, second call) and sequential
+  WCC 10–13% slower; running the same code with tcache disabled recovered
+  PageRank, which settled that cause. The balance is now the word followed by
+  56 bytes of padding, one whole line, so two balances never share one and
+  the balance leaves the 32-byte class; it is not over-aligned, because an
+  `#[repr(align(64))]` wrapper measured 1.2–1.5 ms slower on triangles
+  `hub-65536` at sixteen workers in three runs and the padding did not.
+  Re-measured on the same host against 0.22.0 (second call, medians of
+  seven): PageRank `path-65536` at sixteen workers 12.2–12.4 ms against
+  13.0–13.2 and 29.1–34.2 before; `path-16384` 9.6 against 9.3 and 17.1;
+  sequential WCC `uniform-16384` and `uniform-65536` within 1–2% against
+  10–11% before; triangles `hub-65536` at sixteen workers +4.3–4.7% against
+  +5.5–6.2% before. The one-worker WCC residue is not the balance's line: a
+  shape padded on both sides, which keeps the whole line inside the
+  allocation, recovered PageRank equally and left WCC at the old +11%, while
+  every other chunk size tried recovered it, and disabling tcache never did;
+  what that case responds to is the chunk size class, and why is unexplained.
+  A layout test pins the size and offset and checks that consecutively
+  allocated balances never share a line. What is counted, the unit at which a
+  budget refuses, cancellation, deadlines and every accounting mode are
+  unchanged, and results and work counts are bit for bit the same.
 - **`WorkMeter::charge` is inlined into every kernel again, as in 0.22.0.**
   The accounting opt-outs put the uncounted meter's deadline sample, with its
   clock read, inline in `charge`, and the body outgrew LLVM's inlining
