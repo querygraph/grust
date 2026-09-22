@@ -7,7 +7,8 @@ Every claim is anchored to a public source: a quoted comment with its link, or a
 file and line at a named commit. Sail is read at `main` `51b57bc2` (2026-09-22),
 `datafusion-ffi` at the published 55.1.0 crate, DataFusion at 55.1.0, SedonaDB at
 `main` `a115fc3f`, Apache Sedona at `master` `86fbb82b`, Nutmeg at
-`work/streaming-reads` `96816e5`. Where a claim is reasoning rather than something
+`work/streaming-reads` `96816e5`, datafusion-python at `main` `516d20d`. Where a
+claim is reasoning rather than something
 read or run, it says **inferred**.
 
 ## 1. In one paragraph
@@ -261,8 +262,11 @@ mismatch cannot fault before the check runs, the gap datafusion-python describes
 its own check (`crates/util/src/lib.rs:195-198`: "`version` is not the first field on
 any of these types, so a sufficiently different layout can fault before this ever
 runs"). `datafusion_major` is kept in the manifest rather than read from each object
-because three FFI types carry no version (`FFI_TaskContextProvider`,
-`FFI_TableProviderFactory`, `FFI_ExtensionOptions`). Arrow data crosses as the Arrow
+because most FFI structs carry no `version` field: only about a dozen do (table
+providers and factories, catalogs, execution plans, physical expressions and
+optimizer rules, the codecs, the query planner, the session), and none of the four
+UDF kinds, `FFI_TaskContext`, `FFI_PlanProperties`, `FFI_SessionConfig`,
+`FFI_ExtensionOptions` or `FFI_RecordBatchStream` does. Arrow data crosses as the Arrow
 C Data Interface, which is version-independent; expressions and plans cross as
 DataFusion protobuf, which rides the DataFusion-major check. Proposed: while Sail is
 0.x, `sail_ext_abi_version` changes only with a Sail minor, and one Sail minor
@@ -348,9 +352,14 @@ libraries: in §2, SedonaDB's UDF capsules come from `sedonadb._lib` while a glu
 package would produce the manifest. Instead, at load Sail calls `library_marker_id()`
 on every plan-producing component (`FFI_ExecutionPlan`, `FFI_TableProvider`, codec)
 and builds a marker→extension map itself; one extension may map to several markers.
-A foreign node's marker is read off its handle (`src/execution_plan.rs:337-339`)
-before any encoding, which is when stage placement needs it. UDFs carry no marker
-(`FFI_ScalarUDF` has none) and are owned by name.
+A foreign node's marker is obtained by wrapping it back into a handle
+(`FFI_ExecutionPlan::new` on a `ForeignExecutionPlan` returns the inner handle,
+`src/execution_plan.rs:337-339`) and calling `library_marker_id()`, before any
+encoding, which is when stage placement needs it. The UDF kinds carry a marker
+too, but UDFs are owned by name rather than by marker: a manifest may list
+functions from a library other than the one that produced it, as the glue case in
+§2 does, and two extensions may come from one library. Name ownership is the
+resolver's concern, and a marker would add nothing it needs.
 
 **Placement.** `job_graph/planner.rs` consults the owner's manifest before its
 hard-coded list (`:460-472`). A `DriverOnly` owner forces a driver stage, as
@@ -367,7 +376,7 @@ driver → client. A `DriverOnly` extension pays that for residency.
 ### 6.6 The join extension: one Sail-owned hook
 
 Logical nodes and rules do not cross the FFI, and a foreign physical rule cannot
-inspect Sail's join nodes (§5.2). SedonaDB's maintainer described the options:
+inspect Sail's join nodes (§5, property 2). SedonaDB's maintainer described the options:
 "either Sail would have to hard-code some of the logical planning that identifies a
 logical and/or KNN join and have a specific extension point for 'spatial join'
 (which could resolve the FFI version of the executionplan), or implement some
@@ -383,7 +392,10 @@ Proposed: the general form, seated where Sail can see the join.
   `EnsureRequirements` (`crates/sail-physical-optimizer/src/lib.rs:48-58`), so the
   returned node's requirements are still enforced. It downcasts two shapes Sail can
   produce: `NestedLoopJoinExec` with a filter, and `FilterExec` over `CrossJoinExec`,
-  which Sail's `JoinReorder` reconstructs (`join_reorder/reconstructor.rs:584, 600`).
+  which Sail's `JoinReorder` reconstructs (`join_reorder/reconstructor.rs:584` for
+  the nested-loop shape; `:600` builds the cross join and `:1010` the filter over it).
+  `JoinReorder` decomposes only `HashJoinExec` regions, so a nested-loop join the
+  planner produced survives it untouched.
   When the filter contains a declared predicate it offers the extension the join
   type, the condition as DataFusion protobuf (SedonaDB's C ABI's own choice,
   `sedona-db#1094`) and the children as `FFI_ExecutionPlan`s, and receives an
@@ -398,8 +410,9 @@ Proposed: the general form, seated where Sail can see the join.
 
 **Which queries reach it.** A predicate in an `ON` clause is the join's filter
 directly. The cross-join-with-`WHERE` form the #2001 post names reaches it because
-Sail installs DataFusion's default logical rules minus one
-(`crates/sail-session/src/optimizer.rs:9-15`), lowers a cross join through
+Sail installs DataFusion's default logical rules with two of its own added and one
+dropped (`crates/sail-session/src/optimizer.rs:9-15`,
+`sail-logical-optimizer/src/lib.rs:24-40`), lowers a cross join through
 `LogicalPlanBuilder::cross_join` (`resolver/query/join.rs:90`), DataFusion's
 `push_down_filter` folds the predicate into the join (DataFusion 55.1.0
 `push_down_filter.rs:431-434, 502`) and the physical planner plans a filter-only join
@@ -418,7 +431,8 @@ the session's settings. Under `ShuffleReadExec`, which reads only `batch_size()`
 (`plan/shuffle_read.rs:98`), and over local files, the hook is safe; beyond that it
 waits on [datafusion#24733](https://github.com/apache/datafusion/pull/24733).
 
-**Sail rules that will walk over the opaque node** and treat it generically:
+**Rules in Sail's pipeline that will walk over the opaque node** and treat it
+generically (the first two are DataFusion's, the last two Sail's):
 `EnsureRequirements` (`required_input_distribution` unspecified, equivalences
 rebuilt from orderings only, `src/plan_properties.rs:178-180`), the post-optimization
 `FilterPushdown` (`lib.rs:71`), `RewriteCollectLeftHashJoin` and
