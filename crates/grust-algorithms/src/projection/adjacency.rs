@@ -84,7 +84,7 @@ impl Adjacency {
         let mirrored =
             |row: usize, other: usize| orientation == Orientation::Undirected && row != other;
 
-        let counted = match Counts::plan(context, n, edges.len(), edges.len())? {
+        let counted = match Counts::plan(context, context, n, edges.len(), edges.len())? {
             Some(mut table) => {
                 let len = edges.len().div_ceil(table.chunks).max(1);
                 table.count(context, |index, row, meter| {
@@ -279,18 +279,38 @@ impl Adjacency {
     ///
     /// Counted and filled in parallel above the floor, as [`Self::build`] is,
     /// with this CSR's arcs, in source order, standing for the edges.
+    ///
+    /// The projection builds its transpose with [`Self::transposed_split`];
+    /// these, with one execution for both roles, are what the tests measure.
+    #[cfg(all(test, feature = "parallel"))]
     pub(crate) fn transposed(&self, context: &ExecutionContext) -> Result<Adjacency> {
         Ok(self.transposed_traced(context)?.0)
     }
 
+    #[cfg(all(test, feature = "parallel"))]
     pub(crate) fn transposed_traced(
         &self,
         context: &ExecutionContext,
     ) -> Result<(Adjacency, BuildPath)> {
+        self.transposed_split(context, context)
+    }
+
+    /// The transpose with every byte it admits, kept or scratch, admitted by
+    /// `memory`, and everything else — work, cancellation, the deadline and
+    /// the worker count — taken from `context`. A projection's cached
+    /// transpose outlives the query that happens to build it, so it is
+    /// admitted by the projection's owner while that query pays for, and can
+    /// stop, the build. With one execution for both this is
+    /// [`Self::transposed_traced`], unchanged.
+    pub(crate) fn transposed_split(
+        &self,
+        memory: &ExecutionContext,
+        context: &ExecutionContext,
+    ) -> Result<(Adjacency, BuildPath)> {
         let n = self.offsets.values.len() - 1;
         let arcs = self.targets.values.len();
-        let mut offsets = Buffer::filled(n + 1, 0usize, context)?;
-        let counted = match Counts::plan(context, n, arcs, arcs)? {
+        let mut offsets = Buffer::filled_split(n + 1, 0usize, memory, context)?;
+        let counted = match Counts::plan(context, memory, n, arcs, arcs)? {
             Some(mut table) => {
                 let len = arcs.div_ceil(table.chunks).max(1);
                 table.count(context, |index, row, meter| {
@@ -315,16 +335,16 @@ impl Adjacency {
             }
         };
         prefix(&mut offsets.values, context)?;
-        let mut positions = Buffer::capacity(n, context)?;
+        let mut positions = Buffer::capacity(n, memory)?;
         positions.values.extend_from_slice(&offsets.values[..n]);
         let mut result = Adjacency {
             offsets,
-            targets: Buffer::filled(arcs, 0usize, context)?,
+            targets: Buffer::filled_split(arcs, 0usize, memory, context)?,
             edge_slots: None,
             weights: self
                 .weights
                 .as_ref()
-                .map(|_| Buffer::filled(arcs, 0.0f64, context))
+                .map(|_| Buffer::filled_split(arcs, 0.0f64, memory, context))
                 .transpose()?,
         };
 
@@ -496,6 +516,7 @@ impl Counts {
     /// whatever memory limit it would have met, where it would have met it.
     fn plan(
         context: &ExecutionContext,
+        memory: &ExecutionContext,
         nodes: usize,
         items: usize,
         counting: usize,
@@ -516,7 +537,7 @@ impl Counts {
             .min(items.saturating_mul(2) / nodes)
             .max(1);
         let cells = chunks.saturating_mul(nodes);
-        let admission = match context.reserve(cells.saturating_mul(size_of::<u32>())) {
+        let admission = match memory.reserve(cells.saturating_mul(size_of::<u32>())) {
             Ok(admission) => admission,
             Err(ProcedureError::BudgetExceeded {
                 resource: "memory", ..

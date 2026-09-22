@@ -73,12 +73,27 @@ impl<T> Buffer<T> {
     where
         T: Clone,
     {
-        let mut buffer = Self::capacity(count, context)?;
+        Self::filled_split(count, value, context, context)
+    }
+
+    /// [`Self::filled`] with its bytes admitted by `memory` and its
+    /// initialization charged to, and cancelled by, `work`: for state one
+    /// execution builds and another keeps.
+    pub(crate) fn filled_split(
+        count: usize,
+        value: T,
+        memory: &ExecutionContext,
+        work: &ExecutionContext,
+    ) -> Result<Self>
+    where
+        T: Clone,
+    {
+        let mut buffer = Self::capacity(count, memory)?;
         // Initialization is work too; polling in chunks bounds cancellation
         // latency without a lock for every initialized scalar.
         for offset in (0..count).step_by(1024) {
             let end = offset + (count - offset).min(1024);
-            context.charge_work(end - offset)?;
+            work.charge_work(end - offset)?;
             buffer.values.resize(end, value.clone());
         }
         Ok(buffer)
