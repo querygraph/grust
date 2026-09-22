@@ -1,15 +1,17 @@
 //! Shared cooperative limits with reservations retained by buffer owners.
 
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
-use std::sync::{Arc, Mutex, RwLock};
+use std::sync::{Arc, Mutex, RwLock, Weak};
 use std::time::Instant;
 
 use crate::{ProcedureError, Result};
 
 mod accounting;
 mod cancellation;
+mod child;
 pub use accounting::{Accounting, Interruption, WorkAccounting, WorkCount};
 pub use cancellation::Cancellation;
+pub use child::ChildLimits;
 
 /// Limits shared by projection preparation, kernels and consumers.
 #[derive(Clone, Copy, Debug)]
@@ -48,6 +50,10 @@ impl ResourceUsage {
 #[derive(Debug, Default)]
 struct State {
     waiters: Vec<Option<std::task::Waker>>,
+    /// Child executions that cancelling this one must reach. Registered and
+    /// collected under this lock, as waiters are, so a child created while
+    /// this execution is being cancelled is either collected or sees the flag.
+    children: Vec<Weak<Shared>>,
 }
 
 /// Charges sample the deadline instead of reading the clock for every unit.
@@ -59,8 +65,10 @@ const DEADLINE_SAMPLE_UNITS: usize = 1024;
 
 /// Work, memory and cancellation are lock-free: kernels charge work once per
 /// visited entry, and the reference Cypher executor charges memory once per
-/// copied value. Only the cancellation wakers stay behind the mutex; they are
-/// rare, and they are the one place that needs several fields to move together.
+/// copied value. Only the cancellation wakers and children stay behind the
+/// mutex; they are rare, and they are the one place that needs several fields
+/// to move together. A child with a memory sub-limit of its own also takes its
+/// own `admitting` lock, shared, per charge; a root never does.
 #[derive(Debug)]
 struct Shared {
     limits: ExecutionLimits,
@@ -83,8 +91,25 @@ struct Shared {
     /// freed, so a release needs no waker and no lock either.
     live_bytes: AtomicUsize,
     peak_bytes: AtomicUsize,
-    /// Cancellation wakers only.
+    /// Cancellation wakers and the children cancellation must reach.
     state: Mutex<State>,
+    /// The execution this one draws memory from; `None` for a root. See
+    /// [`ExecutionContext::child`].
+    parent: Option<ExecutionContext>,
+    /// Whether `limits.memory_bytes` is enforced at this level. Always for a
+    /// root. A child enforces it only when it set a sub-limit of its own;
+    /// otherwise its figures are accounting only, and its ancestors' admission
+    /// is the check.
+    own_memory_limit: bool,
+    /// A limited child's claim on its own sub-limit: `live_bytes` plus bytes
+    /// claimed here whose admission by an ancestor has not yet been decided.
+    /// Admission compares against this; usage reports `live_bytes`, which only
+    /// ever holds decided bytes, so a peak never counts a refused charge.
+    claimed_bytes: AtomicUsize,
+    /// Held shared by a limited child across the moment its claim is
+    /// undecided, and exclusively by a charge about to be refused here. See
+    /// [`ExecutionContext::admit_memory`] for why.
+    admitting: RwLock<()>,
 }
 
 /// Units a [`WorkMeter`] admits in one shared-counter operation while the budget
@@ -133,29 +158,53 @@ impl ExecutionContext {
     /// Rejects zero batch size, a work budget with uncounted work, and a
     /// deadline with interruption disabled.
     pub fn with_accounting(limits: ExecutionLimits, accounting: Accounting) -> Result<Self> {
-        if limits.batch_rows == 0 {
-            return Err(ProcedureError::InvalidArguments(
-                "batch_rows must be positive".into(),
-            ));
-        }
-        if !accounting.counts_work() && limits.work_units != usize::MAX {
-            return Err(ProcedureError::InvalidArguments(format!(
-                "work accounting is disabled but a work budget of {} was set; an uncounted \
-                 execution cannot enforce one, so work_units must be usize::MAX",
-                limits.work_units
-            )));
-        }
-        if !accounting.observes_interruption() && limits.deadline.is_some() {
-            return Err(ProcedureError::InvalidArguments(
-                "interruption is disabled but a deadline was set; an execution that never \
-                 reads the clock cannot enforce one"
-                    .into(),
-            ));
-        }
-        Ok(Self(Arc::new(Shared {
+        validate(&limits, accounting)?;
+        Ok(Self(Arc::new(Shared::new(limits, accounting, None, None))))
+    }
+}
+
+/// The checks [`ExecutionContext::with_accounting`] makes, shared with
+/// [`ExecutionContext::child`] so a child cannot hold limits a root would refuse.
+fn validate(limits: &ExecutionLimits, accounting: Accounting) -> Result<()> {
+    if limits.batch_rows == 0 {
+        return Err(ProcedureError::InvalidArguments(
+            "batch_rows must be positive".into(),
+        ));
+    }
+    if !accounting.counts_work() && limits.work_units != usize::MAX {
+        return Err(ProcedureError::InvalidArguments(format!(
+            "work accounting is disabled but a work budget of {} was set; an uncounted \
+             execution cannot enforce one, so work_units must be usize::MAX",
+            limits.work_units
+        )));
+    }
+    if !accounting.observes_interruption() && limits.deadline.is_some() {
+        return Err(ProcedureError::InvalidArguments(
+            "interruption is disabled but a deadline was set; an execution that never \
+             reads the clock cannot enforce one"
+                .into(),
+        ));
+    }
+    Ok(())
+}
+
+impl Shared {
+    /// A fresh execution's state. `parent` and `own_memory_limit` are only
+    /// set for a child; a root always enforces its own memory limit.
+    fn new(
+        limits: ExecutionLimits,
+        accounting: Accounting,
+        concurrency: Option<usize>,
+        parent: Option<(ExecutionContext, bool)>,
+    ) -> Self {
+        let (parent, own_memory_limit) = match parent {
+            Some((parent, own)) => (Some(parent), own),
+            None => (None, true),
+        };
+        Self {
             limits,
             accounting,
-            concurrency: None,
+            concurrency,
             work_units: AtomicUsize::new(0),
             cancelled: AtomicBool::new(false),
             charges_since_deadline_read: AtomicUsize::new(0),
@@ -163,9 +212,15 @@ impl ExecutionContext {
             live_bytes: AtomicUsize::new(0),
             peak_bytes: AtomicUsize::new(0),
             state: Mutex::new(State::default()),
-        })))
+            parent,
+            own_memory_limit,
+            claimed_bytes: AtomicUsize::new(0),
+            admitting: RwLock::new(()),
+        }
     }
+}
 
+impl ExecutionContext {
     /// Permit kernels to use up to `workers` threads for this execution, and
     /// with it the parallel implementation of each kernel, even at one worker.
     ///
@@ -181,6 +236,14 @@ impl ExecutionContext {
         if workers == 0 {
             return Err(ProcedureError::InvalidArguments(
                 "concurrency must be at least one".into(),
+            ));
+        }
+        if self.0.parent.is_some() {
+            // A child is registered with its parent from birth, so it is not
+            // reliably unshared; its concurrency is one of its `ChildLimits`.
+            return Err(ProcedureError::InvalidArguments(
+                "a child's concurrency is set by ChildLimits::concurrency when it is created"
+                    .into(),
             ));
         }
         let shared = Arc::get_mut(&mut self.0).ok_or_else(|| {
@@ -220,6 +283,11 @@ impl ExecutionContext {
 
     /// Signal cancellation to all owners. Cancellation never resets.
     ///
+    /// Cancelling an execution cancels every child created from it, and theirs
+    /// in turn, as a process shutting down stops everything it started; a
+    /// child created after this call starts cancelled. Cancelling a child
+    /// reaches neither its parent nor its siblings.
+    ///
     /// # Errors
     /// Refuses an execution constructed with [`Interruption::Disabled`]: nothing
     /// in it would observe the signal, and accepting it would let the caller
@@ -230,8 +298,16 @@ impl ExecutionContext {
                 "cancelling an execution constructed with interruption disabled".into(),
             ));
         }
-        // Publish cancellation before collecting wakers, so a registration that
-        // races this call either observes the flag or is woken by it.
+        self.signal_cancelled()
+    }
+
+    /// Cancel this execution and its descendants. Every descendant of an
+    /// execution that observes interruption observes it too, which
+    /// [`Self::child`] enforces, so none of them refuses the signal.
+    fn signal_cancelled(&self) -> Result<()> {
+        // Publish cancellation before collecting wakers and children, so a
+        // registration that races this call either observes the flag or is
+        // collected by it.
         self.0.cancelled.store(true, Ordering::Release);
         let mut state = self
             .0
@@ -239,11 +315,26 @@ impl ExecutionContext {
             .lock()
             .map_err(|_| ProcedureError::ResourceStatePoisoned)?;
         let waiters = std::mem::take(&mut state.waiters);
+        let children: Vec<ExecutionContext> = state
+            .children
+            .iter()
+            .filter_map(Weak::upgrade)
+            .map(ExecutionContext)
+            .collect();
+        // Release the lock before waking or cancelling anything, and before
+        // the upgraded children can drop: a child's drop takes this lock.
         drop(state);
         for waker in waiters.into_iter().flatten() {
             waker.wake();
         }
-        Ok(())
+        let mut outcome = Ok(());
+        for child in children {
+            // Every child is reached even if one's state is poisoned.
+            if let Err(error) = child.signal_cancelled() {
+                outcome = Err(error);
+            }
+        }
+        outcome
     }
 
     /// Poll cancellation and deadline without charging work. Unlike a charge,
@@ -401,7 +492,7 @@ impl ExecutionContext {
         self.charge_memory(bytes, DeadlineCheck::Exact)?;
         Ok(MemoryReservation(Arc::new(Reservation {
             context: self.clone(),
-            bytes,
+            bytes: AtomicUsize::new(bytes),
         })))
     }
 
@@ -431,18 +522,37 @@ impl ExecutionContext {
 
     /// Check admission without reserving or changing measured peak usage.
     /// The actual owner must still reserve before allocating.
+    ///
+    /// On a child this checks its own sub-limit, if it has one, and every
+    /// ancestor's budget.
     pub fn check_memory_available(&self, bytes: usize) -> Result<()> {
         self.check_state(DeadlineCheck::Exact)?;
-        self.0
-            .live_bytes
-            .load(Ordering::Relaxed)
-            .checked_add(bytes)
-            .filter(|next| *next <= self.0.limits.memory_bytes)
-            .ok_or(ProcedureError::BudgetExceeded {
-                resource: "memory",
-                limit: self.0.limits.memory_bytes,
-            })?;
-        Ok(())
+        self.memory_fits(bytes)
+    }
+
+    fn memory_fits(&self, bytes: usize) -> Result<()> {
+        if self.0.own_memory_limit {
+            let held = if self.0.parent.is_some() {
+                &self.0.claimed_bytes
+            } else {
+                &self.0.live_bytes
+            };
+            held.load(Ordering::Relaxed)
+                .checked_add(bytes)
+                .filter(|next| *next <= self.0.limits.memory_bytes)
+                .ok_or_else(|| self.memory_exceeded())?;
+        }
+        match &self.0.parent {
+            Some(parent) => parent.memory_fits(bytes),
+            None => Ok(()),
+        }
+    }
+
+    fn memory_exceeded(&self) -> ProcedureError {
+        ProcedureError::BudgetExceeded {
+            resource: "memory",
+            limit: self.0.limits.memory_bytes,
+        }
     }
 
     /// Account temporary allocations with one lexical owner. Individual charges
@@ -469,40 +579,118 @@ impl ExecutionContext {
 
     fn charge_memory(&self, bytes: usize, deadline: DeadlineCheck) -> Result<()> {
         self.check_state(deadline)?;
-        // Admit exactly, as `admit_work` does: the exchange recomputes admission
-        // against the value it actually replaces, so concurrent charges cannot
-        // slip past the limit between them.
-        let mut current = self.0.live_bytes.load(Ordering::Relaxed);
-        loop {
-            let next = current
-                .checked_add(bytes)
-                .filter(|next| *next <= self.0.limits.memory_bytes)
-                .ok_or(ProcedureError::BudgetExceeded {
-                    resource: "memory",
-                    limit: self.0.limits.memory_bytes,
-                })?;
-            match self.0.live_bytes.compare_exchange_weak(
-                current,
-                next,
-                Ordering::Relaxed,
-                Ordering::Relaxed,
-            ) {
-                Ok(_) => {
-                    // The peak can trail `live_bytes` for the instant between
-                    // these two lines; it never misses a completed charge.
-                    self.0.peak_bytes.fetch_max(next, Ordering::Relaxed);
-                    return Ok(());
-                }
-                Err(observed) => current = observed,
+        self.admit_memory(bytes)
+    }
+
+    /// Admit `bytes` at this level and every level above it, or at none.
+    ///
+    /// A root admits with one compare-exchange, exactly as before children
+    /// existed. A child without a sub-limit asks its parent, and counts the
+    /// bytes for its own usage only once the parent has admitted them, so its
+    /// figures never hold an undecided byte.
+    ///
+    /// **A child with a sub-limit** must pass both its own limit and every
+    /// ancestor's, and no single-word exchange covers two counters. So it
+    /// *claims* the bytes against its own limit first, then asks its parent,
+    /// and withdraws the claim if the parent refuses. Neither level can be
+    /// overrun: each admits by its own exchange, against the value it
+    /// replaces, and a byte is counted at a level only by that level's own
+    /// admission. The parent is always asked last, so a root never holds an
+    /// undecided byte, and siblings never see one another's claims. Checking
+    /// both levels first and adding afterwards, as two separate steps, is what
+    /// this replaces: that lets concurrent children jointly overrun the parent,
+    /// which `concurrent_children_never_jointly_overrun_their_parent` catches.
+    ///
+    /// **Why a refusal at the sub-limit is exact, not merely unlikely.** For an
+    /// instant, a claim the parent will refuse sits in `claimed_bytes`, and a
+    /// charge on the same child that fits could be refused because of it,
+    /// although in either order the two charges could have run it is admitted.
+    /// This is the failure the work meter's idle blocks once caused, and it is
+    /// avoided the same way: a claim is made and decided under the child's
+    /// `admitting` lock held *shared*, and a charge that finds no room takes
+    /// the lock *exclusively* and asks once more. Under the exclusive hold no
+    /// claim is undecided, `claimed_bytes` is exactly what has been admitted,
+    /// and the answer is the one a single thread would get. Shared holders
+    /// never wait for each other, so while the child has room this costs one
+    /// uncontended acquisition per charge. Locks are only ever taken child
+    /// before parent, so the exclusive paths of different levels cannot
+    /// deadlock.
+    fn admit_memory(&self, bytes: usize) -> Result<()> {
+        let Some(parent) = &self.0.parent else {
+            // Admit exactly, as `admit_work` does: the exchange recomputes
+            // admission against the value it actually replaces, so concurrent
+            // charges cannot slip past the limit between them.
+            let next = claim(&self.0.live_bytes, bytes, self.0.limits.memory_bytes)
+                .ok_or_else(|| self.memory_exceeded())?;
+            // The peak can trail `live_bytes` for the instant between these
+            // two lines; it never misses a completed charge.
+            self.0.peak_bytes.fetch_max(next, Ordering::Relaxed);
+            return Ok(());
+        };
+        if !self.0.own_memory_limit {
+            parent.admit_memory(bytes)?;
+            self.count_admitted(bytes);
+            return Ok(());
+        }
+        {
+            let _deciding = self
+                .0
+                .admitting
+                .read()
+                .unwrap_or_else(|poison| poison.into_inner());
+            if claim(&self.0.claimed_bytes, bytes, self.0.limits.memory_bytes).is_some() {
+                return self.decide_claim(parent, bytes);
+            }
+        }
+        let _exclusive = self
+            .0
+            .admitting
+            .write()
+            .unwrap_or_else(|poison| poison.into_inner());
+        claim(&self.0.claimed_bytes, bytes, self.0.limits.memory_bytes)
+            .ok_or_else(|| self.memory_exceeded())?;
+        self.decide_claim(parent, bytes)
+    }
+
+    /// Ask the parent for bytes this child has claimed, and count them here if
+    /// it admits them or withdraw the claim if it refuses. The caller holds
+    /// `admitting`, shared or exclusive, across this call.
+    fn decide_claim(&self, parent: &ExecutionContext, bytes: usize) -> Result<()> {
+        match parent.admit_memory(bytes) {
+            Ok(()) => {
+                self.count_admitted(bytes);
+                Ok(())
+            }
+            Err(refused) => {
+                self.0.claimed_bytes.fetch_sub(bytes, Ordering::Relaxed);
+                Err(refused)
             }
         }
     }
 
+    /// Count bytes every level above has admitted. A child's live figure never
+    /// exceeds its parent's, which bounds it, so the addition cannot overflow.
+    fn count_admitted(&self, bytes: usize) {
+        let next = self.0.live_bytes.fetch_add(bytes, Ordering::Relaxed) + bytes;
+        self.0.peak_bytes.fetch_max(next, Ordering::Relaxed);
+    }
+
     /// Release bytes a reservation or account admitted. Only their `Drop`
     /// calls this, with what they hold, so the counter cannot underflow.
+    ///
+    /// A child releases its own figures before its parent's, so a child's
+    /// live figure never exceeds its parent's, and every level returns what it
+    /// admitted.
     fn release_memory(&self, bytes: usize) {
-        if bytes != 0 {
-            self.0.live_bytes.fetch_sub(bytes, Ordering::Relaxed);
+        if bytes == 0 {
+            return;
+        }
+        self.0.live_bytes.fetch_sub(bytes, Ordering::Relaxed);
+        if let Some(parent) = &self.0.parent {
+            if self.0.own_memory_limit {
+                self.0.claimed_bytes.fetch_sub(bytes, Ordering::Relaxed);
+            }
+            parent.release_memory(bytes);
         }
     }
 
@@ -527,6 +715,19 @@ impl ExecutionContext {
             work_units,
             accounting: self.0.accounting,
         })
+    }
+}
+
+/// Add `bytes` to `counter` if the sum stays within `limit`, and return the
+/// sum; `None`, changing nothing, if it would not, including on overflow.
+fn claim(counter: &AtomicUsize, bytes: usize, limit: usize) -> Option<usize> {
+    let mut current = counter.load(Ordering::Relaxed);
+    loop {
+        let next = current.checked_add(bytes).filter(|next| *next <= limit)?;
+        match counter.compare_exchange_weak(current, next, Ordering::Relaxed, Ordering::Relaxed) {
+            Ok(_) => return Some(next),
+            Err(observed) => current = observed,
+        }
     }
 }
 
@@ -556,7 +757,21 @@ impl WorkMeter {
     /// # Errors
     /// Reports cancellation, an expired deadline, and a work budget that the
     /// charge would exceed.
-    #[inline]
+    ///
+    /// # Why the body is shaped like this
+    ///
+    /// Kernels call this once per visited entry, and are fast only if it is
+    /// inlined into them. v0.22.0's body was a cancellation check and the
+    /// balance exchange, and LLVM inlined it everywhere. The accounting modes
+    /// added two flag tests and the uncounted meter's deadline sample, whose
+    /// clock read made the body large enough that sixteen kernels called it
+    /// out of line, and that union-find's path-halving `root`, into which it
+    /// was still inlined, was no longer inlined into sequential WCC: 11–14%
+    /// slower in the default counted mode. The sample is now a cold call and
+    /// the body is `always` inlined. Testing the work mode before the
+    /// cancellation flag, or both modes with one combined flag, measured no
+    /// better across sequential WCC, BFS and PageRank.
+    #[inline(always)]
     pub fn charge(&mut self, units: usize) -> Result<()> {
         if self.observes_interruption {
             self.context.check_cancelled()?;
@@ -570,7 +785,7 @@ impl WorkMeter {
                 self.uncounted_since_sample = self.uncounted_since_sample.saturating_add(units);
                 if self.uncounted_since_sample >= WORK_BLOCK_UNITS {
                     self.uncounted_since_sample = 0;
-                    self.context.check_state(DeadlineCheck::Sampled)?;
+                    return Self::sample_deadline(&self.context);
                 }
             }
             return Ok(());
@@ -590,6 +805,16 @@ impl WorkMeter {
             }
         }
         self.admit(units)
+    }
+
+    /// The uncounted meter's once-per-block deadline sample, out of line so
+    /// that the clock read is not inlined into every kernel loop with `charge`.
+    /// It takes the context rather than the meter, so the call cannot write the
+    /// meter's fields as far as the loop around it can tell.
+    #[cold]
+    #[inline(never)]
+    fn sample_deadline(context: &ExecutionContext) -> Result<()> {
+        context.check_state(DeadlineCheck::Sampled)
     }
 
     /// Admit a block; failing that, exactly what was asked for; failing that,
@@ -731,12 +956,14 @@ impl Drop for MemoryAccount {
 #[derive(Debug)]
 struct Reservation {
     context: ExecutionContext,
-    bytes: usize,
+    /// Atomic only so that [`MemoryReservation::shrink`] can lower it through
+    /// a shared token; it never grows.
+    bytes: AtomicUsize,
 }
 
 impl Drop for Reservation {
     fn drop(&mut self) {
-        self.context.release_memory(self.bytes);
+        self.context.release_memory(*self.bytes.get_mut());
     }
 }
 
@@ -747,7 +974,44 @@ pub struct MemoryReservation(Arc<Reservation>);
 impl MemoryReservation {
     /// Number of accounted bytes retained by this token.
     pub fn bytes(&self) -> usize {
-        self.0.bytes
+        self.0.bytes.load(Ordering::Relaxed)
+    }
+
+    /// Lower the charge to `bytes`, returning the rest to the execution now.
+    ///
+    /// For a caller that reserved an upper bound before allocating and knows
+    /// the real size afterwards. The excess is released at once, through every
+    /// level of a child execution, as a drop would release it; the peak keeps
+    /// the bound, which was admitted. Clones share one charge, so shrinking
+    /// through any clone shrinks it for all of them. A reservation never grows:
+    /// more memory is admitted by reserving again.
+    ///
+    /// # Errors
+    /// Refuses a size larger than the reservation holds, changing nothing.
+    pub fn shrink(&self, bytes: usize) -> Result<()> {
+        let mut held = self.0.bytes.load(Ordering::Relaxed);
+        loop {
+            if bytes > held {
+                return Err(ProcedureError::InvalidArguments(format!(
+                    "cannot shrink a {held}-byte reservation to {bytes} bytes; a reservation \
+                     grows only by reserving again"
+                )));
+            }
+            match self.0.bytes.compare_exchange_weak(
+                held,
+                bytes,
+                Ordering::Relaxed,
+                Ordering::Relaxed,
+            ) {
+                Ok(_) => {
+                    // Only the exchange that lowered it releases the difference,
+                    // so racing shrinks through clones release each byte once.
+                    self.0.context.release_memory(held - bytes);
+                    return Ok(());
+                }
+                Err(observed) => held = observed,
+            }
+        }
     }
 
     pub(crate) fn belongs_to(&self, context: &ExecutionContext) -> bool {

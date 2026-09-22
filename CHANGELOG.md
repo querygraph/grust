@@ -8,6 +8,35 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ### Graph algorithms
 
+- **`WorkMeter::charge` is inlined into every kernel again, as in 0.22.0.**
+  The accounting opt-outs put the uncounted meter's deadline sample, with its
+  clock read, inline in `charge`, and the body outgrew LLVM's inlining
+  threshold: in a thin-LTO release build sixteen kernels called it out of
+  line, and union-find's path-halving `root`, into which it was still inlined,
+  became an out-of-line call on every edge endpoint of sequential WCC, which
+  ran 8–14% slower than 0.22.0 in the default counted mode on the dedicated
+  benchmark host. The sample is now a cold, never-inlined call, and `charge`
+  and `root` are `#[inline(always)]`. Measured there on the four 65,536-node
+  fixtures, sequential counted WCC is 0.3–3.2% from 0.22.0 and BFS from −8.5%
+  to +2.7% (second call), both at or below the previous commit everywhere;
+  WCC is 16–25% faster than before this change with work uncounted and 20–29%
+  with nothing checked. Uncounted BFS is not: 5% slower than before on the
+  layered graph and 15% on the path, and no slower on the other two. Work
+  counts, the unit at which a budget refuses, cancellation and the uncounted
+  deadline cadence are unchanged, and results and work counts are bit for bit
+  the same.
+- **The uncounted cancellation and deadline tests run a kernel that cannot
+  finish.** Both ran PageRank at tolerance zero and unbounded iterations, which
+  stops when the residual is exactly zero; at sixteen workers it reached that in
+  264 iterations and returned `Ok`, failing the cancellation test on a 16-core
+  host and, inside the deadline window, the deadline test once. They now run
+  exact betweenness on the same 60,000-node fixture: 4.32e10 units of work fixed
+  by the graph, about 33 s at sixteen workers on a ten-core laptop and at least
+  0.54 s even at one unit per cycle at 5 GHz on every worker. Cancellation is
+  sent once the kernel is seen holding memory beyond the projection, so it is
+  past its entry checkpoint, and the test fails if the kernel returned before
+  that. The deadline window is four throwaway builds plus 250 ms, and both tests
+  fail if the kernel finished rather than being stopped.
 - **Arrow results carry the registered schema, not one read off the rows.**
   Result batches were built with `RecordBatch::try_from_iter`, which marks a
   column nullable exactly when that batch holds a null, so the schema changed
@@ -214,6 +243,97 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ### Execution accounting
 
+- **Child executions: one memory budget, many independently stopped queries.**
+  `ExecutionContext::child(ChildLimits)` makes an execution that draws memory
+  from its parent's budget and keeps its own work counter, work budget,
+  cancellation and deadline, so an embedder serving concurrent queries can
+  bound the whole process by one budget without every query sharing one
+  cancellation flag and one contended work counter. `ChildLimits` sets an
+  optional memory sub-limit (no larger than the parent's limit), a work
+  budget, a deadline (clipped to the parent's), an accounting mode, and
+  optionally batch rows and concurrency; the rest is inherited.
+  `ExecutionContext::parent()` names the parent. Children nest.
+- **Memory is admitted at every level in one decision.** A child's charge
+  counts against its own sub-limit, if it has one, and against every
+  ancestor, and siblings cannot jointly exceed their parent. A child without
+  a sub-limit asks its parent first and counts the bytes only once admitted;
+  one with a sub-limit claims them against its own limit, asks the parent,
+  and withdraws the claim if the parent refuses, so the root is only ever
+  changed by admitted bytes. A charge that fails at a sub-limit retries once
+  under that child's exclusive admission lock, so a claim the parent was
+  about to refuse cannot make a charge that fits fail; a root still admits
+  with one compare-exchange and takes no lock. Bytes return to every level
+  when a reservation or account drops, and a child's cumulative charges return
+  to the parent when the child drops. Each level reports its own live and peak
+  bytes, a parent's including its children's.
+- **Cancellation reaches down, never up.** Cancelling an execution cancels
+  every descendant and wakes their `cancelled()` waiters; a child created after
+  its parent was cancelled starts cancelled. Cancelling a child reaches neither
+  its parent nor its siblings. A child of an interruptible execution must
+  itself be interruptible, and asking otherwise is `InvalidArguments`; under an
+  uninterruptible parent a child may be either.
+- **Work is not aggregated.** A child's work is counted on its own counter
+  against its own budget; the parent's usage and work budget cover only the
+  work charged to the parent. Aggregating exactly would put every child back on
+  one shared counter.
+- **`MemoryReservation::shrink(bytes)`** lowers a reservation's charge and
+  returns the excess at once, through every level of a child, for a caller that
+  reserved an upper bound and now knows the real size. The peak keeps the
+  bound. Clones share the charge, so racing shrinks release each byte once. A
+  reservation never grows.
+- Tests: siblings racing a parent's budget, and threads racing one child's
+  sub-limit, each with a monitor checking every level and holdings kept until
+  every thread is done so the pressure does not depend on the scheduler;
+  replacing the two-level admission with two separate checks fails both. Exact
+  admission across racing children, a claim the parent refuses
+  never refusing a charge that fits, cancellation in both directions including
+  children created while the parent is cancelled, per-child work budgets
+  racing meters, deadlines, modes, and PageRank on racing children
+  bit-identical to a root at one and four workers. The test that a refused
+  claim never refuses a charge that fits keeps charging until a thousand
+  refused claims have run beside it: with every core saturated its charger
+  twice in 300 runs finished before any of them started, and the test failed
+  as vacuous.
+- **A cached projection runs its kernels on a query's own execution.**
+  Every kernel takes its execution from `GraphProjection::execution()`, which
+  was the execution the projection was built on, so a cached projection ran
+  every query's kernel on one shared cancellation flag and one shared work
+  counter, and child executions could not help. `GraphProjection::with_execution(
+  &context)` returns a view that shares the projection's data — adjacency,
+  weights, node and edge tables, and the transpose, built or not — and copies
+  none of it; kernels on the view admit their scratch and results against
+  `context`, charge their work to its counter and budget, and stop at its
+  cancellation and deadline. `GraphProjection::owner()` names the execution
+  the projection was built on; `execution()` is the owner unless the handle is
+  a view. `context` must be the owner or a descendant of it, and anything else
+  is `InvalidArguments`: a descendant admits every byte against the owner's
+  budget too, is cancelled when the owner is, and never outlives its deadline,
+  so the budget the projection lives in still bounds, and stopping the owner
+  still stops, everything done with its data. `ExecutionContext::is_within(
+  &ancestor)` answers that question by identity.
+- **State a projection keeps is its owner's, whichever view builds it.** The
+  transpose that in-arc kernels build on first use is cached in the shared
+  data and outlives the query that built it, so every byte of it, and of the
+  build's scratch, is admitted by the owner and released only when the
+  projection's last handle drops; a query with a one-byte memory sub-limit can
+  build it. The build itself is the query's: its work is charged to the view's
+  execution, it uses the view's worker count, and cancelling the view, or a
+  work budget that runs out, stops it, keeps nothing, and returns every byte
+  to the owner, and the next kernel that needs it builds it again. The
+  transpose is the only lazily built state a projection holds.
+  `prepare_incoming()` on the owner still builds it at staging, charged to the
+  owner, where no query pays for it.
+- Tests (`tests/projection_views.rs`): which executions may run a view; the
+  transpose built through a child's view, by `prepare_incoming` and inside a
+  kernel, held by none of the query and all of the owner after the child is
+  gone, and released with the projection (charging it to the child instead
+  fails both); a build refused by the query's work budget keeping nothing;
+  PageRank through a view bit-identical to the owner, with the same work, on
+  the push loop and on the pull at one and four workers; two concurrent
+  PageRanks on one cached projection through two children, one cancelled while
+  both run and the other finishing with the owner's bits and exactly its own
+  work, the owner charged nothing; a view's deadline its own, and cancelling
+  the owner reaching every view.
 - **An execution can run with work accounting turned off, by name.**
   `ExecutionContext::with_accounting(limits, accounting)` takes an `Accounting`
   with two independent switches, `work` (`Counted` or `Disabled`) and

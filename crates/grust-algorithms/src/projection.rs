@@ -45,9 +45,18 @@ pub struct ProjectionEdge {
 /// entry; the caller remains responsible for allocating those input vectors
 /// under its ingestion envelope. CSR and scratch are reserved before allocation.
 /// No property maps enter adjacency loops. Reverse CSR is constructed lazily.
+///
+/// A projection lives in the execution it was built on, its *owner*, and its
+/// kernels run on [`Self::execution`], which is the owner unless this handle is
+/// a view made by [`Self::with_execution`]. Clones share everything, the
+/// execution included.
 #[derive(Clone)]
 pub struct GraphProjection {
     inner: Arc<ProjectionData>,
+    /// Where kernels on this handle admit their memory and charge their work,
+    /// and whose cancellation and deadline stop them: the owner, or one of
+    /// its descendants.
+    context: ExecutionContext,
 }
 
 struct ProjectionData {
@@ -61,8 +70,12 @@ struct ProjectionData {
     node_by_id: HashMap<NodeId, usize>,
     edges: Buffer<ProjectionEdge>,
     outgoing: Adjacency,
+    /// Built on first use, then kept as long as the projection: admitted by
+    /// `owner`, never by the view whose kernel happened to build it.
     incoming: Mutex<Option<Arc<Adjacency>>>,
-    context: ExecutionContext,
+    /// The execution the projection was built on. Every byte the shared data
+    /// holds, retained or built later, is admitted by it.
+    owner: ExecutionContext,
     _retained: MemoryReservation,
 }
 
@@ -189,10 +202,64 @@ impl GraphProjection {
                 edges,
                 outgoing,
                 incoming: Mutex::new(None),
-                context: context.clone(),
+                owner: context.clone(),
                 _retained: retained,
             }),
+            context: context.clone(),
         })
+    }
+
+    /// This projection's data, with its kernels run on `context` instead.
+    ///
+    /// The view shares everything the projection holds — the adjacency, the
+    /// weights, the node and edge tables, and the transpose, built or not — and
+    /// copies none of it, so it costs one reference count and one handle. A
+    /// kernel on the view admits its scratch and results against `context`,
+    /// charges its work to `context`'s counter and budget, and stops when
+    /// `context` is cancelled or passes its deadline. This is how an embedder
+    /// that caches a projection runs each query on the query's own child
+    /// execution: cancelling one query then stops that query's kernel and no
+    /// other on the same projection.
+    ///
+    /// **State the projection keeps is the owner's.** The transpose that
+    /// kernels following in-arcs build on first use is kept inside the shared
+    /// data and outlives the query that built it, so every byte of it, and the
+    /// build's scratch, is admitted by the owner, [`Self::owner`], never by the
+    /// view's execution; it is released when the projection's last handle
+    /// drops. The *build* is the query's: its work is charged to the view's
+    /// execution, its worker count is the view's, and cancelling the view
+    /// stops it, in which case nothing is kept and the next kernel that needs
+    /// it builds it again. [`Self::prepare_incoming`] on the owner builds it at
+    /// staging instead, where no query pays for it.
+    ///
+    /// # Errors
+    /// `context` must be the owner or a descendant of it
+    /// ([`ExecutionContext::is_within`]); anything else is `InvalidArguments`.
+    /// A descendant admits every byte against the owner's budget too, so the
+    /// budget the projection lives in still bounds everything done with it;
+    /// it is cancelled when the owner is, and never outlives the owner's
+    /// deadline, so stopping the owner still stops every kernel on its data.
+    /// An unrelated execution would escape all three.
+    pub fn with_execution(&self, context: &ExecutionContext) -> Result<Self> {
+        if !context.is_within(&self.inner.owner) {
+            return Err(ProcedureError::InvalidArguments(
+                "a projection view must run on the execution the projection was built on or a \
+                 descendant of it (ExecutionContext::child); another execution's memory, \
+                 cancellation and deadline would not be bounded by the projection's own"
+                    .into(),
+            ));
+        }
+        Ok(Self {
+            inner: Arc::clone(&self.inner),
+            context: context.clone(),
+        })
+    }
+
+    /// The execution this projection was built on, which admits every byte
+    /// its shared data holds. [`Self::execution`] is where kernels run, and is
+    /// this execution unless the handle is a view.
+    pub fn owner(&self) -> &ExecutionContext {
+        &self.inner.owner
     }
 
     /// Snapshot and principal to which this projection belongs.
@@ -219,9 +286,10 @@ impl GraphProjection {
     pub fn edges(&self) -> &[ProjectionEdge] {
         &self.inner.edges
     }
-    /// Shared resource context for preparation, kernels and consumers.
+    /// Resource context for kernels and consumers on this handle: the owner,
+    /// or the execution a view was made for.
     pub fn execution(&self) -> &ExecutionContext {
-        &self.inner.context
+        &self.context
     }
     /// Number of selected vertices.
     pub fn node_count(&self) -> usize {
@@ -268,17 +336,21 @@ impl GraphProjection {
     /// embedder that caches projections, that cost lands in a user's query
     /// rather than at staging, and a timing that wants the kernel alone sees a
     /// one-off build folded into it. Admitted and charged here, exactly as it
-    /// would be there; the result is shared by every later kernel. Idempotent,
-    /// and free on an undirected projection, whose rows already mirror.
+    /// would be there; the result is shared by every later kernel and every
+    /// view. Its memory is the owner's whichever handle builds it; its work is
+    /// charged to this handle's execution. Idempotent, and free on an
+    /// undirected projection, whose rows already mirror.
     pub fn prepare_incoming(&self) -> Result<()> {
         self.incoming().map(|_| ())
     }
     /// Arcs by target, with weights and edge slots: what `reverse` omits. On an
     /// undirected projection every row already mirrors itself, so this is the
-    /// outgoing adjacency and nothing is built. Otherwise it is built once,
-    /// admitted and charged, and shared by every kernel on this projection.
+    /// outgoing adjacency and nothing is built. Otherwise it is built once and
+    /// shared by every kernel on this projection and its views: admitted by the
+    /// owner, which keeps it, and charged to this handle's execution, which
+    /// can stop the build.
     pub(crate) fn incoming(&self) -> Result<InArcs<'_>> {
-        self.inner.context.checkpoint()?;
+        self.context.checkpoint()?;
         if self.inner.orientation == Orientation::Undirected {
             return Ok(InArcs::Mirror(&self.inner.outgoing));
         }
@@ -290,7 +362,11 @@ impl GraphProjection {
         if let Some(incoming) = &*cached {
             return Ok(InArcs::Built(Arc::clone(incoming)));
         }
-        let incoming = Arc::new(self.inner.outgoing.transposed(&self.inner.context)?);
+        let (built, _) = self
+            .inner
+            .outgoing
+            .transposed_split(&self.inner.owner, &self.context)?;
+        let incoming = Arc::new(built);
         *cached = Some(Arc::clone(&incoming));
         Ok(InArcs::Built(incoming))
     }
