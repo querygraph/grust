@@ -7,13 +7,14 @@
 //! PageRank comparison below checks that, since a fixture that stayed
 //! sequential would make the parallel half of this file vacuous.
 
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::{Duration, Instant};
 
 use grust_algorithms::{
-    Accounting, AlgorithmError, ExecutionContext, ExecutionLimits, GraphProjection, Interruption,
-    Orientation, PageRank, PageRankOptions, ProjectionEdge, RankVariant, SnapshotIdentity,
-    WorkAccounting, WorkCount, bfs, degree, multi_source_bfs, pagerank,
-    weakly_connected_components,
+    Accounting, AlgorithmError, BetweennessOptions, ExecutionContext, ExecutionLimits,
+    GraphProjection, Interruption, Orientation, PageRank, PageRankOptions, ProjectionEdge,
+    RankVariant, SnapshotIdentity, WorkAccounting, WorkCount, betweenness, bfs, degree,
+    multi_source_bfs, pagerank, weakly_connected_components,
 };
 
 const NODES: usize = 60_000;
@@ -191,60 +192,86 @@ fn the_fixture_reaches_the_parallel_kernels_with_accounting_off() {
     assert_ne!(bits(&sequential), bits(&parallel));
 }
 
-/// Unbounded PageRank: it stops only when something stops it.
-const ENDLESS: PageRankOptions<'static> = PageRankOptions {
-    variant: RankVariant::PageRank,
-    damping: 0.85,
-    tolerance: 0.0,
-    max_iterations: usize::MAX,
-    personalization: None,
+/// Exact betweenness on the fixture: a kernel that cannot finish on a test's
+/// timescale at any width these tests use.
+///
+/// Its work is fixed by the graph, not by convergence. Every node reaches every
+/// other along the permutation cycle, so each of the `NODES` single-source
+/// passes charges `1 + outdegree` for every node twice, forward and back:
+/// `2 · NODES · (NODES + EDGES)` = 4.32e10 units on any host. A ten-core
+/// laptop's uncounted release build runs 2.3e8 units a second on one worker
+/// and 1.3e9 on sixteen, so the run would take about 190 s and 33 s. Even one
+/// unit per cycle at 5 GHz on each of sixteen workers, which no core reaches
+/// with a dependent load per arc, would need 0.54 s; the tests below stop it
+/// within milliseconds of seeing it start, or at a deadline a few hundred
+/// milliseconds after the build. PageRank at tolerance zero is not such a
+/// kernel: it stops when the residual is exactly zero, and floating-point
+/// PageRank reaches that, on this fixture in 264 iterations at sixteen workers.
+const EXACT: BetweennessOptions = BetweennessOptions {
+    sampling_size: None,
+    seed: 0,
+    normalized: false,
 };
+
+/// Exact betweenness, which only cancellation or a deadline ends in time.
+/// `Ok(())` means it finished, which is the failure these tests look for.
+fn endless(projection: &GraphProjection) -> Result<(), AlgorithmError> {
+    betweenness(projection, EXACT).map(drop)
+}
 
 #[test]
 fn a_running_kernel_with_uncounted_work_can_still_be_cancelled() {
     for workers in [None, Some(2), Some(16)] {
         let projection = graph(context(Accounting::WORK_UNCOUNTED, workers, None), false);
         let execution = projection.execution().clone();
-        let started = Instant::now();
-        let outcome = std::thread::scope(|scope| {
-            scope.spawn(|| {
-                // Long enough that the kernel is past its entry checkpoint and
-                // inside its iterations on any reasonable host.
-                std::thread::sleep(Duration::from_millis(200));
-                execution.cancel().expect("cancellation is accepted");
+        // What the projection holds. The kernel reserves its first buffer after
+        // its entry checkpoint, so memory above this means it is running.
+        let built = execution.usage().expect("usage").live_bytes;
+        let returned = AtomicBool::new(false);
+        let (outcome, seen_running) = std::thread::scope(|scope| {
+            let observer = scope.spawn(|| {
+                while !returned.load(Ordering::Acquire) {
+                    if execution.usage().expect("usage").live_bytes > built {
+                        execution.cancel().expect("cancellation is accepted");
+                        return true;
+                    }
+                    std::thread::yield_now();
+                }
+                false
             });
-            pagerank(&projection, ENDLESS)
+            let outcome = endless(&projection);
+            returned.store(true, Ordering::Release);
+            (outcome, observer.join().expect("observer"))
         });
         assert!(
-            matches!(outcome, Err(AlgorithmError::Cancelled)),
-            "{workers:?} workers: {:?}",
-            outcome.map(|rank| rank.iterations())
+            seen_running,
+            "{workers:?} workers: the kernel returned {outcome:?} before it was seen running"
         );
-        assert!(started.elapsed() >= Duration::from_millis(200));
+        assert!(
+            matches!(outcome, Err(AlgorithmError::Cancelled)),
+            "{workers:?} workers: stopped by {outcome:?}, not by cancellation"
+        );
     }
 }
 
 #[test]
 fn a_running_kernel_with_uncounted_work_still_meets_its_deadline() {
     for workers in [None, Some(2), Some(16)] {
-        // The deadline governs the whole execution, so it starts before the
-        // projection is built and the build spends from it. It must fall after
-        // the build and before PageRank converges: `ENDLESS` asks for a residual
-        // of exactly zero, which floating-point PageRank does reach — here in
-        // 264 iterations — so no deadline long enough is safe either. A fixed
-        // 300 ms held that window on a laptop and missed it on a burstable Linux
-        // host running four test binaries at once, where the build alone overran
-        // it. Both ends scale with the same machine and the same load: a build is
-        // a few passes over the graph and convergence is hundreds of them. So the
-        // window is measured here rather than assumed — a throwaway build times
-        // this machine, and the deadline leaves the real build twice that.
+        // A deadline is fixed when its execution is created, and a projection
+        // is built inside the execution it belongs to, so the build spends from
+        // the deadline: nothing can set one after it. The window has to cover
+        // the build, and a fixed 300 ms once did not, on a burstable host
+        // running four test binaries at once. So a throwaway build times this
+        // machine under its present load, and the window is four of those plus
+        // a quarter of a second. The kernel cannot finish inside that at any
+        // width (see `EXACT`), so only this edge of the window needs a margin.
         let started = Instant::now();
         drop(graph(
             context(Accounting::WORK_UNCOUNTED, workers, None),
             false,
         ));
         let build = started.elapsed();
-        let deadline = Instant::now() + build * 2 + Duration::from_millis(50);
+        let deadline = Instant::now() + build * 4 + Duration::from_millis(250);
         let projection = graph(
             context(Accounting::WORK_UNCOUNTED, workers, Some(deadline)),
             false,
@@ -254,11 +281,10 @@ fn a_running_kernel_with_uncounted_work_still_meets_its_deadline() {
             "{workers:?} workers: the build spent the whole deadline, so this \
              would test the projection rather than the kernel"
         );
-        let outcome = pagerank(&projection, ENDLESS);
+        let outcome = endless(&projection);
         assert!(
             matches!(outcome, Err(AlgorithmError::DeadlineExceeded)),
-            "{workers:?} workers: {:?}",
-            outcome.map(|rank| rank.iterations())
+            "{workers:?} workers: stopped by {outcome:?}, not by the deadline"
         );
     }
 }

@@ -8,6 +8,35 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ### Graph algorithms
 
+- **`WorkMeter::charge` is inlined into every kernel again, as in 0.22.0.**
+  The accounting opt-outs put the uncounted meter's deadline sample, with its
+  clock read, inline in `charge`, and the body outgrew LLVM's inlining
+  threshold: in a thin-LTO release build sixteen kernels called it out of
+  line, and union-find's path-halving `root`, into which it was still inlined,
+  became an out-of-line call on every edge endpoint of sequential WCC, which
+  ran 8–14% slower than 0.22.0 in the default counted mode on the dedicated
+  benchmark host. The sample is now a cold, never-inlined call, and `charge`
+  and `root` are `#[inline(always)]`. Measured there on the four 65,536-node
+  fixtures, sequential counted WCC is 0.3–3.2% from 0.22.0 and BFS from −8.5%
+  to +2.7% (second call), both at or below the previous commit everywhere;
+  WCC is 16–25% faster than before this change with work uncounted and 20–29%
+  with nothing checked. Uncounted BFS is not: 5% slower than before on the
+  layered graph and 15% on the path, and no slower on the other two. Work
+  counts, the unit at which a budget refuses, cancellation and the uncounted
+  deadline cadence are unchanged, and results and work counts are bit for bit
+  the same.
+- **The uncounted cancellation and deadline tests run a kernel that cannot
+  finish.** Both ran PageRank at tolerance zero and unbounded iterations, which
+  stops when the residual is exactly zero; at sixteen workers it reached that in
+  264 iterations and returned `Ok`, failing the cancellation test on a 16-core
+  host and, inside the deadline window, the deadline test once. They now run
+  exact betweenness on the same 60,000-node fixture: 4.32e10 units of work fixed
+  by the graph, about 33 s at sixteen workers on a ten-core laptop and at least
+  0.54 s even at one unit per cycle at 5 GHz on every worker. Cancellation is
+  sent once the kernel is seen holding memory beyond the projection, so it is
+  past its entry checkpoint, and the test fails if the kernel returned before
+  that. The deadline window is four throwaway builds plus 250 ms, and both tests
+  fail if the kernel finished rather than being stopped.
 - **Arrow results carry the registered schema, not one read off the rows.**
   Result batches were built with `RecordBatch::try_from_iter`, which marks a
   column nullable exactly when that batch holds a null, so the schema changed
