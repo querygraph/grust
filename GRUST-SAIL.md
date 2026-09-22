@@ -286,6 +286,16 @@ Its upstream vehicle is [#2400](https://github.com/lakehq/sail/pull/2400).
 
 ---
 
+## 6. CSV `inferSchema` timestamps — a finding, not a Grust requirement
+
+The Citi Bike showcase found that Sail's CSV `inferSchema` fails on timestamps
+without four to six fractional digits. An open external PR, #2522, fixes most of
+it. Nothing is required of Grust, and nothing has been filed. The full briefing,
+with the verification table and draft comment, is
+[`SAIL-2522-CSV-TIMESTAMPS.md`](SAIL-2522-CSV-TIMESTAMPS.md).
+
+---
+
 ## Checklist before proposing a new Sail change
 
 Derived from what actually happened above, in the order that catches the most.
