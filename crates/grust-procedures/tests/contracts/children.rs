@@ -412,8 +412,17 @@ fn racing_children_are_admitted_exactly_what_the_parent_fits() {
 /// one thread asks for 80 bytes the parent can never grant, and another asks,
 /// again and again, for 30 that always fit: 30 of the child's 100, and 30 of
 /// the parent's remaining 50.
+///
+/// The race is only a test if the two sides overlap. With every core
+/// saturated, the charging thread once finished all its charges before any
+/// hopeless thread had run, twice in 300 runs, which the final check caught as
+/// "the race never ran". So the charger does not stop at its count alone: it
+/// also keeps going until `OVERLAP` hopeless claims have been made while it
+/// was charging, which makes the overlap a property of every passing run
+/// rather than of the scheduler's mood.
 #[test]
 fn a_claim_the_parent_refuses_never_refuses_a_charge_that_fits() {
+    const OVERLAP: usize = 1000;
     let charges = 20_000 * rounds(20) / 20;
     let parent = root(1000);
     let _others = parent.reserve(950).expect("fits");
@@ -421,6 +430,7 @@ fn a_claim_the_parent_refuses_never_refuses_a_charge_that_fits() {
     let done = AtomicBool::new(false);
     let wrongly_refused = AtomicUsize::new(0);
     let hopeless = AtomicUsize::new(0);
+    let overlapped = AtomicUsize::new(0);
     std::thread::scope(|scope| {
         for _ in 0..3 {
             scope.spawn(|| {
@@ -431,15 +441,22 @@ fn a_claim_the_parent_refuses_never_refuses_a_charge_that_fits() {
             });
         }
         scope.spawn(|| {
-            for _ in 0..charges {
+            let before = hopeless.load(Ordering::Relaxed);
+            let mut charged = 0;
+            while charged < charges || hopeless.load(Ordering::Relaxed) - before < OVERLAP {
                 if child.reserve(30).is_err() {
                     wrongly_refused.fetch_add(1, Ordering::Relaxed);
                 }
+                charged += 1;
             }
+            overlapped.store(hopeless.load(Ordering::Relaxed) - before, Ordering::Relaxed);
             done.store(true, Ordering::Relaxed);
         });
     });
-    assert!(hopeless.load(Ordering::Relaxed) > 0, "the race never ran");
+    assert!(
+        overlapped.load(Ordering::Relaxed) >= OVERLAP,
+        "the race never ran"
+    );
     assert_eq!(
         wrongly_refused.load(Ordering::Relaxed),
         0,

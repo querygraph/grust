@@ -289,7 +289,11 @@ reconstructed from Git history, release commits, and the shipped docs.
   never refusing a charge that fits, cancellation in both directions including
   children created while the parent is cancelled, per-child work budgets
   racing meters, deadlines, modes, and PageRank on racing children
-  bit-identical to a root at one and four workers.
+  bit-identical to a root at one and four workers. The test that a refused
+  claim never refuses a charge that fits keeps charging until a thousand
+  refused claims have run beside it: with every core saturated its charger
+  twice in 300 runs finished before any of them started, and the test failed
+  as vacuous.
 - **A cached projection runs its kernels on a query's own execution.**
   Every kernel takes its execution from `GraphProjection::execution()`, which
   was the execution the projection was built on, so a cached projection ran
