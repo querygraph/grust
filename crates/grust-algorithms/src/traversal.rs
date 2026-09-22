@@ -267,6 +267,7 @@ pub fn weakly_connected_components(graph: &GraphProjection) -> Result<Components
     })
 }
 
+#[inline]
 fn root(
     parents: &mut [usize],
     mut node: usize,
