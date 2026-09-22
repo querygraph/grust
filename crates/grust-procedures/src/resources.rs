@@ -249,7 +249,6 @@ impl ExecutionContext {
     /// Poll cancellation and deadline without charging work. Unlike a charge,
     /// this always reads the clock, so an explicit poll is exact. With
     /// interruption disabled it checks nothing.
-    #[inline]
     pub fn checkpoint(&self) -> Result<()> {
         self.check_state(DeadlineCheck::Exact)
     }
@@ -315,7 +314,6 @@ impl ExecutionContext {
     /// interruption disabled it reads neither the cancellation flag nor the
     /// clock. With both disabled it is an inlined test of a field that never
     /// changes, and does nothing else.
-    #[inline]
     pub fn charge_work(&self, units: usize) -> Result<()> {
         self.check_state(DeadlineCheck::Sampled)?;
         if !self.0.accounting.counts_work() {
@@ -364,7 +362,6 @@ impl ExecutionContext {
         Ok(())
     }
 
-    #[inline]
     fn check_state(&self, deadline: DeadlineCheck) -> Result<()> {
         if !self.0.accounting.observes_interruption() {
             return Ok(());
@@ -556,7 +553,6 @@ impl WorkMeter {
     /// # Errors
     /// Reports cancellation, an expired deadline, and a work budget that the
     /// charge would exceed.
-    #[inline]
     pub fn charge(&mut self, units: usize) -> Result<()> {
         if self.observes_interruption {
             self.context.check_cancelled()?;
