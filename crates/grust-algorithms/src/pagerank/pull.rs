@@ -65,6 +65,13 @@
 //! own exact total. Cancellation and the deadline are therefore observed on the
 //! unit cadence they were, not the node cadence.
 //!
+//! **Where a non-finite score is caught.** The pass tested every updated score
+//! for finiteness and set an atomic flag. It now tests once per reduction
+//! block, on the residual the block has just summed, and scans the block only
+//! when that residual is itself non-finite. The predicate is the per-node one
+//! exactly, at both precisions, and the error it raises is unchanged;
+//! [`block_nonfinite`] carries the argument.
+//!
 //! **The per-node arithmetic.** A node's share of its score is
 //! `score / (out-degree + damp)`. `damp` is ArticleRank's mean outgoing weight
 //! and is exactly zero on every PageRank path, so the two passes that form a
@@ -103,6 +110,38 @@ use crate::{
 #[inline(always)]
 fn arcs_of(adjacency: &Adjacency, first: usize, nodes: usize) -> usize {
     adjacency.row_start(first + nodes) - adjacency.row_start(first)
+}
+
+/// Whether a reduction block produced a non-finite score, from the residual it
+/// already formed plus a scan of the block only when that residual is itself
+/// non-finite.
+///
+/// **Why the residual catches every node the per-node test caught.** A block's
+/// residual is `Σ |updated - previous|` over its nodes, in `f64` at either score
+/// precision. If any `updated` is non-finite the term it contributes is too: an
+/// `updated` of NaN gives NaN; an `updated` of `±inf` against a finite previous
+/// score gives `+inf` after `abs`, and against a non-finite one gives `+inf` or
+/// NaN. Every term is `abs`, so every term is nonnegative or NaN, and a sum that
+/// has gone non-finite can never come back — `+inf + nonneg` is `+inf`, and NaN
+/// absorbs everything. So a finite residual proves every one of the block's
+/// updated scores was finite, and the per-node test is not needed to find one.
+///
+/// **Why the scan is needed for the converse.** A non-finite residual does not
+/// prove a non-finite score: a sum of finite terms can overflow. At `f32` scores
+/// it cannot — a term is at most `2 · f32::MAX ≈ 6.8e38` widened to `f64`, and
+/// [`REDUCTION_CHUNK_LEN`] of those sum to about `2.8e42`, far below `f64::MAX`
+/// — but at `f64` scores two terms near `f64::MAX` are enough. Rather than
+/// keep the per-node test at one precision and not the other, the block scans
+/// its own updated scores when, and only when, its residual is non-finite. The
+/// result is the per-node predicate exactly, at both precisions: the same
+/// inputs raise the same [`AlgorithmError::Numerical`], and a block whose
+/// residual overflowed from finite scores reports finite, as it did before.
+///
+/// The scan reads the values the block has just written, so it costs a pass
+/// over one already-hot chunk on a path that ends in an error anyway.
+#[inline]
+fn block_nonfinite<F: Score>(residual: f64, updated: &[F]) -> bool {
+    !residual.is_finite() && updated.iter().any(|value| !value.is_finite())
 }
 
 /// The node cadence on which a block-charged loop polls for cancellation and
@@ -636,9 +675,6 @@ impl<F: Score> Pass<'_, F> {
                             sum += shares_now[self.reverse.target(arc)];
                         }
                         let updated = teleport.at(node) + self.damping * sum;
-                        if !updated.is_finite() {
-                            nonfinite.store(true, Ordering::Relaxed);
-                        }
                         // The residual is `f64` at either precision, from the
                         // score differences formed at the scores' own.
                         residual += (updated - *score).abs().to_f64();
@@ -650,6 +686,12 @@ impl<F: Score> Pass<'_, F> {
                         } else {
                             *share = self.share::<DAMPED>(updated, out_degree);
                         }
+                    }
+                    // One test a block, on the residual this block just
+                    // formed, in place of one test a node: see
+                    // [`block_nonfinite`].
+                    if block_nonfinite(residual, scores) {
+                        nonfinite.store(true, Ordering::Relaxed);
                     }
                     *partial = Partial { residual, dangling };
                 }
@@ -695,19 +737,67 @@ impl<F: Score> Pass<'_, F> {
                         sum += scores_now[self.reverse.target(arc)] * self.probabilities[arc];
                     }
                     let updated = teleport.at(node) + self.damping * sum;
-                    if !updated.is_finite() {
-                        nonfinite.store(true, Ordering::Relaxed);
-                    }
                     residual += (updated - scores_now[node]).abs().to_f64();
                     if self.totals[node] <= F::ZERO {
                         dangling += updated;
                     }
                     *value = updated;
                 }
+                if block_nonfinite(residual, next) {
+                    nonfinite.store(true, Ordering::Relaxed);
+                }
                 *partial = Partial { residual, dangling };
             }
             Ok(())
         })?;
         Ok(!nonfinite.load(Ordering::Relaxed))
+    }
+}
+
+/// The block test is the per-node test, at both precisions: what
+/// [`block_nonfinite`] claims, checked on the predicate itself. The pull cannot
+/// be driven to a non-finite score through the public API — a personalization
+/// is normalized and every arc probability is a fraction of a row total — so
+/// the guard is exercised where it is decided.
+#[cfg(test)]
+mod finite {
+    use super::*;
+
+    /// Every score the per-node test would have flagged, the block test flags,
+    /// whatever the previous score it was measured against was.
+    #[test]
+    fn a_non_finite_score_is_caught_against_any_previous_score() {
+        for bad in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
+            for previous in [0.0, 1.0, -1.0, f64::INFINITY, f64::NEG_INFINITY, f64::NAN] {
+                // The residual the block would have formed: an earlier finite
+                // term, then this node's.
+                let residual = 1.0 + (bad - previous).abs();
+                assert!(
+                    block_nonfinite(residual, &[0.5f64, bad]),
+                    "{bad}, {previous}"
+                );
+            }
+        }
+        for bad in [f32::NAN, f32::INFINITY, f32::NEG_INFINITY] {
+            let residual = 1.0 + (bad - 1.0f32).abs() as f64;
+            assert!(block_nonfinite(residual, &[0.5f32, bad]), "{bad}");
+        }
+    }
+
+    /// A residual that went non-finite by overflowing over finite scores is not
+    /// a non-finite score, and is not reported as one. This is the case the
+    /// residual alone would have got wrong, and the only reason the block scans.
+    #[test]
+    fn a_residual_that_overflowed_over_finite_scores_reports_finite() {
+        assert!(!block_nonfinite(f64::INFINITY, &[f64::MAX, -f64::MAX]));
+        assert!(!block_nonfinite(f64::NAN, &[1.0f64, 2.0]));
+        assert!(!block_nonfinite(f64::INFINITY, &[1.0f32, 2.0]));
+    }
+
+    /// A finite residual settles it with no scan at all.
+    #[test]
+    fn a_finite_residual_reports_finite() {
+        assert!(!block_nonfinite(3.0, &[1.0f64, 2.0]));
+        assert!(!block_nonfinite(0.0, &[0.0f32]));
     }
 }

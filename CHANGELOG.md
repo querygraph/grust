@@ -8,6 +8,51 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ### Graph algorithms
 
+- **PageRank's non-finite check is one test a reduction block, not one a
+  node.** The fused pull tested every updated score with `is_finite` and set an
+  atomic flag; the test and its untaken branch sat in the inner loop between
+  the arc sum and the residual. It now tests once per reduction block, on the
+  residual that block has just summed, and scans the block's own updated scores
+  only when that residual is itself non-finite. **Observable behaviour is
+  identical**, and the error's type and text are unchanged.
+
+  **The equivalence, both directions.** A block's residual is
+  `Σ |updated - previous|` in `f64` at either score precision. Any non-finite
+  `updated` contributes a non-finite term — NaN minus anything is NaN; `±inf`
+  against a finite previous score gives `+inf` after `abs`; `±inf` against a
+  non-finite one gives `+inf` or NaN — and since every term is an `abs`, hence
+  nonnegative or NaN, a sum that has gone non-finite cannot come back. So a
+  finite residual proves every one of the block's scores was finite. The
+  converse fails only by overflow: at `f32` scores it cannot happen (a term is
+  at most about `6.8e38` widened to `f64`, and 4,096 of those sum to about
+  `2.8e42`), but at `f64` scores two terms near `f64::MAX` would be enough, and
+  reporting that block as non-finite would be a new error on an input that used
+  to succeed. That is the one case a residual test alone would get wrong, and
+  it is why the block scans rather than trusting the residual: the predicate is
+  the per-node one exactly, at both precisions. Three unit tests on
+  `block_nonfinite` check all three claims.
+
+  Nothing arithmetic moves — scores, residual, dangling mass, charges,
+  partitions and poll cadence are untouched — and every pinned digest test
+  passes unmodified, `tests/pagerank_pinned.rs` with its `PULL_BUDGETS`
+  constant unchanged, `tests/pagerank_fused.rs`, `tests/pagerank_f32.rs` and
+  `tests/article_rank.rs` with it.
+
+  **Measured on an unloaded laptop, shape only — not a published timing.** Six
+  interleaved rounds against the parent commit, median of rounds, one worker
+  (the trustworthy column on this host; the eight-worker cells are not quoted,
+  the per-iteration estimator being unstable at that width on a laptop). At
+  `f32` the saving is consistent across sizes, families and accounting modes:
+  65,536 nodes hub 1.174 to 1.121 ms an iteration in `counted` and 1.176 to
+  1.121 in `unchecked`, uniform 1.070 to 1.035 and 1.063 to 1.027; 2,097,152
+  nodes hub 43.854 to 42.402 and 42.938 to 41.092, uniform 43.834 to 41.374 in
+  `counted`. That is -3.2% to -5.6%, about 0.7 to 0.8 ns a node. At `f64` it is
+  inside this host's noise in both directions (-2.9% to +1.4%), which is what a
+  removed compare should look like beside an eight-byte arc loop, and the one
+  `f32` cell that does not improve is `unchecked` uniform at 2,097,152 nodes,
+  +0.4%. **The Linux gate is outstanding** — no Linux host was reachable — so
+  these are a shape on one Mac, not a verified result.
+
 - **A CSR row offset is four bytes instead of eight.** The projection's packed
   adjacency and its cached reverse index store a row bound as a `u32` and widen
   it on every read, through `#[inline(always)]` accessors (`range`, `row_start`,
