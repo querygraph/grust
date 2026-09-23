@@ -5,7 +5,7 @@
   <meta name="generator" content="pandoc 3.10.1" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
   <meta name="author" content="Alexy Khrabrov" />
-  <meta name="dcterms.date" content="2026-09-21" />
+  <meta name="dcterms.date" content="2026-09-23" />
   <title>Grust</title>
   <style>
 
@@ -173,7 +173,7 @@ height: auto;
 <h1 class="title">Grust</h1>
 <p class="subtitle">A Rust Property Graph Architecture</p>
 <p class="author">Alexy Khrabrov</p>
-<p class="date">2026-09-21</p>
+<p class="date">2026-09-23</p>
 </header>
 <nav id="TOC" role="doc-toc">
 <ul>
@@ -261,6 +261,8 @@ consumption</a></li>
 execution classes</a></li>
 <li><a href="#what-the-cooperative-budget-costs" id="toc-what-the-cooperative-budget-costs"><span class="toc-section-number">16.5</span> What the cooperative budget
 costs</a></li>
+<li><a href="#running-without-accounting" id="toc-running-without-accounting"><span class="toc-section-number">16.6</span> Running without
+accounting</a></li>
 </ul></li>
 <li><a href="#graph-algorithms-under-measurement" id="toc-graph-algorithms-under-measurement"><span class="toc-section-number">17</span> Graph algorithms under
 measurement</a>
@@ -2885,7 +2887,9 @@ revision and principal. A prepared plan rejects a different graph name
 before invoking a provider. The capability pins data; the identity
 strings do not grant access.</p>
 <p>For direct Rust, create an <code>ExecutionContext</code> with
-memory/work limits, batch size and optional deadline.
+memory/work limits, batch size and optional deadline;
+<code>ExecutionContext::with_accounting</code> runs with less checking,
+as described under “Running without accounting”.
 <code>GraphProjection::from_graph</code> accepts label selection,
 orientation and a weight policy. <code>from_topology</code> accepts
 external IDs and typed edges; <code>from_arrow_batches</code> reads
@@ -2947,6 +2951,11 @@ Rust and have typed Arrow result adapters.</p>
 <td>Weighted scores, residual, iterations and convergence status</td>
 </tr>
 <tr>
+<td><code>articleRank</code></td>
+<td>As <code>pagerank</code>, with the mean outgoing weight added to
+every divisor, so a sparse citer confers less</td>
+</tr>
+<tr>
 <td><code>topologicalSort</code></td>
 <td>Complete DAG order or a concrete closed cycle witness</td>
 </tr>
@@ -2959,6 +2968,22 @@ makes them meaningless</td>
 <td><code>astar</code></td>
 <td>One shortest path to a named target, guided by great-circle distance
 from two coordinate properties</td>
+</tr>
+<tr>
+<td><code>yens</code></td>
+<td>The <code>k</code> shortest loopless paths to a named target, ranked
+by <code>pathIndex</code>, with ties broken by node order</td>
+</tr>
+<tr>
+<td><code>allPairsShortestPaths</code></td>
+<td>Distance for every reachable ordered pair, streamed one source at a
+time and never held as a matrix; unreachable pairs are omitted, and
+<code>sourceNodes</code> restricts the sources</td>
+</tr>
+<tr>
+<td><code>longestPath</code></td>
+<td>Heaviest path ending at each node of a DAG, or the cycle that leaves
+it undefined</td>
 </tr>
 </tbody>
 </table>
@@ -3030,6 +3055,11 @@ evidence</td>
 <td>Communities by weighted majority, on a reproducible schedule</td>
 </tr>
 <tr>
+<td><code>k1Coloring</code></td>
+<td>A colour per node so that no edge joins two of the same,
+greedily</td>
+</tr>
+<tr>
 <td><code>modularity</code></td>
 <td>Modularity and conductance of a partition the caller supplies</td>
 </tr>
@@ -3048,6 +3078,12 @@ evidence</td>
 <tr>
 <td><code>nodeSimilarity</code></td>
 <td>Node pairs by Jaccard, overlap or cosine over neighbour sets</td>
+</tr>
+<tr>
+<td><code>linkPrediction</code></td>
+<td>A score per node pair — common neighbours, Adamic–Adar, resource
+allocation, preferential attachment, total neighbours or same community
+— over every pair at distance two or a supplied list</td>
 </tr>
 <tr>
 <td><code>bridges</code></td>
@@ -3085,6 +3121,18 @@ projection</td>
 from snapshot counts, excluding graph storage, ID maps, original edge
 tables, kernel scratch, output and allocator overhead. Selection can
 reduce those counts. The estimate is not total memory admission.</p>
+<p>The adjacency it sizes is narrow. A row bound and an arc target are
+each four bytes, widened on read, so an outgoing arc costs twelve bytes
+unweighted — a four-byte target beside an eight-byte original-edge slot
+— and twenty weighted; a reverse arc, which carries no edge slots, costs
+four unweighted and twelve weighted. Each CSR’s row-bound array is four
+bytes per node plus one. A projection therefore holds at most
+<code>u32::MAX</code> nodes and at most <code>u32::MAX</code> arcs, and
+one that would pass either ceiling is refused with a named
+<code>AlgorithmError::Unsupported</code> at the checked add that would
+otherwise wrap, rather than falling back to eight-byte fields. Louvain’s
+and Leiden’s per-level scratch CSR keeps eight-byte offsets: it is a
+separate structure, not on a pull’s per-node path.</p>
 <p>The common configuration keys are <code>orientation</code>,
 <code>nodeLabels</code>, <code>relationshipTypes</code>,
 <code>weightProperty</code> and <code>defaultWeight</code>. Unknown keys
@@ -3106,7 +3154,7 @@ projection row in each component.</p>
 <p><code>degree</code> returns every selected node, including isolates.
 Direct Rust <code>degree(&amp;projection)</code> exposes exact
 <code>usize</code> counts and optional <code>f64</code> strengths. Arrow
-columns are <code>nodeId: Utf8</code>, <code>degree: UInt64</code>, and
+columns are <code>nodeId: Utf8</code>, <code>degree: Int64</code>, and
 nullable <code>strength: Float64</code>; Cypher returns an exact checked
 integer count and null strength for unweighted projections. No
 normalization is implicit.</p>
@@ -3126,9 +3174,32 @@ iterations. Scores start uniformly. Optional personalization controls
 teleportation and dangling mass; zero outgoing weight is dangling.
 Parallel edges contribute separately. Finite large weights are scaled
 before sums. Iteration-limit results explicitly report non-convergence.
-Seeds, community algorithms, negative-weight paths, all-pairs/k-shortest
-paths, flow, similarity and ML are deferred; the current catalog is not
-universal GDS compatibility.</p>
+The options are <code>damping</code>, <code>tolerance</code>,
+<code>maxIterations</code>, <code>personalization</code> and
+<code>precision</code>; <code>articleRank</code> takes the same.
+<code>precision</code> is <code>&#39;f64&#39;</code> by default or
+<code>&#39;f32&#39;</code>, and nothing else: at <code>&#39;f32&#39;</code> every score,
+per-arc probability, dangling mass, teleport share and base is formed
+and accumulated in <code>f32</code>, the residual is still summed in
+<code>f64</code> from the <code>f32</code> differences, and the Arrow
+<code>score</code> column is Float32 on every batch, with
+<code>iterations</code>, <code>converged</code> and
+<code>residual</code> unchanged. In Rust that is
+<code>pagerank_f32</code>, returning <code>PageRank&lt;f32&gt;</code>;
+<code>pagerank</code> returns <code>PageRank&lt;f64&gt;</code> as
+before. Both precisions are bit-identical at any worker count. The
+<code>f32</code> residual tracks the <code>f64</code> residual closely,
+so at 1e-8 the two usually stop at the same iteration; at tolerance zero
+<code>f32</code> reaches an exact fixed point sooner, and on a graph
+where most nodes are dangling it needs more iterations than
+<code>f64</code> at tight tolerances. A tolerance below one
+<code>f32</code> ulp of a moving score is met only at an exact fixed
+point: on a four-node graph with scores near 0.45 the default 1e-8 is
+below an ulp, the run oscillates by one ulp on two nodes for all 1000
+iterations and reports <code>converged</code> false, while 1e-6 is met
+in 80. Seeds, community algorithms, negative-weight paths,
+all-pairs/k-shortest paths, flow, similarity and ML are deferred; the
+current catalog is not universal GDS compatibility.</p>
 <h2 data-number="16.3" id="full-paths-and-incremental-consumption"><span class="header-section-number">16.3</span> Full paths and incremental
 consumption</h2>
 <p>A full path contains source-first external node IDs and cumulative
@@ -3256,6 +3327,103 @@ and sampling the deadline reduced a full-path Cypher query on a
 4096-node chain from 21,721 ms to about 2,300 ms. Both figures come from
 one host with a Xen clocksource and are not portable constants; the
 boundary statements and raw evidence accompany them there.</p>
+<h2 data-number="16.6" id="running-without-accounting"><span class="header-section-number">16.6</span> Running without
+accounting</h2>
+<p>The budget’s cost is real, and a library that does no accounting does
+not pay it. For a comparison with such a library to be like-for-like, an
+execution can be constructed with less checking, explicitly and by
+name:</p>
+<div class="sourceCode" id="cb45"><pre class="sourceCode rust"><code class="sourceCode rust"><span id="cb45-1"><a href="#cb45-1" aria-hidden="true" tabindex="-1"></a><span class="kw">use</span> <span class="pp">grust_algorithms::</span><span class="op">{</span>Accounting<span class="op">,</span> ExecutionContext<span class="op">,</span> ExecutionLimits<span class="op">};</span></span>
+<span id="cb45-2"><a href="#cb45-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-3"><a href="#cb45-3" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span> context <span class="op">=</span> <span class="pp">ExecutionContext::</span>with_accounting(</span>
+<span id="cb45-4"><a href="#cb45-4" aria-hidden="true" tabindex="-1"></a>    ExecutionLimits <span class="op">{</span></span>
+<span id="cb45-5"><a href="#cb45-5" aria-hidden="true" tabindex="-1"></a>        memory_bytes<span class="op">:</span> <span class="dv">1</span> <span class="op">&lt;&lt;</span> <span class="dv">30</span><span class="op">,</span></span>
+<span id="cb45-6"><a href="#cb45-6" aria-hidden="true" tabindex="-1"></a>        work_units<span class="op">:</span> <span class="dt">usize</span><span class="pp">::</span><span class="cn">MAX</span><span class="op">,</span> <span class="co">// required: an uncounted budget cannot be enforced</span></span>
+<span id="cb45-7"><a href="#cb45-7" aria-hidden="true" tabindex="-1"></a>        batch_rows<span class="op">:</span> <span class="dv">8192</span><span class="op">,</span></span>
+<span id="cb45-8"><a href="#cb45-8" aria-hidden="true" tabindex="-1"></a>        deadline<span class="op">:</span> <span class="cn">None</span><span class="op">,</span></span>
+<span id="cb45-9"><a href="#cb45-9" aria-hidden="true" tabindex="-1"></a>    <span class="op">},</span></span>
+<span id="cb45-10"><a href="#cb45-10" aria-hidden="true" tabindex="-1"></a>    <span class="pp">Accounting::</span>WORK_UNCOUNTED<span class="op">,</span></span>
+<span id="cb45-11"><a href="#cb45-11" aria-hidden="true" tabindex="-1"></a>)<span class="op">?;</span></span></code></pre></div>
+<p><code>ExecutionContext::new</code> is unchanged and counts work. An
+unlimited budget is not an opt-out: <code>work_units: usize::MAX</code>
+still counts every unit and still reports the total. Two switches,
+independent because they give up different things:</p>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr>
+<th>Mode</th>
+<th>Work counted</th>
+<th>Cancellation and deadline</th>
+<th>Memory admission</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Accounting::COUNTED</code> (default)</td>
+<td>yes, budget exact</td>
+<td>observed</td>
+<td>enforced</td>
+</tr>
+<tr>
+<td><code>Accounting::WORK_UNCOUNTED</code></td>
+<td>no</td>
+<td>observed</td>
+<td>enforced</td>
+</tr>
+<tr>
+<td><code>Accounting { work: Counted, interruption: Disabled }</code></td>
+<td>yes, budget exact</td>
+<td>not observed</td>
+<td>enforced</td>
+</tr>
+<tr>
+<td><code>Accounting::UNCHECKED</code></td>
+<td>no</td>
+<td>not observed</td>
+<td>enforced</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Uncounted work</strong> skips the shared counter, the block
+grants of work meters and the budget comparison, and a meter is never
+registered, so creating and dropping one takes no lock. What is given up
+is the work budget and the work total. Cancellation is still observed at
+every charge, and the deadline is still sampled at the counted cadence:
+once per 1024 charges on the context, once per block on a meter.</p>
+<p><strong>Disabled interruption</strong> additionally stops every
+charge, checkpoint and reservation from reading the cancellation flag or
+the clock. What is given up is the ability to stop a running kernel. It
+is a separate switch because it is the larger trade, and because the
+check is itself a measurable share of a charge-dense loop; neither is
+implied by the other.</p>
+<p><strong>Memory admission is never switched off.</strong> It is
+charged per allocation rather than per visited entry, so it is not the
+hot-loop cost, and it is what stops a projection from exhausting the
+host.</p>
+<p>A limit the mode cannot enforce is refused when the context is
+constructed: a finite <code>work_units</code> with uncounted work, or a
+deadline with interruption disabled. On an execution with interruption
+disabled, <code>cancel()</code> returns <code>Unsupported</code> instead
+of accepting a signal nothing will observe, and a
+<code>cancelled()</code> waiter completes at once with the same
+error.</p>
+<p>The mode is part of the result.
+<code>ExecutionContext::accounting()</code> and
+<code>ResourceUsage::accounting</code> name it, and
+<code>Accounting</code> displays as <code>counted</code>,
+<code>work-uncounted</code>, <code>uninterruptible</code> or
+<code>unchecked</code> for a report row.
+<code>ResourceUsage::work_units</code> is a <code>WorkCount</code>:
+<code>Counted(n)</code> or <code>NotCounted</code>, which is not zero;
+<code>ResourceUsage::counted_work()</code> returns it as an
+<code>Option</code>. Results are bit-identical in every mode,
+sequentially and at every worker count.</p>
 <h1 data-number="17" id="graph-algorithms-under-measurement"><span class="header-section-number">17</span> Graph algorithms under
 measurement</h1>
 <p>This chapter documents what the companion algorithms benchmark
@@ -3352,6 +3520,18 @@ every family.</p>
 <p>A share of self time is not a share of removable wall time. The
 atomic still costs and the surrounding work is real, so a 72.8% profile
 share produced a 20 to 29% improvement, not a threefold one.</p>
+<p>The charge later moved off the node as well. A reduction block’s arc
+total is one subtraction on the transpose’s row bounds, so PageRank’s
+fused pull charges <code>block_nodes + block_arcs</code> once per
+4,096-node block rather than <code>1 + in-arcs</code> per visited node.
+A completed kernel charges the identical total, so every budget decides
+exactly as it did; what moves is where a refusal lands, on a block
+boundary rather than a node boundary. The charge still precedes the work
+it names, so no work a budget refused is ever performed, and each block
+loop polls interruption explicitly on the cadence the per-node charges
+used to reach the meter’s admission on — every 113 nodes on an eight-arc
+graph, every 1,024 on an arcless one — so cancellation and the deadline
+stay as responsive as they were.</p>
 <h2 data-number="17.4" id="deadline-enforcement-is-a-policy-and-policies-differ"><span class="header-section-number">17.4</span> Deadline enforcement is a
 policy, and policies differ</h2>
 <p>Ordinary Cypher’s full-path query measured about ninety times direct
@@ -3610,23 +3790,23 @@ missing property from an explicit null. Scalar properties support Null,
 Boolean, Int64, Float64 and UTF-8, preserving integer precision. Mixed
 non-null types and complex graph properties are rejected by this scalar
 interchange contract rather than silently coerced.</p>
-<div class="sourceCode" id="cb45"><pre class="sourceCode rust"><code class="sourceCode rust"><span id="cb45-1"><a href="#cb45-1" aria-hidden="true" tabindex="-1"></a><span class="kw">use</span> <span class="pp">grust::arrow::</span>ArrowGraph<span class="op">;</span></span>
-<span id="cb45-2"><a href="#cb45-2" aria-hidden="true" tabindex="-1"></a><span class="kw">use</span> <span class="pp">std::fs::</span>File<span class="op">;</span></span>
-<span id="cb45-3"><a href="#cb45-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-4"><a href="#cb45-4" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> main() <span class="op">-&gt;</span> <span class="dt">Result</span><span class="op">&lt;</span>()<span class="op">,</span> <span class="dt">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="pp">std::error::</span><span class="bu">Error</span><span class="op">&gt;&gt;</span> <span class="op">{</span></span>
-<span id="cb45-5"><a href="#cb45-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> graph <span class="op">=</span> <span class="pp">grust::Graph::</span><span class="kw">default</span>()<span class="op">;</span></span>
-<span id="cb45-6"><a href="#cb45-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> tables <span class="op">=</span> <span class="pp">ArrowGraph::</span>from_graph(<span class="op">&amp;</span>graph)<span class="op">?;</span></span>
-<span id="cb45-7"><a href="#cb45-7" aria-hidden="true" tabindex="-1"></a>    tables<span class="op">.</span>write_ipc(</span>
-<span id="cb45-8"><a href="#cb45-8" aria-hidden="true" tabindex="-1"></a>        <span class="pp">File::</span>create(<span class="st">&quot;nodes.arrow&quot;</span>)<span class="op">?,</span></span>
-<span id="cb45-9"><a href="#cb45-9" aria-hidden="true" tabindex="-1"></a>        <span class="pp">File::</span>create(<span class="st">&quot;edges.arrow&quot;</span>)<span class="op">?,</span></span>
-<span id="cb45-10"><a href="#cb45-10" aria-hidden="true" tabindex="-1"></a>    )<span class="op">?;</span></span>
-<span id="cb45-11"><a href="#cb45-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> restored <span class="op">=</span> <span class="pp">ArrowGraph::</span>read_ipc(</span>
-<span id="cb45-12"><a href="#cb45-12" aria-hidden="true" tabindex="-1"></a>        <span class="pp">File::</span>open(<span class="st">&quot;nodes.arrow&quot;</span>)<span class="op">?,</span></span>
-<span id="cb45-13"><a href="#cb45-13" aria-hidden="true" tabindex="-1"></a>        <span class="pp">File::</span>open(<span class="st">&quot;edges.arrow&quot;</span>)<span class="op">?,</span></span>
-<span id="cb45-14"><a href="#cb45-14" aria-hidden="true" tabindex="-1"></a>    )<span class="op">?.</span>to_graph()<span class="op">?;</span></span>
-<span id="cb45-15"><a href="#cb45-15" aria-hidden="true" tabindex="-1"></a>    <span class="pp">assert_eq!</span>(graph<span class="op">,</span> restored)<span class="op">;</span></span>
-<span id="cb45-16"><a href="#cb45-16" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Ok</span>(())</span>
-<span id="cb45-17"><a href="#cb45-17" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<div class="sourceCode" id="cb46"><pre class="sourceCode rust"><code class="sourceCode rust"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a><span class="kw">use</span> <span class="pp">grust::arrow::</span>ArrowGraph<span class="op">;</span></span>
+<span id="cb46-2"><a href="#cb46-2" aria-hidden="true" tabindex="-1"></a><span class="kw">use</span> <span class="pp">std::fs::</span>File<span class="op">;</span></span>
+<span id="cb46-3"><a href="#cb46-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb46-4"><a href="#cb46-4" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> main() <span class="op">-&gt;</span> <span class="dt">Result</span><span class="op">&lt;</span>()<span class="op">,</span> <span class="dt">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="pp">std::error::</span><span class="bu">Error</span><span class="op">&gt;&gt;</span> <span class="op">{</span></span>
+<span id="cb46-5"><a href="#cb46-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> graph <span class="op">=</span> <span class="pp">grust::Graph::</span><span class="kw">default</span>()<span class="op">;</span></span>
+<span id="cb46-6"><a href="#cb46-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> tables <span class="op">=</span> <span class="pp">ArrowGraph::</span>from_graph(<span class="op">&amp;</span>graph)<span class="op">?;</span></span>
+<span id="cb46-7"><a href="#cb46-7" aria-hidden="true" tabindex="-1"></a>    tables<span class="op">.</span>write_ipc(</span>
+<span id="cb46-8"><a href="#cb46-8" aria-hidden="true" tabindex="-1"></a>        <span class="pp">File::</span>create(<span class="st">&quot;nodes.arrow&quot;</span>)<span class="op">?,</span></span>
+<span id="cb46-9"><a href="#cb46-9" aria-hidden="true" tabindex="-1"></a>        <span class="pp">File::</span>create(<span class="st">&quot;edges.arrow&quot;</span>)<span class="op">?,</span></span>
+<span id="cb46-10"><a href="#cb46-10" aria-hidden="true" tabindex="-1"></a>    )<span class="op">?;</span></span>
+<span id="cb46-11"><a href="#cb46-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> restored <span class="op">=</span> <span class="pp">ArrowGraph::</span>read_ipc(</span>
+<span id="cb46-12"><a href="#cb46-12" aria-hidden="true" tabindex="-1"></a>        <span class="pp">File::</span>open(<span class="st">&quot;nodes.arrow&quot;</span>)<span class="op">?,</span></span>
+<span id="cb46-13"><a href="#cb46-13" aria-hidden="true" tabindex="-1"></a>        <span class="pp">File::</span>open(<span class="st">&quot;edges.arrow&quot;</span>)<span class="op">?,</span></span>
+<span id="cb46-14"><a href="#cb46-14" aria-hidden="true" tabindex="-1"></a>    )<span class="op">?.</span>to_graph()<span class="op">?;</span></span>
+<span id="cb46-15"><a href="#cb46-15" aria-hidden="true" tabindex="-1"></a>    <span class="pp">assert_eq!</span>(graph<span class="op">,</span> restored)<span class="op">;</span></span>
+<span id="cb46-16"><a href="#cb46-16" aria-hidden="true" tabindex="-1"></a>    <span class="cn">Ok</span>(())</span>
+<span id="cb46-17"><a href="#cb46-17" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
 <p>This legacy file-format API still stores one batch in each of two
 Arrow files. <code>ArrowGraphTables</code> supports the same graph
 contract across multiple batches. It validates global node identity and
