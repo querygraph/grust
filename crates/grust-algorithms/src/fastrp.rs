@@ -131,7 +131,7 @@ pub fn fast_rp(graph: &GraphProjection, options: FastRpOptions<'_>) -> Result<Fa
     // Chunks are fixed, so the worker count cannot change a value.
     let workers = parallel::concurrency(
         context,
-        length.saturating_add(adjacency.targets.values.len().saturating_mul(d)),
+        length.saturating_add(adjacency.arc_count().saturating_mul(d)),
     );
     parallel::for_chunks(workers, &mut current.values, CHUNK * d, |first, chunk| {
         let mut meter = context.work_meter();
@@ -175,7 +175,7 @@ pub fn fast_rp(graph: &GraphProjection, options: FastRpOptions<'_>) -> Result<Fa
                 for arc in range {
                     let arc_weight = adjacency.weight(arc) as f32;
                     total += arc_weight;
-                    let other = adjacency.targets.values[arc];
+                    let other = adjacency.target(arc);
                     for (value, &theirs) in
                         row.iter_mut().zip(&previous[other * d..(other + 1) * d])
                     {

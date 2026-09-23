@@ -8,6 +8,59 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ### Graph algorithms
 
+- **A CSR arc target is four bytes instead of eight.** The projection's packed
+  adjacency, its cached reverse index, and Louvain's and Leiden's per-level
+  scratch CSR store a target as a `u32` and widen it on every read, through an
+  `#[inline(always)]` accessor or a typed slice; `offsets` stays `usize` and
+  `weights` stays `f64`. An outgoing arc costs 12 bytes instead of 16
+  unweighted (a four-byte target and a word of original-edge slot) and 20
+  instead of 24 weighted; a reverse arc, which carries no edge slots, costs 4
+  instead of 8 unweighted and 12 instead of 16 weighted. The field is private,
+  so every read in the crate had to be converted rather than silently widened:
+  every kernel under `crates/grust-algorithms/src/` now reads through the
+  accessors. **A projection therefore holds at most `u32::MAX` nodes** and a
+  larger one is refused with a named `AlgorithmError::Unsupported` rather than
+  falling back to eight-byte targets. The first graph that fallback would admit
+  has 2^32 nodes, where the offsets alone are 34.4 GB, one `f64` score array is
+  another 34.4 GB and PageRank needs three of them, so the targets — 17.2 GB
+  narrow at one arc a node — are the smallest array in the working set, and
+  every per-node `usize` buffer would have to be narrowed before a wide target
+  array could matter. Results are bit-identical everywhere: this is a
+  representation change only, and every pinned digest test
+  (`tests/pagerank_pinned.rs`, `tests/pagerank_fused.rs`,
+  `tests/pagerank_f32.rs` and the rest) passes unmodified, as does the
+  projection-build determinism test, whose fixture still reaches the parallel
+  fill. The parallel count's chunk bound moved from `2 × items / nodes` to
+  `items / nodes + 2` so that its scratch table — four bytes a node a chunk,
+  admitted and released before the arrays — still cannot exceed the narrowed
+  target array plus the positions it is released in favour of; that keeps a
+  build's accounted peak, and therefore which memory limits it meets, identical
+  at every width, as `a_memory_limit_is_met_or_refused_as_it_is_sequentially`
+  checks. No refusal digest changed. Two byte-count assertions did, both
+  because the sizes they state are the ones that shrank, and both now say so in
+  place: `projectionStats`' `csrBytes` and `estimateCsr`'s `outgoingCsrBytes`
+  fall from 136 to 112 bytes and `reverseCsrBytes` from 88 to 64 on the
+  four-node, three-edge undirected Cypher fixture (`grust-algorithm-procedures`'
+  `projection_inspection_and_csr_estimates_disclose_their_scope`), and the
+  lower bound on what a transpose costs in `projection_views.rs` is now four
+  bytes an arc rather than a word. `CsrEstimate` and
+  `GraphProjection::statistics` report the new sizes; no declared Arrow schema
+  moved, since every arc-valued Arrow column is already a node-id string.
+  Measured on an Apple-silicon laptop (a shared machine, so these are ratios,
+  not publishable absolutes) on a uniform fixture with eight arcs a node, least
+  of the per-iteration measurements over two passes: at 2,097,152 nodes the
+  PageRank pull goes from 71.0 to 70.0 ms an iteration at `f64` and one worker,
+  51.3 to 47.8 at `f32` and one worker, 16.9 to 15.7 at `f64` and eight
+  workers, and 12.5 to 10.0 at `f32` and eight workers; at 65,536 nodes, where
+  the projection is cache-resident, the one-worker cells are unchanged to three
+  digits. The gain is smaller than the halved arc stream because the pull's
+  other memory traffic is the random score reads, which did not change.
+  Projection build time at 2,097,152 nodes is unchanged (505 to 491 ms at one
+  worker, 383 to 387 at eight) and the transpose falls from 188 to 178 ms at
+  one worker and 96 to 85 at eight, while the execution's accounted peak falls
+  from 1,158,614,638 to 1,091,505,774 bytes after the build — exactly
+  16,777,216 arcs × 4 — and from 1,309,609,590 to 1,175,391,862 with the
+  transpose held beside it, exactly twice that.
 - **PageRank and ArticleRank can run with `f32` scores.** `pagerank_f32`
   returns `PageRank<f32>`; `PageRank` is now `PageRank<F = f64>`, so every
   existing caller is unchanged, and `values()` is `&[F]`. One implementation

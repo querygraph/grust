@@ -52,7 +52,7 @@ pub fn degree(graph: &GraphProjection) -> Result<Degrees> {
         .as_ref()
         .map(|_| Buffer::indexed(n, 0.0f64, context))
         .transpose()?;
-    let arcs = adjacency.targets.values.len();
+    let arcs = adjacency.arc_count();
     let workers = crate::parallel::workers(context, n.saturating_add(arcs)).unwrap_or(1);
     let offsets = &adjacency.offsets.values;
     let weights = adjacency.weights.as_ref().map(|weights| &weights.values);

@@ -258,8 +258,7 @@ fn rank<F: Score>(graph: &GraphProjection, options: PageRankOptions<'_>) -> Resu
     // sequential path and the oracle the pull is tested against.
     let workers = crate::parallel::workers(
         context,
-        n.saturating_add(adjacency.targets.values.len())
-            .saturating_mul(2),
+        n.saturating_add(adjacency.arc_count()).saturating_mul(2),
     );
     if let Some(workers) = workers {
         return pull::pull(graph, options, teleport, scores, workers);
@@ -299,11 +298,7 @@ fn rank<F: Score>(graph: &GraphProjection, options: PageRankOptions<'_>) -> Resu
     // before; a row's arcs would all hold the same value.
     let weighted = graph.is_weighted();
     let mut probabilities = Buffer::indexed(
-        if weighted {
-            adjacency.targets.values.len()
-        } else {
-            0
-        },
+        if weighted { adjacency.arc_count() } else { 0 },
         F::ZERO,
         context,
     )?;
@@ -333,24 +328,24 @@ fn rank<F: Score>(graph: &GraphProjection, options: PageRankOptions<'_>) -> Resu
             let total = totals.values[source] + damp;
             let mass = damping * scores.values[source];
             let next = &mut next.values;
-            let targets = &adjacency.targets.values;
+            let targets = adjacency.targets();
             let range = adjacency.range(source);
             if !weighted {
                 charged_arcs(context, 1, range, |arc| {
                     let probability = F::from_f64(adjacency.weight(arc) / scale) / total;
-                    next[targets[arc]] += mass * probability;
+                    next[targets[arc] as usize] += mass * probability;
                 })?;
             } else if iteration == 1 {
                 let probabilities = &mut probabilities.values;
                 charged_arcs(context, 1, range, |arc| {
                     let probability = F::from_f64(adjacency.weight(arc) / scale) / total;
                     probabilities[arc] = probability;
-                    next[targets[arc]] += mass * probability;
+                    next[targets[arc] as usize] += mass * probability;
                 })?;
             } else {
                 let probabilities = &probabilities.values;
                 charged_arcs(context, 1, range, |arc| {
-                    next[targets[arc]] += mass * probabilities[arc];
+                    next[targets[arc] as usize] += mass * probabilities[arc];
                 })?;
             }
         }

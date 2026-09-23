@@ -366,7 +366,7 @@ impl Search<'_> {
             meter.charge(1)?;
             for arc in self.incoming.range(node) {
                 meter.charge(1)?;
-                let previous = self.incoming.targets.values[arc];
+                let previous = self.incoming.target(arc);
                 if !self.allowed(previous, node) {
                     continue;
                 }
@@ -448,7 +448,7 @@ impl Search<'_> {
         let mut best: Option<(usize, usize, f64)> = None;
         for arc in self.out.range(node) {
             meter.charge(1)?;
-            let next = self.out.targets.values[arc];
+            let next = self.out.target(arc);
             if next < floor || self.visited.values[next] || !self.allowed(node, next) {
                 continue;
             }
@@ -482,7 +482,7 @@ impl Search<'_> {
             }
             for arc in self.out.range(node) {
                 meter.charge(1)?;
-                let next = self.out.targets.values[arc];
+                let next = self.out.target(arc);
                 if self.seen.values[next] || self.visited.values[next] || self.banned.values[next] {
                     continue;
                 }

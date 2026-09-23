@@ -327,6 +327,11 @@ fn the_longest_path_reports_a_cycle_as_an_answer_rather_than_an_error() {
 #[test]
 fn projection_inspection_and_csr_estimates_disclose_their_scope() {
     let word = size_of::<usize>() as i64;
+    // An arc target is four bytes, not a word: these byte counts fell when the
+    // CSR narrowed its targets to `u32`. Five offset words plus six arcs of a
+    // four-byte target and a word of original-edge slot, unweighted.
+    let target = 4;
+    let outgoing_arc = target + word;
     assert_eq!(
         run(
             "CALL grust.algorithms.projectionStats({orientation: 'undirected'}) YIELD nodes, edges, arcs, selfLoops, csrBytes RETURN nodes, edges, arcs, selfLoops, csrBytes"
@@ -336,7 +341,7 @@ fn projection_inspection_and_csr_estimates_disclose_their_scope() {
             Value::Int(3),
             Value::Int(6),
             Value::Int(0),
-            Value::Int(17 * word)
+            Value::Int(5 * word + 6 * outgoing_arc)
         ]]
     );
     assert_eq!(
@@ -347,8 +352,9 @@ fn projection_inspection_and_csr_estimates_disclose_their_scope() {
             Value::Int(4),
             Value::Int(3),
             Value::Int(6),
-            Value::Int(17 * word),
-            Value::Int(11 * word),
+            Value::Int(5 * word + 6 * outgoing_arc),
+            // The reverse index carries targets and offsets, no edge slots.
+            Value::Int(5 * word + 6 * target),
             Value::Int(4 * word)
         ]]
     );

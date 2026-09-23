@@ -233,8 +233,7 @@ impl Sets {
         let n = graph.node_count();
         let mut meter = context.work_meter();
         let mut offsets = Buffer::capacity(n + 1, context)?;
-        let mut entries: Buffer<(usize, f64)> =
-            Buffer::capacity(adjacency.targets.values.len(), context)?;
+        let mut entries: Buffer<(usize, f64)> = Buffer::capacity(adjacency.arc_count(), context)?;
         let mut measure = Buffer::capacity(n, context)?;
         let mut admitted = Buffer::capacity(n, context)?;
         let mut member_offsets = Buffer::filled(n + 1, 0usize, context)?;
@@ -245,7 +244,7 @@ impl Sets {
             meter.charge(1 + degree.saturating_mul(degree.max(2).ilog2() as usize))?;
             let start = entries.values.len();
             for arc in range {
-                let target = adjacency.targets.values[arc];
+                let target = adjacency.target(arc);
                 if target != node {
                     entries.values.push((target, adjacency.weight(arc)));
                 }

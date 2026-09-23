@@ -171,7 +171,7 @@ pub fn k1_coloring(graph: &GraphProjection, options: K1ColoringOptions) -> Resul
             let range = adjacency.range(node);
             meter.charge(2 + range.len())?;
             for arc in range {
-                let other = adjacency.targets.values[arc];
+                let other = adjacency.target(arc);
                 let color = colors.values[other];
                 if other != node && color != UNCOLORED {
                     seen.values[color] = stamp;
@@ -194,7 +194,7 @@ pub fn k1_coloring(graph: &GraphProjection, options: K1ColoringOptions) -> Resul
             let range = adjacency.range(node);
             meter.charge(1 + range.len())?;
             for arc in range {
-                let other = adjacency.targets.values[arc];
+                let other = adjacency.target(arc);
                 if other != node
                     && colors.values[other] == colors.values[node]
                     && rank.values[node] > rank.values[other]

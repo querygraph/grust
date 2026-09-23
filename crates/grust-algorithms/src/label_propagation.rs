@@ -119,7 +119,7 @@ pub fn label_propagation(
                     // No support, and it must not register its label twice.
                     continue;
                 }
-                let label = labels.values[incoming.targets.values[arc]];
+                let label = labels.values[incoming.target(arc)];
                 if support.values[label] == 0.0 {
                     touched.values.push(label);
                 }

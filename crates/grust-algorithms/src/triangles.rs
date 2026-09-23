@@ -94,17 +94,14 @@ pub fn triangles(graph: &GraphProjection, options: TriangleOptions) -> Result<Tr
 
     // Distinct neighbours per node, sorted, loops removed.
     let mut simple_offsets = Buffer::filled(n + 1, 0usize, context)?;
-    let mut simple = Buffer::capacity(adjacency.targets.values.len(), context)?;
+    let mut simple = Buffer::capacity(adjacency.arc_count(), context)?;
     for node in 0..n {
         let range = adjacency.range(node);
         meter.charge(1 + range.len())?;
         let first = simple.values.len();
-        simple.values.extend(
-            adjacency.targets.values[range]
-                .iter()
-                .copied()
-                .filter(|&target| target != node),
-        );
+        simple
+            .values
+            .extend(adjacency.row_targets(node).filter(|&target| target != node));
         simple.values[first..].sort_unstable();
         let mut kept = first;
         for index in first..simple.values.len() {
@@ -145,7 +142,7 @@ pub fn triangles(graph: &GraphProjection, options: TriangleOptions) -> Result<Tr
         let len = forward_row(node).len();
         weights.values.push(len.saturating_mul(len));
     }
-    let workers = parallel::concurrency(context, n.saturating_add(adjacency.targets.values.len()));
+    let workers = parallel::concurrency(context, n.saturating_add(adjacency.arc_count()));
     let ranges = parallel::balanced_ranges(&weights.values, workers);
     let counts = Buffer::filled_with(n, || AtomicU64::new(0), context)?;
 

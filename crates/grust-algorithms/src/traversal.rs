@@ -73,9 +73,7 @@ fn bfs_sources<'a>(
     let adjacency = graph.outgoing();
     let workers = crate::parallel::workers_above(
         context,
-        graph
-            .node_count()
-            .saturating_add(adjacency.targets.values.len()),
+        graph.node_count().saturating_add(adjacency.arc_count()),
         crate::parallel::BREADTH_FIRST_SEQUENTIAL_BELOW_UNITS,
     );
     let mut roots = Vec::new();
@@ -106,7 +104,7 @@ fn bfs_sources<'a>(
         head += 1;
         for arc in adjacency.range(node) {
             meter.charge(1)?;
-            let next = adjacency.targets.values[arc];
+            let next = adjacency.target(arc);
             if distances.values[next].is_infinite() {
                 distances.values[next] = distances.values[node] + 1.0;
                 queue.values.push(next);
@@ -133,7 +131,7 @@ fn levels(graph: &GraphProjection, roots: &[usize], workers: usize) -> Result<Di
     let n = graph.node_count();
     let adjacency = graph.outgoing();
     let offsets = &adjacency.offsets.values;
-    let targets = &adjacency.targets.values;
+    let targets = adjacency.targets();
     let level_of = Buffer::indexed_with(n, || AtomicU32::new(UNVISITED), context)?;
     // Every node is claimed at most once, so the frontiers together hold at most
     // one entry per node. Admit that once rather than per level or per worker.
@@ -170,7 +168,7 @@ fn levels(graph: &GraphProjection, roots: &[usize], workers: usize) -> Result<Di
                     let arcs = offsets[node]..offsets[node + 1];
                     meter.charge(1 + arcs.len())?;
                     for arc in arcs {
-                        let next = targets[arc];
+                        let next = targets[arc] as usize;
                         if level_of.values[next]
                             .compare_exchange(
                                 UNVISITED,
@@ -399,7 +397,7 @@ pub fn strongly_connected_components(graph: &GraphProjection) -> Result<Componen
                 order.values.push(node);
                 stack.values.pop();
             } else {
-                let next = adjacency.targets.values[*next_arc];
+                let next = adjacency.target(*next_arc);
                 *next_arc += 1;
                 if !seen.values[next] {
                     seen.values[next] = true;
@@ -431,7 +429,7 @@ pub fn strongly_connected_components(graph: &GraphProjection) -> Result<Componen
             head += 1;
             for arc in reverse.range(node) {
                 meter.charge(1)?;
-                let next = reverse.targets.values[arc];
+                let next = reverse.target(arc);
                 if labels.values[next] == usize::MAX {
                     labels.values[next] = seed;
                     minimum = minimum.min(next);

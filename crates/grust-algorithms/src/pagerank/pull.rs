@@ -131,7 +131,7 @@ pub(super) fn pull<F: Score>(
     let teleport = personalized.as_deref();
 
     let mut totals = Buffer::indexed(if weighted { n } else { 0 }, F::ZERO, context)?;
-    let arcs = reverse.targets.values.len();
+    let arcs = reverse.arc_count();
     let mut probabilities = Buffer::indexed(if weighted { arcs } else { 0 }, F::ZERO, context)?;
     // PageRank divides by the source's own outgoing weight; ArticleRank adds
     // the mean over all nodes, so a source with few arcs confers less.
@@ -354,7 +354,7 @@ fn weigh<F: Score>(
         for node in first..last {
             meter.charge(adjacency.range(node).len())?;
             for arc in reverse.range(node) {
-                let source = reverse.targets.values[arc];
+                let source = reverse.target(arc);
                 own[arc - base] = if totals[source] <= F::ZERO {
                     F::ZERO
                 } else {
@@ -474,7 +474,7 @@ impl<F: Score> Pass<'_, F> {
                         meter.charge(1 + arcs.len())?;
                         let mut sum = F::ZERO;
                         for arc in arcs {
-                            sum += shares_now[self.reverse.targets.values[arc]];
+                            sum += shares_now[self.reverse.target(arc)];
                         }
                         let updated = teleport.at(node) + self.damping * sum;
                         if !updated.is_finite() {
@@ -530,8 +530,7 @@ impl<F: Score> Pass<'_, F> {
                     meter.charge(1 + arcs.len())?;
                     let mut sum = F::ZERO;
                     for arc in arcs {
-                        sum +=
-                            scores_now[self.reverse.targets.values[arc]] * self.probabilities[arc];
+                        sum += scores_now[self.reverse.target(arc)] * self.probabilities[arc];
                     }
                     let updated = teleport.at(node) + self.damping * sum;
                     if !updated.is_finite() {

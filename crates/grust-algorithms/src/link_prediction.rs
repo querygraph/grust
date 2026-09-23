@@ -398,19 +398,16 @@ impl Sets {
         let n = graph.node_count();
         let mut meter = context.work_meter();
         let mut offsets = Buffer::capacity(n + 1, context)?;
-        let mut neighbours = Buffer::capacity(adjacency.targets.values.len(), context)?;
+        let mut neighbours = Buffer::capacity(adjacency.arc_count(), context)?;
         offsets.values.push(0);
         for node in 0..n {
             let range = adjacency.range(node);
             let degree = range.len();
             meter.charge(1 + degree.saturating_mul(degree.max(2).ilog2() as usize))?;
             let start = neighbours.values.len();
-            neighbours.values.extend(
-                adjacency.targets.values[range]
-                    .iter()
-                    .copied()
-                    .filter(|&target| target != node),
-            );
+            neighbours
+                .values
+                .extend(adjacency.row_targets(node).filter(|&target| target != node));
             neighbours.values[start..].sort_unstable();
             let mut write = start;
             for read in start..neighbours.values.len() {

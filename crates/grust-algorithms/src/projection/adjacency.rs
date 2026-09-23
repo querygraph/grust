@@ -5,6 +5,26 @@
 //! produce the same bytes as their sequential forms at every width, and admit
 //! exactly the memory the sequential forms admit, in the same order. How the
 //! count stays exact is on [`Counts`]; how the fill does is on [`RowRange`].
+//!
+//! **Arc targets are four bytes.** Every kernel's inner loop streams the
+//! target array, and above the last cache level that stream is most of a
+//! sweep's cost, so a target is stored as a `u32` and widened on read through
+//! [`Adjacency::target`] or [`Adjacency::targets`]. A projection therefore
+//! holds at most `u32::MAX` nodes, which [`check_node_count`] refuses past
+//! with a named error rather than keeping an eight-byte fallback beside the
+//! narrow one.
+//!
+//! **Why refusing is not a limitation.** The first graph a `usize` fallback
+//! would admit has 2^32 nodes. Before a single arc is stored, that projection
+//! has already asked for 34.4 GB of offsets (`(n+1) × 8`) and 34.4 GB for its
+//! node-id vector's pointers alone; the edge list it is built from is 32 bytes
+//! a [`ProjectionEdge`]; and the cheapest kernel result over it, one `f64` a
+//! node, is another 34.4 GB, which PageRank needs three of. The targets are
+//! 17.2 GB narrow and 34.4 GB wide at one arc a node. So a fallback would
+//! double the smallest array in a working set that is already several hundred
+//! gigabytes for the widest reason, and every per-node `usize` buffer in this
+//! crate would have to be narrowed first for it to matter. A clear refusal
+//! costs one comparison per build and keeps one representation to reason about.
 
 use std::ops::Range;
 
@@ -12,14 +32,39 @@ use grust_procedures::WorkMeter;
 
 use super::*;
 
+/// The stored width of an arc target. Widened to `usize` on every read.
+pub(crate) type Target = u32;
+
 pub(crate) struct Adjacency {
     pub(crate) offsets: Buffer<usize>,
-    pub(crate) targets: Buffer<usize>,
+    /// Read through [`Self::target`] or [`Self::targets`], never widened
+    /// anywhere else, so the width is this file's decision alone.
+    targets: Buffer<Target>,
     /// Original edge position per arc. Present on a projection's own adjacency,
     /// absent on a transpose, whose callers identify arcs by endpoint rather
     /// than by edge and would otherwise pay eight bytes an arc to ignore.
     edge_slots: Option<Buffer<usize>>,
     pub(crate) weights: Option<Buffer<f64>>,
+}
+
+/// The node count a projection can hold, from the stored target width.
+fn check_node_count(n: usize) -> Result<()> {
+    if Target::try_from(n).is_err() {
+        return Err(ProcedureError::Unsupported(format!(
+            "a projection holds at most {} nodes, the largest arc target its four-byte \
+             target array can name; {n} were selected",
+            Target::MAX
+        )));
+    }
+    Ok(())
+}
+
+/// A node index as a stored target. Lossless: [`check_node_count`] ran before
+/// any arc was written, and every target is below the node count.
+#[inline(always)]
+fn narrow(node: usize) -> Target {
+    debug_assert!(Target::try_from(node).is_ok());
+    node as Target
 }
 
 /// Which code a build ran. Only tests read it: a determinism test whose fixture
@@ -68,6 +113,7 @@ impl Adjacency {
         orientation: Orientation,
         context: &ExecutionContext,
     ) -> Result<(Self, BuildPath)> {
+        check_node_count(n)?;
         let mut offsets = Buffer::filled(
             n.checked_add(1)
                 .ok_or_else(|| ProcedureError::Numerical("node count overflow".into()))?,
@@ -122,7 +168,7 @@ impl Adjacency {
         let count = offsets.values[n];
         let mut result = Self {
             offsets,
-            targets: Buffer::filled(count, 0, context)?,
+            targets: Buffer::filled(count, 0 as Target, context)?,
             edge_slots: Some(Buffer::filled(count, 0, context)?),
             weights: weights
                 .map(|_| Buffer::filled(count, 0.0, context))
@@ -190,7 +236,7 @@ impl Adjacency {
         weight: Option<f64>,
     ) {
         let index = positions[source];
-        self.targets.values[index] = target;
+        self.targets.values[index] = narrow(target);
         if let Some(slots) = &mut self.edge_slots {
             slots.values[index] = edge;
         }
@@ -248,6 +294,34 @@ impl Adjacency {
     pub(crate) fn range(&self, node: usize) -> std::ops::Range<usize> {
         self.offsets.values[node]..self.offsets.values[node + 1]
     }
+
+    /// Target of `arc`, widened from its stored four bytes.
+    #[inline(always)]
+    pub(crate) fn target(&self, arc: usize) -> usize {
+        self.targets.values[arc] as usize
+    }
+
+    /// Every arc's target, as stored: for a kernel whose inner loop indexes
+    /// the slice itself. Widen each with `as usize`; nothing else is lossless.
+    #[inline(always)]
+    pub(crate) fn targets(&self) -> &[Target] {
+        &self.targets.values
+    }
+
+    /// Targets of `node`'s row, widened, in arc order.
+    #[inline]
+    pub(crate) fn row_targets(&self, node: usize) -> impl ExactSizeIterator<Item = usize> + '_ {
+        self.targets.values[self.range(node)]
+            .iter()
+            .map(|&target| target as usize)
+    }
+
+    /// Arcs in this adjacency.
+    #[inline]
+    pub(crate) fn arc_count(&self) -> usize {
+        self.targets.values.len()
+    }
+
     /// Original edge position of an arc, on an adjacency that carries them.
     ///
     /// # Panics
@@ -318,7 +392,7 @@ impl Adjacency {
                     let slice = &self.targets.values[start..(start + len).min(arcs)];
                     meter.charge(slice.len())?;
                     for &target in slice {
-                        row[target] += 1;
+                        row[target as usize] += 1;
                     }
                     Ok(())
                 })?;
@@ -328,7 +402,7 @@ impl Adjacency {
                 for chunk in self.targets.values.chunks(1024) {
                     context.charge_work(chunk.len())?;
                     for &target in chunk {
-                        offsets.values[target + 1] += 1;
+                        offsets.values[target as usize + 1] += 1;
                     }
                 }
                 None
@@ -339,7 +413,7 @@ impl Adjacency {
         positions.values.extend_from_slice(&offsets.values[..n]);
         let mut result = Adjacency {
             offsets,
-            targets: Buffer::filled_split(arcs, 0usize, memory, context)?,
+            targets: Buffer::filled_split(arcs, 0 as Target, memory, context)?,
             edge_slots: None,
             weights: self
                 .weights
@@ -362,7 +436,7 @@ impl Adjacency {
                 for source in 0..n {
                     part.poll(source, &meter)?;
                     for arc in self.range(source) {
-                        let target = self.targets.values[arc];
+                        let target = self.target(arc);
                         if part.holds(target) {
                             let weight = self.weights.as_ref().map(|from| from.values[arc]);
                             part.put(target, source, None, weight);
@@ -378,9 +452,10 @@ impl Adjacency {
             let range = self.range(source);
             context.charge_work(1 + range.len())?;
             for arc in range {
-                let slot = positions.values[self.targets.values[arc]];
-                positions.values[self.targets.values[arc]] += 1;
-                result.targets.values[slot] = source;
+                let target = self.target(arc);
+                let slot = positions.values[target];
+                positions.values[target] += 1;
+                result.targets.values[slot] = narrow(source);
                 if let (Some(into), Some(from)) = (&mut result.weights, &self.weights) {
                     into.values[slot] = from.values[arc];
                 }
@@ -441,7 +516,7 @@ struct RowRange<'a> {
     rows: Range<usize>,
     /// Arc index where `rows.start`'s row begins: the slices are relative to it.
     first_arc: usize,
-    targets: &'a mut [usize],
+    targets: &'a mut [Target],
     slots: Option<&'a mut [usize]>,
     weights: Option<&'a mut [f64]>,
     /// Absolute next-arc index per row in `rows`, as the sequential fill's.
@@ -470,7 +545,7 @@ impl RowRange<'_> {
         let local = row - self.rows.start;
         let index = self.positions[local] - self.first_arc;
         self.positions[local] += 1;
-        self.targets[index] = target;
+        self.targets[index] = narrow(target);
         if let (Some(slots), Some(slot)) = (&mut self.slots, slot) {
             slots[index] = slot;
         }
@@ -492,10 +567,10 @@ impl RowRange<'_> {
 /// **Memory.** The table is `chunks × nodes × 4` bytes, admitted before it is
 /// allocated and released before the adjacency's arrays are, so it never adds
 /// to a build's peak. The chunks are at most the worker count, at most
-/// [`MAX_COUNT_CHUNKS`], and at most twice the input per node, so the table is
-/// at most eight bytes per input item and four per node: never more than the
-/// target array and positions the build allocates next, which the sequential
-/// build allocates too.
+/// [`MAX_COUNT_CHUNKS`], and at most the input per node plus two, so the table
+/// is at most four bytes per input item and eight per node: never more than
+/// the four-byte target array and the positions the build allocates next,
+/// which the sequential build allocates too.
 struct Counts {
     workers: usize,
     chunks: usize,
@@ -534,7 +609,7 @@ impl Counts {
         }
         let chunks = workers
             .min(MAX_COUNT_CHUNKS)
-            .min(items.saturating_mul(2) / nodes)
+            .min((items / nodes).saturating_add(2))
             .max(1);
         let cells = chunks.saturating_mul(nodes);
         let admission = match memory.reserve(cells.saturating_mul(size_of::<u32>())) {
@@ -609,6 +684,32 @@ fn prefix(offsets: &mut [usize], context: &ExecutionContext) -> Result<()> {
             .ok_or_else(|| ProcedureError::Numerical("arc count overflow".into()))?;
     }
     Ok(())
+}
+
+/// The node-count ceiling the four-byte target width implies. Nothing here
+/// builds a graph that large, so the check is exercised where it is decided.
+#[cfg(test)]
+mod width {
+    use super::*;
+
+    #[test]
+    fn a_node_count_above_the_target_width_is_refused_and_says_so() {
+        // The last count that fits, and the first that does not.
+        assert!(check_node_count(Target::MAX as usize).is_ok());
+        let refused = check_node_count(Target::MAX as usize + 1).unwrap_err();
+        assert!(matches!(refused, ProcedureError::Unsupported(_)));
+        let message = refused.to_string();
+        assert!(message.contains("4294967295"), "{message}");
+        assert!(message.contains("4294967296"), "{message}");
+    }
+
+    /// The widest node id the ceiling admits survives the round trip that
+    /// every fill performs.
+    #[test]
+    fn the_widest_admitted_node_narrows_and_widens_unchanged() {
+        let widest = Target::MAX as usize - 1;
+        assert_eq!(narrow(widest) as usize, widest);
+    }
 }
 
 /// Without the `parallel` feature there is only the sequential build, which the
@@ -696,7 +797,12 @@ mod tests {
         (list, weights)
     }
 
-    type Bytes = (Vec<usize>, Vec<usize>, Option<Vec<usize>>, Option<Vec<u64>>);
+    type Bytes = (
+        Vec<usize>,
+        Vec<Target>,
+        Option<Vec<usize>>,
+        Option<Vec<u64>>,
+    );
 
     /// Every array, weights as bits.
     fn bytes(adjacency: &Adjacency) -> Bytes {
@@ -735,7 +841,7 @@ mod tests {
         // Well above the floor, and dense enough for sixteen chunks. The path
         // each build reports below is the proof; these say why to expect it.
         const { assert!(NODES + EDGES >= 2 * crate::parallel::SEQUENTIAL_BELOW_UNITS) };
-        const { assert!(2 * EDGES / NODES >= 16) };
+        const { assert!(EDGES / NODES + 2 >= 16) };
         for orientation in ORIENTATIONS {
             for weights in [None, Some(weights.as_slice())] {
                 let oracle = sequential(1 << 30, usize::MAX);
@@ -790,7 +896,8 @@ mod tests {
             let (built, path) =
                 Adjacency::build_traced(NODES, &edges, Some(&weights), orientation, &context)
                     .unwrap();
-            // Three edges per two nodes: three counting chunks, not sixteen.
+            // Three edges per two nodes, one per node rounded down, plus two:
+            // three counting chunks, not sixteen.
             assert_eq!(
                 path,
                 BuildPath::Parallel {
