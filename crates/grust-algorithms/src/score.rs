@@ -40,6 +40,14 @@ pub trait Score:
     const ZERO: Self;
     /// Round an `f64` to this precision.
     fn from_f64(value: f64) -> Self;
+    /// Round a count — an out-degree — to this precision, in one conversion.
+    ///
+    /// The same bits as `Self::from_f64(value as f64)` for every count a
+    /// projection can hold: `usize as f64` is exact below 2^53, so rounding
+    /// that exact `f64` to `f32` is rounding the integer itself, which is what
+    /// `usize as f32` does. It is one conversion instead of two, on the divisor
+    /// of the `f32` kernel's per-node share.
+    fn from_usize(value: usize) -> Self;
     /// Widen to `f64`; exact for both implementations.
     fn to_f64(self) -> f64;
     /// Absolute value.
@@ -53,6 +61,10 @@ impl Score for f64 {
     #[inline(always)]
     fn from_f64(value: f64) -> Self {
         value
+    }
+    #[inline(always)]
+    fn from_usize(value: usize) -> Self {
+        value as f64
     }
     #[inline(always)]
     fn to_f64(self) -> f64 {
@@ -72,6 +84,10 @@ impl Score for f32 {
     const ZERO: Self = 0.0;
     #[inline(always)]
     fn from_f64(value: f64) -> Self {
+        value as f32
+    }
+    #[inline(always)]
+    fn from_usize(value: usize) -> Self {
         value as f32
     }
     #[inline(always)]

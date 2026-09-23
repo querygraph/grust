@@ -8,6 +8,31 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ### Graph algorithms
 
+- **PageRank's per-node share carries no ArticleRank term and one conversion.**
+  Both passes of the pull that form a node's share computed
+  `score / (F::from_f64(out_degree as f64) + damp)`. `damp` is ArticleRank's
+  mean outgoing weight and is exactly zero on every PageRank path, so the two
+  passes are now monomorphised on whether it is zero and PageRank divides by
+  the out-degree alone; and the out-degree is converted to the score type in
+  one step instead of through `f64`. **Both are bit-identical, not merely
+  close.** The divisor is a positive finite integer — `out_degree == 0` is the
+  dangling branch, taken before the division — and adding `+0.0` to a positive
+  finite value is exact in `f32` and `f64` alike; `usize as f64` is exact below
+  2^53, so rounding that to `f32` rounds the integer, which is what `usize as
+  f32` does. Every pinned digest passes unmodified at both precisions and both
+  variants, including `tests/article_rank.rs`, which is the path that keeps the
+  add. A `damp` that is not exactly zero, a NaN included, takes the path that
+  keeps it. Measured as above, least of three interleaved rounds against the
+  block-charging kernel alone: at 65,536 nodes and one worker, where the kernel
+  is cache-resident, 1.179 to 1.152 ms an iteration on hub `f32` and 1.098 to
+  1.059 on uniform `f64` in `counted` mode, 1.179 to 1.150 and 1.092 to 1.070
+  in `unchecked` — 0.2 to 0.6 ns a node, consistently in both modes and both
+  families. At 2,097,152 nodes it is inside this host's noise in either
+  direction (−0.6% to +2.1% at one worker), the pull being bound there by its
+  random score reads rather than by its arithmetic. The attribution that
+  prompted the change inferred 1–2 ns a node without measuring it directly;
+  the measured saving is smaller than that, and appears only where the working
+  set fits in cache.
 - **The PageRank pull charges a reduction block of nodes at once, not a node
   at a time.** The fused pass charged `1 + in-arcs` per node, one work-meter
   call per visited node; an ablation on a ratio host attributed +4.7–5.7% of

@@ -65,6 +65,18 @@
 //! own exact total. Cancellation and the deadline are therefore observed on the
 //! unit cadence they were, not the node cadence.
 //!
+//! **The per-node arithmetic.** A node's share of its score is
+//! `score / (out-degree + damp)`. `damp` is ArticleRank's mean outgoing weight
+//! and is exactly zero on every PageRank path, so the two passes that form a
+//! share are monomorphised on whether it is zero ([`Pass::share`]) and
+//! PageRank's divisor is the out-degree alone, with no add. Nothing moves:
+//! the divisor is a positive finite integer, since `out_degree == 0` is the
+//! dangling branch taken before the division, and adding `+0.0` to a positive
+//! finite value is exact in both precisions. The count is converted to the
+//! score type in one step rather than through `f64`, which is the same bits
+//! for every count a projection can hold and one conversion instead of two in
+//! the `f32` kernel.
+//!
 //! **Memory.** Unweighted, the shares are double-buffered and the scores are
 //! updated in place, since no arc reads a score: three arrays of `n` scores,
 //! as before, plus one partial per fixed chunk. Weighted, each in-arc's
@@ -458,11 +470,48 @@ fn weigh<F: Score>(
 }
 
 impl<F: Score> Pass<'_, F> {
+    /// A node's share of `value`, `value / (out-degree + damp)`.
+    ///
+    /// `damp` is ArticleRank's mean outgoing weight and is exactly zero on
+    /// every PageRank path, so `DAMPED` is false there and the add is not in
+    /// the instruction stream at all. Removing it cannot move a bit: the
+    /// divisor is a positive finite integer — `out_degree == 0` is the dangling
+    /// branch, taken before this is reached — and adding `+0.0` to a positive
+    /// finite value is exact in both precisions. The pinned digests at both
+    /// precisions and both variants check it.
+    ///
+    /// The divisor is converted from the count in one step. Through `f64` it
+    /// was two conversions on the `f32` kernel, for the same bits: `usize as
+    /// f64` is exact below 2^53, so rounding it to `f32` rounds the integer.
+    #[inline(always)]
+    fn share<const DAMPED: bool>(&self, value: F, out_degree: usize) -> F {
+        let divisor = F::from_usize(out_degree);
+        if DAMPED {
+            value / (divisor + self.damp)
+        } else {
+            value / divisor
+        }
+    }
+
+    /// Whether this pass carries ArticleRank's `damp` at all. A `damp` that is
+    /// not exactly zero — a NaN included — takes the path that keeps the add.
+    fn damped(&self) -> bool {
+        self.damp != F::ZERO
+    }
+
     /// Each node's share of its score for the first iteration, and the
     /// dangling mass of the initial scores, summed in the fixed chunks: the
     /// pass every later iteration fuses into the one before it, on the same
     /// chunks with the same charges.
     fn shares_of(&self, scores: &[F], shares: &mut [F]) -> Result<F> {
+        if self.damped() {
+            self.shares_of_inner::<true>(scores, shares)
+        } else {
+            self.shares_of_inner::<false>(scores, shares)
+        }
+    }
+
+    fn shares_of_inner<const DAMPED: bool>(&self, scores: &[F], shares: &mut [F]) -> Result<F> {
         let parts = crate::parallel::for_chunks(
             self.workers,
             shares,
@@ -486,9 +535,7 @@ impl<F: Score> Pass<'_, F> {
                         sum += score;
                         *share = F::ZERO;
                     } else {
-                        // `damp` is zero for PageRank, so this is one add on
-                        // a divisor that was already being formed.
-                        *share = score / (F::from_f64(out_degree as f64) + self.damp);
+                        *share = self.share::<DAMPED>(score, out_degree);
                     }
                 }
                 Ok(sum)
@@ -524,6 +571,21 @@ impl<F: Score> Pass<'_, F> {
     /// place, writes `shares_next` and one partial per fixed chunk. Returns
     /// whether every updated score is finite.
     fn unweighted(
+        &self,
+        teleport: &Teleport<'_, F>,
+        shares_now: &[F],
+        scores: &mut [F],
+        shares_next: &mut [F],
+        partials: &mut [Partial<F>],
+    ) -> Result<bool> {
+        if self.damped() {
+            self.unweighted_inner::<true>(teleport, shares_now, scores, shares_next, partials)
+        } else {
+            self.unweighted_inner::<false>(teleport, shares_now, scores, shares_next, partials)
+        }
+    }
+
+    fn unweighted_inner<const DAMPED: bool>(
         &self,
         teleport: &Teleport<'_, F>,
         shares_now: &[F],
@@ -585,7 +647,7 @@ impl<F: Score> Pass<'_, F> {
                             dangling += updated;
                             *share = F::ZERO;
                         } else {
-                            *share = updated / (F::from_f64(out_degree as f64) + self.damp);
+                            *share = self.share::<DAMPED>(updated, out_degree);
                         }
                     }
                     *partial = Partial { residual, dangling };
