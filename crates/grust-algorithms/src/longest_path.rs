@@ -147,7 +147,7 @@ pub fn longest_path(graph: &GraphProjection) -> Result<LongestPaths> {
         meter.charge(1 + range.len())?;
         let (here, steps) = (distances.values[node], hops.values[node]);
         for arc in range {
-            let next = adjacency.targets.values[arc];
+            let next = adjacency.target(arc);
             let candidate = here + adjacency.weight(arc);
             if candidate > distances.values[next] {
                 distances.values[next] = candidate;

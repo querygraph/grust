@@ -137,7 +137,7 @@ impl Workspace {
             self.reached.values.push(node);
             for arc in adjacency.range(node) {
                 self.meter.charge(1)?;
-                let next = adjacency.targets.values[arc];
+                let next = adjacency.target(arc);
                 let candidate = cost + adjacency.weight(arc);
                 if !candidate.is_finite() {
                     return Err(AlgorithmError::Numerical(

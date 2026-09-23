@@ -169,9 +169,25 @@ PageRank defaults to damping .85, L1 tolerance 1e-8 and 1000 iterations. Scores
 start uniformly. Optional personalization controls teleportation and dangling
 mass; zero outgoing weight is dangling. Parallel edges contribute separately.
 Finite large weights are scaled before sums. Iteration-limit results explicitly
-report non-convergence. Seeds, community algorithms, negative-weight paths,
-all-pairs/k-shortest paths, flow, similarity and ML are deferred; the current
-catalog is not universal GDS compatibility.
+report non-convergence. The options are `damping`, `tolerance`,
+`maxIterations`, `personalization` and `precision`; `articleRank` takes the
+same. `precision` is `'f64'` by default or `'f32'`, and nothing else: at
+`'f32'` every score, per-arc probability, dangling mass, teleport share and
+base is formed and accumulated in `f32`, the residual is still summed in
+`f64` from the `f32` differences, and the Arrow `score` column is Float32 on
+every batch, with `iterations`, `converged` and `residual` unchanged. In Rust
+that is `pagerank_f32`, returning `PageRank<f32>`; `pagerank` returns
+`PageRank<f64>` as before. Both precisions are bit-identical at any worker
+count. The `f32` residual tracks the `f64` residual closely, so at 1e-8 the two
+usually stop at the same iteration; at tolerance zero `f32` reaches an exact
+fixed point sooner, and on a graph where most nodes are dangling it needs more
+iterations than `f64` at tight tolerances. A tolerance below one `f32` ulp of
+a moving score is met only at an exact fixed point: on a four-node graph with
+scores near 0.45 the default 1e-8 is below an ulp, the run oscillates by one
+ulp on two nodes for all 1000 iterations and reports `converged` false, while
+1e-6 is met in 80. Seeds, community algorithms,
+negative-weight paths, all-pairs/k-shortest paths, flow, similarity and ML are
+deferred; the current catalog is not universal GDS compatibility.
 
 ## Full paths and incremental consumption
 

@@ -121,7 +121,7 @@ pub fn betweenness(graph: &GraphProjection, options: BetweennessOptions) -> Resu
     let mut scores = Buffer::filled(n, 0.0f64, context)?;
     let workers = parallel::concurrency(
         context,
-        source_count.saturating_mul(n.saturating_add(adjacency.targets.values.len())),
+        source_count.saturating_mul(n.saturating_add(adjacency.arc_count())),
     );
     let block = block_size(source_count);
     parallel::ordered_blocks(
@@ -211,7 +211,7 @@ impl Workspace {
                 let range = adjacency.range(node);
                 self.meter.charge(1 + range.len())?;
                 for arc in range {
-                    let next = adjacency.targets.values[arc];
+                    let next = adjacency.target(arc);
                     let candidate = cost + adjacency.weight(arc);
                     if candidate < self.distance.values[next] {
                         self.distance.values[next] = candidate;
@@ -232,7 +232,7 @@ impl Workspace {
                 self.meter.charge(1 + range.len())?;
                 let candidate = self.distance.values[node] + 1.0;
                 for arc in range {
-                    let next = adjacency.targets.values[arc];
+                    let next = adjacency.target(arc);
                     if self.distance.values[next].is_infinite() {
                         self.distance.values[next] = candidate;
                         self.order.values.push(next);
@@ -250,7 +250,7 @@ impl Workspace {
             let range = adjacency.range(node);
             self.meter.charge(1 + range.len())?;
             for arc in range {
-                let next = adjacency.targets.values[arc];
+                let next = adjacency.target(arc);
                 if next != node
                     && self.distance.values[next]
                         == self.distance.values[node] + adjacency.weight(arc)

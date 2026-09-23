@@ -152,7 +152,7 @@ pub fn astar(
         meter.charge(1 + range.len())?;
         let here = cost.values[node];
         for arc in range {
-            let next = adjacency.targets.values[arc];
+            let next = adjacency.target(arc);
             let candidate = here + adjacency.weight(arc);
             if candidate < cost.values[next] {
                 cost.values[next] = candidate;

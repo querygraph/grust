@@ -136,7 +136,7 @@ fn pull(
     // few hundred thousand units costs about what entering the pool costs.
     let workers = parallel::concurrency_above(
         context,
-        into.len().saturating_add(arcs.targets.values.len()),
+        into.len().saturating_add(arcs.arc_count()),
         parallel::ITERATION_SEQUENTIAL_BELOW_UNITS,
     );
     let sums = parallel::for_chunks(workers, into, CHUNK, |first, chunk| {
@@ -148,7 +148,7 @@ fn pull(
             meter.charge(1 + range.len())?;
             let mut sum = 0.0;
             for arc in range {
-                sum += arcs.weight(arc) * from[arcs.targets.values[arc]];
+                sum += arcs.weight(arc) * from[arcs.target(arc)];
             }
             *value = keep * from[node] + beta + alpha * sum;
             squares += *value * *value;

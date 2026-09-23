@@ -6,16 +6,17 @@ use arrow_array::{
     ArrayRef, RecordBatch,
     builder::{
         BooleanBuilder, FixedSizeListBuilder, Float32Builder, Float64Builder, Int64Builder,
-        LargeListBuilder, StringBuilder,
+        LargeListBuilder, PrimitiveBuilder, StringBuilder,
     },
+    types::ArrowPrimitiveType,
 };
 use arrow_schema::{Field, Schema};
-use grust_procedures::MemoryReservation;
+use grust_procedures::{ExecutionContext, MemoryReservation};
 
 use crate::{
     AlgorithmError, AllPairsShortestPaths, Components, Degrees, Distances, GraphProjection,
-    KShortestPaths, NodeOrder, NodeTable, PageRank, PathCursor, PathView, Result, ShortestPair,
-    ShortestPaths, TableType, TableValue, TopologicalOrder, buffer::Buffer,
+    KShortestPaths, NodeOrder, NodeTable, PageRank, PathCursor, PathView, Result, Score,
+    ShortestPair, ShortestPaths, TableType, TableValue, TopologicalOrder, buffer::Buffer,
 };
 
 /// A bounded Arrow batch retaining its query memory reservation. Clone this
@@ -48,6 +49,8 @@ enum Output {
     Distances(Distances),
     Components(Components),
     PageRank(PageRank),
+    /// `f32` scores: the `score` column is Float32, the rest as at `f64`.
+    PageRankF32(PageRank<f32>),
     Degrees(Degrees),
     Paths(PathCursor),
     /// Ranked paths, already materialized: one batch each, in rank order.
@@ -105,9 +108,18 @@ impl Components {
     }
 }
 impl PageRank {
-    /// Transfer scores and convergence evidence into Arrow batches.
+    /// Transfer scores and convergence evidence into Arrow batches: `score`
+    /// and `residual` Float64, `iterations` Int64, `converged` Boolean.
     pub fn into_arrow_results(self) -> ArrowResultCursor {
         ArrowResultCursor::new(self.projection().clone(), Output::PageRank(self))
+    }
+}
+impl PageRank<f32> {
+    /// As [`PageRank::into_arrow_results`], with `score` Float32: the scores
+    /// are handed over at the precision they were computed at, never widened.
+    /// The residual was summed in `f64` and stays Float64.
+    pub fn into_arrow_results(self) -> ArrowResultCursor {
+        ArrowResultCursor::new(self.projection().clone(), Output::PageRankF32(self))
     }
 }
 impl NodeTable {
@@ -352,24 +364,12 @@ impl ArrowResultCursor {
                 ]);
             }
             Output::PageRank(result) => {
-                let mut scores = Float64Builder::with_capacity(count);
-                let mut iterations = Int64Builder::with_capacity(count);
-                let mut converged = BooleanBuilder::with_capacity(count);
-                let mut residual = Float64Builder::with_capacity(count);
-                let iteration = signed(result.iterations(), "iterations")?;
-                for &score in &result.values()[start..end] {
-                    context.charge_work(1)?;
-                    scores.append_value(score);
-                    iterations.append_value(iteration);
-                    converged.append_value(result.converged());
-                    residual.append_value(result.residual());
-                }
-                columns.extend([
-                    ("score", Arc::new(scores.finish()) as ArrayRef),
-                    ("iterations", Arc::new(iterations.finish())),
-                    ("converged", Arc::new(converged.finish())),
-                    ("residual", Arc::new(residual.finish())),
-                ]);
+                let scores = Float64Builder::with_capacity(count);
+                rank_columns(context, &mut columns, result, start..end, scores)?;
+            }
+            Output::PageRankF32(result) => {
+                let scores = Float32Builder::with_capacity(count);
+                rank_columns(context, &mut columns, result, start..end, scores)?;
             }
             Output::Table(table) => {
                 for column in 0..table.width() {
@@ -458,6 +458,42 @@ impl ArrowResultCursor {
         self.emitted = true;
         finish(columns, reservation).map(Some)
     }
+}
+
+/// PageRank's four columns after `nodeId`, for rows `start..end`. The score
+/// column's Arrow type is the builder's, which is the scores' own precision;
+/// `iterations`, `converged` and `residual` are Int64, Boolean and Float64 at
+/// either.
+fn rank_columns<F, T>(
+    context: &ExecutionContext,
+    columns: &mut Vec<(&str, ArrayRef)>,
+    result: &PageRank<F>,
+    rows: std::ops::Range<usize>,
+    mut scores: PrimitiveBuilder<T>,
+) -> Result<()>
+where
+    F: Score,
+    T: ArrowPrimitiveType<Native = F>,
+{
+    let count = rows.len();
+    let mut iterations = Int64Builder::with_capacity(count);
+    let mut converged = BooleanBuilder::with_capacity(count);
+    let mut residual = Float64Builder::with_capacity(count);
+    let iteration = signed(result.iterations(), "iterations")?;
+    for &score in &result.values()[rows] {
+        context.charge_work(1)?;
+        scores.append_value(score);
+        iterations.append_value(iteration);
+        converged.append_value(result.converged());
+        residual.append_value(result.residual());
+    }
+    columns.extend([
+        ("score", Arc::new(scores.finish()) as ArrayRef),
+        ("iterations", Arc::new(iterations.finish())),
+        ("converged", Arc::new(converged.finish())),
+        ("residual", Arc::new(residual.finish())),
+    ]);
+    Ok(())
 }
 
 // Up to six Arrow arrays plus schemas/builders/offset and validity buffers.

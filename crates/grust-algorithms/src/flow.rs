@@ -104,9 +104,8 @@ pub fn max_flow(graph: &GraphProjection, source: &str, target: &str) -> Result<M
     let n = graph.node_count();
     let adjacency = graph.outgoing();
     let mut meter = context.work_meter();
-    let carries = |node: usize, arc: usize| {
-        adjacency.targets.values[arc] != node && adjacency.weight(arc) > 0.0
-    };
+    let carries =
+        |node: usize, arc: usize| adjacency.target(arc) != node && adjacency.weight(arc) > 0.0;
 
     // Residual arcs grouped by tail: each projection arc, and its reverse.
     let mut offsets = Buffer::filled(n + 1, 0usize, context)?;
@@ -116,7 +115,7 @@ pub fn max_flow(graph: &GraphProjection, source: &str, target: &str) -> Result<M
         for arc in range {
             if carries(node, arc) {
                 offsets.values[node + 1] += 1;
-                offsets.values[adjacency.targets.values[arc] + 1] += 1;
+                offsets.values[adjacency.target(arc) + 1] += 1;
             }
         }
     }
@@ -138,7 +137,7 @@ pub fn max_flow(graph: &GraphProjection, source: &str, target: &str) -> Result<M
             if !carries(node, arc) {
                 continue;
             }
-            let other = adjacency.targets.values[arc];
+            let other = adjacency.target(arc);
             let forward = cursor.values[node];
             cursor.values[node] += 1;
             let backward = cursor.values[other];

@@ -463,6 +463,96 @@ fn arguments(
     resolved.validate_arguments(args).unwrap()
 }
 
+/// `precision` chooses the Arrow type of the rank kernels' `score` column:
+/// Float64 by default and when named, Float32 when `'f32'` is named, on
+/// every batch, from the declaration rather than the rows. The other three
+/// columns keep their types at either precision, and anything but those two
+/// names is refused before the kernel runs.
+#[test]
+fn rank_precision_selects_the_score_column_s_arrow_type() {
+    use arrow_schema::DataType;
+    let registry = registry();
+    for name in ["pagerank", "articleRank"] {
+        for (options, expected) in [
+            (serde_json::json!({}), DataType::Float64),
+            (serde_json::json!({"precision": "f64"}), DataType::Float64),
+            (serde_json::json!({"precision": "f32"}), DataType::Float32),
+        ] {
+            let args = arguments(&registry, name, options.clone());
+            let context = context();
+            let graph = projection(&context, Orientation::Outgoing);
+            let batches = drain(run_on_projection(name, &graph, &args).unwrap());
+            assert!(
+                batches.len() > 1,
+                "{name} {options}: the row bound splits four rows"
+            );
+            let definition = registry
+                .resolve(&format!("grust.algorithms.{name}"))
+                .unwrap()
+                .definition()
+                .clone();
+            assert_declared_nullability(name, &definition, &batches);
+            let mut mass = 0.0f64;
+            for batch in &batches {
+                let schema = batch.schema();
+                let data_type =
+                    |column: &str| schema.field_with_name(column).unwrap().data_type().clone();
+                assert_eq!(data_type("score"), expected, "{name} {options}");
+                assert_eq!(data_type("iterations"), DataType::Int64, "{name} {options}");
+                assert_eq!(
+                    data_type("converged"),
+                    DataType::Boolean,
+                    "{name} {options}"
+                );
+                assert_eq!(data_type("residual"), DataType::Float64, "{name} {options}");
+                let scores = batch.column_by_name("score").unwrap();
+                mass += match expected {
+                    DataType::Float32 => scores
+                        .as_any()
+                        .downcast_ref::<arrow_array::Float32Array>()
+                        .unwrap()
+                        .iter()
+                        .map(|score| f64::from(score.unwrap()))
+                        .sum::<f64>(),
+                    _ => scores
+                        .as_any()
+                        .downcast_ref::<arrow_array::Float64Array>()
+                        .unwrap()
+                        .iter()
+                        .map(|score| score.unwrap())
+                        .sum::<f64>(),
+                };
+            }
+            if name == "pagerank" {
+                // Four `f32` scores that sum to one in `f64` to within their
+                // own rounding; ArticleRank's sum to less by design.
+                assert!((mass - 1.0).abs() < 1e-6, "{name} {options}: mass {mass}");
+            }
+        }
+        let args = arguments(&registry, name, serde_json::json!({"precision": "f16"}));
+        let context = context();
+        let graph = projection(&context, Orientation::Outgoing);
+        match run_on_projection(name, &graph, &args) {
+            Err(ProcedureError::InvalidArguments(message)) => {
+                assert!(message.contains("precision"), "{name}: {message}")
+            }
+            Err(other) => panic!("{name}: {other}"),
+            Ok(_) => panic!("{name} ran at precision 'f16'"),
+        }
+        // A precision that is not a string fails validation, as the option
+        // is declared `String`.
+        let resolved = registry
+            .resolve(&format!("grust.algorithms.{name}"))
+            .unwrap();
+        assert!(
+            resolved
+                .validate_arguments(vec![Value::Json(serde_json::json!({"precision": 32}))])
+                .is_err(),
+            "{name} accepted a numeric precision"
+        );
+    }
+}
+
 #[test]
 fn every_kernel_but_bellman_ford_refuses_a_signed_projection() {
     // A negative weight does not make Dijkstra fail; it makes it wrong. So a

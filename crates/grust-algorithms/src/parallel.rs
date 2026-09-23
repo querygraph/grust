@@ -147,6 +147,23 @@ pub(crate) fn chunk_len(items: usize, workers: usize) -> usize {
 /// residuals are bit-identical across widths.
 pub(crate) const REDUCTION_CHUNK_LEN: usize = 4096;
 
+/// Items per chunk for a pass that writes each item's own output slot **and**
+/// forms a reduction as it goes: [`chunk_len`] rounded up to a multiple of
+/// [`REDUCTION_CHUNK_LEN`].
+///
+/// A worker's chunk then starts on a reduction-chunk boundary and holds a
+/// whole number of reduction chunks, so a partial the worker sums over each of
+/// them is the partial of that fixed chunk: the same terms in the same order
+/// at any width. The pass keeps the width-dependent cut for balance and the
+/// fixed cut for its sums; the first is a multiple of the second, which is
+/// what lets one loop serve both. Never less than [`chunk_len`], so a pass
+/// that was balanced stays so.
+pub(crate) fn reduction_aligned_chunk_len(items: usize, workers: usize) -> usize {
+    chunk_len(items, workers)
+        .div_ceil(REDUCTION_CHUNK_LEN)
+        .saturating_mul(REDUCTION_CHUNK_LEN)
+}
+
 /// Combine per-chunk results in chunk order, so the combination is independent
 /// of the order in which the chunks finished.
 pub(crate) fn reduce_in_order<T: Copy, R>(

@@ -141,7 +141,7 @@ pub fn community_quality(
         let range = adjacency.range(source);
         meter.charge(1 + range.len())?;
         for arc in range {
-            let target = adjacency.targets.values[arc];
+            let target = adjacency.target(arc);
             let there = dense.values[target];
             // An undirected loop occupies one arc and two matrix entries.
             let weight = if undirected && target == source {

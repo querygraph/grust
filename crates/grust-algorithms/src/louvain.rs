@@ -17,6 +17,7 @@
 use crate::{
     AlgorithmError, GraphProjection, Orientation, Result,
     buffer::Buffer,
+    projection::Target,
     random,
     table::{NodeColumn, NodeTable, TableScalar},
 };
@@ -102,11 +103,13 @@ impl Louvain {
 /// internal weight after coarsening — is `inside`, already in `A_uu` units.
 pub(super) struct Level {
     pub(super) offsets: Buffer<usize>,
-    pub(super) targets: Buffer<usize>,
+    /// Four bytes an arc, as the projection stores them; read through
+    /// [`Self::target`].
+    pub(super) targets: Buffer<Target>,
     pub(super) weights: Buffer<f64>,
     pub(super) inside: Buffer<f64>,
     /// In-arcs, for directed graphs only; an undirected row is its own mirror.
-    pub(super) incoming: Option<(Buffer<usize>, Buffer<usize>, Buffer<f64>)>,
+    pub(super) incoming: Option<(Buffer<usize>, Buffer<Target>, Buffer<f64>)>,
 }
 
 impl Level {
@@ -115,6 +118,11 @@ impl Level {
     }
     pub(super) fn row(&self, node: usize) -> std::ops::Range<usize> {
         self.offsets.values[node]..self.offsets.values[node + 1]
+    }
+    /// Target of `arc`, widened.
+    #[inline(always)]
+    pub(super) fn target(&self, arc: usize) -> usize {
+        self.targets.values[arc] as usize
     }
 }
 
@@ -251,7 +259,7 @@ pub(crate) fn modularity_of(
         let range = adjacency.range(source);
         meter.charge(1 + range.len())?;
         for arc in range {
-            let target = adjacency.targets.values[arc];
+            let target = adjacency.target(arc);
             // An undirected loop occupies one arc but is two matrix entries' worth.
             let weight = if !directed && target == source {
                 2.0 * adjacency.weight(arc)
@@ -287,7 +295,7 @@ pub(super) fn first_level(
 ) -> Result<Level> {
     let n = graph.node_count();
     let adjacency = graph.outgoing();
-    let arcs = adjacency.targets.values.len();
+    let arcs = adjacency.arc_count();
     let mut offsets = Buffer::filled(n + 1, 0usize, context)?;
     let mut targets = Buffer::capacity(arcs, context)?;
     let mut weights = Buffer::capacity(arcs, context)?;
@@ -297,12 +305,12 @@ pub(super) fn first_level(
         let range = adjacency.range(node);
         meter.charge(1 + range.len())?;
         for arc in range {
-            let target = adjacency.targets.values[arc];
+            let target = adjacency.target(arc);
             let weight = adjacency.weight(arc);
             if target == node {
                 inside.values[node] += if directed { weight } else { 2.0 * weight };
             } else {
-                targets.values.push(target);
+                targets.values.push(target as Target);
                 weights.values.push(weight);
             }
         }
@@ -320,11 +328,11 @@ pub(super) fn first_level(
     })
 }
 
-type Csr = (Buffer<usize>, Buffer<usize>, Buffer<f64>);
+type Csr = (Buffer<usize>, Buffer<Target>, Buffer<f64>);
 
 fn transpose(
     offsets: &Buffer<usize>,
-    targets: &Buffer<usize>,
+    targets: &Buffer<Target>,
     weights: &Buffer<f64>,
     context: &ExecutionContext,
 ) -> Result<Csr> {
@@ -333,22 +341,23 @@ fn transpose(
     let mut meter = context.work_meter();
     let mut reversed = Buffer::filled(n + 1, 0usize, context)?;
     for &target in &targets.values {
-        reversed.values[target + 1] += 1;
+        reversed.values[target as usize + 1] += 1;
     }
     for node in 0..n {
         reversed.values[node + 1] += reversed.values[node];
     }
     let mut next = Buffer::capacity(n, context)?;
     next.values.extend_from_slice(&reversed.values[..n]);
-    let mut sources = Buffer::filled(arcs, 0usize, context)?;
+    let mut sources = Buffer::filled(arcs, 0 as Target, context)?;
     let mut carried = Buffer::filled(arcs, 0.0f64, context)?;
     for source in 0..n {
         let range = offsets.values[source]..offsets.values[source + 1];
         meter.charge(1 + range.len())?;
         for arc in range {
-            let slot = next.values[targets.values[arc]];
-            next.values[targets.values[arc]] += 1;
-            sources.values[slot] = source;
+            let target = targets.values[arc] as usize;
+            let slot = next.values[target];
+            next.values[target] += 1;
+            sources.values[slot] = source as Target;
             carried.values[slot] = weights.values[arc];
         }
     }
@@ -450,7 +459,7 @@ pub(super) fn move_nodes(
             let row = level.row(node);
             meter.charge(1 + row.len())?;
             for arc in row {
-                let other = community.values[level.targets.values[arc]];
+                let other = community.values[level.target(arc)];
                 if !seen.values[other] {
                     seen.values[other] = true;
                     touched.values.push(other);
@@ -463,7 +472,7 @@ pub(super) fn move_nodes(
                 let row = offsets.values[node]..offsets.values[node + 1];
                 meter.charge(row.len())?;
                 for arc in row {
-                    let other = community.values[sources.values[arc]];
+                    let other = community.values[sources.values[arc] as usize];
                     if !seen.values[other] {
                         seen.values[other] = true;
                         touched.values.push(other);
@@ -584,7 +593,7 @@ pub(super) fn coarsen(
             let row = level.row(node);
             meter.charge(1 + row.len())?;
             for arc in row {
-                let other = dense.values[level.targets.values[arc]];
+                let other = dense.values[level.target(arc)];
                 let weight = level.weights.values[arc];
                 if other == community {
                     // Both arcs of an undirected internal edge pass through here.
@@ -601,7 +610,7 @@ pub(super) fn coarsen(
         // Sorted so the coarse rows do not depend on member order.
         touched.values.sort_unstable();
         for &other in &touched.values {
-            targets.values.push(other);
+            targets.values.push(other as Target);
             weights.values.push(sum.values[other]);
             sum.values[other] = 0.0;
             seen.values[other] = false;

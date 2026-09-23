@@ -47,7 +47,7 @@ pub fn depth_first(graph: &GraphProjection, source: &str) -> Result<NodeOrder> {
             stack.values.pop();
             continue;
         }
-        let target = adjacency.targets.values[*next];
+        let target = adjacency.target(*next);
         *next += 1;
         if !seen.values[target] {
             seen.values[target] = true;
@@ -95,7 +95,7 @@ pub fn topological_sort(graph: &GraphProjection) -> Result<TopologicalOrder> {
                 stack.values.pop();
                 continue;
             }
-            let target = adjacency.targets.values[*next];
+            let target = adjacency.target(*next);
             *next += 1;
             match colors.values[target] {
                 Color::Unseen => {

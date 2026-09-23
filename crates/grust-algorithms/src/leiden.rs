@@ -143,7 +143,7 @@ fn refine(
         for arc in row {
             let weight = level.weights.values[arc];
             out += weight;
-            if community.values[level.targets.values[arc]] == community.values[node] {
+            if community.values[level.target(arc)] == community.values[node] {
                 external.values[node] += scale * weight;
             }
         }
@@ -152,7 +152,7 @@ fn refine(
             Some((_, sources, weights)) => {
                 for arc in in_rows(node) {
                     into += weights.values[arc];
-                    if community.values[sources.values[arc]] == community.values[node] {
+                    if community.values[sources.values[arc] as usize] == community.values[node] {
                         external.values[node] += weights.values[arc];
                     }
                 }
@@ -218,11 +218,11 @@ fn refine(
             }
         };
         for arc in level.row(node) {
-            reach(level.targets.values[arc], scale * level.weights.values[arc]);
+            reach(level.target(arc), scale * level.weights.values[arc]);
         }
         if let Some((_, sources, weights)) = &level.incoming {
             for arc in in_rows(node) {
-                reach(sources.values[arc], weights.values[arc]);
+                reach(sources.values[arc] as usize, weights.values[arc]);
             }
         }
 
