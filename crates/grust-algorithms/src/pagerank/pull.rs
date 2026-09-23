@@ -93,7 +93,7 @@ use super::{
     PageRank, PageRankOptions, RankVariant, damping, mean_out_degree, mean_outgoing, uniform_share,
 };
 use crate::parallel::{REDUCTION_CHUNK_LEN, reduce_in_order, reduction_aligned_chunk_len};
-use crate::projection::Adjacency;
+use crate::projection::{Adjacency, Offset};
 use crate::{
     AlgorithmError, ExecutionContext, GraphProjection, Result, buffer::Buffer, score::Score,
 };
@@ -102,7 +102,7 @@ use crate::{
 /// of those nodes' degrees, without visiting a node or an arc.
 #[inline(always)]
 fn arcs_of(adjacency: &Adjacency, first: usize, nodes: usize) -> usize {
-    adjacency.offsets.values[first + nodes] - adjacency.offsets.values[first]
+    adjacency.row_start(first + nodes) - adjacency.row_start(first)
 }
 
 /// The node cadence on which a block-charged loop polls for cancellation and
@@ -180,8 +180,9 @@ struct Pass<'a, F> {
     /// Nodes per worker task: a multiple of [`REDUCTION_CHUNK_LEN`].
     chunk: usize,
     reverse: &'a Adjacency,
-    /// The projection's own offsets: a node's out-degree.
-    offsets: &'a [usize],
+    /// The projection's own row bounds, as stored: a node's out-degree is one
+    /// subtraction on them, at four bytes a bound.
+    offsets: &'a [Offset],
     damping: F,
     /// Zero for PageRank; ArticleRank's mean outgoing weight.
     damp: F,
@@ -244,7 +245,7 @@ pub(super) fn pull<F: Score>(
         workers,
         chunk: reduction_aligned_chunk_len(n, workers),
         reverse: &reverse,
-        offsets: &adjacency.offsets.values,
+        offsets: adjacency.offsets(),
         damping,
         damp,
         totals: &totals.values,
@@ -434,7 +435,7 @@ fn weigh<F: Score>(
     let mut first = 0;
     while first < n {
         let last = (first + chunk).min(n);
-        let len = reverse.offsets.values[last] - reverse.offsets.values[first];
+        let len = reverse.row_start(last) - reverse.row_start(first);
         let (own, tail) = std::mem::take(&mut rest).split_at_mut(len);
         rest = tail;
         tasks.push((first, last, own));
@@ -442,7 +443,7 @@ fn weigh<F: Score>(
     }
     crate::parallel::for_each_owned(workers, tasks, |_, (first, last, own)| {
         let mut meter = context.work_meter();
-        let base = reverse.offsets.values[first];
+        let base = reverse.row_start(first);
         let mut start = first;
         while start < last {
             let end = (start + REDUCTION_CHUNK_LEN).min(last);
@@ -527,7 +528,7 @@ impl<F: Score> Pass<'_, F> {
                 for (index, share) in chunk.iter_mut().enumerate() {
                     let node = first + index;
                     let score = scores[node];
-                    let out_degree = self.offsets[node + 1] - self.offsets[node];
+                    let out_degree = (self.offsets[node + 1] - self.offsets[node]) as usize;
                     // Unweighted, having no arc is the whole of dangling. A
                     // dangling node contributes through `base`, never through
                     // an arc, so its share is never read.
@@ -642,7 +643,7 @@ impl<F: Score> Pass<'_, F> {
                         // score differences formed at the scores' own.
                         residual += (updated - *score).abs().to_f64();
                         *score = updated;
-                        let out_degree = self.offsets[node + 1] - self.offsets[node];
+                        let out_degree = (self.offsets[node + 1] - self.offsets[node]) as usize;
                         if out_degree == 0 {
                             dangling += updated;
                             *share = F::ZERO;

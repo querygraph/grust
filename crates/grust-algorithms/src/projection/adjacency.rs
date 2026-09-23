@@ -6,25 +6,34 @@
 //! exactly the memory the sequential forms admit, in the same order. How the
 //! count stays exact is on [`Counts`]; how the fill does is on [`RowRange`].
 //!
-//! **Arc targets are four bytes.** Every kernel's inner loop streams the
+//! **Both index arrays are four bytes.** Every kernel's inner loop streams the
 //! target array, and above the last cache level that stream is most of a
 //! sweep's cost, so a target is stored as a `u32` and widened on read through
-//! [`Adjacency::target`] or [`Adjacency::targets`]. A projection therefore
-//! holds at most `u32::MAX` nodes, which [`check_node_count`] refuses past
-//! with a named error rather than keeping an eight-byte fallback beside the
-//! narrow one.
+//! [`Adjacency::target`] or [`Adjacency::targets`]. A row bound is stored the
+//! same way and read through [`Adjacency::range`], [`Adjacency::row_start`],
+//! [`Adjacency::degree`] or [`Adjacency::offsets`]. A pull that visits a node
+//! reads both ends of its row, so the row bounds are a per-node stream of eight
+//! bytes rather than sixteen.
+//!
+//! A projection therefore holds at most `u32::MAX` nodes, which
+//! [`check_node_count`] refuses past before any counting, and at most
+//! `u32::MAX` arcs, which [`arc_count_overflow`] names wherever a degree count
+//! or a prefix sum would pass it. Neither keeps an eight-byte fallback beside
+//! the narrow one.
 //!
 //! **Why refusing is not a limitation.** The first graph a `usize` fallback
-//! would admit has 2^32 nodes. Before a single arc is stored, that projection
-//! has already asked for 34.4 GB of offsets (`(n+1) × 8`) and 34.4 GB for its
-//! node-id vector's pointers alone; the edge list it is built from is 32 bytes
-//! a [`ProjectionEdge`]; and the cheapest kernel result over it, one `f64` a
-//! node, is another 34.4 GB, which PageRank needs three of. The targets are
-//! 17.2 GB narrow and 34.4 GB wide at one arc a node. So a fallback would
-//! double the smallest array in a working set that is already several hundred
-//! gigabytes for the widest reason, and every per-node `usize` buffer in this
-//! crate would have to be narrowed first for it to matter. A clear refusal
-//! costs one comparison per build and keeps one representation to reason about.
+//! would admit has 2^32 nodes, or 2^32 arcs. Before a single arc is stored, a
+//! projection of 2^32 nodes has already asked for 34.4 GB for its node-id
+//! vector's pointers alone; the edge list it is built from is 32 bytes a
+//! [`ProjectionEdge`]; and the cheapest kernel result over it, one `f64` a
+//! node, is another 34.4 GB, which PageRank needs three of. A projection of
+//! 2^32 arcs holds 17.2 GB of targets at the narrow width and 34.4 GB at the
+//! wide one, and its edge list is 137 GB. So a fallback would double the two
+//! smallest arrays in a working set that is already several hundred gigabytes
+//! for the widest reason, and every per-node `usize` buffer in this crate would
+//! have to be narrowed first for it to matter. A clear refusal costs one
+//! comparison per build and one checked add per node and keeps one
+//! representation to reason about.
 
 use std::ops::Range;
 
@@ -35,8 +44,15 @@ use super::*;
 /// The stored width of an arc target. Widened to `usize` on every read.
 pub(crate) type Target = u32;
 
+/// The stored width of a CSR row bound — an arc index, not a node id, so its
+/// ceiling is the arc count. Widened to `usize` on every read.
+pub(crate) type Offset = u32;
+
 pub(crate) struct Adjacency {
-    pub(crate) offsets: Buffer<usize>,
+    /// Read through [`Self::range`], [`Self::row_start`], [`Self::degree`] or
+    /// [`Self::offsets`], never widened anywhere else, so the width is this
+    /// file's decision alone.
+    offsets: Buffer<Offset>,
     /// Read through [`Self::target`] or [`Self::targets`], never widened
     /// anywhere else, so the width is this file's decision alone.
     targets: Buffer<Target>,
@@ -57,6 +73,18 @@ fn check_node_count(n: usize) -> Result<()> {
         )));
     }
     Ok(())
+}
+
+/// The arc-count ceiling the four-byte row-offset width implies, named
+/// wherever a degree count or a prefix sum would pass it. Refusing here rather
+/// than in a separate pre-pass keeps the check on the arithmetic that could
+/// break, at one checked add per node.
+fn arc_count_overflow() -> ProcedureError {
+    ProcedureError::Unsupported(format!(
+        "a projection holds at most {} arcs, the largest arc index its four-byte \
+         row-offset array can name",
+        Offset::MAX
+    ))
 }
 
 /// A node index as a stored target. Lossless: [`check_node_count`] ran before
@@ -117,7 +145,7 @@ impl Adjacency {
         let mut offsets = Buffer::filled(
             n.checked_add(1)
                 .ok_or_else(|| ProcedureError::Numerical("node count overflow".into()))?,
-            0usize,
+            0 as Offset,
             context,
         )?;
         // Row and other end of an edge's first arc; an undirected non-loop
@@ -154,18 +182,18 @@ impl Adjacency {
                     let (source, target) = ends(edge);
                     offsets.values[source + 1] = offsets.values[source + 1]
                         .checked_add(1)
-                        .ok_or_else(|| ProcedureError::Numerical("degree overflow".into()))?;
+                        .ok_or_else(arc_count_overflow)?;
                     if mirrored(source, target) {
                         offsets.values[target + 1] = offsets.values[target + 1]
                             .checked_add(1)
-                            .ok_or_else(|| ProcedureError::Numerical("degree overflow".into()))?;
+                            .ok_or_else(arc_count_overflow)?;
                     }
                 }
                 None
             }
         };
         prefix(&mut offsets.values, context)?;
-        let count = offsets.values[n];
+        let count = offsets.values[n] as usize;
         let mut result = Self {
             offsets,
             targets: Buffer::filled(count, 0 as Target, context)?,
@@ -177,7 +205,9 @@ impl Adjacency {
         let mut positions = Buffer::capacity(n, context)?;
         for chunk in result.offsets.values[..n].chunks(1024) {
             context.charge_work(chunk.len())?;
-            positions.values.extend_from_slice(chunk);
+            positions
+                .values
+                .extend(chunk.iter().map(|&start| start as usize));
         }
 
         if let Some(workers) = fill_workers(context, n, edges.len(), edges.len())? {
@@ -253,14 +283,14 @@ impl Adjacency {
     fn row_ranges<'a>(&'a mut self, positions: &'a mut [usize], parts: usize) -> Vec<RowRange<'a>> {
         let n = positions.len();
         let offsets = &self.offsets.values;
-        let arcs = offsets[n];
+        let arcs = offsets[n] as usize;
         let parts = parts.clamp(1, n.max(1));
         let bound = |index: usize| -> usize {
             if index >= parts {
                 return n;
             }
             let share = (index as u128 * arcs as u128 / parts as u128) as usize;
-            offsets[..n].partition_point(|&start| start < share)
+            offsets[..n].partition_point(|&start| (start as usize) < share)
         };
         let mut targets = &mut self.targets.values[..];
         let mut slots = self.edge_slots.as_mut().map(|slots| &mut slots.values[..]);
@@ -269,8 +299,8 @@ impl Adjacency {
         let mut ranges = Vec::with_capacity(parts);
         for index in 0..parts {
             let rows = bound(index)..bound(index + 1);
-            let first_arc = offsets[rows.start];
-            let len = offsets[rows.end] - first_arc;
+            let first_arc = offsets[rows.start] as usize;
+            let len = offsets[rows.end] as usize - first_arc;
             let (own, rest) = std::mem::take(&mut targets).split_at_mut(len);
             targets = rest;
             let (own_slots, rest) = split_option(slots.take(), len);
@@ -291,8 +321,34 @@ impl Adjacency {
         ranges
     }
 
+    /// Where `node`'s row begins, widened from its stored four bytes.
+    #[inline(always)]
+    pub(crate) fn row_start(&self, node: usize) -> usize {
+        self.offsets.values[node] as usize
+    }
+
+    #[inline(always)]
     pub(crate) fn range(&self, node: usize) -> std::ops::Range<usize> {
-        self.offsets.values[node]..self.offsets.values[node + 1]
+        self.row_start(node)..self.row_start(node + 1)
+    }
+
+    /// Arcs in `node`'s row: one subtraction on the stored bounds.
+    #[inline(always)]
+    pub(crate) fn degree(&self, node: usize) -> usize {
+        self.row_start(node + 1) - self.row_start(node)
+    }
+
+    /// Every row bound, as stored: for a kernel whose inner loop indexes the
+    /// slice itself. Widen each with `as usize`; nothing else is lossless.
+    #[inline(always)]
+    pub(crate) fn offsets(&self) -> &[Offset] {
+        &self.offsets.values
+    }
+
+    /// Rows in this adjacency: one per node.
+    #[inline(always)]
+    pub(crate) fn node_count(&self) -> usize {
+        self.offsets.values.len() - 1
     }
 
     /// Target of `arc`, widened from its stored four bytes.
@@ -381,9 +437,12 @@ impl Adjacency {
         memory: &ExecutionContext,
         context: &ExecutionContext,
     ) -> Result<(Adjacency, BuildPath)> {
-        let n = self.offsets.values.len() - 1;
+        let n = self.node_count();
+        // Every arc of this adjacency is an arc of its transpose, and this
+        // adjacency's own row bounds already fit an `Offset`, so neither the
+        // count nor the prefix sum below can pass the ceiling.
         let arcs = self.targets.values.len();
-        let mut offsets = Buffer::filled_split(n + 1, 0usize, memory, context)?;
+        let mut offsets = Buffer::filled_split(n + 1, 0 as Offset, memory, context)?;
         let counted = match Counts::plan(context, memory, n, arcs, arcs)? {
             Some(mut table) => {
                 let len = arcs.div_ceil(table.chunks).max(1);
@@ -410,7 +469,9 @@ impl Adjacency {
         };
         prefix(&mut offsets.values, context)?;
         let mut positions = Buffer::capacity(n, memory)?;
-        positions.values.extend_from_slice(&offsets.values[..n]);
+        positions
+            .values
+            .extend(offsets.values[..n].iter().map(|&start| start as usize));
         let mut result = Adjacency {
             offsets,
             targets: Buffer::filled_split(arcs, 0 as Target, memory, context)?,
@@ -569,8 +630,8 @@ impl RowRange<'_> {
 /// to a build's peak. The chunks are at most the worker count, at most
 /// [`MAX_COUNT_CHUNKS`], and at most the input per node plus two, so the table
 /// is at most four bytes per input item and eight per node: never more than
-/// the four-byte target array and the positions the build allocates next,
-/// which the sequential build allocates too.
+/// the four-byte target array and the eight-byte positions the build allocates
+/// next, which the sequential build allocates too.
 struct Counts {
     workers: usize,
     chunks: usize,
@@ -650,10 +711,10 @@ impl Counts {
     /// Add each column into `degrees` — `offsets[1..]`, still zero — and
     /// release the table. Charges no work, as the sequential build has no such
     /// pass; it polls instead. Returns the chunk count, for [`BuildPath`].
-    fn sum_into(self, context: &ExecutionContext, degrees: &mut [usize]) -> Result<usize> {
+    fn sum_into(self, context: &ExecutionContext, degrees: &mut [Offset]) -> Result<usize> {
         let nodes = self.nodes;
         let block = nodes.div_ceil(self.workers.saturating_mul(4)).max(4096);
-        let mut columns: Vec<(Vec<&[u32]>, &mut [usize])> = degrees
+        let mut columns: Vec<(Vec<&[u32]>, &mut [Offset])> = degrees
             .chunks_mut(block)
             .map(|degrees| (Vec::with_capacity(self.chunks), degrees))
             .collect();
@@ -667,7 +728,10 @@ impl Counts {
             // Row by row, so each pass reads memory in order.
             for row in rows {
                 for (&cell, degree) in row.iter().zip(degrees.iter_mut()) {
-                    *degree += cell as usize;
+                    // Checked, as the sequential count's increments are, so a
+                    // degree that passes the ceiling is refused at the same
+                    // ceiling whichever path counted it.
+                    *degree = degree.checked_add(cell).ok_or_else(arc_count_overflow)?;
                 }
             }
             Ok(())
@@ -676,12 +740,15 @@ impl Counts {
     }
 }
 
-fn prefix(offsets: &mut [usize], context: &ExecutionContext) -> Result<()> {
+/// The prefix sum that turns per-node degrees into row bounds. The add is
+/// checked, so a projection whose arcs pass [`Offset::MAX`] is refused here,
+/// before an arc is written, rather than wrapping into a silently wrong CSR.
+fn prefix(offsets: &mut [Offset], context: &ExecutionContext) -> Result<()> {
     for index in 1..offsets.len() {
         context.charge_work(1)?;
         offsets[index] = offsets[index]
             .checked_add(offsets[index - 1])
-            .ok_or_else(|| ProcedureError::Numerical("arc count overflow".into()))?;
+            .ok_or_else(arc_count_overflow)?;
     }
     Ok(())
 }
@@ -709,6 +776,31 @@ mod width {
     fn the_widest_admitted_node_narrows_and_widens_unchanged() {
         let widest = Target::MAX as usize - 1;
         assert_eq!(narrow(widest) as usize, widest);
+    }
+
+    /// The arc-count ceiling is decided in the prefix sum, which is where it is
+    /// exercised: building a projection of four billion arcs to reach it would
+    /// need the 137 GB edge list the module comment prices.
+    #[test]
+    fn an_arc_count_above_the_offset_width_is_refused_and_says_so() {
+        let context = ExecutionContext::new(grust_procedures::ExecutionLimits {
+            memory_bytes: 1 << 20,
+            work_units: usize::MAX,
+            batch_rows: 1024,
+            deadline: None,
+        })
+        .unwrap();
+        // Degrees whose running sum lands exactly on the ceiling, and one arc
+        // past it.
+        let mut exact = [0, Offset::MAX - 1, 1];
+        prefix(&mut exact, &context).unwrap();
+        assert_eq!(exact[2], Offset::MAX);
+        let mut over = [0, Offset::MAX - 1, 2];
+        let refused = prefix(&mut over, &context).unwrap_err();
+        assert!(matches!(refused, ProcedureError::Unsupported(_)));
+        let message = refused.to_string();
+        assert!(message.contains("4294967295"), "{message}");
+        assert!(message.contains("arcs"), "{message}");
     }
 }
 
@@ -798,7 +890,7 @@ mod tests {
     }
 
     type Bytes = (
-        Vec<usize>,
+        Vec<Offset>,
         Vec<Target>,
         Option<Vec<usize>>,
         Option<Vec<u64>>,

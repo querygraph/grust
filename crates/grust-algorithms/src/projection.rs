@@ -11,7 +11,7 @@ use crate::buffer::Buffer;
 
 mod adjacency;
 mod origin;
-pub(crate) use adjacency::{Adjacency, Target};
+pub(crate) use adjacency::{Adjacency, Offset, Target};
 pub use origin::{ProjectionRepresentation, ProjectionSelection};
 
 /// Explicit orientation applied once while preparing topology.

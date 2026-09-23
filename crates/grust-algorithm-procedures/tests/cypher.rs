@@ -327,10 +327,13 @@ fn the_longest_path_reports_a_cycle_as_an_answer_rather_than_an_error() {
 #[test]
 fn projection_inspection_and_csr_estimates_disclose_their_scope() {
     let word = size_of::<usize>() as i64;
-    // An arc target is four bytes, not a word: these byte counts fell when the
-    // CSR narrowed its targets to `u32`. Five offset words plus six arcs of a
-    // four-byte target and a word of original-edge slot, unweighted.
+    // Neither index array is a word: an arc target is four bytes, and so is a
+    // CSR row bound. These byte counts fell twice, once when the targets
+    // narrowed to `u32` and again when the row offsets did. Five four-byte row
+    // bounds plus six arcs of a four-byte target and a word of original-edge
+    // slot, unweighted.
     let target = 4;
+    let offset = 4;
     let outgoing_arc = target + word;
     assert_eq!(
         run(
@@ -341,7 +344,7 @@ fn projection_inspection_and_csr_estimates_disclose_their_scope() {
             Value::Int(3),
             Value::Int(6),
             Value::Int(0),
-            Value::Int(5 * word + 6 * outgoing_arc)
+            Value::Int(5 * offset + 6 * outgoing_arc)
         ]]
     );
     assert_eq!(
@@ -352,9 +355,9 @@ fn projection_inspection_and_csr_estimates_disclose_their_scope() {
             Value::Int(4),
             Value::Int(3),
             Value::Int(6),
-            Value::Int(5 * word + 6 * outgoing_arc),
+            Value::Int(5 * offset + 6 * outgoing_arc),
             // The reverse index carries targets and offsets, no edge slots.
-            Value::Int(5 * word + 6 * target),
+            Value::Int(5 * offset + 6 * target),
             Value::Int(4 * word)
         ]]
     );

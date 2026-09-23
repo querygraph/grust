@@ -54,7 +54,6 @@ pub fn degree(graph: &GraphProjection) -> Result<Degrees> {
         .transpose()?;
     let arcs = adjacency.arc_count();
     let workers = crate::parallel::workers(context, n.saturating_add(arcs)).unwrap_or(1);
-    let offsets = &adjacency.offsets.values;
     let weights = adjacency.weights.as_ref().map(|weights| &weights.values);
 
     // Counts first: O(V) from the CSR offsets alone.
@@ -66,7 +65,7 @@ pub fn degree(graph: &GraphProjection) -> Result<Degrees> {
             meter.charge(slice.len())?;
             for (index, count) in slice.iter_mut().enumerate() {
                 let node = first + index;
-                *count = offsets[node + 1] - offsets[node];
+                *count = adjacency.degree(node);
             }
             Ok(())
         },
@@ -80,7 +79,7 @@ pub fn degree(graph: &GraphProjection) -> Result<Degrees> {
             |first, slice, meter| {
                 for (index, strength) in slice.iter_mut().enumerate() {
                     let node = first + index;
-                    let (start, end) = (offsets[node], offsets[node + 1]);
+                    let (start, end) = (adjacency.row_start(node), adjacency.row_start(node + 1));
                     // The counts pass already charged this node; charge its arcs
                     // before summing them, so a high-degree node cannot run
                     // unmetered and cancellation stays prompt.

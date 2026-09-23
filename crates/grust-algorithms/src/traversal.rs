@@ -130,7 +130,6 @@ fn levels(graph: &GraphProjection, roots: &[usize], workers: usize) -> Result<Di
     let context = graph.execution();
     let n = graph.node_count();
     let adjacency = graph.outgoing();
-    let offsets = &adjacency.offsets.values;
     let targets = adjacency.targets();
     let level_of = Buffer::indexed_with(n, || AtomicU32::new(UNVISITED), context)?;
     // Every node is claimed at most once, so the frontiers together hold at most
@@ -165,7 +164,7 @@ fn levels(graph: &GraphProjection, roots: &[usize], workers: usize) -> Result<Di
             |_, slice, meter| {
                 let mut discovered: Vec<usize> = Vec::new();
                 for &node in slice {
-                    let arcs = offsets[node]..offsets[node + 1];
+                    let arcs = adjacency.range(node);
                     meter.charge(1 + arcs.len())?;
                     for arc in arcs {
                         let next = targets[arc] as usize;

@@ -8,6 +8,67 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ### Graph algorithms
 
+- **A CSR row offset is four bytes instead of eight.** The projection's packed
+  adjacency and its cached reverse index store a row bound as a `u32` and widen
+  it on every read, through `#[inline(always)]` accessors (`range`, `row_start`,
+  `degree`) or a typed slice (`offsets`), as the arc targets already did. The
+  field is private, so every read in the crate was converted rather than
+  silently widened. A row bound is an arc index, not a node id, so **a
+  projection now holds at most `u32::MAX` arcs**, and one that would pass that
+  is refused with a named `AlgorithmError::Unsupported` — at the degree count
+  and at the prefix sum that forms the bounds, on the checked add that would
+  otherwise wrap, rather than in a second pass over the edges. The first graph
+  an eight-byte fallback would admit has 2^32 arcs: 17.2 GB of targets at the
+  narrow width, 34.4 GB of original-edge slots beside them, and a 137 GB
+  `ProjectionEdge` list to build it from, so the row bounds are among the
+  smallest arrays in a working set already in the hundreds of gigabytes, and
+  every per-arc `usize` buffer in the crate would have to be narrowed before a
+  wide offset array could matter.
+
+  **What it buys.** Visiting a node reads both ends of its row, so a pull's
+  per-node index stream is 8 bytes instead of 16 — 4 from the transpose bounds
+  and 4 from the projection's own, one new element of each per node. Counting
+  the arrays the unweighted pull streams in node order, a node costs 56 bytes
+  instead of 64 at `f64` (4 + 4 row bounds, 32 of four-byte in-arc targets, 8
+  of score read and written in place, 8 of share written) and 48 instead of 56
+  at `f32`; the random gathers into the shares array are unchanged. A
+  projection's own offsets and its transpose's each halve in size.
+
+  **Results are bit-identical**: this is a representation change only. Every
+  pinned digest test passes unmodified — `tests/pagerank_pinned.rs` including
+  its `PULL_BUDGETS` constant, `tests/pagerank_fused.rs`,
+  `tests/pagerank_f32.rs`, `tests/article_rank.rs` — and so do the
+  projection-build determinism, work-budget and memory-peak tests, whose
+  fixtures still reach the parallel count and the parallel fill. **One
+  byte-count assertion moved, named here rather than changed quietly:**
+  `projection_inspection_and_csr_estimates_disclose_their_scope` in
+  `crates/grust-algorithm-procedures/tests/cypher.rs` asserted `5 * word` for
+  the offset array of a four-node projection and now asserts `5 * offset` with
+  `offset = 4`, the same formula the targets already used.
+  `CsrEstimate::upper_bound`, and therefore the `estimateCsr` and
+  `projectionStats` procedures, report the narrower offsets; no declared Arrow
+  schema or procedure output moved. Louvain's and Leiden's per-level scratch
+  CSR keeps eight-byte offsets: it is a separate structure, not on the pull's
+  per-node path, and narrowing it is its own ceiling argument.
+
+  **Measured on an unloaded laptop, shape only — not a published timing.**
+  Seven interleaved rounds of the per-iteration sweep, before and after, taking
+  the median of the rounds because the least-of-rounds statistic produced an
+  impossible cell at eight workers (a `(t25 - t5) / 20` estimate of 0.036 ms
+  where the neighbouring rounds give 0.4). At one worker, the trustworthy
+  column on this host: at 65,536 nodes, where the kernel is cache-resident, the
+  eight cells move between -0.6% and +1.0%, which is flat. At 2,097,152 nodes,
+  seven of the eight cells improve, by 0.0% to 2.4% — `counted` uniform `f64`
+  56.531 to 55.315 ms an iteration, `unchecked` hub `f64` 53.931 to 52.616,
+  `unchecked` hub `f32` 43.157 to 42.148 — and `counted` uniform `f32` is
+  +0.1%. That is about 0.0 to 0.6 ns a node, consistent in direction across
+  families, precisions and accounting modes but at or below this host's noise
+  floor, and well short of the 9.24 ns a node the attribution that prompted the
+  change measured at that size. The eight-worker cells are not quoted: the
+  per-iteration estimator is unstable there on a laptop, as the impossible cell
+  above shows. **The Linux gate is outstanding** — no Linux host was reachable
+  — so these are a shape on one Mac, not a verified result.
+
 - **PageRank's per-node share carries no ArticleRank term and one conversion.**
   Both passes of the pull that form a node's share computed
   `score / (F::from_f64(out_degree as f64) + damp)`. `damp` is ArticleRank's
@@ -83,8 +144,9 @@ reconstructed from Git history, release commits, and the shipped docs.
 - **A CSR arc target is four bytes instead of eight.** The projection's packed
   adjacency, its cached reverse index, and Louvain's and Leiden's per-level
   scratch CSR store a target as a `u32` and widen it on every read, through an
-  `#[inline(always)]` accessor or a typed slice; `offsets` stays `usize` and
-  `weights` stays `f64`. An outgoing arc costs 12 bytes instead of 16
+  `#[inline(always)]` accessor or a typed slice; `offsets` stayed `usize`
+  here and were narrowed by the row-offset entry above, and `weights` stays
+  `f64`. An outgoing arc costs 12 bytes instead of 16
   unweighted (a four-byte target and a word of original-edge slot) and 20
   instead of 24 weighted; a reverse arc, which carries no edge slots, costs 4
   instead of 8 unweighted and 12 instead of 16 weighted. The field is private,
@@ -93,7 +155,8 @@ reconstructed from Git history, release commits, and the shipped docs.
   accessors. **A projection therefore holds at most `u32::MAX` nodes** and a
   larger one is refused with a named `AlgorithmError::Unsupported` rather than
   falling back to eight-byte targets. The first graph that fallback would admit
-  has 2^32 nodes, where the offsets alone are 34.4 GB, one `f64` score array is
+  has 2^32 nodes, where the node-id vector's pointers alone are 34.4 GB, one
+  `f64` score array is
   another 34.4 GB and PageRank needs three of them, so the targets — 17.2 GB
   narrow at one arc a node — are the smallest array in the working set, and
   every per-node `usize` buffer would have to be narrowed before a wide target
