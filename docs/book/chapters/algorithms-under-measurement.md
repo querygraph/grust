@@ -68,6 +68,18 @@ A share of self time is not a share of removable wall time. The atomic still
 costs and the surrounding work is real, so a 72.8% profile share produced a 20
 to 29% improvement, not a threefold one.
 
+The charge later moved off the node as well. A reduction block's arc total is
+one subtraction on the transpose's row bounds, so PageRank's fused pull charges
+`block_nodes + block_arcs` once per 4,096-node block rather than `1 + in-arcs`
+per visited node. A completed kernel charges the identical total, so every
+budget decides exactly as it did; what moves is where a refusal lands, on a
+block boundary rather than a node boundary. The charge still precedes the work
+it names, so no work a budget refused is ever performed, and each block loop
+polls interruption explicitly on the cadence the per-node charges used to reach
+the meter's admission on — every 113 nodes on an eight-arc graph, every 1,024 on
+an arcless one — so cancellation and the deadline stay as responsive as they
+were.
+
 ## Deadline enforcement is a policy, and policies differ
 
 Ordinary Cypher's full-path query measured about ninety times direct execution.

@@ -129,6 +129,18 @@ adjacency-buffer upper bounds from snapshot counts, excluding graph storage,
 ID maps, original edge tables, kernel scratch, output and allocator overhead.
 Selection can reduce those counts. The estimate is not total memory admission.
 
+The adjacency it sizes is narrow. A row bound and an arc target are each four
+bytes, widened on read, so an outgoing arc costs twelve bytes unweighted — a
+four-byte target beside an eight-byte original-edge slot — and twenty weighted;
+a reverse arc, which carries no edge slots, costs four unweighted and twelve
+weighted. Each CSR's row-bound array is four bytes per node plus one. A
+projection therefore holds at most `u32::MAX` nodes and at most `u32::MAX` arcs,
+and one that would pass either ceiling is refused with a named
+`AlgorithmError::Unsupported` at the checked add that would otherwise wrap,
+rather than falling back to eight-byte fields. Louvain's and Leiden's per-level
+scratch CSR keeps eight-byte offsets: it is a separate structure, not on a
+pull's per-node path.
+
 The common configuration keys are `orientation`, `nodeLabels`,
 `relationshipTypes`, `weightProperty` and `defaultWeight`. Unknown keys fail.
 Null label arrays select all labels; empty arrays select none. Edges crossing

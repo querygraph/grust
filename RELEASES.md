@@ -34,8 +34,8 @@ history.
 - Tadpole — 0.21.0 (2026-09-18)
 - Fairy — skipped; the name was declined rather than consumed, so it stays
   available for a later release.
-- Mysid — 0.22.0 (2026-09-21) ← current
-- Langoustine
+- Mysid — 0.22.0 (2026-09-21)
+- Langoustine — 0.23.0 (2026-09-23) ← current
 - Tanaid
 - Cumacean
 - Remipede

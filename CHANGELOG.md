@@ -6,6 +6,20 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ## Unreleased
 
+## 0.23.0 — Langoustine — 2026-09-23
+
+Nothing in this release changes an answer. Every kernel returns the bits it
+returned in 0.22.0, at both score precisions and at every worker count, and the
+pinned digest tests that say so are unmodified. What changed is what a graph
+costs to hold and to sweep: PageRank and ArticleRank can compute in `f32`, a
+projection's row bounds and arc targets are four bytes rather than eight, the
+parallel pull makes one pass an iteration instead of three, and the default
+`counted` accounting mode charges one reduction block at a time rather than one
+node. Two ceilings arrive with the narrowing and are refusals rather than silent
+fallbacks: a projection holds at most `u32::MAX` nodes and at most `u32::MAX`
+arcs. The one breaking type change is `ResourceUsage::work_units`, now a
+`WorkCount`.
+
 ### Graph algorithms
 
 - **PageRank's non-finite check is one test a reduction block, not one a
