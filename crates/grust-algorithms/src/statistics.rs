@@ -1,6 +1,9 @@
 //! Projection inspection and explicitly scoped CSR sizing, without kernel work.
 
-use crate::{GraphProjection, Orientation, Result};
+use crate::{
+    GraphProjection, Orientation, Result,
+    projection::{Offset, Target},
+};
 use grust_procedures::ProcedureError;
 
 /// Exact selected topology counts, independent of any algorithm result.
@@ -45,12 +48,14 @@ impl CsrEstimate {
             1
         });
         let max_arcs = arcs.ok_or_else(overflow)?;
+        // Row bounds are four bytes each, as the arc targets are.
         let offsets = nodes
             .checked_add(1)
-            .and_then(|n| n.checked_mul(size_of::<usize>()))
+            .and_then(|n| n.checked_mul(size_of::<Offset>()))
             .ok_or_else(overflow)?;
+        // A reverse index holds four-byte targets and no edge slots.
         let reverse_bytes = max_arcs
-            .checked_mul(size_of::<usize>())
+            .checked_mul(size_of::<Target>())
             .and_then(|n| n.checked_add(offsets))
             .ok_or_else(overflow)?;
         Ok(Self {
@@ -100,7 +105,7 @@ impl GraphProjection {
             }
         };
         context.checkpoint()?;
-        let arcs = self.outgoing().targets.values.len();
+        let arcs = self.outgoing().arc_count();
         Ok(ProjectionStatistics {
             nodes: self.node_count(),
             edges: self.edge_count(),
@@ -113,10 +118,13 @@ impl GraphProjection {
 }
 
 fn csr_bytes(nodes: usize, arcs: usize, weighted: bool) -> Result<usize> {
-    let arc_bytes = 2 * size_of::<usize>() + if weighted { size_of::<f64>() } else { 0 };
+    // An arc is a four-byte target and an eight-byte original-edge slot, plus
+    // its weight where the projection carries one; a row bound is four bytes.
+    let arc_bytes =
+        size_of::<Target>() + size_of::<usize>() + if weighted { size_of::<f64>() } else { 0 };
     nodes
         .checked_add(1)
-        .and_then(|n| n.checked_mul(size_of::<usize>()))
+        .and_then(|n| n.checked_mul(size_of::<Offset>()))
         .and_then(|n| arcs.checked_mul(arc_bytes).and_then(|a| n.checked_add(a)))
         .ok_or_else(overflow)
 }

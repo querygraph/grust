@@ -141,12 +141,7 @@ fn catalog() -> Vec<Spec> {
             field("residual", ValueType::Number),
         ],
         options::pagerank_fields(),
-        |graph, args| {
-            Ok(AlgorithmOutput::PageRank(algorithms::pagerank(
-                graph,
-                options::pagerank(args)?,
-            )?))
-        },
+        |graph, args| rank(graph, args, options::pagerank(args)?),
     ));
     // ArticleRank is PageRank's recurrence with a damped divisor, so it is the
     // same kernel, the same options and the same result shape.
@@ -161,12 +156,7 @@ fn catalog() -> Vec<Spec> {
             field("residual", ValueType::Number),
         ],
         options::pagerank_fields(),
-        |graph, args| {
-            Ok(AlgorithmOutput::PageRank(algorithms::pagerank(
-                graph,
-                options::article_rank(args)?,
-            )?))
-        },
+        |graph, args| rank(graph, args, options::article_rank(args)?),
     ));
     specs.push(Spec::new(
         "dfs",
@@ -748,6 +738,21 @@ fn nullable(name: &str, value_type: ValueType) -> Field {
         nullable: true,
         ..field(name, value_type)
     }
+}
+
+/// PageRank or ArticleRank at the precision the call names: `f64` scores, or
+/// `f32` scores whose `score` column is then Float32.
+fn rank(
+    graph: &algorithms::GraphProjection,
+    args: &ValidatedArguments,
+    options: algorithms::PageRankOptions<'_>,
+) -> Result<AlgorithmOutput> {
+    Ok(match options::precision(args)? {
+        options::Precision::F64 => AlgorithmOutput::PageRank(algorithms::pagerank(graph, options)?),
+        options::Precision::F32 => {
+            AlgorithmOutput::PageRankF32(algorithms::pagerank_f32(graph, options)?)
+        }
+    })
 }
 
 type Kernel = fn(&algorithms::GraphProjection, &ValidatedArguments) -> Result<AlgorithmOutput>;

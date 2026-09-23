@@ -6,6 +6,8 @@ pub(super) enum AlgorithmOutput {
     Distances(algorithms::Distances),
     Components(algorithms::Components),
     PageRank(algorithms::PageRank),
+    /// `f32` scores, widened to Cypher floats row by row; Float32 in Arrow.
+    PageRankF32(algorithms::PageRank<f32>),
     Degrees(algorithms::Degrees),
     Paths(algorithms::ShortestPaths),
     /// Paths being streamed as rows; never produced by a kernel.
@@ -28,6 +30,7 @@ impl AlgorithmOutput {
             Self::Distances(result) => result.into_arrow_results(),
             Self::Components(result) => result.into_arrow_results(),
             Self::PageRank(result) => result.into_arrow_results(),
+            Self::PageRankF32(result) => result.into_arrow_results(),
             Self::Degrees(result) => result.into_arrow_results(),
             Self::Paths(result) => result.into_arrow_results()?,
             Self::RankedPaths(result) => result.into_arrow_results(),
@@ -118,7 +121,7 @@ impl ProcedureCursor for AlgorithmCursor {
                 2,
                 self.graph.node_ids()[result.values()[index]].as_str().len(),
             ),
-            AlgorithmOutput::PageRank(_) => (5, 0),
+            AlgorithmOutput::PageRank(_) | AlgorithmOutput::PageRankF32(_) => (5, 0),
             AlgorithmOutput::Degrees(_) => (3, 0),
             AlgorithmOutput::Table(table) => (
                 1 + table.width(),
@@ -192,6 +195,12 @@ impl ProcedureCursor for AlgorithmCursor {
             }
             AlgorithmOutput::PageRank(result) => {
                 row.push(Value::Float(result.values()[index]));
+                row.push(Value::Int(integer(result.iterations())?));
+                row.push(Value::Bool(result.converged()));
+                row.push(Value::Float(result.residual()));
+            }
+            AlgorithmOutput::PageRankF32(result) => {
+                row.push(Value::Float(f64::from(result.values()[index])));
                 row.push(Value::Int(integer(result.iterations())?));
                 row.push(Value::Bool(result.converged()));
                 row.push(Value::Float(result.residual()));

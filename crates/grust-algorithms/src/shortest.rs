@@ -217,7 +217,7 @@ fn run(graph: &GraphProjection, source: &str, paths: bool) -> Result<(Distances,
         meter.charge(1)?;
         for arc in adjacency.range(node) {
             meter.charge(1)?;
-            let next = adjacency.targets.values[arc];
+            let next = adjacency.target(arc);
             let candidate = cost + adjacency.weight(arc);
             if !candidate.is_finite() {
                 return Err(AlgorithmError::Numerical(

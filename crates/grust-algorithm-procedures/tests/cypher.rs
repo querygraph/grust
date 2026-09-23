@@ -159,6 +159,69 @@ fn option_arrays_use_declared_types_and_empty_selection_is_explicit() {
     assert!(run_read_query_with_registry(&graph(), "default", "CALL grust.algorithms.pagerank({personalization: [9223372036854775807, 0, 0, 0]}) YIELD score RETURN score", &CypherParameters::new(), &registry()).is_err());
 }
 
+/// `precision: 'f32'` reaches Cypher as ordinary floats, and shows the one
+/// thing `f32` cannot do: meet a tolerance below an ulp of a moving score. On
+/// this four-node graph `b` and `c` score about 0.45, where an `f32` ulp is
+/// 2^-25, and at the default tolerance 1e-8 the two settle into a one-ulp
+/// oscillation: residual exactly 2^-24, every iteration, `converged` false
+/// after all 1000. At 1e-6, above the ulp, the run converges in 80
+/// iterations. The `f64` run converges at 1e-8 in 108. On a large graph the
+/// scores are near `1/n` and their ulps far below 1e-8, so this is a
+/// small-graph, large-score effect, stated here rather than hidden by a
+/// looser tolerance.
+#[test]
+fn pagerank_precision_f32_reaches_cypher_as_floats_and_other_names_are_refused() {
+    // Four `f32` scores, widened row by row, sum to one within `f32` rounding.
+    let rank =
+        run("CALL grust.algorithms.pagerank({precision: 'f32'}) YIELD score RETURN sum(score)");
+    assert!(matches!(rank[0][0], Value::Float(value) if (value - 1.0).abs() < 1e-6));
+    assert_eq!(
+        run(
+            "CALL grust.algorithms.pagerank({precision: 'f32'}) YIELD converged, residual, iterations RETURN converged, residual, iterations LIMIT 1"
+        ),
+        vec![vec![
+            Value::Bool(false),
+            Value::Float(f64::from(f32::EPSILON) / 2.0),
+            Value::Int(1000)
+        ]]
+    );
+    assert_eq!(
+        run(
+            "CALL grust.algorithms.pagerank({precision: 'f32', tolerance: 1e-6}) YIELD converged, iterations RETURN converged, iterations LIMIT 1"
+        ),
+        vec![vec![Value::Bool(true), Value::Int(80)]]
+    );
+    assert_eq!(
+        run(
+            "CALL grust.algorithms.pagerank({precision: 'f64'}) YIELD converged, iterations RETURN converged, iterations LIMIT 1"
+        ),
+        vec![vec![Value::Bool(true), Value::Int(108)]]
+    );
+    let same = run("CALL grust.algorithms.pagerank({precision: 'f64'}) YIELD score RETURN score");
+    assert_eq!(
+        same,
+        run("CALL grust.algorithms.pagerank() YIELD score RETURN score")
+    );
+    for query in [
+        "CALL grust.algorithms.pagerank({precision: 'f16'}) YIELD score RETURN score",
+        "CALL grust.algorithms.pagerank({precision: 'F32'}) YIELD score RETURN score",
+        "CALL grust.algorithms.pagerank({precision: 32}) YIELD score RETURN score",
+        "CALL grust.algorithms.articleRank({precision: 'double'}) YIELD score RETURN score",
+    ] {
+        assert!(
+            run_read_query_with_registry(
+                &graph(),
+                "default",
+                query,
+                &CypherParameters::new(),
+                &registry()
+            )
+            .is_err(),
+            "{query}"
+        );
+    }
+}
+
 #[test]
 fn catalog_expansion_uses_the_same_registration_and_execution_contracts() {
     assert_eq!(
@@ -264,6 +327,14 @@ fn the_longest_path_reports_a_cycle_as_an_answer_rather_than_an_error() {
 #[test]
 fn projection_inspection_and_csr_estimates_disclose_their_scope() {
     let word = size_of::<usize>() as i64;
+    // Neither index array is a word: an arc target is four bytes, and so is a
+    // CSR row bound. These byte counts fell twice, once when the targets
+    // narrowed to `u32` and again when the row offsets did. Five four-byte row
+    // bounds plus six arcs of a four-byte target and a word of original-edge
+    // slot, unweighted.
+    let target = 4;
+    let offset = 4;
+    let outgoing_arc = target + word;
     assert_eq!(
         run(
             "CALL grust.algorithms.projectionStats({orientation: 'undirected'}) YIELD nodes, edges, arcs, selfLoops, csrBytes RETURN nodes, edges, arcs, selfLoops, csrBytes"
@@ -273,7 +344,7 @@ fn projection_inspection_and_csr_estimates_disclose_their_scope() {
             Value::Int(3),
             Value::Int(6),
             Value::Int(0),
-            Value::Int(17 * word)
+            Value::Int(5 * offset + 6 * outgoing_arc)
         ]]
     );
     assert_eq!(
@@ -284,8 +355,9 @@ fn projection_inspection_and_csr_estimates_disclose_their_scope() {
             Value::Int(4),
             Value::Int(3),
             Value::Int(6),
-            Value::Int(17 * word),
-            Value::Int(11 * word),
+            Value::Int(5 * offset + 6 * outgoing_arc),
+            // The reverse index carries targets and offsets, no edge slots.
+            Value::Int(5 * offset + 6 * target),
             Value::Int(4 * word)
         ]]
     );

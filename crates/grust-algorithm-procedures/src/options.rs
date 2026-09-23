@@ -39,7 +39,32 @@ pub(super) fn pagerank_fields() -> Vec<OptionField> {
         option("tolerance", ValueType::Number, Value::Float(1e-8), false),
         option("maxIterations", ValueType::Integer, Value::Int(1000), false),
         option("personalization", ValueType::Numbers, Value::Null, true),
+        option(
+            "precision",
+            ValueType::String,
+            Value::String("f64".into()),
+            false,
+        ),
     ]
+}
+
+/// The precision a rank kernel keeps its scores in, which is also the Arrow
+/// type of its `score` column.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(super) enum Precision {
+    F64,
+    F32,
+}
+
+/// `precision`: `'f64'` (the default) or `'f32'`; anything else is refused.
+pub(super) fn precision(args: &ValidatedArguments) -> Result<Precision> {
+    match value(args, "precision")? {
+        Value::String(value) if value == "f64" => Ok(Precision::F64),
+        Value::String(value) if value == "f32" => Ok(Precision::F32),
+        _ => Err(ProcedureError::InvalidArguments(
+            "precision must be 'f64' or 'f32'".into(),
+        )),
+    }
 }
 
 fn value<'a>(args: &'a ValidatedArguments, key: &str) -> Result<&'a Value> {

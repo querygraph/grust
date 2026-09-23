@@ -64,9 +64,9 @@ pub fn k_core(graph: &GraphProjection) -> Result<KCore> {
     for node in 0..n {
         let range = adjacency.range(node);
         meter.charge(1 + range.len())?;
-        let loops = adjacency.targets.values[range.clone()]
-            .iter()
-            .filter(|&&target| target == node)
+        let loops = adjacency
+            .row_targets(node)
+            .filter(|&target| target == node)
             .count();
         degree.values[node] = range.len() - loops;
         maximum = maximum.max(degree.values[node]);
@@ -103,7 +103,7 @@ pub fn k_core(graph: &GraphProjection) -> Result<KCore> {
         let range = adjacency.range(node);
         meter.charge(1 + range.len())?;
         for arc in range {
-            let other = adjacency.targets.values[arc];
+            let other = adjacency.target(arc);
             if other == node || degree.values[other] <= degree.values[node] {
                 continue;
             }

@@ -11,7 +11,7 @@ use crate::buffer::Buffer;
 
 mod adjacency;
 mod origin;
-pub(crate) use adjacency::Adjacency;
+pub(crate) use adjacency::{Adjacency, Offset, Target};
 pub use origin::{ProjectionRepresentation, ProjectionSelection};
 
 /// Explicit orientation applied once while preparing topology.
@@ -577,7 +577,7 @@ mod tests {
             let mut arcs = Vec::new();
             for node in 0..4 {
                 for arc in adjacency.range(node) {
-                    let other = adjacency.targets.values[arc];
+                    let other = adjacency.target(arc);
                     let (from, to) = if flip { (other, node) } else { (node, other) };
                     arcs.push((from, to, adjacency.weight(arc).to_bits()));
                 }
@@ -591,7 +591,7 @@ mod tests {
             assert_eq!(arcs(&incoming, true), arcs(graph.outgoing(), false));
             // Rows list their sources in ascending order.
             for node in 0..4 {
-                let row = &incoming.targets.values[incoming.range(node)];
+                let row: Vec<usize> = incoming.row_targets(node).collect();
                 assert!(row.windows(2).all(|pair| pair[0] <= pair[1]));
             }
             let held = context.usage().unwrap().live_bytes;

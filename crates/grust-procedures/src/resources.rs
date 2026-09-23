@@ -915,6 +915,25 @@ impl WorkMeter {
         self.context.checkpoint()
     }
 
+    /// Poll cancellation, and the deadline at the sampled cadence, without
+    /// charging anything.
+    ///
+    /// This is the interruption half of [`Self::charge`] on its own. A kernel
+    /// that has stopped charging once per visited entry — because it can name
+    /// a whole block's units in one charge — would otherwise reach the clock
+    /// only once per block; calling this on the node cadence the per-entry
+    /// charges used to reach [`WORK_BLOCK_UNITS`] at keeps cancellation and the
+    /// deadline exactly as responsive as they were. It touches nothing shared
+    /// when no deadline is set beyond the cancellation flag, and nothing at all
+    /// when interruption is not observed.
+    ///
+    /// # Errors
+    /// Reports cancellation and, on a sample, an expired deadline.
+    #[inline]
+    pub fn poll(&self) -> Result<()> {
+        self.context.check_state(DeadlineCheck::Sampled)
+    }
+
     /// Return unspent units now rather than at drop.
     pub fn finish(self) {
         drop(self);

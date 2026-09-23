@@ -125,7 +125,7 @@ pub fn bellman_ford(graph: &GraphProjection, source: &str) -> Result<BellmanFord
         let range = adjacency.range(node);
         meter.charge(1 + range.len())?;
         for arc in range {
-            let next = adjacency.targets.values[arc];
+            let next = adjacency.target(arc);
             let candidate = distances.values[node] + adjacency.weight(arc);
             if candidate < distances.values[next] {
                 distances.values[next] = candidate;

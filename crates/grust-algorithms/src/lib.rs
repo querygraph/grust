@@ -61,6 +61,8 @@ pub use properties::{
 };
 mod projection;
 mod random;
+mod score;
+pub use score::Score;
 mod shortest;
 mod similarity;
 mod statistics;
@@ -78,7 +80,7 @@ mod traversal;
 mod yens;
 pub use yens::{KShortestPaths, YensOptions, yens};
 
-pub use pagerank::{PageRank, PageRankOptions, RankVariant, pagerank};
+pub use pagerank::{PageRank, PageRankOptions, RankVariant, pagerank, pagerank_f32};
 
 pub use shortest::{PathCursor, PathView, ShortestPaths, dijkstra, shortest_paths};
 

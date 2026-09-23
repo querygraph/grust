@@ -8,6 +8,323 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ### Graph algorithms
 
+- **PageRank's non-finite check is one test a reduction block, not one a
+  node.** The fused pull tested every updated score with `is_finite` and set an
+  atomic flag; the test and its untaken branch sat in the inner loop between
+  the arc sum and the residual. It now tests once per reduction block, on the
+  residual that block has just summed, and scans the block's own updated scores
+  only when that residual is itself non-finite. **Observable behaviour is
+  identical**, and the error's type and text are unchanged.
+
+  **The equivalence, both directions.** A block's residual is
+  `Σ |updated - previous|` in `f64` at either score precision. Any non-finite
+  `updated` contributes a non-finite term — NaN minus anything is NaN; `±inf`
+  against a finite previous score gives `+inf` after `abs`; `±inf` against a
+  non-finite one gives `+inf` or NaN — and since every term is an `abs`, hence
+  nonnegative or NaN, a sum that has gone non-finite cannot come back. So a
+  finite residual proves every one of the block's scores was finite. The
+  converse fails only by overflow: at `f32` scores it cannot happen (a term is
+  at most about `6.8e38` widened to `f64`, and 4,096 of those sum to about
+  `2.8e42`), but at `f64` scores two terms near `f64::MAX` would be enough, and
+  reporting that block as non-finite would be a new error on an input that used
+  to succeed. That is the one case a residual test alone would get wrong, and
+  it is why the block scans rather than trusting the residual: the predicate is
+  the per-node one exactly, at both precisions. Three unit tests on
+  `block_nonfinite` check all three claims.
+
+  Nothing arithmetic moves — scores, residual, dangling mass, charges,
+  partitions and poll cadence are untouched — and every pinned digest test
+  passes unmodified, `tests/pagerank_pinned.rs` with its `PULL_BUDGETS`
+  constant unchanged, `tests/pagerank_fused.rs`, `tests/pagerank_f32.rs` and
+  `tests/article_rank.rs` with it.
+
+  **Measured on an unloaded laptop, shape only — not a published timing.** Six
+  interleaved rounds against the parent commit, median of rounds, one worker
+  (the trustworthy column on this host; the eight-worker cells are not quoted,
+  the per-iteration estimator being unstable at that width on a laptop). At
+  `f32` the saving is consistent across sizes, families and accounting modes:
+  65,536 nodes hub 1.174 to 1.121 ms an iteration in `counted` and 1.176 to
+  1.121 in `unchecked`, uniform 1.070 to 1.035 and 1.063 to 1.027; 2,097,152
+  nodes hub 43.854 to 42.402 and 42.938 to 41.092, uniform 43.834 to 41.374 in
+  `counted`. That is -3.2% to -5.6%, about 0.7 to 0.8 ns a node. At `f64` it is
+  inside this host's noise in both directions (-2.9% to +1.4%), which is what a
+  removed compare should look like beside an eight-byte arc loop, and the one
+  `f32` cell that does not improve is `unchecked` uniform at 2,097,152 nodes,
+  +0.4%. **The Linux gate is outstanding** — no Linux host was reachable — so
+  these are a shape on one Mac, not a verified result.
+
+- **A CSR row offset is four bytes instead of eight.** The projection's packed
+  adjacency and its cached reverse index store a row bound as a `u32` and widen
+  it on every read, through `#[inline(always)]` accessors (`range`, `row_start`,
+  `degree`) or a typed slice (`offsets`), as the arc targets already did. The
+  field is private, so every read in the crate was converted rather than
+  silently widened. A row bound is an arc index, not a node id, so **a
+  projection now holds at most `u32::MAX` arcs**, and one that would pass that
+  is refused with a named `AlgorithmError::Unsupported` — at the degree count
+  and at the prefix sum that forms the bounds, on the checked add that would
+  otherwise wrap, rather than in a second pass over the edges. The first graph
+  an eight-byte fallback would admit has 2^32 arcs: 17.2 GB of targets at the
+  narrow width, 34.4 GB of original-edge slots beside them, and a 137 GB
+  `ProjectionEdge` list to build it from, so the row bounds are among the
+  smallest arrays in a working set already in the hundreds of gigabytes, and
+  every per-arc `usize` buffer in the crate would have to be narrowed before a
+  wide offset array could matter.
+
+  **What it buys.** Visiting a node reads both ends of its row, so a pull's
+  per-node index stream is 8 bytes instead of 16 — 4 from the transpose bounds
+  and 4 from the projection's own, one new element of each per node. Counting
+  the arrays the unweighted pull streams in node order, a node costs 56 bytes
+  instead of 64 at `f64` (4 + 4 row bounds, 32 of four-byte in-arc targets, 8
+  of score read and written in place, 8 of share written) and 48 instead of 56
+  at `f32`; the random gathers into the shares array are unchanged. A
+  projection's own offsets and its transpose's each halve in size.
+
+  **Results are bit-identical**: this is a representation change only. Every
+  pinned digest test passes unmodified — `tests/pagerank_pinned.rs` including
+  its `PULL_BUDGETS` constant, `tests/pagerank_fused.rs`,
+  `tests/pagerank_f32.rs`, `tests/article_rank.rs` — and so do the
+  projection-build determinism, work-budget and memory-peak tests, whose
+  fixtures still reach the parallel count and the parallel fill. **One
+  byte-count assertion moved, named here rather than changed quietly:**
+  `projection_inspection_and_csr_estimates_disclose_their_scope` in
+  `crates/grust-algorithm-procedures/tests/cypher.rs` asserted `5 * word` for
+  the offset array of a four-node projection and now asserts `5 * offset` with
+  `offset = 4`, the same formula the targets already used.
+  `CsrEstimate::upper_bound`, and therefore the `estimateCsr` and
+  `projectionStats` procedures, report the narrower offsets; no declared Arrow
+  schema or procedure output moved. Louvain's and Leiden's per-level scratch
+  CSR keeps eight-byte offsets: it is a separate structure, not on the pull's
+  per-node path, and narrowing it is its own ceiling argument.
+
+  **Measured on an unloaded laptop, shape only — not a published timing.**
+  Seven interleaved rounds of the per-iteration sweep, before and after, taking
+  the median of the rounds because the least-of-rounds statistic produced an
+  impossible cell at eight workers (a `(t25 - t5) / 20` estimate of 0.036 ms
+  where the neighbouring rounds give 0.4). At one worker, the trustworthy
+  column on this host: at 65,536 nodes, where the kernel is cache-resident, the
+  eight cells move between -0.6% and +1.0%, which is flat. At 2,097,152 nodes,
+  seven of the eight cells improve, by 0.0% to 2.4% — `counted` uniform `f64`
+  56.531 to 55.315 ms an iteration, `unchecked` hub `f64` 53.931 to 52.616,
+  `unchecked` hub `f32` 43.157 to 42.148 — and `counted` uniform `f32` is
+  +0.1%. That is about 0.0 to 0.6 ns a node, consistent in direction across
+  families, precisions and accounting modes but at or below this host's noise
+  floor, and well short of the 9.24 ns a node the attribution that prompted the
+  change measured at that size. The eight-worker cells are not quoted: the
+  per-iteration estimator is unstable there on a laptop, as the impossible cell
+  above shows. **The Linux gate is outstanding** — no Linux host was reachable
+  — so these are a shape on one Mac, not a verified result.
+
+- **PageRank's per-node share carries no ArticleRank term and one conversion.**
+  Both passes of the pull that form a node's share computed
+  `score / (F::from_f64(out_degree as f64) + damp)`. `damp` is ArticleRank's
+  mean outgoing weight and is exactly zero on every PageRank path, so the two
+  passes are now monomorphised on whether it is zero and PageRank divides by
+  the out-degree alone; and the out-degree is converted to the score type in
+  one step instead of through `f64`. **Both are bit-identical, not merely
+  close.** The divisor is a positive finite integer — `out_degree == 0` is the
+  dangling branch, taken before the division — and adding `+0.0` to a positive
+  finite value is exact in `f32` and `f64` alike; `usize as f64` is exact below
+  2^53, so rounding that to `f32` rounds the integer, which is what `usize as
+  f32` does. Every pinned digest passes unmodified at both precisions and both
+  variants, including `tests/article_rank.rs`, which is the path that keeps the
+  add. A `damp` that is not exactly zero, a NaN included, takes the path that
+  keeps it. Measured as above, least of three interleaved rounds against the
+  block-charging kernel alone: at 65,536 nodes and one worker, where the kernel
+  is cache-resident, 1.179 to 1.152 ms an iteration on hub `f32` and 1.098 to
+  1.059 on uniform `f64` in `counted` mode, 1.179 to 1.150 and 1.092 to 1.070
+  in `unchecked` — 0.2 to 0.6 ns a node, consistently in both modes and both
+  families. At 2,097,152 nodes it is inside this host's noise in either
+  direction (−0.6% to +2.1% at one worker), the pull being bound there by its
+  random score reads rather than by its arithmetic. The attribution that
+  prompted the change inferred 1–2 ns a node without measuring it directly;
+  the measured saving is smaller than that, and appears only where the working
+  set fits in cache.
+- **The PageRank pull charges a reduction block of nodes at once, not a node
+  at a time.** The fused pass charged `1 + in-arcs` per node, one work-meter
+  call per visited node; an ablation on a ratio host attributed +4.7–5.7% of
+  the per-sweep cost to the default `counted` mode at 65,536 nodes and one
+  thread and +18.7–21.8% at 2,097,152, the largest single term measured
+  anywhere in the kernel. A block's arc total is `offsets[end] -
+  offsets[start]` on the transpose, one subtraction, so a single charge of
+  `block_nodes + block_arcs` per 4,096-node reduction block is exactly the sum
+  the block's nodes used to make one at a time. The weighted setup's two passes
+  charge the same way, from the row offsets. **A completed kernel charges the
+  identical total**, so every budget decides exactly as it did: the least
+  budget the pinned 3,000-node pull fits in is 129,002 units before and after.
+  The charge still precedes the work it names, so no work a budget refused is
+  ever performed; what moves is only *where* a refusal lands — on a block
+  boundary rather than a node boundary — and therefore the units left standing
+  on the counter when a refused run stops. That is the one thing
+  `tests/pagerank_pinned.rs`' budget sweep records beyond the outcome, and its
+  `PULL_BUDGETS` digest is re-pinned from `0x28c6_c837_8b34_77a9` to
+  `0x98c0_8ea5_11b8_4a46` with the reason written in place; the test still
+  requires `smallest - 1` to be refused, naming `work`, at one, two and sixteen
+  workers. Cancellation and the deadline stay exactly as responsive as they
+  were: charging per node reached the meter's admission, where a counted meter
+  samples the deadline, about once per `WORK_BLOCK_UNITS` (1,024) units, and an
+  uncounted meter samples on that same unit cadence, so each block loop now
+  polls interruption explicitly every `block_nodes × 1024 / block_units` nodes
+  — 113 nodes on an eight-arc graph, 1,024 on an arcless one — through a new
+  `WorkMeter::poll`, the interruption half of `charge` with nothing charged.
+  Scores are bit-identical at both precisions and every worker count and in
+  every accounting mode; every digest in `tests/pagerank_fused.rs`,
+  `tests/pagerank_f32.rs` and the rest of `tests/pagerank_pinned.rs` passes
+  unmodified. Measured on an Apple M1 Max laptop (a shared, loaded machine, so
+  these are ratios and not publishable absolutes), eight arcs a node, least of
+  three interleaved rounds. At 2,097,152 nodes and one worker the uniform
+  family goes from 70.1 to 55.3 ms an iteration at `f64` and 50.5 to 40.5 at
+  `f32` in `counted` mode, and the hub family from 67.3 to 54.2 and 50.6 to
+  43.3; at 65,536 nodes and one worker, where the kernel is cache-resident,
+  `counted` uniform goes from 1.143 to 1.094 ms at `f64` and 1.091 to 1.065 at
+  `f32`. `counted` and `unchecked` now cost the same to within the noise of
+  this host where `counted` was 11% dearer: at 2,097,152 uniform `f64` and one
+  worker, `counted` 70.1 against `unchecked` 63.0 before, and 55.3 against 56.7
+  after. `unchecked` itself improved (63.0 to 56.7 at that cell, 45.5 to 40.6
+  at `f32`), which the meter cost does not explain — taking the call and its
+  `Result` out of the node loop is worth something at every accounting mode.
+  The eight-worker cells on this laptop are noise-dominated and are not quoted:
+  at 65,536 nodes a per-iteration time is 0.2–0.5 ms and one base round even
+  produced a negative estimate for the difference of two timings.
+
+- **A CSR arc target is four bytes instead of eight.** The projection's packed
+  adjacency, its cached reverse index, and Louvain's and Leiden's per-level
+  scratch CSR store a target as a `u32` and widen it on every read, through an
+  `#[inline(always)]` accessor or a typed slice; `offsets` stayed `usize`
+  here and were narrowed by the row-offset entry above, and `weights` stays
+  `f64`. An outgoing arc costs 12 bytes instead of 16
+  unweighted (a four-byte target and a word of original-edge slot) and 20
+  instead of 24 weighted; a reverse arc, which carries no edge slots, costs 4
+  instead of 8 unweighted and 12 instead of 16 weighted. The field is private,
+  so every read in the crate had to be converted rather than silently widened:
+  every kernel under `crates/grust-algorithms/src/` now reads through the
+  accessors. **A projection therefore holds at most `u32::MAX` nodes** and a
+  larger one is refused with a named `AlgorithmError::Unsupported` rather than
+  falling back to eight-byte targets. The first graph that fallback would admit
+  has 2^32 nodes, where the node-id vector's pointers alone are 34.4 GB, one
+  `f64` score array is
+  another 34.4 GB and PageRank needs three of them, so the targets — 17.2 GB
+  narrow at one arc a node — are the smallest array in the working set, and
+  every per-node `usize` buffer would have to be narrowed before a wide target
+  array could matter. Results are bit-identical everywhere: this is a
+  representation change only, and every pinned digest test
+  (`tests/pagerank_pinned.rs`, `tests/pagerank_fused.rs`,
+  `tests/pagerank_f32.rs` and the rest) passes unmodified, as does the
+  projection-build determinism test, whose fixture still reaches the parallel
+  fill. The parallel count's chunk bound moved from `2 × items / nodes` to
+  `items / nodes + 2` so that its scratch table — four bytes a node a chunk,
+  admitted and released before the arrays — still cannot exceed the narrowed
+  target array plus the positions it is released in favour of; that keeps a
+  build's accounted peak, and therefore which memory limits it meets, identical
+  at every width, as `a_memory_limit_is_met_or_refused_as_it_is_sequentially`
+  checks. No refusal digest changed. Two byte-count assertions did, both
+  because the sizes they state are the ones that shrank, and both now say so in
+  place: `projectionStats`' `csrBytes` and `estimateCsr`'s `outgoingCsrBytes`
+  fall from 136 to 112 bytes and `reverseCsrBytes` from 88 to 64 on the
+  four-node, three-edge undirected Cypher fixture (`grust-algorithm-procedures`'
+  `projection_inspection_and_csr_estimates_disclose_their_scope`), and the
+  lower bound on what a transpose costs in `projection_views.rs` is now four
+  bytes an arc rather than a word. `CsrEstimate` and
+  `GraphProjection::statistics` report the new sizes; no declared Arrow schema
+  moved, since every arc-valued Arrow column is already a node-id string.
+  Measured on an Apple-silicon laptop (a shared machine, so these are ratios,
+  not publishable absolutes) on a uniform fixture with eight arcs a node, least
+  of the per-iteration measurements over two passes: at 2,097,152 nodes the
+  PageRank pull goes from 71.0 to 70.0 ms an iteration at `f64` and one worker,
+  51.3 to 47.8 at `f32` and one worker, 16.9 to 15.7 at `f64` and eight
+  workers, and 12.5 to 10.0 at `f32` and eight workers; at 65,536 nodes, where
+  the projection is cache-resident, the one-worker cells are unchanged to three
+  digits. The gain is smaller than the halved arc stream because the pull's
+  other memory traffic is the random score reads, which did not change.
+  Projection build time at 2,097,152 nodes is unchanged (505 to 491 ms at one
+  worker, 383 to 387 at eight) and the transpose falls from 188 to 178 ms at
+  one worker and 96 to 85 at eight, while the execution's accounted peak falls
+  from 1,158,614,638 to 1,091,505,774 bytes after the build — exactly
+  16,777,216 arcs × 4 — and from 1,309,609,590 to 1,175,391,862 with the
+  transpose held beside it, exactly twice that.
+- **PageRank and ArticleRank can run with `f32` scores.** `pagerank_f32`
+  returns `PageRank<f32>`; `PageRank` is now `PageRank<F = f64>`, so every
+  existing caller is unchanged, and `values()` is `&[F]`. One implementation
+  serves both, generic over the sealed `Score` trait, which `f64` and `f32`
+  implement: every score, per-arc probability, dangling mass, teleport share
+  and `base` is formed and accumulated in the score type, the personalization
+  is normalized in `f64` and rounded once, and the L1 residual is summed in
+  `f64` from the score differences at either precision, which is the
+  arrangement `neo4j-labs/graph` uses for its `f32` PageRank, so the two can
+  be compared at one precision under one stopping rule. The stop stays
+  `residual <= tolerance`; `neo4j-labs/graph` stops at `<`, which differs only
+  at a residual exactly equal to the tolerance. The `f64` kernel's bits, work
+  charges and refusal units are unchanged (`tests/pagerank_pinned.rs`), and
+  the `f32` kernel charges the same work and is bit-identical at one, two,
+  three and sixteen workers on the parallel pull, through the same fixed-chunk
+  reductions. `grust.algorithms.pagerank` and `articleRank` take
+  `precision: 'f64' | 'f32'`, default `'f64'`, refusing any other value;
+  at `'f32'` the `score` column is Float32 on every batch, and `iterations`,
+  `converged` and `residual` keep their types. Observed on the 120,000-node,
+  600,000-arc test fixture: at tolerance 1e-8 the `f32` and `f64` runs both
+  stop at iteration 93, the `f32` residual tracking the `f64` residual to a
+  few percent; at tolerance zero `f32` reaches an exact fixed point in 147
+  iterations against `f64`'s 261; and on a fixture with half its 200,000 nodes
+  dangling, `f32` needed about twice the iterations at every tolerance of 1e-6
+  and below, most of which an experimental `f64` dangling sum recovered. The
+  kernel keeps that sum in `f32`, as asked. A tolerance below one `f32` ulp of
+  a moving score is met only at an exact fixed point: on the four-node Cypher
+  test graph, whose two largest scores are near 0.45 (ulp 2^-25), the default
+  1e-8 is never reached, the residual is exactly 2^-24 for all 1000 iterations
+  and `converged` is false, while 1e-6 is met in 80 iterations; the test pins
+  this rather than loosening the tolerance.
+- **The parallel PageRank pull is one pass per iteration instead of three.**
+  Each iteration walked the nodes three times: a pass forming every source's
+  share `score / (out-degree + damp)` and the dangling mass, the pull over
+  in-arcs, and a residual pass over the old and new scores. One pass now does
+  all three. Visiting a node it sums its in-arc shares, forms its new score,
+  adds the move to the residual, and forms the node's share for the next
+  iteration, or adds its new score to the next iteration's dangling mass. That
+  dangling mass feeds the next `base`, which is the arithmetic the shares pass
+  performed over the scores the pull had just written, from the same operands
+  in the same order; the residual and dangling partials are formed per fixed
+  4,096-node chunk in node order and folded in chunk order, as before, each
+  worker's chunk being a whole number of fixed chunks. Scores, iteration
+  counts and residuals are therefore bit-identical to the three-pass kernel
+  at both precisions and at every worker count: every digest in
+  `tests/pagerank_pinned.rs` is unchanged, and `tests/pagerank_fused.rs`
+  checks nine cases (PageRank, ArticleRank, a converging tolerance, a skewed
+  personalization, weighted graphs including one with zero-weight rows and
+  `f64::MAX` weights) at `f64` and `f32` and at one, two, three and sixteen
+  workers against a sequential three-pass reference and against digests the
+  previous kernel produced. Two smaller changes ride along. Without a
+  personalization the pull forms `base * (1/n)` once instead of reading a
+  uniform teleport array per node, the same bits, which the test checks
+  against an explicitly uniform personalization, and releases the array on
+  entry. A weighted pull forms each in-arc's probability once before the
+  iterations, one score per arc, so an arc costs one multiply instead of two
+  random reads and two divisions; an arc out of a dangling row is stored as
+  zero, which adds nothing to a sum of nonnegative terms in either precision,
+  so the arc loop no longer branches. The sequential push forms each weighted
+  arc's probability in its first iteration, where it always did, and keeps
+  it for the later ones; unweighted it is unchanged. Work charging is
+  unchanged in every mode: the pass charges `1 + in-arcs` per node, the
+  residual's and the next shares' units are charged in the same fixed chunks
+  at the points where the passes that made them used to run, never for an
+  iteration that does not happen, and the weighted setup's two passes charge
+  what the two they replace did, so every closed formula holds and every
+  budget refuses at the pinned unit. Peak memory, unweighted pull: the same
+  three score arrays (shares double-buffered, scores updated in place) plus
+  16 bytes per 4,096 nodes of partials, less one score per node when no
+  personalization is given. Weighted pull: `size_of::<F>() * (arcs - nodes)`
+  more, the per-arc probabilities less the `f64` scales it now releases
+  before iterating, plus the partials; weighted push: one score per arc
+  more. Measured on a laptop (Apple M1 Max, other load present, so shape only;
+  the dedicated host decides), per iteration on eight-arcs-per-node fixtures
+  of 65,536 and 2,097,152 nodes, uniform and hub-skewed, release build,
+  least of several: the unweighted pull ran 1.1–1.25x faster at one and
+  eight workers at both sizes and precisions, except one cell, uniform 2M
+  nodes at `f32` and eight workers, which ran 0.8x (10.5–11.2 ms before,
+  12.8–13.4 after, reproduced twice), the size at which the `f32` shares
+  array alone fits a core cluster's L2 and the fused pass's added streams
+  displace it, an inference from the sizes, not a counter reading; the
+  weighted pull ran 2.1–3.3x faster at 65k and 2.7–5.8x at 2M; the weighted
+  push 6–10% faster; the unweighted push unchanged. Every cell's checksum
+  matched the previous kernel's.
 - **Each work meter's balance is padded to a whole cache line.** The balance a
   `WorkMeter` spends its admitted block from was a bare `Arc<AtomicUsize>`: a
   32-byte heap chunk sharing a 64-byte line with whatever glibc's tcache had

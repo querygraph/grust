@@ -181,7 +181,10 @@ fn the_transpose_is_the_owners_whichever_view_builds_it() {
         graph.prepare_incoming().expect("transpose");
         (live(&context) - bytes, work(&context) - units)
     };
-    assert!(transpose_bytes > 32_768 * size_of::<usize>());
+    // The transpose really is proportional to the arcs: at least its target
+    // array, which is four bytes an arc since the CSR narrowed targets to
+    // `u32` — it was a word an arc, and this bound said `size_of::<usize>()`.
+    assert!(transpose_bytes > 32_768 * 4);
 
     let owner = root();
     let graph = chord(4096, 32_768, &owner);
