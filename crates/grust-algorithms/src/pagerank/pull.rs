@@ -34,14 +34,36 @@
 //!
 //! **What is charged, and where.** The three passes charged one unit per
 //! node, `1 + in-arcs` per node, and one unit per node, in that order, every
-//! iteration. The fused pass charges `1 + in-arcs` per node as it visits it.
-//! The residual's units are charged in the same fixed chunks right after the
-//! pass, and the next iteration's share units at the start of that iteration,
-//! before its pass: the same units in the same order as before, so a budget
-//! refuses at the unit it always refused at and leaves the same count behind.
-//! The two chunked charges name work the pass has already done alongside the
-//! node visits it charged; they are kept so the account is the one every
-//! caller, test and budget was written against.
+//! iteration. The fused pass charges `1 + in-arcs` for a whole reduction block
+//! of nodes at once, before the block runs: the block's arc total is
+//! `offsets[end] - offsets[start]` on the transpose, one subtraction, so
+//! `block_nodes + block_arcs` is the exact sum of the charges the block's nodes
+//! used to make one at a time. The residual's units are charged in the same
+//! fixed chunks right after the pass, and the next iteration's share units at
+//! the start of that iteration, before its pass: the same units in the same
+//! order as before. The two chunked charges name work the pass has already done
+//! alongside the node visits it charged; they are kept so the account is the
+//! one every caller, test and budget was written against.
+//!
+//! **What block charging changes, and what it does not.** A completed kernel
+//! charges the same total, unit for unit, so any budget that fitted still fits
+//! and any budget that did not still refuses, naming `work`. What moves is
+//! *where* a refusal lands: the charge still precedes the work, so no refused
+//! work is ever performed, but the refusal now falls on a block boundary rather
+//! than a node boundary, and the units standing on the counter when a kernel
+//! stops are the last whole block's rather than the last node's. That is the
+//! one observable the pinned sweep in `tests/pagerank_pinned.rs` records, and
+//! its digest moved with it.
+//!
+//! **Responsiveness.** Charging per node reached [`WorkMeter::charge`]'s
+//! admission about once per [`WORK_BLOCK_UNITS`] units, and admission is where
+//! a counted meter samples the deadline; an uncounted meter samples on the same
+//! unit cadence of its own. One charge per 4,096-node block would sample once
+//! per block — 36 times less often on an eight-arc graph. So each block loop
+//! polls interruption explicitly every [`Poll`] stride nodes, the stride being
+//! the nodes whose charged work is one block's units, computed from the block's
+//! own exact total. Cancellation and the deadline are therefore observed on the
+//! unit cadence they were, not the node cadence.
 //!
 //! **Memory.** Unweighted, the shares are double-buffered and the scores are
 //! updated in place, since no arc reads a score: three arrays of `n` scores,
@@ -53,6 +75,8 @@
 
 use std::sync::atomic::{AtomicBool, Ordering};
 
+use grust_procedures::{WORK_BLOCK_UNITS, WorkMeter};
+
 use super::{
     PageRank, PageRankOptions, RankVariant, damping, mean_out_degree, mean_outgoing, uniform_share,
 };
@@ -61,6 +85,50 @@ use crate::projection::Adjacency;
 use crate::{
     AlgorithmError, ExecutionContext, GraphProjection, Result, buffer::Buffer, score::Score,
 };
+
+/// The arcs of nodes `first .. first + nodes`, from the offsets alone: the sum
+/// of those nodes' degrees, without visiting a node or an arc.
+#[inline(always)]
+fn arcs_of(adjacency: &Adjacency, first: usize, nodes: usize) -> usize {
+    adjacency.offsets.values[first + nodes] - adjacency.offsets.values[first]
+}
+
+/// The node cadence on which a block-charged loop polls for cancellation and
+/// the deadline.
+///
+/// A charge of `units` spread over `nodes` reached the meter's admission, and
+/// so the deadline sample, once per [`WORK_BLOCK_UNITS`] units when it was made
+/// one node at a time. The stride is the nodes that carry that many units on
+/// this block, so a block charged in one go still polls as often as its nodes
+/// used to, and never less often. A block whose nodes have no arcs polls every
+/// [`WORK_BLOCK_UNITS`] nodes, which is what a unit-per-node charge did.
+struct Poll {
+    stride: usize,
+    until: usize,
+}
+
+impl Poll {
+    /// The stride for a block of `nodes` charged `units`.
+    fn every(nodes: usize, units: usize) -> Self {
+        let stride = (nodes.saturating_mul(WORK_BLOCK_UNITS) / units.max(1)).max(1);
+        Self {
+            stride,
+            until: stride,
+        }
+    }
+
+    /// Count one node, and poll on every `stride`-th. Nothing is charged: the
+    /// block's units were charged before any of its work began.
+    #[inline(always)]
+    fn node(&mut self, meter: &WorkMeter) -> Result<()> {
+        self.until -= 1;
+        if self.until == 0 {
+            self.until = self.stride;
+            return meter.poll();
+        }
+        Ok(())
+    }
+}
 
 /// What one fixed reduction chunk contributes to one iteration's two sums.
 #[derive(Clone, Copy)]
@@ -288,8 +356,10 @@ fn charge_chunks(context: &ExecutionContext, n: usize) -> Result<()> {
 /// unit per row and one per arc and forms the row's scale and total together,
 /// reading the row twice while it is hot; the second charges one unit per
 /// out-arc of each row, in row order, as the totals pass did, and visits the
-/// same arcs by target. The units, their order and the unit a budget refuses
-/// at are unchanged. The scales live only here.
+/// same arcs by target. Both charge a reduction block of rows at a time, from
+/// the row offsets, rather than a row at a time: the same units in the same
+/// order, refused at a block boundary rather than a row boundary. The scales
+/// live only here.
 fn weigh<F: Score>(
     context: &ExecutionContext,
     workers: usize,
@@ -311,22 +381,32 @@ fn weigh<F: Score>(
         .collect();
     crate::parallel::for_each_owned(workers, rows, |_, (first, scales, totals)| {
         let mut meter = context.work_meter();
-        for (index, (scale, total)) in scales.iter_mut().zip(totals.iter_mut()).enumerate() {
-            let range = adjacency.range(first + index);
-            meter.charge(1 + range.len())?;
-            let mut largest = 0.0f64;
-            for arc in range.clone() {
-                largest = largest.max(adjacency.weight(arc));
+        let mut start = first;
+        for (scales, totals) in scales
+            .chunks_mut(REDUCTION_CHUNK_LEN)
+            .zip(totals.chunks_mut(REDUCTION_CHUNK_LEN))
+        {
+            let units = scales.len() + arcs_of(adjacency, start, scales.len());
+            meter.charge(units)?;
+            let mut poll = Poll::every(scales.len(), units);
+            for (index, (scale, total)) in scales.iter_mut().zip(totals.iter_mut()).enumerate() {
+                poll.node(&meter)?;
+                let range = adjacency.range(start + index);
+                let mut largest = 0.0f64;
+                for arc in range.clone() {
+                    largest = largest.max(adjacency.weight(arc));
+                }
+                *scale = largest;
+                if largest <= 0.0 {
+                    continue;
+                }
+                let mut sum = F::ZERO;
+                for arc in range {
+                    sum += F::from_f64(adjacency.weight(arc) / largest);
+                }
+                *total = sum;
             }
-            *scale = largest;
-            if largest <= 0.0 {
-                continue;
-            }
-            let mut sum = F::ZERO;
-            for arc in range {
-                sum += F::from_f64(adjacency.weight(arc) / largest);
-            }
-            *total = sum;
+            start += scales.len();
         }
         Ok(())
     })?;
@@ -351,16 +431,26 @@ fn weigh<F: Score>(
     crate::parallel::for_each_owned(workers, tasks, |_, (first, last, own)| {
         let mut meter = context.work_meter();
         let base = reverse.offsets.values[first];
-        for node in first..last {
-            meter.charge(adjacency.range(node).len())?;
-            for arc in reverse.range(node) {
-                let source = reverse.target(arc);
-                own[arc - base] = if totals[source] <= F::ZERO {
-                    F::ZERO
-                } else {
-                    F::from_f64(reverse.weight(arc) / scales[source]) / (totals[source] + damp)
-                };
+        let mut start = first;
+        while start < last {
+            let end = (start + REDUCTION_CHUNK_LEN).min(last);
+            // One unit per out-arc of each row, as the totals pass charged: the
+            // sum over the block is one subtraction on the row offsets.
+            let units = arcs_of(adjacency, start, end - start);
+            meter.charge(units)?;
+            let mut poll = Poll::every(end - start, units);
+            for node in start..end {
+                poll.node(&meter)?;
+                for arc in reverse.range(node) {
+                    let source = reverse.target(arc);
+                    own[arc - base] = if totals[source] <= F::ZERO {
+                        F::ZERO
+                    } else {
+                        F::from_f64(reverse.weight(arc) / scales[source]) / (totals[source] + damp)
+                    };
+                }
             }
+            start = end;
         }
         Ok(())
     })?;
@@ -464,14 +554,20 @@ impl<F: Score> Pass<'_, F> {
                     blocks.zip(partials.iter_mut()).enumerate()
                 {
                     let first = first + block * REDUCTION_CHUNK_LEN;
+                    // The whole block's `1 + in-arcs` per node, charged before
+                    // any of it runs: the same total the nodes charged one at a
+                    // time, from one subtraction on the transpose offsets.
+                    let units = scores.len() + arcs_of(self.reverse, first, scores.len());
+                    meter.charge(units)?;
+                    let mut poll = Poll::every(scores.len(), units);
                     let mut residual = 0.0f64;
                     let mut dangling = F::ZERO;
                     for (index, (score, share)) in
                         scores.iter_mut().zip(shares_next.iter_mut()).enumerate()
                     {
+                        poll.node(&meter)?;
                         let node = first + index;
                         let arcs = self.reverse.range(node);
-                        meter.charge(1 + arcs.len())?;
                         let mut sum = F::ZERO;
                         for arc in arcs {
                             sum += shares_now[self.reverse.target(arc)];
@@ -522,12 +618,15 @@ impl<F: Score> Pass<'_, F> {
             debug_assert_eq!(blocks.len(), partials.len());
             for (block, (next, partial)) in blocks.zip(partials.iter_mut()).enumerate() {
                 let first = first + block * REDUCTION_CHUNK_LEN;
+                let units = next.len() + arcs_of(self.reverse, first, next.len());
+                meter.charge(units)?;
+                let mut poll = Poll::every(next.len(), units);
                 let mut residual = 0.0f64;
                 let mut dangling = F::ZERO;
                 for (index, value) in next.iter_mut().enumerate() {
+                    poll.node(&meter)?;
                     let node = first + index;
                     let arcs = self.reverse.range(node);
-                    meter.charge(1 + arcs.len())?;
                     let mut sum = F::ZERO;
                     for arc in arcs {
                         sum += scores_now[self.reverse.target(arc)] * self.probabilities[arc];

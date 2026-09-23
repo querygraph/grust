@@ -196,8 +196,20 @@ const SMALL_WEIGHTED: [u64; 3] = [
     0x04cf_ab03_d17f_bbe7,
 ];
 const PUSH_BUDGETS: [u64; 2] = [0x6a41_7bb2_d619_2ef5, 0x072e_7128_972a_c7c8];
+/// Re-pinned when the pull began charging a reduction block of nodes at once
+/// instead of a node at a time. Was `0x28c6_c837_8b34_77a9`.
+///
+/// What did **not** move: the least budget the run fits in, 129,002 units at
+/// one worker, before and after. The block's charge is `block_nodes +
+/// (offsets[end] - offsets[start])` on the transpose, which is exactly what its
+/// nodes charged one at a time, so a completed kernel charges the same total
+/// and every budget decides the same way. Only the third thing this digest
+/// hashes moved: the units standing on the counter when a *refused* run stops.
+/// A charge still precedes the work it names, so no refused work is performed,
+/// but the refusal now lands on a block boundary, and the counter is left at
+/// the last whole block rather than within a node of the budget.
 #[cfg(feature = "parallel")]
-const PULL_BUDGETS: u64 = 0x28c6_c837_8b34_77a9;
+const PULL_BUDGETS: u64 = 0x98c0_8ea5_11b8_4a46;
 
 #[test]
 fn unweighted_scores_are_the_pinned_bits_on_both_paths_at_every_width() {
@@ -413,6 +425,11 @@ fn the_pull_refuses_budgets_at_the_pinned_unit() {
         })
         .collect();
     assert!((NODES + arcs.len()) * 2 >= 1 << 14, "must reach the pull");
+    // The pull charges a reduction block of nodes at once, so a refusal lands
+    // on a block boundary; the budget it lands at, and that it names `work`
+    // (asserted in `budget_sweep`), are what stay pinned. The pair below keeps
+    // that explicit: `smallest - 1` must still be refused at every width.
+    //
     // One worker: at more, the unit a refused run stops at depends on which
     // worker is refused, though whether it is refused does not.
     let smallest = smallest_budget(Some(1), NODES, &arcs, None);

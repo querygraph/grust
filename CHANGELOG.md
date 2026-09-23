@@ -8,6 +8,53 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ### Graph algorithms
 
+- **The PageRank pull charges a reduction block of nodes at once, not a node
+  at a time.** The fused pass charged `1 + in-arcs` per node, one work-meter
+  call per visited node; an ablation on a ratio host attributed +4.7–5.7% of
+  the per-sweep cost to the default `counted` mode at 65,536 nodes and one
+  thread and +18.7–21.8% at 2,097,152, the largest single term measured
+  anywhere in the kernel. A block's arc total is `offsets[end] -
+  offsets[start]` on the transpose, one subtraction, so a single charge of
+  `block_nodes + block_arcs` per 4,096-node reduction block is exactly the sum
+  the block's nodes used to make one at a time. The weighted setup's two passes
+  charge the same way, from the row offsets. **A completed kernel charges the
+  identical total**, so every budget decides exactly as it did: the least
+  budget the pinned 3,000-node pull fits in is 129,002 units before and after.
+  The charge still precedes the work it names, so no work a budget refused is
+  ever performed; what moves is only *where* a refusal lands — on a block
+  boundary rather than a node boundary — and therefore the units left standing
+  on the counter when a refused run stops. That is the one thing
+  `tests/pagerank_pinned.rs`' budget sweep records beyond the outcome, and its
+  `PULL_BUDGETS` digest is re-pinned from `0x28c6_c837_8b34_77a9` to
+  `0x98c0_8ea5_11b8_4a46` with the reason written in place; the test still
+  requires `smallest - 1` to be refused, naming `work`, at one, two and sixteen
+  workers. Cancellation and the deadline stay exactly as responsive as they
+  were: charging per node reached the meter's admission, where a counted meter
+  samples the deadline, about once per `WORK_BLOCK_UNITS` (1,024) units, and an
+  uncounted meter samples on that same unit cadence, so each block loop now
+  polls interruption explicitly every `block_nodes × 1024 / block_units` nodes
+  — 113 nodes on an eight-arc graph, 1,024 on an arcless one — through a new
+  `WorkMeter::poll`, the interruption half of `charge` with nothing charged.
+  Scores are bit-identical at both precisions and every worker count and in
+  every accounting mode; every digest in `tests/pagerank_fused.rs`,
+  `tests/pagerank_f32.rs` and the rest of `tests/pagerank_pinned.rs` passes
+  unmodified. Measured on an Apple M1 Max laptop (a shared, loaded machine, so
+  these are ratios and not publishable absolutes), eight arcs a node, least of
+  three interleaved rounds. At 2,097,152 nodes and one worker the uniform
+  family goes from 70.1 to 55.3 ms an iteration at `f64` and 50.5 to 40.5 at
+  `f32` in `counted` mode, and the hub family from 67.3 to 54.2 and 50.6 to
+  43.3; at 65,536 nodes and one worker, where the kernel is cache-resident,
+  `counted` uniform goes from 1.143 to 1.094 ms at `f64` and 1.091 to 1.065 at
+  `f32`. `counted` and `unchecked` now cost the same to within the noise of
+  this host where `counted` was 11% dearer: at 2,097,152 uniform `f64` and one
+  worker, `counted` 70.1 against `unchecked` 63.0 before, and 55.3 against 56.7
+  after. `unchecked` itself improved (63.0 to 56.7 at that cell, 45.5 to 40.6
+  at `f32`), which the meter cost does not explain — taking the call and its
+  `Result` out of the node loop is worth something at every accounting mode.
+  The eight-worker cells on this laptop are noise-dominated and are not quoted:
+  at 65,536 nodes a per-iteration time is 0.2–0.5 ms and one base round even
+  produced a negative estimate for the difference of two timings.
+
 - **A CSR arc target is four bytes instead of eight.** The projection's packed
   adjacency, its cached reverse index, and Louvain's and Leiden's per-level
   scratch CSR store a target as a `u32` and widen it on every read, through an
