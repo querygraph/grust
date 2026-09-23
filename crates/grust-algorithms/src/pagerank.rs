@@ -3,6 +3,8 @@
 
 use crate::{AlgorithmError, GraphProjection, Result, buffer::Buffer, score::Score};
 
+mod pull;
+
 /// Which rank to compute. The iteration is the same; the two differ only in what
 /// a source divides its score by before sending it along an arc.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -204,7 +206,7 @@ fn rank<F: Score>(graph: &GraphProjection, options: PageRankOptions<'_>) -> Resu
             "personalization length must equal node count".into(),
         ));
     }
-    let uniform = F::from_f64(if n == 0 { 0.0 } else { 1.0 / n as f64 });
+    let uniform = uniform_share::<F>(n);
     let mut teleport = Buffer::filled(n, uniform, context)?;
     if let Some(values) = options.personalization {
         let mut maximum = 0.0f64;
@@ -260,7 +262,7 @@ fn rank<F: Score>(graph: &GraphProjection, options: PageRankOptions<'_>) -> Resu
             .saturating_mul(2),
     );
     if let Some(workers) = workers {
-        return pull(graph, options, &teleport.values, scores, workers);
+        return pull::pull(graph, options, teleport, scores, workers);
     }
     let mut next = Buffer::filled(n, F::ZERO, context)?;
     // Scale each row by its largest edge weight before summing, preventing
@@ -289,6 +291,22 @@ fn rank<F: Score>(graph: &GraphProjection, options: PageRankOptions<'_>) -> Resu
         RankVariant::ArticleRank => mean_outgoing(&totals.values),
     };
     let (damping, retained) = damping::<F>(&options);
+    // Weighted, each arc's probability is formed in the first iteration, where
+    // it always was, and kept, one score per arc, so the later iterations read
+    // it instead of dividing twice per arc. It is that iteration's value, so
+    // every score keeps its bits, and nothing is charged for keeping it. An
+    // unweighted arc's probability is `1 / out-degree`, formed per arc as
+    // before; a row's arcs would all hold the same value.
+    let weighted = graph.is_weighted();
+    let mut probabilities = Buffer::indexed(
+        if weighted {
+            adjacency.targets.values.len()
+        } else {
+            0
+        },
+        F::ZERO,
+        context,
+    )?;
     let mut residual = f64::INFINITY;
     for iteration in 1..=options.max_iterations {
         let mut dangling = F::ZERO;
@@ -315,10 +333,26 @@ fn rank<F: Score>(graph: &GraphProjection, options: PageRankOptions<'_>) -> Resu
             let total = totals.values[source] + damp;
             let mass = damping * scores.values[source];
             let next = &mut next.values;
-            charged_arcs(context, 1, adjacency.range(source), |arc| {
-                let probability = F::from_f64(adjacency.weight(arc) / scale) / total;
-                next[adjacency.targets.values[arc]] += mass * probability;
-            })?;
+            let targets = &adjacency.targets.values;
+            let range = adjacency.range(source);
+            if !weighted {
+                charged_arcs(context, 1, range, |arc| {
+                    let probability = F::from_f64(adjacency.weight(arc) / scale) / total;
+                    next[targets[arc]] += mass * probability;
+                })?;
+            } else if iteration == 1 {
+                let probabilities = &mut probabilities.values;
+                charged_arcs(context, 1, range, |arc| {
+                    let probability = F::from_f64(adjacency.weight(arc) / scale) / total;
+                    probabilities[arc] = probability;
+                    next[targets[arc]] += mass * probability;
+                })?;
+            } else {
+                let probabilities = &probabilities.values;
+                charged_arcs(context, 1, range, |arc| {
+                    next[targets[arc]] += mass * probabilities[arc];
+                })?;
+            }
         }
         residual = 0.0;
         for (&before, &after) in scores.values.iter().zip(&next.values) {
@@ -358,6 +392,14 @@ fn damping<F: Score>(options: &PageRankOptions<'_>) -> (F, F) {
         F::from_f64(options.damping),
         F::from_f64(1.0 - options.damping),
     )
+}
+
+/// The uniform teleport share, `1 / n`, at the score precision: every node's
+/// initial score, and every node's teleport share when no personalization is
+/// given. The pull's uniform path forms `base * uniform` once from this same
+/// value instead of reading it back from the teleport array per node.
+fn uniform_share<F: Score>(n: usize) -> F {
+    F::from_f64(if n == 0 { 0.0 } else { 1.0 / n as f64 })
 }
 
 /// Arcs the push loop visits between two charges.
@@ -418,252 +460,4 @@ fn charge_exactly(context: &crate::ExecutionContext, units: usize) -> Result<()>
         }
         other => other,
     }
-}
-
-/// The parallel iteration, weighted or not.
-///
-/// Each iteration computes, for every target `v`,
-/// `next[v] = base * teleport[v] + damping * Σ score[u] · p(u → v)`
-/// over the in-arcs of `v`, where `p` is the same arc probability the push loop
-/// derives from the source's scaled weight total. It is therefore the same
-/// distribution, summed in a different but equally fixed order. Every reduction
-/// over nodes, the dangling mass and the residual, combines per-chunk partial
-/// sums in fixed-size chunks in chunk order, so the sequence of iterations and
-/// the final scores are identical at one worker and at sixteen.
-fn pull<F: Score>(
-    graph: &GraphProjection,
-    options: PageRankOptions<'_>,
-    teleport: &[F],
-    mut scores: Buffer<F>,
-    workers: usize,
-) -> Result<PageRank<F>> {
-    let context = graph.execution();
-    let n = graph.node_count();
-    let adjacency = graph.outgoing();
-    let offsets = &adjacency.offsets.values;
-    let reverse = graph.incoming()?;
-    // Per-source arc probability, exactly as the push loop derives it: each row
-    // is scaled by its largest weight before summing, so two arcs of f64::MAX
-    // still sum finitely, and a row of zero weight is dangling.
-    //
-    // Only a weighted projection needs them. An unweighted arc's probability is
-    // `1/out-degree`, which `offsets` already holds. Deriving it from `scales`
-    // and `totals` instead added two more 8-byte-per-node streams under the
-    // same random index as `scores` and `offsets`; on roadNet-CA that is 48 MB
-    // of randomly touched arrays against a 24.8 MB L3 where 32 MB fitted
-    // before, and it cost the kernel a measured 1.5x at every worker count.
-    // The per-source shares below go the other way: one 8-byte stream under
-    // the random index instead of those two.
-    let weighted = graph.is_weighted();
-    let factored = if weighted { n } else { 0 };
-    let mut scales = Buffer::indexed(factored, 0.0f64, context)?;
-    let mut totals = Buffer::indexed(factored, F::ZERO, context)?;
-    if weighted {
-        crate::parallel::for_each_chunk(
-            context,
-            workers,
-            &mut scales.values,
-            |first, slice, meter| {
-                for (index, scale) in slice.iter_mut().enumerate() {
-                    let node = first + index;
-                    let range = offsets[node]..offsets[node + 1];
-                    meter.charge(1 + range.len())?;
-                    let mut largest = 0.0f64;
-                    for arc in range {
-                        largest = largest.max(adjacency.weight(arc));
-                    }
-                    *scale = largest;
-                }
-                Ok(())
-            },
-        )?;
-        let scaled = &scales.values;
-        crate::parallel::for_each_chunk(
-            context,
-            workers,
-            &mut totals.values,
-            |first, slice, meter| {
-                for (index, total) in slice.iter_mut().enumerate() {
-                    let node = first + index;
-                    let range = offsets[node]..offsets[node + 1];
-                    meter.charge(range.len())?;
-                    if scaled[node] <= 0.0 {
-                        continue;
-                    }
-                    let mut sum = F::ZERO;
-                    for arc in range {
-                        sum += F::from_f64(adjacency.weight(arc) / scaled[node]);
-                    }
-                    *total = sum;
-                }
-                Ok(())
-            },
-        )?;
-    }
-    // PageRank divides by the source's own outgoing weight; ArticleRank adds the
-    // mean over all nodes, so a source with few arcs confers less.
-    //
-    // Unweighted there is no `totals` to take the mean of, and none is needed:
-    // every unweighted arc contributes exactly `1.0` to its source's total, so
-    // the mean outgoing weight *is* the mean out-degree, `arcs / nodes`. That is
-    // a scalar, computed once here rather than read per arc, so the arc loop
-    // still reads `shares` alone and forming each share costs one addition. It
-    // is the same `f64` `mean_outgoing` would return over the array that is no
-    // longer built: summing integer-valued degrees is exact below 2^53, so the
-    // chunked sum and the arc count agree bit for bit.
-    let damp = match options.variant {
-        RankVariant::PageRank => F::ZERO,
-        RankVariant::ArticleRank if weighted => mean_outgoing(&totals.values),
-        RankVariant::ArticleRank => mean_out_degree(n, adjacency.targets.values.len()),
-    };
-    let (damping, retained) = damping::<F>(&options);
-    let scales = &scales.values;
-    let totals = &totals.values;
-    // Unweighted, each source's share of its score, `score / (out-degree +
-    // damp)`, is formed once per iteration, in the dangling pass that already
-    // reads each node's score and `offsets` row in order, so an arc reads one
-    // randomly indexed array, `shares`, instead of `scores` and both ends of
-    // the source's `offsets` row. The quotient is the one the arc loop used to
-    // form per arc, from the same operands, and the arcs add it in the same
-    // order, so every score keeps its bits (`tests/pagerank_pinned.rs`).
-    //
-    // It costs one f64 per node, admitted here. At scale it also narrows the
-    // randomly touched set the comment above measured, from `scores` and
-    // `offsets` to `shares` alone. Forming the shares is not charged: it is part
-    // of visiting a node in the dangling pass, which charges it, so a work
-    // budget still fails at the same unit.
-    let mut shares = Buffer::indexed(if weighted { 0 } else { n }, F::ZERO, context)?;
-    let mut next = Buffer::indexed(n, F::ZERO, context)?;
-    let mut residual = f64::INFINITY;
-    for iteration in 1..=options.max_iterations {
-        // Dangling mass: scores of nodes with no outgoing arc, summed in the
-        // fixed chunks of `REDUCTION_CHUNK_LEN` on both branches.
-        let scores_now = &scores.values;
-        let dangling = if weighted {
-            crate::parallel::map_chunks(context, workers, scores_now, |first, slice, meter| {
-                meter.charge(slice.len())?;
-                let mut sum = F::ZERO;
-                for (index, &score) in slice.iter().enumerate() {
-                    // A row of zero outgoing weight is dangling even where arcs
-                    // exist, which is the push kernel's rule too.
-                    if scales[first + index] <= 0.0 {
-                        sum += score;
-                    }
-                }
-                Ok(sum)
-            })?
-        } else {
-            crate::parallel::for_chunks(
-                workers,
-                &mut shares.values,
-                crate::parallel::REDUCTION_CHUNK_LEN,
-                |first, chunk| {
-                    // `for_chunks` hands out no meter, so each fixed chunk is
-                    // charged on the execution directly: one exchange per 4,096
-                    // nodes, which is what a meter did too, since a charge that
-                    // size never fits in its 1,024-unit block. Admission is
-                    // exact either way (`tests/pagerank_pinned.rs`).
-                    context.charge_work(chunk.len())?;
-                    let mut sum = F::ZERO;
-                    for (index, share) in chunk.iter_mut().enumerate() {
-                        let node = first + index;
-                        let score = scores_now[node];
-                        let out_degree = offsets[node + 1] - offsets[node];
-                        // Unweighted, having no arc is the whole of dangling. A
-                        // dangling node contributes through `base`, never
-                        // through an arc, so its share is never read.
-                        if out_degree == 0 {
-                            sum += score;
-                            *share = F::ZERO;
-                        } else {
-                            // `damp` is zero for PageRank, so this is one
-                            // add on a divisor that was already being formed.
-                            *share = score / (F::from_f64(out_degree as f64) + damp);
-                        }
-                    }
-                    Ok(sum)
-                },
-            )?
-        };
-        let dangling =
-            crate::parallel::reduce_in_order(&dangling, F::ZERO, |total, part| total + part);
-        let base = retained + damping * dangling;
-        let shares = &shares.values;
-        let nonfinite = std::sync::atomic::AtomicBool::new(false);
-        crate::parallel::for_each_chunk(
-            context,
-            workers,
-            &mut next.values,
-            |first, slice, meter| {
-                for (index, value) in slice.iter_mut().enumerate() {
-                    let node = first + index;
-                    let arcs = reverse.range(node);
-                    meter.charge(1 + arcs.len())?;
-                    let mut sum = F::ZERO;
-                    if weighted {
-                        for arc in arcs {
-                            let source = reverse.targets.values[arc];
-                            // A dangling row contributes through `base`, never
-                            // through an arc; its total is zero and would
-                            // divide.
-                            if totals[source] <= F::ZERO {
-                                continue;
-                            }
-                            let probability = F::from_f64(reverse.weight(arc) / scales[source])
-                                / (totals[source] + damp);
-                            sum += scores_now[source] * probability;
-                        }
-                    } else {
-                        for arc in arcs {
-                            sum += shares[reverse.targets.values[arc]];
-                        }
-                    }
-                    let updated = base * teleport[node] + damping * sum;
-                    if !updated.is_finite() {
-                        nonfinite.store(true, std::sync::atomic::Ordering::Relaxed);
-                    }
-                    *value = updated;
-                }
-                Ok(())
-            },
-        )?;
-        if nonfinite.load(std::sync::atomic::Ordering::Relaxed) {
-            return Err(AlgorithmError::Numerical(
-                "PageRank produced a nonfinite score".into(),
-            ));
-        }
-        let parts = crate::parallel::map_chunks(
-            context,
-            workers,
-            &scores.values,
-            |first, slice, meter| {
-                meter.charge(slice.len())?;
-                // The residual is `f64` at either precision, from the score
-                // differences formed at the scores' own.
-                let mut sum = 0.0f64;
-                for (index, &before) in slice.iter().enumerate() {
-                    sum += (next.values[first + index] - before).abs().to_f64();
-                }
-                Ok(sum)
-            },
-        )?;
-        residual = crate::parallel::reduce_in_order(&parts, 0.0, |total, part| total + part);
-        std::mem::swap(&mut scores, &mut next);
-        if residual <= options.tolerance {
-            return Ok(PageRank {
-                graph: graph.clone(),
-                scores,
-                iterations: iteration,
-                residual,
-                converged: true,
-            });
-        }
-    }
-    Ok(PageRank {
-        graph: graph.clone(),
-        scores,
-        iterations: options.max_iterations,
-        residual,
-        converged: false,
-    })
 }

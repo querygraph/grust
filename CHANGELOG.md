@@ -39,6 +39,59 @@ reconstructed from Git history, release commits, and the shipped docs.
   1e-8 is never reached, the residual is exactly 2^-24 for all 1000 iterations
   and `converged` is false, while 1e-6 is met in 80 iterations; the test pins
   this rather than loosening the tolerance.
+- **The parallel PageRank pull is one pass per iteration instead of three.**
+  Each iteration walked the nodes three times: a pass forming every source's
+  share `score / (out-degree + damp)` and the dangling mass, the pull over
+  in-arcs, and a residual pass over the old and new scores. One pass now does
+  all three. Visiting a node it sums its in-arc shares, forms its new score,
+  adds the move to the residual, and forms the node's share for the next
+  iteration, or adds its new score to the next iteration's dangling mass. That
+  dangling mass feeds the next `base`, which is the arithmetic the shares pass
+  performed over the scores the pull had just written, from the same operands
+  in the same order; the residual and dangling partials are formed per fixed
+  4,096-node chunk in node order and folded in chunk order, as before, each
+  worker's chunk being a whole number of fixed chunks. Scores, iteration
+  counts and residuals are therefore bit-identical to the three-pass kernel
+  at both precisions and at every worker count: every digest in
+  `tests/pagerank_pinned.rs` is unchanged, and `tests/pagerank_fused.rs`
+  checks nine cases (PageRank, ArticleRank, a converging tolerance, a skewed
+  personalization, weighted graphs including one with zero-weight rows and
+  `f64::MAX` weights) at `f64` and `f32` and at one, two, three and sixteen
+  workers against a sequential three-pass reference and against digests the
+  previous kernel produced. Two smaller changes ride along. Without a
+  personalization the pull forms `base * (1/n)` once instead of reading a
+  uniform teleport array per node, the same bits, which the test checks
+  against an explicitly uniform personalization, and releases the array on
+  entry. A weighted pull forms each in-arc's probability once before the
+  iterations, one score per arc, so an arc costs one multiply instead of two
+  random reads and two divisions; an arc out of a dangling row is stored as
+  zero, which adds nothing to a sum of nonnegative terms in either precision,
+  so the arc loop no longer branches. The sequential push forms each weighted
+  arc's probability in its first iteration, where it always did, and keeps
+  it for the later ones; unweighted it is unchanged. Work charging is
+  unchanged in every mode: the pass charges `1 + in-arcs` per node, the
+  residual's and the next shares' units are charged in the same fixed chunks
+  at the points where the passes that made them used to run, never for an
+  iteration that does not happen, and the weighted setup's two passes charge
+  what the two they replace did, so every closed formula holds and every
+  budget refuses at the pinned unit. Peak memory, unweighted pull: the same
+  three score arrays (shares double-buffered, scores updated in place) plus
+  16 bytes per 4,096 nodes of partials, less one score per node when no
+  personalization is given. Weighted pull: `size_of::<F>() * (arcs - nodes)`
+  more, the per-arc probabilities less the `f64` scales it now releases
+  before iterating, plus the partials; weighted push: one score per arc
+  more. Measured on a laptop (Apple M1 Max, other load present, so shape only;
+  the dedicated host decides), per iteration on eight-arcs-per-node fixtures
+  of 65,536 and 2,097,152 nodes, uniform and hub-skewed, release build,
+  least of several: the unweighted pull ran 1.1–1.25x faster at one and
+  eight workers at both sizes and precisions, except one cell, uniform 2M
+  nodes at `f32` and eight workers, which ran 0.8x (10.5–11.2 ms before,
+  12.8–13.4 after, reproduced twice), the size at which the `f32` shares
+  array alone fits a core cluster's L2 and the fused pass's added streams
+  displace it, an inference from the sizes, not a counter reading; the
+  weighted pull ran 2.1–3.3x faster at 65k and 2.7–5.8x at 2M; the weighted
+  push 6–10% faster; the unweighted push unchanged. Every cell's checksum
+  matched the previous kernel's.
 - **Each work meter's balance is padded to a whole cache line.** The balance a
   `WorkMeter` spends its admitted block from was a bare `Arc<AtomicUsize>`: a
   32-byte heap chunk sharing a 64-byte line with whatever glibc's tcache had
