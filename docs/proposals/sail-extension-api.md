@@ -11,6 +11,64 @@ proposal's two reference extensions needs exactly that seam and nothing else. Th
 question does not disappear — it moves. **The protocol decides how a request arrives;
 the FFI decides what a native handler returns.** The fourth revision conflated them.
 
+## The proposal in one page
+
+**What is being asked for.** A way for a native extension — Apache Sedona's spatial
+functions and joins, Nutmeg's graph kernels — to reach a Sail server without patching
+Sail, without a Rust trait API, and on its own release schedule.
+
+**The finding that reorders everything.** Spark Connect already defines the seam. Three
+`google.protobuf.Any` fields — `Relation.extension` (998), `Expression.extension` (999),
+`Command.extension` (999) — carry an extension's own protobuf message, and the JVM
+dispatches them to registered plugins. Delta Lake and GraphFrames ship real products
+through it. Sail rejects all three in three lines. The fourth revision of this proposal
+treated that route as something neither reference extension needed; that was wrong.
+
+**A Connect extension carries new verbs, not functions.** A Connect client sends function
+*names* in `UnresolvedFunction`, never an `Any`, so a scalar function can never arrive
+through this seam. That splits the two reference extensions cleanly, and the split is the
+spine of the document:
+
+| | what it needs | where it lands |
+| --- | --- | --- |
+| **Sedona** | `ST_*` resolvable by name; a spatial join | §2 (no Sail change for scalars) and §11 (a join hook) |
+| **Nutmeg** | "stage this DataFrame as a graph", "run this algorithm" | §3–§10 (the protocol seam) |
+
+**The cheapest thing first.** Sail's resolver consults `CatalogManager::get_function`
+*before* its built-ins, so a native `ScalarUDF` registered there resolves by name with
+**no Sail change at all** — in local mode, for unqualified scalars, through the embedder
+path. That is increment A, and it is a registration plus a test rather than a patch (§2).
+
+**Five design decisions**, each argued against what the JVM does:
+
+1. **Route on the type URL** (§5). The JVM hands every plugin the raw bytes and takes the
+   first claimant, and its error omits the type URL. Sail should keep a `type_url →
+   handler` map and name the unclaimed URL.
+2. **An envelope that makes nested plans first-class** (§6). GraphFrames smuggles input
+   DataFrames as serialized `Plan` bytes inside its own message. Sail should carry
+   `repeated Plan inputs` explicitly and resolve them before the handler runs — at the
+   cost of byte-compatibility with a JVM plugin, which is the trade to decide.
+3. **A handler returns an `FFI_TableProvider`** (§7), because `LogicalPlan` is what Sail
+   needs and does not cross the FFI. Sufficient for Nutmeg's verbs; not for Sedona's
+   join, which is why §11 exists. One extension relation returns exactly one relation.
+4. **The output-field-names contract** (§8). Sail renames every column to an internal id;
+   a handler that does not register its field names produces wrong column names.
+5. **Commands** (§9). The JVM's command plugin cannot return data, which is why Delta
+   models everything as a relation. Sail's commands are logical plans and already return
+   relations, so it is not constrained that way.
+
+**What it costs Sail.** Opening the three rejection lines is necessary and nowhere near
+sufficient: six edits for local mode, four more for cluster, and two of them are
+prerequisites rather than nice-to-haves (§13). A plugin that works in local mode breaks
+when the deployment mode changes, because the remote-execution codec is closed (§15) —
+that is the failure users will actually hit, and it is worth deciding deliberately rather
+than discovering.
+
+**What is honestly unresolved.** How a foreign handler consumes a Sail-planned input
+correctly (§14.5); whether the registry can be per-session, given that
+`ServerSessionFactoryFn` is a bare `fn` pointer and forces a process-global one (§12.3);
+and eight open questions for the maintainers (§18).
+
 ## 0. How to read the citations
 
 Two research notes are the sources of record, cited rather than re-derived:
