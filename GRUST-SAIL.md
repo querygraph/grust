@@ -187,7 +187,7 @@ answered both suites, is in `~/src/nutmeg/docs/spark-suite/`.
 
 ### What the maintainer said, and what it means for the next PR
 
-Heran Lin merged this, and made two points that outlive it.
+The maintainer merged this, and made two points that outlive it.
 
 **On the description.** The PR body was ~6,400 characters for a 60-line refactor
 — a problem statement, a worked embedder example, an alternatives section and a
