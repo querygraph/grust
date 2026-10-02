@@ -1,0 +1,730 @@
+DEPRECATED: The legacy builder is deprecated and will be removed in a future release.
+            Install the buildx component to build images with BuildKit:
+            https://docs.docker.com/go/buildx/
+
+Sending build context to Docker daemon   2.56kB
+Step 1/7 : ARG RUST_BASE=rust:1-trixie
+Step 2/7 : FROM ${RUST_BASE}
+ ---> 5d05167b28ce
+Step 3/7 : RUN apt-get update && apt-get install -y --no-install-recommends build-essential ca-certificates clang cmake curl git libssl-dev pkg-config protobuf-compiler libprotobuf-dev && rm -rf /var/lib/apt/lists/*
+ ---> Running in edb7239fdf7f
+Hit:1 http://deb.debian.org/debian trixie InRelease
+Get:2 http://deb.debian.org/debian trixie-updates InRelease [47.3 kB]
+Get:3 http://deb.debian.org/debian-security trixie-security InRelease [43.4 kB]
+Get:4 http://deb.debian.org/debian trixie/main amd64 Packages [9678 kB]
+Get:5 http://deb.debian.org/debian trixie-updates/main amd64 Packages [4412 B]
+Get:6 http://deb.debian.org/debian-security trixie-security/main amd64 Packages [263 kB]
+Fetched 10.0 MB in 1s (8730 kB/s)
+Reading package lists...
+Reading package lists...
+Building dependency tree...
+Reading state information...
+ca-certificates is already the newest version (20250419).
+curl is already the newest version (8.14.1-2+deb13u5).
+git is already the newest version (1:2.47.3-0+deb13u1).
+The following additional packages will be installed:
+  clang-19 cmake-data libarchive13t64 libclang-common-19-dev libclang-cpp19
+  libclang1-19 libgc1 libjsoncpp26 libllvm19 libobjc-14-dev libobjc4
+  libprotobuf-lite32t64 libprotobuf32t64 libprotoc32t64 librhash1 libssl3t64
+  libuv1t64 libz3-4 llvm-19-linker-tools openssl openssl-provider-legacy
+Suggested packages:
+  clang-19-doc wasi-libc cmake-doc cmake-format elpa-cmake-mode ninja-build
+  lrzip protobuf-mode-el
+Recommended packages:
+  llvm-19-dev clang-tools-19 libclang-rt-19-dev
+The following NEW packages will be installed:
+  build-essential clang clang-19 cmake cmake-data libarchive13t64
+  libclang-common-19-dev libclang-cpp19 libclang1-19 libgc1 libjsoncpp26
+  libllvm19 libobjc-14-dev libobjc4 libprotobuf-dev libprotobuf-lite32t64
+  libprotobuf32t64 libprotoc32t64 librhash1 libuv1t64 libz3-4
+  llvm-19-linker-tools pkg-config protobuf-compiler
+The following packages will be upgraded:
+  libssl-dev libssl3t64 openssl openssl-provider-legacy
+4 upgraded, 24 newly installed, 0 to remove and 12 not upgraded.
+Need to get 83.8 MB of archives.
+After this operation, 364 MB of additional disk space will be used.
+Get:1 http://deb.debian.org/debian-security trixie-security/main amd64 openssl-provider-legacy amd64 3.5.7-1~deb13u3 [316 kB]
+Get:2 http://deb.debian.org/debian-security trixie-security/main amd64 libssl-dev amd64 3.5.7-1~deb13u3 [2968 kB]
+Get:3 http://deb.debian.org/debian-security trixie-security/main amd64 libssl3t64 amd64 3.5.7-1~deb13u3 [2458 kB]
+Get:4 http://deb.debian.org/debian trixie/main amd64 build-essential amd64 12.12 [4624 B]
+Get:5 http://deb.debian.org/debian trixie/main amd64 libz3-4 amd64 4.13.3-1 [8560 kB]
+Get:6 http://deb.debian.org/debian trixie/main amd64 libllvm19 amd64 1:19.1.7-3+b1 [26.0 MB]
+Get:7 http://deb.debian.org/debian trixie/main amd64 libclang-cpp19 amd64 1:19.1.7-3+b1 [13.2 MB]
+Get:8 http://deb.debian.org/debian trixie/main amd64 libgc1 amd64 1:8.2.8-1 [247 kB]
+Get:9 http://deb.debian.org/debian trixie/main amd64 libobjc4 amd64 14.2.0-19 [43.3 kB]
+Get:10 http://deb.debian.org/debian trixie/main amd64 libobjc-14-dev amd64 14.2.0-19 [173 kB]
+Get:11 http://deb.debian.org/debian trixie/main amd64 libclang-common-19-dev amd64 1:19.1.7-3+b1 [740 kB]
+Get:12 http://deb.debian.org/debian trixie/main amd64 llvm-19-linker-tools amd64 1:19.1.7-3+b1 [1263 kB]
+Get:13 http://deb.debian.org/debian trixie/main amd64 libclang1-19 amd64 1:19.1.7-3+b1 [7623 kB]
+Get:14 http://deb.debian.org/debian trixie/main amd64 clang-19 amd64 1:19.1.7-3+b1 [117 kB]
+Get:15 http://deb.debian.org/debian trixie/main amd64 clang amd64 1:19.0-63 [6244 B]
+Get:16 http://deb.debian.org/debian trixie/main amd64 cmake-data all 3.31.6-2 [2268 kB]
+Get:17 http://deb.debian.org/debian trixie/main amd64 libarchive13t64 amd64 3.7.4-4+deb13u1 [350 kB]
+Get:18 http://deb.debian.org/debian trixie/main amd64 libjsoncpp26 amd64 1.9.6-3 [81.7 kB]
+Get:19 http://deb.debian.org/debian trixie/main amd64 librhash1 amd64 1.4.5-1 [132 kB]
+Get:20 http://deb.debian.org/debian trixie/main amd64 libuv1t64 amd64 1.50.0-2 [154 kB]
+Get:21 http://deb.debian.org/debian trixie/main amd64 cmake amd64 3.31.6-2 [12.0 MB]
+Get:22 http://deb.debian.org/debian trixie/main amd64 libprotobuf32t64 amd64 3.21.12-11+deb13u1 [981 kB]
+Get:23 http://deb.debian.org/debian trixie/main amd64 libprotobuf-lite32t64 amd64 3.21.12-11+deb13u1 [275 kB]
+Get:24 http://deb.debian.org/debian trixie/main amd64 libprotobuf-dev amd64 3.21.12-11+deb13u1 [1329 kB]
+Get:25 http://deb.debian.org/debian trixie/main amd64 libprotoc32t64 amd64 3.21.12-11+deb13u1 [922 kB]
+Get:26 http://deb.debian.org/debian-security trixie-security/main amd64 openssl amd64 3.5.7-1~deb13u3 [1508 kB]
+Get:27 http://deb.debian.org/debian trixie/main amd64 pkg-config amd64 1.8.1-4 [14.0 kB]
+Get:28 http://deb.debian.org/debian trixie/main amd64 protobuf-compiler amd64 3.21.12-11+deb13u1 [85.0 kB]
+[91mdebconf: unable to initialize frontend: Dialog
+debconf: (TERM is not set, so the dialog frontend is not usable.)
+debconf: falling back to frontend: Readline
+[0m[91mdebconf: unable to initialize frontend: Readline
+debconf: (This frontend requires a controlling tty.)
+debconf: falling back to frontend: Teletype
+[0m[91mdebconf: unable to initialize frontend: Teletype
+debconf: (This frontend requires a controlling tty.)
+debconf: falling back to frontend: Noninteractive
+[0mFetched 83.8 MB in 2s (36.2 MB/s)
+(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 26064 files and directories currently installed.)
+Preparing to unpack .../openssl-provider-legacy_3.5.7-1~deb13u3_amd64.deb ...
+Unpacking openssl-provider-legacy (3.5.7-1~deb13u3) over (3.5.7-1~deb13u2) ...
+Setting up openssl-provider-legacy (3.5.7-1~deb13u3) ...
+(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 26064 files and directories currently installed.)
+Preparing to unpack .../libssl-dev_3.5.7-1~deb13u3_amd64.deb ...
+Unpacking libssl-dev:amd64 (3.5.7-1~deb13u3) over (3.5.7-1~deb13u2) ...
+Preparing to unpack .../libssl3t64_3.5.7-1~deb13u3_amd64.deb ...
+Unpacking libssl3t64:amd64 (3.5.7-1~deb13u3) over (3.5.7-1~deb13u2) ...
+Setting up libssl3t64:amd64 (3.5.7-1~deb13u3) ...
+Selecting previously unselected package build-essential.
+(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 26064 files and directories currently installed.)
+Preparing to unpack .../00-build-essential_12.12_amd64.deb ...
+Unpacking build-essential (12.12) ...
+Selecting previously unselected package libz3-4:amd64.
+Preparing to unpack .../01-libz3-4_4.13.3-1_amd64.deb ...
+Unpacking libz3-4:amd64 (4.13.3-1) ...
+Selecting previously unselected package libllvm19:amd64.
+Preparing to unpack .../02-libllvm19_1%3a19.1.7-3+b1_amd64.deb ...
+Unpacking libllvm19:amd64 (1:19.1.7-3+b1) ...
+Selecting previously unselected package libclang-cpp19.
+Preparing to unpack .../03-libclang-cpp19_1%3a19.1.7-3+b1_amd64.deb ...
+Unpacking libclang-cpp19 (1:19.1.7-3+b1) ...
+Selecting previously unselected package libgc1:amd64.
+Preparing to unpack .../04-libgc1_1%3a8.2.8-1_amd64.deb ...
+Unpacking libgc1:amd64 (1:8.2.8-1) ...
+Selecting previously unselected package libobjc4:amd64.
+Preparing to unpack .../05-libobjc4_14.2.0-19_amd64.deb ...
+Unpacking libobjc4:amd64 (14.2.0-19) ...
+Selecting previously unselected package libobjc-14-dev:amd64.
+Preparing to unpack .../06-libobjc-14-dev_14.2.0-19_amd64.deb ...
+Unpacking libobjc-14-dev:amd64 (14.2.0-19) ...
+Selecting previously unselected package libclang-common-19-dev:amd64.
+Preparing to unpack .../07-libclang-common-19-dev_1%3a19.1.7-3+b1_amd64.deb ...
+Unpacking libclang-common-19-dev:amd64 (1:19.1.7-3+b1) ...
+Selecting previously unselected package llvm-19-linker-tools.
+Preparing to unpack .../08-llvm-19-linker-tools_1%3a19.1.7-3+b1_amd64.deb ...
+Unpacking llvm-19-linker-tools (1:19.1.7-3+b1) ...
+Selecting previously unselected package libclang1-19.
+Preparing to unpack .../09-libclang1-19_1%3a19.1.7-3+b1_amd64.deb ...
+Unpacking libclang1-19 (1:19.1.7-3+b1) ...
+Selecting previously unselected package clang-19.
+Preparing to unpack .../10-clang-19_1%3a19.1.7-3+b1_amd64.deb ...
+Unpacking clang-19 (1:19.1.7-3+b1) ...
+Selecting previously unselected package clang.
+Preparing to unpack .../11-clang_1%3a19.0-63_amd64.deb ...
+Unpacking clang (1:19.0-63) ...
+Selecting previously unselected package cmake-data.
+Preparing to unpack .../12-cmake-data_3.31.6-2_all.deb ...
+Unpacking cmake-data (3.31.6-2) ...
+Selecting previously unselected package libarchive13t64:amd64.
+Preparing to unpack .../13-libarchive13t64_3.7.4-4+deb13u1_amd64.deb ...
+Unpacking libarchive13t64:amd64 (3.7.4-4+deb13u1) ...
+Selecting previously unselected package libjsoncpp26:amd64.
+Preparing to unpack .../14-libjsoncpp26_1.9.6-3_amd64.deb ...
+Unpacking libjsoncpp26:amd64 (1.9.6-3) ...
+Selecting previously unselected package librhash1:amd64.
+Preparing to unpack .../15-librhash1_1.4.5-1_amd64.deb ...
+Unpacking librhash1:amd64 (1.4.5-1) ...
+Selecting previously unselected package libuv1t64:amd64.
+Preparing to unpack .../16-libuv1t64_1.50.0-2_amd64.deb ...
+Unpacking libuv1t64:amd64 (1.50.0-2) ...
+Selecting previously unselected package cmake.
+Preparing to unpack .../17-cmake_3.31.6-2_amd64.deb ...
+Unpacking cmake (3.31.6-2) ...
+Selecting previously unselected package libprotobuf32t64:amd64.
+Preparing to unpack .../18-libprotobuf32t64_3.21.12-11+deb13u1_amd64.deb ...
+Unpacking libprotobuf32t64:amd64 (3.21.12-11+deb13u1) ...
+Selecting previously unselected package libprotobuf-lite32t64:amd64.
+Preparing to unpack .../19-libprotobuf-lite32t64_3.21.12-11+deb13u1_amd64.deb ...
+Unpacking libprotobuf-lite32t64:amd64 (3.21.12-11+deb13u1) ...
+Selecting previously unselected package libprotobuf-dev:amd64.
+Preparing to unpack .../20-libprotobuf-dev_3.21.12-11+deb13u1_amd64.deb ...
+Unpacking libprotobuf-dev:amd64 (3.21.12-11+deb13u1) ...
+Selecting previously unselected package libprotoc32t64:amd64.
+Preparing to unpack .../21-libprotoc32t64_3.21.12-11+deb13u1_amd64.deb ...
+Unpacking libprotoc32t64:amd64 (3.21.12-11+deb13u1) ...
+Preparing to unpack .../22-openssl_3.5.7-1~deb13u3_amd64.deb ...
+Unpacking openssl (3.5.7-1~deb13u3) over (3.5.7-1~deb13u2) ...
+Selecting previously unselected package pkg-config:amd64.
+Preparing to unpack .../23-pkg-config_1.8.1-4_amd64.deb ...
+Unpacking pkg-config:amd64 (1.8.1-4) ...
+Selecting previously unselected package protobuf-compiler.
+Preparing to unpack .../24-protobuf-compiler_3.21.12-11+deb13u1_amd64.deb ...
+Unpacking protobuf-compiler (3.21.12-11+deb13u1) ...
+Setting up libprotobuf-lite32t64:amd64 (3.21.12-11+deb13u1) ...
+Setting up libprotobuf32t64:amd64 (3.21.12-11+deb13u1) ...
+Setting up libclang-common-19-dev:amd64 (1:19.1.7-3+b1) ...
+Setting up libuv1t64:amd64 (1.50.0-2) ...
+Setting up libprotobuf-dev:amd64 (3.21.12-11+deb13u1) ...
+Setting up libz3-4:amd64 (4.13.3-1) ...
+Setting up libjsoncpp26:amd64 (1.9.6-3) ...
+Setting up libssl-dev:amd64 (3.5.7-1~deb13u3) ...
+Setting up pkg-config:amd64 (1.8.1-4) ...
+Setting up libgc1:amd64 (1:8.2.8-1) ...
+Setting up build-essential (12.12) ...
+Setting up cmake-data (3.31.6-2) ...
+Setting up librhash1:amd64 (1.4.5-1) ...
+Setting up libprotoc32t64:amd64 (3.21.12-11+deb13u1) ...
+Setting up openssl (3.5.7-1~deb13u3) ...
+Setting up libarchive13t64:amd64 (3.7.4-4+deb13u1) ...
+Setting up libllvm19:amd64 (1:19.1.7-3+b1) ...
+Setting up libclang1-19 (1:19.1.7-3+b1) ...
+Setting up protobuf-compiler (3.21.12-11+deb13u1) ...
+Setting up libobjc4:amd64 (14.2.0-19) ...
+Setting up libobjc-14-dev:amd64 (14.2.0-19) ...
+Setting up cmake (3.31.6-2) ...
+Setting up llvm-19-linker-tools (1:19.1.7-3+b1) ...
+Setting up libclang-cpp19 (1:19.1.7-3+b1) ...
+Setting up clang-19 (1:19.1.7-3+b1) ...
+Setting up clang (1:19.0-63) ...
+Processing triggers for libc-bin (2.41-12+deb13u4) ...
+ ---> Removed intermediate container edb7239fdf7f
+ ---> c886be91ba27
+Step 4/7 : RUN test -r /usr/include/google/protobuf/empty.proto
+ ---> Running in c43fbaaed22f
+ ---> Removed intermediate container c43fbaaed22f
+ ---> e7690d2fea03
+Step 5/7 : RUN rustup toolchain install 1.99.0 --profile minimal --component rustfmt --component clippy && rustup default 1.99.0
+ ---> Running in fb64b43b15ba
+[91minfo: syncing channel updates for 1.99.0-x86_64-unknown-linux-gnu
+[0m[91minfo: latest update on 2026-10-01 for version 1.99.0 (b940084d7 2026-09-28)
+[0m[91minfo: downloading 2 components
+[0m
+  1.99.0-x86_64-unknown-linux-gnu updated - rustc 1.99.0 (b940084d7 2026-09-28) (from rustc 1.99.0 (b940084d7 2026-09-28))
+
+[91minfo: checking for self-update (current version: 1.29.1)
+[0m[91minfo: using existing install for 1.99.0-x86_64-unknown-linux-gnu
+[0m[91minfo: default toolchain set to 1.99.0-x86_64-unknown-linux-gnu
+[0m
+  1.99.0-x86_64-unknown-linux-gnu unchanged - rustc 1.99.0 (b940084d7 2026-09-28)
+
+ ---> Removed intermediate container fb64b43b15ba
+ ---> 1262ba5bb0f0
+Step 6/7 : ENV CARGO_BUILD_JOBS=2
+ ---> Running in 8178bfc73759
+ ---> Removed intermediate container 8178bfc73759
+ ---> d9d138827e40
+Step 7/7 : RUN rustc -vV && cargo -V && rustfmt -V && cargo clippy -V && protoc --version && clang --version && g++ --version && cmake --version && git --version && dpkg-query -W
+ ---> Running in bbae2a78b9c2
+rustc 1.99.0 (b940084d7 2026-09-28)
+binary: rustc
+commit-hash: b940084d7eb6a299eb4bfeb8e34901bc051e7ac4
+commit-date: 2026-09-28
+host: x86_64-unknown-linux-gnu
+release: 1.99.0
+LLVM version: 23.1.1
+cargo 1.99.0 (5f94df478 2026-08-27)
+rustfmt 1.10.0-stable (b940084d7e 2026-09-28)
+clippy 0.1.99 (b940084d7e 2026-09-28)
+libprotoc 3.21.12
+Debian clang version 19.1.7 (3+b1)
+Target: x86_64-pc-linux-gnu
+Thread model: posix
+InstalledDir: /usr/lib/llvm-19/bin
+g++ (Debian 14.2.0-19) 14.2.0
+Copyright (C) 2024 Free Software Foundation, Inc.
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+cmake version 3.31.6
+
+CMake suite maintained and supported by Kitware (kitware.com/cmake).
+git version 2.47.3
+adduser	3.152
+apt	3.0.3
+autoconf	2.72-3.1
+automake	1:1.17-4
+autotools-dev	20240727.1
+base-files	13.8+deb13u7
+base-passwd	3.6.7
+bash	5.2.37-2+b10
+binutils	2.44-3
+binutils-common:amd64	2.44-3
+binutils-x86-64-linux-gnu	2.44-3
+bsdutils	1:2.41.5-0+deb13u1
+build-essential	12.12
+bzip2	1.0.8-6
+ca-certificates	20250419
+clang	1:19.0-63
+clang-19	1:19.1.7-3+b1
+cmake	3.31.6-2
+cmake-data	3.31.6-2
+comerr-dev:amd64	2.1-1.47.2-3+b12
+coreutils	9.7-3
+cpp	4:14.2.0-1
+cpp-14	14.2.0-19
+cpp-14-x86-64-linux-gnu	14.2.0-19
+cpp-x86-64-linux-gnu	4:14.2.0-1
+curl	8.14.1-2+deb13u5
+dash	0.5.12-12
+debconf	1.5.91
+debian-archive-keyring	2025.1
+debianutils	5.23.2
+default-libmysqlclient-dev:amd64	1.1.1
+diffutils	1:3.10-4
+dirmngr	2.4.7-21+deb13u1+b5
+dpkg	1.22.22
+dpkg-dev	1.22.22
+file	1:5.46-5
+findutils	4.10.0-3
+fontconfig	2.15.0-2.3
+fontconfig-config	2.15.0-2.3
+fonts-dejavu-core	2.37-8
+fonts-dejavu-mono	2.37-8
+g++	4:14.2.0-1
+g++-14	14.2.0-19
+g++-14-x86-64-linux-gnu	14.2.0-19
+g++-x86-64-linux-gnu	4:14.2.0-1
+gcc	4:14.2.0-1
+gcc-14	14.2.0-19
+gcc-14-base:amd64	14.2.0-19
+gcc-14-x86-64-linux-gnu	14.2.0-19
+gcc-x86-64-linux-gnu	4:14.2.0-1
+gir1.2-freedesktop:amd64	1.84.0-1
+gir1.2-freedesktop-dev:amd64	1.84.0-1
+gir1.2-gdkpixbuf-2.0:amd64	2.42.12+dfsg-4+deb13u1
+gir1.2-glib-2.0:amd64	2.84.4-3~deb13u5
+gir1.2-glib-2.0-dev:amd64	2.84.4-3~deb13u5
+gir1.2-harfbuzz-0.0:amd64	10.2.0-1+deb13u1
+gir1.2-pango-1.0:amd64	1.56.3-1
+gir1.2-rsvg-2.0:amd64	2.60.0+dfsg-1
+girepository-tools:amd64	2.84.4-3~deb13u5
+git	1:2.47.3-0+deb13u1
+git-man	1:2.47.3-0+deb13u1
+gnupg	2.4.7-21+deb13u1
+gnupg-l10n	2.4.7-21+deb13u1
+gpg	2.4.7-21+deb13u1+b5
+gpg-agent	2.4.7-21+deb13u1+b5
+gpgconf	2.4.7-21+deb13u1+b5
+gpgsm	2.4.7-21+deb13u1+b5
+grep	3.11-4
+gzip	1.13-1+deb13u1
+hicolor-icon-theme	0.18-2
+hostname	3.25
+icu-devtools	76.1-4
+imagemagick	8:7.1.1.43+dfsg1-1+deb13u12
+imagemagick-7-common	8:7.1.1.43+dfsg1-1+deb13u12
+imagemagick-7.q16	8:7.1.1.43+dfsg1-1+deb13u12
+init-system-helpers	1.69~deb13u1
+krb5-multidev:amd64	1.21.3-5+deb13u1
+libacl1:amd64	2.3.2-2+b1
+libapr1t64:amd64	1.7.5-1
+libaprutil1t64:amd64	1.6.3-3+deb13u1
+libapt-pkg7.0:amd64	3.0.3
+libarchive13t64:amd64	3.7.4-4+deb13u1
+libasan8:amd64	14.2.0-19
+libassuan9:amd64	3.0.2-2
+libatomic1:amd64	14.2.0-19
+libattr1:amd64	1:2.5.2-3
+libaudit-common	1:4.0.2-2+deb13u1
+libaudit1:amd64	1:4.0.2-2+deb13u1
+libbinutils:amd64	2.44-3
+libblkid-dev:amd64	2.41.5-0+deb13u1
+libblkid1:amd64	2.41.5-0+deb13u1
+libbrotli-dev:amd64	1.1.0-2+b7
+libbrotli1:amd64	1.1.0-2+b7
+libbsd0:amd64	0.12.2-2
+libbz2-1.0:amd64	1.0.8-6
+libbz2-dev:amd64	1.0.8-6
+libc-bin	2.41-12+deb13u4
+libc-dev-bin	2.41-12+deb13u4
+libc6:amd64	2.41-12+deb13u4
+libc6-dev:amd64	2.41-12+deb13u4
+libcairo-gobject2:amd64	1.18.4-1+b1
+libcairo-script-interpreter2:amd64	1.18.4-1+b1
+libcairo2:amd64	1.18.4-1+b1
+libcairo2-dev:amd64	1.18.4-1+b1
+libcap-ng0:amd64	0.8.5-4+b1
+libcap2:amd64	1:2.75-10+deb13u1+b3
+libcbor0.10:amd64	0.10.2-2
+libcc1-0:amd64	14.2.0-19
+libclang-common-19-dev:amd64	1:19.1.7-3+b1
+libclang-cpp19	1:19.1.7-3+b1
+libclang1-19	1:19.1.7-3+b1
+libcom-err2:amd64	1.47.2-3+b12
+libcrypt-dev:amd64	1:4.4.38-1
+libcrypt1:amd64	1:4.4.38-1
+libctf-nobfd0:amd64	2.44-3
+libctf0:amd64	2.44-3
+libcurl3t64-gnutls:amd64	8.14.1-2+deb13u5
+libcurl4-openssl-dev:amd64	8.14.1-2+deb13u5
+libcurl4t64:amd64	8.14.1-2+deb13u5
+libdatrie-dev:amd64	0.2.13-3+b1
+libdatrie1:amd64	0.2.13-3+b1
+libdav1d-dev:amd64	1.5.1-1
+libdav1d7:amd64	1.5.1-1
+libdb-dev:amd64	5.3.4
+libdb5.3-dev	5.3.28+dfsg2-9
+libdb5.3t64:amd64	5.3.28+dfsg2-9
+libde265-0:amd64	1.0.15-1+deb13u2
+libdebconfclient0:amd64	0.280
+libdeflate-dev:amd64	1.23-2
+libdeflate0:amd64	1.23-2
+libdjvulibre-dev:amd64	3.5.28-2.2
+libdjvulibre-text	3.5.28-2.2
+libdjvulibre21:amd64	3.5.28-2.2
+libdpkg-perl	1.22.22
+libedit2:amd64	3.1-20250104-1
+libelf1t64:amd64	0.192-4
+liberror-perl	0.17030-1
+libevent-2.1-7t64:amd64	2.1.13-stable-1~deb13u1
+libevent-core-2.1-7t64:amd64	2.1.13-stable-1~deb13u1
+libevent-dev	2.1.13-stable-1~deb13u1
+libevent-extra-2.1-7t64:amd64	2.1.13-stable-1~deb13u1
+libevent-openssl-2.1-7t64:amd64	2.1.13-stable-1~deb13u1
+libevent-pthreads-2.1-7t64:amd64	2.1.13-stable-1~deb13u1
+libexif-dev:amd64	0.6.25-1+deb13u1
+libexif12:amd64	0.6.25-1+deb13u1
+libexpat1:amd64	2.8.3-1~deb13u1
+libexpat1-dev:amd64	2.8.3-1~deb13u1
+libffi-dev:amd64	3.4.8-2
+libffi8:amd64	3.4.8-2
+libfftw3-bin	3.3.10-2+b1
+libfftw3-dev:amd64	3.3.10-2+b1
+libfftw3-double3:amd64	3.3.10-2+b1
+libfftw3-long3:amd64	3.3.10-2+b1
+libfftw3-quad3:amd64	3.3.10-2+b1
+libfftw3-single3:amd64	3.3.10-2+b1
+libfido2-1:amd64	1.15.0-1+b1
+libfontconfig-dev:amd64	2.15.0-2.3
+libfontconfig1:amd64	2.15.0-2.3
+libfreetype-dev:amd64	2.13.3+dfsg-1+deb13u1
+libfreetype6:amd64	2.13.3+dfsg-1+deb13u1
+libfribidi-dev:amd64	1.0.16-1
+libfribidi0:amd64	1.0.16-1
+libgc1:amd64	1:8.2.8-1
+libgcc-14-dev:amd64	14.2.0-19
+libgcc-s1:amd64	14.2.0-19
+libgcrypt20:amd64	1.11.0-7+deb13u1
+libgdbm-compat4t64:amd64	1.24-2
+libgdbm-dev:amd64	1.24-2
+libgdbm6t64:amd64	1.24-2
+libgdk-pixbuf-2.0-0:amd64	2.42.12+dfsg-4+deb13u1
+libgdk-pixbuf-2.0-dev:amd64	2.42.12+dfsg-4+deb13u1
+libgdk-pixbuf2.0-bin	2.42.12+dfsg-4+deb13u1
+libgdk-pixbuf2.0-common	2.42.12+dfsg-4+deb13u1
+libgio-2.0-dev:amd64	2.84.4-3~deb13u5
+libgio-2.0-dev-bin	2.84.4-3~deb13u5
+libgirepository-2.0-0:amd64	2.84.4-3~deb13u5
+libglib2.0-0t64:amd64	2.84.4-3~deb13u5
+libglib2.0-bin	2.84.4-3~deb13u5
+libglib2.0-data	2.84.4-3~deb13u5
+libglib2.0-dev:amd64	2.84.4-3~deb13u5
+libglib2.0-dev-bin	2.84.4-3~deb13u5
+libgmp-dev:amd64	2:6.3.0+dfsg-3
+libgmp10:amd64	2:6.3.0+dfsg-3
+libgmpxx4ldbl:amd64	2:6.3.0+dfsg-3
+libgnutls-dane0t64:amd64	3.8.9-3+deb13u4
+libgnutls-openssl27t64:amd64	3.8.9-3+deb13u4
+libgnutls28-dev:amd64	3.8.9-3+deb13u4
+libgnutls30t64:amd64	3.8.9-3+deb13u4
+libgomp1:amd64	14.2.0-19
+libgpg-error0:amd64	1.51-4
+libgprofng0:amd64	2.44-3
+libgraphite2-3:amd64	1.3.14-2+deb13u1
+libgraphite2-dev:amd64	1.3.14-2+deb13u1
+libgssapi-krb5-2:amd64	1.21.3-5+deb13u1
+libgssrpc4t64:amd64	1.21.3-5+deb13u1
+libharfbuzz-cairo0:amd64	10.2.0-1+deb13u1
+libharfbuzz-dev:amd64	10.2.0-1+deb13u1
+libharfbuzz-gobject0:amd64	10.2.0-1+deb13u1
+libharfbuzz-icu0:amd64	10.2.0-1+deb13u1
+libharfbuzz-subset0:amd64	10.2.0-1+deb13u1
+libharfbuzz0b:amd64	10.2.0-1+deb13u1
+libheif-plugin-dav1d:amd64	1.19.8-1+deb13u1
+libheif-plugin-libde265:amd64	1.19.8-1+deb13u1
+libheif1:amd64	1.19.8-1+deb13u1
+libhogweed6t64:amd64	3.10.1-1
+libhwasan0:amd64	14.2.0-19
+libice-dev:amd64	2:1.1.1-1
+libice6:amd64	2:1.1.1-1
+libicu-dev:amd64	76.1-4
+libicu76:amd64	76.1-4
+libidn2-0:amd64	2.3.8-2
+libidn2-dev:amd64	2.3.8-2
+libimath-3-1-29t64:amd64	3.1.12-1+b3
+libimath-dev:amd64	3.1.12-1+b3
+libisl23:amd64	0.27-1
+libitm1:amd64	14.2.0-19
+libjansson4:amd64	2.14-2+b3
+libjbig-dev:amd64	2.1-6.1+b2
+libjbig0:amd64	2.1-6.1+b2
+libjpeg-dev:amd64	1:2.1.5-4
+libjpeg62-turbo:amd64	1:2.1.5-4
+libjpeg62-turbo-dev:amd64	1:2.1.5-4
+libjsoncpp26:amd64	1.9.6-3
+libk5crypto3:amd64	1.21.3-5+deb13u1
+libkadm5clnt-mit12:amd64	1.21.3-5+deb13u1
+libkadm5srv-mit12:amd64	1.21.3-5+deb13u1
+libkdb5-10t64:amd64	1.21.3-5+deb13u1
+libkeyutils1:amd64	1.6.3-6
+libkrb5-3:amd64	1.21.3-5+deb13u1
+libkrb5-dev:amd64	1.21.3-5+deb13u1
+libkrb5support0:amd64	1.21.3-5+deb13u1
+libksba8:amd64	1.6.7-2+b1
+liblastlog2-2:amd64	2.41.5-0+deb13u1
+liblcms2-2:amd64	2.16-2+deb13u2
+liblcms2-dev:amd64	2.16-2+deb13u2
+libldap-dev:amd64	2.6.10+dfsg-1
+libldap2:amd64	2.6.10+dfsg-1
+liblerc-dev:amd64	4.0.0+ds-5
+liblerc4:amd64	4.0.0+ds-5
+libllvm19:amd64	1:19.1.7-3+b1
+liblqr-1-0:amd64	0.4.2-2.1+b2
+liblqr-1-0-dev:amd64	0.4.2-2.1+b2
+liblsan0:amd64	14.2.0-19
+libltdl-dev:amd64	2.5.4-4
+libltdl7:amd64	2.5.4-4
+liblz4-1:amd64	1.10.0-4
+liblzma-dev:amd64	5.8.1-1+deb13u1
+liblzma5:amd64	5.8.1-1+deb13u1
+liblzo2-2:amd64	2.10-3+b1
+libmagic-mgc	1:5.46-5
+libmagic1t64:amd64	1:5.46-5
+libmagickcore-7-arch-config:amd64	8:7.1.1.43+dfsg1-1+deb13u12
+libmagickcore-7-headers	8:7.1.1.43+dfsg1-1+deb13u12
+libmagickcore-7.q16-10:amd64	8:7.1.1.43+dfsg1-1+deb13u12
+libmagickcore-7.q16-10-extra:amd64	8:7.1.1.43+dfsg1-1+deb13u12
+libmagickcore-7.q16-dev:amd64	8:7.1.1.43+dfsg1-1+deb13u12
+libmagickcore-dev	8:7.1.1.43+dfsg1-1+deb13u12
+libmagickwand-7-headers	8:7.1.1.43+dfsg1-1+deb13u12
+libmagickwand-7.q16-10:amd64	8:7.1.1.43+dfsg1-1+deb13u12
+libmagickwand-7.q16-dev:amd64	8:7.1.1.43+dfsg1-1+deb13u12
+libmagickwand-dev	8:7.1.1.43+dfsg1-1+deb13u12
+libmariadb-dev	1:11.8.6-0+deb13u1
+libmariadb-dev-compat	1:11.8.6-0+deb13u1
+libmariadb3:amd64	1:11.8.6-0+deb13u1
+libmaxminddb-dev:amd64	1.12.2-1
+libmaxminddb0:amd64	1.12.2-1
+libmd0:amd64	1.1.0-2+b1
+libmount-dev:amd64	2.41.5-0+deb13u1
+libmount1:amd64	2.41.5-0+deb13u1
+libmpc3:amd64	1.3.1-1+b3
+libmpfr6:amd64	4.2.2-1
+libncurses-dev:amd64	6.5+20250216-2
+libncurses6:amd64	6.5+20250216-2
+libncursesw6:amd64	6.5+20250216-2
+libnettle8t64:amd64	3.10.1-1
+libnghttp2-14:amd64	1.64.0-1.1+deb13u1
+libnghttp2-dev:amd64	1.64.0-1.1+deb13u1
+libnghttp3-9:amd64	1.8.0-1
+libnghttp3-dev:amd64	1.8.0-1
+libngtcp2-16:amd64	1.11.0-1+deb13u1
+libngtcp2-crypto-gnutls8:amd64	1.11.0-1+deb13u1
+libnpth0t64:amd64	1.8-3
+libobjc-14-dev:amd64	14.2.0-19
+libobjc4:amd64	14.2.0-19
+libopenexr-3-1-30:amd64	3.1.13-2
+libopenexr-dev	3.1.13-2
+libopenjp2-7:amd64	2.5.3-2.1~deb13u2
+libopenjp2-7-dev:amd64	2.5.3-2.1~deb13u2
+libp11-kit-dev:amd64	0.25.5-3
+libp11-kit0:amd64	0.25.5-3
+libpam-modules:amd64	1.7.0-5
+libpam-modules-bin	1.7.0-5
+libpam-runtime	1.7.0-5
+libpam0g:amd64	1.7.0-5
+libpango-1.0-0:amd64	1.56.3-1
+libpango1.0-dev:amd64	1.56.3-1
+libpangocairo-1.0-0:amd64	1.56.3-1
+libpangoft2-1.0-0:amd64	1.56.3-1
+libpangoxft-1.0-0:amd64	1.56.3-1
+libpcre2-16-0:amd64	10.46-1~deb13u2
+libpcre2-32-0:amd64	10.46-1~deb13u2
+libpcre2-8-0:amd64	10.46-1~deb13u2
+libpcre2-dev:amd64	10.46-1~deb13u2
+libpcre2-posix3:amd64	10.46-1~deb13u2
+libperl5.40:amd64	5.40.1-6+deb13u1
+libpixman-1-0:amd64	0.44.0-3
+libpixman-1-dev:amd64	0.44.0-3
+libpkgconf3:amd64	1.8.1-4
+libpng-dev:amd64	1.6.48-1+deb13u5
+libpng16-16t64:amd64	1.6.48-1+deb13u5
+libpq-dev	17.11-0+deb13u1
+libpq5:amd64	17.11-0+deb13u1
+libproc2-0:amd64	2:4.0.4-9
+libprotobuf-dev:amd64	3.21.12-11+deb13u1
+libprotobuf-lite32t64:amd64	3.21.12-11+deb13u1
+libprotobuf32t64:amd64	3.21.12-11+deb13u1
+libprotoc32t64:amd64	3.21.12-11+deb13u1
+libpsl-dev:amd64	0.21.2-1.1+b1
+libpsl5t64:amd64	0.21.2-1.1+b1
+libpython3-stdlib:amd64	3.13.5-1
+libpython3.13-minimal:amd64	3.13.5-2+deb13u5
+libpython3.13-stdlib:amd64	3.13.5-2+deb13u5
+libquadmath0:amd64	14.2.0-19
+libraw23t64:amd64	0.21.4-2+deb13u1
+libreadline-dev:amd64	8.2-6
+libreadline8t64:amd64	8.2-6
+librhash1:amd64	1.4.5-1
+librsvg2-2:amd64	2.60.0+dfsg-1
+librsvg2-common:amd64	2.60.0+dfsg-1
+librsvg2-dev:amd64	2.60.0+dfsg-1
+librtmp-dev:amd64	2.4+20151223.gitfa8646d.1-2+b5
+librtmp1:amd64	2.4+20151223.gitfa8646d.1-2+b5
+libsasl2-2:amd64	2.1.28+dfsg1-9
+libsasl2-modules-db:amd64	2.1.28+dfsg1-9
+libseccomp2:amd64	2.6.0-2
+libselinux1:amd64	3.8.1-1
+libselinux1-dev:amd64	3.8.1-1
+libsemanage-common	3.8.1-1
+libsemanage2:amd64	3.8.1-1
+libsepol-dev:amd64	3.8.1-1
+libsepol2:amd64	3.8.1-1
+libserf-1-1:amd64	1.3.10-3+b1
+libsframe1:amd64	2.44-3
+libsharpyuv-dev:amd64	1.5.0-0.1
+libsharpyuv0:amd64	1.5.0-0.1
+libsm-dev:amd64	2:1.2.6-1
+libsm6:amd64	2:1.2.6-1
+libsmartcols1:amd64	2.41.5-0+deb13u1
+libsqlite3-0:amd64	3.46.1-7+deb13u2
+libsqlite3-dev:amd64	3.46.1-7+deb13u2
+libssh2-1-dev:amd64	1.11.1-1+deb13u2
+libssh2-1t64:amd64	1.11.1-1+deb13u2
+libssl-dev:amd64	3.5.7-1~deb13u3
+libssl3t64:amd64	3.5.7-1~deb13u3
+libstdc++-14-dev:amd64	14.2.0-19
+libstdc++6:amd64	14.2.0-19
+libsvn1:amd64	1.14.5-3
+libsysprof-capture-4-dev:amd64	48.0-2
+libsystemd0:amd64	257.13-1~deb13u1
+libtasn1-6:amd64	4.20.0-2+deb13u1
+libtasn1-6-dev:amd64	4.20.0-2+deb13u1
+libtext-charwidth-perl:amd64	0.04-11+b4
+libtext-wrapi18n-perl	0.06-10
+libthai-data	0.1.29-2
+libthai-dev:amd64	0.1.29-2+b1
+libthai0:amd64	0.1.29-2+b1
+libtiff-dev:amd64	4.7.0-3+deb13u3
+libtiff6:amd64	4.7.0-3+deb13u3
+libtiffxx6:amd64	4.7.0-3+deb13u3
+libtinfo6:amd64	6.5+20250216-2
+libtool	2.5.4-4
+libtsan2:amd64	14.2.0-19
+libubsan1:amd64	14.2.0-19
+libudev1:amd64	257.13-1~deb13u1
+libunbound8:amd64	1.22.0-2+deb13u3
+libunistring5:amd64	1.3-2
+libutf8proc3:amd64	2.9.0-1+b2
+libuuid1:amd64	2.41.5-0+deb13u1
+libuv1t64:amd64	1.50.0-2
+libwebp-dev:amd64	1.5.0-0.1
+libwebp7:amd64	1.5.0-0.1
+libwebpdecoder3:amd64	1.5.0-0.1
+libwebpdemux2:amd64	1.5.0-0.1
+libwebpmux3:amd64	1.5.0-0.1
+libwmf-0.2-7:amd64	0.2.13-1.1+b3
+libwmf-dev	0.2.13-1.1+b3
+libwmflite-0.2-7:amd64	0.2.13-1.1+b3
+libx11-6:amd64	2:1.8.12-1
+libx11-data	2:1.8.12-1
+libx11-dev:amd64	2:1.8.12-1
+libxau-dev:amd64	1:1.0.11-1
+libxau6:amd64	1:1.0.11-1
+libxcb-render0:amd64	1.17.0-2+b1
+libxcb-render0-dev:amd64	1.17.0-2+b1
+libxcb-shm0:amd64	1.17.0-2+b1
+libxcb-shm0-dev:amd64	1.17.0-2+b1
+libxcb1:amd64	1.17.0-2+b1
+libxcb1-dev:amd64	1.17.0-2+b1
+libxdmcp-dev:amd64	1:1.1.5-1
+libxdmcp6:amd64	1:1.1.5-1
+libxext-dev:amd64	2:1.3.4-1+b3
+libxext6:amd64	2:1.3.4-1+b3
+libxft-dev:amd64	2.3.6-1+b4
+libxft2:amd64	2.3.6-1+b4
+libxml2:amd64	2.12.7+dfsg+really2.9.14-2.1+deb13u3
+libxml2-dev:amd64	2.12.7+dfsg+really2.9.14-2.1+deb13u3
+libxrender-dev:amd64	1:0.9.12-1
+libxrender1:amd64	1:0.9.12-1
+libxslt1-dev:amd64	1.1.35-1.2+deb13u3
+libxslt1.1:amd64	1.1.35-1.2+deb13u3
+libxt-dev:amd64	1:1.2.1-1.2+b2
+libxt6t64:amd64	1:1.2.1-1.2+b2
+libxxhash0:amd64	0.8.3-2
+libyaml-0-2:amd64	0.2.5-2
+libyaml-dev:amd64	0.2.5-2
+libz3-4:amd64	4.13.3-1
+libzstd-dev:amd64	1.5.7+dfsg-1
+libzstd1:amd64	1.5.7+dfsg-1
+linux-libc-dev	6.12.107-1
+llvm-19-linker-tools	1:19.1.7-3+b1
+login	1:4.16.0-2+really2.41.5-0+deb13u1
+login.defs	1:4.17.4-2
+m4	1.4.19-8
+make	4.4.1-2
+mariadb-common	1:11.8.6-0+deb13u1
+mawk	1.3.4.20250131-1
+media-types	13.0.0
+mercurial	7.0.1-2
+mercurial-common	7.0.1-2
+mount	2.41.5-0+deb13u1
+mysql-common	5.8+1.1.1
+native-architecture	0.2.6
+ncurses-base	6.5+20250216-2
+ncurses-bin	6.5+20250216-2
+netbase	6.5
+nettle-dev:amd64	3.10.1-1
+openssh-client	1:10.0p1-7+deb13u4
+openssl	3.5.7-1~deb13u3
+openssl-provider-legacy	3.5.7-1~deb13u3
+pango1.0-tools	1.56.3-1
+passwd	1:4.17.4-2
+patch	2.8-2
+perl	5.40.1-6+deb13u1
+perl-base	5.40.1-6+deb13u1
+perl-modules-5.40	5.40.1-6+deb13u1
+pinentry-curses	1.3.1-2
+pkg-config:amd64	1.8.1-4
+pkgconf:amd64	1.8.1-4
+pkgconf-bin	1.8.1-4
+procps	2:4.0.4-9
+protobuf-compiler	3.21.12-11+deb13u1
+python3	3.13.5-1
+python3-minimal	3.13.5-1
+python3-packaging	25.0-1
+python3.13	3.13.5-2+deb13u5
+python3.13-minimal	3.13.5-2+deb13u5
+readline-common	8.2-6
+rpcsvc-proto	1.4.3-1
+sed	4.9-2+deb13u1
+sensible-utils	0.0.25
+shared-mime-info	2.4-5+b2
+sq	1.3.1-2+b2
+sqv	1.3.0-3+b2
+subversion	1.14.5-3
+sysvinit-utils	3.14-4
+tar	1.35+dfsg-3.1
+tzdata	2026c-0+deb13u1
+ucf	3.0052
+unzip	6.0-29+deb13u1
+util-linux	2.41.5-0+deb13u1
+uuid-dev:amd64	2.41.5-0+deb13u1
+wget	1.25.0-2
+x11-common	1:7.7+24+deb13u1
+x11proto-dev	2024.1-1
+xorg-sgml-doctools	1:1.11-1.1
+xtrans-dev	1.4.0-1
+xz-utils	5.8.1-1+deb13u1
+zlib1g:amd64	1:1.3.dfsg+really1.3.1-1+b1
+zlib1g-dev:amd64	1:1.3.dfsg+really1.3.1-1+b1
+ ---> Removed intermediate container bbae2a78b9c2
+ ---> add46de4d6bc
+Successfully built add46de4d6bc
+Successfully tagged grust-linux-f1-024:run01

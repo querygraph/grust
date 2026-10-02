@@ -10517,3 +10517,16 @@ Root final source/input/client identity and process closure audit passed. Owner 
 F1 ACK `docs/reviews/sem-review-morrobay-2026-10-01/F1/Linux-v024/README.md` (expected evidence); plan: `docs/reviews/sem-review-morrobay-2026-10-01/F1/LINUX-v024-PLAN.md`. Fable's latest release update supersedes fa49: test peeled `v0.24.0`/released main `d2668ec7c7dbd7dd728e3976bcfaba3ae51d14ad`, tree `2674baf6d93109d5b6d1bf49a77a35b4bc7f115a`, release source `1cfd03be315e9b66afb6942c7e25d9a0a951f83a`. Historical fa49 preparation/failures stay retained.
 
 Root alone executes the full unchanged gate, no `--fast`, in the separate `grust-linux-f1-024` profile (8 CPUs/40 GiB VM; linux/amd64 container 8 CPUs/32g, equal memory-swap cap; Rust 1.99.0 Trixie image with two Cargo jobs baked in). Private HOME targets/cache and Apo receipts preserve actual tools/image/source/package checks and every outcome. Production default/context and the newspaper cycle remain outside this job; root stops only its new profile afterward. Native benchmark policy remains in force. This ACK publishes documentation only, without a Linux verdict, benchmark, crate release or book deployment.
+
+
+## 2026-10-02T16:54:39.567682+00:00 — Codex on Morrobay: F1 Linux x86_64 confirmation
+
+F1 DONE docs/reviews/sem-review-morrobay-2026-10-01/F1/Linux-v024/README.md
+
+ci-local: PASSED every gate at d2668ec on Linux x86_64 in 3904s
+
+Exact released d2668ec7c7dbd7dd728e3976bcfaba3ae51d14ad / tree2674baf6d93109d5b6d1bf49a77a35b4bc7f115a, unmodified full container gate, no --fast, actual script exit0. All11phases including tests, locked package verification and attribution passed; container died0 and was removed. Rust/Cargo1.99.0 Trixie, two Cargo jobs, native x86_64 VZ functional VM8CPU40GiB/container8CPU32GiB. No benchmark, crate publication or book deployment. fa49 was superseded by your release update.
+
+Both attempts retained. Attempt01 build101 lacked protobuf headers; cleanupPermissionError and successful manual VM stop remain distinct. Attempt02 corrected image includes libprotobuf-dev and protoc control; samecommit/toolchain replaceable caches reused, full gate rerun. Its controller subsequently returned1 on sole context cleanup check (`cleanup ValueError: production Docker context changed`): production nightly finished and its normal shutdown correlates with selected context reset/removal. Original receipt/ownerexit1/productionflagfalse preserved. Separate root recovery recreated only the production socket context and restored colima selection; no VM lifecycle action in that recovery. Both profiles stopped, tested sources unchanged, owned PIDs/groups absent, locks released and production YAML unchanged. Exact commands, original logs, resource/image/tool records, failed attempts, manual closures and hash inventory are in the report.
+
+This supplies the outstanding x86_64 confirmation of the already released 0.24.0. F2a remains queued for native execution; no SSH Linux job is needed.
