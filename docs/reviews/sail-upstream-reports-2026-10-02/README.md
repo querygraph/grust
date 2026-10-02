@@ -1,6 +1,6 @@
 # Sail: reports for upstream, each standalone
 
-Prepared 2026-10-02 and **filed the same day as issues #2722 to #2731 in
+Prepared 2026-10-02 and **filed the same day as issues #2722 to #2732 in
 `lakehq/sail`**, at the user's instruction (table below). Each folder is one
 report that stands on its own: a description, a reproducer that needs
 only a Sail binary, the output of that reproducer, the cause in the code and
@@ -28,7 +28,7 @@ DataFusion 55.1.0), release build, macOS on an Apple M1 Max, with PySpark
 
 Reports 01 to 10 are in order of severity: answers that are wrong first,
 then failures, then behaviour, then speed. Report 11 was found later the same
-day and belongs with the first two. **It is prepared and not filed.**
+day and belongs with the first two; it was filed as #2732.
 
 ## Filed
 
@@ -44,6 +44,7 @@ day and belongs with the first two. **It is prepared and not filed.**
 | 08 | [#2729](https://github.com/lakehq/sail/issues/2729) |
 | 09 | [#2730](https://github.com/lakehq/sail/issues/2730) |
 | 10 | [#2731](https://github.com/lakehq/sail/issues/2731) |
+| 11 | [#2732](https://github.com/lakehq/sail/issues/2732) |
 
 ## Filing
 
