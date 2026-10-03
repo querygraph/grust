@@ -575,9 +575,22 @@ pub(crate) struct ParsedWherePredicate {
     pub(crate) predicate: GraphPropertyPredicate,
 }
 
+/// One leaf comparison of a writable `MATCH ... WHERE` boolean tree.
+#[derive(Clone, Debug, PartialEq)]
+#[cfg_attr(not(test), allow(dead_code))]
+pub(crate) enum CypherWhereLeaf<'a> {
+    /// A leaf cut out of the statement text by the legacy string planner.
+    Text(&'a str),
+    /// A leaf expression of the typed AST.
+    Expr(&'a crate::ast::Expr),
+    /// The last leaf of a `WHERE` that unsupported text follows; the string
+    /// planner read that text as part of this comparison, so it fails.
+    FollowedByText(&'a crate::ast::Expr),
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) enum CypherWhereBoolean<'a> {
-    Predicate(&'a str),
+    Predicate(CypherWhereLeaf<'a>),
     Not(Box<CypherWhereBoolean<'a>>),
     And(Vec<CypherWhereBoolean<'a>>),
     Or(Vec<CypherWhereBoolean<'a>>),

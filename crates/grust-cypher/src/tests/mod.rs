@@ -21,6 +21,7 @@ mod predicates1;
 mod predicates2;
 mod returning1;
 mod returning2;
+pub(crate) mod write_parity;
 
 /// Shared helper: true for the structured planning-error variants.
 fn is_cypher_planning_error(error: &GrustError) -> bool {

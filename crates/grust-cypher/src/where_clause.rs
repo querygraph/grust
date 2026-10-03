@@ -805,7 +805,29 @@ pub(crate) fn parse_where_boolean_ast(predicate: &str) -> Result<CypherWhereBool
             inner,
         )?)));
     }
-    Ok(CypherWhereBoolean::Predicate(predicate))
+    Ok(CypherWhereBoolean::Predicate(CypherWhereLeaf::Text(
+        predicate,
+    )))
+}
+
+/// Lower one boolean leaf, negated or not, to a property predicate.
+pub(crate) fn lower_where_leaf(
+    leaf: &CypherWhereLeaf<'_>,
+    negated: bool,
+    parameters: &CypherParameters,
+) -> Result<ParsedWherePredicate> {
+    match leaf {
+        CypherWhereLeaf::Text(predicate) if negated => {
+            parse_where_predicate(&format!("NOT {predicate}"), parameters)
+        }
+        CypherWhereLeaf::Text(predicate) => parse_where_predicate(predicate, parameters),
+        CypherWhereLeaf::Expr(expr) => {
+            crate::write_ast::where_predicate_from_expr(expr, negated, parameters)
+        }
+        CypherWhereLeaf::FollowedByText(expr) => {
+            Err(crate::write_ast::leaf_followed_by_text_error(expr))
+        }
+    }
 }
 
 pub(crate) fn lower_where_boolean_ast(
@@ -814,7 +836,7 @@ pub(crate) fn lower_where_boolean_ast(
 ) -> Result<Vec<ParsedWherePredicate>> {
     match predicate {
         CypherWhereBoolean::Predicate(predicate) => {
-            Ok(vec![parse_where_predicate(predicate, parameters)?])
+            Ok(vec![lower_where_leaf(predicate, false, parameters)?])
         }
         CypherWhereBoolean::Not(inner) => lower_negated_where_boolean_ast(inner, parameters),
         CypherWhereBoolean::And(terms) => {
@@ -857,8 +879,7 @@ pub(crate) fn lower_negated_where_boolean_ast(
 ) -> Result<Vec<ParsedWherePredicate>> {
     match predicate {
         CypherWhereBoolean::Predicate(predicate) => {
-            let negated = format!("NOT {predicate}");
-            Ok(vec![parse_where_predicate(&negated, parameters)?])
+            Ok(vec![lower_where_leaf(predicate, true, parameters)?])
         }
         CypherWhereBoolean::Or(terms) => {
             if !terms.iter().any(where_boolean_contains_and)
@@ -1985,7 +2006,7 @@ pub(crate) fn parse_where_single_predicate_ast(
     parameters: &CypherParameters,
 ) -> Result<ParsedWherePredicate> {
     match predicate {
-        CypherWhereBoolean::Predicate(predicate) => parse_where_predicate(predicate, parameters),
+        CypherWhereBoolean::Predicate(predicate) => lower_where_leaf(predicate, false, parameters),
         CypherWhereBoolean::Not(_) | CypherWhereBoolean::And(_) | CypherWhereBoolean::Or(_) => Err(
             cypher_syntax("MATCH WHERE OR only supports bounded predicate terms"),
         ),

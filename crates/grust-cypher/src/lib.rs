@@ -12,6 +12,9 @@ pub use ddl::*;
 mod planner;
 pub use planner::*;
 mod parse;
+// Not yet called outside tests while the legacy planner is still primary.
+#[cfg_attr(not(test), allow(dead_code))]
+mod write_ast;
 pub use parse::*;
 mod where_clause;
 use where_clause::*;
