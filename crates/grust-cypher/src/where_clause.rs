@@ -2,26 +2,6 @@
 
 use crate::*;
 
-pub(crate) fn split_match_where<'a>(
-    pattern: &'a str,
-    parameters: &CypherParameters,
-) -> Result<(&'a str, Vec<ParsedWherePredicate>)> {
-    let Some(index) = find_unquoted_keyword(pattern, "WHERE") else {
-        return Ok((pattern.trim(), Vec::new()));
-    };
-    let match_pattern = pattern[..index].trim();
-    let where_clause = pattern[index + "WHERE".len()..].trim();
-    if match_pattern.is_empty() || where_clause.is_empty() {
-        return Err(cypher_syntax(
-            "MATCH WHERE requires both a pattern and predicate".to_string(),
-        ));
-    }
-    let ast = parse_where_boolean_ast(where_clause)?;
-    let mut predicates = lower_where_boolean_ast(&ast, parameters)?;
-    canonicalize_where_predicates(&mut predicates)?;
-    Ok((match_pattern, predicates))
-}
-
 pub(crate) fn canonicalize_where_predicates(
     predicates: &mut Vec<ParsedWherePredicate>,
 ) -> Result<()> {
@@ -713,103 +693,6 @@ pub(crate) fn compare_where_order_values(
     }
 }
 
-pub(crate) fn split_top_level_and(value: &str) -> Result<Vec<&str>> {
-    let mut parts = Vec::new();
-    let mut rest = value.trim();
-    while let Some(index) = find_top_level_keyword(rest, "AND")? {
-        let part = rest[..index].trim();
-        if part.is_empty() {
-            return Err(cypher_syntax("empty predicate before AND".to_string()));
-        }
-        parts.push(part);
-        rest = rest[index + "AND".len()..].trim();
-    }
-    if rest.is_empty() {
-        return Err(cypher_syntax("empty predicate after AND".to_string()));
-    }
-    parts.push(rest);
-    let mut flattened = Vec::new();
-    for part in parts {
-        let stripped = strip_enclosing_parentheses(part)?;
-        if stripped != part.trim() {
-            if find_top_level_keyword(stripped, "AND")?.is_some() {
-                flattened.extend(split_top_level_and(stripped)?);
-            } else {
-                flattened.push(part);
-            }
-        } else {
-            flattened.push(part);
-        }
-    }
-    Ok(flattened)
-}
-
-pub(crate) fn split_top_level_or(value: &str) -> Result<Vec<&str>> {
-    let mut parts = Vec::new();
-    let mut rest = value.trim();
-    while let Some(index) = find_top_level_keyword(rest, "OR")? {
-        let part = rest[..index].trim();
-        if part.is_empty() {
-            return Err(cypher_syntax("empty predicate before OR".to_string()));
-        }
-        parts.push(part);
-        rest = rest[index + "OR".len()..].trim();
-    }
-    if rest.is_empty() {
-        return Err(cypher_syntax("empty predicate after OR".to_string()));
-    }
-    parts.push(rest);
-    let mut flattened = Vec::new();
-    for part in parts {
-        let stripped = strip_enclosing_parentheses(part)?;
-        if stripped != part.trim() {
-            flattened.extend(split_top_level_or(stripped)?);
-        } else {
-            flattened.push(part);
-        }
-    }
-    Ok(flattened)
-}
-
-pub(crate) fn parse_where_boolean_ast(predicate: &str) -> Result<CypherWhereBoolean<'_>> {
-    let predicate = strip_enclosing_parentheses(predicate.trim())?;
-    if predicate.is_empty() {
-        return Err(cypher_syntax("MATCH WHERE requires a predicate"));
-    }
-    let or_terms = split_top_level_or(predicate)?;
-    if or_terms.len() > 1 {
-        return Ok(CypherWhereBoolean::Or(
-            or_terms
-                .into_iter()
-                .map(parse_where_boolean_ast)
-                .collect::<Result<Vec<_>>>()?,
-        ));
-    }
-    let and_terms = split_top_level_and(predicate)?;
-    if and_terms.len() > 1 {
-        return Ok(CypherWhereBoolean::And(
-            and_terms
-                .into_iter()
-                .map(parse_where_boolean_ast)
-                .collect::<Result<Vec<_>>>()?,
-        ));
-    }
-    if let Some(after_not) = strip_leading_keyword(predicate, "NOT") {
-        let inner = after_not.trim();
-        if inner.is_empty() {
-            return Err(cypher_syntax(
-                "MATCH WHERE NOT requires a predicate".to_string(),
-            ));
-        }
-        return Ok(CypherWhereBoolean::Not(Box::new(parse_where_boolean_ast(
-            inner,
-        )?)));
-    }
-    Ok(CypherWhereBoolean::Predicate(CypherWhereLeaf::Text(
-        predicate,
-    )))
-}
-
 /// Lower one boolean leaf, negated or not, to a property predicate.
 pub(crate) fn lower_where_leaf(
     leaf: &CypherWhereLeaf<'_>,
@@ -817,10 +700,6 @@ pub(crate) fn lower_where_leaf(
     parameters: &CypherParameters,
 ) -> Result<ParsedWherePredicate> {
     match leaf {
-        CypherWhereLeaf::Text(predicate) if negated => {
-            parse_where_predicate(&format!("NOT {predicate}"), parameters)
-        }
-        CypherWhereLeaf::Text(predicate) => parse_where_predicate(predicate, parameters),
         CypherWhereLeaf::Expr(expr) => {
             crate::write_ast::where_predicate_from_expr(expr, negated, parameters)
         }
@@ -2610,135 +2489,6 @@ pub(crate) fn push_unique<T: PartialEq>(values: &mut Vec<T>, value: T) {
     if !values.contains(&value) {
         values.push(value);
     }
-}
-
-pub(crate) fn parse_where_predicate(
-    predicate: &str,
-    parameters: &CypherParameters,
-) -> Result<ParsedWherePredicate> {
-    let predicate = strip_enclosing_parentheses(predicate.trim())?;
-    let (predicate, negated) = if let Some(after_not) = strip_leading_keyword(predicate, "NOT") {
-        let predicate = strip_enclosing_parentheses(after_not.trim())?;
-        if predicate.is_empty() || strip_leading_keyword(predicate, "NOT").is_some() {
-            return Err(cypher_syntax(
-                "MATCH WHERE NOT only supports a single property comparison",
-            ));
-        }
-        (predicate, true)
-    } else {
-        (predicate, false)
-    };
-    if let Some(index) = find_unquoted_keyword(predicate, "IS") {
-        let rest = predicate[index + "IS".len()..].trim();
-        let words = rest.split_whitespace().collect::<Vec<_>>();
-        let op = if words.len() == 2
-            && words[0].eq_ignore_ascii_case("NOT")
-            && words[1].eq_ignore_ascii_case("NULL")
-        {
-            GraphPredicateOp::IsNotNull
-        } else if words.len() == 1 && words[0].eq_ignore_ascii_case("NULL") {
-            GraphPredicateOp::IsNull
-        } else {
-            return Err(cypher_syntax(
-                "MATCH WHERE IS predicates only support IS NULL or IS NOT NULL",
-            ));
-        };
-        let op = if negated {
-            inverted_graph_predicate_op(op)
-        } else {
-            op
-        };
-        let (target, key) = parse_property_ref(&predicate[..index], "MATCH WHERE predicate")?;
-        return Ok(ParsedWherePredicate {
-            target,
-            predicate: GraphPropertyPredicate {
-                key,
-                op,
-                value: Value::Null,
-            },
-        });
-    }
-    for (keyword, op) in [
-        ("STARTS WITH", GraphPredicateOp::StartsWith),
-        ("ENDS WITH", GraphPredicateOp::EndsWith),
-        ("CONTAINS", GraphPredicateOp::Contains),
-    ] {
-        if let Some(index) = find_top_level_keyword_sequence(predicate, keyword)? {
-            let (target, key) =
-                parse_property_ref(&predicate[..index], "MATCH WHERE string predicate")?;
-            let value = parse_cypher_literal(&predicate[index + keyword.len()..], parameters)?;
-            if !matches!(value, Value::String(_)) {
-                return Err(cypher_syntax(
-                    "MATCH WHERE string predicates require string literals or parameters",
-                ));
-            }
-            let op = if negated {
-                inverted_graph_predicate_op(op)
-            } else {
-                op
-            };
-            return Ok(ParsedWherePredicate {
-                target,
-                predicate: GraphPropertyPredicate { key, op, value },
-            });
-        }
-    }
-    if let Some(index) = find_top_level_keyword_sequence(predicate, "IN")? {
-        let (target, key) = parse_property_ref(&predicate[..index], "MATCH WHERE IN predicate")?;
-        let value = parse_cypher_in_values(&predicate[index + "IN".len()..], parameters)?;
-        let op = if negated {
-            GraphPredicateOp::NotIn
-        } else {
-            GraphPredicateOp::In
-        };
-        return Ok(ParsedWherePredicate {
-            target,
-            predicate: GraphPropertyPredicate { key, op, value },
-        });
-    }
-    for (token, op) in [
-        (">=", GraphPredicateOp::GreaterThanOrEqual),
-        ("<=", GraphPredicateOp::LessThanOrEqual),
-        ("<>", GraphPredicateOp::NotEqual),
-        ("!=", GraphPredicateOp::NotEqual),
-        ("=", GraphPredicateOp::Equal),
-        (">", GraphPredicateOp::GreaterThan),
-        ("<", GraphPredicateOp::LessThan),
-    ] {
-        let index = if token.len() == 1 {
-            find_unquoted(predicate, token.chars().next().expect("operator"))
-        } else {
-            find_unquoted_sequence(predicate, token)
-        };
-        if let Some(index) = index {
-            let (target, key) = parse_property_ref(&predicate[..index], "MATCH WHERE predicate")?;
-            let value = parse_cypher_literal(&predicate[index + token.len()..], parameters)?;
-            let op = if negated {
-                inverted_graph_predicate_op(op)
-            } else {
-                op
-            };
-            if matches!(
-                op,
-                GraphPredicateOp::GreaterThan
-                    | GraphPredicateOp::GreaterThanOrEqual
-                    | GraphPredicateOp::LessThan
-                    | GraphPredicateOp::LessThanOrEqual
-            ) && !matches!(value, Value::Int(_) | Value::Float(_) | Value::String(_))
-            {
-                return Err(cypher_syntax(
-                    "MATCH WHERE ordered comparisons require integer, float, or string literals",
-                ));
-            }
-            return Ok(ParsedWherePredicate {
-                target,
-                predicate: GraphPropertyPredicate { key, op, value },
-            });
-        }
-    }
-    Err(cypher_syntax(
-        "MATCH WHERE only supports property comparisons against literals or parameters",
-    ))
 }
 
 pub(crate) fn inverted_graph_predicate_op(op: GraphPredicateOp) -> GraphPredicateOp {

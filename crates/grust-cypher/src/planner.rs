@@ -1,78 +1,23 @@
-//! Mutation plan entrypoints and the CypherMutationPlanner (extracted from lib.rs).
+//! Mutation plan entry points, and the `CypherMutationPlanner` state and
+//! lowering shared by every write statement shape.
+//!
+//! Statements are parsed by the typed parser and walked by
+//! [`crate::write_ast`], which supplies the lowering here with patterns,
+//! `WHERE` predicates and assignments read from the AST. The lowering decides
+//! between id-resolved single-identity operations and row-producing matches,
+//! and binds node, relationship and path variables across `;`-separated
+//! statements (an earlier statement's variables stay bound for later ones,
+//! which is why semantic analysis is not run statement by statement).
 
 use crate::*;
 
-/// Accept-set gate for one writable Cypher **mutation** statement (Unit 10a,
-/// decision B).
-///
-/// The write entrypoints route **acceptance of the mutation grammar** through the
-/// new standards-conformant lexer/parser/semantics pipeline: a mutation statement
-/// the new pipeline rejects (e.g. the non-standard `DELETE (:pattern)` /
-/// `DELETE (:a)-[:R]->(:b)` forms the legacy string planner used to accept) is
-/// rejected here, narrowing the public accept-set to standard GQL/Cypher.
-///
-/// Only the mutation **grammar** is gated (parse-level), and only the trailing
-/// `RETURN` projection is split off before this runs:
-///
-/// - The new parser is the grammar authority, so non-standard mutation syntax
-///   (`DELETE (:pattern)`) is rejected — the B narrowing.
-/// - Semantic analysis is deliberately **not** run here: the legacy write path
-///   resolves cross-statement local-variable bindings (e.g. `DELETE a` where `a`
-///   was bound by an earlier `;`-separated statement) that a per-statement
-///   semantic pass would wrongly reject. Binding/kind checks stay the legacy
-///   planner's job.
-/// - The legacy returning surface (richer than the new read projection today) is
-///   untouched because `RETURN` is split off upstream.
-///
-/// Plan **building** still runs through the legacy planner, so plan shapes stay
-/// byte-identical (guarded by `tests/golden/write_golden.json`); migrating
-/// construction onto the AST is sequenced as follow-on work.
-fn gate_writable_statement(statement: &str) -> Result<()> {
-    let statement = statement.trim();
-    if statement.is_empty() {
-        return Ok(());
-    }
-    crate::parser::parse_query(statement).map_err(|e| e.into_grust(statement))?;
-    Ok(())
-}
-
+/// Plan a writable Cypher script: `;`-separated `CREATE`, `MERGE`, `DELETE`
+/// and `MATCH ... DELETE/CREATE/MERGE/SET/REMOVE` statements.
 pub fn cypher_mutation_plan_with_options(
     cypher: &str,
     options: CypherMutationOptions,
 ) -> Result<(GraphMutationPlan, Vec<CypherGeneratedNodeId>)> {
-    #[cfg(test)]
-    let parity_options = options.clone();
-    let planned = crate::write_ast::ast_mutation_plan_with_options(cypher, options);
-    #[cfg(test)]
-    crate::tests::write_parity::assert_plan_parity(cypher, &parity_options, &planned);
-    planned
-}
-
-pub(crate) fn legacy_mutation_plan_with_options(
-    cypher: &str,
-    options: CypherMutationOptions,
-) -> Result<(GraphMutationPlan, Vec<CypherGeneratedNodeId>)> {
-    let cypher = strip_cypher_comments(cypher)?;
-    let statements = split_cypher_statements(&cypher)?;
-    if statements.is_empty() {
-        return Err(cypher_syntax("writable Cypher statement is empty"));
-    }
-
-    let mut planner = CypherMutationPlanner {
-        node_id_policy: options.node_id_policy,
-        relationship_id_policy: options.relationship_id_policy,
-        null_assignment: options.null_assignment,
-        parameters: options.parameters,
-        ..CypherMutationPlanner::default()
-    };
-    let mut plan = GraphMutationPlan::default();
-    for statement in statements {
-        gate_writable_statement(statement)?;
-        for operation in planner.plan_statement(statement)?.operations {
-            plan.push(operation);
-        }
-    }
-    Ok((plan, planner.generated_node_ids))
+    crate::write_ast::ast_mutation_plan_with_options(cypher, options)
 }
 
 pub fn sail_cypher_mutation_plan_with_options(
@@ -94,87 +39,14 @@ pub struct CypherPlannedMutationWithReturn {
     pub return_clause: CypherReturnClause,
 }
 
+/// Plan a writable Cypher script whose final statement ends in `RETURN`,
+/// returning the plan, the bindings the `RETURN` reads, and the parsed
+/// `RETURN` clause.
 pub fn cypher_mutation_plan_with_return_options(
     cypher: &str,
     options: CypherMutationOptions,
 ) -> Result<CypherPlannedMutationWithReturn> {
-    #[cfg(test)]
-    let parity_options = options.clone();
-    let planned = crate::write_ast::ast_mutation_plan_with_return_options(cypher, options);
-    #[cfg(test)]
-    crate::tests::write_parity::assert_return_parity(cypher, &parity_options, &planned);
-    planned
-}
-
-pub(crate) fn legacy_mutation_plan_with_return_options(
-    cypher: &str,
-    options: CypherMutationOptions,
-) -> Result<CypherPlannedMutationWithReturn> {
-    let cypher = strip_cypher_comments(cypher)?;
-    let mut statements = split_cypher_statements(&cypher)?;
-    if statements.is_empty() {
-        return Err(cypher_syntax("writable Cypher statement is empty"));
-    }
-
-    let final_statement = statements
-        .pop()
-        .expect("checked non-empty statement collection");
-    for statement in &statements {
-        if find_unquoted_keyword(statement, "RETURN").is_some() {
-            return Err(cypher_syntax(
-                "writable Cypher only supports RETURN on the final statement",
-            ));
-        }
-    }
-    let (final_mutation, return_clause) = split_final_return(final_statement)?;
-    if final_mutation.trim().is_empty() {
-        return Err(cypher_syntax(
-            "writable Cypher RETURN requires a preceding mutation statement",
-        ));
-    }
-
-    let mut planner = CypherMutationPlanner {
-        node_id_policy: options.node_id_policy,
-        relationship_id_policy: options.relationship_id_policy,
-        null_assignment: options.null_assignment,
-        parameters: options.parameters,
-        bind_delete_return_rows: true,
-        ..CypherMutationPlanner::default()
-    };
-    let mut plan = GraphMutationPlan::default();
-    for statement in statements {
-        gate_writable_statement(statement)?;
-        for operation in planner.plan_statement(statement)?.operations {
-            plan.push(operation);
-        }
-    }
-    gate_writable_statement(final_mutation)?;
-    for operation in planner.plan_statement(final_mutation)?.operations {
-        plan.push(operation);
-    }
-    let return_clause = parse_cypher_return_clause(
-        return_clause,
-        &CypherReturnScope {
-            node_bindings: &planner.node_bindings,
-            edge_bindings: &planner.edge_bindings,
-            row_node_bindings: &planner.row_node_bindings,
-            row_edge_match_bindings: &planner.row_edge_match_bindings,
-            row_edge_bindings: &planner.row_edge_bindings,
-            row_path_bindings: &planner.row_path_bindings,
-        },
-        &planner.parameters,
-    )?;
-    Ok(CypherPlannedMutationWithReturn {
-        plan,
-        generated_node_ids: planner.generated_node_ids,
-        node_bindings: planner.node_bindings,
-        edge_bindings: planner.edge_bindings,
-        row_node_bindings: planner.row_node_bindings,
-        row_edge_match_bindings: planner.row_edge_match_bindings,
-        row_edge_bindings: planner.row_edge_bindings,
-        row_path_bindings: planner.row_path_bindings,
-        return_clause,
-    })
+    crate::write_ast::ast_mutation_plan_with_return_options(cypher, options)
 }
 
 pub fn sail_cypher_mutation_plan_with_return_options(
@@ -182,6 +54,26 @@ pub fn sail_cypher_mutation_plan_with_return_options(
     options: CypherMutationOptions,
 ) -> Result<CypherPlannedMutationWithReturn> {
     cypher_mutation_plan_with_return_options(cypher, options)
+}
+
+/// One `SET` assignment, as the lowering consumes it.
+pub(crate) struct PatchAssignment {
+    pub(crate) target: String,
+    pub(crate) kind: PatchAssignmentKind,
+}
+
+pub(crate) enum PatchAssignmentKind {
+    Props(Props),
+    RemoveProperty {
+        key: String,
+    },
+    NumericExpression {
+        key: String,
+        source_target: String,
+        source_key: String,
+        op: GraphNumericOp,
+        operand: Value,
+    },
 }
 
 #[derive(Default)]
@@ -201,156 +93,6 @@ pub(crate) struct CypherMutationPlanner {
 }
 
 impl CypherMutationPlanner {
-    fn plan_statement(&mut self, cypher: &str) -> Result<GraphMutationPlan> {
-        let cypher = cypher.trim();
-        match cypher_parser::classify_statement(cypher)? {
-            cypher_parser::CypherStatement::Match(rest) => self.parse_match(rest),
-            cypher_parser::CypherStatement::Create(rest) => {
-                self.parse_upsert(rest, GraphMutationPlanKind::Create)
-            }
-            cypher_parser::CypherStatement::Merge(rest) => {
-                self.parse_upsert(rest, GraphMutationPlanKind::Merge)
-            }
-            cypher_parser::CypherStatement::Delete(rest) => self.parse_delete(rest),
-        }
-    }
-
-    fn parse_upsert(
-        &mut self,
-        pattern: &str,
-        kind: GraphMutationPlanKind,
-    ) -> Result<GraphMutationPlan> {
-        if is_cypher_edge_pattern(pattern) {
-            let parsed = self.parse_edge_pattern(pattern)?;
-            return Ok(GraphMutationPlan::new(vec![
-                GraphMutationPlanOp::UpsertEdge {
-                    kind,
-                    edge: parsed.edge,
-                },
-            ]));
-        }
-
-        let (node, rest) = parse_cypher_node_pattern(pattern, &self.parameters)?;
-        if !rest.trim().is_empty() {
-            return Err(cypher_syntax(format!(
-                "unsupported writable Cypher node pattern suffix: {}",
-                rest.trim()
-            )));
-        }
-        let label = node
-            .label
-            .clone()
-            .ok_or_else(|| cypher_syntax("node CREATE/MERGE requires a label"))?;
-        let id = match optional_string_prop(&node.props, "id") {
-            Some(id) => id,
-            None if kind == GraphMutationPlanKind::Create
-                && self.node_id_policy == CypherNodeIdPolicy::GenerateForCreate =>
-            {
-                let id = format!("node-{}", uuid::Uuid::new_v4());
-                self.generated_node_ids.push(CypherGeneratedNodeId {
-                    variable: node.variable.clone(),
-                    id: NodeId::new(id.clone()),
-                });
-                id
-            }
-            None => {
-                return Err(cypher_unresolved_identity(
-                    "node CREATE/MERGE requires explicit string property 'id'",
-                ));
-            }
-        };
-        self.bind_node_variable(&node, &NodeId::new(id.clone()))?;
-        Ok(GraphMutationPlan::new(vec![
-            GraphMutationPlanOp::UpsertNode {
-                kind,
-                node: Node::new(label, id, node.props),
-            },
-        ]))
-    }
-
-    fn parse_delete(&mut self, pattern: &str) -> Result<GraphMutationPlan> {
-        if is_cypher_edge_pattern(pattern) {
-            let parsed = self.parse_edge_pattern(pattern)?;
-            return Ok(GraphMutationPlan::new(vec![
-                GraphMutationPlanOp::DeleteEdge {
-                    from: parsed.from_id,
-                    label: parsed.edge.label,
-                    to: parsed.to_id,
-                },
-            ]));
-        }
-
-        let (node, rest) = parse_cypher_node_pattern(pattern, &self.parameters)?;
-        if !rest.trim().is_empty() {
-            return Err(cypher_syntax(format!(
-                "unsupported writable Cypher delete pattern suffix: {}",
-                rest.trim()
-            )));
-        }
-        let id = self.resolve_node_id(&node, "node DELETE")?;
-        Ok(GraphMutationPlan::new(vec![
-            GraphMutationPlanOp::DeleteNode(id),
-        ]))
-    }
-
-    fn parse_match(&mut self, statement: &str) -> Result<GraphMutationPlan> {
-        if find_unquoted_keyword(statement, "DELETE").is_some() {
-            return self.parse_match_delete(statement);
-        }
-        if find_unquoted_keyword(statement, "MERGE").is_some() {
-            return self.parse_match_merge(statement);
-        }
-        if find_unquoted_keyword(statement, "CREATE").is_some() {
-            return self.parse_match_create(statement);
-        }
-        if find_unquoted_keyword(statement, "SET").is_some() {
-            return self.parse_match_set(statement);
-        }
-        if find_unquoted_keyword(statement, "REMOVE").is_some() {
-            return self.parse_match_remove(statement);
-        }
-        Err(cypher_syntax(
-            "only ID-resolved MATCH ... DELETE, MATCH ... CREATE/MERGE edge, MATCH ... SET, and MATCH ... REMOVE forms are supported in writable Cypher".to_string(),
-        ))
-    }
-
-    fn parse_match_delete(&mut self, statement: &str) -> Result<GraphMutationPlan> {
-        let (pattern, target) = split_match_delete(statement)?;
-        let targets = parse_match_delete_targets(target)?;
-        let (pattern, where_predicates) = split_match_where(pattern, &self.parameters)?;
-        let (path_variable, pattern) = parse_path_binding(pattern, "MATCH DELETE")?;
-
-        if is_cypher_edge_pattern(pattern) {
-            let mut parsed = self.parse_edge_match_pattern(pattern)?;
-            apply_edge_where_predicates(&mut parsed, where_predicates, "MATCH edge DELETE")?;
-            return self.lower_match_edge_delete_targets(parsed, targets, path_variable);
-        }
-
-        if path_variable.is_some() {
-            return Err(cypher_syntax(
-                "MATCH node DELETE does not support path variables",
-            ));
-        }
-        if targets.len() != 1 {
-            return Err(cypher_syntax(
-                "MATCH node DELETE supports one target for a single-node pattern",
-            ));
-        }
-        let target = targets
-            .into_iter()
-            .next()
-            .expect("checked one delete target");
-        let (mut node, rest) = parse_cypher_node_pattern(pattern, &self.parameters)?;
-        apply_node_where_predicates(&mut node, where_predicates, "MATCH node DELETE")?;
-        if !rest.trim().is_empty() {
-            return Err(cypher_syntax(format!(
-                "unsupported writable Cypher MATCH DELETE pattern suffix: {}",
-                rest.trim()
-            )));
-        }
-        self.lower_match_node_delete(node, target)
-    }
-
     pub(crate) fn lower_match_edge_delete(
         &mut self,
         parsed: ParsedCypherEdgeMatch,
@@ -438,79 +180,6 @@ impl CypherMutationPlanner {
             return Ok(true);
         }
         Ok(self.resolved_endpoint_id(node)?.is_none())
-    }
-
-    fn parse_match_merge(&mut self, statement: &str) -> Result<GraphMutationPlan> {
-        self.parse_match_edge_upsert(statement, "MERGE", GraphMutationPlanKind::Merge)
-    }
-
-    fn parse_match_create(&mut self, statement: &str) -> Result<GraphMutationPlan> {
-        self.parse_match_edge_upsert(statement, "CREATE", GraphMutationPlanKind::Create)
-    }
-
-    fn parse_match_edge_upsert(
-        &mut self,
-        statement: &str,
-        keyword: &str,
-        kind: GraphMutationPlanKind,
-    ) -> Result<GraphMutationPlan> {
-        let (match_clause, edge_pattern) = split_match_edge_upsert(statement, keyword)?;
-        let (match_clause, where_predicates) = split_match_where(match_clause, &self.parameters)?;
-        let mut matched_nodes = BTreeMap::new();
-        for pattern in split_top_level_patterns(match_clause)? {
-            let (node, rest) = parse_cypher_node_pattern(pattern, &self.parameters)?;
-            if !rest.trim().is_empty() {
-                return Err(cypher_syntax(format!(
-                    "unsupported writable Cypher MATCH pattern suffix: {}",
-                    rest.trim()
-                )));
-            }
-            if node.variable.is_none() {
-                return Err(cypher_syntax(format!(
-                    "MATCH {keyword} requires each matched node pattern to bind a variable"
-                )));
-            }
-            let variable = node.variable.clone().expect("checked above");
-            if matched_nodes.insert(variable.clone(), node).is_some() {
-                return Err(cypher_unresolved_identity(format!(
-                    "MATCH {keyword} cannot bind variable '{variable}' more than once"
-                )));
-            }
-        }
-        apply_match_where_predicates(
-            &mut matched_nodes,
-            where_predicates,
-            &format!("MATCH {keyword}"),
-        )?;
-
-        // Unit 10b/W1: a `CREATE`/`MERGE` clause may carry multiple comma-separated
-        // relationship patterns; plan each segment and accumulate the ops. A single
-        // segment reduces to the prior behavior (byte-identical plan).
-        let segments = split_top_level_patterns(edge_pattern)?;
-        let multi = segments.len() > 1;
-        let mut ops = Vec::with_capacity(segments.len());
-        for segment in segments {
-            let (path_variable, segment) = parse_row_path_binding(segment)?;
-            if multi && path_variable.is_some() {
-                return Err(cypher_syntax(format!(
-                    "MATCH {keyword} does not support a path variable with multiple relationship patterns"
-                )));
-            }
-            if !is_cypher_edge_pattern(segment) {
-                return Err(cypher_syntax(format!(
-                    "MATCH {keyword} requires a relationship pattern"
-                )));
-            }
-            let parsed = self.parse_edge_match_pattern(segment)?;
-            ops.push(self.plan_match_edge_segment(
-                parsed,
-                path_variable,
-                &matched_nodes,
-                keyword,
-                kind,
-            )?);
-        }
-        Ok(GraphMutationPlan::new(ops))
     }
 
     /// Plan one `(a)-[rel]->(b)` segment of a `MATCH … CREATE/MERGE` edge write.
@@ -666,225 +335,6 @@ impl CypherMutationPlanner {
             ) => GraphRowEdgeIdPolicy::GenerateForCreateAndMerge,
             _ => GraphRowEdgeIdPolicy::ExplicitOnly,
         }
-    }
-
-    fn parse_match_set(&mut self, statement: &str) -> Result<GraphMutationPlan> {
-        let (pattern, assignments) = split_match_set(statement)?;
-        let assignments =
-            parse_patch_assignments(assignments, &self.parameters, self.null_assignment)?;
-        let mut plan = GraphMutationPlan::default();
-        for assignment in assignments {
-            plan.operations.extend(
-                self.lower_match_set_assignment(pattern, assignment)?
-                    .operations,
-            );
-        }
-        Ok(plan)
-    }
-
-    fn lower_match_set_assignment(
-        &mut self,
-        pattern: &str,
-        assignment: PatchAssignment,
-    ) -> Result<GraphMutationPlan> {
-        let (pattern, where_predicates) = split_match_where(pattern, &self.parameters)?;
-        let (path_variable, pattern) = parse_path_binding(pattern, "MATCH SET")?;
-
-        // Unit 10b/W3: cross-variable correlated SET — `SET a.x = b.y <op> N` where
-        // the numeric expression reads a *different* bound variable. Handled before
-        // the single-target paths (which assume source == target).
-        if let PatchAssignmentKind::NumericExpression { source_target, .. } = &assignment.kind
-            && source_target != &assignment.target
-        {
-            return self.lower_cross_variable_set(
-                pattern,
-                path_variable,
-                where_predicates,
-                assignment,
-            );
-        }
-
-        if is_cypher_edge_pattern(pattern) {
-            let mut parsed = self.parse_edge_match_pattern(pattern)?;
-            apply_edge_where_predicates(&mut parsed, where_predicates, "MATCH edge SET")?;
-            return self.lower_match_edge_set(parsed, path_variable, assignment);
-        }
-
-        let (mut node, rest) = parse_cypher_node_pattern(pattern, &self.parameters)?;
-        apply_node_where_predicates(&mut node, where_predicates, "MATCH node SET")?;
-        if !rest.trim().is_empty() {
-            return Err(cypher_syntax(format!(
-                "unsupported writable Cypher MATCH SET pattern suffix: {}",
-                rest.trim()
-            )));
-        }
-        self.lower_match_node_set(node, assignment)
-    }
-
-    /// Lower a cross-variable correlated `SET a.x = b.y <op> N` (Unit 10b/W3).
-    /// Supports both cartesian (`MATCH (a:..),(b:..)`) and path-correlated
-    /// (`MATCH (a)-[:R]->(b)`) two-variable matches over node targets.
-    fn lower_cross_variable_set(
-        &mut self,
-        pattern: &str,
-        path_variable: Option<String>,
-        where_predicates: Vec<ParsedWherePredicate>,
-        assignment: PatchAssignment,
-    ) -> Result<GraphMutationPlan> {
-        if path_variable.is_some() {
-            return Err(cypher_syntax(
-                "MATCH SET cross-variable updates do not support path variables",
-            ));
-        }
-        let (target_node, source_node, correlation) = if is_cypher_edge_pattern(pattern) {
-            let parsed = self.parse_edge_match_pattern(pattern)?;
-            cross_variable_edge_endpoints(parsed, &assignment)?
-        } else {
-            let mut by_var: BTreeMap<String, ParsedCypherNode> = BTreeMap::new();
-            for segment in split_top_level_patterns(pattern)? {
-                let (node, rest) = parse_cypher_node_pattern(segment, &self.parameters)?;
-                if !rest.trim().is_empty() {
-                    return Err(cypher_syntax(format!(
-                        "unsupported writable Cypher MATCH SET pattern suffix: {}",
-                        rest.trim()
-                    )));
-                }
-                let Some(variable) = node.variable.clone() else {
-                    return Err(cypher_syntax(
-                        "MATCH SET requires each matched node pattern to bind a variable",
-                    ));
-                };
-                by_var.insert(variable, node);
-            }
-            cross_variable_cartesian_nodes(by_var, &assignment)?
-        };
-        lower_cross_variable_nodes(
-            target_node,
-            source_node,
-            correlation,
-            where_predicates,
-            assignment,
-        )
-    }
-
-    fn parse_match_remove(&mut self, statement: &str) -> Result<GraphMutationPlan> {
-        let (pattern, target) = split_match_remove(statement)?;
-        let (pattern, where_predicates) = split_match_where(pattern, &self.parameters)?;
-        let (path_variable, pattern) = parse_path_binding(pattern, "MATCH REMOVE")?;
-        let (target, key) = parse_property_ref(target, "MATCH REMOVE target")?;
-
-        if is_cypher_edge_pattern(pattern) {
-            let mut parsed = self.parse_edge_match_pattern(pattern)?;
-            apply_edge_where_predicates(&mut parsed, where_predicates, "MATCH edge REMOVE")?;
-            return self.lower_match_edge_remove(parsed, path_variable, target, key);
-        }
-
-        let (mut node, rest) = parse_cypher_node_pattern(pattern, &self.parameters)?;
-        apply_node_where_predicates(&mut node, where_predicates, "MATCH node REMOVE")?;
-        if !rest.trim().is_empty() {
-            return Err(cypher_syntax(format!(
-                "unsupported writable Cypher MATCH REMOVE pattern suffix: {}",
-                rest.trim()
-            )));
-        }
-        self.lower_match_node_remove(node, target, key)
-    }
-
-    /// Parse `(a)-[rel]->(b)` or the incoming `(b)<-[rel]-(a)` form, normalizing
-    /// the result so `from`/`to` are always the arrow's source/destination
-    /// (Unit 10b/W2 widening for incoming edges). Returns `(from, rel, to)`.
-    fn parse_directed_edge_pattern(
-        &self,
-        pattern: &str,
-        context: &str,
-    ) -> Result<(ParsedCypherNode, String, ParsedCypherNode)> {
-        let (first, rest) = parse_cypher_node_pattern(pattern, &self.parameters)?;
-        let rest = rest.trim_start();
-        let (incoming, rest) = if let Some(rest) = rest.strip_prefix("<-[") {
-            (true, rest)
-        } else if let Some(rest) = rest.strip_prefix("-[") {
-            (false, rest)
-        } else {
-            return Err(cypher_syntax(format!(
-                "{context} requires a directed -[...]-> or <-[...]- pattern"
-            )));
-        };
-        let rel_end = find_matching(rest, '[', ']')?;
-        let rel = rest[..rel_end].to_string();
-        let rest = rest[rel_end + 1..].trim_start();
-        let rest = if incoming {
-            if rest.starts_with("->") {
-                return Err(cypher_syntax(format!(
-                    "{context} has conflicting edge directions"
-                )));
-            }
-            rest.strip_prefix('-').ok_or_else(|| {
-                cypher_syntax(format!("{context} requires '<-[...]-' incoming direction"))
-            })?
-        } else {
-            rest.strip_prefix("->").ok_or_else(|| {
-                cypher_syntax(format!("{context} requires outgoing '->' direction"))
-            })?
-        };
-        let (second, rest) = parse_cypher_node_pattern(rest, &self.parameters)?;
-        if !rest.trim().is_empty() {
-            return Err(cypher_syntax(format!(
-                "unsupported writable Cypher edge pattern suffix: {}",
-                rest.trim()
-            )));
-        }
-        // Normalize to arrow source -> destination.
-        let (from, to) = if incoming {
-            (second, first)
-        } else {
-            (first, second)
-        };
-        Ok((from, rel, to))
-    }
-
-    fn parse_edge_pattern(&mut self, pattern: &str) -> Result<ParsedCypherEdge> {
-        let (from, rel, to) = self.parse_directed_edge_pattern(pattern, "edge mutation")?;
-        let from_id = self.resolve_node_id(&from, "edge mutation source node")?;
-        let to_id = self.resolve_node_id(&to, "edge mutation destination node")?;
-        let relationship = parse_cypher_relationship(&rel, &self.parameters)?;
-        let mut edge = Edge::new(
-            relationship.label.clone(),
-            from_id.clone(),
-            to_id.clone(),
-            relationship.props.clone(),
-        );
-        if let Some(id) = edge
-            .props
-            .get("id")
-            .and_then(Value::as_str)
-            .map(str::to_string)
-        {
-            edge = edge.with_id(id);
-        }
-        self.bind_edge_variable(
-            &relationship,
-            CypherBoundEdgeIdentity {
-                from: edge.from.clone(),
-                label: edge.label.clone(),
-                to: edge.to.clone(),
-                id: edge.id.clone(),
-            },
-        )?;
-        Ok(ParsedCypherEdge {
-            from_id,
-            to_id,
-            edge,
-        })
-    }
-
-    fn parse_edge_match_pattern(&self, pattern: &str) -> Result<ParsedCypherEdgeMatch> {
-        let (from, rel, to) = self.parse_directed_edge_pattern(pattern, "edge mutation")?;
-        let relationship = parse_cypher_relationship(&rel, &self.parameters)?;
-        Ok(ParsedCypherEdgeMatch {
-            from,
-            relationship,
-            to,
-        })
     }
 
     pub(crate) fn relationship_match_from_pattern(

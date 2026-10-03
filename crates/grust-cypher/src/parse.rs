@@ -520,13 +520,6 @@ pub(crate) struct ParsedCypherNode {
     pub(crate) predicates: Vec<GraphPropertyPredicate>,
 }
 
-#[derive(Debug)]
-pub(crate) struct ParsedCypherEdge {
-    pub(crate) from_id: NodeId,
-    pub(crate) to_id: NodeId,
-    pub(crate) edge: Edge,
-}
-
 #[derive(Clone, Debug)]
 pub(crate) struct ParsedCypherEdgeMatch {
     pub(crate) from: ParsedCypherNode,
@@ -578,8 +571,6 @@ pub(crate) struct ParsedWherePredicate {
 /// One leaf comparison of a writable `MATCH ... WHERE` boolean tree.
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) enum CypherWhereLeaf<'a> {
-    /// A leaf cut out of the statement text by the legacy string planner.
-    Text(&'a str),
     /// A leaf expression of the typed AST.
     Expr(&'a crate::ast::Expr),
     /// The last leaf of a `WHERE` that unsupported text follows; the string
@@ -593,51 +584,6 @@ pub(crate) enum CypherWhereBoolean<'a> {
     Not(Box<CypherWhereBoolean<'a>>),
     And(Vec<CypherWhereBoolean<'a>>),
     Or(Vec<CypherWhereBoolean<'a>>),
-}
-
-pub(crate) fn parse_cypher_node_pattern<'a>(
-    input: &'a str,
-    parameters: &CypherParameters,
-) -> Result<(ParsedCypherNode, &'a str)> {
-    let input = input.trim_start();
-    let input = input.strip_prefix('(').ok_or_else(|| {
-        GrustError::Unsupported("writable Cypher node pattern must start with '('".to_string())
-    })?;
-    let close = find_matching(input, '(', ')')?;
-    let body = input[..close].trim();
-    let rest = &input[close + 1..];
-    let (variable, label, props) = parse_cypher_node_body(body, parameters)?;
-    Ok((
-        ParsedCypherNode {
-            variable,
-            label,
-            props,
-            predicates: Vec::new(),
-        },
-        rest,
-    ))
-}
-
-pub(crate) fn parse_cypher_node_body(
-    body: &str,
-    parameters: &CypherParameters,
-) -> Result<(Option<String>, Option<Label>, Props)> {
-    let (head, props) = split_cypher_body_props(body, parameters)?;
-    let head = head.trim();
-    let (variable, label) = if let Some((variable, label)) = split_name_colon(head) {
-        let label = label.trim();
-        (
-            parse_optional_cypher_variable(variable.trim())?,
-            if label.is_empty() {
-                None
-            } else {
-                Some(Label::new(unquote_cypher_name(label)?))
-            },
-        )
-    } else {
-        (parse_optional_cypher_variable(head)?, None)
-    };
-    Ok((variable, label, props))
 }
 
 pub(crate) fn parse_optional_cypher_variable(value: &str) -> Result<Option<String>> {
@@ -699,30 +645,6 @@ pub(crate) fn unquote_cypher_name(raw: &str) -> Result<String> {
 /// The byte offset of the first `:` outside quotes and backticks.
 fn split_name_colon(head: &str) -> Option<(&str, &str)> {
     find_unquoted(head, ':').map(|index| (&head[..index], &head[index + 1..]))
-}
-
-pub(crate) fn parse_cypher_relationship(
-    body: &str,
-    parameters: &CypherParameters,
-) -> Result<ParsedCypherRelationship> {
-    let (head, props) = split_cypher_body_props(body.trim(), parameters)?;
-    let Some((variable, label)) = split_name_colon(head.trim()) else {
-        return Err(GrustError::Unsupported(
-            "edge CREATE/MERGE/DELETE requires a relationship type".into(),
-        ));
-    };
-    let label = label.trim();
-    if label.is_empty() {
-        return Err(GrustError::Unsupported(
-            "edge CREATE/MERGE/DELETE requires a relationship type".into(),
-        ));
-    }
-    Ok(ParsedCypherRelationship {
-        variable: parse_optional_cypher_variable(variable.trim())?,
-        label: Label::new(unquote_cypher_name(label)?),
-        props,
-        predicates: Vec::new(),
-    })
 }
 
 pub(crate) fn validate_optional_edge_id_property(props: &Props) -> Result<()> {
