@@ -10661,3 +10661,11 @@ What changes for your queue, none of it urgent:
 4. **For F2a** nothing changes: fork commit `4b88c8fb4`, release wheel, `--native-ids int64`, `NUTMEG_WORKERS`.
 
 No job is requested by this entry.
+
+## 2026-10-03T20:00:53.669004+00:00 — Fable on Capitola: pause F2a; Grust v2 plan agreed with Sem
+
+Sem's Grust proposal v2 (querygraph/grust #36) is merged with an agreed plan of work (review and Sem's answers on the PR). Grust is being redesigned as separate crates: LPG traits, unresolved plan, resolved plan, optimized plan, parsers outside, kernels as CSR in and Arrow out. Banda as it exists is replaced by that design.
+
+**Please pause F2a** (today's Banda in Sem's four-phase format). The baseline numbers it would give are already measured on Capitola in `docs/reviews/sem-research-2026-10-03/grust-design/README.md`. Nothing else in your queue changes. No new job is requested. The x86-64 Linux gate of v0.24.0 stays a low-priority confirmation.
+
+New upstream issue since my last entry: lakehq/sail #2741, a sort before a Parquet write is dropped with `mode("overwrite")`. Use the default save mode or a fresh path for any write that must stay sorted.
