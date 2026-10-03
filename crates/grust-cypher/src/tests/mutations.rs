@@ -522,3 +522,63 @@ fn cypher_delete_lowers_resolved_node_and_edge_patterns() {
         .is_err()
     );
 }
+
+#[test]
+fn backtick_identifiers_do_not_split_or_route_write_statements() {
+    // A `;` inside a backtick label is part of the label, not a statement end.
+    let quoted = sail_cypher_mutation_plan("CREATE (n:`A;B` {id: 'x'})").unwrap();
+    let plain = sail_cypher_mutation_plan("CREATE (n:AB {id: 'x'})").unwrap();
+    let relabel = |mutations: Vec<GraphMutation>| -> Vec<GraphMutation> {
+        mutations
+            .into_iter()
+            .map(|m| match m {
+                GraphMutation::UpsertNode(mut node) => {
+                    node.label = "AB".into();
+                    GraphMutation::UpsertNode(node)
+                }
+                other => other,
+            })
+            .collect()
+    };
+    let quoted = quoted.into_mutations();
+    assert!(
+        matches!(&quoted[..], [GraphMutation::UpsertNode(node)] if node.label.as_str() == "A;B"),
+        "{quoted:?}"
+    );
+    assert_eq!(relabel(quoted), plain.into_mutations());
+
+    // A keyword inside a backtick property name does not pick the planner.
+    let quoted =
+        sail_cypher_mutation_plan("MATCH (n:Person {id: 'p1'}) SET n.`x CREATE y` = 1").unwrap();
+    let plain = sail_cypher_mutation_plan("MATCH (n:Person {id: 'p1'}) SET n.xy = 1").unwrap();
+    assert_eq!(
+        format!("{:?}", quoted.into_mutations()).replace("x CREATE y", "xy"),
+        format!("{:?}", plain.into_mutations())
+    );
+
+    // Backslashes inside backticks are literal; the splitter must not treat
+    // the closing backtick as escaped.
+    let statements =
+        crate::parse::split_cypher_statements("CREATE (n:`A\\` {id: 'a'}); CREATE (m:B {id: 'b'})")
+            .unwrap();
+    assert_eq!(statements.len(), 2, "{statements:?}");
+
+    // Relationship types, property-map keys and doubled backticks unquote too.
+    let edge = sail_cypher_mutation_plan(
+        "MATCH (a:Person {id: 'p1'}), (b:Person {id: 'p2'}) CREATE (a)-[:`KNOWS;WELL`]->(b)",
+    )
+    .unwrap();
+    assert!(
+        matches!(&edge.into_mutations()[..], [GraphMutation::UpsertEdge(e)] if e.label.as_str() == "KNOWS;WELL")
+    );
+    let node = sail_cypher_mutation_plan("CREATE (n:`a``b` {id: 'x', `odd key`: 1})").unwrap();
+    match &node.into_mutations()[..] {
+        [GraphMutation::UpsertNode(n)] => {
+            assert_eq!(n.label.as_str(), "a`b");
+            assert_eq!(n.props.get("odd key"), Some(&Value::Int(1)));
+        }
+        other => panic!("{other:?}"),
+    }
+    // A lone backtick inside a quoted name is malformed, not silently kept.
+    assert!(sail_cypher_mutation_plan("CREATE (n:`a`b` {id: 'x'})").is_err());
+}

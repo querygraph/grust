@@ -6,6 +6,21 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ## Unreleased
 
+### Cypher
+
+- **Backtick-quoted names in write statements are read as names.** The
+  string-scanning write planner treated a backtick like any other character.
+  A `;` inside a quoted label split the statement
+  (``CREATE (n:`A;B` {id: 'x'})`` failed); a keyword inside a quoted property
+  name chose the wrong planner (``SET n.`x CREATE y` = 1`` failed); and a
+  quoted label that did plan kept its backticks, so ``CREATE (n:`Person`)``
+  stored the label `` `Person` `` instead of `Person`. The scanners now skip
+  backtick spans (with backslashes literal inside them), and labels,
+  relationship types and property keys lose their quotes, with doubled
+  backticks collapsed. A malformed quoted name is a syntax error. Unquoted
+  names behave as before. The typed parser already accepted these statements;
+  only the write planner was wrong.
+
 ## 0.24.0 — Tanaid — 2026-10-02
 
 Nothing in this release changes an answer. What changed is what a projection

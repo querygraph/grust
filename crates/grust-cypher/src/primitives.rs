@@ -45,7 +45,7 @@ pub(crate) fn find_numeric_operator_candidates(expression: &str) -> Vec<(usize, 
             escaped = false;
             continue;
         }
-        if ch == '\\' && quote.is_some() {
+        if ch == '\\' && matches!(quote, Some('\'' | '"')) {
             escaped = true;
             continue;
         }
@@ -56,7 +56,7 @@ pub(crate) fn find_numeric_operator_candidates(expression: &str) -> Vec<(usize, 
             continue;
         }
         match ch {
-            '\'' | '"' => quote = Some(ch),
+            '\'' | '"' | '`' => quote = Some(ch),
             '+' => candidates.push((index, GraphNumericOp::Add)),
             '-' if index > 0 => candidates.push((index, GraphNumericOp::Subtract)),
             '*' => candidates.push((index, GraphNumericOp::Multiply)),
@@ -145,6 +145,8 @@ pub(crate) fn parse_cypher_prop_key(key: &str) -> Result<String> {
     }
     if is_quoted(key) {
         parse_cypher_string(key)
+    } else if key.starts_with('`') {
+        unquote_cypher_name(key)
     } else if key
         .chars()
         .all(|ch| ch == '_' || ch.is_ascii_alphanumeric())
@@ -321,7 +323,7 @@ pub(crate) fn split_top_level_commas(value: &str) -> Result<Vec<&str>> {
             escaped = false;
             continue;
         }
-        if ch == '\\' && quote.is_some() {
+        if ch == '\\' && matches!(quote, Some('\'' | '"')) {
             escaped = true;
             continue;
         }
@@ -332,7 +334,7 @@ pub(crate) fn split_top_level_commas(value: &str) -> Result<Vec<&str>> {
             continue;
         }
         match ch {
-            '\'' | '"' => quote = Some(ch),
+            '\'' | '"' | '`' => quote = Some(ch),
             '(' => paren_depth += 1,
             ')' => {
                 paren_depth = paren_depth.checked_sub(1).ok_or_else(|| {
@@ -386,7 +388,7 @@ pub(crate) fn find_top_level_keyword_sequence(value: &str, keyword: &str) -> Res
             escaped = false;
             continue;
         }
-        if ch == '\\' && quote.is_some() {
+        if ch == '\\' && matches!(quote, Some('\'' | '"')) {
             escaped = true;
             continue;
         }
@@ -397,7 +399,7 @@ pub(crate) fn find_top_level_keyword_sequence(value: &str, keyword: &str) -> Res
             continue;
         }
         match ch {
-            '\'' | '"' => quote = Some(ch),
+            '\'' | '"' | '`' => quote = Some(ch),
             '(' => paren_depth += 1,
             ')' => {
                 paren_depth = paren_depth.checked_sub(1).ok_or_else(|| {
@@ -459,7 +461,7 @@ pub(crate) fn strip_enclosing_parentheses(value: &str) -> Result<&str> {
                 escaped = false;
                 continue;
             }
-            if ch == '\\' && quote.is_some() {
+            if ch == '\\' && matches!(quote, Some('\'' | '"')) {
                 escaped = true;
                 continue;
             }
@@ -470,7 +472,7 @@ pub(crate) fn strip_enclosing_parentheses(value: &str) -> Result<&str> {
                 continue;
             }
             match ch {
-                '\'' | '"' => quote = Some(ch),
+                '\'' | '"' | '`' => quote = Some(ch),
                 '(' => paren_depth += 1,
                 ')' => {
                     paren_depth = paren_depth.checked_sub(1).ok_or_else(|| {
@@ -515,7 +517,7 @@ pub(crate) fn split_top_level_patterns(value: &str) -> Result<Vec<&str>> {
             escaped = false;
             continue;
         }
-        if ch == '\\' && quote.is_some() {
+        if ch == '\\' && matches!(quote, Some('\'' | '"')) {
             escaped = true;
             continue;
         }
@@ -526,7 +528,7 @@ pub(crate) fn split_top_level_patterns(value: &str) -> Result<Vec<&str>> {
             continue;
         }
         match ch {
-            '\'' | '"' => quote = Some(ch),
+            '\'' | '"' | '`' => quote = Some(ch),
             '(' => paren_depth += 1,
             ')' => paren_depth = paren_depth.saturating_sub(1),
             '[' => bracket_depth += 1,
@@ -563,7 +565,7 @@ pub(crate) fn find_matching(value: &str, _open: char, close: char) -> Result<usi
             escaped = false;
             continue;
         }
-        if ch == '\\' && quote.is_some() {
+        if ch == '\\' && matches!(quote, Some('\'' | '"')) {
             escaped = true;
             continue;
         }
@@ -574,7 +576,7 @@ pub(crate) fn find_matching(value: &str, _open: char, close: char) -> Result<usi
             continue;
         }
         match ch {
-            '\'' | '"' => quote = Some(ch),
+            '\'' | '"' | '`' => quote = Some(ch),
             ch if ch == close => return Ok(index),
             _ => {}
         }
@@ -598,7 +600,7 @@ pub(crate) fn scan_unquoted(
             escaped = false;
             continue;
         }
-        if ch == '\\' && quote.is_some() {
+        if ch == '\\' && matches!(quote, Some('\'' | '"')) {
             escaped = true;
             continue;
         }
@@ -608,7 +610,7 @@ pub(crate) fn scan_unquoted(
             }
             continue;
         }
-        if ch == '\'' || ch == '"' {
+        if ch == '\'' || ch == '"' || ch == '`' {
             quote = Some(ch);
             continue;
         }
