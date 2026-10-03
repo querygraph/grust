@@ -577,7 +577,6 @@ pub(crate) struct ParsedWherePredicate {
 
 /// One leaf comparison of a writable `MATCH ... WHERE` boolean tree.
 #[derive(Clone, Debug, PartialEq)]
-#[cfg_attr(not(test), allow(dead_code))]
 pub(crate) enum CypherWhereLeaf<'a> {
     /// A leaf cut out of the statement text by the legacy string planner.
     Text(&'a str),

@@ -42,7 +42,7 @@ pub fn cypher_mutation_plan_with_options(
 ) -> Result<(GraphMutationPlan, Vec<CypherGeneratedNodeId>)> {
     #[cfg(test)]
     let parity_options = options.clone();
-    let planned = legacy_mutation_plan_with_options(cypher, options);
+    let planned = crate::write_ast::ast_mutation_plan_with_options(cypher, options);
     #[cfg(test)]
     crate::tests::write_parity::assert_plan_parity(cypher, &parity_options, &planned);
     planned
@@ -100,7 +100,7 @@ pub fn cypher_mutation_plan_with_return_options(
 ) -> Result<CypherPlannedMutationWithReturn> {
     #[cfg(test)]
     let parity_options = options.clone();
-    let planned = legacy_mutation_plan_with_return_options(cypher, options);
+    let planned = crate::write_ast::ast_mutation_plan_with_return_options(cypher, options);
     #[cfg(test)]
     crate::tests::write_parity::assert_return_parity(cypher, &parity_options, &planned);
     planned

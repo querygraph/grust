@@ -60,7 +60,6 @@ use crate::*;
 
 use convert::{checked_variable, describe_expr, node_from_pattern, relationship_from_pattern};
 pub(crate) use convert::{leaf_followed_by_text_error, where_predicate_from_expr};
-#[cfg_attr(not(test), allow(unused_imports))]
 pub(crate) use entry::{ast_mutation_plan_with_options, ast_mutation_plan_with_return_options};
 
 /// Parse one `;`-free writable statement with the typed parser.

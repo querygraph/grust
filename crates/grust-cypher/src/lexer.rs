@@ -326,7 +326,6 @@ pub fn tokenize(source: &str) -> Result<Vec<SpannedToken>, LexError> {
 /// Tokenize as far as the source is well formed: the tokens before the first
 /// lexical error (without a trailing [`Token::Eof`] in that case), and the
 /// error, if any.
-#[cfg_attr(not(test), allow(dead_code))]
 pub(crate) fn tokenize_prefix(source: &str) -> (Vec<SpannedToken>, Option<LexError>) {
     let mut lexer = Lexer::new(source);
     let mut out = Vec::new();

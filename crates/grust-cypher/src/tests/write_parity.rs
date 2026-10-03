@@ -188,14 +188,11 @@ fn report_difference(entry: &str, cypher: &str, legacy: &Outcome, ast: &Outcome)
     format!("{entry}: {cypher:?}\n  legacy: {legacy:?}\n  ast:    {ast:?}")
 }
 
-/// Called by `cypher_mutation_plan_with_options` under `cfg(test)`.
-pub(crate) fn assert_plan_parity(
-    cypher: &str,
-    options: &CypherMutationOptions,
-    legacy: &PlanResult,
-) {
-    let ast = crate::write_ast::ast_mutation_plan_with_options(cypher, options.clone());
-    let (legacy, ast) = (plan_outcome(legacy), plan_outcome(&ast));
+/// Called by `cypher_mutation_plan_with_options` under `cfg(test)` with the
+/// AST planner's result.
+pub(crate) fn assert_plan_parity(cypher: &str, options: &CypherMutationOptions, ast: &PlanResult) {
+    let legacy = legacy_mutation_plan_with_options(cypher, options.clone());
+    let (legacy, ast) = (plan_outcome(&legacy), plan_outcome(ast));
     if verdict(&legacy, &ast) == Verdict::Different && known_difference(cypher).is_none() {
         panic!(
             "write planner parity\n{}",
@@ -204,14 +201,15 @@ pub(crate) fn assert_plan_parity(
     }
 }
 
-/// Called by `cypher_mutation_plan_with_return_options` under `cfg(test)`.
+/// Called by `cypher_mutation_plan_with_return_options` under `cfg(test)`
+/// with the AST planner's result.
 pub(crate) fn assert_return_parity(
     cypher: &str,
     options: &CypherMutationOptions,
-    legacy: &Result<CypherPlannedMutationWithReturn>,
+    ast: &Result<CypherPlannedMutationWithReturn>,
 ) {
-    let ast = crate::write_ast::ast_mutation_plan_with_return_options(cypher, options.clone());
-    let (legacy, ast) = (return_outcome(legacy), return_outcome(&ast));
+    let legacy = legacy_mutation_plan_with_return_options(cypher, options.clone());
+    let (legacy, ast) = (return_outcome(&legacy), return_outcome(ast));
     if verdict(&legacy, &ast) == Verdict::Different && known_difference(cypher).is_none() {
         panic!(
             "write planner parity\n{}",

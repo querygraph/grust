@@ -9,15 +9,20 @@ pub mod gql;
 pub mod lexer;
 pub mod parser;
 pub use ddl::*;
+// The legacy string-scanning write planner in `planner`, `parse`,
+// `where_clause`, `returning` and `primitives` now runs only beside the AST
+// planner in the parity tests; the next change removes it.
+#[cfg_attr(not(test), allow(dead_code))]
 mod planner;
 pub use planner::*;
-mod parse;
-// Not yet called outside tests while the legacy planner is still primary.
 #[cfg_attr(not(test), allow(dead_code))]
+mod parse;
 mod write_ast;
 pub use parse::*;
+#[cfg_attr(not(test), allow(dead_code))]
 mod where_clause;
 use where_clause::*;
+#[cfg_attr(not(test), allow(dead_code))]
 mod returning;
 pub use returning::*;
 mod eval_rows;
@@ -26,6 +31,7 @@ mod restricted_values;
 use restricted_values::*;
 mod projection;
 pub use projection::*;
+#[cfg_attr(not(test), allow(dead_code))]
 mod primitives;
 pub use primitives::*;
 pub mod graph_type;
