@@ -1,0 +1,62 @@
+=== E1 missing ')'
+    MATCH (n:Person RETURN n.name
+-- today (1 error):
+    MATCH (n:Person RETURN n.name
+                    ^^^^^^
+    expected ')' to close a node pattern, found Keyword(Return) at line 1, column 17 (bytes 16..22)
+-- winnow (1 error):
+    MATCH (n:Person RETURN n.name
+                    ^
+    invalid node pattern | expected `)`
+-- chumsky (1 error(s)):
+    MATCH (n:Person RETURN n.name
+                    ^^^^^^
+    found 'Keyword(Return)' expected 'Colon', 'LBrace', or 'RParen'
+
+=== E2 missing operand
+    MATCH (a)-[:KNOWS]->(b) WHERE a.age > RETURN b.name
+-- today (1 error):
+    MATCH (a)-[:KNOWS]->(b) WHERE a.age > RETURN b.name
+                                          ^^^^^^
+    expected an expression, found Keyword(Return) at line 1, column 39 (bytes 38..44)
+-- winnow (1 error):
+    MATCH (a)-[:KNOWS]->(b) WHERE a.age > RETURN b.name
+                                          ^
+    invalid expression | expected `(`, an expression
+-- chumsky (1 error(s)):
+    MATCH (a)-[:KNOWS]->(b) WHERE a.age > RETURN b.name
+                                          ^^^^^^
+    found 'Keyword(Return)' expected 'Keyword(Not)', 'Minus', or expression
+
+=== E3 misspelled keyword
+    MATCH (n:Person) RETRUN n.name
+-- today (1 error):
+    MATCH (n:Person) RETRUN n.name
+                     ^^^^^^
+    unexpected trailing input: Identifier("RETRUN") at line 1, column 18 (bytes 17..23)
+-- winnow (1 error):
+    MATCH (n:Person) RETRUN n.name
+                     ^
+    expected `RETURN`
+-- chumsky (1 error(s)):
+    MATCH (n:Person) RETRUN n.name
+                     ^^^^^^
+    found 'Identifier("RETRUN")' expected relationship pattern, 'Comma', 'Keyword(Where)', 'Keyword(Optional)', 'Keyword(Match)', or 'Keyword(Return)'
+
+=== E4 two errors
+    MATCH (a:Person {name: })-[:KNOWS]->(b) WHERE b.age > (3 + ) RETURN b
+-- today (1 error):
+    MATCH (a:Person {name: })-[:KNOWS]->(b) WHERE b.age > (3 + ) RETURN b
+                           ^
+    expected an expression, found RBrace at line 1, column 24 (bytes 23..24)
+-- winnow (1 error):
+    MATCH (a:Person {name: })-[:KNOWS]->(b) WHERE b.age > (3 + ) RETURN b
+                           ^
+    invalid expression | expected `(`, an expression
+-- chumsky (2 error(s)):
+    MATCH (a:Person {name: })-[:KNOWS]->(b) WHERE b.age > (3 + ) RETURN b
+                           ^
+    found 'RBrace' expected expression
+    MATCH (a:Person {name: })-[:KNOWS]->(b) WHERE b.age > (3 + ) RETURN b
+                                                               ^
+    found 'RParen' expected 'Keyword(Not)', 'Minus', or expression

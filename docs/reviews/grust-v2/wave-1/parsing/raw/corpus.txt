@@ -1,0 +1,12 @@
+corpus: 234 sources (224 accepted by parse_statements, 10 rejected at parse level), 22902 bytes accepted
+  rejected: MATCH p = shortestPath((a)-[:KNOWS*]->(m)-[:KNOWS*]->(b)) RETURN p | shortestPath(…) expects exactly one relationship segment
+  rejected: RETURN reduce(s = 0, x IN [1]) | reduce: expected '|' before reduce body, found RParen
+  rejected: CREATE CONSTRAINT FOR (n:Person) REQUIRE n.id IS UNIQUE | expected '(' to start a node pattern, found Keyword(Constraint)
+  rejected: CREATE (:Person {id: 'person-1', name: 'Ada; still one literal'}); MERGE (:Person {id: 'person-2', name: 'Bob'}); CREATE (:Person {id: 'person-1'})-[:KNOWS {since: 2026}]->(:Person {id: 'person-2'}); DELETE (:Person {id: 'person-2'}); | expected an expression, found Colon
+  rejected: CREATE (a:Person {id: 'person-1', name: 'Ada'}); MERGE (b:Person {id: 'person-2', name: 'Bob'}); CREATE (a)-[:KNOWS]->(b); DELETE (a)-[:KNOWS]->(b); DELETE (a); | expected an expression, found Colon
+  rejected: CREATE (:Person {id: 'person-1'}); /* nope | unterminated block comment
+  rejected: DELETE (:Person {id: 'person-1'}) | expected an expression, found Colon
+  rejected: DELETE (:Person {id: 'person-1'})-[:KNOWS]->(:Person {id: 'person-2'}) | expected an expression, found Colon
+  rejected: DELETE (:Person {name: 'Ada'}) | expected an expression, found Colon
+  rejected: DELETE (:Server {id: 'prod->primary'}) | expected an expression, found Colon
+today parse_statements over accepted corpus: median 2950 ns/source, 34.7 MB/s

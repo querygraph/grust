@@ -1,0 +1,24 @@
+[package]
+name = "parsing-spike"
+version = "0.0.0"
+edition = "2024"
+publish = false
+description = "Grust v2 parsing report spike: today's parser vs winnow vs chumsky on a MATCH subset"
+
+# Standalone: not a member of the grust workspace.
+[workspace]
+members = ["crates/subset-ast", "crates/subset-winnow", "crates/subset-chumsky"]
+
+[workspace.dependencies]
+# Today's parser, read from the v0.24.0 worktree (commit d2668ec7).
+grust-cypher = "=0.24.0"
+
+[dependencies]
+grust-cypher.workspace = true
+subset-ast = { path = "crates/subset-ast" }
+subset-winnow = { path = "crates/subset-winnow" }
+subset-chumsky = { path = "crates/subset-chumsky" }
+serde_json = "1"
+
+[profile.release]
+debug = false

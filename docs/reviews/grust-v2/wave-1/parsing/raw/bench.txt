@@ -1,0 +1,15 @@
+# 2026-10-03T20:24:15Z host: Apple M1 Max, 10 cores; rustc 1.97.1 (8bab26f4f 2026-07-14); profile release; load: load averages: 5.18 11.19 18.49
+10 queries, 632 bytes total, mean 63 bytes/query; 20000 iterations x 9 rounds
+grust lexer only (tokenize)                             median      893 ns/query  min      887 ns/query
+today: grust parse_query (lex+parse, full grammar)      median     1997 ns/query  min     1992 ns/query
+winnow subset (char-level, no lexer)                    median     5335 ns/query  min     5332 ns/query
+chumsky subset (grust lexer + chumsky)                  median     7896 ns/query  min     7892 ns/query
+# load after: load averages: 4.79 10.62 18.07
+10 queries, 632 bytes total, mean 63 bytes/query; 20000 iterations x 9 rounds
+grust lexer only (tokenize)                             median      891 ns/query  min      889 ns/query
+today: grust parse_query (lex+parse, full grammar)      median     2001 ns/query  min     1996 ns/query
+winnow subset (char-level, no lexer)                    median     5255 ns/query  min     5245 ns/query
+chumsky subset (grust lexer + chumsky)                  median     7906 ns/query  min     7840 ns/query
+# load after: load averages: 5.11 10.11 17.63
+corpus: 234 sources (224 accepted by parse_statements, 10 rejected at parse level), 22902 bytes accepted
+today parse_statements over accepted corpus: median 2875 ns/source, 35.6 MB/s

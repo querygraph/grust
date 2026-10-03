@@ -1,0 +1,42 @@
+# 2026-10-03T20:32:06Z Apple M1 Max, rustc 1.97.1 (8bab26f4f 2026-07-14), cargo build --release -j 4, each crate in its own empty CARGO_TARGET_DIR; load at start: load averages: 7.59 8.88 14.26
+# crate version | unique crates in its dependency tree incl. itself (cargo tree -e normal,build) | cold release build seconds
+nom v8.0.0 | 2 | 2.5
+winnow v1.0.4 | 1 | 1.0
+chumsky v0.13.0 | 17 | 6.5
+pest_derive v2.9.2 (proc-macro) | 10 | 2.9
+lalrpop-util v0.23.1 | 6 | 5.4
+antlr4rust v0.6.0 | 16 | 3.3
+tree-sitter v0.27.0 | 18 | 8.5
+logos v0.16.1 | 12 | 3.9
+peg v0.8.6 | 6 | 2.0
+lalrpop v0.23.1 (generator, build-dependency) | 47 | 21.6
+# load at end: load averages: 11.51 9.95 14.31
+
+# Grammar crate rebuild only (dependencies already built), release, -j 4. load: load averages: 10.52 9.79 14.20
+antlr4rust generated parser, cypher grammar: 8.8 s
+antlr4rust generated parser, gql grammar: 55.9 s
+spike subset-winnow (subset grammar), rebuild after touch: best of 3 = 1.11 s
+spike subset-chumsky (subset grammar), rebuild after touch: best of 3 = 5.79 s
+# generated Rust source size (antlr4rust v0.6.0 tool jar, sha256 391e7731...):
+     710 gen-cypher/cypherlexer.rs
+   13987 gen-cypher/cypherparser.rs
+    1138 gen-cypher/cypherparserbaselistener.rs
+     480 gen-cypher/cypherparserbasevisitor.rs
+     952 gen-cypher/cypherparserlistener.rs
+    1805 gen-cypher/cypherparservisitor.rs
+    7330 gen-gql/opengql/gqlbaselistener.rs
+    3060 gen-gql/opengql/gqlbasevisitor.rs
+    2839 gen-gql/opengql/gqllexer.rs
+    6200 gen-gql/opengql/gqllistener.rs
+   82158 gen-gql/opengql/gqlparser.rs
+   11697 gen-gql/opengql/gqlvisitor.rs
+  132356 total
+# load at end: load averages: 8.36 9.34 13.61
+
+# Prior art: lakehq/sail sail-sql-parser (chumsky 0.12, derive-macro grammar), local checkout
+# ~/src/sail-upstream-main at 99ee46f69a97342e91bf7d4eaedb4509f1d8a9c2 (2026-10-02), read only.
+# sail-sql-parser + sail-sql-macro: 7069 lines of .rs; of which src/ast: 4050 lines.
+# grep recover_with in sail-sql-parser/src: 0 matches (fail-fast, no recovery).
+# cargo build --release -j 4 -p sail-sql-parser --locked, load ~7.8:
+#   cold incl. dependencies: 21.3 s
+#   after `cargo clean --release -p sail-sql-parser` (the crate alone): 15.2 s
