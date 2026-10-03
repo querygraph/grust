@@ -1,0 +1,87 @@
+
+## 1. Rows per level and the full level table (uniform worst case: every cell non-empty)
+
+| |V| | levels with 4^l < |V| | rows in levels 0..L* | L* (mean mass >= 16) | bytes, 64 B/row | all levels 0..31 (|V| per level below L*) |
+|---|---|---|---|---|---|
+| 1e6 | 0..9 | 21,845 | 7 | 1.3 MiB | 22,349,525 rows, 1.33 GiB |
+| 1e8 | 0..13 | 5,592,405 | 11 | 341.3 MiB | 1,889,478,485 rows, 112.62 GiB |
+| 1e9 | 0..14 | 22,369,621 | 12 | 1.33 GiB | 17,357,913,941 rows, 1,034.61 GiB |
+
+## 2. The adaptive head: cells whose parent holds more than T vertices
+
+Uniform layout: internal cells (mass > T) number about (4/3) |V| / T' with T' in [T, 4T);
+their children are 4 times that. Upper bound used here: (16/3) |V| / T. Skewed layouts add at most
+|V| / T internal cells per extra level of depth.
+
+| |V| | T = 1e3 | T = 1e4 | T = 1e5 | bytes at T = 1e4, 64 B/row |
+|---|---|---|---|---|
+| 1e6 | 5,333 | 533 | 53 | 0.0 MiB |
+| 1e8 | 533,333 | 53,333 | 5,333 | 3.3 MiB |
+| 1e9 | 5,333,333 | 533,333 | 53,333 | 32.6 MiB |
+
+Check against cit-Patents (|V| = 3,774,768), measured adaptive-tree-cells: random 5,509 / 1,365 / 85; hierarchical 10,156 / 1,177 / 129. Bound: 20,132 / 2,013 / 201
+
+## 3. Pseudo-edge rows per level, random layout (no locality): 16^l (1 - exp(-2|E| / 16^l))
+
+Expected distinct ordered cell pairs when 2|E| directed edge rows fall uniformly on 16^l pairs.
+
+Check against cit-Patents (2|E| = 33,037,845 rows), measured pe-rows, random layout:
+  level  2: predicted            256  measured            256
+  level  4: predicted         65,536  measured         65,536
+  level  6: predicted     14,435,667  measured     14,412,661
+  level  8: predicted     32,911,103  measured     32,900,343
+  level 10: predicted     33,037,349  measured     33,036,666
+  level 12: predicted     33,037,843  measured     33,037,845
+
+| |V| | 2|E| | l = 4 | l = 6 | l = 8 | l = 10 | l = 12 |
+|---|---|---|---|---|---|---|
+| 1e6 | 32,000,000 | 6.55e+04 | 1.43e+07 | 3.19e+07 | 3.2e+07 | 3.2e+07 |
+| 1e8 | 3,200,000,000 | 6.55e+04 | 1.68e+07 | 2.26e+09 | 3.2e+09 | 3.2e+09 |
+| 1e9 | 32,000,000,000 | 6.55e+04 | 1.68e+07 | 4.29e+09 | 3.15e+10 | 3.2e+10 |
+
+Stored bytes of P_l at 2.3 B/row (sorted Parquet, measured): 1e9, l = 6: 36.8 MiB; l = 8: 9.20 GiB
+
+## 4. Precomputing pseudo-edges: which levels
+
+Rule: precompute P_l for the levels where expanding a typical cell on demand would scan more than
+R edge rows. A cell at level l holds |V| / 4^l vertices (uniform) and |V| d / 4^l edge rows, d = 32.
+L_p = smallest l with 32 |V| / 4^l <= R. Above L_p, read a precomputed P_(l+1) block.
+
+| |V| | R = 1e6 rows | R = 1e7 rows | R = 1e8 rows |
+|---|---|---|---|
+| 1e6 | L_p = 3, P_0..P_4 <= 6.99e+04 rows (0.2 MiB) | L_p = 1, P_0..P_2 <= 273 rows (0.0 MiB) | L_p = 0, P_0..P_1 <= 17 rows (0.0 MiB) |
+| 1e8 | L_p = 6, P_0..P_7 <= 2.86e+08 rows (628.1 MiB) | L_p = 5, P_0..P_6 <= 1.79e+07 rows (39.3 MiB) | L_p = 3, P_0..P_4 <= 6.99e+04 rows (0.2 MiB) |
+| 1e9 | L_p = 8, P_0..P_9 <= 3.66e+10 rows (78.36 GiB) | L_p = 6, P_0..P_7 <= 2.86e+08 rows (628.1 MiB) | L_p = 5, P_0..P_6 <= 1.79e+07 rows (39.3 MiB) |
+
+## 5. Expand one cell at frontier level l: rows read
+
+Precomputed: P_(l+1) rows whose source is one of the 4 children: at most 4 x (cells at level l+1), and
+at most the edge rows of the cell. On demand: every edge row of the cell, |V| d / 4^l (uniform).
+
+| |V| | frontier l | cell mass (uniform) | on-demand rows | on-demand bytes at 14.5 B | precomputed rows, bound |
+|---|---|---|---|---|---|
+| 1e6 | 3 | 15,625 | 5e+05 | 6.9 MiB | 1,024 |
+| 1e6 | 5 | 977 | 3.12e+04 | 0.4 MiB | 16,384 |
+| 1e6 | 7 | 61 | 1.95e+03 | 0.0 MiB | 1,953 |
+| 1e6 | 9 | 4 | 122 | 0.0 MiB | 122 |
+| 1e8 | 3 | 1,562,500 | 5e+07 | 691.4 MiB | 1,024 |
+| 1e8 | 5 | 97,656 | 3.12e+06 | 43.2 MiB | 16,384 |
+| 1e8 | 7 | 6,104 | 1.95e+05 | 2.7 MiB | 195,312 |
+| 1e8 | 9 | 381 | 1.22e+04 | 0.2 MiB | 12,207 |
+| 1e9 | 3 | 15,625,000 | 5e+08 | 6.75 GiB | 1,024 |
+| 1e9 | 5 | 976,562 | 3.12e+07 | 432.1 MiB | 16,384 |
+| 1e9 | 7 | 61,035 | 1.95e+06 | 27.0 MiB | 262,144 |
+| 1e9 | 9 | 3,815 | 1.22e+05 | 1.7 MiB | 122,070 |
+
+## 6. Build cost, extrapolated linearly in edge rows from graph500-24 (520,759,040 edge rows), laptop seconds
+
+| step | graph500-24, s | 1e8 (3.2e9 rows), core-hours | 1e9 (3.2e10 rows), core-hours |
+|---|---|---|---|
+| EK build, unsorted (2 joins) | 21.87 | 0.4 | 3.7 |
+| EK build, sorted | 52.52 | 0.9 | 9.0 |
+| PE_8 from EK | 73.95 | 1.3 | 12.6 |
+| PE_6 from EK | 11.1 | 0.2 | 1.9 |
+| all PE levels by rollup from PE_10 | 104.74 | 1.8 | 17.9 |
+
+Core-hours = laptop seconds x 10 cores x row ratio / 3600. Linear scaling is an assumption; a sort is
+n log n and a cluster adds shuffle over the network.

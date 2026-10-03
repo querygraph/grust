@@ -25,10 +25,11 @@ DataFusion 55.1.0), release build, macOS on an Apple M1 Max, with PySpark
 | 09 | [The sort order in a Parquet footer is never used](09-parquet-sorting-columns-never-used/README.md) | missed optimization | defaults |
 | 10 | [`partitionBy` writes are 5 to 45 times slower than plain writes](10-partitionby-write-slow/README.md) | performance | defaults |
 | 11 | [A sort before `monotonically_increasing_id()` is removed](11-sort-before-monotonic-id-is-dropped/README.md) | wrong values | defaults |
+| 12 | [A sort before a Parquet write is dropped with `mode("overwrite")`](12-overwrite-write-drops-sort/README.md) | behaviour differs between save modes | defaults |
 
 Reports 01 to 10 are in order of severity: answers that are wrong first,
 then failures, then behaviour, then speed. Report 11 was found later the same
-day and belongs with the first two; it was filed as #2732.
+day and belongs with the first two; it was filed as #2732. Report 12 was found on 2026-10-03 by the visualization study. **It is prepared and not filed.**
 
 ## Filed
 
@@ -83,6 +84,7 @@ only). Each report has the detail in its "Related upstream items" section.
 | 09 | nothing |
 | 10 | no issue; open pull request #1360 addresses Delta partitioned writes; DataFusion's tracker search was incomplete |
 | 11 | nothing; merged pull request #1936 is about the operator's partitioning |
+| 12 | nothing; open pull request #1862 reports a dropped sort for CTAS |
 
 So none is an exact duplicate of an open issue. 02 and 08 should reference
 the existing items rather than stand alone.
