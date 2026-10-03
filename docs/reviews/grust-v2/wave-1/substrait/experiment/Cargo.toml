@@ -1,0 +1,17 @@
+[package]
+name = "substrait-two-hop"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+# Standalone: not part of the Grust workspace.
+[workspace]
+
+[dependencies]
+datafusion = { version = "=55.1.0", default-features = false, features = ["parquet", "sql", "nested_expressions", "recursive_protection"] }
+datafusion-substrait = { version = "=55.1.0" }
+tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
+prost = "0.14"
+# Same version datafusion-substrait 55.1.0 pins; `serde` adds the canonical JSON form.
+substrait = { version = "=0.63.0", features = ["serde"] }
+serde_json = "1"

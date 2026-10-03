@@ -1,0 +1,23 @@
+duckdb v1.5.5; substrait extension 4ea63dd community
+handbuilt-two-hop-rows: from_substrait_json -> ok: '4060'; duckdb SQL: 4060
+handbuilt-two-hop-aggregate: from_substrait_json -> ok: '82152988|440634906497932|390813393255520|321991011040247'; duckdb SQL: 82152988|440634906497932|390813393255520|321991011040247
+Q01: DataFusion plan -> DuckDB ok: '10' (DataFusion SQL rows 10)
+Q02: DataFusion plan -> DuckDB ok: '4060' (DataFusion SQL rows 4060)
+Q03: DataFusion plan -> DuckDB ok: '5853' (DataFusion SQL rows 5853)
+Q04: DataFusion plan -> DuckDB ok: '899' (DataFusion SQL rows 899)
+Q05: DataFusion plan -> DuckDB ok: '657' (DataFusion SQL rows 657)
+Q06: DataFusion plan -> DuckDB ERROR: 'Invalid Error: Was not possible to convert JSON into Substrait plan: INVALID_ARGUMENT: invalid JSON   in   substrait.Plan   @ relations[0].root.input.aggregate.groupings[0]: message  substrait.Aggrega' (DataFusion SQL rows 1695137)
+Q07: DataFusion plan -> DuckDB ok: '6020296' (DataFusion SQL rows 6020296)
+Q08: DataFusion plan -> DuckDB ok: '1' (DataFusion SQL rows 1)
+Q09: DataFusion plan -> DuckDB ERROR: 'Invalid Error: Was not possible to convert JSON into Substrait plan: INVALID_ARGUMENT: invalid JSON in substrait.Plan @ relations[0].root.input.sort.input.aggregate.groupings[0]: message   substrait.A' (DataFusion SQL rows 40620)
+Q10: DataFusion plan -> DuckDB ERROR: 'Invalid Error: Was not possible to convert JSON into Substrait plan: INVALID_ARGUMENT: invalid JSON in  substrait.Plan @ relations[0].root.input.project.input.aggregate.groupings[0]: message substrait' (DataFusion SQL rows 40620)
+Q11: DataFusion plan -> DuckDB ERROR: 'Invalid Error: Was not possible to convert JSON into Substrait plan: INVALID_ARGUMENT: invalid JSON in substrait.Plan @ relations[0].root.input.join.right.project.input.aggregate.groupings[0]: message' (DataFusion SQL rows 11437)
+Q12: DataFusion plan -> DuckDB ok: '40620' (DataFusion SQL rows 40620)
+Q13: DataFusion plan -> DuckDB ok: '3803' (DataFusion SQL rows 3803)
+Q14: DataFusion plan -> DuckDB ERROR: 'Not implemented Error: Unsupported expression type window_function' (DataFusion SQL rows 1695990)
+Q15: DataFusion plan -> DuckDB ok: '29' (DataFusion SQL rows 29)
+Q16: DataFusion plan -> DuckDB ERROR: 'Binder Error: No function matches the given name and argument types \'~~(VARCHAR, STRING_LITERAL, "NULL")\'. You might need to add explicit type casts.' (DataFusion SQL rows 2)
+Q17: DataFusion plan -> DuckDB ERROR: 'Catalog Error: Scalar Function with name json_get_str does not exist!' (DataFusion SQL rows 1)
+Q18: DataFusion plan -> DuckDB ERROR: 'Catalog Error: Scalar Function with name get_field does not exist!' (DataFusion SQL rows 2)
+Q19: no DataFusion-produced plan (This feature is not implemented: Unsupported plan type: RecursiveQuery { name: ")
+duckdb get_substrait_json(two-hop) -> ok; round trip through from_substrait_json: '4060'
