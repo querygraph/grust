@@ -33,25 +33,25 @@ The proposal is the sketch crate [`../sketch/lpg`](../sketch/lpg/src/lib.rs)
 
 ## The types
 
-| Sem's item | Type | Notes |
-|---|---|---|
-| Vertex property group | trait `VertexGroup`; `VertexGroupDef` | id (`VpgId`, 16 bits), name, labels (a set: an LPG vertex may carry several), properties, key, constraints |
-| Edge property group | trait `EdgeGroup`; `EdgeGroupDef` | id (`EpgId`), name, edge type, source and target VPG, direction, properties, the edge columns holding each endpoint's key, constraints |
-| Directions | `Direction::{Directed, Undirected}` on a group; `PatternDirection::{Outgoing, Incoming, Either}` in a pattern | An undirected group is stored once and traversable both ways |
-| Properties | `Property { name, ty, nullable }` | A key property must be non-nullable; the builder checks |
-| Data types (logical) | `LogicalType` | Boolean, Int32, Int64, Float32, Float64, Decimal, String, Binary, Date, Timestamp, Duration, List, Struct. Mapping to Arrow, SQL or Substrait is the lowering's job, not this crate's. |
-| Constraints | `Constraint::{Unique, Cardinality, Total}` | A group's key is unique implicitly. `Cardinality` bounds edges per vertex (one-to-one, many-to-one). `Total`: every source vertex has an edge. These are what a resolver and an optimizer can use. |
+| Sem's item            | Type                                                                                                          | Notes                                                                                                                                                                                              |
+| --------------------- | ------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Vertex property group | trait `VertexGroup`; `VertexGroupDef`                                                                         | id (`VpgId`, 16 bits), name, labels (a set: an LPG vertex may carry several), properties, key, constraints                                                                                         |
+| Edge property group   | trait `EdgeGroup`; `EdgeGroupDef`                                                                             | id (`EpgId`), name, edge type, source and target VPG, direction, properties, the edge columns holding each endpoint's key, constraints                                                             |
+| Directions            | `Direction::{Directed, Undirected}` on a group; `PatternDirection::{Outgoing, Incoming, Either}` in a pattern | An undirected group is stored once and traversable both ways                                                                                                                                       |
+| Properties            | `Property { name, ty, nullable }`                                                                             | A key property must be non-nullable; the builder checks                                                                                                                                            |
+| Data types (logical)  | `LogicalType`                                                                                                 | Boolean, Int32, Int64, Float32, Float64, Decimal, String, Binary, Date, Timestamp, Duration, List, Struct. Mapping to Arrow, SQL or Substrait is the lowering's job, not this crate's.             |
+| Constraints           | `Constraint::{Unique, Cardinality, Total}`                                                                    | A group's key is unique implicitly. `Cardinality` bounds edges per vertex (one-to-one, many-to-one). `Total`: every source vertex has an edge. These are what a resolver and an optimizer can use. |
 
 ## The core APIs
 
-| Sem's item | API | Behaviour |
-|---|---|---|
-| Traversals: resolve an unresolved pattern to all valid paths | `Lpg::resolve(&Pattern, &ResolveOptions) -> Resolution` | Per pattern position, the feasible groups; the list of schema paths; a `truncated` flag |
-| `is_feasible_from` | `Lpg::is_feasible_from(VpgId, &Pattern)`, `Lpg::is_feasible(&Pattern)` | The backward pass only; no enumeration |
-| `find_path` | `Lpg::find_path(from, to, max_hops) -> Option<Vec<Hop>>` | Shortest path in the schema graph, either direction, any edge type |
-| Accessors (get) | trait methods: `vertex`, `edge`, `vertex_by_name`, `property`, `vertices_matching(&LabelExpr)` | |
-| Accessors (set) | `Schema::to_builder()`, then `set_property`, `constraint`, `vertex_group`, `edge_group`, then `build()` | The schema is immutable; changes go through a builder, which revalidates |
-| Serialization | feature `serde`: every type derives `Serialize` and `Deserialize` | JSON through `serde_json`; `schema.cypher` postponed |
+| Sem's item                                                   | API                                                                                                     | Behaviour                                                                               |
+| ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| Traversals: resolve an unresolved pattern to all valid paths | `Lpg::resolve(&Pattern, &ResolveOptions) -> Resolution`                                                 | Per pattern position, the feasible groups; the list of schema paths; a `truncated` flag |
+| `is_feasible_from`                                           | `Lpg::is_feasible_from(VpgId, &Pattern)`, `Lpg::is_feasible(&Pattern)`                                  | The backward pass only; no enumeration                                                  |
+| `find_path`                                                  | `Lpg::find_path(from, to, max_hops) -> Option<Vec<Hop>>`                                                | Shortest path in the schema graph, either direction, any edge type                      |
+| Accessors (get)                                              | trait methods: `vertex`, `edge`, `vertex_by_name`, `property`, `vertices_matching(&LabelExpr)`          |                                                                                         |
+| Accessors (set)                                              | `Schema::to_builder()`, then `set_property`, `constraint`, `vertex_group`, `edge_group`, then `build()` | The schema is immutable; changes go through a builder, which revalidates                |
+| Serialization                                                | feature `serde`: every type derives `Serialize` and `Deserialize`                                       | JSON through `serde_json`; `schema.cypher` postponed                                    |
 
 ### What a pattern is here
 
@@ -91,15 +91,15 @@ superset.
 ([`lpg/tests/resolve.rs`](../sketch/lpg/tests/resolve.rs)), on an LDBC-shaped
 schema of five vertex groups and ten edge groups:
 
-| Test | Pattern | Result |
-|---|---|---|
-| anonymous edge between persons | `(:Person)-[]-(:Person)` | only `knows`; an undirected self-loop group counts as one hop, not two |
-| anonymous target | `(:Person)-[:LIKES]->()` | the target resolves to `post` and `comment` |
-| Sem's example | `(:Person)-[]-(:Person){1,5}-[:KNOWS]-()` | every path has 1 to 5 hops in the first segment; the last node can only be `person`; `likes_post` then `post_creator` is among the two-hop paths |
-| infeasible | `(:Tag)-[]->()` | rejected by the backward pass alone |
-| label expressions, unbounded | `(:Message&!Post)-[:REPLY_OF]->{1,}(:Post)` | starts only at `comment`; five paths with an enumeration cap of four extra hops |
-| `find_path` | forum to tag | `container_of`, `post_tag`; none within one hop |
-| validation, set | | an unknown or nullable key is refused; `set_property` adds a property |
+| Test                           | Pattern                                     | Result                                                                                                                                           |
+| ------------------------------ | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| anonymous edge between persons | `(:Person)-[]-(:Person)`                    | only `knows`; an undirected self-loop group counts as one hop, not two                                                                           |
+| anonymous target               | `(:Person)-[:LIKES]->()`                    | the target resolves to `post` and `comment`                                                                                                      |
+| Sem's example                  | `(:Person)-[]-(:Person){1,5}-[:KNOWS]-()`   | every path has 1 to 5 hops in the first segment; the last node can only be `person`; `likes_post` then `post_creator` is among the two-hop paths |
+| infeasible                     | `(:Tag)-[]->()`                             | rejected by the backward pass alone                                                                                                              |
+| label expressions, unbounded   | `(:Message&!Post)-[:REPLY_OF]->{1,}(:Post)` | starts only at `comment`; five paths with an enumeration cap of four extra hops                                                                  |
+| `find_path`                    | forum to tag                                | `container_of`, `post_tag`; none within one hop                                                                                                  |
+| validation, set                |                                             | an unknown or nullable key is refused; `set_property` adds a property                                                                            |
 
 ## Open questions for Sem
 

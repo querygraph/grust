@@ -31,14 +31,14 @@ Quoted from the specification
 (<https://arrow.apache.org/docs/format/CDataInterface.html>, read
 2026-10-03):
 
-| Rule | Section |
-|---|---|
-| "Any data pointed to by the struct MUST be allocated and maintained by the producer." | Member allocation |
-| "Consumers MUST call a base structure's release callback when they won't be using it anymore, but they MUST not call any of its children's release callbacks." | Release callback semantics, for consumers |
-| "The release callback MUST mark the structure as released, by setting its `release` member to NULL." It must also release children and "free any data area directly owned by the structure". | Release callback semantics, for producers |
-| "The consumer can *move* the `ArrowArray` structure by bitwise copying or shallow member-wise copying. Then it MUST mark the source structure released ... but *without* calling the release callback." | Moving an array |
-| "Both the producer and the consumer SHOULD consider the exported data ... to be immutable." | Mutability |
-| Buffer alignment to the primitive type is "recommended, but not required". | The ArrowArray structure |
+| Rule                                                                                                                                                                                                    | Section                                   |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
+| "Any data pointed to by the struct MUST be allocated and maintained by the producer."                                                                                                                   | Member allocation                         |
+| "Consumers MUST call a base structure's release callback when they won't be using it anymore, but they MUST not call any of its children's release callbacks."                                          | Release callback semantics, for consumers |
+| "The release callback MUST mark the structure as released, by setting its `release` member to NULL." It must also release children and "free any data area directly owned by the structure".            | Release callback semantics, for producers |
+| "The consumer can _move_ the `ArrowArray` structure by bitwise copying or shallow member-wise copying. Then it MUST mark the source structure released ... but _without_ calling the release callback." | Moving an array                           |
+| "Both the producer and the consumer SHOULD consider the exported data ... to be immutable."                                                                                                             | Mutability                                |
+| Buffer alignment to the primitive type is "recommended, but not required".                                                                                                                              | The ArrowArray structure                  |
 
 The specification says nothing about threads. This contract adds a rule for
 that (rule 6 below).
@@ -47,15 +47,15 @@ that (rule 6 below).
 
 ### Who allocates, owns and releases what
 
-| Object | Allocated by | Owned while in use by | `release` called by | Lives until |
-|---|---|---|---|---|
-| Input CSR buffers (offsets, targets, weights) | host | host (the producer) | the kernel calls the struct's `release`, exactly once | that call |
-| Input `ArrowArray` struct | host | kernel, after it **moves** the struct (the host's copy is marked released) | kernel | before `grust_kernel_run` returns, on success and on failure |
-| Input `ArrowSchema` | host | host; the kernel only borrows it | host | the host's choice |
-| Kernel scratch | kernel | kernel | not exported | before the kernel returns |
-| Output buffers | kernel | kernel (the producer) | the host calls the struct's `release`, exactly once | that call |
-| Output `ArrowArray` and `ArrowSchema` | kernel | host | host | the host's choice |
-| Error string | kernel | host | host, with `grust_error_free` | the host's choice |
+| Object                                        | Allocated by | Owned while in use by                                                      | `release` called by                                   | Lives until                                                  |
+| --------------------------------------------- | ------------ | -------------------------------------------------------------------------- | ----------------------------------------------------- | ------------------------------------------------------------ |
+| Input CSR buffers (offsets, targets, weights) | host         | host (the producer)                                                        | the kernel calls the struct's `release`, exactly once | that call                                                    |
+| Input `ArrowArray` struct                     | host         | kernel, after it **moves** the struct (the host's copy is marked released) | kernel                                                | before `grust_kernel_run` returns, on success and on failure |
+| Input `ArrowSchema`                           | host         | host; the kernel only borrows it                                           | host                                                  | the host's choice                                            |
+| Kernel scratch                                | kernel       | kernel                                                                     | not exported                                          | before the kernel returns                                    |
+| Output buffers                                | kernel       | kernel (the producer)                                                      | the host calls the struct's `release`, exactly once   | that call                                                    |
+| Output `ArrowArray` and `ArrowSchema`         | kernel       | host                                                                       | host                                                  | the host's choice                                            |
+| Error string                                  | kernel       | host                                                                       | host, with `grust_error_free`                         | the host's choice                                            |
 
 ### The rules
 
@@ -86,12 +86,12 @@ that (rule 6 below).
 A CSR is exactly an Arrow list array: `n` rows, offsets of length `n + 1`,
 child values of length `m`.
 
-| CSR | Arrow |
-|---|---|
-| offsets | the `LargeList` offsets (`int64`, as Arrow's large list uses) |
-| targets | the child array, `UInt32` while `n < 2^32` (`UInt64` above) |
+| CSR                   | Arrow                                                          |
+| --------------------- | -------------------------------------------------------------- |
+| offsets               | the `LargeList` offsets (`int64`, as Arrow's large list uses)  |
+| targets               | the child array, `UInt32` while `n < 2^32` (`UInt64` above)    |
 | weights, when present | the child becomes a struct `{target: UInt32, weight: Float64}` |
-| row `v` | list element `v`: the neighbours of `v`, in arrival order |
+| row `v`               | list element `v`: the neighbours of `v`, in arrival order      |
 
 So the host exports one array, with the standard C data interface, and
 needs no Grust type to do it. A transpose is a second list array.
@@ -130,13 +130,13 @@ position.
 For a host that links the kernels directly, the C ABI is not needed and the
 same rules hold in types:
 
-| C ABI | Rust |
-|---|---|
-| `GrustHostV1` | the `Host` trait: `reserve`, `release`, `is_cancelled`, `max_threads` |
-| input `ArrowArray` | `Csr<'a>`, a borrowed view of a `LargeListArray`; it cannot outlive the array or free it |
-| admitted output | `admitted_buffer`: an Arrow buffer whose owner holds a `Reservation`, returned when the last reference drops |
-| scratch | `scratch()`: a `Vec` plus a `Reservation` that drops before `run` returns |
-| `estimate` | `Kernel::estimate(n, m)`: an upper bound on what `run` will reserve, so a host may refuse before starting |
+| C ABI              | Rust                                                                                                         |
+| ------------------ | ------------------------------------------------------------------------------------------------------------ |
+| `GrustHostV1`      | the `Host` trait: `reserve`, `release`, `is_cancelled`, `max_threads`                                        |
+| input `ArrowArray` | `Csr<'a>`, a borrowed view of a `LargeListArray`; it cannot outlive the array or free it                     |
+| admitted output    | `admitted_buffer`: an Arrow buffer whose owner holds a `Reservation`, returned when the last reference drops |
+| scratch            | `scratch()`: a `Vec` plus a `Reservation` that drops before `run` returns                                    |
+| `estimate`         | `Kernel::estimate(n, m)`: an upper bound on what `run` will reserve, so a host may refuse before starting    |
 
 ## Checked by the sketch
 
@@ -144,12 +144,12 @@ same rules hold in types:
 that counts bytes
 ([`kernel-abi/tests/contract.rs`](../sketch/kernel-abi/tests/contract.rs)):
 
-| Test | What it shows |
-|---|---|
+| Test                                                            | What it shows                                                                                                                                                                                                  |
+| --------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `output_bytes_stay_admitted_until_the_host_releases_the_output` | WCC on 6 vertices: peak admitted 48 bytes (scratch and output); 24 bytes still admitted after the call (the output); 0 after the host drops the output. The input's buffer was freed before the call returned. |
-| `a_refused_reservation_fails_cleanly_and_leaks_nothing` | With room for the scratch only, the run fails with `BUDGET_EXCEEDED`, the input is still released, and nothing stays admitted. |
-| `cancellation_and_unknown_kernels_are_errors_not_panics` | `CANCELLED` and `UNKNOWN_KERNEL` come back as codes; nothing stays admitted. |
-| `out_degree_through_the_abi` | A kernel with output and no scratch: 48 bytes admitted until the output is released. |
+| `a_refused_reservation_fails_cleanly_and_leaks_nothing`         | With room for the scratch only, the run fails with `BUDGET_EXCEEDED`, the input is still released, and nothing stays admitted.                                                                                 |
+| `cancellation_and_unknown_kernels_are_errors_not_panics`        | `CANCELLED` and `UNKNOWN_KERNEL` come back as codes; nothing stays admitted.                                                                                                                                   |
+| `out_degree_through_the_abi`                                    | A kernel with output and no scratch: 48 bytes admitted until the output is released.                                                                                                                           |
 
 In every test the host's input struct is marked released after the call, as
 the moving rule requires.
