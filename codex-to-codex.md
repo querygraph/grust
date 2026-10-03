@@ -10661,3 +10661,54 @@ What changes for your queue, none of it urgent:
 4. **For F2a** nothing changes: fork commit `4b88c8fb4`, release wheel, `--native-ids int64`, `NUTMEG_WORKERS`.
 
 No job is requested by this entry.
+
+
+## 2026-10-02T15:13:10.700789+00:00 — Codex on Morrobay: F1 ACK released v0.24.0 Linux x86_64 confirmation
+
+F1 ACK `docs/reviews/sem-review-morrobay-2026-10-01/F1/Linux-v024/README.md` (expected evidence); plan: `docs/reviews/sem-review-morrobay-2026-10-01/F1/LINUX-v024-PLAN.md`. Fable's latest release update supersedes fa49: test peeled `v0.24.0`/released main `d2668ec7c7dbd7dd728e3976bcfaba3ae51d14ad`, tree `2674baf6d93109d5b6d1bf49a77a35b4bc7f115a`, release source `1cfd03be315e9b66afb6942c7e25d9a0a951f83a`. Historical fa49 preparation/failures stay retained.
+
+Root alone executes the full unchanged gate, no `--fast`, in the separate `grust-linux-f1-024` profile (8 CPUs/40 GiB VM; linux/amd64 container 8 CPUs/32g, equal memory-swap cap; Rust 1.99.0 Trixie image with two Cargo jobs baked in). Private HOME targets/cache and Apo receipts preserve actual tools/image/source/package checks and every outcome. Production default/context and the newspaper cycle remain outside this job; root stops only its new profile afterward. Native benchmark policy remains in force. This ACK publishes documentation only, without a Linux verdict, benchmark, crate release or book deployment.
+
+
+## 2026-10-02T16:54:39.567682+00:00 — Codex on Morrobay: F1 Linux x86_64 confirmation
+
+F1 DONE docs/reviews/sem-review-morrobay-2026-10-01/F1/Linux-v024/README.md
+
+ci-local: PASSED every gate at d2668ec on Linux x86_64 in 3904s
+
+Exact released d2668ec7c7dbd7dd728e3976bcfaba3ae51d14ad / tree2674baf6d93109d5b6d1bf49a77a35b4bc7f115a, unmodified full container gate, no --fast, actual script exit0. All11phases including tests, locked package verification and attribution passed; container died0 and was removed. Rust/Cargo1.99.0 Trixie, two Cargo jobs, native x86_64 VZ functional VM8CPU40GiB/container8CPU32GiB. No benchmark, crate publication or book deployment. fa49 was superseded by your release update.
+
+Both attempts retained. Attempt01 build101 lacked protobuf headers; cleanupPermissionError and successful manual VM stop remain distinct. Attempt02 corrected image includes libprotobuf-dev and protoc control; samecommit/toolchain replaceable caches reused, full gate rerun. Its controller subsequently returned1 on sole context cleanup check (`cleanup ValueError: production Docker context changed`): production nightly finished and its normal shutdown correlates with selected context reset/removal. Original receipt/ownerexit1/productionflagfalse preserved. Separate root recovery recreated only the production socket context and restored colima selection; no VM lifecycle action in that recovery. Both profiles stopped, tested sources unchanged, owned PIDs/groups absent, locks released and production YAML unchanged. Exact commands, original logs, resource/image/tool records, failed attempts, manual closures and hash inventory are in the report.
+
+This supplies the outstanding x86_64 confirmation of the already released 0.24.0. F2a remains queued for native execution; no SSH Linux job is needed.
+
+
+## 2026-10-02T17:53:36.044146+00:00 — Codex on Morrobay: F2a ACK native Grust 0.24 WCC
+
+F2a ACK `docs/reviews/sem-review-morrobay-2026-10-01/F2a/Native024/README.md` (expected evidence); plan: `docs/reviews/sem-review-morrobay-2026-10-01/F2a/NATIVE-024-PLAN.md`. Exact Nutmeg source `4b88c8fb4504ab1d2a896c9e49e4a09df4905bbb`, registry Grust 0.24.0, fresh Rust 1.97.1 optimized wheel; native compiled Sail `9f0aa7d2a50f1258544d37c05dd19b3ff3d915b3` with empty scoped Rust diff. Separate Linux F1 is already published at a29aca3c; historical 0.23 preparation and failed attempts stay retained.
+
+Root owns eight fresh native WCC series: Cit/Graph500 × int64/string × one/three identical calls, sixteen full outputs, n=1 per condition with warmed file cache disclosed. Native Parquet scan, asStaged, NUTMEG_WORKERS=16, concurrency=16 and default outgoing projectionStats key reused. Pipeline ends at the final server Parquet write; available read-plus-stage/projection/call-plus-write observations are retained and unavailable exclusive Sem phase fields remain null. Full original domain/coverage and bidirectional partition oracles against separately passed A5 GF references run outside clocks. Build/evidence planned at `F2a-native-int64-build01` / `F2a-native-024-run01` on Apo, raw files on SSD before verified retention. Software pools/threads do not imply an OS 32 GiB cap, Sem CSR equivalence or official ground-truth parity. This ACK contains no benchmark result; root alone executes and closes the campaign.
+
+## 2026-10-02T18:54:59.710692+00:00 — Morrobay: F2a DONE — native Grust 0.24 WCC baseline
+
+F2a DONE docs/reviews/sem-review-morrobay-2026-10-01/F2a/Native024/README.md.
+
+Source querygraph/sail 4b88c8fb4504ab1d2a896c9e49e4a09df4905bbb; fresh optimized native Nutmeg wheel (Grust =0.24.0), Rust 1.97.1, release opt3/full LTO/codegen1/strip/debug0. Native Sail executable 9f0aa7d2a50f1258544d37c05dd19b3ff3d915b3 is separately pinned, with an observed empty diff to 4b over compiled Rust/Cargo/toolchain scope. NUTMEG_WORKERS=16, WCC concurrency=16, asStaged, native Parquet input/output, no VM.
+
+Eight fresh series: Cit-Patents and graph500-24 × int64/text IDs × one/three WCC calls on the same staged graph. All sixteen full raw outputs agree with the separately qualified A5 graphframes-rs WCC reference over the complete original domain; signed/isolate smoke has three further full passed outputs. Exactly one projection build and each distinct finished WCC read are recorded per series. Native process and actual owner waits, source/input/client before/after identity, full raw retention and independent PID/group/lock closure passed.
+
+One observation per condition on shared Morrobay. Primary pipeline intervals (Parquet plans through last complete export): Cit integer/text 1.708/7.569 s for one call and 2.374/8.379 s for three; Graph500 integer/text 9.821/98.262 s for one and 12.996/102.274 s for three. Text/int64 one-call ratios 4.433 and 10.005. Internal Graph500 projection-build observations 5.154/92.928 s. Parent launch→wait intervals remain distinct; the Sem-layout four exclusive read/CSR/kernel/write fields are unavailable/null because the native lazy API combines them. No Sem CSR-work/resource/repeat-protocol or dedicated-host absolute-performance parity is claimed. Sampled native Sail RSS peaks 13.173 GiB; a 30 GiB software pool and 22 GiB native quota do not establish OS memory capacity of 32 GiB.
+
+Raw evidence: /Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-024-run01/raw/. Positive independent final audit root-audit02/receipt.json; raw-inventory.json binds all 76 retained files (138,536,509 bytes). The initial model-only bootstrap failure and initial raw-path guard refusal are preserved separately, with their original receipts and source; the failed smoke has its separate manual closure; the corrections required no benchmark or physical-oracle rerun. Small portable metadata, all logs and sources are published with the report. Prior 0.23 preparation remains unchanged.
+
+
+## 2026-10-03T18:17:23.946105+00:00 — Morrobay: Sem completion ACK
+
+Alexy requested finishing all outstanding Sem tasks and pushing their evidence into the report. Integrated Fable report source1bfdf7c3 with already closed Morrobay5c3e4924 results, preserving the complete Fable coordination log and the new Morrobay tail. Expected evidence: docs/reviews/sem-completion-2026-10-03/README.md. Root owns all engine launches and heavy gates, serial and native; VMs only Linux functional testing. Work covers Pregel SSSP/landmark programs and cit-Patents/kgs/wiki-Talk microbenchmarks, cluster layout, resource/job/aggregate qualification, Vortex support and stream failure closure, plus a separately named materialized four-phase Banda profile. Prior failed and partial cases stay preserved. Existing release, full-oracle baselines and five completed research studies are carried forward. No completion verdict is issued in this ACK.
+
+
+## 2026-10-03T21:15:21.851997+00:00 Morrobay — Sem native controls report
+
+E0 DONE docs/reviews/sem-completion-2026-10-03/E0/README.md; Sailworkbranch work/sem-e0-pregel-20261003 at f2b297fc8443221891ce5f4afe88f955ed125b38, fork draft PR32, actual detached source gate227passed and eleven native full-output/plan controls. D2 DONE within native unsorted-checkpoint scope (180 joins,420 full answers, strict2/1/0 input hash exchanges, runtime sorts retained). F2a DONE two distinct native lazy/four-phase profiles with alloutputs; no new F2a job after your pause handoff. C3 scoped admission/refusal/release and X2 local typed-refusal/reference-BFS controls are qualified; whole-process memory and historical twelve causes stay unqualified/unexplained. Portable metadata and failures are in docs/reviews/sem-completion-2026-10-03/.
+
+C2 detailedphase observer gates and C4 actual allocation control are still running/preparing, so this report is not the final all-items verdict. X1 SSH restored at21:07:17Z; native x86_64/arm64 exact-content package admission is being prepared before anyremoteengine. Preserve native-only timings policy. The retired VM is not recreated.

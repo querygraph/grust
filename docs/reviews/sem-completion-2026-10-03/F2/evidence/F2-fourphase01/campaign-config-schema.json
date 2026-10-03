@@ -1,0 +1,147 @@
+{
+  "$defs": {
+    "FilePin": {
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "format": "path",
+          "title": "Path",
+          "type": "string"
+        },
+        "bytes": {
+          "minimum": 0,
+          "title": "Bytes",
+          "type": "integer"
+        },
+        "sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "bytes",
+        "sha256"
+      ],
+      "title": "FilePin",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "root": {
+      "format": "path",
+      "title": "Root",
+      "type": "string"
+    },
+    "worker": {
+      "format": "path",
+      "title": "Worker",
+      "type": "string"
+    },
+    "python": {
+      "format": "path",
+      "title": "Python",
+      "type": "string"
+    },
+    "repo": {
+      "format": "path",
+      "title": "Repo",
+      "type": "string"
+    },
+    "tree": {
+      "pattern": "^[0-9a-f]{40}$",
+      "title": "Tree",
+      "type": "string"
+    },
+    "plans": {
+      "items": {
+        "format": "path",
+        "type": "string"
+      },
+      "maxItems": 4,
+      "minItems": 1,
+      "title": "Plans",
+      "type": "array"
+    },
+    "expected_plans": {
+      "items": {
+        "$ref": "#/$defs/FilePin"
+      },
+      "title": "Expected Plans",
+      "type": "array"
+    },
+    "expected_source": {
+      "items": {
+        "$ref": "#/$defs/FilePin"
+      },
+      "title": "Expected Source",
+      "type": "array"
+    },
+    "expected_helpers": {
+      "items": {
+        "$ref": "#/$defs/FilePin"
+      },
+      "title": "Expected Helpers",
+      "type": "array"
+    },
+    "expected_inputs": {
+      "items": {
+        "$ref": "#/$defs/FilePin"
+      },
+      "title": "Expected Inputs",
+      "type": "array"
+    },
+    "expected_client": {
+      "items": {
+        "$ref": "#/$defs/FilePin"
+      },
+      "title": "Expected Client",
+      "type": "array"
+    },
+    "binary": {
+      "$ref": "#/$defs/FilePin"
+    },
+    "wheel": {
+      "$ref": "#/$defs/FilePin"
+    },
+    "timeout_seconds": {
+      "maximum": 21600,
+      "minimum": 300,
+      "title": "Timeout Seconds",
+      "type": "integer"
+    },
+    "series_seconds": {
+      "default": 2050,
+      "maximum": 2400,
+      "minimum": 2010,
+      "title": "Series Seconds",
+      "type": "integer"
+    },
+    "minimum_free_bytes": {
+      "default": 68719476736,
+      "minimum": 68719476736,
+      "title": "Minimum Free Bytes",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "root",
+    "worker",
+    "python",
+    "repo",
+    "tree",
+    "plans",
+    "expected_plans",
+    "expected_source",
+    "expected_helpers",
+    "expected_inputs",
+    "expected_client",
+    "binary",
+    "wheel",
+    "timeout_seconds"
+  ],
+  "title": "Config",
+  "type": "object"
+}

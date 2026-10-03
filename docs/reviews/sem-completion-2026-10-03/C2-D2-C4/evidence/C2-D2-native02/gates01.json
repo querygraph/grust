@@ -1,0 +1,51 @@
+{
+  "observed_utc": "2026-10-03T19:02:14.593485+00:00",
+  "outcome": "passed_source_only_gates",
+  "cwd": "/Users/alexy/src/grust",
+  "actual_engine_run": false,
+  "controls": 6,
+  "commands": [
+    {
+      "name": "ruff",
+      "argv": [
+        "/tmp/sem-output-oracle-venv/bin/ruff",
+        "check",
+        "/Volumes/Apo/graph-tests/results/sem-completion-20261003/C2-D2-native02/support"
+      ],
+      "returncode": 0,
+      "output": "All checks passed!\n"
+    },
+    {
+      "name": "mypy",
+      "argv": [
+        "/tmp/sem-output-oracle-venv/bin/mypy",
+        "--strict",
+        "--ignore-missing-imports",
+        "--follow-imports=silent",
+        "/Volumes/Apo/graph-tests/results/sem-completion-20261003/C2-D2-native02/support"
+      ],
+      "returncode": 0,
+      "output": "Success: no issues found in 10 source files\n"
+    },
+    {
+      "name": "metadata-projection-control",
+      "argv": [
+        "/tmp/sem-output-oracle-venv/bin/python",
+        "-B",
+        "/Volumes/Apo/graph-tests/results/sem-completion-20261003/C2-D2-native02/support/test_metadata_projection.py"
+      ],
+      "returncode": 0,
+      "output": ".\n----------------------------------------------------------------------\nRan 1 test in 0.006s\n\nOK\n"
+    },
+    {
+      "name": "full-answer-oracle-controls",
+      "argv": [
+        "/tmp/sem-output-oracle-venv/bin/python",
+        "-B",
+        "/Volumes/Apo/graph-tests/results/sem-completion-20261003/C2-D2-native02/support/test_probe_oracle.py"
+      ],
+      "returncode": 0,
+      "output": ".....\n----------------------------------------------------------------------\nRan 5 tests in 0.000s\n\nOK\n"
+    }
+  ]
+}

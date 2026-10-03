@@ -1,0 +1,81 @@
+{
+  "$defs": {
+    "Pin": {
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "format": "path",
+          "title": "Path",
+          "type": "string"
+        },
+        "bytes": {
+          "minimum": 0,
+          "title": "Bytes",
+          "type": "integer"
+        },
+        "sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "bytes",
+        "sha256"
+      ],
+      "title": "Pin",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "root": {
+      "format": "path",
+      "title": "Root",
+      "type": "string"
+    },
+    "python": {
+      "format": "path",
+      "title": "Python",
+      "type": "string"
+    },
+    "worker": {
+      "$ref": "#/$defs/Pin"
+    },
+    "oracle": {
+      "$ref": "#/$defs/Pin"
+    },
+    "helpers": {
+      "items": {
+        "$ref": "#/$defs/Pin"
+      },
+      "title": "Helpers",
+      "type": "array"
+    },
+    "plans": {
+      "items": {
+        "$ref": "#/$defs/Pin"
+      },
+      "title": "Plans",
+      "type": "array"
+    },
+    "timeout_seconds": {
+      "default": 14400,
+      "maximum": 21600,
+      "minimum": 300,
+      "title": "Timeout Seconds",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "root",
+    "python",
+    "worker",
+    "oracle",
+    "helpers",
+    "plans"
+  ],
+  "title": "Config",
+  "type": "object"
+}

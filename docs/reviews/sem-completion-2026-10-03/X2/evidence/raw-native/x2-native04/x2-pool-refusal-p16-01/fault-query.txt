@@ -1,0 +1,1 @@
+range(1048576).repartition(P,id).groupBy(id).count().write.parquet; 1048576 distinct groups, P=16, 1MiB explicit greedy pool per driver/worker. Hash aggregate and/or shuffle allocations may refuse; the outside oracle requires a task-bound memory allocation cause before cleanup.

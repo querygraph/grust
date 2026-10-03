@@ -1,0 +1,863 @@
+{
+  "algorithm": "wcc",
+  "dataset": "graph500-24",
+  "size_class": "native_unclassified",
+  "engine": "Banda / registry Grust 0.24.0",
+  "params": {
+    "ids": "string",
+    "calls": 1,
+    "order": "asStaged",
+    "kernel": "wcc",
+    "workers": 16,
+    "concurrency": 16,
+    "runs": 1
+  },
+  "graph": {
+    "vertices": 8870942,
+    "edges_reported_by_stage": 260379520,
+    "vertices_path": "/Users/alexy/src/grust-benchmark-data/graph500-24/graph500-24-v.parquet",
+    "edges_path": "/Users/alexy/src/grust-benchmark-data/graph500-24/graph500-24-e.parquet"
+  },
+  "warmup": {
+    "count": 0,
+    "performed": false,
+    "cache_flush": false
+  },
+  "monitor": {
+    "rss_interval_s": 0.5,
+    "samples": 190,
+    "observed_worker_peak_rss_kib": 142120,
+    "observed_server_peak_rss_kib": 13737092,
+    "errors": [],
+    "scope": "Sampled direct PID RSS; OS peak and capacity were not measured."
+  },
+  "runs": [
+    {
+      "index": 0,
+      "wall_time_s": 102.992220573,
+      "returncode": 0,
+      "peak_rss_kb": null,
+      "peak_disk_bytes": null,
+      "worker": {
+        "algorithm": "wcc",
+        "phases_s": {
+          "read_parquet_s": null,
+          "csr_and_graph_s": null,
+          "algorithm_s": null,
+          "write_parquet_s": null,
+          "wall_in_process_s": 98.261684753
+        },
+        "observed_spans": [
+          {
+            "name": "read_and_stage",
+            "call": null,
+            "seconds": 3.687981699,
+            "completed": true
+          },
+          {
+            "name": "projection_stats_action",
+            "call": null,
+            "seconds": 92.960916005,
+            "completed": true
+          },
+          {
+            "name": "wcc_and_parquet_write",
+            "call": 1,
+            "seconds": 1.61258462,
+            "completed": true
+          }
+        ],
+        "calls": 1,
+        "full_outputs": 1
+      }
+    }
+  ],
+  "stats": {
+    "parent_launch_to_wait_s": {
+      "n": 1,
+      "mean": 102.992220573,
+      "median": 102.992220573,
+      "min": 102.992220573,
+      "max": 102.992220573,
+      "std": null
+    },
+    "continuous_pipeline_s": {
+      "n": 1,
+      "mean": 98.261684753,
+      "median": 98.261684753,
+      "min": 98.261684753,
+      "max": 98.261684753,
+      "std": null
+    }
+  },
+  "series": {
+    "parent_launch_to_wait_s": [
+      102.992220573
+    ],
+    "continuous_pipeline_s": [
+      98.261684753
+    ]
+  },
+  "raw_series": {
+    "worker": {
+      "observed_utc": "2026-10-02T18:29:05.048747+00:00",
+      "started_utc": "2026-10-02T18:27:24.383073+00:00",
+      "outcome": "completed_unvalidated",
+      "configuration": {
+        "dataset": "graph500-24",
+        "vertices": "/Users/alexy/src/grust-benchmark-data/graph500-24/graph500-24-v.parquet",
+        "edges": "/Users/alexy/src/grust-benchmark-data/graph500-24/graph500-24-e.parquet",
+        "vertex_id_column": "id",
+        "edge_source_column": "source",
+        "edge_target_column": "target",
+        "output_root": "/Users/alexy/src/grust-benchmark-runs/F2a-native-024-run01/graph500-24-string-c1",
+        "receipt": "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-024-run01/series/graph500-24-string-c1.json",
+        "ids": "string",
+        "calls": 1,
+        "workers": 16,
+        "binary": "/Volumes/Apo/graph-tests/results/sem-review-20261001/native-optimized-build01/sail-target/release/sail",
+        "venv": "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-int64-build01/venv",
+        "python_home": "/Users/alexy/.asdf/installs/python/3.12.6",
+        "python_purelib": "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-int64-build01/venv/lib/python3.12/site-packages",
+        "python_library_directory": "/Users/alexy/.asdf/installs/python/3.12.6/lib",
+        "sail_pool_bytes": 32212254720,
+        "native_quota_bytes": 23622320128,
+        "timeout_seconds": 1800,
+        "extension_source_commit": "4b88c8fb4504ab1d2a896c9e49e4a09df4905bbb",
+        "native_runtime_commit": "9f0aa7d2a50f1258544d37c05dd19b3ff3d915b3"
+      },
+      "configuration_pin": {
+        "path": "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-024-run01/plans/graph500-24-string-c1.json",
+        "bytes": 1309,
+        "sha256": "446083ebd5cf860e174fa76eef55b70bca609ff6c18d8036592fb5d92ef1171d"
+      },
+      "worker_source": {
+        "path": "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-024-run01/f2a_worker.py",
+        "bytes": 12908,
+        "sha256": "b829b93c23f7ffd6447c5bec8e54012dc82370191210593cb148c428a6a76812"
+      },
+      "models_source": {
+        "path": "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-024-run01/f2a_models.py",
+        "bytes": 6998,
+        "sha256": "4423dd873f359ac96c91a01422c0a7a7f2b97009cb4840319350e9c9507e14ca"
+      },
+      "owner_pid": 97378,
+      "python_version": "3.12.6 (main, Sep 13 2024, 17:29:18) [Clang 15.0.0 (clang-1500.3.9.4)]",
+      "python_executable": "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-int64-build01/venv/bin/python",
+      "environment": {
+        "PYTHONHOME": "/Users/alexy/.asdf/installs/python/3.12.6",
+        "PYTHONPATH": "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-int64-build01/venv/lib/python3.12/site-packages",
+        "DYLD_LIBRARY_PATH": "/Users/alexy/.asdf/installs/python/3.12.6/lib",
+        "SAIL_EXPERIMENTAL_EXTENSIONS": "1",
+        "SAIL_MODE": "local",
+        "SAIL_EXECUTION__DEFAULT_PARALLELISM": "16",
+        "SAIL_RUNTIME__MEMORY_POOL__TYPE": "greedy",
+        "SAIL_RUNTIME__MEMORY_POOL__GREEDY__MAX_SIZE": "32212254720",
+        "SAIL_NUTMEG_MEMORY_BYTES": "23622320128",
+        "NUTMEG_MEMORY_BYTES": "23622320128",
+        "NUTMEG_WORKERS": "16",
+        "SAIL_GRAPH_UTILS_ROOT": "file:///Users/alexy/src/grust-benchmark-runs/F2a-native-024-run01/graph500-24-string-c1/staging",
+        "TOKIO_WORKER_THREADS": "16",
+        "RAYON_NUM_THREADS": "16",
+        "TMPDIR": "/Users/alexy/src/grust-benchmark-runs/F2a-native-024-run01/graph500-24-string-c1/temporary",
+        "RUST_LOG": "warn"
+      },
+      "server": {
+        "pid": 97384,
+        "pgid": 97384,
+        "argv": [
+          "/Volumes/Apo/graph-tests/results/sem-review-20261001/native-optimized-build01/sail-target/release/sail",
+          "spark",
+          "server",
+          "--ip",
+          "127.0.0.1",
+          "--port",
+          "56949"
+        ],
+        "launched_utc": "2026-10-02T18:27:24.384890+00:00",
+        "closed_utc": "2026-10-02T18:29:05.048010+00:00",
+        "returncode": -15,
+        "wait_completed": true,
+        "termination_requested": true,
+        "forced_kill": false,
+        "scope": "Direct owned native server was waited; group closure is parent-owned."
+      },
+      "pipeline": {
+        "started_ns": 813371292497001,
+        "ended_ns": 813469554181754
+      },
+      "pipeline_seconds": 98.261684753,
+      "pipeline_completed": true,
+      "phases": [
+        {
+          "name": "read_and_stage",
+          "call": null,
+          "span": {
+            "started_ns": 813371292500303,
+            "ended_ns": 813374980482002
+          },
+          "completed": true
+        },
+        {
+          "name": "projection_stats_action",
+          "call": null,
+          "span": {
+            "started_ns": 813374980551489,
+            "ended_ns": 813467941467494
+          },
+          "completed": true
+        },
+        {
+          "name": "wcc_and_parquet_write",
+          "call": 1,
+          "span": {
+            "started_ns": 813467941597134,
+            "ended_ns": 813469554181754
+          },
+          "completed": true
+        }
+      ],
+      "outputs": [
+        {
+          "call": 1,
+          "path": "/Users/alexy/src/grust-benchmark-runs/F2a-native-024-run01/graph500-24-string-c1/result-call1",
+          "completed": true
+        }
+      ],
+      "output_projection": [
+        "id",
+        "component"
+      ],
+      "stage_receipt": {
+        "graph": "g",
+        "nodeCount": 8870942,
+        "edgeCount": 260379520,
+        "revision": 1,
+        "nodeSortPermutationBytes": 0,
+        "nodeSortKeysBytes": 0,
+        "nodeSortedCopyBytes": 0,
+        "nodeFillBytes": 0,
+        "nodeNormalizedBytes": 136069024,
+        "nodeRetainedBytes": 136069024,
+        "nodeSortSeconds": 0.0,
+        "nodeSorted": false,
+        "edgeSortPermutationBytes": 0,
+        "edgeSortKeysBytes": 0,
+        "edgeSortedCopyBytes": 0,
+        "edgeFillBytes": 0,
+        "edgeNormalizedBytes": 8019645183,
+        "edgeRetainedBytes": 8019645183,
+        "edgeSortSeconds": 0.0,
+        "edgeSorted": false
+      },
+      "projection_receipt": {
+        "nodes": 8870942,
+        "edges": 260379520,
+        "arcs": 260379520,
+        "selfLoops": 0,
+        "csrBytes": 2118519932
+      },
+      "native_status": {
+        "memory": {
+          "limit_bytes": 23622320128,
+          "used_bytes": 13149781152,
+          "peak_bytes": 13427776584,
+          "staged_bytes": 8155714207
+        },
+        "graphs": [
+          {
+            "name": "g",
+            "node_count": 8870942,
+            "edge_count": 260379520,
+            "revision": 1,
+            "projections": 1,
+            "staged_bytes": 8155714207,
+            "projection_builds": [
+              {
+                "key": "{\"defaultWeight\": \"Some(Null)\", \"nodeLabels\": \"Some(Null)\", \"orientation\": \"Some(String(\\\"outgoing\\\"))\", \"relationshipTypes\": \"Some(Null)\", \"weightProperty\": \"Some(Null)\"}",
+                "seconds": 92.927884937,
+                "live_bytes_before": 8155714207,
+                "admitted_bytes": 4994066945
+              }
+            ]
+          }
+        ],
+        "reads": [
+          {
+            "id": 1,
+            "algorithm": "projectionStats",
+            "graph": "g",
+            "state": "finished",
+            "message": null,
+            "batches": 1,
+            "rows": 1,
+            "live_bytes": 0,
+            "peak_bytes": 0,
+            "work_units": 260379520,
+            "diagnostics": null
+          },
+          {
+            "id": 2,
+            "algorithm": "wcc",
+            "graph": "g",
+            "state": "finished",
+            "message": null,
+            "batches": 1083,
+            "rows": 8870942,
+            "live_bytes": 0,
+            "peak_bytes": 141935072,
+            "work_units": 304731378,
+            "diagnostics": null
+          }
+        ]
+      },
+      "projection_reused": true,
+      "exclusive_sem_phases": {
+        "read_seconds": null,
+        "csr_and_graph_build_seconds": null,
+        "algorithm_seconds": null,
+        "write_seconds": null,
+        "availability": "unavailable_exclusive_native_parquet_phases",
+        "reason": "Native stage includes read, normalization and retention; the lazy WCC executes during its Parquet write. Exclusive Sem phases were not measured."
+      },
+      "graph_dropped": true,
+      "spark_stopped": true,
+      "errors": [],
+      "scope": "One unvalidated native WCC series on a shared host. Main continuous clock starts before input-read plans and ends at the last full write. Session setup, post-pipeline diagnostics, all validation, graph/session teardown and native process exit are outside that clock. Parent supplies source/input admission, physical output oracles and full process closure."
+    },
+    "parent_series": {
+      "plan": {
+        "path": "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-024-run01/plans/graph500-24-string-c1.json",
+        "bytes": 1309,
+        "sha256": "446083ebd5cf860e174fa76eef55b70bca609ff6c18d8036592fb5d92ef1171d"
+      },
+      "argv": [
+        "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-int64-build01/venv/bin/python",
+        "-I",
+        "-B",
+        "-c",
+        "import runpy,sys;r=sys.argv[1];sys.path.insert(0,r);sys.argv=[r+\"/f2a_worker.py\"]+sys.argv[2:];runpy.run_path(sys.argv[0],run_name=\"__main__\")",
+        "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-024-run01",
+        "--plan",
+        "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-024-run01/plans/graph500-24-string-c1.json"
+      ],
+      "outcome": "completed_unvalidated",
+      "launched_utc": "2026-10-02T18:27:22.223181+00:00",
+      "closed_utc": "2026-10-02T18:29:05.211592+00:00",
+      "pid": 97378,
+      "pgid": 97378,
+      "wait_completed": true,
+      "returncode": 0,
+      "launch_to_wait": {
+        "started_ns": 813369059247577,
+        "ended_ns": 813472051468150
+      },
+      "driver_group_absent": true,
+      "server_group_absent": true,
+      "server_pid": 97384,
+      "server_pgid": 97384,
+      "worker_receipt": {
+        "path": "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-024-run01/series/graph500-24-string-c1.json",
+        "bytes": 8047,
+        "sha256": "799a387f06835a8262f62647fd0844874c04d77481ac5977cc3c5e0e8ada0fa6"
+      },
+      "forced_cleanup": false,
+      "rss_samples": 190,
+      "observed_worker_peak_rss_kib": 142120,
+      "observed_server_peak_rss_kib": 13737092,
+      "rss_errors": [],
+      "rss_sampler_closed": true,
+      "rss_file": {
+        "path": "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-024-main-campaign02/series-6-rss.jsonl",
+        "bytes": 33501,
+        "sha256": "2d418fad53c2bf1db0d485455ccd28fcf89f18a3c0b0d680507b33b022154013"
+      }
+    },
+    "physical_oracle": {
+      "outcome": "passed_full_physical_wcc",
+      "started_utc": "2026-10-02T18:36:09.247549+00:00",
+      "finished_utc": "2026-10-02T18:36:16.860497+00:00",
+      "config": {
+        "vertices": {
+          "bytes": 9119859,
+          "sha256": "f186f0fac502106454ceae29a57c7f350ae60699b5a5087b3001cfd054983428",
+          "path": "/Users/alexy/src/grust-benchmark-data/graph500-24/graph500-24-v.parquet"
+        },
+        "expected_rows": 8870942,
+        "reference": {
+          "directory": "/Volumes/Apo/graph-tests/results/sem-review-20261001/A5-native-fable-exact-post-result01/raw/graph500-24/wcc-b0-p0-graphframes/result",
+          "files": {
+            "9FECbQNlYh8NMNcT_0.parquet": {
+              "bytes": 3657036,
+              "sha256": "786b6c71c36c76c14037c5307148c0692c2b908324376042037f1c5ac11dde88"
+            },
+            "9FECbQNlYh8NMNcT_1.parquet": {
+              "bytes": 3632270,
+              "sha256": "a5a04f763d051cdb2bd3663732c2c31da7bbe353f59060e1970d79a584f377f4"
+            },
+            "9FECbQNlYh8NMNcT_2.parquet": {
+              "bytes": 3626685,
+              "sha256": "961dc6cc7e091bf4a2d8c7af29a189bbce45694892cb803b25098fd3b53a41b5"
+            },
+            "9FECbQNlYh8NMNcT_3.parquet": {
+              "bytes": 3658610,
+              "sha256": "56a8be29c0b1c8d2721fffb7c4217cb5593f355756d94fd5ddd433f891ca0baa"
+            }
+          }
+        },
+        "outputs": [
+          {
+            "directory": "/Users/alexy/src/grust-benchmark-runs/F2a-native-024-run01/graph500-24-string-c1/result-call1",
+            "files": {
+              "tNEJY2hGpT2koeCH_0.zst.parquet": {
+                "bytes": 3067744,
+                "sha256": "5eaa147a2668af05e4afdee1bb0b47b8d4f6938f6df97108f2c2992cb16c140b"
+              },
+              "tNEJY2hGpT2koeCH_1.zst.parquet": {
+                "bytes": 3100918,
+                "sha256": "fc38d07a95f5bd79184c498259962a53b0d4f66f6899c325550e7351e7d489ef"
+              },
+              "tNEJY2hGpT2koeCH_2.zst.parquet": {
+                "bytes": 3080165,
+                "sha256": "810fdeeb297971f2c00f77c07c365d250a126966a1bfa2ed91bf9f1e0c1080af"
+              },
+              "tNEJY2hGpT2koeCH_3.zst.parquet": {
+                "bytes": 3049070,
+                "sha256": "9cc858ec01371f7245e2e892ab63e3237d35f0ead01a29f33c73ccfa2c8bcdc0"
+              }
+            },
+            "number": 1
+          }
+        ],
+        "output": "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-024-run01/oracle-graph500-24-string-c1-01",
+        "metadata_pins": [
+          {
+            "bytes": 8047,
+            "sha256": "799a387f06835a8262f62647fd0844874c04d77481ac5977cc3c5e0e8ada0fa6",
+            "path": "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-024-run01/series/graph500-24-string-c1.json"
+          },
+          {
+            "bytes": 1309,
+            "sha256": "446083ebd5cf860e174fa76eef55b70bca609ff6c18d8036592fb5d92ef1171d",
+            "path": "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-024-run01/plans/graph500-24-string-c1.json"
+          },
+          {
+            "bytes": 41259,
+            "sha256": "55977f9fe083c64421812a427d303a7c0ac42d153c88cec81b0446c0174853d2",
+            "path": "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-024-main-campaign02/receipt.json"
+          },
+          {
+            "bytes": 1288,
+            "sha256": "3c9789b4aa9efd567d16b0b9ee031a0879d4eb52980fe2a7fe3dce9eba72de96",
+            "path": "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-024-main-campaign02/launch-receipt.json"
+          },
+          {
+            "bytes": 190557,
+            "sha256": "81f5c1ae534aaf8e96e158e6abc418ba0c1083780ba918ebac11b16ceff06799",
+            "path": "/Volumes/Apo/graph-tests/results/sem-review-20261001/A5-native-fable-exact-post-result01/receipt.json"
+          },
+          {
+            "bytes": 2190,
+            "sha256": "e41be9ee1066e5b8351acd454dd78fe1f5353618480486c3a424fad47094807c",
+            "path": "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-024-run01/input-admission01.json"
+          },
+          {
+            "bytes": 18487,
+            "sha256": "6514d12838a558336bfbeee0340682f500938e750ccf39698fdf8fb621b2bbc3",
+            "path": "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-024-run01/f2a_oracle.py"
+          }
+        ],
+        "batch_rows": 262144,
+        "work_seconds": 300.0,
+        "closure_seconds": 300.0,
+        "memory_bytes": 25769803776
+      },
+      "configuration": {
+        "bytes": 3812,
+        "sha256": "9262cb56a9904c1c2f336873557063cc24280d0f73ef956f38569ea40e45f4ce",
+        "path": "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-024-run01/oracle-graph500-24-string-c1-plan01.json"
+      },
+      "identities_before": {
+        "/Users/alexy/src/grust-benchmark-data/graph500-24/graph500-24-v.parquet": {
+          "bytes": 9119859,
+          "sha256": "f186f0fac502106454ceae29a57c7f350ae60699b5a5087b3001cfd054983428"
+        },
+        "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-024-run01/oracle-graph500-24-string-c1-plan01.json": {
+          "bytes": 3812,
+          "sha256": "9262cb56a9904c1c2f336873557063cc24280d0f73ef956f38569ea40e45f4ce"
+        },
+        "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-024-run01/series/graph500-24-string-c1.json": {
+          "bytes": 8047,
+          "sha256": "799a387f06835a8262f62647fd0844874c04d77481ac5977cc3c5e0e8ada0fa6"
+        },
+        "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-024-run01/plans/graph500-24-string-c1.json": {
+          "bytes": 1309,
+          "sha256": "446083ebd5cf860e174fa76eef55b70bca609ff6c18d8036592fb5d92ef1171d"
+        },
+        "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-024-main-campaign02/receipt.json": {
+          "bytes": 41259,
+          "sha256": "55977f9fe083c64421812a427d303a7c0ac42d153c88cec81b0446c0174853d2"
+        },
+        "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-024-main-campaign02/launch-receipt.json": {
+          "bytes": 1288,
+          "sha256": "3c9789b4aa9efd567d16b0b9ee031a0879d4eb52980fe2a7fe3dce9eba72de96"
+        },
+        "/Volumes/Apo/graph-tests/results/sem-review-20261001/A5-native-fable-exact-post-result01/receipt.json": {
+          "bytes": 190557,
+          "sha256": "81f5c1ae534aaf8e96e158e6abc418ba0c1083780ba918ebac11b16ceff06799"
+        },
+        "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-024-run01/input-admission01.json": {
+          "bytes": 2190,
+          "sha256": "e41be9ee1066e5b8351acd454dd78fe1f5353618480486c3a424fad47094807c"
+        },
+        "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-024-run01/f2a_oracle.py": {
+          "bytes": 18487,
+          "sha256": "6514d12838a558336bfbeee0340682f500938e750ccf39698fdf8fb621b2bbc3"
+        },
+        "/Volumes/Apo/graph-tests/results/sem-review-20261001/A5-native-fable-exact-post-result01/raw/graph500-24/wcc-b0-p0-graphframes/result/9FECbQNlYh8NMNcT_0.parquet": {
+          "bytes": 3657036,
+          "sha256": "786b6c71c36c76c14037c5307148c0692c2b908324376042037f1c5ac11dde88"
+        },
+        "/Volumes/Apo/graph-tests/results/sem-review-20261001/A5-native-fable-exact-post-result01/raw/graph500-24/wcc-b0-p0-graphframes/result/9FECbQNlYh8NMNcT_1.parquet": {
+          "bytes": 3632270,
+          "sha256": "a5a04f763d051cdb2bd3663732c2c31da7bbe353f59060e1970d79a584f377f4"
+        },
+        "/Volumes/Apo/graph-tests/results/sem-review-20261001/A5-native-fable-exact-post-result01/raw/graph500-24/wcc-b0-p0-graphframes/result/9FECbQNlYh8NMNcT_2.parquet": {
+          "bytes": 3626685,
+          "sha256": "961dc6cc7e091bf4a2d8c7af29a189bbce45694892cb803b25098fd3b53a41b5"
+        },
+        "/Volumes/Apo/graph-tests/results/sem-review-20261001/A5-native-fable-exact-post-result01/raw/graph500-24/wcc-b0-p0-graphframes/result/9FECbQNlYh8NMNcT_3.parquet": {
+          "bytes": 3658610,
+          "sha256": "56a8be29c0b1c8d2721fffb7c4217cb5593f355756d94fd5ddd433f891ca0baa"
+        },
+        "/Users/alexy/src/grust-benchmark-runs/F2a-native-024-run01/graph500-24-string-c1/result-call1/tNEJY2hGpT2koeCH_0.zst.parquet": {
+          "bytes": 3067744,
+          "sha256": "5eaa147a2668af05e4afdee1bb0b47b8d4f6938f6df97108f2c2992cb16c140b"
+        },
+        "/Users/alexy/src/grust-benchmark-runs/F2a-native-024-run01/graph500-24-string-c1/result-call1/tNEJY2hGpT2koeCH_1.zst.parquet": {
+          "bytes": 3100918,
+          "sha256": "fc38d07a95f5bd79184c498259962a53b0d4f66f6899c325550e7351e7d489ef"
+        },
+        "/Users/alexy/src/grust-benchmark-runs/F2a-native-024-run01/graph500-24-string-c1/result-call1/tNEJY2hGpT2koeCH_2.zst.parquet": {
+          "bytes": 3080165,
+          "sha256": "810fdeeb297971f2c00f77c07c365d250a126966a1bfa2ed91bf9f1e0c1080af"
+        },
+        "/Users/alexy/src/grust-benchmark-runs/F2a-native-024-run01/graph500-24-string-c1/result-call1/tNEJY2hGpT2koeCH_3.zst.parquet": {
+          "bytes": 3049070,
+          "sha256": "9cc858ec01371f7245e2e892ab63e3237d35f0ead01a29f33c73ccfa2c8bcdc0"
+        }
+      },
+      "identities_after": {
+        "/Users/alexy/src/grust-benchmark-data/graph500-24/graph500-24-v.parquet": {
+          "bytes": 9119859,
+          "sha256": "f186f0fac502106454ceae29a57c7f350ae60699b5a5087b3001cfd054983428"
+        },
+        "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-024-run01/oracle-graph500-24-string-c1-plan01.json": {
+          "bytes": 3812,
+          "sha256": "9262cb56a9904c1c2f336873557063cc24280d0f73ef956f38569ea40e45f4ce"
+        },
+        "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-024-run01/series/graph500-24-string-c1.json": {
+          "bytes": 8047,
+          "sha256": "799a387f06835a8262f62647fd0844874c04d77481ac5977cc3c5e0e8ada0fa6"
+        },
+        "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-024-run01/plans/graph500-24-string-c1.json": {
+          "bytes": 1309,
+          "sha256": "446083ebd5cf860e174fa76eef55b70bca609ff6c18d8036592fb5d92ef1171d"
+        },
+        "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-024-main-campaign02/receipt.json": {
+          "bytes": 41259,
+          "sha256": "55977f9fe083c64421812a427d303a7c0ac42d153c88cec81b0446c0174853d2"
+        },
+        "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-024-main-campaign02/launch-receipt.json": {
+          "bytes": 1288,
+          "sha256": "3c9789b4aa9efd567d16b0b9ee031a0879d4eb52980fe2a7fe3dce9eba72de96"
+        },
+        "/Volumes/Apo/graph-tests/results/sem-review-20261001/A5-native-fable-exact-post-result01/receipt.json": {
+          "bytes": 190557,
+          "sha256": "81f5c1ae534aaf8e96e158e6abc418ba0c1083780ba918ebac11b16ceff06799"
+        },
+        "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-024-run01/input-admission01.json": {
+          "bytes": 2190,
+          "sha256": "e41be9ee1066e5b8351acd454dd78fe1f5353618480486c3a424fad47094807c"
+        },
+        "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-024-run01/f2a_oracle.py": {
+          "bytes": 18487,
+          "sha256": "6514d12838a558336bfbeee0340682f500938e750ccf39698fdf8fb621b2bbc3"
+        },
+        "/Volumes/Apo/graph-tests/results/sem-review-20261001/A5-native-fable-exact-post-result01/raw/graph500-24/wcc-b0-p0-graphframes/result/9FECbQNlYh8NMNcT_0.parquet": {
+          "bytes": 3657036,
+          "sha256": "786b6c71c36c76c14037c5307148c0692c2b908324376042037f1c5ac11dde88"
+        },
+        "/Volumes/Apo/graph-tests/results/sem-review-20261001/A5-native-fable-exact-post-result01/raw/graph500-24/wcc-b0-p0-graphframes/result/9FECbQNlYh8NMNcT_1.parquet": {
+          "bytes": 3632270,
+          "sha256": "a5a04f763d051cdb2bd3663732c2c31da7bbe353f59060e1970d79a584f377f4"
+        },
+        "/Volumes/Apo/graph-tests/results/sem-review-20261001/A5-native-fable-exact-post-result01/raw/graph500-24/wcc-b0-p0-graphframes/result/9FECbQNlYh8NMNcT_2.parquet": {
+          "bytes": 3626685,
+          "sha256": "961dc6cc7e091bf4a2d8c7af29a189bbce45694892cb803b25098fd3b53a41b5"
+        },
+        "/Volumes/Apo/graph-tests/results/sem-review-20261001/A5-native-fable-exact-post-result01/raw/graph500-24/wcc-b0-p0-graphframes/result/9FECbQNlYh8NMNcT_3.parquet": {
+          "bytes": 3658610,
+          "sha256": "56a8be29c0b1c8d2721fffb7c4217cb5593f355756d94fd5ddd433f891ca0baa"
+        },
+        "/Users/alexy/src/grust-benchmark-runs/F2a-native-024-run01/graph500-24-string-c1/result-call1/tNEJY2hGpT2koeCH_0.zst.parquet": {
+          "bytes": 3067744,
+          "sha256": "5eaa147a2668af05e4afdee1bb0b47b8d4f6938f6df97108f2c2992cb16c140b"
+        },
+        "/Users/alexy/src/grust-benchmark-runs/F2a-native-024-run01/graph500-24-string-c1/result-call1/tNEJY2hGpT2koeCH_1.zst.parquet": {
+          "bytes": 3100918,
+          "sha256": "fc38d07a95f5bd79184c498259962a53b0d4f66f6899c325550e7351e7d489ef"
+        },
+        "/Users/alexy/src/grust-benchmark-runs/F2a-native-024-run01/graph500-24-string-c1/result-call1/tNEJY2hGpT2koeCH_2.zst.parquet": {
+          "bytes": 3080165,
+          "sha256": "810fdeeb297971f2c00f77c07c365d250a126966a1bfa2ed91bf9f1e0c1080af"
+        },
+        "/Users/alexy/src/grust-benchmark-runs/F2a-native-024-run01/graph500-24-string-c1/result-call1/tNEJY2hGpT2koeCH_3.zst.parquet": {
+          "bytes": 3049070,
+          "sha256": "9cc858ec01371f7245e2e892ab63e3237d35f0ead01a29f33c73ccfa2c8bcdc0"
+        }
+      },
+      "original_vertices_schema": {
+        "name": "/Users/alexy/src/grust-benchmark-data/graph500-24/graph500-24-v.parquet",
+        "fields": [
+          {
+            "name": "id",
+            "arrow_type": "int64",
+            "nullable": true
+          }
+        ],
+        "footer_rows": 8870942,
+        "row_groups": 73,
+        "largest_row_group_uncompressed_bytes": 983071,
+        "scanned_rows": 8870942
+      },
+      "reference": {
+        "number": 0,
+        "rows": 8870942,
+        "unique_rows": 8870942,
+        "components": 2901,
+        "canonical_member_mismatches": null,
+        "full_original_domain_passed": true,
+        "labels_in_original_domain": true,
+        "full_partition_equivalence_passed": false,
+        "physical_schemas": [
+          {
+            "name": "/Volumes/Apo/graph-tests/results/sem-review-20261001/A5-native-fable-exact-post-result01/raw/graph500-24/wcc-b0-p0-graphframes/result/9FECbQNlYh8NMNcT_0.parquet",
+            "fields": [
+              {
+                "name": "id",
+                "arrow_type": "int64",
+                "nullable": true
+              },
+              {
+                "name": "component",
+                "arrow_type": "int64",
+                "nullable": true
+              }
+            ],
+            "footer_rows": 2221517,
+            "row_groups": 3,
+            "largest_row_group_uncompressed_bytes": 8672625,
+            "scanned_rows": 2221517
+          },
+          {
+            "name": "/Volumes/Apo/graph-tests/results/sem-review-20261001/A5-native-fable-exact-post-result01/raw/graph500-24/wcc-b0-p0-graphframes/result/9FECbQNlYh8NMNcT_1.parquet",
+            "fields": [
+              {
+                "name": "id",
+                "arrow_type": "int64",
+                "nullable": true
+              },
+              {
+                "name": "component",
+                "arrow_type": "int64",
+                "nullable": true
+              }
+            ],
+            "footer_rows": 2215112,
+            "row_groups": 3,
+            "largest_row_group_uncompressed_bytes": 8672862,
+            "scanned_rows": 2215112
+          },
+          {
+            "name": "/Volumes/Apo/graph-tests/results/sem-review-20261001/A5-native-fable-exact-post-result01/raw/graph500-24/wcc-b0-p0-graphframes/result/9FECbQNlYh8NMNcT_2.parquet",
+            "fields": [
+              {
+                "name": "id",
+                "arrow_type": "int64",
+                "nullable": true
+              },
+              {
+                "name": "component",
+                "arrow_type": "int64",
+                "nullable": true
+              }
+            ],
+            "footer_rows": 2213215,
+            "row_groups": 3,
+            "largest_row_group_uncompressed_bytes": 8671835,
+            "scanned_rows": 2213215
+          },
+          {
+            "name": "/Volumes/Apo/graph-tests/results/sem-review-20261001/A5-native-fable-exact-post-result01/raw/graph500-24/wcc-b0-p0-graphframes/result/9FECbQNlYh8NMNcT_3.parquet",
+            "fields": [
+              {
+                "name": "id",
+                "arrow_type": "int64",
+                "nullable": true
+              },
+              {
+                "name": "component",
+                "arrow_type": "int64",
+                "nullable": true
+              }
+            ],
+            "footer_rows": 2221098,
+            "row_groups": 3,
+            "largest_row_group_uncompressed_bytes": 8669836,
+            "scanned_rows": 2221098
+          }
+        ]
+      },
+      "outputs": [
+        {
+          "number": 1,
+          "rows": 8870942,
+          "unique_rows": 8870942,
+          "components": 2901,
+          "canonical_member_mismatches": 0,
+          "full_original_domain_passed": true,
+          "labels_in_original_domain": true,
+          "full_partition_equivalence_passed": true,
+          "physical_schemas": [
+            {
+              "name": "/Users/alexy/src/grust-benchmark-runs/F2a-native-024-run01/graph500-24-string-c1/result-call1/tNEJY2hGpT2koeCH_0.zst.parquet",
+              "fields": [
+                {
+                  "name": "id",
+                  "arrow_type": "int64",
+                  "nullable": false
+                },
+                {
+                  "name": "component",
+                  "arrow_type": "int64",
+                  "nullable": false
+                }
+              ],
+              "footer_rows": 2220032,
+              "row_groups": 3,
+              "largest_row_group_uncompressed_bytes": 8675088,
+              "scanned_rows": 2220032
+            },
+            {
+              "name": "/Users/alexy/src/grust-benchmark-runs/F2a-native-024-run01/graph500-24-string-c1/result-call1/tNEJY2hGpT2koeCH_1.zst.parquet",
+              "fields": [
+                {
+                  "name": "id",
+                  "arrow_type": "int64",
+                  "nullable": false
+                },
+                {
+                  "name": "component",
+                  "arrow_type": "int64",
+                  "nullable": false
+                }
+              ],
+              "footer_rows": 2220032,
+              "row_groups": 3,
+              "largest_row_group_uncompressed_bytes": 8673935,
+              "scanned_rows": 2220032
+            },
+            {
+              "name": "/Users/alexy/src/grust-benchmark-runs/F2a-native-024-run01/graph500-24-string-c1/result-call1/tNEJY2hGpT2koeCH_2.zst.parquet",
+              "fields": [
+                {
+                  "name": "id",
+                  "arrow_type": "int64",
+                  "nullable": false
+                },
+                {
+                  "name": "component",
+                  "arrow_type": "int64",
+                  "nullable": false
+                }
+              ],
+              "footer_rows": 2219038,
+              "row_groups": 3,
+              "largest_row_group_uncompressed_bytes": 8673632,
+              "scanned_rows": 2219038
+            },
+            {
+              "name": "/Users/alexy/src/grust-benchmark-runs/F2a-native-024-run01/graph500-24-string-c1/result-call1/tNEJY2hGpT2koeCH_3.zst.parquet",
+              "fields": [
+                {
+                  "name": "id",
+                  "arrow_type": "int64",
+                  "nullable": false
+                },
+                {
+                  "name": "component",
+                  "arrow_type": "int64",
+                  "nullable": false
+                }
+              ],
+              "footer_rows": 2211840,
+              "row_groups": 3,
+              "largest_row_group_uncompressed_bytes": 8673675,
+              "scanned_rows": 2211840
+            }
+          ]
+        }
+      ],
+      "memory_admission": {
+        "ordinal_array_budget_bytes": 1135480576,
+        "bounded_batch_budget_bytes": 33554432,
+        "largest_actual_row_group_bytes": 8675088,
+        "modeled_managed_bytes": 1177710096,
+        "declared_budget_bytes": 25769803776,
+        "scope": "Conservative O(V) array/workspace admission model, not measured RSS/OS peak or cap."
+      },
+      "work_seconds": 7.515976160997525,
+      "closure_seconds": 0.09399503597524017,
+      "own_identity_closure_passed": true,
+      "full_output_oracle_passed": true,
+      "errors": [],
+      "scope": "Full partition comparison to the sealed caller-supplied GF reference; reference engine provenance and waited producer closure are separate root proofs. No official Graphalytics topology/ground-truth or performance verdict."
+    }
+  },
+  "environment": {
+    "python": "3.12.6 (main, Sep 13 2024, 17:29:18) [Clang 15.0.0 (clang-1500.3.9.4)]",
+    "python_executable": "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-int64-build01/venv/bin/python",
+    "extension_source": "4b88c8fb4504ab1d2a896c9e49e4a09df4905bbb",
+    "native_runtime_source": "9f0aa7d2a50f1258544d37c05dd19b3ff3d915b3",
+    "binary": {
+      "path": "/Volumes/Apo/graph-tests/results/sem-review-20261001/native-optimized-build01/sail-target/release/sail",
+      "bytes": 150472188,
+      "sha256": "ee80ac3cf9d028639561f3cf32435985192719d629807fcf6a368324fa84946e"
+    },
+    "wheel": {
+      "path": "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-int64-build01/wheels/sail_nutmeg-0.1.0-cp312-cp312-macosx_10_12_x86_64.whl",
+      "bytes": 15680368,
+      "sha256": "347c41034d2eae6b00e84633d3adf20ddc69a41e4665743b29d8b1cd04b5673b"
+    },
+    "controlled_environment": {
+      "PYTHONHOME": "/Users/alexy/.asdf/installs/python/3.12.6",
+      "PYTHONPATH": "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-int64-build01/venv/lib/python3.12/site-packages",
+      "DYLD_LIBRARY_PATH": "/Users/alexy/.asdf/installs/python/3.12.6/lib",
+      "SAIL_EXPERIMENTAL_EXTENSIONS": "1",
+      "SAIL_MODE": "local",
+      "SAIL_EXECUTION__DEFAULT_PARALLELISM": "16",
+      "SAIL_RUNTIME__MEMORY_POOL__TYPE": "greedy",
+      "SAIL_RUNTIME__MEMORY_POOL__GREEDY__MAX_SIZE": "32212254720",
+      "SAIL_NUTMEG_MEMORY_BYTES": "23622320128",
+      "NUTMEG_MEMORY_BYTES": "23622320128",
+      "NUTMEG_WORKERS": "16",
+      "SAIL_GRAPH_UTILS_ROOT": "file:///Users/alexy/src/grust-benchmark-runs/F2a-native-024-run01/graph500-24-string-c1/staging",
+      "TOKIO_WORKER_THREADS": "16",
+      "RAYON_NUM_THREADS": "16",
+      "TMPDIR": "/Users/alexy/src/grust-benchmark-runs/F2a-native-024-run01/graph500-24-string-c1/temporary",
+      "RUST_LOG": "warn"
+    },
+    "scope": "Shared uncapped native host, n=1 per condition; no Sem resource/CSR-work parity. Exclusive four phases unavailable; observed spans are not a subtractive decomposition."
+  }
+}

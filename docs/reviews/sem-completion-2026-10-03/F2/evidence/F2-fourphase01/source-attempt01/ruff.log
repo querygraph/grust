@@ -1,0 +1,81 @@
+I001 [*] Import block is un-sorted or un-formatted
+  --> f2a_campaign.py:3:1
+   |
+ 1 |   """Serial four-phase Arrow bridge owner; full output qualification remains external."""
+ 2 |
+ 3 | / from __future__ import annotations
+ 4 | |
+ 5 | | import argparse
+ 6 | | import datetime as dt
+ 7 | | import hashlib
+ 8 | | import json
+ 9 | | import os
+10 | | import shutil
+11 | | import signal
+12 | | import subprocess
+13 | | import threading
+14 | | import time
+15 | | from pathlib import Path
+16 | | from typing import Literal, Self
+17 | |
+18 | | import f2a_models as models
+19 | | from pydantic import Field, model_validator
+   | |___________________________________________^
+20 |
+21 |   BASE = Path("/Volumes/Apo/graph-tests/results/sem-completion-20261003")
+   |
+help: Organize imports
+   |
+17 |
+   - import f2a_models as models
+18 | from pydantic import Field, model_validator
+19 |
+20 + import f2a_models as models
+21 +
+22 | BASE = Path("/Volumes/Apo/graph-tests/results/sem-completion-20261003")
+   |
+
+RUF007 Prefer `itertools.pairwise()` over `zip()` when iterating over successive pairs
+   --> f2a_campaign.py:421:74
+    |
+419 |         result.pipeline is not None
+420 |         and result.pipeline.started_ns <= spans[0].started_ns
+421 |         and all(first.ended_ns <= second.started_ns for first, second in zip(spans, spans[1:]))
+    |                                                                          ^^^
+422 |         and result.pipeline.ended_ns == spans[-1].ended_ns,
+423 |         "bridge phase boundaries overlap or exceed the continuous clock",
+    |
+help: Replace `zip()` with `itertools.pairwise()`
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> f2a_campaign_launch.py:3:1
+   |
+ 1 |   """Durable waited campaign launcher; root detaches this process with Popen/nohup."""
+ 2 |
+ 3 | / from __future__ import annotations
+ 4 | |
+ 5 | | import argparse
+ 6 | | import os
+ 7 | | import signal
+ 8 | | import subprocess
+ 9 | | import sys
+10 | | from pathlib import Path
+11 | | from typing import Literal
+12 | |
+13 | | import f2a_campaign as campaign
+14 | | import f2a_models as worker
+15 | | from pydantic import Field
+   | |__________________________^
+help: Organize imports
+   |
+12 |
+13 + from pydantic import Field
+14 +
+15 | import f2a_campaign as campaign
+16 | import f2a_models as worker
+   - from pydantic import Field
+17 |
+   |
+
+Found 3 errors.
+[*] 2 fixable with the `--fix` option (1 hidden fix can be enabled with the `--unsafe-fixes` option).

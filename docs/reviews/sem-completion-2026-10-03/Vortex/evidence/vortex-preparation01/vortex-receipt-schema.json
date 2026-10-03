@@ -1,0 +1,492 @@
+{
+  "$defs": {
+    "Attempt": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "outcome": {
+          "default": "started",
+          "enum": [
+            "started",
+            "completed",
+            "error",
+            "not_admitted"
+          ],
+          "title": "Outcome",
+          "type": "string"
+        },
+        "directory": {
+          "anyOf": [
+            {
+              "format": "path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Directory"
+        },
+        "error": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Error"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "Attempt",
+      "type": "object"
+    },
+    "Error": {
+      "additionalProperties": false,
+      "properties": {
+        "phase": {
+          "title": "Phase",
+          "type": "string"
+        },
+        "type": {
+          "title": "Type",
+          "type": "string"
+        },
+        "message": {
+          "title": "Message",
+          "type": "string"
+        }
+      },
+      "required": [
+        "phase",
+        "type",
+        "message"
+      ],
+      "title": "Error",
+      "type": "object"
+    },
+    "FilePin": {
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "format": "path",
+          "title": "Path",
+          "type": "string"
+        },
+        "bytes": {
+          "minimum": 0,
+          "title": "Bytes",
+          "type": "integer"
+        },
+        "sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "bytes",
+        "sha256"
+      ],
+      "title": "FilePin",
+      "type": "object"
+    },
+    "PhysicalCheck": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "directory": {
+          "format": "path",
+          "title": "Directory",
+          "type": "string"
+        },
+        "rows": {
+          "title": "Rows",
+          "type": "integer"
+        },
+        "expected_rows": {
+          "title": "Expected Rows",
+          "type": "integer"
+        },
+        "physical_schemas": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Physical Schemas",
+          "type": "array"
+        },
+        "full_typed_rows_passed": {
+          "title": "Full Typed Rows Passed",
+          "type": "boolean"
+        },
+        "files": {
+          "items": {
+            "$ref": "#/$defs/FilePin"
+          },
+          "title": "Files",
+          "type": "array"
+        }
+      },
+      "required": [
+        "name",
+        "directory",
+        "rows",
+        "expected_rows",
+        "physical_schemas",
+        "full_typed_rows_passed",
+        "files"
+      ],
+      "title": "PhysicalCheck",
+      "type": "object"
+    },
+    "Plan": {
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "enum": [
+            "native_unregistered",
+            "registered_reader"
+          ],
+          "title": "Mode",
+          "type": "string"
+        },
+        "output_root": {
+          "format": "path",
+          "title": "Output Root",
+          "type": "string"
+        },
+        "binary": {
+          "format": "path",
+          "title": "Binary",
+          "type": "string"
+        },
+        "venv": {
+          "format": "path",
+          "title": "Venv",
+          "type": "string"
+        },
+        "python_home": {
+          "format": "path",
+          "title": "Python Home",
+          "type": "string"
+        },
+        "python_purelib": {
+          "format": "path",
+          "title": "Python Purelib",
+          "type": "string"
+        },
+        "python_library_directory": {
+          "format": "path",
+          "title": "Python Library Directory",
+          "type": "string"
+        },
+        "adapter_python_root": {
+          "anyOf": [
+            {
+              "format": "path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Adapter Python Root"
+        },
+        "pins": {
+          "items": {
+            "$ref": "#/$defs/FilePin"
+          },
+          "minItems": 4,
+          "title": "Pins",
+          "type": "array"
+        },
+        "runtime_source": {
+          "const": "9f0aa7d2a50f1258544d37c05dd19b3ff3d915b3",
+          "title": "Runtime Source",
+          "type": "string"
+        },
+        "adapter_source": {
+          "const": "4b88c8fb4504ab1d2a896c9e49e4a09df4905bbb",
+          "title": "Adapter Source",
+          "type": "string"
+        },
+        "timeout_seconds": {
+          "const": 180,
+          "default": 180,
+          "title": "Timeout Seconds",
+          "type": "integer"
+        },
+        "threads": {
+          "const": 2,
+          "default": 2,
+          "title": "Threads",
+          "type": "integer"
+        },
+        "sail_pool_bytes": {
+          "const": 536870912,
+          "default": 536870912,
+          "title": "Sail Pool Bytes",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "mode",
+        "output_root",
+        "binary",
+        "venv",
+        "python_home",
+        "python_purelib",
+        "python_library_directory",
+        "pins",
+        "runtime_source",
+        "adapter_source"
+      ],
+      "title": "Plan",
+      "type": "object"
+    },
+    "ServerExit": {
+      "additionalProperties": false,
+      "properties": {
+        "pid": {
+          "title": "Pid",
+          "type": "integer"
+        },
+        "pgid": {
+          "title": "Pgid",
+          "type": "integer"
+        },
+        "argv": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Argv",
+          "type": "array"
+        },
+        "launched_utc": {
+          "title": "Launched Utc",
+          "type": "string"
+        },
+        "closed_utc": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Closed Utc"
+        },
+        "termination_requested": {
+          "default": false,
+          "title": "Termination Requested",
+          "type": "boolean"
+        },
+        "forced_cleanup": {
+          "default": false,
+          "title": "Forced Cleanup",
+          "type": "boolean"
+        },
+        "returncode": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Returncode"
+        },
+        "wait_completed": {
+          "default": false,
+          "title": "Wait Completed",
+          "type": "boolean"
+        },
+        "group_absent": {
+          "default": false,
+          "title": "Group Absent",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "pid",
+        "pgid",
+        "argv",
+        "launched_utc"
+      ],
+      "title": "ServerExit",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "outcome": {
+      "default": "running",
+      "enum": [
+        "running",
+        "passed_native_format_control",
+        "passed_registered_reader_control",
+        "not_admitted",
+        "error",
+        "timeout"
+      ],
+      "title": "Outcome",
+      "type": "string"
+    },
+    "started_utc": {
+      "title": "Started Utc",
+      "type": "string"
+    },
+    "finished_utc": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Finished Utc"
+    },
+    "configuration": {
+      "$ref": "#/$defs/FilePin"
+    },
+    "plan": {
+      "$ref": "#/$defs/Plan"
+    },
+    "owner_pid": {
+      "title": "Owner Pid",
+      "type": "integer"
+    },
+    "python_version": {
+      "title": "Python Version",
+      "type": "string"
+    },
+    "pyspark_version": {
+      "title": "Pyspark Version",
+      "type": "string"
+    },
+    "pyarrow_version": {
+      "title": "Pyarrow Version",
+      "type": "string"
+    },
+    "vortex_version": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Vortex Version"
+    },
+    "adapter_import_error": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Adapter Import Error"
+    },
+    "environment": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "title": "Environment",
+      "type": "object"
+    },
+    "identities_before": {
+      "items": {
+        "$ref": "#/$defs/FilePin"
+      },
+      "title": "Identities Before",
+      "type": "array"
+    },
+    "identities_after": {
+      "items": {
+        "$ref": "#/$defs/FilePin"
+      },
+      "title": "Identities After",
+      "type": "array"
+    },
+    "attempts": {
+      "items": {
+        "$ref": "#/$defs/Attempt"
+      },
+      "title": "Attempts",
+      "type": "array"
+    },
+    "physical_checks": {
+      "items": {
+        "$ref": "#/$defs/PhysicalCheck"
+      },
+      "title": "Physical Checks",
+      "type": "array"
+    },
+    "server": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ServerExit"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "raw_inventory": {
+      "items": {
+        "$ref": "#/$defs/FilePin"
+      },
+      "title": "Raw Inventory",
+      "type": "array"
+    },
+    "errors": {
+      "items": {
+        "$ref": "#/$defs/Error"
+      },
+      "title": "Errors",
+      "type": "array"
+    },
+    "scope": {
+      "default": "Tiny native local capability control; software pool is not an OS cap. No graph timing, sorted-layout or checkpoint-performance claim. Writer/read errors retain their observed type and text; unsupported is not inferred from arbitrary errors.",
+      "title": "Scope",
+      "type": "string"
+    }
+  },
+  "required": [
+    "started_utc",
+    "configuration",
+    "plan",
+    "owner_pid",
+    "python_version",
+    "pyspark_version",
+    "pyarrow_version",
+    "environment"
+  ],
+  "title": "Receipt",
+  "type": "object"
+}

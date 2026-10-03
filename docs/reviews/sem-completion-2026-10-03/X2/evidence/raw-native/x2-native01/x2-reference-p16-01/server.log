@@ -1,0 +1,29 @@
+[2026-10-03T20:02:52Z INFO sail_cli::spark::server] Starting the Spark Connect server on 127.0.0.1:54944...
+[2026-10-03T20:02:52Z INFO sail_session::session_manager::actor::core] driver server is ready on port 54946
+[2026-10-03T20:02:52Z INFO sail_session::session_manager::actor::handler] creating session 81a774f3-82d2-481f-bfdc-83bbdc81549e
+[2026-10-03T20:02:53Z INFO sail_execution::driver::actor::handler] activating driver 1
+[2026-10-03T20:02:53Z DEBUG sail_execution::driver::actor::handler] launching worker demand 1 attempt 0
+[2026-10-03T20:02:53Z INFO sail_execution::driver::worker_pool::core] starting worker 1
+[2026-10-03T20:02:53Z DEBUG sail_execution::driver::actor::handler] launching worker demand 2 attempt 0
+[2026-10-03T20:02:53Z INFO sail_execution::driver::worker_pool::core] starting worker 2
+[2026-10-03T20:02:53Z INFO sail_execution::worker_manager::process] extension process worker 1: pid=Some(43516), driver_pid=43512, session=81a774f3-82d2-481f-bfdc-83bbdc81549e
+[2026-10-03T20:02:53Z INFO sail_execution::worker_manager::process] extension process worker 2: pid=Some(43515), driver_pid=43512, session=81a774f3-82d2-481f-bfdc-83bbdc81549e
+[2026-10-03T20:02:53Z DEBUG sail_execution::driver::server] RegisterWorkerRequest { driver_id: 1, worker_id: 2, host: "127.0.0.1", port: 54950 }
+[2026-10-03T20:02:53Z DEBUG sail_execution::driver::server] RegisterWorkerRequest { driver_id: 1, worker_id: 1, host: "127.0.0.1", port: 54951 }
+[2026-10-03T20:02:53Z INFO sail_execution::driver::actor::handler] worker 2 is available at 127.0.0.1:54950
+[2026-10-03T20:02:53Z WARN sail_execution::driver::task_assigner::core] worker 2 was not pending
+[2026-10-03T20:02:53Z INFO sail_execution::driver::actor::handler] worker 1 is available at 127.0.0.1:54951
+[2026-10-03T20:02:53Z WARN sail_execution::driver::task_assigner::core] worker 1 was not pending
+[2026-10-03T20:02:53Z DEBUG sail_execution::driver::server] RegisterWorkerResponse
+[2026-10-03T20:02:53Z DEBUG sail_execution::driver::server] RegisterWorkerResponse
+[2026-10-03T20:02:53Z INFO sail_session::session_manager::actor::handler] removing session 81a774f3-82d2-481f-bfdc-83bbdc81549e
+[2026-10-03T20:02:53Z INFO sail_execution::driver::worker_pool::core] stopping worker 1
+[2026-10-03T20:02:53Z INFO sail_execution::driver::worker_pool::core] stopping worker 2
+[2026-10-03T20:02:53Z INFO sail_cli::spark::server] Shutting down the Spark Connect server...
+[2026-10-03T20:02:53Z INFO sail_execution::driver::actor::core] driver 1 has stopped
+[2026-10-03T20:02:53Z WARN sail_common::actor] aborting 8 task(s) for DriverActor
+[2026-10-03T20:02:53Z ERROR sail_execution::driver::worker_pool::core] stop worker: failed in worker 1: error in Tonic status: code: 'Unknown error', message: "transport error", source: tonic::transport::Error(Transport, hyper::Error(Io, Kind(ConnectionReset)))
+[2026-10-03T20:02:53Z ERROR sail_execution::driver::worker_pool::core] stop worker: failed in worker 2: error in Tonic status: code: 'Unknown error', message: "transport error", source: tonic::transport::Error(Transport, hyper::Error(Io, Custom { kind: BrokenPipe, error: "stream closed because of a broken pipe" }))
+[2026-10-03T20:02:53Z INFO sail_session::session_manager::actor::core] driver server has stopped
+[2026-10-03T20:02:53Z WARN sail_common::actor] aborting 4 task(s) for SessionManagerActor
+[2026-10-03T20:02:53Z INFO sail_cli::spark::server] The Spark Connect server has stopped.

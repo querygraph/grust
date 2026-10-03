@@ -1,0 +1,806 @@
+{
+  "$defs": {
+    "ArrowHandoff": {
+      "additionalProperties": false,
+      "properties": {
+        "input_name": {
+          "enum": [
+            "vertices",
+            "edges"
+          ],
+          "title": "Input Name",
+          "type": "string"
+        },
+        "rows": {
+          "minimum": 0,
+          "title": "Rows",
+          "type": "integer"
+        },
+        "chunk_rows": {
+          "maximum": 262144,
+          "minimum": 2,
+          "title": "Chunk Rows",
+          "type": "integer"
+        },
+        "chunks": {
+          "minimum": 1,
+          "title": "Chunks",
+          "type": "integer"
+        },
+        "checked_ipc_encodings": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Checked Ipc Encodings",
+          "type": "integer"
+        },
+        "create_dataframe_calls": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Create Dataframe Calls",
+          "type": "integer"
+        },
+        "checkpoint_attempts": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Checkpoint Attempts",
+          "type": "integer"
+        },
+        "checkpoints_completed": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Checkpoints Completed",
+          "type": "integer"
+        },
+        "cached_chunks": {
+          "minimum": 0,
+          "title": "Cached Chunks",
+          "type": "integer"
+        },
+        "remote_reference_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Remote Reference Ids",
+          "type": "array"
+        },
+        "maximum_ipc_bytes": {
+          "maximum": 33554432,
+          "minimum": 0,
+          "title": "Maximum Ipc Bytes",
+          "type": "integer"
+        },
+        "encoded_ipc_bytes": {
+          "minimum": 0,
+          "title": "Encoded Ipc Bytes",
+          "type": "integer"
+        },
+        "balanced_union_depth": {
+          "minimum": 0,
+          "title": "Balanced Union Depth",
+          "type": "integer"
+        },
+        "cache_threshold_bytes": {
+          "const": 67108864,
+          "default": 67108864,
+          "title": "Cache Threshold Bytes",
+          "type": "integer"
+        },
+        "eager_checkpoints": {
+          "const": true,
+          "default": true,
+          "title": "Eager Checkpoints",
+          "type": "boolean"
+        },
+        "checkpoint_sort_applied": {
+          "const": false,
+          "default": false,
+          "title": "Checkpoint Sort Applied",
+          "type": "boolean"
+        },
+        "completed": {
+          "default": false,
+          "title": "Completed",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "input_name",
+        "rows",
+        "chunk_rows",
+        "chunks",
+        "cached_chunks",
+        "maximum_ipc_bytes",
+        "encoded_ipc_bytes",
+        "balanced_union_depth"
+      ],
+      "title": "ArrowHandoff",
+      "type": "object"
+    },
+    "Error": {
+      "additionalProperties": false,
+      "properties": {
+        "phase": {
+          "title": "Phase",
+          "type": "string"
+        },
+        "detail": {
+          "title": "Detail",
+          "type": "string"
+        }
+      },
+      "required": [
+        "phase",
+        "detail"
+      ],
+      "title": "Error",
+      "type": "object"
+    },
+    "ExclusiveSemPhases": {
+      "additionalProperties": false,
+      "properties": {
+        "read_seconds": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Read Seconds"
+        },
+        "csr_and_graph_build_seconds": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Csr And Graph Build Seconds"
+        },
+        "algorithm_seconds": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Algorithm Seconds"
+        },
+        "write_seconds": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Write Seconds"
+        },
+        "availability": {
+          "default": "unavailable_failed_pipeline",
+          "enum": [
+            "unavailable_failed_pipeline",
+            "observed_materialized_arrow_bridge"
+          ],
+          "title": "Availability",
+          "type": "string"
+        },
+        "reason": {
+          "default": "Separate materialized bridge phases: client Parquet-to-Arrow read; bounded bounded inline Arrow IPC/checkpoint jobs plus stage/projectionStats; all WCC kernels and full Arrow result transport; all client Parquet writes. Not native CSR-only or kernel-only clocks and not the prior native-Parquet profile.",
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "title": "ExclusiveSemPhases",
+      "type": "object"
+    },
+    "FilePin": {
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "format": "path",
+          "title": "Path",
+          "type": "string"
+        },
+        "bytes": {
+          "minimum": 0,
+          "title": "Bytes",
+          "type": "integer"
+        },
+        "sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "bytes",
+        "sha256"
+      ],
+      "title": "FilePin",
+      "type": "object"
+    },
+    "JsonValue": {},
+    "OutputAttempt": {
+      "additionalProperties": false,
+      "properties": {
+        "call": {
+          "maximum": 3,
+          "minimum": 1,
+          "title": "Call",
+          "type": "integer"
+        },
+        "path": {
+          "format": "path",
+          "title": "Path",
+          "type": "string"
+        },
+        "completed": {
+          "default": false,
+          "title": "Completed",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "call",
+        "path"
+      ],
+      "title": "OutputAttempt",
+      "type": "object"
+    },
+    "Phase": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "enum": [
+            "read_parquet",
+            "csr_and_graph",
+            "algorithm_materialize",
+            "write_parquet"
+          ],
+          "title": "Name",
+          "type": "string"
+        },
+        "call": {
+          "anyOf": [
+            {
+              "maximum": 3,
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Call"
+        },
+        "span": {
+          "$ref": "#/$defs/Span"
+        },
+        "completed": {
+          "title": "Completed",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "name",
+        "span",
+        "completed"
+      ],
+      "title": "Phase",
+      "type": "object"
+    },
+    "Plan": {
+      "additionalProperties": false,
+      "properties": {
+        "dataset": {
+          "enum": [
+            "cit-Patents",
+            "graph500-24",
+            "tiny"
+          ],
+          "title": "Dataset",
+          "type": "string"
+        },
+        "vertices": {
+          "format": "path",
+          "title": "Vertices",
+          "type": "string"
+        },
+        "edges": {
+          "format": "path",
+          "title": "Edges",
+          "type": "string"
+        },
+        "vertex_id_column": {
+          "default": "id",
+          "minLength": 1,
+          "title": "Vertex Id Column",
+          "type": "string"
+        },
+        "edge_source_column": {
+          "default": "source",
+          "minLength": 1,
+          "title": "Edge Source Column",
+          "type": "string"
+        },
+        "edge_target_column": {
+          "default": "target",
+          "minLength": 1,
+          "title": "Edge Target Column",
+          "type": "string"
+        },
+        "output_root": {
+          "format": "path",
+          "title": "Output Root",
+          "type": "string"
+        },
+        "receipt": {
+          "format": "path",
+          "title": "Receipt",
+          "type": "string"
+        },
+        "ids": {
+          "const": "int64",
+          "title": "Ids",
+          "type": "string"
+        },
+        "calls": {
+          "enum": [
+            1,
+            3
+          ],
+          "title": "Calls",
+          "type": "integer"
+        },
+        "workers": {
+          "const": 16,
+          "default": 16,
+          "title": "Workers",
+          "type": "integer"
+        },
+        "binary": {
+          "format": "path",
+          "title": "Binary",
+          "type": "string"
+        },
+        "venv": {
+          "format": "path",
+          "title": "Venv",
+          "type": "string"
+        },
+        "python_home": {
+          "format": "path",
+          "title": "Python Home",
+          "type": "string"
+        },
+        "python_purelib": {
+          "format": "path",
+          "title": "Python Purelib",
+          "type": "string"
+        },
+        "python_library_directory": {
+          "format": "path",
+          "title": "Python Library Directory",
+          "type": "string"
+        },
+        "sail_pool_bytes": {
+          "const": 32212254720,
+          "default": 32212254720,
+          "title": "Sail Pool Bytes",
+          "type": "integer"
+        },
+        "native_quota_bytes": {
+          "const": 23622320128,
+          "default": 23622320128,
+          "title": "Native Quota Bytes",
+          "type": "integer"
+        },
+        "timeout_seconds": {
+          "const": 1800,
+          "default": 1800,
+          "title": "Timeout Seconds",
+          "type": "integer"
+        },
+        "chunk_rows": {
+          "default": 262144,
+          "maximum": 262144,
+          "minimum": 2,
+          "title": "Chunk Rows",
+          "type": "integer"
+        },
+        "extension_source_commit": {
+          "const": "4b88c8fb4504ab1d2a896c9e49e4a09df4905bbb",
+          "default": "4b88c8fb4504ab1d2a896c9e49e4a09df4905bbb",
+          "title": "Extension Source Commit",
+          "type": "string"
+        },
+        "native_runtime_commit": {
+          "const": "9f0aa7d2a50f1258544d37c05dd19b3ff3d915b3",
+          "default": "9f0aa7d2a50f1258544d37c05dd19b3ff3d915b3",
+          "title": "Native Runtime Commit",
+          "type": "string"
+        }
+      },
+      "required": [
+        "dataset",
+        "vertices",
+        "edges",
+        "output_root",
+        "receipt",
+        "ids",
+        "calls",
+        "binary",
+        "venv",
+        "python_home",
+        "python_purelib",
+        "python_library_directory"
+      ],
+      "title": "Plan",
+      "type": "object"
+    },
+    "ServerExit": {
+      "additionalProperties": false,
+      "properties": {
+        "pid": {
+          "exclusiveMinimum": 0,
+          "title": "Pid",
+          "type": "integer"
+        },
+        "pgid": {
+          "exclusiveMinimum": 0,
+          "title": "Pgid",
+          "type": "integer"
+        },
+        "argv": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Argv",
+          "type": "array"
+        },
+        "launched_utc": {
+          "title": "Launched Utc",
+          "type": "string"
+        },
+        "closed_utc": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Closed Utc"
+        },
+        "returncode": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Returncode"
+        },
+        "wait_completed": {
+          "default": false,
+          "title": "Wait Completed",
+          "type": "boolean"
+        },
+        "termination_requested": {
+          "default": false,
+          "title": "Termination Requested",
+          "type": "boolean"
+        },
+        "forced_kill": {
+          "default": false,
+          "title": "Forced Kill",
+          "type": "boolean"
+        },
+        "scope": {
+          "default": "Direct owned native server was waited; group closure is parent-owned.",
+          "title": "Scope",
+          "type": "string"
+        }
+      },
+      "required": [
+        "pid",
+        "pgid",
+        "argv",
+        "launched_utc"
+      ],
+      "title": "ServerExit",
+      "type": "object"
+    },
+    "Span": {
+      "additionalProperties": false,
+      "properties": {
+        "started_ns": {
+          "minimum": 0,
+          "title": "Started Ns",
+          "type": "integer"
+        },
+        "ended_ns": {
+          "minimum": 0,
+          "title": "Ended Ns",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "started_ns",
+        "ended_ns"
+      ],
+      "title": "Span",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "execution_profile": {
+      "const": "chunk_checkpoint_arrow_client_four_phase",
+      "default": "chunk_checkpoint_arrow_client_four_phase",
+      "title": "Execution Profile",
+      "type": "string"
+    },
+    "observed_utc": {
+      "title": "Observed Utc",
+      "type": "string"
+    },
+    "started_utc": {
+      "title": "Started Utc",
+      "type": "string"
+    },
+    "outcome": {
+      "enum": [
+        "running",
+        "completed_unvalidated",
+        "failed",
+        "timeout"
+      ],
+      "title": "Outcome",
+      "type": "string"
+    },
+    "configuration": {
+      "$ref": "#/$defs/Plan"
+    },
+    "configuration_pin": {
+      "$ref": "#/$defs/FilePin"
+    },
+    "worker_source": {
+      "$ref": "#/$defs/FilePin"
+    },
+    "models_source": {
+      "$ref": "#/$defs/FilePin"
+    },
+    "owner_pid": {
+      "exclusiveMinimum": 0,
+      "title": "Owner Pid",
+      "type": "integer"
+    },
+    "python_version": {
+      "title": "Python Version",
+      "type": "string"
+    },
+    "pyspark_version": {
+      "title": "Pyspark Version",
+      "type": "string"
+    },
+    "client_plan_source": {
+      "$ref": "#/$defs/FilePin"
+    },
+    "client_session_source": {
+      "$ref": "#/$defs/FilePin"
+    },
+    "client_dataframe_source": {
+      "$ref": "#/$defs/FilePin"
+    },
+    "checkpoint_base_uri": {
+      "title": "Checkpoint Base Uri",
+      "type": "string"
+    },
+    "checkpoint_directory_created": {
+      "title": "Checkpoint Directory Created",
+      "type": "boolean"
+    },
+    "python_executable": {
+      "format": "path",
+      "title": "Python Executable",
+      "type": "string"
+    },
+    "environment": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "title": "Environment",
+      "type": "object"
+    },
+    "server": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ServerExit"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "pipeline": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Span"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "pipeline_seconds": {
+      "anyOf": [
+        {
+          "minimum": 0,
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Pipeline Seconds"
+    },
+    "pipeline_completed": {
+      "default": false,
+      "title": "Pipeline Completed",
+      "type": "boolean"
+    },
+    "phases": {
+      "items": {
+        "$ref": "#/$defs/Phase"
+      },
+      "title": "Phases",
+      "type": "array"
+    },
+    "outputs": {
+      "items": {
+        "$ref": "#/$defs/OutputAttempt"
+      },
+      "title": "Outputs",
+      "type": "array"
+    },
+    "output_projection": {
+      "default": [
+        "id",
+        "component"
+      ],
+      "items": {
+        "enum": [
+          "id",
+          "component"
+        ],
+        "type": "string"
+      },
+      "title": "Output Projection",
+      "type": "array"
+    },
+    "stage_receipt": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/JsonValue"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "projection_receipt": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/JsonValue"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "native_status": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/JsonValue"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "projection_reused": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Projection Reused"
+    },
+    "arrow_handoffs": {
+      "items": {
+        "$ref": "#/$defs/ArrowHandoff"
+      },
+      "title": "Arrow Handoffs",
+      "type": "array"
+    },
+    "exclusive_sem_phases": {
+      "$ref": "#/$defs/ExclusiveSemPhases"
+    },
+    "graph_dropped": {
+      "default": false,
+      "title": "Graph Dropped",
+      "type": "boolean"
+    },
+    "spark_stopped": {
+      "default": false,
+      "title": "Spark Stopped",
+      "type": "boolean"
+    },
+    "errors": {
+      "items": {
+        "$ref": "#/$defs/Error"
+      },
+      "title": "Errors",
+      "type": "array"
+    },
+    "scope": {
+      "default": "One unvalidated native WCC series on a shared host. Main continuous clock starts before materialized client input read and ends at the last full client Parquet write. Chunk IPC encoding and unsorted eager checkpoint jobs are in CSR/graph; result transport is in algorithm. All full inputs/results remain client-resident during their phases. Software pools are not an OS cap. Session setup, post-pipeline diagnostics, all validation, graph/session teardown and native process exit are outside that clock. Parent supplies source/input admission, physical output oracles and full process closure.",
+      "title": "Scope",
+      "type": "string"
+    }
+  },
+  "required": [
+    "observed_utc",
+    "started_utc",
+    "outcome",
+    "configuration",
+    "configuration_pin",
+    "worker_source",
+    "models_source",
+    "owner_pid",
+    "python_version",
+    "pyspark_version",
+    "client_plan_source",
+    "client_session_source",
+    "client_dataframe_source",
+    "checkpoint_base_uri",
+    "checkpoint_directory_created",
+    "python_executable",
+    "environment"
+  ],
+  "title": "Receipt",
+  "type": "object"
+}

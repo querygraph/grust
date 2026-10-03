@@ -1,0 +1,75 @@
+I001 [*] Import block is un-sorted or un-formatted
+  --> /Volumes/Apo/graph-tests/results/sem-completion-20261003/vortex-preparation01/source-attempt01/vortex_probe.py:6:1
+   |
+ 4 |   The registered mode uses the exact Python reader, never a fabricated Rust format.
+ 5 |   """
+ 6 | / from __future__ import annotations
+ 7 | |
+ 8 | | import argparse
+ 9 | | import hashlib
+10 | | import importlib.metadata
+11 | | import os
+12 | | import signal
+13 | | import socket
+14 | | import subprocess
+15 | | import sys
+16 | | import time
+17 | | from collections.abc import Callable
+18 | | from dataclasses import dataclass
+19 | | from datetime import datetime, timezone
+20 | | from pathlib import Path
+21 | | from types import FrameType
+22 | | from typing import Any
+23 | |
+24 | | import pyarrow as pa
+25 | | import pyarrow.parquet as pq
+26 | | import pyspark
+27 | | from pyspark.sql import DataFrame, functions as F
+28 | | from pyspark.sql.connect.session import SparkSession
+29 | |
+30 | | from vortex_models import Attempt, Error, FilePin, PhysicalCheck, Plan, Receipt, ServerExit
+   | |___________________________________________________________________________________________^
+31 |
+32 |   try:
+   |
+help: Organize imports
+   |
+26 | import pyspark
+   - from pyspark.sql import DataFrame, functions as F
+27 + from pyspark.sql import DataFrame
+28 + from pyspark.sql import functions as F
+29 | from pyspark.sql.connect.session import SparkSession
+   -
+   - from vortex_models import Attempt, Error, FilePin, PhysicalCheck, Plan, Receipt, ServerExit
+30 + from vortex_models import (
+31 +     Attempt,
+32 +     Error,
+33 +     FilePin,
+34 +     PhysicalCheck,
+35 +     Plan,
+36 +     Receipt,
+37 +     ServerExit,
+38 + )
+39 |
+   |
+
+RUF100 [*] Unused `noqa` directive (unused: `BLE001`)
+   --> /Volumes/Apo/graph-tests/results/sem-completion-20261003/vortex-preparation01/source-attempt01/vortex_probe.py:139:39
+    |
+137 |         attempt.outcome = "completed"
+138 |         physical(receipt, name, directory, expected, columns)
+139 |     except BaseException as failure:  # noqa: BLE001 - preserve failures and interrupts
+    |                                       ^^^^^^^^^^^^^^
+140 |         attempt.outcome = "error"
+141 |         attempt.error = error(name, failure)
+    |
+help: Remove unused `noqa` directive
+    |
+138 |         physical(receipt, name, directory, expected, columns)
+    -     except BaseException as failure:  # noqa: BLE001 - preserve failures and interrupts
+139 +     except BaseException as failure:
+140 |         attempt.outcome = "error"
+    |
+
+Found 2 errors.
+[*] 2 fixable with the `--fix` option.

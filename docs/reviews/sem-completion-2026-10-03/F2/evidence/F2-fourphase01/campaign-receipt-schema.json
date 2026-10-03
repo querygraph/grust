@@ -1,0 +1,348 @@
+{
+  "$defs": {
+    "FilePin": {
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "format": "path",
+          "title": "Path",
+          "type": "string"
+        },
+        "bytes": {
+          "minimum": 0,
+          "title": "Bytes",
+          "type": "integer"
+        },
+        "sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "bytes",
+        "sha256"
+      ],
+      "title": "FilePin",
+      "type": "object"
+    },
+    "Series": {
+      "additionalProperties": false,
+      "properties": {
+        "plan": {
+          "$ref": "#/$defs/FilePin"
+        },
+        "argv": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Argv",
+          "type": "array"
+        },
+        "outcome": {
+          "default": "running",
+          "enum": [
+            "running",
+            "completed_unvalidated",
+            "error"
+          ],
+          "title": "Outcome",
+          "type": "string"
+        },
+        "launched_utc": {
+          "title": "Launched Utc",
+          "type": "string"
+        },
+        "closed_utc": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Closed Utc"
+        },
+        "pid": {
+          "title": "Pid",
+          "type": "integer"
+        },
+        "pgid": {
+          "title": "Pgid",
+          "type": "integer"
+        },
+        "wait_completed": {
+          "default": false,
+          "title": "Wait Completed",
+          "type": "boolean"
+        },
+        "returncode": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Returncode"
+        },
+        "launch_to_wait": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Span"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "driver_group_absent": {
+          "default": false,
+          "title": "Driver Group Absent",
+          "type": "boolean"
+        },
+        "server_group_absent": {
+          "default": false,
+          "title": "Server Group Absent",
+          "type": "boolean"
+        },
+        "server_pid": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Server Pid"
+        },
+        "server_pgid": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Server Pgid"
+        },
+        "worker_receipt": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FilePin"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "forced_cleanup": {
+          "default": false,
+          "title": "Forced Cleanup",
+          "type": "boolean"
+        },
+        "rss_samples": {
+          "default": 0,
+          "title": "Rss Samples",
+          "type": "integer"
+        },
+        "observed_worker_peak_rss_kib": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Observed Worker Peak Rss Kib"
+        },
+        "observed_server_peak_rss_kib": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Observed Server Peak Rss Kib"
+        },
+        "rss_errors": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Rss Errors",
+          "type": "array"
+        },
+        "rss_sampler_closed": {
+          "default": false,
+          "title": "Rss Sampler Closed",
+          "type": "boolean"
+        },
+        "rss_file": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FilePin"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "plan",
+        "argv",
+        "launched_utc",
+        "pid",
+        "pgid"
+      ],
+      "title": "Series",
+      "type": "object"
+    },
+    "Span": {
+      "additionalProperties": false,
+      "properties": {
+        "started_ns": {
+          "minimum": 0,
+          "title": "Started Ns",
+          "type": "integer"
+        },
+        "ended_ns": {
+          "minimum": 0,
+          "title": "Ended Ns",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "started_ns",
+        "ended_ns"
+      ],
+      "title": "Span",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "outcome": {
+      "default": "running",
+      "enum": [
+        "running",
+        "completed_unvalidated_campaign",
+        "error"
+      ],
+      "title": "Outcome",
+      "type": "string"
+    },
+    "started_utc": {
+      "title": "Started Utc",
+      "type": "string"
+    },
+    "finished_utc": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Finished Utc"
+    },
+    "owner_pid": {
+      "title": "Owner Pid",
+      "type": "integer"
+    },
+    "configuration": {
+      "$ref": "#/$defs/FilePin"
+    },
+    "series": {
+      "items": {
+        "$ref": "#/$defs/Series"
+      },
+      "title": "Series",
+      "type": "array"
+    },
+    "skipped_plans": {
+      "items": {
+        "format": "path",
+        "type": "string"
+      },
+      "title": "Skipped Plans",
+      "type": "array"
+    },
+    "before": {
+      "items": {
+        "$ref": "#/$defs/FilePin"
+      },
+      "title": "Before",
+      "type": "array"
+    },
+    "after": {
+      "items": {
+        "$ref": "#/$defs/FilePin"
+      },
+      "title": "After",
+      "type": "array"
+    },
+    "source_before": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "title": "Source Before",
+      "type": "object"
+    },
+    "source_after": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "title": "Source After",
+      "type": "object"
+    },
+    "all_owned_groups_absent": {
+      "default": false,
+      "title": "All Owned Groups Absent",
+      "type": "boolean"
+    },
+    "locks_released": {
+      "default": false,
+      "title": "Locks Released",
+      "type": "boolean"
+    },
+    "errors": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Errors",
+      "type": "array"
+    },
+    "scope": {
+      "default": "Serial unvalidated materialized Arrow bridge WCC execution; full original-domain/partition oracles and raw-output retention qualification are external. Parent launch_to_wait includes interpreter/setup/diagnostics/cleanup. Worker pipeline has its separately declared boundary. RSS is 500ms observed native/driver RSS, not an OS peak, limit or allocation proof.",
+      "title": "Scope",
+      "type": "string"
+    }
+  },
+  "required": [
+    "started_utc",
+    "owner_pid",
+    "configuration"
+  ],
+  "title": "Receipt",
+  "type": "object"
+}

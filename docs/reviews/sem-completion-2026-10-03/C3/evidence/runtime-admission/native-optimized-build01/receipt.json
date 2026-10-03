@@ -1,0 +1,133 @@
+{
+  "started_utc": "2026-10-02T09:00:55.400520+00:00",
+  "outcome": "passed_optimized_native_binaries",
+  "pid": 97527,
+  "platform": "macOS-15.7.9-x86_64-i386-64bit",
+  "machine": "x86_64",
+  "scope": "optimized native macOS builds; no VM benchmark",
+  "release_environment": {
+    "RUSTUP_TOOLCHAIN": "1.97.1",
+    "CARGO_INCREMENTAL": "0",
+    "CARGO_BUILD_JOBS": "8",
+    "CARGO_PROFILE_RELEASE_OPT_LEVEL": "3",
+    "CARGO_PROFILE_RELEASE_LTO": "true",
+    "CARGO_PROFILE_RELEASE_CODEGEN_UNITS": "1",
+    "CARGO_PROFILE_RELEASE_DEBUG": "0",
+    "CARGO_PROFILE_RELEASE_STRIP": "true",
+    "PYO3_PYTHON": "/tmp/sem-output-oracle-venv/bin/python",
+    "DYLD_LIBRARY_PATH": "/Users/alexy/.asdf/installs/python/3.12.6/lib"
+  },
+  "steps": [
+    {
+      "name": "sail",
+      "argv": [
+        "/Users/alexy/.cargo/bin/cargo",
+        "build",
+        "--locked",
+        "--release",
+        "-p",
+        "sail-cli"
+      ],
+      "cwd": "/Volumes/Apo/graph-tests/workspaces/sem-review-20261001/a5-native-9f0aa7d2a",
+      "target": "/Volumes/Apo/graph-tests/results/sem-review-20261001/native-optimized-build01/sail-target",
+      "started_utc": "2026-10-02T09:00:55.695501+00:00",
+      "returncode": 0,
+      "pid": 97548,
+      "finished_utc": "2026-10-02T09:50:15.182976+00:00",
+      "binary": {
+        "path": "/Volumes/Apo/graph-tests/results/sem-review-20261001/native-optimized-build01/sail-target/release/sail",
+        "bytes": 150472188,
+        "sha256": "ee80ac3cf9d028639561f3cf32435985192719d629807fcf6a368324fa84946e"
+      },
+      "file": "/Volumes/Apo/graph-tests/results/sem-review-20261001/native-optimized-build01/sail-target/release/sail: Mach-O 64-bit executable x86_64",
+      "probe": {
+        "argv": [
+          "/Volumes/Apo/graph-tests/results/sem-review-20261001/native-optimized-build01/sail-target/release/sail",
+          "--version"
+        ],
+        "returncode": 0,
+        "stdout": "sail 0.7.1\n",
+        "stderr": ""
+      },
+      "source_after": {
+        "commit": "9f0aa7d2a50f1258544d37c05dd19b3ff3d915b3",
+        "tree": "950e3ebed76a37c454ed50c950b9b74087fcc60d",
+        "lock_sha256": "46121478d56b0d911d4f295f428b2816bd4a976d22265994afc2a5378bb00546",
+        "manifest_sha256": "56173bc61ded632000c18f77edaf0beb4529010a238a19b318b83c28834a7dff",
+        "path": "/Volumes/Apo/graph-tests/workspaces/sem-review-20261001/a5-native-9f0aa7d2a"
+      }
+    },
+    {
+      "name": "graphframes",
+      "argv": [
+        "/Users/alexy/.cargo/bin/cargo",
+        "build",
+        "--locked",
+        "--release",
+        "--bin",
+        "graphframes"
+      ],
+      "cwd": "/Volumes/Apo/graph-tests/workspaces/sem-review-20261001/graphframes-rs",
+      "target": "/Volumes/Apo/graph-tests/results/sem-review-20261001/native-optimized-build01/graphframes-target",
+      "started_utc": "2026-10-02T09:50:17.421112+00:00",
+      "returncode": 0,
+      "pid": 31463,
+      "finished_utc": "2026-10-02T10:10:23.981943+00:00",
+      "binary": {
+        "path": "/Volumes/Apo/graph-tests/results/sem-review-20261001/native-optimized-build01/graphframes-target/release/graphframes",
+        "bytes": 72311876,
+        "sha256": "41780fcebd40c420281f1b2ac0df15ed19679d06f917faacfe2f1402db15a952"
+      },
+      "file": "/Volumes/Apo/graph-tests/results/sem-review-20261001/native-optimized-build01/graphframes-target/release/graphframes: Mach-O 64-bit executable x86_64",
+      "probe": {
+        "argv": [
+          "/Volumes/Apo/graph-tests/results/sem-review-20261001/native-optimized-build01/graphframes-target/release/graphframes",
+          "--help"
+        ],
+        "returncode": 0,
+        "stdout": "Out-of-core graph algorithms over DataFusion\n\nUsage: graphframes <COMMAND>\n\nCommands:\n  page-rank          PageRank via Pregel\n  wcc                Weakly connected components via randomized contraction\n  mis                Maximal independent set (Ghaffari's algorithm)\n  kcore              k-core (coreness) decomposition\n  hyperanf           HyperANF approximate neighbourhood function\n  shortest-path      Multi-source shortest paths\n  pic                Power Iteration Clustering (Lin & Cohen 2010; Spark MLlib-inspired)\n  mllib              Raw (graph-free) machine-learning algorithms\n  fastrp             FastRP (Fast Random Projection) vertex embeddings\n  fastrp-clustering  Graph clustering: FastRP embeddings (unit norm) + K-Means\n  classical-lp       Classical Label Propagation (CDLP)\n  help               Print this message or the help of the given subcommand(s)\n\nOptions:\n  -h, --help     Print help\n  -V, --version  Print version\n",
+        "stderr": ""
+      },
+      "source_after": {
+        "commit": "b4da56dabe20bba8e29563e06acc5179b2113ce3",
+        "tree": "703080437cd0b7b66952a68716a1feaa1bfc18f5",
+        "lock_sha256": "5fb44b8090979b0c7d2c2951e8df92870d1ed14300b9b5ca333f45ae5f9f9bf0",
+        "manifest_sha256": "6624afcfe66332dd68394dfd2e9a0fa2e04a88b587ca3f63756fe590e5f310b6",
+        "path": "/Volumes/Apo/graph-tests/workspaces/sem-review-20261001/graphframes-rs"
+      }
+    }
+  ],
+  "sources_before": {
+    "sail": {
+      "commit": "9f0aa7d2a50f1258544d37c05dd19b3ff3d915b3",
+      "tree": "950e3ebed76a37c454ed50c950b9b74087fcc60d",
+      "lock_sha256": "46121478d56b0d911d4f295f428b2816bd4a976d22265994afc2a5378bb00546",
+      "manifest_sha256": "56173bc61ded632000c18f77edaf0beb4529010a238a19b318b83c28834a7dff",
+      "path": "/Volumes/Apo/graph-tests/workspaces/sem-review-20261001/a5-native-9f0aa7d2a"
+    },
+    "graphframes": {
+      "commit": "b4da56dabe20bba8e29563e06acc5179b2113ce3",
+      "tree": "703080437cd0b7b66952a68716a1feaa1bfc18f5",
+      "lock_sha256": "5fb44b8090979b0c7d2c2951e8df92870d1ed14300b9b5ca333f45ae5f9f9bf0",
+      "manifest_sha256": "6624afcfe66332dd68394dfd2e9a0fa2e04a88b587ca3f63756fe590e5f310b6",
+      "path": "/Volumes/Apo/graph-tests/workspaces/sem-review-20261001/graphframes-rs"
+    }
+  },
+  "sources_after": {
+    "sail": {
+      "commit": "9f0aa7d2a50f1258544d37c05dd19b3ff3d915b3",
+      "tree": "950e3ebed76a37c454ed50c950b9b74087fcc60d",
+      "lock_sha256": "46121478d56b0d911d4f295f428b2816bd4a976d22265994afc2a5378bb00546",
+      "manifest_sha256": "56173bc61ded632000c18f77edaf0beb4529010a238a19b318b83c28834a7dff",
+      "path": "/Volumes/Apo/graph-tests/workspaces/sem-review-20261001/a5-native-9f0aa7d2a"
+    },
+    "graphframes": {
+      "commit": "b4da56dabe20bba8e29563e06acc5179b2113ce3",
+      "tree": "703080437cd0b7b66952a68716a1feaa1bfc18f5",
+      "lock_sha256": "5fb44b8090979b0c7d2c2951e8df92870d1ed14300b9b5ca333f45ae5f9f9bf0",
+      "manifest_sha256": "6624afcfe66332dd68394dfd2e9a0fa2e04a88b587ca3f63756fe590e5f310b6",
+      "path": "/Volumes/Apo/graph-tests/workspaces/sem-review-20261001/graphframes-rs"
+    }
+  },
+  "finished_utc": "2026-10-02T10:10:25.435124+00:00"
+}
