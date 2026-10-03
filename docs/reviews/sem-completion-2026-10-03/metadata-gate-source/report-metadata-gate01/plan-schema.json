@@ -1,0 +1,191 @@
+{
+  "$defs": {
+    "Claim": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "evidence": {
+          "$ref": "#/$defs/Pin"
+        },
+        "expected_fields": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "minProperties": 1,
+          "title": "Expected Fields",
+          "type": "object"
+        },
+        "scope": {
+          "title": "Scope",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "evidence",
+        "expected_fields",
+        "scope"
+      ],
+      "title": "Claim",
+      "type": "object"
+    },
+    "Identity": {
+      "additionalProperties": false,
+      "properties": {
+        "bytes": {
+          "minimum": 0,
+          "title": "Bytes",
+          "type": "integer"
+        },
+        "sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "bytes",
+        "sha256"
+      ],
+      "title": "Identity",
+      "type": "object"
+    },
+    "JsonValue": {},
+    "Pin": {
+      "additionalProperties": false,
+      "properties": {
+        "bytes": {
+          "minimum": 0,
+          "title": "Bytes",
+          "type": "integer"
+        },
+        "sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        },
+        "path": {
+          "format": "path",
+          "title": "Path",
+          "type": "string"
+        }
+      },
+      "required": [
+        "bytes",
+        "sha256",
+        "path"
+      ],
+      "title": "Pin",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "mode": {
+      "enum": [
+        "candidate",
+        "committed"
+      ],
+      "title": "Mode",
+      "type": "string"
+    },
+    "repo": {
+      "const": "/Volumes/Apo/graph-tests/workspaces/sem-completion-20261003/grust-report",
+      "title": "Repo",
+      "type": "string"
+    },
+    "commit": {
+      "pattern": "^[0-9a-f]{40}$",
+      "title": "Commit",
+      "type": "string"
+    },
+    "base_commit": {
+      "pattern": "^[0-9a-f]{40}$",
+      "title": "Base Commit",
+      "type": "string"
+    },
+    "tree": {
+      "pattern": "^[0-9a-f]{40}$",
+      "title": "Tree",
+      "type": "string"
+    },
+    "changed_files": {
+      "additionalProperties": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/Identity"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "minProperties": 1,
+      "title": "Changed Files",
+      "type": "object"
+    },
+    "helpers": {
+      "additionalProperties": {
+        "$ref": "#/$defs/Identity"
+      },
+      "title": "Helpers",
+      "type": "object"
+    },
+    "manifests": {
+      "items": {
+        "$ref": "#/$defs/Pin"
+      },
+      "minItems": 1,
+      "title": "Manifests",
+      "type": "array"
+    },
+    "archives": {
+      "items": {
+        "$ref": "#/$defs/Pin"
+      },
+      "minItems": 1,
+      "title": "Archives",
+      "type": "array"
+    },
+    "primary_markdown": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Primary Markdown",
+      "type": "array"
+    },
+    "observed_claims": {
+      "items": {
+        "$ref": "#/$defs/Claim"
+      },
+      "minItems": 1,
+      "title": "Observed Claims",
+      "type": "array"
+    },
+    "output": {
+      "format": "path",
+      "title": "Output",
+      "type": "string"
+    }
+  },
+  "required": [
+    "mode",
+    "repo",
+    "commit",
+    "base_commit",
+    "tree",
+    "changed_files",
+    "helpers",
+    "manifests",
+    "archives",
+    "primary_markdown",
+    "observed_claims",
+    "output"
+  ],
+  "title": "Plan",
+  "type": "object"
+}

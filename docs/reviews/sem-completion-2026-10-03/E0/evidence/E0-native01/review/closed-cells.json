@@ -1,0 +1,2663 @@
+{
+  "observed_utc": "2026-10-03T19:01:43.343236+00:00",
+  "status": "independent_closed_artifact_review_passed",
+  "campaign_pin": {
+    "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/receipt.json",
+    "bytes": 112364,
+    "sha256": "302b15747e03203f13a886b3b2c0286ee083b5155ee2014b3c7840bcc84ace0e"
+  },
+  "supervisor_wait_pin": {
+    "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/wait.json",
+    "bytes": 161,
+    "sha256": "5c932044fc266768851b78ab3f900b29bf2959feeaa8d4241c22bfd86b7ddc35"
+  },
+  "source_commit": "f2b297fc8443221891ce5f4afe88f955ed125b38",
+  "source_tree": "3395c493c98edebc4ca137ea81d7fa25dadd8979",
+  "runtime_commit": "9f0aa7d2a50f1258544d37c05dd19b3ff3d915b3",
+  "cells": [
+    {
+      "row": {
+        "dataset": "cit-Patents",
+        "program": "pagerank",
+        "source": 1,
+        "source_basis": "selected source 1; not an official source or earlier A6 claim",
+        "vertices": 3774768,
+        "effective_edges": 16518947,
+        "pipeline_seconds": 3.6728171369759366,
+        "algorithm_and_export_seconds": 3.672613034956157,
+        "client_launch_wait_seconds": 5.199535862077028,
+        "oracle_seconds": 10.639292,
+        "supersteps": 10,
+        "converged": null,
+        "plans": 10,
+        "snapshot_writes": 0,
+        "staging_writes_source_derived": 12,
+        "export_writes": 1,
+        "halt_count_actions_source_derived": 0,
+        "normalization_aggregate_actions_source_derived": 1,
+        "keyless_checkpoint_repartitions": 0,
+        "output_files": 4,
+        "reachable": null,
+        "max_hops": null,
+        "oracle_max_absolute_difference": 2.0328790734103208e-19,
+        "official_sssp_passed": false,
+        "rss_samples": 31,
+        "server_sampled_max_rss_bytes": 1594613760,
+        "client_sampled_max_rss_bytes": 117923840,
+        "server_client_sampled_max_sum_bytes": 1712459776,
+        "oracle_sampled_max_rss_bytes": 1929310208
+      },
+      "producer_pin": {
+        "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/cit-Patents-pagerank/cell/receipt.json",
+        "bytes": 1074,
+        "sha256": "1fa926e49345e69c0bfc06b16f6b124fe32c8ed4fc330b0d4b2fb1145046d086"
+      },
+      "oracle_pin": {
+        "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/cit-Patents-pagerank/oracle.json",
+        "bytes": 4158,
+        "sha256": "30cec0f34436f99b64d5dd0b29cef63e97c8e415c8e00c60014ad395e77a3df2"
+      },
+      "events_pin": {
+        "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/cit-Patents-pagerank/cell/events.json",
+        "bytes": 5305,
+        "sha256": "1737851fbd5728cb8669fbf326f43c51670556c5c80fadc8dad54462c302a456"
+      },
+      "rss_pin": {
+        "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/cit-Patents-pagerank/rss-500ms.jsonl",
+        "bytes": 5329,
+        "sha256": "85e7baa002b49bfb35a18a1dbf7257459087fb1fc73a4f805c0065f6abbf983b"
+      },
+      "output_schema": "id: int64\npagerank: double not null",
+      "numeric_summary": {
+        "sum": 1.0000000000000018,
+        "minimum": 1.401419636004169e-07,
+        "maximum": 8.731477417590194e-05,
+        "null_or_nonfinite": 0
+      },
+      "frontiers": [],
+      "plan_nodes_total": {
+        "ProjectionExec": 60,
+        "HashJoinExec": 20,
+        "RepartitionExec": 40,
+        "DataSourceExec": 30,
+        "AggregateExec": 20,
+        "FilterExec": 10
+      },
+      "plan_details": [
+        {
+          "pin": {
+            "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/cit-Patents-pagerank/cell/pre-write-relation-step-00001.txt",
+            "bytes": 4991,
+            "sha256": "5acd2b8ad95d36eeed8d98f4fa7e03d3211b5056f837068b82b72846385e76d1"
+          },
+          "nodes": {
+            "ProjectionExec": 6,
+            "HashJoinExec": 2,
+            "RepartitionExec": 4,
+            "DataSourceExec": 3,
+            "AggregateExec": 2,
+            "FilterExec": 1
+          },
+          "hash_repartition_lines": [
+            "RepartitionExec: partitioning=Hash([#0@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#23@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#10@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#21@0], 16), input_partitions=16"
+          ],
+          "aggregate_lines": [
+            "AggregateExec: mode=FinalPartitioned, gby=[#23@0 as #23], aggr=[sum(#24)]",
+            "AggregateExec: mode=Partial, gby=[#23@0 as #23], aggr=[sum(#24)]"
+          ]
+        },
+        {
+          "pin": {
+            "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/cit-Patents-pagerank/cell/pre-write-relation-step-00002.txt",
+            "bytes": 5007,
+            "sha256": "778074c4aa7133a1cc2db12bc845d392fab4bd5718d266c64b7e084b445b3c32"
+          },
+          "nodes": {
+            "ProjectionExec": 6,
+            "HashJoinExec": 2,
+            "RepartitionExec": 4,
+            "DataSourceExec": 3,
+            "AggregateExec": 2,
+            "FilterExec": 1
+          },
+          "hash_repartition_lines": [
+            "RepartitionExec: partitioning=Hash([#4@2], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#23@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#14@2], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#21@0], 16), input_partitions=16"
+          ],
+          "aggregate_lines": [
+            "AggregateExec: mode=FinalPartitioned, gby=[#23@0 as #23], aggr=[sum(#24)]",
+            "AggregateExec: mode=Partial, gby=[#23@0 as #23], aggr=[sum(#24)]"
+          ]
+        },
+        {
+          "pin": {
+            "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/cit-Patents-pagerank/cell/pre-write-relation-step-00003.txt",
+            "bytes": 5011,
+            "sha256": "01d47aa44b2cdbd8b6c81b44c0fcc23ce0904b6e8075f3f5040f203ac151e352"
+          },
+          "nodes": {
+            "ProjectionExec": 6,
+            "HashJoinExec": 2,
+            "RepartitionExec": 4,
+            "DataSourceExec": 3,
+            "AggregateExec": 2,
+            "FilterExec": 1
+          },
+          "hash_repartition_lines": [
+            "RepartitionExec: partitioning=Hash([#4@2], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#23@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#14@2], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#21@0], 16), input_partitions=16"
+          ],
+          "aggregate_lines": [
+            "AggregateExec: mode=FinalPartitioned, gby=[#23@0 as #23], aggr=[sum(#24)]",
+            "AggregateExec: mode=Partial, gby=[#23@0 as #23], aggr=[sum(#24)]"
+          ]
+        },
+        {
+          "pin": {
+            "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/cit-Patents-pagerank/cell/pre-write-relation-step-00004.txt",
+            "bytes": 5007,
+            "sha256": "e9ae584dffe8df9ab2ddf18a5daf35203ce59bdff94242cff0ad06b0aab13c30"
+          },
+          "nodes": {
+            "ProjectionExec": 6,
+            "HashJoinExec": 2,
+            "RepartitionExec": 4,
+            "DataSourceExec": 3,
+            "AggregateExec": 2,
+            "FilterExec": 1
+          },
+          "hash_repartition_lines": [
+            "RepartitionExec: partitioning=Hash([#4@2], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#23@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#14@2], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#21@0], 16), input_partitions=16"
+          ],
+          "aggregate_lines": [
+            "AggregateExec: mode=FinalPartitioned, gby=[#23@0 as #23], aggr=[sum(#24)]",
+            "AggregateExec: mode=Partial, gby=[#23@0 as #23], aggr=[sum(#24)]"
+          ]
+        },
+        {
+          "pin": {
+            "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/cit-Patents-pagerank/cell/pre-write-relation-step-00005.txt",
+            "bytes": 4999,
+            "sha256": "cf11e763174ffb2067f425be0b8a35a787275b0a4145eae9dea42f49ade90fbc"
+          },
+          "nodes": {
+            "ProjectionExec": 6,
+            "HashJoinExec": 2,
+            "RepartitionExec": 4,
+            "DataSourceExec": 3,
+            "AggregateExec": 2,
+            "FilterExec": 1
+          },
+          "hash_repartition_lines": [
+            "RepartitionExec: partitioning=Hash([#4@2], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#23@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#14@2], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#21@0], 16), input_partitions=16"
+          ],
+          "aggregate_lines": [
+            "AggregateExec: mode=FinalPartitioned, gby=[#23@0 as #23], aggr=[sum(#24)]",
+            "AggregateExec: mode=Partial, gby=[#23@0 as #23], aggr=[sum(#24)]"
+          ]
+        },
+        {
+          "pin": {
+            "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/cit-Patents-pagerank/cell/pre-write-relation-step-00006.txt",
+            "bytes": 5007,
+            "sha256": "5693ef71c31d8a231b1e1b3a7fb7b876f288eb3fdee895959ea9ba79623af770"
+          },
+          "nodes": {
+            "ProjectionExec": 6,
+            "HashJoinExec": 2,
+            "RepartitionExec": 4,
+            "DataSourceExec": 3,
+            "AggregateExec": 2,
+            "FilterExec": 1
+          },
+          "hash_repartition_lines": [
+            "RepartitionExec: partitioning=Hash([#4@2], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#23@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#14@2], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#21@0], 16), input_partitions=16"
+          ],
+          "aggregate_lines": [
+            "AggregateExec: mode=FinalPartitioned, gby=[#23@0 as #23], aggr=[sum(#24)]",
+            "AggregateExec: mode=Partial, gby=[#23@0 as #23], aggr=[sum(#24)]"
+          ]
+        },
+        {
+          "pin": {
+            "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/cit-Patents-pagerank/cell/pre-write-relation-step-00007.txt",
+            "bytes": 5001,
+            "sha256": "d1469a2b3d66f96941c2729684b92c02f226690e751b8e46e26aff66b68e5016"
+          },
+          "nodes": {
+            "ProjectionExec": 6,
+            "HashJoinExec": 2,
+            "RepartitionExec": 4,
+            "DataSourceExec": 3,
+            "AggregateExec": 2,
+            "FilterExec": 1
+          },
+          "hash_repartition_lines": [
+            "RepartitionExec: partitioning=Hash([#4@2], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#23@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#14@2], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#21@0], 16), input_partitions=16"
+          ],
+          "aggregate_lines": [
+            "AggregateExec: mode=FinalPartitioned, gby=[#23@0 as #23], aggr=[sum(#24)]",
+            "AggregateExec: mode=Partial, gby=[#23@0 as #23], aggr=[sum(#24)]"
+          ]
+        },
+        {
+          "pin": {
+            "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/cit-Patents-pagerank/cell/pre-write-relation-step-00008.txt",
+            "bytes": 4997,
+            "sha256": "c0ee4320ee39e30b6c9f61518adb2889b982ee037afe566bc30199e7c3e13743"
+          },
+          "nodes": {
+            "ProjectionExec": 6,
+            "HashJoinExec": 2,
+            "RepartitionExec": 4,
+            "DataSourceExec": 3,
+            "AggregateExec": 2,
+            "FilterExec": 1
+          },
+          "hash_repartition_lines": [
+            "RepartitionExec: partitioning=Hash([#4@2], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#23@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#14@2], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#21@0], 16), input_partitions=16"
+          ],
+          "aggregate_lines": [
+            "AggregateExec: mode=FinalPartitioned, gby=[#23@0 as #23], aggr=[sum(#24)]",
+            "AggregateExec: mode=Partial, gby=[#23@0 as #23], aggr=[sum(#24)]"
+          ]
+        },
+        {
+          "pin": {
+            "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/cit-Patents-pagerank/cell/pre-write-relation-step-00009.txt",
+            "bytes": 4997,
+            "sha256": "efbd50c7a85d18f2ab475c60dd759a2976cba6a2d134f0eb4456de430afad53a"
+          },
+          "nodes": {
+            "ProjectionExec": 6,
+            "HashJoinExec": 2,
+            "RepartitionExec": 4,
+            "DataSourceExec": 3,
+            "AggregateExec": 2,
+            "FilterExec": 1
+          },
+          "hash_repartition_lines": [
+            "RepartitionExec: partitioning=Hash([#4@2], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#23@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#14@2], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#21@0], 16), input_partitions=16"
+          ],
+          "aggregate_lines": [
+            "AggregateExec: mode=FinalPartitioned, gby=[#23@0 as #23], aggr=[sum(#24)]",
+            "AggregateExec: mode=Partial, gby=[#23@0 as #23], aggr=[sum(#24)]"
+          ]
+        },
+        {
+          "pin": {
+            "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/cit-Patents-pagerank/cell/pre-write-relation-step-00010.txt",
+            "bytes": 4993,
+            "sha256": "f390d71163f1a2cd68c25379a3f1f41b361f8fbe72a832cdbc5c22c84edf965d"
+          },
+          "nodes": {
+            "ProjectionExec": 6,
+            "HashJoinExec": 2,
+            "RepartitionExec": 4,
+            "DataSourceExec": 3,
+            "AggregateExec": 2,
+            "FilterExec": 1
+          },
+          "hash_repartition_lines": [
+            "RepartitionExec: partitioning=Hash([#4@2], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#23@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#14@2], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#21@0], 16), input_partitions=16"
+          ],
+          "aggregate_lines": [
+            "AggregateExec: mode=FinalPartitioned, gby=[#23@0 as #23], aggr=[sum(#24)]",
+            "AggregateExec: mode=Partial, gby=[#23@0 as #23], aggr=[sum(#24)]"
+          ]
+        }
+      ],
+      "official_sssp": null
+    },
+    {
+      "row": {
+        "dataset": "cit-Patents",
+        "program": "sssp",
+        "source": 1,
+        "source_basis": "selected source 1; not an official source or earlier A6 claim",
+        "vertices": 3774768,
+        "effective_edges": 16518947,
+        "pipeline_seconds": 0.4479451180668548,
+        "algorithm_and_export_seconds": 0.44766965508461,
+        "client_launch_wait_seconds": 2.0003927251091227,
+        "oracle_seconds": 7.428575,
+        "supersteps": 1,
+        "converged": true,
+        "plans": 1,
+        "snapshot_writes": 0,
+        "staging_writes_source_derived": 3,
+        "export_writes": 1,
+        "halt_count_actions_source_derived": 1,
+        "normalization_aggregate_actions_source_derived": 0,
+        "keyless_checkpoint_repartitions": 0,
+        "output_files": 4,
+        "reachable": 1,
+        "max_hops": null,
+        "oracle_max_absolute_difference": 0.0,
+        "official_sssp_passed": false,
+        "rss_samples": 19,
+        "server_sampled_max_rss_bytes": 639672320,
+        "client_sampled_max_rss_bytes": 116600832,
+        "server_client_sampled_max_sum_bytes": 756273152,
+        "oracle_sampled_max_rss_bytes": 1906253824
+      },
+      "producer_pin": {
+        "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/cit-Patents-sssp/cell/receipt.json",
+        "bytes": 1062,
+        "sha256": "81765b59a8afe907addd1a41c8d31fd60c5824510c4e1b16df484c0b085916c5"
+      },
+      "oracle_pin": {
+        "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/cit-Patents-sssp/oracle.json",
+        "bytes": 4091,
+        "sha256": "3124a546df771ae162edd6b4e5ba48c2b00c3422499d64af33cadcaa8f046917"
+      },
+      "events_pin": {
+        "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/cit-Patents-sssp/cell/events.json",
+        "bytes": 529,
+        "sha256": "9181d9a349ba7e832b6eca76261decc918022a40a8e6e7af257d9acbc6ea218d"
+      },
+      "rss_pin": {
+        "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/cit-Patents-sssp/rss-500ms.jsonl",
+        "bytes": 3132,
+        "sha256": "6c1f3a09c01789018b69c33c2c1eb32b872349971a067a423e85e9c29c2c7799"
+      },
+      "output_schema": "id: int64\ndistance: double",
+      "numeric_summary": {
+        "reachable": 1,
+        "unreachable": 3774767,
+        "maximum_distance": 0.0
+      },
+      "frontiers": [
+        0
+      ],
+      "plan_nodes_total": {
+        "ProjectionExec": 6,
+        "HashJoinExec": 2,
+        "RepartitionExec": 4,
+        "DataSourceExec": 3,
+        "AggregateExec": 2,
+        "FilterExec": 1
+      },
+      "plan_details": [
+        {
+          "pin": {
+            "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/cit-Patents-sssp/cell/pre-write-relation-step-00001.txt",
+            "bytes": 4755,
+            "sha256": "c69150b2e9fa5263fc5446eca63ab4c95e826c52ff8231856bba439d82233b4e"
+          },
+          "nodes": {
+            "ProjectionExec": 6,
+            "HashJoinExec": 2,
+            "RepartitionExec": 4,
+            "DataSourceExec": 3,
+            "AggregateExec": 2,
+            "FilterExec": 1
+          },
+          "hash_repartition_lines": [
+            "RepartitionExec: partitioning=Hash([#0@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#23@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#8@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#20@0], 16), input_partitions=16"
+          ],
+          "aggregate_lines": [
+            "AggregateExec: mode=FinalPartitioned, gby=[#23@0 as #23], aggr=[min(#24)]",
+            "AggregateExec: mode=Partial, gby=[#23@0 as #23], aggr=[min(#24)]"
+          ]
+        }
+      ],
+      "official_sssp": null
+    },
+    {
+      "row": {
+        "dataset": "cit-Patents",
+        "program": "landmarks",
+        "source": 1,
+        "source_basis": "selected source 1; not an official source or earlier A6 claim",
+        "vertices": 3774768,
+        "effective_edges": 16518947,
+        "pipeline_seconds": 0.4357642310205847,
+        "algorithm_and_export_seconds": 0.4355519430246204,
+        "client_launch_wait_seconds": 1.9965302889468148,
+        "oracle_seconds": 7.426246,
+        "supersteps": 1,
+        "converged": true,
+        "plans": 1,
+        "snapshot_writes": 0,
+        "staging_writes_source_derived": 3,
+        "export_writes": 1,
+        "halt_count_actions_source_derived": 1,
+        "normalization_aggregate_actions_source_derived": 0,
+        "keyless_checkpoint_repartitions": 0,
+        "output_files": 4,
+        "reachable": 1,
+        "max_hops": 0,
+        "oracle_max_absolute_difference": 0.0,
+        "official_sssp_passed": false,
+        "rss_samples": 18,
+        "server_sampled_max_rss_bytes": 564252672,
+        "client_sampled_max_rss_bytes": 116191232,
+        "server_client_sampled_max_sum_bytes": 680443904,
+        "oracle_sampled_max_rss_bytes": 1831800832
+      },
+      "producer_pin": {
+        "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/cit-Patents-landmarks/cell/receipt.json",
+        "bytes": 1079,
+        "sha256": "eb90567543052197a6d7e75f726d6f8f33838328ec828b29d9fcd14af47e2f59"
+      },
+      "oracle_pin": {
+        "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/cit-Patents-landmarks/oracle.json",
+        "bytes": 4151,
+        "sha256": "6e3c360192b1f403c98bafc5c38cda52184f4b7983b54fa1e981f90e434e7ca6"
+      },
+      "events_pin": {
+        "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/cit-Patents-landmarks/cell/events.json",
+        "bytes": 559,
+        "sha256": "92426ffefb7beb8ba481e0051d380890596e77dff3dae9a565aa0eade36b2300"
+      },
+      "rss_pin": {
+        "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/cit-Patents-landmarks/rss-500ms.jsonl",
+        "bytes": 2987,
+        "sha256": "433e24ced292186d24469d4acc21bb4aa8ffe1c588557de78b125998613a341e"
+      },
+      "output_schema": "id: int64\ndist_1: int32",
+      "numeric_summary": {
+        "reachable": 1,
+        "unreachable": 3774767,
+        "max_hops": 0
+      },
+      "frontiers": [
+        0
+      ],
+      "plan_nodes_total": {
+        "ProjectionExec": 6,
+        "HashJoinExec": 2,
+        "RepartitionExec": 4,
+        "DataSourceExec": 3,
+        "AggregateExec": 2,
+        "FilterExec": 1
+      },
+      "plan_details": [
+        {
+          "pin": {
+            "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/cit-Patents-landmarks/cell/pre-write-relation-step-00001.txt",
+            "bytes": 4797,
+            "sha256": "ad00741b53cc1eb47446d1fff72556d2fbaf7f8bad945852373d0f9d53a1465f"
+          },
+          "nodes": {
+            "ProjectionExec": 6,
+            "HashJoinExec": 2,
+            "RepartitionExec": 4,
+            "DataSourceExec": 3,
+            "AggregateExec": 2,
+            "FilterExec": 1
+          },
+          "hash_repartition_lines": [
+            "RepartitionExec: partitioning=Hash([#0@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#20@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#8@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#18@0], 16), input_partitions=16"
+          ],
+          "aggregate_lines": [
+            "AggregateExec: mode=FinalPartitioned, gby=[#20@0 as #20], aggr=[min(#21)]",
+            "AggregateExec: mode=Partial, gby=[#20@0 as #20], aggr=[min(#21)]"
+          ]
+        }
+      ],
+      "official_sssp": null
+    },
+    {
+      "row": {
+        "dataset": "kgs",
+        "program": "pagerank",
+        "source": 239044,
+        "source_basis": "official kgs.properties BFS/SSSP source",
+        "vertices": 832247,
+        "effective_edges": 35783396,
+        "pipeline_seconds": 4.179019202012569,
+        "algorithm_and_export_seconds": 4.178762236959301,
+        "client_launch_wait_seconds": 5.730145905050449,
+        "oracle_seconds": 11.279061,
+        "supersteps": 10,
+        "converged": null,
+        "plans": 10,
+        "snapshot_writes": 0,
+        "staging_writes_source_derived": 12,
+        "export_writes": 1,
+        "halt_count_actions_source_derived": 0,
+        "normalization_aggregate_actions_source_derived": 1,
+        "keyless_checkpoint_repartitions": 0,
+        "output_files": 4,
+        "reachable": null,
+        "max_hops": null,
+        "oracle_max_absolute_difference": 1.491862189340054e-16,
+        "official_sssp_passed": false,
+        "rss_samples": 33,
+        "server_sampled_max_rss_bytes": 1530818560,
+        "client_sampled_max_rss_bytes": 116981760,
+        "server_client_sampled_max_sum_bytes": 1647800320,
+        "oracle_sampled_max_rss_bytes": 2897551360
+      },
+      "producer_pin": {
+        "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/kgs-pagerank/cell/receipt.json",
+        "bytes": 1034,
+        "sha256": "1c996cfb5f906b47553c0afa7172a9baa34ef2d0171a1cf219071c700a54d370"
+      },
+      "oracle_pin": {
+        "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/kgs-pagerank/oracle.json",
+        "bytes": 4001,
+        "sha256": "75d30983d83b7597b72d446fbe982c67637db070a28fc91c3945115c0c09137a"
+      },
+      "events_pin": {
+        "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/kgs-pagerank/cell/events.json",
+        "bytes": 5145,
+        "sha256": "a5f4a89bcf149cb432b0db759e333d0e715d070413fe98f64b62cbc510f09e25"
+      },
+      "rss_pin": {
+        "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/kgs-pagerank/rss-500ms.jsonl",
+        "bytes": 5697,
+        "sha256": "dd57a90f6f74d353621fa2979b3156686fc89ea7e533201e6536ac945c9dc29b"
+      },
+      "output_schema": "id: int64\npagerank: double not null",
+      "numeric_summary": {
+        "sum": 0.9999999999999999,
+        "minimum": 2.394511635350393e-07,
+        "maximum": 0.0020889997901173654,
+        "null_or_nonfinite": 0
+      },
+      "frontiers": [],
+      "plan_nodes_total": {
+        "ProjectionExec": 70,
+        "HashJoinExec": 20,
+        "RepartitionExec": 40,
+        "DataSourceExec": 40,
+        "AggregateExec": 20,
+        "FilterExec": 10,
+        "UnionExec": 10
+      },
+      "plan_details": [
+        {
+          "pin": {
+            "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/kgs-pagerank/cell/pre-write-relation-step-00001.txt",
+            "bytes": 5512,
+            "sha256": "82d03bc8ccd23040df6f4d000356576f420996e3336a67b5d3065f5a2031b7d6"
+          },
+          "nodes": {
+            "ProjectionExec": 7,
+            "HashJoinExec": 2,
+            "RepartitionExec": 4,
+            "DataSourceExec": 4,
+            "AggregateExec": 2,
+            "FilterExec": 1,
+            "UnionExec": 1
+          },
+          "hash_repartition_lines": [
+            "RepartitionExec: partitioning=Hash([#0@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#31@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#10@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#29@0], 16), input_partitions=32"
+          ],
+          "aggregate_lines": [
+            "AggregateExec: mode=FinalPartitioned, gby=[#31@0 as #31], aggr=[sum(#32)]",
+            "AggregateExec: mode=Partial, gby=[#31@0 as #31], aggr=[sum(#32)]"
+          ]
+        },
+        {
+          "pin": {
+            "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/kgs-pagerank/cell/pre-write-relation-step-00002.txt",
+            "bytes": 5534,
+            "sha256": "1f3e27cf16a547a83aae003eb606a37e676a9dc639f682d6cead760471433fbb"
+          },
+          "nodes": {
+            "ProjectionExec": 7,
+            "HashJoinExec": 2,
+            "RepartitionExec": 4,
+            "DataSourceExec": 4,
+            "AggregateExec": 2,
+            "FilterExec": 1,
+            "UnionExec": 1
+          },
+          "hash_repartition_lines": [
+            "RepartitionExec: partitioning=Hash([#4@2], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#31@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#14@2], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#29@0], 16), input_partitions=32"
+          ],
+          "aggregate_lines": [
+            "AggregateExec: mode=FinalPartitioned, gby=[#31@0 as #31], aggr=[sum(#32)]",
+            "AggregateExec: mode=Partial, gby=[#31@0 as #31], aggr=[sum(#32)]"
+          ]
+        },
+        {
+          "pin": {
+            "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/kgs-pagerank/cell/pre-write-relation-step-00003.txt",
+            "bytes": 5536,
+            "sha256": "8b92a2e9e730710e9d96b03f8f6493a6a879a3fe155c24ac1a3709451dfbf284"
+          },
+          "nodes": {
+            "ProjectionExec": 7,
+            "HashJoinExec": 2,
+            "RepartitionExec": 4,
+            "DataSourceExec": 4,
+            "AggregateExec": 2,
+            "FilterExec": 1,
+            "UnionExec": 1
+          },
+          "hash_repartition_lines": [
+            "RepartitionExec: partitioning=Hash([#4@2], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#31@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#14@2], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#29@0], 16), input_partitions=32"
+          ],
+          "aggregate_lines": [
+            "AggregateExec: mode=FinalPartitioned, gby=[#31@0 as #31], aggr=[sum(#32)]",
+            "AggregateExec: mode=Partial, gby=[#31@0 as #31], aggr=[sum(#32)]"
+          ]
+        },
+        {
+          "pin": {
+            "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/kgs-pagerank/cell/pre-write-relation-step-00004.txt",
+            "bytes": 5536,
+            "sha256": "bce47b938289e0e6a3894c1eaf560dea34b4fae5a795b141a9988e9351b0c79e"
+          },
+          "nodes": {
+            "ProjectionExec": 7,
+            "HashJoinExec": 2,
+            "RepartitionExec": 4,
+            "DataSourceExec": 4,
+            "AggregateExec": 2,
+            "FilterExec": 1,
+            "UnionExec": 1
+          },
+          "hash_repartition_lines": [
+            "RepartitionExec: partitioning=Hash([#4@2], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#31@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#14@2], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#29@0], 16), input_partitions=32"
+          ],
+          "aggregate_lines": [
+            "AggregateExec: mode=FinalPartitioned, gby=[#31@0 as #31], aggr=[sum(#32)]",
+            "AggregateExec: mode=Partial, gby=[#31@0 as #31], aggr=[sum(#32)]"
+          ]
+        },
+        {
+          "pin": {
+            "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/kgs-pagerank/cell/pre-write-relation-step-00005.txt",
+            "bytes": 5534,
+            "sha256": "aeaca847f55298894b025d05c2e296a571dbc433ad923f70f9a8d59561e15904"
+          },
+          "nodes": {
+            "ProjectionExec": 7,
+            "HashJoinExec": 2,
+            "RepartitionExec": 4,
+            "DataSourceExec": 4,
+            "AggregateExec": 2,
+            "FilterExec": 1,
+            "UnionExec": 1
+          },
+          "hash_repartition_lines": [
+            "RepartitionExec: partitioning=Hash([#4@2], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#31@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#14@2], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#29@0], 16), input_partitions=32"
+          ],
+          "aggregate_lines": [
+            "AggregateExec: mode=FinalPartitioned, gby=[#31@0 as #31], aggr=[sum(#32)]",
+            "AggregateExec: mode=Partial, gby=[#31@0 as #31], aggr=[sum(#32)]"
+          ]
+        },
+        {
+          "pin": {
+            "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/kgs-pagerank/cell/pre-write-relation-step-00006.txt",
+            "bytes": 5534,
+            "sha256": "d64c5d325aae2aae0f755d0e10b384bbd12342fb323c6726ac73db2e90196d6d"
+          },
+          "nodes": {
+            "ProjectionExec": 7,
+            "HashJoinExec": 2,
+            "RepartitionExec": 4,
+            "DataSourceExec": 4,
+            "AggregateExec": 2,
+            "FilterExec": 1,
+            "UnionExec": 1
+          },
+          "hash_repartition_lines": [
+            "RepartitionExec: partitioning=Hash([#4@2], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#31@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#14@2], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#29@0], 16), input_partitions=32"
+          ],
+          "aggregate_lines": [
+            "AggregateExec: mode=FinalPartitioned, gby=[#31@0 as #31], aggr=[sum(#32)]",
+            "AggregateExec: mode=Partial, gby=[#31@0 as #31], aggr=[sum(#32)]"
+          ]
+        },
+        {
+          "pin": {
+            "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/kgs-pagerank/cell/pre-write-relation-step-00007.txt",
+            "bytes": 5528,
+            "sha256": "e4b3396a5ae7329b109fbc7e61cc33f3c9aad42c71deafaa3fe864da8c453504"
+          },
+          "nodes": {
+            "ProjectionExec": 7,
+            "HashJoinExec": 2,
+            "RepartitionExec": 4,
+            "DataSourceExec": 4,
+            "AggregateExec": 2,
+            "FilterExec": 1,
+            "UnionExec": 1
+          },
+          "hash_repartition_lines": [
+            "RepartitionExec: partitioning=Hash([#4@2], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#31@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#14@2], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#29@0], 16), input_partitions=32"
+          ],
+          "aggregate_lines": [
+            "AggregateExec: mode=FinalPartitioned, gby=[#31@0 as #31], aggr=[sum(#32)]",
+            "AggregateExec: mode=Partial, gby=[#31@0 as #31], aggr=[sum(#32)]"
+          ]
+        },
+        {
+          "pin": {
+            "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/kgs-pagerank/cell/pre-write-relation-step-00008.txt",
+            "bytes": 5536,
+            "sha256": "0fd1a415ab82a1637b960742eb07cacc2666d2771d94f2487b8341d2b3919744"
+          },
+          "nodes": {
+            "ProjectionExec": 7,
+            "HashJoinExec": 2,
+            "RepartitionExec": 4,
+            "DataSourceExec": 4,
+            "AggregateExec": 2,
+            "FilterExec": 1,
+            "UnionExec": 1
+          },
+          "hash_repartition_lines": [
+            "RepartitionExec: partitioning=Hash([#4@2], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#31@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#14@2], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#29@0], 16), input_partitions=32"
+          ],
+          "aggregate_lines": [
+            "AggregateExec: mode=FinalPartitioned, gby=[#31@0 as #31], aggr=[sum(#32)]",
+            "AggregateExec: mode=Partial, gby=[#31@0 as #31], aggr=[sum(#32)]"
+          ]
+        },
+        {
+          "pin": {
+            "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/kgs-pagerank/cell/pre-write-relation-step-00009.txt",
+            "bytes": 5534,
+            "sha256": "bde1c79313a73ce09939b7a08ab697227256f738e1dde02a97a13478266c2eab"
+          },
+          "nodes": {
+            "ProjectionExec": 7,
+            "HashJoinExec": 2,
+            "RepartitionExec": 4,
+            "DataSourceExec": 4,
+            "AggregateExec": 2,
+            "FilterExec": 1,
+            "UnionExec": 1
+          },
+          "hash_repartition_lines": [
+            "RepartitionExec: partitioning=Hash([#4@2], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#31@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#14@2], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#29@0], 16), input_partitions=32"
+          ],
+          "aggregate_lines": [
+            "AggregateExec: mode=FinalPartitioned, gby=[#31@0 as #31], aggr=[sum(#32)]",
+            "AggregateExec: mode=Partial, gby=[#31@0 as #31], aggr=[sum(#32)]"
+          ]
+        },
+        {
+          "pin": {
+            "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/kgs-pagerank/cell/pre-write-relation-step-00010.txt",
+            "bytes": 5534,
+            "sha256": "e78c81b859bb6e2fdbb8720d385398e89ee336e49a577c8efd3796441f715c21"
+          },
+          "nodes": {
+            "ProjectionExec": 7,
+            "HashJoinExec": 2,
+            "RepartitionExec": 4,
+            "DataSourceExec": 4,
+            "AggregateExec": 2,
+            "FilterExec": 1,
+            "UnionExec": 1
+          },
+          "hash_repartition_lines": [
+            "RepartitionExec: partitioning=Hash([#4@2], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#31@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#14@2], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#29@0], 16), input_partitions=32"
+          ],
+          "aggregate_lines": [
+            "AggregateExec: mode=FinalPartitioned, gby=[#31@0 as #31], aggr=[sum(#32)]",
+            "AggregateExec: mode=Partial, gby=[#31@0 as #31], aggr=[sum(#32)]"
+          ]
+        }
+      ],
+      "official_sssp": null
+    },
+    {
+      "row": {
+        "dataset": "kgs",
+        "program": "sssp",
+        "source": 239044,
+        "source_basis": "official kgs.properties BFS/SSSP source",
+        "vertices": 832247,
+        "effective_edges": 35783396,
+        "pipeline_seconds": 5.031130200019106,
+        "algorithm_and_export_seconds": 5.030883204075508,
+        "client_launch_wait_seconds": 6.56052479497157,
+        "oracle_seconds": 30.767894,
+        "supersteps": 20,
+        "converged": true,
+        "plans": 20,
+        "snapshot_writes": 0,
+        "staging_writes_source_derived": 22,
+        "export_writes": 1,
+        "halt_count_actions_source_derived": 20,
+        "normalization_aggregate_actions_source_derived": 0,
+        "keyless_checkpoint_repartitions": 0,
+        "output_files": 4,
+        "reachable": 819249,
+        "max_hops": null,
+        "oracle_max_absolute_difference": 8.881784197001252e-16,
+        "official_sssp_passed": true,
+        "rss_samples": 72,
+        "server_sampled_max_rss_bytes": 1920249856,
+        "client_sampled_max_rss_bytes": 118333440,
+        "server_client_sampled_max_sum_bytes": 2038583296,
+        "oracle_sampled_max_rss_bytes": 3255721984
+      },
+      "producer_pin": {
+        "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/kgs-sssp/cell/receipt.json",
+        "bytes": 1023,
+        "sha256": "e250b4ffadf3565310320de21e1a98923d5765c8060ec3a691f2a0bcf43c8ed8"
+      },
+      "oracle_pin": {
+        "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/kgs-sssp/oracle.json",
+        "bytes": 4519,
+        "sha256": "2e9bce4298c733b91e0be6fb26d89ab3b429ffb3b36cfb688f044e28e598d62b"
+      },
+      "events_pin": {
+        "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/kgs-sssp/cell/events.json",
+        "bytes": 10294,
+        "sha256": "4fbc121552cc64a0b57b48514ebe3e6a1f642e9b038721cd7294c708f8491662"
+      },
+      "rss_pin": {
+        "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/kgs-sssp/rss-500ms.jsonl",
+        "bytes": 11768,
+        "sha256": "31d8c970a0b400ee819d6d1ecf69e2eb2e74cccf7a254b45c79ed489c45567dd"
+      },
+      "output_schema": "id: int64\ndistance: double",
+      "numeric_summary": {
+        "reachable": 819249,
+        "unreachable": 12998,
+        "maximum_distance": 5.82729977
+      },
+      "frontiers": [
+        214,
+        228940,
+        627941,
+        687955,
+        499396,
+        439710,
+        301270,
+        199679,
+        111725,
+        57603,
+        31251,
+        18242,
+        10252,
+        4320,
+        1017,
+        297,
+        113,
+        25,
+        3,
+        0
+      ],
+      "plan_nodes_total": {
+        "ProjectionExec": 140,
+        "HashJoinExec": 40,
+        "RepartitionExec": 80,
+        "DataSourceExec": 80,
+        "AggregateExec": 40,
+        "FilterExec": 20,
+        "UnionExec": 20
+      },
+      "plan_details": [
+        {
+          "pin": {
+            "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/kgs-sssp/cell/pre-write-relation-step-00001.txt",
+            "bytes": 5314,
+            "sha256": "5b285de2c597215cbf894d1d2579ae30311f08bd33839c2abdc3cf132167d232"
+          },
+          "nodes": {
+            "ProjectionExec": 7,
+            "HashJoinExec": 2,
+            "RepartitionExec": 4,
+            "DataSourceExec": 4,
+            "AggregateExec": 2,
+            "FilterExec": 1,
+            "UnionExec": 1
+          },
+          "hash_repartition_lines": [
+            "RepartitionExec: partitioning=Hash([#0@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#36@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#8@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#33@0], 16), input_partitions=32"
+          ],
+          "aggregate_lines": [
+            "AggregateExec: mode=FinalPartitioned, gby=[#36@0 as #36], aggr=[min(#37)]",
+            "AggregateExec: mode=Partial, gby=[#36@0 as #36], aggr=[min(#37)]"
+          ]
+        },
+        {
+          "pin": {
+            "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/kgs-sssp/cell/pre-write-relation-step-00002.txt",
+            "bytes": 5325,
+            "sha256": "d721122ffde77c11f7ed6cbec36acbfe4b247f2765a4ec1e8fe95ccd7d2aaa2c"
+          },
+          "nodes": {
+            "ProjectionExec": 7,
+            "HashJoinExec": 2,
+            "RepartitionExec": 4,
+            "DataSourceExec": 4,
+            "AggregateExec": 2,
+            "FilterExec": 1,
+            "UnionExec": 1
+          },
+          "hash_repartition_lines": [
+            "RepartitionExec: partitioning=Hash([#3@1], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#36@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#11@1], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#33@0], 16), input_partitions=32"
+          ],
+          "aggregate_lines": [
+            "AggregateExec: mode=FinalPartitioned, gby=[#36@0 as #36], aggr=[min(#37)]",
+            "AggregateExec: mode=Partial, gby=[#36@0 as #36], aggr=[min(#37)]"
+          ]
+        },
+        {
+          "pin": {
+            "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/kgs-sssp/cell/pre-write-relation-step-00003.txt",
+            "bytes": 5321,
+            "sha256": "dd91a09c0ad2663b7e85b1381ccec7318fb38626ee07f29745fb436fadbaa4d8"
+          },
+          "nodes": {
+            "ProjectionExec": 7,
+            "HashJoinExec": 2,
+            "RepartitionExec": 4,
+            "DataSourceExec": 4,
+            "AggregateExec": 2,
+            "FilterExec": 1,
+            "UnionExec": 1
+          },
+          "hash_repartition_lines": [
+            "RepartitionExec: partitioning=Hash([#3@1], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#36@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#11@1], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#33@0], 16), input_partitions=32"
+          ],
+          "aggregate_lines": [
+            "AggregateExec: mode=FinalPartitioned, gby=[#36@0 as #36], aggr=[min(#37)]",
+            "AggregateExec: mode=Partial, gby=[#36@0 as #36], aggr=[min(#37)]"
+          ]
+        },
+        {
+          "pin": {
+            "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/kgs-sssp/cell/pre-write-relation-step-00004.txt",
+            "bytes": 5331,
+            "sha256": "4629929ed4bd0ca31f2491849f26434d64080872c6bcb831030030157b1f41fa"
+          },
+          "nodes": {
+            "ProjectionExec": 7,
+            "HashJoinExec": 2,
+            "RepartitionExec": 4,
+            "DataSourceExec": 4,
+            "AggregateExec": 2,
+            "FilterExec": 1,
+            "UnionExec": 1
+          },
+          "hash_repartition_lines": [
+            "RepartitionExec: partitioning=Hash([#3@1], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#36@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#11@1], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#33@0], 16), input_partitions=32"
+          ],
+          "aggregate_lines": [
+            "AggregateExec: mode=FinalPartitioned, gby=[#36@0 as #36], aggr=[min(#37)]",
+            "AggregateExec: mode=Partial, gby=[#36@0 as #36], aggr=[min(#37)]"
+          ]
+        },
+        {
+          "pin": {
+            "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/kgs-sssp/cell/pre-write-relation-step-00005.txt",
+            "bytes": 5323,
+            "sha256": "5df35ecd65946d16d8bd3985cc655f6ec0ddd87aaec03dfa03d331dd62e0b6d5"
+          },
+          "nodes": {
+            "ProjectionExec": 7,
+            "HashJoinExec": 2,
+            "RepartitionExec": 4,
+            "DataSourceExec": 4,
+            "AggregateExec": 2,
+            "FilterExec": 1,
+            "UnionExec": 1
+          },
+          "hash_repartition_lines": [
+            "RepartitionExec: partitioning=Hash([#3@1], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#36@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#11@1], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#33@0], 16), input_partitions=32"
+          ],
+          "aggregate_lines": [
+            "AggregateExec: mode=FinalPartitioned, gby=[#36@0 as #36], aggr=[min(#37)]",
+            "AggregateExec: mode=Partial, gby=[#36@0 as #36], aggr=[min(#37)]"
+          ]
+        },
+        {
+          "pin": {
+            "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/kgs-sssp/cell/pre-write-relation-step-00006.txt",
+            "bytes": 5335,
+            "sha256": "8b755ea4e009fa4bcdef30ac98d75f623e0c110f021cf92b5a42ef51dd85a98b"
+          },
+          "nodes": {
+            "ProjectionExec": 7,
+            "HashJoinExec": 2,
+            "RepartitionExec": 4,
+            "DataSourceExec": 4,
+            "AggregateExec": 2,
+            "FilterExec": 1,
+            "UnionExec": 1
+          },
+          "hash_repartition_lines": [
+            "RepartitionExec: partitioning=Hash([#3@1], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#36@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#11@1], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#33@0], 16), input_partitions=32"
+          ],
+          "aggregate_lines": [
+            "AggregateExec: mode=FinalPartitioned, gby=[#36@0 as #36], aggr=[min(#37)]",
+            "AggregateExec: mode=Partial, gby=[#36@0 as #36], aggr=[min(#37)]"
+          ]
+        },
+        {
+          "pin": {
+            "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/kgs-sssp/cell/pre-write-relation-step-00007.txt",
+            "bytes": 5327,
+            "sha256": "868abf3e03f2b0968cabbe783bc42292192bff9443d14a8965ade95f0ce1e0aa"
+          },
+          "nodes": {
+            "ProjectionExec": 7,
+            "HashJoinExec": 2,
+            "RepartitionExec": 4,
+            "DataSourceExec": 4,
+            "AggregateExec": 2,
+            "FilterExec": 1,
+            "UnionExec": 1
+          },
+          "hash_repartition_lines": [
+            "RepartitionExec: partitioning=Hash([#3@1], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#36@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#11@1], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#33@0], 16), input_partitions=32"
+          ],
+          "aggregate_lines": [
+            "AggregateExec: mode=FinalPartitioned, gby=[#36@0 as #36], aggr=[min(#37)]",
+            "AggregateExec: mode=Partial, gby=[#36@0 as #36], aggr=[min(#37)]"
+          ]
+        },
+        {
+          "pin": {
+            "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/kgs-sssp/cell/pre-write-relation-step-00008.txt",
+            "bytes": 5335,
+            "sha256": "21217532c2f566ac02794d5f9d7a6c22a1eb085369b1978d068164d0e8df5d99"
+          },
+          "nodes": {
+            "ProjectionExec": 7,
+            "HashJoinExec": 2,
+            "RepartitionExec": 4,
+            "DataSourceExec": 4,
+            "AggregateExec": 2,
+            "FilterExec": 1,
+            "UnionExec": 1
+          },
+          "hash_repartition_lines": [
+            "RepartitionExec: partitioning=Hash([#3@1], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#36@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#11@1], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#33@0], 16), input_partitions=32"
+          ],
+          "aggregate_lines": [
+            "AggregateExec: mode=FinalPartitioned, gby=[#36@0 as #36], aggr=[min(#37)]",
+            "AggregateExec: mode=Partial, gby=[#36@0 as #36], aggr=[min(#37)]"
+          ]
+        },
+        {
+          "pin": {
+            "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/kgs-sssp/cell/pre-write-relation-step-00009.txt",
+            "bytes": 5335,
+            "sha256": "44d98f6106458c8c51d742d08edf0808718762bec439fb729b659a7a2945f948"
+          },
+          "nodes": {
+            "ProjectionExec": 7,
+            "HashJoinExec": 2,
+            "RepartitionExec": 4,
+            "DataSourceExec": 4,
+            "AggregateExec": 2,
+            "FilterExec": 1,
+            "UnionExec": 1
+          },
+          "hash_repartition_lines": [
+            "RepartitionExec: partitioning=Hash([#3@1], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#36@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#11@1], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#33@0], 16), input_partitions=32"
+          ],
+          "aggregate_lines": [
+            "AggregateExec: mode=FinalPartitioned, gby=[#36@0 as #36], aggr=[min(#37)]",
+            "AggregateExec: mode=Partial, gby=[#36@0 as #36], aggr=[min(#37)]"
+          ]
+        },
+        {
+          "pin": {
+            "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/kgs-sssp/cell/pre-write-relation-step-00010.txt",
+            "bytes": 5335,
+            "sha256": "230c98f877ed2fd25a1b0615add5a158daee0e0a6b75ebef4ce6b45b63738e42"
+          },
+          "nodes": {
+            "ProjectionExec": 7,
+            "HashJoinExec": 2,
+            "RepartitionExec": 4,
+            "DataSourceExec": 4,
+            "AggregateExec": 2,
+            "FilterExec": 1,
+            "UnionExec": 1
+          },
+          "hash_repartition_lines": [
+            "RepartitionExec: partitioning=Hash([#3@1], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#36@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#11@1], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#33@0], 16), input_partitions=32"
+          ],
+          "aggregate_lines": [
+            "AggregateExec: mode=FinalPartitioned, gby=[#36@0 as #36], aggr=[min(#37)]",
+            "AggregateExec: mode=Partial, gby=[#36@0 as #36], aggr=[min(#37)]"
+          ]
+        },
+        {
+          "pin": {
+            "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/kgs-sssp/cell/pre-write-relation-step-00011.txt",
+            "bytes": 5327,
+            "sha256": "7129d61ffaf65c8e0055cef7edaf3a4fde6552f9e43c9c25ed6f97388fcfb3ae"
+          },
+          "nodes": {
+            "ProjectionExec": 7,
+            "HashJoinExec": 2,
+            "RepartitionExec": 4,
+            "DataSourceExec": 4,
+            "AggregateExec": 2,
+            "FilterExec": 1,
+            "UnionExec": 1
+          },
+          "hash_repartition_lines": [
+            "RepartitionExec: partitioning=Hash([#3@1], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#36@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#11@1], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#33@0], 16), input_partitions=32"
+          ],
+          "aggregate_lines": [
+            "AggregateExec: mode=FinalPartitioned, gby=[#36@0 as #36], aggr=[min(#37)]",
+            "AggregateExec: mode=Partial, gby=[#36@0 as #36], aggr=[min(#37)]"
+          ]
+        },
+        {
+          "pin": {
+            "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/kgs-sssp/cell/pre-write-relation-step-00012.txt",
+            "bytes": 5331,
+            "sha256": "94652522f42adadb0418e50969358b0a7cea15fb90b2834eefb5dc67147c719a"
+          },
+          "nodes": {
+            "ProjectionExec": 7,
+            "HashJoinExec": 2,
+            "RepartitionExec": 4,
+            "DataSourceExec": 4,
+            "AggregateExec": 2,
+            "FilterExec": 1,
+            "UnionExec": 1
+          },
+          "hash_repartition_lines": [
+            "RepartitionExec: partitioning=Hash([#3@1], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#36@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#11@1], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#33@0], 16), input_partitions=32"
+          ],
+          "aggregate_lines": [
+            "AggregateExec: mode=FinalPartitioned, gby=[#36@0 as #36], aggr=[min(#37)]",
+            "AggregateExec: mode=Partial, gby=[#36@0 as #36], aggr=[min(#37)]"
+          ]
+        },
+        {
+          "pin": {
+            "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/kgs-sssp/cell/pre-write-relation-step-00013.txt",
+            "bytes": 5335,
+            "sha256": "293b174cfa3549b6a48dc9700ac13bbba39cbdc74023ffb40e961b38ecfe4c56"
+          },
+          "nodes": {
+            "ProjectionExec": 7,
+            "HashJoinExec": 2,
+            "RepartitionExec": 4,
+            "DataSourceExec": 4,
+            "AggregateExec": 2,
+            "FilterExec": 1,
+            "UnionExec": 1
+          },
+          "hash_repartition_lines": [
+            "RepartitionExec: partitioning=Hash([#3@1], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#36@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#11@1], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#33@0], 16), input_partitions=32"
+          ],
+          "aggregate_lines": [
+            "AggregateExec: mode=FinalPartitioned, gby=[#36@0 as #36], aggr=[min(#37)]",
+            "AggregateExec: mode=Partial, gby=[#36@0 as #36], aggr=[min(#37)]"
+          ]
+        },
+        {
+          "pin": {
+            "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/kgs-sssp/cell/pre-write-relation-step-00014.txt",
+            "bytes": 5331,
+            "sha256": "7194c0a43037a0014d42b90308c696cd65f83ad7d922cbf3b358fe5464f324f3"
+          },
+          "nodes": {
+            "ProjectionExec": 7,
+            "HashJoinExec": 2,
+            "RepartitionExec": 4,
+            "DataSourceExec": 4,
+            "AggregateExec": 2,
+            "FilterExec": 1,
+            "UnionExec": 1
+          },
+          "hash_repartition_lines": [
+            "RepartitionExec: partitioning=Hash([#3@1], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#36@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#11@1], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#33@0], 16), input_partitions=32"
+          ],
+          "aggregate_lines": [
+            "AggregateExec: mode=FinalPartitioned, gby=[#36@0 as #36], aggr=[min(#37)]",
+            "AggregateExec: mode=Partial, gby=[#36@0 as #36], aggr=[min(#37)]"
+          ]
+        },
+        {
+          "pin": {
+            "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/kgs-sssp/cell/pre-write-relation-step-00015.txt",
+            "bytes": 5323,
+            "sha256": "f6b9ba8e288d7871ceddcde9021c2ba97aa5637f8438f992c1bafb6e0ca79901"
+          },
+          "nodes": {
+            "ProjectionExec": 7,
+            "HashJoinExec": 2,
+            "RepartitionExec": 4,
+            "DataSourceExec": 4,
+            "AggregateExec": 2,
+            "FilterExec": 1,
+            "UnionExec": 1
+          },
+          "hash_repartition_lines": [
+            "RepartitionExec: partitioning=Hash([#3@1], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#36@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#11@1], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#33@0], 16), input_partitions=32"
+          ],
+          "aggregate_lines": [
+            "AggregateExec: mode=FinalPartitioned, gby=[#36@0 as #36], aggr=[min(#37)]",
+            "AggregateExec: mode=Partial, gby=[#36@0 as #36], aggr=[min(#37)]"
+          ]
+        },
+        {
+          "pin": {
+            "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/kgs-sssp/cell/pre-write-relation-step-00016.txt",
+            "bytes": 5327,
+            "sha256": "34a80e04719e1588321e09c1d5b1b4b754a08bbc546c05f8147582573fba3d6c"
+          },
+          "nodes": {
+            "ProjectionExec": 7,
+            "HashJoinExec": 2,
+            "RepartitionExec": 4,
+            "DataSourceExec": 4,
+            "AggregateExec": 2,
+            "FilterExec": 1,
+            "UnionExec": 1
+          },
+          "hash_repartition_lines": [
+            "RepartitionExec: partitioning=Hash([#3@1], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#36@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#11@1], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#33@0], 16), input_partitions=32"
+          ],
+          "aggregate_lines": [
+            "AggregateExec: mode=FinalPartitioned, gby=[#36@0 as #36], aggr=[min(#37)]",
+            "AggregateExec: mode=Partial, gby=[#36@0 as #36], aggr=[min(#37)]"
+          ]
+        },
+        {
+          "pin": {
+            "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/kgs-sssp/cell/pre-write-relation-step-00017.txt",
+            "bytes": 5335,
+            "sha256": "ef0bf5a896af18104bfba703c3e17271a4be6eb28e42603dbe02d3a31c45e80d"
+          },
+          "nodes": {
+            "ProjectionExec": 7,
+            "HashJoinExec": 2,
+            "RepartitionExec": 4,
+            "DataSourceExec": 4,
+            "AggregateExec": 2,
+            "FilterExec": 1,
+            "UnionExec": 1
+          },
+          "hash_repartition_lines": [
+            "RepartitionExec: partitioning=Hash([#3@1], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#36@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#11@1], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#33@0], 16), input_partitions=32"
+          ],
+          "aggregate_lines": [
+            "AggregateExec: mode=FinalPartitioned, gby=[#36@0 as #36], aggr=[min(#37)]",
+            "AggregateExec: mode=Partial, gby=[#36@0 as #36], aggr=[min(#37)]"
+          ]
+        },
+        {
+          "pin": {
+            "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/kgs-sssp/cell/pre-write-relation-step-00018.txt",
+            "bytes": 5331,
+            "sha256": "a9a9bcbf2ab6c9624c5cdceaf17e8d526bb4fd909c21be250ac3db044389e246"
+          },
+          "nodes": {
+            "ProjectionExec": 7,
+            "HashJoinExec": 2,
+            "RepartitionExec": 4,
+            "DataSourceExec": 4,
+            "AggregateExec": 2,
+            "FilterExec": 1,
+            "UnionExec": 1
+          },
+          "hash_repartition_lines": [
+            "RepartitionExec: partitioning=Hash([#3@1], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#36@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#11@1], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#33@0], 16), input_partitions=32"
+          ],
+          "aggregate_lines": [
+            "AggregateExec: mode=FinalPartitioned, gby=[#36@0 as #36], aggr=[min(#37)]",
+            "AggregateExec: mode=Partial, gby=[#36@0 as #36], aggr=[min(#37)]"
+          ]
+        },
+        {
+          "pin": {
+            "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/kgs-sssp/cell/pre-write-relation-step-00019.txt",
+            "bytes": 5335,
+            "sha256": "7c0842c7ed172cce3228cb981f24dc84ed7d33baeae9f467dd235c71b7cbe606"
+          },
+          "nodes": {
+            "ProjectionExec": 7,
+            "HashJoinExec": 2,
+            "RepartitionExec": 4,
+            "DataSourceExec": 4,
+            "AggregateExec": 2,
+            "FilterExec": 1,
+            "UnionExec": 1
+          },
+          "hash_repartition_lines": [
+            "RepartitionExec: partitioning=Hash([#3@1], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#36@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#11@1], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#33@0], 16), input_partitions=32"
+          ],
+          "aggregate_lines": [
+            "AggregateExec: mode=FinalPartitioned, gby=[#36@0 as #36], aggr=[min(#37)]",
+            "AggregateExec: mode=Partial, gby=[#36@0 as #36], aggr=[min(#37)]"
+          ]
+        },
+        {
+          "pin": {
+            "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/kgs-sssp/cell/pre-write-relation-step-00020.txt",
+            "bytes": 5335,
+            "sha256": "50837f91aff5e2a02c995c33c6fc9c44d3c6f202211351123090d0a49adac0fa"
+          },
+          "nodes": {
+            "ProjectionExec": 7,
+            "HashJoinExec": 2,
+            "RepartitionExec": 4,
+            "DataSourceExec": 4,
+            "AggregateExec": 2,
+            "FilterExec": 1,
+            "UnionExec": 1
+          },
+          "hash_repartition_lines": [
+            "RepartitionExec: partitioning=Hash([#3@1], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#36@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#11@1], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#33@0], 16), input_partitions=32"
+          ],
+          "aggregate_lines": [
+            "AggregateExec: mode=FinalPartitioned, gby=[#36@0 as #36], aggr=[min(#37)]",
+            "AggregateExec: mode=Partial, gby=[#36@0 as #36], aggr=[min(#37)]"
+          ]
+        }
+      ],
+      "official_sssp": {
+        "path": "/Volumes/Apo/graph-tests/data/ldbc-20261003/kgs/kgs-SSSP",
+        "bytes": 23855079,
+        "sha256": "a4b9a0b03760ed45786ef3d676b16f26526fbe580fdf20538081731fcd714933"
+      }
+    },
+    {
+      "row": {
+        "dataset": "kgs",
+        "program": "landmarks",
+        "source": 239044,
+        "source_basis": "official kgs.properties BFS/SSSP source",
+        "vertices": 832247,
+        "effective_edges": 35783396,
+        "pipeline_seconds": 1.947279600892216,
+        "algorithm_and_export_seconds": 1.9470253359759226,
+        "client_launch_wait_seconds": 3.4720147370826453,
+        "oracle_seconds": 42.982535,
+        "supersteps": 10,
+        "converged": true,
+        "plans": 10,
+        "snapshot_writes": 0,
+        "staging_writes_source_derived": 12,
+        "export_writes": 1,
+        "halt_count_actions_source_derived": 10,
+        "normalization_aggregate_actions_source_derived": 0,
+        "keyless_checkpoint_repartitions": 0,
+        "output_files": 4,
+        "reachable": 819249,
+        "max_hops": 9,
+        "oracle_max_absolute_difference": 0.0,
+        "official_sssp_passed": false,
+        "rss_samples": 90,
+        "server_sampled_max_rss_bytes": 1263112192,
+        "client_sampled_max_rss_bytes": 116772864,
+        "server_client_sampled_max_sum_bytes": 1263112192,
+        "oracle_sampled_max_rss_bytes": 2888523776
+      },
+      "producer_pin": {
+        "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/kgs-landmarks/cell/receipt.json",
+        "bytes": 1040,
+        "sha256": "b270f66b57983177514395cd3538ac1cbe0247349cafccaf1e73deab1df782ec"
+      },
+      "oracle_pin": {
+        "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/kgs-landmarks/oracle.json",
+        "bytes": 3987,
+        "sha256": "d7e0c578d695e05cbdb4dff287f8a125280d04ea41d9f34aad42749cbd0e6123"
+      },
+      "events_pin": {
+        "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/kgs-landmarks/cell/events.json",
+        "bytes": 5427,
+        "sha256": "6e049dc36de53160a84c5d266a3aaeeea6beefaf7438ba142af163350f6134aa"
+      },
+      "rss_pin": {
+        "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/kgs-landmarks/rss-500ms.jsonl",
+        "bytes": 14243,
+        "sha256": "9c763d39cdd73e17f7070a4d3dbdbd7529729b8a8cc27db73210ecf242455f6c"
+      },
+      "output_schema": "id: int64\ndist_239044: int32",
+      "numeric_summary": {
+        "reachable": 819249,
+        "unreachable": 12998,
+        "max_hops": 9
+      },
+      "frontiers": [
+        214,
+        228858,
+        492585,
+        92862,
+        4338,
+        345,
+        40,
+        5,
+        1,
+        0
+      ],
+      "plan_nodes_total": {
+        "ProjectionExec": 70,
+        "HashJoinExec": 20,
+        "RepartitionExec": 40,
+        "DataSourceExec": 40,
+        "AggregateExec": 20,
+        "FilterExec": 10,
+        "UnionExec": 10
+      },
+      "plan_details": [
+        {
+          "pin": {
+            "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/kgs-landmarks/cell/pre-write-relation-step-00001.txt",
+            "bytes": 5347,
+            "sha256": "dde14d993dd8fd94f96a3a209ba9593e5650820834720631324c65b0897628a0"
+          },
+          "nodes": {
+            "ProjectionExec": 7,
+            "HashJoinExec": 2,
+            "RepartitionExec": 4,
+            "DataSourceExec": 4,
+            "AggregateExec": 2,
+            "FilterExec": 1,
+            "UnionExec": 1
+          },
+          "hash_repartition_lines": [
+            "RepartitionExec: partitioning=Hash([#0@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#28@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#8@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#26@0], 16), input_partitions=32"
+          ],
+          "aggregate_lines": [
+            "AggregateExec: mode=FinalPartitioned, gby=[#28@0 as #28], aggr=[min(#29)]",
+            "AggregateExec: mode=Partial, gby=[#28@0 as #28], aggr=[min(#29)]"
+          ]
+        },
+        {
+          "pin": {
+            "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/kgs-landmarks/cell/pre-write-relation-step-00002.txt",
+            "bytes": 5354,
+            "sha256": "bae2138fc4b9166293e5b414208cdcf21ceb5fb0c31645fb4c75fcf2d5681352"
+          },
+          "nodes": {
+            "ProjectionExec": 7,
+            "HashJoinExec": 2,
+            "RepartitionExec": 4,
+            "DataSourceExec": 4,
+            "AggregateExec": 2,
+            "FilterExec": 1,
+            "UnionExec": 1
+          },
+          "hash_repartition_lines": [
+            "RepartitionExec: partitioning=Hash([#3@1], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#28@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#11@1], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#26@0], 16), input_partitions=32"
+          ],
+          "aggregate_lines": [
+            "AggregateExec: mode=FinalPartitioned, gby=[#28@0 as #28], aggr=[min(#29)]",
+            "AggregateExec: mode=Partial, gby=[#28@0 as #28], aggr=[min(#29)]"
+          ]
+        },
+        {
+          "pin": {
+            "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/kgs-landmarks/cell/pre-write-relation-step-00003.txt",
+            "bytes": 5350,
+            "sha256": "d3d0ebfb82274621036b137ca2106768a930e330562143167dede9adc1212a56"
+          },
+          "nodes": {
+            "ProjectionExec": 7,
+            "HashJoinExec": 2,
+            "RepartitionExec": 4,
+            "DataSourceExec": 4,
+            "AggregateExec": 2,
+            "FilterExec": 1,
+            "UnionExec": 1
+          },
+          "hash_repartition_lines": [
+            "RepartitionExec: partitioning=Hash([#3@1], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#28@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#11@1], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#26@0], 16), input_partitions=32"
+          ],
+          "aggregate_lines": [
+            "AggregateExec: mode=FinalPartitioned, gby=[#28@0 as #28], aggr=[min(#29)]",
+            "AggregateExec: mode=Partial, gby=[#28@0 as #28], aggr=[min(#29)]"
+          ]
+        },
+        {
+          "pin": {
+            "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/kgs-landmarks/cell/pre-write-relation-step-00004.txt",
+            "bytes": 5354,
+            "sha256": "aecc36e97e54e8ab3a8469b49ffb36d8805bb0e116899826db3d4df4dae93f51"
+          },
+          "nodes": {
+            "ProjectionExec": 7,
+            "HashJoinExec": 2,
+            "RepartitionExec": 4,
+            "DataSourceExec": 4,
+            "AggregateExec": 2,
+            "FilterExec": 1,
+            "UnionExec": 1
+          },
+          "hash_repartition_lines": [
+            "RepartitionExec: partitioning=Hash([#3@1], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#28@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#11@1], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#26@0], 16), input_partitions=32"
+          ],
+          "aggregate_lines": [
+            "AggregateExec: mode=FinalPartitioned, gby=[#28@0 as #28], aggr=[min(#29)]",
+            "AggregateExec: mode=Partial, gby=[#28@0 as #28], aggr=[min(#29)]"
+          ]
+        },
+        {
+          "pin": {
+            "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/kgs-landmarks/cell/pre-write-relation-step-00005.txt",
+            "bytes": 5350,
+            "sha256": "af32a82c7932aab59ce84eb47ba2cfa9ff21a0fba606052bbec1fc52ba40186d"
+          },
+          "nodes": {
+            "ProjectionExec": 7,
+            "HashJoinExec": 2,
+            "RepartitionExec": 4,
+            "DataSourceExec": 4,
+            "AggregateExec": 2,
+            "FilterExec": 1,
+            "UnionExec": 1
+          },
+          "hash_repartition_lines": [
+            "RepartitionExec: partitioning=Hash([#3@1], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#28@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#11@1], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#26@0], 16), input_partitions=32"
+          ],
+          "aggregate_lines": [
+            "AggregateExec: mode=FinalPartitioned, gby=[#28@0 as #28], aggr=[min(#29)]",
+            "AggregateExec: mode=Partial, gby=[#28@0 as #28], aggr=[min(#29)]"
+          ]
+        },
+        {
+          "pin": {
+            "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/kgs-landmarks/cell/pre-write-relation-step-00006.txt",
+            "bytes": 5334,
+            "sha256": "c05b923ef2e000b6f2b21b27d2b86bd3884a5092e4b9caaa216324461b84b6a3"
+          },
+          "nodes": {
+            "ProjectionExec": 7,
+            "HashJoinExec": 2,
+            "RepartitionExec": 4,
+            "DataSourceExec": 4,
+            "AggregateExec": 2,
+            "FilterExec": 1,
+            "UnionExec": 1
+          },
+          "hash_repartition_lines": [
+            "RepartitionExec: partitioning=Hash([#3@1], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#28@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#11@1], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#26@0], 16), input_partitions=32"
+          ],
+          "aggregate_lines": [
+            "AggregateExec: mode=FinalPartitioned, gby=[#28@0 as #28], aggr=[min(#29)]",
+            "AggregateExec: mode=Partial, gby=[#28@0 as #28], aggr=[min(#29)]"
+          ]
+        },
+        {
+          "pin": {
+            "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/kgs-landmarks/cell/pre-write-relation-step-00007.txt",
+            "bytes": 5350,
+            "sha256": "b528df631e841da098a0f8f9db0b559b73f0bb1be3465102d06fd366012aa879"
+          },
+          "nodes": {
+            "ProjectionExec": 7,
+            "HashJoinExec": 2,
+            "RepartitionExec": 4,
+            "DataSourceExec": 4,
+            "AggregateExec": 2,
+            "FilterExec": 1,
+            "UnionExec": 1
+          },
+          "hash_repartition_lines": [
+            "RepartitionExec: partitioning=Hash([#3@1], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#28@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#11@1], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#26@0], 16), input_partitions=32"
+          ],
+          "aggregate_lines": [
+            "AggregateExec: mode=FinalPartitioned, gby=[#28@0 as #28], aggr=[min(#29)]",
+            "AggregateExec: mode=Partial, gby=[#28@0 as #28], aggr=[min(#29)]"
+          ]
+        },
+        {
+          "pin": {
+            "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/kgs-landmarks/cell/pre-write-relation-step-00008.txt",
+            "bytes": 5346,
+            "sha256": "bb172ccd8e77037bf8d9330c129f54ec5d85c3a3a7afa2b79e068ffbb5be12b9"
+          },
+          "nodes": {
+            "ProjectionExec": 7,
+            "HashJoinExec": 2,
+            "RepartitionExec": 4,
+            "DataSourceExec": 4,
+            "AggregateExec": 2,
+            "FilterExec": 1,
+            "UnionExec": 1
+          },
+          "hash_repartition_lines": [
+            "RepartitionExec: partitioning=Hash([#3@1], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#28@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#11@1], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#26@0], 16), input_partitions=32"
+          ],
+          "aggregate_lines": [
+            "AggregateExec: mode=FinalPartitioned, gby=[#28@0 as #28], aggr=[min(#29)]",
+            "AggregateExec: mode=Partial, gby=[#28@0 as #28], aggr=[min(#29)]"
+          ]
+        },
+        {
+          "pin": {
+            "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/kgs-landmarks/cell/pre-write-relation-step-00009.txt",
+            "bytes": 5350,
+            "sha256": "5e1c271b0674f85ac1bbd6defdbecd15bfb3d9285ff9ec4e202e1329a2267cf1"
+          },
+          "nodes": {
+            "ProjectionExec": 7,
+            "HashJoinExec": 2,
+            "RepartitionExec": 4,
+            "DataSourceExec": 4,
+            "AggregateExec": 2,
+            "FilterExec": 1,
+            "UnionExec": 1
+          },
+          "hash_repartition_lines": [
+            "RepartitionExec: partitioning=Hash([#3@1], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#28@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#11@1], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#26@0], 16), input_partitions=32"
+          ],
+          "aggregate_lines": [
+            "AggregateExec: mode=FinalPartitioned, gby=[#28@0 as #28], aggr=[min(#29)]",
+            "AggregateExec: mode=Partial, gby=[#28@0 as #28], aggr=[min(#29)]"
+          ]
+        },
+        {
+          "pin": {
+            "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/kgs-landmarks/cell/pre-write-relation-step-00010.txt",
+            "bytes": 5354,
+            "sha256": "5c4945391581a8fd5d4a16ebf7445932844f516ab8b8525e06ae4c8a0ebf3150"
+          },
+          "nodes": {
+            "ProjectionExec": 7,
+            "HashJoinExec": 2,
+            "RepartitionExec": 4,
+            "DataSourceExec": 4,
+            "AggregateExec": 2,
+            "FilterExec": 1,
+            "UnionExec": 1
+          },
+          "hash_repartition_lines": [
+            "RepartitionExec: partitioning=Hash([#3@1], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#28@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#11@1], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#26@0], 16), input_partitions=32"
+          ],
+          "aggregate_lines": [
+            "AggregateExec: mode=FinalPartitioned, gby=[#28@0 as #28], aggr=[min(#29)]",
+            "AggregateExec: mode=Partial, gby=[#28@0 as #28], aggr=[min(#29)]"
+          ]
+        }
+      ],
+      "official_sssp": null
+    },
+    {
+      "row": {
+        "dataset": "wiki-Talk",
+        "program": "pagerank",
+        "source": 2,
+        "source_basis": "official wiki-Talk.properties BFS source; unit-weight SSSP adaptation",
+        "vertices": 2394385,
+        "effective_edges": 5021410,
+        "pipeline_seconds": 2.3392919109901413,
+        "algorithm_and_export_seconds": 2.3390849789138883,
+        "client_launch_wait_seconds": 3.980935469036922,
+        "oracle_seconds": 4.5846,
+        "supersteps": 10,
+        "converged": null,
+        "plans": 10,
+        "snapshot_writes": 0,
+        "staging_writes_source_derived": 12,
+        "export_writes": 1,
+        "halt_count_actions_source_derived": 0,
+        "normalization_aggregate_actions_source_derived": 1,
+        "keyless_checkpoint_repartitions": 0,
+        "output_files": 4,
+        "reachable": null,
+        "max_hops": null,
+        "oracle_max_absolute_difference": 2.4665599424045226e-18,
+        "official_sssp_passed": false,
+        "rss_samples": 16,
+        "server_sampled_max_rss_bytes": 1244033024,
+        "client_sampled_max_rss_bytes": 117174272,
+        "server_client_sampled_max_sum_bytes": 1361207296,
+        "oracle_sampled_max_rss_bytes": 977018880
+      },
+      "producer_pin": {
+        "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/wiki-Talk-pagerank/cell/receipt.json",
+        "bytes": 1063,
+        "sha256": "9c7600dc6684360d2c61c75e46299d3c3dd981c8aaa6bc7994b26f72fdb9776f"
+      },
+      "oracle_pin": {
+        "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/wiki-Talk-pagerank/oracle.json",
+        "bytes": 4119,
+        "sha256": "5452c07b486ff955cc85bc1713adc95afcbdbb18f95f91744f91478c1a91b73d"
+      },
+      "events_pin": {
+        "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/wiki-Talk-pagerank/cell/events.json",
+        "bytes": 5265,
+        "sha256": "96f7d8df3ecaab62e095d89fcf58fc2138a0d228e75492f21fa33d5213adece3"
+      },
+      "rss_pin": {
+        "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/wiki-Talk-pagerank/rss-500ms.jsonl",
+        "bytes": 2850,
+        "sha256": "0a04c05e1488bb6ade262d1793dfd82f39c0866ab1fae3e088ab117b033873a4"
+      },
+      "output_schema": "id: int64\npagerank: double not null",
+      "numeric_summary": {
+        "sum": 0.9999999999999984,
+        "minimum": 3.753788830069855e-07,
+        "maximum": 0.0002457230325482416,
+        "null_or_nonfinite": 0
+      },
+      "frontiers": [],
+      "plan_nodes_total": {
+        "ProjectionExec": 60,
+        "HashJoinExec": 20,
+        "RepartitionExec": 40,
+        "DataSourceExec": 30,
+        "AggregateExec": 20,
+        "FilterExec": 10
+      },
+      "plan_details": [
+        {
+          "pin": {
+            "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/wiki-Talk-pagerank/cell/pre-write-relation-step-00001.txt",
+            "bytes": 4918,
+            "sha256": "bd9ac89140c841d0d3ce9d32ddab3d66f70babf57c947f93de8bbc6edaf8d01d"
+          },
+          "nodes": {
+            "ProjectionExec": 6,
+            "HashJoinExec": 2,
+            "RepartitionExec": 4,
+            "DataSourceExec": 3,
+            "AggregateExec": 2,
+            "FilterExec": 1
+          },
+          "hash_repartition_lines": [
+            "RepartitionExec: partitioning=Hash([#0@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#23@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#10@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#21@0], 16), input_partitions=16"
+          ],
+          "aggregate_lines": [
+            "AggregateExec: mode=FinalPartitioned, gby=[#23@0 as #23], aggr=[sum(#24)]",
+            "AggregateExec: mode=Partial, gby=[#23@0 as #23], aggr=[sum(#24)]"
+          ]
+        },
+        {
+          "pin": {
+            "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/wiki-Talk-pagerank/cell/pre-write-relation-step-00002.txt",
+            "bytes": 4950,
+            "sha256": "b131d542be39e182d9ecd32d422402a387bf11e4dd001c1e32cc1c6fd97816a3"
+          },
+          "nodes": {
+            "ProjectionExec": 6,
+            "HashJoinExec": 2,
+            "RepartitionExec": 4,
+            "DataSourceExec": 3,
+            "AggregateExec": 2,
+            "FilterExec": 1
+          },
+          "hash_repartition_lines": [
+            "RepartitionExec: partitioning=Hash([#4@2], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#23@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#14@2], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#21@0], 16), input_partitions=16"
+          ],
+          "aggregate_lines": [
+            "AggregateExec: mode=FinalPartitioned, gby=[#23@0 as #23], aggr=[sum(#24)]",
+            "AggregateExec: mode=Partial, gby=[#23@0 as #23], aggr=[sum(#24)]"
+          ]
+        },
+        {
+          "pin": {
+            "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/wiki-Talk-pagerank/cell/pre-write-relation-step-00003.txt",
+            "bytes": 4950,
+            "sha256": "db45a3e2a6b5e8720ba44f9685af3fabc1fb6a1ce6979b22ba2bf19675462f05"
+          },
+          "nodes": {
+            "ProjectionExec": 6,
+            "HashJoinExec": 2,
+            "RepartitionExec": 4,
+            "DataSourceExec": 3,
+            "AggregateExec": 2,
+            "FilterExec": 1
+          },
+          "hash_repartition_lines": [
+            "RepartitionExec: partitioning=Hash([#4@2], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#23@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#14@2], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#21@0], 16), input_partitions=16"
+          ],
+          "aggregate_lines": [
+            "AggregateExec: mode=FinalPartitioned, gby=[#23@0 as #23], aggr=[sum(#24)]",
+            "AggregateExec: mode=Partial, gby=[#23@0 as #23], aggr=[sum(#24)]"
+          ]
+        },
+        {
+          "pin": {
+            "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/wiki-Talk-pagerank/cell/pre-write-relation-step-00004.txt",
+            "bytes": 4942,
+            "sha256": "d4e286df2c48d1457cacae7b9995dba848d12ca0fabf57211603bdf2002cd030"
+          },
+          "nodes": {
+            "ProjectionExec": 6,
+            "HashJoinExec": 2,
+            "RepartitionExec": 4,
+            "DataSourceExec": 3,
+            "AggregateExec": 2,
+            "FilterExec": 1
+          },
+          "hash_repartition_lines": [
+            "RepartitionExec: partitioning=Hash([#4@2], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#23@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#14@2], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#21@0], 16), input_partitions=16"
+          ],
+          "aggregate_lines": [
+            "AggregateExec: mode=FinalPartitioned, gby=[#23@0 as #23], aggr=[sum(#24)]",
+            "AggregateExec: mode=Partial, gby=[#23@0 as #23], aggr=[sum(#24)]"
+          ]
+        },
+        {
+          "pin": {
+            "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/wiki-Talk-pagerank/cell/pre-write-relation-step-00005.txt",
+            "bytes": 4950,
+            "sha256": "413e7c3e88099678bbb38e6ddab01729daf35bdab04bce24a5ae235f42fcc609"
+          },
+          "nodes": {
+            "ProjectionExec": 6,
+            "HashJoinExec": 2,
+            "RepartitionExec": 4,
+            "DataSourceExec": 3,
+            "AggregateExec": 2,
+            "FilterExec": 1
+          },
+          "hash_repartition_lines": [
+            "RepartitionExec: partitioning=Hash([#4@2], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#23@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#14@2], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#21@0], 16), input_partitions=16"
+          ],
+          "aggregate_lines": [
+            "AggregateExec: mode=FinalPartitioned, gby=[#23@0 as #23], aggr=[sum(#24)]",
+            "AggregateExec: mode=Partial, gby=[#23@0 as #23], aggr=[sum(#24)]"
+          ]
+        },
+        {
+          "pin": {
+            "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/wiki-Talk-pagerank/cell/pre-write-relation-step-00006.txt",
+            "bytes": 4950,
+            "sha256": "3f070b87869f7fe9225d6800a73ba917890b31f8de760fe85bf0766da2040e20"
+          },
+          "nodes": {
+            "ProjectionExec": 6,
+            "HashJoinExec": 2,
+            "RepartitionExec": 4,
+            "DataSourceExec": 3,
+            "AggregateExec": 2,
+            "FilterExec": 1
+          },
+          "hash_repartition_lines": [
+            "RepartitionExec: partitioning=Hash([#4@2], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#23@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#14@2], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#21@0], 16), input_partitions=16"
+          ],
+          "aggregate_lines": [
+            "AggregateExec: mode=FinalPartitioned, gby=[#23@0 as #23], aggr=[sum(#24)]",
+            "AggregateExec: mode=Partial, gby=[#23@0 as #23], aggr=[sum(#24)]"
+          ]
+        },
+        {
+          "pin": {
+            "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/wiki-Talk-pagerank/cell/pre-write-relation-step-00007.txt",
+            "bytes": 4946,
+            "sha256": "402b93819575aeeacead5377d6189ed33e4f811796fce8d150725bcf48e99e8d"
+          },
+          "nodes": {
+            "ProjectionExec": 6,
+            "HashJoinExec": 2,
+            "RepartitionExec": 4,
+            "DataSourceExec": 3,
+            "AggregateExec": 2,
+            "FilterExec": 1
+          },
+          "hash_repartition_lines": [
+            "RepartitionExec: partitioning=Hash([#4@2], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#23@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#14@2], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#21@0], 16), input_partitions=16"
+          ],
+          "aggregate_lines": [
+            "AggregateExec: mode=FinalPartitioned, gby=[#23@0 as #23], aggr=[sum(#24)]",
+            "AggregateExec: mode=Partial, gby=[#23@0 as #23], aggr=[sum(#24)]"
+          ]
+        },
+        {
+          "pin": {
+            "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/wiki-Talk-pagerank/cell/pre-write-relation-step-00008.txt",
+            "bytes": 4950,
+            "sha256": "2f93114e2ce4e19e7cb7e374269216684d2a38c38aa19272c15a0434cae5730f"
+          },
+          "nodes": {
+            "ProjectionExec": 6,
+            "HashJoinExec": 2,
+            "RepartitionExec": 4,
+            "DataSourceExec": 3,
+            "AggregateExec": 2,
+            "FilterExec": 1
+          },
+          "hash_repartition_lines": [
+            "RepartitionExec: partitioning=Hash([#4@2], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#23@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#14@2], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#21@0], 16), input_partitions=16"
+          ],
+          "aggregate_lines": [
+            "AggregateExec: mode=FinalPartitioned, gby=[#23@0 as #23], aggr=[sum(#24)]",
+            "AggregateExec: mode=Partial, gby=[#23@0 as #23], aggr=[sum(#24)]"
+          ]
+        },
+        {
+          "pin": {
+            "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/wiki-Talk-pagerank/cell/pre-write-relation-step-00009.txt",
+            "bytes": 4942,
+            "sha256": "7e2a9ea4cfb3cc0638907fef4c36c4a4f0afb2ca06c55fdaf5883eb781b14e13"
+          },
+          "nodes": {
+            "ProjectionExec": 6,
+            "HashJoinExec": 2,
+            "RepartitionExec": 4,
+            "DataSourceExec": 3,
+            "AggregateExec": 2,
+            "FilterExec": 1
+          },
+          "hash_repartition_lines": [
+            "RepartitionExec: partitioning=Hash([#4@2], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#23@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#14@2], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#21@0], 16), input_partitions=16"
+          ],
+          "aggregate_lines": [
+            "AggregateExec: mode=FinalPartitioned, gby=[#23@0 as #23], aggr=[sum(#24)]",
+            "AggregateExec: mode=Partial, gby=[#23@0 as #23], aggr=[sum(#24)]"
+          ]
+        },
+        {
+          "pin": {
+            "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/wiki-Talk-pagerank/cell/pre-write-relation-step-00010.txt",
+            "bytes": 4944,
+            "sha256": "b4b47c5d5929e7e92b6be4dcef32201fa876e0553f7a8e6ebf3c7100ca9c1a8b"
+          },
+          "nodes": {
+            "ProjectionExec": 6,
+            "HashJoinExec": 2,
+            "RepartitionExec": 4,
+            "DataSourceExec": 3,
+            "AggregateExec": 2,
+            "FilterExec": 1
+          },
+          "hash_repartition_lines": [
+            "RepartitionExec: partitioning=Hash([#4@2], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#23@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#14@2], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#21@0], 16), input_partitions=16"
+          ],
+          "aggregate_lines": [
+            "AggregateExec: mode=FinalPartitioned, gby=[#23@0 as #23], aggr=[sum(#24)]",
+            "AggregateExec: mode=Partial, gby=[#23@0 as #23], aggr=[sum(#24)]"
+          ]
+        }
+      ],
+      "official_sssp": null
+    },
+    {
+      "row": {
+        "dataset": "wiki-Talk",
+        "program": "sssp",
+        "source": 2,
+        "source_basis": "official wiki-Talk.properties BFS source; unit-weight SSSP adaptation",
+        "vertices": 2394385,
+        "effective_edges": 5021410,
+        "pipeline_seconds": 1.2746988900471479,
+        "algorithm_and_export_seconds": 1.274423248018138,
+        "client_launch_wait_seconds": 2.7886696179630235,
+        "oracle_seconds": 14.063525,
+        "supersteps": 7,
+        "converged": true,
+        "plans": 7,
+        "snapshot_writes": 0,
+        "staging_writes_source_derived": 9,
+        "export_writes": 1,
+        "halt_count_actions_source_derived": 7,
+        "normalization_aggregate_actions_source_derived": 0,
+        "keyless_checkpoint_repartitions": 0,
+        "output_files": 4,
+        "reachable": 2354316,
+        "max_hops": null,
+        "oracle_max_absolute_difference": 0.0,
+        "official_sssp_passed": false,
+        "rss_samples": 33,
+        "server_sampled_max_rss_bytes": 1010241536,
+        "client_sampled_max_rss_bytes": 118149120,
+        "server_client_sampled_max_sum_bytes": 1128390656,
+        "oracle_sampled_max_rss_bytes": 1236860928
+      },
+      "producer_pin": {
+        "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/wiki-Talk-sssp/cell/receipt.json",
+        "bytes": 1051,
+        "sha256": "bf9e8940f704c5f65e47c523792f1b55ce40d8695fd27a1e3c2e1a89edc5c87d"
+      },
+      "oracle_pin": {
+        "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/wiki-Talk-sssp/oracle.json",
+        "bytes": 4052,
+        "sha256": "80eb7b67e6d7313a7f0e86cca63f65177b3d6042fbb47756fd75db2436e51a36"
+      },
+      "events_pin": {
+        "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/wiki-Talk-sssp/cell/events.json",
+        "bytes": 3678,
+        "sha256": "dcce5a76135429a959836868bfa0528e86082801b78e4752200e7666cdbde775"
+      },
+      "rss_pin": {
+        "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/wiki-Talk-sssp/rss-500ms.jsonl",
+        "bytes": 5345,
+        "sha256": "a41931c81433eee93051c15400239895c284541a528217687807f4a90052b497"
+      },
+      "output_schema": "id: int64\ndistance: double",
+      "numeric_summary": {
+        "reachable": 2354316,
+        "unreachable": 40069,
+        "maximum_distance": 6.0
+      },
+      "frontiers": [
+        110,
+        35120,
+        1423197,
+        887517,
+        8307,
+        64,
+        0
+      ],
+      "plan_nodes_total": {
+        "ProjectionExec": 42,
+        "HashJoinExec": 14,
+        "RepartitionExec": 28,
+        "DataSourceExec": 21,
+        "AggregateExec": 14,
+        "FilterExec": 7
+      },
+      "plan_details": [
+        {
+          "pin": {
+            "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/wiki-Talk-sssp/cell/pre-write-relation-step-00001.txt",
+            "bytes": 4698,
+            "sha256": "79d281a0e15a3c6d7d44e8eeac04a36765e5cc3376d67284dcdb6823c9911989"
+          },
+          "nodes": {
+            "ProjectionExec": 6,
+            "HashJoinExec": 2,
+            "RepartitionExec": 4,
+            "DataSourceExec": 3,
+            "AggregateExec": 2,
+            "FilterExec": 1
+          },
+          "hash_repartition_lines": [
+            "RepartitionExec: partitioning=Hash([#0@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#23@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#8@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#20@0], 16), input_partitions=16"
+          ],
+          "aggregate_lines": [
+            "AggregateExec: mode=FinalPartitioned, gby=[#23@0 as #23], aggr=[min(#24)]",
+            "AggregateExec: mode=Partial, gby=[#23@0 as #23], aggr=[min(#24)]"
+          ]
+        },
+        {
+          "pin": {
+            "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/wiki-Talk-sssp/cell/pre-write-relation-step-00002.txt",
+            "bytes": 4703,
+            "sha256": "aa05a92f9f1dd20b90d50164a1cfc9c82c17f64a98824e4008483ff261dcf260"
+          },
+          "nodes": {
+            "ProjectionExec": 6,
+            "HashJoinExec": 2,
+            "RepartitionExec": 4,
+            "DataSourceExec": 3,
+            "AggregateExec": 2,
+            "FilterExec": 1
+          },
+          "hash_repartition_lines": [
+            "RepartitionExec: partitioning=Hash([#3@1], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#23@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#11@1], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#20@0], 16), input_partitions=16"
+          ],
+          "aggregate_lines": [
+            "AggregateExec: mode=FinalPartitioned, gby=[#23@0 as #23], aggr=[min(#24)]",
+            "AggregateExec: mode=Partial, gby=[#23@0 as #23], aggr=[min(#24)]"
+          ]
+        },
+        {
+          "pin": {
+            "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/wiki-Talk-sssp/cell/pre-write-relation-step-00003.txt",
+            "bytes": 4693,
+            "sha256": "9183a332d13de55cd068b89f63595203307ec79f673e35ca256628b30e59a208"
+          },
+          "nodes": {
+            "ProjectionExec": 6,
+            "HashJoinExec": 2,
+            "RepartitionExec": 4,
+            "DataSourceExec": 3,
+            "AggregateExec": 2,
+            "FilterExec": 1
+          },
+          "hash_repartition_lines": [
+            "RepartitionExec: partitioning=Hash([#3@1], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#23@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#11@1], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#20@0], 16), input_partitions=16"
+          ],
+          "aggregate_lines": [
+            "AggregateExec: mode=FinalPartitioned, gby=[#23@0 as #23], aggr=[min(#24)]",
+            "AggregateExec: mode=Partial, gby=[#23@0 as #23], aggr=[min(#24)]"
+          ]
+        },
+        {
+          "pin": {
+            "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/wiki-Talk-sssp/cell/pre-write-relation-step-00004.txt",
+            "bytes": 4703,
+            "sha256": "04281eb027cd5981ad23e92c437a4846327e9ae49da7c80e399bb0aeb4d54492"
+          },
+          "nodes": {
+            "ProjectionExec": 6,
+            "HashJoinExec": 2,
+            "RepartitionExec": 4,
+            "DataSourceExec": 3,
+            "AggregateExec": 2,
+            "FilterExec": 1
+          },
+          "hash_repartition_lines": [
+            "RepartitionExec: partitioning=Hash([#3@1], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#23@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#11@1], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#20@0], 16), input_partitions=16"
+          ],
+          "aggregate_lines": [
+            "AggregateExec: mode=FinalPartitioned, gby=[#23@0 as #23], aggr=[min(#24)]",
+            "AggregateExec: mode=Partial, gby=[#23@0 as #23], aggr=[min(#24)]"
+          ]
+        },
+        {
+          "pin": {
+            "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/wiki-Talk-sssp/cell/pre-write-relation-step-00005.txt",
+            "bytes": 4707,
+            "sha256": "231a7486be77c7c67590151e01d358978f7478e31ae817e0584674fa29bf0430"
+          },
+          "nodes": {
+            "ProjectionExec": 6,
+            "HashJoinExec": 2,
+            "RepartitionExec": 4,
+            "DataSourceExec": 3,
+            "AggregateExec": 2,
+            "FilterExec": 1
+          },
+          "hash_repartition_lines": [
+            "RepartitionExec: partitioning=Hash([#3@1], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#23@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#11@1], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#20@0], 16), input_partitions=16"
+          ],
+          "aggregate_lines": [
+            "AggregateExec: mode=FinalPartitioned, gby=[#23@0 as #23], aggr=[min(#24)]",
+            "AggregateExec: mode=Partial, gby=[#23@0 as #23], aggr=[min(#24)]"
+          ]
+        },
+        {
+          "pin": {
+            "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/wiki-Talk-sssp/cell/pre-write-relation-step-00006.txt",
+            "bytes": 4715,
+            "sha256": "7bb53098462fb57d88573e60ae43c74b5d1b0afc6d19e960e97ba4d60607cd1c"
+          },
+          "nodes": {
+            "ProjectionExec": 6,
+            "HashJoinExec": 2,
+            "RepartitionExec": 4,
+            "DataSourceExec": 3,
+            "AggregateExec": 2,
+            "FilterExec": 1
+          },
+          "hash_repartition_lines": [
+            "RepartitionExec: partitioning=Hash([#3@1], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#23@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#11@1], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#20@0], 16), input_partitions=16"
+          ],
+          "aggregate_lines": [
+            "AggregateExec: mode=FinalPartitioned, gby=[#23@0 as #23], aggr=[min(#24)]",
+            "AggregateExec: mode=Partial, gby=[#23@0 as #23], aggr=[min(#24)]"
+          ]
+        },
+        {
+          "pin": {
+            "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/wiki-Talk-sssp/cell/pre-write-relation-step-00007.txt",
+            "bytes": 4715,
+            "sha256": "e0baf25d31bcf404dff2b9219d1c860b55ceb69153e2c14f7a9aaf417f71eba3"
+          },
+          "nodes": {
+            "ProjectionExec": 6,
+            "HashJoinExec": 2,
+            "RepartitionExec": 4,
+            "DataSourceExec": 3,
+            "AggregateExec": 2,
+            "FilterExec": 1
+          },
+          "hash_repartition_lines": [
+            "RepartitionExec: partitioning=Hash([#3@1], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#23@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#11@1], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#20@0], 16), input_partitions=16"
+          ],
+          "aggregate_lines": [
+            "AggregateExec: mode=FinalPartitioned, gby=[#23@0 as #23], aggr=[min(#24)]",
+            "AggregateExec: mode=Partial, gby=[#23@0 as #23], aggr=[min(#24)]"
+          ]
+        }
+      ],
+      "official_sssp": null
+    },
+    {
+      "row": {
+        "dataset": "wiki-Talk",
+        "program": "landmarks",
+        "source": 2,
+        "source_basis": "official wiki-Talk.properties BFS source; unit-weight SSSP adaptation",
+        "vertices": 2394385,
+        "effective_edges": 5021410,
+        "pipeline_seconds": 1.292756121023558,
+        "algorithm_and_export_seconds": 1.2925427539739758,
+        "client_launch_wait_seconds": 2.8450379110872746,
+        "oracle_seconds": 11.605968,
+        "supersteps": 7,
+        "converged": true,
+        "plans": 7,
+        "snapshot_writes": 0,
+        "staging_writes_source_derived": 9,
+        "export_writes": 1,
+        "halt_count_actions_source_derived": 7,
+        "normalization_aggregate_actions_source_derived": 0,
+        "keyless_checkpoint_repartitions": 0,
+        "output_files": 4,
+        "reachable": 2354316,
+        "max_hops": 6,
+        "oracle_max_absolute_difference": 0.0,
+        "official_sssp_passed": false,
+        "rss_samples": 28,
+        "server_sampled_max_rss_bytes": 918745088,
+        "client_sampled_max_rss_bytes": 116985856,
+        "server_client_sampled_max_sum_bytes": 1035730944,
+        "oracle_sampled_max_rss_bytes": 981409792
+      },
+      "producer_pin": {
+        "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/wiki-Talk-landmarks/cell/receipt.json",
+        "bytes": 1066,
+        "sha256": "a503f05e5cdf4b7020a5f59df72c25ff73c4924a6382348eb4ff3b4e3fbfb66c"
+      },
+      "oracle_pin": {
+        "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/wiki-Talk-landmarks/oracle.json",
+        "bytes": 4112,
+        "sha256": "1b2eefb53ede2efeb28a46875dc79e0b9efb595fbefa879277f0549311ec9c29"
+      },
+      "events_pin": {
+        "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/wiki-Talk-landmarks/cell/events.json",
+        "bytes": 3888,
+        "sha256": "d597811053fd99df5cdce8dbf03c81a3401e8a46d517f10613ab5bf5a1058b59"
+      },
+      "rss_pin": {
+        "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/wiki-Talk-landmarks/rss-500ms.jsonl",
+        "bytes": 4567,
+        "sha256": "60e3524f3b70b608d9fe3383b13081ab7bd246ab3032bdf070b18b813ca95533"
+      },
+      "output_schema": "id: int64\ndist_2: int32",
+      "numeric_summary": {
+        "reachable": 2354316,
+        "unreachable": 40069,
+        "max_hops": 6
+      },
+      "frontiers": [
+        110,
+        35120,
+        1423197,
+        887517,
+        8307,
+        64,
+        0
+      ],
+      "plan_nodes_total": {
+        "ProjectionExec": 42,
+        "HashJoinExec": 14,
+        "RepartitionExec": 28,
+        "DataSourceExec": 21,
+        "AggregateExec": 14,
+        "FilterExec": 7
+      },
+      "plan_details": [
+        {
+          "pin": {
+            "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/wiki-Talk-landmarks/cell/pre-write-relation-step-00001.txt",
+            "bytes": 4732,
+            "sha256": "acb694e3f4e31eba9d0636d09172027502f3753e2be38396503005b968225196"
+          },
+          "nodes": {
+            "ProjectionExec": 6,
+            "HashJoinExec": 2,
+            "RepartitionExec": 4,
+            "DataSourceExec": 3,
+            "AggregateExec": 2,
+            "FilterExec": 1
+          },
+          "hash_repartition_lines": [
+            "RepartitionExec: partitioning=Hash([#0@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#20@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#8@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#18@0], 16), input_partitions=16"
+          ],
+          "aggregate_lines": [
+            "AggregateExec: mode=FinalPartitioned, gby=[#20@0 as #20], aggr=[min(#21)]",
+            "AggregateExec: mode=Partial, gby=[#20@0 as #20], aggr=[min(#21)]"
+          ]
+        },
+        {
+          "pin": {
+            "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/wiki-Talk-landmarks/cell/pre-write-relation-step-00002.txt",
+            "bytes": 4735,
+            "sha256": "045a192049f5f4e77f547605deaca381f855c8efe02e940c75326988c82054a1"
+          },
+          "nodes": {
+            "ProjectionExec": 6,
+            "HashJoinExec": 2,
+            "RepartitionExec": 4,
+            "DataSourceExec": 3,
+            "AggregateExec": 2,
+            "FilterExec": 1
+          },
+          "hash_repartition_lines": [
+            "RepartitionExec: partitioning=Hash([#3@1], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#20@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#11@1], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#18@0], 16), input_partitions=16"
+          ],
+          "aggregate_lines": [
+            "AggregateExec: mode=FinalPartitioned, gby=[#20@0 as #20], aggr=[min(#21)]",
+            "AggregateExec: mode=Partial, gby=[#20@0 as #20], aggr=[min(#21)]"
+          ]
+        },
+        {
+          "pin": {
+            "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/wiki-Talk-landmarks/cell/pre-write-relation-step-00003.txt",
+            "bytes": 4749,
+            "sha256": "4c55d977b06501e48e76d9392c2ee439eb22e9fb2b6d42aa60e5eda3bfa811a2"
+          },
+          "nodes": {
+            "ProjectionExec": 6,
+            "HashJoinExec": 2,
+            "RepartitionExec": 4,
+            "DataSourceExec": 3,
+            "AggregateExec": 2,
+            "FilterExec": 1
+          },
+          "hash_repartition_lines": [
+            "RepartitionExec: partitioning=Hash([#3@1], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#20@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#11@1], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#18@0], 16), input_partitions=16"
+          ],
+          "aggregate_lines": [
+            "AggregateExec: mode=FinalPartitioned, gby=[#20@0 as #20], aggr=[min(#21)]",
+            "AggregateExec: mode=Partial, gby=[#20@0 as #20], aggr=[min(#21)]"
+          ]
+        },
+        {
+          "pin": {
+            "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/wiki-Talk-landmarks/cell/pre-write-relation-step-00004.txt",
+            "bytes": 4745,
+            "sha256": "b25b5b4f85590a1172a5a997adbef5c2b71ef6e4cc1a150bc896ea91d8c997d1"
+          },
+          "nodes": {
+            "ProjectionExec": 6,
+            "HashJoinExec": 2,
+            "RepartitionExec": 4,
+            "DataSourceExec": 3,
+            "AggregateExec": 2,
+            "FilterExec": 1
+          },
+          "hash_repartition_lines": [
+            "RepartitionExec: partitioning=Hash([#3@1], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#20@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#11@1], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#18@0], 16), input_partitions=16"
+          ],
+          "aggregate_lines": [
+            "AggregateExec: mode=FinalPartitioned, gby=[#20@0 as #20], aggr=[min(#21)]",
+            "AggregateExec: mode=Partial, gby=[#20@0 as #20], aggr=[min(#21)]"
+          ]
+        },
+        {
+          "pin": {
+            "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/wiki-Talk-landmarks/cell/pre-write-relation-step-00005.txt",
+            "bytes": 4753,
+            "sha256": "d908c8fe1502023286b0937095049048aa7a3cf1e5cfcf51db456b7959e6575e"
+          },
+          "nodes": {
+            "ProjectionExec": 6,
+            "HashJoinExec": 2,
+            "RepartitionExec": 4,
+            "DataSourceExec": 3,
+            "AggregateExec": 2,
+            "FilterExec": 1
+          },
+          "hash_repartition_lines": [
+            "RepartitionExec: partitioning=Hash([#3@1], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#20@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#11@1], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#18@0], 16), input_partitions=16"
+          ],
+          "aggregate_lines": [
+            "AggregateExec: mode=FinalPartitioned, gby=[#20@0 as #20], aggr=[min(#21)]",
+            "AggregateExec: mode=Partial, gby=[#20@0 as #20], aggr=[min(#21)]"
+          ]
+        },
+        {
+          "pin": {
+            "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/wiki-Talk-landmarks/cell/pre-write-relation-step-00006.txt",
+            "bytes": 4757,
+            "sha256": "1186c248111d0e29303c554a12b51130b4ca89c18b8a2207838c4381537c2b9c"
+          },
+          "nodes": {
+            "ProjectionExec": 6,
+            "HashJoinExec": 2,
+            "RepartitionExec": 4,
+            "DataSourceExec": 3,
+            "AggregateExec": 2,
+            "FilterExec": 1
+          },
+          "hash_repartition_lines": [
+            "RepartitionExec: partitioning=Hash([#3@1], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#20@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#11@1], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#18@0], 16), input_partitions=16"
+          ],
+          "aggregate_lines": [
+            "AggregateExec: mode=FinalPartitioned, gby=[#20@0 as #20], aggr=[min(#21)]",
+            "AggregateExec: mode=Partial, gby=[#20@0 as #20], aggr=[min(#21)]"
+          ]
+        },
+        {
+          "pin": {
+            "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/E0-native01/raw/wiki-Talk-landmarks/cell/pre-write-relation-step-00007.txt",
+            "bytes": 4749,
+            "sha256": "40a70c686915c1e6b6a1c12b6dad5729a4066ae7c13368c0cd7b4e5752d93f9e"
+          },
+          "nodes": {
+            "ProjectionExec": 6,
+            "HashJoinExec": 2,
+            "RepartitionExec": 4,
+            "DataSourceExec": 3,
+            "AggregateExec": 2,
+            "FilterExec": 1
+          },
+          "hash_repartition_lines": [
+            "RepartitionExec: partitioning=Hash([#3@1], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#20@0], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#11@1], 16), input_partitions=16",
+            "RepartitionExec: partitioning=Hash([#18@0], 16), input_partitions=16"
+          ],
+          "aggregate_lines": [
+            "AggregateExec: mode=FinalPartitioned, gby=[#20@0 as #20], aggr=[min(#21)]",
+            "AggregateExec: mode=Partial, gby=[#20@0 as #20], aggr=[min(#21)]"
+          ]
+        }
+      ],
+      "official_sssp": null
+    }
+  ],
+  "action_count_basis": "exact program call sites, not observed engine job IDs",
+  "plans": "pre-write updated-relation explain; excludes writer sink and execution metrics",
+  "rss": "500ms samples of owned process RSS; not a hard peak or memory-fit certificate"
+}

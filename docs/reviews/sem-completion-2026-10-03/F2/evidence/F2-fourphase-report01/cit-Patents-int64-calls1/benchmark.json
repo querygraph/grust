@@ -1,0 +1,543 @@
+{
+  "algorithm": "wcc",
+  "dataset": "cit-Patents",
+  "size_class": "M",
+  "engine": "Nutmeg/native Arrow bridge",
+  "params": {
+    "execution_profile": "chunk_checkpoint_arrow_client_four_phase",
+    "ids": "int64",
+    "calls": 1,
+    "order": "asStaged",
+    "workers": 16,
+    "concurrency": 16,
+    "chunk_rows": 262144,
+    "runs": 1
+  },
+  "graph": {
+    "vertices_reported_by_stage": 3774768,
+    "edges_reported_by_stage": 16518947,
+    "vertices_path": "/Users/alexy/src/grust-benchmark-data/cit-Patents/cit-Patents-v.parquet",
+    "edges_path": "/Users/alexy/src/grust-benchmark-data/cit-Patents/cit-Patents-e.parquet"
+  },
+  "warmup": {
+    "count": 0,
+    "performed": false,
+    "cache_flush": false
+  },
+  "monitor": {
+    "rss_interval_s": 0.5,
+    "samples": 16,
+    "observed_worker_peak_rss_kib": 783820,
+    "observed_server_peak_rss_kib": 1490432,
+    "scope": "Direct PID sampled RSS; not OS peak or limit."
+  },
+  "runs": [
+    {
+      "index": 0,
+      "wall_time_s": 8.482240827,
+      "returncode": 0,
+      "worker": {
+        "algorithm": "wcc",
+        "phases_s": {
+          "read_parquet_s": 0.125889736,
+          "csr_and_graph_s": 5.620204482,
+          "algorithm_s": 1.001722181,
+          "write_parquet_s": 0.129478084,
+          "wall_in_process_s": 6.883285792
+        },
+        "calls": 1,
+        "completed_full_writes": 1,
+        "full_physical_qualification": "pending_external_oracles"
+      }
+    }
+  ],
+  "stats": {
+    "parent_launch_to_wait_s": {
+      "n": 1,
+      "mean": 8.482240827,
+      "median": 8.482240827,
+      "min": 8.482240827,
+      "max": 8.482240827,
+      "std": null
+    },
+    "continuous_pipeline_s": {
+      "n": 1,
+      "mean": 6.883285792,
+      "median": 6.883285792,
+      "min": 6.883285792,
+      "max": 6.883285792,
+      "std": null
+    }
+  },
+  "series": {
+    "parent_launch_to_wait_s": [
+      8.482240827
+    ],
+    "continuous_pipeline_s": [
+      6.883285792
+    ]
+  },
+  "raw_series": {
+    "worker": {
+      "execution_profile": "chunk_checkpoint_arrow_client_four_phase",
+      "observed_utc": "2026-10-03T19:35:41.025005+00:00",
+      "started_utc": "2026-10-03T19:35:33.682561+00:00",
+      "outcome": "completed_unvalidated",
+      "configuration": {
+        "dataset": "cit-Patents",
+        "vertices": "/Users/alexy/src/grust-benchmark-data/cit-Patents/cit-Patents-v.parquet",
+        "edges": "/Users/alexy/src/grust-benchmark-data/cit-Patents/cit-Patents-e.parquet",
+        "vertex_id_column": "id",
+        "edge_source_column": "source",
+        "edge_target_column": "target",
+        "output_root": "/Users/alexy/src/grust-benchmark-runs/sem-completion-20261003/F2-fourphase-main03/cit-Patents-int64-c1",
+        "receipt": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/F2-fourphase-main03/cit-Patents-int64-c1.json",
+        "ids": "int64",
+        "calls": 1,
+        "workers": 16,
+        "binary": "/Volumes/Apo/graph-tests/results/sem-review-20261001/native-optimized-build01/sail-target/release/sail",
+        "venv": "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-int64-build01/venv",
+        "python_home": "/Users/alexy/.asdf/installs/python/3.12.6",
+        "python_purelib": "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-int64-build01/venv/lib/python3.12/site-packages",
+        "python_library_directory": "/Users/alexy/.asdf/installs/python/3.12.6/lib",
+        "sail_pool_bytes": 32212254720,
+        "native_quota_bytes": 23622320128,
+        "timeout_seconds": 1800,
+        "chunk_rows": 262144,
+        "extension_source_commit": "4b88c8fb4504ab1d2a896c9e49e4a09df4905bbb",
+        "native_runtime_commit": "9f0aa7d2a50f1258544d37c05dd19b3ff3d915b3"
+      },
+      "configuration_pin": {
+        "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/F2-fourphase01/plans/main03/cit-Patents-int64-c1.json",
+        "bytes": 1349,
+        "sha256": "202d7c1d83c1009ce81d322a2315c49167f7110afce802db4a78082bbb66554a"
+      },
+      "worker_source": {
+        "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/F2-fourphase01/f2a_worker.py",
+        "bytes": 19105,
+        "sha256": "c776e1e9f603bff27f29d3a762b8ea4e72eb5c6f6a3987a742030ab2f8a440ab"
+      },
+      "models_source": {
+        "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/F2-fourphase01/f2a_models.py",
+        "bytes": 9019,
+        "sha256": "3e67f4bc3487ec51dfc6fcc67b1e26024e2bdf3a9389cb79b5c91fe40276068e"
+      },
+      "owner_pid": 32194,
+      "python_version": "3.12.6 (main, Sep 13 2024, 17:29:18) [Clang 15.0.0 (clang-1500.3.9.4)]",
+      "pyspark_version": "4.0.1",
+      "client_plan_source": {
+        "path": "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-int64-build01/venv/lib/python3.12/site-packages/pyspark/sql/connect/plan.py",
+        "bytes": 99118,
+        "sha256": "8606df63892caee177c0c3ef64b72e8fdc9dfda0f1fe02b155f0ec12111bef20"
+      },
+      "client_session_source": {
+        "path": "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-int64-build01/venv/lib/python3.12/site-packages/pyspark/sql/connect/session.py",
+        "bytes": 45433,
+        "sha256": "29833e979ac7d7536f742d2dd996096a11f82b19344bc22b1248e25c8e396946"
+      },
+      "client_dataframe_source": {
+        "path": "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-int64-build01/venv/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py",
+        "bytes": 85737,
+        "sha256": "374573117e82e43731fdb06a6c21dec80c64ae8ffa6a1deea8e071a57c096983"
+      },
+      "checkpoint_base_uri": "file:///Users/alexy/src/grust-benchmark-runs/sem-completion-20261003/F2-fourphase-main03/cit-Patents-int64-c1/checkpoints",
+      "checkpoint_directory_created": true,
+      "python_executable": "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-int64-build01/venv/bin/python",
+      "environment": {
+        "PYTHONHOME": "/Users/alexy/.asdf/installs/python/3.12.6",
+        "PYTHONPATH": "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-int64-build01/venv/lib/python3.12/site-packages",
+        "DYLD_LIBRARY_PATH": "/Users/alexy/.asdf/installs/python/3.12.6/lib",
+        "SAIL_EXPERIMENTAL_EXTENSIONS": "1",
+        "SAIL_MODE": "local",
+        "SAIL_EXECUTION__DEFAULT_PARALLELISM": "16",
+        "SAIL_EXECUTION__CHECKPOINT__PATH": "file:///Users/alexy/src/grust-benchmark-runs/sem-completion-20261003/F2-fourphase-main03/cit-Patents-int64-c1/checkpoints",
+        "SAIL_RUNTIME__MEMORY_POOL__TYPE": "greedy",
+        "SAIL_RUNTIME__MEMORY_POOL__GREEDY__MAX_SIZE": "32212254720",
+        "SAIL_NUTMEG_MEMORY_BYTES": "23622320128",
+        "NUTMEG_MEMORY_BYTES": "23622320128",
+        "NUTMEG_WORKERS": "16",
+        "SAIL_GRAPH_UTILS_ROOT": "file:///Users/alexy/src/grust-benchmark-runs/sem-completion-20261003/F2-fourphase-main03/cit-Patents-int64-c1/staging",
+        "TOKIO_WORKER_THREADS": "16",
+        "RAYON_NUM_THREADS": "16",
+        "TMPDIR": "/Users/alexy/src/grust-benchmark-runs/sem-completion-20261003/F2-fourphase-main03/cit-Patents-int64-c1/temporary",
+        "RUST_LOG": "warn"
+      },
+      "server": {
+        "pid": 32198,
+        "pgid": 32198,
+        "argv": [
+          "/Volumes/Apo/graph-tests/results/sem-review-20261001/native-optimized-build01/sail-target/release/sail",
+          "spark",
+          "server",
+          "--ip",
+          "127.0.0.1",
+          "--port",
+          "54540"
+        ],
+        "launched_utc": "2026-10-03T19:35:33.685556+00:00",
+        "closed_utc": "2026-10-03T19:35:41.023895+00:00",
+        "returncode": -15,
+        "wait_completed": true,
+        "termination_requested": true,
+        "forced_kill": false,
+        "scope": "Direct owned native server was waited; group closure is parent-owned."
+      },
+      "pipeline": {
+        "started_ns": 903860496468031,
+        "ended_ns": 903867379753823
+      },
+      "pipeline_seconds": 6.883285792,
+      "pipeline_completed": true,
+      "phases": [
+        {
+          "name": "read_parquet",
+          "call": null,
+          "span": {
+            "started_ns": 903860496469933,
+            "ended_ns": 903860622359669
+          },
+          "completed": true
+        },
+        {
+          "name": "csr_and_graph",
+          "call": null,
+          "span": {
+            "started_ns": 903860627852402,
+            "ended_ns": 903866248056884
+          },
+          "completed": true
+        },
+        {
+          "name": "algorithm_materialize",
+          "call": null,
+          "span": {
+            "started_ns": 903866248515140,
+            "ended_ns": 903867250237321
+          },
+          "completed": true
+        },
+        {
+          "name": "write_parquet",
+          "call": null,
+          "span": {
+            "started_ns": 903867250275739,
+            "ended_ns": 903867379753823
+          },
+          "completed": true
+        }
+      ],
+      "outputs": [
+        {
+          "call": 1,
+          "path": "/Users/alexy/src/grust-benchmark-runs/sem-completion-20261003/F2-fourphase-main03/cit-Patents-int64-c1/result-call1",
+          "completed": true
+        }
+      ],
+      "output_projection": [
+        "id",
+        "component"
+      ],
+      "stage_receipt": {
+        "graph": "g",
+        "nodeCount": 3774768,
+        "edgeCount": 16518947,
+        "revision": 1,
+        "nodeSortPermutationBytes": 0,
+        "nodeSortKeysBytes": 0,
+        "nodeSortedCopyBytes": 0,
+        "nodeFillBytes": 0,
+        "nodeNormalizedBytes": 45299060,
+        "nodeRetainedBytes": 45299060,
+        "nodeSortSeconds": 0.0,
+        "nodeSorted": false,
+        "edgeSortPermutationBytes": 0,
+        "edgeSortKeysBytes": 0,
+        "edgeSortedCopyBytes": 0,
+        "edgeFillBytes": 0,
+        "edgeNormalizedBytes": 398535733,
+        "edgeRetainedBytes": 398535733,
+        "edgeSortSeconds": 0.0,
+        "edgeSorted": false
+      },
+      "projection_receipt": {
+        "nodes": 3774768,
+        "edges": 16518947,
+        "arcs": 16518947,
+        "selfLoops": 0,
+        "csrBytes": 147250652
+      },
+      "native_status": {
+        "memory": {
+          "limit_bytes": 23622320128,
+          "used_bytes": 1059019312,
+          "peak_bytes": 1175864274,
+          "staged_bytes": 443834793
+        },
+        "graphs": [
+          {
+            "name": "g",
+            "node_count": 3774768,
+            "edge_count": 16518947,
+            "revision": 1,
+            "projections": 1,
+            "staged_bytes": 443834793,
+            "projection_builds": [
+              {
+                "key": "{\"defaultWeight\": \"Some(Null)\", \"nodeLabels\": \"Some(Null)\", \"orientation\": \"Some(String(\\\"outgoing\\\"))\", \"relationshipTypes\": \"Some(Null)\", \"weightProperty\": \"Some(Null)\"}",
+                "seconds": 0.70825239,
+                "live_bytes_before": 443834793,
+                "admitted_bytes": 615184519
+              }
+            ]
+          }
+        ],
+        "reads": [
+          {
+            "id": 1,
+            "algorithm": "projectionStats",
+            "graph": "g",
+            "state": "finished",
+            "message": null,
+            "batches": 1,
+            "rows": 1,
+            "live_bytes": 0,
+            "peak_bytes": 0,
+            "work_units": 16518947,
+            "diagnostics": null
+          },
+          {
+            "id": 2,
+            "algorithm": "wcc",
+            "graph": "g",
+            "state": "finished",
+            "message": null,
+            "batches": 461,
+            "rows": 3774768,
+            "live_bytes": 12627067,
+            "peak_bytes": 60396288,
+            "work_units": 35389185,
+            "diagnostics": null
+          }
+        ]
+      },
+      "projection_reused": true,
+      "arrow_handoffs": [
+        {
+          "input_name": "vertices",
+          "rows": 3774768,
+          "chunk_rows": 262144,
+          "chunks": 15,
+          "checked_ipc_encodings": 15,
+          "create_dataframe_calls": 15,
+          "checkpoint_attempts": 15,
+          "checkpoints_completed": 15,
+          "cached_chunks": 15,
+          "remote_reference_ids": [
+            "a36c2579-a7f9-46bc-8384-a14bdf0c134a",
+            "ade71978-60f3-47a7-a0ba-9c0aa189775d",
+            "5b9a7829-b53e-4777-805f-c08db3595d52",
+            "99f89f36-9a17-432f-923f-94979ecddf35",
+            "83804e24-260d-4333-a687-ac82c5e0b09e",
+            "3c608b2f-63f0-4bc9-ba68-0fbca3b9da2f",
+            "e66bd53f-0a78-49dd-a542-3acbc0be1752",
+            "fe7dc5e7-2d37-4545-b472-2e750400db02",
+            "3d87ff34-4b28-4a3b-a216-41a7ff9d7843",
+            "310cb6ee-88ca-48f9-801d-3d6e3fde5efd",
+            "c5e65dc6-ebfb-4727-a87d-3e5bc641de67",
+            "3a74d8e6-5466-4e86-a2b7-75eb4b68f15d",
+            "24a38c72-183f-4fd3-ae70-03e0bc8dd41d",
+            "e2f1a0e1-7ca5-4503-9a3b-f84ad0d7c526",
+            "24ec9865-4368-448d-8be5-ae18f85bd2c4"
+          ],
+          "maximum_ipc_bytes": 2097872,
+          "encoded_ipc_bytes": 30206784,
+          "balanced_union_depth": 4,
+          "cache_threshold_bytes": 67108864,
+          "eager_checkpoints": true,
+          "checkpoint_sort_applied": false,
+          "completed": true
+        },
+        {
+          "input_name": "edges",
+          "rows": 16518947,
+          "chunk_rows": 262144,
+          "chunks": 64,
+          "checked_ipc_encodings": 64,
+          "create_dataframe_calls": 64,
+          "checkpoint_attempts": 64,
+          "checkpoints_completed": 64,
+          "cached_chunks": 64,
+          "remote_reference_ids": [
+            "88028c97-542b-4531-8531-b7f34d9364af",
+            "436abfd7-b8f3-458b-a233-c327a62a3306",
+            "3575d1b1-c888-4658-9ccc-6f9021387333",
+            "3c57c194-f4a1-410d-b46f-de6fe641fe25",
+            "4c0d4531-f712-4d5a-84fa-a152ee4d08c7",
+            "802830f5-1e84-4d85-b68c-62068cd7d8c1",
+            "12f90e94-4790-4a41-8b5e-ca0c31bbd12a",
+            "30fbfaa9-9874-4079-bbdc-37c442d76d99",
+            "c55b7eba-2eef-4394-a8db-391905841660",
+            "a92f4c10-8521-4247-b15b-9e0530b4e6e5",
+            "a30023de-fe9a-4719-81c9-5b9d7ea72425",
+            "0e391af3-5453-470f-96e7-bcfe9705a2f3",
+            "b7889c6c-1fa9-4779-b577-fa628fddcdeb",
+            "55665b6d-c9c0-437b-8c59-4c04ffe38235",
+            "fee829ec-6e7e-43f3-a9de-25050c3c2def",
+            "e023c736-9d6a-4915-8046-51b4873bac37",
+            "537bd38b-5897-4326-bdf5-ed406d21c385",
+            "8d3e3fb7-ad71-439f-8332-11824dc3c429",
+            "76d4be5a-cae9-4c8b-9ee1-bb1217eb5d73",
+            "2957d757-6bae-4c24-941d-6b509035ba11",
+            "6282993f-f0ee-4c2b-9465-d01f972185aa",
+            "ded0c1a7-dffb-46e6-98a6-95504dbc3558",
+            "95eb5276-7c6f-41de-baa1-c6ee1fbc6e02",
+            "9d45ffb4-b655-41c2-8f3e-fefac0b12e24",
+            "148174cf-2870-4bf6-91f5-dc33ad09a6a4",
+            "ab4e963c-eea8-4ad2-8705-a5e893f72854",
+            "9d043098-e5a6-4a54-b618-688ebcc48379",
+            "0590c8f1-7eb1-4d60-8643-1fdf67467bcf",
+            "9ad27ee9-49ae-4968-87bb-fae15de912d8",
+            "54e77363-a1e4-46ae-a6ec-652b7eaa62e9",
+            "fe08c9d6-8514-4b4d-9c53-ccffbe27f8a3",
+            "7027426e-3af7-4613-8766-6b001e60d7cb",
+            "400dea78-4247-4f7d-a8fa-39f5c8ce38c6",
+            "9436ae81-52f4-48fc-b306-f9ea99d3bb31",
+            "05ca88d8-bc56-48ba-a859-ef33bf1200a9",
+            "35a2434a-4ec7-4c4f-a0c9-a7f250bfcd82",
+            "6061b71b-05a0-48ce-96a7-b1e61fe01765",
+            "be836450-5b41-40f9-bc86-6bcf2eef1894",
+            "11c7c612-653a-403e-bd97-c79483e5b23c",
+            "e3700997-5933-4d65-b05c-6f962c09679d",
+            "2803da28-4793-4079-b29b-6daf6d99caf1",
+            "e6c4fcad-c577-4eff-98c4-4831b8dd5568",
+            "6a0f896e-d4df-4204-8702-a9460208d7c2",
+            "c0d1d6be-03b6-4638-aefd-aac5fbc36336",
+            "324e4cd7-af66-4dea-8d08-f7c3baac375d",
+            "f8ba18b2-03ae-4061-8267-1f7eb343629e",
+            "23738c8f-2832-4132-b627-9b073fc56e1e",
+            "dca5b865-2dba-467e-aec1-f46b6ad2b591",
+            "42f5dfb0-ec0c-443c-b7d4-c073c06e24fd",
+            "2932957b-e793-4b6e-859a-37a6621ac50d",
+            "da9e3511-e970-4be8-a99b-4d619cb3d972",
+            "e44bdb2a-c43d-4a66-b7be-55ddea11154f",
+            "84533a1d-f857-4209-9ecd-58a02873e7c9",
+            "b767d93a-2dac-41cf-b656-7dd7cafd20f4",
+            "6910ef1d-6f5f-48a4-86a1-10ee68116cdc",
+            "e28549cd-4f5b-4025-9417-3849b1779ca9",
+            "0255c44d-0997-461a-b271-4ce76c7832c8",
+            "d061bf89-6f51-4b42-b1df-d945fa202fc3",
+            "7c26ce19-b50a-4b99-8a9c-2564eff6dcd8",
+            "0293a70d-0e27-440a-97cc-c5bd20099f2b",
+            "9f6c101b-5df7-4cff-b16a-ad7a55b8809d",
+            "3995fce2-148a-4993-8fc6-f214ccc6eec6",
+            "a6e6d583-6f09-45e1-8140-a3feb0a4debf",
+            "9de27586-a938-4046-b9b5-348ea77a8845"
+          ],
+          "maximum_ipc_bytes": 4195264,
+          "encoded_ipc_bytes": 264352688,
+          "balanced_union_depth": 6,
+          "cache_threshold_bytes": 67108864,
+          "eager_checkpoints": true,
+          "checkpoint_sort_applied": false,
+          "completed": true
+        }
+      ],
+      "exclusive_sem_phases": {
+        "read_seconds": 0.125889736,
+        "csr_and_graph_build_seconds": 5.620204482,
+        "algorithm_seconds": 1.001722181,
+        "write_seconds": 0.129478084,
+        "availability": "observed_materialized_arrow_bridge",
+        "reason": "Separate materialized bridge phases: client Parquet-to-Arrow read; bounded bounded inline Arrow IPC/checkpoint jobs plus stage/projectionStats; all WCC kernels and full Arrow result transport; all client Parquet writes. Not native CSR-only or kernel-only clocks and not the prior native-Parquet profile."
+      },
+      "graph_dropped": true,
+      "spark_stopped": true,
+      "errors": [],
+      "scope": "One unvalidated native WCC series on a shared host. Main continuous clock starts before materialized client input read and ends at the last full client Parquet write. Chunk IPC encoding and unsorted eager checkpoint jobs are in CSR/graph; result transport is in algorithm. All full inputs/results remain client-resident during their phases. Software pools are not an OS cap. Session setup, post-pipeline diagnostics, all validation, graph/session teardown and native process exit are outside that clock. Parent supplies source/input admission, physical output oracles and full process closure."
+    },
+    "parent_series": {
+      "plan": {
+        "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/F2-fourphase01/plans/main03/cit-Patents-int64-c1.json",
+        "bytes": 1349,
+        "sha256": "202d7c1d83c1009ce81d322a2315c49167f7110afce802db4a78082bbb66554a"
+      },
+      "argv": [
+        "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-int64-build01/venv/bin/python",
+        "-I",
+        "-B",
+        "-c",
+        "import runpy,sys;r=sys.argv[1];sys.path.insert(0,r);sys.argv=[r+\"/f2a_worker.py\"]+sys.argv[2:];runpy.run_path(sys.argv[0],run_name=\"__main__\")",
+        "/Volumes/Apo/graph-tests/results/sem-completion-20261003/F2-fourphase01",
+        "--plan",
+        "/Volumes/Apo/graph-tests/results/sem-completion-20261003/F2-fourphase01/plans/main03/cit-Patents-int64-c1.json"
+      ],
+      "outcome": "completed_unvalidated",
+      "launched_utc": "2026-10-03T19:35:32.763438+00:00",
+      "closed_utc": "2026-10-03T19:35:41.245390+00:00",
+      "pid": 32194,
+      "pgid": 32194,
+      "wait_completed": true,
+      "returncode": 0,
+      "launch_to_wait": {
+        "started_ns": 903859501553557,
+        "ended_ns": 903867983794384
+      },
+      "driver_group_absent": true,
+      "server_group_absent": true,
+      "server_pid": 32198,
+      "server_pgid": 32198,
+      "worker_receipt": {
+        "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/F2-fourphase-main03/cit-Patents-int64-c1.json",
+        "bytes": 15012,
+        "sha256": "2bdb55c736d4397d53789bf8071a217a8c61b876228fc41b7c9ac47a2c182aaa"
+      },
+      "forced_cleanup": false,
+      "rss_samples": 16,
+      "observed_worker_peak_rss_kib": 783820,
+      "observed_server_peak_rss_kib": 1490432,
+      "rss_errors": [],
+      "rss_sampler_closed": true,
+      "rss_file": {
+        "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/F2-fourphase-main03/series-1-rss.jsonl",
+        "bytes": 2763,
+        "sha256": "1d01574dd62494dfd49a7efa884ca1b0f244f1b803e7f651d5076bb37ae41dad"
+      }
+    }
+  },
+  "environment": {
+    "extension_source": "4b88c8fb4504ab1d2a896c9e49e4a09df4905bbb",
+    "native_runtime_source": "9f0aa7d2a50f1258544d37c05dd19b3ff3d915b3",
+    "python": "3.12.6 (main, Sep 13 2024, 17:29:18) [Clang 15.0.0 (clang-1500.3.9.4)]",
+    "pyspark_version": "4.0.1",
+    "binary": {
+      "path": "/Volumes/Apo/graph-tests/results/sem-review-20261001/native-optimized-build01/sail-target/release/sail",
+      "bytes": 150472188,
+      "sha256": "ee80ac3cf9d028639561f3cf32435985192719d629807fcf6a368324fa84946e"
+    },
+    "wheel": {
+      "path": "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-int64-build01/wheels/sail_nutmeg-0.1.0-cp312-cp312-macosx_10_12_x86_64.whl",
+      "bytes": 15680368,
+      "sha256": "347c41034d2eae6b00e84633d3adf20ddc69a41e4665743b29d8b1cd04b5673b"
+    },
+    "controlled_environment": {
+      "PYTHONHOME": "/Users/alexy/.asdf/installs/python/3.12.6",
+      "PYTHONPATH": "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-int64-build01/venv/lib/python3.12/site-packages",
+      "DYLD_LIBRARY_PATH": "/Users/alexy/.asdf/installs/python/3.12.6/lib",
+      "SAIL_EXPERIMENTAL_EXTENSIONS": "1",
+      "SAIL_MODE": "local",
+      "SAIL_EXECUTION__DEFAULT_PARALLELISM": "16",
+      "SAIL_EXECUTION__CHECKPOINT__PATH": "file:///Users/alexy/src/grust-benchmark-runs/sem-completion-20261003/F2-fourphase-main03/cit-Patents-int64-c1/checkpoints",
+      "SAIL_RUNTIME__MEMORY_POOL__TYPE": "greedy",
+      "SAIL_RUNTIME__MEMORY_POOL__GREEDY__MAX_SIZE": "32212254720",
+      "SAIL_NUTMEG_MEMORY_BYTES": "23622320128",
+      "NUTMEG_MEMORY_BYTES": "23622320128",
+      "NUTMEG_WORKERS": "16",
+      "SAIL_GRAPH_UTILS_ROOT": "file:///Users/alexy/src/grust-benchmark-runs/sem-completion-20261003/F2-fourphase-main03/cit-Patents-int64-c1/staging",
+      "TOKIO_WORKER_THREADS": "16",
+      "RAYON_NUM_THREADS": "16",
+      "TMPDIR": "/Users/alexy/src/grust-benchmark-runs/sem-completion-20261003/F2-fourphase-main03/cit-Patents-int64-c1/temporary",
+      "RUST_LOG": "warn"
+    },
+    "scope": "Separate bounded client-Arrow/checkpoint bridge on a shared native host; n1, no dispersion inference. Read is client Parquet-to-Arrow. CSR/graph includes bounded inline IPC encoding, eager unsorted checkpoint jobs, balanced remote-reference unions, asStaged and projectionStats. Algorithm includes all WCC calls plus full Arrow result transport. Write is client Parquet for all materialized results. Continuous total includes phase boundaries/bookkeeping; parent wall also includes imports/setup/status/cleanup. No old native-Parquet baseline, native CSR-only/kernel-only or Sem resource/work parity claim. Full physical qualification is pending external oracles."
+  }
+}

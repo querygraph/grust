@@ -1,0 +1,149 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "dataset": {
+      "enum": [
+        "cit-Patents",
+        "graph500-24",
+        "tiny"
+      ],
+      "title": "Dataset",
+      "type": "string"
+    },
+    "vertices": {
+      "format": "path",
+      "title": "Vertices",
+      "type": "string"
+    },
+    "edges": {
+      "format": "path",
+      "title": "Edges",
+      "type": "string"
+    },
+    "vertex_id_column": {
+      "default": "id",
+      "minLength": 1,
+      "title": "Vertex Id Column",
+      "type": "string"
+    },
+    "edge_source_column": {
+      "default": "source",
+      "minLength": 1,
+      "title": "Edge Source Column",
+      "type": "string"
+    },
+    "edge_target_column": {
+      "default": "target",
+      "minLength": 1,
+      "title": "Edge Target Column",
+      "type": "string"
+    },
+    "output_root": {
+      "format": "path",
+      "title": "Output Root",
+      "type": "string"
+    },
+    "receipt": {
+      "format": "path",
+      "title": "Receipt",
+      "type": "string"
+    },
+    "ids": {
+      "const": "int64",
+      "title": "Ids",
+      "type": "string"
+    },
+    "calls": {
+      "enum": [
+        1,
+        3
+      ],
+      "title": "Calls",
+      "type": "integer"
+    },
+    "workers": {
+      "const": 16,
+      "default": 16,
+      "title": "Workers",
+      "type": "integer"
+    },
+    "binary": {
+      "format": "path",
+      "title": "Binary",
+      "type": "string"
+    },
+    "venv": {
+      "format": "path",
+      "title": "Venv",
+      "type": "string"
+    },
+    "python_home": {
+      "format": "path",
+      "title": "Python Home",
+      "type": "string"
+    },
+    "python_purelib": {
+      "format": "path",
+      "title": "Python Purelib",
+      "type": "string"
+    },
+    "python_library_directory": {
+      "format": "path",
+      "title": "Python Library Directory",
+      "type": "string"
+    },
+    "sail_pool_bytes": {
+      "const": 32212254720,
+      "default": 32212254720,
+      "title": "Sail Pool Bytes",
+      "type": "integer"
+    },
+    "native_quota_bytes": {
+      "const": 23622320128,
+      "default": 23622320128,
+      "title": "Native Quota Bytes",
+      "type": "integer"
+    },
+    "timeout_seconds": {
+      "const": 1800,
+      "default": 1800,
+      "title": "Timeout Seconds",
+      "type": "integer"
+    },
+    "chunk_rows": {
+      "default": 262144,
+      "maximum": 262144,
+      "minimum": 2,
+      "title": "Chunk Rows",
+      "type": "integer"
+    },
+    "extension_source_commit": {
+      "const": "4b88c8fb4504ab1d2a896c9e49e4a09df4905bbb",
+      "default": "4b88c8fb4504ab1d2a896c9e49e4a09df4905bbb",
+      "title": "Extension Source Commit",
+      "type": "string"
+    },
+    "native_runtime_commit": {
+      "const": "9f0aa7d2a50f1258544d37c05dd19b3ff3d915b3",
+      "default": "9f0aa7d2a50f1258544d37c05dd19b3ff3d915b3",
+      "title": "Native Runtime Commit",
+      "type": "string"
+    }
+  },
+  "required": [
+    "dataset",
+    "vertices",
+    "edges",
+    "output_root",
+    "receipt",
+    "ids",
+    "calls",
+    "binary",
+    "venv",
+    "python_home",
+    "python_purelib",
+    "python_library_directory"
+  ],
+  "title": "Plan",
+  "type": "object"
+}

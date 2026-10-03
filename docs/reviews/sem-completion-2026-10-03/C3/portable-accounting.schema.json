@@ -1,0 +1,108 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "C3 observed native accounting evidence",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "status",
+    "host_source",
+    "extension_source",
+    "native_content_identity",
+    "native_lease_ledger",
+    "qualification",
+    "evidence"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "status": {
+      "const": "independent_closed_native_accounting_review_passed"
+    },
+    "native_lease_ledger": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "timestamp_utc": {
+            "title": "Timestamp Utc",
+            "type": "string"
+          },
+          "pid": {
+            "exclusiveMinimum": 0,
+            "title": "Pid",
+            "type": "integer"
+          },
+          "id": {
+            "exclusiveMinimum": 0,
+            "title": "Id",
+            "type": "integer"
+          },
+          "event": {
+            "enum": [
+              "admitted",
+              "released"
+            ],
+            "title": "Event",
+            "type": "string"
+          },
+          "extension": {
+            "title": "Extension",
+            "type": "string"
+          },
+          "bytes": {
+            "exclusiveMinimum": 0,
+            "title": "Bytes",
+            "type": "integer"
+          },
+          "pool_reserved": {
+            "minimum": 0,
+            "title": "Pool Reserved",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "timestamp_utc",
+          "pid",
+          "id",
+          "event",
+          "extension",
+          "bytes",
+          "pool_reserved"
+        ],
+        "title": "QuotaEvent",
+        "type": "object"
+      }
+    },
+    "qualification": {
+      "type": "object",
+      "properties": {
+        "full_nonpool_headroom_measured": {
+          "const": false
+        },
+        "transport_buffers_measured": {
+          "const": false
+        },
+        "operator_spill_measured": {
+          "const": false
+        },
+        "native_os32_pss_accounting_qualified": {
+          "const": false
+        },
+        "physical_memory_accounting_qualified": {
+          "const": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "full_nonpool_headroom_measured",
+        "transport_buffers_measured",
+        "operator_spill_measured",
+        "native_os32_pss_accounting_qualified",
+        "physical_memory_accounting_qualified"
+      ]
+    }
+  }
+}

@@ -1,0 +1,135 @@
+{
+  "$defs": {
+    "FilePin": {
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "format": "path",
+          "title": "Path",
+          "type": "string"
+        },
+        "bytes": {
+          "minimum": 0,
+          "title": "Bytes",
+          "type": "integer"
+        },
+        "sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "bytes",
+        "sha256"
+      ],
+      "title": "FilePin",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "mode": {
+      "enum": [
+        "native_unregistered",
+        "registered_reader"
+      ],
+      "title": "Mode",
+      "type": "string"
+    },
+    "output_root": {
+      "format": "path",
+      "title": "Output Root",
+      "type": "string"
+    },
+    "binary": {
+      "format": "path",
+      "title": "Binary",
+      "type": "string"
+    },
+    "venv": {
+      "format": "path",
+      "title": "Venv",
+      "type": "string"
+    },
+    "python_home": {
+      "format": "path",
+      "title": "Python Home",
+      "type": "string"
+    },
+    "python_purelib": {
+      "format": "path",
+      "title": "Python Purelib",
+      "type": "string"
+    },
+    "python_library_directory": {
+      "format": "path",
+      "title": "Python Library Directory",
+      "type": "string"
+    },
+    "adapter_python_root": {
+      "anyOf": [
+        {
+          "format": "path",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Adapter Python Root"
+    },
+    "pins": {
+      "items": {
+        "$ref": "#/$defs/FilePin"
+      },
+      "minItems": 4,
+      "title": "Pins",
+      "type": "array"
+    },
+    "runtime_source": {
+      "const": "9f0aa7d2a50f1258544d37c05dd19b3ff3d915b3",
+      "title": "Runtime Source",
+      "type": "string"
+    },
+    "adapter_source": {
+      "const": "4b88c8fb4504ab1d2a896c9e49e4a09df4905bbb",
+      "title": "Adapter Source",
+      "type": "string"
+    },
+    "timeout_seconds": {
+      "const": 180,
+      "default": 180,
+      "title": "Timeout Seconds",
+      "type": "integer"
+    },
+    "threads": {
+      "const": 2,
+      "default": 2,
+      "title": "Threads",
+      "type": "integer"
+    },
+    "sail_pool_bytes": {
+      "const": 536870912,
+      "default": 536870912,
+      "title": "Sail Pool Bytes",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "mode",
+    "output_root",
+    "binary",
+    "venv",
+    "python_home",
+    "python_purelib",
+    "python_library_directory",
+    "pins",
+    "runtime_source",
+    "adapter_source"
+  ],
+  "title": "Plan",
+  "type": "object"
+}

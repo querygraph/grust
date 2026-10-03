@@ -1,0 +1,170 @@
+{
+  "$defs": {
+    "Pin": {
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "format": "path",
+          "title": "Path",
+          "type": "string"
+        },
+        "bytes": {
+          "minimum": 0,
+          "title": "Bytes",
+          "type": "integer"
+        },
+        "sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "bytes",
+        "sha256"
+      ],
+      "title": "Pin",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "run_id": {
+      "pattern": "^[a-z0-9-]+$",
+      "title": "Run Id",
+      "type": "string"
+    },
+    "kind": {
+      "const": "c4",
+      "title": "Kind",
+      "type": "string"
+    },
+    "aggregate": {
+      "enum": [
+        "tuple-min",
+        "min-by"
+      ],
+      "title": "Aggregate",
+      "type": "string"
+    },
+    "output": {
+      "format": "path",
+      "title": "Output",
+      "type": "string"
+    },
+    "binary": {
+      "$ref": "#/$defs/Pin"
+    },
+    "repo": {
+      "format": "path",
+      "title": "Repo",
+      "type": "string"
+    },
+    "source": {
+      "pattern": "^[a-f0-9]{40}$",
+      "title": "Source",
+      "type": "string"
+    },
+    "tree": {
+      "pattern": "^[a-f0-9]{40}$",
+      "title": "Tree",
+      "type": "string"
+    },
+    "fixture": {
+      "format": "path",
+      "title": "Fixture",
+      "type": "string"
+    },
+    "fixture_manifest": {
+      "$ref": "#/$defs/Pin"
+    },
+    "originals": {
+      "items": {
+        "$ref": "#/$defs/Pin"
+      },
+      "title": "Originals",
+      "type": "array"
+    },
+    "helpers": {
+      "items": {
+        "$ref": "#/$defs/Pin"
+      },
+      "title": "Helpers",
+      "type": "array"
+    },
+    "client": {
+      "items": {
+        "$ref": "#/$defs/Pin"
+      },
+      "title": "Client",
+      "type": "array"
+    },
+    "partitions": {
+      "enum": [
+        4,
+        16,
+        32
+      ],
+      "title": "Partitions",
+      "type": "integer"
+    },
+    "threads": {
+      "const": 16,
+      "default": 16,
+      "title": "Threads",
+      "type": "integer"
+    },
+    "worker_count": {
+      "const": 2,
+      "default": 2,
+      "title": "Worker Count",
+      "type": "integer"
+    },
+    "worker_task_slots": {
+      "maximum": 16,
+      "minimum": 2,
+      "title": "Worker Task Slots",
+      "type": "integer"
+    },
+    "pool_bytes_per_process": {
+      "const": 10737418240,
+      "default": 10737418240,
+      "title": "Pool Bytes Per Process",
+      "type": "integer"
+    },
+    "timeout_seconds": {
+      "default": 300,
+      "maximum": 900,
+      "minimum": 60,
+      "title": "Timeout Seconds",
+      "type": "integer"
+    },
+    "repetitions": {
+      "default": 3,
+      "maximum": 20,
+      "minimum": 1,
+      "title": "Repetitions",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "run_id",
+    "kind",
+    "aggregate",
+    "output",
+    "binary",
+    "repo",
+    "source",
+    "tree",
+    "fixture",
+    "fixture_manifest",
+    "originals",
+    "helpers",
+    "client",
+    "partitions",
+    "worker_task_slots"
+  ],
+  "title": "Plan",
+  "type": "object"
+}

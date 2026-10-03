@@ -1,0 +1,159 @@
+{
+  "observed_utc": "2026-10-02T16:45:52.040907+00:00",
+  "started_utc": "2026-10-02T15:39:02.933901+00:00",
+  "owner_pid": 50030,
+  "plan": {
+    "bytes": 1163,
+    "sha256": "5a5a74a5422780644e814c85918ae76a9a2efb4c73552f003de35a67b2f7a081",
+    "path": "/Volumes/Apo/graph-tests/results/sem-review-20261001/F1-linux-v024-run02/plan.json"
+  },
+  "source": {
+    "bytes": 16771,
+    "sha256": "14fbcb6940777eae075005a48ed2dc887e17b2cc92a3ae6f0787e8f3a11b011d",
+    "path": "/Volumes/Apo/graph-tests/results/sem-review-20261001/F1-linux-v024-run02/gate_owner.py"
+  },
+  "image_recipe": {
+    "bytes": 613,
+    "sha256": "5c1081f0a45904d28ecbd077846b918a367d7f25faa167a608dbbf4bff9ff594",
+    "path": "/Volumes/Apo/graph-tests/results/sem-review-20261001/F1-linux-v024-run02/image/Dockerfile"
+  },
+  "outcome": "failed",
+  "active_step": null,
+  "steps": [
+    {
+      "name": "start-owned-profile",
+      "argv": [
+        "colima",
+        "start",
+        "--profile",
+        "grust-linux-f1-024",
+        "--activate=false",
+        "--template=false",
+        "--ssh-config=false",
+        "--runtime",
+        "docker",
+        "--arch",
+        "x86_64",
+        "--vm-type",
+        "vz",
+        "--mount-type",
+        "virtiofs",
+        "--cpus",
+        "8",
+        "--memory",
+        "40",
+        "--disk",
+        "60",
+        "--root-disk",
+        "20",
+        "--mount",
+        "/Users/alexy/gates-linux-f1-024-run02:w"
+      ],
+      "log": "/Volumes/Apo/graph-tests/results/sem-review-20261001/F1-linux-v024-run02/01-start-owned-profile.log",
+      "started_utc": "2026-10-02T15:39:02.942472+00:00",
+      "pid": 50042,
+      "returncode": 0,
+      "closed_utc": "2026-10-02T15:39:35.029956+00:00"
+    },
+    {
+      "name": "pull-rust-trixie",
+      "argv": [
+        "docker",
+        "pull",
+        "--platform",
+        "linux/amd64",
+        "rust:1-trixie"
+      ],
+      "log": "/Volumes/Apo/graph-tests/results/sem-review-20261001/F1-linux-v024-run02/02-pull-rust-trixie.log",
+      "started_utc": "2026-10-02T15:39:35.078721+00:00",
+      "pid": 50273,
+      "returncode": 0,
+      "closed_utc": "2026-10-02T15:39:37.084684+00:00"
+    },
+    {
+      "name": "build-package-image",
+      "argv": [
+        "docker",
+        "build",
+        "--platform",
+        "linux/amd64",
+        "--build-arg",
+        "RUST_BASE=rust@sha256:5d05167b28cef0fa3a6c781cd77949386848191f3382e82cf53bd1277a47a98f",
+        "--iidfile",
+        "/Volumes/Apo/graph-tests/results/sem-review-20261001/F1-linux-v024-run02/image-id.txt",
+        "-t",
+        "grust-linux-f1-024:run01",
+        "/Volumes/Apo/graph-tests/results/sem-review-20261001/F1-linux-v024-run02/image"
+      ],
+      "log": "/Volumes/Apo/graph-tests/results/sem-review-20261001/F1-linux-v024-run02/03-build-package-image.log",
+      "started_utc": "2026-10-02T15:39:37.200875+00:00",
+      "pid": 50275,
+      "returncode": 0,
+      "closed_utc": "2026-10-02T15:40:35.362656+00:00"
+    },
+    {
+      "name": "verify-toolchain",
+      "argv": [
+        "docker",
+        "run",
+        "--rm",
+        "sha256:add46de4d6bc510d9261a6eb88c399d01b61a03e298c13b68c6d6a11f8887bf2",
+        "bash",
+        "-c",
+        "set -e; test -r /usr/include/google/protobuf/empty.proto; protoc -I/usr/include --descriptor_set_out=/tmp/protobuf-headers.pb /usr/include/google/protobuf/empty.proto; test \"$(rustc --version | cut -d\" \" -f2)\" = 1.99.0; test \"$CARGO_BUILD_JOBS\" = 2; uname -sm; rustc -vV; cargo -V; cargo clippy -V; rustfmt -V; protoc --version"
+      ],
+      "log": "/Volumes/Apo/graph-tests/results/sem-review-20261001/F1-linux-v024-run02/04-verify-toolchain.log",
+      "started_utc": "2026-10-02T15:40:35.497217+00:00",
+      "pid": 50540,
+      "returncode": 0,
+      "closed_utc": "2026-10-02T15:40:37.504443+00:00"
+    },
+    {
+      "name": "full-linux-gate",
+      "argv": [
+        "bash",
+        "/Users/alexy/gates-linux-f1-024-run02/driver/scripts/gate-linux-container.sh",
+        "d2668ec7c7dbd7dd728e3976bcfaba3ae51d14ad"
+      ],
+      "log": "/Volumes/Apo/graph-tests/results/sem-review-20261001/F1-linux-v024-run02/05-full-linux-gate.log",
+      "started_utc": "2026-10-02T15:40:37.517876+00:00",
+      "pid": 50549,
+      "returncode": 0,
+      "closed_utc": "2026-10-02T16:45:45.261510+00:00"
+    },
+    {
+      "name": "stop-owned-profile",
+      "argv": [
+        "colima",
+        "stop",
+        "--profile",
+        "grust-linux-f1-024"
+      ],
+      "log": "/Volumes/Apo/graph-tests/results/sem-review-20261001/F1-linux-v024-run02/06-stop-owned-profile.log",
+      "started_utc": "2026-10-02T16:45:45.767350+00:00",
+      "pid": 69824,
+      "returncode": 0,
+      "closed_utc": "2026-10-02T16:45:51.769649+00:00"
+    }
+  ],
+  "free_host_bytes": 257792802816,
+  "base_image_digest": "rust@sha256:5d05167b28cef0fa3a6c781cd77949386848191f3382e82cf53bd1277a47a98f",
+  "image_id": "sha256:add46de4d6bc510d9261a6eb88c399d01b61a03e298c13b68c6d6a11f8887bf2",
+  "event_watcher_returncode": 143,
+  "container_inspections": [
+    {
+      "bytes": 8614,
+      "sha256": "8dde7a390f2279ba662dffdad939fb355883315b8f5b5f31d35914a718e56949",
+      "path": "/Volumes/Apo/graph-tests/results/sem-review-20261001/F1-linux-v024-run02/container-cc2c269fa8fc.json"
+    }
+  ],
+  "exact_verdict": "ci-local: PASSED every gate at d2668ec on Linux x86_64 in 3904s",
+  "unchanged_detached_sources": true,
+  "owned_profile_stopped": true,
+  "production_config_and_context_preserved": false,
+  "shared_locks_released": true,
+  "errors": [
+    "cleanup ValueError: production Docker context changed"
+  ],
+  "scope": "Full unmodified functional gate, not a VM benchmark or crate publication."
+}
