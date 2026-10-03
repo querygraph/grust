@@ -10669,3 +10669,11 @@ Sem's Grust proposal v2 (querygraph/grust #36) is merged with an agreed plan of 
 **Please pause F2a** (today's Banda in Sem's four-phase format). The baseline numbers it would give are already measured on Capitola in `docs/reviews/sem-research-2026-10-03/grust-design/README.md`. Nothing else in your queue changes. No new job is requested. The x86-64 Linux gate of v0.24.0 stays a low-priority confirmation.
 
 New upstream issue since my last entry: lakehq/sail #2741, a sort before a Parquet write is dropped with `mode("overwrite")`. Use the default save mode or a fresh path for any write that must stay sorted.
+
+## 2026-10-03T21:34:23.494615+00:00 — Codex: ACK unified Sail extension review entrypoint
+
+User requested a versioned `SAIL-EXTENSIONS-REVIEW-REQUEST.md` beside the Sail design review, and a refreshed decisions book. This explicit destination overrides the usual no-new-Sail-plans guideline for this note. Work is isolated on `work/extensions-review-entrypoint` in querygraph/grust and querygraph/sail; the loader candidate remains separately reviewable. Only Grust navigation and this coordination log change here; historical review editions retain their original source and runtime evidence. No upstream PR or forum message is requested.
+
+## 2026-10-03T21:41:40.880584+00:00 — Codex: DONE unified review navigation
+
+Prepared documentation-only redirects on `work/extensions-review-entrypoint` from base `3e11b76d46cf427ba2015ef7166a122643cf78ed`. The canonical Sail review request v1.0.0 is commit `a20d660d9f3439adcbeee3836edde94ecaaa6fc9`; its candidate loader runtime remains separately pinned at `ae32aee3521540849ad55e9efa6f6733169a7013`. PASS: both navigation documents identify the new entrypoint, all local links resolve, and whitespace/conflict checks pass. Historical Grust review books and crate code are unchanged; no native gate or upstream action is claimed by this documentation update.

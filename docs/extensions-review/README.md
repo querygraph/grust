@@ -1,5 +1,11 @@
 # Building the two review guides
 
+For a new design review, start at the versioned
+[SAIL-EXTENSIONS-REVIEW-REQUEST.md](https://github.com/querygraph/sail/blob/sail-extensions/docs/development/extensions/SAIL-EXTENSIONS-REVIEW-REQUEST.md).
+The editions described below remain reference books for their original source
+pin; current review targets and the separately tested loader candidate are
+identified by that entrypoint.
+
 These source-owned configs use the central FirstPair builder. They do not
 change or publish the Grust book, its catalog identity or library deployment.
 The review target is Sail `bd8ce9ae8839477e2c08a0475ab7900b115c5366`;
