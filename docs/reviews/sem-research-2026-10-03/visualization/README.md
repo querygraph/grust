@@ -24,8 +24,8 @@ It does not redo them.
    precompute P_l for l up to about 6 or 7 at 1e9, and compute deeper levels on demand. The level table
    carries `deg_sum`, so the service can choose the path per cell.
 4. **Sail can serve this today, with two cautions, both measured here.** First, a Parquet write keeps a
-   preceding sort only in the default save mode: `mode("overwrite")` drops it (prepared as upstream
-   report 12, not yet filed). Second, Delta cannot be clustered ([lakehq/sail#2726](https://github.com/lakehq/sail/issues/2726)). The related Sail issues
+   preceding sort only in the default save mode: `mode("overwrite")` drops it
+   ([lakehq/sail#2741](https://github.com/lakehq/sail/issues/2741)). Second, Delta cannot be clustered ([lakehq/sail#2726](https://github.com/lakehq/sail/issues/2726)). The related Sail issues
    filed on 2026-10-02 are listed in section 3.4. Sorted Parquet then prunes row groups and pages (EXPLAIN ANALYZE: 32 row groups to 4,
    152 pages to 4, 3.2 MB scanned instead of 220 MB). Sail has no result cache, because `persist` is a
    no-op, so the cache lives in the service.
@@ -284,7 +284,7 @@ maps vertex keys. That choice is an open decision (section 9, D2).
 
 | Need | Today | Evidence | Upstream issue |
 |---|---|---|---|
-| Sorted files from a sort before a Parquet write | **yes, in the default save mode only**. `mode("overwrite")` drops the sort: 4 of 4 files unsorted, against 4 of 4 sorted with the same frame in the default mode | [run] `raw/probe-sorted-write.txt` ([`probe_sorted_write.py`](probe_sorted_write.py)). Mechanism [code]: overwrite wraps the sink in `BarrierExec` with a `FileDeleteExec` (`crates/sail-data-source/src/listing/planner.rs:253-258`, `source.rs:315`). `BarrierExec` does not override `maintains_input_order` (`crates/sail-physical-plan/src/barrier.rs:64-80`), so the sort below it is removed as unneeded **[inf]**, the same way as for Delta in `delta-order-plans` section 1. Same code in upstream `99ee46f69` (`planner.rs:258`). New; not in the earlier studies, which wrote in the default mode | upstream report 12, prepared and **not yet filed**: [`12-overwrite-write-drops-sort`](../../sail-upstream-reports-2026-10-02/12-overwrite-write-drops-sort/README.md) |
+| Sorted files from a sort before a Parquet write | **yes, in the default save mode only**. `mode("overwrite")` drops the sort: 4 of 4 files unsorted, against 4 of 4 sorted with the same frame in the default mode | [run] `raw/probe-sorted-write.txt` ([`probe_sorted_write.py`](probe_sorted_write.py)). Mechanism [code]: overwrite wraps the sink in `BarrierExec` with a `FileDeleteExec` (`crates/sail-data-source/src/listing/planner.rs:253-258`, `source.rs:315`). `BarrierExec` does not override `maintains_input_order` (`crates/sail-physical-plan/src/barrier.rs:64-80`), so the sort below it is removed as unneeded **[inf]**, the same way as for Delta in `delta-order-plans` section 1. Same code in upstream `99ee46f69` (`planner.rs:258`). New; not in the earlier studies, which wrote in the default mode | [lakehq/sail#2741](https://github.com/lakehq/sail/issues/2741) |
 | Pruning on a key range over sorted Parquet | **yes**: row-group statistics and the page index | [run] `raw/explain-analyze-cit-Patents-random-ek-sorted.txt`: row groups 32 total, 4 matched; pages 152 total, 4 matched; 98.3K rows and 3.22 MB scanned. Unsorted: 33.04M rows, 219.7 MB (`...-ek-plain.txt`) | none needed |
 | Delta tables clustered by key | **no**: `CLUSTER BY` and `OPTIMIZE ... ZORDER BY` are refused, and a sort before a Delta write is dropped | `delta-order-plans` section 1 | [lakehq/sail#2726](https://github.com/lakehq/sail/issues/2726) (the dropped sort). `CLUSTER BY` and `ZORDER` are missing features; no issue filed |
 | Delta file pruning by min/max | works, if files are clustered, which Sail cannot produce | `delta-order-plans` section 2 | none needed |
@@ -701,5 +701,5 @@ upstream `99ee46f69`: `orderBy(k)` then a default write gave 4 of 4 sorted
 files; the same with `mode("overwrite")` gave 0 of 4; the same for
 `sortWithinPartitions`. It is written up as standalone upstream report 12 in
 [`../../sail-upstream-reports-2026-10-02/12-overwrite-write-drops-sort/`](../../sail-upstream-reports-2026-10-02/12-overwrite-write-drops-sort/README.md),
-not filed. The cited code (`barrier.rs`, `listing/planner.rs:253-258`) reads
+filed as [lakehq/sail#2741](https://github.com/lakehq/sail/issues/2741). The cited code (`barrier.rs`, `listing/planner.rs:253-258`) reads
 as the study says.

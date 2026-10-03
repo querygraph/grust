@@ -17,7 +17,7 @@ reproduced independently.
 
 A sort before a Parquet write is dropped when the write uses
 `mode("overwrite")`. Reproduced on unmodified upstream and written up as
-standalone report 12, **not filed**:
+standalone report 12, filed as [lakehq/sail#2741](https://github.com/lakehq/sail/issues/2741):
 [`../sail-upstream-reports-2026-10-02/12-overwrite-write-drops-sort/`](../sail-upstream-reports-2026-10-02/12-overwrite-write-drops-sort/README.md).
 It matters to both designs: both rely on sorted or clustered Parquet, so
 their writers must use the default save mode or a fresh path until it is
