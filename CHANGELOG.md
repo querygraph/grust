@@ -71,6 +71,16 @@ reconstructed from Git history, release commits, and the shipped docs.
   comments, and the `RETURN` projection parser are unchanged and remain
   text-based.
 
+### Dependencies
+
+- **Turso 0.8.1.** The embedded Turso engine moves from 0.7.2 to the stable
+  0.8.1 (its `turso_*` crates with it, and `antithesis_sdk` 0.2.9 to 0.3.0).
+  `grust-turso` needed no source change: it builds with all features, and its
+  tests, `querygraph-memory`'s and the facade's with `turso` and `turso-sync`
+  pass. The pin in `benchmarks/lsqb/BACKENDS.md` is updated; the Turso
+  measurements already published (the strain chapter, 0.20.0 post) were taken
+  on 0.7.2 and were not rerun.
+
 ## 0.24.0 — Tanaid — 2026-10-02
 
 Nothing in this release changes an answer. What changed is what a projection
