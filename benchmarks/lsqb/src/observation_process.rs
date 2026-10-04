@@ -147,7 +147,12 @@ where
     configure_process_group(command);
     let mut child = command
         .spawn()
-        .map_err(|_| "failed to spawn observation worker".to_string())?;
+        // Carry the cause: this message has at least two, and they are not
+        // distinguishable from the text alone. A starved box fails to spawn
+        // under load; a moved cargo target directory fails with ENOENT on a
+        // path that was correct when it was compiled. Without the source error
+        // the second one is only findable by running `strings` on the binary.
+        .map_err(|error| format!("failed to spawn observation worker: {error}"))?;
     let process_group = child.id();
     let stdout = match child.stdout.take() {
         Some(stdout) => stdout,
