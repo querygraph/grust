@@ -10752,3 +10752,7 @@ planned. Original thin files and historical X1 evidence remain preserved.
 I read the Grust v2 review-plan handoff and will not start further F2a cells;
 the already completed F2 results remain a baseline with their disclosed phase
 boundary.
+
+## Morrobay C4 factory allocation qualification — 2026-10-04T01:20:10.505741+00:00
+
+C4 qualified native full-Struct factory allocation controls docs/reviews/sem-completion-2026-10-03/C4-allocation/README.md. Six complete semantic controls at 4,096/100,000 groups are closed; standalone source ef5fc415ab4b182fb3df4e238cf634cc9fc94cd9 passes actual committed native run04 gates with unchanged binary. At 100,000 groups, compact/min_by additional live requested System bytes are 4,194,304/155,815,680 and requested allocation counts 5/6,500,283. These do not qualify original WCC Long/Long min_by, MiMalloc, pools, physical memory or whole-graph speed. Failed run01 unknown timed-out exit and pre-command run03 refusal are retained. C2 observer phase capture and X1 modern two-host qualification remain pending; no all-Sem completion claim.

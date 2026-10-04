@@ -1,0 +1,26 @@
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/arrow-array-59.3.0/src/array/struct_array.rs:344:     pub fn slice(&self, offset: usize, len: usize) -> Self {
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/arrow-array-59.3.0/src/array/struct_array.rs:345:         assert!(
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/arrow-array-59.3.0/src/array/struct_array.rs:346:             offset.saturating_add(len) <= self.len,
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/arrow-array-59.3.0/src/array/struct_array.rs:347:             "the length + offset of the sliced StructArray cannot exceed the existing length"
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/arrow-array-59.3.0/src/array/struct_array.rs:348:         );
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/arrow-array-59.3.0/src/array/struct_array.rs:349: 
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/arrow-array-59.3.0/src/array/struct_array.rs:350:         let fields = self.fields.iter().map(|a| a.slice(offset, len)).collect();
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/arrow-array-59.3.0/src/array/struct_array.rs:351: 
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/arrow-array-59.3.0/src/array/struct_array.rs:352:         Self {
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/arrow-array-59.3.0/src/array/struct_array.rs:353:             len,
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/arrow-array-59.3.0/src/array/struct_array.rs:354:             data_type: self.data_type.clone(),
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/arrow-array-59.3.0/src/array/struct_array.rs:355:             nulls: self.nulls.as_ref().map(|n| n.slice(offset, len)),
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/arrow-array-59.3.0/src/array/struct_array.rs:356:             fields,
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/arrow-array-59.3.0/src/array/struct_array.rs:357:         }
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/arrow-array-59.3.0/src/array/struct_array.rs:358:     }
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/arrow-array-59.3.0/src/array/struct_array.rs:359: 
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/arrow-array-59.3.0/src/array/struct_array.rs:540:     fn get_array_memory_size(&self) -> usize {
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/arrow-array-59.3.0/src/array/struct_array.rs:541:         let mut size = self.fields.iter().map(|a| a.get_array_memory_size()).sum();
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/arrow-array-59.3.0/src/array/struct_array.rs:542:         size += std::mem::size_of::<Self>();
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/arrow-array-59.3.0/src/array/struct_array.rs:543:         if let Some(n) = self.nulls.as_ref() {
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/arrow-array-59.3.0/src/array/struct_array.rs:544:             size += n.buffer().capacity();
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/arrow-array-59.3.0/src/array/struct_array.rs:545:         }
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/arrow-array-59.3.0/src/array/struct_array.rs:546:         size
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/arrow-array-59.3.0/src/array/struct_array.rs:547:     }
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/arrow-array-59.3.0/src/array/struct_array.rs:548: 
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/arrow-array-59.3.0/src/array/struct_array.rs:549:     #[cfg(feature = "pool")]

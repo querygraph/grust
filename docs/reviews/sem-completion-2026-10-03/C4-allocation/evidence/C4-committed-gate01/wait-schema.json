@@ -1,0 +1,126 @@
+{
+  "$defs": {
+    "Pin": {
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "format": "path",
+          "title": "Path",
+          "type": "string"
+        },
+        "bytes": {
+          "minimum": 0,
+          "title": "Bytes",
+          "type": "integer"
+        },
+        "sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "bytes",
+        "sha256"
+      ],
+      "title": "Pin",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "outcome": {
+      "default": "running",
+      "enum": [
+        "running",
+        "passed_actual_committed_owner_wait",
+        "error"
+      ],
+      "title": "Outcome",
+      "type": "string"
+    },
+    "configuration": {
+      "$ref": "#/$defs/Pin"
+    },
+    "supervisor_pid": {
+      "title": "Supervisor Pid",
+      "type": "integer"
+    },
+    "owner_pid": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Owner Pid"
+    },
+    "returncode": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Returncode"
+    },
+    "waited": {
+      "default": false,
+      "title": "Waited",
+      "type": "boolean"
+    },
+    "owner_group_absent": {
+      "default": false,
+      "title": "Owner Group Absent",
+      "type": "boolean"
+    },
+    "forced_cleanup": {
+      "default": false,
+      "title": "Forced Cleanup",
+      "type": "boolean"
+    },
+    "owner_receipt": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Pin"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "finished_utc": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Finished Utc"
+    },
+    "errors": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Errors",
+      "type": "array"
+    }
+  },
+  "required": [
+    "configuration",
+    "supervisor_pid"
+  ],
+  "title": "Wait",
+  "type": "object"
+}

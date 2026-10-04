@@ -1,0 +1,58 @@
+I001 [*] Import block is un-sorted or un-formatted
+  --> /Volumes/Apo/graph-tests/results/sem-completion-20261003/C4-allocation-owner02/test_allocator_owner.py:3:1
+   |
+ 1 |   """Pure models, synthetic counters and mocked lifecycle; no Cargo/process launch."""
+ 2 |
+ 3 | / import json
+ 4 | | import subprocess
+ 5 | | import tempfile
+ 6 | | import unittest
+ 7 | | from pathlib import Path
+ 8 | | from typing import Any, cast
+ 9 | | from unittest.mock import Mock, patch
+10 | |
+11 | | from pydantic import ValidationError
+12 | |
+13 | | import allocator_models as m
+14 | | import allocator_owner as owner
+   | |_______________________________^
+15 |
+16 |   ORIGINAL_PLAN = Path(__file__).with_name("original-run01-plan.json")
+   |
+help: Organize imports
+   |
+10 |
+   - from pydantic import ValidationError
+   -
+11 | import allocator_models as m
+12 | import allocator_owner as owner
+13 + from pydantic import ValidationError
+14 |
+   |
+
+SIM117 Use a single `with` statement with multiple contexts instead of nested `with` statements
+  --> /Volumes/Apo/graph-tests/results/sem-completion-20261003/C4-allocation-owner02/test_allocator_owner.py:46:9
+   |
+45 |       def test_timeout_identifies_probe_budget(self) -> None:
+46 | /         with patch.object(owner.time, "monotonic", return_value=100.0):
+47 | |             with self.assertRaisesRegex(
+48 | |                 ValueError, r"step timeout expired: probe-04 .*900s"
+49 | |             ):
+   | |______________^
+50 |                   owner.check_step_deadline(1000.0, 100.0, "probe-04", 900)
+   |
+help: Combine `with` statements
+
+SIM117 Use a single `with` statement with multiple contexts instead of nested `with` statements
+  --> /Volumes/Apo/graph-tests/results/sem-completion-20261003/C4-allocation-owner02/test_allocator_owner.py:53:9
+   |
+52 |       def test_campaign_timeout_remains_independent(self) -> None:
+53 | /         with patch.object(owner.time, "monotonic", return_value=100.0):
+54 | |             with self.assertRaisesRegex(ValueError, "gate total timeout expired"):
+   | |__________________________________________________________________________________^
+55 |                   owner.check_step_deadline(100.0, 1000.0, "probe-04", 900)
+   |
+help: Combine `with` statements
+
+Found 3 errors.
+[*] 1 fixable with the `--fix` option.

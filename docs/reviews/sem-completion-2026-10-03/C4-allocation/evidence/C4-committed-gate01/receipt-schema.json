@@ -1,0 +1,347 @@
+{
+  "$defs": {
+    "GitProof": {
+      "additionalProperties": false,
+      "properties": {
+        "head": {
+          "title": "Head",
+          "type": "string"
+        },
+        "tree": {
+          "title": "Tree",
+          "type": "string"
+        },
+        "detached": {
+          "title": "Detached",
+          "type": "boolean"
+        },
+        "status": {
+          "title": "Status",
+          "type": "string"
+        },
+        "tracked": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Tracked",
+          "type": "array"
+        }
+      },
+      "required": [
+        "head",
+        "tree",
+        "detached",
+        "status",
+        "tracked"
+      ],
+      "title": "GitProof",
+      "type": "object"
+    },
+    "Limits": {
+      "additionalProperties": false,
+      "properties": {
+        "soft": {
+          "title": "Soft",
+          "type": "integer"
+        },
+        "hard": {
+          "title": "Hard",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "soft",
+        "hard"
+      ],
+      "title": "Limits",
+      "type": "object"
+    },
+    "Pin": {
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "format": "path",
+          "title": "Path",
+          "type": "string"
+        },
+        "bytes": {
+          "minimum": 0,
+          "title": "Bytes",
+          "type": "integer"
+        },
+        "sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "bytes",
+        "sha256"
+      ],
+      "title": "Pin",
+      "type": "object"
+    },
+    "Step": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "argv": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Argv",
+          "type": "array"
+        },
+        "pid": {
+          "title": "Pid",
+          "type": "integer"
+        },
+        "pgid": {
+          "title": "Pgid",
+          "type": "integer"
+        },
+        "started_utc": {
+          "title": "Started Utc",
+          "type": "string"
+        },
+        "finished_utc": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Finished Utc"
+        },
+        "returncode": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Returncode"
+        },
+        "waited": {
+          "default": false,
+          "title": "Waited",
+          "type": "boolean"
+        },
+        "group_absent": {
+          "default": false,
+          "title": "Group Absent",
+          "type": "boolean"
+        },
+        "forced_cleanup": {
+          "default": false,
+          "title": "Forced Cleanup",
+          "type": "boolean"
+        },
+        "cleanup_errors": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Cleanup Errors",
+          "type": "array"
+        },
+        "log": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Pin"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "name",
+        "argv",
+        "pid",
+        "pgid",
+        "started_utc"
+      ],
+      "title": "Step",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "outcome": {
+      "default": "running",
+      "enum": [
+        "running",
+        "passed_committed_native_rust_gates_with_reused_controls",
+        "error"
+      ],
+      "title": "Outcome",
+      "type": "string"
+    },
+    "owner_pid": {
+      "title": "Owner Pid",
+      "type": "integer"
+    },
+    "owner_token": {
+      "title": "Owner Token",
+      "type": "string"
+    },
+    "configuration": {
+      "$ref": "#/$defs/Pin"
+    },
+    "started_utc": {
+      "title": "Started Utc",
+      "type": "string"
+    },
+    "finished_utc": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Finished Utc"
+    },
+    "git_before": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/GitProof"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "git_after": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/GitProof"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "fd_before": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Limits"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "fd_after": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Limits"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "candidate_admitted": {
+      "default": false,
+      "title": "Candidate Admitted",
+      "type": "boolean"
+    },
+    "six_prior_semantic_controls_reused": {
+      "default": false,
+      "title": "Six Prior Semantic Controls Reused",
+      "type": "boolean"
+    },
+    "source_and_binary_equal_to_candidate": {
+      "default": false,
+      "title": "Source And Binary Equal To Candidate",
+      "type": "boolean"
+    },
+    "command_journal": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Pin"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "rust_steps": {
+      "items": {
+        "$ref": "#/$defs/Step"
+      },
+      "title": "Rust Steps",
+      "type": "array"
+    },
+    "metadata_steps": {
+      "items": {
+        "$ref": "#/$defs/Step"
+      },
+      "title": "Metadata Steps",
+      "type": "array"
+    },
+    "immutable_closure": {
+      "default": false,
+      "title": "Immutable Closure",
+      "type": "boolean"
+    },
+    "all_owned_groups_absent": {
+      "default": false,
+      "title": "All Owned Groups Absent",
+      "type": "boolean"
+    },
+    "locks_released": {
+      "default": false,
+      "title": "Locks Released",
+      "type": "boolean"
+    },
+    "repeated_allocator_probes": {
+      "const": false,
+      "default": false,
+      "title": "Repeated Allocator Probes",
+      "type": "boolean"
+    },
+    "graph_or_OS_memory_qualified": {
+      "const": false,
+      "default": false,
+      "title": "Graph Or Os Memory Qualified",
+      "type": "boolean"
+    },
+    "errors": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Errors",
+      "type": "array"
+    }
+  },
+  "required": [
+    "owner_pid",
+    "owner_token",
+    "configuration",
+    "started_utc"
+  ],
+  "title": "Receipt",
+  "type": "object"
+}

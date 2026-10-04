@@ -1,0 +1,149 @@
+{
+  "$defs": {
+    "Pin": {
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "format": "path",
+          "title": "Path",
+          "type": "string"
+        },
+        "bytes": {
+          "minimum": 0,
+          "title": "Bytes",
+          "type": "integer"
+        },
+        "sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "bytes",
+        "sha256"
+      ],
+      "title": "Pin",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "root": {
+      "format": "path",
+      "title": "Root",
+      "type": "string"
+    },
+    "source": {
+      "format": "path",
+      "title": "Source",
+      "type": "string"
+    },
+    "source_freeze": {
+      "$ref": "#/$defs/Pin"
+    },
+    "source_files": {
+      "additionalProperties": {
+        "$ref": "#/$defs/Pin"
+      },
+      "title": "Source Files",
+      "type": "object"
+    },
+    "source_origins": {
+      "items": {
+        "$ref": "#/$defs/Pin"
+      },
+      "minItems": 7,
+      "title": "Source Origins",
+      "type": "array"
+    },
+    "helpers": {
+      "additionalProperties": {
+        "$ref": "#/$defs/Pin"
+      },
+      "title": "Helpers",
+      "type": "object"
+    },
+    "ownership_helpers": {
+      "additionalProperties": {
+        "$ref": "#/$defs/Pin"
+      },
+      "title": "Ownership Helpers",
+      "type": "object"
+    },
+    "target": {
+      "format": "path",
+      "title": "Target",
+      "type": "string"
+    },
+    "cargo_home": {
+      "format": "path",
+      "title": "Cargo Home",
+      "type": "string"
+    },
+    "seed_manifests": {
+      "items": {
+        "$ref": "#/$defs/Pin"
+      },
+      "minItems": 1,
+      "title": "Seed Manifests",
+      "type": "array"
+    },
+    "tools": {
+      "additionalProperties": {
+        "$ref": "#/$defs/Pin"
+      },
+      "title": "Tools",
+      "type": "object"
+    },
+    "total_seconds": {
+      "default": 14400,
+      "maximum": 21600,
+      "minimum": 300,
+      "title": "Total Seconds",
+      "type": "integer"
+    },
+    "step_seconds": {
+      "default": 7200,
+      "maximum": 10800,
+      "minimum": 30,
+      "title": "Step Seconds",
+      "type": "integer"
+    },
+    "probe_seconds": {
+      "default": 600,
+      "maximum": 1800,
+      "minimum": 10,
+      "title": "Probe Seconds",
+      "type": "integer"
+    },
+    "minimum_free_bytes": {
+      "default": 42949672960,
+      "minimum": 42949672960,
+      "title": "Minimum Free Bytes",
+      "type": "integer"
+    },
+    "emergency_free_bytes": {
+      "default": 21474836480,
+      "minimum": 21474836480,
+      "title": "Emergency Free Bytes",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "root",
+    "source",
+    "source_freeze",
+    "source_files",
+    "source_origins",
+    "helpers",
+    "ownership_helpers",
+    "target",
+    "cargo_home",
+    "seed_manifests",
+    "tools"
+  ],
+  "title": "Plan",
+  "type": "object"
+}

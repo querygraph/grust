@@ -1,0 +1,38 @@
+I001 [*] Import block is un-sorted or un-formatted
+  --> /Volumes/Apo/graph-tests/results/sem-completion-20261003/C4-allocation-owner02/test_allocator_owner.py:3:1
+   |
+ 1 |   """Pure models, synthetic counters and mocked lifecycle; no Cargo/process launch."""
+ 2 |
+ 3 | / import json
+ 4 | | import subprocess
+ 5 | | import tempfile
+ 6 | | import time
+ 7 | | import unittest
+ 8 | | from pathlib import Path
+ 9 | | from typing import Any, cast
+10 | | from unittest.mock import Mock, patch
+11 | |
+12 | | import gate_owner as owned
+13 | | from pydantic import ValidationError
+14 | |
+15 | | import allocator_models as m
+16 | | import allocator_owner as owner
+   | |_______________________________^
+17 |
+18 |   ORIGINAL_PLAN = Path(__file__).with_name("original-run01-plan.json")
+   |
+help: Organize imports
+   |
+11 |
+   - import gate_owner as owned
+   - from pydantic import ValidationError
+   -
+12 | import allocator_models as m
+13 | import allocator_owner as owner
+14 + import gate_owner as owned
+15 + from pydantic import ValidationError
+16 |
+   |
+
+Found 1 error.
+[*] 1 fixable with the `--fix` option.

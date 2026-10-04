@@ -129,9 +129,33 @@ nonnull filter.
 
 In this single ordered pair, min_by/MIN collect ratios are 1.621 cold and
 1.543 warm; parent launch-to-exit ratio is 0.997. This bounded query does
-not measure allocation per group. The current same-struct 100,000-group
-allocator control is being gated separately; historical generic struct
-MIN controls retain their own controller, allocator, and memory scopes.
+not measure allocation per group.
+
+**The separate full-Struct factory allocation controls are now qualified.**
+Six fresh single-thread controls cover 4,096 and 100,000 groups with the same
+nonnull `(distance DOUBLE, hops BIGINT, parent BIGINT)` payload and complete
+key. At 100,000 groups, compact Struct MIN requests 5 allocations versus
+6,500,283 for ordered Struct min_by. First-update additional live requested
+bytes are 4,194,304 versus 155,815,680; cumulative requested bytes are
+8,126,464 versus 622,458,304. All evaluate/state/merge semantic checks pass.
+The [complete rows](C4-allocation/first-update-table.json) and
+[factory source, logs and closure](C4-allocation/README.md) retain every
+control and failed attempt.
+
+The standalone source is committed at
+`ef5fc415ab4b182fb3df4e238cf634cc9fc94cd9`. Its actual native committed
+run04 passes Rust versions, fmt, Clippy, tests and release compilation with
+the unchanged exact binary, reusing the six closed controls. The failed
+run01's forced cleanup and unknown timed-out exit status remain unqualified;
+run03's inherited GIT_PAGER refusal occurred before any command.
+
+These counters count requested System allocations, not MiMalloc, native
+Sail pools, physical storage or a whole-process memory envelope. Raw clocks
+include reported-size/output-size sampling. The approximately 240 GB
+reported ordered-accumulator size repeatedly accounts for shared buffers;
+it is not unique live or physical storage. The original WCC Long/Long
+min_by and whole-graph performance are outside this full-Struct control's
+scope. Historical generic Struct MIN controls retain their own scopes.
 
 ## Resource reservation ownership (C3)
 
