@@ -1,0 +1,123 @@
+{
+  "observed_utc": "2026-10-04T18:56:48.404097+00:00",
+  "outcome": "passed_offline_source_gates",
+  "source_before": {
+    "observe_x1.py": {
+      "bytes": 22333,
+      "sha256": "2b21867e5889c49faeed6c555bb31f523e1bd765cb78df7507c03f0dd3262a45"
+    },
+    "darwin_memory.py": {
+      "bytes": 1896,
+      "sha256": "3e1471cd02b1c6db874529d0464b6613036937a5c4537e05d8725cf3e232e9f3"
+    },
+    "control_models.py": {
+      "bytes": 6585,
+      "sha256": "e4003295bbabc01ab722d2febea6a7331ca0516ee63fc1f1f28ae0e089148752"
+    },
+    "owner_models.py": {
+      "bytes": 17716,
+      "sha256": "6e06a814e5b379e8788326b8d9a18ff4d2b2c0087e1f91631f0f8cd123d56ef7"
+    },
+    "x1_models.py": {
+      "bytes": 17716,
+      "sha256": "6e06a814e5b379e8788326b8d9a18ff4d2b2c0087e1f91631f0f8cd123d56ef7"
+    },
+    "test_admission.py": {
+      "bytes": 12040,
+      "sha256": "8d0c8b9ed192e1699f25647f9e8aaec7f9db504172525da3b060a28e21cf8953"
+    },
+    "test_observe.py": {
+      "bytes": 14498,
+      "sha256": "8d5d31f29a8abae3c44f89f9493413bd63aee02e54883b1bef99b736eb8c3034"
+    }
+  },
+  "source_after": {
+    "observe_x1.py": {
+      "bytes": 22333,
+      "sha256": "2b21867e5889c49faeed6c555bb31f523e1bd765cb78df7507c03f0dd3262a45"
+    },
+    "darwin_memory.py": {
+      "bytes": 1896,
+      "sha256": "3e1471cd02b1c6db874529d0464b6613036937a5c4537e05d8725cf3e232e9f3"
+    },
+    "control_models.py": {
+      "bytes": 6585,
+      "sha256": "e4003295bbabc01ab722d2febea6a7331ca0516ee63fc1f1f28ae0e089148752"
+    },
+    "owner_models.py": {
+      "bytes": 17716,
+      "sha256": "6e06a814e5b379e8788326b8d9a18ff4d2b2c0087e1f91631f0f8cd123d56ef7"
+    },
+    "x1_models.py": {
+      "bytes": 17716,
+      "sha256": "6e06a814e5b379e8788326b8d9a18ff4d2b2c0087e1f91631f0f8cd123d56ef7"
+    },
+    "test_admission.py": {
+      "bytes": 12040,
+      "sha256": "8d0c8b9ed192e1699f25647f9e8aaec7f9db504172525da3b060a28e21cf8953"
+    },
+    "test_observe.py": {
+      "bytes": 14498,
+      "sha256": "8d5d31f29a8abae3c44f89f9493413bd63aee02e54883b1bef99b736eb8c3034"
+    }
+  },
+  "steps": [
+    {
+      "argv": [
+        "/tmp/sem-output-oracle-venv/bin/ruff",
+        "check",
+        "--isolated",
+        "control_models.py"
+      ],
+      "returncode": 0,
+      "actual_wait_completed": true,
+      "log": "1.log"
+    },
+    {
+      "argv": [
+        "/tmp/sem-output-oracle-venv/bin/ruff",
+        "format",
+        "--check",
+        "--isolated",
+        "control_models.py"
+      ],
+      "returncode": 0,
+      "actual_wait_completed": true,
+      "log": "2.log"
+    },
+    {
+      "argv": [
+        "/tmp/sem-output-oracle-venv/bin/mypy",
+        "--strict",
+        "--ignore-missing-imports",
+        "--follow-imports=silent",
+        "observe_x1.py",
+        "darwin_memory.py",
+        "control_models.py",
+        "owner_models.py",
+        "x1_models.py",
+        "test_admission.py",
+        "test_observe.py"
+      ],
+      "returncode": 0,
+      "actual_wait_completed": true,
+      "log": "3.log"
+    },
+    {
+      "argv": [
+        "/tmp/sem-output-oracle-venv/bin/python",
+        "-B",
+        "-m",
+        "unittest",
+        "-v",
+        "test_observe"
+      ],
+      "returncode": 0,
+      "actual_wait_completed": true,
+      "log": "4.log"
+    }
+  ],
+  "pure_controls": 24,
+  "style_scope": "Only changed observer control_models style, inherited observer body style limitations preserved; Positive style full executor and tests.",
+  "runtime_performed": false
+}

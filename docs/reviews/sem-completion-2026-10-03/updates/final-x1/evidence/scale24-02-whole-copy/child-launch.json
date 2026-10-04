@@ -1,0 +1,27 @@
+{
+  "observed_utc": "2026-10-04T22:40:31.960280+00:00",
+  "pid": 20203,
+  "pgid": 20203,
+  "argv": [
+    "/usr/bin/ssh",
+    "-4",
+    "-o",
+    "BatchMode=yes",
+    "-o",
+    "ConnectTimeout=5",
+    "-o",
+    "IdentitiesOnly=yes",
+    "-i",
+    "/Users/alexy/.ssh/laika",
+    "-o",
+    "StrictHostKeyChecking=yes",
+    "-o",
+    "UserKnownHostsFile=/Volumes/Apo/graph-tests/results/sem-completion-20261003/X1-local-network-diagnostic01/known_hosts",
+    "-o",
+    "GlobalKnownHostsFile=/dev/null",
+    "-o",
+    "HostKeyAlias=morrobay-sem-native",
+    "alexy@192.168.4.63",
+    "/Users/alexy/src/grust-benchmark-envs/sem-completion-20261003/x1-fat-x8601/bin/python -I -B -c 'import json,sys,posixpath;from pathlib import Path;sys.path.insert(0,'\"'\"'/Volumes/Apo/graph-tests/results/sem-completion-20261003/MinIO-native-preparation01/support'\"'\"');import credential_env;import pyarrow.fs as fs;c=credential_env.read_credentials(Path('\"'\"'/Users/alexy/.local/state/querygraph/x1-minio-store02/credentials.json'\"'\"'));f=fs.S3FileSystem(access_key=c.access_key.get_secret_value(),secret_key=c.secret_key.get_secret_value(),endpoint_override='\"'\"'192.168.4.61:49190'\"'\"',scheme='\"'\"'http'\"'\"',region='\"'\"'us-east-1'\"'\"');prefix='\"'\"'qg-x1-native-20261004b/x1-native-scale24-02/'\"'\"';d=Path('\"'\"'/Volumes/Apo/graph-tests/results/sem-completion-20261003/X1-native-scale24-02-whole-store-copy01/whole-run'\"'\"');a=[x for x in f.get_file_info(fs.FileSelector(prefix.rstrip('\"'\"'/'\"'\"'),recursive=True)) if x.type==fs.FileType.File];assert a;before=sorted((x.path,x.size) for x in a);\nfor x in a:\n rel=x.path.removeprefix(prefix);assert rel!=x.path and '\"'\"'..'\"'\"' not in Path(rel).parts and not Path(rel).is_absolute();p=d/rel;p.parent.mkdir(parents=True,exist_ok=True);\n with f.open_input_stream(x.path) as inp,p.open('\"'\"'xb'\"'\"') as out:\n  while block:=inp.read(1048576):out.write(block)\n assert p.stat().st_size==x.size\nafter=sorted((x.path,x.size) for x in f.get_file_info(fs.FileSelector(prefix.rstrip('\"'\"'/'\"'\"'),recursive=True)) if x.type==fs.FileType.File);assert before==after;print(json.dumps({'\"'\"'source_directory_before'\"'\"':before,'\"'\"'source_directory_after'\"'\"':after,'\"'\"'downloaded_all'\"'\"':True}))'"
+  ]
+}

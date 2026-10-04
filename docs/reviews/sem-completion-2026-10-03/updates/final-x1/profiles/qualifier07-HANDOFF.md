@@ -1,0 +1,9 @@
+# Qualifier07: actual worker status and separate driver causal order
+
+Fresh source-only profile from qualifier06. Original source/case failures remain unchanged. Root supplies actual fresh completed producer/original wait/canonical current closure/full oracle02 Pins.
+
+Task statuses are read from both retained worker channels and declared worker ID must match that channel. Existing full native topology/event/phase/stage/task/PID/partition/math/typed cap or allocation classification remains strict. The worker proof now requires native cause (when applicable), execution_failure, task_failure and FAILED status in the same worker log with exact TaskKey/PID/session/cause ordering. It never compares byte offsets across files or hosts. Driver ReportTaskStatusRequest contains the actual FAILED wire status and typed cause; its byte location must precede an actually observed matching session teardown in the SAME driver log. Missing driver teardown, wrong channel, wrong log/order/cause/owner still refuses.
+
+CauseWitness adds actual worker_failed_status. Legacy driver_failed_status is now the actual FAILED ReportTaskStatusRequest location (same as driver_report). This is a schema correction to preserve real channels and separate causal proofs; no global-first-fault claim is made. Owner-helper SHA binds owner09; all other six-helper values unchanged. Other admission/native arithmetic/log parsing/wait/output predicates remain.
+
+All21pure controls/Ruff/format/strictmypy passed source-gates02. Old failure fixture used impossible driver-channel worker statuses; corrected actual worker channel preserves reversed-order and all refusal checks. Three new controls reject cross-file worker order, declared worker/channel mismatch, and missing/foreign/reversed driver teardown. No runtime/SSH/native/probe/payload/process/lock work by author.

@@ -1,0 +1,5 @@
+### `2026-10-04T18:48:44.725064+00:00` — Morrobay X1 diagnosis packet (dated partial)
+
+Evidence: `docs/reviews/sem-completion-2026-10-03/updates/source07/README-APPEND.md` after root integration. The closed Tiny05 owner/outer waits1, negative current closure, interrupted sampler waits1, native local-mode RPC diagnostics01–08 and application-scoped firewall record are retained without graph/math promotion. Diagnostic05 fails before native server startup due to an optional-module route and is independently closed; initial closure stderr is kept.
+
+After the exact native CLI was added/unblocked, diagnostic08's four alternating loopback/LAN metadata RPCs passed. Earlier LAN deadlines and all original failed flags remain distinct. This observation is scoped to the current RPC test, not a historical X1/X2 cause certificate, graph oracle or full memory peak. Final native controls/scale24 require their own actual closed evidence. Source05/06 are not edited; F2a additional rerun remains user-paused.

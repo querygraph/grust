@@ -1,0 +1,404 @@
+--- negative06/close_failed06.py
++++ negative07/close_failed07.py
+@@ -1,4 +1,4 @@
+-"""Close retained Tiny07 witness-verifier failure after unqualified BFS export."""
++"""Close the original scale24 one-hour client timeout without promoting its result."""
+ 
+ from __future__ import annotations
+ 
+@@ -7,6 +7,9 @@
+ import shlex
+ import subprocess
+ from pathlib import Path
++from typing import Literal
++
++from pydantic import Field
+ 
+ import close_case as q
+ import control_models as c
+@@ -19,6 +22,34 @@
+     executor: m.Pin
+     outer_wait_configuration: m.Pin
+     retained_action: m.Pin
++    independent_worker_copy: m.Pin
++    workers: dict[str, m.Pin]
++
++
++class CopiedFile(m.Model):
++    original: m.Pin
++    copied: m.Pin = Field(alias="copy")
++
++
++class WorkerCopy(m.Model):
++    observed_utc: str
++    outcome: Literal["copied_independent_actual_closed_worker_evidence"]
++    actual_copy_wait: m.Pin
++    copies: dict[str, CopiedFile]
++    remote_current_absence: dict[str, list[int]]
++    original_failed_owner_unchanged: Literal[True]
++    graph_oracle_qualified: Literal[False]
++    private_credentials_contents_or_hashes_included: Literal[False]
++
++
++class CopyWait(m.Model):
++    observed_utc: str
++    pid: int = Field(gt=1)
++    pgid: int = Field(gt=1)
++    returncode: Literal[0]
++    actual_wait_completed: Literal[True]
++    group_absent: Literal[True]
++    forced_cleanup: Literal[False]
+ 
+ 
+ class FailedClosure(q.Closure):
+@@ -26,7 +57,11 @@
+     original_errors: list[str]
+     native_server_started: bool = True
+     native_graph_algorithm_started: bool = True
+-    full_native_export_retained_unqualified: bool = True
++    full_native_export_retained_unqualified: Literal[False] = False
++    full_physical_output_qualified: Literal[False] = False
++    native_execution_witness_qualified: Literal[False] = False
++    independent_worker_copy: m.Pin
++    separately_retained_worker_receipts: list[m.Pin]
+     retained_action: m.Pin
+     original_outer_wait: m.Pin
+     original_outer_returncode: int | None = None
+@@ -54,42 +89,107 @@
+ 
+ 
+ def action_shape(action: m.ActionReceipt, plan: m.Plan) -> None:
+-    io.require(
+-        action.outcome == "completed_unqualified_bfs_export"
++    request = action.native_request
++    expected = {
++        "version": 3,
++        "algorithm": "bfs_reference",
++        "source": 13507776,
++        "max_levels": 8,
++        "alpha": 14,
++        "beta": 24,
++        "partitions": 32,
++        "vertices": 16777216,
++        "max_phase_budget": 32,
++        "batch_rows": 4096,
++        "generation": 1,
++    }
++    io.require(
++        action.outcome == "error"
+         and action.plan == plan
+-        and not action.errors
++        and action.errors == ["KeyboardInterrupt()"]
+         and action.session_closed
+-        and bool(action.workers)
++        and len(action.workers) == 2
+         and bool(action.stages)
+-        and action.native_request.get("algorithm") == "bfs_reference"
+-        and action.native_request.get("version") == 3
+-        and action.native_request.get("source") == -5
+-        and action.native_request.get("partitions") == 32
+-        and action.native_request.get("max_levels") == 8
+-        and action.levels == 8
+-        and action.reached == 11
+-        and action.converged is True
+-        and action.export_projection
+-        == [
+-            "id",
+-            "distance",
+-            "hops",
+-            "parent",
+-            "owner",
+-            "worker_id",
+-            "pid",
+-            "adjacency_id",
+-            "incoming_adjacency_id",
+-            "phase",
+-            "levels",
+-            "reached",
+-            "converged",
+-        ]
+-        and action.output_uri == plan.output_uri
++        and set(request) == {*expected, "operation_id", "snapshot_id"}
++        and all(
++            type(request[key]) is type(value) and request[key] == value
++            for key, value in expected.items()
++        )
++        and all(
++            isinstance(request[key], str) and bool(request[key])
++            for key in ("operation_id", "snapshot_id")
++        )
++        and action.levels is None
++        and action.reached is None
++        and action.converged is None
++        and not action.export_projection
++        and action.output_uri is None
+         and action.client_error is None
+         and not action.client_error_before_teardown,
+-        "exact retained unqualified native13 BFS export differs",
+-    )
++        "exact retained interrupted original scale24 request/no-export differs",
++    )
++
++
++def worker_copy_shape(
++    copy: WorkerCopy,
++    config: Config,
++    plan: m.Plan,
++    workers: list[m.RemoteReceipt],
++) -> list[m.Pin]:
++    io.require(
++        set(config.workers) == {"worker1", "worker2"} and len(workers) == 2,
++        "two separately retained worker receipts required",
++    )
++    names = {
++        f"worker{worker}/{name}"
++        for worker in (1, 2)
++        for name in ("receipt.json", "native.log", "native-resource-audit.jsonl")
++    }
++    io.require(
++        set(copy.copies) == names, "exact six public independent worker copies required"
++    )
++    pins = [config.independent_worker_copy, copy.actual_copy_wait]
++    for index, worker in enumerate(workers, 1):
++        role = "worker" + str(index)
++        io.require(role_name(worker, plan) == role, "independent worker role differs")
++        receipt = config.workers[role]
++        io.require(
++            receipt == copy.copies[role + "/receipt.json"].copied
++            and receipt.path
++            == config.independent_worker_copy.path.parent / role / "receipt.json",
++            "independent worker receipt copy binding differs",
++        )
++        for name in ("receipt.json", "native.log", "native-resource-audit.jsonl"):
++            item = copy.copies[role + "/" + name]
++            io.require(
++                item.original.path == worker.request.root / name
++                and item.copied.path == receipt.path.parent / name
++                and (item.original.bytes, item.original.sha256)
++                == (item.copied.bytes, item.copied.sha256),
++                "independent worker original/copy identity differs",
++            )
++            if name != "receipt.json":
++                io.require(
++                    worker.retained_files.get(name) == item.original,
++                    "worker retained public log differs from copy",
++                )
++            pins.append(item.copied)
++        io.require(
++            set(worker.retained_files) == {"native.log", "native-resource-audit.jsonl"},
++            "exact independent worker public file set required",
++        )
++    worker2 = workers[1]
++    if worker2.process is None:
++        raise ValueError("independent worker2 native process missing")
++    ids = [worker2.supervisor_pid, worker2.process.pid]
++    io.require(
++        copy.actual_copy_wait.path
++        == config.independent_worker_copy.path.parent / "copy.wait.json"
++        and copy.remote_current_absence
++        == {"observed_absent_pids": ids, "observed_absent_groups": ids},
++        "original independent copy observation differs from worker2 lifetime",
++    )
++    return pins
+ 
+ 
+ def outer_binding(
+@@ -136,12 +236,13 @@
+ def failure_shape(produced: m.OwnerReceipt, plan: m.Plan) -> None:
+     io.require(
+         produced.plan == plan
+-        and plan.kind == "tiny"
+-        and plan.run_id == "x1-native-tiny07"
++        and plan.kind == "scale24"
++        and plan.run_id == "x1-native-scale24-01"
++        and plan.timeout_seconds == 3600
+         and produced.outcome == "error"
+         and produced.errors
+-        == ["ValueError('full native stage/partition success on both hosts required')"]
+-        and produced.action_receipt is not None
++        == ["ValueError('actual local/SSH supervisor wait/closure failed')"]
++        and produced.action_receipt is None
+         and not produced.native_execution_workers
+         and produced.native_execution_job_id is None
+         and produced.native_execution_session_id is None
+@@ -150,7 +251,8 @@
+         and not produced.all_recorded_owned_processes_absent
+         and not produced.locks_released
+         and not produced.full_physical_output_qualified
+-        and len(produced.host_receipts) == 6
++        and len(produced.host_receipts) == 4
++        and len(produced.transfers) == 24
+         and [(v.host, v.role, v.root) for v in produced.supervisors]
+         == [
+             ("morrobay", "inspect-morrobay", plan.root / "inspection-morrobay"),
+@@ -158,11 +260,8 @@
+             ("capitola", "driver", plan.remote_root / "driver"),
+             ("capitola", "client", plan.remote_root / "client"),
+         ],
+-        "exact retained Tiny07 witness-verifier failure differs",
+-    )
+-    if produced.action_receipt is None:
+-        raise ValueError("original completed client action missing")
+-    action_shape(produced.action_receipt, plan)
++        "exact original scale24 bounded client timeout failure differs",
++    )
+ 
+ 
+ def role_name(recording: m.RemoteReceipt, plan: m.Plan) -> str:
+@@ -174,7 +273,12 @@
+         and recording.host
+         == {"morrobay": "morrobay.local", "capitola": "Capitola.local"}[name]
+         and recording.architecture == target.architecture
+-        and not recording.errors
++        and recording.errors
++        == (
++            ["TimeoutError('bounded native child lifetime elapsed')"]
++            if role == "client"
++            else []
++        )
+         and recording.source_before
+         == recording.source_after
+         == {"head": m.SOURCE, "tree": target.tree, "status": ""}
+@@ -197,7 +301,8 @@
+         return "inspect-" + name
+     io.require(
+         role in ("client", "driver", "worker")
+-        and recording.outcome == "completed_closed_supervised_process"
++        and recording.outcome
++        == ("error" if role == "client" else "completed_closed_supervised_process")
+         and not recording.inspection_steps
+         and recording.process is not None,
+         "actual naturally closed native/client role differs",
+@@ -206,8 +311,10 @@
+         raise ValueError("actual recorded native process missing")
+     io.require(
+         recording.process.argv == recording.request.argv
+-        and recording.process.returncode == 0
+-        and recording.process.sigint_shutdown is (role == "driver"),
++        and recording.process.returncode == (1 if role == "client" else 0)
++        and recording.process.sigint_shutdown is (role in ("driver", "client"))
++        and recording.request.timeout_seconds
++        == (plan.timeout_seconds if role == "client" else plan.timeout_seconds + 90),
+         "actual original native/client wait and shutdown differ",
+     )
+     if role == "worker":
+@@ -238,7 +345,7 @@
+     io.require(
+         config.executor.path == Path(__file__)
+         and io.pin(config.executor.path) == config.executor,
+-        "negative06 executor identity differs",
++        "negative07 executor identity differs",
+     )
+     produced = m.OwnerReceipt.model_validate_json(io.read(cfg.producer))
+     plan = m.Plan.model_validate_json(io.read(produced.configuration))
+@@ -262,6 +369,10 @@
+         },
+         original_errors=produced.errors,
+         retained_action=config.retained_action,
++        independent_worker_copy=config.independent_worker_copy,
++        separately_retained_worker_receipts=[
++            config.workers[n] for n in ("worker1", "worker2")
++        ],
+         original_outer_wait=cfg.outer_launch_wait,
+         original_outer_errors=[],
+     )
+@@ -277,9 +388,17 @@
+         )
+         action = m.ActionReceipt.model_validate_json(io.read(config.retained_action))
+         action_shape(action, plan)
+-        io.require(
+-            action == produced.action_receipt,
+-            "retained completed action differs from original producer",
++        worker_copy = WorkerCopy.model_validate_json(
++            io.read(config.independent_worker_copy)
++        )
++        workers = [
++            m.RemoteReceipt.model_validate_json(io.read(config.workers[n]))
++            for n in ("worker1", "worker2")
++        ]
++        external_pins = worker_copy_shape(worker_copy, config, plan, workers)
++        copy_wait = CopyWait.model_validate_json(io.read(worker_copy.actual_copy_wait))
++        io.require(
++            copy_wait.pid == copy_wait.pgid, "independent copy waited group differs"
+         )
+         result.original_outer_returncode, result.original_outer_errors = (
+             outer.returncode,
+@@ -346,6 +465,7 @@
+                 cfg.outer_launch_wait,
+                 config.outer_wait_configuration,
+                 config.retained_action,
++                *external_pins,
+                 m.Pin.model_validate_json(json.dumps(launch["known_hosts"])),
+                 cfg.common_marker,
+                 produced.configuration,
+@@ -381,8 +501,10 @@
+             },
+             "capitola": set(),
+         }
++        pids["morrobay"].add(copy_wait.pid)
++        groups["morrobay"].add(copy_wait.pgid)
+         for supervisor in produced.supervisors:
+-            closed_proof(supervisor.process, 0)
++            closed_proof(supervisor.process, 1 if supervisor.role == "client" else 0)
+         for proof in [*[v.process for v in produced.supervisors], *produced.transfers]:
+             if proof not in [v.process for v in produced.supervisors]:
+                 q.checked(proof)
+@@ -390,7 +512,7 @@
+             groups["morrobay"].add(proof.pgid)
+         metadata: dict[str, list[m.Pin]] = {"morrobay": [], "capitola": []}
+         observed_roles: list[str] = []
+-        for recording in produced.host_receipts:
++        for recording in [*produced.host_receipts, *workers]:
+             name = recording.request.target.name
+             role = role_name(recording, plan)
+             observed_roles.append(role)
+@@ -400,13 +522,17 @@
+                 *recording.inspection_steps,
+                 *([recording.process] if recording.process else []),
+             ]:
+-                closed_proof(proof, 0)
++                closed_proof(proof, 1 if role == "client" else 0)
+                 pids[name].add(proof.pid)
+                 groups[name].add(proof.pgid)
+             host_supervisor = next(
+                 (v for v in produced.supervisors if v.role == role), None
+             )
+-            directory = plan.root / "closed-evidence" / role
++            directory = (
++                config.workers[role].path.parent
++                if role in ("worker1", "worker2")
++                else plan.root / "closed-evidence" / role
++            )
+             receipt_pin = io.pin(directory / "receipt.json")
+             io.require(
+                 m.RemoteReceipt.model_validate_json(io.read(receipt_pin)) == recording
+@@ -451,8 +577,8 @@
+             == [
+                 "inspect-morrobay",
+                 "inspect-capitola",
++                "driver",
+                 "client",
+-                "driver",
+                 "worker1",
+                 "worker2",
+             ],
+@@ -464,7 +590,7 @@
+             io.require(
+                 {name: pin.sha256 for name, pin in target.helpers.items()}
+                 == c.OWNER_HELPER_SHA,
+-                "actual owner08 helper surface differs",
++                "actual owner09 helper surface differs",
+             )
+             name = target.name
+             host_metadata = q.unique([*metadata[name], plan.dataset.admissions[name]])
+@@ -593,9 +719,7 @@
+             for p in [q.COMMON, q.OLD / "gate.lock", q.OLD / "serial-queue.lock"]
+         )
+         io.require(result.locks_released, "owned locks remain")
+-        result.outcome = (
+-            "closed_failed_twohost_witness_verifier_after_unqualified_native_export"
+-        )
++        result.outcome = "closed_failed_original_scale24_bounded_client_timeout"
+     except BaseException as error:  # noqa: BLE001 - preserve actual failed admission and unreleased locks
+         result.outcome = "error"
+         result.errors.append(repr(error))

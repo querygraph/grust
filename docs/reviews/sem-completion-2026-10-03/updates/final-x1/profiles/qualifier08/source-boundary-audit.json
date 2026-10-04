@@ -1,0 +1,51 @@
+{
+  "observed_utc": "2026-10-04T19:31:18.489921+00:00",
+  "scope": "Read-only exact source and closed failure metadata. No engine or qualification executed by author.",
+  "source": "4b88c8fb4504ab1d2a896c9e49e4a09df4905bbb",
+  "primary_files": [
+    {
+      "path": "/Volumes/Apo/graph-tests/workspaces/sem-review-20261001/f2a-native-4b88c8fb4/crates/sail-common-datafusion/src/error.rs",
+      "bytes": 8147,
+      "sha256": "e1df0b26602f090862758a874f34f12b9d80b6a825127992841b609ee3dda200"
+    },
+    {
+      "path": "/Volumes/Apo/graph-tests/workspaces/sem-review-20261001/f2a-native-4b88c8fb4/crates/sail-execution/src/task_runner/monitor.rs",
+      "bytes": 7497,
+      "sha256": "e9bd78a29671cf956eaff4adcdd4f8918d3750cd02714ee15927fb35823b822e"
+    },
+    {
+      "path": "/Volumes/Apo/graph-tests/workspaces/sem-review-20261001/f2a-native-4b88c8fb4/examples/extensions/nutmeg/src/argentea/bfs/output.rs",
+      "bytes": 14698,
+      "sha256": "21f539d9e1386a317a9fee92a295d0adea38ae015278a5f3442a8c7e01830e22"
+    },
+    {
+      "path": "/Volumes/Apo/graph-tests/workspaces/sem-review-20261001/f2a-native-4b88c8fb4/examples/extensions/nutmeg/src/argentea/mod.rs",
+      "bytes": 17111,
+      "sha256": "593ad38024a772c6d5c0dd561c0ad87a0cabd825483fe227d95934a48cf3e274"
+    },
+    {
+      "path": "/Volumes/Apo/graph-tests/workspaces/sem-review-20261001/f2a-native-4b88c8fb4/examples/extensions/argentea/BFS_NATIVE.md",
+      "bytes": 8583,
+      "sha256": "808e952d05f54db52a0c04cf21944aac150d7c36b1ff66887aadfd1785bf56e8"
+    }
+  ],
+  "findings": [
+    "CommonErrorCause::build maps DataFusionError::Ffi(x) to Unknown(x.clone()) explicitly at error.rs:165.",
+    "Native BFS output.rs:91 writes event failure/code bfs_level_cap and then returns its typed cap error.",
+    "argentea/mod.rs:37 wraps domain errors as DataFusionError::Execution.",
+    "Task monitor logs actual execution_failure then builds CommonErrorCause from the error before sending Failed.",
+    "Original qualifier07 rejects the actual sole unknown cap cause before any ordering check; its failed audit is retained.",
+    "Fresh qualifier08 preserves RPC unknown and proves only this exact native-bound FFI cap with independent native/task/driver witnesses; no historical first-cause claim."
+  ],
+  "original_failed_audit": {
+    "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/X1-native-bfs-cap0-01-qualified-control01/audit.json",
+    "bytes": 58851,
+    "sha256": "e3a87126c4588694d8b6f54be942057b1dad56d36443616982451846b04c054d"
+  },
+  "original_failed_configuration": {
+    "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/X1-bfs-cap0-01-qualified-root01/config.json",
+    "bytes": 2964,
+    "sha256": "c5922da9d5c5303cc397fba20344435574c82f013176f05fdc7dda31d7795a3f"
+  },
+  "runtime_or_qualification_executed": false
+}

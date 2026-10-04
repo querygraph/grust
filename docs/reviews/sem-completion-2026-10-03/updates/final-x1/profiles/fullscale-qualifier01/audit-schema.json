@@ -1,0 +1,504 @@
+{
+  "$defs": {
+    "Config": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "scale24",
+          "default": "scale24",
+          "title": "Kind",
+          "type": "string"
+        },
+        "producer": {
+          "$ref": "#/$defs/Pin"
+        },
+        "original_wait": {
+          "$ref": "#/$defs/Pin"
+        },
+        "canonical_wait": {
+          "$ref": "#/$defs/Pin"
+        },
+        "outer_wait": {
+          "$ref": "#/$defs/Pin"
+        },
+        "outer_binding": {
+          "$ref": "#/$defs/Pin"
+        },
+        "current_closure": {
+          "$ref": "#/$defs/Pin"
+        },
+        "current_closure_wait": {
+          "$ref": "#/$defs/Pin"
+        },
+        "whole_copy": {
+          "$ref": "#/$defs/Pin"
+        },
+        "oracle": {
+          "$ref": "#/$defs/Pin"
+        },
+        "oracle_freeze": {
+          "$ref": "#/$defs/Pin"
+        },
+        "oracle_wait": {
+          "$ref": "#/$defs/Pin"
+        },
+        "original_manifest": {
+          "$ref": "#/$defs/Pin"
+        },
+        "restore_closure": {
+          "$ref": "#/$defs/Pin"
+        },
+        "memory": {
+          "items": {
+            "$ref": "#/$defs/MemoryProof"
+          },
+          "maxItems": 2,
+          "minItems": 2,
+          "title": "Memory",
+          "type": "array"
+        },
+        "memory_closure": {
+          "$ref": "#/$defs/Pin"
+        },
+        "helpers": {
+          "additionalProperties": {
+            "$ref": "#/$defs/Pin"
+          },
+          "title": "Helpers",
+          "type": "object"
+        },
+        "output": {
+          "format": "path",
+          "title": "Output",
+          "type": "string"
+        }
+      },
+      "required": [
+        "producer",
+        "original_wait",
+        "canonical_wait",
+        "outer_wait",
+        "outer_binding",
+        "current_closure",
+        "current_closure_wait",
+        "whole_copy",
+        "oracle",
+        "oracle_freeze",
+        "oracle_wait",
+        "original_manifest",
+        "restore_closure",
+        "memory",
+        "memory_closure",
+        "helpers",
+        "output"
+      ],
+      "title": "Config",
+      "type": "object"
+    },
+    "JsonValue": {},
+    "Location": {
+      "additionalProperties": false,
+      "properties": {
+        "log": {
+          "$ref": "#/$defs/Pin"
+        },
+        "line": {
+          "minimum": 1,
+          "title": "Line",
+          "type": "integer"
+        },
+        "byte_offset": {
+          "minimum": 0,
+          "title": "Byte Offset",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "log",
+        "line",
+        "byte_offset"
+      ],
+      "title": "Location",
+      "type": "object"
+    },
+    "MemoryProof": {
+      "additionalProperties": false,
+      "properties": {
+        "configuration": {
+          "$ref": "#/$defs/Pin"
+        },
+        "helper_copies": {
+          "additionalProperties": {
+            "$ref": "#/$defs/Pin"
+          },
+          "title": "Helper Copies",
+          "type": "object"
+        },
+        "host": {
+          "enum": [
+            "morrobay",
+            "capitola"
+          ],
+          "title": "Host",
+          "type": "string"
+        },
+        "receipt": {
+          "$ref": "#/$defs/Pin"
+        },
+        "original_wait": {
+          "$ref": "#/$defs/Pin"
+        },
+        "stop": {
+          "$ref": "#/$defs/Pin"
+        }
+      },
+      "required": [
+        "configuration",
+        "helper_copies",
+        "host",
+        "receipt",
+        "original_wait",
+        "stop"
+      ],
+      "title": "MemoryProof",
+      "type": "object"
+    },
+    "NativeRecord": {
+      "additionalProperties": {
+        "$ref": "#/$defs/JsonValue"
+      },
+      "properties": {
+        "protocol": {
+          "const": 3,
+          "title": "Protocol",
+          "type": "integer"
+        },
+        "algorithm": {
+          "const": "bfs_reference",
+          "title": "Algorithm",
+          "type": "string"
+        },
+        "operation_id": {
+          "title": "Operation Id",
+          "type": "string"
+        },
+        "snapshot_id": {
+          "title": "Snapshot Id",
+          "type": "string"
+        },
+        "generation": {
+          "minimum": 1,
+          "title": "Generation",
+          "type": "integer"
+        },
+        "event": {
+          "enum": [
+            "init",
+            "decide",
+            "apply",
+            "result",
+            "failure",
+            "close"
+          ],
+          "title": "Event",
+          "type": "string"
+        },
+        "partition": {
+          "exclusiveMaximum": 32,
+          "minimum": 0,
+          "title": "Partition",
+          "type": "integer"
+        },
+        "worker_id": {
+          "enum": [
+            1,
+            2
+          ],
+          "title": "Worker Id",
+          "type": "integer"
+        },
+        "pid": {
+          "exclusiveMinimum": 1,
+          "title": "Pid",
+          "type": "integer"
+        },
+        "adjacency_id": {
+          "exclusiveMinimum": 0,
+          "title": "Adjacency Id",
+          "type": "integer"
+        },
+        "job_id": {
+          "minimum": 0,
+          "title": "Job Id",
+          "type": "integer"
+        },
+        "session_id": {
+          "title": "Session Id",
+          "type": "string"
+        },
+        "phase": {
+          "minimum": 0,
+          "title": "Phase",
+          "type": "integer"
+        },
+        "location": {
+          "$ref": "#/$defs/Location"
+        }
+      },
+      "required": [
+        "protocol",
+        "algorithm",
+        "operation_id",
+        "snapshot_id",
+        "generation",
+        "event",
+        "partition",
+        "worker_id",
+        "pid",
+        "adjacency_id",
+        "job_id",
+        "session_id",
+        "phase",
+        "location"
+      ],
+      "title": "NativeRecord",
+      "type": "object"
+    },
+    "Pin": {
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "format": "path",
+          "title": "Path",
+          "type": "string"
+        },
+        "bytes": {
+          "minimum": 0,
+          "title": "Bytes",
+          "type": "integer"
+        },
+        "sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "bytes",
+        "sha256"
+      ],
+      "title": "Pin",
+      "type": "object"
+    },
+    "Proof": {
+      "additionalProperties": false,
+      "properties": {
+        "job_id": {
+          "title": "Job Id",
+          "type": "integer"
+        },
+        "session_id": {
+          "title": "Session Id",
+          "type": "string"
+        },
+        "stages": {
+          "items": {
+            "type": "integer"
+          },
+          "title": "Stages",
+          "type": "array"
+        },
+        "owners": {
+          "additionalProperties": {
+            "$ref": "#/$defs/NativeRecord"
+          },
+          "title": "Owners",
+          "type": "object"
+        },
+        "successful_tasks": {
+          "default": 0,
+          "title": "Successful Tasks",
+          "type": "integer"
+        },
+        "cap_failures": {
+          "items": {
+            "$ref": "#/$defs/NativeRecord"
+          },
+          "title": "Cap Failures",
+          "type": "array"
+        },
+        "both_workers": {
+          "const": true,
+          "default": true,
+          "title": "Both Workers",
+          "type": "boolean"
+        },
+        "complete_topology": {
+          "const": true,
+          "default": true,
+          "title": "Complete Topology",
+          "type": "boolean"
+        },
+        "owners_closed": {
+          "const": true,
+          "default": true,
+          "title": "Owners Closed",
+          "type": "boolean"
+        },
+        "event_count": {
+          "title": "Event Count",
+          "type": "integer"
+        },
+        "directed_init_arcs": {
+          "title": "Directed Init Arcs",
+          "type": "integer"
+        },
+        "initialized_vertices": {
+          "title": "Initialized Vertices",
+          "type": "integer"
+        },
+        "terminal_reached": {
+          "title": "Terminal Reached",
+          "type": "integer"
+        },
+        "terminal_levels": {
+          "title": "Terminal Levels",
+          "type": "integer"
+        },
+        "worker_successes": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "title": "Worker Successes",
+          "type": "object"
+        }
+      },
+      "required": [
+        "job_id",
+        "session_id",
+        "stages",
+        "owners",
+        "event_count",
+        "directed_init_arcs",
+        "initialized_vertices",
+        "terminal_reached",
+        "terminal_levels",
+        "worker_successes"
+      ],
+      "title": "Proof",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "outcome": {
+      "default": "checking",
+      "enum": [
+        "checking",
+        "passed_qualified_current_twohost_original_scale24_BFS",
+        "error"
+      ],
+      "title": "Outcome",
+      "type": "string"
+    },
+    "observed_utc": {
+      "title": "Observed Utc",
+      "type": "string"
+    },
+    "configuration": {
+      "$ref": "#/$defs/Pin"
+    },
+    "config": {
+      "$ref": "#/$defs/Config"
+    },
+    "pins_before": {
+      "items": {
+        "$ref": "#/$defs/Pin"
+      },
+      "title": "Pins Before",
+      "type": "array"
+    },
+    "pins_after": {
+      "items": {
+        "$ref": "#/$defs/Pin"
+      },
+      "title": "Pins After",
+      "type": "array"
+    },
+    "native": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Proof"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "execution_and_current_process_closure_passed": {
+      "default": false,
+      "title": "Execution And Current Process Closure Passed",
+      "type": "boolean"
+    },
+    "full_original_mathematical_physical_certificate_passed": {
+      "default": false,
+      "title": "Full Original Mathematical Physical Certificate Passed",
+      "type": "boolean"
+    },
+    "bounded_natural_memory_observer_closure_passed": {
+      "default": false,
+      "title": "Bounded Natural Memory Observer Closure Passed",
+      "type": "boolean"
+    },
+    "own_metadata_identity_closure_passed": {
+      "default": false,
+      "title": "Own Metadata Identity Closure Passed",
+      "type": "boolean"
+    },
+    "original_producer_physical_flag_preserved": {
+      "const": false,
+      "default": false,
+      "title": "Original Producer Physical Flag Preserved",
+      "type": "boolean"
+    },
+    "historical_X1_X2_initiating_cause_identified": {
+      "const": false,
+      "default": false,
+      "title": "Historical X1 X2 Initiating Cause Identified",
+      "type": "boolean"
+    },
+    "OS32_PSS_unique_host_memory_native_pool_fit_or_timing_claim": {
+      "const": false,
+      "default": false,
+      "title": "Os32 Pss Unique Host Memory Native Pool Fit Or Timing Claim",
+      "type": "boolean"
+    },
+    "service_and_firewall_lifecycle_qualified_here": {
+      "const": false,
+      "default": false,
+      "title": "Service And Firewall Lifecycle Qualified Here",
+      "type": "boolean"
+    },
+    "errors": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Errors",
+      "type": "array"
+    },
+    "scope": {
+      "default": "Conjunction of closed current native execution/process provenance and independent all-original mathematical/physical certificate. Original producer/oracle scopes stay unchanged. Memory is bounded per-process observation closure only; no history, speed, OS memory or final store/firewall lifecycle claim.",
+      "title": "Scope",
+      "type": "string"
+    }
+  },
+  "required": [
+    "observed_utc",
+    "configuration",
+    "config"
+  ],
+  "title": "Audit",
+  "type": "object"
+}

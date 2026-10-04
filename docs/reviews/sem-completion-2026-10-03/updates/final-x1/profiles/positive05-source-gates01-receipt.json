@@ -1,0 +1,106 @@
+{
+  "observed_utc": "2026-10-04T18:56:47.839745+00:00",
+  "outcome": "passed_offline_source_gates",
+  "source_before": {
+    "close_case.py": {
+      "bytes": 22862,
+      "sha256": "b0168eb3cc4fe2ce80df95e44246c6483dcf6b2a291a75b20635b931ca959316"
+    },
+    "x1_models.py": {
+      "bytes": 17716,
+      "sha256": "6e06a814e5b379e8788326b8d9a18ff4d2b2c0087e1f91631f0f8cd123d56ef7"
+    },
+    "x1_io.py": {
+      "bytes": 12698,
+      "sha256": "9783345d0be6e530c86b2b7a54d0f051918278c69ecb03ab3e3682a175f5a0ff"
+    },
+    "control_models.py": {
+      "bytes": 6585,
+      "sha256": "e4003295bbabc01ab722d2febea6a7331ca0516ee63fc1f1f28ae0e089148752"
+    },
+    "owner_models.py": {
+      "bytes": 17716,
+      "sha256": "6e06a814e5b379e8788326b8d9a18ff4d2b2c0087e1f91631f0f8cd123d56ef7"
+    }
+  },
+  "source_after": {
+    "close_case.py": {
+      "bytes": 22862,
+      "sha256": "b0168eb3cc4fe2ce80df95e44246c6483dcf6b2a291a75b20635b931ca959316"
+    },
+    "x1_models.py": {
+      "bytes": 17716,
+      "sha256": "6e06a814e5b379e8788326b8d9a18ff4d2b2c0087e1f91631f0f8cd123d56ef7"
+    },
+    "x1_io.py": {
+      "bytes": 12698,
+      "sha256": "9783345d0be6e530c86b2b7a54d0f051918278c69ecb03ab3e3682a175f5a0ff"
+    },
+    "control_models.py": {
+      "bytes": 6585,
+      "sha256": "e4003295bbabc01ab722d2febea6a7331ca0516ee63fc1f1f28ae0e089148752"
+    },
+    "owner_models.py": {
+      "bytes": 17716,
+      "sha256": "6e06a814e5b379e8788326b8d9a18ff4d2b2c0087e1f91631f0f8cd123d56ef7"
+    }
+  },
+  "steps": [
+    {
+      "argv": [
+        "/tmp/sem-output-oracle-venv/bin/ruff",
+        "check",
+        "--isolated",
+        "close_case.py",
+        "test_closure.py"
+      ],
+      "returncode": 0,
+      "actual_wait_completed": true,
+      "log": "1.log"
+    },
+    {
+      "argv": [
+        "/tmp/sem-output-oracle-venv/bin/ruff",
+        "format",
+        "--check",
+        "--isolated",
+        "--line-length",
+        "150",
+        "close_case.py",
+        "test_closure.py"
+      ],
+      "returncode": 0,
+      "actual_wait_completed": true,
+      "log": "2.log"
+    },
+    {
+      "argv": [
+        "/tmp/sem-output-oracle-venv/bin/mypy",
+        "--strict",
+        "--ignore-missing-imports",
+        "--follow-imports=silent",
+        "close_case.py",
+        "test_closure.py"
+      ],
+      "returncode": 0,
+      "actual_wait_completed": true,
+      "log": "3.log"
+    },
+    {
+      "argv": [
+        "/tmp/sem-output-oracle-venv/bin/python",
+        "-B",
+        "-m",
+        "unittest",
+        "-v",
+        "test_closure"
+      ],
+      "returncode": 0,
+      "actual_wait_completed": true,
+      "log": "4.log"
+    }
+  ],
+  "pure_controls": 4,
+  "style_scope": "Only changed observer control_models style, inherited observer body style limitations preserved; Positive style full executor and tests.",
+  "runtime_performed": false
+}

@@ -1,0 +1,138 @@
+--- X1-control-qualifier06/control_models.py
++++ X1-control-qualifier07/control_models.py
+@@ -29,7 +29,7 @@
+     "x1_remote.py": "fe642d665e8c6630574d80515dcaa88d38db2cdf826947d5cde737dd80b4eab9",
+     "x1_worker.py": "89a109320e66e140a731ed9a68b28c1483927e4b0d758128c4731cf4091b7b05",
+     "x1_actions.py": "6617845928df0049899a42b3162240876e2f23737407f3e4e973c5b917ac1cba",
+-    "x1_owner.py": "8a75e2f3b9e372ac11997ef0db23afe4daf37b273985f57f04f0151fd0d85f1f",
++    "x1_owner.py": "4820f089f6985ffee2929e713fd1337d65a520a3c047951d1f38c02a9b8b5ea9",
+ }
+ 
+ 
+@@ -166,6 +166,7 @@
+     task_failure: Location
+     driver_report: Location
+     driver_failed_status: Location
++    worker_failed_status: Location
+     worker_byte_order_passed: Literal[True] = True
+     driver_byte_order_passed: Literal[True] = True
+     global_first_fault_claimed: Literal[False] = False
+--- X1-control-qualifier06/control_logs.py
++++ X1-control-qualifier07/control_logs.py
+@@ -84,6 +84,15 @@
+     return result
+ 
+ 
++def worker_statuses(raw: list[Line], worker: int) -> list[m.TaskStatus]:
++    result = statuses(raw)
++    io.require(
++        worker in (1, 2) and all(row.worker_id == worker for row in result),
++        "task status differs from its actual owned worker log channel",
++    )
++    return result
++
++
+ def failed_reports(raw: list[Line]) -> list[m.FailedReport]:
+     result = []
+     for line in raw:
+@@ -183,6 +192,26 @@
+     return "allocation_refused"
+ 
+ 
++def driver_teardown_order(report: m.Location, raw: list[Line], session: str) -> None:
++    ended = [
++        line
++        for line in raw
++        if re.search(
++            r"\bremoving (?:idle )?session " + re.escape(session) + r"(?:\s|$)",
++            line.text,
++        )
++    ]
++    io.require(bool(ended), "actual driver session teardown evidence missing")
++    io.require(
++        all(
++            report.log == line.location.log
++            and report.byte_offset < line.location.byte_offset
++            for line in ended
++        ),
++        "typed driver failure report must precede teardown in the same driver log",
++    )
++
++
+ def failure_witness(
+     report: m.FailedReport,
+     status: m.TaskStatus,
+@@ -199,8 +228,8 @@
+         report.key == status.key
+         and status.worker_id == worker
+         and status.status == "FAILED"
+-        and report.location.byte_offset < status.location.byte_offset,
+-        "typed report must precede matching FAILED worker task status",
++        and report.location.log != status.location.log,
++        "typed driver report must bind matching FAILED status in a distinct worker log",
+     )
+     execution: Line | None = None
+     failure: Line | None = None
+@@ -239,8 +268,11 @@
+     if execution is None or failure is None:
+         raise ValueError("missing causal worker witness")
+     io.require(
+-        execution.location.byte_offset < failure.location.byte_offset,
+-        "worker task cause preceded execution failure",
++        execution.location.log == failure.location.log == status.location.log
++        and execution.location.byte_offset
++        < failure.location.byte_offset
++        < status.location.byte_offset,
++        "same worker log requires execution failure then task failure then FAILED status",
+     )
+     if native is not None:
+         io.require(
+@@ -249,6 +281,7 @@
+             and native.worker_id == worker
+             and native.pid == pid
+             and native.session_id == session
++            and native.location.log == execution.location.log
+             and native.location.byte_offset < execution.location.byte_offset,
+             "native cap cause must precede same owner execution failure",
+         )
+@@ -273,6 +306,7 @@
+             "execution": execution.location,
+             "task_failure": failure.location,
+             "driver_report": report.location,
+-            "driver_failed_status": status.location,
++            "driver_failed_status": report.location,
++            "worker_failed_status": status.location,
+         }
+     )
+--- X1-control-qualifier06/qualify_control.py
++++ X1-control-qualifier07/qualify_control.py
+@@ -33,7 +33,11 @@
+     driver_lines = list(
+         logs.lines(io.pin(producer.plan.root / "closed-evidence/driver/native.log"))
+     )
+-    tasks = logs.statuses(driver_lines)
++    tasks = [
++        status
++        for worker, rows in worker_lines.items()
++        for status in logs.worker_statuses(rows, worker)
++    ]
+     if config.kind != "host-pool-refusal":
+         records = []
+         for worker, record in workers.items():
+@@ -165,13 +169,9 @@
+         "no task-bound typed refusal before teardown; generic transport/startup failure does not qualify",
+     )
+     for witness in audit.witnesses:
+-        for line in driver_lines:
+-            if "removing session " + witness.session_id in line.text:
+-                io.require(
+-                    witness.driver_failed_status.byte_offset
+-                    < line.location.byte_offset,
+-                    "typed task cause was reported after driver session teardown",
+-                )
++        logs.driver_teardown_order(
++            witness.driver_report, driver_lines, witness.session_id
++        )
+     audit.both_physical_workers_executed = True
+     audit.outcome = (
+         "passed_typed_bfs_cap_control"

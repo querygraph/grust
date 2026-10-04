@@ -1,0 +1,25 @@
+{
+  "observed_utc": "2026-10-04T19:20:04.072806+00:00",
+  "pid": 72091,
+  "pgid": 72091,
+  "returncode": 0,
+  "actual_wait_completed": true,
+  "group_absent": true,
+  "forced_cleanup": false,
+  "argv": [
+    "/usr/bin/ssh",
+    "-4",
+    "-o",
+    "BatchMode=yes",
+    "-o",
+    "ConnectTimeout=5",
+    "-o",
+    "IdentitiesOnly=yes",
+    "-i",
+    "/Users/alexy/.ssh/laika",
+    "-o",
+    "HostKeyAlias=capitola",
+    "alexy@192.168.4.61",
+    "/Users/alexy/src/grust-benchmark-envs/sem-completion-20261003/x1-fat-arm01/bin/python -I -B -c 'import json,hashlib,subprocess;from pathlib import Path;from datetime import datetime,timezone;r=Path('\"'\"'/Users/alexy/src/grust-benchmark-runs/sem-completion-20261003'\"'\"');w=r/'\"'\"'x1-memory-tiny08-capitola-wait01/wait-receipt.json'\"'\"';v=json.loads(w.read_text());assert v['\"'\"'returncode'\"'\"']==0 and v['\"'\"'wait_completed'\"'\"'] and v['\"'\"'child_group_absent'\"'\"'] and v['\"'\"'immutable_closure'\"'\"'] and not v['\"'\"'forced_cleanup'\"'\"'] and not v['\"'\"'errors'\"'\"'];f=r/'\"'\"'x1-memory-tiny08-capitola/receipt.json'\"'\"';a=json.loads(f.read_text());assert a['\"'\"'outcome'\"'\"']=='\"'\"'stopped_bounded_process_observations_only'\"'\"' and not a['\"'\"'errors'\"'\"'];ps=subprocess.run(['\"'\"'/bin/ps'\"'\"','\"'\"'-axo'\"'\"','\"'\"'pid=,pgid='\"'\"'],capture_output=True,text=True,check=True);ids={v['\"'\"'waiter_pid'\"'\"'],v['\"'\"'child_pid'\"'\"']};assert all(not ids.intersection(map(int,l.split())) for l in ps.stdout.splitlines());print(json.dumps({'\"'\"'observed_utc'\"'\"':datetime.now(timezone.utc).isoformat(),'\"'\"'actual_original_wait'\"'\"':v,'\"'\"'producer'\"'\"':a,'\"'\"'current_all_observer_ids_absent'\"'\"':True,'\"'\"'pins'\"'\"':[{'\"'\"'path'\"'\"':str(p),'\"'\"'bytes'\"'\"':p.stat().st_size,'\"'\"'sha256'\"'\"':hashlib.sha256(p.read_bytes()).hexdigest()} for p in [w,f]]}))'"
+  ]
+}

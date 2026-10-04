@@ -1,0 +1,49 @@
+{
+  "outcome": "passed",
+  "checks": [
+    {
+      "label": "ruff",
+      "command": [
+        "/tmp/sem-output-oracle-venv/bin/ruff",
+        "check",
+        "close_failed07.py",
+        "test_failed07.py"
+      ],
+      "returncode": 0
+    },
+    {
+      "label": "format",
+      "command": [
+        "/tmp/sem-output-oracle-venv/bin/ruff",
+        "format",
+        "--check",
+        "close_failed07.py",
+        "test_failed07.py"
+      ],
+      "returncode": 0
+    },
+    {
+      "label": "mypy",
+      "command": [
+        "/tmp/sem-output-oracle-venv/bin/mypy",
+        "--strict",
+        "close_failed07.py",
+        "test_failed07.py"
+      ],
+      "returncode": 0
+    },
+    {
+      "label": "controls",
+      "command": [
+        "/tmp/sem-output-oracle-venv/bin/python",
+        "-B",
+        "-m",
+        "unittest",
+        "-v",
+        "test_failed07"
+      ],
+      "returncode": 0
+    }
+  ],
+  "scope": "Source lint/format/typing plus four pure closed-public-metadata controls; no executor/SSH/native/process/lock actions."
+}

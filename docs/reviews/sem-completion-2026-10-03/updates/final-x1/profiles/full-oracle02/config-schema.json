@@ -1,0 +1,310 @@
+{
+  "$defs": {
+    "Identity": {
+      "additionalProperties": false,
+      "properties": {
+        "bytes": {
+          "minimum": 0,
+          "title": "Bytes",
+          "type": "integer"
+        },
+        "sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "bytes",
+        "sha256"
+      ],
+      "title": "Identity",
+      "type": "object"
+    },
+    "Limits": {
+      "additionalProperties": false,
+      "properties": {
+        "batch_rows": {
+          "default": 65536,
+          "maximum": 262144,
+          "minimum": 1,
+          "title": "Batch Rows",
+          "type": "integer"
+        },
+        "work_seconds": {
+          "default": 7200,
+          "maximum": 43200,
+          "minimum": 1,
+          "title": "Work Seconds",
+          "type": "integer"
+        },
+        "audit_seconds": {
+          "default": 3600,
+          "maximum": 43200,
+          "minimum": 1,
+          "title": "Audit Seconds",
+          "type": "integer"
+        }
+      },
+      "title": "Limits",
+      "type": "object"
+    },
+    "Pin": {
+      "additionalProperties": false,
+      "properties": {
+        "bytes": {
+          "minimum": 0,
+          "title": "Bytes",
+          "type": "integer"
+        },
+        "sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        },
+        "path": {
+          "format": "path",
+          "title": "Path",
+          "type": "string"
+        }
+      },
+      "required": [
+        "bytes",
+        "sha256",
+        "path"
+      ],
+      "title": "Pin",
+      "type": "object"
+    },
+    "ResultSet": {
+      "additionalProperties": false,
+      "properties": {
+        "directory": {
+          "format": "path",
+          "title": "Directory",
+          "type": "string"
+        },
+        "files": {
+          "additionalProperties": {
+            "$ref": "#/$defs/Identity"
+          },
+          "title": "Files",
+          "type": "object"
+        }
+      },
+      "required": [
+        "directory",
+        "files"
+      ],
+      "title": "ResultSet",
+      "type": "object"
+    },
+    "SourceContract": {
+      "additionalProperties": false,
+      "properties": {
+        "repo": {
+          "format": "path",
+          "title": "Repo",
+          "type": "string"
+        },
+        "head": {
+          "const": "4b88c8fb4504ab1d2a896c9e49e4a09df4905bbb",
+          "title": "Head",
+          "type": "string"
+        },
+        "tree": {
+          "pattern": "^[a-f0-9]{40}$",
+          "title": "Tree",
+          "type": "string"
+        },
+        "files": {
+          "items": {
+            "$ref": "#/$defs/Pin"
+          },
+          "minItems": 1,
+          "title": "Files",
+          "type": "array"
+        }
+      },
+      "required": [
+        "repo",
+        "head",
+        "tree",
+        "files"
+      ],
+      "title": "SourceContract",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "dataset": {
+      "enum": [
+        "graph500-generated-scale24",
+        "tiny"
+      ],
+      "title": "Dataset",
+      "type": "string"
+    },
+    "vertices": {
+      "items": {
+        "$ref": "#/$defs/Pin"
+      },
+      "minItems": 1,
+      "title": "Vertices",
+      "type": "array"
+    },
+    "edges": {
+      "items": {
+        "$ref": "#/$defs/Pin"
+      },
+      "minItems": 1,
+      "title": "Edges",
+      "type": "array"
+    },
+    "result": {
+      "$ref": "#/$defs/ResultSet"
+    },
+    "expected_vertices": {
+      "maximum": 20000000,
+      "minimum": 1,
+      "title": "Expected Vertices",
+      "type": "integer"
+    },
+    "expected_edges": {
+      "maximum": 300000000,
+      "minimum": 0,
+      "title": "Expected Edges",
+      "type": "integer"
+    },
+    "source_id": {
+      "maximum": 9223372036854775807,
+      "minimum": -9223372036854775808,
+      "title": "Source Id",
+      "type": "integer"
+    },
+    "max_levels": {
+      "maximum": 62,
+      "minimum": 0,
+      "title": "Max Levels",
+      "type": "integer"
+    },
+    "partitions": {
+      "maximum": 128,
+      "minimum": 1,
+      "title": "Partitions",
+      "type": "integer"
+    },
+    "edge_source": {
+      "default": "src",
+      "enum": [
+        "src",
+        "source"
+      ],
+      "title": "Edge Source",
+      "type": "string"
+    },
+    "edge_target": {
+      "default": "dst",
+      "enum": [
+        "dst",
+        "target"
+      ],
+      "title": "Edge Target",
+      "type": "string"
+    },
+    "edge_schema_profile": {
+      "default": "endpoints2",
+      "enum": [
+        "endpoints2",
+        "original_weight3"
+      ],
+      "title": "Edge Schema Profile",
+      "type": "string"
+    },
+    "undirected": {
+      "const": true,
+      "default": true,
+      "title": "Undirected",
+      "type": "boolean"
+    },
+    "method": {
+      "const": "reference",
+      "default": "reference",
+      "title": "Method",
+      "type": "string"
+    },
+    "schema_profile": {
+      "default": "native13",
+      "enum": [
+        "native13",
+        "projected4"
+      ],
+      "title": "Schema Profile",
+      "type": "string"
+    },
+    "projected_terminal_receipt": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Pin"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "source_contract": {
+      "$ref": "#/$defs/SourceContract"
+    },
+    "client_files": {
+      "items": {
+        "$ref": "#/$defs/Pin"
+      },
+      "minItems": 1,
+      "title": "Client Files",
+      "type": "array"
+    },
+    "producer_evidence": {
+      "items": {
+        "$ref": "#/$defs/Pin"
+      },
+      "minItems": 1,
+      "title": "Producer Evidence",
+      "type": "array"
+    },
+    "helpers": {
+      "additionalProperties": {
+        "$ref": "#/$defs/Pin"
+      },
+      "title": "Helpers",
+      "type": "object"
+    },
+    "output": {
+      "format": "path",
+      "title": "Output",
+      "type": "string"
+    },
+    "limits": {
+      "$ref": "#/$defs/Limits"
+    }
+  },
+  "required": [
+    "dataset",
+    "vertices",
+    "edges",
+    "result",
+    "expected_vertices",
+    "expected_edges",
+    "source_id",
+    "max_levels",
+    "partitions",
+    "source_contract",
+    "client_files",
+    "producer_evidence",
+    "helpers",
+    "output"
+  ],
+  "title": "Config",
+  "type": "object"
+}

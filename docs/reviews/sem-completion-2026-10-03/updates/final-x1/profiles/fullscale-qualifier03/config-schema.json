@@ -1,0 +1,174 @@
+{
+  "$defs": {
+    "MemoryProof": {
+      "additionalProperties": false,
+      "properties": {
+        "configuration": {
+          "$ref": "#/$defs/Pin"
+        },
+        "original_wait_configuration": {
+          "$ref": "#/$defs/Pin"
+        },
+        "helper_copies": {
+          "additionalProperties": {
+            "$ref": "#/$defs/Pin"
+          },
+          "title": "Helper Copies",
+          "type": "object"
+        },
+        "host": {
+          "enum": [
+            "morrobay",
+            "capitola"
+          ],
+          "title": "Host",
+          "type": "string"
+        },
+        "receipt": {
+          "$ref": "#/$defs/Pin"
+        },
+        "original_wait": {
+          "$ref": "#/$defs/Pin"
+        },
+        "stop": {
+          "$ref": "#/$defs/Pin"
+        }
+      },
+      "required": [
+        "configuration",
+        "original_wait_configuration",
+        "helper_copies",
+        "host",
+        "receipt",
+        "original_wait",
+        "stop"
+      ],
+      "title": "MemoryProof",
+      "type": "object"
+    },
+    "Pin": {
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "format": "path",
+          "title": "Path",
+          "type": "string"
+        },
+        "bytes": {
+          "minimum": 0,
+          "title": "Bytes",
+          "type": "integer"
+        },
+        "sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "bytes",
+        "sha256"
+      ],
+      "title": "Pin",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "kind": {
+      "const": "scale24",
+      "default": "scale24",
+      "title": "Kind",
+      "type": "string"
+    },
+    "producer": {
+      "$ref": "#/$defs/Pin"
+    },
+    "original_wait": {
+      "$ref": "#/$defs/Pin"
+    },
+    "canonical_wait": {
+      "$ref": "#/$defs/Pin"
+    },
+    "outer_wait": {
+      "$ref": "#/$defs/Pin"
+    },
+    "outer_binding": {
+      "$ref": "#/$defs/Pin"
+    },
+    "original_outer_current_closure": {
+      "$ref": "#/$defs/Pin"
+    },
+    "current_closure": {
+      "$ref": "#/$defs/Pin"
+    },
+    "current_closure_wait": {
+      "$ref": "#/$defs/Pin"
+    },
+    "whole_copy": {
+      "$ref": "#/$defs/Pin"
+    },
+    "oracle": {
+      "$ref": "#/$defs/Pin"
+    },
+    "oracle_freeze": {
+      "$ref": "#/$defs/Pin"
+    },
+    "oracle_wait": {
+      "$ref": "#/$defs/Pin"
+    },
+    "original_manifest": {
+      "$ref": "#/$defs/Pin"
+    },
+    "restore_closure": {
+      "$ref": "#/$defs/Pin"
+    },
+    "memory": {
+      "items": {
+        "$ref": "#/$defs/MemoryProof"
+      },
+      "maxItems": 2,
+      "minItems": 2,
+      "title": "Memory",
+      "type": "array"
+    },
+    "memory_closure": {
+      "$ref": "#/$defs/Pin"
+    },
+    "helpers": {
+      "additionalProperties": {
+        "$ref": "#/$defs/Pin"
+      },
+      "title": "Helpers",
+      "type": "object"
+    },
+    "output": {
+      "format": "path",
+      "title": "Output",
+      "type": "string"
+    }
+  },
+  "required": [
+    "producer",
+    "original_wait",
+    "canonical_wait",
+    "outer_wait",
+    "outer_binding",
+    "original_outer_current_closure",
+    "current_closure",
+    "current_closure_wait",
+    "whole_copy",
+    "oracle",
+    "oracle_freeze",
+    "oracle_wait",
+    "original_manifest",
+    "restore_closure",
+    "memory",
+    "memory_closure",
+    "helpers",
+    "output"
+  ],
+  "title": "Config",
+  "type": "object"
+}

@@ -1,0 +1,234 @@
+--- qualifier07/control_models.py
++++ qualifier08/control_models.py
+@@ -161,6 +161,9 @@
+     session_id: str
+     classified_cause: Literal["bfs_level_cap", "allocation_refused"]
+     typed_cause: dict[str, JsonValue]
++    rpc_tag: Literal["execution", "python", "unknown"]
++    error_boundary: Literal["common_error_cause", "datafusion_ffi_native_cap"]
++    rpc_common_execution_tag_preserved: bool
+     native: Location | None = None
+     execution: Location
+     task_failure: Location
+@@ -188,6 +191,8 @@
+     pins_after: list[o.Pin] = Field(default_factory=list)
+     native: NativeProof | None = None
+     witnesses: list[CauseWitness] = Field(default_factory=list)
++    native_bound_ffi_cap_decoded: bool = False
++    rpc_common_execution_tag_preserved: bool | None = None
+     original_wait_adapter_passed: bool = False
+     producer_source_process_closure_passed: bool = False
+     both_physical_workers_executed: bool = False
+@@ -197,4 +202,4 @@
+     historical_cause_identified: Literal[False] = False
+     full_original_graph_executed: Literal[False] = False
+     errors: list[str] = Field(default_factory=list)
+-    scope: str = "Closed current stock4b control evidence only. Typed execution allocation refusal is a classification of the actual CommonErrorCause payload, not a new wire enum. No global first fault, native allocator participation in the plain range control, historical explanation, or full-scale result claim."
++    scope: str = "Closed current stock4b control evidence only. A native-bound FFI cap has a typed native BfsCapFailure receipt but RPC CommonErrorCause::Unknown; no execution wire-tag preservation is claimed. Generic unknown remains refused. Plain host allocation refusal requires the existing execution payload. No global first fault, native allocator participation in the plain range control, historical explanation, or full-scale result claim."
+--- qualifier07/control_logs.py
++++ qualifier08/control_logs.py
+@@ -26,6 +26,7 @@
+     r"h2 protocol|stream reset|connection reset|broken pipe|transport error|grpc_code=|host memory admission|native extension",
+     re.IGNORECASE,
+ )
++FFI_CAP_TEXT = "Execution error: argentea: BFS did not converge within max_levels"
+ 
+ 
+ @dataclass(frozen=True, slots=True)
+@@ -212,6 +213,105 @@
+     )
+ 
+ 
++def native_bound_ffi_cap_text(
++    report: m.FailedReport,
++    status: m.TaskStatus,
++    *,
++    request: Mapping[str, object] | None,
++    proof: m.NativeProof | None,
++    native: m.NativeRecord | None,
++    worker: int,
++    pid: int,
++    session: str,
++) -> str:
++    """Decode the stock4b FFI cap boundary only with a proven native cause.
++
++    DataFusionError::Ffi becomes CommonErrorCause::Unknown in stock4b.
++    This preserves that wire tag; it does not reclassify generic unknown errors.
++    The caller still proves native -> execution -> task_failure -> FAILED order
++    in the worker log and driver FAILED -> session removal in the driver log.
++    """
++    io.require(
++        report.cause == {"unknown": FFI_CAP_TEXT}
++        and report.message == f"task error: FFI error: {FFI_CAP_TEXT}",
++        "exact stock4b FFI cap cause and message required",
++    )
++    io.require(
++        native is not None and proof is not None and request is not None,
++        "FFI cap requires complete native proof and actual request",
++    )
++    if native is None or proof is None or request is None:
++        raise ValueError("native-bound FFI cap evidence absent")
++    io.require(
++        all(
++            type(request.get(key)) is int and request.get(key) == value
++            for key, value in {
++                "version": 3,
++                "max_levels": 0,
++                "partitions": 32,
++                "vertices": 13,
++                "source": -5,
++                "generation": native.generation,
++            }.items()
++        )
++        and all(
++            getattr(native, key) == request.get(key)
++            for key in ("algorithm", "operation_id", "snapshot_id")
++        ),
++        "FFI cap request/operation/snapshot/generation mismatch",
++    )
++    owner = proof.owners.get(report.key.partition)
++    detail = native.__pydantic_extra__ or {}
++    io.require(
++        native in proof.cap_failures
++        and owner is not None
++        and native.event == "failure"
++        and native.phase == 1
++        and detail.get("code") == "bfs_level_cap"
++        and detail.get("outcome") == "nonconverged"
++        and all(
++            type(detail.get(key)) is int and detail.get(key) == value
++            for key, value in {
++                "levels": 0,
++                "max_levels": 0,
++                "frontier_vertices": 1,
++                "reached": 1,
++            }.items()
++        )
++        and native.job_id == proof.job_id == report.key.job_id
++        and native.session_id == proof.session_id == session
++        and report.key.stage in proof.stages
++        and report.key == status.key
++        and status.status == "FAILED"
++        and native.partition == report.key.partition
++        and native.worker_id == status.worker_id == worker
++        and native.pid == pid
++        and native.location.log == status.location.log,
++        "FFI cap native payload/task/worker/PID/session/stage mismatch",
++    )
++    if owner is None:
++        raise ValueError("native cap owner absent")
++    io.require(
++        all(
++            getattr(owner, key) == getattr(native, key)
++            for key in (
++                "algorithm",
++                "operation_id",
++                "snapshot_id",
++                "generation",
++                "partition",
++                "worker_id",
++                "pid",
++                "adjacency_id",
++                "job_id",
++                "session_id",
++            )
++        ),
++        "FFI cap differs from the proven native owner incarnation",
++    )
++    return FFI_CAP_TEXT
++
++
+ def failure_witness(
+     report: m.FailedReport,
+     status: m.TaskStatus,
+@@ -221,9 +321,26 @@
+     pid: int,
+     session: str,
+     native: m.NativeRecord | None = None,
++    request: Mapping[str, object] | None = None,
++    native_proof: m.NativeProof | None = None,
+ ) -> m.CauseWitness:
+     cap = native is not None
+-    classified = classify(report.cause, cap=cap)
++    ffi_cap = "unknown" in report.cause
++    if ffi_cap:
++        text = native_bound_ffi_cap_text(
++            report,
++            status,
++            request=request,
++            proof=native_proof,
++            native=native,
++            worker=worker,
++            pid=pid,
++            session=session,
++        )
++        classified = "bfs_level_cap"
++    else:
++        classified = classify(report.cause, cap=cap)
++        text = cause_text(report.cause, cap=cap)
+     io.require(
+         report.key == status.key
+         and status.worker_id == worker
+@@ -233,7 +350,6 @@
+     )
+     execution: Line | None = None
+     failure: Line | None = None
+-    text = cause_text(report.cause, cap=cap)
+     for line in raw:
+         if (
+             "execution_failure " in line.text
+@@ -243,7 +359,9 @@
+         ):
+             chain = line.text.split("error_chain=", 1)[-1]
+             matches = (
+-                "BFS did not converge within max_levels" in chain
++                chain == f"FFI error: {FFI_CAP_TEXT}"
++                if ffi_cap
++                else "BFS did not converge within max_levels" in chain
+                 if cap
+                 else bool(ALLOCATION.search(chain))
+             )
+@@ -258,6 +376,7 @@
+             and task_key(line.text) == report.key
+             and "cause=" in line.text
+             and text in line.text.split("cause=", 1)[1]
++            and (not ffi_cap or line.text.split("cause=", 1)[1] == FFI_CAP_TEXT)
+         ):
+             failure = line
+             break
+@@ -302,6 +421,11 @@
+             "session_id": session,
+             "classified_cause": classified,
+             "typed_cause": report.cause,
++            "rpc_tag": next(iter(report.cause)),
++            "error_boundary": "datafusion_ffi_native_cap"
++            if ffi_cap
++            else "common_error_cause",
++            "rpc_common_execution_tag_preserved": "execution" in report.cause,
+             "native": native.location if native else None,
+             "execution": execution.location,
+             "task_failure": failure.location,
+--- qualifier07/qualify_control.py
++++ qualifier08/qualify_control.py
+@@ -160,6 +160,8 @@
+                         pid=worker_record.process.pid,
+                         session=stage_jobs[scope],
+                         native=cause,
++                        request=cast(dict[str, object], action.native_request),
++                        native_proof=audit.native,
+                     )
+                 except ValueError:
+                     continue  # Other failed tasks may carry cancellation/transport consequences; preserve all raw logs.
+@@ -172,6 +174,12 @@
+         logs.driver_teardown_order(
+             witness.driver_report, driver_lines, witness.session_id
+         )
++    audit.native_bound_ffi_cap_decoded = any(
++        row.error_boundary == "datafusion_ffi_native_cap" for row in audit.witnesses
++    )
++    audit.rpc_common_execution_tag_preserved = all(
++        row.rpc_common_execution_tag_preserved for row in audit.witnesses
++    )
+     audit.both_physical_workers_executed = True
+     audit.outcome = (
+         "passed_typed_bfs_cap_control"

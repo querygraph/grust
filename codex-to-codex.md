@@ -10756,3 +10756,17 @@ boundary.
 ## Morrobay C4 factory allocation qualification — 2026-10-04T01:20:10.505741+00:00
 
 C4 qualified native full-Struct factory allocation controls docs/reviews/sem-completion-2026-10-03/C4-allocation/README.md. Six complete semantic controls at 4,096/100,000 groups are closed; standalone source ef5fc415ab4b182fb3df4e238cf634cc9fc94cd9 passes actual committed native run04 gates with unchanged binary. At 100,000 groups, compact/min_by additional live requested System bytes are 4,194,304/155,815,680 and requested allocation counts 5/6,500,283. These do not qualify original WCC Long/Long min_by, MiMalloc, pools, physical memory or whole-graph speed. Failed run01 unknown timed-out exit and pre-command run03 refusal are retained. C2 observer phase capture and X1 modern two-host qualification remain pending; no all-Sem completion claim.
+
+## 2026-10-04T23:23:52.692821+00:00 — Morrobay: DONE authorized Sem completion experiments
+
+C2/C3/C4/D2/E0/X1/X2, the retained native F2 phase profiles, and the Vortex capability controls are closed within their disclosed contracts. Additional F2a remains paused by the user; Grust v2 is a separate design direction.
+
+The original generated X1 scale24-02 replay is qualified on native Morrobay x86-64 and Capitola arm64 with the byte-identical universal2 CLI/wheel: all16,777,216 rows and all268,435,456 original weighted edges; source13,507,776, undirected/K8/P32; reached8,862,601, maxdistance5, terminal6; 640 native tasks and672 owner events. All7 full-certificate flags pass and14 failure counters are0. The independently observed outer launcher, native participants, both natural memory observers and source identities are closed. New composite audit SHA e64d885b5b3880463a5f5e010e11faeda65914cca0b8fc3570ece44d38de86a6; original producer/oracle false scopes are unchanged.
+
+Preserved: original failed scale24-01, checker1 FD256 failure, qualifier02 metadata failure, strict07 cap failure and all earlier source/admission/runtime negatives. Checker2 used FD8192 on the same output; helper fixes repeated no native graph run. Native K0 is qualified at the DataFusion FFI seam with RPC Unknown/wire not preserved; the separate plain host-pool control retains typed Execution allocation causality.
+
+Store03 stopped normally, supervisor0/server0/currentgroups absent/dedicatedlock released; earlier Store02 expiry remains failed. Only the added Cap Sail firewall app entry was removed; Capglobal1, Morglobal0 and unrelated rules are unchanged. Backend/output data and private credentials are retained. No benchmark VM was recreated; production Eigen publishing is untouched.
+
+Current report: docs/reviews/sem-completion-2026-10-03/README.md; final X1 catalog: updates/final-x1/ (466 closed metadata members, manifest bfda772ec6ddcf4356fef415c4f0c2b07e7ba80b08394c1487cc32448f03fe3f, freeze 55a21288516ac06c095cecbe280db472f5ee2e038e2f931ff63e534554719aac). Board sections8/9 are reconciled. C2 trace fix is querygraph/sail 98de82ab0f58385c795b33ec1dc0db85a362a998, PR33 draft; its original native committed gate and full controls are retained separately from this documentation update.
+
+Limits remain explicit: historical X1/X2 initiating causes unknown; no exclusive whole-server phase budget, PSS/OS32GiB/unique physical-total/native-fit guarantee or new fullscale timing comparison; Vortex writing unavailable. This report includes no private credentials or credential hashes.

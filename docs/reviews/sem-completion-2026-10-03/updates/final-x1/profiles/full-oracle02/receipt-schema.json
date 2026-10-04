@@ -1,0 +1,598 @@
+{
+  "$defs": {
+    "Failures": {
+      "additionalProperties": false,
+      "properties": {
+        "duplicate_rows": {
+          "default": 0,
+          "title": "Duplicate Rows",
+          "type": "integer"
+        },
+        "unknown_ids": {
+          "default": 0,
+          "title": "Unknown Ids",
+          "type": "integer"
+        },
+        "null_ids": {
+          "default": 0,
+          "title": "Null Ids",
+          "type": "integer"
+        },
+        "missing_ids": {
+          "default": 0,
+          "title": "Missing Ids",
+          "type": "integer"
+        },
+        "null_tuple": {
+          "default": 0,
+          "title": "Null Tuple",
+          "type": "integer"
+        },
+        "invalid_distance": {
+          "default": 0,
+          "title": "Invalid Distance",
+          "type": "integer"
+        },
+        "distance_hops": {
+          "default": 0,
+          "title": "Distance Hops",
+          "type": "integer"
+        },
+        "source_tuple": {
+          "default": 0,
+          "title": "Source Tuple",
+          "type": "integer"
+        },
+        "non_source_zero": {
+          "default": 0,
+          "title": "Non Source Zero",
+          "type": "integer"
+        },
+        "raw_diagnostics": {
+          "default": 0,
+          "title": "Raw Diagnostics",
+          "type": "integer"
+        },
+        "owner_identity": {
+          "default": 0,
+          "title": "Owner Identity",
+          "type": "integer"
+        },
+        "minimum_parent": {
+          "default": 0,
+          "title": "Minimum Parent",
+          "type": "integer"
+        },
+        "edge_level_gap": {
+          "default": 0,
+          "title": "Edge Level Gap",
+          "type": "integer"
+        },
+        "edge_reachability_closure": {
+          "default": 0,
+          "title": "Edge Reachability Closure",
+          "type": "integer"
+        }
+      },
+      "title": "Failures",
+      "type": "object"
+    },
+    "Identity": {
+      "additionalProperties": false,
+      "properties": {
+        "bytes": {
+          "minimum": 0,
+          "title": "Bytes",
+          "type": "integer"
+        },
+        "sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "bytes",
+        "sha256"
+      ],
+      "title": "Identity",
+      "type": "object"
+    },
+    "InputEdgeFile": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "fields": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Fields",
+          "type": "array"
+        },
+        "types": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Types",
+          "type": "array"
+        },
+        "nullable": {
+          "items": {
+            "type": "boolean"
+          },
+          "title": "Nullable",
+          "type": "array"
+        },
+        "footer_rows": {
+          "title": "Footer Rows",
+          "type": "integer"
+        },
+        "rows_examined": {
+          "default": 0,
+          "title": "Rows Examined",
+          "type": "integer"
+        },
+        "input": {
+          "$ref": "#/$defs/Pin"
+        },
+        "schema_profile": {
+          "enum": [
+            "endpoints2",
+            "original_weight3"
+          ],
+          "title": "Schema Profile",
+          "type": "string"
+        },
+        "examined_columns": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Examined Columns",
+          "type": "array"
+        },
+        "deliberately_unused_columns": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Deliberately Unused Columns",
+          "type": "array"
+        }
+      },
+      "required": [
+        "name",
+        "fields",
+        "types",
+        "nullable",
+        "footer_rows",
+        "input",
+        "schema_profile",
+        "examined_columns",
+        "deliberately_unused_columns"
+      ],
+      "title": "InputEdgeFile",
+      "type": "object"
+    },
+    "Owner": {
+      "additionalProperties": false,
+      "properties": {
+        "owner": {
+          "title": "Owner",
+          "type": "integer"
+        },
+        "worker_id": {
+          "title": "Worker Id",
+          "type": "integer"
+        },
+        "pid": {
+          "title": "Pid",
+          "type": "integer"
+        },
+        "adjacency_id": {
+          "title": "Adjacency Id",
+          "type": "integer"
+        },
+        "rows": {
+          "default": 0,
+          "title": "Rows",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "owner",
+        "worker_id",
+        "pid",
+        "adjacency_id"
+      ],
+      "title": "Owner",
+      "type": "object"
+    },
+    "PhysicalFile": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "fields": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Fields",
+          "type": "array"
+        },
+        "types": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Types",
+          "type": "array"
+        },
+        "nullable": {
+          "items": {
+            "type": "boolean"
+          },
+          "title": "Nullable",
+          "type": "array"
+        },
+        "footer_rows": {
+          "title": "Footer Rows",
+          "type": "integer"
+        },
+        "rows_examined": {
+          "default": 0,
+          "title": "Rows Examined",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "name",
+        "fields",
+        "types",
+        "nullable",
+        "footer_rows"
+      ],
+      "title": "PhysicalFile",
+      "type": "object"
+    },
+    "Pin": {
+      "additionalProperties": false,
+      "properties": {
+        "bytes": {
+          "minimum": 0,
+          "title": "Bytes",
+          "type": "integer"
+        },
+        "sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        },
+        "path": {
+          "format": "path",
+          "title": "Path",
+          "type": "string"
+        }
+      },
+      "required": [
+        "bytes",
+        "sha256",
+        "path"
+      ],
+      "title": "Pin",
+      "type": "object"
+    },
+    "SourceObservation": {
+      "additionalProperties": false,
+      "properties": {
+        "head": {
+          "title": "Head",
+          "type": "string"
+        },
+        "tree": {
+          "title": "Tree",
+          "type": "string"
+        },
+        "detached": {
+          "title": "Detached",
+          "type": "boolean"
+        },
+        "status": {
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "head",
+        "tree",
+        "detached",
+        "status"
+      ],
+      "title": "SourceObservation",
+      "type": "object"
+    },
+    "Terminal": {
+      "additionalProperties": false,
+      "properties": {
+        "levels": {
+          "title": "Levels",
+          "type": "integer"
+        },
+        "reached": {
+          "title": "Reached",
+          "type": "integer"
+        },
+        "phase": {
+          "title": "Phase",
+          "type": "integer"
+        },
+        "converged": {
+          "title": "Converged",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "levels",
+        "reached",
+        "phase",
+        "converged"
+      ],
+      "title": "Terminal",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "outcome": {
+      "default": "checking",
+      "enum": [
+        "checking",
+        "passed_full_undirected_BFS_certificate",
+        "mismatch",
+        "partial_output",
+        "cap_unqualified",
+        "error"
+      ],
+      "title": "Outcome",
+      "type": "string"
+    },
+    "started_utc": {
+      "title": "Started Utc",
+      "type": "string"
+    },
+    "finished_utc": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Finished Utc"
+    },
+    "configuration": {
+      "$ref": "#/$defs/Pin"
+    },
+    "source_before": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/SourceObservation"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "source_after": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/SourceObservation"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "pins_before": {
+      "items": {
+        "$ref": "#/$defs/Pin"
+      },
+      "title": "Pins Before",
+      "type": "array"
+    },
+    "pins_after": {
+      "items": {
+        "$ref": "#/$defs/Pin"
+      },
+      "title": "Pins After",
+      "type": "array"
+    },
+    "raw_files_before": {
+      "additionalProperties": {
+        "$ref": "#/$defs/Identity"
+      },
+      "title": "Raw Files Before",
+      "type": "object"
+    },
+    "raw_files_after": {
+      "additionalProperties": {
+        "$ref": "#/$defs/Identity"
+      },
+      "title": "Raw Files After",
+      "type": "object"
+    },
+    "physical_files": {
+      "items": {
+        "$ref": "#/$defs/PhysicalFile"
+      },
+      "title": "Physical Files",
+      "type": "array"
+    },
+    "input_edge_physical_files": {
+      "items": {
+        "$ref": "#/$defs/InputEdgeFile"
+      },
+      "title": "Input Edge Physical Files",
+      "type": "array"
+    },
+    "vertex_rows": {
+      "default": 0,
+      "title": "Vertex Rows",
+      "type": "integer"
+    },
+    "edge_rows": {
+      "default": 0,
+      "title": "Edge Rows",
+      "type": "integer"
+    },
+    "output_rows": {
+      "default": 0,
+      "title": "Output Rows",
+      "type": "integer"
+    },
+    "unique_output_ids": {
+      "default": 0,
+      "title": "Unique Output Ids",
+      "type": "integer"
+    },
+    "reached": {
+      "default": 0,
+      "title": "Reached",
+      "type": "integer"
+    },
+    "max_distance": {
+      "default": -1,
+      "title": "Max Distance",
+      "type": "integer"
+    },
+    "computed_terminal_levels": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Computed Terminal Levels"
+    },
+    "observed_terminal": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Terminal"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "owners": {
+      "items": {
+        "$ref": "#/$defs/Owner"
+      },
+      "title": "Owners",
+      "type": "array"
+    },
+    "failures": {
+      "$ref": "#/$defs/Failures"
+    },
+    "full_domain_passed": {
+      "default": false,
+      "title": "Full Domain Passed",
+      "type": "boolean"
+    },
+    "all_original_edges_examined": {
+      "default": false,
+      "title": "All Original Edges Examined",
+      "type": "boolean"
+    },
+    "parent_paths_and_minimum_parent_passed": {
+      "default": false,
+      "title": "Parent Paths And Minimum Parent Passed",
+      "type": "boolean"
+    },
+    "all_edge_lower_bound_and_reachability_passed": {
+      "default": false,
+      "title": "All Edge Lower Bound And Reachability Passed",
+      "type": "boolean"
+    },
+    "terminal_empty_expansion_cap_passed": {
+      "default": false,
+      "title": "Terminal Empty Expansion Cap Passed",
+      "type": "boolean"
+    },
+    "full_physical_certificate_passed": {
+      "default": false,
+      "title": "Full Physical Certificate Passed",
+      "type": "boolean"
+    },
+    "own_identity_closure_passed": {
+      "default": false,
+      "title": "Own Identity Closure Passed",
+      "type": "boolean"
+    },
+    "full_array_bytes": {
+      "default": 0,
+      "title": "Full Array Bytes",
+      "type": "integer"
+    },
+    "identity_domain_verified": {
+      "default": false,
+      "title": "Identity Domain Verified",
+      "type": "boolean"
+    },
+    "declared_batch_array_allowance_bytes": {
+      "default": 0,
+      "title": "Declared Batch Array Allowance Bytes",
+      "type": "integer"
+    },
+    "array_memory_scope": {
+      "default": "full_array_bytes sums six retained ndarray.nbytes (34V); batch allowance is advisory 512*batch_rows, not a proved allocator/decoder/physical peak. Internal sorting/Arrow buffers, metadata, interpreter and runtime headroom are not bounded here; root must observe RSS separately.",
+      "title": "Array Memory Scope",
+      "type": "string"
+    },
+    "progress": {
+      "default": "initial",
+      "title": "Progress",
+      "type": "string"
+    },
+    "errors": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Errors",
+      "type": "array"
+    },
+    "certain_producer_process_closure": {
+      "const": false,
+      "default": false,
+      "title": "Certain Producer Process Closure",
+      "type": "boolean"
+    },
+    "native_ABI_or_historical_cause_qualified": {
+      "const": false,
+      "default": false,
+      "title": "Native Abi Or Historical Cause Qualified",
+      "type": "boolean"
+    },
+    "scope": {
+      "default": "All original undirected edges plus source-rooted decreasing parent paths prove exact BFS distances and minimum signed-ID preceding-level parents. Outside algorithm timer; no CSR/queue replay, process closure, allocator or historical fault claim.",
+      "title": "Scope",
+      "type": "string"
+    }
+  },
+  "required": [
+    "started_utc",
+    "configuration"
+  ],
+  "title": "Receipt",
+  "type": "object"
+}

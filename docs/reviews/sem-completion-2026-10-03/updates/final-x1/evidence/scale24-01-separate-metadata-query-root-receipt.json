@@ -1,0 +1,29 @@
+{
+  "observed_utc": "2026-10-04T20:31:03.195749+00:00",
+  "actual_ssh_wait": {
+    "argv": [
+      "/usr/bin/ssh",
+      "-4",
+      "-o",
+      "BatchMode=yes",
+      "-o",
+      "ConnectTimeout=5",
+      "-o",
+      "IdentitiesOnly=yes",
+      "-i",
+      "/Users/alexy/.ssh/laika",
+      "-o",
+      "HostKeyAlias=capitola",
+      "alexy@192.168.4.61",
+      "/Users/alexy/src/grust-benchmark-envs/sem-completion-20261003/x1-fat-arm01/bin/python -I -B -c 'import json,subprocess,os,hashlib;from pathlib import Path;r=Path('\"'\"'/Users/alexy/src/grust-benchmark-runs/sem-completion-20261003/x1-scale24-01-live-metadata01'\"'\"');r.mkdir(mode=0o700);f=r/'\"'\"'metadata-query.py'\"'\"';f.write_text('\"'\"'import json,os;from pathlib import Path;from datetime import datetime,timezone;from pyspark.sql.connect.session import SparkSession;from pyspark.sql.connect.client.retries import DefaultPolicy\\nr=Path(\\'\"'\"'/Users/alexy/src/grust-benchmark-runs/sem-completion-20261003/x1-scale24-01-live-metadata01\\'\"'\"');s=None;v={\\'\"'\"'observed_utc\\'\"'\"':datetime.now(timezone.utc).isoformat(),\\'\"'\"'outcome\\'\"'\"':\\'\"'\"'running\\'\"'\"',\\'\"'\"'original_native_session\\'\"'\"':\\'\"'\"'96ed20ae-5330-486d-a59b-e7f0ab8195d7\\'\"'\"',\\'\"'\"'job_id\\'\"'\"':38,\\'\"'\"'query_boundary\\'\"'\"':\\'\"'\"'fresh metadata session outside original algorithm; no graph inputs or writes\\'\"'\"',\\'\"'\"'queries\\'\"'\"':[],\\'\"'\"'errors\\'\"'\"':[],\\'\"'\"'session_closed\\'\"'\"':False}\\ntry:\\n s=SparkSession.builder.remote(\\'\"'\"'sc://192.168.4.61:50151\\'\"'\"').create();s.client.set_retry_policies([DefaultPolicy(max_retries=0)]);v[\\'\"'\"'metadata_session\\'\"'\"']=s.client._session_id;assert v[\\'\"'\"'metadata_session\\'\"'\"']!=v[\\'\"'\"'original_native_session\\'\"'\"']\\n for sql in [\"SELECT stage,partitions,inputs,`group`,mode,distribution,placement,status,created_at,stopped_at FROM system.execution.stages WHERE session_id=\\'\"'\"'96ed20ae-5330-486d-a59b-e7f0ab8195d7\\'\"'\"' AND job_id=38 ORDER BY stage\", \"SELECT stage,status,COUNT(*) AS tasks,MIN(partition) AS first_partition,MAX(partition) AS last_partition,MIN(created_at) AS earliest_created,MAX(stopped_at) AS latest_stopped FROM system.execution.tasks WHERE session_id=\\'\"'\"'96ed20ae-5330-486d-a59b-e7f0ab8195d7\\'\"'\"' AND job_id=38 GROUP BY stage,status ORDER BY stage,status\", \"SELECT worker_id,host,port,status,created_at,stopped_at FROM system.cluster.workers WHERE session_id=\\'\"'\"'96ed20ae-5330-486d-a59b-e7f0ab8195d7\\'\"'\"' ORDER BY worker_id\"]:\\n  rows=s.sql(sql).collect();v[\\'\"'\"'queries\\'\"'\"'].append({\\'\"'\"'sql\\'\"'\"':sql,\\'\"'\"'rows\\'\"'\"':[x.asDict(recursive=True) for x in rows]});(r/\\'\"'\"'observations.json\\'\"'\"').write_text(json.dumps(v,indent=2,default=str)+\\'\"'\"'\\\\n\\'\"'\"')\\n v[\\'\"'\"'outcome\\'\"'\"']=\\'\"'\"'completed_metadata_queries_only\\'\"'\"'\\nexcept BaseException as e:\\n v[\\'\"'\"'outcome\\'\"'\"']=\\'\"'\"'metadata_query_error\\'\"'\"';v[\\'\"'\"'errors\\'\"'\"'].append(repr(e));raise\\nfinally:\\n if s is not None:s.stop();v[\\'\"'\"'session_closed\\'\"'\"']=True\\n (r/\\'\"'\"'observations.json\\'\"'\"').write_text(json.dumps(v,indent=2,default=str)+\\'\"'\"'\\\\n\\'\"'\"')'\"'\"');w=r/'\"'\"'wait'\"'\"';w.mkdir();cfg=r/'\"'\"'wait-config.json'\"'\"';py='\"'\"'/Users/alexy/src/grust-benchmark-envs/sem-completion-20261003/x1-fat-arm01/bin/python'\"'\"';cfg.write_text(json.dumps({'\"'\"'root'\"'\"':str(w),'\"'\"'argv'\"'\"':[py,'\"'\"'-I'\"'\"','\"'\"'-B'\"'\"',str(f)],'\"'\"'timeout_seconds'\"'\"':120})+'\"'\"'\\n'\"'\"');waiter=Path('\"'\"'/Users/alexy/src/grust-benchmark-preparations/sem-completion-20261003/x1-root-build-preparation01/wait_child.py'\"'\"');assert hashlib.sha256(waiter.read_bytes()).hexdigest()=='\"'\"'cfcad0454a8251dafc6ae499a66036d652606fc4974b0a13d4f6e06e53d749bc'\"'\"';p=subprocess.run([py,'\"'\"'-I'\"'\"','\"'\"'-B'\"'\"',str(waiter),'\"'\"'--config'\"'\"',str(cfg)],env={k:v for k,v in os.environ.items() if not k.startswith(('\"'\"'GIT_'\"'\"','\"'\"'AWS_'\"'\"','\"'\"'MINIO_'\"'\"','\"'\"'PYTHON'\"'\"','\"'\"'DYLD_'\"'\"','\"'\"'SAIL_'\"'\"','\"'\"'NUTMEG_'\"'\"'))},capture_output=True,timeout=160);print(json.dumps({'\"'\"'wait'\"'\"':json.loads((w/'\"'\"'wait-receipt.json'\"'\"').read_text()),'\"'\"'observation'\"'\"':json.loads((r/'\"'\"'observations.json'\"'\"').read_text())}));print('\"'\"'metadata_waiter_exit'\"'\"',p.returncode)'"
+    ],
+    "pid": 87926,
+    "pgid": 87926,
+    "returncode": 0,
+    "actual_wait_completed": true,
+    "group_absent": true,
+    "forced_cleanup": false
+  },
+  "source_sha256": "212ce046cf159bf6d9b61ce86c9e13b78ad8f504f9afe8c40fc099e20d82eee1",
+  "scope": "Read-only live execution-table snapshots through a separate metadata session; no original graph operation or cause verdict."
+}

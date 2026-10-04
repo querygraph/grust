@@ -1,0 +1,82 @@
+--- owner08/x1_owner.py
++++ owner09/x1_owner.py
+@@ -467,35 +467,50 @@
+     )
+     succeeded: dict[tuple[int, int], int] = {}
+     counts: dict[int, int] = {1: 0, 2: 0}
+-    with (receipt.plan.root / "closed-evidence/driver/native.log").open() as stream:
+-        for line in stream:
+-            if "worker_task_status " not in line:
+-                continue
+-            match = pattern.search(line)
+-            io.require(match is not None, "malformed declared task status")
+-            if match is None:
+-                raise ValueError("task status parse failed")
+-            worker, observed_job, stage, partition, attempt = map(
+-                int, match.groups()[:5]
+-            )
+-            status = match[6]
+-            if observed_job != job or stage not in stages:
+-                continue
+-            io.require(
+-                worker in (1, 2)
+-                and attempt == 0
+-                and 0 <= partition < receipt.plan.partitions,
+-                "actual native task worker/partition/retry differs",
+-            )
+-            io.require(
+-                status in ("RUNNING", "SUCCEEDED"),
+-                "positive native operation has a failed task",
+-            )
+-            if status == "SUCCEEDED":
+-                key = (stage, partition)
+-                io.require(key not in succeeded, "duplicate successful native task")
+-                succeeded[key] = worker
+-                counts[worker] += 1
++    for channel_worker in (1, 2):
++        recording = workers[channel_worker]
++        path = receipt.plan.root / f"closed-evidence/worker{channel_worker}/native.log"
++        retained = recording.retained_files.get("native.log")
++        before = io.pin(path)
++        io.require(
++            retained is not None
++            and (before.bytes, before.sha256) == (retained.bytes, retained.sha256),
++            "exact retained physical worker task-status log required",
++        )
++        with path.open() as stream:
++            for line in stream:
++                if "worker_task_status " not in line:
++                    continue
++                match = pattern.search(line)
++                io.require(match is not None, "malformed declared task status")
++                if match is None:
++                    raise ValueError("task status parse failed")
++                worker, observed_job, stage, partition, attempt = map(
++                    int, match.groups()[:5]
++                )
++                status = match[6]
++                io.require(
++                    worker == channel_worker,
++                    "task status worker differs from its owned physical log channel",
++                )
++                if observed_job != job or stage not in stages:
++                    continue
++                io.require(
++                    worker in (1, 2)
++                    and attempt == 0
++                    and 0 <= partition < receipt.plan.partitions,
++                    "actual native task worker/partition/retry differs",
++                )
++                io.require(
++                    status in ("RUNNING", "SUCCEEDED"),
++                    "positive native operation has a failed task",
++                )
++                if status == "SUCCEEDED":
++                    key = (stage, partition)
++                    io.require(key not in succeeded, "duplicate successful native task")
++                    succeeded[key] = worker
++                    counts[worker] += 1
++        io.require(io.pin(path) == before, "owned worker task-status log changed")
+     io.require(
+         set(succeeded)
+         == {

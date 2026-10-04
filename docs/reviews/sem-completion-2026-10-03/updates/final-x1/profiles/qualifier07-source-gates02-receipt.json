@@ -1,0 +1,167 @@
+{
+  "observed_utc": "2026-10-04T18:54:55.211422+00:00",
+  "outcome": "passed_offline_source_gates",
+  "source_before": {
+    "owner_models.py": {
+      "bytes": 17716,
+      "sha256": "6e06a814e5b379e8788326b8d9a18ff4d2b2c0087e1f91631f0f8cd123d56ef7"
+    },
+    "oracle_models.py": {
+      "bytes": 9189,
+      "sha256": "39abf8b975401b55a155236bc741a1c541f10c1d768e2dcef9f82444956fd9a1"
+    },
+    "control_models.py": {
+      "bytes": 6585,
+      "sha256": "e4003295bbabc01ab722d2febea6a7331ca0516ee63fc1f1f28ae0e089148752"
+    },
+    "control_admission.py": {
+      "bytes": 14426,
+      "sha256": "f69d9b908e6b466346e2563b7d47b7d5d6f395b89d27458750a35b1ec9163b14"
+    },
+    "control_io.py": {
+      "bytes": 2242,
+      "sha256": "7a216d558880652ef1943382d297aed5b11b2b303e6c4c4317431c9e8aef9a94"
+    },
+    "control_logs.py": {
+      "bytes": 11189,
+      "sha256": "246b2b6ac10f18d61380c208f1ea315b58cf593a3721e11c1ee5786a1fa51d98"
+    },
+    "control_native.py": {
+      "bytes": 9179,
+      "sha256": "33b717cb6c39de8d48527989e8978ea800453e73a785f2872e7aa148d6c9e49f"
+    },
+    "qualify_control.py": {
+      "bytes": 11631,
+      "sha256": "0041408e409a4504729a58debb408336cf5cf2082f58992b47689291175d1979"
+    },
+    "test_controls.py": {
+      "bytes": 16220,
+      "sha256": "82147f8f714184485aef0833f61075ff422ccd49b3ef15f3401437cd7d00b180"
+    },
+    "test_owner04_bindings.py": {
+      "bytes": 5680,
+      "sha256": "53c9274887f4328c620db92d6b9be2d073cf817e3ef65ec16c98a8f09df664f0"
+    }
+  },
+  "source_after": {
+    "owner_models.py": {
+      "bytes": 17716,
+      "sha256": "6e06a814e5b379e8788326b8d9a18ff4d2b2c0087e1f91631f0f8cd123d56ef7"
+    },
+    "oracle_models.py": {
+      "bytes": 9189,
+      "sha256": "39abf8b975401b55a155236bc741a1c541f10c1d768e2dcef9f82444956fd9a1"
+    },
+    "control_models.py": {
+      "bytes": 6585,
+      "sha256": "e4003295bbabc01ab722d2febea6a7331ca0516ee63fc1f1f28ae0e089148752"
+    },
+    "control_admission.py": {
+      "bytes": 14426,
+      "sha256": "f69d9b908e6b466346e2563b7d47b7d5d6f395b89d27458750a35b1ec9163b14"
+    },
+    "control_io.py": {
+      "bytes": 2242,
+      "sha256": "7a216d558880652ef1943382d297aed5b11b2b303e6c4c4317431c9e8aef9a94"
+    },
+    "control_logs.py": {
+      "bytes": 11189,
+      "sha256": "246b2b6ac10f18d61380c208f1ea315b58cf593a3721e11c1ee5786a1fa51d98"
+    },
+    "control_native.py": {
+      "bytes": 9179,
+      "sha256": "33b717cb6c39de8d48527989e8978ea800453e73a785f2872e7aa148d6c9e49f"
+    },
+    "qualify_control.py": {
+      "bytes": 11631,
+      "sha256": "0041408e409a4504729a58debb408336cf5cf2082f58992b47689291175d1979"
+    },
+    "test_controls.py": {
+      "bytes": 16220,
+      "sha256": "82147f8f714184485aef0833f61075ff422ccd49b3ef15f3401437cd7d00b180"
+    },
+    "test_owner04_bindings.py": {
+      "bytes": 5680,
+      "sha256": "53c9274887f4328c620db92d6b9be2d073cf817e3ef65ec16c98a8f09df664f0"
+    }
+  },
+  "commands": [
+    {
+      "argv": [
+        "/tmp/sem-output-oracle-venv/bin/ruff",
+        "check",
+        "--isolated",
+        "owner_models.py",
+        "oracle_models.py",
+        "control_models.py",
+        "control_admission.py",
+        "control_io.py",
+        "control_logs.py",
+        "control_native.py",
+        "qualify_control.py",
+        "test_controls.py",
+        "test_owner04_bindings.py"
+      ],
+      "returncode": 0,
+      "actual_wait_completed": true,
+      "log": "1.log"
+    },
+    {
+      "argv": [
+        "/tmp/sem-output-oracle-venv/bin/ruff",
+        "format",
+        "--check",
+        "--isolated",
+        "owner_models.py",
+        "oracle_models.py",
+        "control_models.py",
+        "control_admission.py",
+        "control_io.py",
+        "control_logs.py",
+        "control_native.py",
+        "qualify_control.py",
+        "test_controls.py",
+        "test_owner04_bindings.py"
+      ],
+      "returncode": 0,
+      "actual_wait_completed": true,
+      "log": "2.log"
+    },
+    {
+      "argv": [
+        "/tmp/sem-output-oracle-venv/bin/mypy",
+        "--strict",
+        "--ignore-missing-imports",
+        "--follow-imports=silent",
+        "owner_models.py",
+        "oracle_models.py",
+        "control_models.py",
+        "control_admission.py",
+        "control_io.py",
+        "control_logs.py",
+        "control_native.py",
+        "qualify_control.py",
+        "test_controls.py",
+        "test_owner04_bindings.py"
+      ],
+      "returncode": 0,
+      "actual_wait_completed": true,
+      "log": "3.log"
+    },
+    {
+      "argv": [
+        "/tmp/sem-output-oracle-venv/bin/python",
+        "-B",
+        "-m",
+        "unittest",
+        "-v",
+        "test_controls",
+        "test_owner04_bindings"
+      ],
+      "returncode": 0,
+      "actual_wait_completed": true,
+      "log": "4.log"
+    }
+  ],
+  "native_import_or_engine_work_performed": false
+}
