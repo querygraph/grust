@@ -1,0 +1,55 @@
+{
+  "recorded_utc": "2026-09-30T22:39:49.438515+00:00",
+  "repository": "querygraph/grust",
+  "outcome": "PASS_READ_ONLY_ACTIVATION_REVIEW",
+  "source": "/private/tmp/grust-sail-review-closed2-publication/activate_shared.py",
+  "source_sha256": "1322504e897091d5ae81f3d8f91756c8e58b9b4e51b84ab6babc21747bfb9965",
+  "supersedes_review": "activation-independent-review-final.json",
+  "published_commit": "d9df4b0e89b1e4a1838b1b536d05f47ba4f12808",
+  "base_commit": "7387b985f242164281c7d94a1560bbfcfa8d8fe5",
+  "blockers": [],
+  "narrow_diff_verified": true,
+  "subject_correction": "The isolated candidate is required to append to the base coordination blob. Shared coordination contains existing historical insertions and is instead captured, guarded, backed up, and preserved as one exact original byte sequence. Checking the own appendix against all shared bytes prevents duplication. No shared coordination rewrite is introduced.",
+  "preservation_guards_unchanged": [
+    "Inner symbolic-ref and exact HEAD/index checks under index.lock.",
+    "Shared original coordination equality before mutation, private backup, append-only writes, and whole original+appendix prefix checks after writes.",
+    "Selected sources and tracked dirty files unchanged checks.",
+    "Exclusive intent/success/failure receipts with completed phase, no automatic rollback.",
+    "Published snapshot exact source and branch ancestry checks; live remote check remains in helper and was not executed by reviewer."
+  ],
+  "local_prerequisites": {
+    "shared_head": "7387b985f242164281c7d94a1560bbfcfa8d8fe5",
+    "shared_branch": "refs/heads/work/proposal-v5",
+    "shared_index_matches_preparation": true,
+    "staged_diff_empty": true,
+    "index_lock_absent": true,
+    "candidate_head": "d9df4b0e89b1e4a1838b1b536d05f47ba4f12808",
+    "candidate_clean": true,
+    "selected_source_hash_size_mode_matches": 214,
+    "shared_manifest_matches_base": true,
+    "shared_coordination_matches_preparation_and_failed_attempt": true,
+    "shared_coordination_sha256": "32e325cd28dff5211e3231324f5ff296ef4928e591144c71153993cf23aed5f3",
+    "shared_coordination_numstat": "124\t0\tcodex-to-codex.md",
+    "candidate_coordination_base_prefix": true,
+    "shared_coordination_base_prefix": false,
+    "own_appendix_bytes": 865,
+    "own_appendix_absent_from_shared": true,
+    "activation_intent_failure_success_paths_absent": true
+  },
+  "retained_failure": {
+    "path": "activation-attempt01-guard-failure.json",
+    "helper_snapshot": "activation-attempt01.py",
+    "phase": "Pre-mutation assertion before backup, intent, index lock, and activation writes",
+    "consistent_with_current_local_state": true
+  },
+  "validation": {
+    "ast_parse": "PASS",
+    "helper_executed": false,
+    "remote_calls": false,
+    "candidate_or_shared_repository_edits": false
+  },
+  "limits": [
+    "Read-only source and current local prerequisite review, not activation execution or fault injection.",
+    "Normal index-lock concurrency and partial-activation recovery limits from the previous review remain; no claim of an atomic filesystem transaction."
+  ]
+}

@@ -1,0 +1,59 @@
+use std::collections::HashSet;
+use std::sync::Arc;
+
+use datafusion_expr::{LogicalPlan, UNNAMED_TABLE};
+use sail_common::spec;
+use sail_common_datafusion::connect_extension::{ConnectExtensionRegistry, HostInputExec};
+use sail_common_datafusion::extension::SessionExtensionAccessor;
+use sail_common_datafusion::rename::logical_plan::rename_logical_plan;
+
+use crate::error::{PlanError, PlanResult};
+use crate::resolver::PlanResolver;
+use crate::resolver::state::PlanResolverState;
+
+impl PlanResolver<'_> {
+    pub(super) async fn resolve_query_extension(
+        &self,
+        payload_type_url: String,
+        payload: Vec<u8>,
+        inputs: Vec<spec::QueryPlan>,
+        is_envelope: bool,
+        state: &mut PlanResolverState,
+    ) -> PlanResult<LogicalPlan> {
+        let registry = self.ctx.extension::<ConnectExtensionRegistry>()?;
+        let handler = registry.resolve(&payload_type_url, is_envelope, inputs.len())?;
+        let session = self.ctx.state();
+        let context = self.ctx.task_ctx();
+        let runtime = tokio::runtime::Handle::try_current().map_err(|error| {
+            PlanError::internal(format!(
+                "Connect extension planning requires the host runtime: {error}"
+            ))
+        })?;
+        let mut physical_inputs = Vec::with_capacity(inputs.len());
+        for input in inputs {
+            let plan = self.resolve_query_plan(input, state).await?;
+            let names = Self::get_field_names(plan.schema(), state)?;
+            let mut seen = HashSet::new();
+            if names.iter().any(|name| !seen.insert(name)) {
+                return Err(PlanError::unsupported(format!(
+                    "duplicate input column names for Connect extension {payload_type_url}; alias the input columns"
+                )));
+            }
+            // Extensions receive public DataFrame names, never Sail's internal
+            // field IDs. Restoring names before planning also preserves expression
+            // binding through the normal physical planner.
+            let plan = rename_logical_plan(plan, &names)?;
+            let physical = session.create_physical_plan(&plan).await?;
+            physical_inputs.push(Arc::new(HostInputExec::new(
+                physical,
+                Arc::clone(&context),
+                runtime.clone(),
+            ))
+                as Arc<dyn datafusion::physical_plan::ExecutionPlan>);
+        }
+        // No input is executed here. A provider's scan must return a lazy plan;
+        // this path is also used by Spark Connect AnalyzePlan.
+        let provider = handler.plan(&payload, physical_inputs)?;
+        self.resolve_table_provider_with_rename(provider, UNNAMED_TABLE, None, vec![], None, state)
+    }
+}

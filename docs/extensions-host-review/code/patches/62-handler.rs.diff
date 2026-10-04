@@ -1,0 +1,121 @@
+diff --git a/crates/sail-session/src/session_manager/actor/handler.rs b/crates/sail-session/src/session_manager/actor/handler.rs
+index 2061e7c874a0a4814e102d02b23d03cf25b74f44..68c4b8dfcd4e512542a07a2fc84fd091b9f098c3 100644
+--- a/crates/sail-session/src/session_manager/actor/handler.rs
++++ b/crates/sail-session/src/session_manager/actor/handler.rs
+@@ -7,8 +7,10 @@ use sail_cache::remote_checkpoint::RemoteCheckpointRegistry;
+ use sail_common::actor::{ActorAction, ActorContext};
+ use sail_common::telemetry::SpanAttribute;
+ use sail_common_datafusion::extension::SessionExtensionAccessor;
++use sail_common_datafusion::native_resource::NativeResourceTracker;
+ use sail_common_datafusion::session::activity::ActivityTracker;
+ use sail_common_datafusion::session::job::JobService;
++use sail_common_datafusion::session::lifecycle::SessionLifecycle;
+ use sail_execution::DriverId;
+ use sail_execution::driver::DriverHandle;
+ use sail_execution::error::ExecutionResult;
+@@ -20,6 +22,7 @@ use crate::error::{SessionError, SessionResult};
+ use crate::session_factory::{ServerSessionInfo, SessionJobRunnerInfo};
+ use crate::session_manager::SessionManagerMessage;
+ use crate::session_manager::actor::SessionManagerActor;
++use crate::session_manager::cleanup::SessionCleanup;
+ use crate::session_manager::session::{ServerSession, ServerSessionState};
+ 
+ impl SessionManagerActor {
+@@ -80,6 +83,7 @@ impl SessionManagerActor {
+         let runner = match self.job_runner_factory.create(
+             ctx.children_mut(),
+             SessionJobRunnerInfo {
++                resource_domain: self.options.resource_domain.clone(),
+                 session_id: session_id.clone(),
+                 driver_id,
+                 driver_server_port: self.driver_gateway.as_ref().map(|x| x.port()),
+@@ -118,6 +122,7 @@ impl SessionManagerActor {
+             return ActorAction::Continue;
+         }
+         let info = ServerSessionInfo {
++            resource_domain: self.options.resource_domain.clone(),
+             session_id: session_id.clone(),
+             user_id: user_id.clone(),
+             session_manager: ctx.handle().clone(),
+@@ -268,7 +273,7 @@ impl SessionManagerActor {
+ 
+     pub(super) fn handle_probe_idle_session(
+         &mut self,
+-        ctx: &mut ActorContext<Self>,
++        _ctx: &mut ActorContext<Self>,
+         session_id: String,
+         instant: Instant,
+     ) -> ActorAction {
+@@ -279,7 +284,7 @@ impl SessionManagerActor {
+             && tracker.active_at().is_ok_and(|x| x <= instant)
+         {
+             info!("removing idle session {session_id}");
+-            Self::delete_session(ctx, session_id.clone(), context);
++            Self::delete_session(&mut self.cleanup, session_id.clone(), context);
+             if let Some(driver_id) = *driver_id {
+                 self.drivers.remove(driver_id);
+             }
+@@ -296,7 +301,7 @@ impl SessionManagerActor {
+ 
+     pub(super) fn handle_delete_session(
+         &mut self,
+-        ctx: &mut ActorContext<Self>,
++        _ctx: &mut ActorContext<Self>,
+         session_id: String,
+         result: oneshot::Sender<SessionResult<()>>,
+     ) -> ActorAction {
+@@ -304,7 +309,7 @@ impl SessionManagerActor {
+         let output = if let Some(session) = session {
+             if let ServerSessionState::Running { context, driver_id } = &mut session.state {
+                 info!("removing session {session_id}");
+-                Self::delete_session(ctx, session_id.clone(), context);
++                Self::delete_session(&mut self.cleanup, session_id.clone(), context);
+                 if let Some(driver_id) = *driver_id {
+                     self.drivers.remove(driver_id);
+                 }
+@@ -370,16 +375,32 @@ impl SessionManagerActor {
+         ActorAction::Continue
+     }
+ 
+-    fn delete_session(ctx: &mut ActorContext<Self>, session_id: String, context: &SessionContext) {
++    fn delete_session(cleanup: &mut SessionCleanup, session_id: String, context: &SessionContext) {
+         let Ok(service) = context.extension::<JobService>() else {
+             warn!("job service not found for session {session_id}");
+             return;
+         };
+         let checkpoint_registry = context.extension::<RemoteCheckpointRegistry>().ok();
++        let lifecycle = context.extension::<SessionLifecycle>().ok();
++        let native_resources = context.extension::<NativeResourceTracker>().ok();
++        let graph_runs = context
++            .extension::<crate::extensions::graph_utils::GraphRuns>()
++            .ok();
+         let runtime_env = context.runtime_env();
+-        ctx.spawn(async move {
+-            // Stop tasks before deleting the namespace so late attempts cannot recreate objects.
++        cleanup.spawn(async move {
++            if let Some(lifecycle) = lifecycle
++                && let Err(error) = lifecycle.stop().await
++            {
++                warn!("failed to stop session resources for {session_id}: {error}");
++            }
++            // Request executor/job shutdown before cleanup. Detached data-source
++            // writers are not all joined here, so storage cleanup is best effort.
+             service.runner().stop().await;
++            if let Some(graph_runs) = graph_runs
++                && let Err(error) = graph_runs.cleanup().await
++            {
++                warn!("failed to clean graph runs for session {session_id}: {error}");
++            }
+             if let Some(checkpoint_registry) = checkpoint_registry
+                 && let Err(error) = checkpoint_registry
+                     .cleanup_session(runtime_env.as_ref())
+@@ -387,6 +408,9 @@ impl SessionManagerActor {
+             {
+                 warn!("failed to clean checkpoints for session {session_id}: {error}");
+             }
++            if let Some(resources) = native_resources {
++                resources.wait_for_release().await;
++            }
+         });
+     }
+ }

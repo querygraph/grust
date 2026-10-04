@@ -1,0 +1,9 @@
+distinct k: 2000000 of 2000000
+[orderBy(k) + monotonically_increasing_id: rows where i == k, read by an aggregate] -> 1
+[plan of that aggregate] -> ['CoalescePartitionsExec', 'MonotonicIdExec: col=#2', 'RepartitionExec: partitioning=RoundRobinBatch(10), input_partitions=1']
+[the same frame written to Parquet first: rows where i == k] -> 2000000
+[row_number() over (order by k) - 1 == k, read by an aggregate] -> 2000000
+== repeatability of a parquet scan in local mode
+run 0 partition sizes [1048576, 1048576, 951808, 951296, 1048576, 1048576, 951296, 951296] ids of four keys [0, 250432, 8590934272, 42950624767]
+run 1 partition sizes [1048576, 1048576, 1048576, 951296, 1048576, 951296, 951808, 951296] ids of four keys [8589934592, 8590185024, 25770803456, 51540559359]
+run 2 partition sizes [1048576, 1048576, 1048576, 1048576, 951808, 951296, 951296, 951296] ids of four keys [8589934592, 8590185024, 34360738048, 25770755583]

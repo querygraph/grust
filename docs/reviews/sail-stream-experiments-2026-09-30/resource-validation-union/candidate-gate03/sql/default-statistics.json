@@ -1,0 +1,81 @@
+{
+  "started_utc": "2026-10-01T00:14:09.462144+00:00",
+  "scope": "Actual new CLI; default-statistics Parquet read and both builtin PageRank policies; tiny local fixture only.",
+  "checks": [
+    {
+      "case": "mixed_nan_finite",
+      "file_sha256": "6fd520fb55be32d9bb624cc90df37d007ba2b261be97febae0ca730985a941b8",
+      "file_bytes": 1575,
+      "footer_min": 0.5,
+      "footer_max": 0.5,
+      "writer": "parquet-cpp-arrow version 21.0.0",
+      "direct_read_nan_mask": [
+        true,
+        false
+      ],
+      "policies": {
+        "reference": {
+          "outcome": "expected_rejection",
+          "error": "1 invalid PageRank scores"
+        },
+        "certificate": {
+          "outcome": "expected_rejection",
+          "error": "1 invalid PageRank scores"
+        }
+      }
+    },
+    {
+      "case": "finite_fixed_point",
+      "file_sha256": "6a6fd5c0fcd3e82e64593533c7aa70f90e11ac154f84a439be93a7540b675041",
+      "file_bytes": 1567,
+      "footer_min": 0.5,
+      "footer_max": 0.5,
+      "writer": "parquet-cpp-arrow version 21.0.0",
+      "direct_read_nan_mask": [
+        false,
+        false
+      ],
+      "policies": {
+        "reference": {
+          "outcome": "passed",
+          "proof": {
+            "rows": 2,
+            "unique_ids": 2,
+            "null_ids": 0,
+            "rank_sum": 1.0,
+            "l1_error": 0.0,
+            "max_error": 0.0,
+            "min_iterations": 1,
+            "max_iterations": 1,
+            "all_converged": 1,
+            "reported_residual": 0.0,
+            "min_reported_residual": 0.0,
+            "l1_error_limit": 1.1333433333333332e-07,
+            "true_fixed_point_residual": 0.0,
+            "stationary_l1_error_bound": 0.0
+          }
+        },
+        "certificate": {
+          "outcome": "passed",
+          "proof": {
+            "rows": 2,
+            "unique_ids": 2,
+            "null_ids": 0,
+            "rank_sum": 1.0,
+            "min_iterations": 1,
+            "max_iterations": 1,
+            "all_converged": 1,
+            "reported_residual": 0.0,
+            "min_reported_residual": 0.0,
+            "policy": "certificate",
+            "true_fixed_point_residual": 0.0,
+            "stationary_l1_error_bound": 0.0,
+            "certificate": "independent fixed-point residual at or below tolerance; no reference vector"
+          }
+        }
+      }
+    }
+  ],
+  "outcome": "passed",
+  "finished_utc": "2026-10-01T00:14:09.839454+00:00"
+}

@@ -1,0 +1,40 @@
+{
+  "recorded_utc": "2026-09-30T19:21:23.956629+00:00",
+  "repository": "querygraph/sail",
+  "branch": "work/argentea-wcc-inbox",
+  "base": "c6126c27aae1b6262be3b1ecd6271008cc64fc69",
+  "commit": "b4babe87cb50d16b4d439a0841a6291991c433d2",
+  "source_tree": "a8126f3c3c859e6098592a45881ea4e83507e358",
+  "verdict": "PASS",
+  "exact_receipt": "exact-gate/receipt.json",
+  "core_passed": 113,
+  "native_passed": 49,
+  "argentea_native_passed": 43,
+  "loaded_core_passed": 113,
+  "loaded_native_passed": 49,
+  "load_processes": 10,
+  "all_load_reaped": true,
+  "changes": [
+    "Only Topology and Done elide the per-vertex Option<i64> labels allocation and matching admission. All six active modes retain their required buffers.",
+    "Mode guards, completion totals, EOF/publication barriers and output semantics are unchanged. Five new tests check real allocation, admission under32KiB Done headroom, malformed payloads and independent final component labels."
+  ],
+  "evidence": [
+    "Old one-vertex/no-edge idle-work fixture passes on base while three new allocation/headroom tests fail. Active-mode and malformed-payload controls already pass on base.",
+    "At 65,536 total vertices across 3 owners, both WCC algorithms: Topology/Done start allocated 1,051,663\u21923,087 bytes; peak admitted 1,056,528\u21927,952 bytes. At 1/1,024/65,536 vertices optimized start cost is constant. All six active-mode controls unchanged.",
+    "All 24 matched counter cells equal under loaded exact gate; this is allocation/admission evidence, not elapsed-time evidence."
+  ],
+  "complexity": "Per owner, removes16*local_vertices bytes and local_vertices initialization entries in these two inbox modes; remaining inbox/cursor bookkeeping is O(partitions), aggregate O(partitions^2). Existing resident adjacency/labels and active-round copies remain.",
+  "limitations": [
+    "Topology publication still builds incoming CSR; only its inbox label storage was omitted.",
+    "Retained raw-edge/CSR overlap, active-mode label buffers, full state copies, worker placement and distributed completion traffic are unchanged.",
+    "Tests use local core and adapter execution. No remote cluster scaling or stream-failure cause claim.",
+    "Full native formatting has inherited baseline failures; no native source changed. Core fmt and strict clippy passed.",
+    "An exact-gate command initially had a malformed shell argument and did not launch; exact-launch-error.json retained. Corrected command passed without source edits."
+  ],
+  "source_hashes": {
+    "examples/extensions/argentea/tests/wcc_inbox.rs": "d931954ed4a3429512deb66219d47b945b4d58aedac844a738aa81960453dfe6",
+    "examples/extensions/argentea/src/wcc/protocol.rs": "6714e9379eb2225baf5b3d2f9245f5334590fea69c5cff4f6db98578f390b247"
+  },
+  "pushed": true,
+  "delivery_receipt": "delivery.json"
+}

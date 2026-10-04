@@ -1,0 +1,118 @@
+{
+  "recorded_utc": "2026-10-01T01:54:50.244811+00:00",
+  "started_utc": "2026-10-01T01:54:49.979188+00:00",
+  "outcome": "SOURCE_DERIVED_PARENT_WITNESS_CONTROLS_PASS",
+  "sail_commit": "fc094a0c25a49edeac2f9f0195aa973421a21a43",
+  "containing_remote_refs": [
+    "querygraph/work/sssp-candidate-buffer-reuse",
+    "querygraph/work/stream-review-followup"
+  ],
+  "sources": {
+    "examples/extensions/benchmarks/traversal_certificate.py": {
+      "bytes": 5846,
+      "sha256": "4014bbc54897fa02bb8181294a611bf78eef88938f1e28953de49dee51ec71f3"
+    },
+    "examples/extensions/benchmarks/traversal_cell.py": {
+      "bytes": 9972,
+      "sha256": "8b02d35cc72e86cfdf2b476d9682ed9e3563515a5f2e8af2c8d20e7ef517616a"
+    },
+    "examples/extensions/benchmarks/test_traversal_certificate.py": {
+      "bytes": 2706,
+      "sha256": "56ed4a9b3609f46243e9792e8ecff35a69087434e887908cb520928701a3ceb0"
+    },
+    "examples/extensions/benchmarks/graph_cell.py": {
+      "bytes": 36302,
+      "sha256": "bee64cba85e7d4d47d3bc05c4ace076954aa727b35ad17146530dcf4da7b5630"
+    },
+    "examples/extensions/graph-algorithms/src/pyspark_pecan/traversal.py": {
+      "bytes": 5594,
+      "sha256": "cf449b9d01274ff5eb6c7cef4c9c9e3accb17a9011c1bcac7501daa883b1ff13"
+    },
+    "examples/extensions/graph-algorithms/src/pyspark_pecan/traversal_stepping.py": {
+      "bytes": 3497,
+      "sha256": "ae427cb634157a8b95b8fb795189e14a0fb88145a86bbf9cc310975f7a9e144a"
+    },
+    "examples/extensions/argentea/python/argentea_sssp_client.py": {
+      "bytes": 10684,
+      "sha256": "429efc7664c4ed406866107d78cf6d95225aedef43c3dd9c3dc29f581f1f96c0"
+    }
+  },
+  "exhaustive_control": {
+    "vertices": 3,
+    "directed_graphs": 512,
+    "graph_reached_parent_hop_cases": 19584,
+    "valid_parent_witness_cases": 640,
+    "weights": "all zero; all finite reached distances zero; absent vertices unreachable",
+    "property": "Every accepted total integer parent/hop proof reaches the root via existing tight edges; BFS depth never exceeds supplied hops."
+  },
+  "predicate_acceptance_counterexample": {
+    "source_distance": 1.0,
+    "weight": 1.0,
+    "target_distance": 2.000000000004,
+    "tolerance": 1e-12,
+    "candidate": 2.0,
+    "allowed": 5.000000000004e-12,
+    "certificate_residual": 3.999911513119514e-12,
+    "certificate_tight": true,
+    "old_parent_residual": 3.999911513119514e-12,
+    "old_parent_allowed": 3.000000000004e-12,
+    "old_parent_accepts": false
+  },
+  "floating_regrouping_counterexample": {
+    "source_distance": 1.0,
+    "weight": 1.1102230246251565e-16,
+    "target_distance": 1.0,
+    "tolerance": 0.0,
+    "candidate": 1.0,
+    "allowed": 0.0,
+    "certificate_residual": 0.0,
+    "certificate_tight": true,
+    "old_parent_residual": 1.1102230246251565e-16,
+    "old_parent_allowed": 2e-12,
+    "old_parent_accepts": true
+  },
+  "round_cap_counterexample": {
+    "edges": [
+      [
+        0,
+        1
+      ],
+      [
+        0,
+        2
+      ],
+      [
+        1,
+        2
+      ]
+    ],
+    "parents": {
+      "0": 0,
+      "1": 0,
+      "2": 1
+    },
+    "hops": {
+      "0": 0,
+      "1": 1,
+      "2": 2
+    },
+    "bfs_witness_rounds": 1,
+    "maximum_parent_hops": 2,
+    "cap": 1,
+    "consequence": "Rejecting because parent hops exceed cap would reject an existing BFS-certificate pass; use existing BFS fallback in that case to preserve outcomes."
+  },
+  "sql_null_control": {
+    "engine_executed": false,
+    "comparison_with_missing_parent": null,
+    "naive_invalid_where_keeps_row": false,
+    "explicit_null_guard_keeps_row": true,
+    "scope": "Three-valued SQL semantics only, not an actual Sail SQL observation."
+  },
+  "limits": [
+    "No Sail source modified, implementation, compilation, SQL endpoint, workload or timing experiment.",
+    "Three-vertex enumeration supports the stated mathematical induction; it does not qualify an implementation.",
+    "Float expressions reproduced with Python binary64 in source order; actual SQL/DataFusion expression evaluation requires a later implementation gate.",
+    "Keep the existing parent numeric predicate as an additional condition if existing parent-output acceptance must remain identical."
+  ],
+  "probe_sha256": "76c5031ceb5d37f8c43270843d2db01f78e5d26d6abadf8d791b450ac1165eab"
+}

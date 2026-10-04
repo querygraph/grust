@@ -1,0 +1,87 @@
+{
+  "container_python": "/targets/pecan-benchmark/venv/bin/python",
+  "container_repo": "/targets/pecan-benchmark/candidate",
+  "container_root": "/targets/pecan-benchmark/runs/pecan-review",
+  "container_sail_binary": "/targets/pecan-benchmark/release/host/release/sail",
+  "datasets": {
+    "chain-512": {
+      "family": "chain",
+      "seed": 20260927,
+      "vertices": 512
+    },
+    "sparse-10000": {
+      "block_size": 1024,
+      "degree": 8,
+      "family": "sparse",
+      "seed": 20260927,
+      "vertices": 10000
+    },
+    "sparse-100000": {
+      "block_size": 1024,
+      "degree": 8,
+      "family": "sparse",
+      "seed": 20260927,
+      "vertices": 100000
+    },
+    "sparse-1000000": {
+      "block_size": 1024,
+      "degree": 8,
+      "family": "sparse",
+      "seed": 20260927,
+      "vertices": 1000000
+    }
+  },
+  "defaults": {
+    "damping": 0.85,
+    "max_iterations": 1000,
+    "native_quota": 8589934592,
+    "partitions": 8,
+    "sail_pool_bytes": 17179869184,
+    "seed": 42,
+    "threads": 8,
+    "timeout": 600,
+    "tolerance": 1e-08,
+    "worker_task_slots": 32
+  },
+  "docker_context": "colima-sail-gate",
+  "extra_cell_args": [
+    "--ranking-validation=certificate"
+  ],
+  "harness_source_sha": "0000000000000000000000000000000000000000",
+  "host_output": "/Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/wcc-outcome-audit/resume-missing-receipt",
+  "image": "sail-pecan-benchmark:release",
+  "limits": {
+    "cpus": 8,
+    "cpuset_cpus": "0-7",
+    "memory_gib": 32,
+    "outer_timeout_seconds": 1440
+  },
+  "native_source_sha": "0000000000000000000000000000000000000000",
+  "run_id": "pecan-review",
+  "runtime_source_sha": "0000000000000000000000000000000000000000",
+  "seed": 20260927,
+  "suites": [
+    {
+      "algorithms": [
+        "wcc"
+      ],
+      "datasets": [
+        "sparse-10000"
+      ],
+      "engines": [
+        "pecan"
+      ],
+      "mode": "local",
+      "name": "resume",
+      "repetitions": 1,
+      "variants": [
+        "optimized"
+      ]
+    }
+  ],
+  "target_volume": "sail-extension-targets",
+  "variants": [
+    "reference",
+    "optimized"
+  ]
+}

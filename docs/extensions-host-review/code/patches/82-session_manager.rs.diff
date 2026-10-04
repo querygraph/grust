@@ -1,0 +1,46 @@
+diff --git a/crates/sail-spark-connect/src/session_manager.rs b/crates/sail-spark-connect/src/session_manager.rs
+index caece1c2892800e86b86c1c65d3e1b846a8a4a4b..818ee7f5115e1bac30ce573dc6a24d40cc01af95 100644
+--- a/crates/sail-spark-connect/src/session_manager.rs
++++ b/crates/sail-spark-connect/src/session_manager.rs
+@@ -9,6 +9,7 @@ use sail_common::actor::ActorSystem;
+ use sail_common::config::AppConfig;
+ use sail_common::runtime::RuntimeHandle;
+ use sail_common_datafusion::catalog::display::DefaultCatalogDisplay;
++use sail_common_datafusion::session::lifecycle::SessionLifecycle;
+ use sail_common_datafusion::session::plan::PlanService;
+ use sail_plan::catalog::SparkCatalogObjectDisplay;
+ use sail_plan::formatter::SparkPlanFormatter;
+@@ -48,19 +49,22 @@ impl ServerSessionMutator for SparkSessionMutator {
+             Box::new(DefaultCatalogDisplay::<SparkCatalogObjectDisplay>::default()),
+             Box::new(SparkPlanFormatter),
+         );
+-        let spark = SparkSession::try_new(
+-            info.session_id.clone(),
+-            info.user_id.clone(),
+-            SparkSessionOptions {
+-                execution_heartbeat_interval: Duration::from_secs(
+-                    self.config.spark.execution_heartbeat_interval_secs,
+-                ),
+-            },
+-        )
+-        .map_err(|e| internal_datafusion_err!("{e}"))?;
++        let spark = Arc::new(
++            SparkSession::try_new(
++                info.session_id.clone(),
++                info.user_id.clone(),
++                SparkSessionOptions {
++                    execution_heartbeat_interval: Duration::from_secs(
++                        self.config.spark.execution_heartbeat_interval_secs,
++                    ),
++                },
++            )
++            .map_err(|e| internal_datafusion_err!("{e}"))?,
++        );
+         Ok(config
+             .with_extension(Arc::new(plan_service))
+-            .with_extension(Arc::new(spark)))
++            .with_extension(Arc::new(SessionLifecycle::new(spark.clone())))
++            .with_extension(spark))
+     }
+ 
+     fn mutate_state(

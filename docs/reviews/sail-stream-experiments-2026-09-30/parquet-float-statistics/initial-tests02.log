@@ -1,0 +1,31 @@
+   Compiling sail-data-source v0.7.1 (/private/tmp/sail-parquet-float-statistics/crates/sail-data-source)
+warning: linker stderr: ld: __eh_frame section too large (max 16MB) to encode dwarf unwind offsets in compact unwind table, performance of exception handling might be affected
+  |
+  = note: `#[warn(linker_messages)]` on by default
+
+warning: `sail-data-source` (lib test) generated 1 warning
+    Finished `test` profile [unoptimized] target(s) in 10.87s
+     Running unittests src/lib.rs (/private/tmp/sail-parquet-float-statistics-target/debug/deps/sail_data_source-1a7969aa402ea3a7)
+
+running 8 tests
+test formats::parquet::statistics_tests::only_floating_bounds_are_removed ... ok
+
+thread 'formats::parquet::read_statistics_tests::parquet_dictionary_float_values_survive_statistics' (55971712) panicked at crates/sail-data-source/src/formats/parquet/read_statistics_tests.rs:45:10:
+called `Result::unwrap()` on an `Err` value: General("unsupported data type for byte array dictionary reader - Dictionary(Int32, Float16)")
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test formats::parquet::options::tests::test_resolve_parquet_write_options ... ok
+test formats::parquet::options::tests::test_resolve_parquet_read_options ... ok
+test formats::parquet::options::tests::test_resolve_parquet_write_options_with_global_default ... ok
+test formats::parquet::options::tests::test_resolve_parquet_read_options_with_global_default ... ok
+test formats::parquet::read_statistics_tests::parquet_integer_bounds_and_all_null_counts_survive ... ok
+test formats::parquet::read_statistics_tests::parquet_float_values_survive_statistics ... ok
+test formats::parquet::read_statistics_tests::parquet_dictionary_float_values_survive_statistics ... FAILED
+
+failures:
+
+failures:
+    formats::parquet::read_statistics_tests::parquet_dictionary_float_values_survive_statistics
+
+test result: FAILED. 7 passed; 1 failed; 0 ignored; 0 measured; 68 filtered out; finished in 0.07s
+
+error: test failed, to rerun pass `-p sail-data-source --lib`

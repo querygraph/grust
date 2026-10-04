@@ -1,0 +1,32 @@
+{
+  "recorded_utc": "2026-09-30T22:27:53.215121+00:00",
+  "repository": "querygraph/grust",
+  "source": "/private/tmp/grust-sail-review-closed2-publication/activate_shared.py",
+  "source_sha256": "469e6ca4bc525fb3a376dccc4dfcbb4219b10648cf7f6a6904099f2eeb1c47db",
+  "outcome": "CHANGES_REQUIRED",
+  "scope": "Read-only source and local metadata review; no helper execution, remote calls, repository edits, or activation.",
+  "blocking_findings": [
+    {
+      "lines": [
+        33,
+        68,
+        72,
+        73
+      ],
+      "finding": "Symbolic HEAD is checked before acquiring index.lock but not inside it. A same-base branch switch before lock acquisition can pass the SHA guard and install the proposal branch index in a different checked-out branch.",
+      "required_fix": "Recheck symbolic-ref HEAD equals refs/heads/work/proposal-v5 inside index.lock before update-ref."
+    }
+  ],
+  "nonblocking_recommendations": [
+    "Record failure phase and private backup path when an exception occurs after the first activation mutation; do not automatically roll back across concurrency.",
+    "After the append, verify the coordination file still starts with the captured original bytes."
+  ],
+  "accepted_scope": [
+    "Private temporary index read-tree does not update working files.",
+    "Only manifest is replaced; source and unrelated dirty file bytes are checked and not rewritten.",
+    "Coordination uses append and has a private backup.",
+    "DONE text limits logging03 to admission/launch snapshot and excludes final outcome/performance qualification."
+  ],
+  "local_delivery_commit": "d9df4b0e89b1e4a1838b1b536d05f47ba4f12808",
+  "source_ast_parse": "PASS"
+}

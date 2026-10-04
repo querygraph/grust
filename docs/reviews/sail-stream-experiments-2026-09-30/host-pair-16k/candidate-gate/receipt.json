@@ -1,0 +1,71 @@
+{
+  "started_utc": "2026-09-30T20:20:54.036165+00:00",
+  "scope": "detached content candidate gate; no commit/Sail binary verdict",
+  "base_head": "f4443ba76c18c922698a060183c02ca65ce939c7",
+  "worktree": "/private/tmp/grust-host-pair-prep-gate",
+  "files_sha256_before": {
+    "pair16k-20260930201356-01-a.json": "ea46b643191ed3028be5944956755020fd6d915cf689025a8adf6d28b386d2c5",
+    "pair16k-20260930201356-02-b.json": "d0db66f24036f1644293fec129b90f4f7a5c13d39b19f8c778276de8f82caf83",
+    "pair16k-20260930201356-03-a.json": "ecb63e3c0cada304822fcfaff2327d682708139501fe1e8f5091ac29ebce7a1e",
+    "pair16k-20260930201356-04-b.json": "a37c3ae7bbc94be07898060e5b8bed8bcd20a47f6754a34bbdf99be2752b5b7f",
+    "pair16k-20260930201356-05-b.json": "337e776244720b06aaac73cab7f8ea048ede7d38675332f6cb462ed4ba5f0083",
+    "pair16k-20260930201356-06-a.json": "54c1e7bfe2b9c9a8eb442a4075a86761c03aaa1a2f13fec5f9ced4440d9227b9",
+    "pair16k-20260930201356-dry-plans.json": "0600a1d059c1bdd0111933bc9c75c3ac8e5e4232f257f866b539b300195bbfe3",
+    "pair16k-20260930201356-plan.json": "304aa7ae266100e0ce1e8908a73d6d3ce1aed9a89c72ac32383b140544b15ae5",
+    "prepare_host_pair.py": "e7ddd9a938fe72638cd97073dbdd8894a95b467f7ffe750ad6eae2bab80ae46a",
+    "run_host_pair.py": "20ed2b27ba1a070c23c186127028dc942cd9f2dde2facd4725d864086ad52dee",
+    "stage_host_pair.py": "dc7add0f298af05101f66f88b7f9a3800c755c3fee425aac627bdd5f241ee71b",
+    "test_host_pair.py": "1f76f0ea81f7c2b75f6529c93e8143de7ec8237aeb93d04bf56015115393b037"
+  },
+  "checks": [
+    {
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "/private/tmp/grust-host-pair-prep-gate/docs/reviews/sail-stream-experiments-2026-09-30/host-pair-16k",
+        "-p",
+        "test_host_pair.py",
+        "-v"
+      ],
+      "returncode": 0
+    },
+    {
+      "command": [
+        "python3",
+        "/private/tmp/grust-host-pair-prep-gate/docs/reviews/sail-stream-experiments-2026-09-30/host-pair-16k/run_host_pair.py",
+        "/private/tmp/grust-host-pair-prep-gate/docs/reviews/sail-stream-experiments-2026-09-30/host-pair-16k/pair16k-20260930201356-plan.json"
+      ],
+      "returncode": 0
+    },
+    {
+      "command": [
+        "python3",
+        "/private/tmp/grust-host-pair-prep-gate/docs/reviews/sail-stream-experiments-2026-09-30/host-pair-16k/stage_host_pair.py",
+        "/private/tmp/grust-host-pair-prep-gate/docs/reviews/sail-stream-experiments-2026-09-30/host-pair-16k/pair16k-20260930201356-plan.json",
+        "--expected-plan-sha256",
+        "304aa7ae266100e0ce1e8908a73d6d3ce1aed9a89c72ac32383b140544b15ae5"
+      ],
+      "returncode": 0
+    }
+  ],
+  "files_sha256_after": {
+    "pair16k-20260930201356-01-a.json": "ea46b643191ed3028be5944956755020fd6d915cf689025a8adf6d28b386d2c5",
+    "pair16k-20260930201356-02-b.json": "d0db66f24036f1644293fec129b90f4f7a5c13d39b19f8c778276de8f82caf83",
+    "pair16k-20260930201356-03-a.json": "ecb63e3c0cada304822fcfaff2327d682708139501fe1e8f5091ac29ebce7a1e",
+    "pair16k-20260930201356-04-b.json": "a37c3ae7bbc94be07898060e5b8bed8bcd20a47f6754a34bbdf99be2752b5b7f",
+    "pair16k-20260930201356-05-b.json": "337e776244720b06aaac73cab7f8ea048ede7d38675332f6cb462ed4ba5f0083",
+    "pair16k-20260930201356-06-a.json": "54c1e7bfe2b9c9a8eb442a4075a86761c03aaa1a2f13fec5f9ced4440d9227b9",
+    "pair16k-20260930201356-dry-plans.json": "0600a1d059c1bdd0111933bc9c75c3ac8e5e4232f257f866b539b300195bbfe3",
+    "pair16k-20260930201356-plan.json": "304aa7ae266100e0ce1e8908a73d6d3ce1aed9a89c72ac32383b140544b15ae5",
+    "prepare_host_pair.py": "e7ddd9a938fe72638cd97073dbdd8894a95b467f7ffe750ad6eae2bab80ae46a",
+    "run_host_pair.py": "20ed2b27ba1a070c23c186127028dc942cd9f2dde2facd4725d864086ad52dee",
+    "stage_host_pair.py": "dc7add0f298af05101f66f88b7f9a3800c755c3fee425aac627bdd5f241ee71b",
+    "test_host_pair.py": "1f76f0ea81f7c2b75f6529c93e8143de7ec8237aeb93d04bf56015115393b037"
+  },
+  "head_after": "f4443ba76c18c922698a060183c02ca65ce939c7",
+  "finished_utc": "2026-09-30T20:20:54.290107+00:00",
+  "passed": true
+}

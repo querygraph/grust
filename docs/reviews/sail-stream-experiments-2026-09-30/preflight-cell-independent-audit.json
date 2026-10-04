@@ -1,0 +1,47 @@
+{
+  "recorded_utc": "2026-09-30T20:02:37.368099+00:00",
+  "outcome": "PASS_BOUNDED_READ_ONLY_REVIEW",
+  "script_sha256": "454afd5bdf4ef9f1d714d01bbcf76f17714600bac67dfd0b5956c381a8485e3d",
+  "config_sha256": "cda092d0bd07e2bf9860df227b36ca2d072ad13ffafcf767aad2dc34723db864",
+  "expected_runtime_binary_sha256": "5b7f506c19afd76a28b84c1459397b4ab30ff4cfc761f4195789425b963facec",
+  "static_parse": "passed",
+  "config_differing_top_level_fields": [
+    "container_sail_binary",
+    "host_output",
+    "run_id",
+    "runtime_source_sha",
+    "suites"
+  ],
+  "suite_only_namespace_diff": true,
+  "verified_scope": [
+    "Read-only Docker root and target volume; network disabled;1CPU256MiB32PID bound; Python-I-B",
+    "Exclusive local receipt path avoids overwriting prior admission",
+    "Pinned configuration hash, executable hash with before/after identity metadata, clean3a source HEAD and originalffcf native.so hash",
+    "Positive free-disk threshold and no Docker containers observed before/after reader",
+    "VMboot/uptime/CPU/memory identity fields exclude process args and environment"
+  ],
+  "limitations": [
+    {
+      "lines": "31-36,91-96",
+      "detail": "Dataset manifest hash/count metadata is recorded, not checked against an expected dataset hash. Does not rehash canonical input files. Root must compare baseline manifest and subsequent graph receipt."
+    },
+    {
+      "lines": "78-81,97-99",
+      "detail": "Docker snapshots only; not all VM processes. No lock, no future idle guarantee, no complete-run memory/disk guarantee."
+    },
+    {
+      "lines": "23-26,31-36",
+      "detail": "Binary stat bracket is a narrow concurrent-change guard, not lock. Dataset/native hash reads do not have equivalent stat brackets."
+    },
+    {
+      "lines": "54-55,82-87,101-107",
+      "detail": "If docker run times out, subprocess.run terminates client but does not prove unnamed reader container termination; --rm removes on eventual exit. Before proceeding after that failure, identify and reap only the reader via Docker; no timeout occurred in this review because reviewer did not run it."
+    }
+  ],
+  "launch_blockers": [],
+  "approval_scope": "Bounded read-only preflight suitable as supplementary observation with listed interpretation/failure-cleanup limits",
+  "no_remote_calls": true,
+  "no_runtime_execution": true,
+  "no_source_modifications": true,
+  "no_performance_comparison": "289 smoke overlapped compact build;561 smoke planned afterbuild, so elapsed-time comparison unsupported"
+}

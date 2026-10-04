@@ -1,0 +1,51 @@
+{
+  "recorded_utc": "2026-09-30T19:16:27.265597+00:00",
+  "outcome": "passed_as_supplemental_point_in_time_mapping_with_limits",
+  "review_scope": "Read-only source and retained builder control audit; no invocation of collector, no remote calls or graph workload, no script edits",
+  "files_sha256": {
+    "capture_process_identity.py": "0b7746b9a89202723ded4c1816b76a89d4ad0f2190c800cb4dcb84b3d34bc460",
+    "process-identity-staging.json": "de280b05a47afa27d2f73875cd3dd47d46765f4a6ec37570147d820462ee2abd",
+    "process-identity-control561.json": "27b443d532b10c3ce3d02515bd8e5a65c9a0a03131dd721a3abb649a7341c749"
+  },
+  "control": {
+    "all_three_staged_script_hashes_match": true,
+    "successful_process_rows": 3,
+    "namespace_ids_per_row": [
+      2,
+      2,
+      2
+    ],
+    "all_host_ids_match_status_pid_and_first_nspid": true,
+    "all_cgroups_contain_full_inspected_container_id": true,
+    "control_is_builder_not_sail_worker": true
+  },
+  "checks": [
+    {
+      "lines": "20-21,89-98",
+      "result": "Selects inspect ID/init PID/running, top pid/ppid/comm and explicit proc status whitelist; no cmdline or environ reads."
+    },
+    {
+      "lines": "23-44",
+      "result": "Proc stat field22 starttime parsed correctly after final parenthesis. Full container ID checked against cgroup; before/after start_ticks rejects detected PID replacement during one row read. Disappearance, permission and parse errors retained per row."
+    },
+    {
+      "lines": "83,98-107",
+      "result": "Exclusive-create receipt prevents overwrite. Full ID pins top after name lookup. Reader only opens proc files, does not signal or write target cell; benchmark source and sampler remain unchanged."
+    },
+    {
+      "lines": "46-50",
+      "result": "VM monotonic bounds and SC_CLK_TCK retained for timing/starttime interpretation; status NSpid supplies observed host/container namespace identifiers."
+    }
+  ],
+  "limits": [
+    "The process list and each row are sequential observations, not an atomic container snapshot. Processes born after docker top are omitted.",
+    "Reuse between docker top and the first stat read within the same container is not detected; mapping describes the process alive at the proc read, and status Name/PPid should take precedence over earlier top fields.",
+    "Container ID persists across restart. Initial inspect PID is not revalidated after capture; no boot_id or PID-namespace inode is recorded. Do not stitch samples across an unverified VM/container restart.",
+    "Start ticks reduce in-read reuse ambiguity but are clock-tick resolution and do not establish continuity after capture. The cgroup is read once, not rechecked after status.",
+    "Outer outcome captured means the helper completed, not that every process mapped. Callers must check per-row errors, presence/shape of NSpid, host PID consistency and full cgroup identity; the script itself does not require these successful-row invariants.",
+    "Three successful builder mappings qualify diagnostic plumbing only; they do not demonstrate Sail worker behavior or identify any historical OOM victim."
+  ],
+  "future_oom_attribution": "A successful row directly observes host-PID to namespace-PID mapping at capture. A future worker OOM attribution must also match full cgroup and same-boot kernel event host PID, connect the namespace PID to the worker startup/identity record, and use nearby/repeated captures or lifecycle evidence to exclude intervening PID reuse/restart. A single early mapping is not permanent worker identity; remaining continuity uncertainty must remain explicit.",
+  "blocking_change_required_for_supplemental_use": false,
+  "optional_hardening": "A future version could record boot_id and PID namespace inode, revalidate init/cgroup at capture end, and distinguish complete/partial mapping outcomes; no change made in this audit."
+}

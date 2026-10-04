@@ -1,0 +1,251 @@
+{
+  "started_utc": "2026-10-01T16:15:18.589556+00:00",
+  "outcome": "FAILED",
+  "mode": "candidate",
+  "head": "cab6bacc0ad0d1fc8b3070e9e4267e99751909fe",
+  "tree": "5e87eb7a730646168c0f0cb6db989c4573a06e18",
+  "private_fixtures": "/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pecan-validation-gate-plpjxpbn",
+  "commands": [
+    {
+      "label": "client-before",
+      "command": [
+        "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/bin/python",
+        "-B",
+        "/Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/resource-validation-union/sql_gate.py",
+        "--interpreter-probe"
+      ],
+      "started_utc": "2026-10-01T16:15:20.360268+00:00",
+      "returncode": 0,
+      "group_absent": true,
+      "finished_utc": "2026-10-01T16:15:20.777126+00:00"
+    },
+    {
+      "label": "modules-before",
+      "command": [
+        "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/bin/python",
+        "-B",
+        "/private/tmp/grust-pecan-explicit-validation/docs/reviews/pecan-validation-2026-10-01/run_gate.py",
+        "--module-origin-probe",
+        "/private/tmp/sail-pecan-validation-gate-02"
+      ],
+      "started_utc": "2026-10-01T16:15:21.433780+00:00",
+      "returncode": 0,
+      "group_absent": true,
+      "finished_utc": "2026-10-01T16:15:22.181488+00:00"
+    },
+    {
+      "label": "diff-check",
+      "command": [
+        "git",
+        "-C",
+        "/private/tmp/sail-pecan-validation-gate-02",
+        "diff",
+        "--check",
+        "HEAD"
+      ],
+      "started_utc": "2026-10-01T16:15:22.837548+00:00",
+      "returncode": 0,
+      "group_absent": true,
+      "finished_utc": "2026-10-01T16:15:22.879819+00:00"
+    },
+    {
+      "label": "collection",
+      "command": [
+        "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/bin/python",
+        "-B",
+        "/private/tmp/grust-pecan-explicit-validation/docs/reviews/pecan-validation-2026-10-01/run_gate.py",
+        "--collect",
+        "/private/tmp/sail-pecan-validation-gate-02"
+      ],
+      "started_utc": "2026-10-01T16:15:23.533774+00:00",
+      "returncode": 0,
+      "group_absent": true,
+      "finished_utc": "2026-10-01T16:15:25.198066+00:00"
+    },
+    {
+      "label": "offline",
+      "command": [
+        "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/bin/python",
+        "-B",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--rootdir=/private/tmp/sail-pecan-validation-gate-02",
+        "/private/tmp/sail-pecan-validation-gate-02/examples/extensions/graph-algorithms/tests",
+        "/private/tmp/sail-pecan-validation-gate-02/examples/extensions/argentea/python",
+        "/private/tmp/sail-pecan-validation-gate-02/examples/extensions/benchmarks",
+        "--junitxml=/private/tmp/grust-pecan-explicit-validation/docs/reviews/pecan-validation-2026-10-01/candidate-gate-02/offline.xml",
+        "--basetemp=/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pecan-validation-gate-plpjxpbn/offline"
+      ],
+      "started_utc": "2026-10-01T16:15:25.863292+00:00",
+      "returncode": 0,
+      "group_absent": true,
+      "finished_utc": "2026-10-01T16:15:34.129551+00:00"
+    },
+    {
+      "label": "client-after",
+      "command": [
+        "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/bin/python",
+        "-B",
+        "/Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/resource-validation-union/sql_gate.py",
+        "--interpreter-probe"
+      ],
+      "started_utc": "2026-10-01T16:15:35.660307+00:00",
+      "returncode": 0,
+      "group_absent": true,
+      "finished_utc": "2026-10-01T16:15:35.976970+00:00"
+    },
+    {
+      "label": "modules-after",
+      "command": [
+        "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/bin/python",
+        "-B",
+        "/private/tmp/grust-pecan-explicit-validation/docs/reviews/pecan-validation-2026-10-01/run_gate.py",
+        "--module-origin-probe",
+        "/private/tmp/sail-pecan-validation-gate-02"
+      ],
+      "started_utc": "2026-10-01T16:15:36.663919+00:00",
+      "returncode": 0,
+      "group_absent": true,
+      "finished_utc": "2026-10-01T16:15:37.253473+00:00"
+    }
+  ],
+  "modules": [],
+  "host": {
+    "hostname": "Capitola.local",
+    "machine": "arm64",
+    "platform": "macOS-26.2-arm64-arm-64bit"
+  },
+  "runtime": {
+    "binary": "/private/tmp/sail-resource-validation-union-target/host/debug/sail",
+    "sha256": "4b976fd7a809cb059c72a2119293f490105ff0ed375feaf0ccb5f3e5dad88662",
+    "built_commit": "a3462345a6764096024c055dc4d105a3c634e5a4",
+    "profile": "dev debug=0"
+  },
+  "scope": "Full Pecan/Argentea/benchmark Python suites, all Pecan modules and Spark-fixture benchmark modules live; local SQL only. Explicit generator/control-binary skips; no builds, worker/Flight/native qualification or performance claim.",
+  "pins": {
+    "/private/tmp/sail-resource-validation-union-target/host/debug/sail": "4b976fd7a809cb059c72a2119293f490105ff0ed375feaf0ccb5f3e5dad88662",
+    "/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/bin/python3.12": "7ab28aab7042141d3d97175edec3045ff15b5d0cbf885817c7c1ad0dad393f9f",
+    "/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/lib/libpython3.12.dylib": "51454eefef9d30acb598f19a0a8e0c5ef3641d5e81b3611d5f634343475321a5",
+    "/private/tmp/grust-pecan-explicit-validation/docs/reviews/pecan-validation-2026-10-01/run_gate.py": "4d73a12fc4d8f2c710727d63a8899f317f21fdfc78686692caf3d3824d685233",
+    "/Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/resource-validation-union/sql_gate.py": "eaebc96443f9edc621adb1a937d7042ef3b8decaae757693f03872d7ad8fbb96",
+    "/private/tmp/grust-pecan-explicit-validation/docs/reviews/pecan-validation-2026-10-01/action_probe.py": "cbe30b1cebb980a295f64f41a64fbb969fde18178549729bb03f423cbb7ee3bb"
+  },
+  "client_before": {
+    "executable": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/bin/python",
+    "real_executable": "/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/bin/python3.12",
+    "executable_sha256": "7ab28aab7042141d3d97175edec3045ff15b5d0cbf885817c7c1ad0dad393f9f",
+    "version": "3.12.8 (main, Jan  5 2025, 06:55:30) [Clang 19.1.6 ]",
+    "path_python3": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/bin/python3",
+    "path_python3_real": "/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/bin/python3.12",
+    "path_python3_sha256": "7ab28aab7042141d3d97175edec3045ff15b5d0cbf885817c7c1ad0dad393f9f",
+    "stdlib_encodings_file": "/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/lib/python3.12/encodings/__init__.py",
+    "stdlib_encodings_sha256": "78c4744d407690f321565488710b5aaf6486b5afa8d185637aa1e7633ab59cd8",
+    "prefix": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion",
+    "base_prefix": "/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none",
+    "modules": {
+      "pyspark": {
+        "version": "4.0.1",
+        "file": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/__init__.py",
+        "sha256": "e1776e11568f4231f8079502270a2c84828f335ef61cc60561b225d636c7bcdc"
+      },
+      "pyarrow": {
+        "version": "21.0.0",
+        "file": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyarrow/__init__.py",
+        "sha256": "9f52fe44ffd0653d93eeac470a26ee12cf7c054760bfc4915493db4a99105aa0"
+      },
+      "numpy": {
+        "version": "2.5.3",
+        "file": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/numpy/__init__.py",
+        "sha256": "09295a80660f17925ae23765ce8cbd7ff7ceae968d5f2f89349f1cb74c0b9e11"
+      },
+      "grpc": {
+        "version": "1.84.0",
+        "file": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/grpc/__init__.py",
+        "sha256": "7e3a88cf8430c74ec70ca65ba615a3c0419d3a4f59f9c59c01500ade2d88dd39"
+      },
+      "pytest": {
+        "version": "8.4.2",
+        "file": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pytest/__init__.py",
+        "sha256": "66993a5e3905005e0981159b4794d10b1adacf341a58a44d696ad2c4442dcdc6"
+      }
+    }
+  },
+  "modules_before": {
+    "pyspark_pecan": {
+      "path": "/private/tmp/sail-pecan-validation-gate-02/examples/extensions/graph-algorithms/src/pyspark_pecan/__init__.py",
+      "sha256": "10200002e26b633290388da972ebefd3d96df41e9719d72ea2339dd96ab9add7"
+    },
+    "sail_nutmeg": {
+      "path": "/private/tmp/sail-pecan-validation-gate-02/examples/extensions/nutmeg/python/sail_nutmeg/__init__.py",
+      "sha256": "8ab1469a2f7411203604d2faaae29b30a35689599eb62d0bb397ab672cdb53ab"
+    }
+  },
+  "error": "AssertionError('JUnit case inventory differs from collection')",
+  "traceback": "Traceback (most recent call last):\n  File \"/private/tmp/grust-pecan-explicit-validation/docs/reviews/pecan-validation-2026-10-01/run_gate.py\", line 217, in main\n    receipt['offline'] = xml_result(output/'offline.xml', items, True)\n                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/grust-pecan-explicit-validation/docs/reviews/pecan-validation-2026-10-01/run_gate.py\", line 118, in xml_result\n    assert Counter(keys) == Counter(wanted), 'JUnit case inventory differs from collection'\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: JUnit case inventory differs from collection\n",
+  "client_after": {
+    "executable": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/bin/python",
+    "real_executable": "/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/bin/python3.12",
+    "executable_sha256": "7ab28aab7042141d3d97175edec3045ff15b5d0cbf885817c7c1ad0dad393f9f",
+    "version": "3.12.8 (main, Jan  5 2025, 06:55:30) [Clang 19.1.6 ]",
+    "path_python3": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/bin/python3",
+    "path_python3_real": "/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/bin/python3.12",
+    "path_python3_sha256": "7ab28aab7042141d3d97175edec3045ff15b5d0cbf885817c7c1ad0dad393f9f",
+    "stdlib_encodings_file": "/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/lib/python3.12/encodings/__init__.py",
+    "stdlib_encodings_sha256": "78c4744d407690f321565488710b5aaf6486b5afa8d185637aa1e7633ab59cd8",
+    "prefix": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion",
+    "base_prefix": "/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none",
+    "modules": {
+      "pyspark": {
+        "version": "4.0.1",
+        "file": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/__init__.py",
+        "sha256": "e1776e11568f4231f8079502270a2c84828f335ef61cc60561b225d636c7bcdc"
+      },
+      "pyarrow": {
+        "version": "21.0.0",
+        "file": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyarrow/__init__.py",
+        "sha256": "9f52fe44ffd0653d93eeac470a26ee12cf7c054760bfc4915493db4a99105aa0"
+      },
+      "numpy": {
+        "version": "2.5.3",
+        "file": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/numpy/__init__.py",
+        "sha256": "09295a80660f17925ae23765ce8cbd7ff7ceae968d5f2f89349f1cb74c0b9e11"
+      },
+      "grpc": {
+        "version": "1.84.0",
+        "file": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/grpc/__init__.py",
+        "sha256": "7e3a88cf8430c74ec70ca65ba615a3c0419d3a4f59f9c59c01500ade2d88dd39"
+      },
+      "pytest": {
+        "version": "8.4.2",
+        "file": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pytest/__init__.py",
+        "sha256": "66993a5e3905005e0981159b4794d10b1adacf341a58a44d696ad2c4442dcdc6"
+      }
+    }
+  },
+  "source_runtime_client_unchanged": true,
+  "raw_xml_counts": {
+    "offline.xml": {
+      "tests": 1473,
+      "failure": 0,
+      "error": 0,
+      "skipped": 236
+    }
+  },
+  "files_sha256": {
+    "collection.log": "d97b093a31075b341ce9154806892217918bf3ee4c7643012c9b9636e6ecdcdb",
+    "source-before.json": "038412cdb0dcb3accde5f83c16a1bb9ae9279fb581474a26fe9f971aaf6e2c91",
+    "source-after.json": "038412cdb0dcb3accde5f83c16a1bb9ae9279fb581474a26fe9f971aaf6e2c91",
+    "modules-after.log": "dc69f7fd774bbb07b3c9b8520cee738f5418538ea038d5f9a610f8c361c0bcc1",
+    "client-before.log": "f50b17d9b3009ca2400c24b5fe166f55db485c895f63275ed1bc74e65df6e660",
+    "diff-check.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "offline.xml": "7180ed0672797c59d1c9c3e864cba60f3178f77a227accc8f95cc031ecc57d1b",
+    "client-after.log": "f50b17d9b3009ca2400c24b5fe166f55db485c895f63275ed1bc74e65df6e660",
+    "offline.log": "53e8207d919e307dd815f0d04aa9a32703f7b4585bdc4e9693a3b82eacd5747f",
+    "inventory.json": "2e2f82940b1545ee58373d64c1bf34288e73cff2b6ef3122f0c2e56b3dd77a58",
+    "modules-before.log": "dc69f7fd774bbb07b3c9b8520cee738f5418538ea038d5f9a610f8c361c0bcc1"
+  },
+  "finished_utc": "2026-10-01T16:15:37.603178+00:00"
+}

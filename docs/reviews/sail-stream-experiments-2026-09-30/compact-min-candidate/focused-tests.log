@@ -1,0 +1,58 @@
+   Compiling sail-common v0.7.1 (/private/tmp/sail-compact-struct-min/crates/sail-common)
+   Compiling sail-native-resource-ffi v0.1.0 (/private/tmp/sail-compact-struct-min/crates/sail-native-resource-ffi)
+   Compiling sail-sql-parser v0.7.1 (/private/tmp/sail-compact-struct-min/crates/sail-sql-parser)
+   Compiling pyo3-ffi v0.29.2
+   Compiling pyo3 v0.29.2
+   Compiling arrow-pyarrow v59.3.0
+   Compiling sail-common-datafusion v0.7.1 (/private/tmp/sail-compact-struct-min/crates/sail-common-datafusion)
+   Compiling sail-object-store v0.7.1 (/private/tmp/sail-compact-struct-min/crates/sail-object-store)
+   Compiling sail-celeborn v0.7.1 (/private/tmp/sail-compact-struct-min/crates/sail-celeborn)
+   Compiling sail-sql-analyzer v0.7.1 (/private/tmp/sail-compact-struct-min/crates/sail-sql-analyzer)
+   Compiling sail-catalog v0.7.1 (/private/tmp/sail-compact-struct-min/crates/sail-catalog)
+   Compiling sail-cache v0.7.1 (/private/tmp/sail-compact-struct-min/crates/sail-cache)
+   Compiling sail-system-store v0.7.1 (/private/tmp/sail-compact-struct-min/crates/sail-system-store)
+   Compiling sail-python-udf v0.7.1 (/private/tmp/sail-compact-struct-min/crates/sail-python-udf)
+   Compiling sail-telemetry v0.7.1 (/private/tmp/sail-compact-struct-min/crates/sail-telemetry)
+   Compiling sail-catalog-system v0.7.1 (/private/tmp/sail-compact-struct-min/crates/sail-catalog-system)
+   Compiling sail-catalog-memory v0.7.1 (/private/tmp/sail-compact-struct-min/crates/sail-catalog-memory)
+   Compiling sail-function v0.7.1 (/private/tmp/sail-compact-struct-min/crates/sail-function)
+   Compiling sail-logical-plan v0.7.1 (/private/tmp/sail-compact-struct-min/crates/sail-logical-plan)
+   Compiling sail-physical-plan v0.7.1 (/private/tmp/sail-compact-struct-min/crates/sail-physical-plan)
+   Compiling sail-data-source v0.7.1 (/private/tmp/sail-compact-struct-min/crates/sail-data-source)
+   Compiling sail-iceberg v0.7.1 (/private/tmp/sail-compact-struct-min/crates/sail-iceberg)
+   Compiling sail-delta-lake v0.7.1 (/private/tmp/sail-compact-struct-min/crates/sail-delta-lake)
+   Compiling sail-plan v0.7.1 (/private/tmp/sail-compact-struct-min/crates/sail-plan)
+   Compiling sail-execution v0.7.1 (/private/tmp/sail-compact-struct-min/crates/sail-execution)
+warning: linker stderr: ld: __eh_frame section too large (max 16MB) to encode dwarf unwind offsets in compact unwind table, performance of exception handling might be affected
+  |
+  = note: `#[warn(linker_messages)]` on by default
+
+warning: `sail-plan` (lib test) generated 1 warning
+warning: `sail-execution` (lib test) generated 1 warning (1 duplicate)
+    Finished `test` profile [unoptimized] target(s) in 1m 30s
+     Running unittests src/lib.rs (/private/tmp/sail-compact-struct-min-target/debug/deps/sail_execution-e44df62cbdcda443)
+
+running 2 tests
+test proto::struct_min_tests::only_compact_min_gets_an_explicit_worker_codec_marker ... ok
+test proto::struct_min_tests::worker_plan_round_trip_keeps_compact_min_accumulator ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 147 filtered out; finished in 0.03s
+
+     Running unittests src/lib.rs (/private/tmp/sail-compact-struct-min-target/debug/deps/sail_function-cdd2afa6170213d3)
+
+running 6 tests
+test aggregate::compact_struct_min::tests::specialization_rejects_other_shapes_and_keeps_field_metadata ... ok
+test aggregate::compact_struct_min::tests::state_merge_prefix_shift_and_capacity_accounting_remain_valid ... ok
+test aggregate::compact_struct_min::tests::filters_root_nulls_first_ties_and_null_children_are_distinct ... ok
+test aggregate::struct_min::tests::other_grouped_types_and_planner_properties_keep_datafusion_behavior ... ok
+test aggregate::struct_min::tests::scalar_and_sliding_accumulators_keep_datafusion_behavior ... ok
+test aggregate::compact_struct_min::tests::typed_comparison_matches_arrow_struct_order_for_all_child_masks ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 322 filtered out; finished in 0.03s
+
+     Running unittests src/lib.rs (/private/tmp/sail-compact-struct-min-target/debug/deps/sail_plan-1f89aa02053ffed6)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 13 filtered out; finished in 0.00s
+

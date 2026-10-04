@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "bookRoot": "docs/extensions-host-review",
+  "manuscript": "docs/extensions-host-review/dist/sail-extensions-host-review.md",
+  "metadata": "docs/extensions-host-review/metadata.yaml",
+  "css": "docs/extensions-review/epub.css",
+  "stem": "sail-extensions-host-review",
+  "version": "1.0",
+  "versionStamp": "${version}-${sourceCommit}",
+  "dist": "docs/extensions-host-review/dist",
+  "buildDir": "docs/extensions-host-review/build",
+  "edition": "full",
+  "primaryFormat": "typst",
+  "mobi": false,
+  "environment": {"GIT_OPTIONAL_LOCKS": "0", "PYTHONDONTWRITEBYTECODE": "1"},
+  "pandoc": {
+    "reader": "markdown-smart",
+    "tocDepth": 2,
+    "numberSections": false,
+    "commonArgs": ["--syntax-highlighting=pygments"],
+    "resourcePaths": ["docs/extensions-host-review", "docs/extensions-review", "${repoRoot}"]
+  },
+  "pdf": {
+    "includeInHeader": ["docs/extensions-review/pdf-header.typ"],
+    "variables": {
+      "papersize": "a4",
+      "mainfont": "Helvetica Neue",
+      "codefont": "DejaVu Sans Mono",
+      "fontsize": "10.5pt",
+      "page-numbering": "1",
+      "linestretch": "1.08",
+      "linkcolor": "185b80"
+    }
+  },
+  "epub": {"titlePage": true},
+  "hooks": {
+    "prepare": "python3.12 docs/extensions-review/assemble.py --book-root docs/extensions-host-review"
+  },
+  "validators": ["python3.12 docs/extensions-review/verify.py --book-root docs/extensions-host-review --artifacts"]
+}

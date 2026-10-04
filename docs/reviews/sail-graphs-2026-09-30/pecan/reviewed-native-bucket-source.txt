@@ -1,0 +1,22 @@
+examples/extensions/vendor/nutmeg-graph/src/optimized/stepping.rs at ffcfbd5690e3f3681ef9ac18ba959bc231cf9f73
+72:     let mut rounds = Vec::new();
+73:     rounds.try_reserve_exact(limit).map_err(err)?;
+74:     while let Some(first) = queue.peek() {
+75:         context.checkpoint().map_err(err)?;
+76:         if rounds.len() == limit {
+77:             return exec_err!("ssspDeltaStar did not converge within maxIterations={limit}");
+78:         }
+79:         let bucket = (f64::from_bits(distance[first].load(Ordering::Relaxed)) / delta).floor();
+80:         if !bucket.is_finite() {
+81:             return exec_err!("ssspDeltaStar bucket overflow; choose larger delta");
+82:         }
+83:         frontier.clear();
+84:         while let Some(u) = queue.peek() {
+85:             let cost = f64::from_bits(distance[u].load(Ordering::Relaxed));
+86:             if (cost / delta).floor() != bucket {
+87:                 break;
+88:             }
+89:             queue.pop();
+90:             frontier.push((u, cost));
+91:         }
+92:         let examined = AtomicUsize::new(0);

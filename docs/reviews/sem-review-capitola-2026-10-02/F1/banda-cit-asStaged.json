@@ -1,0 +1,148 @@
+{
+ "graph": "cit-Patents",
+ "order": "asStaged",
+ "threads": 10,
+ "phases": {
+  "server_and_session": 0.4255599580001217,
+  "read_and_stage": 0.3648722910002107,
+  "projection_undirected": 9.749537874999987,
+  "wcc_call_1": 7.585315999999693,
+  "wcc_call_2": 0.25929679199998645,
+  "projection_outgoing": 0.07753966699965531,
+  "pagerank_10_steps": 0.398436125000444
+ },
+ "stage_receipt": {
+  "graph": "g",
+  "nodeCount": 3774768,
+  "edgeCount": 16518947,
+  "revision": 1,
+  "nodeSortPermutationBytes": 0,
+  "nodeSortKeysBytes": 0,
+  "nodeSortedCopyBytes": 0,
+  "nodeFillBytes": 0,
+  "nodeNormalizedBytes": 56452362,
+  "nodeRetainedBytes": 56452362,
+  "nodeSortSeconds": 0.0,
+  "nodeSorted": false,
+  "edgeSortPermutationBytes": 0,
+  "edgeSortKeysBytes": 0,
+  "edgeSortedCopyBytes": 0,
+  "edgeFillBytes": 0,
+  "edgeNormalizedBytes": 497381984,
+  "edgeRetainedBytes": 497381984,
+  "edgeSortSeconds": 0.0,
+  "edgeSorted": false
+ },
+ "projection_stats": {
+  "nodes": 3774768,
+  "edges": 16518947,
+  "arcs": 33037894,
+  "selfLoops": 0,
+  "csrBytes": 411553804
+ },
+ "rows": {
+  "wcc_call_1": 3774768,
+  "wcc_call_2": 3774768,
+  "pagerank_10_steps": 3774768
+ },
+ "status": {
+  "memory": {
+   "limit_bytes": 42949672960,
+   "used_bytes": 3252969588,
+   "peak_bytes": 3343578772,
+   "staged_bytes": 553834346
+  },
+  "graphs": [
+   {
+    "name": "g",
+    "node_count": 3774768,
+    "edge_count": 16518947,
+    "revision": 1,
+    "projections": 2,
+    "staged_bytes": 553834346,
+    "projection_builds": [
+     {
+      "key": "{\"defaultWeight\": \"Some(Null)\", \"nodeLabels\": \"Some(Null)\", \"orientation\": \"Some(String(\\\"undirected\\\"))\", \"relationshipTypes\": \"Some(Null)\", \"weightProperty\": \"Some(Null)\"}",
+      "seconds": 9.664075875,
+      "live_bytes_before": 553834346,
+      "admitted_bytes": 1408093871
+     },
+     {
+      "key": "{\"defaultWeight\": \"Some(Null)\", \"nodeLabels\": \"Some(Null)\", \"orientation\": \"Some(String(\\\"outgoing\\\"))\", \"relationshipTypes\": \"Some(Null)\", \"weightProperty\": \"Some(Null)\"}",
+      "seconds": 7.32659375,
+      "live_bytes_before": 1961928217,
+      "admitted_bytes": 1209866507
+     }
+    ]
+   }
+  ],
+  "reads": [
+   {
+    "id": 1,
+    "algorithm": "projectionStats",
+    "graph": "g",
+    "state": "finished",
+    "message": null,
+    "batches": 1,
+    "rows": 1,
+    "live_bytes": 0,
+    "peak_bytes": 0,
+    "work_units": 16518947,
+    "diagnostics": null
+   },
+   {
+    "id": 2,
+    "algorithm": "wcc",
+    "graph": "g",
+    "state": "finished",
+    "message": null,
+    "batches": 461,
+    "rows": 3774768,
+    "live_bytes": 497094,
+    "peak_bytes": 60396288,
+    "work_units": 35389205,
+    "diagnostics": null
+   },
+   {
+    "id": 3,
+    "algorithm": "wcc",
+    "graph": "g",
+    "state": "finished",
+    "message": null,
+    "batches": 461,
+    "rows": 3774768,
+    "live_bytes": 497094,
+    "peak_bytes": 60396288,
+    "work_units": 35389196,
+    "diagnostics": null
+   },
+   {
+    "id": 4,
+    "algorithm": "projectionStats",
+    "graph": "g",
+    "state": "finished",
+    "message": null,
+    "batches": 1,
+    "rows": 1,
+    "live_bytes": 0,
+    "peak_bytes": 0,
+    "work_units": 16518947,
+    "diagnostics": null
+   },
+   {
+    "id": 5,
+    "algorithm": "pagerank",
+    "graph": "g",
+    "state": "finished",
+    "message": null,
+    "batches": 461,
+    "rows": 3774768,
+    "live_bytes": 1719376,
+    "peak_bytes": 90609184,
+    "work_units": 358187496,
+    "diagnostics": null
+   }
+  ]
+ },
+ "launch_to_exit_seconds": 19.447667166999963
+}

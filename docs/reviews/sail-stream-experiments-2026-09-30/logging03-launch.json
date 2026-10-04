@@ -1,0 +1,14 @@
+{
+  "recorded_utc": "2026-09-30T22:01:54.282386+00:00",
+  "configuration_sha256": "b28132996612b11edb77bb02019288e4a562db5e4d22c4430a6a8815a220aea0",
+  "admission_sha256": "6a3498c619be6c5ec7b49531f9b22c8b8dbdc6947c6f3dcb61e1dc3e98fbdec9",
+  "command": [
+    "ssh",
+    "-o",
+    "BatchMode=yes",
+    "morrobay",
+    "python3 -B -"
+  ],
+  "remote_source": "\nfrom pathlib import Path\nimport hashlib,subprocess,sys,json\nroot=Path('/Users/alexy/src/sail-extensions-gates/stream-experiments-20260930')\nassert hashlib.sha256((root/'run_focused_safe.py').read_bytes()).hexdigest()=='53589784544a1414b29b1a42e061bada15a0a868801cd356addf4e35f29abdd1'\nassert hashlib.sha256((root/'logging03-compact.json').read_bytes()).hexdigest()=='b28132996612b11edb77bb02019288e4a562db5e4d22c4430a6a8815a220aea0'\nassert not (root/'logging03-compact').exists()\np=subprocess.run(['/usr/local/bin/docker','--context','colima-sail-gate','ps','-q'],capture_output=True,text=True,timeout=20)\nassert p.returncode==0 and not p.stdout.strip()\nraise SystemExit(subprocess.call([sys.executable,'-B',str(root/'run_focused_safe.py'),str(root/'logging03-compact.json')]))\n",
+  "scope": "Launch matched compact control only after logging02 terminal OOM/error and complete collection. Bootstrap not repeated. Same original controller/native package and data, resources, logging, validation and timeouts; runtime289 replaced by561. Shared-host diagnostic outcome control, not absolute timing."
+}

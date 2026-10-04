@@ -1,0 +1,196 @@
+..............F...FFF..............                                      [100%]
+=================================== FAILURES ===================================
+______________________ test_push_pull_distances_and_trace ______________________
+
+spark = <pyspark.sql.connect.session.SparkSession object at 0x1161f7500>
+
+    def test_push_pull_distances_and_trace(spark):
+        v,e=frames(spark)
+        events=[]
+        with GraphAlgorithms(spark,observer=events.append).bfs(v,e,source=0,method='push_pull',partitions=2) as r:
+            assert {x.id:x.distance for x in r.frame.collect()} == {0:0.,1:1.,2:1.,3:2.,4:3.,-7:None,5:None}
+            assert any(x.get('direction')=='pull' for x in events)
+>           assert all(x['pull_early_exit'] is False for x in events)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+examples/extensions/graph-algorithms/tests/test_traversal.py:75: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+.0 = <list_iterator object at 0x11629e380>
+
+>   assert all(x['pull_early_exit'] is False for x in events)
+               ^^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'pull_early_exit'
+
+examples/extensions/graph-algorithms/tests/test_traversal.py:75: KeyError
+______ test_weighted_round_executes_only_one_expansion_action[reference] _______
+
+spark = <pyspark.sql.connect.session.SparkSession object at 0x1161f7500>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x105bf5a60>
+method = 'reference'
+
+    @pytest.mark.parametrize('method', ['reference', 'frontier', 'delta_star'])
+    def test_weighted_round_executes_only_one_expansion_action(spark, monkeypatch, method):
+        from pyspark.sql.connect.dataframe import DataFrame
+        from pyspark_pecan.staging import StagingRun
+    
+        materialize, count = StagingRun.materialize, DataFrame.count
+        adjacency_path = None
+        edge_stages = 0
+        expansion_actions = []
+    
+        def reads_adjacency(frame):
+            return adjacency_path is not None and adjacency_path in str(frame._plan.to_proto(spark.client))
+    
+        def trace_materialize(run, frame, **kwargs):
+            nonlocal adjacency_path, edge_stages
+            if reads_adjacency(frame):
+                expansion_actions.append('materialize')
+            result = materialize(run, frame, **kwargs)
+            if frame.columns == ['src', 'dst', 'weight']:
+                edge_stages += 1
+                # The first edge write snapshots input; the second commits the
+                # traversal adjacency after validation. Count only expansion jobs.
+                if edge_stages == 2:
+                    adjacency_path = result[0]
+            return result
+    
+        def trace_count(frame):
+            if reads_adjacency(frame):
+                expansion_actions.append('count')
+            return count(frame)
+    
+        monkeypatch.setattr(StagingRun, 'materialize', trace_materialize)
+        monkeypatch.setattr(DataFrame, 'count', trace_count)
+        with GraphAlgorithms(spark).sssp(*frames(spark), source=0, method=method,
+                                        delta=1., partitions=2) as result:
+            assert result.frame.columns == ['id', 'distance', 'hops', 'parent']
+            rows = {row.id: row for row in result.frame.collect()}
+            assert {key: row.distance for key, row in rows.items()} == {
+                0: 0., 1: 2., 2: 1., 3: 2., 4: 4., -7: None, 5: None}
+            assert (rows[1].parent, rows[3].parent, rows[4].parent) == (2, 1, 3)
+            assert adjacency_path is not None
+>           assert expansion_actions == ['materialize'] * result.iterations
+E           AssertionError: assert ['count', 'ma...rialize', ...] == ['materialize...'materialize']
+E             
+E             At index 0 diff: 'count' != 'materialize'
+E             Left contains 5 more items, first extra item: 'materialize'
+E             Use -v to get more diff
+
+examples/extensions/graph-algorithms/tests/test_traversal.py:137: AssertionError
+_______ test_weighted_round_executes_only_one_expansion_action[frontier] _______
+
+spark = <pyspark.sql.connect.session.SparkSession object at 0x1161f7500>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x1162834a0>
+method = 'frontier'
+
+    @pytest.mark.parametrize('method', ['reference', 'frontier', 'delta_star'])
+    def test_weighted_round_executes_only_one_expansion_action(spark, monkeypatch, method):
+        from pyspark.sql.connect.dataframe import DataFrame
+        from pyspark_pecan.staging import StagingRun
+    
+        materialize, count = StagingRun.materialize, DataFrame.count
+        adjacency_path = None
+        edge_stages = 0
+        expansion_actions = []
+    
+        def reads_adjacency(frame):
+            return adjacency_path is not None and adjacency_path in str(frame._plan.to_proto(spark.client))
+    
+        def trace_materialize(run, frame, **kwargs):
+            nonlocal adjacency_path, edge_stages
+            if reads_adjacency(frame):
+                expansion_actions.append('materialize')
+            result = materialize(run, frame, **kwargs)
+            if frame.columns == ['src', 'dst', 'weight']:
+                edge_stages += 1
+                # The first edge write snapshots input; the second commits the
+                # traversal adjacency after validation. Count only expansion jobs.
+                if edge_stages == 2:
+                    adjacency_path = result[0]
+            return result
+    
+        def trace_count(frame):
+            if reads_adjacency(frame):
+                expansion_actions.append('count')
+            return count(frame)
+    
+        monkeypatch.setattr(StagingRun, 'materialize', trace_materialize)
+        monkeypatch.setattr(DataFrame, 'count', trace_count)
+        with GraphAlgorithms(spark).sssp(*frames(spark), source=0, method=method,
+                                        delta=1., partitions=2) as result:
+            assert result.frame.columns == ['id', 'distance', 'hops', 'parent']
+            rows = {row.id: row for row in result.frame.collect()}
+            assert {key: row.distance for key, row in rows.items()} == {
+                0: 0., 1: 2., 2: 1., 3: 2., 4: 4., -7: None, 5: None}
+            assert (rows[1].parent, rows[3].parent, rows[4].parent) == (2, 1, 3)
+            assert adjacency_path is not None
+>           assert expansion_actions == ['materialize'] * result.iterations
+E           AssertionError: assert ['count', 'ma...rialize', ...] == ['materialize...'materialize']
+E             
+E             At index 0 diff: 'count' != 'materialize'
+E             Left contains 5 more items, first extra item: 'materialize'
+E             Use -v to get more diff
+
+examples/extensions/graph-algorithms/tests/test_traversal.py:137: AssertionError
+______ test_weighted_round_executes_only_one_expansion_action[delta_star] ______
+
+spark = <pyspark.sql.connect.session.SparkSession object at 0x1161f7500>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x116283230>
+method = 'delta_star'
+
+    @pytest.mark.parametrize('method', ['reference', 'frontier', 'delta_star'])
+    def test_weighted_round_executes_only_one_expansion_action(spark, monkeypatch, method):
+        from pyspark.sql.connect.dataframe import DataFrame
+        from pyspark_pecan.staging import StagingRun
+    
+        materialize, count = StagingRun.materialize, DataFrame.count
+        adjacency_path = None
+        edge_stages = 0
+        expansion_actions = []
+    
+        def reads_adjacency(frame):
+            return adjacency_path is not None and adjacency_path in str(frame._plan.to_proto(spark.client))
+    
+        def trace_materialize(run, frame, **kwargs):
+            nonlocal adjacency_path, edge_stages
+            if reads_adjacency(frame):
+                expansion_actions.append('materialize')
+            result = materialize(run, frame, **kwargs)
+            if frame.columns == ['src', 'dst', 'weight']:
+                edge_stages += 1
+                # The first edge write snapshots input; the second commits the
+                # traversal adjacency after validation. Count only expansion jobs.
+                if edge_stages == 2:
+                    adjacency_path = result[0]
+            return result
+    
+        def trace_count(frame):
+            if reads_adjacency(frame):
+                expansion_actions.append('count')
+            return count(frame)
+    
+        monkeypatch.setattr(StagingRun, 'materialize', trace_materialize)
+        monkeypatch.setattr(DataFrame, 'count', trace_count)
+        with GraphAlgorithms(spark).sssp(*frames(spark), source=0, method=method,
+                                        delta=1., partitions=2) as result:
+            assert result.frame.columns == ['id', 'distance', 'hops', 'parent']
+            rows = {row.id: row for row in result.frame.collect()}
+            assert {key: row.distance for key, row in rows.items()} == {
+                0: 0., 1: 2., 2: 1., 3: 2., 4: 4., -7: None, 5: None}
+            assert (rows[1].parent, rows[3].parent, rows[4].parent) == (2, 1, 3)
+            assert adjacency_path is not None
+>           assert expansion_actions == ['materialize'] * result.iterations
+E           AssertionError: assert ['count', 'ma...rialize', ...] == ['materialize...'materialize']
+E             
+E             At index 0 diff: 'count' != 'materialize'
+E             Left contains 5 more items, first extra item: 'materialize'
+E             Use -v to get more diff
+
+examples/extensions/graph-algorithms/tests/test_traversal.py:137: AssertionError
+=========================== short test summary info ============================
+FAILED examples/extensions/graph-algorithms/tests/test_traversal.py::test_push_pull_distances_and_trace
+FAILED examples/extensions/graph-algorithms/tests/test_traversal.py::test_weighted_round_executes_only_one_expansion_action[reference]
+FAILED examples/extensions/graph-algorithms/tests/test_traversal.py::test_weighted_round_executes_only_one_expansion_action[frontier]
+FAILED examples/extensions/graph-algorithms/tests/test_traversal.py::test_weighted_round_executes_only_one_expansion_action[delta_star]
+4 failed, 31 passed in 22.36s

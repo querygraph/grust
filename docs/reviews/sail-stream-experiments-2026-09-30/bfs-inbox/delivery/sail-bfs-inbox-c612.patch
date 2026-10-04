@@ -1,0 +1,321 @@
+From c6126c27aae1b6262be3b1ecd6271008cc64fc69 Mon Sep 17 00:00:00 2001
+From: Alexy Khrabrov <deliverable@gmail.com>
+Date: Wed, 30 Sep 2026 11:07:40 -0700
+Subject: [PATCH] Avoid unused BFS inbox buffers outside their traversal modes
+
+---
+ .../extensions/argentea/src/bfs/protocol.rs   |   8 +
+ .../extensions/argentea/tests/bfs_inbox.rs    | 282 ++++++++++++++++++
+ 2 files changed, 290 insertions(+)
+ create mode 100644 examples/extensions/argentea/tests/bfs_inbox.rs
+
+diff --git a/examples/extensions/argentea/src/bfs/protocol.rs b/examples/extensions/argentea/src/bfs/protocol.rs
+index 3993aad59..40a5acb34 100644
+--- a/examples/extensions/argentea/src/bfs/protocol.rs
++++ b/examples/extensions/argentea/src/bfs/protocol.rs
+@@ -64,6 +64,14 @@ impl Inbox {
+         resources: &Resources,
+     ) -> Result<Self> {
+         let p = reports.len();
++        // Topology and Done never read candidate parents. Only Pull consumes
++        // ghost membership; Push can retain incoming CSR without needing a mask.
++        let n = if matches!(mode, BfsMode::Reference | BfsMode::Push | BfsMode::Pull) {
++            n
++        } else {
++            0
++        };
++        let ghosts = if mode == BfsMode::Pull { ghosts } else { 0 };
+         let bytes = n
+             .checked_mul(16)
+             .and_then(|x| x.checked_add(ghosts))
+diff --git a/examples/extensions/argentea/tests/bfs_inbox.rs b/examples/extensions/argentea/tests/bfs_inbox.rs
+new file mode 100644
+index 000000000..f35c04467
+--- /dev/null
++++ b/examples/extensions/argentea/tests/bfs_inbox.rs
+@@ -0,0 +1,282 @@
++//! Measure real inbox construction, including retained incoming ghosts.
++#[path = "../src/adjacency_tests/allocations.rs"]
++mod allocations;
++mod bfs_support;
++use bfs_support::*;
++use grust_procedures::ExecutionContext;
++use sail_argentea_core::*;
++
++const LIMIT: usize = 256 << 20;
++const PARTITIONS: usize = 3;
++
++struct Fixture {
++    op: Operation,
++    parts: Vec<BfsPartition>,
++    resources: Resources,
++    usage: ExecutionContext,
++    ids: Vec<i64>,
++    arcs: Vec<(i64, i64)>,
++}
++
++fn fixture(n: usize, ghosts: usize, pull: bool) -> Fixture {
++    assert!(ghosts <= n);
++    let op = operation(PARTITIONS, n as u64);
++    let (resources, usage, _) = resources(LIMIT);
++    let ids = (-1..n as i64 - 1).collect::<Vec<_>>();
++    // Each source occurs in exactly one recipient's incoming ghost table.
++    // Only -1 and 0 are reachable, even when all local ghost tables are large.
++    let arcs = if ghosts == 0 {
++        vec![]
++    } else {
++        std::iter::once((-1, 0))
++            .chain((0..ghosts as i64 - 1).map(|id| (id, id)))
++            .collect()
++    };
++    let mut opts = options(-1, BfsAlgorithm::DirectionOptimizing);
++    opts.alpha = if pull { u64::MAX } else { 1 };
++    let parts = parts(&op, &ids, &arcs, opts, &resources).unwrap();
++    Fixture {
++        op,
++        parts,
++        resources,
++        usage,
++        ids,
++        arcs,
++    }
++}
++
++fn complete(f: &mut Fixture, mut cursors: Vec<BfsEmissionCursor>) {
++    let phase = phase(&f.op, &f.parts);
++    loop {
++        let mut any = false;
++        for cursor in &mut cursors {
++            if let Some(message) = cursor.next_update().unwrap() {
++                any = true;
++                f.parts[message.recipient].receive(&message).unwrap();
++            }
++        }
++        if !any {
++            break;
++        }
++    }
++    for cursor in cursors {
++        let completion = cursor.finish().unwrap();
++        for part in &mut f.parts {
++            part.finish_producer(&completion).unwrap();
++        }
++    }
++    for part in &mut f.parts {
++        part.finish(&phase).unwrap();
++    }
++}
++
++fn finish_and_check(f: &mut Fixture) {
++    loop {
++        stats(&f.op, &mut f.parts).unwrap();
++        let phase = phase(&f.op, &f.parts);
++        let results = f
++            .parts
++            .iter_mut()
++            .map(|part| part.seal(&phase).unwrap())
++            .collect::<Vec<_>>();
++        if results[0].is_some() {
++            assert!(results.iter().all(|r| *r == results[0]));
++            break;
++        }
++        assert!(f.parts[0].next_phase() < 8);
++        exchange(&f.op, &mut f.parts).unwrap();
++    }
++    let rows = collected(&f.parts);
++    assert_eq!(rows, oracle(&f.ids, &f.arcs, -1));
++    assert!(certificate(&rows, &f.arcs, -1));
++}
++
++#[derive(Clone, Copy, Debug, PartialEq, Eq)]
++struct Cost {
++    allocation_calls: usize,
++    allocated_bytes: usize,
++    peak_admitted: usize,
++}
++
++fn measure(n: usize, ghosts: usize, mode: BfsMode, headroom: usize) -> Cost {
++    let mut f = fixture(n, ghosts, mode == BfsMode::Pull);
++    if mode != BfsMode::Topology {
++        setup(&f.op, &mut f.parts).unwrap();
++    }
++    if mode == BfsMode::Done {
++        while f.parts.iter().any(|p| p.frontier_count() > 0) {
++            stats(&f.op, &mut f.parts).unwrap();
++            exchange(&f.op, &mut f.parts).unwrap();
++        }
++    }
++    stats(&f.op, &mut f.parts).unwrap();
++    let phase = phase(&f.op, &f.parts);
++    let before_rows = f
++        .parts
++        .iter()
++        .map(|p| p.state_rows().collect::<Vec<_>>())
++        .collect::<Vec<_>>();
++    let origins = f.parts.iter().map(BfsPartition::origin).collect::<Vec<_>>();
++    let levels = f.parts[0].levels();
++    let floor = LIMIT - headroom;
++    let before = f.usage.usage().unwrap();
++    assert!(floor > before.peak_bytes);
++    let blocker = f.usage.reserve(floor - before.live_bytes).unwrap();
++    let before = f.usage.usage().unwrap();
++    let mut cursors = Vec::with_capacity(PARTITIONS);
++    let (_, allocations) = allocations::measure(|| {
++        for part in &mut f.parts {
++            cursors.push(part.start_emission(&phase).unwrap());
++        }
++    });
++    assert!(cursors.iter().all(|c| c.mode() == mode));
++    let after = f.usage.usage().unwrap();
++    let cost = Cost {
++        allocation_calls: allocations.calls,
++        allocated_bytes: allocations.bytes,
++        peak_admitted: after.peak_bytes - before.peak_bytes,
++    };
++    println!(
++        "BFS_INBOX_COUNTER mode={mode:?} vertices={n} ghosts={ghosts} partitions={PARTITIONS} allocation_calls={} allocated_bytes={} peak_admitted_bytes={}",
++        cost.allocation_calls, cost.allocated_bytes, cost.peak_admitted
++    );
++    // Keep quota pressure through Done publication; active publication needs a
++    // separate full Values allocation and is outside this inbox measurement.
++    if mode != BfsMode::Done {
++        drop(blocker);
++        complete(&mut f, cursors);
++    } else {
++        complete(&mut f, cursors);
++        drop(blocker);
++        assert_eq!(f.parts[0].levels(), levels);
++        assert!(f.parts.iter().all(|p| p.last_work() == BfsWork::default()));
++        assert_eq!(
++            f.parts
++                .iter()
++                .map(|p| p.state_rows().collect::<Vec<_>>())
++                .collect::<Vec<_>>(),
++            before_rows
++        );
++    }
++    assert_eq!(
++        f.parts.iter().map(BfsPartition::origin).collect::<Vec<_>>(),
++        origins
++    );
++    assert!(f.parts.iter().all(|p| p.next_phase() == phase.number + 1));
++    finish_and_check(&mut f);
++    let usage = f.usage.clone();
++    drop(f.parts);
++    drop(f.resources);
++    assert_eq!(usage.usage().unwrap().live_bytes, 0);
++    cost
++}
++
++#[test]
++fn done_inboxes_are_independent_of_vertices_and_retained_ghosts() {
++    // The old idle fixture had one vertex and no ghosts, and checked BfsWork
++    // only. Include its shape, but require identical real allocation at scale.
++    let costs = [(1, 0), (1_024, 1_024), (65_536, 1_024), (65_536, 65_536)]
++        .map(|(n, ghosts)| measure(n, ghosts, BfsMode::Done, LIMIT / 2));
++    for cost in &costs[1..] {
++        assert_eq!(*cost, costs[0]);
++    }
++}
++
++#[test]
++fn push_omits_ghost_storage_and_pull_keeps_required_buffers() {
++    let cells = [(1_024, 1_024), (65_536, 1_024), (65_536, 65_536)];
++    let push = cells.map(|(n, g)| measure(n, g, BfsMode::Push, LIMIT / 2));
++    let pull = cells.map(|(n, g)| measure(n, g, BfsMode::Pull, LIMIT / 2));
++    let vertices = (65_536 - 1_024) * size_of::<Option<i64>>();
++    for costs in [push, pull] {
++        assert_eq!(
++            costs[1].allocated_bytes - costs[0].allocated_bytes,
++            vertices
++        );
++        assert_eq!(costs[1].peak_admitted - costs[0].peak_admitted, vertices);
++    }
++    assert_eq!(push[2], push[1], "Push never reads incoming membership");
++    assert_eq!(
++        pull[2].allocated_bytes - pull[1].allocated_bytes,
++        65_536 - 1_024
++    );
++    assert_eq!(
++        pull[2].peak_admitted - pull[1].peak_admitted,
++        65_536 - 1_024
++    );
++    assert!(pull[2].allocated_bytes > push[2].allocated_bytes);
++}
++
++#[test]
++fn topology_has_no_candidate_buffers() {
++    let small = measure(1_024, 1_024, BfsMode::Topology, LIMIT / 2);
++    let large = measure(65_536, 65_536, BfsMode::Topology, LIMIT / 2);
++    assert_eq!(small, large);
++}
++
++#[test]
++fn done_inboxes_fit_protocol_sized_headroom() {
++    measure(65_536, 65_536, BfsMode::Done, 32 * 1_024);
++}
++
++#[test]
++fn elided_buffers_still_reject_wrong_payload_modes_before_access() {
++    for mode in [
++        BfsMode::Topology,
++        BfsMode::Done,
++        BfsMode::Push,
++        BfsMode::Pull,
++    ] {
++        for membership in [false, true] {
++            if membership && mode == BfsMode::Pull || !membership && mode == BfsMode::Push {
++                continue;
++            }
++            let mut f = fixture(1_024, 1_024, mode == BfsMode::Pull);
++            if mode != BfsMode::Topology {
++                setup(&f.op, &mut f.parts).unwrap();
++            }
++            if mode == BfsMode::Done {
++                while f.parts.iter().any(|p| p.frontier_count() > 0) {
++                    stats(&f.op, &mut f.parts).unwrap();
++                    exchange(&f.op, &mut f.parts).unwrap();
++                }
++            }
++            stats(&f.op, &mut f.parts).unwrap();
++            let phase = phase(&f.op, &f.parts);
++            let before = f.parts[0].state_rows().collect::<Vec<_>>();
++            let cursor = f.parts[0].start_emission(&phase).unwrap();
++            assert_eq!(cursor.mode(), mode);
++            let origin = f.parts[0].origin();
++            let error = f.parts[0]
++                .receive_values(
++                    &phase,
++                    BfsMessageValues {
++                        origin,
++                        producer: 0,
++                        recipient: 0,
++                        sequence: 0,
++                        mode,
++                        payload: if membership {
++                            BfsPayload::Membership { vertex: i64::MAX }
++                        } else {
++                            BfsPayload::Candidate {
++                                target: i64::MAX,
++                                parent: 0,
++                                distance: 1,
++                            }
++                        },
++                    },
++                )
++                .unwrap_err();
++            assert!(error.starts_with(if membership {
++                "invalid, duplicated or unordered BFS membership"
++            } else {
++                "invalid BFS candidate mode"
++            }));
++            assert!(f.parts[0].finish(&phase).is_err());
++            assert!(f.parts[0].row_cursor().is_err());
++            assert_eq!(f.parts[0].state_rows().collect::<Vec<_>>(), before);
++            assert_eq!(f.parts[0].next_phase(), phase.number);
++        }
++    }
++}
+-- 
+2.50.1 (Apple Git-155)
+

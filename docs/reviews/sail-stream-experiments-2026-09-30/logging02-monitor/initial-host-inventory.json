@@ -1,0 +1,13 @@
+{
+  "recorded_utc": "2026-09-30T20:06:58.217733+00:00",
+  "command": [
+    "ssh",
+    "morrobay",
+    "python3 -B -"
+  ],
+  "source": "import json\nfrom pathlib import Path\np=Path('/Users/alexy/src/sail-extensions-gates/stream-experiments-20260930/logging02')\nprint(json.dumps({'exists':p.exists(),'files':[str(x.relative_to(p)) for x in p.rglob('*') if x.is_file()][:100]}))\n",
+  "returncode": 0,
+  "stdout": "{\"exists\": true, \"files\": [\"host-before.json\", \"plan.json\", \"process-identity-01.json\", \"configuration.json\", \"cell/container.log\", \"preflight-1790798627903341000/orchestration.json\", \"preflight-1790798627903341000/container.log\"]}\n",
+  "stderr": "",
+  "scope": "Read-only host output inventory; no arguments/environment/process mutation"
+}

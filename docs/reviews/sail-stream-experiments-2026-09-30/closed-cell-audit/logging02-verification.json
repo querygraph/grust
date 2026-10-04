@@ -1,0 +1,119 @@
+{
+  "recorded_utc": "2026-09-30T22:00:48.626765+00:00",
+  "cell_directory": "/Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/logging02",
+  "expectations_canonical_sha256": "f6c000e9ca20974b649c3279855442facbbbb4ba8cdda84c093c6e1d5cac890d",
+  "integrity_status": "integrity_verified",
+  "errors": [],
+  "inconclusive_reasons": [],
+  "recorded_outcomes": {
+    "docker_state": {
+      "Dead": false,
+      "Error": "",
+      "ExitCode": 1,
+      "FinishedAt": "2026-09-30T21:58:06.310953881Z",
+      "OOMKilled": true,
+      "Paused": false,
+      "Pid": 0,
+      "Restarting": false,
+      "Running": false,
+      "StartedAt": "2026-09-30T20:03:49.717483806Z",
+      "Status": "exited"
+    },
+    "outer_timeout": false,
+    "attach_returncode": 1,
+    "transport_errors": [],
+    "receipt_outcome": "error",
+    "correctness": null,
+    "error": "Traceback (most recent call last):\n  File \"/targets/sail-stream-experiments-20260930/source-3a9028057/examples/extensions/benchmarks/graph_cell.py\", line 494, in main\n    result, handle, nm = execute(spark, args, manifest, receipt, sampler)\n                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/targets/sail-stream-experiments-20260930/source-3a9028057/examples/extensions/benchmarks/graph_cell.py\", line 124, in execute\n    return traversal_execute(spark, args, receipt, sampler)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/targets/sail-stream-experiments-20260930/source-3a9028057/examples/extensions/benchmarks/traversal_cell.py\", line 90, in execute\n    handle=getattr(graph,args.algorithm)(vertices,edges,**options)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/targets/sail-stream-experiments-20260930/source-3a9028057/examples/extensions/graph-algorithms/src/pyspark_pecan/algorithms.py\", line 297, in sssp\n    return execute(self, vertices, edges, source=source, weighted=True,\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/targets/sail-stream-experiments-20260930/source-3a9028057/examples/extensions/graph-algorithms/src/pyspark_pecan/traversal.py\", line 89, in execute\n    return graph._run(vertices, edges, partitions, cancellation, body,\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/targets/sail-stream-experiments-20260930/source-3a9028057/examples/extensions/graph-algorithms/src/pyspark_pecan/algorithms.py\", line 95, in _run\n    return body(run, vertices, edges, size)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/targets/sail-stream-experiments-20260930/source-3a9028057/examples/extensions/graph-algorithms/src/pyspark_pecan/traversal.py\", line 40, in body\n    return stepping(graph, run, vertices, adjacency, size, source, delta, max_iterations)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/targets/sail-stream-experiments-20260930/source-3a9028057/examples/extensions/graph-algorithms/src/pyspark_pecan/traversal_stepping.py\", line 38, in execute\n    next_path, updated = run.materialize(relaxed)\n                         ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/targets/sail-stream-experiments-20260930/source-3a9028057/examples/extensions/graph-algorithms/src/pyspark_pecan/staging.py\", line 36, in materialize\n    frame.repartition(self.partitions).write.mode(\"error\").parquet(path)\n  File \"/targets/graph-nuts-ffcfbd569/venv/lib/python3.12/site-packages/pyspark/sql/connect/readwriter.py\", line 755, in parquet\n    self.format(\"parquet\").save(path)\n  File \"/targets/graph-nuts-ffcfbd569/venv/lib/python3.12/site-packages/pyspark/sql/connect/readwriter.py\", line 679, in save\n    _, _, ei = self._spark.client.execute_command(\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/targets/graph-nuts-ffcfbd569/venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 1148, in execute_command\n    data, _, metrics, observed_metrics, properties = self._execute_and_fetch(\n                                                     ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/targets/graph-nuts-ffcfbd569/venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 1560, in _execute_and_fetch\n    for response in self._execute_and_fetch_as_iterator(\n                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/targets/graph-nuts-ffcfbd569/venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 1537, in _execute_and_fetch_as_iterator\n    self._handle_error(error)\n  File \"/targets/graph-nuts-ffcfbd569/venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 1811, in _handle_error\n    self._handle_rpc_error(error)\n  File \"/targets/graph-nuts-ffcfbd569/venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 1882, in _handle_rpc_error\n    raise convert_exception(\npyspark.errors.exceptions.connect.SparkRuntimeException: h2 protocol error: error reading a body from connection\nwrite completion is uncertain; cleanup deferred for file:///targets/sail-stream-experiments-20260930/logging02/cells/stream-log02-r1-scale24-pecan-sssp-delta_star/staging/e11de82c-9b96-49dd-b923-8cb5464dc166. The server session retains ownership and attempts cleanup at teardown; this is best effort, not a guarantee that all writers have drained.\n",
+    "cleanup_errors": [],
+    "cgroup_after": {
+      "memory.current": "100675584",
+      "memory.peak": "107374235648",
+      "memory.max": "107374182400",
+      "memory.swap.max": "0",
+      "memory.events": "low 0\nhigh 0\nmax 5359\noom 14\noom_kill 2\noom_group_kill 0",
+      "memory.stat": "anon 81367040\nfile 12492800\nkernel 2699264\nkernel_stack 557056\npagetables 847872\nsec_pagetables 0\npercpu 13600\nsock 0\nvmalloc 12288\nshmem 0\nzswap 0\nzswapped 0\nfile_mapped 131072\nfile_dirty 28672\nfile_writeback 0\nswapcached 0\nanon_thp 0\nfile_thp 0\nshmem_thp 0\ninactive_anon 6373376\nactive_anon 74944512\ninactive_file 724992\nactive_file 11759616\nunevictable 0\nslab_reclaimable 451184\nslab_unreclaimable 708752\nslab 1159936\nworkingset_refault_anon 0\nworkingset_refault_file 218943\nworkingset_activate_anon 0\nworkingset_activate_file 25\nworkingset_restore_anon 0\nworkingset_restore_file 25\nworkingset_nodereclaim 0\npgscan 2869435\npgsteal 2869346\npgscan_kswapd 0\npgscan_direct 2858043\npgscan_khugepaged 11392\npgsteal_kswapd 0\npgsteal_direct 2857954\npgsteal_khugepaged 11392\npgfault 29098547\npgmajfault 182\npgrefill 1676595\npgactivate 51\npgdeactivate 0\npglazyfree 0\npglazyfreed 0\nzswpin 0\nzswpout 0\nzswpwb 0\nthp_fault_alloc 158683\nthp_collapse_alloc 770\nthp_swpout 0\nthp_swpout_fallback 0",
+      "cpu.max": "3200000 100000",
+      "cpu.stat": "usage_usec 175996149951\nuser_usec 53086704731\nsystem_usec 122909445219\ncore_sched.force_idle_usec 0\nnr_periods 69042\nnr_throttled 8731\nthrottled_usec 2181310570\nnr_bursts 0\nburst_usec 0",
+      "cpuset.cpus.effective": "0-31"
+    },
+    "producer_started_utc": "2026-09-30T20:05:12.489226+00:00",
+    "producer_finished_utc": "2026-09-30T21:58:04.968153+00:00",
+    "runner_outcome": "oom"
+  },
+  "correctness_verification": "not_performed",
+  "known_transformations": {},
+  "notes": [
+    "Dataset checks compare the producer-embedded manifest to pinned local evidence; dataset/Parquet bytes were not read or recomputed."
+  ],
+  "files": {
+    "/Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/linux-builds/integration289/final/rebuild-receipt.json": {
+      "bytes": 16869,
+      "sha256": "546c59c09ab00dda861de36412f8d027ca30da880207a79a81b56088197ebcd5"
+    },
+    "/Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/logging01/diagnostics/receipt.json": {
+      "bytes": 214186,
+      "sha256": "969a7811615eeef3190b7b0f5f87a72f637b430edd37db48e031e5819d235e84"
+    },
+    "/Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/logging02.json": {
+      "bytes": 3037,
+      "sha256": "520b244165096bd2bb17a45d22effe50210d8bcf4bca5e546364f273cba36ff0"
+    },
+    "/Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/pecan-gate3/measured-1-base/diagnostics/receipt.json": {
+      "bytes": 27867,
+      "sha256": "735432b56cfc47bd9f3e49579ab6d8834b3a4b4d962f6fea07b5bf5ba1bcb70a"
+    },
+    "logging02/configuration.json": {
+      "bytes": 3037,
+      "sha256": "520b244165096bd2bb17a45d22effe50210d8bcf4bca5e546364f273cba36ff0"
+    },
+    "logging02/plan.json": {
+      "bytes": 1967,
+      "sha256": "ba61c2bee4091ba5e6acf2515eca99dbd37a00e8bc84da77cb1d1e4b21dc2859"
+    },
+    "logging02/result.json": {
+      "bytes": 5239,
+      "sha256": "6d0aae6f246608e7828c4bb8fe4daf7fab53073e383d76c1dcf9456067e498ec"
+    },
+    "logging02/cell/orchestration.json": {
+      "bytes": 3848,
+      "sha256": "b09d0f4b122f35c4d1ef0ba1e47a3a0cadf412b7ad74ca945266a83a7fde5a5b"
+    },
+    "logging02/collection.json": {
+      "bytes": 1129,
+      "sha256": "7ab73b6c9dcc7e068b9d9fa1170db0121327b35810825baed24ae32f5ff25a87"
+    },
+    "logging02/diagnostics/receipt.json": {
+      "bytes": 216433,
+      "sha256": "758466343a93955a579681d39d4e6acb07d9475a0d23da1020929fe031751ade"
+    },
+    "logging02/diagnostics/server-settings.json": {
+      "bytes": 287,
+      "sha256": "18688fb5f728030eba0610f10bb4b83d34591bffd2b4570472619d0bbc21624e"
+    },
+    "logging02/host-before.json": {
+      "bytes": 82978,
+      "sha256": "a6af907c7b7f387fa75a9049962b118959f5a8eda441232f85a8166a0feabc61"
+    },
+    "logging02/diagnostics.tar": {
+      "bytes": 18063360,
+      "sha256": "a04d953ffe1c50d6b86f0130c126c230c4c69467d55a39e0822e9917a43d4939"
+    },
+    "logging02/diagnostics/memory-samples.jsonl": {
+      "bytes": 5461247,
+      "sha256": "13a2ad72c4f2ad7b97dedbcf554f34ceed3b5fcb94b0adfa5edbe582cabb42ba"
+    },
+    "logging02/diagnostics/server.log": {
+      "bytes": 12376738,
+      "sha256": "cdd6f367bd47fd69062bf7527433bceba8023784c861c8821651c3d4f84a8b67"
+    }
+  },
+  "scope": "Local collected-byte and recorded-identity/resource agreement only. No remote access, binary execution, source rebuild, dataset/result Parquet recomputation, independent certificate validation, causal diagnosis or performance qualification. Recorded runner and receipt outcomes remain separate.",
+  "helper_sha256": "c8d59db362136879bbd3a6efe8f527311849e3e0be18ddb64e6da996bdfcd318",
+  "case": "logging02",
+  "profiles_file": {
+    "path": "/Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/closed-cell-audit/profiles.json",
+    "bytes": 5617,
+    "sha256": "dfe38f1cb23f8b689ec7cf839e6016fa037e013396d80fbdc6dce4f65d89eb76"
+  }
+}

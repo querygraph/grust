@@ -1,0 +1,73 @@
+{
+  "generated_at_utc": "2026-09-30T20:22:25.444513+00:00",
+  "outcome": "PASS with terminology clarification",
+  "source": "200d1cf8eb1db5e9057e09e071ebd57391f4b376",
+  "probe_sha256": "7e13c09e442e3b0731acdb223fa0a785880e90e6a31549fa8625c3bf38b21e1f",
+  "receipt_sha256": "61c859aa2946bbf5ba0b6141de5a7a8329a29818cd0ac167b899fde9f0585311",
+  "document_sha256_at_review": "7aed7174dbe07ecc58a20978e53ee09140085a034991220d1c1cab4bbddb60c2",
+  "source_blobs_verified": [
+    {
+      "path": "examples/extensions/argentea/python/argentea_client.py",
+      "sha256": "159bc34934312ff389443a72224be06f36c702dae26b2d788d6b6261f8f8743a"
+    },
+    {
+      "path": "examples/extensions/argentea/python/argentea_delta_client.py",
+      "sha256": "ed58ec46a121a9a28929c083921796aac096d254accebddad8414a7d28c4e38a"
+    },
+    {
+      "path": "examples/extensions/argentea/python/argentea_bfs_client.py",
+      "sha256": "b07113c644c403e34d2978f9c4b3004485e05e6c1aa53d5bcc292e8520d1490a"
+    },
+    {
+      "path": "examples/extensions/argentea/python/argentea_sssp_client.py",
+      "sha256": "429efc7664c4ed406866107d78cf6d95225aedef43c3dd9c3dc29f581f1f96c0"
+    },
+    {
+      "path": "examples/extensions/argentea/python/argentea_wcc_client.py",
+      "sha256": "03ccdbd71374d17ef57b9561ebc22eb69c627db5f45b980d689cb56e56b5e6ce"
+    },
+    {
+      "path": "examples/extensions/argentea/src/lib.rs",
+      "sha256": "d772daa8f59fdfddf4edbadcde71896ed083d5725d05233edd6fb23b33b33ada"
+    },
+    {
+      "path": "examples/extensions/argentea/src/bfs/emission.rs",
+      "sha256": "ca1b6c563d04f47d83db883d23c2c4400054417622505e9582b2c854804b4b54"
+    },
+    {
+      "path": "examples/extensions/nutmeg/src/argentea/request.rs",
+      "sha256": "be24c2d2fd9215ca972287099f63e17073360888a0bd20b8a3ca1f3bac9e31cd"
+    },
+    {
+      "path": "examples/extensions/nutmeg/src/argentea/delta/request.rs",
+      "sha256": "925ddd80714bc338ffa1f6745fca6d88626dd0461f98ede0ebe2bd22d185742c"
+    },
+    {
+      "path": "examples/extensions/nutmeg/src/argentea/bfs/request.rs",
+      "sha256": "c9d9a087a099fa25756e96a17b05d9b6695702477e5be1a64dbca5990c43919e"
+    },
+    {
+      "path": "examples/extensions/nutmeg/src/argentea/sssp/request.rs",
+      "sha256": "1aa97f7b816e0775c3dbb9bb4d42e86387394d234f0b024839e55fb3ac770e58"
+    },
+    {
+      "path": "examples/extensions/nutmeg/src/argentea/wcc/request.rs",
+      "sha256": "d4994963a939039fa10cc2bcbf4016162633251d3f00b5d1fe9fae9d3c2ca8cb"
+    }
+  ],
+  "checks": [
+    "All 12 recorded source hashes match exact commit blobs.",
+    "Five actual Python options calls at each of 64 and 65 are recorded; source validators agree. Audit did not rerun Python clients.",
+    "Native BFS/SSSP/WCC/delta request source restricts partitions to 1..64; fixed PageRank adapter admits 1..65536; core operation permits more than64.",
+    "BFS client symmetrizes directed=False then assigns source pmod owner; core owner uses rem_euclid.",
+    "BFS emission walks each owned source adjacency through its cursor; independent closed-form arithmetic matches all seven star receipt vectors and ratios.",
+    "P64 center owner has65535+1023=66558 of131070 arcs; first frontier source0 has65535 active arcs on owner0.",
+    "Appended document explicitly distinguishes actual Python admission, source inspection and ownership arithmetic from native/cluster execution/timing/Graph500 measurements."
+  ],
+  "clarification": "Prefer Euclidean remainder of the signed vertex ID modulo P to signed remainder modulo P: Rust rem_euclid produces a nonnegative owner even for negative IDs. This does not change the nonnegative-ID star calculation.",
+  "limits": [
+    "API options validation is not native adapter execution or real request admission.",
+    "The star model establishes skew under whole-vertex source ownership, not observed RSS, timing, network cost or scaling on Graph500.",
+    "No native kernels, Sail graphs or remote workloads were launched by this audit."
+  ]
+}

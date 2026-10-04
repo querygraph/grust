@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en-US" xml:lang="en-US">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <meta name="author" content="Querygraph" />
+  <meta name="dcterms.date" content="2026-10-01" />
+  <meta name="description" content="Version 1.0. Review target: querygraph/sail bd8ce9ae8839477e2c08a0475ab7900b115c5366." />
+  <title>4. Commands and receipts</title>
+  <style>
+    div.sitenav { display: flex; flex-direction: row; flex-wrap: wrap; }
+    span.navlink { flex: 1; }
+    span.navlink-label { display: inline-block; min-width: 4em; }
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: 1.5em;}
+    div.column{flex: auto;}
+    @media screen {
+    div.columns{gap: min(4vw, 1.5em);}
+    div.column{overflow-x: auto;}
+    }
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <link rel="stylesheet" href="book.css" />
+</head>
+<body>
+<nav id="sitenav">
+<div class="sitenav">
+<span class="navlink">
+<span class="navlink-label">Up:</span> <a href="index.html" accesskey="u" rel="up">Sail Extensions: A Design Review</a>
+</span>
+<span class="navlink">
+<span class="navlink-label">Top:</span> <a href="index.html" accesskey="t" rel="top">Sail Extensions: A Design Review</a>
+</span>
+</div>
+<div class="sitenav">
+<span class="navlink">
+<span class="navlink-label">Next:</span> <a href="chapter-007.html" accesskey="n" rel="next">5. Placement and replay</a>
+</span>
+<span class="navlink">
+<span class="navlink-label">Previous:</span> <a href="chapter-005.html" accesskey="p" rel="previous">3. Relations</a>
+</span>
+</div>
+</nav>
+<h1 data-number="6" id="module-04-commands"><span
+class="header-section-number">6</span> 4. Commands and receipts</h1>
+<p><a href="chapter-005.html#module-03-relations">Relations</a> describe
+work without executing it. Some operations, such as staging or dropping
+a graph, must also change state. The prototype represents them as
+relations with mutating verbs and small receipt results. The client
+explicitly collects the receipt. This reuses the relation transport and
+input handling while making the execution boundary visible to the
+caller.</p>
+<p>The <strong>public behavior</strong> should distinguish planning,
+attempted execution, committed state and an acknowledged result.
+Constructing a DataFrame or asking for its schema must not mutate state.
+A successful stage receipt identifies the graph, node and edge counts,
+and revision; a drop receipt reports whether removal occurred. If
+execution or acknowledgement is interrupted, absence of a receipt is not
+proof that no mutation happened. Callers need an indeterminate outcome,
+not an automatic retry presented as harmless. None of this promises
+cross-request exactly-once execution or durable recovery.</p>
+<p>The pinned <strong>implementation</strong> uses Nutmeg's
+<code>MutationTable</code> and an execution node with one output
+partition. Its shared attempt state changes from ready to running before
+the mutation; completion caches the receipt batch. Another execution of
+that same completed object can return the cached receipt. A running or
+previously failed attempt is refused rather than executed again. A newly
+planned request has a new attempt object, so this mechanism is not a
+persistent idempotency key. <a
+href="https://github.com/querygraph/sail/blob/bd8ce9ae8839477e2c08a0475ab7900b115c5366/examples/extensions/nutmeg/src/mutation.rs#L207">Mutation
+state and execution</a>. The client <code>stage</code> and
+<code>drop</code> methods collect the result eagerly; ordinary algorithm
+results remain lazy. <a
+href="https://github.com/querygraph/sail/blob/bd8ce9ae8839477e2c08a0475ab7900b115c5366/examples/extensions/nutmeg/python/sail_nutmeg/client.py#L53">Client
+behavior</a>.</p>
+<p>A separate safeguard sits in Sail's scheduler: a task region
+containing driver-native execution receives one attempt, including
+native reads. That conservative placement rule prevents the scheduler
+from silently replaying a region whose effects it cannot classify. It
+does not prevent a client from submitting a new request, make a lost
+receipt recoverable, or establish transactions across operations. The
+package's cached receipt and the scheduler's region policy solve
+different replay problems.</p>
+<p>Spark Connect's raw <code>Command.extension</code> is a fair
+alternative and is not implemented by this prototype. It would
+distinguish effects at the protocol level, while requiring command
+dispatch, acknowledgement and input semantics. The relation approach
+reduces the initial surface but cannot infer that an arbitrary relation
+is safe to replay. A durable operation identifier and result log would
+be additional design work under either transport.</p>
+<p>Acceptance should verify no mutation during EXPLAIN, one effect on
+repeated execution of a single provider, and explicit failure after an
+interrupted attempt; a disconnected client must never imply rollback.
+The decision is whether receipts plus conservative non-replay suffice
+initially, or whether read/effect classification is required first. That
+leads directly to <a
+href="chapter-007.html#module-05-placement">placement and
+replay</a>.</p>
+</body>
+</html>

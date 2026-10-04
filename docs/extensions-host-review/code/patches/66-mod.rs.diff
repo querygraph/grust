@@ -1,0 +1,24 @@
+diff --git a/crates/sail-session/src/session_manager/mod.rs b/crates/sail-session/src/session_manager/mod.rs
+index 0cca1eee1a30ec0aae28fd112fc0f634055a1390..b6ce85481ed07878d131f65252ec10b40015bb45 100644
+--- a/crates/sail-session/src/session_manager/mod.rs
++++ b/crates/sail-session/src/session_manager/mod.rs
+@@ -1,4 +1,5 @@
+ mod actor;
++mod cleanup;
+ mod session;
+ 
+ use std::fmt;
+@@ -114,6 +115,13 @@ pub async fn create_session_manager(
+                 .raw()
+                 .map_err(|e| SessionError::internal(e.to_string()))?,
+         );
++    let options = if std::env::var("SAIL_EXPERIMENTAL_EXTENSIONS").as_deref() == Ok("1") {
++        options.with_resource_domain(crate::runtime::MemoryResourceDomain::new(
++            &config.runtime.memory_pool,
++        ))
++    } else {
++        options
++    };
+     let components = SessionManagerComponents {
+         session_factory,
+         job_runner_factory,

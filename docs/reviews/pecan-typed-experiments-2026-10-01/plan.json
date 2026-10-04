@@ -1,0 +1,111 @@
+{
+  "recorded_utc": "2026-10-01T17:28:50.422318+00:00",
+  "status": "prepared_not_launched",
+  "execution_owner": "Morrobay agent after operator handoff",
+  "support_sha256": "0f378b86d2feaa93413d1fe573eef524c110f1c019f2dace955c22d1a8f5dc39",
+  "controller_commits": {
+    "baseline": "cab6bacc0ad0d1fc8b3070e9e4267e99751909fe",
+    "candidate": "6ae2e43a903c2cee02da170465c922c72b76198e"
+  },
+  "steps": [
+    {
+      "run_id": "typed-smoke-local",
+      "kind": "smoke",
+      "mode": "local",
+      "revision": "candidate",
+      "role": "compatibility"
+    },
+    {
+      "run_id": "typed-smoke-process-cluster",
+      "kind": "smoke",
+      "mode": "process-cluster",
+      "revision": "candidate",
+      "role": "compatibility"
+    },
+    {
+      "run_id": "typed-warmup-local-baseline",
+      "kind": "wcc",
+      "mode": "local",
+      "revision": "baseline",
+      "role": "warmup"
+    },
+    {
+      "run_id": "typed-warmup-local-candidate",
+      "kind": "wcc",
+      "mode": "local",
+      "revision": "candidate",
+      "role": "warmup"
+    },
+    {
+      "run_id": "typed-warmup-process-cluster-baseline",
+      "kind": "wcc",
+      "mode": "process-cluster",
+      "revision": "baseline",
+      "role": "warmup"
+    },
+    {
+      "run_id": "typed-warmup-process-cluster-candidate",
+      "kind": "wcc",
+      "mode": "process-cluster",
+      "revision": "candidate",
+      "role": "warmup"
+    },
+    {
+      "run_id": "typed-measured-local-1-baseline",
+      "kind": "wcc",
+      "mode": "local",
+      "revision": "baseline",
+      "role": "measured"
+    },
+    {
+      "run_id": "typed-measured-local-2-candidate",
+      "kind": "wcc",
+      "mode": "local",
+      "revision": "candidate",
+      "role": "measured"
+    },
+    {
+      "run_id": "typed-measured-local-3-candidate",
+      "kind": "wcc",
+      "mode": "local",
+      "revision": "candidate",
+      "role": "measured"
+    },
+    {
+      "run_id": "typed-measured-local-4-baseline",
+      "kind": "wcc",
+      "mode": "local",
+      "revision": "baseline",
+      "role": "measured"
+    },
+    {
+      "run_id": "typed-measured-process-cluster-1-candidate",
+      "kind": "wcc",
+      "mode": "process-cluster",
+      "revision": "candidate",
+      "role": "measured"
+    },
+    {
+      "run_id": "typed-measured-process-cluster-2-baseline",
+      "kind": "wcc",
+      "mode": "process-cluster",
+      "revision": "baseline",
+      "role": "measured"
+    },
+    {
+      "run_id": "typed-measured-process-cluster-3-baseline",
+      "kind": "wcc",
+      "mode": "process-cluster",
+      "revision": "baseline",
+      "role": "measured"
+    },
+    {
+      "run_id": "typed-measured-process-cluster-4-candidate",
+      "kind": "wcc",
+      "mode": "process-cluster",
+      "revision": "candidate",
+      "role": "measured"
+    }
+  ],
+  "policy": "serial; stop on any nonzero wrapper exit or incomplete closure; retain every result including warmups; fresh resource admission per cell; report shared-host ratios within each execution class"
+}

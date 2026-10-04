@@ -1,0 +1,16 @@
+diff --git a/crates/sail-plan/src/function/mod.rs b/crates/sail-plan/src/function/mod.rs
+index ba4406d5ae15923ac5d0970023d776e6386b0346..1e2726f9ba054bf4ca36588bcbe255871ad5a79e 100644
+--- a/crates/sail-plan/src/function/mod.rs
++++ b/crates/sail-plan/src/function/mod.rs
+@@ -54,6 +54,11 @@ pub fn is_built_in_generator_function(name: &str) -> bool {
+     BUILT_IN_GENERATOR_FUNCTIONS.contains_key(name)
+ }
+ 
++/// Includes every built-in function kind for extension collision validation.
++pub fn is_built_in_function_name(name: &str) -> bool {
++    list_built_in_function_names().contains(&name)
++}
++
+ fn list_built_in_function_names() -> Vec<&'static str> {
+     let mut names = BUILT_IN_SCALAR_FUNCTIONS
+         .keys()

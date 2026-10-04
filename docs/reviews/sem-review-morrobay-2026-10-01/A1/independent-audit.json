@@ -1,0 +1,383 @@
+{
+  "artifacts_unchanged_during_audit": true,
+  "audit_control_correction": {
+    "comparison": "Compared complete orchestration content after excluding only the wrapper save timestamp; all command, identity, limits, outcome and closure fields agree",
+    "finding": "Wrapper adds recorded_utc when saving container-record.json; orchestration.json has no such field",
+    "original_artifacts_changed": false
+  },
+  "binary": {
+    "all_three_copies_match": true,
+    "byte_order": "little-endian",
+    "bytes": 162805992,
+    "elf_class": "ELF64",
+    "machine": "x86-64",
+    "sha256": "b2a7fc0f077fafc158aaa8a45ac32e5f2af5b3d96b8050c348421fa79442722f"
+  },
+  "build": {
+    "command": [
+      "cargo",
+      "build",
+      "--release",
+      "--locked",
+      "--bin",
+      "graphframes",
+      "--jobs",
+      "8"
+    ],
+    "incremental": "Disabled by frozen helper",
+    "jobs": 8,
+    "returncode": 0,
+    "source_helper_manifest_unchanged": true,
+    "target_dir": "/targets/sem-review-20261001/A1-run02/target",
+    "target_freshness": "Fresh run02 namespace and frozen helper freshness assertion before cargo; target outside source checkout",
+    "tools": {
+      "cargo": {
+        "command": [
+          "cargo",
+          "-V"
+        ],
+        "returncode": 0,
+        "stderr": "",
+        "stdout": "cargo 1.97.1 (c980f4866 2026-06-30)\n"
+      },
+      "cmake": {
+        "command": [
+          "cmake",
+          "--version"
+        ],
+        "returncode": 0,
+        "stderr": "",
+        "stdout": "cmake version 3.31.6\n\nCMake suite maintained and supported by Kitware (kitware.com/cmake).\n"
+      },
+      "cxx": {
+        "command": [
+          "c++",
+          "--version"
+        ],
+        "returncode": 0,
+        "stderr": "",
+        "stdout": "c++ (Debian 14.2.0-19) 14.2.0\nCopyright (C) 2024 Free Software Foundation, Inc.\nThis is free software; see the source for copying conditions.  There is NO\nwarranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n\n"
+      },
+      "rustc": {
+        "command": [
+          "rustc",
+          "-vV"
+        ],
+        "returncode": 0,
+        "stderr": "",
+        "stdout": "rustc 1.97.1 (8bab26f4f 2026-07-14)\nbinary: rustc\ncommit-hash: 8bab26f4f68e0e26f0bb7960be334d5b520ea452\ncommit-date: 2026-07-14\nhost: x86_64-unknown-linux-gnu\nrelease: 1.97.1\nLLVM version: 22.1.6\n"
+      }
+    }
+  },
+  "checks": {
+    "absent_sem-review-a1-build-run01": true,
+    "absent_sem-review-a1-build-run02": true,
+    "absent_sem-review-a1-stage-run01": true,
+    "absent_sem-review-a1-stage-run02": true,
+    "actual_clean_source": true,
+    "actual_detached_head": true,
+    "actual_docker_limits": true,
+    "actual_elf64_x86_64": true,
+    "actual_exact_head": true,
+    "actual_wrapper_hash": true,
+    "all333_source_files": true,
+    "artifact_inventory_unchanged": true,
+    "build_closure": true,
+    "cargo_lock": true,
+    "closed_original_lock_retained": true,
+    "expected_helper_manifest_arguments": true,
+    "failed_stage01_retained": true,
+    "help_commands_and_results": true,
+    "host_guest_producer_receipt_match": true,
+    "host_guest_support_build_graphframes_v2.py": true,
+    "host_guest_support_graphframes-rs-b4da56d.bundle": true,
+    "host_guest_support_source-manifest.json": true,
+    "host_orchestration_agreement": true,
+    "image_identity": true,
+    "locked_isolated_release_build": true,
+    "memory_peak": true,
+    "no_final_observation_errors": true,
+    "no_memory_events": true,
+    "original_support_unchanged": true,
+    "passed_receipts": true,
+    "producer_cgroup_limits": true,
+    "producer_source_identity_before_after_final": true,
+    "read_only_context_query": true,
+    "retained_cli_usage_and_flags": true,
+    "stage_closure": true,
+    "three_binary_copies_match": true,
+    "tool_outputs": true
+  },
+  "closure": {
+    "artifact_copy_returncode": 0,
+    "build_exit_code": 0,
+    "build_stopped_removed": true,
+    "container_absence_at_audit": {
+      "sem-review-a1-build-run01": {
+        "returncode": 1,
+        "stderr": "error: no such object: sem-review-a1-build-run01\n"
+      },
+      "sem-review-a1-build-run02": {
+        "returncode": 1,
+        "stderr": "error: no such object: sem-review-a1-build-run02\n"
+      },
+      "sem-review-a1-stage-run01": {
+        "returncode": 1,
+        "stderr": "error: no such object: sem-review-a1-stage-run01\n"
+      },
+      "sem-review-a1-stage-run02": {
+        "returncode": 1,
+        "stderr": "error: no such object: sem-review-a1-stage-run02\n"
+      }
+    },
+    "lock_retained": false,
+    "outer_timeout": false,
+    "producer_final_observation_errors": [],
+    "running_container_ids_at_audit": [],
+    "stage_passed_stopped_removed": true,
+    "transport_errors": []
+  },
+  "guest_filesystem_audit": {
+    "actual_file_inventory_sha256": "79e81e646e799bc9aa518f5990bce1e4c882897db1a84064bbaea45b8b4e3201",
+    "actual_hash_map_sha256": "a0f3f536307a79e6232e6110cf6a02d60a6dd9cdc4c084f69514f0f8a69ebe0b",
+    "binary": {
+      "bytes": 162805992,
+      "sha256": "b2a7fc0f077fafc158aaa8a45ac32e5f2af5b3d96b8050c348421fa79442722f"
+    },
+    "cargo_toml": "[package]\nname = \"graphframes-rs\"\nversion = \"0.0.1\"\nedition = \"2024\"\n\nexclude = [\n    \"/target/\",\n    \"testing/*\"\n]\n\n[dependencies]\n\n# Core dependencies\ndatafusion = \"55.0.1\"\nasync-trait = \"0.1\"\ntokio = {version = \"1\", features = [\"full\"] }\nurl = \"2\"\nfutures = \"0.3\"\nuuid = {version = \"1\", features = [\"v4\"] }\nlog = \"0.4\"\nrand = { version = \"0.9\", features = [\"std_rng\"] }\nwide = \"0.7\"\ndatasketches = { version = \"0.3.0\", default-features = false, features = [\"hll\"] }\n\n# CLI dependencies\nclap = { version = \"4.5\", features = [\"derive\", \"env\"], optional = true}\nenv_logger = { version = \"0.11\", optional = true }\nsnmalloc-rs = { version = \"0.7\", optional = true }\n\n[features]\ndefault = [\"cli\"]\ncli = [\"dep:clap\", \"dep:env_logger\", \"dep:snmalloc-rs\"]\n\n[[bin]]\nname = \"graphframes\"\npath = \"src/main.rs\"\nrequired-features = [\"cli\"]\n",
+    "checked_file_count": 333,
+    "detached": {
+      "returncode": 1,
+      "stderr": "",
+      "stdout": ""
+    },
+    "file_mismatches": [],
+    "git_tree_names_match": true,
+    "head": {
+      "returncode": 0,
+      "stderr": "",
+      "stdout": "b4da56dabe20bba8e29563e06acc5179b2113ce3\n"
+    },
+    "observed_utc": "2026-10-01T20:21:21.933440+00:00",
+    "producer_receipt_sha256": "6b7cf6436867506cde4df266502386f938cc5e25a30e8c92feda9af60403768e",
+    "retained_binary": {
+      "bytes": 162805992,
+      "sha256": "b2a7fc0f077fafc158aaa8a45ac32e5f2af5b3d96b8050c348421fa79442722f"
+    },
+    "status": {
+      "returncode": 0,
+      "stderr": "",
+      "stdout": ""
+    },
+    "support": {
+      "build_graphframes_v2.py": {
+        "bytes": 5645,
+        "sha256": "ec2b859877c55c153b76e8d66807d896c1bd1322be5c228905ac827c92bfce08"
+      },
+      "graphframes-rs-b4da56d.bundle": {
+        "bytes": 10025959,
+        "sha256": "6800d128b222ff895c1dda8953b1f814a18a1407d90ab610b67646ad4f857f8c"
+      },
+      "source-manifest.json": {
+        "bytes": 61509,
+        "sha256": "6afffe11503250e61d1ca54c6cb83e9b146b364399a0384142f3961e2d2dfa2b"
+      }
+    },
+    "tracked_count": 333,
+    "tracked_names_match": true
+  },
+  "help": {
+    "help": {
+      "command": [
+        "/targets/sem-review-20261001/A1-run02/target/release/graphframes",
+        "--help"
+      ],
+      "returncode": 0,
+      "stderr": "",
+      "stdout_sha256": "580d665873be2b5913c23dd1a91491c2104ad8970150db1e06be00f77648e58a"
+    },
+    "wcc_help": {
+      "command": [
+        "/targets/sem-review-20261001/A1-run02/target/release/graphframes",
+        "wcc",
+        "--help"
+      ],
+      "returncode": 0,
+      "stderr": "",
+      "stdout_sha256": "ee285427a14fe99c8f7025f01ec482f97c207fb6845413378c5d80520a2ab7bf"
+    }
+  },
+  "host": "Morrobay",
+  "host_artifact_inventory": {
+    "host-run01": {
+      "closure-audit.json": {
+        "bytes": 1108,
+        "sha256": "396bb63b378250f6a62a9d4eb7a13cdb8648609f34ff5ec827e788308def2b15"
+      },
+      "result.json": {
+        "bytes": 2248,
+        "sha256": "2d6dc2deed4a91da41c5d9c944601244b7793147b20293121cc90b046c23d262"
+      },
+      "stage.json": {
+        "bytes": 2258,
+        "sha256": "c0a7e37c28f5439beb1e097a2000cad33651912099a76683b40f8ed7d1a08a67"
+      },
+      "support-manifest.json": {
+        "bytes": 599,
+        "sha256": "c0f50b89345057427c5aca4c47c32d2302c3214eaca52a27f7c76a665bad7e0e"
+      }
+    },
+    "host-run02": {
+      "configuration.json": {
+        "bytes": 839,
+        "sha256": "cb5ea26363a9cbad919b76d10b8c8283692e0a348962e187bb3f82898ec81987"
+      },
+      "container-record.json": {
+        "bytes": 2353,
+        "sha256": "b768c904405655e16ad16a961a2b79aaf14b4fdffa2f5b20d75794d30af62d07"
+      },
+      "container/container.log": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "container/orchestration.json": {
+        "bytes": 2299,
+        "sha256": "4ba75e1c85fe616c23870ca95b3704fdcb429f77e61af7242bd0fe845a6af103"
+      },
+      "container/results/cargo-build.log": {
+        "bytes": 18776,
+        "sha256": "e55c10d810c4b49e23a305672b89961ecfc72b4a173de600dc74fe4f7cc59ae5"
+      },
+      "container/results/graphframes-linux-x86_64-b4da56d-release": {
+        "bytes": 162805992,
+        "sha256": "b2a7fc0f077fafc158aaa8a45ac32e5f2af5b3d96b8050c348421fa79442722f"
+      },
+      "container/results/receipt.json": {
+        "bytes": 148883,
+        "sha256": "6b7cf6436867506cde4df266502386f938cc5e25a30e8c92feda9af60403768e"
+      },
+      "result.json": {
+        "bytes": 645,
+        "sha256": "9132b4509729131e2fd71461e7617c8058f6e81e0949113d65215253d673b96a"
+      },
+      "stage.json": {
+        "bytes": 3883,
+        "sha256": "becafc2162bf82fe254e19ec25e02410d79f7b9b5a448ec5702dc44438cf558a"
+      },
+      "support-manifest.json": {
+        "bytes": 602,
+        "sha256": "6c61a32e571933c0084b14619f6b4f810a458112068dc177b12dc0fc9d54ccbd"
+      }
+    },
+    "support": {
+      "build_graphframes.py": {
+        "bytes": 3921,
+        "sha256": "9a461efe8770b53f2e920be1a20d81d6054f21b67bea1d0a09f7483cc91bbfaa"
+      },
+      "build_graphframes_v2.py": {
+        "bytes": 5645,
+        "sha256": "ec2b859877c55c153b76e8d66807d896c1bd1322be5c228905ac827c92bfce08"
+      },
+      "graphframes-rs-b4da56d.bundle": {
+        "bytes": 10025959,
+        "sha256": "6800d128b222ff895c1dda8953b1f814a18a1407d90ab610b67646ad4f857f8c"
+      },
+      "review-run02.json": {
+        "bytes": 648,
+        "sha256": "0692ab791acc83ed241adf6ced720f472ee9ded30afc291d8c9e666936120e35"
+      },
+      "run_build.py": {
+        "bytes": 5986,
+        "sha256": "7edfd1504f820de472618e112ea6312365c5d226d7da0f551882cd21c3a718f0"
+      },
+      "run_build_v2.py": {
+        "bytes": 8383,
+        "sha256": "ad5321bdfd4cd661c5bb9e8c25962a4071ddd6043a5938954f0492015b194eb9"
+      },
+      "source-manifest.json": {
+        "bytes": 61509,
+        "sha256": "6afffe11503250e61d1ca54c6cb83e9b146b364399a0384142f3961e2d2dfa2b"
+      }
+    }
+  },
+  "image": "sha256:f3518d652fbea8b9b9f9ebf9849277ca3bd39d0c21bb2c6e36fbaeaa2dc2678e",
+  "item": "A1",
+  "limitations": [
+    "Prebuild target freshness is established by the frozen helper and fresh namespace; the auditor did not observe the directory before compilation",
+    "Compiler and tool identities are retained command outputs; this audit did not rerun compilers or independently hash toolchain binaries",
+    "Stage ownership is checked from the frozen wrapper procedure and receipt because the container was already removed",
+    "No source, algorithm or benchmark was changed or executed by this audit; only filesystem hashing, git inspection and Docker read-only inspection were performed",
+    "Build diagnostic elapsed time does not establish algorithm performance",
+    "Board commit557a7565 is outside this audit; A2/A3 were not launched by this agent"
+  ],
+  "limits": {
+    "cargo_timeout_seconds": 4800,
+    "cpus": 16,
+    "cpuset": "0-15",
+    "docker_inspect": {
+      "CpuPeriod": 0,
+      "CpuQuota": 0,
+      "CpusetCpus": "0-15",
+      "Init": true,
+      "Memory": 34359738368,
+      "MemorySwap": 34359738368,
+      "NanoCpus": 16000000000,
+      "PidMode": "",
+      "PidsLimit": 1024
+    },
+    "memory_bytes": 34359738368,
+    "outer_timeout_seconds": 5400,
+    "pids_limit": 1024,
+    "producer_cgroup": {
+      "cpu.max": "1600000 100000",
+      "cpuset.cpus.effective": "0-15",
+      "memory.current": "18116608",
+      "memory.max": "34359738368",
+      "memory.swap.max": "0"
+    },
+    "swap_bytes": 0
+  },
+  "memory": {
+    "cgroup_peak_bytes": 5499604992,
+    "cgroup_peak_gib": 5.121906280517578,
+    "current_after_bytes": 2107506688,
+    "events_after": {
+      "high": 0,
+      "low": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_group_kill": 0,
+      "oom_kill": 0
+    },
+    "events_before": {
+      "high": 0,
+      "low": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_group_kill": 0,
+      "oom_kill": 0
+    },
+    "events_delta": {
+      "high": 0,
+      "low": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_group_kill": 0,
+      "oom_kill": 0
+    },
+    "scope": "Build-container lifetime includes build and help execution; not an algorithm memory qualification"
+  },
+  "outcome": "PASS_INDEPENDENT_A1_BUILD_AND_HELP_AUDIT",
+  "recorded_utc": "2026-10-01T20:21:24.075376+00:00",
+  "retained_failed_attempt": {
+    "build_never_created": true,
+    "classification": "prebuild staging harness failure: missing parent directory",
+    "closure_receipt_sha256": "396bb63b378250f6a62a9d4eb7a13cdb8648609f34ff5ec827e788308def2b15",
+    "original_helper_hashes_preserved": true,
+    "outcome": "error",
+    "path": "/Volumes/Apo/graph-tests/results/sem-review-20261001/A1/host-run01",
+    "separate_closed_lock": "/Volumes/Apo/graph-tests/results/sem-review-20261001/gate.lock.closed-A1-run01"
+  },
+  "scope": "Independent retained-evidence and current guest-filesystem audit of an unmodified external release build plus --help and wcc --help. No algorithm, correctness gate, timing comparison, dedicated-host performance result, A2/A3 launch or scaling qualification.",
+  "source": "b4da56dabe20bba8e29563e06acc5179b2113ce3"
+}

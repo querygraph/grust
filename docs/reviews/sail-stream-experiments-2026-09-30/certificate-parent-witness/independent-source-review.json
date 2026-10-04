@@ -1,0 +1,298 @@
+{
+  "recorded_utc": "2026-10-01T02:20:51.478072+00:00",
+  "outcome": "PASS_INDEPENDENT_PARENT_WITNESS_SOURCE_REVIEW",
+  "base": "fc094a0c25a49edeac2f9f0195aa973421a21a43",
+  "tree": "cd73d093230153857de196abc17ea8e98464149b",
+  "source_hashes": {
+    "examples/extensions/benchmarks/test_traversal_certificate.py": "c89f28a61ea06165d50a10392ea022ca5e5a59a507db00627e6c3d61b87b1cdd",
+    "examples/extensions/benchmarks/test_traversal_parent_witness.py": "09974df43e417f02058dd5f9cccf7c4d5ab4f09309b6c8cab13cc67b36ae38b9",
+    "examples/extensions/benchmarks/traversal_certificate.py": "e398f56bad0f2bb0b6f4606ac9099803dda64ce8b909a0b1303c75d8408f3b4d",
+    "examples/extensions/benchmarks/traversal_parent_witness.py": "f8c07e5e32bac3b19ddf81242329120a7854f8deb782a828f8e9dccfd6f52411"
+  },
+  "frozen_sha256": "37b11923fde7e51bbd993799262862f23da5e379fa66edadb067b84bf0fdeaba",
+  "candidate_patch_sha256": "5e904e3f9c8c96c201e57a41990226907cb75884e02ff92dd4118cda57364b71",
+  "unchanged_dependencies_sha256": {
+    "examples/extensions/benchmarks/traversal_cell.py": "8b02d35cc72e86cfdf2b476d9682ed9e3563515a5f2e8af2c8d20e7ef517616a",
+    "examples/extensions/graph-algorithms/src/pyspark_pecan/algorithms.py": "0d8d36918b8a16db14fd87933d5fc594d73a573fa33150bd2bcfd02055f7c81b",
+    "examples/extensions/graph-algorithms/src/pyspark_pecan/staging.py": "24e984f7de989a903fe34bed9f5d0479418046cf4dabe65287b9eda8acfad498"
+  },
+  "helper_hashes": {
+    "run_sql_gate.py": "d33de1ab62274ad5132e717ce7dbd3056cd36e10e1d68c924ccc73d83e3a40de",
+    "test_baseline.py": "76727a43afd191b136f89d7bbefd600dc4e7484ae71d27430043b5ece6a1f995",
+    "test_preconditions.py": "4514e837d7377bbfdb747aa7c84dbfc7238906f5a564d6031d8829ca533f41d3",
+    "test_work.py": "d1e60316df55dbe1179c9b53951055d3cb47aa61aad9a507e0e456e34fc8396a"
+  },
+  "source_proof_receipt_sha256": "4d58c3c32f4a25254f03eb87f357e38c386a7a582a0dc05906202888165240d8",
+  "blockers": [],
+  "production_review": [
+    {
+      "paths": [
+        "examples/extensions/benchmarks/traversal_certificate.py:24-59",
+        "examples/extensions/benchmarks/traversal_parent_witness.py:11-30"
+      ],
+      "finding": "Original output cardinality/domain, finite distances, source zero, endpoint/weight, overflow, reachability closure and all-edge tightness checks remain byte-identical. Fast selection requires integral id/hops and matching parent/id types. On the fast path integral ID equality preserves coverage injectively; cardinality/domain checks exclude null/duplicate/missing vertices."
+    },
+    {
+      "paths": [
+        "examples/extensions/benchmarks/traversal_parent_witness.py:20-46"
+      ],
+      "finding": "Explicit null tests, root self-parent/hop-zero, nonroot positive hops below V, left parent existence/reached checks and h(child)=h(parent)+1 establish a strictly decreasing finite parent chain. Tight-edge anti-join establishes each chosen directed edge under the already-constructed exact candidate/allowed expression. Signed IDs and parallel edges do not rely on ID order."
+    },
+    {
+      "paths": [
+        "examples/extensions/benchmarks/traversal_certificate.py:18-23",
+        "examples/extensions/benchmarks/traversal_certificate.py:62-64",
+        "examples/extensions/benchmarks/traversal_certificate.py:90-106"
+      ],
+      "finding": "max_rounds validation remains before actions; existing strict partition and same-session/unique-name/BIGINT schema helpers run before selection. The unchanged BFS witness handles absent/non-integral/unproved/over-cap metadata, preserving a shorter BFS path under the cap. Parent depth is reported separately; witness_rounds=None accurately means no BFS ran. No non-test consumers requiring integer witness_rounds were found in Python/Rust source search."
+    },
+    {
+      "paths": [
+        "examples/extensions/benchmarks/traversal_cell.py:107-119",
+        "examples/extensions/benchmarks/traversal_cell.py:140-165"
+      ],
+      "finding": "Caller and original parent validator are byte-identical to fc094a. The stricter, differently grouped legacy parent-edge numeric condition still runs after either certificate method. Existing reference policy is untouched. A direct certify call may retain its historical distance-certificate acceptance even when the later caller rejects malformed parent output."
+    },
+    {
+      "paths": [
+        "examples/extensions/benchmarks/test_traversal_parent_witness.py:45-189"
+      ],
+      "finding": "Actual-SQL fixtures cover all four integral hop widths, independent tiny oracle parity, cap trap, floating grouping and tolerance disagreement, null/missing/cyclic/oversized/root metadata, missing optional fields, disconnected zero cycle, all-edge shortcut/unreachable/overflow failures, output coverage, signed ID extrema, parallel/undirected edges, isolated root and schema/partition regressions."
+    }
+  ],
+  "retained_actual_sql_evidence": {
+    "baseline04": {
+      "receipt_sha256": "7afc463445706992d27202c422d0ed34c2f434d5f4ca031d80dc04557cfcbbd3",
+      "sql_xml_sha256": "e6b7c0277592522cbb5cce34004e1d665b919c1b1558f34eacfa0a85ee5be6bb",
+      "head": "fc094a0c25a49edeac2f9f0195aa973421a21a43",
+      "tree": "5abc3e30eadb878402b3a90bcbeb0a48ac8c4b25",
+      "outcome": "PASS",
+      "sql_counts_observed": {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "scope": "Local builtin SQL and Python certificate code only. Existing union CLI; no rebuild, remote workload, native wheel/cluster or timing verdict.",
+      "runtime_and_helper_pins": {
+        "/private/tmp/sail-resource-validation-union-target/host/debug/sail": "4b976fd7a809cb059c72a2119293f490105ff0ed375feaf0ccb5f3e5dad88662",
+        "/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/bin/python3.12": "7ab28aab7042141d3d97175edec3045ff15b5d0cbf885817c7c1ad0dad393f9f",
+        "/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/lib/libpython3.12.dylib": "51454eefef9d30acb598f19a0a8e0c5ef3641d5e81b3611d5f634343475321a5",
+        "/Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/resource-validation-union/sql_gate.py": "eaebc96443f9edc621adb1a937d7042ef3b8decaae757693f03872d7ad8fbb96",
+        "/Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/certificate-parent-witness/run_sql_gate.py": "cc9899ddec64237a2f2cfaa43449b999f6331a7726c7a86c929b0d2c1f9e616d"
+      }
+    },
+    "baseline-preconditions01": {
+      "receipt_sha256": "2435eb723fdb3619fe07fac7e2589143ac3cbe8132bf3a7f5d24bbe8ad45774d",
+      "sql_xml_sha256": "23deb7cd177c3fdbdc89fbc9a4d2584eb750f8e2a2e616f27c796431323eea22",
+      "head": "fc094a0c25a49edeac2f9f0195aa973421a21a43",
+      "tree": "5abc3e30eadb878402b3a90bcbeb0a48ac8c4b25",
+      "outcome": "PASS",
+      "sql_counts_observed": {
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "scope": "Local builtin SQL and Python certificate code only. Existing union CLI; no rebuild, remote workload, native wheel/cluster or timing verdict.",
+      "runtime_and_helper_pins": {
+        "/private/tmp/sail-resource-validation-union-target/host/debug/sail": "4b976fd7a809cb059c72a2119293f490105ff0ed375feaf0ccb5f3e5dad88662",
+        "/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/bin/python3.12": "7ab28aab7042141d3d97175edec3045ff15b5d0cbf885817c7c1ad0dad393f9f",
+        "/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/lib/libpython3.12.dylib": "51454eefef9d30acb598f19a0a8e0c5ef3641d5e81b3611d5f634343475321a5",
+        "/Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/resource-validation-union/sql_gate.py": "eaebc96443f9edc621adb1a937d7042ef3b8decaae757693f03872d7ad8fbb96",
+        "/Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/certificate-parent-witness/run_sql_gate.py": "b0dc664f6c9d7820b5ca1169e17e271f5749896093783c5c5e174e5775ecd4cb"
+      }
+    },
+    "candidate-preconditions01": {
+      "receipt_sha256": "4a483668712c963f090bec7628dd26d52442d75ebc35eea31ef5bb39b2b8d63c",
+      "sql_xml_sha256": "8317adfbd0b2e0944ce5204c4a10bec938cbf4ff5380f27c3581aefdc985258b",
+      "head": "fc094a0c25a49edeac2f9f0195aa973421a21a43",
+      "tree": "f9da2f74a7c2ecf0340b72f2f4fa5d4df3d39b68",
+      "outcome": "failed",
+      "sql_counts_observed": {
+        "tests": 6,
+        "failures": 6,
+        "errors": 0,
+        "skipped": 0
+      },
+      "scope": "Local builtin SQL and Python certificate code only. Existing union CLI; no rebuild, remote workload, native wheel/cluster or timing verdict.",
+      "runtime_and_helper_pins": {
+        "/private/tmp/sail-resource-validation-union-target/host/debug/sail": "4b976fd7a809cb059c72a2119293f490105ff0ed375feaf0ccb5f3e5dad88662",
+        "/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/bin/python3.12": "7ab28aab7042141d3d97175edec3045ff15b5d0cbf885817c7c1ad0dad393f9f",
+        "/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/lib/libpython3.12.dylib": "51454eefef9d30acb598f19a0a8e0c5ef3641d5e81b3611d5f634343475321a5",
+        "/Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/resource-validation-union/sql_gate.py": "eaebc96443f9edc621adb1a937d7042ef3b8decaae757693f03872d7ad8fbb96",
+        "/Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/certificate-parent-witness/run_sql_gate.py": "b0dc664f6c9d7820b5ca1169e17e271f5749896093783c5c5e174e5775ecd4cb"
+      }
+    },
+    "candidate-preconditions02": {
+      "receipt_sha256": "ac67c318e366dbb4f2257e6d826a81cdb28477d542d0ffb1265547671359304d",
+      "sql_xml_sha256": "db4fcc4778a442a140dd80f5ce7a0c9a93f7a7b5222178cb2a101f269a69f068",
+      "head": "fc094a0c25a49edeac2f9f0195aa973421a21a43",
+      "tree": "799e22a2c5104772fb9cf79f63ae106770f1d989",
+      "outcome": "PASS",
+      "sql_counts_observed": {
+        "tests": 13,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "scope": "Local builtin SQL and Python certificate code only. Existing union CLI; no rebuild, remote workload, native wheel/cluster or timing verdict.",
+      "runtime_and_helper_pins": {
+        "/private/tmp/sail-resource-validation-union-target/host/debug/sail": "4b976fd7a809cb059c72a2119293f490105ff0ed375feaf0ccb5f3e5dad88662",
+        "/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/bin/python3.12": "7ab28aab7042141d3d97175edec3045ff15b5d0cbf885817c7c1ad0dad393f9f",
+        "/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/lib/libpython3.12.dylib": "51454eefef9d30acb598f19a0a8e0c5ef3641d5e81b3611d5f634343475321a5",
+        "/Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/resource-validation-union/sql_gate.py": "eaebc96443f9edc621adb1a937d7042ef3b8decaae757693f03872d7ad8fbb96",
+        "/Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/certificate-parent-witness/run_sql_gate.py": "a71865f6ea133607349d71579356e08e0c0ec56113a60860e375b47c17388e75"
+      }
+    },
+    "baseline-work01": {
+      "receipt_sha256": "9a08d5c6391d1853deab77fa46eaadf51852962d96fe750120d249f8cc59f9a3",
+      "sql_xml_sha256": "c078c66ee266c2feadc90c287d8bb577d933658fa964312a53ad0823e16bcecd",
+      "head": "fc094a0c25a49edeac2f9f0195aa973421a21a43",
+      "tree": "5abc3e30eadb878402b3a90bcbeb0a48ac8c4b25",
+      "outcome": "PASS",
+      "sql_counts_observed": {
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "scope": "Local builtin SQL and Python certificate code only. Existing union CLI; no rebuild, remote workload, native wheel/cluster or timing verdict.",
+      "runtime_and_helper_pins": {
+        "/private/tmp/sail-resource-validation-union-target/host/debug/sail": "4b976fd7a809cb059c72a2119293f490105ff0ed375feaf0ccb5f3e5dad88662",
+        "/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/bin/python3.12": "7ab28aab7042141d3d97175edec3045ff15b5d0cbf885817c7c1ad0dad393f9f",
+        "/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/lib/libpython3.12.dylib": "51454eefef9d30acb598f19a0a8e0c5ef3641d5e81b3611d5f634343475321a5",
+        "/Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/resource-validation-union/sql_gate.py": "eaebc96443f9edc621adb1a937d7042ef3b8decaae757693f03872d7ad8fbb96",
+        "/Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/certificate-parent-witness/run_sql_gate.py": "b0dc664f6c9d7820b5ca1169e17e271f5749896093783c5c5e174e5775ecd4cb"
+      }
+    },
+    "candidate-work01": {
+      "receipt_sha256": "c5db45393524d5aaab71cb52fe198d7d4f324537cf9c92776b74e5b5a69ee823",
+      "sql_xml_sha256": "59d927e4eb26f527fb7e3791f72e76bc9ab7c1ef2723977ffdc516816a89c412",
+      "head": "fc094a0c25a49edeac2f9f0195aa973421a21a43",
+      "tree": "f9da2f74a7c2ecf0340b72f2f4fa5d4df3d39b68",
+      "outcome": "PASS",
+      "sql_counts_observed": {
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "scope": "Local builtin SQL and Python certificate code only. Existing union CLI; no rebuild, remote workload, native wheel/cluster or timing verdict.",
+      "runtime_and_helper_pins": {
+        "/private/tmp/sail-resource-validation-union-target/host/debug/sail": "4b976fd7a809cb059c72a2119293f490105ff0ed375feaf0ccb5f3e5dad88662",
+        "/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/bin/python3.12": "7ab28aab7042141d3d97175edec3045ff15b5d0cbf885817c7c1ad0dad393f9f",
+        "/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/lib/libpython3.12.dylib": "51454eefef9d30acb598f19a0a8e0c5ef3641d5e81b3611d5f634343475321a5",
+        "/Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/resource-validation-union/sql_gate.py": "eaebc96443f9edc621adb1a937d7042ef3b8decaae757693f03872d7ad8fbb96",
+        "/Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/certificate-parent-witness/run_sql_gate.py": "b0dc664f6c9d7820b5ca1169e17e271f5749896093783c5c5e174e5775ecd4cb"
+      }
+    },
+    "candidate01": {
+      "receipt_sha256": "81d888227aba9af097ec7c27085b5772740922a071f074bc1dee5680a708eb30",
+      "sql_xml_sha256": "5a9def1b5424b8f3b9d0afb8a543bf95ff6aae53b1cdf6c0d1be45c4581950f3",
+      "head": "fc094a0c25a49edeac2f9f0195aa973421a21a43",
+      "tree": "f9da2f74a7c2ecf0340b72f2f4fa5d4df3d39b68",
+      "outcome": "PASS",
+      "sql_counts_observed": {
+        "tests": 48,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "scope": "Local builtin SQL and Python certificate code only. Existing union CLI; no rebuild, remote workload, native wheel/cluster or timing verdict.",
+      "runtime_and_helper_pins": {
+        "/private/tmp/sail-resource-validation-union-target/host/debug/sail": "4b976fd7a809cb059c72a2119293f490105ff0ed375feaf0ccb5f3e5dad88662",
+        "/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/bin/python3.12": "7ab28aab7042141d3d97175edec3045ff15b5d0cbf885817c7c1ad0dad393f9f",
+        "/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/lib/libpython3.12.dylib": "51454eefef9d30acb598f19a0a8e0c5ef3641d5e81b3611d5f634343475321a5",
+        "/Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/resource-validation-union/sql_gate.py": "eaebc96443f9edc621adb1a937d7042ef3b8decaae757693f03872d7ad8fbb96",
+        "/Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/certificate-parent-witness/run_sql_gate.py": "cc9899ddec64237a2f2cfaa43449b999f6331a7726c7a86c929b0d2c1f9e616d"
+      }
+    }
+  },
+  "matched_work_counters": {
+    "baseline": {
+      "depth0": {
+        "execute_plan_iterator_calls": 30,
+        "graph_runs": 1,
+        "materializations": 3
+      },
+      "depth1": {
+        "execute_plan_iterator_calls": 36,
+        "graph_runs": 1,
+        "materializations": 5
+      },
+      "depth2": {
+        "execute_plan_iterator_calls": 43,
+        "graph_runs": 1,
+        "materializations": 7
+      },
+      "depth4": {
+        "execute_plan_iterator_calls": 57,
+        "graph_runs": 1,
+        "materializations": 11
+      },
+      "depth8": {
+        "execute_plan_iterator_calls": 85,
+        "graph_runs": 1,
+        "materializations": 19
+      },
+      "distance_only": {
+        "execute_plan_iterator_calls": 57,
+        "graph_runs": 1,
+        "materializations": 11
+      },
+      "cap_fallback": {
+        "execute_plan_iterator_calls": 36,
+        "graph_runs": 1,
+        "materializations": 5
+      }
+    },
+    "fixed_candidate": {
+      "depth0": {
+        "execute_plan_iterator_calls": 18,
+        "graph_runs": 0,
+        "materializations": 0
+      },
+      "depth1": {
+        "execute_plan_iterator_calls": 18,
+        "graph_runs": 0,
+        "materializations": 0
+      },
+      "depth2": {
+        "execute_plan_iterator_calls": 18,
+        "graph_runs": 0,
+        "materializations": 0
+      },
+      "depth4": {
+        "execute_plan_iterator_calls": 18,
+        "graph_runs": 0,
+        "materializations": 0
+      },
+      "depth8": {
+        "execute_plan_iterator_calls": 18,
+        "graph_runs": 0,
+        "materializations": 0
+      },
+      "distance_only": {
+        "execute_plan_iterator_calls": 57,
+        "graph_runs": 1,
+        "materializations": 11
+      },
+      "cap_fallback": {
+        "execute_plan_iterator_calls": 37,
+        "graph_runs": 1,
+        "materializations": 5
+      }
+    },
+    "scope": "Only certify local-client ExecutePlan iterator, GraphAlgorithms._run and StagingRun.materialize counters. Not DataFusion job/task counts, server work, elapsed time, peak memory or later unchanged parent-output validation. Cap-fallback36 to37 is retained; distance-only57 is unchanged."
+  },
+  "limits": [
+    "This is a source approval for the frozen staged tree, not a verdict on the later commit or final expanded gate.",
+    "Final 337-unit/71-SQL expected counts require the new candidate and exact-SHA receipts; earlier passing gates name earlier trees and remain scoped to those trees.",
+    "Review reran no SQL, build, workload or remote-host command; it rehashed source and parsed retained test XML/receipts.",
+    "Actual SQL uses the pinned existing local union CLI, not the Linux561 runtime, a rebuilt wheel or process/multi-host cluster.",
+    "The benchmark uses immutable Parquet output. Removing witness staging does not establish atomic correctness over arbitrary concurrently mutating or nondeterministic DataFrames; prior certificate actions were also separately evaluated.",
+    "The fast proof removes checkpoint materializations, but no full-query speed or memory improvement follows from client call counts alone."
+  ],
+  "reviewer_environment_note": "Default local Python3.14 XML parsing failed due its pyexpat/system-libexpat symbol mismatch; metadata parsing was repeated successfully with /usr/bin/python3. No subject test failed or was rerun by this reviewer."
+}

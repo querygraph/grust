@@ -1,0 +1,45 @@
+{
+  "recorded_utc": "2026-09-30T22:59:15.504179+00:00",
+  "outcome": "PASS_INDEPENDENT_SOURCE_REVIEW",
+  "repository": "querygraph/sail",
+  "base_head": "200d1cf8eb1db5e9057e09e071ebd57391f4b376",
+  "frozen_index_tree": "721d0293c3e74c789a26a9add7fe9b91ac2e04d4",
+  "patch_sha256": "d916681049144a994c214688d98d856962e174b46b84c310c357d5ecca75a3ee",
+  "source_hashes": {
+    "examples/extensions/argentea/src/bfs.rs": "b7a38eec34fbcd5ff439a044ae42337ed3b6ae84a8813b58ffdd5bb4c8b02e37",
+    "examples/extensions/argentea/src/bfs/initialization.rs": "29bc69730f2995ca81d11f49b04bb41f89983e3a445a9d86cd6e0983743faca4",
+    "examples/extensions/argentea/src/lib.rs": "6dc76c907932a08f79c89e39ac9e8f6e6b21b13cfb43933d78d8a21b81d73970",
+    "examples/extensions/argentea/src/sssp.rs": "bace12b11a9e392d1f5a005b9d552485f994696d6383241336ecb89b924058ec",
+    "examples/extensions/argentea/src/sssp/partition.rs": "aa23b37526672fd9054f8cf2aff8954033aa96825eab026db2d2484de3e36bfe",
+    "examples/extensions/argentea/src/sssp/partition/initialization.rs": "0457989b38122d61b05861f86eeea1b902d8b68254373f20d62894ac5cdb1dbc",
+    "examples/extensions/argentea/tests/initialization.rs": "d88687b99de4947e0ac7a905f5fb5934424fcd0fb22c38021eef691c2a5c0aee",
+    "examples/extensions/argentea/tests/initialization_bfs.rs": "25a885db358dde81d3c4fe42866faa2be7f0c65ba443e8d372ca433aa5d2024c",
+    "examples/extensions/argentea/tests/initialization_support/sssp.rs": "bcf99d97f3d81f71ac16838fabd6d17126289db2d519e26cdc461f8e1de76735",
+    "examples/extensions/argentea/tests/sssp.rs": "905b903ffe6da58d68e2c1a6b93fc1707c7e47f9e991a6cb1170d52ca6c8c290",
+    "examples/extensions/nutmeg/src/argentea/bfs/input.rs": "59f8abfe10b2b6dc036a5bdd7ca36be46e66eab4d3532b7bee624f6bed014ddb",
+    "examples/extensions/nutmeg/src/argentea/bfs/tests.rs": "ec9d8599da2f8e734be8acd6cc3d6528dd9175f92d2161cc7e072d64d7566f1e",
+    "examples/extensions/nutmeg/src/argentea/bfs/tests/initialization.rs": "7514b2d68e8619a9ec27e083835a0fade7f133662f0b359ac32397adc2fc7c26",
+    "examples/extensions/nutmeg/src/argentea/sssp/input.rs": "9d6612fc480720e401d95e60d162c8fa836826d2f7abe20e3e0dd0dc173b4eb8",
+    "examples/extensions/nutmeg/src/argentea/sssp/tests.rs": "64dd51ee3ff5757a83ede1293fb73c5c3e2982aa17d48f285a202ff843a6c3dc",
+    "examples/extensions/nutmeg/src/argentea/sssp/tests/initialization.rs": "07abc316cd92ad54ef84bf974da2e4f74d16082a6ed5414bb68fcc977d5967fb"
+  },
+  "gate_receipt_sha256": "5f7ed2647ca9111965c470c99f8bfe391094e84fdafd4eef42872e738aad8319",
+  "reviewer_execution": "Read-only source and retained test-output review; no independent Cargo build, benchmark, remote execution or workload. Candidate tree verdict, not a new commit verdict.",
+  "checks": [
+    "Existing build delegates prepare then finish; options and CSR validation precede original label/frontier initialization. CSR copies input independently and rejects duplicate vertices; validated vertex length is unchanged.",
+    "Nutmeg drops both raw vectors before their MemoryAccount, and drops all three before finish. Input order, CSR, protocol and frontier semantics unchanged by inspection.",
+    "Prepared opaque structs now declare adjacency before Resources. Rust field drop order releases CSR storage/admission before sole Resources host lease on abandonment. Destructured finish bindings drop adjacency before Resources on error.",
+    "Retained last-owner failure records 28680 live admitted bytes at early host lease release before fix. New test moves the sole Resources owner, drops raw input, and checks lease callback observed zero admission for BFS/SSSP abandonment and cancelled finish.",
+    "All 16 candidate receipt source fingerprints match frozen tree. Full candidate receipts report core120/native51 tests ordinary and saturated; these are author-executed gates, inspected rather than rerun."
+  ],
+  "resolved_finding": {
+    "kind": "Host lease could be dropped before retained BFS CSR admission when last prepared owner was abandoned",
+    "before_failure_log_sha256": "c8419d1bd847d4958683e780c39525f13c2bdc4ca975c6b6df4255e6019ed688",
+    "fix": "Place adjacency before Resources in both preparation structs; pin last-owner abandonment and cancellation."
+  },
+  "limits": [
+    "No Linux, process-cluster, RSS or throughput qualification here. Requested allocation/admission counters are not full runtime memory measurements.",
+    "Native adapter fixtures target controlled input-admission overlap; core fixtures exercise nonempty adjacency and exact outputs. No broad source refactor approved."
+  ],
+  "remaining_blockers": []
+}

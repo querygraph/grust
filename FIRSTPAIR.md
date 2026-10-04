@@ -78,3 +78,15 @@ central deployment machinery in this repository.
 When build behavior changes, update `book.build.json` and source-owned hooks,
 then run the unified build and its validators. When library identity or policy
 changes, update this file and the central catalog in the same logical change.
+
+## Standalone extension review editions
+
+The extension review guide and its host implementation companion use the same
+central builder with explicit source-owned configurations:
+`docs/extensions-review/book.build.json` and
+`docs/extensions-host-review/book.build.json`. Their `dist/` directories contain
+Markdown, PDF and EPUB reference editions with complete code listings. Run
+`docs/extensions-review/build.sh` for both. These are review documents, not a
+replacement edition of the Grust book; they do not change this contract's
+catalog slug, shelf or main-book configuration. No library publication follows
+from building them.

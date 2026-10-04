@@ -1,0 +1,23 @@
+{
+  "recorded_utc": "2026-09-30T17:14:00.796979+00:00",
+  "command": "ssh -o BatchMode=yes morrobay 'PATH=/usr/local/bin:/usr/bin:/bin /usr/local/bin/colima --profile sail-gate ssh -- sudo dmesg'",
+  "dmesg_sha256": "8240947a650ed728b5a2cfe1cce498c779b941575e22497091bab89feff9df40",
+  "container_id": "4fe816b778a4a857325219ff9b9ae64d2de7f730f1ea7d50149bb72e85b6c011",
+  "kernel_victim_pid": 130101,
+  "kernel_kill_monotonic_seconds": 131805.374507,
+  "kernel_victim_anon_rss_kib": 52138228,
+  "kernel_victim_file_rss_kib": 72704,
+  "driver_container_pid": 56,
+  "worker_container_pids": {
+    "1": 173,
+    "2": 174
+  },
+  "observations": [
+    "Kernel cgroup ID equals retained Docker create/inspect ID.",
+    "Kernel memcg OOM kills Sail PID130101.",
+    "First scan spanning kill (131805.339861006 to131806.427559442) omits worker2 PID174 while driver56 and worker1 PID173 remain.",
+    "Subsequent scans retain worker1 until client cleanup."
+  ],
+  "inference": "Worker2 was the OOM victim. Linux/container PID namespace mapping was not recorded live, but kernel identity, memory and disappearing worker agree.",
+  "scope": "This replay only; does not establish cause of earlier no-OOM stream losses."
+}

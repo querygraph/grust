@@ -1,0 +1,605 @@
+{
+  "recorded_utc": "2026-09-30T21:18:19.887346+00:00",
+  "outcome": "SOURCE_REVIEW_COMPLETE_DOCUMENTATION_CORRECTIONS_REQUIRED",
+  "scope": "Read-only pinned-source review; no build, algorithm execution, remote workload, public message, shared prose edit or publication. Only this owned evidence subtree is written.",
+  "reviewed_grust_commit": "7bb00a299db9a24c35a47022614d6f572309b9a2",
+  "external_runtime_source": "b4da56dabe20bba8e29563e06acc5179b2113ce3",
+  "external_results_commit": "ba2fdd8f51fa7fafdca15012d2741f5f8d80c024",
+  "sail_source_commit": "200d1cf8eb1db5e9057e09e071ebd57391f4b376",
+  "published_wcc_receipt_extract": {
+    "params": {
+      "max_memory": "30G",
+      "num_workers": 16,
+      "checkpoint_dir": "/home/ubuntu/nvm/gfwd/wcc_graph500-24",
+      "undirected": false,
+      "weighted": false,
+      "runs": 5,
+      "warmup": 1,
+      "target_samples": 300,
+      "align": "dtw",
+      "disk_mode": "du",
+      "cli_args": [
+        "--seed",
+        "42"
+      ]
+    },
+    "environment": {
+      "timestamp": "2026-09-29T09:11:18.830607+00:00",
+      "platform": "Linux-7.0.0-1006-aws-x86_64-with-glibc2.43",
+      "python": "3.14.4",
+      "cpu_count": 16,
+      "gnuplot": true,
+      "git_commit": "b4da56dabe20bba8e29563e06acc5179b2113ce3"
+    },
+    "run_returncodes": [
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  "runtime_results_boundary": {
+    "compared_paths": [
+      "src/main.rs",
+      "src/utils/options.rs",
+      "src/lib.rs",
+      "src/algorithm/connectivity/connected_components.rs",
+      "src/algorithm/pregel.rs",
+      "src/memory/hash_partitioned.rs",
+      "src/memory/parquet_checkpointer.rs",
+      "benches/python/main.py",
+      "benches/python/monitor.py",
+      "Cargo.lock"
+    ],
+    "changed_paths": [
+      "src/memory/parquet_checkpointer.rs"
+    ],
+    "interpretation": "Use b4 runtime code for execution claims. ba2 is result publication; its checkpointer source differs. Receipt git_commit is checkout identity, not independent proof of executed binary bytes."
+  },
+  "findings": [
+    {
+      "severity": "P1 documentation/architecture premise",
+      "document_lines": [
+        394,
+        419
+      ],
+      "problem": "A library entry point does not settle explicit per-action Sail submission; the new closure contradicts the retained distributed-adapter requirements.",
+      "evidence_ids": [
+        "library",
+        "wcc",
+        "direct_local_writer",
+        "sail_extension"
+      ],
+      "correction": "Sem identifies an existing Rust library entry point, GraphFrame.pagerank() and connected_components(). Embedding and distributed per-action Sail submission remain an engineering task requiring placement, codecs, cancellation, resource/ownership and checkpoint qualification. Preserve Sem attributed quotation."
+    },
+    {
+      "severity": "P2 reproducibility",
+      "document_lines": [
+        279,
+        282,
+        483,
+        494
+      ],
+      "problem": "Settings are not all CLI flags and SMJ preference is not an observed universal physical-plan guarantee.",
+      "evidence_ids": [
+        "cli",
+        "options",
+        "benchmark_command",
+        "wcc",
+        "pregel",
+        "df_join_choice"
+      ],
+      "correction": "Record WCC randomized affine-hash contraction,seed42,minimum-original-label output,per-forward-round reps+edges writes and backward-frontier writes. Record prefer_smj=true/prefer_hash_join=false as source configuration; capture optimized plans/spill in new pilot. num_workers means DataFusion target partitions. CLI carries checkpoint directory,not interval."
+    },
+    {
+      "severity": "P2 identity/representation contract",
+      "document_lines": [
+        437,
+        449
+      ],
+      "problem": "External i64 identity and checked dense internal indices are conflated; wide fallback is proposed,not implemented.",
+      "evidence_ids": [
+        "library",
+        "grust_adjacency",
+        "grust_projection",
+        "argentea_adjacency",
+        "argentea_weighted",
+        "banda_extra_bfs_csr"
+      ],
+      "correction": "Require exact signed-i64 external IDs and endpoints,including sparse/negative/extreme values. Permit a disclosed lossless dense encoding only after checked bounds and full mapping/build cost are included. Keep arc offsets wide in the proposed design. Existing0.23 generic projection rejects excessive nodes/arcs and has no wide fallback; Argentea currently uses i64 targets/usize offsets. Compare the proposed wide and dense variants without describing a lossless representation as semantic narrowing."
+    },
+    {
+      "severity": "P2 remaining evidence boundary",
+      "document_lines": [
+        271,
+        283,
+        483,
+        494
+      ],
+      "problem": "URLs and source defaults do not supply historical input hashes,binary/toolchain identity or actual plans. Identifying lib.rs does not close the Sail adapter question.",
+      "evidence_ids": [
+        "benchmark_command",
+        "dataset_downloader",
+        "external_manifest"
+      ],
+      "correction": "Treat Sem confirmations as attributed answers; collect input hashes,binary/toolchain/allocator/configuration and plans in StageA. Remaining source/integration questions are ours to verify and need not be retold by Sem."
+    }
+  ],
+  "neutrality_boundary": "Different disclosed join strategies or lossless internal representations can be compared under matched input/output/resource/timing contracts; they must not be silently represented as the same execution strategy or accepted/rejected to predetermine a named-engine outcome.",
+  "explicit_limits": [
+    "No claimed large-graph ID remapping control was executed.",
+    "The conceptual dense mapping of arbitrary i64 IDs to0..N-1 preserves identity if round trips and endpoint mappings are exact; actual proposed adapter remains unimplemented.",
+    "Vertex/isolate/dedup and write-cost claims are reviewed separately by root; no cross-dataset conclusion is drawn here.",
+    "External main moved during fetch; all source claims remain pinned to b4 and ba2."
+  ],
+  "sources": [
+    {
+      "id": "sem_new_answers",
+      "repository": "/Users/alexy/src/grust",
+      "commit": "7bb00a299db9a24c35a47022614d6f572309b9a2",
+      "path": "docs/SEM-REVIEW-2.md",
+      "sha256": "73c5e73366904d2f2a03298ca44843d1b0ef7c7ac96f95c0ba791bd39e653740",
+      "git_blob": "8afe1fc8be18b71ff2a3d3d1b90ac9fc59f15843",
+      "line_spans": [
+        {
+          "first": 60,
+          "last": 91,
+          "sha256": "6c7c136212206dd36c896af3dde93714982e69f531163b26294a6de77cc9950b"
+        },
+        {
+          "first": 269,
+          "last": 292,
+          "sha256": "b4a879b6184cdf8a4beb6b2a889b8c6209bdf7ac64aa55785a876c70a5f3350d"
+        },
+        {
+          "first": 394,
+          "last": 419,
+          "sha256": "8bfb23d7dec21fbd88b83651aa7f6a3f752fd43660767388ad32095f6c105c1e"
+        },
+        {
+          "first": 437,
+          "last": 449,
+          "sha256": "7e7e2ddb932a0ce15977384d975c7e939b0d0982fef3ca81e57ae2f9fe510e51"
+        },
+        {
+          "first": 483,
+          "last": 494,
+          "sha256": "79e833ebfe32f71108563f99f401e16f5e333cfcd2d76bf17cd67b7b2e6c6a72"
+        }
+      ],
+      "fact": "Attributed answers identify library and CLI; author adds stronger adapter-closure, join, and representation claims assessed below. Review binds committed7bb, not later shared edits."
+    },
+    {
+      "id": "cli",
+      "repository": "/private/tmp/graphframes-rs-plan-review",
+      "commit": "b4da56dabe20bba8e29563e06acc5179b2113ce3",
+      "path": "src/main.rs",
+      "sha256": "5e8e871ed7181de913b2bd9f01d776dd01db6a07edb12c2ce8d5d5fca4b2a596",
+      "git_blob": "5fa6bda089738bcccee4d5ef03c972a6c2be8f07",
+      "line_spans": [
+        {
+          "first": 65,
+          "last": 155,
+          "sha256": "f4d1130b38bed801b53ca0217c62639d41df9aed8d04b0fb3bab92dd45eb23c4"
+        },
+        {
+          "first": 183,
+          "last": 191,
+          "sha256": "c63b48489123b3fab7d7b26be7cfe20853d7494620d8246d28b3b9867fd1ba35"
+        },
+        {
+          "first": 512,
+          "last": 551,
+          "sha256": "5de9281e8e563bb0f8bbb6ff12b1ec96c6b94c4f790dfc06ed8828a36b2ff971"
+        },
+        {
+          "first": 699,
+          "last": 725,
+          "sha256": "f81597d8b10fa2f6df9b64b3e6c5779a66f30cdfacec532724200c90f7182e97"
+        },
+        {
+          "first": 753,
+          "last": 774,
+          "sha256": "99e9e4d16da7a85adf8aa76d6c529f81074fea8198d3c67507913aa819695e6d"
+        }
+      ],
+      "fact": "CLI exposes pool/partitions/checkpoint directory. WCC selects connected_components with supplied seed. DataFusion SessionConfig.from_env is modified to target_partitions and prefer_hash_join=!default.prefer_smj, with FairSpillPool. No checkpoint-interval CLI parameter in CommonArgs or Wcc."
+    },
+    {
+      "id": "options",
+      "repository": "/private/tmp/graphframes-rs-plan-review",
+      "commit": "b4da56dabe20bba8e29563e06acc5179b2113ce3",
+      "path": "src/utils/options.rs",
+      "sha256": "3e69bbba9a5b8e619d640b7fa15b5eace6bf00215d89bc66c4160d4143b60b6b",
+      "git_blob": "5c4c66623d240df75dd4e240c17414f4db09f01e",
+      "line_spans": [
+        {
+          "first": 5,
+          "last": 20,
+          "sha256": "a006e90151e634c9426dd8348fe483dbb8f33a8a7433d10b09464fe5f2cfb576"
+        }
+      ],
+      "fact": "GraphFramesConfig defaults prefer_smj=true. scoped_ctx builds a DataFusion SessionContext using copied configuration and same RuntimeEnv; this is not Sail job submission."
+    },
+    {
+      "id": "benchmark_command",
+      "repository": "/private/tmp/graphframes-rs-plan-review",
+      "commit": "b4da56dabe20bba8e29563e06acc5179b2113ce3",
+      "path": "benches/python/main.py",
+      "sha256": "6b5f0a7365feada8afd4a75204c00910ffc32210b12ed898f3300c54fbb7585f",
+      "git_blob": "159a1db5965bf40ed5ba49a21d16b962eda58f13",
+      "line_spans": [
+        {
+          "first": 47,
+          "last": 58,
+          "sha256": "80ba530eb5bd6a626bda960b950294c79f46a8e2305035e5e64aed3b716fcf5d"
+        },
+        {
+          "first": 108,
+          "last": 123,
+          "sha256": "c31085cab54b437b87af0ca1d853d35c096b7dce4e3cd07e658ef6cccc4ee496"
+        },
+        {
+          "first": 126,
+          "last": 151,
+          "sha256": "e1b65a2245ae38c720366b7ca09c43ddb338cd9fef74d6406405b1e0e678a8bb"
+        },
+        {
+          "first": 163,
+          "last": 178,
+          "sha256": "9142b0781749a439849404a9dc8f8ae846e3cd9fc2f76ea1c254069718175d1b"
+        },
+        {
+          "first": 214,
+          "last": 237,
+          "sha256": "abd93b3392150aced0681bb66752d55eff54dbe0bb7275bf2130775382fb1d56"
+        }
+      ],
+      "fact": "Benchmark explicitly supplies WCC seed42, PageRank max_iter10/tol0.01, pool/partitions/directory/output. environment_info records checkout git HEAD, not executable hash."
+    },
+    {
+      "id": "timer",
+      "repository": "/private/tmp/graphframes-rs-plan-review",
+      "commit": "b4da56dabe20bba8e29563e06acc5179b2113ce3",
+      "path": "benches/python/monitor.py",
+      "sha256": "81b4264383579f3b3499e9053cf60a5af394821b2f973bdae455f6431b0cfdae",
+      "git_blob": "062318f81e9bc01a1784ac14f8eea5c467ddaea3",
+      "line_spans": [
+        {
+          "first": 118,
+          "last": 147,
+          "sha256": "04b23b5a76d13648ca146a0e269ef6db15779bf6fff64b094536885e8630ccfe"
+        }
+      ],
+      "fact": "perf_counter starts before Popen and elapsed ends after proc.wait; process launch through exit, including algorithm input reads/output writing. Downloads and cargo build are outside this measured child interval."
+    },
+    {
+      "id": "library",
+      "repository": "/private/tmp/graphframes-rs-plan-review",
+      "commit": "b4da56dabe20bba8e29563e06acc5179b2113ce3",
+      "path": "src/lib.rs",
+      "sha256": "274301948bf1dc6728c4fa231c9b0a613272d1c2992f4ea8b30990ec004b0a69",
+      "git_blob": "9c1e08f136c0e96c87bd349c8e054eb7939b7c03",
+      "line_spans": [
+        {
+          "first": 75,
+          "last": 103,
+          "sha256": "c92ee7413a721fc9786f149d8b73323bb5ac90a478c4e6d2243e5343b820938c"
+        }
+      ],
+      "fact": "GraphFrame stores DataFusion DataFrames and requires Int64 ID/src/dst schemas. An in-process Rust entry point is established; no Sail dispatcher contract is established."
+    },
+    {
+      "id": "wcc",
+      "repository": "/private/tmp/graphframes-rs-plan-review",
+      "commit": "b4da56dabe20bba8e29563e06acc5179b2113ce3",
+      "path": "src/algorithm/connectivity/connected_components.rs",
+      "sha256": "b244af7d744d39b084ded2d733f5361b3e5b9236ed964546d38ab04a776537fa",
+      "git_blob": "56a36cbf947b4648bb9a93453ca78feba53db703",
+      "line_spans": [
+        {
+          "first": 1,
+          "last": 13,
+          "sha256": "64aaffe7b4ce182dfe6a31046536a7a5adf39eeedcbe173599271c52bb5a5b82"
+        },
+        {
+          "first": 50,
+          "last": 67,
+          "sha256": "95b91b2c5c8c0d5f3834a61d0e5031d076a8261851990c3c5337f6e79e4a8035"
+        },
+        {
+          "first": 147,
+          "last": 185,
+          "sha256": "a62db7f4ad69540d1c92b455d594fa808585ab84fefdec60ea9e22c57ca6e02d"
+        },
+        {
+          "first": 192,
+          "last": 208,
+          "sha256": "0d75720400cb2b6fe99662a55808835ae10a06d036613638ad6fb37fba545220"
+        },
+        {
+          "first": 244,
+          "last": 285,
+          "sha256": "8ac95c177026ac26a1cf64b45a0ccecb7f0c7b43af69a1b839cbefffda960857"
+        },
+        {
+          "first": 298,
+          "last": 323,
+          "sha256": "9df7c28d7fe46ce891c7d96fbc4442573c752d5f0dfcb7fc1a963eb8fbdf02af"
+        },
+        {
+          "first": 386,
+          "last": 396,
+          "sha256": "dfbfe9fe12af0907e48e4296424bc1c853a98e8a460675b3754e8f0b3cbfda53"
+        }
+      ],
+      "fact": "Randomized affine-hash contraction, seed42 builder default and minimum-original-label output default. Every forward round pushes reps and relabeled edges to Parquet and counts edges; backward steps push frontier. This scheduling is algorithm source, not a CLI checkpoint interval."
+    },
+    {
+      "id": "pregel",
+      "repository": "/private/tmp/graphframes-rs-plan-review",
+      "commit": "b4da56dabe20bba8e29563e06acc5179b2113ce3",
+      "path": "src/algorithm/pregel.rs",
+      "sha256": "2ad6437cee0309e5c2dbce54ded6dc8e832b5763fe831248df4f4e0bb5640105",
+      "git_blob": "692366c7ab6cf14ba418cb681dbb21a2ec27e7ce",
+      "line_spans": [
+        {
+          "first": 230,
+          "last": 245,
+          "sha256": "93c65d08b9fc063081386e8f9b5240af19a58058fa711508332144ea63835ec9"
+        },
+        {
+          "first": 466,
+          "last": 502,
+          "sha256": "771532cc893ce253d31a31e24fa70b624209c58f0df571fa6f0342acb113f33f"
+        }
+      ],
+      "fact": "Pregel also uses concrete SessionContext and writes aggregated messages plus presorted vertex state during each iteration. No generic external per-action executor hook is shown by these APIs."
+    },
+    {
+      "id": "checkpointer",
+      "repository": "/private/tmp/graphframes-rs-plan-review",
+      "commit": "b4da56dabe20bba8e29563e06acc5179b2113ce3",
+      "path": "src/memory/parquet_checkpointer.rs",
+      "sha256": "a18e56dfac5a1b48a08da07ea0282b3e35f401c27144a9135b2689235edbf84b",
+      "git_blob": "eb6c71b87c9e1c07a91f0d2fe46aa30d2c0dae81",
+      "line_spans": [
+        {
+          "first": 77,
+          "last": 102,
+          "sha256": "653494b0af51d4382e7b6f6cd28b23dc5ab640d9d2637d4e23a80e554a1b368e"
+        },
+        {
+          "first": 105,
+          "last": 130,
+          "sha256": "edd67ea89e392eb93e3b616762839dcd0677ba8dbce68831ff66a7671629fa6f"
+        }
+      ],
+      "fact": "Plain push writes Parquet then reads back if files exist. push_pre_sorted calls custom hash-partitioned writer/readback; empty handling and action boundaries are library-owned."
+    },
+    {
+      "id": "direct_local_writer",
+      "repository": "/private/tmp/graphframes-rs-plan-review",
+      "commit": "b4da56dabe20bba8e29563e06acc5179b2113ce3",
+      "path": "src/memory/hash_partitioned.rs",
+      "sha256": "4745b5647da8cf9789732814e3993ddf605d8d5845fe39bfbaca3c4e647d02c1",
+      "git_blob": "077afaee83b152e6bba890821f2cb9bd8ed096bc",
+      "line_spans": [
+        {
+          "first": 36,
+          "last": 70,
+          "sha256": "55492a4ef6d8c0fcf0e6f16c9176b5bac0b8ba2118682aa1ef852f18ee045461"
+        },
+        {
+          "first": 78,
+          "last": 121,
+          "sha256": "6639cb2b8e426ca2b43a943fd8415f7cfa4df59a1f066e9bf1d0a4fa0a5d0240"
+        }
+      ],
+      "fact": "Custom writer obtains a DataFusion physical plan, directly calls plan.execute(i,ctx.task_ctx()) and spawns local write tasks; embedding unchanged is not distributed Sail submission."
+    },
+    {
+      "id": "pagerank_api",
+      "repository": "/private/tmp/graphframes-rs-plan-review",
+      "commit": "b4da56dabe20bba8e29563e06acc5179b2113ce3",
+      "path": "src/algorithm/centrality/pagerank.rs",
+      "sha256": "30d233c1ac5f8fe86411a9ed6eb96542eada12a5ce8d8c68a692272e27ea9f13",
+      "git_blob": "0cef7e90d08e82aa530695933c37896f64d01576",
+      "line_spans": [
+        {
+          "first": 172,
+          "last": 200,
+          "sha256": "ac0e501049684cecdaba191e79488c58e156336403abb393e3a45bcd1fd57780"
+        },
+        {
+          "first": 227,
+          "last": 250,
+          "sha256": "7cc4ea625c5e4d9136dfd3b306318fce34702286e0f779303711b643f4344e9e"
+        }
+      ],
+      "fact": "Actual public method spelling is pagerank(). Fixed-step path still prunes participation by tolerance; library method availability does not change earlier finite-PageRank parity finding."
+    },
+    {
+      "id": "dataset_downloader",
+      "repository": "/private/tmp/graphframes-rs-plan-review",
+      "commit": "b4da56dabe20bba8e29563e06acc5179b2113ce3",
+      "path": "benches/python/datasets.py",
+      "sha256": "0add33adc046e584331a42feaca7f6f39d7dcc1e24e3748966f161e4e7bdaa2b",
+      "git_blob": "3f3df0968300f6e746a7f237f58df6aa0f746b11",
+      "line_spans": [
+        {
+          "first": 19,
+          "last": 23,
+          "sha256": "606ce473f24c06a816e942a8251b2ff4ba209f6d1a4badd32ad38402da85eadc"
+        },
+        {
+          "first": 124,
+          "last": 145,
+          "sha256": "8f47da2c8443470b9fbeef11d0d509a37e8b9e38da340385f57389171a8bf9d9"
+        }
+      ],
+      "fact": "Uses official Parquet URL template but skips any already-existing nonempty local file without hash verification. URL identity alone is not historical input-byte identity."
+    },
+    {
+      "id": "external_manifest",
+      "repository": "/private/tmp/graphframes-sem-review-ba2fdd8",
+      "commit": "ba2fdd8f51fa7fafdca15012d2741f5f8d80c024",
+      "path": "benches/results/wcc/M/graph500-24/max_mem_30G_workers_16/benchmark.json",
+      "sha256": "e7b14fb78f1321a07e859a943cb72e63a36bfa61ceb864ddd4672840975e6198",
+      "git_blob": "3f7f23f1651d04ae5bbe34b4794690cb83dfce06",
+      "line_spans": [],
+      "fact": "Published WCC receipt reports runtime checkoutb4,30G pool,16 target partitions,seed42,five runs and one warmup. It does not contain executable hash or captured physical plans."
+    },
+    {
+      "id": "sail_extension",
+      "repository": "/private/tmp/sail-stream-review-followup-gate",
+      "commit": "200d1cf8eb1db5e9057e09e071ebd57391f4b376",
+      "path": "crates/sail-session/src/extensions/mod.rs",
+      "sha256": "52fe53eede88e4cbd6269db7a7dba9d407fdbc522436bbe6d6cd779be0f17cb0",
+      "git_blob": "a0c6aff5f6552a5a79a726e0b7392178342fa978",
+      "line_spans": [
+        {
+          "first": 87,
+          "last": 128,
+          "sha256": "3846e64cde4e08a8b7874c6af163776fcdec54a7162fe30f7783770e56a15533"
+        }
+      ],
+      "fact": "Current extension relation handler receives payload and physical inputs; this signature does not provide the session JobService."
+    },
+    {
+      "id": "argentea_adjacency",
+      "repository": "/private/tmp/sail-stream-review-followup-gate",
+      "commit": "200d1cf8eb1db5e9057e09e071ebd57391f4b376",
+      "path": "examples/extensions/argentea/src/adjacency.rs",
+      "sha256": "139ef3bbff2e1a9cf7305aa1d1814e4e9d6e49d96903d02fea4ab840fcc01eff",
+      "git_blob": "695d580efa74d20619dae351cced0229e890577a",
+      "line_spans": [
+        {
+          "first": 11,
+          "last": 24,
+          "sha256": "501dd3a07e857485b6bb3d4f89c15ae8070e0b7fc49fed93be5552c0ff106bb7"
+        },
+        {
+          "first": 40,
+          "last": 68,
+          "sha256": "bc1126f51948f3c54082d5d6dbc6191f99e06301c7f7b62a23413f90e23519af"
+        }
+      ],
+      "fact": "Current Argentea adjacency stores signed-i64 vertices/targets and usize offsets; targets can refer to remotely owned IDs."
+    },
+    {
+      "id": "argentea_weighted",
+      "repository": "/private/tmp/sail-stream-review-followup-gate",
+      "commit": "200d1cf8eb1db5e9057e09e071ebd57391f4b376",
+      "path": "examples/extensions/argentea/src/sssp/adjacency.rs",
+      "sha256": "8f98c31cefddd506b48116b2faa0c1dc37055c136ab00b835f0abb8a09194fae",
+      "git_blob": "4ece3a3cc57bcf2fb3466639120bfeedac2284cb",
+      "line_spans": [
+        {
+          "first": 10,
+          "last": 25,
+          "sha256": "695ed9b7e33e49ec10282ad3579dcea1e970158e244160de31728d8df3ce227c"
+        }
+      ],
+      "fact": "Weighted Argentea adjacency stores Vec<i64> vertices,Vec<usize> offsets and Vec<(i64,f64)> arcs."
+    },
+    {
+      "id": "banda_extra_bfs_csr",
+      "repository": "/private/tmp/sail-stream-review-followup-gate",
+      "commit": "200d1cf8eb1db5e9057e09e071ebd57391f4b376",
+      "path": "examples/extensions/vendor/nutmeg-graph/src/optimized/bfs.rs",
+      "sha256": "35c2330fe4d5ca5a4f8668a31dd71baca64bbfff67cb75e39242786cdd71104b",
+      "git_blob": "a291b222ec3d06d9837cdc3ef5827988c04822b6",
+      "line_spans": [
+        {
+          "first": 28,
+          "last": 60,
+          "sha256": "4194b5aafdaa2ee754317fb84e110b7bce2b43277b07fb5d92b54a827a5e9cb8"
+        }
+      ],
+      "fact": "Banda optimized BFS also builds additional usize CSR arrays; do not claim every retained adjacency in this path is uniformly u32."
+    },
+    {
+      "id": "grust_adjacency",
+      "repository": "crates.io grust-algorithms",
+      "version": "0.23.0",
+      "path": "/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/grust-algorithms-0.23.0/src/projection/adjacency.rs",
+      "sha256": "c4ff1b59cb6a6a290dc7969faea0c0e486a8729592f2bca9559c65b819190e0b",
+      "locked_archive_sha256": "a81e8aae0c01384e8061dae52ac75cedaa06f343281b597662fa894bd87f9239",
+      "archive_member_bytes_verified": true,
+      "line_spans": [
+        {
+          "first": 18,
+          "last": 22,
+          "sha256": "60e9071e64e9544ffbc317cdb8a1addb2a9282af6b9e43bf407033230536f6eb"
+        },
+        {
+          "first": 44,
+          "last": 95,
+          "sha256": "a677e68a9f31dd923c9965237c3c359289d498638568cbfb507ad00bd27834f6"
+        },
+        {
+          "first": 140,
+          "last": 146,
+          "sha256": "0e30a5df5ba333c040203f0568d6ce4c5fd73abc0a73902060a19a2f43f9eaed"
+        },
+        {
+          "first": 180,
+          "last": 189,
+          "sha256": "c568a71a3dc7efff22b9e970c874224e5595c04116e23ff68836167b5ac0c046"
+        },
+        {
+          "first": 744,
+          "last": 753,
+          "sha256": "4437d2988d9926db1f712d0bdee2ce3e06b7552ba37e1a34c0c4c082189928f4"
+        }
+      ],
+      "fact": "Generic projection stores Target=u32 and Offset=u32; checked node/arc bounds reject aboveu32::MAX. No wide fallback exists. These are dense indices/count bounds, not numeric external-ID bounds."
+    },
+    {
+      "id": "grust_projection",
+      "repository": "crates.io grust-algorithms",
+      "version": "0.23.0",
+      "path": "/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/grust-algorithms-0.23.0/src/projection.rs",
+      "sha256": "43cc4f510c88a862f642c72a3d268c38603646eec1e17167d41158786499233f",
+      "locked_archive_sha256": "a81e8aae0c01384e8061dae52ac75cedaa06f343281b597662fa894bd87f9239",
+      "archive_member_bytes_verified": true,
+      "line_spans": [
+        {
+          "first": 65,
+          "last": 75,
+          "sha256": "0eee98e50bc0c32824074f474e003c74b5157556bbf8f84fc8fed6eb78621e8a"
+        },
+        {
+          "first": 280,
+          "last": 289,
+          "sha256": "f8d561281af7c8b46258f99f7a3d45785dd31cc65c6511528b6941674fc39754"
+        }
+      ],
+      "fact": "Projection retains original NodeIds alongside a map to dense usize indices; dense target encoding is distinct from external identity."
+    },
+    {
+      "id": "df_join_choice",
+      "repository": "crates.io datafusion",
+      "version": "55.1.0",
+      "path": "/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-55.1.0/src/physical_planner.rs",
+      "sha256": "9f9c0292abc61ce6fdc43a1d5fd1fe8ef18b5f9765b2417574f01ba3006c010b",
+      "locked_archive_sha256": "14313430439ef858ed5f52ca9c840e9eea9844da34d3716d05a476449634da5d",
+      "archive_member_bytes_verified": true,
+      "line_spans": [
+        {
+          "first": 1570,
+          "last": 1577,
+          "sha256": "b3979c28a44791ce486ab566b761cceef9cab9275164ba6ee1320d3eeb7735dd"
+        },
+        {
+          "first": 1702,
+          "last": 1735,
+          "sha256": "1e28c7814ce753b9e000272b21046c6decb55314374af0002fc6d1381e1804cb"
+        }
+      ],
+      "fact": "prefer_hash_join=false selects SMJ only for applicable equijoins with target_partitions>1,repartition_joins enabled,and no null-aware condition. It is not proof all physical joins always use SMJ."
+    }
+  ]
+}

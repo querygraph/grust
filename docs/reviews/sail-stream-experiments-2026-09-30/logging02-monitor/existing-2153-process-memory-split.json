@@ -1,0 +1,110 @@
+{
+  "recorded_utc": "2026-09-30T21:55:03.062559+00:00",
+  "scope": "Local extraction from existing capture only; no additional remote read or PSS scan.",
+  "source": "observation-20260930T215338275713Z.json",
+  "source_sha256": "b88c631976ff50bcc7664a88aab1cb2b168d1321a72ef4a87796cf0b2b087b1f",
+  "original_sampler_row_sha256": "66616681c75659119265e6379895346aa6e7a754f78fe9d681b30f023685fc88",
+  "original_sampler_row": {
+    "scan_started_seconds": 150330.186018808,
+    "scan_finished_seconds": 150331.798219471,
+    "phase": "execute",
+    "step": null,
+    "rss_bytes": 91634573312,
+    "pss_bytes": 91486127104,
+    "pss_processes_available": 5,
+    "cgroup_current_bytes": 102285864960,
+    "fd_total": 78,
+    "directories": null,
+    "processes": [
+      {
+        "pid": 1,
+        "name": "docker-init",
+        "rss_bytes": 765952,
+        "pss_bytes": 761856,
+        "fd_count": 3
+      },
+      {
+        "pid": 7,
+        "name": "python",
+        "rss_bytes": 149843968,
+        "pss_bytes": 144406528,
+        "fd_count": 11
+      },
+      {
+        "pid": 50,
+        "name": "sail-linux-x86_",
+        "rss_bytes": 499351552,
+        "pss_bytes": 453967872,
+        "fd_count": 25
+      },
+      {
+        "pid": 167,
+        "name": "sail-linux-x86_",
+        "rss_bytes": 45751283712,
+        "pss_bytes": 45716751360,
+        "fd_count": 20
+      },
+      {
+        "pid": 169,
+        "name": "sail-linux-x86_",
+        "rss_bytes": 45233328128,
+        "pss_bytes": 45170239488,
+        "fd_count": 19
+      }
+    ]
+  },
+  "scan_seconds": 1.6122006630175747,
+  "sail_process_split": [
+    {
+      "pid": 50,
+      "name": "sail-linux-x86_",
+      "rss_bytes": 499351552,
+      "pss_bytes": 453967872,
+      "fd_count": 25,
+      "role": "driver",
+      "rss_gib": 0.465057373046875,
+      "pss_gib": 0.42279052734375
+    },
+    {
+      "pid": 167,
+      "name": "sail-linux-x86_",
+      "rss_bytes": 45751283712,
+      "pss_bytes": 45716751360,
+      "fd_count": 20,
+      "role": "worker 2",
+      "rss_gib": 42.60920333862305,
+      "pss_gib": 42.57704257965088
+    },
+    {
+      "pid": 169,
+      "name": "sail-linux-x86_",
+      "rss_bytes": 45233328128,
+      "pss_bytes": 45170239488,
+      "fd_count": 19,
+      "role": "worker 1",
+      "rss_gib": 42.1268196105957,
+      "pss_gib": 42.068063735961914
+    }
+  ],
+  "role_mapping_source": "identity-audit.json binds startup worker IDs to host/NSpid and start ticks; current raw capture confirms the same starts.",
+  "role_mapping_source_sha256": "12d72dac581489101b9ff8c098d620e8f5136e3e5d626e17356719bfc943c398",
+  "observation_monotonic": 150333.190069975,
+  "cgroup_current_bytes": 102284148736,
+  "cgroup_memory_stat_bytes": {
+    "anon": 91313704960,
+    "file": 7373873152,
+    "kernel": 414420992,
+    "kernel_stack": 4685824,
+    "pagetables": 191045632,
+    "sock": 4096,
+    "slab": 218605088,
+    "file_mapped": 0,
+    "file_dirty": 8192,
+    "file_writeback": 0
+  },
+  "limits": [
+    "The original sampler reads processes sequentially over the retained monotonic scan interval; RSS/PSS sums are not simultaneous.",
+    "The supplemental cgroup memory.stat is read separately from the original sampler row and from memory.current. These point reads are not a synchronized decomposition.",
+    "Per-process share shows sampled residency, not task ownership, graph partition skew, or a causal attribution."
+  ]
+}

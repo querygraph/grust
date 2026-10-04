@@ -1,0 +1,11 @@
+2026-09-30T16:20:21.703896Z  INFO ThreadId(01) sail_transport_log_control: CONTROL start; this is not Sail mode=keepalive hyper_tracing=true
+2026-09-30T16:20:21.809321Z  INFO ThreadId(03) peer{side="proxy-client-to-server"}: sail_transport_log_control: CONTROL proxy deliberately dropped client PING ACK
+2026-09-30T16:20:21.960688Z DEBUG ThreadId(02) peer{side="server"}: hyper::proto::h2::server: keep-alive timed out, closing connection
+2026-09-30T16:20:21.960996Z DEBUG ThreadId(05) hyper::proto::h2: stream received RST_STREAM: NO_ERROR
+2026-09-30T16:20:21.960999Z  INFO ThreadId(02) peer{side="server"}: sail_transport_log_control: CONTROL server connection future completed result=Err(hyper::Error(Http2, KeepAliveTimedOut))
+2026-09-30T16:20:21.961050Z DEBUG ThreadId(05) hyper::proto::h2::server: stream error: error writing a body to connection
+2026-09-30T16:20:21.961261Z  INFO ThreadId(01) sail_transport_log_control: CONTROL body error chain display=error reading a body from connection debug=hyper::Error(Body, Error { kind: Io(Custom { kind: BrokenPipe, error: "stream closed because of a broken pipe" }) })
+2026-09-30T16:20:21.961313Z  INFO ThreadId(01) sail_transport_log_control: CONTROL body error chain display=stream closed because of a broken pipe debug=Error { kind: Io(Custom { kind: BrokenPipe, error: "stream closed because of a broken pipe" }) }
+2026-09-30T16:20:21.961336Z  INFO ThreadId(02) peer{side="client"}: sail_transport_log_control: CONTROL client connection future completed result=Ok(())
+2026-09-30T16:20:21.961371Z  INFO ThreadId(01) sail_transport_log_control: CONTROL Tonic conversion code=Unknown h2 protocol error: error reading a body from connection debug=Status { code: Unknown, message: "h2 protocol error: error reading a body from connection", source: Some(hyper::Error(Body, Error { kind: Io(Custom { kind: BrokenPipe, error: "stream closed because of a broken pipe" }) })) }
+PASS: induced keepalive failure produced the same outer Tonic body-read message

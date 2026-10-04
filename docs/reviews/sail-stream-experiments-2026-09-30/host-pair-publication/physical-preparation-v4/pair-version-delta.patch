@@ -1,0 +1,287 @@
+--- physical-output-pair-execution-preparation/prepare_pair.py
++++ physical-output-pair-execution-preparation-v4/prepare_pair.py
+@@ -12,8 +12,8 @@
+ HERE = Path(__file__).resolve().parent
+ EXP = HERE.parent
+ PAIR_SHA = '6a377820d65649a72ce4317da11e13245e404109deaa1eef573edff262816987'
+-COPY_SHA = '85710ab9dadc60347947b1e021dcc91700325c92d10021dd612ce82864ae93ed'
+-ENTRY_SHA = '4ab83d7fc8be79e45c915b829b4bef542b822f169cc9703a20a10db3f67c1999'
++COPY_SHA = 'e2af7e75557c1dcc61839175ca505e227fe02262f3bd28c819f91c47c1d9c909'
++ENTRY_SHA = '099628a53cc7349c993f41c2f1508a3bca745969c13481bc4c1c08a69e92facd'
+ HELPER_SHA = '4c5fe87d0eb0b3f4aec3e70841bc7db968017f952dda6978840d101d2f2f7872'
+ 
+ 
+@@ -36,6 +36,7 @@
+ def save(path, value):
+     with path.open('x') as stream:
+         json.dump(value, stream, indent=2, allow_nan=False); stream.write('\n')
++    path.chmod(0o644)
+     return sha(path)
+ 
+ 
+@@ -79,13 +80,13 @@
+         policy.all_six(all_six, plan)
+         all_six_path = output / 'all-six-closures.json'; save(all_six_path, all_six)
+         # This exact frozen helper handles original-and-copied SHA guards.
+-        copier = load_module(HERE / 'baseline-v2/prepare.py', 'frozen_copier', COPY_SHA)
++        copier = load_module(HERE / 'baseline-v4/prepare.py', 'frozen_copier', COPY_SHA)
+         need(sha(HERE / 'container_check.py') == ENTRY_SHA, 'reviewed entry changed')
+         helper = EXP / 'physical-output-audit/audit_output.py'; need(sha(helper) == HELPER_SHA, 'physical helper changed')
+         bundle_root = output / 'bundles'; bundle_root.mkdir()
+         prepared = []
+         for entry, config, item in zip(plan['runs'], configs, exports):
+-            bundle = bundle_root / f"{entry['order']:02d}"; bundle.mkdir()
++            bundle = bundle_root / f"{entry['order']:02d}"; copier.create_bundle_directory(bundle)
+             sources = {'configuration.json': EXP / 'host-pair-16k' / entry['configuration'],
+                 'producer-receipt.json': Path(item['receipt']), 'closed-audit.json': output / item['closure_file'],
+                 'audit_output.py': helper, 'container_check.py': HERE / 'container_check.py',
+@@ -102,6 +103,8 @@
+                 native_sha256=plan['expected_native_package_identity']['files_sha256']['_native.cpython-312-x86_64-linux-gnu.so'],
+                 expected_python_version='3.12.14', expected_pyarrow='21.0.0', expected_numpy='2.5.3',
+                 container_name='physical-output-pair-' + uuid.uuid4().hex[:16], timeout_seconds=1800,
++                execution_identity=dict(host_uid=501, host_gid=20, container_user='0:20',
++                    bundle_mode='0755', bundle_file_mode='0644', evidence_mode='0770'),
+                 limits=dict(cpus=1, memory_bytes=2147483648, memory_swap_bytes=2147483648, pids=64),
+                 disk_admission=dict(host_evidence_minimum_free_bytes=268435456, target_volume_minimum_free_bytes=1073741824))
+             digest = save(bundle / 'request.json', request)
+--- physical-output-pair-execution-preparation/run_pair.py
++++ physical-output-pair-execution-preparation-v4/run_pair.py
+@@ -86,9 +86,10 @@
+         for item in manifest['cells']:
+             row = dict(order=item['order'], phase=item['phase'], host=item['host'], cell_output=item['cell_output'], outcome='started')
+             report['cells'].append(row); save(output / 'serial-receipt.json', report)
+-            cell_output = output / f"{item['order']:02d}"; cell_output.mkdir()
++            cell_output = output / f"{item['order']:02d}"
+             request_path = path.parent / item['request']; request = json.loads(request_path.read_text())
+             supervisor = load_supervisor(request_path.parent / 'supervise.py', request)
++            supervisor.create_evidence_directory(cell_output)
+             rc = supervisor.run_supervisor(request_path, item['request_sha256'], cell_output)
+             outer = cell_output / 'outer-receipt.json'; data = json.loads(outer.read_text())
+             row.update(outcome='closed', supervisor_returncode=rc, outer_receipt_sha256=sha(outer),
+@@ -131,6 +132,7 @@
+     if not a.execute_after_closure:
+         print(json.dumps(dict(prepared_only=True, cells=manifest['cells'], original_ratio_eligible=manifest['original_ratio_eligible']), indent=2)); return 0
+     output.mkdir(parents=False, exist_ok=False)
++    output.chmod(0o700)
+     command = [sys.executable, '-I', '-B', str(Path(__file__).resolve()), '--request', str(path),
+                '--request-sha256', a.request_sha256, '--output', str(output), '--execute-after-closure', '--detached-child']
+     with (output / 'serial.stdout').open('xb') as stdout, (output / 'serial.stderr').open('xb') as stderr:
+--- physical-output-pair-execution-preparation/supervise.py
++++ physical-output-pair-execution-preparation-v4/supervise.py
+@@ -8,6 +8,7 @@
+ from pathlib import Path
+ import re
+ import shutil
++import stat
+ import subprocess
+ import sys
+ import uuid
+@@ -17,7 +18,7 @@
+ PLAN_SHA = 'd51e9f4d5a1d16fb18c36e93fcb3d641c017610a7319ee56a203676800dbe1ab'
+ HELPER_SHA = '4c5fe87d0eb0b3f4aec3e70841bc7db968017f952dda6978840d101d2f2f7872'
+ VOLUME = 'sail-extension-targets'
+-INSPECT = '{"Id":{{json .Id}},"State":{{json .State}},"Labels":{{json .Config.Labels}},"Mounts":{{json .Mounts}},"Memory":{{.HostConfig.Memory}},"MemorySwap":{{.HostConfig.MemorySwap}},"NanoCpus":{{.HostConfig.NanoCpus}},"ReadonlyRootfs":{{.HostConfig.ReadonlyRootfs}},"NetworkMode":{{json .HostConfig.NetworkMode}}}'
++INSPECT = '{"Id":{{json .Id}},"State":{{json .State}},"Labels":{{json .Config.Labels}},"User":{{json .Config.User}},"Mounts":{{json .Mounts}},"Memory":{{.HostConfig.Memory}},"MemorySwap":{{.HostConfig.MemorySwap}},"NanoCpus":{{.HostConfig.NanoCpus}},"ReadonlyRootfs":{{.HostConfig.ReadonlyRootfs}},"NetworkMode":{{json .HostConfig.NetworkMode}}}'
+ 
+ 
+ def utc():
+@@ -49,6 +50,38 @@
+     result = dict(path=str(path), total_bytes=usage.total, used_bytes=usage.used,
+                   free_bytes=usage.free, minimum_free_bytes=minimum)
+     return result
++
++
++IDENTITY = dict(host_uid=501, host_gid=20, container_user='0:20',
++                bundle_mode='0755', bundle_file_mode='0644', evidence_mode='0770')
++
++
++def path_permissions(path):
++    info = path.lstat()
++    return dict(uid=info.st_uid, gid=info.st_gid, mode=format(stat.S_IMODE(info.st_mode), '04o'))
++
++
++def validate_bundle_permissions(root, request):
++    need(request.get('execution_identity') == IDENTITY, 'execution identity differs')
++    need(os.getuid() == IDENTITY['host_uid'] and os.getgid() == IDENTITY['host_gid'], 'host UID/GID differs')
++    need(root.is_dir() and not root.is_symlink() and path_permissions(root)['mode'] == '0755', 'bundle mode must be0755')
++    for name in ['request.json', *request['files']]:
++        path = root / name
++        need(path.is_file() and not path.is_symlink() and path_permissions(path)['mode'] == '0644', 'bundle file mode must be0644: ' + name)
++
++
++def create_evidence_directory(output):
++    # The parent creates only a new directory; never chmod earlier evidence.
++    output.mkdir(parents=False, exist_ok=False)
++    os.chown(output, -1, IDENTITY['host_gid'])
++    output.chmod(0o770)
++
++
++def validate_evidence_directory(output):
++    need(output.is_dir() and not output.is_symlink(), 'evidence directory invalid')
++    value = path_permissions(output)
++    need(value['uid'] == IDENTITY['host_uid'] and value['gid'] == IDENTITY['host_gid'] and value['mode'] == '0770', 'evidence owner/mode differs')
++    return value
+ 
+ 
+ def validate(request_path, digest, output):
+@@ -61,6 +94,7 @@
+     need(all(',' not in str(p) and '\n' not in str(p) for p in (root, output)), 'unsafe Docker mount path')
+     names = {'configuration.json', 'producer-receipt.json', 'closed-audit.json', 'audit_output.py', 'container_check.py', 'supervise.py', 'pair-plan.json', 'all-six-closures.json', 'pair_policy.py'}
+     need(set(request['files']) == names, 'bundle inventory differs')
++    validate_bundle_permissions(root, request)
+     for name, pin in request['files'].items():
+         path = root / name
+         need(path.is_file() and not path.is_symlink() and path.stat().st_size == pin['bytes'] and sha(path) == pin['sha256'], 'bundle changed: ' + name)
+@@ -80,7 +114,7 @@
+ 
+ def create_command(request, root, output, digest, execution_id):
+     return DOCKER + ['create', '--name', request['container_name'], '--label', 'physical-check.request=' + digest, '--label', 'physical-check.execution=' + execution_id,
+-        '--pull=never', '--read-only', '--network=none', '--cpus=1', '--memory=2147483648',
++        '--pull=never', '--user=0:20', '--read-only', '--network=none', '--cpus=1', '--memory=2147483648',
+         '--memory-swap=2147483648', '--pids-limit=64', '--cap-drop=ALL', '--security-opt=no-new-privileges',
+         '--mount', 'type=volume,source=' + VOLUME + ',target=/targets,readonly,volume-nocopy',
+         '--mount', 'type=bind,source=' + str(root) + ',target=/work,readonly',
+@@ -92,6 +126,7 @@
+ 
+ 
+ def run_supervisor(request_path, digest, output):
++    validate_evidence_directory(output)
+     with (output / 'supervisor-claim.json').open('x') as stream:
+         json.dump(dict(utc=utc(), pid=os.getpid(), request_sha256=digest), stream)
+         stream.write('\n')
+@@ -139,6 +174,9 @@
+ 
+     try:
+         request = validate(request_path, digest, output)
++        report['host_identity'] = dict(uid=os.getuid(), gid=os.getgid())
++        report['evidence_permissions'] = validate_evidence_directory(output)
++        report['bundle_permissions'] = path_permissions(request_path.parent)
+         report['supervisor_pid'] = os.getpid()
+         report['supervisor_sha256'] = sha(Path(__file__).resolve())
+         save(output / 'outer-receipt.json', report)
+@@ -157,6 +195,7 @@
+         report['container_id'] = container_id
+         initial = inspect(container_id, 'inspect-created')
+         report['created_container'] = initial
++        need(initial['User'] == request['execution_identity']['container_user'], 'created container user differs')
+         need(initial['Memory'] == 2147483648 and initial['MemorySwap'] == 2147483648 and
+              initial['NanoCpus'] == 1000000000 and initial['ReadonlyRootfs'] is True and
+              initial['NetworkMode'] == 'none', 'created resource policy differs')
+@@ -233,7 +272,7 @@
+     if not args.execute_after_closure:
+         print(json.dumps(dict(prepared_only=True, docker_command=create_command(request, request_path.parent, output, args.request_sha256, '<new-per-execution-UUID>')), indent=2))
+         return 0
+-    output.mkdir(parents=False, exist_ok=False)
++    create_evidence_directory(output)
+     child = [sys.executable, '-I', '-B', str(Path(__file__).resolve()), '--request', str(request_path),
+              '--request-sha256', args.request_sha256, '--output', str(output), '--execute-after-closure', '--detached-child']
+     with (output / 'supervisor.stdout').open('xb') as out, (output / 'supervisor.stderr').open('xb') as err:
+--- physical-output-pair-execution-preparation/container_check.py
++++ physical-output-pair-execution-preparation-v4/container_check.py
+@@ -5,6 +5,7 @@
+ import json
+ import os
+ import shutil
++import stat
+ from pathlib import Path
+ import subprocess
+ import sys
+@@ -33,6 +34,24 @@
+     need(report['target_volume_disk_before']['free_bytes'] >= minimum, 'retained target volume has insufficient free space')
+ 
+ 
++def validate_reader_permissions(request, report):
++    identity = request['execution_identity']
++    need(identity == dict(host_uid=501, host_gid=20, container_user='0:20',
++        bundle_mode='0755', bundle_file_mode='0644', evidence_mode='0770'), 'execution identity differs')
++    report['reader_identity'] = dict(uid=os.getuid(), gid=os.getgid())
++    need(report['reader_identity'] == dict(uid=0, gid=20), 'container UID/GID differs')
++    report['mounted_permissions'] = {}
++    for name in ('/work', '/work/container_check.py', '/evidence'):
++        info = Path(name).stat()
++        report['mounted_permissions'][name] = dict(uid=info.st_uid, gid=info.st_gid,
++            mode=format(stat.S_IMODE(info.st_mode), '04o'))
++    need(report['mounted_permissions']['/work']['mode'] == '0755' and
++         report['mounted_permissions']['/work/container_check.py']['mode'] == '0644', 'mounted bundle modes differ')
++    need(report['mounted_permissions']['/evidence']['uid'] == 501 and
++         report['mounted_permissions']['/evidence']['gid'] == 20 and
++             report['mounted_permissions']['/evidence']['mode'] == '0770', 'mounted evidence owner/mode differs')
++
++
+ def main():
+     report = dict(started_utc=datetime.now(timezone.utc).isoformat(), outcome='admission_error')
+     rc = 2
+@@ -43,6 +62,7 @@
+         for name, pin in request['files'].items():
+             path = root / name
+             need(path.stat().st_size == pin['bytes'] and sha(path) == pin['sha256'], 'bundle file differs: ' + name)
++        validate_reader_permissions(request, report)
+         c = json.loads((root / 'configuration.json').read_text())
+         report['boot_id'] = Path('/proc/sys/kernel/random/boot_id').read_text().strip()
+         need(report['boot_id'] == request['boot_id'], 'VM boot differs')
+--- physical-output-pair-execution-preparation/test_pair.py
++++ physical-output-pair-execution-preparation-v4/test_pair.py
+@@ -2,6 +2,7 @@
+ import copy
+ import importlib.util
+ import json
++import stat
+ from pathlib import Path
+ import tempfile
+ import types
+@@ -19,6 +20,7 @@
+ policy = load(ROOT / 'pair_policy.py', 'pair_policy_test')
+ runner = load(ROOT / 'run_pair.py', 'pair_runner_test')
+ preparer = load(ROOT / 'prepare_pair.py', 'pair_prepare_test')
++supervisor = load(ROOT/'supervise.py', 'pair_supervisor_modes')
+ plan = json.loads((ROOT.parent / 'host-pair-16k/pair16k-20260930201356-plan.json').read_text())
+ 
+ 
+@@ -110,6 +112,10 @@
+                 self.assertEqual(request['binary_sha256'],entry['binary_sha256'])
+                 self.assertEqual(request['cell_output'],entry['cell_output'])
+                 self.assertEqual(request['expected_vertices'],16384)
++                self.assertEqual(request['execution_identity'],supervisor.IDENTITY)
++                bundle=(prepared/item['request']).parent
++                self.assertEqual(stat.S_IMODE(bundle.stat().st_mode),0o755)
++                self.assertTrue(all(stat.S_IMODE(path.stat().st_mode)==0o644 for path in bundle.iterdir()))
+ 
+ 
+ class Serial(unittest.TestCase):
+@@ -122,6 +128,7 @@
+                 cells.append(dict(order=e['order'],phase=e['phase'],host=e['host'],cell_output=e['cell_output'],request=str(path.relative_to(root)),request_sha256='x'))
+             manifest=dict(cells=cells,original_ratio_eligible=True,original_shared_host_ratios={'original':1.25})
+             def run_cell(path,digest,destination):
++                self.assertEqual(stat.S_IMODE(destination.stat().st_mode),0o770)
+                 order=int(destination.name);calls.append(order)
+                 state=dict(Running=False,Status='exited',ExitCode=0,OOMKilled=False)
+                 status='physical_values_pass';cleanup='removed_after_state_capture';rc=0
+@@ -137,7 +144,7 @@
+                     physical={'sha256':runner.sha(destination/'physical-output.json')}
+                 (destination/'outer-receipt.json').write_text(json.dumps(dict(physical_status=status,physical_report=physical,cleanup=cleanup,container_state=state)))
+                 return rc
+-            with patch.object(runner,'validate',return_value=manifest), patch.object(runner,'load_supervisor',return_value=types.SimpleNamespace(run_supervisor=run_cell)):
++            with patch.object(runner,'validate',return_value=manifest), patch.object(runner,'load_supervisor',return_value=types.SimpleNamespace(run_supervisor=run_cell,create_evidence_directory=supervisor.create_evidence_directory)):
+                 rc=runner.execute(root/'pair-requests.json','x',output)
+             report=json.loads((output/'serial-receipt.json').read_text())
+             return rc,report,calls
+@@ -160,10 +167,16 @@
+ 
+ if __name__ == '__main__':
+     suite=unittest.TestSuite([unittest.defaultTestLoader.loadTestsFromTestCase(c) for c in (Policy,BundleIntegration,Serial)])
+-    # Reuse the reviewed v2 lifecycle controls against the derivative supervisor.
+-    path=ROOT.parent/'physical-output-execution-preparation/test_preparation.py'
+-    if preparer.sha(path) != '2f9765fadb9b869a87327967c51fdabb7325be96e1a0c12e661e13d9fd023540': raise ValueError('frozen lifecycle controls differ')
++    # Reuse the reviewed v4 lifecycle and permission controls against the derivative supervisor.
++    path=ROOT.parent/'physical-output-execution-preparation-v4/test_preparation.py'
++    if preparer.sha(path) != 'ec0c27b4f33b3c9aa4f88f350d1c884e2b7201bf8d0d553e2fd9ee76d783ca71': raise ValueError('frozen lifecycle controls differ')
+     inherited=load(path,'inherited_lifecycle_controls');inherited.s=load(ROOT/'supervise.py','pair_supervisor_controls')
+     suite.addTests(unittest.defaultTestLoader.loadTestsFromTestCase(inherited.Supervisor))
++    permissions_path=ROOT.parent/'physical-output-execution-preparation-v4/test_permissions.py'
++    if preparer.sha(permissions_path) != '2d78e2dd2a8e0b21e4515b85b790208a3a0acc0ba78f6f2f9a181c0637ab4907': raise ValueError('frozen permission controls differ')
++    permissions=load(permissions_path,'inherited_permission_controls')
++    permissions.p=load(ROOT/'baseline-v4/prepare.py','reviewed_v4_copier')
++    permissions.s=supervisor; permissions.entry=load(ROOT/'container_check.py','pair_entry_modes')
++    suite.addTests(unittest.defaultTestLoader.loadTestsFromTestCase(permissions.Permissions))
+     result=unittest.TextTestRunner(verbosity=2).run(suite)
+     raise SystemExit(0 if result.wasSuccessful() else 1)

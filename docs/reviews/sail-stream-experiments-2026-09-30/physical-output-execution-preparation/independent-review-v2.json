@@ -1,0 +1,43 @@
+{
+  "recorded_utc": "2026-10-01T00:54:59.440956+00:00",
+  "outcome": "PASS_BOUNDED_INDEPENDENT_PREPARATION_REVIEW",
+  "version": 2,
+  "prepared_only": true,
+  "files": {
+    "README.md": "69cf3c511463456e458c7d9d1cef4f3ed2206fd6a8f2443c14fa9c2266aca448",
+    "container_check.py": "4ab83d7fc8be79e45c915b829b4bef542b822f169cc9703a20a10db3f67c1999",
+    "prepare.py": "85710ab9dadc60347947b1e021dcc91700325c92d10021dd612ce82864ae93ed",
+    "review_reproductions.py": "1eab353adad144f88b9f2fd55347dcba2fc6c6fada89a5110850baa620a156b9",
+    "supervise.py": "7c9411e1ce99e4dba67018642e03a8122c296a2aad9bab0b971c31bc07ade479",
+    "test_preparation.py": "2f9765fadb9b869a87327967c51fdabb7325be96e1a0c12e661e13d9fd023540",
+    "local-controls-v2.stdout": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "local-controls-v2.stderr": "2b6187e214f7ed217c5ba0bb0f4b68a766d30d4d0d5c496cd2ba6b4f196a8cf2",
+    "preparation-v2.json": "729faa260a5f38eabfab906cd13d62c3970c5640e6d34c9e102cbde640bb10ed",
+    "preparation.json": "4325dcf9e98681d50920b34b22410206eb2a0d89b60dfa5d68196108433e5fe7",
+    "review-reproductions-v2.json": "a46b92895b0626eb7c2edcea384e5253f68c7615547e2d3993c6b151b671533b"
+  },
+  "findings": [],
+  "closed_review_findings": [
+    {
+      "issue": "Attempt01 permitted Docker OOMKilled=true plus exit0 and an inner physical pass to return success.",
+      "resolution": "Final predicate requires OOMKilled is False, Running is False, Status exited, exit0, physical_values_pass and no recorded errors; negative mocked controls cover OOM+exit0 and created state."
+    },
+    {
+      "issue": "Attempt01 could seal copied receipt bytes different from the operator supplied SHA256.",
+      "resolution": "Every required input is checked against supplied pins before copying; copied bytes match pre-copy hashes and every original is rehashed afterward; request is written only after these checks. Before/after-copy mutation controls fail."
+    }
+  ],
+  "reviewed_scope": [
+    "Full preparation/request binding, exact logging03 namespace/config/producer/closed-audit linkage and unchanged physical verifier.",
+    "Read-only retained targets/scripts with separate evidence writes; isolated 1 CPU, 2 GiB, zero container swap, no network.",
+    "Unique execution ownership labels; uncertain create recovery, bounded wait, exited-state/OOM capture before removal and durable command errors.",
+    "Host evidence filesystem requires 256 MiB free before Docker; actual mounted targets filesystem requires 1 GiB before scan; thresholds explicitly proposed rather than measured resource guarantees.",
+    "Nineteen local/mock controls and two original-gap reproductions inspected and hashes verified; reviewer did not execute them."
+  ],
+  "limitations": [
+    "No SSH, Docker, runtime, production result scan or benchmark launch by this reviewer.",
+    "Future execution requires actual closed logging03 evidence and separate root authorization; this is preparation only.",
+    "Trusted campaign controls, not an adversarial filesystem/race sandbox. Docker idle point checks rely on serial orchestration, not a global exclusion lock.",
+    "Physical-domain/value validation supplements the original outcome; it does not recompute shortest paths, prove the graph certificate, or qualify timing."
+  ]
+}

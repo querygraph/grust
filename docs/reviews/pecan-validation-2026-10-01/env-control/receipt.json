@@ -1,0 +1,91 @@
+{
+  "outcome": "PASS_SOURCE_PATH_ENV_CONTROL",
+  "started_utc": "2026-10-01T16:13:52.130206+00:00",
+  "finished_utc": "2026-10-01T16:13:54.661881+00:00",
+  "head": "cab6bacc0ad0d1fc8b3070e9e4267e99751909fe",
+  "tree": "51e9ae66d53e608fe08da54cd4ab91d750be0715",
+  "source_unchanged": true,
+  "original_failed_gate_unchanged": true,
+  "old_runner_sha256": "0cb5b35c087623f3e0c3484c6e27a328233a90f7f5c4e5814ed09f17d4e4c3c6",
+  "new_runner_sha256": "156abe97526a5e41e726f969c03a3753b316c95df6bba84e4a2e31f9c5647a46",
+  "original_pythonpath": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages:/private/tmp/sail-pecan-validation-gate/examples/extensions/benchmarks:/private/tmp/sail-pecan-validation-gate/examples/extensions/nutmeg/python:/private/tmp/sail-pecan-validation-gate/examples/extensions/graph-algorithms/src",
+  "corrected_pythonpath": "/private/tmp/sail-pecan-validation-gate/examples/extensions/benchmarks:/private/tmp/sail-pecan-validation-gate/examples/extensions/nutmeg/python:/private/tmp/sail-pecan-validation-gate/examples/extensions/graph-algorithms/src:/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages",
+  "commands": [
+    {
+      "label": "old-order-origin-rejected",
+      "command": [
+        "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/bin/python",
+        "-B",
+        "/private/tmp/grust-pecan-explicit-validation/docs/reviews/pecan-validation-2026-10-01/run_gate.py",
+        "--module-origin-probe",
+        "/private/tmp/sail-pecan-validation-gate"
+      ],
+      "returncode": 1
+    },
+    {
+      "label": "corrected-origin",
+      "command": [
+        "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/bin/python",
+        "-B",
+        "/private/tmp/grust-pecan-explicit-validation/docs/reviews/pecan-validation-2026-10-01/run_gate.py",
+        "--module-origin-probe",
+        "/private/tmp/sail-pecan-validation-gate"
+      ],
+      "returncode": 0
+    },
+    {
+      "label": "manifest-tests",
+      "command": [
+        "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/bin/python",
+        "-B",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--rootdir=/private/tmp/sail-pecan-validation-gate",
+        "examples/extensions/argentea/python/test_argentea_sssp_client.py::test_wheel_manifest_advertises_only_explicit_worker_sssp_role",
+        "examples/extensions/argentea/python/test_argentea_wcc_client.py::test_wheel_manifest_advertises_only_explicit_worker_wcc_role",
+        "--junitxml=/private/tmp/grust-pecan-explicit-validation/docs/reviews/pecan-validation-2026-10-01/env-control/manifest-tests.xml",
+        "--basetemp=/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pecan-env-control-jfryfc48"
+      ],
+      "returncode": 0
+    }
+  ],
+  "tests": {
+    "passed": 2,
+    "skipped": 0,
+    "failed": 0
+  },
+  "module_origins": {
+    "pyspark_pecan": {
+      "path": "/private/tmp/sail-pecan-validation-gate/examples/extensions/graph-algorithms/src/pyspark_pecan/__init__.py",
+      "sha256": "10200002e26b633290388da972ebefd3d96df41e9719d72ea2339dd96ab9add7"
+    },
+    "sail_nutmeg": {
+      "path": "/private/tmp/sail-pecan-validation-gate/examples/extensions/nutmeg/python/sail_nutmeg/__init__.py",
+      "sha256": "8ab1469a2f7411203604d2faaae29b30a35689599eb62d0bb397ab672cdb53ab"
+    }
+  },
+  "original_failed_gate_hashes": {
+    "collection.log": "a5e14fd344b9fef7f133066df0500cf35ee1dd4ae1ee2e9d39502a002359d7f7",
+    "source-before.json": "2b6e2b28260a8790f0bc67d1e9298417fbf80ca867ca1d861f0e3883f284dfee",
+    "source-after.json": "2b6e2b28260a8790f0bc67d1e9298417fbf80ca867ca1d861f0e3883f284dfee",
+    "client-before.log": "f50b17d9b3009ca2400c24b5fe166f55db485c895f63275ed1bc74e65df6e660",
+    "diff-check.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "offline.xml": "330756e2ba846c7ecf3645aee815dff121e57c94268da034ebf6560d1d490ad2",
+    "client-after.log": "f50b17d9b3009ca2400c24b5fe166f55db485c895f63275ed1bc74e65df6e660",
+    "offline.log": "56f5e8b4ca6bdedb03f785e98710d1c746b7e7e88bb456f2dccf02119a790018",
+    "inventory.json": "4e0c16cbf7192632e81cdce6ef6fdf54b6782bcc36565a5016fdf58aca6d1a95",
+    "receipt.json": "39fed9a46f521f08ba89d658f03a614ae423e7e37ecbf4316db0ce5f0819f06a"
+  },
+  "files_sha256": {
+    "old-order-origin-rejected.log": "f85f75e972f38198ca5496687c795e73431ad66accb194dca950119a301a8725",
+    "run_control.py": "e942edde07656217b0282970a8696b0d10d19f760d93720048bd3b2d0d88740a",
+    "manifest-tests.xml": "5bd64db1d343967fe89570c57446479e8d5e00f08f5eccf114bb464dc9341664",
+    "run_gate-attempt01.py": "0cb5b35c087623f3e0c3484c6e27a328233a90f7f5c4e5814ed09f17d4e4c3c6",
+    "manifest-tests.log": "18ab64d6a4d76b835fd6aeebd13f57cfe33811030fadc226c3b4f7ee544c632b",
+    "corrected-origin.log": "863490550fb3048f05f8d1496a6f58cade48232837b22c230b31f4e5160a72f2"
+  },
+  "scope": "Two existing manifest tests plus package-origin positive/negative controls only; no SQL/server/build."
+}

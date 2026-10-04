@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en-US" xml:lang="en-US">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <meta name="author" content="Querygraph" />
+  <meta name="dcterms.date" content="2026-10-01" />
+  <meta name="description" content="Version 1.0. Review target: querygraph/sail bd8ce9ae8839477e2c08a0475ab7900b115c5366." />
+  <title>Sail Extensions: A Design Review</title>
+  <style>
+    div.sitenav { display: flex; flex-direction: row; flex-wrap: wrap; }
+    span.navlink { flex: 1; }
+    span.navlink-label { display: inline-block; min-width: 4em; }
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: 1.5em;}
+    div.column{flex: auto;}
+    @media screen {
+    div.columns{gap: min(4vw, 1.5em);}
+    div.column{overflow-x: auto;}
+    }
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <link rel="stylesheet" href="book.css" />
+</head>
+<body>
+<nav id="sitenav">
+<div class="sitenav">
+<span class="navlink">
+</span>
+<span class="navlink">
+</span>
+</div>
+<div class="sitenav">
+<span class="navlink">
+<span class="navlink-label">Next:</span> <a href="chapter-001.html" accesskey="n" rel="next">Sail extensions: the first contract</a>
+</span>
+<span class="navlink">
+</span>
+</div>
+</nav>
+<header id="title-block-header">
+<h1 class="title">Sail Extensions: A Design Review</h1>
+<p class="subtitle">Contracts, alternatives, and a complete Sedona
+example</p>
+<p class="author">Querygraph</p>
+<p class="date">2026-10-01</p>
+</header>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="chapter-001.html#introduction" id="toc-introduction"><span
+class="toc-section-number">1</span> Sail extensions: the first
+contract</a>
+<ul>
+<li><a href="chapter-001.html#introduction--three-decisions-in-order"
+id="toc-introduction--three-decisions-in-order"><span
+class="toc-section-number">1.1</span> Three decisions, in order</a></li>
+<li><a href="chapter-001.html#introduction--a-thirty-minute-review"
+id="toc-introduction--a-thirty-minute-review"><span
+class="toc-section-number">1.2</span> A thirty-minute review</a></li>
+</ul></li>
+<li><a href="chapter-002.html#overview" id="toc-overview"><span
+class="toc-section-number">2</span> From the brief to the design</a>
+<ul>
+<li><a href="chapter-002.html#overview--module-map"
+id="toc-overview--module-map"><span
+class="toc-section-number">2.1</span> The eight-module map</a></li>
+<li><a href="chapter-002.html#overview--decision-matrix"
+id="toc-overview--decision-matrix"><span
+class="toc-section-number">2.2</span> The decision map</a></li>
+<li><a href="chapter-002.html#overview--how-this-fits-sails-design"
+id="toc-overview--how-this-fits-sails-design"><span
+class="toc-section-number">2.3</span> How this fits Sail's
+design</a></li>
+</ul></li>
+<li><a href="chapter-003.html#module-01-discovery"
+id="toc-module-01-discovery"><span class="toc-section-number">3</span>
+1. Discovery and binding</a></li>
+<li><a href="chapter-004.html#module-02-functions"
+id="toc-module-02-functions"><span class="toc-section-number">4</span>
+2. Functions</a></li>
+<li><a href="chapter-005.html#module-03-relations"
+id="toc-module-03-relations"><span class="toc-section-number">5</span>
+3. Relations</a></li>
+<li><a href="chapter-006.html#module-04-commands"
+id="toc-module-04-commands"><span class="toc-section-number">6</span> 4.
+Commands and receipts</a></li>
+<li><a href="chapter-007.html#module-05-placement"
+id="toc-module-05-placement"><span class="toc-section-number">7</span>
+5. Placement and replay</a></li>
+<li><a href="chapter-008.html#module-06-memory"
+id="toc-module-06-memory"><span class="toc-section-number">8</span> 6.
+Native memory</a></li>
+<li><a href="chapter-009.html#module-07-lifecycle"
+id="toc-module-07-lifecycle"><span class="toc-section-number">9</span>
+7. Lifecycle and teardown</a></li>
+<li><a href="chapter-010.html#module-08-compatibility"
+id="toc-module-08-compatibility"><span
+class="toc-section-number">10</span> 8. Packaging and
+compatibility</a></li>
+<li><a href="chapter-011.html#code-listings"
+id="toc-code-listings"><span class="toc-section-number">11</span>
+Complete code and reading path</a>
+<ul>
+<li><a href="chapter-011.html#code-listings--sample-path"
+id="toc-code-listings--sample-path"><span
+class="toc-section-number">11.1</span> The small author sample</a></li>
+<li><a href="chapter-011.html#code-listings--running-the-sample"
+id="toc-code-listings--running-the-sample"><span
+class="toc-section-number">11.2</span> Running the sample</a></li>
+<li><a href="chapter-011.html#code-listings--sample-listings"
+id="toc-code-listings--sample-listings"><span
+class="toc-section-number">11.3</span> Listings</a></li>
+</ul></li>
+</ul>
+</nav>
+
+</body>
+</html>

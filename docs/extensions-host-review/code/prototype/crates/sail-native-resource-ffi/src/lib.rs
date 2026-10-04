@@ -1,0 +1,160 @@
+//! The small C ABI shared by independently compiled native extensions and Sail.
+//! An opaque, prepaid memory lease crosses the boundary; Rust ownership and
+//! allocator layouts stay entirely inside the library that issued the lease.
+use std::ffi::{CStr, c_void};
+use std::fmt::{Debug, Formatter};
+use std::ptr::NonNull;
+use std::sync::Arc;
+
+pub const MEMORY_LEASE_CAPSULE: &CStr = c"sail_native_memory_lease_v1";
+
+#[repr(C)]
+struct Header {
+    version: u32,
+    size: u32,
+}
+
+/// A non-spillable host admission retained until the final clone is released.
+///
+/// Callbacks must be thread-safe and must never unwind. Every instance owns one
+/// reference. A consumer may inspect the header before touching versioned fields.
+#[repr(C)]
+pub struct MemoryLease {
+    header: Header,
+    bytes: u64,
+    opaque: *const c_void,
+    retain: unsafe extern "C" fn(*const c_void),
+    release: unsafe extern "C" fn(*const c_void),
+}
+
+// SAFETY: constructors require a Send + Sync owner; imports promise the same
+// thread-safe callback contract. The opaque object is never accessed here.
+unsafe impl Send for MemoryLease {}
+unsafe impl Sync for MemoryLease {}
+
+impl MemoryLease {
+    /// Export ownership through callbacks compiled in the issuing library.
+    pub fn new<T: Send + Sync + 'static>(owner: Arc<T>, bytes: u64) -> Self {
+        unsafe extern "C" fn retain<T>(opaque: *const c_void) {
+            // SAFETY: only new() constructs this token, from Arc<T>::into_raw.
+            unsafe { Arc::<T>::increment_strong_count(opaque.cast::<T>()) };
+        }
+        unsafe extern "C" fn release<T>(opaque: *const c_void) {
+            // SAFETY: each token owns one reference created by new()/retain().
+            unsafe { drop(Arc::<T>::from_raw(opaque.cast::<T>())) };
+        }
+        Self {
+            header: Header {
+                version: 1,
+                size: std::mem::size_of::<Self>() as u32,
+            },
+            bytes,
+            opaque: Arc::into_raw(owner).cast::<c_void>(),
+            retain: retain::<T>,
+            release: release::<T>,
+        }
+    }
+
+    /// Validate the ABI and quota, then take an independently releasable reference.
+    ///
+    /// # Safety
+    /// `pointer` must address a readable, aligned header. A matching header must
+    /// address a live MemoryLease with valid thread-safe, non-unwinding callbacks.
+    /// Its issuing library must remain loaded until every imported clone is gone.
+    pub unsafe fn import(
+        pointer: NonNull<c_void>,
+        expected_bytes: u64,
+    ) -> Result<Self, &'static str> {
+        // SAFETY: the caller guarantees at least the fixed header is readable.
+        let header = unsafe { pointer.cast::<Header>().as_ref() };
+        if header.version != 1 || header.size as usize != std::mem::size_of::<Self>() {
+            return Err("native memory lease ABI mismatch");
+        }
+        // SAFETY: the validated header and caller's capsule contract cover Self.
+        let lease = unsafe { pointer.cast::<Self>().as_ref() };
+        if lease.bytes != expected_bytes || lease.opaque.is_null() {
+            return Err("native memory lease quota mismatch");
+        }
+        Ok(lease.clone())
+    }
+
+    pub fn bytes(&self) -> u64 {
+        self.bytes
+    }
+}
+
+impl Clone for MemoryLease {
+    fn clone(&self) -> Self {
+        // SAFETY: self owns a live reference and callbacks obey the ABI contract.
+        unsafe { (self.retain)(self.opaque) };
+        Self {
+            header: Header {
+                version: self.header.version,
+                size: self.header.size,
+            },
+            bytes: self.bytes,
+            opaque: self.opaque,
+            retain: self.retain,
+            release: self.release,
+        }
+    }
+}
+
+impl Drop for MemoryLease {
+    fn drop(&mut self) {
+        // SAFETY: this instance owns exactly one reference, relinquished once.
+        unsafe { (self.release)(self.opaque) };
+    }
+}
+
+impl Debug for MemoryLease {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("MemoryLease")
+            .field("version", &self.header.version)
+            .field("bytes", &self.bytes)
+            .finish_non_exhaustive()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
+    use super::*;
+
+    struct Owner(Arc<AtomicUsize>);
+    impl Drop for Owner {
+        fn drop(&mut self) {
+            self.0.fetch_add(1, Ordering::SeqCst);
+        }
+    }
+
+    #[test]
+    fn imports_validate_before_clone_and_release_only_the_final_owner() -> Result<(), &'static str>
+    {
+        let drops = Arc::new(AtomicUsize::new(0));
+        let exported = MemoryLease::new(Arc::new(Owner(drops.clone())), 64);
+        let pointer = NonNull::from(&exported).cast::<c_void>();
+        // SAFETY: the exported lease remains alive during both imports.
+        assert!(unsafe { MemoryLease::import(pointer, 65) }.is_err());
+        let imported = unsafe { MemoryLease::import(pointer, 64) }?;
+        drop(exported);
+        assert_eq!(drops.load(Ordering::SeqCst), 0);
+        let output_owner = imported.clone();
+        drop(imported);
+        assert_eq!(drops.load(Ordering::SeqCst), 0);
+        std::thread::spawn(move || drop(output_owner))
+            .join()
+            .map_err(|_| "release thread failed")?;
+        assert_eq!(drops.load(Ordering::SeqCst), 1);
+        let wrong = Header {
+            version: 2,
+            size: 8,
+        };
+        // SAFETY: a rejected version only reads the fixed header.
+        assert!(
+            unsafe { MemoryLease::import(NonNull::from(&wrong).cast::<c_void>(), 64) }.is_err()
+        );
+        Ok(())
+    }
+}

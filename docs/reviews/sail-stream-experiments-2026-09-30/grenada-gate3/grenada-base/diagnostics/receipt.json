@@ -1,0 +1,835 @@
+{
+  "started_utc": "2026-09-30T17:12:37.061844+00:00",
+  "arguments": {
+    "sail_binary": "/targets/graph-nuts-ffcfbd569/sail-linux-x86_64-ffcfbd5690e3-release",
+    "runtime_source_sha": "ffcfbd5690e3f3681ef9ac18ba959bc231cf9f73",
+    "native_source_sha": "ffcfbd5690e3f3681ef9ac18ba959bc231cf9f73",
+    "dataset": "/targets/sail-stream-experiments-20260930/pecan-gate3/datasets/weighted16k",
+    "expected_dataset_family": "traversal",
+    "expected_vertices": 16384,
+    "expected_graph500_sha256": null,
+    "expected_input_sha256": null,
+    "expected_edge_sha256": null,
+    "expected_weight_policy": null,
+    "expected_weight_seed": null,
+    "output": "/targets/sail-stream-experiments-20260930/grenada-gate3/cells/grenada-base",
+    "engine": "nutmeg-datafusion",
+    "algorithm": "sssp",
+    "variant": "frontier",
+    "source": 0,
+    "directed": true,
+    "delta": 1.0,
+    "traversal_validation": "reference",
+    "http2_keepalive_timeout": 120,
+    "record_plans": false,
+    "argentea_max_rounds": 62,
+    "stage_order": "canonical",
+    "ranking_validation": "reference",
+    "certificate_max_rounds": 10000,
+    "seed": 42,
+    "mode": "process-cluster",
+    "partitions": 4,
+    "threads": 4,
+    "worker_task_slots": 16,
+    "sail_pool_bytes": 3221225472,
+    "native_quota": 268435456,
+    "tolerance": 1e-08,
+    "damping": 0.85,
+    "max_iterations": 100,
+    "timeout": 600,
+    "repeat": 0,
+    "allow_unisolated": false,
+    "allow_dirty": false
+  },
+  "source_request": 0,
+  "source_degree": null,
+  "source_policy": null,
+  "harness_source_sha": "ffcfbd5690e3f3681ef9ac18ba959bc231cf9f73",
+  "source_dirty": "",
+  "runtime_source_sha": "ffcfbd5690e3f3681ef9ac18ba959bc231cf9f73",
+  "binary_sha256": "516cb3e5aecd89e954edff7934be439e63f2257e08c5ba45f09219261a173226",
+  "native_source_sha": "ffcfbd5690e3f3681ef9ac18ba959bc231cf9f73",
+  "native_package_identity": {
+    "root": "/targets/graph-nuts-ffcfbd569/venv/lib/python3.12/site-packages/sail_nutmeg",
+    "files_sha256": {
+      "__init__.py": "8ab1469a2f7411203604d2faaae29b30a35689599eb62d0bb397ab672cdb53ab",
+      "_native.cpython-312-x86_64-linux-gnu.so": "eb0be839de652e059799dea3bba22cc0908998bd97cfa2f4cf04c67817e2ee50",
+      "argentea_factory.py": "b79bb66e6dab06a8d3b405fcad3633614f394e89a35012ed2d1fb2095e43271a",
+      "client.py": "0e184de1daf55d1ea483c7153ea9df6951445b6e1206bd29027e3283a2ed803e",
+      "graph.py": "6ec3cb51c88dcbf677bde93bc2320dead5703e3f586d1b0a59b34919dc20cb57"
+    }
+  },
+  "packages": {
+    "pyspark": "4.0.1",
+    "numpy": "2.5.3",
+    "pyarrow": "21.0.0",
+    "protobuf": "7.36.2",
+    "sail-nutmeg": "0.1.0",
+    "sail-sedona-extension": "0.1.0",
+    "pyspark-pecan": "0.1.0"
+  },
+  "platform": "Linux-6.8.0-117-generic-x86_64-with-glibc2.41",
+  "python": "3.12.14 (main, Sep 24 2026, 17:57:43) [Clang 22.1.3 ]",
+  "dataset": {
+    "family": "traversal",
+    "seed": 42,
+    "parameters": {
+      "degree": 32,
+      "source": 0,
+      "directed": true
+    },
+    "counts": {
+      "vertices": 16384,
+      "edges": 529723
+    },
+    "traversal": {
+      "source": 0,
+      "directed": true,
+      "seed": 42,
+      "weight_policy": "seeded integers 0..15 stored as float64"
+    },
+    "purpose": "bounded correctness fixture; not a Graph500 input",
+    "files": {
+      "vertices.parquet": {
+        "sha256": "65fbeb27779f3eade77cb9a74528952628893137b92ae88017f3fe93a96a91a7",
+        "bytes": 94785
+      },
+      "edges.parquet": {
+        "sha256": "d350d66a97f352916e3944657a0d2ae2ddff5718f651e335b33d7c5d7cdfc013",
+        "bytes": 1375846
+      },
+      "reference.parquet": {
+        "sha256": "243f396cd5900402acfea18875a423c9dd40f37f0dc343ba4fa42c90bb2497ef",
+        "bytes": 104754
+      }
+    }
+  },
+  "cgroup_before": {
+    "memory.current": "85786624",
+    "memory.peak": "89108480",
+    "memory.max": "12884901888",
+    "memory.swap.max": "0",
+    "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0",
+    "memory.stat": "anon 80142336\nfile 4907008\nkernel 2338816\nkernel_stack 163840\npagetables 610304\nsec_pagetables 0\npercpu 13056\nsock 0\nvmalloc 12288\nshmem 0\nzswap 0\nzswapped 0\nfile_mapped 0\nfile_dirty 2719744\nfile_writeback 0\nswapcached 0\nanon_thp 0\nfile_thp 0\nshmem_thp 0\ninactive_anon 0\nactive_anon 80142336\ninactive_file 4907008\nactive_file 0\nunevictable 0\nslab_reclaimable 1091128\nslab_unreclaimable 412384\nslab 1503512\nworkingset_refault_anon 0\nworkingset_refault_file 0\nworkingset_activate_anon 0\nworkingset_activate_file 0\nworkingset_restore_anon 0\nworkingset_restore_file 0\nworkingset_nodereclaim 0\npgscan 0\npgsteal 0\npgscan_kswapd 0\npgscan_direct 0\npgscan_khugepaged 0\npgsteal_kswapd 0\npgsteal_direct 0\npgsteal_khugepaged 0\npgfault 25069\npgmajfault 0\npgrefill 0\npgactivate 0\npgdeactivate 0\npglazyfree 0\npglazyfreed 0\nzswpin 0\nzswpout 0\nzswpwb 0\nthp_fault_alloc 0\nthp_collapse_alloc 0\nthp_swpout 0\nthp_swpout_fallback 0",
+    "cpu.max": "800000 100000",
+    "cpu.stat": "usage_usec 18938603\nuser_usec 10687218\nsystem_usec 8251385\ncore_sched.force_idle_usec 0\nnr_periods 183\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0",
+    "cpuset.cpus.effective": "0-7"
+  },
+  "host_load_before": "0.62 1.04 5.16 1/442 24",
+  "installed_extension_boundary": "Experimental extension loading enabled; installed package inventory is recorded separately and does not by itself prove runtime use",
+  "prepaid_native_quota_bytes": 268435456,
+  "sail_pool_per_process_bytes": 3221225472,
+  "remaining_participating_df_budget_bytes": 2952790016,
+  "worker_task_slots_per_worker": 16,
+  "worker_task_slots_total": 32,
+  "boundary": "input DataFrame handles to completed full result Parquet write; server startup and correctness verification excluded",
+  "cache_boundary": "fresh Sail state; dataset checksum reads before timing warm OS page cache; no cache flushing",
+  "outcome": "passed",
+  "cleanup_errors": [],
+  "rlimit_nofile": {
+    "soft": 1024,
+    "hard": 524288
+  },
+  "temporary_directory": "/tmp",
+  "driver_pid": 26,
+  "cgroup_execution_before": {
+    "memory.current": "255774720",
+    "memory.peak": "255778816",
+    "memory.max": "12884901888",
+    "memory.swap.max": "0",
+    "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0",
+    "memory.stat": "anon 243142656\nfile 4984832\nkernel 6447104\nkernel_stack 1114112\npagetables 2703360\nsec_pagetables 0\npercpu 14144\nsock 0\nvmalloc 12288\nshmem 0\nzswap 0\nzswapped 0\nfile_mapped 0\nfile_dirty 1785856\nfile_writeback 0\nswapcached 0\nanon_thp 90177536\nfile_thp 0\nshmem_thp 0\ninactive_anon 0\nactive_anon 242987008\ninactive_file 4976640\nactive_file 0\nunevictable 0\nslab_reclaimable 1235264\nslab_unreclaimable 1276632\nslab 2511896\nworkingset_refault_anon 0\nworkingset_refault_file 0\nworkingset_activate_anon 0\nworkingset_activate_file 0\nworkingset_restore_anon 0\nworkingset_restore_file 0\nworkingset_nodereclaim 0\npgscan 0\npgsteal 0\npgscan_kswapd 0\npgscan_direct 0\npgscan_khugepaged 0\npgsteal_kswapd 0\npgsteal_direct 0\npgsteal_khugepaged 0\npgfault 47887\npgmajfault 0\npgrefill 0\npgactivate 0\npgdeactivate 0\npglazyfree 0\npglazyfreed 0\nzswpin 0\nzswpout 0\nzswpwb 0\nthp_fault_alloc 43\nthp_collapse_alloc 0\nthp_swpout 0\nthp_swpout_fallback 0",
+    "cpu.max": "800000 100000",
+    "cpu.stat": "usage_usec 25094067\nuser_usec 15260514\nsystem_usec 9833552\ncore_sched.force_idle_usec 0\nnr_periods 218\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0",
+    "cpuset.cpus.effective": "0-7"
+  },
+  "algorithm_ready_seconds": 42.967248686007224,
+  "algorithm_iterations": 24,
+  "algorithm_converged": true,
+  "parent_output": "rooted parent tree and hop count",
+  "kernel": "frontier",
+  "end_to_end_seconds": 43.00044652799261,
+  "iteration_events": [
+    {
+      "kind": "iteration_start",
+      "algorithm": "sssp-frontier",
+      "iteration": 1,
+      "elapsed_seconds": 2.3959105759859085
+    },
+    {
+      "kind": "iteration_end",
+      "algorithm": "sssp-frontier",
+      "iteration": 1,
+      "active_vertices": 34,
+      "elapsed_seconds": 2.963493112998549
+    },
+    {
+      "kind": "iteration_start",
+      "algorithm": "sssp-frontier",
+      "iteration": 2,
+      "elapsed_seconds": 3.0765047789900564
+    },
+    {
+      "kind": "iteration_end",
+      "algorithm": "sssp-frontier",
+      "iteration": 2,
+      "active_vertices": 1047,
+      "elapsed_seconds": 5.0121703690092545
+    },
+    {
+      "kind": "iteration_start",
+      "algorithm": "sssp-frontier",
+      "iteration": 3,
+      "elapsed_seconds": 5.444676726008765
+    },
+    {
+      "kind": "iteration_end",
+      "algorithm": "sssp-frontier",
+      "iteration": 3,
+      "active_vertices": 13655,
+      "elapsed_seconds": 8.733084447012516
+    },
+    {
+      "kind": "iteration_start",
+      "algorithm": "sssp-frontier",
+      "iteration": 4,
+      "elapsed_seconds": 8.955785742000444
+    },
+    {
+      "kind": "iteration_end",
+      "algorithm": "sssp-frontier",
+      "iteration": 4,
+      "active_vertices": 13841,
+      "elapsed_seconds": 12.645193523989292
+    },
+    {
+      "kind": "iteration_start",
+      "algorithm": "sssp-frontier",
+      "iteration": 5,
+      "elapsed_seconds": 12.800390082993545
+    },
+    {
+      "kind": "iteration_end",
+      "algorithm": "sssp-frontier",
+      "iteration": 5,
+      "active_vertices": 12051,
+      "elapsed_seconds": 16.549616759992205
+    },
+    {
+      "kind": "iteration_start",
+      "algorithm": "sssp-frontier",
+      "iteration": 6,
+      "elapsed_seconds": 16.645687771000667
+    },
+    {
+      "kind": "iteration_end",
+      "algorithm": "sssp-frontier",
+      "iteration": 6,
+      "active_vertices": 9971,
+      "elapsed_seconds": 20.200282180012437
+    },
+    {
+      "kind": "iteration_start",
+      "algorithm": "sssp-frontier",
+      "iteration": 7,
+      "elapsed_seconds": 20.352266133995727
+    },
+    {
+      "kind": "iteration_end",
+      "algorithm": "sssp-frontier",
+      "iteration": 7,
+      "active_vertices": 8162,
+      "elapsed_seconds": 22.189824453991605
+    },
+    {
+      "kind": "iteration_start",
+      "algorithm": "sssp-frontier",
+      "iteration": 8,
+      "elapsed_seconds": 22.26688396499958
+    },
+    {
+      "kind": "iteration_end",
+      "algorithm": "sssp-frontier",
+      "iteration": 8,
+      "active_vertices": 6689,
+      "elapsed_seconds": 23.423569017992122
+    },
+    {
+      "kind": "iteration_start",
+      "algorithm": "sssp-frontier",
+      "iteration": 9,
+      "elapsed_seconds": 23.51955298599205
+    },
+    {
+      "kind": "iteration_end",
+      "algorithm": "sssp-frontier",
+      "iteration": 9,
+      "active_vertices": 5496,
+      "elapsed_seconds": 25.1493644840084
+    },
+    {
+      "kind": "iteration_start",
+      "algorithm": "sssp-frontier",
+      "iteration": 10,
+      "elapsed_seconds": 25.234677119005937
+    },
+    {
+      "kind": "iteration_end",
+      "algorithm": "sssp-frontier",
+      "iteration": 10,
+      "active_vertices": 4770,
+      "elapsed_seconds": 26.888850793009624
+    },
+    {
+      "kind": "iteration_start",
+      "algorithm": "sssp-frontier",
+      "iteration": 11,
+      "elapsed_seconds": 27.045546100998763
+    },
+    {
+      "kind": "iteration_end",
+      "algorithm": "sssp-frontier",
+      "iteration": 11,
+      "active_vertices": 4025,
+      "elapsed_seconds": 29.11297229799675
+    },
+    {
+      "kind": "iteration_start",
+      "algorithm": "sssp-frontier",
+      "iteration": 12,
+      "elapsed_seconds": 29.22556156400242
+    },
+    {
+      "kind": "iteration_end",
+      "algorithm": "sssp-frontier",
+      "iteration": 12,
+      "active_vertices": 3499,
+      "elapsed_seconds": 30.384289639012422
+    },
+    {
+      "kind": "iteration_start",
+      "algorithm": "sssp-frontier",
+      "iteration": 13,
+      "elapsed_seconds": 30.46574134399998
+    },
+    {
+      "kind": "iteration_end",
+      "algorithm": "sssp-frontier",
+      "iteration": 13,
+      "active_vertices": 3352,
+      "elapsed_seconds": 31.814214243990136
+    },
+    {
+      "kind": "iteration_start",
+      "algorithm": "sssp-frontier",
+      "iteration": 14,
+      "elapsed_seconds": 31.91534878598759
+    },
+    {
+      "kind": "iteration_end",
+      "algorithm": "sssp-frontier",
+      "iteration": 14,
+      "active_vertices": 3318,
+      "elapsed_seconds": 32.85783079100656
+    },
+    {
+      "kind": "iteration_start",
+      "algorithm": "sssp-frontier",
+      "iteration": 15,
+      "elapsed_seconds": 32.96740755200153
+    },
+    {
+      "kind": "iteration_end",
+      "algorithm": "sssp-frontier",
+      "iteration": 15,
+      "active_vertices": 2668,
+      "elapsed_seconds": 35.13325613801135
+    },
+    {
+      "kind": "iteration_start",
+      "algorithm": "sssp-frontier",
+      "iteration": 16,
+      "elapsed_seconds": 35.23319383399212
+    },
+    {
+      "kind": "iteration_end",
+      "algorithm": "sssp-frontier",
+      "iteration": 16,
+      "active_vertices": 1630,
+      "elapsed_seconds": 36.0359580689983
+    },
+    {
+      "kind": "iteration_start",
+      "algorithm": "sssp-frontier",
+      "iteration": 17,
+      "elapsed_seconds": 36.11934939501225
+    },
+    {
+      "kind": "iteration_end",
+      "algorithm": "sssp-frontier",
+      "iteration": 17,
+      "active_vertices": 819,
+      "elapsed_seconds": 36.70658298599301
+    },
+    {
+      "kind": "iteration_start",
+      "algorithm": "sssp-frontier",
+      "iteration": 18,
+      "elapsed_seconds": 36.8163585519942
+    },
+    {
+      "kind": "iteration_end",
+      "algorithm": "sssp-frontier",
+      "iteration": 18,
+      "active_vertices": 361,
+      "elapsed_seconds": 37.742967091005994
+    },
+    {
+      "kind": "iteration_start",
+      "algorithm": "sssp-frontier",
+      "iteration": 19,
+      "elapsed_seconds": 37.8491225070029
+    },
+    {
+      "kind": "iteration_end",
+      "algorithm": "sssp-frontier",
+      "iteration": 19,
+      "active_vertices": 150,
+      "elapsed_seconds": 38.77317188901361
+    },
+    {
+      "kind": "iteration_start",
+      "algorithm": "sssp-frontier",
+      "iteration": 20,
+      "elapsed_seconds": 38.86578734300565
+    },
+    {
+      "kind": "iteration_end",
+      "algorithm": "sssp-frontier",
+      "iteration": 20,
+      "active_vertices": 51,
+      "elapsed_seconds": 39.429318576003425
+    },
+    {
+      "kind": "iteration_start",
+      "algorithm": "sssp-frontier",
+      "iteration": 21,
+      "elapsed_seconds": 39.51154056499945
+    },
+    {
+      "kind": "iteration_end",
+      "algorithm": "sssp-frontier",
+      "iteration": 21,
+      "active_vertices": 16,
+      "elapsed_seconds": 40.12342528600129
+    },
+    {
+      "kind": "iteration_start",
+      "algorithm": "sssp-frontier",
+      "iteration": 22,
+      "elapsed_seconds": 40.20687188199372
+    },
+    {
+      "kind": "iteration_end",
+      "algorithm": "sssp-frontier",
+      "iteration": 22,
+      "active_vertices": 8,
+      "elapsed_seconds": 40.83308698699693
+    },
+    {
+      "kind": "iteration_start",
+      "algorithm": "sssp-frontier",
+      "iteration": 23,
+      "elapsed_seconds": 40.92894179499126
+    },
+    {
+      "kind": "iteration_end",
+      "algorithm": "sssp-frontier",
+      "iteration": 23,
+      "active_vertices": 3,
+      "elapsed_seconds": 42.048167764005484
+    },
+    {
+      "kind": "iteration_start",
+      "algorithm": "sssp-frontier",
+      "iteration": 24,
+      "elapsed_seconds": 42.15201194898691
+    },
+    {
+      "kind": "iteration_end",
+      "algorithm": "sssp-frontier",
+      "iteration": 24,
+      "active_vertices": 0,
+      "elapsed_seconds": 42.6883447500004
+    }
+  ],
+  "cgroup_execution_after": {
+    "memory.current": "765210624",
+    "memory.peak": "955076608",
+    "memory.max": "12884901888",
+    "memory.swap.max": "0",
+    "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0",
+    "memory.stat": "anon 645558272\nfile 5849088\nkernel 9662464\nkernel_stack 1835008\npagetables 4497408\nsec_pagetables 0\npercpu 14144\nsock 16384\nvmalloc 12288\nshmem 0\nzswap 0\nzswapped 0\nfile_mapped 0\nfile_dirty 385024\nfile_writeback 0\nswapcached 0\nanon_thp 211812352\nfile_thp 0\nshmem_thp 0\ninactive_anon 0\nactive_anon 748838912\ninactive_file 5783552\nactive_file 0\nunevictable 0\nslab_reclaimable 1398864\nslab_unreclaimable 1837168\nslab 3236032\nworkingset_refault_anon 0\nworkingset_refault_file 0\nworkingset_activate_anon 0\nworkingset_activate_file 0\nworkingset_restore_anon 0\nworkingset_restore_file 0\nworkingset_nodereclaim 0\npgscan 0\npgsteal 0\npgscan_kswapd 0\npgscan_direct 0\npgscan_khugepaged 0\npgsteal_kswapd 0\npgsteal_direct 0\npgsteal_khugepaged 0\npgfault 611571\npgmajfault 0\npgrefill 0\npgactivate 0\npgdeactivate 0\npglazyfree 0\npglazyfreed 0\nzswpin 0\nzswpout 0\nzswpwb 0\nthp_fault_alloc 583\nthp_collapse_alloc 13\nthp_swpout 0\nthp_swpout_fallback 0",
+    "cpu.max": "800000 100000",
+    "cpu.stat": "usage_usec 177673514\nuser_usec 55065722\nsystem_usec 122607791\ncore_sched.force_idle_usec 0\nnr_periods 648\nnr_throttled 8\nthrottled_usec 117376\nnr_bursts 0\nburst_usec 0",
+    "cpuset.cpus.effective": "0-7"
+  },
+  "result_files": [
+    {
+      "name": "mSb0jMrIuCRMad81_0.zst.parquet",
+      "bytes": 68258,
+      "sha256": "a1e3a809fc461f8bb73a90832fdcf92ee050f7b42f057deaa65cce2f1fd848f5"
+    },
+    {
+      "name": "mSb0jMrIuCRMad81_1.zst.parquet",
+      "bytes": 67981,
+      "sha256": "d3dda4ebdb35099a196b0a08a7ac641a95bd37746bfca46e75afd7f2f917007c"
+    }
+  ],
+  "correctness": {
+    "rows": 16384,
+    "unique": 16384,
+    "parent_tree_checked": true,
+    "reference": "independent BFS/heap-Dijkstra"
+  },
+  "staging_files_after_shutdown": [],
+  "finished_utc": "2026-09-30T17:13:32.179504+00:00",
+  "memory": {
+    "interval_seconds": 0.05,
+    "samples": 492,
+    "phase_peaks": {
+      "startup": {
+        "rss_bytes": 477171712,
+        "pss_bytes": 375557120,
+        "cgroup_current_bytes": 236380160,
+        "fd_total": 61
+      },
+      "baseline": {
+        "rss_bytes": 513171456,
+        "pss_bytes": 399937536,
+        "cgroup_current_bytes": 255774720,
+        "fd_total": 70
+      },
+      "execute": {
+        "rss_bytes": 1127665664,
+        "pss_bytes": 978782208,
+        "cgroup_current_bytes": 952983552,
+        "fd_total": 80
+      },
+      "verification": {
+        "rss_bytes": 973586432,
+        "pss_bytes": 824446976,
+        "cgroup_current_bytes": 765308928,
+        "fd_total": 79
+      },
+      "cleanup": {
+        "rss_bytes": 948854784,
+        "pss_bytes": 798771200,
+        "cgroup_current_bytes": 740208640,
+        "fd_total": 70
+      }
+    },
+    "phase_first_samples": {
+      "startup": {
+        "scan_started_seconds": 133386.721564863,
+        "scan_finished_seconds": 133386.739128605,
+        "phase": "startup",
+        "step": null,
+        "rss_bytes": 140730368,
+        "pss_bytes": 140236800,
+        "pss_processes_available": 2,
+        "cgroup_current_bytes": 92327936,
+        "fd_total": 9,
+        "directories": {
+          "staging": {
+            "files": 0,
+            "bytes": 0
+          },
+          "temporary": {
+            "files": 0,
+            "bytes": 0
+          }
+        },
+        "processes": [
+          {
+            "pid": 1,
+            "name": "docker-init",
+            "rss_bytes": 765952,
+            "pss_bytes": 761856,
+            "fd_count": 3
+          },
+          {
+            "pid": 7,
+            "name": "python",
+            "rss_bytes": 139964416,
+            "pss_bytes": 139474944,
+            "fd_count": 6
+          }
+        ]
+      },
+      "baseline": {
+        "scan_started_seconds": 133390.061301309,
+        "scan_finished_seconds": 133390.078005415,
+        "phase": "baseline",
+        "step": null,
+        "rss_bytes": 513171456,
+        "pss_bytes": 399937536,
+        "pss_processes_available": 5,
+        "cgroup_current_bytes": 255774720,
+        "fd_total": 70,
+        "directories": null,
+        "processes": [
+          {
+            "pid": 1,
+            "name": "docker-init",
+            "rss_bytes": 765952,
+            "pss_bytes": 761856,
+            "fd_count": 3
+          },
+          {
+            "pid": 7,
+            "name": "python",
+            "rss_bytes": 147546112,
+            "pss_bytes": 142224384,
+            "fd_count": 11
+          },
+          {
+            "pid": 26,
+            "name": "sail-linux-x86_",
+            "rss_bytes": 174182400,
+            "pss_bytes": 138490880,
+            "fd_count": 23
+          },
+          {
+            "pid": 62,
+            "name": "sail-linux-x86_",
+            "rss_bytes": 89055232,
+            "pss_bytes": 54045696,
+            "fd_count": 16
+          },
+          {
+            "pid": 63,
+            "name": "sail-linux-x86_",
+            "rss_bytes": 101621760,
+            "pss_bytes": 64414720,
+            "fd_count": 17
+          }
+        ]
+      },
+      "execute": {
+        "scan_started_seconds": 133390.195723085,
+        "scan_finished_seconds": 133390.2110332,
+        "phase": "execute",
+        "step": null,
+        "rss_bytes": 514097152,
+        "pss_bytes": 400717824,
+        "pss_processes_available": 5,
+        "cgroup_current_bytes": 255774720,
+        "fd_total": 70,
+        "directories": null,
+        "processes": [
+          {
+            "pid": 1,
+            "name": "docker-init",
+            "rss_bytes": 765952,
+            "pss_bytes": 761856,
+            "fd_count": 3
+          },
+          {
+            "pid": 7,
+            "name": "python",
+            "rss_bytes": 147611648,
+            "pss_bytes": 142289920,
+            "fd_count": 11
+          },
+          {
+            "pid": 26,
+            "name": "sail-linux-x86_",
+            "rss_bytes": 175042560,
+            "pss_bytes": 139254784,
+            "fd_count": 23
+          },
+          {
+            "pid": 62,
+            "name": "sail-linux-x86_",
+            "rss_bytes": 89055232,
+            "pss_bytes": 54021120,
+            "fd_count": 16
+          },
+          {
+            "pid": 63,
+            "name": "sail-linux-x86_",
+            "rss_bytes": 101621760,
+            "pss_bytes": 64390144,
+            "fd_count": 17
+          }
+        ]
+      },
+      "verification": {
+        "scan_started_seconds": 133433.199927854,
+        "scan_finished_seconds": 133433.253818236,
+        "phase": "verification",
+        "step": null,
+        "rss_bytes": 973586432,
+        "pss_bytes": 824446976,
+        "pss_processes_available": 5,
+        "cgroup_current_bytes": 765308928,
+        "fd_total": 78,
+        "directories": null,
+        "processes": [
+          {
+            "pid": 1,
+            "name": "docker-init",
+            "rss_bytes": 765952,
+            "pss_bytes": 761856,
+            "fd_count": 3
+          },
+          {
+            "pid": 7,
+            "name": "python",
+            "rss_bytes": 146911232,
+            "pss_bytes": 141587456,
+            "fd_count": 11
+          },
+          {
+            "pid": 26,
+            "name": "sail-linux-x86_",
+            "rss_bytes": 270864384,
+            "pss_bytes": 225577984,
+            "fd_count": 25
+          },
+          {
+            "pid": 62,
+            "name": "sail-linux-x86_",
+            "rss_bytes": 278740992,
+            "pss_bytes": 229639168,
+            "fd_count": 20
+          },
+          {
+            "pid": 63,
+            "name": "sail-linux-x86_",
+            "rss_bytes": 276303872,
+            "pss_bytes": 226880512,
+            "fd_count": 19
+          }
+        ]
+      },
+      "cleanup": {
+        "scan_started_seconds": 133433.906676763,
+        "scan_finished_seconds": 133433.942912036,
+        "phase": "cleanup",
+        "step": null,
+        "rss_bytes": 948854784,
+        "pss_bytes": 798771200,
+        "pss_processes_available": 5,
+        "cgroup_current_bytes": 740208640,
+        "fd_total": 70,
+        "directories": null,
+        "processes": [
+          {
+            "pid": 1,
+            "name": "docker-init",
+            "rss_bytes": 765952,
+            "pss_bytes": 761856,
+            "fd_count": 3
+          },
+          {
+            "pid": 7,
+            "name": "python",
+            "rss_bytes": 147017728,
+            "pss_bytes": 141689856,
+            "fd_count": 11
+          },
+          {
+            "pid": 26,
+            "name": "sail-linux-x86_",
+            "rss_bytes": 277114880,
+            "pss_bytes": 232001536,
+            "fd_count": 25
+          },
+          {
+            "pid": 62,
+            "name": "sail-linux-x86_",
+            "rss_bytes": 270614528,
+            "pss_bytes": 220823552,
+            "fd_count": 17
+          },
+          {
+            "pid": 63,
+            "name": "sail-linux-x86_",
+            "rss_bytes": 253341696,
+            "pss_bytes": 203494400,
+            "fd_count": 14
+          }
+        ]
+      }
+    },
+    "phase_sample_counts": {
+      "startup": 48,
+      "transition": 2,
+      "baseline": 2,
+      "execute": 427,
+      "verification": 7,
+      "cleanup": 6
+    },
+    "step_peaks": {},
+    "directory_peaks": {
+      "staging": {
+        "startup": {
+          "files": 0,
+          "bytes": 0
+        },
+        "execute": {
+          "files": 19,
+          "bytes": 4387174
+        },
+        "verification": {
+          "files": 3,
+          "bytes": 136250
+        }
+      },
+      "temporary": {
+        "startup": {
+          "files": 0,
+          "bytes": 0
+        },
+        "execute": {
+          "files": 0,
+          "bytes": 0
+        },
+        "verification": {
+          "files": 0,
+          "bytes": 0
+        }
+      }
+    },
+    "watched_directories": {
+      "staging": "/targets/sail-stream-experiments-20260930/grenada-gate3/cells/grenada-base/staging",
+      "temporary": "/tmp"
+    },
+    "directory_scan_every": 20,
+    "fd_boundary": "sum of open descriptors over all visible processes; None when any /proc/<pid>/fd was unreadable",
+    "directory_boundary": "files and bytes under each watched directory at scan time; a walk sees a tree in motion",
+    "execution_sampled": true,
+    "thread_alive": false,
+    "error": null,
+    "scope": "all visible processes: requires a private PID namespace",
+    "rss_boundary": "sum of contemporaneous process RSS, shared pages counted per process",
+    "pss_boundary": "sum of contemporaneous Linux proportional set size",
+    "cgroup_boundary": "container current/peak includes page cache and allocator overhead"
+  },
+  "cgroup_after": {
+    "memory.current": "87703552",
+    "memory.peak": "955076608",
+    "memory.max": "12884901888",
+    "memory.swap.max": "0",
+    "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0",
+    "memory.stat": "anon 78110720\nfile 5718016\nkernel 2834432\nkernel_stack 163840\npagetables 839680\nsec_pagetables 0\npercpu 14144\nsock 0\nvmalloc 12288\nshmem 0\nzswap 0\nzswapped 0\nfile_mapped 0\nfile_dirty 258048\nfile_writeback 0\nswapcached 0\nanon_thp 0\nfile_thp 0\nshmem_thp 0\ninactive_anon 0\nactive_anon 78110720\ninactive_file 5718016\nactive_file 0\nunevictable 0\nslab_reclaimable 1285176\nslab_unreclaimable 471456\nslab 1756632\nworkingset_refault_anon 0\nworkingset_refault_file 0\nworkingset_activate_anon 0\nworkingset_activate_file 0\nworkingset_restore_anon 0\nworkingset_restore_file 0\nworkingset_nodereclaim 0\npgscan 0\npgsteal 0\npgscan_kswapd 0\npgscan_direct 0\npgscan_khugepaged 0\npgsteal_kswapd 0\npgsteal_direct 0\npgsteal_khugepaged 0\npgfault 619977\npgmajfault 0\npgrefill 0\npgactivate 0\npgdeactivate 0\npglazyfree 0\npglazyfreed 0\nzswpin 0\nzswpout 0\nzswpwb 0\nthp_fault_alloc 585\nthp_collapse_alloc 13\nthp_swpout 0\nthp_swpout_fallback 0",
+    "cpu.max": "800000 100000",
+    "cpu.stat": "usage_usec 182426645\nuser_usec 55535790\nsystem_usec 126890854\ncore_sched.force_idle_usec 0\nnr_periods 660\nnr_throttled 8\nthrottled_usec 117376\nnr_bursts 0\nburst_usec 0",
+    "cpuset.cpus.effective": "0-7"
+  },
+  "guest_steal_fraction": 0.0,
+  "steal_scope": "whole Linux VM from /proc/stat, not container or assigned cpuset",
+  "host_load_after": "1.83 1.30 5.05 2/442 329"
+}

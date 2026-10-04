@@ -1,0 +1,59 @@
+   Compiling sail-argentea-core v0.1.0 (/private/tmp/sail-argentea-wcc-inbox-gate/examples/extensions/argentea)
+    Finished `release` profile [optimized] target(s) in 0.72s
+     Running tests/wcc_inbox.rs (/private/tmp/sail-wcc-inbox-core-target/release/deps/wcc_inbox-80fd7af2d63750c9)
+
+running 5 tests
+WCC_INBOX_COUNTER algorithm=Reference mode=Done vertices=1 arcs=0 partitions=3 allocation_calls=49 allocated_bytes=3103 peak_admitted_bytes=7968
+WCC_INBOX_COUNTER algorithm=Reference mode=Reference vertices=1024 arcs=3 partitions=3 allocation_calls=51 allocated_bytes=19471 peak_admitted_bytes=24336
+WCC_INBOX_COUNTER algorithm=Reference mode=Done vertices=1024 arcs=3 partitions=3 allocation_calls=51 allocated_bytes=19471 peak_admitted_bytes=24336
+WCC_INBOX_COUNTER algorithm=Reference mode=Topology vertices=1 arcs=0 partitions=3 allocation_calls=49 allocated_bytes=3103 peak_admitted_bytes=7968
+WCC_INBOX_COUNTER algorithm=Reference mode=Topology vertices=1024 arcs=3 partitions=3 allocation_calls=51 allocated_bytes=19471 peak_admitted_bytes=24336
+WCC_INBOX_COUNTER algorithm=Reference mode=Topology vertices=65536 arcs=3 partitions=3 allocation_calls=51 allocated_bytes=1051663 peak_admitted_bytes=1056528
+
+thread 'done_inboxes_fit_protocol_sized_headroom' (55163082) panicked at tests/wcc_inbox.rs:129:54:
+called `Result::unwrap()` on an `Err` value: "procedure memory budget exceeded (limit 268435456)"
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test done_inboxes_fit_protocol_sized_headroom ... FAILED
+WCC_INBOX_COUNTER algorithm=Reference mode=Reference vertices=65536 arcs=3 partitions=3 allocation_calls=51 allocated_bytes=1051663 peak_admitted_bytes=1056528
+WCC_INBOX_COUNTER algorithm=Reference mode=Done vertices=65536 arcs=3 partitions=3 allocation_calls=51 allocated_bytes=1051663 peak_admitted_bytes=1056528
+test omitted_labels_still_reject_payloads_before_indexing ... ok
+WCC_INBOX_COUNTER algorithm=StarContraction mode=Topology vertices=1 arcs=0 partitions=3 allocation_calls=49 allocated_bytes=3103 peak_admitted_bytes=7968
+WCC_INBOX_COUNTER algorithm=StarContraction mode=Topology vertices=1024 arcs=3 partitions=3 allocation_calls=51 allocated_bytes=19471 peak_admitted_bytes=24336
+WCC_INBOX_COUNTER algorithm=StarContraction mode=Done vertices=1 arcs=0 partitions=3 allocation_calls=49 allocated_bytes=3103 peak_admitted_bytes=7968
+WCC_INBOX_COUNTER algorithm=StarContraction mode=Neighbors vertices=1024 arcs=3 partitions=3 allocation_calls=51 allocated_bytes=19471 peak_admitted_bytes=24336
+WCC_INBOX_COUNTER algorithm=StarContraction mode=Done vertices=1024 arcs=3 partitions=3 allocation_calls=51 allocated_bytes=19471 peak_admitted_bytes=24336
+WCC_INBOX_COUNTER algorithm=StarContraction mode=Topology vertices=65536 arcs=3 partitions=3 allocation_calls=51 allocated_bytes=1051663 peak_admitted_bytes=1056528
+WCC_INBOX_COUNTER algorithm=StarContraction mode=Neighbors vertices=65536 arcs=3 partitions=3 allocation_calls=51 allocated_bytes=1051663 peak_admitted_bytes=1056528
+WCC_INBOX_COUNTER algorithm=StarContraction mode=Done vertices=65536 arcs=3 partitions=3 allocation_calls=51 allocated_bytes=1051663 peak_admitted_bytes=1056528
+
+thread 'topology_has_no_label_storage' (55163084) panicked at tests/wcc_inbox.rs:204:9:
+assertion `left == right` failed
+  left: Cost { allocation_calls: 49, allocated_bytes: 3103, peak_admitted: 7968 }
+ right: Cost { allocation_calls: 51, allocated_bytes: 19471, peak_admitted: 24336 }
+test topology_has_no_label_storage ... FAILED
+WCC_INBOX_COUNTER algorithm=StarContraction mode=HookRoute vertices=1024 arcs=3 partitions=3 allocation_calls=51 allocated_bytes=19471 peak_admitted_bytes=24336
+
+thread 'done_inboxes_are_independent_of_vertices_and_retained_topology' (55163081) panicked at tests/wcc_inbox.rs:193:9:
+assertion `left == right` failed
+  left: Cost { allocation_calls: 49, allocated_bytes: 3103, peak_admitted: 7968 }
+ right: Cost { allocation_calls: 51, allocated_bytes: 19471, peak_admitted: 24336 }
+test done_inboxes_are_independent_of_vertices_and_retained_topology ... FAILED
+WCC_INBOX_COUNTER algorithm=StarContraction mode=HookRoute vertices=65536 arcs=3 partitions=3 allocation_calls=51 allocated_bytes=1051663 peak_admitted_bytes=1056528
+WCC_INBOX_COUNTER algorithm=StarContraction mode=HookReturn vertices=1024 arcs=3 partitions=3 allocation_calls=51 allocated_bytes=19471 peak_admitted_bytes=24336
+WCC_INBOX_COUNTER algorithm=StarContraction mode=HookReturn vertices=65536 arcs=3 partitions=3 allocation_calls=51 allocated_bytes=1051663 peak_admitted_bytes=1056528
+WCC_INBOX_COUNTER algorithm=StarContraction mode=NormalizeRoute vertices=1024 arcs=0 partitions=3 allocation_calls=51 allocated_bytes=19471 peak_admitted_bytes=24336
+WCC_INBOX_COUNTER algorithm=StarContraction mode=NormalizeRoute vertices=65536 arcs=0 partitions=3 allocation_calls=51 allocated_bytes=1051663 peak_admitted_bytes=1056528
+WCC_INBOX_COUNTER algorithm=StarContraction mode=NormalizeReturn vertices=1024 arcs=0 partitions=3 allocation_calls=51 allocated_bytes=19471 peak_admitted_bytes=24336
+WCC_INBOX_COUNTER algorithm=StarContraction mode=NormalizeReturn vertices=65536 arcs=0 partitions=3 allocation_calls=51 allocated_bytes=1051663 peak_admitted_bytes=1056528
+test all_active_modes_keep_required_label_buffers ... ok
+
+failures:
+
+failures:
+    done_inboxes_are_independent_of_vertices_and_retained_topology
+    done_inboxes_fit_protocol_sized_headroom
+    topology_has_no_label_storage
+
+test result: FAILED. 2 passed; 3 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.57s
+
+error: test failed, to rerun pass `--test wcc_inbox`

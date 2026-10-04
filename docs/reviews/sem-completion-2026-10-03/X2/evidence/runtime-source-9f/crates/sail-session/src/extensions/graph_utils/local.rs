@@ -1,0 +1,114 @@
+//! A no-follow check for the explicitly trusted, exclusively managed local root.
+//!
+//! ObjectStore's local listing follows symbolic links. Checking an owned URI's
+//! lexical prefix therefore is not sufficient before listing/deleting its tree.
+//! This check rejects existing links; it is not a descriptor-relative sandbox
+//! against an OS user racing filesystem changes between the check and operation.
+use std::path::{Path, PathBuf};
+
+use datafusion_common::{Result, exec_datafusion_err, exec_err, plan_datafusion_err, plan_err};
+use url::Url;
+
+#[derive(Debug, Clone)]
+pub(super) struct LocalRoot(PathBuf);
+
+impl LocalRoot {
+    pub(super) fn canonicalize(url: &Url) -> Result<(Url, Option<Self>)> {
+        if url.scheme() != "file" {
+            return Ok((url.clone(), None));
+        }
+        let path = url
+            .to_file_path()
+            .map_err(|()| plan_datafusion_err!("graph utils requires a local file URI"))?;
+        let root = path.canonicalize().map_err(|e| {
+            plan_datafusion_err!(
+                "precreate the trusted graph staging directory before starting Sail: {e}"
+            )
+        })?;
+        if !root.is_dir() || root.parent().is_none() {
+            return plan_err!("graph staging root must be an existing non-root directory");
+        }
+        let url = Url::from_directory_path(&root)
+            .map_err(|()| plan_datafusion_err!("invalid canonical graph staging root"))?;
+        if url.path().trim_matches('/').split('/').any(|part| {
+            !part
+                .bytes()
+                .all(|b| b.is_ascii_alphanumeric() || b"-_.=".contains(&b))
+        }) {
+            return plan_err!(
+                "canonical graph staging root requires unambiguous ASCII path segments"
+            );
+        }
+        Ok((url, Some(Self(root))))
+    }
+
+    pub(super) async fn check(&self, relative: PathBuf) -> Result<()> {
+        let root = self.0.clone();
+        tokio::task::spawn_blocking(move || {
+            // Recheck all root components too: replacing the allocated run or
+            // an ancestor with a symlink must not redirect a later request.
+            let mut current = PathBuf::new();
+            for component in root.components() {
+                current.push(component);
+                reject_link(&current)?;
+            }
+            for component in relative.components() {
+                current.push(component);
+                match std::fs::symlink_metadata(&current) {
+                    Ok(metadata) => reject_type(&current, &metadata)?,
+                    Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(()),
+                    Err(error) => return Err(error.into()),
+                }
+            }
+            let metadata = std::fs::symlink_metadata(&current)?;
+            reject_type(&current, &metadata)?;
+            if !metadata.is_dir() {
+                return Ok(());
+            }
+            // Keep one iterator per directory depth, rather than accumulating
+            // every object path in memory. read_dir/file_type do not follow links.
+            let mut directories = vec![std::fs::read_dir(&current)?];
+            while let Some(directory) = directories.last_mut() {
+                if let Some(entry) = directory.next() {
+                    let entry = entry?;
+                    let kind = entry.file_type()?;
+                    if kind.is_symlink() {
+                        return exec_err!(
+                            "symbolic links are not allowed in graph staging: {}",
+                            entry.path().display()
+                        );
+                    }
+                    if kind.is_dir() {
+                        directories.push(std::fs::read_dir(entry.path())?);
+                    } else if !kind.is_file() {
+                        return exec_err!(
+                            "non-regular file in graph staging: {}",
+                            entry.path().display()
+                        );
+                    }
+                } else {
+                    directories.pop();
+                }
+            }
+            Ok(())
+        })
+        .await
+        .map_err(|e| exec_datafusion_err!("graph staging path check: {e}"))?
+    }
+}
+
+fn reject_link(path: &Path) -> Result<()> {
+    reject_type(path, &std::fs::symlink_metadata(path)?)
+}
+fn reject_type(path: &Path, metadata: &std::fs::Metadata) -> Result<()> {
+    if metadata.file_type().is_symlink() {
+        return exec_err!(
+            "symbolic links are not allowed in graph staging: {}",
+            path.display()
+        );
+    }
+    if !metadata.is_dir() && !metadata.is_file() {
+        return exec_err!("non-regular file in graph staging: {}", path.display());
+    }
+    Ok(())
+}

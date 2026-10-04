@@ -1,0 +1,19 @@
+[build-system]
+requires = ["maturin>=1.8,<2"]
+build-backend = "maturin"
+
+[project]
+name = "sail-sedona-extension"
+version = "0.1.0"
+description = "Apache SedonaDB native scalar extension for the Sail extension proof of concept"
+requires-python = ">=3.12"
+license = "Apache-2.0"
+license-files = ["LICENSE-SEDONADB", "NOTICE-SEDONADB", "LICENSE-GEOS", "NOTICE"]
+
+[project.entry-points."pysail.extensions"]
+sedona = "sail_sedona:extension"
+
+[tool.maturin]
+features = ["pyo3/extension-module"]
+module-name = "sail_sedona._native"
+python-source = "python"

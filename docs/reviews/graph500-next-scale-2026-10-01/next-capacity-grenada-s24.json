@@ -1,0 +1,81 @@
+{
+  "run_id": "next-capacity-grenada-s24",
+  "docker_context": "colima-sail-gate",
+  "image": "sha256:f3518d652fbea8b9b9f9ebf9849277ca3bd39d0c21bb2c6e36fbaeaa2dc2678e",
+  "target_volume": "sail-extension-targets",
+  "container_python": "/targets/graph-nuts-ffcfbd569/venv/bin/python",
+  "container_repo": "/targets/sail-stream-experiments-20260930/source-3a9028057",
+  "container_sail_binary": "/targets/sail-compact-host-56194b170155/sail-linux-x86_64-56194b170155-release",
+  "runtime_source_sha": "56194b170155301ba91077f0ba3df31fe2c78b6b",
+  "native_source_sha": "ffcfbd5690e3f3681ef9ac18ba959bc231cf9f73",
+  "harness_source_sha": "3a9028057c6c6c5034492845926fc4bc18f9626f",
+  "container_root": "/targets/sail-stream-experiments-20260930/next-capacity-grenada-s24",
+  "host_output": "/Users/alexy/src/sail-extensions-gates/stream-experiments-20260930/next-capacity-grenada-s24",
+  "seed": 20260929,
+  "limits": {
+    "cpus": 32,
+    "cpuset_cpus": "0-31",
+    "memory_gib": 100,
+    "outer_timeout_seconds": 32400
+  },
+  "defaults": {
+    "partitions": 32,
+    "threads": 32,
+    "worker_task_slots": 64,
+    "sail_pool_bytes": 103079215104,
+    "native_quota": 85899345920,
+    "tolerance": 1e-08,
+    "damping": 0.85,
+    "max_iterations": 1000,
+    "timeout": 28800,
+    "seed": 42,
+    "delta": 0.1
+  },
+  "datasets": {
+    "scale24": {
+      "family": "graph500",
+      "vertices": 16777216,
+      "scale": 24,
+      "edge_factor": 16,
+      "seed1": 42,
+      "seed2": 54,
+      "source": 13507776,
+      "directed": false,
+      "generator": "/targets/traversal-linux-038c9b9597d3/functional/graph500-stream",
+      "validation": "certificate",
+      "certificate_max_rounds": 10000,
+      "expected_edge_sha256": "cacd401faca8b8da8cd81fcbedfadce5b355c7029c6c53fc9bec947b60d6649e"
+    }
+  },
+  "suites": [
+    {
+      "name": "next-capacity-grenada-s24",
+      "mode": "process-cluster",
+      "repetitions": 1,
+      "datasets": [
+        "scale24"
+      ],
+      "engines": [
+        "nutmeg-datafusion"
+      ],
+      "algorithms": [
+        "sssp"
+      ],
+      "variants": [
+        "delta_star"
+      ],
+      "max_iterations": 1000
+    }
+  ],
+  "note": "Capacity qualification on shared Morrobay. Same compact561 runtime, original3a controller/nativeffcf, source and protocol as closed Pecan24. Fresh namespace; retained immutable input. Algorithm timeout8h and whole-cell outer9h leave room for larger work and certification. Serial resource admission and disk guard supplement existing harness; every outcome retained.",
+  "extra_cell_args": [
+    "--record-plans",
+    "--http2-keepalive-timeout",
+    "120"
+  ],
+  "environment": {
+    "SAIL_CLUSTER__TASK_STREAM_CREATION_TIMEOUT_SECS": "900",
+    "SAIL_CLUSTER__WORKER_MAX_IDLE_TIME_SECS": "86400",
+    "SAIL_BENCHMARK_RUST_LOG": "info,h2::proto::connection=debug,h2::proto::streams=warn,h2::frame::go_away=trace,h2::frame::reset=trace,h2::frame::ping=trace,h2::proto::ping_pong=trace,sail_execution::task_runner=debug,tonic::transport::server=debug"
+  }
+}

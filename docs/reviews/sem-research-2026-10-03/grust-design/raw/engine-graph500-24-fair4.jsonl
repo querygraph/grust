@@ -1,0 +1,6 @@
+{"graph": "graph500-24", "step": "1 dense ids: row_number over id, write", "seconds": 0.417, "server_peak_rss_gib": 0.29, "pool": "fair 4 GiB"}
+{"graph": "graph500-24", "step": "2 map both endpoints: two joins, write unsorted", "seconds": 6.298, "server_peak_rss_gib": 1.49, "pool": "fair 4 GiB"}
+{"graph": "graph500-24", "step": "3 sort by (s, d), write one file", "seconds": 1.366, "server_peak_rss_gib": 5.41, "pool": "fair 4 GiB", "error": "Failed to allocate additional 208.1 KB for ExternalSorterMerge[3] with 0.0 B already allocated for this reservation - 79.2 KB remain available for the total memory pool: fair(pool_size: 4.0 GB)"}
+{"graph": "graph500-24", "step": "2+3 map and sort in one job, write one file", "seconds": 24.045, "server_peak_rss_gib": 6.17, "pool": "fair 4 GiB"}
+{"graph": "graph500-24", "step": "4 map a dense result back: one join of n rows, write", "seconds": 0.306, "server_peak_rss_gib": 6.17, "pool": "fair 4 GiB"}
+{"graph": "graph500-24", "step": "summary", "vertices": 8870942, "files": {"map": 4, "edges-dense": 8, "edges-mapped-sorted": 6}, "bytes": {"map": 24253556, "edges-dense": 1012076132, "edges-mapped-sorted": 846424003}}

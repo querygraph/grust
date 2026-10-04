@@ -1,0 +1,59 @@
+{
+  "observed_utc": "2026-10-01T22:16:16.123631+00:00",
+  "outcome": "closure_verified_staging_preserved",
+  "original_host_outcome": "error",
+  "cause": "case-sensitive Docker absence message parser rejected lowercase no such object",
+  "algorithm_launches": 0,
+  "certain_container_closure": true,
+  "staging_producer": "passed",
+  "controller": "f3b3ef8fc054ce7788ec2b46ec8b034ccec1f98a",
+  "retained_lock": "/Volumes/Apo/graph-tests/results/sem-review-20261001/A2-run01/stage01/retained-closed-lock",
+  "original_owner": {
+    "action": "stage",
+    "host": "/Volumes/Apo/graph-tests/results/sem-review-20261001/A2-run01/stage01",
+    "pid": 36351,
+    "run_id": "stage01",
+    "started_utc": "2026-10-01T22:13:36.390309+00:00",
+    "token": "f5238e5f0caa4ee5a10b6a9f6f199df4"
+  },
+  "fresh_observations": [
+    {
+      "command": [
+        "/usr/local/bin/docker",
+        "--context",
+        "colima-sail-gate",
+        "inspect",
+        "sem-review-a2-stage01-stage"
+      ],
+      "exit_code": 1,
+      "stdout": "[]\n",
+      "stderr": "error: no such object: sem-review-a2-stage01-stage\n"
+    },
+    {
+      "command": [
+        "/usr/local/bin/docker",
+        "--context",
+        "colima-sail-gate",
+        "inspect",
+        "27712303b645e20d74b95fbd0d6feffd06dfe77ba72b9bb25f12e7b62aee3b81"
+      ],
+      "exit_code": 1,
+      "stdout": "[]\n",
+      "stderr": "error: no such object: 27712303b645e20d74b95fbd0d6feffd06dfe77ba72b9bb25f12e7b62aee3b81\n"
+    },
+    {
+      "command": [
+        "/usr/local/bin/docker",
+        "--context",
+        "colima-sail-gate",
+        "ps",
+        "-q"
+      ],
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    }
+  ],
+  "original_stage_receipt_sha256": "c97c7ee061dbd62a60abec4732c8e8bed774871aee6c119d4ea056adbf3a4052",
+  "decision": "Reuse verified immutable staged inputs, not rerun stage01; next phase has a fresh ID after host parser fix gates."
+}

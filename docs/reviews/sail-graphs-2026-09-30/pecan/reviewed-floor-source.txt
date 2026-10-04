@@ -1,0 +1,36 @@
+crates/sail-function/src/scalar/math/spark_ceil_floor.rs at ffcfbd5690e3f3681ef9ac18ba959bc231cf9f73
+574:                 if let Some(target_scale) = *target_scale {
+575:                     let (return_type_precision, return_type_scale) =
+576:                         get_return_type_precision_scale(return_type)?;
+577:                     let masked = mask_non_finite_f64(arg);
+578:                     let arg = masked.cast_to(
+579:                         &DataType::Decimal128(return_type_precision, return_type_scale),
+580:                         float_cast_options,
+581:                     )?;
+582:                     decimal128_ceil_floor(name, &arg, &Some(target_scale), return_type)
+583:                 } else {
+584:                     let func = if matches!(name, "ceil") {
+585:                         f64::ceil
+586:                     } else {
+587:                         f64::floor
+588:                     };
+589:                     match arg {
+590:                         ColumnarValue::Scalar(ScalarValue::Float64(value)) => {
+591:                             Ok(ColumnarValue::Scalar(ScalarValue::Int64(
+592:                                 value.map(|x| func(x) as i64),
+593:                             )))
+594:                         }
+595:                         ColumnarValue::Array(array) => Ok(ColumnarValue::Array(Arc::new(
+596:                             array
+597:                                 .as_primitive::<Float64Type>()
+598:                                 .unary::<_, Int64Type>(|x| func(x) as i64),
+599:                         )
+600:                             as ArrayRef)),
+601:                         _ => Err(unsupported_data_type_exec_err(
+602:                             name,
+603:                             format!("{}", DataType::Float64).as_str(),
+604:                             &arg.data_type(),
+605:                         )),
+606:                     }
+607:                 }
+608:             }

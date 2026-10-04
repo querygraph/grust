@@ -1,0 +1,413 @@
+"""Gate the frozen detached PR/WCC input-lifetime component only.
+
+Scope: Argentea core and Nutmeg release unit tests, ordinary and all cores
+saturated. No host Rust/CLI/Python/Linux/worker/Flight/native wheel or timing,
+RSS, cluster or performance qualification. Evidence remains outside Sail.
+"""
+import argparse
+from contextlib import ExitStack
+from datetime import datetime, timezone
+import hashlib
+import json
+import os
+from pathlib import Path
+import re
+import shutil
+import signal
+import subprocess
+import sys
+import time
+
+PYTHON = Path('/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/bin/python')
+NATIVE_FORMAT = [
+    'examples/extensions/nutmeg/src/argentea/input.rs',
+    'examples/extensions/nutmeg/src/argentea/delta/input.rs',
+    'examples/extensions/nutmeg/src/argentea/delta/tests.rs',
+    'examples/extensions/nutmeg/src/argentea/delta/tests/initialization.rs',
+    'examples/extensions/nutmeg/src/argentea/wcc/input.rs',
+    'examples/extensions/nutmeg/src/argentea/tests.rs',
+    'examples/extensions/nutmeg/src/argentea/wcc/tests.rs',
+    'examples/extensions/nutmeg/src/argentea/tests/initialization.rs',
+    'examples/extensions/nutmeg/src/argentea/tests/lifetime_allocations.rs',
+    'examples/extensions/nutmeg/src/argentea/wcc/tests/initialization.rs',
+]
+MIN_FREE = 32 * 1024**3
+GROUP_TERM_GRACE = 30
+GROUP_KILL_GRACE = 10
+
+
+def utc():
+    return datetime.now(timezone.utc).isoformat()
+
+
+def sha(path):
+    result = hashlib.sha256()
+    with path.open('rb') as stream:
+        for block in iter(lambda: stream.read(1 << 20), b''):
+            result.update(block)
+    return result.hexdigest()
+
+
+def check(condition, message):
+    if not condition:
+        raise RuntimeError(message)
+
+
+def stop_group(process):
+    """Stop only a group created by this driver, and prove that group is absent.
+
+    Waiting for the leader alone cannot prove that its descendants exited.
+    Only direct children are reaped here; group absence is the separate check.
+    """
+    permission_probes = []
+
+    def exists():
+        process.poll()  # Reap an exited leader before asking macOS about its group.
+        try:
+            os.killpg(process.pid, 0)
+            return True
+        except ProcessLookupError:
+            return False
+        except PermissionError:
+            # Darwin can report EPERM while a just-exited group is disappearing.
+            # EPERM itself is never absence: require a complete successful ps read.
+            process.poll()
+            snapshot = subprocess.check_output(['ps', '-axo', 'pid=,pgid='], text=True, timeout=5)
+            pairs = [tuple(map(int, line.split())) for line in snapshot.splitlines() if line.strip()]
+            check(pairs and all(len(pair) == 2 for pair in pairs), 'empty/malformed process-group inventory')
+            check(any(pid == os.getpid() for pid, _ in pairs), 'process inventory omitted driver')
+            members = [pid for pid, pgid in pairs if pgid == process.pid]
+            permission_probes.append(dict(recorded_utc=utc(), pid=process.pid, member_pids=members,
+                                          proof='successful complete ps pid/pgid snapshot'))
+            return bool(members)
+
+    result = dict(pid=process.pid, leader_complete_on_entry=process.poll() is not None,
+                  group_alive_on_entry=exists(), signals=[], permission_probes=permission_probes)
+    for signum in (signal.SIGTERM, signal.SIGKILL):
+        if not exists():
+            break
+        try:
+            os.killpg(process.pid, signum)
+            result['signals'].append(signum.name)
+        except ProcessLookupError:
+            break
+        except PermissionError:
+            if not exists():
+                break
+            raise
+        deadline = time.monotonic() + (GROUP_TERM_GRACE if signum == signal.SIGTERM else GROUP_KILL_GRACE)
+        while exists() and time.monotonic() < deadline:
+            process.poll()  # Reap the direct child when it exits.
+            time.sleep(.05)
+    process.wait(timeout=1)
+    result.update(leader_returncode=process.returncode, leader_reaped=True,
+                  group_absent=not exists())
+    check(result['group_absent'], 'owned process group remains: ' + str(result))
+    return result
+
+
+def native_registry(text):
+    """Libtest --list output only: no interleaved per-test status parsing."""
+    lines = [line for line in text.splitlines() if line.strip()]
+    names = [match[1] for line in lines if (match := re.fullmatch(r'(\S+): test', line))]
+    check(len(names) == len(set(names)) == 55, 'native registry missing/duplicate tests')
+    check(sum(name.startswith('argentea::') for name in names) == 49, 'native Argentea registry differs')
+    check(len(lines) == 56 and lines[-1] == '55 tests, 0 benchmarks', 'native registry footer/extra output differs')
+    return dict(tests=55, argentea_tests=49, names=sorted(names))
+
+
+def test_summaries(text, expected):
+    rows = re.findall(r'^test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored; (\d+) measured; (\d+) filtered out;', text, re.M)
+    values = [tuple(map(int, row)) for row in rows]
+    check(values and sum(row[0] for row in values) == expected, 'test inventory differs')
+    check(all(row[1:] == (0, 0, 0, 0) for row in values), 'failed/ignored/measured/filtered tests')
+    return values
+
+
+def cargo_artifact(log, name, manifest):
+    artifacts = []
+    for line in log.read_text().splitlines():
+        if not line.startswith('{'):
+            continue
+        try:
+            item = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if item.get('reason') == 'compiler-artifact' and item.get('target', {}).get('name') == name and item.get('executable'):
+            artifacts.append(item)
+    check(len(artifacts) == 1, 'Cargo executable artifact inventory differs')
+    check(Path(artifacts[0]['manifest_path']).resolve() == manifest.resolve(), 'artifact belongs to another source')
+    return artifacts[0]
+
+
+def native_binary_guard(proof):
+    check(sha(Path(proof['binary'])) == proof['binary_sha256'], 'native test executable changed')
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    for name in ('repo', 'output', 'target-root'):
+        parser.add_argument('--' + name, type=Path, required=True)
+    for name in ('head', 'tree'):
+        parser.add_argument('--' + name, required=True)
+    parser.add_argument('--exact', action='store_true')
+    args = parser.parse_args()
+    for name in ('repo', 'output', 'target_root'):
+        setattr(args, name, getattr(args, name).resolve())
+    check(not args.output.is_relative_to(args.repo), 'output must be outside source')
+    check(not args.target_root.is_relative_to(args.repo), 'targets must be outside source')
+    args.output.mkdir(parents=True, exist_ok=False)
+    script_hash = sha(Path(__file__))
+    receipt = dict(started_utc=utc(), outcome='RUNNING', repository='querygraph/sail',
+                   repo=str(args.repo), output=str(args.output), head=args.head, tree=args.tree,
+                   exact=args.exact, target_root=str(args.target_root), script_sha256=script_hash,
+                   scope=__doc__, steps=[], guards=[], saturation=[], cleanup=[])
+    processes = []
+    lock_fd = None
+    lock_path = args.target_root / '.rank-wcc-input-gate.lock'
+    baseline = None
+    git_env = dict(os.environ, GIT_OPTIONAL_LOCKS='0')
+
+    def save():
+        temporary = args.output / 'receipt.tmp'
+        temporary.write_text(json.dumps(receipt, indent=2) + '\n')
+        temporary.replace(args.output / 'receipt.json')
+
+    def git(*command):
+        return subprocess.check_output(['git', *command], cwd=args.repo, env=git_env)
+
+    def state():
+        head = git('rev-parse', 'HEAD').decode().strip()
+        tree = git('write-tree').decode().strip()
+        index = git('ls-files', '--stage', '-z')
+        check(subprocess.run(['git', 'symbolic-ref', '-q', 'HEAD'], cwd=args.repo,
+                             capture_output=True, env=git_env).returncode == 1, 'source must be detached')
+        check(head == args.head and tree == args.tree, 'unexpected HEAD/index tree')
+        check(subprocess.run(['git', 'diff', '--quiet'], cwd=args.repo, env=git_env).returncode == 0,
+              'unstaged source changes')
+        check(not git('ls-files', '--others', '--exclude-standard'), 'untracked source files')
+        status = git('status', '--porcelain').decode()
+        if args.exact:
+            check(not status and git('rev-parse', 'HEAD^{tree}').decode().strip() == args.tree,
+                  'exact gate requires a clean matching commit')
+        files = {}
+        for raw in git('ls-files', '-z').split(b'\0'):
+            if not raw:
+                continue
+            name = os.fsdecode(raw)
+            path = args.repo / name
+            files[name] = dict(mode=path.lstat().st_mode,
+                               sha256=(hashlib.sha256(os.fsencode(os.readlink(path))).hexdigest()
+                                       if path.is_symlink() else sha(path)))
+        check(git('rev-parse', 'HEAD').decode().strip() == head and
+              git('write-tree').decode().strip() == tree and
+              git('ls-files', '--stage', '-z') == index, 'source identity changed during snapshot')
+        return dict(head=head, tree=tree, status=status, files=files,
+                    index_sha256=hashlib.sha256(index).hexdigest())
+
+    def guard(label):
+        started = utc()
+        current = state()
+        check(sha(Path(__file__)) == script_hash, 'gate driver changed')
+        if current != baseline:
+            (args.output / ('source-mismatch-' + label + '.json')).write_text(
+                json.dumps(current, indent=2) + '\n')
+            raise RuntimeError('frozen source changed: ' + label)
+        receipt['guards'].append(dict(label=label, started_utc=started, completed_utc=utc(),
+                                       source_sha256=hashlib.sha256(json.dumps(current, sort_keys=True).encode()).hexdigest()))
+        save()
+
+    def run(name, command, env, count=None, native_proof=None, loaded=False, separate_stderr=False):
+        guard(name + '-before')
+        if native_proof is not None:
+            native_binary_guard(native_proof)
+        free = min(shutil.disk_usage(args.repo).free, shutil.disk_usage(args.target_root).free)
+        check(free >= MIN_FREE, 'free disk below 32 GiB before ' + name)
+        step = dict(name=name, command=[str(x) for x in command], started_utc=utc(),
+                    free_bytes_before=free, outcome='RUNNING', environment=env)
+        receipt['steps'].append(step)
+        if loaded:
+            step['load_alive_before'] = sum(p.poll() is None for p in processes)
+            check(step['load_alive_before'] == len(processes) and processes, 'load missing')
+        save()
+        process = None
+        log = args.output / (name + '.log')
+        stderr_log = args.output / (name + '.stderr')
+        error = None
+        try:
+            with ExitStack() as stack:
+                stream = stack.enter_context(log.open('x'))
+                stderr = stack.enter_context(stderr_log.open('x')) if separate_stderr else subprocess.STDOUT
+                process = subprocess.Popen(command, cwd=args.repo, env=dict(os.environ, **env),
+                                           stdout=stream, stderr=stderr, start_new_session=True)
+                step['pid'] = process.pid
+                save()
+                step['returncode'] = process.wait(timeout=7200)
+            check(step['returncode'] == 0, name + ' command failed')
+            text = log.read_text()
+            if count is not None:
+                step['summaries'] = test_summaries(text, count)
+                step['tests_passed'] = count
+            if native_proof is not None:
+                native_binary_guard(native_proof)
+                check(native_proof['binary'] in text, 'native command executed another test artifact')
+                check(step['summaries'] == [(55, 0, 0, 0, 0)], 'native run must be complete and unfiltered')
+                step.update(native_binary_sha256=native_proof['binary_sha256'],
+                            native_registry_sha256=native_proof['registry_sha256'],
+                            argentea_tests_passed=native_proof['argentea_tests'],
+                            argentea_count_evidence='49 registered in pinned executable; all 55 registered tests pass, none ignored/filtered')
+            if loaded:
+                step['load_alive_after'] = sum(p.poll() is None for p in processes)
+                check(step['load_alive_after'] == len(processes), 'load exited during test')
+            step['outcome'] = 'PASS'
+        except BaseException as caught:
+            error = caught
+            step.update(outcome='FAIL', error=repr(caught))
+        finally:
+            if process is not None:
+                try:
+                    cleanup = stop_group(process)
+                    step['process_cleanup'] = cleanup
+                    step['final_returncode'] = process.returncode
+                    check(not (cleanup['leader_complete_on_entry'] and cleanup['group_alive_on_entry']),
+                          'command left background processes')
+                except BaseException as caught:
+                    step['cleanup_error'] = repr(caught)
+                    step['outcome'] = 'FAIL'
+                    error = error or caught
+            if log.exists():
+                step.update(log=log.name, log_bytes=log.stat().st_size, log_sha256=sha(log))
+            if stderr_log.exists():
+                step.update(stderr_log=stderr_log.name, stderr_log_sha256=sha(stderr_log))
+            step.update(finished_utc=utc(), free_bytes_after=shutil.disk_usage(args.target_root).free)
+            try:
+                guard(name + '-after')
+            except BaseException as caught:
+                step['source_guard_error'] = repr(caught)
+                step['outcome'] = 'FAIL'
+                error = error or caught
+            save()
+        print(name, step['outcome'], flush=True)
+        if error:
+            raise error
+
+    def reap_load():
+        for process in processes:
+            try:
+                cleanup = stop_group(process)
+                receipt['cleanup'].append(dict(kind='saturator', pid=process.pid,
+                                               returncode=process.returncode, reaped=process.poll() is not None,
+                                               group_cleanup=cleanup))
+            except BaseException as error:
+                receipt['cleanup'].append(dict(kind='saturator', pid=process.pid, error=repr(error), reaped=False))
+        check(all(p.poll() is not None for p in processes), 'unreaped saturator')
+        check(all(x.get('reaped') for x in receipt['cleanup']), 'saturator cleanup failed')
+        processes.clear()
+        save()
+
+    def interrupted(signum, _frame):
+        raise InterruptedError('received signal ' + str(signum))
+
+    previous_handlers = {s: signal.signal(s, interrupted) for s in (signal.SIGTERM, signal.SIGINT)}
+    save()
+    try:
+        args.target_root.mkdir(parents=True, exist_ok=True)
+        lock_fd = os.open(lock_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+        os.write(lock_fd, (str(os.getpid()) + '\n').encode())
+        baseline = state()
+        (args.output / 'source-before.json').write_text(json.dumps(baseline, indent=2) + '\n')
+        receipt['source_before_sha256'] = sha(args.output / 'source-before.json')
+        for target in ('core', 'native'):
+            (args.target_root / target).mkdir(exist_ok=True)
+        probe_env = {key: value for key, value in os.environ.items()
+                     if key not in ('PYTHONHOME', 'PYTHONPATH', 'DYLD_LIBRARY_PATH', 'LD_LIBRARY_PATH')}
+        probe_env.update(PYTHONNOUSERSITE='1', PYTHONDONTWRITEBYTECODE='1', GIT_OPTIONAL_LOCKS='0')
+        info = json.loads(subprocess.check_output([str(PYTHON), '-c',
+            'import json,sys,sysconfig; print(json.dumps(dict(version=list(sys.version_info[:3]), '
+            'base_prefix=sys.base_prefix, purelib=sysconfig.get_path("purelib"), libdir=sysconfig.get_config_var("LIBDIR"))))'], env=probe_env))
+        check(info['version'] == [3, 12, 8], 'native requires pinned Python 3.12.8')
+        check(Path(info['purelib']).is_dir() and Path(info['libdir']).is_dir(), 'Python paths absent')
+        receipt['python'] = dict(path=str(PYTHON), executable_sha256=sha(PYTHON), **info)
+        base = dict(CARGO_INCREMENTAL='0', CARGO_NET_OFFLINE='true', CARGO_BUILD_JOBS='6',
+                    PYTHONDONTWRITEBYTECODE='1', PYTHONNOUSERSITE='1', GIT_OPTIONAL_LOCKS='0')
+        python_env = dict(PYO3_PYTHON=str(PYTHON), PYTHONHOME=info['base_prefix'],
+                          PYTHONPATH=info['purelib'], DYLD_LIBRARY_PATH=info['libdir'],
+                          PATH=str(PYTHON.parent)+os.pathsep+os.environ['PATH'])
+        core = dict(base, CARGO_TARGET_DIR=str(args.target_root/'core'))
+        native = dict(base, **python_env, CARGO_TARGET_DIR=str(args.target_root/'native'))
+        environment = dict(core=core, native=native)
+        receipt['environments'] = environment
+        receipt['native_format_scope'] = dict(files=NATIVE_FORMAT,
+            exclusions='Inherited full Nutmeg format failures; all ten changed Rust files are checked.')
+        manifest = lambda name: str(args.repo / f'examples/extensions/{name}/Cargo.toml')
+        run('diff-check', ['git', 'diff', '--cached', '--check'], core)
+        run('core-format', ['cargo', 'fmt', '--manifest-path', manifest('argentea'), '--', '--check'], core)
+        run('core-clippy', ['cargo', 'clippy', '--manifest-path', manifest('argentea'), '--locked', '--offline', '--all-targets', '--', '-D', 'warnings'], core)
+        run('native-changed-format', ['rustfmt', '--edition', '2024', '--check', '--config', 'skip_children=true',
+                                     *[str(args.repo / name) for name in NATIVE_FORMAT]], native)
+        core_test = ['cargo', 'test', '--manifest-path', manifest('argentea'), '--locked', '--offline', '--release', '--', '--nocapture']
+        run('core-release', core_test, core, 136)
+        run('native-build', ['cargo', 'test', '--manifest-path', manifest('nutmeg'), '--locked', '--offline',
+                             '--release', '--lib', '--no-run', '--message-format=json-render-diagnostics'], native)
+        artifact = cargo_artifact(args.output / 'native-build.log', '_native', Path(manifest('nutmeg')))
+        native_binary = Path(artifact['executable']).resolve()
+        check(artifact['profile']['test'] is True and native_binary.is_relative_to((args.target_root/'native/release').resolve()),
+              'native artifact is not this target release test binary')
+        native_hash = sha(native_binary)
+        native_test = ['cargo', 'test', '--manifest-path', manifest('nutmeg'), '--locked', '--offline', '--release', '--lib']
+        run('native-registry', [*native_test, '--', '--list'], native, separate_stderr=True)
+        check(str(native_binary) in (args.output / 'native-registry.stderr').read_text(), 'registry executed another test artifact')
+        proof = native_registry((args.output / 'native-registry.log').read_text())
+        proof.update(binary=str(native_binary), binary_sha256=native_hash,
+                     registry_log_sha256=sha(args.output / 'native-registry.log'), cargo_artifact=artifact)
+        native_binary_guard(proof)
+        (args.output / 'native-registry.json').write_text(json.dumps(proof, indent=2)+'\n')
+        proof['registry_sha256'] = sha(args.output / 'native-registry.json')
+        receipt['native_registry'] = proof
+        save()
+        native_test = [*native_test, '--', '--nocapture']
+        run('native-release', native_test, native, 55, native_proof=proof)
+        count = os.cpu_count()
+        check(count is not None and count > 0, 'CPU count unavailable')
+        yes = shutil.which('yes')
+        check(yes is not None, 'saturator executable absent')
+        for _ in range(count):
+            process = subprocess.Popen([yes], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
+            processes.append(process)
+            receipt['saturation'].append(dict(pid=process.pid, started_utc=utc()))
+            save()
+        time.sleep(1)
+        run('core-loaded', core_test, core, 136, loaded=True)
+        run('native-loaded', native_test, native, 55, native_proof=proof, loaded=True)
+        reap_load()
+        guard('final')
+        receipt['outcome'] = 'PASS'
+    except BaseException as error:
+        receipt.update(outcome='FAIL', error=repr(error))
+    finally:
+        for signum in previous_handlers:
+            signal.signal(signum, signal.SIG_IGN)
+        try:
+            reap_load()
+        except BaseException as error:
+            receipt.update(outcome='FAIL', cleanup_error=repr(error))
+        if lock_fd is not None:
+            try:
+                check(os.fstat(lock_fd).st_ino == lock_path.stat().st_ino, 'target lock replaced')
+                lock_path.unlink()
+            except BaseException as error:
+                receipt.update(outcome='FAIL', lock_cleanup_error=repr(error))
+            finally:
+                os.close(lock_fd)
+        receipt['finished_utc'] = utc()
+        receipt['all_saturators_reaped'] = all(x.get('reaped') for x in receipt['cleanup'] if x['kind'] == 'saturator')
+        save()
+        for signum, handler in previous_handlers.items():
+            signal.signal(signum, handler)
+    print('RANK_WCC_INPUT_LIFETIME_GATE', receipt['outcome'], args.head,
+          'exact commit' if args.exact else 'staged tree ' + args.tree, flush=True)
+    return 0 if receipt['outcome'] == 'PASS' else 1
+
+
+if __name__ == '__main__':
+    sys.exit(main())

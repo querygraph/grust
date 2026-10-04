@@ -1,0 +1,24 @@
+{
+  "utc": "2026-09-30T16:46:40.848899+00:00",
+  "outcome": "oom",
+  "cell": {
+    "cell_id": "stream-log01-r1-scale24-pecan-bfs-frontier",
+    "suite": "stream-log01",
+    "repeat": 1,
+    "dataset": "scale24",
+    "engine": "pecan",
+    "algorithm": "bfs",
+    "variant": "frontier",
+    "mode": "process-cluster",
+    "stage_order": "canonical",
+    "max_iterations": 1000,
+    "expected_outcome": "passed",
+    "diagnostic": false,
+    "sequence": 1
+  },
+  "receipt_outcome": "error",
+  "original_runtime": "ffcfbd5690e3f3681ef9ac18ba959bc231cf9f73",
+  "harness": "3a9028057c6c6c5034492845926fc4bc18f9626f",
+  "error": "Traceback (most recent call last):\n  File \"/targets/sail-stream-experiments-20260930/source-3a9028057/examples/extensions/benchmarks/graph_cell.py\", line 494, in main\n    result, handle, nm = execute(spark, args, manifest, receipt, sampler)\n                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/targets/sail-stream-experiments-20260930/source-3a9028057/examples/extensions/benchmarks/graph_cell.py\", line 124, in execute\n    return traversal_execute(spark, args, receipt, sampler)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/targets/sail-stream-experiments-20260930/source-3a9028057/examples/extensions/benchmarks/traversal_cell.py\", line 90, in execute\n    handle=getattr(graph,args.algorithm)(vertices,edges,**options)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/targets/sail-stream-experiments-20260930/source-3a9028057/examples/extensions/graph-algorithms/src/pyspark_pecan/algorithms.py\", line 279, in bfs\n    return execute(self, vertices, edges, source=source, weighted=False,\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/targets/sail-stream-experiments-20260930/source-3a9028057/examples/extensions/graph-algorithms/src/pyspark_pecan/traversal.py\", line 89, in execute\n    return graph._run(vertices, edges, partitions, cancellation, body,\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/targets/sail-stream-experiments-20260930/source-3a9028057/examples/extensions/graph-algorithms/src/pyspark_pecan/algorithms.py\", line 95, in _run\n    return body(run, vertices, edges, size)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/targets/sail-stream-experiments-20260930/source-3a9028057/examples/extensions/graph-algorithms/src/pyspark_pecan/traversal.py\", line 67, in body\n    next_path, next_reached = run.materialize(updated)\n                              ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/targets/sail-stream-experiments-20260930/source-3a9028057/examples/extensions/graph-algorithms/src/pyspark_pecan/staging.py\", line 36, in materialize\n    frame.repartition(self.partitions).write.mode(\"error\").parquet(path)\n  File \"/targets/graph-nuts-ffcfbd569/venv/lib/python3.12/site-packages/pyspark/sql/connect/readwriter.py\", line 755, in parquet\n    self.format(\"parquet\").save(path)\n  File \"/targets/graph-nuts-ffcfbd569/venv/lib/python3.12/site-packages/pyspark/sql/connect/readwriter.py\", line 679, in save\n    _, _, ei = self._spark.client.execute_command(\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/targets/graph-nuts-ffcfbd569/venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 1148, in execute_command\n    data, _, metrics, observed_metrics, properties = self._execute_and_fetch(\n                                                     ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/targets/graph-nuts-ffcfbd569/venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 1560, in _execute_and_fetch\n    for response in self._execute_and_fetch_as_iterator(\n                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/targets/graph-nuts-ffcfbd569/venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 1537, in _execute_and_fetch_as_iterator\n    self._handle_error(error)\n  File \"/targets/graph-nuts-ffcfbd569/venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 1811, in _handle_error\n    self._handle_rpc_error(error)\n  File \"/targets/graph-nuts-ffcfbd569/venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 1882, in _handle_rpc_error\n    raise convert_exception(\npyspark.errors.exceptions.connect.SparkRuntimeException: h2 protocol error: error reading a body from connection\nwrite completion is uncertain; cleanup deferred for file:///targets/sail-stream-experiments-20260930/logging01/cells/stream-log01-r1-scale24-pecan-bfs-frontier/staging/c5880dc0-f197-4bef-b6a1-288e5c3437c1. The server session retains ownership and attempts cleanup at teardown; this is best effort, not a guarantee that all writers have drained.\n",
+  "experiment": "diagnosis on shared host, not a performance measurement"
+}

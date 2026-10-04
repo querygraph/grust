@@ -1,0 +1,2004 @@
+{
+  "started_utc": "2026-10-01T16:17:49.002721+00:00",
+  "outcome": "FAILED",
+  "mode": "candidate",
+  "head": "cab6bacc0ad0d1fc8b3070e9e4267e99751909fe",
+  "tree": "5e87eb7a730646168c0f0cb6db989c4573a06e18",
+  "private_fixtures": "/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pecan-validation-gate-y867jo0m",
+  "commands": [
+    {
+      "label": "client-before",
+      "command": [
+        "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/bin/python",
+        "-B",
+        "/Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/resource-validation-union/sql_gate.py",
+        "--interpreter-probe"
+      ],
+      "started_utc": "2026-10-01T16:17:50.749397+00:00",
+      "returncode": 0,
+      "group_absent": true,
+      "finished_utc": "2026-10-01T16:17:51.170522+00:00"
+    },
+    {
+      "label": "modules-before",
+      "command": [
+        "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/bin/python",
+        "-B",
+        "/private/tmp/grust-pecan-explicit-validation/docs/reviews/pecan-validation-2026-10-01/run_gate.py",
+        "--module-origin-probe",
+        "/private/tmp/sail-pecan-validation-gate-02"
+      ],
+      "started_utc": "2026-10-01T16:17:51.833133+00:00",
+      "returncode": 0,
+      "group_absent": true,
+      "finished_utc": "2026-10-01T16:17:52.541171+00:00"
+    },
+    {
+      "label": "diff-check",
+      "command": [
+        "git",
+        "-C",
+        "/private/tmp/sail-pecan-validation-gate-02",
+        "diff",
+        "--check",
+        "HEAD"
+      ],
+      "started_utc": "2026-10-01T16:17:53.192086+00:00",
+      "returncode": 0,
+      "group_absent": true,
+      "finished_utc": "2026-10-01T16:17:53.234482+00:00"
+    },
+    {
+      "label": "collection",
+      "command": [
+        "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/bin/python",
+        "-B",
+        "/private/tmp/grust-pecan-explicit-validation/docs/reviews/pecan-validation-2026-10-01/run_gate.py",
+        "--collect",
+        "/private/tmp/sail-pecan-validation-gate-02"
+      ],
+      "started_utc": "2026-10-01T16:17:53.878686+00:00",
+      "returncode": 0,
+      "group_absent": true,
+      "finished_utc": "2026-10-01T16:17:55.477492+00:00"
+    },
+    {
+      "label": "offline",
+      "command": [
+        "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/bin/python",
+        "-B",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--rootdir=/private/tmp/sail-pecan-validation-gate-02",
+        "/private/tmp/sail-pecan-validation-gate-02/examples/extensions/graph-algorithms/tests",
+        "/private/tmp/sail-pecan-validation-gate-02/examples/extensions/argentea/python",
+        "/private/tmp/sail-pecan-validation-gate-02/examples/extensions/benchmarks",
+        "--junitxml=/private/tmp/grust-pecan-explicit-validation/docs/reviews/pecan-validation-2026-10-01/candidate-gate-03/offline.xml",
+        "--basetemp=/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pecan-validation-gate-y867jo0m/offline"
+      ],
+      "started_utc": "2026-10-01T16:17:56.155146+00:00",
+      "returncode": 0,
+      "group_absent": true,
+      "finished_utc": "2026-10-01T16:18:04.368000+00:00"
+    },
+    {
+      "label": "sql-00-test_pagerank_metadata",
+      "command": [
+        "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/bin/python",
+        "-B",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--rootdir=/private/tmp/sail-pecan-validation-gate-02",
+        "/private/tmp/sail-pecan-validation-gate-02/examples/extensions/benchmarks/test_pagerank_metadata.py",
+        "--junitxml=/private/tmp/grust-pecan-explicit-validation/docs/reviews/pecan-validation-2026-10-01/candidate-gate-03/sql-00-test_pagerank_metadata.xml",
+        "--basetemp=/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pecan-validation-gate-y867jo0m/sql-00-test_pagerank_metadata/pytest"
+      ],
+      "started_utc": "2026-10-01T16:18:05.240495+00:00",
+      "returncode": 0,
+      "group_absent": true,
+      "finished_utc": "2026-10-01T16:18:09.522486+00:00"
+    },
+    {
+      "label": "sql-01-test_traversal_certificate",
+      "command": [
+        "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/bin/python",
+        "-B",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--rootdir=/private/tmp/sail-pecan-validation-gate-02",
+        "/private/tmp/sail-pecan-validation-gate-02/examples/extensions/benchmarks/test_traversal_certificate.py",
+        "--junitxml=/private/tmp/grust-pecan-explicit-validation/docs/reviews/pecan-validation-2026-10-01/candidate-gate-03/sql-01-test_traversal_certificate.xml",
+        "--basetemp=/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pecan-validation-gate-y867jo0m/sql-01-test_traversal_certificate/pytest"
+      ],
+      "started_utc": "2026-10-01T16:18:10.473067+00:00",
+      "returncode": 0,
+      "group_absent": true,
+      "finished_utc": "2026-10-01T16:18:15.030651+00:00"
+    },
+    {
+      "label": "sql-02-test_traversal_parent_witness",
+      "command": [
+        "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/bin/python",
+        "-B",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--rootdir=/private/tmp/sail-pecan-validation-gate-02",
+        "/private/tmp/sail-pecan-validation-gate-02/examples/extensions/benchmarks/test_traversal_parent_witness.py",
+        "--junitxml=/private/tmp/grust-pecan-explicit-validation/docs/reviews/pecan-validation-2026-10-01/candidate-gate-03/sql-02-test_traversal_parent_witness.xml",
+        "--basetemp=/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pecan-validation-gate-y867jo0m/sql-02-test_traversal_parent_witness/pytest"
+      ],
+      "started_utc": "2026-10-01T16:18:15.969895+00:00",
+      "returncode": 0,
+      "group_absent": true,
+      "finished_utc": "2026-10-01T16:18:43.396753+00:00"
+    },
+    {
+      "label": "sql-03-test_wcc_certificate",
+      "command": [
+        "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/bin/python",
+        "-B",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--rootdir=/private/tmp/sail-pecan-validation-gate-02",
+        "/private/tmp/sail-pecan-validation-gate-02/examples/extensions/benchmarks/test_wcc_certificate.py",
+        "--junitxml=/private/tmp/grust-pecan-explicit-validation/docs/reviews/pecan-validation-2026-10-01/candidate-gate-03/sql-03-test_wcc_certificate.xml",
+        "--basetemp=/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pecan-validation-gate-y867jo0m/sql-03-test_wcc_certificate/pytest"
+      ],
+      "started_utc": "2026-10-01T16:18:44.289574+00:00",
+      "returncode": 0,
+      "group_absent": true,
+      "finished_utc": "2026-10-01T16:18:45.581051+00:00"
+    },
+    {
+      "label": "sql-04-test_algorithms",
+      "command": [
+        "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/bin/python",
+        "-B",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--rootdir=/private/tmp/sail-pecan-validation-gate-02",
+        "/private/tmp/sail-pecan-validation-gate-02/examples/extensions/graph-algorithms/tests/test_algorithms.py",
+        "--junitxml=/private/tmp/grust-pecan-explicit-validation/docs/reviews/pecan-validation-2026-10-01/candidate-gate-03/sql-04-test_algorithms.xml",
+        "--basetemp=/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pecan-validation-gate-y867jo0m/sql-04-test_algorithms/pytest"
+      ],
+      "started_utc": "2026-10-01T16:18:46.449097+00:00",
+      "returncode": 1,
+      "group_absent": true,
+      "finished_utc": "2026-10-01T16:18:48.345091+00:00"
+    },
+    {
+      "label": "client-after",
+      "command": [
+        "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/bin/python",
+        "-B",
+        "/Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/resource-validation-union/sql_gate.py",
+        "--interpreter-probe"
+      ],
+      "started_utc": "2026-10-01T16:18:50.001385+00:00",
+      "returncode": 0,
+      "group_absent": true,
+      "finished_utc": "2026-10-01T16:18:50.313197+00:00"
+    },
+    {
+      "label": "modules-after",
+      "command": [
+        "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/bin/python",
+        "-B",
+        "/private/tmp/grust-pecan-explicit-validation/docs/reviews/pecan-validation-2026-10-01/run_gate.py",
+        "--module-origin-probe",
+        "/private/tmp/sail-pecan-validation-gate-02"
+      ],
+      "started_utc": "2026-10-01T16:18:51.004387+00:00",
+      "returncode": 0,
+      "group_absent": true,
+      "finished_utc": "2026-10-01T16:18:51.579647+00:00"
+    }
+  ],
+  "modules": [
+    {
+      "module": "examples/extensions/benchmarks/test_pagerank_metadata.py",
+      "selected_server_environment": {
+        "SAIL_MODE": "local",
+        "SAIL_EXPERIMENTAL_EXTENSIONS": "1",
+        "SAIL_EXPERIMENTAL_PROCESS_WORKERS": "0",
+        "SAIL_EXECUTION__DEFAULT_PARALLELISM": "2",
+        "SAIL_EXECUTION__COLLECT_STATISTICS": "true",
+        "SAIL_RUNTIME__MEMORY_POOL__TYPE": "greedy",
+        "SAIL_RUNTIME__MEMORY_POOL__GREEDY__MAX_SIZE": "2147483648",
+        "SAIL_GRAPH_UTILS_ROOT": "file:///var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pecan-validation-gate-y867jo0m/sql-00-test_pagerank_metadata/staging",
+        "TOKIO_WORKER_THREADS": "2",
+        "RAYON_NUM_THREADS": "2",
+        "RUST_LOG": "warn"
+      },
+      "server_pythonpath_removed": true,
+      "server_command": [
+        "/private/tmp/sail-resource-validation-union-target/host/debug/sail",
+        "spark",
+        "server",
+        "--ip",
+        "127.0.0.1",
+        "--port",
+        "62956"
+      ],
+      "server_pid_and_pgid": 26754,
+      "counts": {
+        "tests": 52,
+        "skipped": 0,
+        "failures": 0,
+        "errors": 0,
+        "passed": 52,
+        "skipped_cases": []
+      },
+      "server_reaped": true,
+      "server_group_absent": true,
+      "server_returncode": -15
+    },
+    {
+      "module": "examples/extensions/benchmarks/test_traversal_certificate.py",
+      "selected_server_environment": {
+        "SAIL_MODE": "local",
+        "SAIL_EXPERIMENTAL_EXTENSIONS": "1",
+        "SAIL_EXPERIMENTAL_PROCESS_WORKERS": "0",
+        "SAIL_EXECUTION__DEFAULT_PARALLELISM": "2",
+        "SAIL_EXECUTION__COLLECT_STATISTICS": "true",
+        "SAIL_RUNTIME__MEMORY_POOL__TYPE": "greedy",
+        "SAIL_RUNTIME__MEMORY_POOL__GREEDY__MAX_SIZE": "2147483648",
+        "SAIL_GRAPH_UTILS_ROOT": "file:///var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pecan-validation-gate-y867jo0m/sql-01-test_traversal_certificate/staging",
+        "TOKIO_WORKER_THREADS": "2",
+        "RAYON_NUM_THREADS": "2",
+        "RUST_LOG": "warn"
+      },
+      "server_pythonpath_removed": true,
+      "server_command": [
+        "/private/tmp/sail-resource-validation-union-target/host/debug/sail",
+        "spark",
+        "server",
+        "--ip",
+        "127.0.0.1",
+        "--port",
+        "62972"
+      ],
+      "server_pid_and_pgid": 26831,
+      "counts": {
+        "tests": 9,
+        "skipped": 0,
+        "failures": 0,
+        "errors": 0,
+        "passed": 9,
+        "skipped_cases": []
+      },
+      "server_reaped": true,
+      "server_group_absent": true,
+      "server_returncode": -15
+    },
+    {
+      "module": "examples/extensions/benchmarks/test_traversal_parent_witness.py",
+      "selected_server_environment": {
+        "SAIL_MODE": "local",
+        "SAIL_EXPERIMENTAL_EXTENSIONS": "1",
+        "SAIL_EXPERIMENTAL_PROCESS_WORKERS": "0",
+        "SAIL_EXECUTION__DEFAULT_PARALLELISM": "2",
+        "SAIL_EXECUTION__COLLECT_STATISTICS": "true",
+        "SAIL_RUNTIME__MEMORY_POOL__TYPE": "greedy",
+        "SAIL_RUNTIME__MEMORY_POOL__GREEDY__MAX_SIZE": "2147483648",
+        "SAIL_GRAPH_UTILS_ROOT": "file:///var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pecan-validation-gate-y867jo0m/sql-02-test_traversal_parent_witness/staging",
+        "TOKIO_WORKER_THREADS": "2",
+        "RAYON_NUM_THREADS": "2",
+        "RUST_LOG": "warn"
+      },
+      "server_pythonpath_removed": true,
+      "server_command": [
+        "/private/tmp/sail-resource-validation-union-target/host/debug/sail",
+        "spark",
+        "server",
+        "--ip",
+        "127.0.0.1",
+        "--port",
+        "62987"
+      ],
+      "server_pid_and_pgid": 26886,
+      "counts": {
+        "tests": 43,
+        "skipped": 0,
+        "failures": 0,
+        "errors": 0,
+        "passed": 43,
+        "skipped_cases": []
+      },
+      "server_reaped": true,
+      "server_group_absent": true,
+      "server_returncode": -15
+    },
+    {
+      "module": "examples/extensions/benchmarks/test_wcc_certificate.py",
+      "selected_server_environment": {
+        "SAIL_MODE": "local",
+        "SAIL_EXPERIMENTAL_EXTENSIONS": "1",
+        "SAIL_EXPERIMENTAL_PROCESS_WORKERS": "0",
+        "SAIL_EXECUTION__DEFAULT_PARALLELISM": "2",
+        "SAIL_EXECUTION__COLLECT_STATISTICS": "true",
+        "SAIL_RUNTIME__MEMORY_POOL__TYPE": "greedy",
+        "SAIL_RUNTIME__MEMORY_POOL__GREEDY__MAX_SIZE": "2147483648",
+        "SAIL_GRAPH_UTILS_ROOT": "file:///var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pecan-validation-gate-y867jo0m/sql-03-test_wcc_certificate/staging",
+        "TOKIO_WORKER_THREADS": "2",
+        "RAYON_NUM_THREADS": "2",
+        "RUST_LOG": "warn"
+      },
+      "server_pythonpath_removed": true,
+      "server_command": [
+        "/private/tmp/sail-resource-validation-union-target/host/debug/sail",
+        "spark",
+        "server",
+        "--ip",
+        "127.0.0.1",
+        "--port",
+        "63056"
+      ],
+      "server_pid_and_pgid": 27122,
+      "counts": {
+        "tests": 6,
+        "skipped": 0,
+        "failures": 0,
+        "errors": 0,
+        "passed": 6,
+        "skipped_cases": []
+      },
+      "server_reaped": true,
+      "server_group_absent": true,
+      "server_returncode": -15
+    },
+    {
+      "module": "examples/extensions/graph-algorithms/tests/test_algorithms.py",
+      "selected_server_environment": {
+        "SAIL_MODE": "local",
+        "SAIL_EXPERIMENTAL_EXTENSIONS": "1",
+        "SAIL_EXPERIMENTAL_PROCESS_WORKERS": "0",
+        "SAIL_EXECUTION__DEFAULT_PARALLELISM": "2",
+        "SAIL_EXECUTION__COLLECT_STATISTICS": "true",
+        "SAIL_RUNTIME__MEMORY_POOL__TYPE": "greedy",
+        "SAIL_RUNTIME__MEMORY_POOL__GREEDY__MAX_SIZE": "2147483648",
+        "SAIL_GRAPH_UTILS_ROOT": "file:///var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pecan-validation-gate-y867jo0m/sql-04-test_algorithms/staging",
+        "TOKIO_WORKER_THREADS": "2",
+        "RAYON_NUM_THREADS": "2",
+        "RUST_LOG": "warn"
+      },
+      "server_pythonpath_removed": true,
+      "server_command": [
+        "/private/tmp/sail-resource-validation-union-target/host/debug/sail",
+        "spark",
+        "server",
+        "--ip",
+        "127.0.0.1",
+        "--port",
+        "63063"
+      ],
+      "server_pid_and_pgid": 27152,
+      "server_reaped": true,
+      "server_group_absent": true,
+      "server_returncode": -15
+    }
+  ],
+  "host": {
+    "hostname": "Capitola.local",
+    "machine": "arm64",
+    "platform": "macOS-26.2-arm64-arm-64bit"
+  },
+  "runtime": {
+    "binary": "/private/tmp/sail-resource-validation-union-target/host/debug/sail",
+    "sha256": "4b976fd7a809cb059c72a2119293f490105ff0ed375feaf0ccb5f3e5dad88662",
+    "built_commit": "a3462345a6764096024c055dc4d105a3c634e5a4",
+    "profile": "dev debug=0"
+  },
+  "scope": "Full Pecan/Argentea/benchmark Python suites, all Pecan modules and Spark-fixture benchmark modules live; local SQL only. Explicit generator/control-binary skips; no builds, worker/Flight/native qualification or performance claim.",
+  "pins": {
+    "/private/tmp/sail-resource-validation-union-target/host/debug/sail": "4b976fd7a809cb059c72a2119293f490105ff0ed375feaf0ccb5f3e5dad88662",
+    "/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/bin/python3.12": "7ab28aab7042141d3d97175edec3045ff15b5d0cbf885817c7c1ad0dad393f9f",
+    "/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/lib/libpython3.12.dylib": "51454eefef9d30acb598f19a0a8e0c5ef3641d5e81b3611d5f634343475321a5",
+    "/private/tmp/grust-pecan-explicit-validation/docs/reviews/pecan-validation-2026-10-01/run_gate.py": "bd24c58be92ff17e0caeaa80c09f0de936446ed55ca545c8aaa8342ae1c3a4cd",
+    "/Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/resource-validation-union/sql_gate.py": "eaebc96443f9edc621adb1a937d7042ef3b8decaae757693f03872d7ad8fbb96",
+    "/private/tmp/grust-pecan-explicit-validation/docs/reviews/pecan-validation-2026-10-01/action_probe.py": "cbe30b1cebb980a295f64f41a64fbb969fde18178549729bb03f423cbb7ee3bb"
+  },
+  "client_before": {
+    "executable": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/bin/python",
+    "real_executable": "/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/bin/python3.12",
+    "executable_sha256": "7ab28aab7042141d3d97175edec3045ff15b5d0cbf885817c7c1ad0dad393f9f",
+    "version": "3.12.8 (main, Jan  5 2025, 06:55:30) [Clang 19.1.6 ]",
+    "path_python3": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/bin/python3",
+    "path_python3_real": "/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/bin/python3.12",
+    "path_python3_sha256": "7ab28aab7042141d3d97175edec3045ff15b5d0cbf885817c7c1ad0dad393f9f",
+    "stdlib_encodings_file": "/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/lib/python3.12/encodings/__init__.py",
+    "stdlib_encodings_sha256": "78c4744d407690f321565488710b5aaf6486b5afa8d185637aa1e7633ab59cd8",
+    "prefix": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion",
+    "base_prefix": "/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none",
+    "modules": {
+      "pyspark": {
+        "version": "4.0.1",
+        "file": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/__init__.py",
+        "sha256": "e1776e11568f4231f8079502270a2c84828f335ef61cc60561b225d636c7bcdc"
+      },
+      "pyarrow": {
+        "version": "21.0.0",
+        "file": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyarrow/__init__.py",
+        "sha256": "9f52fe44ffd0653d93eeac470a26ee12cf7c054760bfc4915493db4a99105aa0"
+      },
+      "numpy": {
+        "version": "2.5.3",
+        "file": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/numpy/__init__.py",
+        "sha256": "09295a80660f17925ae23765ce8cbd7ff7ceae968d5f2f89349f1cb74c0b9e11"
+      },
+      "grpc": {
+        "version": "1.84.0",
+        "file": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/grpc/__init__.py",
+        "sha256": "7e3a88cf8430c74ec70ca65ba615a3c0419d3a4f59f9c59c01500ade2d88dd39"
+      },
+      "pytest": {
+        "version": "8.4.2",
+        "file": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pytest/__init__.py",
+        "sha256": "66993a5e3905005e0981159b4794d10b1adacf341a58a44d696ad2c4442dcdc6"
+      }
+    }
+  },
+  "modules_before": {
+    "pyspark_pecan": {
+      "path": "/private/tmp/sail-pecan-validation-gate-02/examples/extensions/graph-algorithms/src/pyspark_pecan/__init__.py",
+      "sha256": "10200002e26b633290388da972ebefd3d96df41e9719d72ea2339dd96ab9add7"
+    },
+    "sail_nutmeg": {
+      "path": "/private/tmp/sail-pecan-validation-gate-02/examples/extensions/nutmeg/python/sail_nutmeg/__init__.py",
+      "sha256": "8ab1469a2f7411203604d2faaae29b30a35689599eb62d0bb397ab672cdb53ab"
+    }
+  },
+  "offline": {
+    "tests": 1473,
+    "skipped": 236,
+    "failures": 0,
+    "errors": 0,
+    "passed": 1237,
+    "skipped_cases": [
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_algorithms",
+        "name": "test_pagerank_dangling_isolates_parallel_edges_and_loop",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_algorithms",
+        "name": "test_wcc_exact_minimum_labels_and_result_retention",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_algorithms",
+        "name": "test_empty_graph[False-pagerank]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_algorithms",
+        "name": "test_empty_graph[False-wcc]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_algorithms",
+        "name": "test_empty_graph[True-pagerank]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_algorithms",
+        "name": "test_empty_graph[True-wcc]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_algorithms",
+        "name": "test_tolerance_and_limit_are_explicit",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_algorithms",
+        "name": "test_invalid_graph_cleans_partial_snapshots[ids0-edges0-unique]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_algorithms",
+        "name": "test_invalid_graph_cleans_partial_snapshots[ids1-edges1-must not be null]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_algorithms",
+        "name": "test_invalid_graph_cleans_partial_snapshots[ids2-edges2-endpoints must not be null]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_algorithms",
+        "name": "test_invalid_graph_cleans_partial_snapshots[ids3-edges3-does not reference]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_algorithms",
+        "name": "test_cancel_between_iterations_cleans_stages",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_algorithms",
+        "name": "test_foreign_session_frames_are_rejected_before_staging",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_checkpoint_sql",
+        "name": "test_checkpoint_roundtrip_preserves_rows_schema_and_duplicates[rows0-True]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_checkpoint_sql",
+        "name": "test_checkpoint_roundtrip_preserves_rows_schema_and_duplicates[rows0-False]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_checkpoint_sql",
+        "name": "test_checkpoint_roundtrip_preserves_rows_schema_and_duplicates[rows1-True]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_checkpoint_sql",
+        "name": "test_checkpoint_roundtrip_preserves_rows_schema_and_duplicates[rows1-False]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_pagerank_delta",
+        "name": "test_delta_matches_stationary_solution_and_power_with_dangling_vertices",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_pagerank_delta",
+        "name": "test_frontier_shrinks_and_reactivates_without_losing_accumulated_residual",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_pagerank_delta",
+        "name": "test_uniform_stationary_initialization_needs_no_frontier_pushes[ids0-edges0-0.15]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_pagerank_delta",
+        "name": "test_uniform_stationary_initialization_needs_no_frontier_pushes[ids1-edges1-0.15]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_pagerank_delta",
+        "name": "test_uniform_stationary_initialization_needs_no_frontier_pushes[ids2-edges2-0.15]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_pagerank_delta",
+        "name": "test_uniform_stationary_initialization_needs_no_frontier_pushes[ids3-edges3-1.0]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_pagerank_delta",
+        "name": "test_iteration_cap_still_runs_the_true_certificate",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_pagerank_delta",
+        "name": "test_uncertified_limit_and_observer_cancellation_clean_the_owned_run",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_traversal",
+        "name": "test_distances_and_acyclic_parents[bfs-reference]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_traversal",
+        "name": "test_distances_and_acyclic_parents[bfs-frontier]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_traversal",
+        "name": "test_distances_and_acyclic_parents[sssp-reference]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_traversal",
+        "name": "test_distances_and_acyclic_parents[sssp-frontier]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_traversal",
+        "name": "test_undirected_and_missing_source",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_traversal",
+        "name": "test_invalid_weights[None]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_traversal",
+        "name": "test_invalid_weights[-1.0]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_traversal",
+        "name": "test_invalid_weights[nan]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_traversal",
+        "name": "test_invalid_weights[inf]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_traversal",
+        "name": "test_invalid_weights[-inf]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_traversal",
+        "name": "test_delta_star_bucket_closure[0.25]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_traversal",
+        "name": "test_delta_star_bucket_closure[1.0]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_traversal",
+        "name": "test_delta_star_bucket_closure[3.0]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_traversal",
+        "name": "test_delta_star_bucket_closure[100.0]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_traversal",
+        "name": "test_push_pull_distances_and_trace",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_traversal",
+        "name": "test_overflowing_relaxation_is_rejected_even_when_dominated[False-reference]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_traversal",
+        "name": "test_overflowing_relaxation_is_rejected_even_when_dominated[False-frontier]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_traversal",
+        "name": "test_overflowing_relaxation_is_rejected_even_when_dominated[False-delta_star]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_traversal",
+        "name": "test_overflowing_relaxation_is_rejected_even_when_dominated[True-reference]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_traversal",
+        "name": "test_overflowing_relaxation_is_rejected_even_when_dominated[True-frontier]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_traversal",
+        "name": "test_overflowing_relaxation_is_rejected_even_when_dominated[True-delta_star]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_traversal",
+        "name": "test_weighted_relaxation_preserves_hop_then_signed_parent_ties[reference]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_traversal",
+        "name": "test_weighted_relaxation_preserves_hop_then_signed_parent_ties[frontier]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_traversal",
+        "name": "test_weighted_relaxation_preserves_hop_then_signed_parent_ties[delta_star]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_traversal",
+        "name": "test_weighted_round_executes_only_one_expansion_action[reference]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_traversal",
+        "name": "test_weighted_round_executes_only_one_expansion_action[frontier]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_traversal",
+        "name": "test_weighted_round_executes_only_one_expansion_action[delta_star]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_traversal",
+        "name": "test_cancelled_traversal_releases_owned_stages[bfs-reference]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_traversal",
+        "name": "test_cancelled_traversal_releases_owned_stages[bfs-frontier]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_traversal",
+        "name": "test_cancelled_traversal_releases_owned_stages[bfs-push_pull]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_traversal",
+        "name": "test_cancelled_traversal_releases_owned_stages[sssp-reference]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_traversal",
+        "name": "test_cancelled_traversal_releases_owned_stages[sssp-frontier]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_traversal",
+        "name": "test_cancelled_traversal_releases_owned_stages[sssp-delta_star]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_traversal",
+        "name": "test_isolated_source_and_partition_invariance[bfs-push_pull]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_traversal",
+        "name": "test_isolated_source_and_partition_invariance[sssp-delta_star]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_traversal",
+        "name": "test_invalid_bucket_width[0.0]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_traversal",
+        "name": "test_invalid_bucket_width[-1.0]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_traversal",
+        "name": "test_invalid_bucket_width[nan]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_traversal",
+        "name": "test_invalid_bucket_width[inf]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_traversal",
+        "name": "test_invalid_bucket_width[True]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_validation_sql",
+        "name": "test_valid_traversal_default_and_checked_outputs_are_exact[bfs-reference]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_validation_sql",
+        "name": "test_valid_traversal_default_and_checked_outputs_are_exact[bfs-frontier]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_validation_sql",
+        "name": "test_valid_traversal_default_and_checked_outputs_are_exact[bfs-push_pull]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_validation_sql",
+        "name": "test_valid_traversal_default_and_checked_outputs_are_exact[sssp-reference]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_validation_sql",
+        "name": "test_valid_traversal_default_and_checked_outputs_are_exact[sssp-frontier]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_validation_sql",
+        "name": "test_valid_traversal_default_and_checked_outputs_are_exact[sssp-delta_star]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_validation_sql",
+        "name": "test_singleton_seed_sql_preserves_extreme_bigint_and_column_types[-9223372036854775808]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_validation_sql",
+        "name": "test_singleton_seed_sql_preserves_extreme_bigint_and_column_types[9223372036854775807]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_validation_sql",
+        "name": "test_bfs_issues_only_its_convergence_count_per_round[reference]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_validation_sql",
+        "name": "test_bfs_issues_only_its_convergence_count_per_round[frontier]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_wcc_fused",
+        "name": "test_fused_preserves_each_representative_map_and_removes_priority_writes",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_wcc_randomized",
+        "name": "test_signed_extreme_ids_isolates_duplicates_and_components[randomized-0]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_wcc_randomized",
+        "name": "test_signed_extreme_ids_isolates_duplicates_and_components[randomized-42]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_wcc_randomized",
+        "name": "test_signed_extreme_ids_isolates_duplicates_and_components[randomized-18446744073709551615]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_wcc_randomized",
+        "name": "test_signed_extreme_ids_isolates_duplicates_and_components[randomized_fused-0]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_wcc_randomized",
+        "name": "test_signed_extreme_ids_isolates_duplicates_and_components[randomized_fused-42]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_wcc_randomized",
+        "name": "test_signed_extreme_ids_isolates_duplicates_and_components[randomized_fused-18446744073709551615]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_wcc_randomized",
+        "name": "test_chain_contracts_and_backpropagates_in_bounded_rounds[randomized-42]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_wcc_randomized",
+        "name": "test_chain_contracts_and_backpropagates_in_bounded_rounds[randomized-123]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_wcc_randomized",
+        "name": "test_chain_contracts_and_backpropagates_in_bounded_rounds[randomized_fused-42]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_wcc_randomized",
+        "name": "test_chain_contracts_and_backpropagates_in_bounded_rounds[randomized_fused-123]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_wcc_randomized",
+        "name": "test_empty_edgeless_and_loop_only[False-randomized-ids0-links0]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_wcc_randomized",
+        "name": "test_empty_edgeless_and_loop_only[False-randomized-ids1-links1]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_wcc_randomized",
+        "name": "test_empty_edgeless_and_loop_only[False-randomized-ids2-links2]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_wcc_randomized",
+        "name": "test_empty_edgeless_and_loop_only[False-randomized_fused-ids0-links0]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_wcc_randomized",
+        "name": "test_empty_edgeless_and_loop_only[False-randomized_fused-ids1-links1]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_wcc_randomized",
+        "name": "test_empty_edgeless_and_loop_only[False-randomized_fused-ids2-links2]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_wcc_randomized",
+        "name": "test_empty_edgeless_and_loop_only[True-randomized-ids0-links0]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_wcc_randomized",
+        "name": "test_empty_edgeless_and_loop_only[True-randomized-ids1-links1]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_wcc_randomized",
+        "name": "test_empty_edgeless_and_loop_only[True-randomized-ids2-links2]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_wcc_randomized",
+        "name": "test_empty_edgeless_and_loop_only[True-randomized_fused-ids0-links0]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_wcc_randomized",
+        "name": "test_empty_edgeless_and_loop_only[True-randomized_fused-ids1-links1]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_wcc_randomized",
+        "name": "test_empty_edgeless_and_loop_only[True-randomized_fused-ids2-links2]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_wcc_randomized",
+        "name": "test_cancellation_and_cap_retain_cleanup_contract[randomized]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.graph-algorithms.tests.test_wcc_randomized",
+        "name": "test_cancellation_and_cap_retain_cleanup_contract[randomized_fused]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE to test an engine with graph utils"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_graph500_fixture",
+        "name": "test_real_generator_chunk_invariance_manifest_and_small_oracle",
+        "type": "pytest.skip",
+        "message": "set GRAPH500_SOURCE for the pinned real-generator integration gate"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_graph500_fixture",
+        "name": "test_real_generator_rejects_stale_binary_and_retains_failed_preparation",
+        "type": "pytest.skip",
+        "message": "set GRAPH500_SOURCE for the pinned real-generator integration gate"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_graph500_matrix",
+        "name": "test_preparation_command_generates_real_graph500_fixture",
+        "type": "pytest.skip",
+        "message": "set GRAPH500_MATRIX_GENERATOR to a pinned built upstream generator"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_pagerank_metadata",
+        "name": "test_invalid_metadata_is_checked_on_every_row[change0-reference]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual PageRank validation checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_pagerank_metadata",
+        "name": "test_invalid_metadata_is_checked_on_every_row[change0-certificate]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual PageRank validation checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_pagerank_metadata",
+        "name": "test_invalid_metadata_is_checked_on_every_row[change1-reference]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual PageRank validation checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_pagerank_metadata",
+        "name": "test_invalid_metadata_is_checked_on_every_row[change1-certificate]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual PageRank validation checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_pagerank_metadata",
+        "name": "test_invalid_metadata_is_checked_on_every_row[change2-reference]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual PageRank validation checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_pagerank_metadata",
+        "name": "test_invalid_metadata_is_checked_on_every_row[change2-certificate]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual PageRank validation checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_pagerank_metadata",
+        "name": "test_invalid_metadata_is_checked_on_every_row[change3-reference]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual PageRank validation checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_pagerank_metadata",
+        "name": "test_invalid_metadata_is_checked_on_every_row[change3-certificate]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual PageRank validation checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_pagerank_metadata",
+        "name": "test_iterations_describe_one_completed_run[reference]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual PageRank validation checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_pagerank_metadata",
+        "name": "test_iterations_describe_one_completed_run[certificate]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual PageRank validation checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_pagerank_metadata",
+        "name": "test_required_residuals_are_finite_and_present_on_every_row[residual0-flags0-reference]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual PageRank validation checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_pagerank_metadata",
+        "name": "test_required_residuals_are_finite_and_present_on_every_row[residual0-flags0-certificate]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual PageRank validation checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_pagerank_metadata",
+        "name": "test_required_residuals_are_finite_and_present_on_every_row[residual0-flags1-reference]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual PageRank validation checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_pagerank_metadata",
+        "name": "test_required_residuals_are_finite_and_present_on_every_row[residual0-flags1-certificate]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual PageRank validation checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_pagerank_metadata",
+        "name": "test_required_residuals_are_finite_and_present_on_every_row[residual1-flags0-reference]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual PageRank validation checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_pagerank_metadata",
+        "name": "test_required_residuals_are_finite_and_present_on_every_row[residual1-flags0-certificate]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual PageRank validation checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_pagerank_metadata",
+        "name": "test_required_residuals_are_finite_and_present_on_every_row[residual1-flags1-reference]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual PageRank validation checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_pagerank_metadata",
+        "name": "test_required_residuals_are_finite_and_present_on_every_row[residual1-flags1-certificate]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual PageRank validation checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_pagerank_metadata",
+        "name": "test_required_residuals_are_finite_and_present_on_every_row[residual2-flags0-reference]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual PageRank validation checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_pagerank_metadata",
+        "name": "test_required_residuals_are_finite_and_present_on_every_row[residual2-flags0-certificate]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual PageRank validation checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_pagerank_metadata",
+        "name": "test_required_residuals_are_finite_and_present_on_every_row[residual2-flags1-reference]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual PageRank validation checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_pagerank_metadata",
+        "name": "test_required_residuals_are_finite_and_present_on_every_row[residual2-flags1-certificate]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual PageRank validation checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_pagerank_metadata",
+        "name": "test_required_residuals_are_finite_and_present_on_every_row[residual3-flags0-reference]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual PageRank validation checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_pagerank_metadata",
+        "name": "test_required_residuals_are_finite_and_present_on_every_row[residual3-flags0-certificate]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual PageRank validation checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_pagerank_metadata",
+        "name": "test_required_residuals_are_finite_and_present_on_every_row[residual3-flags1-reference]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual PageRank validation checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_pagerank_metadata",
+        "name": "test_required_residuals_are_finite_and_present_on_every_row[residual3-flags1-certificate]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual PageRank validation checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_pagerank_metadata",
+        "name": "test_reported_residual_is_uniform_and_within_tolerance[residual0-reference]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual PageRank validation checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_pagerank_metadata",
+        "name": "test_reported_residual_is_uniform_and_within_tolerance[residual0-certificate]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual PageRank validation checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_pagerank_metadata",
+        "name": "test_reported_residual_is_uniform_and_within_tolerance[residual1-reference]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual PageRank validation checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_pagerank_metadata",
+        "name": "test_reported_residual_is_uniform_and_within_tolerance[residual1-certificate]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual PageRank validation checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_pagerank_metadata",
+        "name": "test_invalid_scores_remain_rejected[scores0-reference]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual PageRank validation checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_pagerank_metadata",
+        "name": "test_invalid_scores_remain_rejected[scores0-certificate]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual PageRank validation checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_pagerank_metadata",
+        "name": "test_invalid_scores_remain_rejected[scores1-reference]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual PageRank validation checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_pagerank_metadata",
+        "name": "test_invalid_scores_remain_rejected[scores1-certificate]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual PageRank validation checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_pagerank_metadata",
+        "name": "test_invalid_scores_remain_rejected[scores2-reference]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual PageRank validation checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_pagerank_metadata",
+        "name": "test_invalid_scores_remain_rejected[scores2-certificate]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual PageRank validation checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_pagerank_metadata",
+        "name": "test_invalid_scores_remain_rejected[scores3-reference]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual PageRank validation checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_pagerank_metadata",
+        "name": "test_invalid_scores_remain_rejected[scores3-certificate]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual PageRank validation checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_pagerank_metadata",
+        "name": "test_nonconvergence_remains_distinct_from_mismatch[reference]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual PageRank validation checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_pagerank_metadata",
+        "name": "test_nonconvergence_remains_distinct_from_mismatch[certificate]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual PageRank validation checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_pagerank_metadata",
+        "name": "test_valid_fixed_point_and_optional_baseline_residual[change0-reference]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual PageRank validation checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_pagerank_metadata",
+        "name": "test_valid_fixed_point_and_optional_baseline_residual[change0-certificate]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual PageRank validation checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_pagerank_metadata",
+        "name": "test_valid_fixed_point_and_optional_baseline_residual[change1-reference]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual PageRank validation checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_pagerank_metadata",
+        "name": "test_valid_fixed_point_and_optional_baseline_residual[change1-certificate]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual PageRank validation checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_pagerank_metadata",
+        "name": "test_valid_fixed_point_and_optional_baseline_residual[change2-reference]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual PageRank validation checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_pagerank_metadata",
+        "name": "test_valid_fixed_point_and_optional_baseline_residual[change2-certificate]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual PageRank validation checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_pagerank_metadata",
+        "name": "test_valid_fixed_point_and_optional_baseline_residual[change3-reference]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual PageRank validation checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_pagerank_metadata",
+        "name": "test_valid_fixed_point_and_optional_baseline_residual[change3-certificate]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual PageRank validation checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_pagerank_metadata",
+        "name": "test_baseline_iterations_start_at_one[reference]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual PageRank validation checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_pagerank_metadata",
+        "name": "test_baseline_iterations_start_at_one[certificate]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual PageRank validation checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_pagerank_metadata",
+        "name": "test_metadata_validation_does_not_replace_the_score_proof[reference]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual PageRank validation checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_pagerank_metadata",
+        "name": "test_metadata_validation_does_not_replace_the_score_proof[certificate]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual PageRank validation checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_traversal_certificate",
+        "name": "test_valid_full_certificate[True-distances0]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for distributed certificate checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_traversal_certificate",
+        "name": "test_valid_full_certificate[False-distances1]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for distributed certificate checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_traversal_certificate",
+        "name": "test_bad_distances_cannot_pass_local_constraints_alone[distances0-tight-edge witness]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for distributed certificate checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_traversal_certificate",
+        "name": "test_bad_distances_cannot_pass_local_constraints_alone[distances1-tight-edge witness]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for distributed certificate checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_traversal_certificate",
+        "name": "test_bad_distances_cannot_pass_local_constraints_alone[distances2-triangle]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for distributed certificate checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_traversal_certificate",
+        "name": "test_bad_distances_cannot_pass_local_constraints_alone[distances3-reachable]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for distributed certificate checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_traversal_certificate",
+        "name": "test_bad_distances_cannot_pass_local_constraints_alone[distances4-invalid distance]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for distributed certificate checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_traversal_certificate",
+        "name": "test_bad_distances_cannot_pass_local_constraints_alone[distances5-tight-edge witness]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for distributed certificate checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_traversal_certificate",
+        "name": "test_certificate_cap_is_failure_and_ownership_is_released",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for distributed certificate checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_traversal_controls",
+        "name": "test_real_controls_match_every_reference_distance[gap-bfs-15-1-False]",
+        "type": "pytest.skip",
+        "message": "set control binary environment variables for real-driver qualification"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_traversal_controls",
+        "name": "test_real_controls_match_every_reference_distance[gap-bfs-15-1-True]",
+        "type": "pytest.skip",
+        "message": "set control binary environment variables for real-driver qualification"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_traversal_controls",
+        "name": "test_real_controls_match_every_reference_distance[gap-bfs-15-4-False]",
+        "type": "pytest.skip",
+        "message": "set control binary environment variables for real-driver qualification"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_traversal_controls",
+        "name": "test_real_controls_match_every_reference_distance[gap-bfs-15-4-True]",
+        "type": "pytest.skip",
+        "message": "set control binary environment variables for real-driver qualification"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_traversal_controls",
+        "name": "test_real_controls_match_every_reference_distance[gap-sssp-4-1-False]",
+        "type": "pytest.skip",
+        "message": "set control binary environment variables for real-driver qualification"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_traversal_controls",
+        "name": "test_real_controls_match_every_reference_distance[gap-sssp-4-1-True]",
+        "type": "pytest.skip",
+        "message": "set control binary environment variables for real-driver qualification"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_traversal_controls",
+        "name": "test_real_controls_match_every_reference_distance[gap-sssp-4-4-False]",
+        "type": "pytest.skip",
+        "message": "set control binary environment variables for real-driver qualification"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_traversal_controls",
+        "name": "test_real_controls_match_every_reference_distance[gap-sssp-4-4-True]",
+        "type": "pytest.skip",
+        "message": "set control binary environment variables for real-driver qualification"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_traversal_controls",
+        "name": "test_real_controls_match_every_reference_distance[parallel-rho-8-1-False]",
+        "type": "pytest.skip",
+        "message": "set control binary environment variables for real-driver qualification"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_traversal_controls",
+        "name": "test_real_controls_match_every_reference_distance[parallel-rho-8-1-True]",
+        "type": "pytest.skip",
+        "message": "set control binary environment variables for real-driver qualification"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_traversal_controls",
+        "name": "test_real_controls_match_every_reference_distance[parallel-rho-8-4-False]",
+        "type": "pytest.skip",
+        "message": "set control binary environment variables for real-driver qualification"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_traversal_controls",
+        "name": "test_real_controls_match_every_reference_distance[parallel-rho-8-4-True]",
+        "type": "pytest.skip",
+        "message": "set control binary environment variables for real-driver qualification"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_traversal_controls",
+        "name": "test_real_controls_match_every_reference_distance[parallel-delta-4-1-False]",
+        "type": "pytest.skip",
+        "message": "set control binary environment variables for real-driver qualification"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_traversal_controls",
+        "name": "test_real_controls_match_every_reference_distance[parallel-delta-4-1-True]",
+        "type": "pytest.skip",
+        "message": "set control binary environment variables for real-driver qualification"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_traversal_controls",
+        "name": "test_real_controls_match_every_reference_distance[parallel-delta-4-4-False]",
+        "type": "pytest.skip",
+        "message": "set control binary environment variables for real-driver qualification"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_traversal_controls",
+        "name": "test_real_controls_match_every_reference_distance[parallel-delta-4-4-True]",
+        "type": "pytest.skip",
+        "message": "set control binary environment variables for real-driver qualification"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_traversal_controls",
+        "name": "test_real_controls_match_every_reference_distance[parallel-bellman-ford-1-1-False]",
+        "type": "pytest.skip",
+        "message": "set control binary environment variables for real-driver qualification"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_traversal_controls",
+        "name": "test_real_controls_match_every_reference_distance[parallel-bellman-ford-1-1-True]",
+        "type": "pytest.skip",
+        "message": "set control binary environment variables for real-driver qualification"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_traversal_controls",
+        "name": "test_real_controls_match_every_reference_distance[parallel-bellman-ford-1-4-False]",
+        "type": "pytest.skip",
+        "message": "set control binary environment variables for real-driver qualification"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_traversal_controls",
+        "name": "test_real_controls_match_every_reference_distance[parallel-bellman-ford-1-4-True]",
+        "type": "pytest.skip",
+        "message": "set control binary environment variables for real-driver qualification"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_traversal_controls",
+        "name": "test_real_controls_preserve_explicit_isolated_source[gap-bfs]",
+        "type": "pytest.skip",
+        "message": "set control binary environment variables"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_traversal_controls",
+        "name": "test_real_controls_preserve_explicit_isolated_source[gap-sssp]",
+        "type": "pytest.skip",
+        "message": "set control binary environment variables"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_traversal_controls",
+        "name": "test_real_controls_preserve_explicit_isolated_source[parallel-rho]",
+        "type": "pytest.skip",
+        "message": "set control binary environment variables"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_traversal_controls",
+        "name": "test_real_controls_preserve_explicit_isolated_source[parallel-delta]",
+        "type": "pytest.skip",
+        "message": "set control binary environment variables"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_traversal_controls",
+        "name": "test_real_controls_preserve_explicit_isolated_source[parallel-bellman-ford]",
+        "type": "pytest.skip",
+        "message": "set control binary environment variables"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_traversal_controls",
+        "name": "test_parallel_dense_multigraph_tuning_keeps_positive_threshold",
+        "type": "pytest.skip",
+        "message": "set PARALLEL_CONTROL_BINARY"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_traversal_controls",
+        "name": "test_control_mismatch_retains_full_output_and_receipt",
+        "type": "pytest.skip",
+        "message": "set PARALLEL_CONTROL_BINARY"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_traversal_parent_witness",
+        "name": "test_integral_parent_tree_matches_distance_only_certificate_and_oracle[hop_type0-False]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual parent-witness checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_traversal_parent_witness",
+        "name": "test_integral_parent_tree_matches_distance_only_certificate_and_oracle[hop_type0-True]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual parent-witness checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_traversal_parent_witness",
+        "name": "test_integral_parent_tree_matches_distance_only_certificate_and_oracle[hop_type1-False]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual parent-witness checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_traversal_parent_witness",
+        "name": "test_integral_parent_tree_matches_distance_only_certificate_and_oracle[hop_type1-True]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual parent-witness checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_traversal_parent_witness",
+        "name": "test_integral_parent_tree_matches_distance_only_certificate_and_oracle[hop_type2-False]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual parent-witness checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_traversal_parent_witness",
+        "name": "test_integral_parent_tree_matches_distance_only_certificate_and_oracle[hop_type2-True]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual parent-witness checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_traversal_parent_witness",
+        "name": "test_integral_parent_tree_matches_distance_only_certificate_and_oracle[hop_type3-False]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual parent-witness checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_traversal_parent_witness",
+        "name": "test_integral_parent_tree_matches_distance_only_certificate_and_oracle[hop_type3-True]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual parent-witness checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_traversal_parent_witness",
+        "name": "test_cap_trap_retains_shorter_bfs_fallback",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual parent-witness checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_traversal_parent_witness",
+        "name": "test_old_parent_tolerance_does_not_prove_exact_tight_edge",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual parent-witness checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_traversal_parent_witness",
+        "name": "test_stricter_existing_parent_output_rejection_is_preserved",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual parent-witness checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_traversal_parent_witness",
+        "name": "test_invalid_parent_metadata_falls_back_and_caller_still_rejects[null_parent]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual parent-witness checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_traversal_parent_witness",
+        "name": "test_invalid_parent_metadata_falls_back_and_caller_still_rejects[null_hops]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual parent-witness checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_traversal_parent_witness",
+        "name": "test_invalid_parent_metadata_falls_back_and_caller_still_rejects[missing_parent]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual parent-witness checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_traversal_parent_witness",
+        "name": "test_invalid_parent_metadata_falls_back_and_caller_still_rejects[cycle]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual parent-witness checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_traversal_parent_witness",
+        "name": "test_invalid_parent_metadata_falls_back_and_caller_still_rejects[unreachable_metadata]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual parent-witness checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_traversal_parent_witness",
+        "name": "test_invalid_parent_metadata_falls_back_and_caller_still_rejects[root_parent]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual parent-witness checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_traversal_parent_witness",
+        "name": "test_invalid_parent_metadata_falls_back_and_caller_still_rejects[root_hops]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual parent-witness checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_traversal_parent_witness",
+        "name": "test_invalid_parent_metadata_falls_back_and_caller_still_rejects[zero_nonroot_hops]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual parent-witness checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_traversal_parent_witness",
+        "name": "test_invalid_parent_metadata_falls_back_and_caller_still_rejects[oversized_hops]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual parent-witness checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_traversal_parent_witness",
+        "name": "test_invalid_parent_metadata_falls_back_and_caller_still_rejects[missing_edge]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual parent-witness checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_traversal_parent_witness",
+        "name": "test_floating_hops_keep_existing_fallback_acceptance",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual parent-witness checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_traversal_parent_witness",
+        "name": "test_one_missing_optional_native_field_keeps_original_contract[parent]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual parent-witness checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_traversal_parent_witness",
+        "name": "test_one_missing_optional_native_field_keeps_original_contract[hops]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual parent-witness checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_traversal_parent_witness",
+        "name": "test_disconnected_zero_cycle_cannot_be_parent_proof",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual parent-witness checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_traversal_parent_witness",
+        "name": "test_parent_tree_never_bypasses_all_edge_checks[shortcut]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual parent-witness checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_traversal_parent_witness",
+        "name": "test_parent_tree_never_bypasses_all_edge_checks[unreachable]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual parent-witness checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_traversal_parent_witness",
+        "name": "test_parent_tree_never_bypasses_all_edge_checks[overflow]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual parent-witness checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_traversal_parent_witness",
+        "name": "test_parent_metadata_never_bypasses_output_coverage[duplicate]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual parent-witness checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_traversal_parent_witness",
+        "name": "test_parent_metadata_never_bypasses_output_coverage[missing]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual parent-witness checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_traversal_parent_witness",
+        "name": "test_parent_metadata_never_bypasses_output_coverage[unknown]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual parent-witness checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_traversal_parent_witness",
+        "name": "test_signed_ids_parallel_edges_and_undirected_orientation",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual parent-witness checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_traversal_parent_witness",
+        "name": "test_float_expression_order_and_isolated_root",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual parent-witness checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_traversal_parent_witness",
+        "name": "test_original_graph_run_preconditions_apply_before_parent_selection[partitions0]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual parent-witness checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_traversal_parent_witness",
+        "name": "test_original_graph_run_preconditions_apply_before_parent_selection[partitions_bool]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual parent-witness checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_traversal_parent_witness",
+        "name": "test_original_graph_run_preconditions_apply_before_parent_selection[partitions_float]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual parent-witness checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_traversal_parent_witness",
+        "name": "test_original_graph_run_preconditions_apply_before_parent_selection[vertices_int32]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual parent-witness checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_traversal_parent_witness",
+        "name": "test_original_graph_run_preconditions_apply_before_parent_selection[edges_int32]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual parent-witness checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_traversal_parent_witness",
+        "name": "test_original_graph_run_preconditions_apply_before_parent_selection[duplicate_names]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual parent-witness checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_wcc_certificate",
+        "name": "test_edge_consistency_only_is_partial_even_for_a_correct_partition[labels0]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual WCC certificate checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_wcc_certificate",
+        "name": "test_edge_consistency_only_is_partial_even_for_a_correct_partition[labels1]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual WCC certificate checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_wcc_certificate",
+        "name": "test_edge_consistency_only_is_partial_even_for_a_correct_partition[labels2]",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual WCC certificate checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_wcc_certificate",
+        "name": "test_reference_rejects_merged_components",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual WCC certificate checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_wcc_certificate",
+        "name": "test_reference_normalizes_valid_representative_conventions",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual WCC certificate checks"
+      },
+      {
+        "classname": "examples.extensions.benchmarks.test_wcc_certificate",
+        "name": "test_partial_check_still_rejects_split_connected_components",
+        "type": "pytest.skip",
+        "message": "set SAIL_GRAPH_TEST_REMOTE for actual WCC certificate checks"
+      }
+    ]
+  },
+  "error": "AssertionError('sql-04-test_algorithms failed; original log retained')",
+  "traceback": "Traceback (most recent call last):\n  File \"/private/tmp/grust-pecan-explicit-validation/docs/reviews/pecan-validation-2026-10-01/run_gate.py\", line 254, in main\n    run(command+[str(repo/module), '--junitxml='+str(output/(label+'.xml')),\n  File \"/private/tmp/grust-pecan-explicit-validation/docs/reviews/pecan-validation-2026-10-01/run_gate.py\", line 184, in run\n    assert record['returncode'] == 0, label+' failed; original log retained'\n           ^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: sql-04-test_algorithms failed; original log retained\n",
+  "client_after": {
+    "executable": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/bin/python",
+    "real_executable": "/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/bin/python3.12",
+    "executable_sha256": "7ab28aab7042141d3d97175edec3045ff15b5d0cbf885817c7c1ad0dad393f9f",
+    "version": "3.12.8 (main, Jan  5 2025, 06:55:30) [Clang 19.1.6 ]",
+    "path_python3": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/bin/python3",
+    "path_python3_real": "/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/bin/python3.12",
+    "path_python3_sha256": "7ab28aab7042141d3d97175edec3045ff15b5d0cbf885817c7c1ad0dad393f9f",
+    "stdlib_encodings_file": "/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/lib/python3.12/encodings/__init__.py",
+    "stdlib_encodings_sha256": "78c4744d407690f321565488710b5aaf6486b5afa8d185637aa1e7633ab59cd8",
+    "prefix": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion",
+    "base_prefix": "/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none",
+    "modules": {
+      "pyspark": {
+        "version": "4.0.1",
+        "file": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/__init__.py",
+        "sha256": "e1776e11568f4231f8079502270a2c84828f335ef61cc60561b225d636c7bcdc"
+      },
+      "pyarrow": {
+        "version": "21.0.0",
+        "file": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyarrow/__init__.py",
+        "sha256": "9f52fe44ffd0653d93eeac470a26ee12cf7c054760bfc4915493db4a99105aa0"
+      },
+      "numpy": {
+        "version": "2.5.3",
+        "file": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/numpy/__init__.py",
+        "sha256": "09295a80660f17925ae23765ce8cbd7ff7ceae968d5f2f89349f1cb74c0b9e11"
+      },
+      "grpc": {
+        "version": "1.84.0",
+        "file": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/grpc/__init__.py",
+        "sha256": "7e3a88cf8430c74ec70ca65ba615a3c0419d3a4f59f9c59c01500ade2d88dd39"
+      },
+      "pytest": {
+        "version": "8.4.2",
+        "file": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pytest/__init__.py",
+        "sha256": "66993a5e3905005e0981159b4794d10b1adacf341a58a44d696ad2c4442dcdc6"
+      }
+    }
+  },
+  "source_runtime_client_unchanged": true,
+  "raw_xml_counts": {
+    "sql-02-test_traversal_parent_witness.xml": {
+      "tests": 43,
+      "failure": 0,
+      "error": 0,
+      "skipped": 0
+    },
+    "sql-01-test_traversal_certificate.xml": {
+      "tests": 9,
+      "failure": 0,
+      "error": 0,
+      "skipped": 0
+    },
+    "sql-00-test_pagerank_metadata.xml": {
+      "tests": 52,
+      "failure": 0,
+      "error": 0,
+      "skipped": 0
+    },
+    "offline.xml": {
+      "tests": 1473,
+      "failure": 0,
+      "error": 0,
+      "skipped": 236
+    },
+    "sql-03-test_wcc_certificate.xml": {
+      "tests": 6,
+      "failure": 0,
+      "error": 0,
+      "skipped": 0
+    },
+    "sql-04-test_algorithms.xml": {
+      "tests": 13,
+      "failure": 8,
+      "error": 0,
+      "skipped": 0
+    }
+  },
+  "files_sha256": {
+    "collection.log": "8343a0327a92de1164148720b13ac3c2f7c694e8b241fb84445b14d61f0fc43c",
+    "sql-03-test_wcc_certificate.log": "1614abf852c9e5cadfc9150a2427c3fb0b89f157ac244129aa888a0dc2560ab6",
+    "sql-04-test_algorithms.log": "ac06d4266cb70ba69d7d64da1b8febf4128fdf5d1589b133f2cc035dd03efc8b",
+    "sql-03-test_wcc_certificate-server.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "sql-02-test_traversal_parent_witness.xml": "b2f0364c98e60b87ce9115a5c28e5a7b4da979c2e53bfe5a5893b39f9ece7bcd",
+    "source-before.json": "038412cdb0dcb3accde5f83c16a1bb9ae9279fb581474a26fe9f971aaf6e2c91",
+    "source-after.json": "038412cdb0dcb3accde5f83c16a1bb9ae9279fb581474a26fe9f971aaf6e2c91",
+    "modules-after.log": "dc69f7fd774bbb07b3c9b8520cee738f5418538ea038d5f9a610f8c361c0bcc1",
+    "sql-01-test_traversal_certificate.xml": "6a3d3abd8e73eb4834bd9e3abc80060807c88f014a1fcf0a7fdfad7cada269cc",
+    "client-before.log": "f50b17d9b3009ca2400c24b5fe166f55db485c895f63275ed1bc74e65df6e660",
+    "sql-00-test_pagerank_metadata.xml": "708c38fa7f23a6d82deddf5eece7381a907d46a03aabf2827d5a775dfee94591",
+    "diff-check.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "offline.xml": "d245f0d2ee8f4b9e0aa11e359c6ba48084aaa59dc5c857f055e7309a8bf06b5b",
+    "client-after.log": "f50b17d9b3009ca2400c24b5fe166f55db485c895f63275ed1bc74e65df6e660",
+    "sql-00-test_pagerank_metadata-server.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "sql-01-test_traversal_certificate.log": "e8b67cc50125b409d5984b36482881d3eb0d3416acb1804619354700e75c0006",
+    "sql-00-test_pagerank_metadata.log": "422c0139bd8994dd7c34718c3341a3a83fb7584db70211475b597dda6ea56d4b",
+    "sql-04-test_algorithms-server.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "offline.log": "cbe5cfc787d3ef7cc8ade4b76a871d78308b30efaa37f908c45f901f3f245e59",
+    "sql-02-test_traversal_parent_witness-server.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "inventory.json": "f2de3b09d5d4c482fcd3119b31689afb354038f8fe984c042699d5a018c1210c",
+    "sql-03-test_wcc_certificate.xml": "faed256c06e4548749d85f2d3bb39cad6a8c4ec59102e181ade17cf602f244a9",
+    "sql-01-test_traversal_certificate-server.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "sql-04-test_algorithms.xml": "f05787729b88ccdee5bbae87d16d92c0f2a2f227026bb18e1629d6c2374deb5d",
+    "sql-02-test_traversal_parent_witness.log": "e90a2fb23e1663969148dfcc86ed685d56df316f99741ad0262c8b668768d209",
+    "modules-before.log": "dc69f7fd774bbb07b3c9b8520cee738f5418538ea038d5f9a610f8c361c0bcc1"
+  },
+  "finished_utc": "2026-10-01T16:18:51.923657+00:00"
+}

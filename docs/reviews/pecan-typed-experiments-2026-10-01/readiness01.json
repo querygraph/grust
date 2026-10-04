@@ -1,0 +1,72 @@
+{
+  "recorded_utc": "2026-10-01T17:15:08.934213+00:00",
+  "host_disk": [
+    4001907707904,
+    3967212584960,
+    34695122944
+  ],
+  "apo_disk": [
+    6000135831552,
+    5934742962176,
+    65392869376
+  ],
+  "prior_container": {
+    "Id": "01341720e951f4be6d661f56fae533ca3a5a1c1f7124ea47ab9dd4bfd4f457c9",
+    "Name": "/sail-next-capacity-grenada-s24-1",
+    "Image": "sha256:f3518d652fbea8b9b9f9ebf9849277ca3bd39d0c21bb2c6e36fbaeaa2dc2678e",
+    "State": {
+      "Status": "exited",
+      "Running": false,
+      "Paused": false,
+      "Restarting": false,
+      "OOMKilled": false,
+      "Dead": false,
+      "Pid": 0,
+      "ExitCode": 143,
+      "Error": "",
+      "StartedAt": "2026-10-01T13:29:16.127092685Z",
+      "FinishedAt": "2026-10-01T15:37:53.470220571Z"
+    }
+  },
+  "prior_supervisor_receipt": {
+    "recorded_utc": "2026-10-01T15:38:06.024500+00:00",
+    "outcome": "error",
+    "plan_sha256": "9d326a474b3487554e8994fb56159004b6863a58445f93ded42df5d21c778f2e",
+    "supervisor_sha256": "f6ebbb9be7c927a593099d0f93a6590af7ef88d91010a015de31a774c8ad6100",
+    "cells": [
+      {
+        "run_id": "next-capacity-pecan-s25",
+        "outcome": "passed",
+        "producer_outcome": "passed",
+        "result_outcome": "passed",
+        "correctness": {
+          "rows": 33554432,
+          "unique": 33554432,
+          "reached": 17048727,
+          "certificate": "all-edge inequalities and rooted tight-edge reachability",
+          "witness_rounds": 21,
+          "relative_edge_tolerance": 1e-12,
+          "max_edge_slack": 6.329183004796505e-12,
+          "conservative_absolute_distance_error_bound": 0.00021238703558156677,
+          "reference": "distributed certificate; no precomputed reference vector",
+          "parent_tree_checked": true
+        },
+        "files": {
+          "result.json": "9197710e3bb88710eda1b7e09f011322db03e7e0f53a9670094ab26570abdb0a",
+          "diagnostics/receipt.json": "789ec6944fb1ede1a394de362c893aaad4a9f0ad419e576498ee12313a2bbb52",
+          "cell/orchestration.json": "5d17aa41c1625b6c16bd5e05deac0c9319b26be17e3b4f5263963e751c9be2c4"
+        },
+        "physical_output_checked": false
+      }
+    ],
+    "error": "RuntimeError('observer command failed: {\\'returncode\\': None, \\'error\\': \\'TimeoutExpired([\\\\\\'/usr/local/bin/docker\\\\\\', \\\\\\'--context\\\\\\', \\\\\\'colima-sail-gate\\\\\\', \\\\\\'run\\\\\\', \\\\\\'--rm\\\\\\', \\\\\\'--name\\\\\\', \\\\\\'sail-next-capacity-grenada-s24-observer-148\\\\\\', \\\\\\'--read-only\\\\\\', \\\\\\'--network\\\\\\', \\\\\\'none\\\\\\', \\\\\\'--memory\\\\\\', \\\\\\'256m\\\\\\', \\\\\\'--memory-swap\\\\\\', \\\\\\'256m\\\\\\', \\\\\\'--cpus\\\\\\', \\\\\\'1\\\\\\', \\\\\\'--pids-limit\\\\\\', \\\\\\'32\\\\\\', \\\\\\'--mount\\\\\\', \\\\\\'type=volume,source=sail-extension-targets,target=/targets,readonly\\\\\\', \\\\\\'--entrypoint\\\\\\', \\\\\\'/targets/graph-nuts-ffcfbd569/venv/bin/python\\\\\\', \\\\\\'sha256:f3518d652fbea8b9b9f9ebf9849277ca3bd39d0c21bb2c6e36fbaeaa2dc2678e\\\\\\', \\\\\\'-I\\\\\\', \\\\\\'-B\\\\\\', \\\\\\'-c\\\\\\', \"\\\\\\\\nimport hashlib,json,os,shutil,subprocess,sys\\\\\\\\nfrom pathlib import Path\\\\\\\\nos.environ[\\\\\\'GIT_OPTIONAL_LOCKS\\\\\\']=\\\\\\'0\\\\\\'\\\\\\\\ndef sha(p):\\\\\\\\n with Path(p).open(\\\\\\'rb\\\\\\') as f:return hashlib.file_digest(f,\\\\\\'sha256\\\\\\').hexdigest()\\\\\\\\nc=json.loads(sys.argv[1]);r={\\\\\\'free_bytes\\\\\\':shutil.disk_usage(\\\\\\'/targets\\\\\\').free,\\\\\\'boot_id\\\\\\':Path(\\\\\\'/proc/sys/kernel/random/boot_id\\\\\\').read_text().strip()}\\\\\\\\nr[\\\\\\'memory\\\\\\']=Path(\\\\\\'/proc/meminfo\\\\\\').read_text();r[\\\\\\'available_bytes\\\\\\']=int(next(x.split()[1] for x in r[\\\\\\'memory\\\\\\'].splitlines() if x.startswith(\\\\\\'MemAvailable:\\\\\\')))*1024\\\\\\\\nif sys.argv[2]==\\\\\\'admit\\\\\\':\\\\\\\\n r[\\\\\\'binary_sha256\\\\\\']=sha(c[\\\\\\'container_sail_binary\\\\\\']);r[\\\\\\'native_sha256\\\\\\']=sha(\\\\\\'/targets/graph-nuts-ffcfbd569/venv/lib/python3.12/site-packages/sail_nutmeg/_native.cpython-312-x86_64-linux-gnu.so\\\\\\')\\\\\\\\n r[\\\\\\'head\\\\\\']=subprocess.check_output([\\\\\\'git\\\\\\',\\\\\\'-C\\\\\\',c[\\\\\\'container_repo\\\\\\'],\\\\\\'rev-parse\\\\\\',\\\\\\'HEAD\\\\\\'],text=True).strip();r[\\\\\\'dirty\\\\\\']=subprocess.check_output([\\\\\\'git\\\\\\',\\\\\\'-C\\\\\\',c[\\\\\\'container_repo\\\\\\'],\\\\\\'status\\\\\\',\\\\\\'--porcelain\\\\\\'],text=True).strip()\\\\\\\\n r[\\\\\\'manifests\\\\\\']={n:sha(Path(c[\\\\\\'container_root\\\\\\'])/\\\\\\'datasets\\\\\\'/n/\\\\\\'manifest.json\\\\\\') for n in c[\\\\\\'datasets\\\\\\']}\\\\\\\\n r[\\\\\\'cell_absent\\\\\\']=not (Path(c[\\\\\\'container_root\\\\\\'])/\\\\\\'cells\\\\\\').exists()\\\\\\\\nprint(json.dumps(r))\\\\\\\\n\", \\\\\\'{\"run_id\": \"next-capacity-grenada-s24\", \"docker_context\": \"colima-sail-gate\", \"image\": \"sha256:f3518d652fbea8b9b9f9ebf9849277ca3bd39d0c21bb2c6e36fbaeaa2dc2678e\", \"target_volume\": \"sail-extension-targets\", \"container_python\": \"/targets/graph-nuts-ffcfbd569/venv/bin/python\", \"container_repo\": \"/targets/sail-stream-experiments-20260930/source-3a9028057\", \"container_sail_binary\": \"/targets/sail-compact-host-56194b170155/sail-linux-x86_64-56194b170155-release\", \"runtime_source_sha\": \"56194b170155301ba91077f0ba3df31fe2c78b6b\", \"native_source_sha\": \"ffcfbd5690e3f3681ef9ac18ba959bc231cf9f73\", \"harness_source_sha\": \"3a9028057c6c6c5034492845926fc4bc18f9626f\", \"container_root\": \"/targets/sail-stream-experiments-20260930/next-capacity-grenada-s24\", \"host_output\": \"/Users/alexy/src/sail-extensions-gates/stream-experiments-20260930/next-capacity-grenada-s24\", \"seed\": 20260929, \"limits\": {\"cpus\": 32, \"cpuset_cpus\": \"0-31\", \"memory_gib\": 100, \"outer_timeout_seconds\": 32400}, \"defaults\": {\"partitions\": 32, \"threads\": 32, \"worker_task_slots\": 64, \"sail_pool_bytes\": 103079215104, \"native_quota\": 85899345920, \"tolerance\": 1e-08, \"damping\": 0.85, \"max_iterations\": 1000, \"timeout\": 28800, \"seed\": 42, \"delta\": 0.1}, \"datasets\": {\"scale24\": {\"family\": \"graph500\", \"vertices\": 16777216, \"scale\": 24, \"edge_factor\": 16, \"seed1\": 42, \"seed2\": 54, \"source\": 13507776, \"directed\": false, \"generator\": \"/targets/traversal-linux-038c9b9597d3/functional/graph500-stream\", \"validation\": \"certificate\", \"certificate_max_rounds\": 10000, \"expected_edge_sha256\": \"cacd401faca8b8da8cd81fcbedfadce5b355c7029c6c53fc9bec947b60d6649e\"}}, \"suites\": [{\"name\": \"next-capacity-grenada-s24\", \"mode\": \"process-cluster\", \"repetitions\": 1, \"datasets\": [\"scale24\"], \"engines\": [\"nutmeg-datafusion\"], \"algorithms\": [\"sssp\"], \"variants\": [\"delta_star\"], \"max_iterations\": 1000}], \"note\": \"Capacity qualification on shared Morrobay. Same compact561 runtime, original3a controller/nativeffcf, source and protocol as closed Pecan24. Fresh namespace; retained immutable input. Algorithm timeout8h and whole-cell outer9h leave room for larger work and certification. Serial resource admission and disk guard supplement existing harness; every outcome retained.\", \"extra_cell_args\": [\"--record-plans\", \"--http2-keepalive-timeout\", \"120\"], \"environment\": {\"SAIL_CLUSTER__TASK_STREAM_CREATION_TIMEOUT_SECS\": \"900\", \"SAIL_CLUSTER__WORKER_MAX_IDLE_TIME_SECS\": \"86400\", \"SAIL_BENCHMARK_RUST_LOG\": \"info,h2::proto::connection=debug,h2::proto::streams=warn,h2::frame::go_away=trace,h2::frame::reset=trace,h2::frame::ping=trace,h2::proto::ping_pong=trace,sail_execution::task_runner=debug,tonic::transport::server=debug\"}}\\\\\\', \\\\\\'poll\\\\\\'], 45)\\', \\'seconds\\': 47.98306900798343, \\'stdout\\': \\'\\', \\'stdout_bytes\\': 0, \\'stdout_sha256\\': \\'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\\', \\'stdout_truncated\\': False, \\'stderr\\': \\'\\', \\'stderr_bytes\\': 0, \\'stderr_sha256\\': \\'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\\', \\'stderr_truncated\\': False}')",
+    "lock_retained": true
+  },
+  "prior_lock_contents": [],
+  "guest": {
+    "returncode": 0,
+    "stdout": "{\"boot_id\": \"f5443bfc-c939-491a-a984-b73cc6d1cb20\", \"disk\": [252516577280, 153011490816, 87247863808], \"meminfo\": \"MemTotal:       113312000 kB\\nMemFree:        84934688 kB\\nMemAvailable:   111515556 kB\\nBuffers:          970948 kB\\nCached:         25423548 kB\\nSwapCached:            0 kB\\nActive:          2679196 kB\\nInactive:       23883296 kB\\nActive(anon):     180948 kB\\nInactive(anon):     2584 kB\\nActive(file):    2498248 kB\\nInactive(file): 23880712 kB\\nUnevictable:       14600 kB\\nMlocked:               0 kB\\nSwapTotal:             0 kB\\nSwapFree:              0 kB\\nZswap:                 0 kB\\nZswapped:              0 kB\\nDirty:               352 kB\\nWriteback:             0 kB\\nAnonPages:        182820 kB\\nMapped:           100796 kB\\nShmem:               984 kB\\nKReclaimable:    1307044 kB\\nSlab:            1623728 kB\\nSReclaimable:    1307044 kB\\nSUnreclaim:       316684 kB\\nKernelStack:        7280 kB\\nPageTables:         3660 kB\\nSecPageTables:         0 kB\\nNFS_Unstable:          0 kB\\nBounce:                0 kB\\nWritebackTmp:          0 kB\\nCommitLimit:    56656000 kB\\nCommitted_AS:    1217468 kB\\nVmallocTotal:   34359738367 kB\\nVmallocUsed:       16116 kB\\nVmallocChunk:          0 kB\\nPercpu:            26880 kB\\nHardwareCorrupted:     0 kB\\nAnonHugePages:         0 kB\\nShmemHugePages:        0 kB\\nShmemPmdMapped:        0 kB\\nFileHugePages:         0 kB\\nFilePmdMapped:         0 kB\\nUnaccepted:            0 kB\\nHugePages_Total:       0\\nHugePages_Free:        0\\nHugePages_Rsvd:        0\\nHugePages_Surp:        0\\nHugepagesize:       2048 kB\\nHugetlb:               0 kB\\nDirectMap4k:      160940 kB\\nDirectMap2M:    115175424 kB\\n\", \"python\": \"3.12.14 (main, Sep 24 2026, 17:57:43) [Clang 22.1.3 ]\", \"packages\": {\"pydantic\": null, \"pyspark\": \"4.0.1\", \"pyarrow\": \"21.0.0\", \"numpy\": \"2.5.3\"}, \"runtime_dirs\": [\"sail-stream-2894a962076d\", \"sail-stream-experiments-20260930\", \"sail-compact-host-56194b170155\"], \"inputs\": {\"/targets/sail-stream-experiments-20260930/sem-wcc-pilot-inputs/wcc-membership.i64le\": 60396288, \"/targets/sail-stream-experiments-20260930/sem-wcc-pilot-inputs/cit-Patents-e.parquet\": 70037384, \"/targets/sail-stream-experiments-20260930/sem-wcc-pilot-inputs/cit-Patents-v.parquet\": 3861941}, \"runtime_sha256\": \"5b7f506c19afd76a28b84c1459397b4ab30ff4cfc761f4195789425b963facec\", \"source_head\": \"3a9028057c6c6c5034492845926fc4bc18f9626f\"}\n",
+    "stderr": ""
+  },
+  "containers_after": ""
+}

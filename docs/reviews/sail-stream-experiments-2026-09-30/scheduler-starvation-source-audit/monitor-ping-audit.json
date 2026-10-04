@@ -1,0 +1,622 @@
+{
+  "recorded_utc": "2026-09-30T20:56:47.524650+00:00",
+  "outcome": "CONTRARY_TO_CONTINUOUS_GLOBAL_BLACKOUT_NOT_A_PER_PEER_CONTROL",
+  "scope": "Read only previously captured local logging02-monitor observation JSONs. No remote call, new workload, active log read or existing monitor edit. No whole-run or failure-cause verdict.",
+  "observation_files_examined": 31,
+  "observations_without_vm_payload": 8,
+  "timeout_receipts": 8,
+  "selected_single_tail": {
+    "path": "docs/reviews/sail-stream-experiments-2026-09-30/logging02-monitor/observation-20260930T204108056578Z.json",
+    "observation_sha256": "08340d6788806f05c1865c7022321b9ccfced8f0014fda69676be9e5829235cf",
+    "container_id": "277559b777e04a8bdda5f0cb8931480269de472f0fbf2e2125375496118fab16",
+    "local_started_utc": "2026-09-30T20:41:08.056578+00:00",
+    "local_finished_utc": "2026-09-30T20:41:55.298070+00:00",
+    "captured_server_bytes": 12147616,
+    "tail_offset": 12114848,
+    "tail_bytes": 32768,
+    "tail_sha256": "3e23b044aaf3683266931ac8a68c564420cbc679c94fc1c97a8a1ba7491b9c27",
+    "tail_utf8_round_trip_bytes_verified": true,
+    "first_partial_line_ignored": true,
+    "received_user_ping_ack_records": 138,
+    "first_ack_timestamp": "2026-09-30T20:30:24Z",
+    "last_ack_timestamp": "2026-09-30T20:41:49Z",
+    "distinct_ack_timestamps": 100,
+    "largest_gap_between_observed_ack_timestamps": {
+      "from": "2026-09-30T20:40:06Z",
+      "to": "2026-09-30T20:40:31Z",
+      "seconds": 25.0
+    },
+    "ack_records_per_utc_minute": {
+      "2026-09-30T20:30Z": 8,
+      "2026-09-30T20:31Z": 12,
+      "2026-09-30T20:32Z": 13,
+      "2026-09-30T20:33Z": 10,
+      "2026-09-30T20:34Z": 12,
+      "2026-09-30T20:35Z": 12,
+      "2026-09-30T20:36Z": 13,
+      "2026-09-30T20:37Z": 12,
+      "2026-09-30T20:38Z": 11,
+      "2026-09-30T20:39Z": 11,
+      "2026-09-30T20:40Z": 11,
+      "2026-09-30T20:41Z": 13
+    },
+    "encoded_ping_request_records": 135,
+    "encoded_ping_ack_records": 173,
+    "example_ack_records": [
+      {
+        "timestamp_utc": "2026-09-30T20:30:24Z",
+        "server_log_byte_offset": 12115084,
+        "line_sha256": "a504dca7e85e42e96eee2c07801a9044f161b78b9ff0bb0ea95e54c606b30695"
+      },
+      {
+        "timestamp_utc": "2026-09-30T20:36:16Z",
+        "server_log_byte_offset": 12131313,
+        "line_sha256": "dd04d14eec23c047751147318f3f9c5acd5a75237da0efe0c6934a028331349a"
+      },
+      {
+        "timestamp_utc": "2026-09-30T20:41:49Z",
+        "server_log_byte_offset": 12147472,
+        "line_sha256": "7365d6096823716b6f7c1ada934ec37adaf01e967d84a95933482f105a4537fa"
+      }
+    ]
+  },
+  "interpretation": {
+    "supported": "At these logged instants, some h2 connections represented in the merged server log processed incoming PING USER ACKs. Repeated ACK processing during the observer timeout interval is contrary to an uninterrupted blackout of every contributing process for that entire interval.",
+    "not_supported": [
+      "No PID, runtime identity, connection ID, peer or PING payload is present in these lines; activity cannot be assigned to a particular worker or failing peer.",
+      "ACK timestamps from different connections cannot be paired with request timestamps to calculate RTT or an individual connection keepalive delay.",
+      "The maximum gap is between available merged ACK records, not maximum scheduler lag, peer latency or a bound on an individual runtime blackout.",
+      "Log timestamps are whole seconds and this audit assumes their recorded clock values; no new cross-clock synchronization was measured.",
+      "Snapshots contain bounded tails, scan filters/caps and observation gaps. This single tail is not full server-log coverage.",
+      "Observer SSH timeout is not proof of Sail-runtime blackout; later captured log bytes show transport activity within part of that period.",
+      "Neither ACK activity nor host paging establishes or excludes other causes of stream loss. No failing connection is identified by this analysis."
+    ]
+  },
+  "snapshot_inventory": [
+    {
+      "path": "docs/reviews/sail-stream-experiments-2026-09-30/logging02-monitor/observation-20260930T200923589965Z.json",
+      "sha256": "bd39318f1c4a86289fdcde656f4be4e74d0565516e46daf72bc8bbf53492d958",
+      "local_started_utc": "2026-09-30T20:09:23.589965+00:00",
+      "local_finished_utc": "2026-09-30T20:09:33.440755+00:00",
+      "has_observation": true,
+      "has_server_tail": true,
+      "timeout": false,
+      "server_bytes_at_start": 3746961,
+      "server_tail_offset": 3714193,
+      "error_scan_windows": [
+        [
+          0,
+          2097152
+        ],
+        [
+          2097152,
+          3746961
+        ]
+      ],
+      "error_scan_gap_bytes": 0
+    },
+    {
+      "path": "docs/reviews/sail-stream-experiments-2026-09-30/logging02-monitor/observation-20260930T201203322023Z.json",
+      "sha256": "706b1814a55182b33cfb32d24d1e00ae60e1814c1b15d3b2e17bc37565ece4aa",
+      "local_started_utc": "2026-09-30T20:12:03.322023+00:00",
+      "local_finished_utc": "2026-09-30T20:12:06.005022+00:00",
+      "has_observation": true,
+      "has_server_tail": true,
+      "timeout": false,
+      "server_bytes_at_start": 5877639,
+      "server_tail_offset": 5844871,
+      "error_scan_windows": [
+        [
+          3746961,
+          5844113
+        ],
+        [
+          5844113,
+          5877639
+        ]
+      ],
+      "error_scan_gap_bytes": 0
+    },
+    {
+      "path": "docs/reviews/sail-stream-experiments-2026-09-30/logging02-monitor/observation-20260930T201304795184Z.json",
+      "sha256": "cbfcf21da76c5a5934c12d52fb3bebc071c71da85594c56914caaf0977db2dfd",
+      "local_started_utc": "2026-09-30T20:13:04.795184+00:00",
+      "local_finished_utc": "2026-09-30T20:13:44.086996+00:00",
+      "has_observation": true,
+      "has_server_tail": true,
+      "timeout": false,
+      "server_bytes_at_start": 7640778,
+      "server_tail_offset": 7608010,
+      "error_scan_windows": [
+        [
+          5877639,
+          7640778
+        ]
+      ],
+      "error_scan_gap_bytes": 0
+    },
+    {
+      "path": "docs/reviews/sail-stream-experiments-2026-09-30/logging02-monitor/observation-20260930T201424622583Z.json",
+      "sha256": "711ff9aff1e3b53ec01cb96592ce8c95cb42b554e4d44cf8d38347ae58cd1ed0",
+      "local_started_utc": "2026-09-30T20:14:24.622583+00:00",
+      "local_finished_utc": "2026-09-30T20:14:56.313252+00:00",
+      "has_observation": true,
+      "has_server_tail": true,
+      "timeout": false,
+      "server_bytes_at_start": 7644452,
+      "server_tail_offset": 7611684,
+      "error_scan_windows": [
+        [
+          7640778,
+          7644452
+        ]
+      ],
+      "error_scan_gap_bytes": 0
+    },
+    {
+      "path": "docs/reviews/sail-stream-experiments-2026-09-30/logging02-monitor/observation-20260930T201524666045Z.json",
+      "sha256": "886f5d7d209c56dee456b6d06bb0b05a38aaf5d361f9fc8570dbbc43e7a7fe1b",
+      "local_started_utc": "2026-09-30T20:15:24.666045+00:00",
+      "local_finished_utc": "2026-09-30T20:15:37.725170+00:00",
+      "has_observation": true,
+      "has_server_tail": true,
+      "timeout": false,
+      "server_bytes_at_start": 7646587,
+      "server_tail_offset": 7613819,
+      "error_scan_windows": [
+        [
+          7644452,
+          7646587
+        ]
+      ],
+      "error_scan_gap_bytes": 0
+    },
+    {
+      "path": "docs/reviews/sail-stream-experiments-2026-09-30/logging02-monitor/observation-20260930T201624692751Z.json",
+      "sha256": "059d1047f1e0af4707b10b522b5e64172741b8826a347892d5aa644e3cf432b7",
+      "local_started_utc": "2026-09-30T20:16:24.692751+00:00",
+      "local_finished_utc": "2026-09-30T20:16:27.225151+00:00",
+      "has_observation": true,
+      "has_server_tail": true,
+      "timeout": false,
+      "server_bytes_at_start": 7648722,
+      "server_tail_offset": 7615954,
+      "error_scan_windows": [
+        [
+          7646587,
+          7648722
+        ]
+      ],
+      "error_scan_gap_bytes": 0
+    },
+    {
+      "path": "docs/reviews/sail-stream-experiments-2026-09-30/logging02-monitor/observation-20260930T201724644126Z.json",
+      "sha256": "425d8f38ad573ef61e62bb374ce0a2779cca63789590ffd413603034b6eac719",
+      "local_started_utc": "2026-09-30T20:17:24.644126+00:00",
+      "local_finished_utc": "2026-09-30T20:17:26.565891+00:00",
+      "has_observation": true,
+      "has_server_tail": true,
+      "timeout": false,
+      "server_bytes_at_start": 7652032,
+      "server_tail_offset": 7619264,
+      "error_scan_windows": [
+        [
+          7648722,
+          7652032
+        ]
+      ],
+      "error_scan_gap_bytes": 0
+    },
+    {
+      "path": "docs/reviews/sail-stream-experiments-2026-09-30/logging02-monitor/observation-20260930T201824662579Z.json",
+      "sha256": "da0d9d95974652b44f3ef13b325ebf0e18d3d34525d6ff6a697f8e9560f954bf",
+      "local_started_utc": "2026-09-30T20:18:24.662579+00:00",
+      "local_finished_utc": "2026-09-30T20:18:26.528941+00:00",
+      "has_observation": true,
+      "has_server_tail": true,
+      "timeout": false,
+      "server_bytes_at_start": 7666109,
+      "server_tail_offset": 7633341,
+      "error_scan_windows": [
+        [
+          7652032,
+          7666109
+        ]
+      ],
+      "error_scan_gap_bytes": 0
+    },
+    {
+      "path": "docs/reviews/sail-stream-experiments-2026-09-30/logging02-monitor/observation-20260930T201924664018Z.json",
+      "sha256": "0208c5f97e1edbed26cf5641d37610b3176be8c6feff8bed0c3c0315af03287e",
+      "local_started_utc": "2026-09-30T20:19:24.664018+00:00",
+      "local_finished_utc": "2026-09-30T20:19:26.951617+00:00",
+      "has_observation": true,
+      "has_server_tail": true,
+      "timeout": false,
+      "server_bytes_at_start": 8779902,
+      "server_tail_offset": 8747134,
+      "error_scan_windows": [
+        [
+          7666109,
+          8779902
+        ]
+      ],
+      "error_scan_gap_bytes": 0
+    },
+    {
+      "path": "docs/reviews/sail-stream-experiments-2026-09-30/logging02-monitor/observation-20260930T202024693761Z.json",
+      "sha256": "3946f9aada092e43383e2eeb90d6699a1ed6b3438ca561136a1ae9397998bbb9",
+      "local_started_utc": "2026-09-30T20:20:24.693761+00:00",
+      "local_finished_utc": "2026-09-30T20:20:26.820705+00:00",
+      "has_observation": true,
+      "has_server_tail": true,
+      "timeout": false,
+      "server_bytes_at_start": 10904973,
+      "server_tail_offset": 10872205,
+      "error_scan_windows": [
+        [
+          8779902,
+          10877054
+        ],
+        [
+          10877054,
+          10904973
+        ]
+      ],
+      "error_scan_gap_bytes": 0
+    },
+    {
+      "path": "docs/reviews/sail-stream-experiments-2026-09-30/logging02-monitor/observation-20260930T202124698587Z.json",
+      "sha256": "e8ac305a17d313e4158b6e5010e4af764d38ac6f2ed57527cab0f011093c5353",
+      "local_started_utc": "2026-09-30T20:21:24.698587+00:00",
+      "local_finished_utc": "2026-09-30T20:21:27.494699+00:00",
+      "has_observation": true,
+      "has_server_tail": true,
+      "timeout": false,
+      "server_bytes_at_start": 12088120,
+      "server_tail_offset": 12055352,
+      "error_scan_windows": [
+        [
+          10904973,
+          12088120
+        ]
+      ],
+      "error_scan_gap_bytes": 0
+    },
+    {
+      "path": "docs/reviews/sail-stream-experiments-2026-09-30/logging02-monitor/observation-20260930T202224697868Z.json",
+      "sha256": "d9e123e3b37c8ca8ea6eeddd6a9097a76d76a61fe8c18c3758fdaba2ef337ec6",
+      "local_started_utc": "2026-09-30T20:22:24.697868+00:00",
+      "local_finished_utc": "2026-09-30T20:23:20.897090+00:00",
+      "has_observation": true,
+      "has_server_tail": true,
+      "timeout": false,
+      "server_bytes_at_start": 12094351,
+      "server_tail_offset": 12061583,
+      "error_scan_windows": [
+        [
+          12088120,
+          12094351
+        ]
+      ],
+      "error_scan_gap_bytes": 0
+    },
+    {
+      "path": "docs/reviews/sail-stream-experiments-2026-09-30/logging02-monitor/observation-20260930T202324720750Z.json",
+      "sha256": "d26277f6ed8409cd7bf86156594d27a3727c1308da332ec25d4f8df7e8c9d84a",
+      "local_started_utc": "2026-09-30T20:23:24.720750+00:00",
+      "local_finished_utc": "2026-09-30T20:24:03.814033+00:00",
+      "has_observation": true,
+      "has_server_tail": true,
+      "timeout": false,
+      "server_bytes_at_start": 12096041,
+      "server_tail_offset": 12063273,
+      "error_scan_windows": [
+        [
+          12094351,
+          12096041
+        ]
+      ],
+      "error_scan_gap_bytes": 0
+    },
+    {
+      "path": "docs/reviews/sail-stream-experiments-2026-09-30/logging02-monitor/observation-20260930T202507353018Z.json",
+      "sha256": "f3d02bd75f69e7c681f83d6e519975f5ae1d8af5db1f2a6ab89c4b709bf0ab1c",
+      "local_started_utc": "2026-09-30T20:25:07.353018+00:00",
+      "local_finished_utc": "2026-09-30T20:25:38.766535+00:00",
+      "has_observation": true,
+      "has_server_tail": true,
+      "timeout": false,
+      "server_bytes_at_start": 12100816,
+      "server_tail_offset": 12068048,
+      "error_scan_windows": [
+        [
+          12096041,
+          12100816
+        ]
+      ],
+      "error_scan_gap_bytes": 0
+    },
+    {
+      "path": "docs/reviews/sail-stream-experiments-2026-09-30/logging02-monitor/observation-20260930T202607381153Z.json",
+      "sha256": "346c47e71e82282861bf447dda03c0c90d9628b777bd2f02d16b9f11112e14f1",
+      "local_started_utc": "2026-09-30T20:26:07.381153+00:00",
+      "local_finished_utc": "2026-09-30T20:26:45.484288+00:00",
+      "has_observation": true,
+      "has_server_tail": true,
+      "timeout": false,
+      "server_bytes_at_start": 12103976,
+      "server_tail_offset": 12071208,
+      "error_scan_windows": [
+        [
+          12100816,
+          12103976
+        ]
+      ],
+      "error_scan_gap_bytes": 0
+    },
+    {
+      "path": "docs/reviews/sail-stream-experiments-2026-09-30/logging02-monitor/observation-20260930T202707408518Z.json",
+      "sha256": "c66547069e4d586131a9433f0f2ec6022fc168335eb8c642d456daee93d96a50",
+      "local_started_utc": "2026-09-30T20:27:07.408518+00:00",
+      "local_finished_utc": "2026-09-30T20:27:54.017024+00:00",
+      "has_observation": true,
+      "has_server_tail": true,
+      "timeout": false,
+      "server_bytes_at_start": 12107136,
+      "server_tail_offset": 12074368,
+      "error_scan_windows": [
+        [
+          12103976,
+          12107136
+        ]
+      ],
+      "error_scan_gap_bytes": 0
+    },
+    {
+      "path": "docs/reviews/sail-stream-experiments-2026-09-30/logging02-monitor/observation-20260930T202807412148Z.json",
+      "sha256": "c777a93b93904877f34bca289be2bf592cdbada1f6d5728caac07f99ed0b71d6",
+      "local_started_utc": "2026-09-30T20:28:07.412148+00:00",
+      "local_finished_utc": "2026-09-30T20:28:57.102057+00:00",
+      "has_observation": true,
+      "has_server_tail": true,
+      "timeout": false,
+      "server_bytes_at_start": 12110441,
+      "server_tail_offset": 12077673,
+      "error_scan_windows": [
+        [
+          12107136,
+          12110441
+        ]
+      ],
+      "error_scan_gap_bytes": 0
+    },
+    {
+      "path": "docs/reviews/sail-stream-experiments-2026-09-30/logging02-monitor/observation-20260930T202907412859Z.json",
+      "sha256": "317ba49db22934e4b90c87867ba8adc41dbc4832c7f8597adaa4e02c02584e25",
+      "local_started_utc": "2026-09-30T20:29:07.412859+00:00",
+      "local_finished_utc": "2026-09-30T20:29:55.268893+00:00",
+      "has_observation": true,
+      "has_server_tail": true,
+      "timeout": false,
+      "server_bytes_at_start": 12113381,
+      "server_tail_offset": 12080613,
+      "error_scan_windows": [
+        [
+          12110441,
+          12113381
+        ]
+      ],
+      "error_scan_gap_bytes": 0
+    },
+    {
+      "path": "docs/reviews/sail-stream-experiments-2026-09-30/logging02-monitor/observation-20260930T203007464359Z.json",
+      "sha256": "4c8d50dab4b392718c9995aeaddab286bcd5ae7709d0b42343f27c0db2a02203",
+      "local_started_utc": "2026-09-30T20:30:07.464359+00:00",
+      "local_finished_utc": "2026-09-30T20:31:03.724783+00:00",
+      "has_observation": true,
+      "has_server_tail": true,
+      "timeout": false,
+      "server_bytes_at_start": 12116611,
+      "server_tail_offset": 12083843,
+      "error_scan_windows": [
+        [
+          12113381,
+          12116611
+        ]
+      ],
+      "error_scan_gap_bytes": 0
+    },
+    {
+      "path": "docs/reviews/sail-stream-experiments-2026-09-30/logging02-monitor/observation-20260930T203107439073Z.json",
+      "sha256": "35b8458cb8b43599d14b973a1a33d86eef3176bdaa7c7cc5f06416305eb53700",
+      "local_started_utc": "2026-09-30T20:31:07.439073+00:00",
+      "local_finished_utc": "2026-09-30T20:32:06.201265+00:00",
+      "has_observation": true,
+      "has_server_tail": true,
+      "timeout": false,
+      "server_bytes_at_start": 12119772,
+      "server_tail_offset": 12087004,
+      "error_scan_windows": [
+        [
+          12116611,
+          12119772
+        ]
+      ],
+      "error_scan_gap_bytes": 0
+    },
+    {
+      "path": "docs/reviews/sail-stream-experiments-2026-09-30/logging02-monitor/observation-20260930T203207452462Z.json",
+      "sha256": "b4fff88aa1c86a31a8438e248226e1d29c438a67301180232ff59ac97cded619",
+      "local_started_utc": "2026-09-30T20:32:07.452462+00:00",
+      "local_finished_utc": "2026-09-30T20:33:07.461232+00:00",
+      "has_observation": false,
+      "has_server_tail": false,
+      "timeout": true,
+      "server_bytes_at_start": null,
+      "server_tail_offset": null,
+      "error_scan_windows": null,
+      "error_scan_gap_bytes": null
+    },
+    {
+      "path": "docs/reviews/sail-stream-experiments-2026-09-30/logging02-monitor/observation-20260930T203307539775Z.json",
+      "sha256": "33ff237936cdf6fdf59bf68f8246f1f7e2891f6924f7ba30c78aaec6569221f7",
+      "local_started_utc": "2026-09-30T20:33:07.539775+00:00",
+      "local_finished_utc": "2026-09-30T20:34:07.545029+00:00",
+      "has_observation": false,
+      "has_server_tail": false,
+      "timeout": true,
+      "server_bytes_at_start": null,
+      "server_tail_offset": null,
+      "error_scan_windows": null,
+      "error_scan_gap_bytes": null
+    },
+    {
+      "path": "docs/reviews/sail-stream-experiments-2026-09-30/logging02-monitor/observation-20260930T203407615787Z.json",
+      "sha256": "5078ed2872288c740811869ed7d1b7bb5640e70fedf08bc031fd402ae9268213",
+      "local_started_utc": "2026-09-30T20:34:07.615787+00:00",
+      "local_finished_utc": "2026-09-30T20:35:07.625043+00:00",
+      "has_observation": false,
+      "has_server_tail": false,
+      "timeout": true,
+      "server_bytes_at_start": null,
+      "server_tail_offset": null,
+      "error_scan_windows": null,
+      "error_scan_gap_bytes": null
+    },
+    {
+      "path": "docs/reviews/sail-stream-experiments-2026-09-30/logging02-monitor/observation-20260930T203507689639Z.json",
+      "sha256": "a9cbf0b94165d5a984b4a2fb23e58bcaa1dd068e7c28477533e5cb3e20901f1f",
+      "local_started_utc": "2026-09-30T20:35:07.689639+00:00",
+      "local_finished_utc": "2026-09-30T20:36:07.700885+00:00",
+      "has_observation": false,
+      "has_server_tail": false,
+      "timeout": true,
+      "server_bytes_at_start": null,
+      "server_tail_offset": null,
+      "error_scan_windows": null,
+      "error_scan_gap_bytes": null
+    },
+    {
+      "path": "docs/reviews/sail-stream-experiments-2026-09-30/logging02-monitor/observation-20260930T203607768121Z.json",
+      "sha256": "aa47b6352b2cfb8137cd03e6958f9ded76b9a8b05340da78ef98bbb975e405f4",
+      "local_started_utc": "2026-09-30T20:36:07.768121+00:00",
+      "local_finished_utc": "2026-09-30T20:37:07.785586+00:00",
+      "has_observation": false,
+      "has_server_tail": false,
+      "timeout": true,
+      "server_bytes_at_start": null,
+      "server_tail_offset": null,
+      "error_scan_windows": null,
+      "error_scan_gap_bytes": null
+    },
+    {
+      "path": "docs/reviews/sail-stream-experiments-2026-09-30/logging02-monitor/observation-20260930T203707846227Z.json",
+      "sha256": "24a42a63248a40fc76a820de7c935880270804ff9083625fbf04d16fc9038d9f",
+      "local_started_utc": "2026-09-30T20:37:07.846227+00:00",
+      "local_finished_utc": "2026-09-30T20:38:07.851826+00:00",
+      "has_observation": false,
+      "has_server_tail": false,
+      "timeout": true,
+      "server_bytes_at_start": null,
+      "server_tail_offset": null,
+      "error_scan_windows": null,
+      "error_scan_gap_bytes": null
+    },
+    {
+      "path": "docs/reviews/sail-stream-experiments-2026-09-30/logging02-monitor/observation-20260930T203807920959Z.json",
+      "sha256": "75da25e158ca09aa224beddd8b1afaf9ab1fca8e6d0cd2c221f2ee230c967c52",
+      "local_started_utc": "2026-09-30T20:38:07.920959+00:00",
+      "local_finished_utc": "2026-09-30T20:39:07.924161+00:00",
+      "has_observation": false,
+      "has_server_tail": false,
+      "timeout": true,
+      "server_bytes_at_start": null,
+      "server_tail_offset": null,
+      "error_scan_windows": null,
+      "error_scan_gap_bytes": null
+    },
+    {
+      "path": "docs/reviews/sail-stream-experiments-2026-09-30/logging02-monitor/observation-20260930T203907987373Z.json",
+      "sha256": "a3fb1789cc50600ff99f062af72798f1965062655f53047d7f95ade79b161ee3",
+      "local_started_utc": "2026-09-30T20:39:07.987373+00:00",
+      "local_finished_utc": "2026-09-30T20:40:07.991222+00:00",
+      "has_observation": false,
+      "has_server_tail": false,
+      "timeout": true,
+      "server_bytes_at_start": null,
+      "server_tail_offset": null,
+      "error_scan_windows": null,
+      "error_scan_gap_bytes": null
+    },
+    {
+      "path": "docs/reviews/sail-stream-experiments-2026-09-30/logging02-monitor/observation-20260930T204008045395Z.json",
+      "sha256": "d76b246135cc109d7f14e1db6d095d9fe46ad6b99c4c96781c86ac08e2555703",
+      "local_started_utc": "2026-09-30T20:40:08.045395+00:00",
+      "local_finished_utc": "2026-09-30T20:41:00.408579+00:00",
+      "has_observation": true,
+      "has_server_tail": true,
+      "timeout": false,
+      "server_bytes_at_start": 12144683,
+      "server_tail_offset": 12111915,
+      "error_scan_windows": [
+        [
+          12119772,
+          12144683
+        ]
+      ],
+      "error_scan_gap_bytes": 0
+    },
+    {
+      "path": "docs/reviews/sail-stream-experiments-2026-09-30/logging02-monitor/observation-20260930T204108056578Z.json",
+      "sha256": "08340d6788806f05c1865c7022321b9ccfced8f0014fda69676be9e5829235cf",
+      "local_started_utc": "2026-09-30T20:41:08.056578+00:00",
+      "local_finished_utc": "2026-09-30T20:41:55.298070+00:00",
+      "has_observation": true,
+      "has_server_tail": true,
+      "timeout": false,
+      "server_bytes_at_start": 12147616,
+      "server_tail_offset": 12114848,
+      "error_scan_windows": [
+        [
+          12144683,
+          12147616
+        ]
+      ],
+      "error_scan_gap_bytes": 0
+    },
+    {
+      "path": "docs/reviews/sail-stream-experiments-2026-09-30/logging02-monitor/observation-20260930T205039810557Z.json",
+      "sha256": "0ae4b6b5f7a851e75ab8795ddb6b78a6086fb0085193b682822378227fe475a9",
+      "local_started_utc": "2026-09-30T20:50:39.810557+00:00",
+      "local_finished_utc": "2026-09-30T20:51:33.950939+00:00",
+      "has_observation": true,
+      "has_server_tail": true,
+      "timeout": false,
+      "server_bytes_at_start": 12175466,
+      "server_tail_offset": 12142698,
+      "error_scan_windows": [
+        [
+          12147616,
+          12175466
+        ]
+      ],
+      "error_scan_gap_bytes": 0
+    }
+  ],
+  "analysis_note": "Initial read-only exploratory summarizer encountered an empty max() on a one-ACK snapshot; this receipt uses explicit empty-gap handling and one selected tail, avoiding counts duplicated across overlapping snapshots.",
+  "selection_revision": {
+    "previous_derived_receipt_sha256": "3b794f4a9b07b54998e44f2bfd12e1464b812f6cb03591a6f989fcb7eb787524",
+    "reason": "A newly collected observation appeared during file discovery. This final analysis explicitly selects the fixed 20:41 observation whose retained tail spans the eight earlier observer timeout receipts; the 20:50 observation remains inventoried but is not the selected control. No raw observation changed."
+  },
+  "ack_log_source": {
+    "path": "/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/h2-0.4.15/src/proto/ping_pong.rs",
+    "sha256": "fabf42b1b1062e361c4d45026e9bfc9c32a02a9074259c71b525e78d2113a148",
+    "first_line": 90,
+    "last_line": 121,
+    "span_sha256": "86fdffd62e698c7b4df9f12f8be1df682e0a951734a4b7f06f3b766381cddcbf",
+    "locked_archive_checksum": "6cb093c84e8bd9b188d4c4a8cb6579fc016968d14c99882163cd3ff402a4f155",
+    "archive_member_bytes_verified": true,
+    "meaning": "This log is emitted when incoming PING is an ACK with USER payload and user_pings.receive_pong() accepts it; it is not merely a PING encode request. It still supplies no process or connection identity."
+  }
+}

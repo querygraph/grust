@@ -1,0 +1,589 @@
+{
+  "recorded_utc": "2026-09-30T16:42:41.992640+00:00",
+  "repository": "querygraph/sail",
+  "host": "Capitola.local",
+  "machine": "arm64",
+  "baseline_production_sha": "ffcfbd5690e3f3681ef9ac18ba959bc231cf9f73",
+  "changed_sha": "19414314f90f289e491d444541b9f13ec394da64",
+  "baseline_worktree": "/tmp/sail-argentea-csr-baseline",
+  "changed_worktree": "/tmp/sail-argentea-csr-gate",
+  "baseline_test_command": "CARGO_INCREMENTAL=0 CARGO_BUILD_JOBS=4 CARGO_TARGET_DIR=/tmp/sail-argentea-csr-baseline-target cargo test --manifest-path /tmp/sail-argentea-csr-baseline/examples/extensions/argentea/Cargo.toml --locked --release --lib adjacency_tests::adjacency_build_allocation_and_work_counters -- --nocapture",
+  "baseline_outcome": {
+    "exit_code": 101,
+    "reason": "Expected new no-V-scratch assertion failure after all 24 counter cells printed; baseline production adjacency source unchanged, only identical test instrumentation added."
+  },
+  "scope": "Synchronous core builders only. Allocation counters cover requested allocation sizes on the constructing test thread, not allocator overhead or RSS. Fixtures, raw edge allocation and caller resource construction are outside measurement. Admission and work counters are grust-procedures ResourceUsage. No runtime/transport/adapter/cluster test or speed claim.",
+  "test_hashes": {
+    "src/adjacency_tests/mod.rs": "1c28beea2758f0ed12c8e364f4bde84f017675aaae90a5b53470c44f4a45e9b1",
+    "src/adjacency_tests/allocations.rs": "1d5aefa7c54831f234a1c7dbaaab91bd2f4f531bc789179ab34b79ebe6a9d1a2"
+  },
+  "cells": [
+    {
+      "key": {
+        "partitions": 1,
+        "dense": true,
+        "vertices": 16,
+        "arcs": 64,
+        "weighted": false
+      },
+      "baseline": {
+        "allocation_calls": 8,
+        "allocated_bytes": 1152,
+        "peak_requested_bytes": 1048,
+        "peak_admitted_bytes": 6152,
+        "counted_work": 160
+      },
+      "changed": {
+        "allocation_calls": 7,
+        "allocated_bytes": 1024,
+        "peak_requested_bytes": 1024,
+        "peak_admitted_bytes": 6024,
+        "counted_work": 160
+      }
+    },
+    {
+      "key": {
+        "partitions": 1,
+        "dense": true,
+        "vertices": 16,
+        "arcs": 64,
+        "weighted": true
+      },
+      "baseline": {
+        "allocation_calls": 8,
+        "allocated_bytes": 1672,
+        "peak_requested_bytes": 1560,
+        "peak_admitted_bytes": 6664,
+        "counted_work": 752
+      },
+      "changed": {
+        "allocation_calls": 7,
+        "allocated_bytes": 1544,
+        "peak_requested_bytes": 1464,
+        "peak_admitted_bytes": 6536,
+        "counted_work": 240
+      }
+    },
+    {
+      "key": {
+        "partitions": 1,
+        "dense": true,
+        "vertices": 65536,
+        "arcs": 262144,
+        "weighted": false
+      },
+      "baseline": {
+        "allocation_calls": 8,
+        "allocated_bytes": 3670272,
+        "peak_requested_bytes": 3670168,
+        "peak_admitted_bytes": 8392712,
+        "counted_work": 655360
+      },
+      "changed": {
+        "allocation_calls": 7,
+        "allocated_bytes": 3145984,
+        "peak_requested_bytes": 3145984,
+        "peak_admitted_bytes": 7868424,
+        "counted_work": 655360
+      }
+    },
+    {
+      "key": {
+        "partitions": 1,
+        "dense": true,
+        "vertices": 65536,
+        "arcs": 262144,
+        "weighted": true
+      },
+      "baseline": {
+        "allocation_calls": 8,
+        "allocated_bytes": 5767432,
+        "peak_requested_bytes": 5767320,
+        "peak_admitted_bytes": 10489864,
+        "counted_work": 10158080
+      },
+      "changed": {
+        "allocation_calls": 7,
+        "allocated_bytes": 5243144,
+        "peak_requested_bytes": 5243064,
+        "peak_admitted_bytes": 9965576,
+        "counted_work": 1769472
+      }
+    },
+    {
+      "key": {
+        "partitions": 1,
+        "dense": false,
+        "vertices": 16,
+        "arcs": 64,
+        "weighted": false
+      },
+      "baseline": {
+        "allocation_calls": 8,
+        "allocated_bytes": 1152,
+        "peak_requested_bytes": 1048,
+        "peak_admitted_bytes": 6152,
+        "counted_work": 160
+      },
+      "changed": {
+        "allocation_calls": 7,
+        "allocated_bytes": 1024,
+        "peak_requested_bytes": 1024,
+        "peak_admitted_bytes": 6024,
+        "counted_work": 160
+      }
+    },
+    {
+      "key": {
+        "partitions": 1,
+        "dense": false,
+        "vertices": 16,
+        "arcs": 64,
+        "weighted": true
+      },
+      "baseline": {
+        "allocation_calls": 8,
+        "allocated_bytes": 1672,
+        "peak_requested_bytes": 1560,
+        "peak_admitted_bytes": 6664,
+        "counted_work": 752
+      },
+      "changed": {
+        "allocation_calls": 7,
+        "allocated_bytes": 1544,
+        "peak_requested_bytes": 1464,
+        "peak_admitted_bytes": 6536,
+        "counted_work": 752
+      }
+    },
+    {
+      "key": {
+        "partitions": 1,
+        "dense": false,
+        "vertices": 65536,
+        "arcs": 262144,
+        "weighted": false
+      },
+      "baseline": {
+        "allocation_calls": 8,
+        "allocated_bytes": 3670272,
+        "peak_requested_bytes": 3670168,
+        "peak_admitted_bytes": 8392712,
+        "counted_work": 655360
+      },
+      "changed": {
+        "allocation_calls": 7,
+        "allocated_bytes": 3145984,
+        "peak_requested_bytes": 3145984,
+        "peak_admitted_bytes": 7868424,
+        "counted_work": 655360
+      }
+    },
+    {
+      "key": {
+        "partitions": 1,
+        "dense": false,
+        "vertices": 65536,
+        "arcs": 262144,
+        "weighted": true
+      },
+      "baseline": {
+        "allocation_calls": 8,
+        "allocated_bytes": 5767432,
+        "peak_requested_bytes": 5767320,
+        "peak_admitted_bytes": 10489864,
+        "counted_work": 10158080
+      },
+      "changed": {
+        "allocation_calls": 7,
+        "allocated_bytes": 5243144,
+        "peak_requested_bytes": 5243064,
+        "peak_admitted_bytes": 9965576,
+        "counted_work": 10158080
+      }
+    },
+    {
+      "key": {
+        "partitions": 3,
+        "dense": true,
+        "vertices": 16,
+        "arcs": 64,
+        "weighted": false
+      },
+      "baseline": {
+        "allocation_calls": 8,
+        "allocated_bytes": 1152,
+        "peak_requested_bytes": 1048,
+        "peak_admitted_bytes": 6152,
+        "counted_work": 160
+      },
+      "changed": {
+        "allocation_calls": 7,
+        "allocated_bytes": 1024,
+        "peak_requested_bytes": 1024,
+        "peak_admitted_bytes": 6024,
+        "counted_work": 160
+      }
+    },
+    {
+      "key": {
+        "partitions": 3,
+        "dense": true,
+        "vertices": 16,
+        "arcs": 64,
+        "weighted": true
+      },
+      "baseline": {
+        "allocation_calls": 8,
+        "allocated_bytes": 1672,
+        "peak_requested_bytes": 1560,
+        "peak_admitted_bytes": 6664,
+        "counted_work": 752
+      },
+      "changed": {
+        "allocation_calls": 7,
+        "allocated_bytes": 1544,
+        "peak_requested_bytes": 1464,
+        "peak_admitted_bytes": 6536,
+        "counted_work": 240
+      }
+    },
+    {
+      "key": {
+        "partitions": 3,
+        "dense": true,
+        "vertices": 65536,
+        "arcs": 262144,
+        "weighted": false
+      },
+      "baseline": {
+        "allocation_calls": 8,
+        "allocated_bytes": 3670272,
+        "peak_requested_bytes": 3670168,
+        "peak_admitted_bytes": 8392712,
+        "counted_work": 655360
+      },
+      "changed": {
+        "allocation_calls": 7,
+        "allocated_bytes": 3145984,
+        "peak_requested_bytes": 3145984,
+        "peak_admitted_bytes": 7868424,
+        "counted_work": 655360
+      }
+    },
+    {
+      "key": {
+        "partitions": 3,
+        "dense": true,
+        "vertices": 65536,
+        "arcs": 262144,
+        "weighted": true
+      },
+      "baseline": {
+        "allocation_calls": 8,
+        "allocated_bytes": 5767432,
+        "peak_requested_bytes": 5767320,
+        "peak_admitted_bytes": 10489864,
+        "counted_work": 10158080
+      },
+      "changed": {
+        "allocation_calls": 7,
+        "allocated_bytes": 5243144,
+        "peak_requested_bytes": 5243064,
+        "peak_admitted_bytes": 9965576,
+        "counted_work": 1769472
+      }
+    },
+    {
+      "key": {
+        "partitions": 3,
+        "dense": false,
+        "vertices": 16,
+        "arcs": 64,
+        "weighted": false
+      },
+      "baseline": {
+        "allocation_calls": 8,
+        "allocated_bytes": 1152,
+        "peak_requested_bytes": 1048,
+        "peak_admitted_bytes": 6152,
+        "counted_work": 160
+      },
+      "changed": {
+        "allocation_calls": 7,
+        "allocated_bytes": 1024,
+        "peak_requested_bytes": 1024,
+        "peak_admitted_bytes": 6024,
+        "counted_work": 160
+      }
+    },
+    {
+      "key": {
+        "partitions": 3,
+        "dense": false,
+        "vertices": 16,
+        "arcs": 64,
+        "weighted": true
+      },
+      "baseline": {
+        "allocation_calls": 8,
+        "allocated_bytes": 1672,
+        "peak_requested_bytes": 1560,
+        "peak_admitted_bytes": 6664,
+        "counted_work": 752
+      },
+      "changed": {
+        "allocation_calls": 7,
+        "allocated_bytes": 1544,
+        "peak_requested_bytes": 1464,
+        "peak_admitted_bytes": 6536,
+        "counted_work": 752
+      }
+    },
+    {
+      "key": {
+        "partitions": 3,
+        "dense": false,
+        "vertices": 65536,
+        "arcs": 262144,
+        "weighted": false
+      },
+      "baseline": {
+        "allocation_calls": 8,
+        "allocated_bytes": 3670272,
+        "peak_requested_bytes": 3670168,
+        "peak_admitted_bytes": 8392712,
+        "counted_work": 655360
+      },
+      "changed": {
+        "allocation_calls": 7,
+        "allocated_bytes": 3145984,
+        "peak_requested_bytes": 3145984,
+        "peak_admitted_bytes": 7868424,
+        "counted_work": 655360
+      }
+    },
+    {
+      "key": {
+        "partitions": 3,
+        "dense": false,
+        "vertices": 65536,
+        "arcs": 262144,
+        "weighted": true
+      },
+      "baseline": {
+        "allocation_calls": 8,
+        "allocated_bytes": 5767432,
+        "peak_requested_bytes": 5767320,
+        "peak_admitted_bytes": 10489864,
+        "counted_work": 10158080
+      },
+      "changed": {
+        "allocation_calls": 7,
+        "allocated_bytes": 5243144,
+        "peak_requested_bytes": 5243064,
+        "peak_admitted_bytes": 9965576,
+        "counted_work": 10158080
+      }
+    },
+    {
+      "key": {
+        "partitions": 32,
+        "dense": true,
+        "vertices": 16,
+        "arcs": 64,
+        "weighted": false
+      },
+      "baseline": {
+        "allocation_calls": 8,
+        "allocated_bytes": 1152,
+        "peak_requested_bytes": 1048,
+        "peak_admitted_bytes": 6152,
+        "counted_work": 160
+      },
+      "changed": {
+        "allocation_calls": 7,
+        "allocated_bytes": 1024,
+        "peak_requested_bytes": 1024,
+        "peak_admitted_bytes": 6024,
+        "counted_work": 160
+      }
+    },
+    {
+      "key": {
+        "partitions": 32,
+        "dense": true,
+        "vertices": 16,
+        "arcs": 64,
+        "weighted": true
+      },
+      "baseline": {
+        "allocation_calls": 8,
+        "allocated_bytes": 1672,
+        "peak_requested_bytes": 1560,
+        "peak_admitted_bytes": 6664,
+        "counted_work": 752
+      },
+      "changed": {
+        "allocation_calls": 7,
+        "allocated_bytes": 1544,
+        "peak_requested_bytes": 1464,
+        "peak_admitted_bytes": 6536,
+        "counted_work": 240
+      }
+    },
+    {
+      "key": {
+        "partitions": 32,
+        "dense": true,
+        "vertices": 65536,
+        "arcs": 262144,
+        "weighted": false
+      },
+      "baseline": {
+        "allocation_calls": 8,
+        "allocated_bytes": 3670272,
+        "peak_requested_bytes": 3670168,
+        "peak_admitted_bytes": 8392712,
+        "counted_work": 655360
+      },
+      "changed": {
+        "allocation_calls": 7,
+        "allocated_bytes": 3145984,
+        "peak_requested_bytes": 3145984,
+        "peak_admitted_bytes": 7868424,
+        "counted_work": 655360
+      }
+    },
+    {
+      "key": {
+        "partitions": 32,
+        "dense": true,
+        "vertices": 65536,
+        "arcs": 262144,
+        "weighted": true
+      },
+      "baseline": {
+        "allocation_calls": 8,
+        "allocated_bytes": 5767432,
+        "peak_requested_bytes": 5767320,
+        "peak_admitted_bytes": 10489864,
+        "counted_work": 10158080
+      },
+      "changed": {
+        "allocation_calls": 7,
+        "allocated_bytes": 5243144,
+        "peak_requested_bytes": 5243064,
+        "peak_admitted_bytes": 9965576,
+        "counted_work": 1769472
+      }
+    },
+    {
+      "key": {
+        "partitions": 32,
+        "dense": false,
+        "vertices": 16,
+        "arcs": 64,
+        "weighted": false
+      },
+      "baseline": {
+        "allocation_calls": 8,
+        "allocated_bytes": 1152,
+        "peak_requested_bytes": 1048,
+        "peak_admitted_bytes": 6152,
+        "counted_work": 160
+      },
+      "changed": {
+        "allocation_calls": 7,
+        "allocated_bytes": 1024,
+        "peak_requested_bytes": 1024,
+        "peak_admitted_bytes": 6024,
+        "counted_work": 160
+      }
+    },
+    {
+      "key": {
+        "partitions": 32,
+        "dense": false,
+        "vertices": 16,
+        "arcs": 64,
+        "weighted": true
+      },
+      "baseline": {
+        "allocation_calls": 8,
+        "allocated_bytes": 1672,
+        "peak_requested_bytes": 1560,
+        "peak_admitted_bytes": 6664,
+        "counted_work": 752
+      },
+      "changed": {
+        "allocation_calls": 7,
+        "allocated_bytes": 1544,
+        "peak_requested_bytes": 1464,
+        "peak_admitted_bytes": 6536,
+        "counted_work": 752
+      }
+    },
+    {
+      "key": {
+        "partitions": 32,
+        "dense": false,
+        "vertices": 65536,
+        "arcs": 262144,
+        "weighted": false
+      },
+      "baseline": {
+        "allocation_calls": 8,
+        "allocated_bytes": 3670272,
+        "peak_requested_bytes": 3670168,
+        "peak_admitted_bytes": 8392712,
+        "counted_work": 655360
+      },
+      "changed": {
+        "allocation_calls": 7,
+        "allocated_bytes": 3145984,
+        "peak_requested_bytes": 3145984,
+        "peak_admitted_bytes": 7868424,
+        "counted_work": 655360
+      }
+    },
+    {
+      "key": {
+        "partitions": 32,
+        "dense": false,
+        "vertices": 65536,
+        "arcs": 262144,
+        "weighted": true
+      },
+      "baseline": {
+        "allocation_calls": 8,
+        "allocated_bytes": 5767432,
+        "peak_requested_bytes": 5767320,
+        "peak_admitted_bytes": 10489864,
+        "counted_work": 10158080
+      },
+      "changed": {
+        "allocation_calls": 7,
+        "allocated_bytes": 5243144,
+        "peak_requested_bytes": 5243064,
+        "peak_admitted_bytes": 9965576,
+        "counted_work": 10158080
+      }
+    }
+  ],
+  "changed_test_command": [
+    "cargo",
+    "test",
+    "--manifest-path",
+    "/private/tmp/sail-argentea-csr-gate/examples/extensions/argentea/Cargo.toml",
+    "--locked",
+    "--release",
+    "--",
+    "--nocapture"
+  ],
+  "changed_outcome": {
+    "exit_code": 0,
+    "release_tests_passed": 96,
+    "detached_clean_gate": true
+  }
+}

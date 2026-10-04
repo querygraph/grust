@@ -1,0 +1,12 @@
+{
+  "started_utc": "2026-10-01T01:33:05.252108+00:00",
+  "command": [
+    "ssh",
+    "morrobay",
+    "/usr/local/bin/python3 -I -B -c 'import json,os,subprocess; from pathlib import Path; d=[\"/usr/local/bin/docker\",\"--context\",\"colima-sail-gate\"]; p=Path(\"/Users/alexy/src/sail-extensions-gates/stream-experiments-20260930/physical-log03-2d37334db86040da-bundle\"); q=p.with_name(\"physical-log03-2d37334db86040da-evidence\"); print(json.dumps(dict(uid=os.getuid(),gid=os.getgid(),paths={str(x):dict(mode=oct(x.stat().st_mode & 0o777),uid=x.stat().st_uid,gid=x.stat().st_gid) for x in [p,p/\"container_check.py\",q]},image_user=subprocess.check_output(d+[\"image\",\"inspect\",\"--format\",\"{{json .Config.User}}\",\"sha256:f3518d652fbea8b9b9f9ebf9849277ca3bd39d0c21bb2c6e36fbaeaa2dc2678e\"]).decode(),running=subprocess.check_output(d+[\"ps\",\"-q\"]).decode())))'"
+  ],
+  "finished_utc": "2026-10-01T01:33:05.944932+00:00",
+  "returncode": 0,
+  "stdout": "{\"uid\": 501, \"gid\": 20, \"paths\": {\"/Users/alexy/src/sail-extensions-gates/stream-experiments-20260930/physical-log03-2d37334db86040da-bundle\": {\"mode\": \"0o700\", \"uid\": 501, \"gid\": 20}, \"/Users/alexy/src/sail-extensions-gates/stream-experiments-20260930/physical-log03-2d37334db86040da-bundle/container_check.py\": {\"mode\": \"0o644\", \"uid\": 501, \"gid\": 20}, \"/Users/alexy/src/sail-extensions-gates/stream-experiments-20260930/physical-log03-2d37334db86040da-evidence\": {\"mode\": \"0o755\", \"uid\": 501, \"gid\": 20}}, \"image_user\": \"\\\"\\\"\\n\", \"running\": \"\"}\n",
+  "stderr": ""
+}

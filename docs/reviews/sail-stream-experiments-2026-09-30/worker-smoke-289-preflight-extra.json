@@ -1,0 +1,11 @@
+{
+  "recorded_utc": "2026-09-30T19:19:14.811413+00:00",
+  "command": [
+    "ssh",
+    "morrobay",
+    "/usr/local/bin/docker --context colima-sail-gate exec sail-stream-build561-host /targets/graph-nuts-ffcfbd569/venv/bin/python -I -B -c 'import hashlib,json,pathlib,shutil,subprocess\np=pathlib.Path('\"'\"'/targets/sail-stream-2894a962076d/sail-linux-x86_64-2894a962076d-release'\"'\"')\nsha=hashlib.file_digest(p.open('\"'\"'rb'\"'\"'),'\"'\"'sha256'\"'\"').hexdigest()\nassert sha=='\"'\"'40a78182a420152e8e3651f9cdb38a4196eaf8bc7aead092d10e258a17ac3497'\"'\"'\nsource='\"'\"'/targets/sail-stream-experiments-20260930/source-3a9028057'\"'\"'\nhead=subprocess.check_output(['\"'\"'git'\"'\"','\"'\"'-C'\"'\"',source,'\"'\"'rev-parse'\"'\"','\"'\"'HEAD'\"'\"'],text=True).strip()\nstatus=subprocess.check_output(['\"'\"'git'\"'\"','\"'\"'-C'\"'\"',source,'\"'\"'status'\"'\"','\"'\"'--porcelain'\"'\"'],text=True).strip()\nassert head=='\"'\"'3a9028057c6c6c5034492845926fc4bc18f9626f'\"'\"' and status=='\"'\"''\"'\"'\nfree=shutil.disk_usage('\"'\"'/targets'\"'\"').free\nassert free>12*1024**3\nprint(json.dumps(dict(binary_sha256=sha,harness_head=head,harness_status=status,free_bytes=free)))\n'"
+  ],
+  "returncode": 0,
+  "stdout": "{\"binary_sha256\": \"40a78182a420152e8e3651f9cdb38a4196eaf8bc7aead092d10e258a17ac3497\", \"harness_head\": \"3a9028057c6c6c5034492845926fc4bc18f9626f\", \"harness_status\": \"\", \"free_bytes\": 28564393984}\n",
+  "stderr": ""
+}

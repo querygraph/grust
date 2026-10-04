@@ -1,0 +1,36 @@
+diff --git a/examples/extensions/graph-algorithms/tests/test_checkpoint_repartition.py b/examples/extensions/graph-algorithms/tests/test_checkpoint_repartition.py
+index 184956548..1a4c43579 100644
+--- a/examples/extensions/graph-algorithms/tests/test_checkpoint_repartition.py
++++ b/examples/extensions/graph-algorithms/tests/test_checkpoint_repartition.py
+@@ -81,6 +81,31 @@ def test_constructor_default_and_explicit_settings(monkeypatch, options, expecte
+     assert GraphAlgorithms(object(), **options).repartition_checkpoints is expected
+ 
+ 
++@pytest.mark.parametrize("options,repartition", [({}, True), ({"repartition_checkpoints": True}, True),
++                                                 ({"repartition_checkpoints": False}, False)])
++def test_public_controller_propagates_setting_to_snapshot_and_body_writes(monkeypatch, options, repartition):
++    calls = []
++    session = SimpleNamespace(read=Reader(Frame(calls)), addTag=lambda _: None, removeTag=lambda _: None)
++    utils = SimpleNamespace(allocate=lambda: ("file:///owned/run", "token"), exists=lambda *_: True)
++    monkeypatch.setattr(algorithms, "GraphUtils", lambda _: utils)
++    monkeypatch.setattr(algorithms, "_check_input_schema", lambda *_: None)
++
++    def snapshot(run, *_):
++        run.materialize(Frame(calls))
++        run.materialize(Frame(calls))
++        return None, None, 3
++
++    def body(run, _vertices, _edges, size):
++        return run.materialize(Frame(calls), expected_rows=size)
++
++    monkeypatch.setattr(algorithms, "_snapshot", snapshot)
++    graph = GraphAlgorithms(session, **options)
++    graph._run(None, None, 7, None, body)
++    assert calls.count(("repartition", 7)) == (3 if repartition else 0)
++    assert [value for kind, value in calls if kind == "writer"] == [
++        "repartitioned" if repartition else "input"] * 3
++
++
+ @pytest.mark.parametrize("options,writer", [({}, "repartitioned"),
+     ({"repartition_checkpoints": True}, "repartitioned"),
+     ({"repartition_checkpoints": False}, "input")])

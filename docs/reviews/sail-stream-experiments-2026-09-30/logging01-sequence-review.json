@@ -1,0 +1,136 @@
+{
+  "recorded_utc": "2026-09-30T16:59:55.438423+00:00",
+  "source_sha256": {
+    "server.log": "c037bb047f026be560fcea0d3a994cf47e96a5169b1a972a1c11dfa1dc508ae4",
+    "receipt.json": "969a7811615eeef3190b7b0f5f87a72f637b430edd37db48e031e5819d235e84",
+    "orchestration.json": "1877f0a6e291060814418d79050423e97dd7a1e9fc8d4bb652889513eee1dff4"
+  },
+  "first_log_occurrences": {
+    "connection_reset": {
+      "line": 11933,
+      "text": "[2026-09-30T16:46:28Z DEBUG h2::proto::connection] Connection::poll; IO error error=ConnectionReset"
+    },
+    "task_failed": {
+      "line": 11935,
+      "text": "[2026-09-30T16:46:28Z DEBUG sail_execution::task_runner::actor::handler] worker_task_status worker_id=1 job_id=28 stage=4 partition=10 attempt=0 status=FAILED"
+    },
+    "session_removal": {
+      "line": 11974,
+      "text": "[2026-09-30T16:46:29Z INFO sail_session::session_manager::actor::handler] removing session 929849b9-f0ca-40f8-9232-771fc39038d4"
+    },
+    "worker_stop": {
+      "line": 11975,
+      "text": "[2026-09-30T16:46:29Z INFO sail_execution::driver::worker_pool::core] stopping worker 1"
+    },
+    "goaway": {
+      "line": 11977,
+      "text": "[2026-09-30T16:46:29Z TRACE h2::frame::go_away] encoding GO_AWAY; code=NO_ERROR"
+    },
+    "error_level": {
+      "line": 11985,
+      "text": "[2026-09-30T16:46:29Z ERROR sail_execution::driver::worker_pool::core] stop task job 28 stage 4 partition 26 attempt 0: failed in worker 1: error in Tonic status: code: 'Unknown error', message: \"transport error\", source: tonic::transport::Error(Transport, hyper::Error(Io, Kind(ConnectionReset)))"
+    }
+  },
+  "outcome": {
+    "harness": "error",
+    "orchestrator": "oom",
+    "docker_oom_killed": true
+  },
+  "cgroup_before": {
+    "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0",
+    "memory.peak": "987295744",
+    "memory.max": "107374182400"
+  },
+  "cgroup_after": {
+    "memory.events": "low 0\nhigh 0\nmax 5692\noom 22\noom_kill 1\noom_group_kill 0",
+    "memory.peak": "107374247936",
+    "memory.max": "107374182400"
+  },
+  "elapsed_until_error_seconds": 1229.2498187110177,
+  "iteration_events": [
+    {
+      "kind": "iteration_start",
+      "algorithm": "bfs-frontier",
+      "iteration": 1,
+      "elapsed_seconds": 341.1335136990092
+    },
+    {
+      "kind": "iteration_end",
+      "algorithm": "bfs-frontier",
+      "iteration": 1,
+      "active_vertices": 407203,
+      "elapsed_seconds": 360.297001302999
+    },
+    {
+      "kind": "iteration_start",
+      "algorithm": "bfs-frontier",
+      "iteration": 2,
+      "elapsed_seconds": 360.33855126801063
+    }
+  ],
+  "peak_execute_sample": {
+    "scan_started_seconds": 131749.342159275,
+    "scan_finished_seconds": 131750.305678054,
+    "phase": "execute",
+    "step": null,
+    "rss_bytes": 102638243840,
+    "pss_bytes": 102513375232,
+    "pss_processes_available": 5,
+    "cgroup_current_bytes": 107374182400,
+    "fd_total": 78,
+    "directories": null,
+    "processes": [
+      {
+        "pid": 1,
+        "name": "docker-init",
+        "rss_bytes": 765952,
+        "pss_bytes": 761856,
+        "fd_count": 3
+      },
+      {
+        "pid": 7,
+        "name": "python",
+        "rss_bytes": 149151744,
+        "pss_bytes": 143747072,
+        "fd_count": 11
+      },
+      {
+        "pid": 56,
+        "name": "sail-linux-x86_",
+        "rss_bytes": 433537024,
+        "pss_bytes": 387699712,
+        "fd_count": 25
+      },
+      {
+        "pid": 173,
+        "name": "sail-linux-x86_",
+        "rss_bytes": 50945646592,
+        "pss_bytes": 50898893824,
+        "fd_count": 20
+      },
+      {
+        "pid": 174,
+        "name": "sail-linux-x86_",
+        "rss_bytes": 51109142528,
+        "pss_bytes": 51082272768,
+        "fd_count": 19
+      }
+    ]
+  },
+  "driver_pid": 56,
+  "sample_count": 2204,
+  "requested_interval_seconds": 0.05,
+  "observed_mean_start_gap_seconds": 0.5590911839396316,
+  "observed_max_start_gap_seconds": 12.7736729690223,
+  "conclusions": [
+    "One cgroup OOM kill is independently confirmed; memory reached the100GiB envelope.",
+    "First recorded transport errors are ConnectionReset at16:46:28Z; teardown and NO_ERROR GO_AWAY follow at16:46:29Z.",
+    "The client failed while materializing BFS-frontier iteration2, not in SSSP weighted overflow checking."
+  ],
+  "limits": [
+    "Merged driver/worker logging lacks per-connection endpoints and process identity; cannot identify OOM victim or exact kill/reset ordering.",
+    "OOM counters are before/after snapshots; last live observation16:43:56Z still had oom_kill0.",
+    "No kernel OOM record or per-operator allocation profile in these artifacts; allocation origin remains unproven.",
+    "The50ms sampler interval is requested sleep, not observed sampling frequency; reading smaps and directories adds latency."
+  ]
+}

@@ -1,0 +1,77 @@
+{
+  "started_utc": "2026-09-30T18:06:23.286906+00:00",
+  "source_sha": "b569e75de625885b3d919fa4196b2e0bed14c618",
+  "candidate_not_commit": true,
+  "detached_clean_gate": false,
+  "candidate_patch_sha256": "33d1f88303cd815fe12b163be5cf42add5879d3056683f87d048c235aca29c0f",
+  "worktree": "/private/tmp/sail-bfs-inbox-gate",
+  "host": "Capitola.local",
+  "machine": "arm64",
+  "environment": {
+    "CARGO_INCREMENTAL": "0",
+    "CARGO_BUILD_JOBS": "4",
+    "CARGO_TARGET_DIR": "/private/tmp/sail-bfs-inbox-native-target",
+    "PYO3_PYTHON": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/bin/python",
+    "PYTHONHOME": "/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none",
+    "PYTHONPATH": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages",
+    "DYLD_LIBRARY_PATH": "/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/lib"
+  },
+  "source_hashes": {
+    "examples/extensions/argentea/src/bfs/protocol.rs": "645f5a50ec1553e66322ddb194fa530bb9d09548b0b074473555d62c96203955",
+    "examples/extensions/argentea/tests/bfs_inbox.rs": "3d6f8b55f6d48638ce3af9427755dd96121b9e78ba46ddb97db154f46ef905b2"
+  },
+  "commands": [
+    {
+      "name": "format",
+      "command": [
+        "rustfmt",
+        "--edition",
+        "2024",
+        "--check",
+        "/private/tmp/sail-bfs-inbox-gate/examples/extensions/nutmeg/src/argentea/bfs/tests/controls.rs"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "inventory",
+      "command": [
+        "cargo",
+        "test",
+        "--manifest-path",
+        "/private/tmp/sail-bfs-inbox-gate/examples/extensions/nutmeg/Cargo.toml",
+        "--locked",
+        "--release",
+        "--lib",
+        "--",
+        "--list"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "release",
+      "command": [
+        "cargo",
+        "test",
+        "--manifest-path",
+        "/private/tmp/sail-bfs-inbox-gate/examples/extensions/nutmeg/Cargo.toml",
+        "--locked",
+        "--release",
+        "--lib",
+        "--",
+        "--nocapture"
+      ],
+      "exit_code": 0
+    }
+  ],
+  "scope": "Full native adapter release library tests, including all Argentea tests. No remote transport or cluster execution.",
+  "format_scope": "No native adapter file changed. Core crate fmt is a separate required gate. Full native fmt has inherited failures, preserved in Grust bfs-completion/baseline-native-format.",
+  "test_summary": [
+    "test result: ok. 49 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.69s"
+  ],
+  "tests_passed": 49,
+  "argentea_tests_passed": 43,
+  "inventory_matches": true,
+  "unchanged": true,
+  "finished_utc": "2026-09-30T18:07:01.279038+00:00",
+  "outcome": "passed"
+}

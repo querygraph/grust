@@ -1,0 +1,13 @@
+== Physical Plan ==
+ProjectionExec: expr=[#16@0 as id, #17@1 as distance, #18@2 as hops, #19@3 as parent]
+  ProjectionExec: expr=[#0@0 as #16, get_field(min(struct(#1,#2,#3))@1, distance) as #17, get_field(min(struct(#1,#2,#3))@1, hops) as #18, get_field(min(struct(#1,#2,#3))@1, parent) as #19]
+    AggregateExec: mode=FinalPartitioned, gby=[#0@0 as #0], aggr=[min(struct(#1,#2,#3))]
+      RepartitionExec: partitioning=Hash([#0@0], 16), input_partitions=17
+        AggregateExec: mode=Partial, gby=[#0@0 as #0], aggr=[min(struct(#1,#2,#3))]
+          UnionExec
+            DataSourceExec: file_groups={1 group: [[Users/alexy/src/grust-benchmark-runs/sem-completion-20261003/x2-native04/x2-reference-p16-01/staging/28b613c1-429a-4b77-89f9-1a1de2d44e70/stage-00012/Hr6nNiRKdsa738uB_0.zst.parquet]]}, projection=[id@0 as #0, distance@1 as #1, hops@2 as #2, parent@3 as #3], file_type=parquet
+            ProjectionExec: expr=[#9@0 as #0, #5@1 + 1 as #1, #6@2 + 1 as #2, #4@3 as #3]
+              HashJoinExec: mode=CollectLeft, join_type=Inner, on=[(#4@0, #8@0)], projection=[#9@4, #5@1, #6@2, #4@0]
+                DataSourceExec: file_groups={1 group: [[Users/alexy/src/grust-benchmark-runs/sem-completion-20261003/x2-native04/x2-reference-p16-01/staging/28b613c1-429a-4b77-89f9-1a1de2d44e70/stage-00012/Hr6nNiRKdsa738uB_0.zst.parquet]]}, projection=[id@0 as #4, distance@1 as #5, hops@2 as #6], file_type=parquet
+                RepartitionExec: partitioning=RoundRobinBatch(16), input_partitions=2
+                  DataSourceExec: file_groups={2 groups: [[Users/alexy/src/grust-benchmark-runs/sem-completion-20261003/x2-native04/x2-reference-p16-01/staging/28b613c1-429a-4b77-89f9-1a1de2d44e70/stage-00002/lkEk5OUPO0Lfagjk_0.zst.parquet], [Users/alexy/src/grust-benchmark-runs/sem-completion-20261003/x2-native04/x2-reference-p16-01/staging/28b613c1-429a-4b77-89f9-1a1de2d44e70/stage-00002/lkEk5OUPO0Lfagjk_1.zst.parquet]]}, projection=[src@0 as #8, dst@1 as #9], file_type=parquet

@@ -1,0 +1,27 @@
+diff --git a/crates/sail-spark-connect/src/server.rs b/crates/sail-spark-connect/src/server.rs
+index 3032f8d1bf5f6077cf4beb06ef63bf66d3cdbea2..9455ed6e7bbce1fc355891459759c41097a72bf5 100644
+--- a/crates/sail-spark-connect/src/server.rs
++++ b/crates/sail-spark-connect/src/server.rs
+@@ -125,7 +125,12 @@ impl SparkConnectService for SparkConnectServer {
+         request: Request<ExecutePlanRequest>,
+     ) -> Result<Response<Self::ExecutePlanStream>, Status> {
+         let request = request.into_inner();
+-        debug!("{request:?}");
++        // Extension payloads can carry session-owned capabilities. Log routing
++        // identifiers, never opaque plan bytes or client argument values.
++        debug!(
++            "ExecutePlan session_id={} operation_id={:?}",
++            request.session_id, request.operation_id
++        );
+         let session_id = request.session_id;
+         let user_id = request.user_context.map(|u| u.user_id).unwrap_or_default();
+         let metadata = ExecutorMetadata {
+@@ -166,7 +171,7 @@ impl SparkConnectService for SparkConnectServer {
+         use crate::spark::connect::analyze_plan_response;
+ 
+         let request = request.into_inner();
+-        debug!("{request:?}");
++        debug!("AnalyzePlan session_id={}", request.session_id);
+         let session_id = request.session_id.clone();
+         let user_id = request.user_context.map(|u| u.user_id).unwrap_or_default();
+         let ctx = self

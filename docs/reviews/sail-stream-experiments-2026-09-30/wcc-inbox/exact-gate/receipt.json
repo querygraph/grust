@@ -1,0 +1,192 @@
+{
+  "started_utc": "2026-09-30T19:19:53.395765+00:00",
+  "repository": "querygraph/sail",
+  "head": "b4babe87cb50d16b4d439a0841a6291991c433d2",
+  "index_tree": "a8126f3c3c859e6098592a45881ea4e83507e358",
+  "named_branch_head": "b4babe87cb50d16b4d439a0841a6291991c433d2",
+  "source_scope": "exact commit",
+  "host": "Capitola.local",
+  "free_disk_bytes": 461028380672,
+  "source_hashes": {
+    "examples/extensions/argentea/tests/wcc_inbox.rs": "d931954ed4a3429512deb66219d47b945b4d58aedac844a738aa81960453dfe6",
+    "examples/extensions/argentea/src/wcc/protocol.rs": "6714e9379eb2225baf5b3d2f9245f5334590fea69c5cff4f6db98578f390b247"
+  },
+  "core_environment": {
+    "CARGO_INCREMENTAL": "0",
+    "CARGO_BUILD_JOBS": "4",
+    "CARGO_TARGET_DIR": "/private/tmp/sail-wcc-inbox-core-target"
+  },
+  "native_environment": {
+    "CARGO_INCREMENTAL": "0",
+    "CARGO_BUILD_JOBS": "4",
+    "CARGO_TARGET_DIR": "/private/tmp/sail-wcc-inbox-native-target",
+    "PYO3_PYTHON": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/bin/python",
+    "PYTHONHOME": "/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none",
+    "PYTHONPATH": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages",
+    "DYLD_LIBRARY_PATH": "/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/lib"
+  },
+  "steps": [
+    {
+      "name": "diff-check",
+      "command": [
+        "git",
+        "diff",
+        "--check",
+        "--cached"
+      ],
+      "returncode": 0
+    },
+    {
+      "name": "core-format",
+      "command": [
+        "cargo",
+        "fmt",
+        "--manifest-path",
+        "/private/tmp/sail-argentea-wcc-inbox-gate/examples/extensions/argentea/Cargo.toml",
+        "--",
+        "--check"
+      ],
+      "returncode": 0
+    },
+    {
+      "name": "core-clippy",
+      "command": [
+        "cargo",
+        "clippy",
+        "--manifest-path",
+        "/private/tmp/sail-argentea-wcc-inbox-gate/examples/extensions/argentea/Cargo.toml",
+        "--locked",
+        "--all-targets",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "returncode": 0
+    },
+    {
+      "name": "core-release",
+      "command": [
+        "cargo",
+        "test",
+        "--manifest-path",
+        "/private/tmp/sail-argentea-wcc-inbox-gate/examples/extensions/argentea/Cargo.toml",
+        "--locked",
+        "--release",
+        "--",
+        "--nocapture"
+      ],
+      "returncode": 0,
+      "summaries": [
+        "test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.07s",
+        "test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s",
+        "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s",
+        "test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.11s",
+        "test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.51s",
+        "test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s",
+        "test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.57s",
+        "test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s"
+      ],
+      "tests_passed": 113,
+      "expected_count": 113
+    },
+    {
+      "name": "native-release",
+      "command": [
+        "cargo",
+        "test",
+        "--manifest-path",
+        "/private/tmp/sail-argentea-wcc-inbox-gate/examples/extensions/nutmeg/Cargo.toml",
+        "--locked",
+        "--release",
+        "--lib",
+        "--",
+        "--nocapture"
+      ],
+      "returncode": 0,
+      "summaries": [
+        "test result: ok. 49 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.72s"
+      ],
+      "tests_passed": 49,
+      "expected_count": 49,
+      "argentea_tests_passed": 43
+    },
+    {
+      "name": "core-loaded",
+      "command": [
+        "cargo",
+        "test",
+        "--manifest-path",
+        "/private/tmp/sail-argentea-wcc-inbox-gate/examples/extensions/argentea/Cargo.toml",
+        "--locked",
+        "--release",
+        "--",
+        "--nocapture"
+      ],
+      "returncode": 0,
+      "summaries": [
+        "test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s",
+        "test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s",
+        "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.10s",
+        "test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.12s",
+        "test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.57s",
+        "test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s",
+        "test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.80s",
+        "test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s"
+      ],
+      "tests_passed": 113,
+      "expected_count": 113,
+      "load_alive_before": 10,
+      "load_alive_after": 10
+    },
+    {
+      "name": "native-loaded",
+      "command": [
+        "cargo",
+        "test",
+        "--manifest-path",
+        "/private/tmp/sail-argentea-wcc-inbox-gate/examples/extensions/nutmeg/Cargo.toml",
+        "--locked",
+        "--release",
+        "--lib",
+        "--",
+        "--nocapture"
+      ],
+      "returncode": 0,
+      "summaries": [
+        "test result: ok. 49 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.83s"
+      ],
+      "tests_passed": 49,
+      "expected_count": 49,
+      "argentea_tests_passed": 43,
+      "load_alive_before": 10,
+      "load_alive_after": 10
+    }
+  ],
+  "script_sha256": "891646c6f8c1c9a889006e863076f58691595afb55c59e58ea7fbfc8500f358c",
+  "format_scope": "Full Argentea core fmt. No native source changed; inherited full native fmt failures retained separately in bfs-completion/baseline-native-format.",
+  "scope": "Local core and full native adapter release tests, including every Argentea adapter test, under ordinary and saturated CPU. No remote or transport/performance claim.",
+  "load_process_count": 10,
+  "verdict": "PASS",
+  "all_load_reaped": true,
+  "finished_utc": "2026-09-30T19:20:01.709320+00:00",
+  "observed_head": "b4babe87cb50d16b4d439a0841a6291991c433d2",
+  "observed_tree": "a8126f3c3c859e6098592a45881ea4e83507e358"
+}

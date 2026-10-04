@@ -1,0 +1,20 @@
+// Experimental local-mode protocol. This schema is a wire contract, not a native ABI.
+syntax = "proto3";
+package sail.extension.v1;
+
+import "spark/connect/base.proto";
+import "spark/connect/expressions.proto";
+
+// Pack into Relation.extension with type URL:
+// type.googleapis.com/sail.extension.v1.SailExtensionRequest
+message SailExtensionRequest {
+  string payload_type_url = 1;
+  bytes payload = 2;
+  // Only Plan.root is accepted. Names are restored to the input DataFrame's
+  // user-facing names before the native handler receives a physical plan.
+  repeated spark.connect.Plan inputs = 3;
+  // Reserved by the proposal; this PoC rejects any occurrence of this field.
+  repeated spark.connect.Expression input_expressions = 4;
+  // Required value: 1. An omitted proto3 value (0) is rejected.
+  uint32 envelope_version = 5;
+}

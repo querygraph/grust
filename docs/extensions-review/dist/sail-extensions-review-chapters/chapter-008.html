@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en-US" xml:lang="en-US">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <meta name="author" content="Querygraph" />
+  <meta name="dcterms.date" content="2026-10-01" />
+  <meta name="description" content="Version 1.0. Review target: querygraph/sail bd8ce9ae8839477e2c08a0475ab7900b115c5366." />
+  <title>6. Native memory</title>
+  <style>
+    div.sitenav { display: flex; flex-direction: row; flex-wrap: wrap; }
+    span.navlink { flex: 1; }
+    span.navlink-label { display: inline-block; min-width: 4em; }
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: 1.5em;}
+    div.column{flex: auto;}
+    @media screen {
+    div.columns{gap: min(4vw, 1.5em);}
+    div.column{overflow-x: auto;}
+    }
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <link rel="stylesheet" href="book.css" />
+</head>
+<body>
+<nav id="sitenav">
+<div class="sitenav">
+<span class="navlink">
+<span class="navlink-label">Up:</span> <a href="index.html" accesskey="u" rel="up">Sail Extensions: A Design Review</a>
+</span>
+<span class="navlink">
+<span class="navlink-label">Top:</span> <a href="index.html" accesskey="t" rel="top">Sail Extensions: A Design Review</a>
+</span>
+</div>
+<div class="sitenav">
+<span class="navlink">
+<span class="navlink-label">Next:</span> <a href="chapter-009.html" accesskey="n" rel="next">7. Lifecycle and teardown</a>
+</span>
+<span class="navlink">
+<span class="navlink-label">Previous:</span> <a href="chapter-007.html" accesskey="p" rel="previous">5. Placement and replay</a>
+</span>
+</div>
+</nav>
+<h1 data-number="8" id="module-06-memory"><span
+class="header-section-number">8</span> 6. Native memory</h1>
+<p>The <a href="chapter-007.html#module-05-placement">placement
+decision</a> identifies the process that owns native work. Memory
+admission must then account for that work alongside Sail's own
+operators. An extension that allocates substantial state outside the
+host's budget can exhaust memory even when every participating
+DataFusion operator honors its reservation.</p>
+<p>The public invariant is that participating allocations have admission
+before they are made, and retain that admission until their storage and
+allocation authority are gone. Native state, snapshots, producers and
+exported Arrow buffers can outlive the initiating request. Returning
+quota when a session closes is therefore too early if any of those
+owners survives. The extension must cooperate with this protocol; a
+lease is not an allocator interception mechanism or a tenant security
+boundary.</p>
+<p>The review implementation prepays the manifest's
+<code>memory_bytes</code> from the host DataFusion pool. A small
+resource ABI carries a byte limit and opaque ownership callbacks; the
+extension subdivides the reservation internally. The reservation is
+non-spillable, including unused capacity. At <code>bd8ce9ae</code>, this
+bridge serves participating <strong>driver-native allocations</strong>:
+the <a
+href="https://github.com/querygraph/sail/blob/bd8ce9ae8839477e2c08a0475ab7900b115c5366/crates/sail-session/src/extensions/manifest.rs#L55">manifest
+validator</a> rejects <code>memory_bytes</code> with another placement.
+It does not supply equivalent admission for worker scalar UDF
+allocations. The <a
+href="https://github.com/querygraph/sail/blob/bd8ce9ae8839477e2c08a0475ab7900b115c5366/crates/sail-common-datafusion/src/native_resource.rs#L104">host
+reservation</a> accounts participating bytes, not process RSS.</p>
+<p>With extensions enabled, the standard session manager shares one
+admission domain with its sessions and in-process workers. Separately
+started worker factories own separate domains. This topology and the
+pool's configured limit must be disclosed; equal numeric limits do not
+imply shared ownership or a cluster-wide budget. Runtime, Python,
+transport, metadata and other unaccounted allocations require additional
+headroom.</p>
+<p>Prepayment is a straightforward initial policy, but hierarchical
+pools or dynamic requests to a common admission coordinator are valid
+alternatives. The unsafe alternative is two independent pools each
+promising the same capacity. Dynamic lending could improve utilization,
+at the cost of defining failure, concurrency and reclamation across the
+boundary. Native spilling additionally requires an extension-specific
+recovery path; it is not created by setting a host spill option.</p>
+<p>Acceptance should show host operators and native reservations
+contending against the same finite limit, rejected admission before
+allocation, and a retained Arrow output preventing early quota reuse.
+Last-owner tests must inspect storage lifetime as well as reservation
+counters. Passing a counter-only check cannot prove that the last buffer
+was already freed.</p>
+<p>The decision is whether coarse, prepaid admission is acceptable
+initially, with its scope and idle-capacity cost explicit. The public
+ownership invariant should survive a later policy change. <a
+href="chapter-009.html#module-07-lifecycle">Lifecycle and teardown</a>
+determine what happens when an admitted owner does not finish
+promptly.</p>
+</body>
+</html>

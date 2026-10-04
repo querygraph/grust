@@ -1,0 +1,1021 @@
+diff --git a/examples/extensions/benchmarks/certificate_identity.py b/examples/extensions/benchmarks/certificate_identity.py
+new file mode 100644
+index 000000000..f24229976
+--- /dev/null
++++ b/examples/extensions/benchmarks/certificate_identity.py
+@@ -0,0 +1,173 @@
++"""Audit recorded traversal dataset identities without reopening dataset files.
++
++The producer hashes the live inventory. This consumer checks that the recorded
++inventory, generation parameters, and configured pins form a consistent record.
++"""
++from pathlib import PurePosixPath
++import re
++
++
++FAMILIES = ('traversal', 'graph500', 'edge-list-traversal', 'snap-edge-list')
++IMPORTED = ('edge-list-traversal', 'snap-edge-list')
++
++
++def sha256_value(value):
++    return isinstance(value, str) and re.fullmatch(r'[a-f0-9]{64}', value) is not None
++
++
++def same(left, right):
++    return type(left) is type(right) and left == right
++
++
++def certificate_dataset_errors(manifest, options) -> list[str]:
++    errors = []
++    if not isinstance(manifest, dict) or not isinstance(options, dict):
++        return ['dataset manifest or configuration is malformed']
++    family = options.get('family')
++    if family not in FAMILIES:
++        return ['unsupported certificate dataset family']
++
++    def section(name):
++        value = manifest.get(name)
++        if not isinstance(value, dict):
++            errors.append(f'dataset {name} is missing or malformed')
++            return {}
++        return value
++
++    def check(label, actual, expected):
++        if not same(actual, expected):
++            errors.append(f'dataset configuration differs: {label}')
++
++    check('family', manifest.get('family'), family)
++    if family != 'traversal':
++        check('schema_version', manifest.get('schema_version'), 1)
++    counts, parameters, traversal = (section(name) for name in ('counts', 'parameters', 'traversal'))
++    vertices, edges = counts.get('vertices'), counts.get('edges')
++    valid_vertices = type(vertices) is int and 0 < vertices < 1 << 63
++    valid_edges = type(edges) is int and 0 <= edges < 1 << 63
++    if not valid_vertices or not valid_edges:
++        errors.append('dataset counts are missing or malformed')
++    check('vertices', vertices, options.get('vertices'))
++
++    defaults = dict(source=0, directed=family != 'graph500')
++    if family == 'traversal':
++        defaults.update(degree=8, seed=42)
++    else:
++        defaults.update(chunk_edges=262144, chunk_vertices=262144)
++    if family == 'graph500':
++        defaults.update(edge_factor=16, seed1=42, seed2=54)
++    if family in IMPORTED:
++        defaults.update(weight_seed=42)
++    expected = dict(defaults, **options)
++    for key, value in expected.items():
++        # These govern verification, not the generated dataset identity.
++        if key in ('family', 'vertices', 'validation', 'certificate_max_rounds',
++                   'source', 'expected_edge_sha256'):
++            continue
++        if key == 'generator':
++            generator = section('generator')
++            argv = generator.get('argv')
++            actual = argv[0] if isinstance(argv, list) and argv else None
++        elif key == 'seed' and family == 'traversal':
++            actual = manifest.get('seed')
++            check('traversal.seed', traversal.get('seed'), value)
++        else:
++            actual = parameters.get(key)
++        check(key, actual, value)
++
++    directed = expected['directed']
++    if type(traversal.get('directed')) is not bool:
++        errors.append('dataset traversal direction is missing or malformed')
++    check('traversal.directed', traversal.get('directed'), directed)
++    source, requested = traversal.get('source'), expected['source']
++    if not (valid_vertices and type(source) is int and 0 <= source < vertices):
++        errors.append('dataset traversal source is outside its vertex range')
++    if requested == 'max-degree':
++        if family not in ('graph500', 'snap-edge-list'):
++            errors.append('dataset source policy does not support max-degree')
++        policy = traversal.get('source_policy')
++        if not isinstance(policy, str) or not policy.startswith('highest-degree'):
++            errors.append('dataset source policy differs: max-degree')
++    else:
++        check('traversal.source', source, requested)
++        if family != 'traversal':
++            policy = traversal.get('source_policy')
++            if not isinstance(policy, str) or not policy.startswith('explicit fixed'):
++                errors.append('dataset source policy differs: explicit source')
++    # SNAP records the resolved dense source; Graph500 retains the request.
++    check('source', parameters.get('source'), source if family == 'snap-edge-list' else requested)
++    if family == 'graph500':
++        scale, factor = parameters.get('scale'), parameters.get('edge_factor')
++        if type(scale) is not int or not 1 <= scale <= 40 or vertices != 1 << scale:
++            errors.append('dataset Graph500 scale/count differs')
++        if type(factor) is not int or factor <= 0 or not valid_vertices or edges != vertices * factor:
++            errors.append('dataset Graph500 edge factor/count differs')
++    if family in IMPORTED:
++        check('parameters.vertices', parameters.get('vertices'), vertices)
++        imported = section('input')
++        for key, field in (('edge_file', 'path'), ('edge_sha256', 'sha256')):
++            check(key + ' input', imported.get(field), options.get(key))
++        path = imported.get('path')
++        if (not isinstance(path, str) or not PurePosixPath(path).is_absolute() or
++                '..' in PurePosixPath(path).parts):
++            errors.append('dataset input path is missing or malformed')
++        if not sha256_value(imported.get('sha256')):
++            errors.append('dataset input hash is missing or malformed')
++        if type(imported.get('bytes')) is not int or imported['bytes'] < 0:
++            errors.append('dataset input byte count is missing or malformed')
++        for key in ('weight_policy', 'weight_seed'):
++            check('traversal.' + key, traversal.get(key), expected.get(key))
++
++    if family != 'traversal':
++        canonical = section('canonical')
++        for name, count, width in (('vertices', vertices, 8), ('edges', edges, 24)):
++            identity = canonical.get(name)
++            if not isinstance(identity, dict) or not sha256_value(identity.get('sha256')):
++                errors.append(f'dataset canonical {name} hash is missing or malformed')
++            elif type(count) is int:
++                check('canonical.' + name + '.bytes', identity.get('bytes'), count * width)
++        if 'expected_edge_sha256' in options:
++            identity = canonical.get('edges')
++            actual = identity.get('sha256') if isinstance(identity, dict) else None
++            check('expected_edge_sha256', actual, options['expected_edge_sha256'])
++        if family in ('graph500', 'edge-list-traversal'):
++            check('reference', parameters.get('reference'), options.get('validation') == 'reference')
++            check('expected_edge_sha256 parameter', parameters.get('expected_edge_sha256'),
++                  options.get('expected_edge_sha256'))
++
++    files = section('files')
++    inventory = {name: set() for name in ('vertices.parquet', 'edges.parquet', 'reference.parquet')}
++    for name, identity in files.items():
++        path = PurePosixPath(name) if isinstance(name, str) else None
++        if (path is None or not path.parts or path.is_absolute() or '..' in path.parts or
++                '\\' in name or path.as_posix() != name or path.parts[0] not in inventory or
++                not (len(path.parts) == 1 or (len(path.parts) == 2 and
++                     re.fullmatch(r'part-[0-9]{8,}\.parquet', path.name)))):
++            errors.append(f'dataset file path is malformed: {name!r}')
++        else:
++            inventory[path.parts[0]].add(name)
++        if (not isinstance(identity, dict) or not sha256_value(identity.get('sha256')) or
++                type(identity.get('bytes')) is not int or identity['bytes'] <= 0):
++            errors.append(f'dataset file identity is missing or malformed: {name!r}')
++    for name, count, chunk_key in (('vertices.parquet', vertices, 'chunk_vertices'),
++                                    ('edges.parquet', edges, 'chunk_edges')):
++        if family == 'traversal':
++            wanted = {name}
++        else:
++            chunk = parameters.get(chunk_key)
++            if type(chunk) is not int or not 1 <= chunk <= 1 << 24:
++                errors.append(f'dataset partition size is missing or malformed: {chunk_key}')
++                continue
++            if not valid_vertices or not valid_edges:
++                continue
++            # Compare count/names without constructing a huge expected inventory.
++            parts = (max(count, 1) + chunk - 1) // chunk
++            names = inventory[name]
++            if len(names) != parts or any(f'{name}/part-{i:08d}.parquet' not in names for i in range(len(names))):
++                errors.append(f'dataset partition inventory differs: {name}')
++            continue
++        if inventory[name] != wanted:
++            errors.append(f'dataset file inventory differs: {name}')
++    if inventory['reference.parquet'] not in (set(), {'reference.parquet'}):
++        errors.append('dataset reference inventory is malformed')
++    return errors
+diff --git a/examples/extensions/benchmarks/run_matrix.py b/examples/extensions/benchmarks/run_matrix.py
+index 5c0073016..68015a4fb 100644
+--- a/examples/extensions/benchmarks/run_matrix.py
++++ b/examples/extensions/benchmarks/run_matrix.py
+@@ -20,7 +20,8 @@ from traversal_source import MAX_DEGREE
+ import time
+ 
+ from runtime import algorithm_method, validate_admission_settings
+-from validation_outcome import effective_outcome, expected_validation_outcome, resumed_outcome
++from validation_outcome import (completed_exit_status, effective_outcome, expected_validation_outcome,
++                                partial_certificate_errors, resumed_evidence, resumed_outcome)
+ 
+ 
+ ENGINES = ('pecan', 'nutmeg-native', 'nutmeg-datafusion')
+@@ -371,8 +372,11 @@ def classify(record, receipt, expected_sha):
+         return 'missing_receipt'
+     if receipt.get('harness_source_sha') != expected_sha:
+         return 'source_mismatch'
+-    if receipt.get('outcome') == 'passed' and record.get('attach_returncode') != 0:
++    expected_exit = completed_exit_status(receipt.get('outcome'))
++    if expected_exit is not None and record.get('attach_returncode') != expected_exit:
+         return 'exit_receipt_mismatch'
++    if expected_exit is not None and partial_certificate_errors(receipt):
++        return 'invalid_receipt'
+     return effective_outcome(receipt)
+ 
+ 
+@@ -485,9 +489,9 @@ def main():
+                 result = json.loads(completed.read_text())
+                 if result['configuration_sha256'] != fingerprint:
+                     raise RuntimeError('resume configuration differs from recorded cell')
+-                receipt_path = cell_output / 'artifacts/receipt.json'
+-                if result.get('outcome') == 'passed' and receipt_path.exists():
+-                    result = resumed_outcome(result, json.loads(receipt_path.read_text()), cell['expected_outcome'])
++                if result.get('outcome') in ('passed', 'partially_verified'):
++                    record, receipt = resumed_evidence(cell_output)
++                    result = resumed_outcome(result, classify(record, receipt, config['harness_source_sha']), cell['expected_outcome'])
+                 results.append(result)
+                 continue
+             record = run_container(config, 'sail-' + config['run_id'] + '-' + str(cell['sequence']),
+@@ -496,18 +500,22 @@ def main():
+             path = cell_output / 'artifacts/receipt.json'
+             try:
+                 receipt = json.loads(path.read_text()) if path.exists() else None
+-            except (OSError, json.JSONDecodeError) as error:
++                if receipt is not None and not isinstance(receipt, dict):
++                    raise ValueError('receipt must be a JSON object')
++            except (OSError, ValueError) as error:
+                 receipt = None
+                 record['receipt_read_error'] = repr(error)
+                 write_json(cell_output / 'orchestration.json', record)
+             outcome = classify(record, receipt, config['harness_source_sha'])
++            arguments = receipt.get('arguments') if receipt else None
++            correctness = receipt.get('correctness') if receipt else None
+             result = dict(**cell, outcome=outcome, configuration_sha256=fingerprint,
+                           expected_outcome_observed=outcome == cell['expected_outcome'],
+                           receipt_path=str(path) if path.exists() else None,
+                           end_to_end_seconds=receipt.get('end_to_end_seconds') if receipt else None,
+-                          source=receipt.get('arguments', {}).get('source') if receipt else None,
++                          source=arguments.get('source') if isinstance(arguments, dict) else None,
+                           source_degree=receipt.get('source_degree') if receipt else None,
+-                          reached=(receipt.get('correctness') or {}).get('reached') if receipt else None)
++                          reached=correctness.get('reached') if isinstance(correctness, dict) else None)
+             write_json(completed, result)
+             results.append(result)
+             write_json(output / 'matrix-results.json', dict(recorded_utc=utc(), results=results,
+diff --git a/examples/extensions/benchmarks/summarize.py b/examples/extensions/benchmarks/summarize.py
+index 1c27d4fbd..17a184d81 100644
+--- a/examples/extensions/benchmarks/summarize.py
++++ b/examples/extensions/benchmarks/summarize.py
+@@ -11,8 +11,10 @@ from pathlib import Path, PurePosixPath
+ import re
+ from statistics import median
+ 
+-from run_matrix import configuration_fingerprint, plan_cells
+-from validation_outcome import effective_outcome
++from run_matrix import cell_command, configuration_fingerprint, plan_cells, TRAVERSAL_FAMILIES
++from validation_outcome import (effective_outcome, is_partial_wcc_certificate, partial_certificate_errors,
++                                validation_arguments, PARTIALLY_VERIFIED)
++from certificate_identity import certificate_dataset_errors
+ 
+ 
+ GROUP = ('suite', 'dataset', 'mode', 'algorithm', 'engine', 'variant')
+@@ -38,6 +40,7 @@ def cell_row(cell, summary, receipt):
+         return row
+     peaks = receipt.get('memory', {}).get('phase_peaks', {}).get('execute', {})
+     correctness = receipt.get('correctness', {})
++    correctness = correctness if isinstance(correctness, dict) else {}
+     status = receipt.get('native_status_after', receipt.get('native_status_on_error', {})) or {}
+     reads = [r for r in status.get('reads', []) if r['algorithm'] == receipt.get('kernel')]
+     native = reads[0] if len(reads) == 1 else {}
+@@ -85,7 +88,7 @@ def sha256_value(value):
+ 
+ 
+ def integrity_errors(cell, summary, receipt, config):
+-    """Check an apparent pass against its planned cell, not just its label."""
++    """Check a completed exact or partial verification against its planned cell."""
+     errors = []
+     if summary.get('configuration_sha256') != configuration_fingerprint(config):
+         errors.append('configuration fingerprint differs')
+@@ -102,16 +105,23 @@ def integrity_errors(cell, summary, receipt, config):
+         if summary.get(key) != value:
+             errors.append(f'summary cell field differs: {key}')
+     if not receipt:
+-        return errors + ['passed summary has no valid receipt']
+-    if receipt.get('outcome') != 'passed':
+-        errors.append('passed summary disagrees with receipt outcome')
++        return errors + ['completed summary has no valid receipt']
++    legacy_partial_receipt = (summary.get('outcome') == PARTIALLY_VERIFIED and
++                              receipt.get('outcome') == 'passed' and
++                              effective_outcome(receipt) == PARTIALLY_VERIFIED)
++    if receipt.get('outcome') != summary.get('outcome') and not legacy_partial_receipt:
++        errors.append('completed summary disagrees with receipt outcome')
++    errors.extend(partial_certificate_errors(receipt))
+     for key in ('harness_source_sha', 'runtime_source_sha', 'native_source_sha'):
+         if receipt.get(key) != config[key]:
+             errors.append(f'source differs: {key}')
+     if receipt.get('source_dirty') != '':
+         errors.append('source is dirty or cleanliness is unrecorded')
+     arguments = receipt.get('arguments') or {}
++    arguments = arguments if isinstance(arguments, dict) else {}
+     expected = {key: cell[key] for key in ('engine', 'algorithm', 'variant', 'mode', 'repeat', 'max_iterations')}
++    if cell['algorithm'] in ('pagerank', 'wcc'):
++        expected['ranking_validation'] = validation_arguments(cell_command(config, cell)).ranking_validation
+     expected.update({key: config['defaults'][key] for key in
+                      ('partitions', 'threads', 'worker_task_slots', 'sail_pool_bytes',
+                       'native_quota', 'tolerance', 'damping', 'timeout', 'seed')})
+@@ -143,19 +153,21 @@ def integrity_errors(cell, summary, receipt, config):
+         errors.append('memory sampler failed or has no completion record')
+     seconds = receipt.get('end_to_end_seconds')
+     if not isinstance(seconds, (float, int)) or not math.isfinite(seconds) or seconds < 0:
+-        errors.append('passed receipt has no finite nonnegative duration')
++        errors.append('completed receipt has no finite nonnegative duration')
+     if not sha256_value(receipt.get('binary_sha256')):
+         errors.append('Sail binary hash is missing or malformed')
+     native = (receipt.get('native_package_identity') or {}).get('files_sha256')
+     if not isinstance(native, dict) or not native or not all(sha256_value(v) for v in native.values()):
+         errors.append('native installed-file hashes are missing or malformed')
+     manifest = receipt.get('dataset') or {}
++    options = config['datasets'][cell['dataset']]
++    if is_partial_wcc_certificate(receipt) and options['family'] in TRAVERSAL_FAMILIES:
++        return errors + certificate_dataset_errors(manifest, options)
+     files = manifest.get('files') or {}
+     required = ('vertices.parquet', 'edges.parquet', 'reference.parquet')
+     if (set(files) != set(required) or
+             any(not isinstance(files.get(name), dict) or not sha256_value(files[name].get('sha256')) for name in required)):
+         errors.append('dataset hashes are missing or malformed')
+-    options = config['datasets'][cell['dataset']]
+     observed = dict(manifest.get('parameters') or {}, family=manifest.get('family'),
+                     vertices=(manifest.get('counts') or {}).get('vertices'), seed=manifest.get('seed'),
+                     **{k: (manifest.get('pagerank') or {}).get(k) for k in ('damping', 'tolerance')})
+@@ -174,7 +186,7 @@ def audited_rows(entries, config):
+     rows, identities = [], defaultdict(list)
+     for cell, summary, receipt in entries:
+         row = cell_row(cell, summary, receipt)
+-        if row['outcome'] == 'passed':
++        if row['outcome'] in ('passed', PARTIALLY_VERIFIED):
+             row['integrity_errors'] = integrity_errors(cell, summary, receipt, config)
+             if not row['integrity_errors']:
+                 native = receipt['native_package_identity']['files_sha256']
+diff --git a/examples/extensions/benchmarks/test_certificate_identity.py b/examples/extensions/benchmarks/test_certificate_identity.py
+new file mode 100644
+index 000000000..82fc0a10f
+--- /dev/null
++++ b/examples/extensions/benchmarks/test_certificate_identity.py
+@@ -0,0 +1,167 @@
++"""Recorded identity audit controls using the real tiny fixture writers."""
++from copy import deepcopy
++import hashlib
++
++import pytest
++
++from certificate_identity import certificate_dataset_errors
++import imported_snap_fixture
++import imported_traversal_fixture
++import traversal_fixture
++
++
++@pytest.fixture
++def imported(tmp_path):
++    path = tmp_path / 'input.edges'
++    path.write_bytes(b'6 6\n0 1\n0 1\n1 1\n1 2\n3 4\n4 3\n')
++    digest = hashlib.sha256(path.read_bytes()).hexdigest()
++    options = dict(family='edge-list-traversal', vertices=6, edge_file=str(path),
++                   edge_sha256=digest, weight_policy='unit', chunk_edges=2,
++                   chunk_vertices=2, validation='certificate', certificate_max_rounds=123)
++    arguments = {k: v for k, v in options.items() if k not in
++                 ('family', 'validation', 'certificate_max_rounds')}
++    manifest = imported_traversal_fixture.prepare(tmp_path / 'data', **arguments)
++    return manifest, options
++
++
++def graph500():
++    # Matches graph500_fixture.prepare's manifest layout without building or
++    # invoking the external generator. Eight vertices, sixteen edge records.
++    options = dict(family='graph500', vertices=8, scale=3, generator='/tools/generator',
++                   edge_factor=2, source='max-degree', validation='certificate',
++                   certificate_max_rounds=42, expected_edge_sha256='a' * 64)
++    parameters = dict(scale=3, edge_factor=2, seed1=42, seed2=54, source='max-degree',
++                      directed=False, chunk_edges=262144, chunk_vertices=262144,
++                      reference=False, expected_edge_sha256='a' * 64)
++    manifest = dict(schema_version=1, family='graph500', parameters=parameters,
++                    counts=dict(vertices=8, edges=16),
++                    traversal=dict(source=3, directed=False,
++                                   source_policy='highest-degree vertex, lowest id among ties; not Graph500 root sampling'),
++                    generator=dict(argv=['/tools/generator', '3', '2', '42', '54', '262144']),
++                    canonical=dict(vertices=dict(sha256='b' * 64, bytes=64),
++                                   edges=dict(sha256='a' * 64, bytes=384)),
++                    files={f'{name}.parquet/part-00000000.parquet': dict(sha256='c' * 64, bytes=100)
++                           for name in ('vertices', 'edges')})
++    return manifest, options
++
++
++def test_partitioned_import_and_optional_reference(imported):
++    manifest, options = imported
++    assert len(manifest['files']) == 6
++    assert certificate_dataset_errors(manifest, options) == []
++    manifest['files']['reference.parquet'] = dict(sha256='d' * 64, bytes=100)
++    assert certificate_dataset_errors(manifest, options) == []
++    options['expected_edge_sha256'] = manifest['canonical']['edges']['sha256']
++    manifest['parameters']['expected_edge_sha256'] = options['expected_edge_sha256']
++    assert certificate_dataset_errors(manifest, options) == []
++
++
++@pytest.mark.parametrize('source', [0, 'max-degree'])
++def test_real_snap_resolved_source_and_optional_canonical_pin(tmp_path, source):
++    path = tmp_path / 'snap.txt'
++    path.write_bytes(b'# SNAP fixture\n40 10\n40 20\n10 10\n20 40\n60 40\n20 40\n')
++    digest = hashlib.sha256(path.read_bytes()).hexdigest()
++    options = dict(family='snap-edge-list', vertices=4, edge_file=str(path),
++                   edge_sha256=digest, weight_policy='unit', source=source,
++                   chunk_edges=2, chunk_vertices=2, validation='certificate')
++    arguments = {k: v for k, v in options.items() if k not in ('family', 'validation')}
++    manifest = imported_snap_fixture.prepare(tmp_path / 'snap', **arguments)
++    options['expected_edge_sha256'] = manifest['canonical']['edges']['sha256']
++    assert certificate_dataset_errors(manifest, options) == []
++    manifest['traversal']['source_policy'] = 'unrecorded'
++    assert any('source policy' in error for error in certificate_dataset_errors(manifest, options))
++
++
++def test_real_bounded_traversal_flat_inventory(tmp_path):
++    manifest = traversal_fixture.prepare(tmp_path / 'tiny', vertices=8)
++    options = dict(family='traversal', vertices=8)
++    assert certificate_dataset_errors(manifest, options) == []
++    manifest['seed'] = 43
++    assert 'dataset configuration differs: seed' in certificate_dataset_errors(manifest, options)
++
++
++def test_graph500_shape_defaults_and_policy():
++    manifest, options = graph500()
++    assert certificate_dataset_errors(manifest, options) == []
++    manifest['parameters']['seed1'] = 43
++    assert 'dataset configuration differs: seed1' in certificate_dataset_errors(manifest, options)
++
++
++@pytest.mark.parametrize('path,value,diagnostic', [
++    (('family',), 'snap-edge-list', 'family'),
++    (('counts', 'vertices'), 7, 'vertices'),
++    (('counts', 'edges'), -1, 'counts'),
++    (('parameters', 'vertices'), 7, 'parameters.vertices'),
++    (('parameters', 'weight_seed'), 43, 'weight_seed'),
++    (('parameters', 'directed'), 1, 'directed'),
++    (('parameters', 'source'), 1, 'source'),
++    (('parameters', 'chunk_edges'), 3, 'chunk_edges'),
++    (('input', 'sha256'), 'e' * 64, 'edge_sha256'),
++    (('input', 'path'), '/different/input.edges', 'edge_file'),
++    (('input', 'bytes'), True, 'byte count'),
++    (('canonical', 'edges', 'sha256'), 'invalid', 'canonical edges hash'),
++    (('canonical', 'vertices', 'bytes'), 47, 'canonical.vertices.bytes'),
++    (('traversal', 'weight_policy'), 'splitmix64-1-16', 'traversal.weight_policy'),
++    (('traversal', 'source'), 6, 'source'),
++    (('traversal', 'source_policy'), 'highest-degree vertex', 'source policy'),
++])
++def test_configuration_and_internal_identity_corruption_rejected(imported, path, value, diagnostic):
++    manifest, options = imported
++    target = manifest
++    for key in path[:-1]:
++        target = target[key]
++    target[path[-1]] = value
++    assert any(diagnostic in error for error in certificate_dataset_errors(manifest, options))
++
++
++@pytest.mark.parametrize('name', [
++    '/edges.parquet/part-00000000.parquet', '../edges.parquet',
++    'edges.parquet/../part-00000000.parquet', 'edges.parquet//part-00000000.parquet',
++    'edges.parquet/./part-00000000.parquet', 'edges.parquet\\part-00000000.parquet',
++    'unlisted.parquet', 'reference.parquet/part-00000000.parquet',
++])
++def test_unsafe_or_invalid_inventory_paths_rejected(imported, name):
++    manifest, options = imported
++    manifest['files'][name] = dict(sha256='a' * 64, bytes=100)
++    assert certificate_dataset_errors(manifest, options)
++
++
++@pytest.mark.parametrize('change', ['missing_edges', 'missing_partition', 'extra_partition',
++                                    'flat_and_partitioned', 'bad_hash', 'bad_size'])
++def test_inventory_shape_and_hash_corruption_rejected(imported, change):
++    manifest, options = imported
++    files = manifest['files']
++    first = 'edges.parquet/part-00000000.parquet'
++    if change == 'missing_edges':
++        manifest['files'] = {k: v for k, v in files.items() if k.startswith('vertices')}
++    elif change == 'missing_partition':
++        del files[first]
++    elif change == 'extra_partition':
++        files['edges.parquet/part-00000003.parquet'] = deepcopy(files[first])
++    elif change == 'flat_and_partitioned':
++        files['edges.parquet'] = deepcopy(files[first])
++    elif change == 'bad_hash':
++        files[first]['sha256'] = 'A' * 64
++    else:
++        files[first]['bytes'] = -1
++    assert certificate_dataset_errors(manifest, options)
++
++
++@pytest.mark.parametrize('section', ['files', 'counts', 'parameters', 'traversal', 'canonical', 'input'])
++def test_malformed_sections_return_errors(imported, section):
++    manifest, options = imported
++    manifest[section] = []
++    assert certificate_dataset_errors(manifest, options)
++
++
++def test_graph500_count_generator_and_canonical_pin_corruption():
++    manifest, options = graph500()
++    for path, value, diagnostic in [
++        (('counts', 'edges'), 17, 'edge factor/count'),
++        (('generator', 'argv'), ['/wrong/generator'], 'generator'),
++        (('canonical', 'edges', 'sha256'), 'f' * 64, 'expected_edge_sha256'),
++        (('traversal', 'source_policy'), 'explicit fixed vertex', 'source policy'),
++    ]:
++        changed = deepcopy(manifest)
++        changed[path[0]][path[1]] = value
++        assert any(diagnostic in error for error in certificate_dataset_errors(changed, options))
+diff --git a/examples/extensions/benchmarks/test_summarize.py b/examples/extensions/benchmarks/test_summarize.py
+index 20e3118ae..aa76a197c 100644
+--- a/examples/extensions/benchmarks/test_summarize.py
++++ b/examples/extensions/benchmarks/test_summarize.py
+@@ -54,6 +54,7 @@ def records(algorithm='pagerank'):
+                 pass
+             arguments[key.removeprefix('--').replace('-', '_')] = value
+         arguments.update(allow_dirty=False, allow_unisolated=False)
++        arguments.setdefault('ranking_validation', 'reference')
+         summary = dict(cell, outcome='passed', expected_outcome_observed=True,
+                        configuration_sha256=configuration_fingerprint(config))
+         receipt = dict(outcome='passed', end_to_end_seconds=5, arguments=arguments,
+diff --git a/examples/extensions/benchmarks/test_validation_outcome.py b/examples/extensions/benchmarks/test_validation_outcome.py
+index 8991632fb..88ac7e59e 100644
+--- a/examples/extensions/benchmarks/test_validation_outcome.py
++++ b/examples/extensions/benchmarks/test_validation_outcome.py
+@@ -14,7 +14,7 @@ from validation_outcome import effective_outcome
+ 
+ def certificate_receipt(outcome='passed'):
+     return dict(outcome=outcome, harness_source_sha='a' * 40,
+-                arguments={'algorithm': 'wcc'},
++                arguments={'algorithm': 'wcc', 'ranking_validation': 'certificate'},
+                 correctness={'policy': 'certificate', 'component_count_verified': False})
+ 
+ 
+@@ -31,16 +31,14 @@ def test_existing_outcomes_are_preserved(outcome):
+     assert effective_outcome(certificate_receipt(outcome)) == outcome
+ 
+ 
+-def test_reference_wcc_pagerank_and_independent_certificates_remain_passes():
++def test_reference_wcc_and_pagerank_remain_passes():
+     receipt = certificate_receipt()
+     receipt['correctness']['policy'] = 'reference'
++    receipt['arguments']['ranking_validation'] = 'reference'
+     assert effective_outcome(receipt) == 'passed'
+     receipt = certificate_receipt()
+     receipt['arguments']['algorithm'] = 'pagerank'
+     assert effective_outcome(receipt) == 'passed'
+-    receipt = certificate_receipt()
+-    receipt['correctness']['component_count_verified'] = True
+-    assert effective_outcome(receipt) == 'passed'
+ 
+ 
+ def test_classifier_keeps_partial_scope_and_failure_precedence():
+@@ -58,6 +56,70 @@ def test_classifier_keeps_partial_scope_and_failure_precedence():
+     assert classify(record, receipt, 'a' * 40) == 'oom'
+ 
+ 
++@pytest.mark.parametrize('exit_status', [None, 0, 7, 137])
++def test_partial_exit_must_be_one(exit_status):
++    record = dict(transport_errors=[], attach_returncode=exit_status, inspect={'state': {'OOMKilled': False}})
++    assert classify(record, certificate_receipt('partially_verified'), 'a' * 40) == 'exit_receipt_mismatch'
++    record['outer_timeout'] = True
++    assert classify(record, certificate_receipt('partially_verified'), 'a' * 40) == 'outer_timeout'
++    record['inspect']['state']['OOMKilled'] = True
++    assert classify(record, certificate_receipt('partially_verified'), 'a' * 40) == 'oom'
++
++
++@pytest.mark.parametrize('marker', ['missing', None, 0, 'false', True])
++def test_malformed_component_count_marker_cannot_restore_exact_pass(marker):
++    receipt = certificate_receipt()
++    if marker == 'missing':
++        del receipt['correctness']['component_count_verified']
++    else:
++        receipt['correctness']['component_count_verified'] = marker
++    assert effective_outcome(receipt) == 'invalid_receipt'
++    record = dict(transport_errors=[], attach_returncode=0, inspect={'state': {'OOMKilled': False}})
++    assert classify(record, receipt, 'a' * 40) == 'invalid_receipt'
++
++
++@pytest.mark.parametrize('field', ['arguments', 'correctness'])
++@pytest.mark.parametrize('value', [['malformed'], 'malformed', None])
++def test_nonobject_completed_metadata_is_invalid_without_masking_failures(field, value):
++    receipt = certificate_receipt()
++    receipt[field] = value
++    record = dict(transport_errors=[], attach_returncode=0, inspect={'state': {'OOMKilled': False}})
++    assert effective_outcome(receipt) == 'invalid_receipt'
++    assert classify(record, receipt, 'a' * 40) == 'invalid_receipt'
++    receipt['outcome'] = 'mismatch'
++    assert effective_outcome(receipt) == classify(record, receipt, 'a' * 40) == 'mismatch'
++
++
++@pytest.mark.parametrize('field', ['arguments', 'correctness', 'receipt'])
++@pytest.mark.parametrize('value', [['malformed'], 'malformed'])
++def test_fresh_matrix_retains_malformed_receipt_without_crashing(tmp_path, monkeypatch, field, value):
++    configuration = config('certificate')
++    configuration['host_output'] = str(tmp_path / 'matrix')
++    configuration['suites'][0].update(engines=['pecan'], algorithms=['wcc'])
++    receipt = certificate_receipt('partially_verified')
++    receipt['harness_source_sha'] = configuration['harness_source_sha']
++    if field == 'receipt':
++        receipt = value
++    else:
++        receipt[field] = value
++
++    def run_container(_config, _name, _command, output, *_args):
++        (output / 'artifacts').mkdir(parents=True)
++        (output / 'artifacts/receipt.json').write_text(json.dumps(receipt))
++        return dict(transport_errors=[], attach_returncode=1)
++
++    configuration_path = tmp_path / 'configuration.json'
++    configuration_path.write_text(json.dumps(configuration))
++    monkeypatch.setattr(sys, 'argv', ['run_matrix.py', '--config', str(configuration_path), '--skip-prepare'])
++    monkeypatch.setattr(run_matrix, 'preflight', lambda *args: configuration['image'])
++    monkeypatch.setattr(run_matrix, 'run_container', run_container)
++    assert run_matrix.main() == 1
++    result, = json.loads((Path(configuration['host_output']) / 'matrix-results.json').read_text())['results']
++    assert result['outcome'] == 'invalid_receipt'
++    assert not result['expected_outcome_observed']
++    assert json.loads(Path(result['receipt_path']).read_text()) == receipt
++
++
+ def test_matrix_defaults_distinguish_certificate_wcc_from_other_algorithms():
+     configuration = config('certificate')
+     cells = plan_cells(configuration)
+@@ -96,7 +158,8 @@ def test_matrix_explicit_expectation_overrides_are_preserved(expected):
+ 
+ 
+ @pytest.mark.parametrize('explicit', [False, True])
+-def test_resume_restates_legacy_partial_pass_without_rewriting_cell_evidence(tmp_path, monkeypatch, explicit):
++@pytest.mark.parametrize('evidence', ['valid', 'missing_receipt', 'malformed_receipt', 'missing_exit', 'unexpected_exit'])
++def test_resume_restates_legacy_partial_pass_without_rewriting_cell_evidence(tmp_path, monkeypatch, explicit, evidence):
+     configuration = config('certificate')
+     configuration['host_output'] = str(tmp_path / 'matrix')
+     configuration['suites'][0].update(engines=['pecan'], algorithms=['wcc'])
+@@ -109,16 +172,24 @@ def test_resume_restates_legacy_partial_pass_without_rewriting_cell_evidence(tmp
+                   configuration_sha256=run_matrix.configuration_fingerprint(configuration))
+     summary_path, receipt_path = directory / 'summary.json', directory / 'artifacts/receipt.json'
+     summary_path.write_text(json.dumps(legacy))
+-    receipt_path.write_text(json.dumps(certificate_receipt()))
+-    original_summary, original_receipt = summary_path.read_bytes(), receipt_path.read_bytes()
++    receipt = certificate_receipt()
++    receipt['harness_source_sha'] = configuration['harness_source_sha']
++    if evidence != 'missing_receipt':
++        receipt_path.write_text('{malformed' if evidence == 'malformed_receipt' else json.dumps(receipt))
++    if evidence != 'missing_exit':
++        (directory / 'orchestration.json').write_text(json.dumps(dict(transport_errors=[],
++            attach_returncode=7 if evidence == 'unexpected_exit' else 0)))
++    original_summary = summary_path.read_bytes()
++    original_receipt = receipt_path.read_bytes() if receipt_path.exists() else None
+     configuration_path = tmp_path / 'configuration.json'
+     configuration_path.write_text(json.dumps(configuration))
+     monkeypatch.setattr(sys, 'argv', ['run_matrix.py', '--config', str(configuration_path), '--resume', '--skip-prepare'])
+     monkeypatch.setattr(run_matrix, 'preflight', lambda *args: configuration['image'])
+-    assert run_matrix.main() == (1 if explicit else 0)
++    assert run_matrix.main() == (0 if not explicit and evidence == 'valid' else 1)
+     result, = json.loads((Path(configuration['host_output']) / 'matrix-results.json').read_text())['results']
+-    assert result['outcome'] == 'partially_verified'
++    assert result['outcome'] == dict(valid='partially_verified', missing_receipt='missing_receipt',
++        malformed_receipt='invalid_receipt', missing_exit='exit_receipt_mismatch', unexpected_exit='exit_receipt_mismatch')[evidence]
+     assert result['original_outcome'] == result['original_expected_outcome'] == 'passed'
+-    assert result['expected_outcome_observed'] is (not explicit)
++    assert result['expected_outcome_observed'] is (not explicit and evidence == 'valid')
+     assert summary_path.read_bytes() == original_summary
+-    assert receipt_path.read_bytes() == original_receipt
++    assert (receipt_path.read_bytes() if receipt_path.exists() else None) == original_receipt
+diff --git a/examples/extensions/benchmarks/test_wcc_certificate.py b/examples/extensions/benchmarks/test_wcc_certificate.py
+index c6bc007f1..0c85ddb43 100644
+--- a/examples/extensions/benchmarks/test_wcc_certificate.py
++++ b/examples/extensions/benchmarks/test_wcc_certificate.py
+@@ -42,7 +42,8 @@ def test_edge_consistency_only_is_partial_even_for_a_correct_partition(spark, tm
+     assert correctness['component_count_verified'] is False
+     assert correctness['verification_scope'] == 'partial_wcc_partition'
+     assert correctness['crossing_edges'] == correctness['foreign_labels'] == 0
+-    assert effective_outcome({'arguments': {'algorithm': 'wcc'}, 'correctness': correctness}, outcome='passed') == 'partially_verified'
++    assert effective_outcome({'arguments': {'algorithm': 'wcc', 'ranking_validation': 'certificate'},
++                              'correctness': correctness}, outcome='passed') == 'partially_verified'
+ 
+ 
+ def test_reference_rejects_merged_components(spark, tmp_path):
+diff --git a/examples/extensions/benchmarks/test_wcc_outcome_consumers.py b/examples/extensions/benchmarks/test_wcc_outcome_consumers.py
+index 1ae16ccb1..d7ddcbea8 100644
+--- a/examples/extensions/benchmarks/test_wcc_outcome_consumers.py
++++ b/examples/extensions/benchmarks/test_wcc_outcome_consumers.py
+@@ -9,6 +9,7 @@ from summarize import aggregate, audited_rows
+ from run_matrix import configuration_fingerprint, plan_cells
+ from test_summarize import records
+ import tutorial_methods
++from test_certificate_identity import graph500, imported
+ 
+ 
+ def wcc_records():
+@@ -21,31 +22,44 @@ def partial(receipt):
+                                   verification_scope='partial_wcc_partition')
+ 
+ 
+-def test_legacy_partial_pass_cannot_improve_exact_pass_metrics_or_rewrite_evidence():
++def certificate_records(reported='passed'):
+     configuration, entries = wcc_records()
+-    partial(entries[0][2])
++    configuration['extra_cell_args'] = ['--ranking-validation=certificate']
++    planned = {cell['cell_id']: cell for cell in plan_cells(configuration)}
++    for cell, summary, receipt in entries:
++        partial(receipt)
++        summary['configuration_sha256'] = configuration_fingerprint(configuration)
++        summary['outcome'] = receipt['outcome'] = reported
++        if reported == 'partially_verified':
++            summary.update(planned[cell['cell_id']])
++    return configuration, [(planned[cell['cell_id']], summary, receipt) for cell, summary, receipt in entries]
++
++
++def test_legacy_partial_pass_cannot_improve_exact_pass_metrics_or_rewrite_evidence():
++    configuration, entries = certificate_records()
+     for entry, seconds in zip(entries, [.01, 5., 7.]):
+         entry[2]['end_to_end_seconds'] = seconds
+     original = deepcopy(entries)
+     rows = audited_rows(entries, configuration)
+     assert entries == original
+-    assert [row['outcome'] for row in rows] == ['partially_verified', 'passed', 'passed']
++    assert {row['outcome'] for row in rows} == {'partially_verified'}
+     assert rows[0]['original_outcome'] == rows[0]['receipt_outcome'] == 'passed'
+     assert rows[0]['component_count_verified'] is False
+     assert rows[0]['verification_scope'] == 'partial_wcc_partition'
+     assert rows[0]['dataset_files_identity'] == rows[1]['dataset_files_identity']
+     assert rows[0]['native_installed_files_identity'] == rows[1]['native_installed_files_identity']
+     group, = aggregate(rows)
+-    assert group['outcomes'] == {'partially_verified': 1, 'passed': 2}
+-    assert group['metrics']['seconds'] == dict(samples=2, median=6., minimum=5., maximum=7.)
++    assert group['outcomes'] == {'partially_verified': 3}
++    assert group['passed'] == 0 and group['metrics']['seconds'] is None
++    # Aggregation itself must also exclude a faster partial observation from
++    # any pass-only statistic; these synthetic rows isolate that filter.
++    mixed = deepcopy(rows)
++    mixed[1]['outcome'] = mixed[2]['outcome'] = 'passed'
++    assert aggregate(mixed)[0]['metrics']['seconds'] == dict(samples=2, median=6., minimum=5., maximum=7.)
+ 
+ 
+ def test_explicit_partial_only_group_retains_counts_and_raw_metrics():
+-    configuration, entries = wcc_records()
+-    for cell, summary, receipt in entries:
+-        partial(receipt)
+-        summary['outcome'] = receipt['outcome'] = 'partially_verified'
+-        cell['expected_outcome'] = summary['expected_outcome'] = 'partially_verified'
++    configuration, entries = certificate_records('partially_verified')
+     rows = audited_rows(entries, configuration)
+     assert all(row['seconds'] == 5 and row['expected_outcome_observed'] for row in rows)
+     group, = aggregate(rows)
+@@ -53,6 +67,18 @@ def test_explicit_partial_only_group_retains_counts_and_raw_metrics():
+     assert all(metric is None for metric in group['metrics'].values())
+ 
+ 
++def test_reclassified_legacy_receipt_can_back_a_new_partial_summary():
++    configuration, entries = certificate_records('partially_verified')
++    for _, _, receipt in entries:
++        receipt['outcome'] = 'passed'
++    original = deepcopy(entries)
++    rows = audited_rows(entries, configuration)
++    assert entries == original
++    assert all(row['outcome'] == row['original_outcome'] == 'partially_verified' for row in rows)
++    assert all(row['receipt_outcome'] == 'passed' and not row['integrity_errors'] for row in rows)
++    assert aggregate(rows)[0]['passed'] == 0
++
++
+ @pytest.mark.parametrize('explicit', [None, 'passed', 'partially_verified'])
+ def test_historical_matrix_is_replanned_without_erasing_explicit_expectations(explicit):
+     configuration, entries = wcc_records()
+@@ -82,8 +108,7 @@ def test_historical_matrix_is_replanned_without_erasing_explicit_expectations(ex
+ 
+ @pytest.mark.parametrize('binary', ['invalid', '1' * 64])
+ def test_legacy_scope_downgrade_does_not_bypass_integrity_or_cross_cell_identity(binary):
+-    configuration, entries = wcc_records()
+-    partial(entries[0][2])
++    configuration, entries = certificate_records()
+     entries[0][2]['binary_sha256'] = binary
+     rows = audited_rows(entries, configuration)
+     assert rows[0]['outcome'] == 'integrity_error'
+@@ -93,10 +118,94 @@ def test_legacy_scope_downgrade_does_not_bypass_integrity_or_cross_cell_identity
+         assert all(row['outcome'] == 'integrity_error' for row in rows)
+ 
+ 
++@pytest.mark.parametrize('corruption', ['source', 'binary', 'dataset', 'native', 'receipt_outcome', 'validation_policy'])
++def test_new_partial_receipts_receive_the_same_identity_audit(corruption):
++    configuration, entries = certificate_records('partially_verified')
++    receipt = entries[0][2]
++    if corruption == 'source':
++        receipt['runtime_source_sha'] = '9' * 40
++    elif corruption == 'binary':
++        receipt['binary_sha256'] = '9' * 64
++    elif corruption == 'dataset':
++        receipt['dataset']['files']['edges.parquet']['sha256'] = '9' * 64
++    elif corruption == 'native':
++        receipt['native_package_identity']['files_sha256']['extension.so'] = '9' * 64
++    elif corruption == 'receipt_outcome':
++        receipt['outcome'] = 'mismatch'
++    else:
++        receipt['arguments']['ranking_validation'] = 'reference'
++    original = deepcopy(entries)
++    rows = audited_rows(entries, configuration)
++    assert entries == original
++    assert rows[0]['outcome'] == 'integrity_error'
++    assert rows[0]['original_outcome'] == 'partially_verified'
++    assert rows[0]['receipt_outcome'] == receipt['outcome']
++    assert aggregate(rows)[0]['passed'] == 0
++    if corruption in ('binary', 'dataset', 'native'):
++        assert all(row['outcome'] == 'integrity_error' for row in rows)
++
++
++@pytest.mark.parametrize('reported', ['passed', 'partially_verified'])
++@pytest.mark.parametrize('marker', ['missing', None, 0, 'false', True])
++def test_malformed_partial_scope_metadata_is_an_integrity_error(reported, marker):
++    configuration, entries = certificate_records(reported)
++    if marker == 'missing':
++        del entries[0][2]['correctness']['component_count_verified']
++    else:
++        entries[0][2]['correctness']['component_count_verified'] = marker
++    row = audited_rows(entries, configuration)[0]
++    assert row['outcome'] == 'integrity_error'
++    assert 'partial WCC component count marker must be boolean false' in row['integrity_errors']
++
++
++def test_receipt_cannot_change_a_planned_reference_protocol_to_certificate():
++    configuration, entries = wcc_records()
++    partial(entries[0][2])
++    row = audited_rows(entries, configuration)[0]
++    assert row['outcome'] == 'integrity_error'
++    assert 'receipt argument differs: ranking_validation' in row['integrity_errors']
++
++
++@pytest.mark.parametrize('field', ['arguments', 'correctness'])
++@pytest.mark.parametrize('value', [None, ['malformed'], 'malformed'])
++def test_nonobject_completed_metadata_is_retained_as_an_integrity_error(field, value):
++    configuration, entries = certificate_records('partially_verified')
++    entries[0][2][field] = value
++    original = deepcopy(entries)
++    row = audited_rows(entries, configuration)[0]
++    assert entries == original
++    assert row['outcome'] == 'integrity_error'
++    assert f'completed receipt {field} must be a JSON object' in row['integrity_errors']
++
++
++@pytest.mark.parametrize('kind', ['imported', 'graph500'])
++def test_partitioned_no_reference_certificates_are_audited_without_becoming_passes(imported, kind):
++    manifest, options = imported if kind == 'imported' else graph500()
++    configuration, entries = certificate_records('partially_verified')
++    dataset = entries[0][0]['dataset']
++    configuration['datasets'][dataset] = options
++    planned = {cell['cell_id']: cell for cell in plan_cells(configuration)}
++    for cell, summary, receipt in entries:
++        summary.update(planned[cell['cell_id']], configuration_sha256=configuration_fingerprint(configuration))
++        receipt['dataset'] = deepcopy(manifest)
++    entries = [(planned[cell['cell_id']], summary, receipt) for cell, summary, receipt in entries]
++    rows = audited_rows(entries, configuration)
++    assert all(row['outcome'] == 'partially_verified' and not row['integrity_errors'] for row in rows)
++    assert all(row['dataset_files_identity'] == rows[0]['dataset_files_identity'] for row in rows)
++    assert aggregate(rows)[0]['passed'] == 0
++    first = next(iter(entries[0][2]['dataset']['files']))
++    entries[0][2]['dataset']['files'][first]['sha256'] = '9' * 64
++    assert all(row['outcome'] == 'integrity_error' for row in audited_rows(entries, configuration))
++
++
+ @pytest.mark.parametrize('reported,exit_status,expected', [
+     ('partially_verified', 1, 'partially_verified'),
+     ('passed', 0, 'partially_verified'),
+     ('passed', 7, 'orchestration_error'),
++    ('partially_verified', 0, 'orchestration_error'),
++    ('partially_verified', 7, 'orchestration_error'),
++    ('partially_verified', 137, 'orchestration_error'),
++    ('partially_verified', None, 'orchestration_error'),
+ ])
+ def test_tutorial_keeps_partial_and_original_outcomes(tmp_path, monkeypatch, reported, exit_status, expected):
+     receipt = dict(outcome=reported, arguments={'algorithm': 'wcc'}, end_to_end_seconds=1.)
+diff --git a/examples/extensions/benchmarks/tutorial_methods.py b/examples/extensions/benchmarks/tutorial_methods.py
+index fa1377e3b..a0cb3ae61 100644
+--- a/examples/extensions/benchmarks/tutorial_methods.py
++++ b/examples/extensions/benchmarks/tutorial_methods.py
+@@ -14,7 +14,7 @@ import subprocess
+ import sys
+ 
+ from graph_fixtures import prepare
+-from validation_outcome import effective_outcome, PARTIALLY_VERIFIED
++from validation_outcome import completed_exit_status, effective_outcome, partial_certificate_errors, PARTIALLY_VERIFIED
+ 
+ 
+ ENGINES = ("pecan", "nutmeg-native", "nutmeg-datafusion")
+@@ -63,6 +63,8 @@ def run_case(command, log_path, receipt_path, private_container):
+             row['original_receipt_outcome'] = receipt.get('outcome')
+             if receipt.get('outcome') not in ('passed', PARTIALLY_VERIFIED, 'error', 'mismatch', 'nonconverged', 'timeout'):
+                 raise ValueError('receipt has no completed outcome')
++            if completed_exit_status(receipt.get('outcome')) is not None:
++                errors.extend(partial_certificate_errors(receipt))
+             memory = receipt.get('memory', {})
+             if not isinstance(memory, dict):
+                 raise ValueError('receipt memory must be a JSON object')
+@@ -82,8 +84,9 @@ def run_case(command, log_path, receipt_path, private_container):
+             row.update(metrics, outcome=effective_outcome(receipt))
+     except (OSError, UnicodeError, ValueError, TypeError, AttributeError) as error:
+         errors.append(f'receipt unavailable or invalid: {error!r}')
+-    if row['original_receipt_outcome'] == 'passed' and row['returncode'] != 0:
+-        errors.append('passed receipt disagrees with nonzero or unavailable child exit status')
++    expected_exit = completed_exit_status(row['original_receipt_outcome'])
++    if expected_exit is not None and row['returncode'] != expected_exit:
++        errors.append(f'{row["original_receipt_outcome"]} receipt disagrees with expected child exit status {expected_exit}')
+     if errors:
+         row.update(outcome='orchestration_error', error='; '.join(errors))
+     elif receipt.get('error'):
+diff --git a/examples/extensions/benchmarks/validation_outcome.py b/examples/extensions/benchmarks/validation_outcome.py
+index 6a1941c00..1d1ffd3a8 100644
+--- a/examples/extensions/benchmarks/validation_outcome.py
++++ b/examples/extensions/benchmarks/validation_outcome.py
+@@ -1,37 +1,94 @@
+ """Separate a completed partial WCC check from independently verified results."""
+ import argparse
++import json
+ 
+ 
+ PARTIALLY_VERIFIED = 'partially_verified'
+ 
+ 
++def is_partial_wcc_certificate(receipt):
++    correctness = receipt.get('correctness')
++    arguments = receipt.get('arguments')
++    correctness = correctness if isinstance(correctness, dict) else {}
++    arguments = arguments if isinstance(arguments, dict) else {}
++    return (correctness.get('verification_scope') == 'partial_wcc_partition' or
++            arguments.get('algorithm') == 'wcc' and
++            (arguments.get('ranking_validation') == 'certificate' or correctness.get('policy') == 'certificate'))
++
++
++def partial_certificate_errors(receipt):
++    """No current WCC certificate proves connectivity, even if its marker claims it."""
++    errors = [f'completed receipt {name} must be a JSON object' for name in ('arguments', 'correctness')
++              if name in receipt and not isinstance(receipt[name], dict)]
++    if errors:
++        return errors
++    if not is_partial_wcc_certificate(receipt) and receipt.get('outcome') != PARTIALLY_VERIFIED:
++        return []
++    arguments, correctness = receipt.get('arguments') or {}, receipt.get('correctness') or {}
++    errors = []
++    for key, expected in [('algorithm', 'wcc'), ('ranking_validation', 'certificate')]:
++        if arguments.get(key) != expected:
++            errors.append(f'partial certificate argument differs: {key}')
++    if correctness.get('policy') != 'certificate':
++        errors.append('partial WCC certificate policy is missing or contradictory')
++    if correctness.get('component_count_verified') is not False:
++        errors.append('partial WCC component count marker must be boolean false')
++    if correctness.get('verification_scope') not in (None, 'partial_wcc_partition'):
++        errors.append('partial WCC verification scope is contradictory')
++    return errors
++
++
+ def effective_outcome(receipt, *, outcome=None):
+     """Derive scope without changing an original receipt or masking a failure."""
+     reported = receipt.get('outcome', 'invalid_receipt') if outcome is None else outcome
+-    correctness = receipt.get('correctness') or {}
+-    arguments = receipt.get('arguments') or {}
+-    if (reported == 'passed' and arguments.get('algorithm') == 'wcc' and
+-            correctness.get('policy') == 'certificate' and
+-            correctness.get('component_count_verified') is False):
++    if reported in ('passed', PARTIALLY_VERIFIED) and partial_certificate_errors(receipt):
++        return 'invalid_receipt'
++    if reported == 'passed' and is_partial_wcc_certificate(receipt):
+         return PARTIALLY_VERIFIED
+     return reported
+ 
+ 
+-def expected_validation_outcome(command):
+-    """Read the effective flags, including any final extra-cell overrides."""
++def completed_exit_status(outcome):
++    """graph_cell exits zero for an exact pass and one for completed partial checks."""
++    return {'passed': 0, PARTIALLY_VERIFIED: 1}.get(outcome)
++
++
++def validation_arguments(command):
+     parser = argparse.ArgumentParser(add_help=False, allow_abbrev=False)
+     parser.add_argument('--algorithm')
+     parser.add_argument('--ranking-validation', default='reference')
+     arguments, _ = parser.parse_known_args(command)
++    return arguments
++
++
++def expected_validation_outcome(command):
++    """Read the effective flags, including any final extra-cell overrides."""
++    arguments = validation_arguments(command)
+     return (PARTIALLY_VERIFIED if arguments.algorithm == 'wcc' and
+             arguments.ranking_validation == 'certificate' else 'passed')
+ 
+ 
+-def resumed_outcome(result, receipt, expected):
+-    """Restate a legacy summary in memory; retain its original outcome labels."""
+-    if result.get('outcome') != 'passed' or effective_outcome(receipt) != PARTIALLY_VERIFIED:
+-        return result
+-    return dict(result, original_outcome=result['outcome'],
+-                original_expected_outcome=result.get('expected_outcome'),
+-                outcome=PARTIALLY_VERIFIED, expected_outcome=expected,
+-                expected_outcome_observed=expected == PARTIALLY_VERIFIED)
++def resumed_outcome(result, observed, expected):
++    """Restate a saved summary in memory; retain its original outcome labels."""
++    return dict(result, original_outcome=result.get('original_outcome', result['outcome']),
++                original_expected_outcome=result.get('original_expected_outcome', result.get('expected_outcome')),
++                outcome=observed, expected_outcome=expected,
++                expected_outcome_observed=expected == observed)
++
++
++def resumed_evidence(directory):
++    """Missing or malformed retained evidence cannot substantiate a saved pass."""
++    receipt_path, record_path = directory / 'artifacts/receipt.json', directory / 'orchestration.json'
++    record, receipt = dict(transport_errors=[]), None
++    try:
++        if record_path.exists():
++            record = json.loads(record_path.read_text())
++        if receipt_path.exists():
++            receipt = json.loads(receipt_path.read_text())
++        if not isinstance(record, dict) or (receipt is not None and not isinstance(receipt, dict)):
++            raise ValueError('resumed evidence must contain JSON objects')
++        record.setdefault('transport_errors', [])
++    except (OSError, ValueError) as error:
++        record = dict(transport_errors=[], receipt_read_error=repr(error))
++        receipt = None
++    return record, receipt

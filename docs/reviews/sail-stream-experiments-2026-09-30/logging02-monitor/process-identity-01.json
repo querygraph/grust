@@ -1,0 +1,106 @@
+{
+  "started_utc": "2026-09-30T20:04:58.744428+00:00",
+  "container_name": "sail-stream-log02-1",
+  "scope": "read-only process identity; no arguments or environment",
+  "inspect": {
+    "command": [
+      "/usr/local/bin/docker",
+      "--context",
+      "colima-sail-gate",
+      "inspect",
+      "--format",
+      "{{json .Id}} {{json .State.Pid}} {{json .State.Running}}",
+      "sail-stream-log02-1"
+    ],
+    "returncode": 0,
+    "stdout": "\"277559b777e04a8bdda5f0cb8931480269de472f0fbf2e2125375496118fab16\" 183578 true\n",
+    "stderr": ""
+  },
+  "top": {
+    "command": [
+      "/usr/local/bin/docker",
+      "--context",
+      "colima-sail-gate",
+      "top",
+      "277559b777e04a8bdda5f0cb8931480269de472f0fbf2e2125375496118fab16",
+      "-eo",
+      "pid,ppid,comm"
+    ],
+    "returncode": 0,
+    "stdout": "PID                 PPID                COMMAND\n183578              183555              docker-init\n183609              183578              python\n",
+    "stderr": ""
+  },
+  "identity": {
+    "container_id": "277559b777e04a8bdda5f0cb8931480269de472f0fbf2e2125375496118fab16",
+    "init_host_pid": 183578,
+    "host_pids": [
+      183578,
+      183609
+    ]
+  },
+  "capture": {
+    "command": [
+      "/usr/local/bin/colima",
+      "--profile",
+      "sail-gate",
+      "ssh",
+      "--",
+      "sudo",
+      "/usr/bin/python3",
+      "-c",
+      "<VM_READER from capture_process_identity.py>",
+      "{\"container_id\": \"277559b777e04a8bdda5f0cb8931480269de472f0fbf2e2125375496118fab16\", \"init_host_pid\": 183578, \"host_pids\": [183578, 183609]}"
+    ],
+    "returncode": 0,
+    "stderr": ""
+  },
+  "mapping": {
+    "monotonic_started": 143752.472415579,
+    "monotonic_finished": 143752.47346361,
+    "clock_ticks_per_second": 100,
+    "processes": [
+      {
+        "host_pid": 183578,
+        "start_ticks": 14368213,
+        "cgroup": "0::/docker/277559b777e04a8bdda5f0cb8931480269de472f0fbf2e2125375496118fab16\n",
+        "status": {
+          "Name": "docker-init",
+          "State": "S (sleeping)",
+          "Tgid": "183578",
+          "Pid": "183578",
+          "PPid": "183555",
+          "FDSize": "64",
+          "NSpid": "183578\t1",
+          "VmSize": "1056 kB",
+          "VmRSS": "748 kB",
+          "RssAnon": "48 kB",
+          "RssFile": "700 kB",
+          "VmSwap": "0 kB",
+          "Threads": "1"
+        }
+      },
+      {
+        "host_pid": 183609,
+        "start_ticks": 14368241,
+        "cgroup": "0::/docker/277559b777e04a8bdda5f0cb8931480269de472f0fbf2e2125375496118fab16\n",
+        "status": {
+          "Name": "python",
+          "State": "R (running)",
+          "Tgid": "183609",
+          "Pid": "183609",
+          "PPid": "183578",
+          "FDSize": "64",
+          "NSpid": "183609\t7",
+          "VmSize": "1648020 kB",
+          "VmRSS": "138676 kB",
+          "RssAnon": "78360 kB",
+          "RssFile": "60316 kB",
+          "VmSwap": "0 kB",
+          "Threads": "33"
+        }
+      }
+    ]
+  },
+  "outcome": "captured",
+  "finished_utc": "2026-09-30T20:05:00.164354+00:00"
+}

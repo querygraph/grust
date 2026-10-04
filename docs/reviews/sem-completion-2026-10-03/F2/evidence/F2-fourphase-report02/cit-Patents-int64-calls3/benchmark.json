@@ -1,0 +1,1079 @@
+{
+  "algorithm": "wcc",
+  "dataset": "cit-Patents",
+  "size_class": "M",
+  "engine": "Nutmeg/native Arrow bridge",
+  "params": {
+    "execution_profile": "chunk_checkpoint_arrow_client_four_phase",
+    "ids": "int64",
+    "calls": 3,
+    "order": "asStaged",
+    "workers": 16,
+    "concurrency": 16,
+    "chunk_rows": 262144,
+    "runs": 1
+  },
+  "graph": {
+    "vertices_reported_by_stage": 3774768,
+    "edges_reported_by_stage": 16518947,
+    "vertices_path": "/Users/alexy/src/grust-benchmark-data/cit-Patents/cit-Patents-v.parquet",
+    "edges_path": "/Users/alexy/src/grust-benchmark-data/cit-Patents/cit-Patents-e.parquet"
+  },
+  "warmup": {
+    "count": 0,
+    "performed": false,
+    "cache_flush": false
+  },
+  "monitor": {
+    "rss_interval_s": 0.5,
+    "samples": 20,
+    "observed_worker_peak_rss_kib": 895128,
+    "observed_server_peak_rss_kib": 1506772,
+    "scope": "Direct PID sampled RSS; not OS peak or limit."
+  },
+  "runs": [
+    {
+      "index": 0,
+      "wall_time_s": 10.596020532,
+      "returncode": 0,
+      "worker": {
+        "algorithm": "wcc",
+        "phases_s": {
+          "read_parquet_s": 0.127806057,
+          "csr_and_graph_s": 5.47575941,
+          "algorithm_s": 2.95069948,
+          "write_parquet_s": 0.348973998,
+          "wall_in_process_s": 8.908658583
+        },
+        "calls": 3,
+        "completed_full_writes": 3,
+        "full_physical_qualification": "passed_full_physical_wcc",
+        "oracle_receipt": {
+          "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/F2-fourphase-main03-oracle-cit-Patents-int64-c3-01/receipt.json",
+          "bytes": 21309,
+          "sha256": "6092d23ac2becc700097c4c69a7a2251b578654b206b1c96475a4a7c212a6622"
+        }
+      }
+    }
+  ],
+  "stats": {
+    "parent_launch_to_wait_s": {
+      "n": 1,
+      "mean": 10.596020532,
+      "median": 10.596020532,
+      "min": 10.596020532,
+      "max": 10.596020532,
+      "std": null
+    },
+    "continuous_pipeline_s": {
+      "n": 1,
+      "mean": 8.908658583,
+      "median": 8.908658583,
+      "min": 8.908658583,
+      "max": 8.908658583,
+      "std": null
+    }
+  },
+  "series": {
+    "parent_launch_to_wait_s": [
+      10.596020532
+    ],
+    "continuous_pipeline_s": [
+      8.908658583
+    ]
+  },
+  "raw_series": {
+    "worker": {
+      "execution_profile": "chunk_checkpoint_arrow_client_four_phase",
+      "observed_utc": "2026-10-03T19:35:51.625287+00:00",
+      "started_utc": "2026-10-03T19:35:42.236383+00:00",
+      "outcome": "completed_unvalidated",
+      "configuration": {
+        "dataset": "cit-Patents",
+        "vertices": "/Users/alexy/src/grust-benchmark-data/cit-Patents/cit-Patents-v.parquet",
+        "edges": "/Users/alexy/src/grust-benchmark-data/cit-Patents/cit-Patents-e.parquet",
+        "vertex_id_column": "id",
+        "edge_source_column": "source",
+        "edge_target_column": "target",
+        "output_root": "/Users/alexy/src/grust-benchmark-runs/sem-completion-20261003/F2-fourphase-main03/cit-Patents-int64-c3",
+        "receipt": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/F2-fourphase-main03/cit-Patents-int64-c3.json",
+        "ids": "int64",
+        "calls": 3,
+        "workers": 16,
+        "binary": "/Volumes/Apo/graph-tests/results/sem-review-20261001/native-optimized-build01/sail-target/release/sail",
+        "venv": "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-int64-build01/venv",
+        "python_home": "/Users/alexy/.asdf/installs/python/3.12.6",
+        "python_purelib": "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-int64-build01/venv/lib/python3.12/site-packages",
+        "python_library_directory": "/Users/alexy/.asdf/installs/python/3.12.6/lib",
+        "sail_pool_bytes": 32212254720,
+        "native_quota_bytes": 23622320128,
+        "timeout_seconds": 1800,
+        "chunk_rows": 262144,
+        "extension_source_commit": "4b88c8fb4504ab1d2a896c9e49e4a09df4905bbb",
+        "native_runtime_commit": "9f0aa7d2a50f1258544d37c05dd19b3ff3d915b3"
+      },
+      "configuration_pin": {
+        "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/F2-fourphase01/plans/main03/cit-Patents-int64-c3.json",
+        "bytes": 1349,
+        "sha256": "9a2cdf21af5baec7d1a0d55a16a90831b17d6604239f474fd70f002e9372df56"
+      },
+      "worker_source": {
+        "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/F2-fourphase01/f2a_worker.py",
+        "bytes": 19105,
+        "sha256": "c776e1e9f603bff27f29d3a762b8ea4e72eb5c6f6a3987a742030ab2f8a440ab"
+      },
+      "models_source": {
+        "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/F2-fourphase01/f2a_models.py",
+        "bytes": 9019,
+        "sha256": "3e67f4bc3487ec51dfc6fcc67b1e26024e2bdf3a9389cb79b5c91fe40276068e"
+      },
+      "owner_pid": 32236,
+      "python_version": "3.12.6 (main, Sep 13 2024, 17:29:18) [Clang 15.0.0 (clang-1500.3.9.4)]",
+      "pyspark_version": "4.0.1",
+      "client_plan_source": {
+        "path": "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-int64-build01/venv/lib/python3.12/site-packages/pyspark/sql/connect/plan.py",
+        "bytes": 99118,
+        "sha256": "8606df63892caee177c0c3ef64b72e8fdc9dfda0f1fe02b155f0ec12111bef20"
+      },
+      "client_session_source": {
+        "path": "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-int64-build01/venv/lib/python3.12/site-packages/pyspark/sql/connect/session.py",
+        "bytes": 45433,
+        "sha256": "29833e979ac7d7536f742d2dd996096a11f82b19344bc22b1248e25c8e396946"
+      },
+      "client_dataframe_source": {
+        "path": "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-int64-build01/venv/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py",
+        "bytes": 85737,
+        "sha256": "374573117e82e43731fdb06a6c21dec80c64ae8ffa6a1deea8e071a57c096983"
+      },
+      "checkpoint_base_uri": "file:///Users/alexy/src/grust-benchmark-runs/sem-completion-20261003/F2-fourphase-main03/cit-Patents-int64-c3/checkpoints",
+      "checkpoint_directory_created": true,
+      "python_executable": "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-int64-build01/venv/bin/python",
+      "environment": {
+        "PYTHONHOME": "/Users/alexy/.asdf/installs/python/3.12.6",
+        "PYTHONPATH": "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-int64-build01/venv/lib/python3.12/site-packages",
+        "DYLD_LIBRARY_PATH": "/Users/alexy/.asdf/installs/python/3.12.6/lib",
+        "SAIL_EXPERIMENTAL_EXTENSIONS": "1",
+        "SAIL_MODE": "local",
+        "SAIL_EXECUTION__DEFAULT_PARALLELISM": "16",
+        "SAIL_EXECUTION__CHECKPOINT__PATH": "file:///Users/alexy/src/grust-benchmark-runs/sem-completion-20261003/F2-fourphase-main03/cit-Patents-int64-c3/checkpoints",
+        "SAIL_RUNTIME__MEMORY_POOL__TYPE": "greedy",
+        "SAIL_RUNTIME__MEMORY_POOL__GREEDY__MAX_SIZE": "32212254720",
+        "SAIL_NUTMEG_MEMORY_BYTES": "23622320128",
+        "NUTMEG_MEMORY_BYTES": "23622320128",
+        "NUTMEG_WORKERS": "16",
+        "SAIL_GRAPH_UTILS_ROOT": "file:///Users/alexy/src/grust-benchmark-runs/sem-completion-20261003/F2-fourphase-main03/cit-Patents-int64-c3/staging",
+        "TOKIO_WORKER_THREADS": "16",
+        "RAYON_NUM_THREADS": "16",
+        "TMPDIR": "/Users/alexy/src/grust-benchmark-runs/sem-completion-20261003/F2-fourphase-main03/cit-Patents-int64-c3/temporary",
+        "RUST_LOG": "warn"
+      },
+      "server": {
+        "pid": 32246,
+        "pgid": 32246,
+        "argv": [
+          "/Volumes/Apo/graph-tests/results/sem-review-20261001/native-optimized-build01/sail-target/release/sail",
+          "spark",
+          "server",
+          "--ip",
+          "127.0.0.1",
+          "--port",
+          "54547"
+        ],
+        "launched_utc": "2026-10-03T19:35:42.239424+00:00",
+        "closed_utc": "2026-10-03T19:35:51.624184+00:00",
+        "returncode": -15,
+        "wait_completed": true,
+        "termination_requested": true,
+        "forced_kill": false,
+        "scope": "Direct owned native server was waited; group closure is parent-owned."
+      },
+      "pipeline": {
+        "started_ns": 903869049087233,
+        "ended_ns": 903877957745816
+      },
+      "pipeline_seconds": 8.908658583,
+      "pipeline_completed": true,
+      "phases": [
+        {
+          "name": "read_parquet",
+          "call": null,
+          "span": {
+            "started_ns": 903869049089241,
+            "ended_ns": 903869176895298
+          },
+          "completed": true
+        },
+        {
+          "name": "csr_and_graph",
+          "call": null,
+          "span": {
+            "started_ns": 903869181863144,
+            "ended_ns": 903874657622554
+          },
+          "completed": true
+        },
+        {
+          "name": "algorithm_materialize",
+          "call": null,
+          "span": {
+            "started_ns": 903874658033910,
+            "ended_ns": 903877608733390
+          },
+          "completed": true
+        },
+        {
+          "name": "write_parquet",
+          "call": null,
+          "span": {
+            "started_ns": 903877608771818,
+            "ended_ns": 903877957745816
+          },
+          "completed": true
+        }
+      ],
+      "outputs": [
+        {
+          "call": 1,
+          "path": "/Users/alexy/src/grust-benchmark-runs/sem-completion-20261003/F2-fourphase-main03/cit-Patents-int64-c3/result-call1",
+          "completed": true
+        },
+        {
+          "call": 2,
+          "path": "/Users/alexy/src/grust-benchmark-runs/sem-completion-20261003/F2-fourphase-main03/cit-Patents-int64-c3/result-call2",
+          "completed": true
+        },
+        {
+          "call": 3,
+          "path": "/Users/alexy/src/grust-benchmark-runs/sem-completion-20261003/F2-fourphase-main03/cit-Patents-int64-c3/result-call3",
+          "completed": true
+        }
+      ],
+      "output_projection": [
+        "id",
+        "component"
+      ],
+      "stage_receipt": {
+        "graph": "g",
+        "nodeCount": 3774768,
+        "edgeCount": 16518947,
+        "revision": 1,
+        "nodeSortPermutationBytes": 0,
+        "nodeSortKeysBytes": 0,
+        "nodeSortedCopyBytes": 0,
+        "nodeFillBytes": 0,
+        "nodeNormalizedBytes": 45299060,
+        "nodeRetainedBytes": 45299060,
+        "nodeSortSeconds": 0.0,
+        "nodeSorted": false,
+        "edgeSortPermutationBytes": 0,
+        "edgeSortKeysBytes": 0,
+        "edgeSortedCopyBytes": 0,
+        "edgeFillBytes": 0,
+        "edgeNormalizedBytes": 398535733,
+        "edgeRetainedBytes": 398535733,
+        "edgeSortSeconds": 0.0,
+        "edgeSorted": false
+      },
+      "projection_receipt": {
+        "nodes": 3774768,
+        "edges": 16518947,
+        "arcs": 16518947,
+        "selfLoops": 0,
+        "csrBytes": 147250652
+      },
+      "native_status": {
+        "memory": {
+          "limit_bytes": 23622320128,
+          "used_bytes": 1059019312,
+          "peak_bytes": 1175864274,
+          "staged_bytes": 443834793
+        },
+        "graphs": [
+          {
+            "name": "g",
+            "node_count": 3774768,
+            "edge_count": 16518947,
+            "revision": 1,
+            "projections": 1,
+            "staged_bytes": 443834793,
+            "projection_builds": [
+              {
+                "key": "{\"defaultWeight\": \"Some(Null)\", \"nodeLabels\": \"Some(Null)\", \"orientation\": \"Some(String(\\\"outgoing\\\"))\", \"relationshipTypes\": \"Some(Null)\", \"weightProperty\": \"Some(Null)\"}",
+                "seconds": 0.713605259,
+                "live_bytes_before": 443834793,
+                "admitted_bytes": 615184519
+              }
+            ]
+          }
+        ],
+        "reads": [
+          {
+            "id": 1,
+            "algorithm": "projectionStats",
+            "graph": "g",
+            "state": "finished",
+            "message": null,
+            "batches": 1,
+            "rows": 1,
+            "live_bytes": 0,
+            "peak_bytes": 0,
+            "work_units": 16518947,
+            "diagnostics": null
+          },
+          {
+            "id": 2,
+            "algorithm": "wcc",
+            "graph": "g",
+            "state": "finished",
+            "message": null,
+            "batches": 461,
+            "rows": 3774768,
+            "live_bytes": 13298812,
+            "peak_bytes": 60396288,
+            "work_units": 35389186,
+            "diagnostics": null
+          },
+          {
+            "id": 3,
+            "algorithm": "wcc",
+            "graph": "g",
+            "state": "finished",
+            "message": null,
+            "batches": 461,
+            "rows": 3774768,
+            "live_bytes": 11955325,
+            "peak_bytes": 60396288,
+            "work_units": 35389183,
+            "diagnostics": null
+          },
+          {
+            "id": 4,
+            "algorithm": "wcc",
+            "graph": "g",
+            "state": "finished",
+            "message": null,
+            "batches": 461,
+            "rows": 3774768,
+            "live_bytes": 11955325,
+            "peak_bytes": 60396288,
+            "work_units": 35389179,
+            "diagnostics": null
+          }
+        ]
+      },
+      "projection_reused": true,
+      "arrow_handoffs": [
+        {
+          "input_name": "vertices",
+          "rows": 3774768,
+          "chunk_rows": 262144,
+          "chunks": 15,
+          "checked_ipc_encodings": 15,
+          "create_dataframe_calls": 15,
+          "checkpoint_attempts": 15,
+          "checkpoints_completed": 15,
+          "cached_chunks": 15,
+          "remote_reference_ids": [
+            "e4e37390-1edf-4711-b2ba-ca4a1c9e2527",
+            "35ea5a48-1571-4ef3-95f9-d96bf27a9395",
+            "3d1a453e-42e2-448c-b838-13dd0856fccc",
+            "f39bc33a-fd2f-478c-859f-8afa3ead6073",
+            "265198fe-b42e-4f11-b153-d2a1779d3e75",
+            "9cc1017c-0e94-4405-97e8-9fe351d515f9",
+            "d3f143de-eb3d-49b9-997b-a3c86a3bb72c",
+            "01c22d93-508b-4f96-a6d9-c39f3f8916e5",
+            "ef3d18ee-be68-40fd-9d91-5848fc1baf37",
+            "30d86b19-3e05-4fc7-9470-6311d9598efa",
+            "61ca087c-4ea6-4e1b-9555-379af977c299",
+            "8a5135a1-aee6-4afd-95c6-bef466e95f8a",
+            "92d67142-9726-4c77-ba21-385d4c214900",
+            "37ab450e-eece-4dc8-a74d-ca9c28db0ee5",
+            "5c0a3f6f-41c1-4f84-ba12-eee6a6718084"
+          ],
+          "maximum_ipc_bytes": 2097872,
+          "encoded_ipc_bytes": 30206784,
+          "balanced_union_depth": 4,
+          "cache_threshold_bytes": 67108864,
+          "eager_checkpoints": true,
+          "checkpoint_sort_applied": false,
+          "completed": true
+        },
+        {
+          "input_name": "edges",
+          "rows": 16518947,
+          "chunk_rows": 262144,
+          "chunks": 64,
+          "checked_ipc_encodings": 64,
+          "create_dataframe_calls": 64,
+          "checkpoint_attempts": 64,
+          "checkpoints_completed": 64,
+          "cached_chunks": 64,
+          "remote_reference_ids": [
+            "ebe0a8b5-da41-4a73-b6ff-1b968b7fbb17",
+            "7612b63f-4fe8-48b5-a4da-d28e1ea226e2",
+            "7da52240-174e-40fe-986c-1e9c003765be",
+            "e676dd5f-3412-4024-a312-bd6ad6eaf1ad",
+            "582ba9ce-5f58-4622-b9ad-1cba22f577f2",
+            "7168ee34-3d80-4127-9dce-f2e1adbf3c50",
+            "0d4357f8-f208-4159-88ee-6adb2559e343",
+            "1deca376-e8bc-4867-9cfa-6496d2ea6992",
+            "3df815df-f827-4485-bf84-723e1c0cc21c",
+            "827e1eeb-c2e7-47c2-9dcc-d4fad08352d6",
+            "f0f551b7-2b32-4fe2-84ec-a8c24728d6d1",
+            "854d3711-984a-4128-bac5-1583d0b87c9e",
+            "6ae281bd-b2ac-437c-977d-41591941431d",
+            "2858de40-ac52-428b-9073-9e4d260c9aa8",
+            "e082f90e-3a0a-4c44-a3d0-7e3969b5bfae",
+            "7aaebf8b-3e24-42ed-8208-ef081e98c891",
+            "f70212ba-57ce-4ac9-a245-72fa0f76ed7e",
+            "80c4f16d-64c8-4f8d-9ba3-b27b8b27a394",
+            "2b43db16-4a27-47e7-af62-aca687a14b88",
+            "302a077f-be91-4a7d-9fb6-7439b11962e2",
+            "5646f7db-09d7-42ab-85d8-622f01912fd3",
+            "96ba6a00-9955-415b-8efe-9b8f19da30fb",
+            "44290d71-9f3e-4034-89b1-0a009f184ed2",
+            "1819b437-8dd2-478a-a8c3-7d6fd3f7ead3",
+            "92480534-9098-420d-872a-6e3f6ca4e777",
+            "fb741406-d842-4fe6-b48b-f846fa82901e",
+            "c792052a-878b-45e8-9b69-9d8ab74ca344",
+            "52ba200b-2761-4a12-a707-cf2617d311fa",
+            "2febf378-2347-4570-9c56-d5b47823c74b",
+            "e35ef4b8-a34f-45d9-b30b-4ab1e597ad07",
+            "776accc2-78c5-414b-acf2-897b78b74f56",
+            "d40ea7e5-dd3e-4313-880b-7032a92f1deb",
+            "493619f6-c51f-4e47-ac8b-75e6e5be541f",
+            "4100ec73-4cff-4c05-a379-733525e02a57",
+            "4cff6a3e-f1e2-412e-9fdc-baab0a799b64",
+            "b88c8400-9e5d-4e22-ab9d-93ae21a01053",
+            "9c038628-1ef2-468a-b8f0-29c587d4c6e2",
+            "53dd5e79-32b7-46e5-a63d-a159470c784f",
+            "26e09393-3c45-44da-809a-cc7b017a8bde",
+            "e118567a-ba18-4409-a935-3d861f99702b",
+            "d4220c33-3ec3-41b5-a2a8-12e4d2d35d80",
+            "2111ab6e-137e-4ed1-bbe6-37f46879202f",
+            "c55f307c-5305-49df-832b-7dfac22e3a74",
+            "3c4a16f0-aa6c-4f05-8c1a-c83893c339da",
+            "c0da714e-dba2-48cd-a29a-737fc6efc3cc",
+            "20669f5a-5227-4b3e-8d51-2fd93baeea69",
+            "4e8b80ce-07fa-41f8-95c3-440cc7442b17",
+            "3bd1477f-07ac-4c12-8694-35083d626edb",
+            "a69cdeba-78cf-4061-8236-9e520acfb799",
+            "ec8a9ed7-1a23-4857-9da1-c80b310038be",
+            "2f85834d-7220-42d1-82b9-571d07c92598",
+            "f2d45cf7-96d9-4153-a706-ae7b71071bd5",
+            "2b61ab5d-9bd6-43ea-b81e-ecd48fa516ce",
+            "f58c2353-3809-4d8e-ad3c-939599a6b636",
+            "9c49363f-2fe4-476c-8716-05b9a137bb3e",
+            "2308204a-32a4-4716-a5fa-18fed902c333",
+            "3bf3b6c3-a39b-4433-85f2-9ddfb71aee3b",
+            "1d5352ec-d0ec-4ad2-ab50-67376596c505",
+            "48252835-2b19-4619-891d-6038c5e78c3f",
+            "6e9186e6-2f3f-4a3f-9493-e5bc1c485f0b",
+            "6a76e251-0087-48e0-afe2-55f89d465be4",
+            "b3561c87-206c-4c11-a992-0a9f806b54bf",
+            "2a91af40-aaa1-4f9f-afad-d8befca8d4b8",
+            "fd31f624-17fb-456e-a9c3-26bdcbd1ae26"
+          ],
+          "maximum_ipc_bytes": 4195264,
+          "encoded_ipc_bytes": 264352688,
+          "balanced_union_depth": 6,
+          "cache_threshold_bytes": 67108864,
+          "eager_checkpoints": true,
+          "checkpoint_sort_applied": false,
+          "completed": true
+        }
+      ],
+      "exclusive_sem_phases": {
+        "read_seconds": 0.127806057,
+        "csr_and_graph_build_seconds": 5.47575941,
+        "algorithm_seconds": 2.95069948,
+        "write_seconds": 0.348973998,
+        "availability": "observed_materialized_arrow_bridge",
+        "reason": "Separate materialized bridge phases: client Parquet-to-Arrow read; bounded bounded inline Arrow IPC/checkpoint jobs plus stage/projectionStats; all WCC kernels and full Arrow result transport; all client Parquet writes. Not native CSR-only or kernel-only clocks and not the prior native-Parquet profile."
+      },
+      "graph_dropped": true,
+      "spark_stopped": true,
+      "errors": [],
+      "scope": "One unvalidated native WCC series on a shared host. Main continuous clock starts before materialized client input read and ends at the last full client Parquet write. Chunk IPC encoding and unsorted eager checkpoint jobs are in CSR/graph; result transport is in algorithm. All full inputs/results remain client-resident during their phases. Software pools are not an OS cap. Session setup, post-pipeline diagnostics, all validation, graph/session teardown and native process exit are outside that clock. Parent supplies source/input admission, physical output oracles and full process closure."
+    },
+    "parent_series": {
+      "plan": {
+        "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/F2-fourphase01/plans/main03/cit-Patents-int64-c3.json",
+        "bytes": 1349,
+        "sha256": "9a2cdf21af5baec7d1a0d55a16a90831b17d6604239f474fd70f002e9372df56"
+      },
+      "argv": [
+        "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-int64-build01/venv/bin/python",
+        "-I",
+        "-B",
+        "-c",
+        "import runpy,sys;r=sys.argv[1];sys.path.insert(0,r);sys.argv=[r+\"/f2a_worker.py\"]+sys.argv[2:];runpy.run_path(sys.argv[0],run_name=\"__main__\")",
+        "/Volumes/Apo/graph-tests/results/sem-completion-20261003/F2-fourphase01",
+        "--plan",
+        "/Volumes/Apo/graph-tests/results/sem-completion-20261003/F2-fourphase01/plans/main03/cit-Patents-int64-c3.json"
+      ],
+      "outcome": "completed_unvalidated",
+      "launched_utc": "2026-10-03T19:35:41.319330+00:00",
+      "closed_utc": "2026-10-03T19:35:51.914968+00:00",
+      "pid": 32236,
+      "pgid": 32236,
+      "wait_completed": true,
+      "returncode": 0,
+      "launch_to_wait": {
+        "started_ns": 903868057810961,
+        "ended_ns": 903878653831493
+      },
+      "driver_group_absent": true,
+      "server_group_absent": true,
+      "server_pid": 32246,
+      "server_pgid": 32246,
+      "worker_receipt": {
+        "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/F2-fourphase-main03/cit-Patents-int64-c3.json",
+        "bytes": 16007,
+        "sha256": "411da393443d428b1664aa65b8a568486ff475247ab6a2db2cad07e1376dcb50"
+      },
+      "forced_cleanup": false,
+      "rss_samples": 20,
+      "observed_worker_peak_rss_kib": 895128,
+      "observed_server_peak_rss_kib": 1506772,
+      "rss_errors": [],
+      "rss_sampler_closed": true,
+      "rss_file": {
+        "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/F2-fourphase-main03/series-2-rss.jsonl",
+        "bytes": 3461,
+        "sha256": "96f61525707bfa0abbb0c9bb6f4b1e07c2f0c86fe0096e3564c5d077a7be01a9"
+      }
+    },
+    "full_oracle_receipt": {
+      "outcome": "passed_full_physical_wcc",
+      "started_utc": "2026-10-03T19:56:59.726464+00:00",
+      "finished_utc": "2026-10-03T19:57:04.447757+00:00",
+      "config": {
+        "vertices": {
+          "bytes": 3861941,
+          "sha256": "0969ea9ede0969e18e76a2c70191ed7ccecaecb9f1da6d954093dbefbc8958aa",
+          "path": "/Users/alexy/src/grust-benchmark-data/cit-Patents/cit-Patents-v.parquet"
+        },
+        "expected_rows": 3774768,
+        "reference": {
+          "directory": "/Volumes/Apo/graph-tests/results/sem-review-20261001/A5-native-fable-exact-post-result01/raw/cit-Patents/wcc-b0-p0-graphframes/result",
+          "files": {
+            "Tonjs5pvgNaK2nPJ_0.parquet": {
+              "bytes": 1508074,
+              "sha256": "72b8e74e09967c3ed7f86a1d973eede44ff10fc151041bd4475633372c63a157"
+            },
+            "Tonjs5pvgNaK2nPJ_1.parquet": {
+              "bytes": 1509666,
+              "sha256": "b2603c2267b9071cefecc395630a9ecf4cb850fff36859334ecb47e20b5920fb"
+            },
+            "Tonjs5pvgNaK2nPJ_2.parquet": {
+              "bytes": 1504056,
+              "sha256": "1620e8eaa9d0c8c1565525de0bdd7a38a57039f8db0233821f210b4d13a51dee"
+            },
+            "Tonjs5pvgNaK2nPJ_3.parquet": {
+              "bytes": 1505565,
+              "sha256": "4f1b1799d33a44f5e3b95dd77bc86cd5e0866f881bc71946388ea44b74a463ac"
+            }
+          }
+        },
+        "outputs": [
+          {
+            "directory": "/Users/alexy/src/grust-benchmark-runs/sem-completion-20261003/F2-fourphase-main03/cit-Patents-int64-c3/result-call1",
+            "files": {
+              "part-0.parquet": {
+                "bytes": 16348665,
+                "sha256": "2cddfbe99b9d64342b7c266f04ee83aeb8d70c59bd7a2511c494d52ceafe0cc9"
+              }
+            },
+            "number": 1
+          },
+          {
+            "directory": "/Users/alexy/src/grust-benchmark-runs/sem-completion-20261003/F2-fourphase-main03/cit-Patents-int64-c3/result-call2",
+            "files": {
+              "part-0.parquet": {
+                "bytes": 16348595,
+                "sha256": "4213a3de8d6613be8d8ecb6ef231ec3f250a037925d37077732c9d24c87a7b8b"
+              }
+            },
+            "number": 2
+          },
+          {
+            "directory": "/Users/alexy/src/grust-benchmark-runs/sem-completion-20261003/F2-fourphase-main03/cit-Patents-int64-c3/result-call3",
+            "files": {
+              "part-0.parquet": {
+                "bytes": 16348616,
+                "sha256": "469f153bc2cc551aad8032042c3eb25ba4829fa2ef33d2b4e65241e0ec5c2f5d"
+              }
+            },
+            "number": 3
+          }
+        ],
+        "output": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/F2-fourphase-main03-oracle-cit-Patents-int64-c3-01",
+        "metadata_pins": [
+          {
+            "bytes": 18487,
+            "sha256": "6514d12838a558336bfbeee0340682f500938e750ccf39698fdf8fb621b2bbc3",
+            "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/F2-fourphase01/oracle-preparation01/f2a_oracle.py"
+          },
+          {
+            "bytes": 1349,
+            "sha256": "9a2cdf21af5baec7d1a0d55a16a90831b17d6604239f474fd70f002e9372df56",
+            "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/F2-fourphase01/plans/main03/cit-Patents-int64-c3.json"
+          },
+          {
+            "bytes": 12641,
+            "sha256": "22873ba78580612d3e26c0c21de695eface4c1d1f273ce31a3682972a8203e63",
+            "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/F2-fourphase01/main03-config.json"
+          },
+          {
+            "bytes": 2301,
+            "sha256": "562898d765f3d56b92b6b16b34ebe3b481da0f1b0aa4c2c05f334510f9cb6dbe",
+            "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/F2-fourphase01/checkpoint-freeze02.json"
+          },
+          {
+            "bytes": 5510,
+            "sha256": "dfb13434131096bd611395edfc27dc5e116fd44c8e2c0d36caece4c3f9bd044e",
+            "path": "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-024-run01/oracle-cit-Patents-int64-c3-plan01.json"
+          },
+          {
+            "bytes": 190557,
+            "sha256": "81f5c1ae534aaf8e96e158e6abc418ba0c1083780ba918ebac11b16ceff06799",
+            "path": "/Volumes/Apo/graph-tests/results/sem-review-20261001/A5-native-fable-exact-post-result01/receipt.json"
+          },
+          {
+            "bytes": 2190,
+            "sha256": "e41be9ee1066e5b8351acd454dd78fe1f5353618480486c3a424fad47094807c",
+            "path": "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-024-run01/input-admission01.json"
+          },
+          {
+            "bytes": 16007,
+            "sha256": "411da393443d428b1664aa65b8a568486ff475247ab6a2db2cad07e1376dcb50",
+            "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/F2-fourphase-main03/cit-Patents-int64-c3.json"
+          },
+          {
+            "bytes": 32400,
+            "sha256": "281a3b65e50cf24a38b8bb24b02d6018636ff156f7c1b007444491289fa50746",
+            "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/F2-fourphase-main03/receipt.json"
+          },
+          {
+            "bytes": 1316,
+            "sha256": "b3f9343ca871937386ac295e63da7b438f01a1842fb15510b977c638fe0c1f94",
+            "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/F2-fourphase-main03/launch-receipt.json"
+          }
+        ],
+        "batch_rows": 262144,
+        "work_seconds": 300.0,
+        "closure_seconds": 300.0,
+        "memory_bytes": 25769803776
+      },
+      "configuration": {
+        "bytes": 4719,
+        "sha256": "3068abf2d683c509e61585439ae3788bf650c8be170d86d08ad0dd25b9af96ca",
+        "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/F2-fourphase01/oracle-preparation01/oracle-cit-Patents-int64-c3-plan03.json"
+      },
+      "identities_before": {
+        "/Users/alexy/src/grust-benchmark-data/cit-Patents/cit-Patents-v.parquet": {
+          "bytes": 3861941,
+          "sha256": "0969ea9ede0969e18e76a2c70191ed7ccecaecb9f1da6d954093dbefbc8958aa"
+        },
+        "/Volumes/Apo/graph-tests/results/sem-completion-20261003/F2-fourphase01/oracle-preparation01/oracle-cit-Patents-int64-c3-plan03.json": {
+          "bytes": 4719,
+          "sha256": "3068abf2d683c509e61585439ae3788bf650c8be170d86d08ad0dd25b9af96ca"
+        },
+        "/Volumes/Apo/graph-tests/results/sem-completion-20261003/F2-fourphase01/oracle-preparation01/f2a_oracle.py": {
+          "bytes": 18487,
+          "sha256": "6514d12838a558336bfbeee0340682f500938e750ccf39698fdf8fb621b2bbc3"
+        },
+        "/Volumes/Apo/graph-tests/results/sem-completion-20261003/F2-fourphase01/plans/main03/cit-Patents-int64-c3.json": {
+          "bytes": 1349,
+          "sha256": "9a2cdf21af5baec7d1a0d55a16a90831b17d6604239f474fd70f002e9372df56"
+        },
+        "/Volumes/Apo/graph-tests/results/sem-completion-20261003/F2-fourphase01/main03-config.json": {
+          "bytes": 12641,
+          "sha256": "22873ba78580612d3e26c0c21de695eface4c1d1f273ce31a3682972a8203e63"
+        },
+        "/Volumes/Apo/graph-tests/results/sem-completion-20261003/F2-fourphase01/checkpoint-freeze02.json": {
+          "bytes": 2301,
+          "sha256": "562898d765f3d56b92b6b16b34ebe3b481da0f1b0aa4c2c05f334510f9cb6dbe"
+        },
+        "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-024-run01/oracle-cit-Patents-int64-c3-plan01.json": {
+          "bytes": 5510,
+          "sha256": "dfb13434131096bd611395edfc27dc5e116fd44c8e2c0d36caece4c3f9bd044e"
+        },
+        "/Volumes/Apo/graph-tests/results/sem-review-20261001/A5-native-fable-exact-post-result01/receipt.json": {
+          "bytes": 190557,
+          "sha256": "81f5c1ae534aaf8e96e158e6abc418ba0c1083780ba918ebac11b16ceff06799"
+        },
+        "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-024-run01/input-admission01.json": {
+          "bytes": 2190,
+          "sha256": "e41be9ee1066e5b8351acd454dd78fe1f5353618480486c3a424fad47094807c"
+        },
+        "/Volumes/Apo/graph-tests/results/sem-completion-20261003/F2-fourphase-main03/cit-Patents-int64-c3.json": {
+          "bytes": 16007,
+          "sha256": "411da393443d428b1664aa65b8a568486ff475247ab6a2db2cad07e1376dcb50"
+        },
+        "/Volumes/Apo/graph-tests/results/sem-completion-20261003/F2-fourphase-main03/receipt.json": {
+          "bytes": 32400,
+          "sha256": "281a3b65e50cf24a38b8bb24b02d6018636ff156f7c1b007444491289fa50746"
+        },
+        "/Volumes/Apo/graph-tests/results/sem-completion-20261003/F2-fourphase-main03/launch-receipt.json": {
+          "bytes": 1316,
+          "sha256": "b3f9343ca871937386ac295e63da7b438f01a1842fb15510b977c638fe0c1f94"
+        },
+        "/Volumes/Apo/graph-tests/results/sem-review-20261001/A5-native-fable-exact-post-result01/raw/cit-Patents/wcc-b0-p0-graphframes/result/Tonjs5pvgNaK2nPJ_0.parquet": {
+          "bytes": 1508074,
+          "sha256": "72b8e74e09967c3ed7f86a1d973eede44ff10fc151041bd4475633372c63a157"
+        },
+        "/Volumes/Apo/graph-tests/results/sem-review-20261001/A5-native-fable-exact-post-result01/raw/cit-Patents/wcc-b0-p0-graphframes/result/Tonjs5pvgNaK2nPJ_1.parquet": {
+          "bytes": 1509666,
+          "sha256": "b2603c2267b9071cefecc395630a9ecf4cb850fff36859334ecb47e20b5920fb"
+        },
+        "/Volumes/Apo/graph-tests/results/sem-review-20261001/A5-native-fable-exact-post-result01/raw/cit-Patents/wcc-b0-p0-graphframes/result/Tonjs5pvgNaK2nPJ_2.parquet": {
+          "bytes": 1504056,
+          "sha256": "1620e8eaa9d0c8c1565525de0bdd7a38a57039f8db0233821f210b4d13a51dee"
+        },
+        "/Volumes/Apo/graph-tests/results/sem-review-20261001/A5-native-fable-exact-post-result01/raw/cit-Patents/wcc-b0-p0-graphframes/result/Tonjs5pvgNaK2nPJ_3.parquet": {
+          "bytes": 1505565,
+          "sha256": "4f1b1799d33a44f5e3b95dd77bc86cd5e0866f881bc71946388ea44b74a463ac"
+        },
+        "/Users/alexy/src/grust-benchmark-runs/sem-completion-20261003/F2-fourphase-main03/cit-Patents-int64-c3/result-call1/part-0.parquet": {
+          "bytes": 16348665,
+          "sha256": "2cddfbe99b9d64342b7c266f04ee83aeb8d70c59bd7a2511c494d52ceafe0cc9"
+        },
+        "/Users/alexy/src/grust-benchmark-runs/sem-completion-20261003/F2-fourphase-main03/cit-Patents-int64-c3/result-call2/part-0.parquet": {
+          "bytes": 16348595,
+          "sha256": "4213a3de8d6613be8d8ecb6ef231ec3f250a037925d37077732c9d24c87a7b8b"
+        },
+        "/Users/alexy/src/grust-benchmark-runs/sem-completion-20261003/F2-fourphase-main03/cit-Patents-int64-c3/result-call3/part-0.parquet": {
+          "bytes": 16348616,
+          "sha256": "469f153bc2cc551aad8032042c3eb25ba4829fa2ef33d2b4e65241e0ec5c2f5d"
+        }
+      },
+      "identities_after": {
+        "/Users/alexy/src/grust-benchmark-data/cit-Patents/cit-Patents-v.parquet": {
+          "bytes": 3861941,
+          "sha256": "0969ea9ede0969e18e76a2c70191ed7ccecaecb9f1da6d954093dbefbc8958aa"
+        },
+        "/Volumes/Apo/graph-tests/results/sem-completion-20261003/F2-fourphase01/oracle-preparation01/oracle-cit-Patents-int64-c3-plan03.json": {
+          "bytes": 4719,
+          "sha256": "3068abf2d683c509e61585439ae3788bf650c8be170d86d08ad0dd25b9af96ca"
+        },
+        "/Volumes/Apo/graph-tests/results/sem-completion-20261003/F2-fourphase01/oracle-preparation01/f2a_oracle.py": {
+          "bytes": 18487,
+          "sha256": "6514d12838a558336bfbeee0340682f500938e750ccf39698fdf8fb621b2bbc3"
+        },
+        "/Volumes/Apo/graph-tests/results/sem-completion-20261003/F2-fourphase01/plans/main03/cit-Patents-int64-c3.json": {
+          "bytes": 1349,
+          "sha256": "9a2cdf21af5baec7d1a0d55a16a90831b17d6604239f474fd70f002e9372df56"
+        },
+        "/Volumes/Apo/graph-tests/results/sem-completion-20261003/F2-fourphase01/main03-config.json": {
+          "bytes": 12641,
+          "sha256": "22873ba78580612d3e26c0c21de695eface4c1d1f273ce31a3682972a8203e63"
+        },
+        "/Volumes/Apo/graph-tests/results/sem-completion-20261003/F2-fourphase01/checkpoint-freeze02.json": {
+          "bytes": 2301,
+          "sha256": "562898d765f3d56b92b6b16b34ebe3b481da0f1b0aa4c2c05f334510f9cb6dbe"
+        },
+        "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-024-run01/oracle-cit-Patents-int64-c3-plan01.json": {
+          "bytes": 5510,
+          "sha256": "dfb13434131096bd611395edfc27dc5e116fd44c8e2c0d36caece4c3f9bd044e"
+        },
+        "/Volumes/Apo/graph-tests/results/sem-review-20261001/A5-native-fable-exact-post-result01/receipt.json": {
+          "bytes": 190557,
+          "sha256": "81f5c1ae534aaf8e96e158e6abc418ba0c1083780ba918ebac11b16ceff06799"
+        },
+        "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-024-run01/input-admission01.json": {
+          "bytes": 2190,
+          "sha256": "e41be9ee1066e5b8351acd454dd78fe1f5353618480486c3a424fad47094807c"
+        },
+        "/Volumes/Apo/graph-tests/results/sem-completion-20261003/F2-fourphase-main03/cit-Patents-int64-c3.json": {
+          "bytes": 16007,
+          "sha256": "411da393443d428b1664aa65b8a568486ff475247ab6a2db2cad07e1376dcb50"
+        },
+        "/Volumes/Apo/graph-tests/results/sem-completion-20261003/F2-fourphase-main03/receipt.json": {
+          "bytes": 32400,
+          "sha256": "281a3b65e50cf24a38b8bb24b02d6018636ff156f7c1b007444491289fa50746"
+        },
+        "/Volumes/Apo/graph-tests/results/sem-completion-20261003/F2-fourphase-main03/launch-receipt.json": {
+          "bytes": 1316,
+          "sha256": "b3f9343ca871937386ac295e63da7b438f01a1842fb15510b977c638fe0c1f94"
+        },
+        "/Volumes/Apo/graph-tests/results/sem-review-20261001/A5-native-fable-exact-post-result01/raw/cit-Patents/wcc-b0-p0-graphframes/result/Tonjs5pvgNaK2nPJ_0.parquet": {
+          "bytes": 1508074,
+          "sha256": "72b8e74e09967c3ed7f86a1d973eede44ff10fc151041bd4475633372c63a157"
+        },
+        "/Volumes/Apo/graph-tests/results/sem-review-20261001/A5-native-fable-exact-post-result01/raw/cit-Patents/wcc-b0-p0-graphframes/result/Tonjs5pvgNaK2nPJ_1.parquet": {
+          "bytes": 1509666,
+          "sha256": "b2603c2267b9071cefecc395630a9ecf4cb850fff36859334ecb47e20b5920fb"
+        },
+        "/Volumes/Apo/graph-tests/results/sem-review-20261001/A5-native-fable-exact-post-result01/raw/cit-Patents/wcc-b0-p0-graphframes/result/Tonjs5pvgNaK2nPJ_2.parquet": {
+          "bytes": 1504056,
+          "sha256": "1620e8eaa9d0c8c1565525de0bdd7a38a57039f8db0233821f210b4d13a51dee"
+        },
+        "/Volumes/Apo/graph-tests/results/sem-review-20261001/A5-native-fable-exact-post-result01/raw/cit-Patents/wcc-b0-p0-graphframes/result/Tonjs5pvgNaK2nPJ_3.parquet": {
+          "bytes": 1505565,
+          "sha256": "4f1b1799d33a44f5e3b95dd77bc86cd5e0866f881bc71946388ea44b74a463ac"
+        },
+        "/Users/alexy/src/grust-benchmark-runs/sem-completion-20261003/F2-fourphase-main03/cit-Patents-int64-c3/result-call1/part-0.parquet": {
+          "bytes": 16348665,
+          "sha256": "2cddfbe99b9d64342b7c266f04ee83aeb8d70c59bd7a2511c494d52ceafe0cc9"
+        },
+        "/Users/alexy/src/grust-benchmark-runs/sem-completion-20261003/F2-fourphase-main03/cit-Patents-int64-c3/result-call2/part-0.parquet": {
+          "bytes": 16348595,
+          "sha256": "4213a3de8d6613be8d8ecb6ef231ec3f250a037925d37077732c9d24c87a7b8b"
+        },
+        "/Users/alexy/src/grust-benchmark-runs/sem-completion-20261003/F2-fourphase-main03/cit-Patents-int64-c3/result-call3/part-0.parquet": {
+          "bytes": 16348616,
+          "sha256": "469f153bc2cc551aad8032042c3eb25ba4829fa2ef33d2b4e65241e0ec5c2f5d"
+        }
+      },
+      "original_vertices_schema": {
+        "name": "/Users/alexy/src/grust-benchmark-data/cit-Patents/cit-Patents-v.parquet",
+        "fields": [
+          {
+            "name": "id",
+            "arrow_type": "int64",
+            "nullable": true
+          }
+        ],
+        "footer_rows": 3774768,
+        "row_groups": 31,
+        "largest_row_group_uncompressed_bytes": 983071,
+        "scanned_rows": 3774768
+      },
+      "reference": {
+        "number": 0,
+        "rows": 3774768,
+        "unique_rows": 3774768,
+        "components": 3627,
+        "canonical_member_mismatches": null,
+        "full_original_domain_passed": true,
+        "labels_in_original_domain": true,
+        "full_partition_equivalence_passed": false,
+        "physical_schemas": [
+          {
+            "name": "/Volumes/Apo/graph-tests/results/sem-review-20261001/A5-native-fable-exact-post-result01/raw/cit-Patents/wcc-b0-p0-graphframes/result/Tonjs5pvgNaK2nPJ_0.parquet",
+            "fields": [
+              {
+                "name": "id",
+                "arrow_type": "int64",
+                "nullable": true
+              },
+              {
+                "name": "component",
+                "arrow_type": "int64",
+                "nullable": true
+              }
+            ],
+            "footer_rows": 944610,
+            "row_groups": 1,
+            "largest_row_group_uncompressed_bytes": 7844804,
+            "scanned_rows": 944610
+          },
+          {
+            "name": "/Volumes/Apo/graph-tests/results/sem-review-20261001/A5-native-fable-exact-post-result01/raw/cit-Patents/wcc-b0-p0-graphframes/result/Tonjs5pvgNaK2nPJ_1.parquet",
+            "fields": [
+              {
+                "name": "id",
+                "arrow_type": "int64",
+                "nullable": true
+              },
+              {
+                "name": "component",
+                "arrow_type": "int64",
+                "nullable": true
+              }
+            ],
+            "footer_rows": 944853,
+            "row_groups": 1,
+            "largest_row_group_uncompressed_bytes": 7848093,
+            "scanned_rows": 944853
+          },
+          {
+            "name": "/Volumes/Apo/graph-tests/results/sem-review-20261001/A5-native-fable-exact-post-result01/raw/cit-Patents/wcc-b0-p0-graphframes/result/Tonjs5pvgNaK2nPJ_2.parquet",
+            "fields": [
+              {
+                "name": "id",
+                "arrow_type": "int64",
+                "nullable": true
+              },
+              {
+                "name": "component",
+                "arrow_type": "int64",
+                "nullable": true
+              }
+            ],
+            "footer_rows": 941123,
+            "row_groups": 1,
+            "largest_row_group_uncompressed_bytes": 7818636,
+            "scanned_rows": 941123
+          },
+          {
+            "name": "/Volumes/Apo/graph-tests/results/sem-review-20261001/A5-native-fable-exact-post-result01/raw/cit-Patents/wcc-b0-p0-graphframes/result/Tonjs5pvgNaK2nPJ_3.parquet",
+            "fields": [
+              {
+                "name": "id",
+                "arrow_type": "int64",
+                "nullable": true
+              },
+              {
+                "name": "component",
+                "arrow_type": "int64",
+                "nullable": true
+              }
+            ],
+            "footer_rows": 944182,
+            "row_groups": 1,
+            "largest_row_group_uncompressed_bytes": 7840132,
+            "scanned_rows": 944182
+          }
+        ]
+      },
+      "outputs": [
+        {
+          "number": 1,
+          "rows": 3774768,
+          "unique_rows": 3774768,
+          "components": 3627,
+          "canonical_member_mismatches": 0,
+          "full_original_domain_passed": true,
+          "labels_in_original_domain": true,
+          "full_partition_equivalence_passed": true,
+          "physical_schemas": [
+            {
+              "name": "/Users/alexy/src/grust-benchmark-runs/sem-completion-20261003/F2-fourphase-main03/cit-Patents-int64-c3/result-call1/part-0.parquet",
+              "fields": [
+                {
+                  "name": "id",
+                  "arrow_type": "int64",
+                  "nullable": false
+                },
+                {
+                  "name": "component",
+                  "arrow_type": "int64",
+                  "nullable": false
+                }
+              ],
+              "footer_rows": 3774768,
+              "row_groups": 4,
+              "largest_row_group_uncompressed_bytes": 8733253,
+              "scanned_rows": 3774768
+            }
+          ]
+        },
+        {
+          "number": 2,
+          "rows": 3774768,
+          "unique_rows": 3774768,
+          "components": 3627,
+          "canonical_member_mismatches": 0,
+          "full_original_domain_passed": true,
+          "labels_in_original_domain": true,
+          "full_partition_equivalence_passed": true,
+          "physical_schemas": [
+            {
+              "name": "/Users/alexy/src/grust-benchmark-runs/sem-completion-20261003/F2-fourphase-main03/cit-Patents-int64-c3/result-call2/part-0.parquet",
+              "fields": [
+                {
+                  "name": "id",
+                  "arrow_type": "int64",
+                  "nullable": false
+                },
+                {
+                  "name": "component",
+                  "arrow_type": "int64",
+                  "nullable": false
+                }
+              ],
+              "footer_rows": 3774768,
+              "row_groups": 4,
+              "largest_row_group_uncompressed_bytes": 8732964,
+              "scanned_rows": 3774768
+            }
+          ]
+        },
+        {
+          "number": 3,
+          "rows": 3774768,
+          "unique_rows": 3774768,
+          "components": 3627,
+          "canonical_member_mismatches": 0,
+          "full_original_domain_passed": true,
+          "labels_in_original_domain": true,
+          "full_partition_equivalence_passed": true,
+          "physical_schemas": [
+            {
+              "name": "/Users/alexy/src/grust-benchmark-runs/sem-completion-20261003/F2-fourphase-main03/cit-Patents-int64-c3/result-call3/part-0.parquet",
+              "fields": [
+                {
+                  "name": "id",
+                  "arrow_type": "int64",
+                  "nullable": false
+                },
+                {
+                  "name": "component",
+                  "arrow_type": "int64",
+                  "nullable": false
+                }
+              ],
+              "footer_rows": 3774768,
+              "row_groups": 4,
+              "largest_row_group_uncompressed_bytes": 8733254,
+              "scanned_rows": 3774768
+            }
+          ]
+        }
+      ],
+      "memory_admission": {
+        "ordinal_array_budget_bytes": 483170304,
+        "bounded_batch_budget_bytes": 33554432,
+        "largest_actual_row_group_bytes": 8733254,
+        "modeled_managed_bytes": 525457990,
+        "declared_budget_bytes": 25769803776,
+        "scope": "Conservative O(V) array/workspace admission model, not measured RSS/OS peak or cap."
+      },
+      "work_seconds": 4.590948302997276,
+      "closure_seconds": 0.12721806403715163,
+      "own_identity_closure_passed": true,
+      "full_output_oracle_passed": true,
+      "errors": [],
+      "scope": "Full partition comparison to the sealed caller-supplied GF reference; reference engine provenance and waited producer closure are separate root proofs. No official Graphalytics topology/ground-truth or performance verdict."
+    }
+  },
+  "environment": {
+    "extension_source": "4b88c8fb4504ab1d2a896c9e49e4a09df4905bbb",
+    "native_runtime_source": "9f0aa7d2a50f1258544d37c05dd19b3ff3d915b3",
+    "python": "3.12.6 (main, Sep 13 2024, 17:29:18) [Clang 15.0.0 (clang-1500.3.9.4)]",
+    "pyspark_version": "4.0.1",
+    "binary": {
+      "path": "/Volumes/Apo/graph-tests/results/sem-review-20261001/native-optimized-build01/sail-target/release/sail",
+      "bytes": 150472188,
+      "sha256": "ee80ac3cf9d028639561f3cf32435985192719d629807fcf6a368324fa84946e"
+    },
+    "wheel": {
+      "path": "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-int64-build01/wheels/sail_nutmeg-0.1.0-cp312-cp312-macosx_10_12_x86_64.whl",
+      "bytes": 15680368,
+      "sha256": "347c41034d2eae6b00e84633d3adf20ddc69a41e4665743b29d8b1cd04b5673b"
+    },
+    "controlled_environment": {
+      "PYTHONHOME": "/Users/alexy/.asdf/installs/python/3.12.6",
+      "PYTHONPATH": "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-int64-build01/venv/lib/python3.12/site-packages",
+      "DYLD_LIBRARY_PATH": "/Users/alexy/.asdf/installs/python/3.12.6/lib",
+      "SAIL_EXPERIMENTAL_EXTENSIONS": "1",
+      "SAIL_MODE": "local",
+      "SAIL_EXECUTION__DEFAULT_PARALLELISM": "16",
+      "SAIL_EXECUTION__CHECKPOINT__PATH": "file:///Users/alexy/src/grust-benchmark-runs/sem-completion-20261003/F2-fourphase-main03/cit-Patents-int64-c3/checkpoints",
+      "SAIL_RUNTIME__MEMORY_POOL__TYPE": "greedy",
+      "SAIL_RUNTIME__MEMORY_POOL__GREEDY__MAX_SIZE": "32212254720",
+      "SAIL_NUTMEG_MEMORY_BYTES": "23622320128",
+      "NUTMEG_MEMORY_BYTES": "23622320128",
+      "NUTMEG_WORKERS": "16",
+      "SAIL_GRAPH_UTILS_ROOT": "file:///Users/alexy/src/grust-benchmark-runs/sem-completion-20261003/F2-fourphase-main03/cit-Patents-int64-c3/staging",
+      "TOKIO_WORKER_THREADS": "16",
+      "RAYON_NUM_THREADS": "16",
+      "TMPDIR": "/Users/alexy/src/grust-benchmark-runs/sem-completion-20261003/F2-fourphase-main03/cit-Patents-int64-c3/temporary",
+      "RUST_LOG": "warn"
+    },
+    "scope": "Separate bounded client-Arrow/checkpoint bridge on a shared native host; n1, no dispersion inference. Read is client Parquet-to-Arrow. CSR/graph includes bounded inline IPC encoding, eager unsorted checkpoint jobs, balanced remote-reference unions, asStaged and projectionStats. Algorithm includes all WCC calls plus full Arrow result transport. Write is client Parquet for all materialized results. Continuous total includes phase boundaries/bookkeeping; parent wall also includes imports/setup/status/cleanup. No old native-Parquet baseline, native CSR-only/kernel-only or Sem resource/work parity claim. All full outputs passed separate original-domain and partition oracles after engine closure; oracle time is outside every reported clock."
+  }
+}

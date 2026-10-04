@@ -1,0 +1,710 @@
+{
+  "recorded_utc": "2026-09-30T20:54:38.396493+00:00",
+  "outcome": "SOURCE_MECHANISM_CONFIRMED_CAUSE_UNDETERMINED",
+  "scope": "Static source audit only, not a failure diagnosis. No code edits, builds, remote workload or synthetic scheduling control.",
+  "sail_repository": "querygraph/sail",
+  "sail_commit": "2894a962076d3cc404dd72ec736ebeb9239901f6",
+  "sail_detached": true,
+  "sail_clean": true,
+  "cargo_lock_sha256": "46121478d56b0d911d4f295f428b2816bd4a976d22265994afc2a5378bb00546",
+  "locked_registry_packages": [
+    {
+      "name": "datafusion-physical-plan",
+      "version": "55.1.0",
+      "cargo_lock_checksum": "1265d58e5bce07d154e642a51ff43033b576a6ae40d50a29ac2b9f311004eb52",
+      "archive_path": "/Users/alexy/.cargo/registry/cache/index.crates.io-1949cf8c6b5b557f/datafusion-physical-plan-55.1.0.crate",
+      "archive_sha256": "1265d58e5bce07d154e642a51ff43033b576a6ae40d50a29ac2b9f311004eb52"
+    },
+    {
+      "name": "datafusion-physical-optimizer",
+      "version": "55.1.0",
+      "cargo_lock_checksum": "11fbe7e6665072957d44ed9587676e17a1f9ab3acfadfc287dac23750585f18a",
+      "archive_path": "/Users/alexy/.cargo/registry/cache/index.crates.io-1949cf8c6b5b557f/datafusion-physical-optimizer-55.1.0.crate",
+      "archive_sha256": "11fbe7e6665072957d44ed9587676e17a1f9ab3acfadfc287dac23750585f18a"
+    },
+    {
+      "name": "datafusion-datasource",
+      "version": "55.1.0",
+      "cargo_lock_checksum": "f69f45d2d700785be8df9d4b44410e1c8e4a856f10cc728b418a1066c0b594fb",
+      "archive_path": "/Users/alexy/.cargo/registry/cache/index.crates.io-1949cf8c6b5b557f/datafusion-datasource-55.1.0.crate",
+      "archive_sha256": "f69f45d2d700785be8df9d4b44410e1c8e4a856f10cc728b418a1066c0b594fb"
+    },
+    {
+      "name": "tokio",
+      "version": "1.53.1",
+      "cargo_lock_checksum": "202caea871b69668250d242070849eb495be178ed697a3e98aebce5bc81a0bed",
+      "archive_path": "/Users/alexy/.cargo/registry/cache/index.crates.io-1949cf8c6b5b557f/tokio-1.53.1.crate",
+      "archive_sha256": "202caea871b69668250d242070849eb495be178ed697a3e98aebce5bc81a0bed"
+    },
+    {
+      "name": "datafusion-functions-aggregate",
+      "version": "55.1.0",
+      "cargo_lock_checksum": "46c0c2b2e856883ecf6a4fa8b23e7c6041183af8a68d0583dc95d1d21e4eaee0",
+      "archive_path": "/Users/alexy/.cargo/registry/cache/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0.crate",
+      "archive_sha256": "46c0c2b2e856883ecf6a4fa8b23e7c6041183af8a68d0583dc95d1d21e4eaee0"
+    },
+    {
+      "name": "datafusion-common",
+      "version": "55.1.0",
+      "cargo_lock_checksum": "a6e06fe711ff815c8cf3143158547aea599702fd43f76f5866c70d5a5b3693a0",
+      "archive_path": "/Users/alexy/.cargo/registry/cache/index.crates.io-1949cf8c6b5b557f/datafusion-common-55.1.0.crate",
+      "archive_sha256": "a6e06fe711ff815c8cf3143158547aea599702fd43f76f5866c70d5a5b3693a0"
+    }
+  ],
+  "conclusion": {
+    "confirmed": "Worker task stream polling and gRPC share primary Tokio runtime; synchronous inner work can delay a poll.",
+    "refuted_simplifications": [
+      "Substantial preparation runs via spawn_blocking.",
+      "Object-store IO has a separate runtime.",
+      "Missing displayed CooperativeExec under Parquet does not imply missing cooperation.",
+      "An await does not guarantee yielding; budget is not a wall-clock bound."
+    ],
+    "unproven": "No measured scheduling-delay interval, process/connection attribution or stack establishes scheduler starvation as the cause of any stream loss. Runtime sharing is not a diagnosis.",
+    "host_pressure": "Parent reported host macOS paging as an independent confound; guest zero swap/steal and cgroup headroom do not exclude host-induced delays. This audit does not measure or attribute paging.",
+    "limits": [
+      "Final Linux cooperation rustc cfg not independently extracted.",
+      "Configured thread count is not measured process thread inventory.",
+      "No per-poll duration at production graph size.",
+      "One expensive poll does not establish complete multi-thread-runtime blackout."
+    ]
+  },
+  "control_review": {
+    "executed": "Only existing test binary --list discovery; no tests/workload executed for this investigation.",
+    "insufficient_existing_controls": [
+      "Preparation cancellation/error tests do not exercise long aggregate polls.",
+      "Tonic keepalive control intentionally drops PING ACKs; it tests observability, not CPU starvation.",
+      "Standalone aggregate allocation probes do not test Tokio scheduling."
+    ],
+    "proposal_not_run": "Bounded exact-dependency aggregate/join stream, same-runtime heartbeat and independent peer; cooperative and deliberately noncooperative controls with poll-duration/heartbeat measurements. Mechanism plausibility only; parent deferred synthetic controls in favor of existing host/connection evidence."
+  },
+  "receipt_generation": "First in-memory construction assumed .cargo-checksum.json existed and stopped before writing. Corrected receipt validates local registry bytes against cached .crate members and the archive SHA256 against Cargo.lock. No source or existing evidence was changed.",
+  "sources": [
+    {
+      "id": "runtime",
+      "source_kind": "Sail git source",
+      "path": "crates/sail-common/src/runtime.rs",
+      "local_path": "/private/tmp/sail-stream-performance-gate/crates/sail-common/src/runtime.rs",
+      "sha256": "c0afe90d7158ee7f8c2f613e7211acfe095a52b70bc68d58b8c96c7ad0c87c8e",
+      "line_count": 64,
+      "spans": [
+        {
+          "first_line": 7,
+          "last_line": 13,
+          "sha256": "ed1c5a698e05a9b93f9fac6370e7d6eb9d4d1d3b9adaa51b13bc356bb7a238e5"
+        },
+        {
+          "first_line": 25,
+          "last_line": 42,
+          "sha256": "a338a63582c7330d9c4e93d76c8324b2ca5e7de8eb3dbfd0f0d67e38899c03a3"
+        },
+        {
+          "first_line": 57,
+          "last_line": 62,
+          "sha256": "86d870fffedd6d346351ae701ec61fcee17b2f5901b3ced0435924d5b5c66498"
+        }
+      ],
+      "fact": "Creates primary and IO multi-thread Tokio runtimes; no dedicated compute executor or explicit worker_threads override here. FIXME is design intent, not failure evidence.",
+      "git_blob": "fa900812997219813c466e0bf61d976582ae2ed1"
+    },
+    {
+      "id": "worker_entrypoint",
+      "source_kind": "Sail git source",
+      "path": "crates/sail-cli/src/worker/entrypoint.rs",
+      "local_path": "/private/tmp/sail-stream-performance-gate/crates/sail-cli/src/worker/entrypoint.rs",
+      "sha256": "ba5e8cd451e575874c4fa73693588efe97e1207149751a4073d45988d32945a6",
+      "line_count": 33,
+      "spans": [
+        {
+          "first_line": 11,
+          "last_line": 28,
+          "sha256": "f02777d100f5c1f04b1e08ea06b059c5a640a30ffbb00c4aa12bd49d325a84d4"
+        }
+      ],
+      "fact": "Worker entrypoint runs inside primary.block_on.",
+      "git_blob": "a3ae103ce7bc1a620349182bf6dea0d86bc6def5"
+    },
+    {
+      "id": "worker_actor_start",
+      "source_kind": "Sail git source",
+      "path": "crates/sail-execution/src/worker/entrypoint.rs",
+      "local_path": "/private/tmp/sail-stream-performance-gate/crates/sail-execution/src/worker/entrypoint.rs",
+      "sha256": "14df6649489bee6cad1bfc78055fb4a06220a54808e49b3c019c371a4ceffeb5",
+      "line_count": 46,
+      "spans": [
+        {
+          "first_line": 17,
+          "last_line": 44,
+          "sha256": "41490676a9b96c6286e1f7df1ddcf5444c456f11b45cf48ce038c0ee444e53b9"
+        }
+      ],
+      "fact": "Creates ActorSystem and spawns WorkerActor.",
+      "git_blob": "b328935eadda0991d6416fa1f1e9f3f0af16b5b5"
+    },
+    {
+      "id": "actor_spawns",
+      "source_kind": "Sail git source",
+      "path": "crates/sail-common/src/actor.rs",
+      "local_path": "/private/tmp/sail-stream-performance-gate/crates/sail-common/src/actor.rs",
+      "sha256": "78ffc3529bb5181569b554ad61ac7d5605ae5a91dfd6cfc2baeb2a92623b0905",
+      "line_count": 652,
+      "spans": [
+        {
+          "first_line": 133,
+          "last_line": 138,
+          "sha256": "13dc679a0907829b9f0988722035e7b121a7a644a00ec7dfb85209d74d50a1fc"
+        },
+        {
+          "first_line": 250,
+          "last_line": 270,
+          "sha256": "50adb69fd002b0caacbb08c550caa94bec0b549551792f415d11f52973dec920"
+        }
+      ],
+      "fact": "ActorContext and ActorSystem use current-runtime JoinSet.spawn.",
+      "git_blob": "f5506b770b24f40738e2e5445c76e34a5b71d8c0"
+    },
+    {
+      "id": "worker_children",
+      "source_kind": "Sail git source",
+      "path": "crates/sail-execution/src/worker/actor/core.rs",
+      "local_path": "/private/tmp/sail-stream-performance-gate/crates/sail-execution/src/worker/actor/core.rs",
+      "sha256": "d894837bc31e743a70baef2bc43f3617f0167d49c232643296b32a4b045b9e3c",
+      "line_count": 156,
+      "spans": [
+        {
+          "first_line": 92,
+          "last_line": 130,
+          "sha256": "1b820329590f63afe5bbae4d6017363406938603de41e74dca99478a16c3187c"
+        }
+      ],
+      "fact": "Worker starts child TaskRunnerActor and RPC ServerMonitor.",
+      "git_blob": "db7cfae5a921b307b4b19eec61e4cb34dc749b2c"
+    },
+    {
+      "id": "server_spawn",
+      "source_kind": "Sail git source",
+      "path": "crates/sail-execution/src/rpc.rs",
+      "local_path": "/private/tmp/sail-stream-performance-gate/crates/sail-execution/src/rpc.rs",
+      "sha256": "451bf6402ed180900299567a4c363f556485ac8659da1625a3244b8062ca4947",
+      "line_count": 173,
+      "spans": [
+        {
+          "first_line": 41,
+          "last_line": 48,
+          "sha256": "a371248e7146c25321550af3c62260617f973053d6f271fce9592abc10d1a5a8"
+        }
+      ],
+      "fact": "ServerMonitor starts its future via current-runtime tokio::spawn.",
+      "git_blob": "a4469dc8db9f106194a534125ae0c91c1d8b0918"
+    },
+    {
+      "id": "worker_rpc",
+      "source_kind": "Sail git source",
+      "path": "crates/sail-execution/src/worker/actor/rpc.rs",
+      "local_path": "/private/tmp/sail-stream-performance-gate/crates/sail-execution/src/worker/actor/rpc.rs",
+      "sha256": "e677cbfff3203360ebf665446718bab287cb905d9520583521428987d4c66169",
+      "line_count": 91,
+      "spans": [
+        {
+          "first_line": 44,
+          "last_line": 89,
+          "sha256": "c3bf55ff05408eef4126f0bcb2f5b2f15fa3a47fa3c443f7fe7d9b936c16bcfb"
+        }
+      ],
+      "fact": "Worker service and Flight service share ServerBuilder; no alternate executor supplied.",
+      "git_blob": "4ed7e1c15874a985e46f42331ad3492455fcf978"
+    },
+    {
+      "id": "server_builder",
+      "source_kind": "Sail git source",
+      "path": "crates/sail-common/src/server/builder.rs",
+      "local_path": "/private/tmp/sail-stream-performance-gate/crates/sail-common/src/server/builder.rs",
+      "sha256": "9b5589a5fefec2286349e22bd180d477f2edc40498d2989359512fb44bfab37c",
+      "line_count": 144,
+      "spans": [
+        {
+          "first_line": 25,
+          "last_line": 49,
+          "sha256": "a85fc7bf850deb4132b4acc635680ae85854221dcd2267f57d3483c2e50a18fc"
+        },
+        {
+          "first_line": 81,
+          "last_line": 88,
+          "sha256": "d33a5224b633163d58ba4391f9d45deee150ab61193c7d3fac28f9b547ec7318"
+        },
+        {
+          "first_line": 134,
+          "last_line": 140,
+          "sha256": "4fa058503c8f2029142051abf1f0c4a2b12be533b522ac13c3ad19d092dcdc0a"
+        }
+      ],
+      "fact": "Tonic HTTP2 keepalive configuration and serving have no alternate executor. Saturation comment is not an observation.",
+      "git_blob": "4c1076a8964d486361bf9990cc99c092d5f5a399"
+    },
+    {
+      "id": "task_admission",
+      "source_kind": "Sail git source",
+      "path": "crates/sail-execution/src/task_runner/actor/handler.rs",
+      "local_path": "/private/tmp/sail-stream-performance-gate/crates/sail-execution/src/task_runner/actor/handler.rs",
+      "sha256": "5654729d444b2ca637de0d1e58a92480881d492a1c02a81fafad0489814f55de",
+      "line_count": 466,
+      "spans": [
+        {
+          "first_line": 61,
+          "last_line": 87,
+          "sha256": "c6ab10382b6c001c130a027b6d6f35f0ed7c31e62eef3f0c8a8c4a5a3a4f4064"
+        }
+      ],
+      "fact": "Initial protobuf decoding remains synchronous; admitted tasks construct preparation streams and spawn monitors.",
+      "git_blob": "3eabbc533d87894c9fa790a7c4dcf2adf8d5cbf1"
+    },
+    {
+      "id": "task_monitor",
+      "source_kind": "Sail git source",
+      "path": "crates/sail-execution/src/task_runner/monitor.rs",
+      "local_path": "/private/tmp/sail-stream-performance-gate/crates/sail-execution/src/task_runner/monitor.rs",
+      "sha256": "e9bd78a29671cf956eaff4adcdd4f8918d3750cd02714ee15927fb35823b822e",
+      "line_count": 239,
+      "spans": [
+        {
+          "first_line": 41,
+          "last_line": 53,
+          "sha256": "fdd92789f4e037e5df7a93945fec3196480fb45364b340bfc213eae3ee5d2a09"
+        },
+        {
+          "first_line": 56,
+          "last_line": 74,
+          "sha256": "a9f84b38ab8a4097a69eb225fe9c342cc52dfebde091815577bb2cce822bffec"
+        },
+        {
+          "first_line": 146,
+          "last_line": 163,
+          "sha256": "1fdd3378b84dfb8285eb44986173dd3631fd0f646a1111d04be0ed0db269c4a2"
+        }
+      ],
+      "fact": "Current-runtime spawn polls streams; next().await may be ready. select cancellation cannot preempt synchronous poll work.",
+      "git_blob": "a87cef874d43beb52c2e460dd751eae3bbd880b2"
+    },
+    {
+      "id": "preparation",
+      "source_kind": "Sail git source",
+      "path": "crates/sail-execution/src/task_runner/preparation.rs",
+      "local_path": "/private/tmp/sail-stream-performance-gate/crates/sail-execution/src/task_runner/preparation.rs",
+      "sha256": "24237bfe3a6012953fcc29964d840ef0e65f08206d197057c5f83babdc144e30",
+      "line_count": 326,
+      "spans": [
+        {
+          "first_line": 86,
+          "last_line": 116,
+          "sha256": "1a4c2adf61c59679a7484eab69b1525eeb76940e0416a40abf64d89d3df94cff"
+        },
+        {
+          "first_line": 189,
+          "last_line": 226,
+          "sha256": "f0912655cce5f71d6101e133ceadf492194db5ee52a1b14f7debfd7bd7074a6d"
+        }
+      ],
+      "fact": "Physical-plan conversion, scan/shuffle rewriting and execute construction run in spawn_blocking; the resulting stream is flattened for later polling.",
+      "git_blob": "2dc07c8b1c33ff8cc0104d9502640011c39e8100"
+    },
+    {
+      "id": "object_store_registry",
+      "source_kind": "Sail git source",
+      "path": "crates/sail-object-store/src/registry.rs",
+      "local_path": "/private/tmp/sail-stream-performance-gate/crates/sail-object-store/src/registry.rs",
+      "sha256": "94303b0c72f09f4d87b6e33032ac14c9cb42c8dd874fbdd9382f06552d0bd822",
+      "line_count": 313,
+      "spans": [
+        {
+          "first_line": 98,
+          "last_line": 109,
+          "sha256": "4410969a789b1831efc59c1f96ef579a2b4af47f60def1d64c0a8a9c821a6d0b"
+        }
+      ],
+      "fact": "Wraps object stores with runtime.io handle.",
+      "git_blob": "1fec6a97495c658db60d1e7b202e73d47e763cf1"
+    },
+    {
+      "id": "object_store_runtime",
+      "source_kind": "Sail git source",
+      "path": "crates/sail-object-store/src/layers/runtime.rs",
+      "local_path": "/private/tmp/sail-stream-performance-gate/crates/sail-object-store/src/layers/runtime.rs",
+      "sha256": "ac3cdff87f0f6cabf2e8c09f4fa49f87fcadca2db3f3259616d4a46ea2a0d77f",
+      "line_count": 462,
+      "spans": [
+        {
+          "first_line": 53,
+          "last_line": 70,
+          "sha256": "7484756cfc4bae083ef8b56153f401750351379386a8482a2b79d8c66be0446d"
+        },
+        {
+          "first_line": 85,
+          "last_line": 118,
+          "sha256": "bb84470bb884feeb630a6234ada9f853bd77140fb2ba3cd6a61dd6271951af5a"
+        },
+        {
+          "first_line": 235,
+          "last_line": 240,
+          "sha256": "80639219735ce4bf0bc4db95effc1aff9fb098fdc4d3013d6b8d9e7ec64b0cb5"
+        }
+      ],
+      "fact": "Object-store futures and streamed payloads use supplied IO runtime. This does not isolate all compute or gRPC.",
+      "git_blob": "1efefb1f2917503231f3609103922a7eb14154e3"
+    },
+    {
+      "id": "sail_coop_optimizer",
+      "source_kind": "Sail git source",
+      "path": "crates/sail-physical-optimizer/src/lib.rs",
+      "local_path": "/private/tmp/sail-stream-performance-gate/crates/sail-physical-optimizer/src/lib.rs",
+      "sha256": "b19233de523448860be80fc87355f6814728fd4f8a59d20e4a44cc32ad9bcfed",
+      "line_count": 117,
+      "spans": [
+        {
+          "first_line": 65,
+          "last_line": 78,
+          "sha256": "8149884267ac261a1ad4b1daadbbe431b531cd7678325767a2e99972dbe069f9"
+        }
+      ],
+      "fact": "Sail optimizer includes EnsureCooperative.",
+      "git_blob": "e6456eb5629fa2da527b7a153b9484a608f2c5d7"
+    },
+    {
+      "id": "session_optimizer",
+      "source_kind": "Sail git source",
+      "path": "crates/sail-session/src/session_factory/server.rs",
+      "local_path": "/private/tmp/sail-stream-performance-gate/crates/sail-session/src/session_factory/server.rs",
+      "sha256": "fa8fb124c11b2a5915feb59cd35aa6940c89a454890be77397e83c083a3ec78c",
+      "line_count": 255,
+      "spans": [
+        {
+          "first_line": 147,
+          "last_line": 158,
+          "sha256": "f0b308f244c42dcb10da227cb9663f6ba68931d32d3506ccf0fd8475f5b14c23"
+        }
+      ],
+      "fact": "Server session uses Sail physical optimizers.",
+      "git_blob": "c187fd8f023d518937ccde24067ded62020907b7"
+    },
+    {
+      "id": "shuffle_read",
+      "source_kind": "Sail git source",
+      "path": "crates/sail-execution/src/stream/local/memory.rs",
+      "local_path": "/private/tmp/sail-stream-performance-gate/crates/sail-execution/src/stream/local/memory.rs",
+      "sha256": "2cef4b7f3e38bc963f406def36a981c9151d7729ac50802e290afe4adc5465a1",
+      "line_count": 164,
+      "spans": [
+        {
+          "first_line": 35,
+          "last_line": 58,
+          "sha256": "e1179eb59b9b7645f8534d954b75d9f5e6c3ab8806c296f6b2ffa506607bea5b"
+        },
+        {
+          "first_line": 74,
+          "last_line": 135,
+          "sha256": "5a1219ec87b8e0d64b8c5b2204a0e84189b938b1e927095d35e4a63b63fcb791"
+        },
+        {
+          "first_line": 146,
+          "last_line": 150,
+          "sha256": "b11e88d81f6a9e84c6e25f64267b9ac0b5f2649d1e2563195f8faf75210d9cd4"
+        }
+      ],
+      "fact": "Receive uses Tokio mpsc ReceiverStream. Replica write uses try_send and overflow buffers without internal await; closing buffered senders awaits send.",
+      "git_blob": "759c4b49db94eb9a9cb7fdfb86a61ee02851bf76"
+    },
+    {
+      "id": "shuffle_write",
+      "source_kind": "Sail git source",
+      "path": "crates/sail-execution/src/plan/shuffle_write.rs",
+      "local_path": "/private/tmp/sail-stream-performance-gate/crates/sail-execution/src/plan/shuffle_write.rs",
+      "sha256": "109afecda7d26c60f5f5dd28b22b5fb548bdeaca4631db8fcebbcf44d873364a",
+      "line_count": 302,
+      "spans": [
+        {
+          "first_line": 210,
+          "last_line": 217,
+          "sha256": "e6c263353d13d3e83a9db18a3692de86b42a885ac8dea410b325d9e0a4007ce4"
+        },
+        {
+          "first_line": 254,
+          "last_line": 286,
+          "sha256": "2f78ab3f59b2d33fbd3b3cdc0ae5d3f4904f72a23293f913f3a8386696b4c48a"
+        }
+      ],
+      "fact": "Awaits child batches, partitions synchronously and awaits writer; awaits are not unconditional yields.",
+      "git_blob": "048cdb649f25b894f42b83c220048249d445e77c"
+    },
+    {
+      "id": "benchmark_threads",
+      "source_kind": "Sail git source",
+      "path": "examples/extensions/benchmarks/runtime.py",
+      "local_path": "/private/tmp/sail-stream-performance-gate/examples/extensions/benchmarks/runtime.py",
+      "sha256": "27a76460792bac9668e18c8e32961f34a936060dc15cd3fe06f115124757b6e4",
+      "line_count": 211,
+      "spans": [
+        {
+          "first_line": 144,
+          "last_line": 180,
+          "sha256": "807b9492223128adf31530943a9d512ffb7c6175cfdb0daa19ff9f3ba914cacf"
+        }
+      ],
+      "fact": "Harness sets TOKIO_WORKER_THREADS and experimental keepalive timeout; not a measured thread count.",
+      "git_blob": "11c0d0f57245b7d95bbd914c76f02d141ad33d36"
+    },
+    {
+      "id": "worker_inheritance",
+      "source_kind": "Sail git source",
+      "path": "crates/sail-execution/src/worker_manager/process.rs",
+      "local_path": "/private/tmp/sail-stream-performance-gate/crates/sail-execution/src/worker_manager/process.rs",
+      "sha256": "6c2fb7404811fd87893bbaaa2f061c20675ba844c252a8e9f3b22efa274225df",
+      "line_count": 104,
+      "spans": [
+        {
+          "first_line": 30,
+          "last_line": 77,
+          "sha256": "035bc3bbf585f209fe84ce5cceea95dc05509744b59b3ce172e2bfe83adf491f"
+        }
+      ],
+      "fact": "Process-worker launch changes selected environment keys without clearing inherited environment.",
+      "git_blob": "4bf0035880b1652fd69ebf16d3970ac6698bc42a"
+    },
+    {
+      "id": "df_coop",
+      "source_kind": "locked Cargo registry source",
+      "path": "datafusion-physical-plan-55.1.0/src/coop.rs",
+      "local_path": "/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-physical-plan-55.1.0/src/coop.rs",
+      "sha256": "3bd554818d4915ce2bfb34a39850e28c020f1fb5624775dacb75ae7b112cf5e3",
+      "line_count": 517,
+      "spans": [
+        {
+          "first_line": 144,
+          "last_line": 163,
+          "sha256": "24d0536900bccd26066fc3cb514398fe0548afd41222f52fd451b188599782bf"
+        }
+      ],
+      "fact": "Default cfg uses Tokio poll_proceed and commits ready progress. Alternative cfg branches exist; final Linux rustc cfg not independently extracted here.",
+      "locked_archive_member_bytes_verified": true
+    },
+    {
+      "id": "df_ensure_coop",
+      "source_kind": "locked Cargo registry source",
+      "path": "datafusion-physical-optimizer-55.1.0/src/ensure_coop.rs",
+      "local_path": "/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-physical-optimizer-55.1.0/src/ensure_coop.rs",
+      "sha256": "c1c6e92c973fa8ed78a1708db233272ab3e4321bfb81868b61ecbb8114b7030c",
+      "line_count": 427,
+      "spans": [
+        {
+          "first_line": 74,
+          "last_line": 120,
+          "sha256": "b29705b3b369a29c05daa622d60efc493c91bf069a6282c5869f20dbaa029204"
+        }
+      ],
+      "fact": "Optimizer inserts cooperation based on scheduling/evaluation properties.",
+      "locked_archive_member_bytes_verified": true
+    },
+    {
+      "id": "df_parquet_coop",
+      "source_kind": "locked Cargo registry source",
+      "path": "datafusion-datasource-55.1.0/src/file_scan_config/mod.rs",
+      "local_path": "/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-datasource-55.1.0/src/file_scan_config/mod.rs",
+      "sha256": "c01c32e2b7649ab22b0814a12b8dc0bdf51ed490fd671e1a27dc68fee1220503",
+      "line_count": 3865,
+      "spans": [
+        {
+          "first_line": 723,
+          "last_line": 729,
+          "sha256": "561e12f3e88a469e78f40735a6477667b77f2eff0e7594bbab24d41cc40004b6"
+        },
+        {
+          "first_line": 918,
+          "last_line": 919,
+          "sha256": "8439412a96f8c39614b0cb3d15acbe25fe1d4626dccea0c44a07b1426de9909a"
+        }
+      ],
+      "fact": "File scans internally wrap cooperative() and advertise Cooperative. Missing displayed CooperativeExec under Parquet does not establish missing cooperation.",
+      "locked_archive_member_bytes_verified": true
+    },
+    {
+      "id": "tokio_budget",
+      "source_kind": "locked Cargo registry source",
+      "path": "tokio-1.53.1/src/task/coop/mod.rs",
+      "local_path": "/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tokio-1.53.1/src/task/coop/mod.rs",
+      "sha256": "e6efc19435559c8621d30aab8e37e0ad652857f8eefc170f73bf8dac653729de",
+      "line_count": 573,
+      "spans": [
+        {
+          "first_line": 8,
+          "last_line": 14,
+          "sha256": "ab32ff376f874d803acebad36d7e863068eed6ae01a10bfa71cc0d0c1426d689"
+        },
+        {
+          "first_line": 105,
+          "last_line": 117,
+          "sha256": "a4ef26cb79e2e438c304c591dc027b804cc5c56889fd1f63941d9fb75d56c446"
+        },
+        {
+          "first_line": 291,
+          "last_line": 311,
+          "sha256": "6d4627f2e83ecd267658e0e50c8c130a8186622e7d76ab46325fc05cc6154c5d"
+        }
+      ],
+      "fact": "Initial budget is 128 operations, not milliseconds. Synchronous code inside a poll is not forcibly preempted.",
+      "locked_archive_member_bytes_verified": true
+    },
+    {
+      "id": "tokio_mpsc",
+      "source_kind": "locked Cargo registry source",
+      "path": "tokio-1.53.1/src/sync/mpsc/chan.rs",
+      "local_path": "/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tokio-1.53.1/src/sync/mpsc/chan.rs",
+      "sha256": "3b6cc36df5ee39061bab6bc696ec01202988289c1f405d8a1390663e6dd02fcf",
+      "line_count": 631,
+      "spans": [
+        {
+          "first_line": 289,
+          "last_line": 305,
+          "sha256": "8bbc5debe9961b39f17fa0bdff4a8b9fbfa458835e9d7593d35133aafb37d596"
+        }
+      ],
+      "fact": "Channel receive participates in budget even for ready messages.",
+      "locked_archive_member_bytes_verified": true
+    },
+    {
+      "id": "df_min_struct",
+      "source_kind": "locked Cargo registry source",
+      "path": "datafusion-functions-aggregate-55.1.0/src/min_max/min_max_struct.rs",
+      "local_path": "/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/min_max/min_max_struct.rs",
+      "sha256": "af016c06b87e81c554f059abc8b20f1f3a279625a8b3941081bea99137dc8e17",
+      "line_count": 539,
+      "spans": [
+        {
+          "first_line": 213,
+          "last_line": 263,
+          "sha256": "93e2c15ae39b07ff51c4ba438bb377706d0fc076882b1096c01bda180aadfdde"
+        }
+      ],
+      "fact": "Original MIN(struct) update allocates locations for total_num_groups and scans resident groups after input rows, synchronously. Failure-time duration unmeasured.",
+      "locked_archive_member_bytes_verified": true
+    },
+    {
+      "id": "df_hash_aggregate",
+      "source_kind": "locked Cargo registry source",
+      "path": "datafusion-physical-plan-55.1.0/src/aggregates/hash_stream.rs",
+      "local_path": "/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-physical-plan-55.1.0/src/aggregates/hash_stream.rs",
+      "sha256": "f3de61e29312169fc2a44f23e63a4a227c329654d2a8c029824a7153cc3ff3f2",
+      "line_count": 1838,
+      "spans": [
+        {
+          "first_line": 565,
+          "last_line": 578,
+          "sha256": "d741c67ee59bb6fd6358150e6d5a51df97b8ca66f57860df773d5e6e09e589b7"
+        },
+        {
+          "first_line": 944,
+          "last_line": 983,
+          "sha256": "86523ed69a70a4ec53d0437ed63f392a1a6a959dd315363c22d9197cb880cd4a"
+        }
+      ],
+      "fact": "Modern hash aggregate consumes input and performs aggregate_batch synchronously within poll state machine.",
+      "locked_archive_member_bytes_verified": true
+    },
+    {
+      "id": "df_aggregate_selection",
+      "source_kind": "locked Cargo registry source",
+      "path": "datafusion-physical-plan-55.1.0/src/aggregates/mod.rs",
+      "local_path": "/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-physical-plan-55.1.0/src/aggregates/mod.rs",
+      "sha256": "f185a2534b227ba461b60d6368ca3546e091bd30dd9147d69250cd84c2925633",
+      "line_count": 7982,
+      "spans": [
+        {
+          "first_line": 1183,
+          "last_line": 1237,
+          "sha256": "4928ed5ac4468042069b446df1785a0f316a7b49733aaf6f0c71b78cc579a7f6"
+        }
+      ],
+      "fact": "Configuration and query shape select modern stream paths, otherwise grouped fallback.",
+      "locked_archive_member_bytes_verified": true
+    },
+    {
+      "id": "df_migration_default",
+      "source_kind": "locked Cargo registry source",
+      "path": "datafusion-common-55.1.0/src/config.rs",
+      "local_path": "/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-common-55.1.0/src/config.rs",
+      "sha256": "4344d19942ce7e4f1054d631eca4cfd6648cd8b2e03fc3e59076fbebac15158f",
+      "line_count": 4623,
+      "spans": [
+        {
+          "first_line": 881,
+          "last_line": 890,
+          "sha256": "77a49c4a74f4764d46cab778cf3f502fca0dbeba81b1773d2595d6df7413cef8"
+        }
+      ],
+      "fact": "enable_migration_aggregate defaults true; does not alone establish a specific observed internal stream.",
+      "locked_archive_member_bytes_verified": true
+    },
+    {
+      "id": "df_legacy_aggregate",
+      "source_kind": "locked Cargo registry source",
+      "path": "datafusion-physical-plan-55.1.0/src/aggregates/grouped_hash_stream.rs",
+      "local_path": "/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-physical-plan-55.1.0/src/aggregates/grouped_hash_stream.rs",
+      "sha256": "705c13c94165897565eb7f81460de8082dd1fbd2a9f8d87a18316619366e486b",
+      "line_count": 1603,
+      "spans": [
+        {
+          "first_line": 635,
+          "last_line": 661,
+          "sha256": "bc0dca8b3da327abd8203816059195596e0f8f2e561bba9e24bdb7590dc44335"
+        },
+        {
+          "first_line": 839,
+          "last_line": 850,
+          "sha256": "efde7316e192ea41aa9fa9bf3cd6c0adf47d2828d391937706f41f6e456715cc"
+        },
+        {
+          "first_line": 905,
+          "last_line": 921,
+          "sha256": "063db9c97b58c2ae2fd5643a7e5999a218e9d7c64e3e0698f682e4a8e09c80e3"
+        }
+      ],
+      "fact": "Legacy grouped hash stream also performs synchronous grouped aggregate work during poll.",
+      "locked_archive_member_bytes_verified": true
+    },
+    {
+      "id": "df_hash_join",
+      "source_kind": "locked Cargo registry source",
+      "path": "datafusion-physical-plan-55.1.0/src/joins/hash_join/exec.rs",
+      "local_path": "/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-physical-plan-55.1.0/src/joins/hash_join/exec.rs",
+      "sha256": "27b1f0d3b29fc3b90d44cc1f730939baf94368ef07c7de6761a24990b900e35c",
+      "line_count": 7281,
+      "spans": [
+        {
+          "first_line": 2256,
+          "last_line": 2279,
+          "sha256": "15fe8f951bae442208876a1d0514a4a7161b0628e06d2bb1f518a16f6147f1c7"
+        },
+        {
+          "first_line": 2344,
+          "last_line": 2367,
+          "sha256": "9d5e8e9f4e7a88baca92c939f420d208039f1feb4fe1ad5b2958be4fa104d5a1"
+        }
+      ],
+      "fact": "After collecting input with awaits, hash-map build loops across collected batches, concatenates and evaluates expressions without an intervening await here.",
+      "locked_archive_member_bytes_verified": true
+    },
+    {
+      "id": "df_hash_join_poll",
+      "source_kind": "locked Cargo registry source",
+      "path": "datafusion-physical-plan-55.1.0/src/joins/hash_join/stream.rs",
+      "local_path": "/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-physical-plan-55.1.0/src/joins/hash_join/stream.rs",
+      "sha256": "df118bb8760231711eb190a2a946945f335fd942a042eb90f682437009a23e2f",
+      "line_count": 1144,
+      "spans": [
+        {
+          "first_line": 591,
+          "last_line": 632,
+          "sha256": "4e87ce334b732a148c8c119b440d83ee8a3e7450eff378882b1c0bdad18fd21d"
+        }
+      ],
+      "fact": "Poll drives build/probe transitions; synchronous sections are not preempted by outer cooperation.",
+      "locked_archive_member_bytes_verified": true
+    }
+  ]
+}

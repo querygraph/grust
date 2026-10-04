@@ -1,0 +1,6 @@
+local: GROUP BY k over the table, groups: 1000
+local: GROUP BY k over the same files read by path, groups: 1000
+local: plan: RepartitionExec: partitioning=Hash([#0@0], 10), input_partitions=10, preserve_order=true, sort_exprs=#0@0 ASC NULLS LAST
+local-cluster: GROUP BY k over the table, groups: ERROR: internal error: repartition is order-preserving and would result in incorrect results in distributed execution
+local-cluster: GROUP BY k over the same files read by path, groups: 1000
+local-cluster: plan: RepartitionExec: partitioning=Hash([#0@0], 10), input_partitions=10, preserve_order=true, sort_exprs=#0@0 ASC NULLS LAST

@@ -1,0 +1,218 @@
+diff --git a/examples/extensions/argentea/src/pagerank/emission.rs b/examples/extensions/argentea/src/pagerank/emission.rs
+index cf2ba0bdc..e8fea3c8d 100644
+--- a/examples/extensions/argentea/src/pagerank/emission.rs
++++ b/examples/extensions/argentea/src/pagerank/emission.rs
+@@ -8,10 +8,11 @@ pub struct EmissionCursor {
+     ranks: Arc<Ranks>,
+     round: Arc<Round>,
+     producer: usize,
++    // Sequence storage must drop before its admission and last host lease.
++    sequences: Vec<u64>,
+     ownership: Arc<EmissionOwnership>,
+     resources: Resources,
+     meter: WorkMeter,
+-    sequences: Vec<u64>,
+     vertex: usize,
+     edge: usize,
+     entered: bool,
+diff --git a/examples/extensions/argentea/tests/pagerank_cursor_lease.rs b/examples/extensions/argentea/tests/pagerank_cursor_lease.rs
+new file mode 100644
+index 000000000..a8acf172f
+--- /dev/null
++++ b/examples/extensions/argentea/tests/pagerank_cursor_lease.rs
+@@ -0,0 +1,195 @@
++//! Actual sequence storage must drop before the last prepaid host lease.
++use grust_procedures::{ExecutionContext, ExecutionLimits};
++use sail_argentea_core::{Operation, PageRankPartition, Resources, Round};
++use sail_native_resource_ffi::MemoryLease;
++use std::alloc::{GlobalAlloc, Layout, System};
++use std::cell::Cell;
++use std::sync::Arc;
++use std::sync::atomic::{AtomicUsize, Ordering};
++
++const PARTITIONS: usize = 257;
++const SEQUENCE_BYTES: usize = PARTITIONS * size_of::<u64>();
++const LIMIT: usize = 16 << 20;
++
++#[derive(Clone, Copy, Default)]
++struct Tracking {
++    pointer: usize,
++    matching_allocations: usize,
++    live: bool,
++    deallocations: usize,
++}
++thread_local! { static TRACKING: Cell<Option<Tracking>> = const { Cell::new(None) }; }
++struct Tracked;
++#[global_allocator]
++static ALLOCATOR: Tracked = Tracked;
++
++fn event(remove: usize, add: usize, bytes: usize) {
++    let _ = TRACKING.try_with(|state| {
++        if let Some(mut tracking) = state.get() {
++            if remove != 0 && tracking.live && remove == tracking.pointer {
++                tracking.live = false;
++                tracking.deallocations += 1;
++            }
++            if add != 0 && bytes == SEQUENCE_BYTES {
++                tracking.matching_allocations += 1;
++                if tracking.pointer == 0 {
++                    tracking.pointer = add;
++                    tracking.live = true;
++                }
++            }
++            state.set(Some(tracking));
++        }
++    });
++}
++// SAFETY: All requests delegate to System with the original pointer/layout.
++// The thread-local bookkeeping uses allocation-free Cells and scalar fields.
++unsafe impl GlobalAlloc for Tracked {
++    unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
++        let p = unsafe { System.alloc(layout) };
++        event(0, p as usize, layout.size());
++        p
++    }
++    unsafe fn alloc_zeroed(&self, layout: Layout) -> *mut u8 {
++        let p = unsafe { System.alloc_zeroed(layout) };
++        event(0, p as usize, layout.size());
++        p
++    }
++    unsafe fn dealloc(&self, p: *mut u8, layout: Layout) {
++        event(p as usize, 0, 0);
++        unsafe { System.dealloc(p, layout) };
++    }
++    unsafe fn realloc(&self, p: *mut u8, layout: Layout, bytes: usize) -> *mut u8 {
++        let next = unsafe { System.realloc(p, layout, bytes) };
++        if !next.is_null() {
++            event(p as usize, next as usize, bytes);
++        }
++        next
++    }
++}
++
++#[derive(Default)]
++struct Observation {
++    callbacks: AtomicUsize,
++    sequence_live_at_release: AtomicUsize,
++    admitted_bytes_at_release: AtomicUsize,
++}
++struct LeaseProbe(ExecutionContext, Arc<Observation>);
++impl Drop for LeaseProbe {
++    fn drop(&mut self) {
++        let live = TRACKING.with(|state| usize::from(state.get().unwrap().live));
++        self.1
++            .sequence_live_at_release
++            .store(live, Ordering::SeqCst);
++        self.1
++            .admitted_bytes_at_release
++            .store(self.0.usage().unwrap().live_bytes, Ordering::SeqCst);
++        self.1.callbacks.fetch_add(1, Ordering::SeqCst);
++    }
++}
++
++fn fixture() -> (PageRankPartition, Round, ExecutionContext, Arc<Observation>) {
++    let execution = ExecutionContext::new(ExecutionLimits {
++        memory_bytes: LIMIT,
++        work_units: usize::MAX,
++        batch_rows: 16,
++        deadline: None,
++    })
++    .unwrap();
++    let observed = Arc::new(Observation::default());
++    let lease = MemoryLease::new(
++        Arc::new(LeaseProbe(execution.clone(), observed.clone())),
++        LIMIT as u64,
++    );
++    let resources = Resources::new(execution.clone(), lease).unwrap();
++    let operation = Operation {
++        package: "cursor-lease-test".into(),
++        session: "session".into(),
++        operation: "operation".into(),
++        snapshot: "snapshot".into(),
++        generation: 1,
++        partitions: PARTITIONS,
++        vertices: 3,
++    };
++    // All three IDs belong to owner 0. P*8 differs from rank/CSR widths.
++    let mut part = PageRankPartition::build(
++        operation.clone(),
++        0,
++        &[0, 257, 514],
++        &[(0, 257), (257, 514)],
++        resources,
++    )
++    .unwrap();
++    let round = Round {
++        operation,
++        number: 0,
++    };
++    part.begin(&round).unwrap();
++    (part, round, execution, observed)
++}
++
++fn check_release(mode: &str) {
++    let (mut part, round, execution, observed) = fixture();
++    // Begin after partition/inbox construction, immediately before the sole
++    // sequence allocation. Pointer matching ignores preexisting same-size data.
++    TRACKING.with(|state| {
++        assert!(state.get().is_none());
++        state.set(Some(Tracking::default()));
++    });
++    let mut cursor = part.start_emission(&round).unwrap();
++    let first = TRACKING.with(|state| state.get().unwrap());
++    assert_eq!(first.matching_allocations, 1);
++    assert!(first.live && first.pointer != 0);
++    drop(part);
++    assert_eq!(observed.callbacks.load(Ordering::SeqCst), 0);
++    match mode {
++        "cursor_last_owner" => drop(cursor),
++        "contribution_alias" => {
++            let contribution = cursor.next_update().unwrap().unwrap();
++            drop(cursor);
++            assert_eq!(observed.callbacks.load(Ordering::SeqCst), 0);
++            assert!(!TRACKING.with(|state| state.get().unwrap().live));
++            drop(contribution);
++        }
++        "completed_emission" => {
++            while cursor.next_update().unwrap().is_some() {}
++            let emission = cursor.finish().unwrap();
++            assert_eq!(observed.callbacks.load(Ordering::SeqCst), 0);
++            assert!(TRACKING.with(|state| state.get().unwrap().live));
++            drop(emission);
++        }
++        _ => unreachable!(),
++    }
++    let tracking = TRACKING.with(|state| state.take().unwrap());
++    let live_at_release = observed.sequence_live_at_release.load(Ordering::SeqCst);
++    let admitted_at_release = observed.admitted_bytes_at_release.load(Ordering::SeqCst);
++    println!(
++        "CURSOR_LEASE mode={mode} sequence_bytes={SEQUENCE_BYTES} matching_allocations={} sequence_live_at_lease_release={live_at_release} admitted_bytes_at_lease_release={admitted_at_release} deallocations={}",
++        tracking.matching_allocations, tracking.deallocations
++    );
++    assert_eq!(
++        tracking.matching_allocations, 1,
++        "unexpected same-size allocation alias"
++    );
++    assert_eq!(tracking.deallocations, 1);
++    assert!(!tracking.live);
++    assert_eq!(observed.callbacks.load(Ordering::SeqCst), 1);
++    assert_eq!(execution.usage().unwrap().live_bytes, 0);
++    assert_eq!(admitted_at_release, 0);
++    assert_eq!(
++        live_at_release, 0,
++        "sequence Vec must deallocate before the last host lease"
++    );
++}
++
++#[test]
++fn cursor_last_owner_releases_sequence_storage_before_host_lease() {
++    check_release("cursor_last_owner");
++}
++#[test]
++fn retained_contribution_keeps_host_lease_after_cursor_storage_drops() {
++    check_release("contribution_alias");
++}
++#[test]
++fn completed_emission_releases_sequence_storage_before_host_lease() {
++    check_release("completed_emission");
++}

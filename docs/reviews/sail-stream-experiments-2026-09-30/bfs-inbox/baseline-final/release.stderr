@@ -1,0 +1,23 @@
+   Compiling sail-argentea-core v0.1.0 (/private/tmp/sail-bfs-inbox-baseline/examples/extensions/argentea)
+    Finished `release` profile [optimized] target(s) in 0.73s
+     Running tests/bfs_inbox.rs (/private/tmp/sail-bfs-inbox-baseline-target/release/deps/bfs_inbox-88c194aa859a406c)
+
+thread 'done_inboxes_fit_protocol_sized_headroom' (54917354) panicked at tests/bfs_inbox.rs:129:54:
+called `Result::unwrap()` on an `Err` value: "procedure memory budget exceeded (limit 268435456)"
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+thread 'topology_has_no_candidate_buffers' (54917357) panicked at tests/bfs_inbox.rs:214:5:
+assertion `left == right` failed
+  left: Cost { allocation_calls: 54, allocated_bytes: 19951, peak_admitted: 23784 }
+ right: Cost { allocation_calls: 54, allocated_bytes: 1052143, peak_admitted: 1055976 }
+
+thread 'done_inboxes_are_independent_of_vertices_and_retained_ghosts' (54917353) panicked at tests/bfs_inbox.rs:181:9:
+assertion `left == right` failed
+  left: Cost { allocation_calls: 57, allocated_bytes: 20975, peak_admitted: 24808 }
+ right: Cost { allocation_calls: 52, allocated_bytes: 3583, peak_admitted: 7416 }
+
+thread 'push_omits_ghost_storage_and_pull_keeps_required_buffers' (54917356) panicked at tests/bfs_inbox.rs:198:5:
+assertion `left == right` failed: Push never reads incoming membership
+  left: Cost { allocation_calls: 57, allocated_bytes: 1117679, peak_admitted: 1121512 }
+ right: Cost { allocation_calls: 57, allocated_bytes: 1053167, peak_admitted: 1057000 }
+error: test failed, to rerun pass `--test bfs_inbox`

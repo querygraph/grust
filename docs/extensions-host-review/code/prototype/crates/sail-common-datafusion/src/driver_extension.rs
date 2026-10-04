@@ -1,0 +1,210 @@
+//! Session-owned native regions placed on the driver in a distributed job.
+use std::collections::HashMap;
+use std::fmt::{Debug, Formatter};
+use std::sync::{Arc, Mutex, Weak};
+
+use datafusion::execution::{SendableRecordBatchStream, TaskContext};
+use datafusion::physical_plan::{DisplayAs, DisplayFormatType, ExecutionPlan, PlanProperties};
+use datafusion_common::{Result, plan_datafusion_err, plan_err};
+use serde::{Deserialize, Serialize};
+
+use crate::extension::{SessionExtension, SessionExtensionAccessor};
+
+pub const DRIVER_CODEC_PREFIX: &[u8] = b"SAIL_DRIVER_EXTENSION_V1\0";
+
+/// A frozen native plan, including its graph revision or mutation attempt state.
+/// Only its declared host inputs are substituted during task preparation.
+pub trait DriverExtensionBinding: Debug + Send + Sync {
+    /// Release native snapshots after query completion/cancellation. Streams
+    /// already executing own their materialized plans until they are dropped.
+    fn close(&self) {}
+    fn materialize(
+        &self,
+        inputs: &[Arc<dyn ExecutionPlan>],
+        context: Arc<TaskContext>,
+    ) -> Result<Arc<dyn ExecutionPlan>>;
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct DriverDescriptor {
+    pub owner: String,
+    pub plan_id: String,
+}
+
+#[derive(Debug)]
+pub struct BoundDriverPlan {
+    pub descriptor: DriverDescriptor,
+    pub properties: Arc<PlanProperties>,
+    pub input_schemas: Vec<arrow_schema::SchemaRef>,
+    pub binding: Arc<dyn DriverExtensionBinding>,
+}
+
+/// Weak entries do not extend graph snapshots beyond the lifetime of a query.
+/// The job graph owns each live bound plan while its tasks can be decoded.
+#[derive(Debug, Default)]
+pub struct DriverExtensionRegistry(Mutex<HashMap<String, Weak<BoundDriverPlan>>>);
+
+impl SessionExtension for DriverExtensionRegistry {
+    fn name() -> &'static str {
+        "DriverExtensionRegistry"
+    }
+}
+
+impl DriverExtensionRegistry {
+    pub fn register(&self, plan: &Arc<BoundDriverPlan>) -> Result<()> {
+        let mut entries = self
+            .0
+            .lock()
+            .map_err(|_| plan_datafusion_err!("driver extension registry poisoned"))?;
+        entries.retain(|_, value| value.strong_count() > 0);
+        if entries.contains_key(&plan.descriptor.plan_id) {
+            return plan_err!("duplicate driver extension plan identity");
+        }
+        entries.insert(plan.descriptor.plan_id.clone(), Arc::downgrade(plan));
+        Ok(())
+    }
+
+    fn lookup(&self, descriptor: &DriverDescriptor) -> Result<Arc<BoundDriverPlan>> {
+        let entries = self
+            .0
+            .lock()
+            .map_err(|_| plan_datafusion_err!("driver extension registry poisoned"))?;
+        let plan = entries
+            .get(&descriptor.plan_id)
+            .and_then(Weak::upgrade)
+            .ok_or_else(|| {
+                plan_datafusion_err!(
+                    "driver extension plan is unavailable in this session or has expired"
+                )
+            })?;
+        if plan.descriptor != *descriptor {
+            return plan_err!("driver extension owner mismatch");
+        }
+        Ok(plan)
+    }
+}
+
+#[derive(Debug)]
+pub struct DriverExtensionExec {
+    pub bound: Arc<BoundDriverPlan>,
+    inputs: Vec<Arc<dyn ExecutionPlan>>,
+}
+
+impl DriverExtensionExec {
+    pub fn new(bound: Arc<BoundDriverPlan>, inputs: Vec<Arc<dyn ExecutionPlan>>) -> Result<Self> {
+        if inputs.len() != bound.input_schemas.len()
+            || inputs
+                .iter()
+                .zip(&bound.input_schemas)
+                .any(|(input, schema)| input.schema() != *schema)
+        {
+            return plan_err!("driver extension input arity/schema mismatch");
+        }
+        Ok(Self { bound, inputs })
+    }
+
+    pub fn encode(&self, buffer: &mut Vec<u8>) -> Result<()> {
+        buffer.extend_from_slice(DRIVER_CODEC_PREFIX);
+        serde_json::to_writer(buffer, &self.bound.descriptor)
+            .map_err(|e| plan_datafusion_err!("driver extension descriptor: {e}"))
+    }
+
+    pub fn decode(
+        buffer: &[u8],
+        inputs: &[Arc<dyn ExecutionPlan>],
+        context: &TaskContext,
+    ) -> Result<Arc<dyn ExecutionPlan>> {
+        if buffer.len() > 8192 {
+            return plan_err!("driver extension descriptor exceeds 8192 bytes");
+        }
+        let payload = buffer
+            .strip_prefix(DRIVER_CODEC_PREFIX)
+            .ok_or_else(|| plan_datafusion_err!("unknown driver extension codec owner/version"))?;
+        let descriptor: DriverDescriptor = serde_json::from_slice(payload)
+            .map_err(|e| plan_datafusion_err!("driver extension descriptor: {e}"))?;
+        let registry = context
+            .extension::<DriverExtensionRegistry>()
+            .map_err(|_| {
+                plan_datafusion_err!("driver-only extension cannot be decoded on a worker")
+            })?;
+        Ok(Arc::new(Self::new(
+            registry.lookup(&descriptor)?,
+            inputs.to_vec(),
+        )?))
+    }
+}
+
+impl DisplayAs for DriverExtensionExec {
+    fn fmt_as(&self, _: DisplayFormatType, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "DriverExtensionExec: owner={}, plan={}, placement=driver, retry=disabled",
+            self.bound.descriptor.owner, self.bound.descriptor.plan_id
+        )
+    }
+}
+
+impl ExecutionPlan for DriverExtensionExec {
+    fn apply_expressions(
+        &self,
+        _f: &mut dyn FnMut(
+            &Arc<dyn datafusion::physical_expr::PhysicalExpr>,
+        ) -> Result<datafusion_common::tree_node::TreeNodeRecursion>,
+    ) -> Result<datafusion_common::tree_node::TreeNodeRecursion> {
+        Ok(datafusion_common::tree_node::TreeNodeRecursion::Continue)
+    }
+    fn name(&self) -> &str {
+        "DriverExtensionExec"
+    }
+    fn properties(&self) -> &Arc<PlanProperties> {
+        &self.bound.properties
+    }
+    fn children(&self) -> Vec<&Arc<dyn ExecutionPlan>> {
+        self.inputs.iter().collect()
+    }
+    fn required_input_distribution(&self) -> Vec<datafusion::physical_expr::Distribution> {
+        vec![datafusion::physical_expr::Distribution::SinglePartition; self.inputs.len()]
+    }
+    fn with_new_children(
+        self: Arc<Self>,
+        children: Vec<Arc<dyn ExecutionPlan>>,
+    ) -> Result<Arc<dyn ExecutionPlan>> {
+        Ok(Arc::new(Self::new(self.bound.clone(), children)?))
+    }
+    fn execute(
+        &self,
+        partition: usize,
+        context: Arc<TaskContext>,
+    ) -> Result<SendableRecordBatchStream> {
+        if partition != 0
+            || self
+                .inputs
+                .iter()
+                .any(|input| input.properties().partitioning.partition_count() != 1)
+        {
+            return plan_err!("driver extension requires one output partition and gathered inputs");
+        }
+        let plan = self
+            .bound
+            .binding
+            .materialize(&self.inputs, context.clone())?;
+        plan.execute(0, context)
+    }
+}
+
+pub fn contains_driver_extension(plan: &Arc<dyn ExecutionPlan>) -> bool {
+    plan.is::<DriverExtensionExec>() || plan.children().into_iter().any(contains_driver_extension)
+}
+
+pub fn release_driver_extensions(plan: &Arc<dyn ExecutionPlan>) {
+    if let Some(native) = plan.downcast_ref::<DriverExtensionExec>() {
+        native.bound.binding.close();
+    }
+    for child in plan.children() {
+        release_driver_extensions(child);
+    }
+}
+
+#[cfg(test)]
+mod tests;

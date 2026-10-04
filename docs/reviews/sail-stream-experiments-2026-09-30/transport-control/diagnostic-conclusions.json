@@ -1,0 +1,20 @@
+{
+  "recorded_utc": "2026-09-30T16:19:45.397389+00:00",
+  "minimal_existing_build_filter": "info,h2::proto::connection=debug,h2::proto::streams=warn,h2::frame::go_away=trace,h2::frame::reset=trace,h2::frame::ping=trace,h2::proto::ping_pong=trace",
+  "all_shared_dependency_versions_match_sail_lock": true,
+  "hyper_logging_requires": [
+    "optional hyper/tracing Cargo feature",
+    "RUSTFLAGS=--cfg hyper_unstable_tracing"
+  ],
+  "optional_hyper_filter": "hyper::proto::h2=debug",
+  "notes": [
+    "The default Sail CLI feature closure does not enable hyper tracing. The existing gate binary must not be assumed to emit hyper debug events merely because RUST_LOG mentions the module.",
+    "h2 control-frame modules log transmitted GOAWAY reason, RESET stream ID and reason, PING generation and PING acknowledgements. They exclude DATA and WINDOW_UPDATE frame logs.",
+    "Enable this filter on every peer and retain process/connection/endpoint identity; GOAWAY encoding itself records only the reason. RUST_LOG alone does not add missing addresses or task keys.",
+    "GOAWAY(NO_ERROR) is not proof of keepalive: the control establishes that a deliberately induced keepalive can produce it, and an identical outer Tonic body-read message can come from RST_STREAM(INTERNAL_ERROR).",
+    "Without hyper tracing, capture the complete server connection-future error to identify KeepAliveTimedOut directly. On the receiving body, induced keepalive mapped to Unknown/BrokenPipe while induced remote reset mapped to Internal/Reset.",
+    "The original unprefixed keepalive controls timed out because the initial proxy did not relay EOF after tokio::io::copy. Those logs/control-results.json are retained as fixture failures. The corrected-proxy and later runs explicitly call shutdown on the downstream write half.",
+    "The earliest isolated lock had five nontransport patch-version differences; Cargo.initial-control.lock preserves it. Current Cargo.lock aligns every dependency shared with Sail. All protocol packages were pinned from the first run.",
+    "All controls are local in-memory HTTP/2 peers; these are diagnostics controls, not a Sail reproduction, throughput result or distributed qualification."
+  ]
+}

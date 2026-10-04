@@ -1,0 +1,93 @@
+{
+  "recorded_utc": "2026-09-30T22:37:35.519839+00:00",
+  "repository": "querygraph/grust",
+  "outcome": "PASS_READ_ONLY_ACTIVATION_REVIEW",
+  "source": "/private/tmp/grust-sail-review-closed2-publication/activate_shared.py",
+  "source_sha256": "affb71f9865de2358055717f250a0d61932daa596ed395acbdcbf626dcb5880f",
+  "published_commit": "d9df4b0e89b1e4a1838b1b536d05f47ba4f12808",
+  "base_commit": "7387b985f242164281c7d94a1560bbfcfa8d8fe5",
+  "blockers": [],
+  "reviewed_controls": [
+    {
+      "lines": [
+        79,
+        81,
+        82,
+        86
+      ],
+      "property": "Exclusive index.lock acquired before repeated symbolic HEAD, exact base HEAD, and index identity checks; compare-and-swap branch update follows them. This rejects the previously identified same-base branch switch before lock acquisition."
+    },
+    {
+      "lines": [
+        43,
+        44,
+        55,
+        57,
+        85,
+        101
+      ],
+      "property": "Selected source files and tracked dirty files are checked before and after activation and are not rewritten by the helper."
+    },
+    {
+      "lines": [
+        60,
+        61,
+        62,
+        63,
+        66,
+        88,
+        90
+      ],
+      "property": "Private backup contains original index, coordination, and manifest. New tree is built into a private temporary index without a worktree update; only the expected manifest is replaced."
+    },
+    {
+      "lines": [
+        83,
+        92,
+        93,
+        103,
+        110
+      ],
+      "property": "Coordination writes append only; both postconditions preserve the exact captured original followed by the isolated published appendix."
+    },
+    {
+      "lines": [
+        29,
+        30,
+        31,
+        32,
+        74,
+        77,
+        87,
+        89,
+        91,
+        94,
+        104,
+        109,
+        116,
+        119,
+        120,
+        130
+      ],
+      "property": "Exclusive intent/success/failure receipts and phase updates retain recoverable partial-activation evidence. No automatic rollback can overwrite concurrent later state."
+    },
+    {
+      "lines": [
+        108
+      ],
+      "property": "DONE prose limits logging03 evidence to admission and launch, explicitly excluding its final compact outcome and performance qualification."
+    }
+  ],
+  "validation": {
+    "ast_parse": "PASS",
+    "helper_executed": false,
+    "remote_calls": false,
+    "candidate_or_shared_repository_edits": false,
+    "initial_blocker_resolved": true
+  },
+  "limits": [
+    "Read-only code review, not an activation execution or fault-injection test.",
+    "Git index.lock coordinates normal Git index/checkout operations; it does not serialize arbitrary external direct writes to HEAD or working files. Preservation guards fail visibly on detected concurrent changes.",
+    "Abrupt process or host loss can interrupt a multi-file activation; the backup and intent/phase receipts support manual recovery, not an atomic filesystem transaction."
+  ]
+}

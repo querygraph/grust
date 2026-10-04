@@ -1,0 +1,39 @@
+diff --git a/crates/sail-session/src/session_factory/server.rs b/crates/sail-session/src/session_factory/server.rs
+index 2828250fd36a6115dade54f9d70f177ea559722e..c187fd8f023d518937ccde24067ded62020907b7 100644
+--- a/crates/sail-session/src/session_factory/server.rs
++++ b/crates/sail-session/src/session_factory/server.rs
+@@ -26,11 +26,12 @@ use crate::catalog::create_catalog_manager;
+ use crate::formats::create_data_source_registry;
+ use crate::optimizer::{default_analyzer_rules, default_optimizer_rules};
+ use crate::planner::new_query_planner;
+-use crate::runtime::RuntimeEnvFactory;
++use crate::runtime::{MemoryResourceDomain, RuntimeEnvFactory};
+ use crate::session_factory::SessionFactory;
+ use crate::session_manager::SessionManagerActor;
+ 
+ pub struct ServerSessionInfo {
++    pub resource_domain: Option<MemoryResourceDomain>,
+     pub session_id: String,
+     pub user_id: String,
+     pub session_manager: ActorHandle<SessionManagerActor>,
+@@ -130,15 +131,17 @@ impl ServerSessionFactory {
+         self.apply_execution_config(&mut config)?;
+         self.apply_execution_parquet_config(&mut config);
+         self.apply_optimizer_config(&mut config)?;
+-        let config = self.mutator.mutate_config(config, info)?;
+-        Ok(config)
++        self.mutator.mutate_config(config, info)
+     }
+ 
+     fn create_session_state(&mut self, info: &mut ServerSessionInfo) -> Result<SessionState> {
+         let config = self.create_session_config(info)?;
+         let runtime = self
+             .runtime_env
+-            .create(|builder| self.mutator.mutate_runtime_env(builder, info))?;
++            .create(info.resource_domain.as_ref(), |builder| {
++                self.mutator.mutate_runtime_env(builder, info)
++            })?;
++        let config = crate::extensions::register_extensions(config, &self.config.mode, &runtime)?;
+         // We do not add default features to the session state,
+         // since we manage data sources and functions ourselves.
+         let builder = SessionStateBuilder::new()

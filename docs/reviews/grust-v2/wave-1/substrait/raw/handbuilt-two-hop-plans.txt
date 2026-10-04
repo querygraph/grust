@@ -1,0 +1,71 @@
+-- logical plan from the Substrait consumer
+Projection: left.id AS a, right.id AS b, v.id AS c
+  Inner Join: e.target = v.id
+    Inner Join: right.id = e.source
+      Inner Join: left.target = right.id
+        SubqueryAlias: left
+          Inner Join: v.id = e.source
+            Filter: v.id >= Int64(4000000) AND v.id < Int64(4002000)
+              TableScan: v
+            TableScan: e
+        SubqueryAlias: right
+          TableScan: v
+      TableScan: e
+    TableScan: v
+
+-- after DataFusion's optimizer
+Projection: left.id AS a, right.id AS b, v.id AS c
+  Inner Join: e.target = v.id
+    Projection: left.id, right.id, e.target
+      Inner Join: right.id = e.source
+        Projection: left.id, right.id
+          Inner Join: left.target = right.id
+            SubqueryAlias: left
+              Projection: v.id, e.target
+                Inner Join: v.id = e.source
+                  Filter: v.id >= Int64(4000000) AND v.id < Int64(4002000)
+                    TableScan: v projection=[id], partial_filters=[v.id >= Int64(4000000), v.id < Int64(4002000)]
+                  TableScan: e projection=[source, target]
+            SubqueryAlias: right
+              TableScan: v projection=[id]
+        TableScan: e projection=[source, target]
+    TableScan: v projection=[id]
+
+-- physical plan (Substrait route)
+ProjectionExec: expr=[id@0 as a, id@1 as b, id@2 as c]
+  HashJoinExec: mode=Partitioned, join_type=Inner, on=[(id@0, target@2)], projection=[id@1, id@2, id@0]
+    RepartitionExec: partitioning=Hash([id@0], 4), input_partitions=4
+      DataSourceExec: file_groups={4 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:0..965486], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:965486..1930972], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1930972..2896458], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:2896458..3861941]]}, projection=[id], file_type=parquet
+    RepartitionExec: partitioning=Hash([target@2], 4), input_partitions=4
+      HashJoinExec: mode=Partitioned, join_type=Inner, on=[(id@1, source@0)], projection=[id@0, id@1, target@3]
+        HashJoinExec: mode=Partitioned, join_type=Inner, on=[(target@1, id@0)], projection=[id@0, id@2]
+          RepartitionExec: partitioning=Hash([target@1], 4), input_partitions=4
+            HashJoinExec: mode=CollectLeft, join_type=Inner, on=[(id@0, source@0)], projection=[id@0, target@2]
+              CoalescePartitionsExec
+                FilterExec: id@0 >= 4000000 AND id@0 < 4002000
+                  DataSourceExec: file_groups={4 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:0..965486], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:965486..1930972], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1930972..2896458], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:2896458..3861941]]}, projection=[id], file_type=parquet, predicate=id@0 >= 4000000 AND id@0 < 4002000, pruning_predicate=id_null_count@1 != row_count@2 AND id_max@0 >= 4000000 AND id_null_count@1 != row_count@2 AND id_min@3 < 4002000, required_guarantees=[]
+              DataSourceExec: file_groups={4 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:0..17509346], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:17509346..35018692], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:35018692..52528038], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:52528038..70037384]]}, projection=[source, target], file_type=parquet, predicate=DynamicFilter [ empty ], dynamic_rg_pruning=eligible
+          RepartitionExec: partitioning=Hash([id@0], 4), input_partitions=4
+            DataSourceExec: file_groups={4 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:0..965486], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:965486..1930972], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1930972..2896458], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:2896458..3861941]]}, projection=[id], file_type=parquet, predicate=DynamicFilter [ empty ], dynamic_rg_pruning=eligible
+        RepartitionExec: partitioning=Hash([source@0], 4), input_partitions=4
+          DataSourceExec: file_groups={4 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:0..17509346], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:17509346..35018692], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:35018692..52528038], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:52528038..70037384]]}, projection=[source, target], file_type=parquet, predicate=DynamicFilter [ empty ] AND DynamicFilter [ empty ], dynamic_rg_pruning=eligible
+
+
+-- physical plan (SQL route)
+ProjectionExec: expr=[id@0 as a, id@1 as b, id@2 as c]
+  HashJoinExec: mode=Partitioned, join_type=Inner, on=[(target@2, id@0)], projection=[id@0, id@1, id@3]
+    RepartitionExec: partitioning=Hash([target@2], 4), input_partitions=4
+      HashJoinExec: mode=CollectLeft, join_type=Inner, on=[(id@1, source@0)], projection=[id@0, id@1, target@3]
+        CoalescePartitionsExec
+          HashJoinExec: mode=CollectLeft, join_type=Inner, on=[(target@1, id@0)], projection=[id@0, id@2]
+            CoalescePartitionsExec
+              HashJoinExec: mode=CollectLeft, join_type=Inner, on=[(id@0, source@0)], projection=[id@0, target@2]
+                CoalescePartitionsExec
+                  FilterExec: id@0 >= 4000000 AND id@0 < 4002000
+                    DataSourceExec: file_groups={4 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:0..965486], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:965486..1930972], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1930972..2896458], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:2896458..3861941]]}, projection=[id], file_type=parquet, predicate=id@0 >= 4000000 AND id@0 < 4002000, pruning_predicate=id_null_count@1 != row_count@2 AND id_max@0 >= 4000000 AND id_null_count@1 != row_count@2 AND id_min@3 < 4002000, required_guarantees=[]
+                FilterExec: source@0 >= 4000000 AND source@0 < 4002000
+                  DataSourceExec: file_groups={4 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:0..17509346], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:17509346..35018692], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:35018692..52528038], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:52528038..70037384]]}, projection=[source, target], file_type=parquet, predicate=source@0 >= 4000000 AND source@0 < 4002000 AND DynamicFilter [ empty ], dynamic_rg_pruning=eligible, pruning_predicate=source_null_count@1 != row_count@2 AND source_max@0 >= 4000000 AND source_null_count@1 != row_count@2 AND source_min@3 < 4002000, required_guarantees=[]
+            DataSourceExec: file_groups={4 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:0..965486], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:965486..1930972], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1930972..2896458], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:2896458..3861941]]}, projection=[id], file_type=parquet, predicate=DynamicFilter [ empty ], dynamic_rg_pruning=eligible
+        DataSourceExec: file_groups={4 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:0..17509346], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:17509346..35018692], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:35018692..52528038], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:52528038..70037384]]}, projection=[source, target], file_type=parquet, predicate=DynamicFilter [ empty ], dynamic_rg_pruning=eligible
+    RepartitionExec: partitioning=Hash([id@0], 4), input_partitions=4
+      DataSourceExec: file_groups={4 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:0..965486], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:965486..1930972], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1930972..2896458], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:2896458..3861941]]}, projection=[id], file_type=parquet, predicate=DynamicFilter [ empty ], dynamic_rg_pruning=eligible

@@ -169,6 +169,70 @@ coordinator's.
 - **Publish timings from a dedicated host only**, and label every other host's
   numbers as ratios on a shared box, never as absolute results.
 
+## Sail Discipline
+
+The failure: on 2026-09-28 the Graph Nuts scaling plan was written into a
+Sail checkout's `docs/` and pushed there instead of into this repository, and
+had to be pulled back.
+
+- **Upstream Sail (`lakehq/sail`) changes are minimized and arrive only as
+  small, granular pull requests that are thoughtful and manually verifiable.**
+  Nothing is pushed to `lakehq/sail` directly. The order of work is: try
+  everything and build it in the fork first; when it works, refactor what
+  upstream actually needs into separately scoped PRs, each with a one-paragraph
+  statement of what it touches and why and a way to verify it by hand; the
+  operator reviews each one before it is opened.
+- **The `querygraph/sail` fork is ours to use as we please.** It is the
+  working repository for the extension work (Pecan, Nutmeg's wheel, Argentea,
+  the benchmark harness under `examples/extensions`) and for preparing upstream
+  changes under `crates/`. Work there on named `work/` branches, gated as the
+  rest of this file requires.
+- **Documents do not go into Sail, upstream or fork.** Plans, reviews,
+  handoffs, diagnoses and the Graph Nuts map live in `grust/docs` (see
+  `docs/GRAPH-NUTS.md`). The fork's `docs/development/extensions` tree holds
+  the evidence reports written beside the code and is not the place for new
+  plans.
+
+## Valid Graph Assumptions
+
+The failure: Pecan's Python peppered `isNull`, uniqueness and membership
+checks over every input and every round, each one a distributed job, and
+carried no type hints, so Sem could neither debug it nor compare it with his
+engine; the checks were measured as a visible share of the time at scale.
+
+- **A graph handed to any Graph Nuts path is valid, by contract, and no path
+  spends a job verifying it.** Valid means: vertex `id` is BIGINT, unique and
+  non-null; edge `src` and `dst` are BIGINT, non-null and name existing
+  vertices; weights, where used, are DOUBLE, finite and non-negative with
+  finite path sums; a traversal source is a vertex. A graph that breaks the
+  contract yields an undefined result, not a diagnosed error.
+- **Only the schema is checked**, by name and type at planning time, because
+  it is free. Argument domains (caps, tolerances, seeds, methods, sources)
+  are validated once at the call boundary with Pydantic models, never by
+  queries.
+- **Do not reintroduce input validation into the algorithms.** A validation
+  pass, if a caller wants one, is a separate, explicit utility that runs once
+  before the algorithm, outside its timer.
+- **Sem's rule, verbatim in translation (2026-10-01): if a check requires an
+  operation over the data, the check does not run by default.** Arguments
+  are assumed valid too; checking that "the user is not an idiot" shifts the
+  cost of the 1% onto the 99%, so only free, in-memory argument checks exist.
+- **"As in X" means as in X.** When an algorithm is asked for in the form of
+  a named reference (GraphX, the Pregel paper, graphframes-rs, a cited
+  paper), it is implemented in that form, with that reference's stopping
+  rule and no added terms, certificates or redistributions. Any deviation is
+  a separate, named method with its own docstring, never a silent
+  "improvement" (Sem, 2026-10-01: the third algorithm in a row carried an
+  unasked trade-off).
+- **Code is navigable by people, not only by grep.** Type hints on every
+  definition so go-to-definition and find-references work; no function-local
+  imports (the import-structure test enforces it); structured values are
+  models, not dicts.
+- **Python in the extensions is typed.** Every definition has type hints,
+  structured records are Pydantic models or slotted dataclasses, and `mypy`
+  and `ruff` pass on the package before it is committed. Generated protobuf
+  modules are the one exception and are typed as `Any` at their import.
+
 ## File Discipline
 
 - Prefer keeping source and documentation files under 500 lines, and try to keep

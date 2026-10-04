@@ -1,0 +1,28 @@
+{
+  "recorded_utc": "2026-09-30T17:30:43.731904+00:00",
+  "repository": "querygraph/sail",
+  "branch": "work/argentea-bfs-completion",
+  "commit": "193e2a9035428cc707bf09c0d20a16c421f353ba",
+  "base": "2894a962076d3cc404dd72ec736ebeb9239901f6",
+  "candidate_patch_sha256": "14327aa75f1b383172de37265fa75d3a8d6ba4721d88234537f526f52ba8102c",
+  "baseline": {
+    "exit_code": 101,
+    "accepted_malformed_cells": 12,
+    "log": "baseline-regression.log",
+    "boundary": "Counterexample suppresses candidates AND rewrites completion totals; not ordinary transport truncation, not evidence of the observed stream-loss cause."
+  },
+  "production_change": "Reference/Push completion total must match recorded producer frontier_edges. Existing topology/pull/done/local-sequence/EOF checks remain. No new allocation or graph traversal.",
+  "validation": {
+    "core": "fmt, strict clippy all-targets, 103 release tests",
+    "native": "49 release library tests, 43 Argentea; no skipped or filtered tests; changed native file rustfmt",
+    "loaded": "103 core + 49 native under 10 live yes processes; all load processes reaped"
+  },
+  "format_limitation": "Full native crate fmt has baseline-identical diffs in unchanged mutation.rs and tests.rs; failed precommit gate prevented commit. Both original output and baseline control retained.",
+  "commit_worktree_clean": true,
+  "gates": [
+    "exact-core/receipt.json",
+    "exact-native/receipt.json",
+    "exact-loaded/receipt.json"
+  ],
+  "no_upstream_push": true
+}

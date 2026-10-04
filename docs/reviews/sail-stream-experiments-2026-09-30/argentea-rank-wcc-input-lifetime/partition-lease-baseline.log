@@ -1,0 +1,38 @@
+   Compiling sail-argentea-core v0.1.0 (/private/tmp/sail-rank-wcc-lifetime-baseline/examples/extensions/argentea)
+    Finished `release` profile [optimized] target(s) in 1.81s
+     Running tests/partition_lease.rs (/private/tmp/sail-rank-wcc-lifetime-target/core/release/deps/partition_lease-d4178b32c904cd14)
+
+running 3 tests
+PARTITION_SUCCESSFUL_DROP kind=residual_pagerank admitted_at_lease_release=502 final_live_bytes=0
+
+thread 'residual_pagerank_successful_sole_owner_retains_host_lease_through_storage_drop' (56275775) panicked at tests/partition_lease.rs:47:5:
+assertion `left == right` failed
+  left: 502
+ right: 0
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+PARTITION_SUCCESSFUL_DROP kind=sssp admitted_at_lease_release=824 final_live_bytes=0
+
+thread 'sssp_successful_sole_owner_retains_host_lease_through_storage_drop' (56275776) panicked at tests/partition_lease.rs:47:5:
+assertion `left == right` failed
+  left: 824
+ right: 0
+PARTITION_SUCCESSFUL_DROP kind=bfs admitted_at_lease_release=816 final_live_bytes=0
+
+thread 'bfs_successful_sole_owner_retains_host_lease_through_storage_drop' (56275774) panicked at tests/partition_lease.rs:47:5:
+assertion `left == right` failed
+  left: 816
+ right: 0
+test residual_pagerank_successful_sole_owner_retains_host_lease_through_storage_drop ... FAILED
+test bfs_successful_sole_owner_retains_host_lease_through_storage_drop ... FAILED
+test sssp_successful_sole_owner_retains_host_lease_through_storage_drop ... FAILED
+
+failures:
+
+failures:
+    bfs_successful_sole_owner_retains_host_lease_through_storage_drop
+    residual_pagerank_successful_sole_owner_retains_host_lease_through_storage_drop
+    sssp_successful_sole_owner_retains_host_lease_through_storage_drop
+
+test result: FAILED. 0 passed; 3 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--test partition_lease`

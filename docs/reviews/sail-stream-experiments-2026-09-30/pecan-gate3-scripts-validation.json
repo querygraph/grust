@@ -1,0 +1,85 @@
+{
+  "recorded_utc": "2026-09-30T16:45:27.323045+00:00",
+  "verdict": "PASSED: 4 orchestration unit checks; 14-cell dry plan; paired commands identical except source/output; bounded fixture generated",
+  "gate_worktree": "/private/tmp/grust-pecan-experiment-gate",
+  "gate_base_sha": "b91828b2765ec2018e21011aea686e931af68c99",
+  "scope": "uncommitted script snapshot, SHA256-pinned below; not a verdict on base commit content, Sail runtime, GraphUtils or remote performance",
+  "python": "3.12.8 (main, Jan  5 2025, 06:55:30) [Clang 19.1.6 ]",
+  "platform": "macOS-26.2-arm64-arm-64bit",
+  "files_sha256": {
+    "pecan_gate3_cell.py": "8837f5fc844beea024af2be9071d7ff71455b99c3e20e11ff32aa0c2563d7f7f",
+    "run_pecan_gate3.py": "98dcb881989a1a65cc6090b49d39abe97c8c5831dfbf8bc1f0dbdf66ac267cca",
+    "test_pecan_gate3.py": "2b72c115231065c31d29d13a7c3eb1ed5aa834bced74781cd0f70b5d3985b1d8"
+  },
+  "checks": [
+    {
+      "command": [
+        "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_pecan_gate3.py"
+      ],
+      "returncode": 0,
+      "stderr": "test_balanced_order_and_full_gates (test_pecan_gate3.ExperimentTests.test_balanced_order_and_full_gates) ... ok\ntest_junit_failures_and_skips_remain_distinct (test_pecan_gate3.ExperimentTests.test_junit_failures_and_skips_remain_distinct) ... ok\ntest_only_controller_source_changes_between_cells (test_pecan_gate3.ExperimentTests.test_only_controller_source_changes_between_cells) ... ok\ntest_pytest_environment_excludes_external_shim_and_selection (test_pecan_gate3.ExperimentTests.test_pytest_environment_excludes_external_shim_and_selection) ... ok\n\n----------------------------------------------------------------------\nRan 4 tests in 0.002s\n\nOK\n",
+      "stdout": ""
+    },
+    {
+      "command": [
+        "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/bin/python",
+        "run_pecan_gate3.py",
+        "--matrix",
+        "/private/tmp/sail-stream-diagnostic-harness-gate/examples/extensions/benchmarks"
+      ],
+      "returncode": 0,
+      "stderr": "",
+      "stdout": "dry plan saved separately"
+    }
+  ],
+  "local_fixture": {
+    "source_sha": "edc2c7c8cfc17cfc02f4f3a794bd4a3ec86ee3ed",
+    "pyarrow": "21.0.0",
+    "manifest": {
+      "family": "traversal",
+      "seed": 42,
+      "parameters": {
+        "degree": 32,
+        "source": 0,
+        "directed": true
+      },
+      "counts": {
+        "vertices": 16384,
+        "edges": 529723
+      },
+      "traversal": {
+        "source": 0,
+        "directed": true,
+        "seed": 42,
+        "weight_policy": "seeded integers 0..15 stored as float64"
+      },
+      "purpose": "bounded correctness fixture; not a Graph500 input",
+      "files": {
+        "reference.parquet": {
+          "sha256": "243f396cd5900402acfea18875a423c9dd40f37f0dc343ba4fa42c90bb2497ef",
+          "bytes": 104754
+        },
+        "edges.parquet": {
+          "sha256": "d350d66a97f352916e3944657a0d2ae2ddff5718f651e335b33d7c5d7cdfc013",
+          "bytes": 1375846
+        },
+        "vertices.parquet": {
+          "sha256": "65fbeb27779f3eade77cb9a74528952628893137b92ae88017f3fe93a96a91a7",
+          "bytes": 94785
+        }
+      }
+    },
+    "total_parquet_bytes": 1575385,
+    "boundary": "local recipe feasibility only; remote generated files get their own manifest; Parquet writer versions can change physical bytes"
+  },
+  "initial_attempt": {
+    "python": "/opt/homebrew/bin/python3 (3.14)",
+    "outcome": "environment_error",
+    "detail": "JUnit parser import failed: pyexpat dynamic linker missing _XML_SetAllocTrackerActivationThreshold in system libexpat; unchanged tests passed on existing Python3.12 venv"
+  },
+  "remote_loads_launched": false
+}

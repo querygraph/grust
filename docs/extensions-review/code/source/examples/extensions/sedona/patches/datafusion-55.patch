@@ -1,0 +1,111 @@
+diff --git a/Cargo.toml b/Cargo.toml
+index 4f7c991..4d01e6a 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -71,14 +71,14 @@ categories = ["science::geo", "database"]
+ adbc_core = ">=0.24.0"
+ adbc_ffi = ">=0.24.0"
+ approx = "0.5"
+-arrow = { version = "58.3.0", features = ["prettyprint", "ffi", "chrono-tz"] }
+-arrow-array = { version = "58.3.0" }
+-arrow-buffer = { version = "58.3.0" }
+-arrow-cast = { version = "58.3.0" }
+-arrow-data = { version = "58.3.0" }
+-arrow-ipc = { version = "58.3.0" }
+-arrow-json = { version = "58.3.0" }
+-arrow-schema = { version = "58.3.0" }
++arrow = { version = "=59.3.0", features = ["prettyprint", "ffi", "chrono-tz"] }
++arrow-array = { version = "=59.3.0" }
++arrow-buffer = { version = "=59.3.0" }
++arrow-cast = { version = "=59.3.0" }
++arrow-data = { version = "=59.3.0" }
++arrow-ipc = { version = "=59.3.0" }
++arrow-json = { version = "=59.3.0" }
++arrow-schema = { version = "=59.3.0" }
+ async-trait = { version = "0.1.87" }
+ bytemuck = "1.25"
+ byteorder = "1"
+@@ -86,21 +86,21 @@ bytes = "1.11"
+ chrono = { version = "0.4.41", default-features = false }
+ comfy-table = { version = "8.0" }
+ criterion = { version = "0.8", features = ["html_reports"] }
+-datafusion = { version = "54.1.0", default-features = false }
+-datafusion-catalog = { version = "54.1.0" }
+-datafusion-common = { version = "54.1.0", default-features = false }
+-datafusion-common-runtime = { version = "54.1.0", default-features = false }
+-datafusion-proto = { version = "54.1.0", default-features = false }
+-datafusion-datasource = { version = "54.1.0", default-features = false }
+-datafusion-datasource-parquet = { version = "54.1.0" }
+-datafusion-execution = { version = "54.1.0", default-features = false }
+-datafusion-expr = { version = "54.1.0", default-features = false }
+-datafusion-ffi = {  version = "54.1.0" }
+-datafusion-optimizer = { version = "54.1.0" }
+-datafusion-physical-expr = { version = "54.1.0" }
+-datafusion-physical-plan = { version = "54.1.0" }
+-datafusion-pruning = { version = "54.1.0" }
+-datafusion-session = { version = "54.1.0" }
++datafusion = { version = "=55.1.0", default-features = false }
++datafusion-catalog = { version = "=55.1.0" }
++datafusion-common = { version = "=55.1.0", default-features = false }
++datafusion-common-runtime = { version = "=55.1.0", default-features = false }
++datafusion-proto = { version = "=55.1.0", default-features = false }
++datafusion-datasource = { version = "=55.1.0", default-features = false }
++datafusion-datasource-parquet = { version = "=55.1.0" }
++datafusion-execution = { version = "=55.1.0", default-features = false }
++datafusion-expr = { version = "=55.1.0", default-features = false }
++datafusion-ffi = {  version = "=55.1.0" }
++datafusion-optimizer = { version = "=55.1.0" }
++datafusion-physical-expr = { version = "=55.1.0" }
++datafusion-physical-plan = { version = "=55.1.0" }
++datafusion-pruning = { version = "=55.1.0" }
++datafusion-session = { version = "=55.1.0" }
+ dirs = "7.0.0"
+ env_logger = "0.11"
+ fastrand = "2.4"
+@@ -122,8 +122,8 @@ num-traits = { version = "0.2", default-features = false, features = ["libm"] }
+ object_store = { version = "0.13.2", default-features = false }
+ once_cell = "1.20"
+ parking_lot = "0.12"
+-parquet = { version = "58.3.0", default-features = false, features = ["arrow", "async", "geospatial", "object_store"] }
+-parquet-geospatial = { version = "58.3.0" }
++parquet = { version = "=59.3.0", default-features = false, features = ["arrow", "async", "geospatial", "object_store"] }
++parquet-geospatial = { version = "=59.3.0" }
+ pin-project-lite = "0.2"
+ prost = "0.14.1"
+ pyo3 = { version = "0.29.0" }
+diff --git a/rust/sedona-functions/src/st_envelope_agg.rs b/rust/sedona-functions/src/st_envelope_agg.rs
+index 1b5f9ec..b4bc203 100644
+--- a/rust/sedona-functions/src/st_envelope_agg.rs
++++ b/rust/sedona-functions/src/st_envelope_agg.rs
+@@ -442,10 +442,29 @@ impl<T: WkbBounder2D + Default + 'static> GroupsAccumulator for BoundsGroupsAccu
+         &mut self,
+         values: &[ArrayRef],
+         group_indices: &[usize],
+-        opt_filter: Option<&arrow_array::BooleanArray>,
+         total_num_groups: usize,
+     ) -> Result<()> {
+-        self.merge_state(values, group_indices, opt_filter, total_num_groups)
++        self.merge_state(values, group_indices, None, total_num_groups)
++    }
++
++    fn convert_to_state(
++        &self,
++        values: &[ArrayRef],
++        opt_filter: Option<&BooleanArray>,
++    ) -> Result<Vec<ArrayRef>> {
++        // The bypass path represents every input row as its own group, while
++        // preserving the normal update path's null and FILTER semantics.
++        let rows = values[0].len();
++        let groups: Vec<_> = (0..rows).collect();
++        let mut accumulator = Self::new(self.input_type.clone());
++        accumulator.execute_update(
++            values,
++            &groups,
++            opt_filter,
++            rows,
++            self.input_type.clone(),
++        )?;
++        accumulator.emit_state(EmitTo::All)
+     }
+ 
+     fn evaluate(&mut self, emit_to: EmitTo) -> Result<ArrayRef> {

@@ -1,0 +1,76 @@
+diff --git a/crates/sail-execution/src/proto/converter.rs b/crates/sail-execution/src/proto/converter.rs
+index 5dbc2e4edd8a7249ddfa20181f88126b9748ddc2..8682125789aeb55710e4776df1f69f48aa6d68b5 100644
+--- a/crates/sail-execution/src/proto/converter.rs
++++ b/crates/sail-execution/src/proto/converter.rs
+@@ -69,29 +69,38 @@ impl PhysicalProtoConverterExtension for RemotePhysicalProtoConverter {
+         input_schema: &Schema,
+         ctx: &PhysicalPlanDecodeContext<'_>,
+     ) -> Result<Arc<dyn PhysicalExpr>> {
+-        let decoded = match decode_remote_expr_kind(proto)? {
+-            Some((ExprKind::HigherOrderUdf(node), inputs)) => {
+-                self.higher_order_proto_to_expr(node, inputs, input_schema, ctx)
+-            }
+-            Some((ExprKind::LambdaVariable(node), _)) => {
+-                let field = try_decode_field_ref(&node.field)?;
+-                let index = usize::try_from(node.index).map_err(|_| {
+-                    plan_datafusion_err!(
+-                        "LambdaVariable index {} does not fit in usize",
+-                        node.index
+-                    )
+-                })?;
+-                Ok(Arc::new(LambdaVariable::new(index, field)) as Arc<dyn PhysicalExpr>)
+-            }
+-            Some((ExprKind::Lambda(node), inputs)) => {
+-                let [body] = inputs else {
+-                    return plan_err!("LambdaExpr expects exactly one input, got {}", inputs.len());
+-                };
+-                let body = self.proto_to_physical_expr(body, input_schema, ctx)?;
+-                Ok(Arc::new(LambdaExpr::try_new(node.params, body)?) as Arc<dyn PhysicalExpr>)
+-            }
+-            _ => self.default_proto_to_physical_expr(proto, input_schema, ctx),
+-        }?;
++        let decoded = if let Some(expr) =
++            super::native_expr::decode(proto, input_schema, ctx, self)?
++        {
++            expr
++        } else {
++            match decode_remote_expr_kind(proto)? {
++                Some((ExprKind::HigherOrderUdf(node), inputs)) => {
++                    self.higher_order_proto_to_expr(node, inputs, input_schema, ctx)
++                }
++                Some((ExprKind::LambdaVariable(node), _)) => {
++                    let field = try_decode_field_ref(&node.field)?;
++                    let index = usize::try_from(node.index).map_err(|_| {
++                        plan_datafusion_err!(
++                            "LambdaVariable index {} does not fit in usize",
++                            node.index
++                        )
++                    })?;
++                    Ok(Arc::new(LambdaVariable::new(index, field)) as Arc<dyn PhysicalExpr>)
++                }
++                Some((ExprKind::Lambda(node), inputs)) => {
++                    let [body] = inputs else {
++                        return plan_err!(
++                            "LambdaExpr expects exactly one input, got {}",
++                            inputs.len()
++                        );
++                    };
++                    let body = self.proto_to_physical_expr(body, input_schema, ctx)?;
++                    Ok(Arc::new(LambdaExpr::try_new(node.params, body)?) as Arc<dyn PhysicalExpr>)
++                }
++                _ => self.default_proto_to_physical_expr(proto, input_schema, ctx),
++            }?
++        };
+ 
+         let Some(expression_id) = proto.expr_id else {
+             return Ok(decoded);
+@@ -118,6 +127,9 @@ impl PhysicalProtoConverterExtension for RemotePhysicalProtoConverter {
+         expr: &Arc<dyn PhysicalExpr>,
+         codec: &dyn PhysicalExtensionCodec,
+     ) -> Result<PhysicalExprNode> {
++        if let Some(proto) = super::native_expr::encode(expr, codec, self)? {
++            return Ok(proto);
++        }
+         if let Some(hof) = expr.downcast_ref::<HigherOrderFunctionExpr>() {
+             return self.higher_order_expr_to_proto(expr, hof, codec);
+         }

@@ -1,0 +1,375 @@
+--- ownership-v2/common.py
++++ compact/common.py
+@@ -7,51 +7,71 @@
+ import subprocess
+ 
+ SRC = Path('/Users/alexy/src/grust')
+-DST = Path('/private/tmp/grust-sail-review-ownership-docs-v2')
+-OUT = Path('/private/tmp/grust-sail-review-ownership-publication-v2')
++DST = Path('/private/tmp/grust-sail-review-compact-docs')
++OUT = Path('/private/tmp/grust-sail-review-compact-publication')
+ REL = Path('docs/reviews/sail-stream-experiments-2026-09-30')
+-BASE = '980da04151cd5860017a06580a658bdf7e133c40'
++BASE = '95ad9933053a3896db10ff6b1ec57a98b904fb50'
+ ORIGIN = 'git@github.com:querygraph/grust.git'
+ REFS = ['refs/heads/work/proposal-v5', 'refs/heads/work/sail-graph-review']
+ BRANCH = REFS[0]
+ MANIFEST = REL/'DOCUMENTATION-SNAPSHOT.json'
+ COORD = Path('codex-to-codex.md')
+-MUTABLE_PROSE = {REL/'RESULTS.md'}
+-MUTABLE_FILES = MUTABLE_PROSE | {REL/'verify_documentation_snapshot.py'}
++MUTABLE_PROSE = {REL/'RESULTS.md', REL/'COMPACT-REPLAY-AND-SSSP.md'}
++MUTABLE_FILES = MUTABLE_PROSE
+ REVIEW_INPUTS = {Path('docs/SEM-REVIEW-2.md'), Path('docs/STREAM-LOSS-STATUS.md')}
+ ALLOWED_DIRS = {
+-    'argentea-rank-wcc-input-lifetime', 'argentea-cursor-lease-control',
+-    'documentation-validation-publication',
+-    'physical-output-execution-preparation', 'documentation-archive-context',
++    'sssp-candidate-buffer-reuse', 'logging03-publication', 'logging03-closed-review',
++    'logging03-physical-execution', 'logging03-monitor',
++    'physical-output-execution-preparation-v3', 'physical-output-execution-preparation-v4',
++    'documentation-ownership-publication',
+ }
+ ALLOWED_FILES = {
+-    'RESULTS.md', 'verify_documentation_snapshot.py', 'documentation-validation-activation.json',
+-    'argentea-rank-wcc-input-lifetime-delivery.json',
++    'RESULTS.md', 'COMPACT-REPLAY-AND-SSSP.md', 'sssp-candidate-buffer-reuse-delivery.json',
++    'documentation-ownership-activation.json', 'logging03-recovery02.json',
++    'logging03-collection.json', 'logging03-host-closure.json', 'logging03-wrapper-exit.json',
++    'closed-cell-audit/logging03-verification.json',
+ }
+-REQUIRED_CLOSURES = {
+-    str(REL/'argentea-rank-wcc-input-lifetime/final-receipt.json'),
+-    str(REL/'argentea-rank-wcc-input-lifetime/extended-exact-gate/receipt.json'),
+-    str(REL/'argentea-rank-wcc-input-lifetime-delivery.json'),
+-}
+-# Expanded component closure only; the earlier a41 gate remains historical evidence.
+-COMPONENT_COMMIT = '33adfce1d2ab77c3e108aa542f7eda80dd5f5cf9'
+-COMPONENT_TREE = '3f4399056199b49708340abf0b4d1205fca860dd'
+-COMPONENT_FINAL = str(REL/'argentea-rank-wcc-input-lifetime/final-receipt.json')
+-COMPONENT_EXACT = str(REL/'argentea-rank-wcc-input-lifetime/extended-exact-gate/receipt.json')
+-COMPONENT_DELIVERY = str(REL/'argentea-rank-wcc-input-lifetime-delivery.json')
++COMPONENT_COMMIT = 'fc094a0c25a49edeac2f9f0195aa973421a21a43'
++COMPONENT_TREE = '5abc3e30eadb878402b3a90bcbeb0a48ac8c4b25'
++COMPONENT_FINAL = str(REL/'sssp-candidate-buffer-reuse/final-receipt.json')
++COMPONENT_EXACT = str(REL/'sssp-candidate-buffer-reuse/exact-gate/receipt.json')
++COMPONENT_DELIVERY = str(REL/'sssp-candidate-buffer-reuse-delivery.json')
++PHYSICAL_REVIEW = str(REL/'logging03-physical-execution/independent-final-review.json')
++PHYSICAL_OUTER = str(REL/'logging03-physical-execution/attempt03/evidence/outer-receipt.json')
++PHYSICAL_REQUEST = str(REL/'logging03-physical-execution/bundles/attempt03/request.json')
++PACKAGE_FROZEN = str(REL/'logging03-publication/frozen.json')
+ CLOSED_PINS = {
+-    COMPONENT_FINAL: 'eff934be8adb0d9aa867596148b9fd9586fed96f1ba55ab74b2be35c9fa95380',
+-    COMPONENT_EXACT: 'a5d00a6905fd8c1336945ff76941804f317bb4ee0e9d4caeec9ca604e202798e',
++    COMPONENT_FINAL: 'a43aec337331a009c0e6adae08f19b8cd8984f3726f009b56c029788a05db09a',
++    COMPONENT_EXACT: '857c4e27d36f7ebb0932c69026acdf07e32fe42e0c2f97f3db887ee8421f1530',
++    COMPONENT_DELIVERY: 'fae44150d003d6dd514caf12e9703eb764ce2c304754b8cf86f81b7f09568715',
++    PHYSICAL_REVIEW: 'f9ae3ce79f5c3a37027ebba24fab5e2c28cab3b1909cc79feb5699c4968ea384',
++    PHYSICAL_OUTER: '00421102e9f5d70bf876d7c0e64b7db63e2e8a8261403c8e84d6c5503ccaacef',
++    PHYSICAL_REQUEST: '9a0f956c78c0583489c3b456ef2b276a17049fa31091ba6f922b4dcdc7a8bc65',
++    PACKAGE_FROZEN: '146f60d1f45bc1dbf407da7d343ef51a4789275dd7e8241a2bff16b173279e73',
+ }
+ CLOSURE_PREDICATES = {
+     COMPONENT_FINAL: {'outcome': 'EXACT_COMPONENT_GATE_PASS', 'commit': COMPONENT_COMMIT,
+-                      'tree': COMPONENT_TREE, 'exact_gate': 'extended-exact-gate/receipt.json',
+-                      'exact_gate_receipt_sha256': CLOSED_PINS[COMPONENT_EXACT]},
++                      'tree': COMPONENT_TREE, 'exact_gate': 'exact-gate/receipt.json'},
+     COMPONENT_EXACT: {'outcome': 'PASS', 'head': COMPONENT_COMMIT,
+                       'tree': COMPONENT_TREE, 'exact': True},
+     COMPONENT_DELIVERY: {'outcome': 'PUSHED_AND_REMOTELY_VERIFIED',
+                          'commit': COMPONENT_COMMIT, 'tree': COMPONENT_TREE},
++    PHYSICAL_REVIEW: {'outcome': 'PASS_INDEPENDENT_CLOSED_PHYSICAL_EXECUTION_AUDIT',
++                       'request_sha256': CLOSED_PINS[PHYSICAL_REQUEST], 'blockers': []},
++    PHYSICAL_OUTER: {'outcome': 'container_completed', 'physical_status': 'physical_values_pass',
++                     'request_sha256': CLOSED_PINS[PHYSICAL_REQUEST], 'errors': [],
++                     'cleanup': 'removed_after_state_capture', 'bundle_unchanged': True,
++                     'container_state.Running': False, 'container_state.Status': 'exited',
++                     'container_state.ExitCode': 0, 'container_state.OOMKilled': False},
++    PHYSICAL_REQUEST: {'prepared_only': True, 'expected_vertices': 16777216,
++                       'expected_source': 13507776},
++    PACKAGE_FROZEN: {'outcome': 'FROZEN_PACKAGE_LOCAL_LINKS_AND_INVENTORY_VERIFIED'},
+ }
++REQUIRED_CLOSURES = set(CLOSURE_PREDICATES)
++# The sole binary exception is a closed, independently inspectable diagnostics
++# package. This does not permit other archives or generated graph payloads.
++BINARY_PINS = {str(REL/'logging03-publication/diagnostics.tar.gz'):
++    {'bytes': 13848616, 'sha256': '2643372903532e7c1ff7b3f206aa7e5b176fef2a2b547ddc6947c1052d4fa83b', 'mode': '0o644'}}
+ ARCHIVE_CONTEXTS = {'docs/reviews/sail-stream-experiments-2026-09-30/documentation-validation-publication/preparation-attempt01/RESULTS.md': {'original_path': 'docs/reviews/sail-stream-experiments-2026-09-30/RESULTS.md', 'source_manifest': 'docs/reviews/sail-stream-experiments-2026-09-30/documentation-validation-publication/preparation-attempt01/DOCUMENTATION-SNAPSHOT.json'}}
+ ENV = dict(os.environ, GIT_OPTIONAL_LOCKS='0', PYTHONDONTWRITEBYTECODE='1')
+ 
+@@ -112,11 +132,25 @@
+     check(str(local) in ALLOWED_FILES or local.parts[0] in ALLOWED_DIRS,
+           'source outside fixed preparation scope: '+name)
+     check('__pycache__' not in path.parts and path.suffix != '.pyc', 'cache selected')
+-    check(path.suffix.lower() not in ('.parquet', '.bin', '.so', '.dylib', '.exe', '.whl', '.tar', '.gz', '.zip'),
++    check(name in BINARY_PINS or path.suffix.lower() not in ('.parquet', '.bin', '.so', '.dylib', '.exe', '.whl', '.tar', '.gz', '.zip', '.tgz', '.xz', '.bz2', '.zst'),
+           'private/binary data selected: '+name)
+     return path
+ 
+ 
++def check_selected_content(path, name):
++    # All other selected records are text. Do not accidentally publish a binary
++    # under an unfamiliar extension; reject for explicit review without editing.
++    if name in BINARY_PINS:
++        check(info(path) == BINARY_PINS[name], 'binary exception content differs')
++    else:
++        data = path.read_bytes()
++        try:
++            data.decode('utf-8')
++        except UnicodeDecodeError as error:
++            raise RuntimeError('unapproved non-text selected source: '+name) from error
++        check(b'\0' not in data, 'unapproved NUL-bearing selected source: '+name)
++
++
+ def safe_path(root, name):
+     path = relative(name)
+     current = root
+@@ -152,20 +186,23 @@
+               and all(c in '0123456789abcdef' for c in expected['sha256']), 'invalid source hash')
+         check(type(expected['bytes']) is int and expected['bytes'] >= 0, 'invalid source size')
+         check(expected['mode'] in ('0o644', '0o755'), 'unexpected source mode')
++        if name in BINARY_PINS:
++            check(expected == BINARY_PINS[name], 'binary exception pin differs: '+name)
++    check(set(BINARY_PINS) <= set(auth['selected_sources']), 'closed diagnostics package missing')
+     check(isinstance(auth.get('required_json'), list) and auth['required_json'], 'missing closure guards')
+     for item in auth['required_json']:
+         check(isinstance(item, dict) and item.get('path') in auth['selected_sources'], 'closure receipt not selected')
+         check(isinstance(item.get('equals'), dict) and item['equals']
+               and all(isinstance(k, str) and k and all(k.split('.')) for k in item['equals']), 'invalid closure guard')
+     check(REQUIRED_CLOSURES <= {x['path'] for x in auth['required_json']},
+-          'new component final/exact gate and outer delivery closure receipts required')
++          'component, physical check and package closure receipts required')
+     for path, predicates in CLOSURE_PREDICATES.items():
+         matches = [item['equals'] for item in auth['required_json'] if item['path'] == path]
+         check(len(matches) == 1 and all(matches[0].get(k) == v for k, v in predicates.items()),
+-              'expanded component closure predicates differ: '+path)
++              'closed evidence predicates differ: '+path)
+     for path, digest in CLOSED_PINS.items():
+         check(auth['selected_sources'][path]['sha256'] == digest,
+-              'expanded component closed receipt hash differs: '+path)
++              'closed evidence receipt hash differs: '+path)
+ 
+ 
+ def index_path():
+--- ownership-v2/prepare_snapshot.py
++++ compact/prepare_snapshot.py
+@@ -25,6 +25,7 @@
+ for name, expected in auth['selected_sources'].items():
+     path = selected_path(name)
+     check(info(safe_path(SRC, str(path))) == expected, 'frozen source does not match authorization: '+name)
++    check_selected_content(safe_path(SRC, str(path)), name)
+     selected[name] = expected
+ for item in auth['required_json']:
+     check(item['path'] in selected, 'closure receipt not selected')
+@@ -35,7 +36,7 @@
+             actual = actual[key]
+         check(actual == value, 'closed-result guard failed: '+item['path']+' '+pointer)
+ check(REQUIRED_CLOSURES <= {x['path'] for x in auth['required_json']},
+-      'new component final/exact gate and outer delivery closure receipts required')
++      'component, physical check and package closure receipts required')
+ prep = dict(recorded_utc=utc(), base_commit=BASE, selected_sources=selected, shared_before=state,
+             authorization_sha256=args.authorization_sha256, authorization=auth,
+             expected_remote_refs=dict.fromkeys(REFS, BASE))
+@@ -63,7 +64,7 @@
+     publication_branches=[ref.removeprefix('refs/heads/') for ref in REFS],
+     files=[dict(path=str(p), sha256=sha(DST/p), bytes=(DST/p).stat().st_size) for p in sorted(paths)],
+     pending_excluded_subtrees=auth['excluded_scopes'],
+-    source_copy_guard='Only authorized exact source bytes/sizes/modes copied; shared coordination never copied. All prior evidence immutable except current root RESULTS, the reviewed archive-link verifier, and a candidate-only coordination append.',
++    source_copy_guard='Only authorized exact source bytes/sizes/modes copied; shared coordination never copied. All prior evidence immutable except the two selected current root prose files and a candidate-only coordination append.',
+     current_snapshot_cutoff=auth['cutoff'],
+     archived_markdown_link_contexts=ARCHIVE_CONTEXTS)
+ # Historical cutoff fields remain evidence but cannot label this publication.
+--- ownership-v2/commit_and_gate.sh
++++ compact/commit_and_gate.sh
+@@ -2,13 +2,13 @@
+ # Root executes only after frozen-input authorization and independent review.
+ # No command may follow a failed gate; candidate/exact outputs are kept separate.
+ set -C
+-cd /private/tmp/grust-sail-review-ownership-docs-v2 &&
++cd /private/tmp/grust-sail-review-compact-docs &&
+ export GIT_OPTIONAL_LOCKS=0 PYTHONDONTWRITEBYTECODE=1 &&
+-python3 /private/tmp/grust-sail-review-ownership-publication-v2/guard.py candidate-before &&
+-python3 docs/reviews/sail-stream-experiments-2026-09-30/verify_documentation_snapshot.py --expected-head 980da04151cd5860017a06580a658bdf7e133c40 > /private/tmp/grust-sail-review-ownership-publication-v2/candidate-gate.log 2>&1 &&
+-python3 /private/tmp/grust-sail-review-ownership-publication-v2/guard.py candidate-after &&
+-git commit -F /private/tmp/grust-sail-review-ownership-publication-v2/commit-message.txt &&
++python3 /private/tmp/grust-sail-review-compact-publication/guard.py candidate-before &&
++python3 docs/reviews/sail-stream-experiments-2026-09-30/verify_documentation_snapshot.py --expected-head 95ad9933053a3896db10ff6b1ec57a98b904fb50 > /private/tmp/grust-sail-review-compact-publication/candidate-gate.log 2>&1 &&
++python3 /private/tmp/grust-sail-review-compact-publication/guard.py candidate-after &&
++git commit -F /private/tmp/grust-sail-review-compact-publication/commit-message.txt &&
+ snapshot_commit=$(git rev-parse HEAD) &&
+-python3 /private/tmp/grust-sail-review-ownership-publication-v2/guard.py exact-before "$snapshot_commit" &&
+-python3 docs/reviews/sail-stream-experiments-2026-09-30/verify_documentation_snapshot.py --expected-head "$snapshot_commit" > /private/tmp/grust-sail-review-ownership-publication-v2/exact-gate.log 2>&1 &&
+-python3 /private/tmp/grust-sail-review-ownership-publication-v2/guard.py exact-after "$snapshot_commit"
++python3 /private/tmp/grust-sail-review-compact-publication/guard.py exact-before "$snapshot_commit" &&
++python3 docs/reviews/sail-stream-experiments-2026-09-30/verify_documentation_snapshot.py --expected-head "$snapshot_commit" > /private/tmp/grust-sail-review-compact-publication/exact-gate.log 2>&1 &&
++python3 /private/tmp/grust-sail-review-compact-publication/guard.py exact-after "$snapshot_commit"
+--- ownership-v2/activate_shared.py
++++ compact/activate_shared.py
+@@ -13,7 +13,7 @@
+ head = None
+ fd = None
+ lock = None
+-receipt_path = SRC/REL/'documentation-ownership-activation.json'
++receipt_path = SRC/REL/'documentation-compact-activation.json'
+ check(not receipt_path.exists() and not (OUT/'activation-intent.json').exists()
+       and not (OUT/'activation-failure.json').exists(), 'activation already attempted')
+ try:
+@@ -44,7 +44,7 @@
+     before = {name: info(SRC/name) for name in preserved}
+     index = index_path()
+     index_before = info(index)
+-    backup = Path(tempfile.mkdtemp(prefix='grust-ownership-activation-', dir='/private/tmp'))
++    backup = Path(tempfile.mkdtemp(prefix='grust-compact-activation-', dir='/private/tmp'))
+     shutil.copy2(index, backup/'index')
+     (backup/'coordination-before-lock.md').write_bytes(current_coord)
+     (backup/'manifest.json').write_bytes(old_manifest)
+--- ownership-v2/run_offline_controls.py
++++ compact/run_offline_controls.py
+@@ -5,7 +5,7 @@
+ from pathlib import Path
+ import common as c
+ 
+-output = c.OUT/'offline-controls-v3'
++output = c.OUT/'offline-controls02'
+ output.mkdir(exist_ok=False)
+ real_src = c.SRC
+ results = []
+@@ -33,21 +33,24 @@
+         c.git(root, 'remote', 'add', 'origin', c.ORIGIN)
+         files = {c.COORD: b'base section\npreviously inserted historical entry\nlast base section\n',
+                  c.REL/'RESULTS.md': b'reviewed results\n',
++                 c.REL/'COMPACT-REPLAY-AND-SSSP.md': b'reviewed compact result\n',
+                  Path('docs/SEM-REVIEW-2.md'): b'reviewed SEM input\n',
+                  Path('docs/STREAM-LOSS-STATUS.md'): b'reviewed stream input\n',
+-                 c.REL/'argentea-rank-wcc-input-lifetime/extended-exact-gate/receipt.json': b'{"verdict":"PASS"}\n',
+-                 c.REL/'argentea-rank-wcc-input-lifetime/final-receipt.json': b'{"outcome":"EXACT_COMPONENT_GATE_PASS"}\n',
+-                 c.REL/'argentea-rank-wcc-input-lifetime-delivery.json': b'{"outcome":"PUSHED_AND_REMOTELY_VERIFIED"}\n'}
++                 c.REL/'sssp-candidate-buffer-reuse/exact-gate/receipt.json': b'{"verdict":"PASS"}\n',
++                 c.REL/'sssp-candidate-buffer-reuse/final-receipt.json': b'{"outcome":"EXACT_COMPONENT_GATE_PASS"}\n',
++                 c.REL/'sssp-candidate-buffer-reuse-delivery.json': b'{"outcome":"PUSHED_AND_REMOTELY_VERIFIED"}\n'}
++        files.update({Path(name):b'{}\n' for name in c.REQUIRED_CLOSURES if Path(name) not in files})
++        files.update({Path(name):b'synthetic gzip bytes\n' for name in c.BINARY_PINS})
+         for relative, data in files.items():
+             (root/relative).parent.mkdir(parents=True, exist_ok=True)
+             (root/relative).write_bytes(data)
+         c.git(root, 'add', '.')
+         c.git(root, '-c', 'user.name=Offline Control', '-c', 'user.email=control@example.invalid',
+               '-c', 'core.hooksPath=/dev/null', 'commit', '-qm', 'Synthetic fixture')
+-        selected = str(c.REL/'argentea-rank-wcc-input-lifetime/extended-exact-gate/receipt.json')
+-        final = str(c.REL/'argentea-rank-wcc-input-lifetime/final-receipt.json')
+-        delivery = str(c.REL/'argentea-rank-wcc-input-lifetime-delivery.json')
+-        preparation = dict(shared_before=c.shared_state(), selected_sources={name:c.info(root/name) for name in [selected, final, delivery]})
++        selected = str(c.REL/'sssp-candidate-buffer-reuse/exact-gate/receipt.json')
++        final = str(c.REL/'sssp-candidate-buffer-reuse/final-receipt.json')
++        delivery = str(c.REL/'sssp-candidate-buffer-reuse-delivery.json')
++        preparation = dict(shared_before=c.shared_state(), selected_sources={name:c.info(root/name) for name in c.REQUIRED_CLOSURES | set(c.BINARY_PINS)})
+         test('unchanged_shared_state', lambda: c.check_shared(preparation))
+         original = (root/c.COORD).read_bytes()
+         def appended():
+@@ -90,7 +93,7 @@
+             (root/'linked').symlink_to(root/'elsewhere', target_is_directory=True)
+             rejected(lambda:c.safe_path(root, 'linked/file.json'), 'symlink in selected path')
+         test('selected_ancestor_symlink_rejected', ancestor_symlink)
+-        for name in ('logging03/cell.json', 'followup02/receipt.json', 'host-pair-16k/new-cell.json', 'resource-validation-union/receipt.json'):
++        for name in ('logging03/cell.json', 'followup02/receipt.json', 'host-pair-16k/new-cell.json', 'host-pair-execution/new-cell.json', 'resource-validation-union/receipt.json'):
+             test('active_scope_rejected:'+name, lambda name=name:rejected(lambda:c.selected_path(str(c.REL/name)), 'outside fixed preparation scope'))
+         auth = dict(archived_markdown_link_contexts=copy.deepcopy(c.ARCHIVE_CONTEXTS), status='AUTHORIZED_FROZEN_INPUTS', base=c.BASE, scope='Offline synthetic test only',
+                     coordination_title='ACK synthetic', coordination_body='Synthetic fixture',
+@@ -102,37 +105,63 @@
+         auth['selected_sources'] = copy.deepcopy(auth['selected_sources'])
+         for path, digest in c.CLOSED_PINS.items():
+             auth['selected_sources'][path]['sha256'] = digest
++        for path, expected in c.BINARY_PINS.items():
++            auth['selected_sources'][path] = copy.deepcopy(expected)
+         test('well_formed_authorization_accepted', lambda:c.validate_authorization(auth))
+-        test('reviewed_verifier_path_allowed', lambda:c.selected_path(str(c.REL/'verify_documentation_snapshot.py')))
+-        test('archive_context_evidence_allowed', lambda:c.selected_path(str(c.REL/'documentation-archive-context/receipt.json')))
++        test('verifier_edit_rejected', lambda:rejected(lambda:c.selected_path(str(c.REL/'verify_documentation_snapshot.py')), 'outside fixed preparation scope'))
++        test('prior_archive_context_unchanged', lambda:c.check(len(c.ARCHIVE_CONTEXTS)==1 and 'documentation-validation-publication/preparation-attempt01/RESULTS.md' in next(iter(c.ARCHIVE_CONTEXTS)), 'archive context changed'))
+         for context in ({}, None, {'unknown':{}}):
+             changed=copy.deepcopy(auth);changed['archived_markdown_link_contexts']=context
+             test('wrong_archive_context_rejected:'+str(context),lambda changed=changed:rejected(lambda:c.validate_authorization(changed),'reviewed archive link context differs'))
+-        test('closed_cursor_scope_accepted', lambda:c.selected_path(str(c.REL/'argentea-cursor-lease-control/final-receipt.json')))
+-        for path in (selected, final, delivery):
++        test('prior_component_selection_rejected', lambda:rejected(lambda:c.selected_path(str(c.REL/'argentea-cursor-lease-control/final-receipt.json')), 'outside fixed preparation scope'))
++        for path in c.REQUIRED_CLOSURES:
+             changed=copy.deepcopy(auth)
+-            next(x for x in changed['required_json'] if x['path']==path)['equals']['tree']='wrong'
+-            test('wrong_expanded_identity_rejected:'+path, lambda changed=changed:rejected(lambda:c.validate_authorization(changed),'expanded component closure predicates differ'))
++            predicates=next(x for x in changed['required_json'] if x['path']==path)['equals']
++            predicates[next(iter(predicates))]='wrong'
++            test('wrong_expanded_identity_rejected:'+path, lambda changed=changed:rejected(lambda:c.validate_authorization(changed),'closed evidence predicates differ'))
+         for path in c.CLOSED_PINS:
+             changed=copy.deepcopy(auth); changed['selected_sources'][path]['sha256']='0'*64
+-            test('wrong_closed_receipt_hash_rejected:'+path, lambda changed=changed:rejected(lambda:c.validate_authorization(changed),'expanded component closed receipt hash differs'))
++            test('wrong_closed_receipt_hash_rejected:'+path, lambda changed=changed:rejected(lambda:c.validate_authorization(changed),'closed evidence receipt hash differs'))
+         changed=copy.deepcopy(auth)
+-        old=str(c.REL/'argentea-rank-wcc-input-lifetime/exact-gate/receipt.json')
++        old=str(c.REL/'sssp-candidate-buffer-reuse/candidate-gate/receipt.json')
+         changed['selected_sources'][old]=changed['selected_sources'].pop(selected)
+         next(x for x in changed['required_json'] if x['path']==selected)['path']=old
+-        test('intermediate_exact_gate_rejected', lambda:rejected(lambda:c.validate_authorization(changed),'new component final/exact gate and outer delivery closure receipts required'))
++        test('intermediate_exact_gate_rejected', lambda:rejected(lambda:c.validate_authorization(changed),'component, physical check and package closure receipts required'))
++        binary_path=next(iter(c.BINARY_PINS))
++        test('sole_named_gzip_allowed', lambda:c.selected_path(binary_path))
++        for name in ('logging03-publication/other.tar.gz', 'logging03-monitor/private.gz',
++                     'logging03-publication/diagnostics.tar', 'logging03-publication/raw.parquet'):
++            test('unapproved_binary_rejected:'+name, lambda name=name:rejected(
++                lambda:c.selected_path(str(c.REL/name)), 'private/binary data selected'))
++        for key,value in [('sha256','0'*64),('bytes',13848617),('mode','0o755')]:
++            changed=copy.deepcopy(auth);changed['selected_sources'][binary_path][key]=value
++            test('changed_gzip_pin_rejected:'+key, lambda changed=changed:rejected(
++                lambda:c.validate_authorization(changed), 'binary exception pin differs'))
++        changed=copy.deepcopy(auth);del changed['selected_sources'][binary_path]
++        test('missing_gzip_rejected', lambda:rejected(lambda:c.validate_authorization(changed),
++             'closed diagnostics package missing'))
++        def unexpected_binary_content():
++            path=root/'unexpected.data';path.write_bytes(b'\xff\x80')
++            rejected(lambda:c.check_selected_content(path,'unexpected.data'),'unapproved non-text')
++            path.write_bytes(b'abc\0def')
++            rejected(lambda:c.check_selected_content(path,'unexpected.data'),'unapproved NUL-bearing')
++            path.write_text('valid ordinary text\n')
++            c.check_selected_content(path,'ordinary.log')
++        test('unfamiliar_binary_extension_rejected',unexpected_binary_content)
++        test('same_gzip_path_wrong_actual_bytes_rejected',lambda:rejected(
++            lambda:c.check_selected_content(root/binary_path,binary_path),'binary exception content differs'))
+         for key, value, reason in [('status','DRAFT_NOT_AUTHORIZED','inputs not authorized'),
+                                    ('excluded_scopes',None,'missing exclusions'),
+                                    ('commit_message',{},'missing reviewed prose'),
+                                    ('required_json',[],'missing closure guards')]:
+             changed=copy.deepcopy(auth); changed[key]=value
+             test('invalid_authorization_rejected:'+key, lambda changed=changed,reason=reason:rejected(lambda:c.validate_authorization(changed),reason))
+-        for path in (selected, final, delivery):
++        for path in c.REQUIRED_CLOSURES:
+             changed=copy.deepcopy(auth)
+             changed['required_json']=[item for item in changed['required_json'] if item['path'] != path]
+             test('missing_component_closure_rejected:'+path,
+                  lambda changed=changed:rejected(lambda:c.validate_authorization(changed),
+-                     'new component final/exact gate and outer delivery closure receipts required'))
++                     'component, physical check and package closure receipts required'))
+     receipt=dict(recorded_utc=c.utc(), outcome='PASS_OFFLINE_TOOLING_CONTROLS', controls=results,
+                  count=len(results), production_helpers={name:c.sha(c.OUT/name) for name in
+                     ('common.py','prepare_snapshot.py','guard.py','commit_and_gate.sh','publish.py','activate_shared.py')},
+--- ownership-v2/authorization-template.json
++++ compact/authorization-template.json
+@@ -1,13 +1,13 @@
+ {
+   "status": "DRAFT_NOT_AUTHORIZED",
+-  "base": "980da04151cd5860017a06580a658bdf7e133c40",
+-  "scope": "Root must provide the reviewed documentation-only scope after final 33adfce expanded ownership component and outer delivery receipts close; closed cursor evidence is allowed. Preserve all selected historical bytes and resolve the one archived RESULTS document using its pinned original-source manifest.",
+-  "cutoff": "Root must supply the exact closed evidence boundary; active run observations remain excluded.",
++  "base": "95ad9933053a3896db10ff6b1ec57a98b904fb50",
++  "scope": "Root must provide reviewed closed compact replay, physical-value check and SSSP component scope after final source freeze; no active paired study evidence.",
++  "cutoff": "Root must provide exact closed evidence cutoff.",
+   "excluded_scopes": [
+-    "All active logging03 and followup02 data",
+-    "Future paired workloads and their data",
+-    "Generated mock fixtures, bytecode, caches, private raw collections and binary artifacts",
+-    "Book, crate, runtime, Linux, worker, Flight, native-extension and performance qualification"
++    "Active host-pair execution and future paired data; all followup02 data",
++    "Raw logging03 collection outside the one pinned diagnostics package and selected metadata",
++    "Generated mock fixtures, bytecode, caches, private raw data and every unapproved binary/archive",
++    "Book or crate release; documentation gates are not runtime/performance qualification"
+   ],
+   "coordination_title": "Root must supply a task-specific ACK title",
+   "coordination_body": "Root must supply the isolated candidate appendix; shared coordination is never copied.",

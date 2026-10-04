@@ -1,0 +1,97 @@
+{
+  "recorded_utc": "2026-10-01T19:03:38.332158+00:00",
+  "purpose": "Official tiny-fixture semantic correctness before further timing/scale work",
+  "performance_measurement": false,
+  "controller_commit": "6ae2e43a903c2cee02da170465c922c72b76198e",
+  "runtime_commit": "56194b170155301ba91077f0ba3df31fe2c78b6b",
+  "runtime_binary_sha256": "5b7f506c19afd76a28b84c1459397b4ab30ff4cfc761f4195789425b963facec",
+  "image_sha256": "f3518d652fbea8b9b9f9ebf9849277ca3bd39d0c21bb2c6e36fbaeaa2dc2678e",
+  "envelope": {
+    "cpus": 2,
+    "cgroup_memory_gib": 4,
+    "swap_gib": 0,
+    "sail_pool_gib": 1,
+    "threads": 2,
+    "partitions": 2,
+    "execution_class": "local"
+  },
+  "inputs": "inputs/manifest.json",
+  "sequence": [
+    {
+      "dataset": "test-bfs-directed",
+      "algorithm": "bfs"
+    },
+    {
+      "dataset": "test-bfs-undirected",
+      "algorithm": "bfs"
+    },
+    {
+      "dataset": "test-pr-directed",
+      "algorithm": "pr"
+    },
+    {
+      "dataset": "test-pr-undirected",
+      "algorithm": "pr"
+    },
+    {
+      "dataset": "test-wcc-directed",
+      "algorithm": "wcc"
+    },
+    {
+      "dataset": "test-wcc-undirected",
+      "algorithm": "wcc"
+    },
+    {
+      "dataset": "test-sssp-directed",
+      "algorithm": "sssp"
+    },
+    {
+      "dataset": "test-sssp-undirected",
+      "algorithm": "sssp"
+    },
+    {
+      "dataset": "example-directed",
+      "algorithm": "bfs"
+    },
+    {
+      "dataset": "example-directed",
+      "algorithm": "pr"
+    },
+    {
+      "dataset": "example-directed",
+      "algorithm": "wcc"
+    },
+    {
+      "dataset": "example-directed",
+      "algorithm": "sssp"
+    },
+    {
+      "dataset": "example-undirected",
+      "algorithm": "bfs"
+    },
+    {
+      "dataset": "example-undirected",
+      "algorithm": "pr"
+    },
+    {
+      "dataset": "example-undirected",
+      "algorithm": "wcc"
+    },
+    {
+      "dataset": "example-undirected",
+      "algorithm": "sssp"
+    }
+  ],
+  "unsupported_algorithms": [
+    "cdlp",
+    "lcc"
+  ],
+  "oracle_boundary": "Full exported/collected result compared outside algorithm; no algorithm input-validation jobs",
+  "failure_policy": "Retain every cell. No retries; stop when transport/process closure is uncertain. A mismatched semantic result is never a pass.",
+  "run_id": "run02",
+  "helper": "run_ldbc_v2.py",
+  "prior_attempt": "host-run01",
+  "prior_attempt_outcome": "harness cleanup-contract error after BFS official answer passed",
+  "correction": "Match object-store cleanup contract: zero non-directory payload entries, with directories recorded separately; all semantic oracles unchanged",
+  "original_attempt_preserved": true
+}

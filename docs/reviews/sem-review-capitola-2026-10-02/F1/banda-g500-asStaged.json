@@ -1,0 +1,148 @@
+{
+ "graph": "graph500-24",
+ "order": "asStaged",
+ "threads": 10,
+ "phases": {
+  "server_and_session": 0.3768195000002379,
+  "read_and_stage": 1.8753920419994756,
+  "projection_undirected": 158.59934579199944,
+  "wcc_call_1": 136.81252154199956,
+  "wcc_call_2": 1.095415290999881,
+  "projection_outgoing": 1.1784251250001034,
+  "pagerank_10_steps": 4.0590419169993766
+ },
+ "stage_receipt": {
+  "graph": "g",
+  "nodeCount": 8870942,
+  "edgeCount": 260379520,
+  "revision": 1,
+  "nodeSortPermutationBytes": 0,
+  "nodeSortKeysBytes": 0,
+  "nodeSortedCopyBytes": 0,
+  "nodeFillBytes": 0,
+  "nodeNormalizedBytes": 136069024,
+  "nodeRetainedBytes": 136069024,
+  "nodeSortSeconds": 0.0,
+  "nodeSorted": false,
+  "edgeSortPermutationBytes": 0,
+  "edgeSortKeysBytes": 0,
+  "edgeSortedCopyBytes": 0,
+  "edgeFillBytes": 0,
+  "edgeNormalizedBytes": 8019645183,
+  "edgeRetainedBytes": 8019645183,
+  "edgeSortSeconds": 0.0,
+  "edgeSorted": false
+ },
+ "projection_stats": {
+  "nodes": 8870942,
+  "edges": 260379520,
+  "arcs": 520759040,
+  "selfLoops": 0,
+  "csrBytes": 6284592252
+ },
+ "rows": {
+  "wcc_call_1": 8870942,
+  "wcc_call_2": 8870942,
+  "pagerank_10_steps": 8870942
+ },
+ "status": {
+  "memory": {
+   "limit_bytes": 47244640256,
+   "used_bytes": 41092729421,
+   "peak_bytes": 41305666685,
+   "staged_bytes": 8155714207
+  },
+  "graphs": [
+   {
+    "name": "g",
+    "node_count": 8870942,
+    "edge_count": 260379520,
+    "revision": 1,
+    "projections": 2,
+    "staged_bytes": 8155714207,
+    "projection_builds": [
+     {
+      "key": "{\"defaultWeight\": \"Some(Null)\", \"nodeLabels\": \"Some(Null)\", \"orientation\": \"Some(String(\\\"undirected\\\"))\", \"relationshipTypes\": \"Some(Null)\", \"weightProperty\": \"Some(Null)\"}",
+      "seconds": 157.394999042,
+      "live_bytes_before": 8155714207,
+      "admitted_bytes": 17492283801
+     },
+     {
+      "key": "{\"defaultWeight\": \"Some(Null)\", \"nodeLabels\": \"Some(Null)\", \"orientation\": \"Some(String(\\\"outgoing\\\"))\", \"relationshipTypes\": \"Some(Null)\", \"weightProperty\": \"Some(Null)\"}",
+      "seconds": 135.661029833,
+      "live_bytes_before": 25647998008,
+      "admitted_bytes": 14367729561
+     }
+    ]
+   }
+  ],
+  "reads": [
+   {
+    "id": 1,
+    "algorithm": "projectionStats",
+    "graph": "g",
+    "state": "finished",
+    "message": null,
+    "batches": 1,
+    "rows": 1,
+    "live_bytes": 0,
+    "peak_bytes": 0,
+    "work_units": 260379520,
+    "diagnostics": null
+   },
+   {
+    "id": 2,
+    "algorithm": "wcc",
+    "graph": "g",
+    "state": "finished",
+    "message": null,
+    "batches": 1083,
+    "rows": 8870942,
+    "live_bytes": 558259,
+    "peak_bytes": 141935072,
+    "work_units": 304731353,
+    "diagnostics": null
+   },
+   {
+    "id": 3,
+    "algorithm": "wcc",
+    "graph": "g",
+    "state": "finished",
+    "message": null,
+    "batches": 1083,
+    "rows": 8870942,
+    "live_bytes": 558259,
+    "peak_bytes": 141935072,
+    "work_units": 304731344,
+    "diagnostics": null
+   },
+   {
+    "id": 4,
+    "algorithm": "projectionStats",
+    "graph": "g",
+    "state": "finished",
+    "message": null,
+    "batches": 1,
+    "rows": 1,
+    "live_bytes": 0,
+    "peak_bytes": 0,
+    "work_units": 260379520,
+    "diagnostics": null
+   },
+   {
+    "id": 5,
+    "algorithm": "pagerank",
+    "graph": "g",
+    "state": "finished",
+    "message": null,
+    "batches": 1083,
+    "rows": 8870942,
+    "live_bytes": 1796208,
+    "peak_bytes": 212937264,
+    "work_units": 3722029557,
+    "diagnostics": null
+   }
+  ]
+ },
+ "launch_to_exit_seconds": 308.3091313750001
+}

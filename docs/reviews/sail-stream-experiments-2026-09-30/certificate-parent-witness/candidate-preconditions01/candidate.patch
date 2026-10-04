@@ -1,0 +1,330 @@
+diff --git a/examples/extensions/benchmarks/test_traversal_certificate.py b/examples/extensions/benchmarks/test_traversal_certificate.py
+index a8ba8a8ab..1cb4d1662 100644
+--- a/examples/extensions/benchmarks/test_traversal_certificate.py
++++ b/examples/extensions/benchmarks/test_traversal_certificate.py
+@@ -14,19 +14,27 @@ def spark():
+     session.stop()
+ 
+ 
+-def fixture(spark, distances):
+-    vertices=spark.createDataFrame([(i,) for i in range(6)],'id long')
+-    edges=spark.createDataFrame([(0,1,1.),(1,2,0.),(2,1,0.),(3,4,0.),(4,3,0.)],
+-                               'src long,dst long,weight double')
+-    actual=spark.createDataFrame(list(enumerate(distances)),'id long,distance double')
+-    return vertices,edges,actual
++def fixture(spark, distances, tmp_path):
++    import pyarrow as pa
++    import pyarrow.parquet as pq
++    # Parquet is the benchmark input boundary; no client createDataFrame config
++    # negotiation is needed to exercise the certificate on an actual server.
++    root=tmp_path/'input';root.mkdir()
++    pq.write_table(pa.table({'id':list(range(6))}),root/'vertices.parquet')
++    pq.write_table(pa.table({'src':[0,1,2,3,4],'dst':[1,2,1,4,3],
++                             'weight':[1.,0.,0.,0.,0.]}),root/'edges.parquet')
++    pq.write_table(pa.table({'id':list(range(6)),
++                             'distance':pa.array(distances,type=pa.float64())}),root/'actual.parquet')
++    return tuple(spark.read.parquet((root/name).as_uri()) for name in
++                 ['vertices.parquet','edges.parquet','actual.parquet'])
++
+ 
+ 
+ @pytest.mark.parametrize('weighted,distances',[(True,[0.,1.,1.,None,None,None]),
+                                                (False,[0.,1.,2.,None,None,None])])
+-def test_valid_full_certificate(spark,weighted,distances):
++def test_valid_full_certificate(spark,tmp_path,weighted,distances):
+     from traversal_certificate import certify
+-    v,e,a=fixture(spark,distances)
++    v,e,a=fixture(spark,distances,tmp_path)
+     result=certify(spark,a,v,e,source=0,weighted=weighted,partitions=2)
+     assert result['reached']==3 and result['witness_rounds']==2
+     if not weighted:
+@@ -41,14 +49,14 @@ def test_valid_full_certificate(spark,weighted,distances):
+     ([0.,1.,float('nan'),None,None,None],'invalid distance'),
+     ([0.,1.,1.,None,None,0.],'tight-edge witness'),
+ ])
+-def test_bad_distances_cannot_pass_local_constraints_alone(spark,distances,message):
++def test_bad_distances_cannot_pass_local_constraints_alone(spark,tmp_path,distances,message):
+     from traversal_certificate import certify
+-    v,e,a=fixture(spark,distances)
++    v,e,a=fixture(spark,distances,tmp_path)
+     with pytest.raises(AssertionError,match=message):
+         certify(spark,a,v,e,source=0,weighted=True,partitions=2)
+ 
+ 
+-def test_certificate_cap_is_failure_and_ownership_is_released(spark, monkeypatch):
++def test_certificate_cap_is_failure_and_ownership_is_released(spark, tmp_path, monkeypatch):
+     from traversal_certificate import certify
+     from pyspark_pecan.utils import GraphUtils
+     allocated=[]
+@@ -58,7 +66,7 @@ def test_certificate_cap_is_failure_and_ownership_is_released(spark, monkeypatch
+         allocated.append((utils,owned))
+         return owned
+     monkeypatch.setattr(GraphUtils,'allocate',track)
+-    v,e,a=fixture(spark,[0.,1.,1.,None,None,None])
++    v,e,a=fixture(spark,[0.,1.,1.,None,None,None],tmp_path)
+     with pytest.raises(RuntimeError,match='round limit'):
+         certify(spark,a,v,e,source=0,weighted=True,partitions=2,max_rounds=1)
+     assert len(allocated)==1
+diff --git a/examples/extensions/benchmarks/test_traversal_parent_witness.py b/examples/extensions/benchmarks/test_traversal_parent_witness.py
+new file mode 100644
+index 000000000..2d6960ab9
+--- /dev/null
++++ b/examples/extensions/benchmarks/test_traversal_parent_witness.py
+@@ -0,0 +1,161 @@
++"""Actual SQL/oracle and fallback controls for the optional parent witness."""
++import os
++import pyarrow as pa
++import pyarrow.parquet as pq
++import pytest
++
++
++@pytest.fixture(scope='module')
++def spark():
++    endpoint=os.environ.get('SAIL_GRAPH_TEST_REMOTE')
++    if not endpoint:
++        pytest.skip('set SAIL_GRAPH_TEST_REMOTE for actual parent-witness checks')
++    from pyspark.sql.connect.session import SparkSession
++    session=SparkSession.builder.remote(endpoint).create()
++    yield session
++    session.stop()
++
++
++def fixture(spark,root,rows=None,edges=None,hop_type=None):
++    rows=rows or [(0,0.,0,0),(1,1.,0,1),(2,2.,1,2),(3,None,None,None)]
++    if edges is None:edges=[(0,1,1.),(1,2,1.)]
++    root.mkdir()
++    pq.write_table(pa.table({'id':pa.array([r[0] for r in rows],type=pa.int64())}),root/'vertices.parquet')
++    actual=pa.table({name:pa.array([row[i] for row in rows],type=kind)
++        for i,(name,kind) in enumerate([('id',pa.int64()),('distance',pa.float64()),
++                                       ('parent',pa.int64()),('hops',hop_type or pa.int64())])})
++    pq.write_table(actual,root/'actual.parquet')
++    pq.write_table(pa.table({name:pa.array([edge[i] for edge in edges],type=kind)
++        for i,(name,kind) in enumerate([('src',pa.int64()),('dst',pa.int64()),('weight',pa.float64())])}),root/'edges.parquet')
++    return tuple(spark.read.parquet((root/name).as_uri()) for name in
++                 ['vertices.parquet','edges.parquet','actual.parquet'])
++
++
++def certify(spark,frames,**options):
++    from traversal_certificate import certify as implementation
++    v,e,a=frames
++    return implementation(spark,a,v,e,source=options.pop('source',0),
++                           weighted=options.pop('weighted',True),partitions=2,**options)
++
++
++def validate(spark,root,**options):
++    from traversal_cell import validate as implementation
++    return implementation(spark,root/'actual.parquet',root,'sssp',4,0,True,False,
++                          policy='certificate',partitions=2,**options)
++
++
++@pytest.mark.parametrize('weighted',[False,True])
++@pytest.mark.parametrize('hop_type',[pa.int8(),pa.int16(),pa.int32(),pa.int64()])
++def test_integral_parent_tree_matches_distance_only_certificate_and_oracle(spark,tmp_path,weighted,hop_type):
++    from traversal_reference import distances
++    frames=fixture(spark,tmp_path/'data',hop_type=hop_type)
++    v,e,a=frames
++    proof=certify(spark,frames,weighted=weighted)
++    reference=certify(spark,(v,e,a.select('id','distance')),weighted=weighted)
++    assert proof['witness_method']=='parent_hops' and proof['witness_rounds'] is None
++    assert proof['parent_witness_max_hops']==2
++    assert reference['witness_method']=='tight_edge_bfs' and reference['witness_rounds']==2
++    for key in ('rows','unique','reached','max_edge_slack','conservative_absolute_distance_error_bound'):
++        assert proof[key]==reference[key]
++    assert {r.id:r.distance for r in a.collect()}==distances([0,1,2,3],[(0,1,1.),(1,2,1.)],0,weighted=weighted)
++
++
++def test_cap_trap_retains_shorter_bfs_fallback(spark,tmp_path):
++    frames=fixture(spark,tmp_path/'data',rows=[(0,0.,0,0),(1,0.,0,1),(2,0.,1,2)],
++                   edges=[(0,1,0.),(1,2,0.),(0,2,0.)])
++    proof=certify(spark,frames,max_rounds=1)
++    assert proof['witness_method']=='tight_edge_bfs' and proof['witness_rounds']==1
++    assert proof['parent_witness_max_hops'] is None
++
++
++def test_old_parent_tolerance_does_not_prove_exact_tight_edge(spark,tmp_path):
++    # Chosen root->2 parent is allowed by old parent validation but not tight at
++    # tolerance0; actual tight path needs two rounds, beyond the cap of one.
++    frames=fixture(spark,tmp_path/'data',rows=[(0,0.,0,0),(1,1.,0,1),(2,1.,0,1)],
++                   edges=[(0,1,1.),(1,2,0.),(0,2,1.+5e-13)])
++    with pytest.raises(RuntimeError,match='round limit'):
++        certify(spark,frames,max_rounds=1)
++
++
++def test_stricter_existing_parent_output_rejection_is_preserved(spark,tmp_path):
++    root=tmp_path/'data'
++    frames=fixture(spark,root,rows=[(0,0.,0,0),(1,1.,0,1),(2,2.+4e-12,1,2),(3,None,None,None)])
++    assert certify(spark,frames,tolerance=1e-12)['witness_method']=='parent_hops'
++    with pytest.raises(AssertionError,match='invalid parent edge'):
++        validate(spark,root)
++
++
++@pytest.mark.parametrize('case',['null_parent','null_hops','missing_parent','cycle','unreachable_metadata',
++                                  'root_parent','root_hops','zero_nonroot_hops','oversized_hops'])
++def test_invalid_parent_metadata_falls_back_and_caller_still_rejects(spark,tmp_path,case):
++    rows=[[0,0.,0,0],[1,1.,0,1],[2,2.,1,2],[3,None,None,None]]
++    if case=='null_parent':rows[1][2]=None
++    if case=='null_hops':rows[1][3]=None
++    if case=='missing_parent':rows[1][2]=99
++    if case=='cycle':rows[1][2]=2
++    if case=='unreachable_metadata':rows[3][2]=0
++    if case=='root_parent':rows[0][2]=1
++    if case=='root_hops':rows[0][3]=1
++    if case=='zero_nonroot_hops':rows[1][3]=0
++    if case=='oversized_hops':rows[2][3]=4
++    root=tmp_path/'data';frames=fixture(spark,root,rows=rows)
++    proof=certify(spark,frames)
++    assert proof['witness_method']=='tight_edge_bfs' and proof['witness_rounds']==2
++    with pytest.raises(AssertionError):validate(spark,root)
++
++
++def test_floating_hops_keep_existing_fallback_acceptance(spark,tmp_path):
++    root=tmp_path/'data';frames=fixture(spark,root,hop_type=pa.float64())
++    assert certify(spark,frames)['witness_method']=='tight_edge_bfs'
++    assert validate(spark,root)['parent_tree_checked']
++
++
++@pytest.mark.parametrize('missing',['parent','hops'])
++def test_one_missing_optional_native_field_keeps_original_contract(spark,tmp_path,missing):
++    from traversal_cell import validate_parents
++    root=tmp_path/'data';v,e,a=fixture(spark,root);a=a.drop(missing)
++    assert certify(spark,(v,e,a))['witness_method']=='tight_edge_bfs'
++    assert validate_parents(spark,a,root,'sssp',4,0,True,True) is False
++    with pytest.raises(AssertionError,match='portable traversal'):
++        validate_parents(spark,a,root,'sssp',4,0,True,False)
++
++
++def test_disconnected_zero_cycle_cannot_be_parent_proof(spark,tmp_path):
++    frames=fixture(spark,tmp_path/'data',rows=[(0,0.,0,0),(1,0.,2,1),(2,0.,1,2)],
++                   edges=[(1,2,0.),(2,1,0.)])
++    with pytest.raises(AssertionError,match='tight-edge witness'):certify(spark,frames)
++
++
++@pytest.mark.parametrize('case',['shortcut','unreachable','overflow'])
++def test_parent_tree_never_bypasses_all_edge_checks(spark,tmp_path,case):
++    rows=[(0,0.,0,0),(1,1.,0,1),(2,2.,1,2),(3,None,None,None)]
++    edges=[(0,1,1.),(1,2,1.)]
++    if case=='shortcut':edges.append((0,2,.5));message='triangle'
++    if case=='unreachable':edges.append((1,3,1.));message='reachable'
++    if case=='overflow':
++        rows=[(0,0.,0,0),(1,1e308,0,1),(2,1e308,1,2),(3,None,None,None)]
++        edges=[(0,1,1e308),(1,2,1e308)];message='overflow'
++    with pytest.raises(AssertionError,match=message):certify(spark,fixture(spark,tmp_path/'data',rows,edges))
++
++
++def test_signed_ids_parallel_edges_and_undirected_orientation(spark,tmp_path):
++    ids=[-(1<<63),-1,(1<<63)-1]
++    frames=fixture(spark,tmp_path/'data',rows=[(ids[0],0.,ids[0],0),(ids[1],1.,ids[0],1),(ids[2],2.,ids[1],2)],
++                   edges=[(ids[1],ids[0],8.),(ids[1],ids[0],1.),(ids[1],ids[2],1.)])
++    assert certify(spark,frames,source=ids[0],directed=False)['witness_method']=='parent_hops'
++
++
++def test_float_expression_order_and_isolated_root(spark,tmp_path):
++    frames=fixture(spark,tmp_path/'rounding',rows=[(0,0.,0,0),(1,1.,0,1),(2,1.,1,2)],
++                   edges=[(0,1,1.),(1,2,2.**-53)])
++    assert certify(spark,frames,tolerance=0.)['witness_method']=='parent_hops'
++    singleton=fixture(spark,tmp_path/'singleton',rows=[(0,0.,0,0)],edges=[])
++    proof=certify(spark,singleton)
++    assert proof['parent_witness_max_hops']==0 and proof['witness_rounds'] is None
++
++
++@pytest.mark.parametrize('cap',[0,-1,True,1.5])
++def test_invalid_cap_rejected_before_any_fast_path(cap):
++    from traversal_certificate import certify as implementation
++    with pytest.raises(ValueError,match='max_rounds'):
++        implementation(None,None,None,None,source=0,weighted=True,max_rounds=cap)
+diff --git a/examples/extensions/benchmarks/traversal_certificate.py b/examples/extensions/benchmarks/traversal_certificate.py
+index 6f80d23b6..d7c0552a3 100644
+--- a/examples/extensions/benchmarks/traversal_certificate.py
++++ b/examples/extensions/benchmarks/traversal_certificate.py
+@@ -9,6 +9,7 @@ the measured call and may itself require many distributed rounds.
+ import math
+ from pyspark.sql.connect import functions as F
+ from pyspark_pecan import GraphAlgorithms
++from traversal_parent_witness import parent_witness_depth
+ 
+ 
+ def certify(spark, actual, vertices, edges, *, source, weighted, directed=True,
+@@ -55,7 +56,7 @@ def certify(spark, actual, vertices, edges, *, source, weighted, directed=True,
+     assert not links.where(F.col('target_distance')-F.col('candidate')>F.col('allowed')).limit(1).count(), 'triangle inequality violated'
+     tight=links.where(F.abs(F.col('target_distance')-F.col('candidate'))<=F.col('allowed')).select('src','dst')
+     wanted=reached.count()
+-    graph=GraphAlgorithms(spark)
++    parent_depth=parent_witness_depth(actual,tight,source=source,vertices=count,max_rounds=max_rounds)
+ 
+     def witness(run, checked_vertices, checked_edges, size):
+         path,seen=run.materialize(checked_vertices.where(F.col('id')==source))
+@@ -81,7 +82,12 @@ def certify(spark, actual, vertices, edges, *, source, weighted, directed=True,
+         run.close()
+         return rounds
+ 
+-    rounds=graph._run(vertices,tight,partitions,None,witness)
++    if parent_depth is None:
++        rounds=GraphAlgorithms(spark)._run(vertices,tight,partitions,None,witness)
++        witness_method='tight_edge_bfs'
++    else:
++        rounds=None  # No BFS was run; parent depth is an upper bound, not BFS rounds.
++        witness_method='parent_hops'
+     # Every simple path has at most V-1 edges. Each local inequality/witness
+     # admits at most slack plus one rounded addition; report the accumulated
+     # conservative bound, not a full-vector relative-error claim.
+@@ -89,6 +95,7 @@ def certify(spark, actual, vertices, edges, *, source, weighted, directed=True,
+     bound=(count-1)*(slack+rounding)
+     assert math.isfinite(bound),'certificate error bound overflow'
+     return dict(**cardinality,reached=wanted,certificate='all-edge inequalities and rooted tight-edge reachability',
+-                witness_rounds=rounds,relative_edge_tolerance=tolerance,
++                witness_rounds=rounds,witness_method=witness_method,
++                parent_witness_max_hops=parent_depth,relative_edge_tolerance=tolerance,
+                 max_edge_slack=slack,conservative_absolute_distance_error_bound=bound,
+                 reference='distributed certificate; no precomputed reference vector')
+diff --git a/examples/extensions/benchmarks/traversal_parent_witness.py b/examples/extensions/benchmarks/traversal_parent_witness.py
+new file mode 100644
+index 000000000..23f781c23
+--- /dev/null
++++ b/examples/extensions/benchmarks/traversal_parent_witness.py
+@@ -0,0 +1,46 @@
++"""Optional parent/hop proof of the existing tight-edge reachability condition.
++
++This only selects a witness implementation. It never substitutes for the
++caller's existing parent-output validation or the certificate's all-edge checks.
++An unproved or over-cap parent path retains the original BFS fallback.
++"""
++from pyspark.sql.connect import functions as F
++from pyspark.sql.types import ByteType, ShortType, IntegerType, LongType
++
++
++def parent_witness_depth(actual, tight, *, source, vertices, max_rounds):
++    if not {'parent', 'hops'} <= set(actual.columns):
++        return None
++    integral = (ByteType, ShortType, IntegerType, LongType)
++    schema = actual.schema
++    if (not isinstance(schema['hops'].dataType, integral)
++            or not isinstance(schema['id'].dataType, integral)
++            or schema['parent'].dataType != schema['id'].dataType):
++        return None
++    reached = F.col('distance').isNotNull()
++    root = F.col('id') == source
++    # Explicit null tests are necessary: SQL UNKNOWN is not an invalid row.
++    invalid = (~reached & (F.col('parent').isNotNull() | F.col('hops').isNotNull())) | (
++        reached & (F.col('parent').isNull() | F.col('hops').isNull()
++                   | (F.col('hops') < 0) | (F.col('hops') >= vertices)
++                   | (root & ((F.col('parent') != source) | (F.col('hops') != 0)))
++                   | (~root & (F.col('hops') < 1))))
++    bounds = actual.agg(F.count(F.when(invalid, 1)).alias('invalid'),
++                        F.max('hops').alias('maximum')).first()
++    if bounds.invalid or bounds.maximum is None or bounds.maximum > max_rounds:
++        return None
++    children = actual.where(reached & ~root).select('id', 'parent', 'hops')
++    parents = actual.where(reached).select(F.col('id').alias('parent_id'),
++                                           F.col('hops').alias('parent_hops'))
++    linked = children.join(parents, children.parent == parents.parent_id, 'left')
++    if linked.where(F.col('parent_id').isNull() | F.col('parent_hops').isNull()
++                    | (F.col('hops') != F.col('parent_hops') + 1)).limit(1).count():
++        return None
++    # Use the certificate's exact candidate/allowed expression, already used
++    # to build tight. Do not regroup floating arithmetic or use parent tolerance.
++    if children.join(tight, (children.parent == tight.src) & (children.id == tight.dst),
++                     'left_anti').limit(1).count():
++        return None
++    # Positive integral hops strictly decrease to the sole zero-hop root.
++    # The supplied path can be deeper than BFS; only use it within the same cap.
++    return int(bounds.maximum)

@@ -1,0 +1,80 @@
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last.rs:170:             is_first,
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last.rs:171:             BytesValueState::try_new(data_type.clone())?,
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last.rs:172:         ),
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last.rs:173: 
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last.rs:174:         // Nested / composite types fall through to a generic ScalarValue-backed
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last.rs:175:         // state. Slower per-batch than the primitive/bytes fast paths but still
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last.rs:176:         // avoids the per-row ScalarValue churn of the per-group `Accumulator`
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last.rs:177:         // path: winner extraction happens once per group per batch, not once
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last.rs:178:         // per candidate row.
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last.rs:179:         DataType::List(_)
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last.rs:180:         | DataType::LargeList(_)
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last.rs:181:         | DataType::ListView(_)
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last.rs:182:         | DataType::LargeListView(_)
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last.rs:183:         | DataType::FixedSizeList(_, _)
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last.rs:184:         | DataType::Struct(_)
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last.rs:185:         | DataType::Map(_, _) => create_groups_accumulator_helper(
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last.rs:186:             args,
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last.rs:187:             is_first,
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last.rs:188:             GenericValueState::new(data_type.clone()),
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last.rs:189:         ),
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last.rs:190: 
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last.rs:379: struct FirstLastGroupsAccumulator<S: ValueState> {
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last.rs:380:     // ================ state ===========
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last.rs:381:     state: S,
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last.rs:382:     // Stores ordering values, of the aggregator requirement corresponding to first value
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last.rs:383:     // of the aggregator.
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last.rs:384:     // The `orderings` are stored row-wise, meaning that `orderings[group_idx]`
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last.rs:385:     // represents the ordering values corresponding to the `group_idx`-th group.
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last.rs:386:     orderings: Vec<Vec<ScalarValue>>,
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last.rs:387:     // At the beginning, `is_sets[group_idx]` is false, which means `first` is not seen yet.
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last.rs:388:     // Once we see the first value, we set the `is_sets[group_idx]` flag
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last.rs:389:     is_sets: BooleanBufferBuilder,
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last.rs:390:     // size of `self.orderings`
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last.rs:391:     // Calculating the memory usage of `self.orderings` using `ScalarValue::size_of_vec` is quite costly.
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last.rs:392:     // Therefore, we cache it and compute `size_of` only after each update
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last.rs:393:     // to avoid calling `ScalarValue::size_of_vec` by Self.size.
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last.rs:394:     size_of_orderings: usize,
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last.rs:505:         orderings: &[ScalarValue],
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last.rs:506:         array: &ArrayRef,
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last.rs:507:         idx: usize,
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last.rs:508:     ) -> Result<()> {
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last.rs:509:         self.state.update(group_idx, array, idx)?;
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last.rs:510:         self.is_sets.set_bit(group_idx, true);
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last.rs:511: 
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last.rs:512:         debug_assert!(orderings.len() == self.ordering_req.len());
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last.rs:513:         let old_size = ScalarValue::size_of_vec(&self.orderings[group_idx]);
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last.rs:514:         self.orderings[group_idx].clear();
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last.rs:515:         self.orderings[group_idx].extend_from_slice(orderings);
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last.rs:516:         let new_size = ScalarValue::size_of_vec(&self.orderings[group_idx]);
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last.rs:517:         self.size_of_orderings = self.size_of_orderings - old_size + new_size;
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last.rs:518:         Ok(())
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last.rs:637:         self.resize_states(total_num_groups);
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last.rs:638: 
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last.rs:639:         let vals = &values_and_order_cols[0];
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last.rs:640: 
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last.rs:641:         let mut ordering_buf = Vec::with_capacity(self.ordering_req.len());
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last.rs:642: 
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last.rs:643:         // The overhead of calling `extract_row_at_idx_to_buf` is somewhat high, so we need to minimize its calls as much as possible.
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last.rs:644:         for (group_idx, idx) in self
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last.rs:645:             .get_filtered_extreme_of_each_group(
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last.rs:646:                 &values_and_order_cols[1..],
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last.rs:647:                 group_indices,
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last.rs:648:                 opt_filter,
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last.rs:649:                 vals,
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last.rs:650:                 None,
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last.rs:651:             )?
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last.rs:652:             .into_iter()
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last.rs:653:         {
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last.rs:654:             extract_row_at_idx_to_buf(
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last.rs:655:                 &values_and_order_cols[1..],
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last.rs:656:                 idx,
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last.rs:657:                 &mut ordering_buf,
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last.rs:658:             )?;
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last.rs:739:     fn size(&self) -> usize {
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last.rs:740:         self.state.size()
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last.rs:741:             + self.is_sets.capacity() / 8 // capacity is in bits, so convert to bytes
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last.rs:742:             + self.size_of_orderings
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last.rs:743:             + self.extreme_of_each_group_buf.0.capacity() * size_of::<usize>()
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last.rs:744:             + self.extreme_of_each_group_buf.1.capacity() / 8
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last.rs:745:     }

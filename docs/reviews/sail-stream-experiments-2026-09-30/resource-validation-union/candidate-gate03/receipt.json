@@ -1,0 +1,1714 @@
+{
+  "started_utc": "2026-10-01T00:13:16.107146+00:00",
+  "outcome": "PASS",
+  "repository": "querygraph/sail",
+  "repo": "/private/tmp/sail-resource-validation-union-gate",
+  "output": "/Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/resource-validation-union/candidate-gate03",
+  "head": "200d1cf8eb1db5e9057e09e071ebd57391f4b376",
+  "tree": "d43293b4e5de64878c85c1d3d756077e2b7b749b",
+  "exact": false,
+  "target_root": "/private/tmp/sail-resource-validation-union-target",
+  "script_sha256": "ac1b12fbe08ac290b862c4453431fe31f95ef3d61b9ba27506b1f1c0ee6c1bdd",
+  "sql_helper": "/Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/resource-validation-union/sql_gate.py",
+  "sql_helper_sha256": "eaebc96443f9edc621adb1a937d7042ef3b8decaae757693f03872d7ad8fbb96",
+  "scope": "Gate a frozen detached Sail union; no commit, checkout, push or remote work.\n\nScope: changed host data-source code, Argentea/Nutmeg release unit tests, local\nCLI and Python/SQL controls. Excludes Linux, worker/Flight, a combined rebuilt\nnative extension, and performance qualification. Evidence is outside Sail.\n",
+  "steps": [
+    {
+      "name": "diff-check",
+      "command": [
+        "git",
+        "diff",
+        "--cached",
+        "--check"
+      ],
+      "started_utc": "2026-10-01T00:13:17.031751+00:00",
+      "free_bytes_before": 447475101696,
+      "outcome": "PASS",
+      "environment": {
+        "CARGO_INCREMENTAL": "0",
+        "CARGO_NET_OFFLINE": "true",
+        "CARGO_BUILD_JOBS": "6",
+        "PYTHONDONTWRITEBYTECODE": "1",
+        "PYTHONNOUSERSITE": "1",
+        "GIT_OPTIONAL_LOCKS": "0",
+        "PYO3_PYTHON": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/bin/python",
+        "PYTHONHOME": "/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none",
+        "PYTHONPATH": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages",
+        "DYLD_LIBRARY_PATH": "/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/lib",
+        "CARGO_TARGET_DIR": "/private/tmp/sail-resource-validation-union-target/host",
+        "CARGO_PROFILE_DEV_DEBUG": "0",
+        "CARGO_PROFILE_TEST_DEBUG": "0"
+      },
+      "pid": 13243,
+      "returncode": 0,
+      "process_cleanup": {
+        "pid": 13243,
+        "leader_complete_on_entry": true,
+        "group_alive_on_entry": false,
+        "signals": [],
+        "permission_probes": [],
+        "leader_returncode": 0,
+        "leader_reaped": true,
+        "group_absent": true
+      },
+      "final_returncode": 0,
+      "log": "diff-check.log",
+      "log_bytes": 0,
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "finished_utc": "2026-10-01T00:13:17.072817+00:00",
+      "free_bytes_after": 447475093504
+    },
+    {
+      "name": "host-format",
+      "command": [
+        "cargo",
+        "fmt",
+        "-p",
+        "sail-data-source",
+        "--check"
+      ],
+      "started_utc": "2026-10-01T00:13:18.014589+00:00",
+      "free_bytes_before": 447475060736,
+      "outcome": "PASS",
+      "environment": {
+        "CARGO_INCREMENTAL": "0",
+        "CARGO_NET_OFFLINE": "true",
+        "CARGO_BUILD_JOBS": "6",
+        "PYTHONDONTWRITEBYTECODE": "1",
+        "PYTHONNOUSERSITE": "1",
+        "GIT_OPTIONAL_LOCKS": "0",
+        "PYO3_PYTHON": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/bin/python",
+        "PYTHONHOME": "/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none",
+        "PYTHONPATH": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages",
+        "DYLD_LIBRARY_PATH": "/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/lib",
+        "CARGO_TARGET_DIR": "/private/tmp/sail-resource-validation-union-target/host",
+        "CARGO_PROFILE_DEV_DEBUG": "0",
+        "CARGO_PROFILE_TEST_DEBUG": "0"
+      },
+      "pid": 13267,
+      "returncode": 0,
+      "process_cleanup": {
+        "pid": 13267,
+        "leader_complete_on_entry": true,
+        "group_alive_on_entry": false,
+        "signals": [],
+        "permission_probes": [],
+        "leader_returncode": 0,
+        "leader_reaped": true,
+        "group_absent": true
+      },
+      "final_returncode": 0,
+      "log": "host-format.log",
+      "log_bytes": 440,
+      "log_sha256": "c0103e3a67572f4b2307879c217d95619ca907f4800b9c047f2d3c695deef3b2",
+      "finished_utc": "2026-10-01T00:13:18.281436+00:00",
+      "free_bytes_after": 447475048448
+    },
+    {
+      "name": "host-clippy",
+      "command": [
+        "cargo",
+        "clippy",
+        "--locked",
+        "--offline",
+        "-p",
+        "sail-data-source",
+        "--all-targets",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "started_utc": "2026-10-01T00:13:19.168917+00:00",
+      "free_bytes_before": 447474982912,
+      "outcome": "PASS",
+      "environment": {
+        "CARGO_INCREMENTAL": "0",
+        "CARGO_NET_OFFLINE": "true",
+        "CARGO_BUILD_JOBS": "6",
+        "PYTHONDONTWRITEBYTECODE": "1",
+        "PYTHONNOUSERSITE": "1",
+        "GIT_OPTIONAL_LOCKS": "0",
+        "PYO3_PYTHON": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/bin/python",
+        "PYTHONHOME": "/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none",
+        "PYTHONPATH": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages",
+        "DYLD_LIBRARY_PATH": "/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/lib",
+        "CARGO_TARGET_DIR": "/private/tmp/sail-resource-validation-union-target/host",
+        "CARGO_PROFILE_DEV_DEBUG": "0",
+        "CARGO_PROFILE_TEST_DEBUG": "0"
+      },
+      "pid": 13303,
+      "returncode": 0,
+      "process_cleanup": {
+        "pid": 13303,
+        "leader_complete_on_entry": true,
+        "group_alive_on_entry": false,
+        "signals": [],
+        "permission_probes": [],
+        "leader_returncode": 0,
+        "leader_reaped": true,
+        "group_absent": true
+      },
+      "final_returncode": 0,
+      "log": "host-clippy.log",
+      "log_bytes": 60,
+      "log_sha256": "2a7f2bc267ab84a783d3e33a26c82086964c4f5a781be885b3a698fdde636801",
+      "finished_utc": "2026-10-01T00:13:19.867394+00:00",
+      "free_bytes_after": 447474343936
+    },
+    {
+      "name": "host-tests",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "-p",
+        "sail-data-source",
+        "--lib"
+      ],
+      "started_utc": "2026-10-01T00:13:20.731736+00:00",
+      "free_bytes_before": 447475159040,
+      "outcome": "PASS",
+      "environment": {
+        "CARGO_INCREMENTAL": "0",
+        "CARGO_NET_OFFLINE": "true",
+        "CARGO_BUILD_JOBS": "6",
+        "PYTHONDONTWRITEBYTECODE": "1",
+        "PYTHONNOUSERSITE": "1",
+        "GIT_OPTIONAL_LOCKS": "0",
+        "PYO3_PYTHON": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/bin/python",
+        "PYTHONHOME": "/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none",
+        "PYTHONPATH": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages",
+        "DYLD_LIBRARY_PATH": "/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/lib",
+        "CARGO_TARGET_DIR": "/private/tmp/sail-resource-validation-union-target/host",
+        "CARGO_PROFILE_DEV_DEBUG": "0",
+        "CARGO_PROFILE_TEST_DEBUG": "0"
+      },
+      "pid": 13342,
+      "returncode": 0,
+      "summaries": [
+        [
+          77,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "tests_passed": 77,
+      "process_cleanup": {
+        "pid": 13342,
+        "leader_complete_on_entry": true,
+        "group_alive_on_entry": false,
+        "signals": [],
+        "permission_probes": [],
+        "leader_returncode": 0,
+        "leader_reaped": true,
+        "group_absent": true
+      },
+      "final_returncode": 0,
+      "log": "host-tests.log",
+      "log_bytes": 6668,
+      "log_sha256": "c2e02b9c902d7c52c32ba0e06cfc978cc8b00f47af30d416a31f1c1d294b0c1d",
+      "finished_utc": "2026-10-01T00:13:27.676116+00:00",
+      "free_bytes_after": 447474020352
+    },
+    {
+      "name": "core-format",
+      "command": [
+        "cargo",
+        "fmt",
+        "--manifest-path",
+        "/private/tmp/sail-resource-validation-union-gate/examples/extensions/argentea/Cargo.toml",
+        "--",
+        "--check"
+      ],
+      "started_utc": "2026-10-01T00:13:28.645130+00:00",
+      "free_bytes_before": 447474028544,
+      "outcome": "PASS",
+      "environment": {
+        "CARGO_INCREMENTAL": "0",
+        "CARGO_NET_OFFLINE": "true",
+        "CARGO_BUILD_JOBS": "6",
+        "PYTHONDONTWRITEBYTECODE": "1",
+        "PYTHONNOUSERSITE": "1",
+        "GIT_OPTIONAL_LOCKS": "0",
+        "CARGO_TARGET_DIR": "/private/tmp/sail-resource-validation-union-target/core"
+      },
+      "pid": 13481,
+      "returncode": 0,
+      "process_cleanup": {
+        "pid": 13481,
+        "leader_complete_on_entry": true,
+        "group_alive_on_entry": false,
+        "signals": [],
+        "permission_probes": [],
+        "leader_returncode": 0,
+        "leader_reaped": true,
+        "group_absent": true
+      },
+      "final_returncode": 0,
+      "log": "core-format.log",
+      "log_bytes": 4180,
+      "log_sha256": "f22a704f143b0c9f744793b9f7565058ee3072e5ab047360edd2dcb5b868ad90",
+      "finished_utc": "2026-10-01T00:13:28.906422+00:00",
+      "free_bytes_after": 447474008064
+    },
+    {
+      "name": "core-clippy",
+      "command": [
+        "cargo",
+        "clippy",
+        "--manifest-path",
+        "/private/tmp/sail-resource-validation-union-gate/examples/extensions/argentea/Cargo.toml",
+        "--locked",
+        "--offline",
+        "--all-targets",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "started_utc": "2026-10-01T00:13:29.778907+00:00",
+      "free_bytes_before": 447474024448,
+      "outcome": "PASS",
+      "environment": {
+        "CARGO_INCREMENTAL": "0",
+        "CARGO_NET_OFFLINE": "true",
+        "CARGO_BUILD_JOBS": "6",
+        "PYTHONDONTWRITEBYTECODE": "1",
+        "PYTHONNOUSERSITE": "1",
+        "GIT_OPTIONAL_LOCKS": "0",
+        "CARGO_TARGET_DIR": "/private/tmp/sail-resource-validation-union-target/core"
+      },
+      "pid": 13519,
+      "returncode": 0,
+      "process_cleanup": {
+        "pid": 13519,
+        "leader_complete_on_entry": true,
+        "group_alive_on_entry": false,
+        "signals": [],
+        "permission_probes": [],
+        "leader_returncode": 0,
+        "leader_reaped": true,
+        "group_absent": true
+      },
+      "final_returncode": 0,
+      "log": "core-clippy.log",
+      "log_bytes": 60,
+      "log_sha256": "63bd8a3ac13f8b1c160887cdaf9b30715b07e638d60df463cb8815f661518191",
+      "finished_utc": "2026-10-01T00:13:29.970106+00:00",
+      "free_bytes_after": 447474077696
+    },
+    {
+      "name": "native-changed-format",
+      "command": [
+        "rustfmt",
+        "--edition",
+        "2024",
+        "--check",
+        "--config",
+        "skip_children=true",
+        "/private/tmp/sail-resource-validation-union-gate/examples/extensions/nutmeg/src/argentea/bfs/input.rs",
+        "/private/tmp/sail-resource-validation-union-gate/examples/extensions/nutmeg/src/argentea/bfs/tests/initialization.rs",
+        "/private/tmp/sail-resource-validation-union-gate/examples/extensions/nutmeg/src/argentea/sssp/input.rs",
+        "/private/tmp/sail-resource-validation-union-gate/examples/extensions/nutmeg/src/argentea/sssp/tests/initialization.rs"
+      ],
+      "started_utc": "2026-10-01T00:13:30.840491+00:00",
+      "free_bytes_before": 447473987584,
+      "outcome": "PASS",
+      "environment": {
+        "CARGO_INCREMENTAL": "0",
+        "CARGO_NET_OFFLINE": "true",
+        "CARGO_BUILD_JOBS": "6",
+        "PYTHONDONTWRITEBYTECODE": "1",
+        "PYTHONNOUSERSITE": "1",
+        "GIT_OPTIONAL_LOCKS": "0",
+        "PYO3_PYTHON": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/bin/python",
+        "PYTHONHOME": "/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none",
+        "PYTHONPATH": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages",
+        "DYLD_LIBRARY_PATH": "/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/lib",
+        "CARGO_TARGET_DIR": "/private/tmp/sail-resource-validation-union-target/native"
+      },
+      "pid": 13548,
+      "returncode": 0,
+      "process_cleanup": {
+        "pid": 13548,
+        "leader_complete_on_entry": true,
+        "group_alive_on_entry": false,
+        "signals": [],
+        "permission_probes": [],
+        "leader_returncode": 0,
+        "leader_reaped": true,
+        "group_absent": true
+      },
+      "final_returncode": 0,
+      "log": "native-changed-format.log",
+      "log_bytes": 880,
+      "log_sha256": "ce0ef163d1a8bb9f5d9bfe882520eb3d4f39f07570780fe60aaf33db432250c1",
+      "finished_utc": "2026-10-01T00:13:30.888751+00:00",
+      "free_bytes_after": 447473975296
+    },
+    {
+      "name": "core-release",
+      "command": [
+        "cargo",
+        "test",
+        "--manifest-path",
+        "/private/tmp/sail-resource-validation-union-gate/examples/extensions/argentea/Cargo.toml",
+        "--locked",
+        "--offline",
+        "--release",
+        "--",
+        "--nocapture"
+      ],
+      "started_utc": "2026-10-01T00:13:31.750585+00:00",
+      "free_bytes_before": 447473909760,
+      "outcome": "PASS",
+      "environment": {
+        "CARGO_INCREMENTAL": "0",
+        "CARGO_NET_OFFLINE": "true",
+        "CARGO_BUILD_JOBS": "6",
+        "PYTHONDONTWRITEBYTECODE": "1",
+        "PYTHONNOUSERSITE": "1",
+        "GIT_OPTIONAL_LOCKS": "0",
+        "CARGO_TARGET_DIR": "/private/tmp/sail-resource-validation-union-target/core"
+      },
+      "pid": 13579,
+      "returncode": 0,
+      "summaries": [
+        [
+          6,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          5,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          2,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          5,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          7,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          6,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          4,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          9,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          5,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          1,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          8,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          13,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          17,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          5,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          8,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          5,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          8,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          6,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "tests_passed": 120,
+      "process_cleanup": {
+        "pid": 13579,
+        "leader_complete_on_entry": true,
+        "group_alive_on_entry": false,
+        "signals": [],
+        "permission_probes": [],
+        "leader_returncode": 0,
+        "leader_reaped": true,
+        "group_absent": true
+      },
+      "final_returncode": 0,
+      "log": "core-release.log",
+      "log_bytes": 32993,
+      "log_sha256": "0ec896483caf0efb9f7896a31c7c46e4ab824d5781e2d1c4d54663daac891c77",
+      "finished_utc": "2026-10-01T00:13:33.334608+00:00",
+      "free_bytes_after": 447473868800
+    },
+    {
+      "name": "native-build",
+      "command": [
+        "cargo",
+        "test",
+        "--manifest-path",
+        "/private/tmp/sail-resource-validation-union-gate/examples/extensions/nutmeg/Cargo.toml",
+        "--locked",
+        "--offline",
+        "--release",
+        "--lib",
+        "--no-run",
+        "--message-format=json-render-diagnostics"
+      ],
+      "started_utc": "2026-10-01T00:13:34.263736+00:00",
+      "free_bytes_before": 447473602560,
+      "outcome": "PASS",
+      "environment": {
+        "CARGO_INCREMENTAL": "0",
+        "CARGO_NET_OFFLINE": "true",
+        "CARGO_BUILD_JOBS": "6",
+        "PYTHONDONTWRITEBYTECODE": "1",
+        "PYTHONNOUSERSITE": "1",
+        "GIT_OPTIONAL_LOCKS": "0",
+        "PYO3_PYTHON": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/bin/python",
+        "PYTHONHOME": "/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none",
+        "PYTHONPATH": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages",
+        "DYLD_LIBRARY_PATH": "/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/lib",
+        "CARGO_TARGET_DIR": "/private/tmp/sail-resource-validation-union-target/native"
+      },
+      "pid": 13639,
+      "returncode": 0,
+      "process_cleanup": {
+        "pid": 13639,
+        "leader_complete_on_entry": true,
+        "group_alive_on_entry": false,
+        "signals": [],
+        "permission_probes": [],
+        "leader_returncode": 0,
+        "leader_reaped": true,
+        "group_absent": true
+      },
+      "final_returncode": 0,
+      "log": "native-build.log",
+      "log_bytes": 272749,
+      "log_sha256": "8a8de914374a87d6a514c49e91cefb349535ecd0cab752473a1a23e17c92f0c9",
+      "finished_utc": "2026-10-01T00:13:34.505317+00:00",
+      "free_bytes_after": 447473033216
+    },
+    {
+      "name": "native-registry",
+      "command": [
+        "cargo",
+        "test",
+        "--manifest-path",
+        "/private/tmp/sail-resource-validation-union-gate/examples/extensions/nutmeg/Cargo.toml",
+        "--locked",
+        "--offline",
+        "--release",
+        "--lib",
+        "--",
+        "--list"
+      ],
+      "started_utc": "2026-10-01T00:13:35.456031+00:00",
+      "free_bytes_before": 447473451008,
+      "outcome": "PASS",
+      "environment": {
+        "CARGO_INCREMENTAL": "0",
+        "CARGO_NET_OFFLINE": "true",
+        "CARGO_BUILD_JOBS": "6",
+        "PYTHONDONTWRITEBYTECODE": "1",
+        "PYTHONNOUSERSITE": "1",
+        "GIT_OPTIONAL_LOCKS": "0",
+        "PYO3_PYTHON": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/bin/python",
+        "PYTHONHOME": "/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none",
+        "PYTHONPATH": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages",
+        "DYLD_LIBRARY_PATH": "/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/lib",
+        "CARGO_TARGET_DIR": "/private/tmp/sail-resource-validation-union-target/native"
+      },
+      "pid": 13671,
+      "returncode": 0,
+      "process_cleanup": {
+        "pid": 13671,
+        "leader_complete_on_entry": true,
+        "group_alive_on_entry": false,
+        "signals": [],
+        "permission_probes": [],
+        "leader_returncode": 0,
+        "leader_reaped": true,
+        "group_absent": true
+      },
+      "final_returncode": 0,
+      "log": "native-registry.log",
+      "log_bytes": 4640,
+      "log_sha256": "1b397b361849ed86f52fe94a816ac7d6cfcc4790a5f3113b0ebcc9810d3d071f",
+      "stderr_log": "native-registry.stderr",
+      "stderr_log_sha256": "302fcccdf2de43908c0c0466d04ba5fb99bb053def20993222ff090b4cad727b",
+      "finished_utc": "2026-10-01T00:13:35.717171+00:00",
+      "free_bytes_after": 447473131520
+    },
+    {
+      "name": "native-release",
+      "command": [
+        "cargo",
+        "test",
+        "--manifest-path",
+        "/private/tmp/sail-resource-validation-union-gate/examples/extensions/nutmeg/Cargo.toml",
+        "--locked",
+        "--offline",
+        "--release",
+        "--lib",
+        "--",
+        "--nocapture"
+      ],
+      "started_utc": "2026-10-01T00:13:36.764333+00:00",
+      "free_bytes_before": 447473442816,
+      "outcome": "PASS",
+      "environment": {
+        "CARGO_INCREMENTAL": "0",
+        "CARGO_NET_OFFLINE": "true",
+        "CARGO_BUILD_JOBS": "6",
+        "PYTHONDONTWRITEBYTECODE": "1",
+        "PYTHONNOUSERSITE": "1",
+        "GIT_OPTIONAL_LOCKS": "0",
+        "PYO3_PYTHON": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/bin/python",
+        "PYTHONHOME": "/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none",
+        "PYTHONPATH": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages",
+        "DYLD_LIBRARY_PATH": "/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/lib",
+        "CARGO_TARGET_DIR": "/private/tmp/sail-resource-validation-union-target/native"
+      },
+      "pid": 13698,
+      "returncode": 0,
+      "summaries": [
+        [
+          51,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "tests_passed": 51,
+      "native_binary_sha256": "5367ddc23794fae3e89aea3b95c074664942cbf25948c23ae2b480cd27ffde7b",
+      "native_registry_sha256": "a2318b65ac4dbc7dac81cdf119f64fba905bc83e04ad785f19df02ca9fc2482f",
+      "argentea_tests_passed": 45,
+      "argentea_count_evidence": "45 registered in pinned executable; all 51 registered tests pass, none ignored/filtered",
+      "process_cleanup": {
+        "pid": 13698,
+        "leader_complete_on_entry": true,
+        "group_alive_on_entry": false,
+        "signals": [],
+        "permission_probes": [],
+        "leader_returncode": 0,
+        "leader_reaped": true,
+        "group_absent": true
+      },
+      "final_returncode": 0,
+      "log": "native-release.log",
+      "log_bytes": 3189141,
+      "log_sha256": "09d9383835ddbe6ca81e171408bccbe77fc4807d5b15cbd72e898e04d0973b7e",
+      "finished_utc": "2026-10-01T00:13:37.728403+00:00",
+      "free_bytes_after": 447469887488
+    },
+    {
+      "name": "core-loaded",
+      "command": [
+        "cargo",
+        "test",
+        "--manifest-path",
+        "/private/tmp/sail-resource-validation-union-gate/examples/extensions/argentea/Cargo.toml",
+        "--locked",
+        "--offline",
+        "--release",
+        "--",
+        "--nocapture"
+      ],
+      "started_utc": "2026-10-01T00:13:39.955541+00:00",
+      "free_bytes_before": 447469744128,
+      "outcome": "PASS",
+      "environment": {
+        "CARGO_INCREMENTAL": "0",
+        "CARGO_NET_OFFLINE": "true",
+        "CARGO_BUILD_JOBS": "6",
+        "PYTHONDONTWRITEBYTECODE": "1",
+        "PYTHONNOUSERSITE": "1",
+        "GIT_OPTIONAL_LOCKS": "0",
+        "CARGO_TARGET_DIR": "/private/tmp/sail-resource-validation-union-target/core"
+      },
+      "load_alive_before": 10,
+      "pid": 13758,
+      "returncode": 0,
+      "summaries": [
+        [
+          6,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          5,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          2,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          5,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          7,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          6,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          4,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          9,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          5,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          1,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          8,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          13,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          17,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          5,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          8,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          5,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          8,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          6,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "tests_passed": 120,
+      "load_alive_after": 10,
+      "process_cleanup": {
+        "pid": 13758,
+        "leader_complete_on_entry": true,
+        "group_alive_on_entry": false,
+        "signals": [],
+        "permission_probes": [],
+        "leader_returncode": 0,
+        "leader_reaped": true,
+        "group_absent": true
+      },
+      "final_returncode": 0,
+      "log": "core-loaded.log",
+      "log_bytes": 32993,
+      "log_sha256": "1a7eebb98c8e705917c5c77e11c4753b8958452ff2c032d0f44255be48069ab5",
+      "finished_utc": "2026-10-01T00:13:41.933740+00:00",
+      "free_bytes_after": 447469490176
+    },
+    {
+      "name": "native-loaded",
+      "command": [
+        "cargo",
+        "test",
+        "--manifest-path",
+        "/private/tmp/sail-resource-validation-union-gate/examples/extensions/nutmeg/Cargo.toml",
+        "--locked",
+        "--offline",
+        "--release",
+        "--lib",
+        "--",
+        "--nocapture"
+      ],
+      "started_utc": "2026-10-01T00:13:43.544274+00:00",
+      "free_bytes_before": 447469981696,
+      "outcome": "PASS",
+      "environment": {
+        "CARGO_INCREMENTAL": "0",
+        "CARGO_NET_OFFLINE": "true",
+        "CARGO_BUILD_JOBS": "6",
+        "PYTHONDONTWRITEBYTECODE": "1",
+        "PYTHONNOUSERSITE": "1",
+        "GIT_OPTIONAL_LOCKS": "0",
+        "PYO3_PYTHON": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/bin/python",
+        "PYTHONHOME": "/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none",
+        "PYTHONPATH": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages",
+        "DYLD_LIBRARY_PATH": "/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/lib",
+        "CARGO_TARGET_DIR": "/private/tmp/sail-resource-validation-union-target/native"
+      },
+      "load_alive_before": 10,
+      "pid": 13823,
+      "returncode": 0,
+      "summaries": [
+        [
+          51,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "tests_passed": 51,
+      "native_binary_sha256": "5367ddc23794fae3e89aea3b95c074664942cbf25948c23ae2b480cd27ffde7b",
+      "native_registry_sha256": "a2318b65ac4dbc7dac81cdf119f64fba905bc83e04ad785f19df02ca9fc2482f",
+      "argentea_tests_passed": 45,
+      "argentea_count_evidence": "45 registered in pinned executable; all 51 registered tests pass, none ignored/filtered",
+      "load_alive_after": 10,
+      "process_cleanup": {
+        "pid": 13823,
+        "leader_complete_on_entry": true,
+        "group_alive_on_entry": false,
+        "signals": [],
+        "permission_probes": [],
+        "leader_returncode": 0,
+        "leader_reaped": true,
+        "group_absent": true
+      },
+      "final_returncode": 0,
+      "log": "native-loaded.log",
+      "log_bytes": 3189142,
+      "log_sha256": "18c2c0bcba47ec7aa703c5681c448d6a85a486754c12b34c593afe9bbfd666f2",
+      "finished_utc": "2026-10-01T00:13:45.491139+00:00",
+      "free_bytes_after": 447466696704
+    },
+    {
+      "name": "cli-build",
+      "command": [
+        "cargo",
+        "build",
+        "--locked",
+        "--offline",
+        "-p",
+        "sail-cli",
+        "--bin",
+        "sail",
+        "--message-format=json-render-diagnostics"
+      ],
+      "started_utc": "2026-10-01T00:13:47.392899+00:00",
+      "free_bytes_before": 447467110400,
+      "outcome": "PASS",
+      "environment": {
+        "CARGO_INCREMENTAL": "0",
+        "CARGO_NET_OFFLINE": "true",
+        "CARGO_BUILD_JOBS": "6",
+        "PYTHONDONTWRITEBYTECODE": "1",
+        "PYTHONNOUSERSITE": "1",
+        "GIT_OPTIONAL_LOCKS": "0",
+        "PYO3_PYTHON": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/bin/python",
+        "PYTHONHOME": "/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none",
+        "PYTHONPATH": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages",
+        "DYLD_LIBRARY_PATH": "/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/lib",
+        "CARGO_TARGET_DIR": "/private/tmp/sail-resource-validation-union-target/host",
+        "CARGO_PROFILE_DEV_DEBUG": "0",
+        "CARGO_PROFILE_TEST_DEBUG": "0"
+      },
+      "pid": 13882,
+      "returncode": 0,
+      "process_cleanup": {
+        "pid": 13882,
+        "leader_complete_on_entry": true,
+        "group_alive_on_entry": false,
+        "signals": [],
+        "permission_probes": [],
+        "leader_returncode": 0,
+        "leader_reaped": true,
+        "group_absent": true
+      },
+      "final_returncode": 0,
+      "log": "cli-build.log",
+      "log_bytes": 877554,
+      "log_sha256": "d1235daa0e2ae9564b0835ae0d148bafee8b78d40943923ecbb6d9ccfbf3391c",
+      "finished_utc": "2026-10-01T00:13:48.315727+00:00",
+      "free_bytes_after": 447465328640
+    },
+    {
+      "name": "python-sql",
+      "command": [
+        "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/bin/python",
+        "/Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/resource-validation-union/sql_gate.py",
+        "--repo",
+        "/private/tmp/sail-resource-validation-union-gate",
+        "--output",
+        "/Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/resource-validation-union/candidate-gate03/sql",
+        "--expected-head",
+        "200d1cf8eb1db5e9057e09e071ebd57391f4b376",
+        "--expected-tree",
+        "d43293b4e5de64878c85c1d3d756077e2b7b749b",
+        "--mode",
+        "candidate",
+        "--binary",
+        "/private/tmp/sail-resource-validation-union-target/host/debug/sail",
+        "--binary-sha256",
+        "4b976fd7a809cb059c72a2119293f490105ff0ed375feaf0ccb5f3e5dad88662"
+      ],
+      "started_utc": "2026-10-01T00:13:49.759849+00:00",
+      "free_bytes_before": 447465058304,
+      "outcome": "PASS",
+      "environment": {
+        "CARGO_INCREMENTAL": "0",
+        "CARGO_NET_OFFLINE": "true",
+        "CARGO_BUILD_JOBS": "6",
+        "PYTHONDONTWRITEBYTECODE": "1",
+        "PYTHONNOUSERSITE": "1",
+        "GIT_OPTIONAL_LOCKS": "0",
+        "PYO3_PYTHON": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/bin/python",
+        "PYTHONHOME": "/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none",
+        "PYTHONPATH": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages",
+        "DYLD_LIBRARY_PATH": "/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/lib",
+        "CARGO_TARGET_DIR": "/private/tmp/sail-resource-validation-union-target/host",
+        "CARGO_PROFILE_DEV_DEBUG": "0",
+        "CARGO_PROFILE_TEST_DEBUG": "0"
+      },
+      "pid": 13931,
+      "returncode": 0,
+      "process_cleanup": {
+        "pid": 13931,
+        "leader_complete_on_entry": true,
+        "group_alive_on_entry": false,
+        "signals": [],
+        "permission_probes": [],
+        "leader_returncode": 0,
+        "leader_reaped": true,
+        "group_absent": true
+      },
+      "final_returncode": 0,
+      "log": "python-sql.log",
+      "log_bytes": 123,
+      "log_sha256": "a30ce56c44a9916914d644834506b1d2cd5d7850bb1c275d970abfe179896992",
+      "finished_utc": "2026-10-01T00:14:11.121831+00:00",
+      "free_bytes_after": 447454330880
+    }
+  ],
+  "guards": [
+    {
+      "label": "diff-check-before",
+      "started_utc": "2026-10-01T00:13:16.603865+00:00",
+      "completed_utc": "2026-10-01T00:13:17.027980+00:00",
+      "source_sha256": "330513e27723acdbc98307b24adb46e5110be61ff18d2c73fa963254fb847efa"
+    },
+    {
+      "label": "diff-check-after",
+      "started_utc": "2026-10-01T00:13:17.072855+00:00",
+      "completed_utc": "2026-10-01T00:13:17.530887+00:00",
+      "source_sha256": "330513e27723acdbc98307b24adb46e5110be61ff18d2c73fa963254fb847efa"
+    },
+    {
+      "label": "host-format-before",
+      "started_utc": "2026-10-01T00:13:17.535288+00:00",
+      "completed_utc": "2026-10-01T00:13:18.010604+00:00",
+      "source_sha256": "330513e27723acdbc98307b24adb46e5110be61ff18d2c73fa963254fb847efa"
+    },
+    {
+      "label": "host-format-after",
+      "started_utc": "2026-10-01T00:13:18.281475+00:00",
+      "completed_utc": "2026-10-01T00:13:18.732247+00:00",
+      "source_sha256": "330513e27723acdbc98307b24adb46e5110be61ff18d2c73fa963254fb847efa"
+    },
+    {
+      "label": "host-clippy-before",
+      "started_utc": "2026-10-01T00:13:18.736525+00:00",
+      "completed_utc": "2026-10-01T00:13:19.164978+00:00",
+      "source_sha256": "330513e27723acdbc98307b24adb46e5110be61ff18d2c73fa963254fb847efa"
+    },
+    {
+      "label": "host-clippy-after",
+      "started_utc": "2026-10-01T00:13:19.867430+00:00",
+      "completed_utc": "2026-10-01T00:13:20.298300+00:00",
+      "source_sha256": "330513e27723acdbc98307b24adb46e5110be61ff18d2c73fa963254fb847efa"
+    },
+    {
+      "label": "host-tests-before",
+      "started_utc": "2026-10-01T00:13:20.302606+00:00",
+      "completed_utc": "2026-10-01T00:13:20.727697+00:00",
+      "source_sha256": "330513e27723acdbc98307b24adb46e5110be61ff18d2c73fa963254fb847efa"
+    },
+    {
+      "label": "host-tests-after",
+      "started_utc": "2026-10-01T00:13:27.676149+00:00",
+      "completed_utc": "2026-10-01T00:13:28.159271+00:00",
+      "source_sha256": "330513e27723acdbc98307b24adb46e5110be61ff18d2c73fa963254fb847efa"
+    },
+    {
+      "label": "core-format-before",
+      "started_utc": "2026-10-01T00:13:28.163743+00:00",
+      "completed_utc": "2026-10-01T00:13:28.641223+00:00",
+      "source_sha256": "330513e27723acdbc98307b24adb46e5110be61ff18d2c73fa963254fb847efa"
+    },
+    {
+      "label": "core-format-after",
+      "started_utc": "2026-10-01T00:13:28.906455+00:00",
+      "completed_utc": "2026-10-01T00:13:29.337702+00:00",
+      "source_sha256": "330513e27723acdbc98307b24adb46e5110be61ff18d2c73fa963254fb847efa"
+    },
+    {
+      "label": "core-clippy-before",
+      "started_utc": "2026-10-01T00:13:29.342193+00:00",
+      "completed_utc": "2026-10-01T00:13:29.774853+00:00",
+      "source_sha256": "330513e27723acdbc98307b24adb46e5110be61ff18d2c73fa963254fb847efa"
+    },
+    {
+      "label": "core-clippy-after",
+      "started_utc": "2026-10-01T00:13:29.970139+00:00",
+      "completed_utc": "2026-10-01T00:13:30.400486+00:00",
+      "source_sha256": "330513e27723acdbc98307b24adb46e5110be61ff18d2c73fa963254fb847efa"
+    },
+    {
+      "label": "native-changed-format-before",
+      "started_utc": "2026-10-01T00:13:30.405161+00:00",
+      "completed_utc": "2026-10-01T00:13:30.836434+00:00",
+      "source_sha256": "330513e27723acdbc98307b24adb46e5110be61ff18d2c73fa963254fb847efa"
+    },
+    {
+      "label": "native-changed-format-after",
+      "started_utc": "2026-10-01T00:13:30.888785+00:00",
+      "completed_utc": "2026-10-01T00:13:31.319271+00:00",
+      "source_sha256": "330513e27723acdbc98307b24adb46e5110be61ff18d2c73fa963254fb847efa"
+    },
+    {
+      "label": "core-release-before",
+      "started_utc": "2026-10-01T00:13:31.323829+00:00",
+      "completed_utc": "2026-10-01T00:13:31.746476+00:00",
+      "source_sha256": "330513e27723acdbc98307b24adb46e5110be61ff18d2c73fa963254fb847efa"
+    },
+    {
+      "label": "core-release-after",
+      "started_utc": "2026-10-01T00:13:33.334641+00:00",
+      "completed_utc": "2026-10-01T00:13:33.832806+00:00",
+      "source_sha256": "330513e27723acdbc98307b24adb46e5110be61ff18d2c73fa963254fb847efa"
+    },
+    {
+      "label": "native-build-before",
+      "started_utc": "2026-10-01T00:13:33.837582+00:00",
+      "completed_utc": "2026-10-01T00:13:34.259583+00:00",
+      "source_sha256": "330513e27723acdbc98307b24adb46e5110be61ff18d2c73fa963254fb847efa"
+    },
+    {
+      "label": "native-build-after",
+      "started_utc": "2026-10-01T00:13:34.505351+00:00",
+      "completed_utc": "2026-10-01T00:13:34.959287+00:00",
+      "source_sha256": "330513e27723acdbc98307b24adb46e5110be61ff18d2c73fa963254fb847efa"
+    },
+    {
+      "label": "native-registry-before",
+      "started_utc": "2026-10-01T00:13:35.024724+00:00",
+      "completed_utc": "2026-10-01T00:13:35.451844+00:00",
+      "source_sha256": "330513e27723acdbc98307b24adb46e5110be61ff18d2c73fa963254fb847efa"
+    },
+    {
+      "label": "native-registry-after",
+      "started_utc": "2026-10-01T00:13:35.717207+00:00",
+      "completed_utc": "2026-10-01T00:13:36.152989+00:00",
+      "source_sha256": "330513e27723acdbc98307b24adb46e5110be61ff18d2c73fa963254fb847efa"
+    },
+    {
+      "label": "native-release-before",
+      "started_utc": "2026-10-01T00:13:36.219453+00:00",
+      "completed_utc": "2026-10-01T00:13:36.700756+00:00",
+      "source_sha256": "330513e27723acdbc98307b24adb46e5110be61ff18d2c73fa963254fb847efa"
+    },
+    {
+      "label": "native-release-after",
+      "started_utc": "2026-10-01T00:13:37.728450+00:00",
+      "completed_utc": "2026-10-01T00:13:38.198616+00:00",
+      "source_sha256": "330513e27723acdbc98307b24adb46e5110be61ff18d2c73fa963254fb847efa"
+    },
+    {
+      "label": "core-loaded-before",
+      "started_utc": "2026-10-01T00:13:39.242593+00:00",
+      "completed_utc": "2026-10-01T00:13:39.949591+00:00",
+      "source_sha256": "330513e27723acdbc98307b24adb46e5110be61ff18d2c73fa963254fb847efa"
+    },
+    {
+      "label": "core-loaded-after",
+      "started_utc": "2026-10-01T00:13:41.933797+00:00",
+      "completed_utc": "2026-10-01T00:13:42.662412+00:00",
+      "source_sha256": "330513e27723acdbc98307b24adb46e5110be61ff18d2c73fa963254fb847efa"
+    },
+    {
+      "label": "native-loaded-before",
+      "started_utc": "2026-10-01T00:13:42.671918+00:00",
+      "completed_utc": "2026-10-01T00:13:43.467604+00:00",
+      "source_sha256": "330513e27723acdbc98307b24adb46e5110be61ff18d2c73fa963254fb847efa"
+    },
+    {
+      "label": "native-loaded-after",
+      "started_utc": "2026-10-01T00:13:45.491180+00:00",
+      "completed_utc": "2026-10-01T00:13:46.092154+00:00",
+      "source_sha256": "330513e27723acdbc98307b24adb46e5110be61ff18d2c73fa963254fb847efa"
+    },
+    {
+      "label": "cli-build-before",
+      "started_utc": "2026-10-01T00:13:46.916154+00:00",
+      "completed_utc": "2026-10-01T00:13:47.388276+00:00",
+      "source_sha256": "330513e27723acdbc98307b24adb46e5110be61ff18d2c73fa963254fb847efa"
+    },
+    {
+      "label": "cli-build-after",
+      "started_utc": "2026-10-01T00:13:48.315771+00:00",
+      "completed_utc": "2026-10-01T00:13:48.817195+00:00",
+      "source_sha256": "330513e27723acdbc98307b24adb46e5110be61ff18d2c73fa963254fb847efa"
+    },
+    {
+      "label": "python-sql-before",
+      "started_utc": "2026-10-01T00:13:49.321794+00:00",
+      "completed_utc": "2026-10-01T00:13:49.755236+00:00",
+      "source_sha256": "330513e27723acdbc98307b24adb46e5110be61ff18d2c73fa963254fb847efa"
+    },
+    {
+      "label": "python-sql-after",
+      "started_utc": "2026-10-01T00:14:11.121871+00:00",
+      "completed_utc": "2026-10-01T00:14:11.561392+00:00",
+      "source_sha256": "330513e27723acdbc98307b24adb46e5110be61ff18d2c73fa963254fb847efa"
+    },
+    {
+      "label": "final",
+      "started_utc": "2026-10-01T00:14:12.026295+00:00",
+      "completed_utc": "2026-10-01T00:14:12.450708+00:00",
+      "source_sha256": "330513e27723acdbc98307b24adb46e5110be61ff18d2c73fa963254fb847efa"
+    }
+  ],
+  "saturation": [
+    {
+      "pid": 13727,
+      "started_utc": "2026-10-01T00:13:38.205444+00:00"
+    },
+    {
+      "pid": 13728,
+      "started_utc": "2026-10-01T00:13:38.207786+00:00"
+    },
+    {
+      "pid": 13729,
+      "started_utc": "2026-10-01T00:13:38.210357+00:00"
+    },
+    {
+      "pid": 13730,
+      "started_utc": "2026-10-01T00:13:38.213104+00:00"
+    },
+    {
+      "pid": 13731,
+      "started_utc": "2026-10-01T00:13:38.215732+00:00"
+    },
+    {
+      "pid": 13732,
+      "started_utc": "2026-10-01T00:13:38.218251+00:00"
+    },
+    {
+      "pid": 13733,
+      "started_utc": "2026-10-01T00:13:38.220883+00:00"
+    },
+    {
+      "pid": 13734,
+      "started_utc": "2026-10-01T00:13:38.223873+00:00"
+    },
+    {
+      "pid": 13735,
+      "started_utc": "2026-10-01T00:13:38.227200+00:00"
+    },
+    {
+      "pid": 13736,
+      "started_utc": "2026-10-01T00:13:38.235274+00:00"
+    }
+  ],
+  "cleanup": [
+    {
+      "kind": "saturator",
+      "pid": 13727,
+      "returncode": -15,
+      "reaped": true,
+      "group_cleanup": {
+        "pid": 13727,
+        "leader_complete_on_entry": false,
+        "group_alive_on_entry": true,
+        "signals": [
+          "SIGTERM"
+        ],
+        "permission_probes": [
+          {
+            "recorded_utc": "2026-10-01T00:13:46.142522+00:00",
+            "pid": 13727,
+            "member_pids": [
+              13727
+            ],
+            "proof": "successful complete ps pid/pgid snapshot"
+          }
+        ],
+        "leader_returncode": -15,
+        "leader_reaped": true,
+        "group_absent": true
+      }
+    },
+    {
+      "kind": "saturator",
+      "pid": 13728,
+      "returncode": -15,
+      "reaped": true,
+      "group_cleanup": {
+        "pid": 13728,
+        "leader_complete_on_entry": false,
+        "group_alive_on_entry": true,
+        "signals": [
+          "SIGTERM"
+        ],
+        "permission_probes": [
+          {
+            "recorded_utc": "2026-10-01T00:13:46.236529+00:00",
+            "pid": 13728,
+            "member_pids": [
+              13728
+            ],
+            "proof": "successful complete ps pid/pgid snapshot"
+          }
+        ],
+        "leader_returncode": -15,
+        "leader_reaped": true,
+        "group_absent": true
+      }
+    },
+    {
+      "kind": "saturator",
+      "pid": 13729,
+      "returncode": -15,
+      "reaped": true,
+      "group_cleanup": {
+        "pid": 13729,
+        "leader_complete_on_entry": false,
+        "group_alive_on_entry": true,
+        "signals": [
+          "SIGTERM"
+        ],
+        "permission_probes": [
+          {
+            "recorded_utc": "2026-10-01T00:13:46.344478+00:00",
+            "pid": 13729,
+            "member_pids": [
+              13729
+            ],
+            "proof": "successful complete ps pid/pgid snapshot"
+          }
+        ],
+        "leader_returncode": -15,
+        "leader_reaped": true,
+        "group_absent": true
+      }
+    },
+    {
+      "kind": "saturator",
+      "pid": 13730,
+      "returncode": -15,
+      "reaped": true,
+      "group_cleanup": {
+        "pid": 13730,
+        "leader_complete_on_entry": false,
+        "group_alive_on_entry": true,
+        "signals": [
+          "SIGTERM"
+        ],
+        "permission_probes": [
+          {
+            "recorded_utc": "2026-10-01T00:13:46.440864+00:00",
+            "pid": 13730,
+            "member_pids": [
+              13730
+            ],
+            "proof": "successful complete ps pid/pgid snapshot"
+          }
+        ],
+        "leader_returncode": -15,
+        "leader_reaped": true,
+        "group_absent": true
+      }
+    },
+    {
+      "kind": "saturator",
+      "pid": 13731,
+      "returncode": -15,
+      "reaped": true,
+      "group_cleanup": {
+        "pid": 13731,
+        "leader_complete_on_entry": false,
+        "group_alive_on_entry": true,
+        "signals": [
+          "SIGTERM"
+        ],
+        "permission_probes": [
+          {
+            "recorded_utc": "2026-10-01T00:13:46.540818+00:00",
+            "pid": 13731,
+            "member_pids": [
+              13731
+            ],
+            "proof": "successful complete ps pid/pgid snapshot"
+          }
+        ],
+        "leader_returncode": -15,
+        "leader_reaped": true,
+        "group_absent": true
+      }
+    },
+    {
+      "kind": "saturator",
+      "pid": 13732,
+      "returncode": -15,
+      "reaped": true,
+      "group_cleanup": {
+        "pid": 13732,
+        "leader_complete_on_entry": false,
+        "group_alive_on_entry": true,
+        "signals": [
+          "SIGTERM"
+        ],
+        "permission_probes": [
+          {
+            "recorded_utc": "2026-10-01T00:13:46.634207+00:00",
+            "pid": 13732,
+            "member_pids": [
+              13732
+            ],
+            "proof": "successful complete ps pid/pgid snapshot"
+          }
+        ],
+        "leader_returncode": -15,
+        "leader_reaped": true,
+        "group_absent": true
+      }
+    },
+    {
+      "kind": "saturator",
+      "pid": 13733,
+      "returncode": -15,
+      "reaped": true,
+      "group_cleanup": {
+        "pid": 13733,
+        "leader_complete_on_entry": false,
+        "group_alive_on_entry": true,
+        "signals": [
+          "SIGTERM"
+        ],
+        "permission_probes": [],
+        "leader_returncode": -15,
+        "leader_reaped": true,
+        "group_absent": true
+      }
+    },
+    {
+      "kind": "saturator",
+      "pid": 13734,
+      "returncode": -15,
+      "reaped": true,
+      "group_cleanup": {
+        "pid": 13734,
+        "leader_complete_on_entry": false,
+        "group_alive_on_entry": true,
+        "signals": [
+          "SIGTERM"
+        ],
+        "permission_probes": [],
+        "leader_returncode": -15,
+        "leader_reaped": true,
+        "group_absent": true
+      }
+    },
+    {
+      "kind": "saturator",
+      "pid": 13735,
+      "returncode": -15,
+      "reaped": true,
+      "group_cleanup": {
+        "pid": 13735,
+        "leader_complete_on_entry": false,
+        "group_alive_on_entry": true,
+        "signals": [
+          "SIGTERM"
+        ],
+        "permission_probes": [],
+        "leader_returncode": -15,
+        "leader_reaped": true,
+        "group_absent": true
+      }
+    },
+    {
+      "kind": "saturator",
+      "pid": 13736,
+      "returncode": -15,
+      "reaped": true,
+      "group_cleanup": {
+        "pid": 13736,
+        "leader_complete_on_entry": false,
+        "group_alive_on_entry": true,
+        "signals": [
+          "SIGTERM"
+        ],
+        "permission_probes": [],
+        "leader_returncode": -15,
+        "leader_reaped": true,
+        "group_absent": true
+      }
+    }
+  ],
+  "source_before_sha256": "bb2c82d47b4d621b1a5cb53cf2c2ebc6fda282eed3f5b54cd1c28bf3c3d1ee30",
+  "python": {
+    "path": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/bin/python",
+    "executable_sha256": "7ab28aab7042141d3d97175edec3045ff15b5d0cbf885817c7c1ad0dad393f9f",
+    "version": [
+      3,
+      12,
+      8
+    ],
+    "base_prefix": "/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none",
+    "purelib": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages",
+    "libdir": "/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/lib"
+  },
+  "environments": {
+    "host": {
+      "CARGO_INCREMENTAL": "0",
+      "CARGO_NET_OFFLINE": "true",
+      "CARGO_BUILD_JOBS": "6",
+      "PYTHONDONTWRITEBYTECODE": "1",
+      "PYTHONNOUSERSITE": "1",
+      "GIT_OPTIONAL_LOCKS": "0",
+      "PYO3_PYTHON": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/bin/python",
+      "PYTHONHOME": "/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none",
+      "PYTHONPATH": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages",
+      "DYLD_LIBRARY_PATH": "/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/lib",
+      "CARGO_TARGET_DIR": "/private/tmp/sail-resource-validation-union-target/host",
+      "CARGO_PROFILE_DEV_DEBUG": "0",
+      "CARGO_PROFILE_TEST_DEBUG": "0"
+    },
+    "core": {
+      "CARGO_INCREMENTAL": "0",
+      "CARGO_NET_OFFLINE": "true",
+      "CARGO_BUILD_JOBS": "6",
+      "PYTHONDONTWRITEBYTECODE": "1",
+      "PYTHONNOUSERSITE": "1",
+      "GIT_OPTIONAL_LOCKS": "0",
+      "CARGO_TARGET_DIR": "/private/tmp/sail-resource-validation-union-target/core"
+    },
+    "native": {
+      "CARGO_INCREMENTAL": "0",
+      "CARGO_NET_OFFLINE": "true",
+      "CARGO_BUILD_JOBS": "6",
+      "PYTHONDONTWRITEBYTECODE": "1",
+      "PYTHONNOUSERSITE": "1",
+      "GIT_OPTIONAL_LOCKS": "0",
+      "PYO3_PYTHON": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/bin/python",
+      "PYTHONHOME": "/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none",
+      "PYTHONPATH": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages",
+      "DYLD_LIBRARY_PATH": "/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/lib",
+      "CARGO_TARGET_DIR": "/private/tmp/sail-resource-validation-union-target/native"
+    }
+  },
+  "native_format_scope": {
+    "files": [
+      "examples/extensions/nutmeg/src/argentea/bfs/input.rs",
+      "examples/extensions/nutmeg/src/argentea/bfs/tests/initialization.rs",
+      "examples/extensions/nutmeg/src/argentea/sssp/input.rs",
+      "examples/extensions/nutmeg/src/argentea/sssp/tests/initialization.rs"
+    ],
+    "exclusions": "Inherited full Nutmeg format failures; two parent test modules only add declarations."
+  },
+  "native_registry": {
+    "tests": 51,
+    "argentea_tests": 45,
+    "names": [
+      "argentea::bfs::tests::bfs_request_and_wire_schema_are_strict",
+      "argentea::bfs::tests::controls::cap_receipts_are_typed_and_source_endpoint_quota_failures_are_distinct",
+      "argentea::bfs::tests::controls::close_interrupts_both_bfs_barriers_with_initialized_state",
+      "argentea::bfs::tests::controls::dropped_bfs_statistics_stream_cancels_and_retained_integer_slice_remains_valid",
+      "argentea::bfs::tests::controls::late_missing_statistics_and_false_topology_totals_fail_before_publication",
+      "argentea::bfs::tests::controls::missing_candidates_with_rewritten_wire_completion_fail_before_publication",
+      "argentea::bfs::tests::initialization::initialization_releases_raw_input_before_state",
+      "argentea::bfs::tests::integer_bfs_variants_run_real_range_exchanges_with_nullable_results_and_empty_owners",
+      "argentea::delta::tests::capped_result_and_quota_failure_never_return_rows",
+      "argentea::delta::tests::controls::abandoned_statistics_output_cancels_but_its_float_slice_stays_valid",
+      "argentea::delta::tests::controls::close_interrupts_both_residual_barriers_with_initialized_state",
+      "argentea::delta::tests::controls::late_or_missing_statistics_rows_fail_before_a_decision",
+      "argentea::delta::tests::controls::producer_origin_and_late_publication_remain_pinned_to_the_job",
+      "argentea::delta::tests::controls::typed_cap_receipt_survives_guard_cancellation_and_never_labels_quota",
+      "argentea::delta::tests::real_datafusion_ranges_run_signed_frontiers_certificates_and_done_with_empty_owners",
+      "argentea::delta::tests::typed_statistics_reject_duplicate_missing_and_infinite_nonempty_fields",
+      "argentea::delta::tests::v2_request_budget_and_statistics_channel_are_strict",
+      "argentea::receipt::tests::child_writes_complete_receipts",
+      "argentea::receipt::tests::eight_processes_append_only_whole_parseable_receipts",
+      "argentea::receipt::tests::one_complete_write_contains_prefix_json_and_newline",
+      "argentea::resource_failure::tests::only_exact_local_memory_refusal_produces_causal_evidence",
+      "argentea::sssp::tests::adversarial::invalid_weights_fail_before_partition_publication",
+      "argentea::sssp::tests::adversarial::weighted_request_and_wire_reject_nonfinite_or_ambiguous_values",
+      "argentea::sssp::tests::initialization::initialization_releases_raw_input_before_state",
+      "argentea::sssp::tests::one_round_cap_never_returns_partial_distances",
+      "argentea::sssp::tests::resource_failure::post_init_claim_refusal_keeps_a_causal_record_after_unwind",
+      "argentea::sssp::tests::signed_extremes_survive_sssp_wire_and_retained_result_slice",
+      "argentea::sssp::tests::sssp_exact_weighted_labels_through_range_exchanges",
+      "argentea::sssp::tests::sssp_request_rejects_unknown_fields_and_overflow_before_phase_arithmetic",
+      "argentea::sssp::tests::statistics_require_all_fields_completion_and_stable_mode",
+      "argentea::tests::controls::close_interrupts_pending_input_without_waiting_for_a_batch",
+      "argentea::tests::controls::dropping_unfinished_output_cancels_but_keeps_emitted_arrays_valid",
+      "argentea::tests::controls::incorrect_global_vertex_count_is_rejected_before_rank_publication",
+      "argentea::tests::controls::schema_round_identity_and_nullability_are_checked_before_execution",
+      "argentea::tests::missing_producer_marker_fails_without_publishing_ranks",
+      "argentea::tests::output_array_slice_retains_admission_after_worker_close",
+      "argentea::tests::protocol_rejects_changed_round_and_unknown_fields",
+      "argentea::tests::real_range_exchange_reuses_two_native_owners_across_four_rounds",
+      "argentea::tests::scoped_configuration_replay_and_quota_are_fail_closed",
+      "argentea::wcc::tests::resource_failure::post_init_claim_refusal_keeps_a_causal_record_after_unwind",
+      "argentea::wcc::tests::signed_extremes_survive_wcc_wire_and_retained_result_slice",
+      "argentea::wcc::tests::star_three_round_cap_never_returns_partial_components",
+      "argentea::wcc::tests::statistics_require_all_fields_completion_and_stable_mode",
+      "argentea::wcc::tests::wcc_exact_components_through_range_exchanges",
+      "argentea::wcc::tests::wcc_request_rejects_unknown_fields_and_overflow_before_phase_arithmetic",
+      "tests::as_staged_order_skips_the_sort_and_is_only_a_stage_option",
+      "tests::dropped_blocked_stream_cancels_and_keeps_exported_batch_valid",
+      "tests::empty_inputs_validate_schema_and_mapping_before_mutation",
+      "tests::ffi_provider_round_trip_preserves_native_execution",
+      "tests::rejects_wrong_verb_version_shape_and_algorithm_before_execution",
+      "tests::two_input_stage_reads_all_four_partitions_and_replays_receipt"
+    ],
+    "binary": "/private/tmp/sail-resource-validation-union-target/native/release/deps/_native-f518c53dd7363e48",
+    "binary_sha256": "5367ddc23794fae3e89aea3b95c074664942cbf25948c23ae2b480cd27ffde7b",
+    "registry_log_sha256": "1b397b361849ed86f52fe94a816ac7d6cfcc4790a5f3113b0ebcc9810d3d071f",
+    "cargo_artifact": {
+      "reason": "compiler-artifact",
+      "package_id": "path+file:///private/tmp/sail-resource-validation-union-gate/examples/extensions/nutmeg#sail-nutmeg-extension@0.1.0",
+      "manifest_path": "/private/tmp/sail-resource-validation-union-gate/examples/extensions/nutmeg/Cargo.toml",
+      "target": {
+        "kind": [
+          "cdylib",
+          "rlib"
+        ],
+        "crate_types": [
+          "cdylib",
+          "rlib"
+        ],
+        "name": "_native",
+        "src_path": "/private/tmp/sail-resource-validation-union-gate/examples/extensions/nutmeg/src/lib.rs",
+        "edition": "2024",
+        "doc": true,
+        "doctest": true,
+        "test": true
+      },
+      "profile": {
+        "opt_level": "3",
+        "debuginfo": 0,
+        "debug_assertions": false,
+        "overflow_checks": false,
+        "test": true
+      },
+      "features": [],
+      "filenames": [
+        "/private/tmp/sail-resource-validation-union-target/native/release/deps/_native-f518c53dd7363e48"
+      ],
+      "executable": "/private/tmp/sail-resource-validation-union-target/native/release/deps/_native-f518c53dd7363e48",
+      "fresh": true
+    },
+    "registry_sha256": "a2318b65ac4dbc7dac81cdf119f64fba905bc83e04ad785f19df02ca9fc2482f"
+  },
+  "cli_cargo_artifact": {
+    "reason": "compiler-artifact",
+    "package_id": "path+file:///private/tmp/sail-resource-validation-union-gate/crates/sail-cli#0.7.1",
+    "manifest_path": "/private/tmp/sail-resource-validation-union-gate/crates/sail-cli/Cargo.toml",
+    "target": {
+      "kind": [
+        "bin"
+      ],
+      "crate_types": [
+        "bin"
+      ],
+      "name": "sail",
+      "src_path": "/private/tmp/sail-resource-validation-union-gate/crates/sail-cli/src/main.rs",
+      "edition": "2024",
+      "doc": true,
+      "doctest": false,
+      "test": true
+    },
+    "profile": {
+      "opt_level": "0",
+      "debuginfo": 0,
+      "debug_assertions": true,
+      "overflow_checks": true,
+      "test": false
+    },
+    "features": [
+      "default",
+      "mimalloc"
+    ],
+    "filenames": [
+      "/private/tmp/sail-resource-validation-union-target/host/debug/sail"
+    ],
+    "executable": "/private/tmp/sail-resource-validation-union-target/host/debug/sail",
+    "fresh": true
+  },
+  "binary": {
+    "path": "/private/tmp/sail-resource-validation-union-target/host/debug/sail",
+    "sha256": "4b976fd7a809cb059c72a2119293f490105ff0ed375feaf0ccb5f3e5dad88662",
+    "profile": "dev debug=0"
+  },
+  "sql_receipt_sha256": "b6d89e04bf53e8400c4d3af1815c61ae1049337da4e65e57b7d15c24aaa3d658",
+  "finished_utc": "2026-10-01T00:14:12.456629+00:00",
+  "all_saturators_reaped": true
+}

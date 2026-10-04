@@ -1,0 +1,34 @@
+{
+  "recorded_utc": "2026-09-30T23:47:12.592864+00:00",
+  "outcome": "PREPARED_ONLY",
+  "series": "followup02",
+  "maximum_reads": 6,
+  "minimum_seconds_after_previous_local_return": 900,
+  "earliest_first_start_utc": "2026-10-01T00:00:28.963537+00:00",
+  "prior_series_last_return_utc": "2026-09-30T23:45:28.963537+00:00",
+  "file_pins": {
+    "observe_followup02.py": "8b8a32e888325ba92420f6dd287af34ec0a5d8322073e1ba55368c95461f3441",
+    "test_followup02_guards.py": "f4715efbdb2d4059ea63b4de1d774dcf1acdac2a7e713e625dbec9ac82b3eb41",
+    "followup02-offline-guards.log": "a9c16255b29021a733836f8f2cfbdba8efe552ae91469a43b797d3ce455134a0",
+    "observe_series.py": "b49d83e2ff10b374597ed3d24904cd8ab1688c03081f78dd40b77ace64f7d9cd",
+    "vm_observer.py": "4039d8d252b17fc7b30909bc8e1986ffd6e54ee665f3ef5640df36acb9cca328",
+    "followup01-final.json": "79907cc422b7e6534d119b19469882cd53718754f09533c68a3e4c3d4b2469e4",
+    "followup01-captured-progress.json": "864f5d8e197b754f1bc9047ef9b1ecabc7326bf8fe904c83c2271a1046f62201"
+  },
+  "offline_guard_controls_passed": 5,
+  "scope": "New namespace/local schedule ledger; exact existing remote observer, mapping, boot/init/start/cgroup guards and bounded log/cgroup/original sampler operations reused. No reader active or remote read performed by preparation.",
+  "stop_rules": [
+    "Stop on timeout or any capture failure; do not infer remote reader ended after SSH timeout.",
+    "Stop on identity/PID mismatch/disappearance, new fault, producer receipt, or root stop.",
+    "At most six serialized reads; require prior local/capture exit0 and >=900 seconds after previous local return."
+  ],
+  "changes_from_followup01": [
+    "Unique followup02 namespace and fifteen-minute schedule.",
+    "Previous-series closed receipt is hash-pinned; first offset comes from its last recorded observation.",
+    "Locally assert immutable VM observer SHA in addition to existing reviewed observer/identity/config pins. No remote operation changed."
+  ],
+  "limits": [
+    "Snapshot and bounded log gaps only; no continuous liveness or absence-of-all-fault proof.",
+    "No extra PSS/hash/Docker/dmesg/signals/containers/workloads. No benchmark or causal result inferred."
+  ]
+}

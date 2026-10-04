@@ -1,0 +1,37 @@
+{
+  "recorded_utc": "2026-09-30T17:24:50.947717+00:00",
+  "outcome": "passed",
+  "checks": [
+    {
+      "name": "info",
+      "command": [
+        "/private/tmp/sail-tonic-keepalive-target/debug/sail-tonic-keepalive-control",
+        "keepalive"
+      ],
+      "rust_log": "info",
+      "returncode": 0,
+      "expected_specific_diagnostic_present": false
+    },
+    {
+      "name": "tonic-debug",
+      "command": [
+        "/private/tmp/sail-tonic-keepalive-target/debug/sail-tonic-keepalive-control",
+        "keepalive"
+      ],
+      "rust_log": "info,tonic::transport::server=debug",
+      "returncode": 0,
+      "expected_specific_diagnostic_present": true
+    }
+  ],
+  "gate_detached_base": "b91828b2765ec2018e21011aea686e931af68c99",
+  "source_sha256": {
+    "Cargo.toml": "548ce76d27a29fcc752cfd63f12fd0f35f7f7b3df5c62e8600094adfce8dd263",
+    "Cargo.lock": "db1692e228a2ee9e2e5734e702f037a9fc0737049d02c6e802ba1c9a075deabf",
+    "src/main.rs": "94cf868bcecafe3bbf4e8c10700e90a11467d50ec6941f6f162a1aa81fc5fcb3"
+  },
+  "binary_sha256": "274128d439f2a00a771bfefd08b37daf1d87c2015cb26be3eb8a680e5a41c61e",
+  "shared_dependency_versions_match_sail": true,
+  "tonic_source": "tonic-0.14.6/src/transport/server/mod.rs:942",
+  "conclusion": "Tonic server debug logging exposes the server connection-future keepalive cause without hyper/tracing. Earlier hyper-only controls did not exercise this logger. Enable tonic::transport::server=debug for the instrumented no-OOM replay.",
+  "scope": "Local exact-dependency in-memory Tonic server with deliberately dropped PING ACKs; no Sail or benchmark qualification"
+}

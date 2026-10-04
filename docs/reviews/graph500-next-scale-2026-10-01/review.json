@@ -1,0 +1,103 @@
+{
+  "recorded_utc": "2026-10-01T05:13:18.492749+00:00",
+  "outcome": "PASS_INDEPENDENT_PRELAUNCH_SOURCE_CONFIG_REVIEW",
+  "repository": "querygraph/grust",
+  "head": "05a7b30277b189e4fe6a4a1eb4bdebdbbaef30b3",
+  "reviewed_files": {
+    "supervise.py": "f6ebbb9be7c927a593099d0f93a6590af7ef88d91010a015de31a774c8ad6100",
+    "test_supervise.py": "f837bae70487b86e7e28ac66c2fc36b4122e7b738ead5c476d06289adfc2599c",
+    "plan.json": "9d326a474b3487554e8994fb56159004b6863a58445f93ded42df5d21c778f2e",
+    "remote-support-pins.json": "23ee8504d18cd8db931421f81854e0e01d05dcb6bb5a5c031e1684089f3d69ad",
+    "README.md": "7dee9a892cec7a75c35a16a5e13fa7fa08914b59b98949cc457646c4dd56fba2",
+    "readiness01.json": "1505b445660310f8e72a2b47ab960b4177bc437c1385eb4aa45dac8e2597bf4b"
+  },
+  "configs": [
+    {
+      "file": "next-capacity-pecan-s25.json",
+      "sha256": "17c6ffdc7926af44886ad592aa8d6c328b967ecbd4ffccab7c8a1724021af183",
+      "run_id": "next-capacity-pecan-s25",
+      "mode": "process-cluster",
+      "engine": "pecan",
+      "dataset": "scale25",
+      "manifest_sha256": {
+        "scale25": "465aa5c32d22b7641aeb17b52ff0d3a524f0e09d802fcc60631be88dcc8a4e20"
+      },
+      "depends_on_success": null,
+      "minimum_disk_bytes": 34359738368,
+      "minimum_guest_available_bytes": 109521666048
+    },
+    {
+      "file": "next-capacity-grenada-s24.json",
+      "sha256": "97220fa3b71851f12cb81b98bb6857524de850b9f99a919673ead457a51159c1",
+      "run_id": "next-capacity-grenada-s24",
+      "mode": "process-cluster",
+      "engine": "nutmeg-datafusion",
+      "dataset": "scale24",
+      "manifest_sha256": {
+        "scale24": "8bad1a94c5a37715ce9320f27b3f13097ef50c2a9bfdfa15c25ed0665007c75c"
+      },
+      "depends_on_success": null,
+      "minimum_disk_bytes": 32212254720,
+      "minimum_guest_available_bytes": 109521666048
+    },
+    {
+      "file": "next-capacity-grenada-s25.json",
+      "sha256": "5c20ab930c679681828ac59d1f2d8f7ebfa5c07447a4d031ad526558358ea597",
+      "run_id": "next-capacity-grenada-s25",
+      "mode": "process-cluster",
+      "engine": "nutmeg-datafusion",
+      "dataset": "scale25",
+      "manifest_sha256": {
+        "scale25": "465aa5c32d22b7641aeb17b52ff0d3a524f0e09d802fcc60631be88dcc8a4e20"
+      },
+      "depends_on_success": "next-capacity-grenada-s24",
+      "minimum_disk_bytes": 34359738368,
+      "minimum_guest_available_bytes": 109521666048
+    }
+  ],
+  "comparison_config": {
+    "path": "docs/reviews/sail-stream-experiments-2026-09-30/logging03-compact.json",
+    "sha256": "b28132996612b11edb77bb02019288e4a562db5e4d22c4430a6a8815a220aea0"
+  },
+  "controls": {
+    "receipt_path": "/private/tmp/graph500-supervisor-controls02-gp5ds5zr/receipt.json",
+    "receipt_sha256": "22b0ccb2c1b789e42ad24287b6e0b8dd20f165969a33279b649628f78e87206b",
+    "tests": 15,
+    "stderr_sha256": "7268d4efe5767aed892f8577a29f90b7453be4e7b1d4f324f8e0c9db8769e941",
+    "outcome": "PASS",
+    "scope": "Retained offline mocked controls inspected, not independently rerun; no actual remote workload qualification."
+  },
+  "resolved_findings": [
+    {
+      "subject": "TimeoutExpired partial observer output",
+      "resolution": "Retains bounded 64 KiB text prefix per stream, full available byte count/hash and truncation flags; no claim of lossless full raw retention beyond that limit."
+    },
+    {
+      "subject": "Launcher exit racing signal",
+      "resolution": "ProcessLookupError does not bypass subsequent fingerprinted own-container stop scan."
+    },
+    {
+      "subject": "Closure execution-class and dataset arguments",
+      "resolution": "Checks process-cluster, repeat1, certificate mode/cap, graph500 family and canonical resolved dataset path in addition to source/resources/algorithm fields; negative controls cover mode/dataset/validation mismatch."
+    }
+  ],
+  "checks": [
+    "All three reviewed configuration hashes match plan and pinned readiness dataset/canonical-edge metadata.",
+    "Configuration comparison with closed Pecan24 preserves runtime561, old3a controller/nativeffcf, process-cluster, source, direction, delta, parallelism, resource envelope and logging; namespace/scale/engine changes and longer deadlines are explicit.",
+    "8h algorithm and9h cell outer limit are distinct from additional15min launcher-overrun guard and observer duration; no exact whole-supervisor9h promise.",
+    "Each cell requires fresh namespace, pinned support inventory, runtime/native hashes, clean source, manifest and boot identity, no other running container, disk/RAM admission.",
+    "Runtime disk guard stops below8GiB, observer/interference/identity failure closes queue; polling is not a reservation and cannot exclude between-observation interference.",
+    "Only launcher-owned process group and configuration-fingerprinted containers are targeted by abort; no global Docker stop/prune or dataset/output deletion.",
+    "Wrapper exit0 does not qualify a failed producer. Both producer/result pass plus certificate, runtime/arguments, exit/OOM and cleanup evidence required for success.",
+    "Grenada25 requires actual qualified Grenada24 pass; completely collected independent non-pass can continue, while missing/malformed evidence or uncertain cleanup stops queue.",
+    "Producer/cell raw outcomes retained separately; physical Parquet output qualification remains pending and explicit."
+  ],
+  "limits": [
+    "Read-only source/configuration/evidence review; no SSH, Docker, benchmark, new runtime test or remote admission was performed.",
+    "Manifest hashes establish recorded input identity; this review did not rehash remote Parquet payloads.",
+    "Pool/quota are per-process configuration, not proof of actual native reservation by Pecan or a cluster-wide memory/RSS bound.",
+    "Shared-host capacity/correctness preparation is not a measured speedup, dedicated-host timing result or multi-host scaling qualification.",
+    "No unconditional claim of successful cleanup if Docker/control plane is unavailable: stop error and retained lock require operator intervention."
+  ],
+  "blockers": []
+}

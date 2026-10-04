@@ -1,0 +1,16 @@
+== Physical Plan ==
+ProjectionExec: expr=[#13@0 as id, #14@1 as representative]
+  ProjectionExec: expr=[#2@0 as #13, CASE WHEN gf_axpb(1, #2@0, 0) < min(#4)@2 THEN #2@0 ELSE min_by(#3,#4)@1 END as #14]
+    AggregateExec: mode=FinalPartitioned, gby=[#2@0 as #2], aggr=[last_value(#3) FILTER (WHERE #4 IS NOT NULL) ORDER BY [#4 DESC NULLS FIRST] as min_by(#3,#4), min(#4)]
+      RepartitionExec: partitioning=Hash([#2@0], 4), input_partitions=8
+        AggregateExec: mode=Partial, gby=[#2@0 as #2], aggr=[last_value(#3) FILTER (WHERE #4 IS NOT NULL) ORDER BY [#4 DESC NULLS FIRST] as min_by(#3,#4), min(#4)]
+          UnionExec
+            ProjectionExec: expr=[#0@0 as #2, #1@1 as #3, gf_axpb(1, #1@1, 0) as #4]
+              ExplicitRepartitionExec: partitioning=RoundRobinBatch(4), input_partitions=1
+                ProjectionExec: expr=[src@0 as #0, dst@1 as #1]
+                  DataSourceExec: partitions=1, partition_sizes=[1]
+            ProjectionExec: expr=[#6@1 as #2, #5@0 as #3, gf_axpb(1, #5@0, 0) as #4]
+              ExplicitRepartitionExec: partitioning=RoundRobinBatch(4), input_partitions=1
+                ProjectionExec: expr=[src@0 as #5, dst@1 as #6]
+                  DataSourceExec: partitions=1, partition_sizes=[1]
+

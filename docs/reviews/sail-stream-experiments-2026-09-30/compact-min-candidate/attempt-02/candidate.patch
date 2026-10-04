@@ -1,0 +1,1011 @@
+diff --git a/crates/sail-execution/src/proto/codec.rs b/crates/sail-execution/src/proto/codec.rs
+index 79103609f..e77b6a989 100644
+--- a/crates/sail-execution/src/proto/codec.rs
++++ b/crates/sail-execution/src/proto/codec.rs
+@@ -144,6 +144,7 @@ use sail_function::aggregate::product::ProductFunction;
+ use sail_function::aggregate::regr::{Regr, RegrType};
+ use sail_function::aggregate::schema_of_variant_agg::SchemaOfVariantAggFunction;
+ use sail_function::aggregate::skewness::SkewnessFunc;
++use sail_function::aggregate::struct_min::{StructMin, struct_min_udaf};
+ use sail_function::aggregate::theta_sketch::{
+     ThetaIntersectionAggFunction, ThetaSketchAggFunction, ThetaUnionAggFunction,
+ };
+@@ -3840,6 +3841,7 @@ impl PhysicalExtensionCodec for RemoteExecutionCodec {
+                 "kurtosis" => Ok(Arc::new(AggregateUDF::from(KurtosisFunction::new()))),
+                 "max" => Ok(datafusion::functions_aggregate::min_max::max_udaf()),
+                 "max_by" => Ok(Arc::new(AggregateUDF::from(MaxByFunction::new()))),
++                "min" => Ok(struct_min_udaf()),
+                 "min_by" => Ok(Arc::new(AggregateUDF::from(MinByFunction::new()))),
+                 "mode" => Ok(Arc::new(AggregateUDF::from(ModeFunction::new()))),
+                 "percentile" => Ok(Arc::new(AggregateUDF::from(PercentileFunction::new()))),
+@@ -4011,6 +4013,7 @@ impl PhysicalExtensionCodec for RemoteExecutionCodec {
+             || node.inner().is::<Regr>()
+             || node.inner().is::<SchemaOfVariantAggFunction>()
+             || node.inner().is::<SkewnessFunc>()
++            || node.inner().is::<StructMin>()
+             || node.inner().is::<ThetaIntersectionAggFunction>()
+             || node.inner().is::<ThetaSketchAggFunction>()
+             || node.inner().is::<ThetaUnionAggFunction>()
+diff --git a/crates/sail-execution/src/proto/mod.rs b/crates/sail-execution/src/proto/mod.rs
+index e1448edc3..1dfd6a8ee 100644
+--- a/crates/sail-execution/src/proto/mod.rs
++++ b/crates/sail-execution/src/proto/mod.rs
+@@ -3,6 +3,8 @@ mod converter;
+ mod decode;
+ mod encode;
+ mod native_expr;
++#[cfg(test)]
++mod struct_min_tests;
+ 
+ pub use codec::RemoteExecutionCodec;
+ #[cfg(test)]
+diff --git a/crates/sail-execution/src/proto/struct_min_tests.rs b/crates/sail-execution/src/proto/struct_min_tests.rs
+new file mode 100644
+index 000000000..efa80a911
+--- /dev/null
++++ b/crates/sail-execution/src/proto/struct_min_tests.rs
+@@ -0,0 +1,132 @@
++use std::sync::Arc;
++
++use datafusion::arrow::array::{Array, ArrayRef, Float64Array, Int64Array, StructArray};
++use datafusion::arrow::datatypes::{DataType, Field, Fields, Schema};
++use datafusion::arrow::record_batch::RecordBatch;
++use datafusion::common::{Result, plan_datafusion_err};
++use datafusion::datasource::memory::MemorySourceConfig;
++use datafusion::datasource::source::DataSourceExec;
++use datafusion::execution::FunctionRegistry;
++use datafusion::functions_aggregate::min_max;
++use datafusion::physical_expr::aggregate::AggregateExprBuilder;
++use datafusion::physical_expr::expressions::Column;
++use datafusion::physical_plan::aggregates::{AggregateExec, AggregateMode, PhysicalGroupBy};
++use datafusion::physical_plan::{ExecutionPlan, collect};
++use datafusion::prelude::SessionContext;
++use datafusion_proto::physical_plan::PhysicalExtensionCodec;
++use sail_function::aggregate::struct_min::{StructMin, struct_min_udaf};
++
++use super::{RemoteExecutionCodec, decode_remote_physical_plan, encode_remote_physical_plan};
++
++#[tokio::test]
++async fn worker_plan_round_trip_keeps_compact_min_accumulator() -> Result<()> {
++    let fields = Fields::from(vec![
++        Field::new("distance", DataType::Float64, true),
++        Field::new("hops", DataType::Int64, true),
++        Field::new("parent", DataType::Int64, true),
++    ]);
++    let groups = 4096;
++    let values: ArrayRef = Arc::new(StructArray::new(
++        fields.clone(),
++        vec![
++            Arc::new(Float64Array::from(vec![2.0; groups])),
++            Arc::new(Int64Array::from(vec![1; groups])),
++            Arc::new(Int64Array::from(vec![-7; groups])),
++        ],
++        None,
++    ));
++    let schema = Arc::new(Schema::new(vec![
++        Field::new("key", DataType::Int64, false),
++        Field::new("value", DataType::Struct(fields), true),
++    ]));
++    let keys = Int64Array::from_iter_values((0..groups).map(|i| i as i64));
++    let batch = RecordBatch::try_new(
++        Arc::clone(&schema),
++        vec![Arc::new(keys), Arc::clone(&values)],
++    )?;
++    let input = DataSourceExec::from_data_source(MemorySourceConfig::try_new(
++        &[vec![batch]],
++        Arc::clone(&schema),
++        None,
++    )?);
++    let expression = Arc::new(
++        AggregateExprBuilder::new(struct_min_udaf(), vec![Arc::new(Column::new("value", 1))])
++            .schema(Arc::clone(&schema))
++            .alias("minimum")
++            .build()?,
++    );
++    let plan: Arc<dyn ExecutionPlan> = Arc::new(AggregateExec::try_new(
++        AggregateMode::Single,
++        PhysicalGroupBy::new_single(vec![(Arc::new(Column::new("key", 0)), "key".into())]),
++        vec![expression],
++        vec![None],
++        input,
++        schema,
++    )?);
++    let codec = RemoteExecutionCodec;
++    // A worker context already knows DataFusion's built-in `min`. The explicit
++    // function payload must bypass that registry during remote plan decoding.
++    let worker = SessionContext::new().task_ctx();
++    assert!(worker.udaf("min")?.inner().is::<min_max::Min>());
++    let encoded = encode_remote_physical_plan(&codec, plan)?;
++    let decoded = decode_remote_physical_plan(worker.as_ref(), &codec, &encoded)?;
++    let aggregate = decoded
++        .downcast_ref::<AggregateExec>()
++        .ok_or_else(|| plan_datafusion_err!("expected aggregate after worker decode"))?;
++    let function = &aggregate.aggr_expr()[0];
++    assert!(function.fun().inner().is::<StructMin>());
++    assert!(function.groups_accumulator_supported());
++
++    // Naming alone is insufficient: exercise the decoded expression's actual
++    // factory. The original singleton-StructArray implementation needs hundreds
++    // of bytes per group; a compact accumulator must stay below this envelope.
++    let mut accumulator = function.create_groups_accumulator()?;
++    let indexes: Vec<_> = (0..groups).collect();
++    accumulator.update_batch(&[values], &indexes, None, groups)?;
++    assert!(accumulator.size() < groups * 128);
++
++    let output = collect(decoded, worker).await?;
++    assert_eq!(
++        output.iter().map(RecordBatch::num_rows).sum::<usize>(),
++        groups
++    );
++    for batch in output {
++        let minimum = batch
++            .column(1)
++            .as_any()
++            .downcast_ref::<StructArray>()
++            .ok_or_else(|| plan_datafusion_err!("expected struct result"))?;
++        assert_eq!(minimum.null_count(), 0);
++        let distance = minimum
++            .column(0)
++            .as_any()
++            .downcast_ref::<Float64Array>()
++            .ok_or_else(|| plan_datafusion_err!("expected float distance"))?;
++        let parent = minimum
++            .column(2)
++            .as_any()
++            .downcast_ref::<Int64Array>()
++            .ok_or_else(|| plan_datafusion_err!("expected signed parent"))?;
++        assert!(distance.values().iter().all(|value| *value == 2.0));
++        assert!(parent.values().iter().all(|value| *value == -7));
++    }
++    Ok(())
++}
++
++#[test]
++fn only_compact_min_gets_an_explicit_worker_codec_marker() -> Result<()> {
++    let codec = RemoteExecutionCodec;
++    let mut encoded = Vec::new();
++    codec.try_encode_udaf(&struct_min_udaf(), &mut encoded)?;
++    assert!(!encoded.is_empty());
++    assert!(
++        codec
++            .try_decode_udaf("min", &encoded)?
++            .inner()
++            .is::<StructMin>()
++    );
++    let mut original = Vec::new();
++    codec.try_encode_udaf(&min_max::min_udaf(), &mut original)?;
++    assert!(original.is_empty());
++    Ok(())
++}
+diff --git a/crates/sail-function/src/aggregate/compact_struct_min.rs b/crates/sail-function/src/aggregate/compact_struct_min.rs
+new file mode 100644
+index 000000000..998534280
+--- /dev/null
++++ b/crates/sail-function/src/aggregate/compact_struct_min.rs
+@@ -0,0 +1,184 @@
++//! Compact grouped MIN for flat (Float64, Int64, Int64) structs.
++//!
++//! Comparison deliberately matches DataFusion's `partial_cmp_struct`: skip a
++//! field unless both children are valid, use Arrow's total float order, and keep
++//! the first value on a full tie. This is not SQL row comparison with NULLS LAST.
++use std::cmp::Ordering;
++use std::mem::{size_of, size_of_val};
++use std::sync::Arc;
++
++use datafusion::arrow::array::{
++    Array, ArrayRef, AsArray, BooleanArray, Float64Builder, Int64Builder, NullBufferBuilder,
++    StructArray,
++};
++use datafusion::arrow::buffer::NullBuffer;
++use datafusion::arrow::datatypes::{DataType, Float64Type, Int64Type};
++use datafusion::common::{Result, internal_err};
++use datafusion::logical_expr::{EmitTo, GroupsAccumulator};
++
++pub(super) fn supports_type(data_type: &DataType) -> bool {
++    matches!(data_type, DataType::Struct(fields) if fields.len() == 3
++        && fields[0].data_type() == &DataType::Float64
++        && fields[1].data_type() == &DataType::Int64
++        && fields[2].data_type() == &DataType::Int64)
++}
++
++pub(super) fn new(data_type: &DataType) -> Result<Box<dyn GroupsAccumulator>> {
++    if !supports_type(data_type) {
++        return internal_err!("compact struct MIN requires (Float64, Int64, Int64)");
++    }
++    Ok(Box::new(CompactStructMin {
++        data_type: data_type.clone(),
++        groups: Vec::new(),
++    }))
++}
++
++const PRESENT: u8 = 8;
++
++/// One owned inline value per group, including child validity and presence.
++/// Presence distinguishes an unseen group from a valid struct of three nulls.
++#[derive(Clone, Copy, Default)]
++struct Group {
++    first: f64,
++    second: i64,
++    third: i64,
++    valid: u8,
++}
++impl Group {
++    fn precedes(&self, other: &Self) -> bool {
++        let both = self.valid & other.valid;
++        if both & 1 != 0 {
++            match self.first.total_cmp(&other.first) {
++                Ordering::Less => return true,
++                Ordering::Greater => return false,
++                Ordering::Equal => {}
++            }
++        }
++        if both & 2 != 0 {
++            match self.second.cmp(&other.second) {
++                Ordering::Less => return true,
++                Ordering::Greater => return false,
++                Ordering::Equal => {}
++            }
++        }
++        both & 4 != 0 && self.third < other.third
++    }
++}
++
++struct CompactStructMin {
++    data_type: DataType,
++    groups: Vec<Group>,
++}
++impl GroupsAccumulator for CompactStructMin {
++    fn update_batch(
++        &mut self,
++        values: &[ArrayRef],
++        group_indices: &[usize],
++        opt_filter: Option<&BooleanArray>,
++        total_num_groups: usize,
++    ) -> Result<()> {
++        let array = &values[0];
++        assert_eq!(array.len(), group_indices.len());
++        assert_eq!(array.data_type(), &self.data_type);
++        if let Some(filter) = opt_filter {
++            assert_eq!(filter.len(), array.len());
++        }
++        let array = array.as_struct();
++        let first = array.column(0).as_primitive::<Float64Type>();
++        let second = array.column(1).as_primitive::<Int64Type>();
++        let third = array.column(2).as_primitive::<Int64Type>();
++        self.groups.resize(total_num_groups, Group::default());
++        for (row, &group_index) in group_indices.iter().enumerate() {
++            if array.is_null(row)
++                || opt_filter.is_some_and(|filter| filter.is_null(row) || !filter.value(row))
++            {
++                continue;
++            }
++            let candidate = Group {
++                first: first.value(row),
++                second: second.value(row),
++                third: third.value(row),
++                valid: PRESENT
++                    | u8::from(first.is_valid(row))
++                    | (u8::from(second.is_valid(row)) << 1)
++                    | (u8::from(third.is_valid(row)) << 2),
++            };
++            let current = &mut self.groups[group_index];
++            if current.valid & PRESENT == 0 || candidate.precedes(current) {
++                *current = candidate;
++            }
++        }
++        Ok(())
++    }
++
++    fn evaluate(&mut self, emit_to: EmitTo) -> Result<ArrayRef> {
++        let groups = emit_to.take_needed(&mut self.groups);
++        let mut first = Float64Builder::with_capacity(groups.len());
++        let mut second = Int64Builder::with_capacity(groups.len());
++        let mut third = Int64Builder::with_capacity(groups.len());
++        let mut validity = NullBufferBuilder::new(groups.len());
++        for group in groups {
++            first.append_option((group.valid & 1 != 0).then_some(group.first));
++            second.append_option((group.valid & 2 != 0).then_some(group.second));
++            third.append_option((group.valid & 4 != 0).then_some(group.third));
++            validity.append(group.valid & PRESENT != 0);
++        }
++        let DataType::Struct(fields) = &self.data_type else {
++            return internal_err!("compact struct MIN has a non-struct type");
++        };
++        Ok(Arc::new(StructArray::try_new(
++            fields.clone(),
++            vec![
++                Arc::new(first.finish()),
++                Arc::new(second.finish()),
++                Arc::new(third.finish()),
++            ],
++            validity.finish(),
++        )?))
++    }
++
++    fn state(&mut self, emit_to: EmitTo) -> Result<Vec<ArrayRef>> {
++        self.evaluate(emit_to).map(|array| vec![array])
++    }
++
++    fn merge_batch(
++        &mut self,
++        values: &[ArrayRef],
++        group_indices: &[usize],
++        total_num_groups: usize,
++    ) -> Result<()> {
++        self.update_batch(values, group_indices, None, total_num_groups)
++    }
++
++    fn convert_to_state(
++        &self,
++        values: &[ArrayRef],
++        opt_filter: Option<&BooleanArray>,
++    ) -> Result<Vec<ArrayRef>> {
++        let array = &values[0];
++        assert_eq!(array.data_type(), &self.data_type);
++        let array = array.as_struct();
++        let filtered = opt_filter.and_then(|filter| {
++            assert_eq!(filter.len(), array.len());
++            let values = NullBuffer::new(filter.values().clone());
++            NullBuffer::union(Some(&values), filter.nulls())
++        });
++        let nulls = NullBuffer::union(filtered.as_ref(), array.nulls());
++        Ok(vec![Arc::new(StructArray::try_new(
++            array.fields().clone(),
++            array.columns().to_vec(),
++            nulls,
++        )?)])
++    }
++
++    fn size(&self) -> usize {
++        // Include spare capacity retained after EmitTo::First, not just live
++        // groups. Schema storage is fixed (three fields), independent of groups.
++        size_of_val(self) + self.data_type.size() - size_of::<DataType>()
++            + self.groups.capacity() * size_of::<Group>()
++    }
++}
++
++#[cfg(test)]
++#[path = "compact_struct_min_tests.rs"]
++mod tests;
+diff --git a/crates/sail-function/src/aggregate/compact_struct_min_tests.rs b/crates/sail-function/src/aggregate/compact_struct_min_tests.rs
+new file mode 100644
+index 000000000..46f8b2bfb
+--- /dev/null
++++ b/crates/sail-function/src/aggregate/compact_struct_min_tests.rs
+@@ -0,0 +1,222 @@
++use std::collections::HashMap;
++
++use super::*;
++use datafusion::arrow::array::{Float64Array, Int64Array};
++use datafusion::arrow::datatypes::{Field, Fields};
++use datafusion::common::scalar::partial_cmp_struct;
++
++fn fields(nullable: bool) -> Fields {
++    vec![
++        Field::new("distance", DataType::Float64, nullable)
++            .with_metadata(HashMap::from([("unit".into(), "custom".into())])),
++        Field::new("hops", DataType::Int64, nullable),
++        Field::new("parent", DataType::Int64, nullable),
++    ]
++    .into()
++}
++fn rows(input: &[Group], fields: Fields) -> ArrayRef {
++    Arc::new(StructArray::new(
++        fields,
++        vec![
++            Arc::new(Float64Array::from_iter(
++                input.iter().map(|r| (r.valid & 1 != 0).then_some(r.first)),
++            )),
++            Arc::new(Int64Array::from_iter(
++                input.iter().map(|r| (r.valid & 2 != 0).then_some(r.second)),
++            )),
++            Arc::new(Int64Array::from_iter(
++                input.iter().map(|r| (r.valid & 4 != 0).then_some(r.third)),
++            )),
++        ],
++        Some(NullBuffer::from_iter(
++            input.iter().map(|r| r.valid & PRESENT != 0),
++        )),
++    ))
++}
++fn row(first: f64, second: i64, third: i64, children: u8) -> Group {
++    Group {
++        first,
++        second,
++        third,
++        valid: PRESENT | children,
++    }
++}
++fn assert_rows(actual: &ArrayRef, expected: &[Group]) {
++    let actual = actual.as_struct();
++    assert_eq!(actual.len(), expected.len());
++    for (i, expected) in expected.iter().enumerate() {
++        assert_eq!(actual.is_valid(i), expected.valid & PRESENT != 0);
++        let floats = actual.column(0).as_primitive::<Float64Type>();
++        let seconds = actual.column(1).as_primitive::<Int64Type>();
++        let thirds = actual.column(2).as_primitive::<Int64Type>();
++        assert_eq!(floats.is_valid(i), expected.valid & 1 != 0);
++        assert_eq!(seconds.is_valid(i), expected.valid & 2 != 0);
++        assert_eq!(thirds.is_valid(i), expected.valid & 4 != 0);
++        if expected.valid & 1 != 0 {
++            assert_eq!(floats.value(i).to_bits(), expected.first.to_bits());
++        }
++        if expected.valid & 2 != 0 {
++            assert_eq!(seconds.value(i), expected.second);
++        }
++        if expected.valid & 4 != 0 {
++            assert_eq!(thirds.value(i), expected.third);
++        }
++    }
++}
++
++#[test]
++fn typed_comparison_matches_arrow_struct_order_for_all_child_masks() {
++    let cases = [
++        (f64::NEG_INFINITY, i64::MIN, i64::MAX),
++        (-1.0, -1, 0),
++        (-0.0, 0, -1),
++        (0.0, 0, i64::MIN),
++        (1.0, i64::MAX, i64::MIN),
++        (f64::INFINITY, 2, 3),
++        (f64::from_bits(0x7ff8_0000_0000_0001), 2, i64::MAX),
++        (f64::from_bits(0xfff8_0000_0000_0001), 2, i64::MAX),
++        (f64::from_bits(0x7ff0_0000_0000_0001), 0, 0),
++    ];
++    let mut groups = Vec::new();
++    for (first, second, third) in cases {
++        for valid in 0..8 {
++            groups.push(row(first, second, third, valid));
++        }
++    }
++    let arrays: Vec<_> = groups
++        .iter()
++        .map(|group| rows(&[*group], fields(true)))
++        .collect();
++    for (i, a) in groups.iter().enumerate() {
++        for (j, b) in groups.iter().enumerate() {
++            assert_eq!(
++                a.precedes(b),
++                partial_cmp_struct(arrays[i].as_struct(), arrays[j].as_struct())
++                    == Some(Ordering::Less),
++                "row {i}, row {j}"
++            );
++        }
++    }
++}
++
++#[test]
++fn filters_root_nulls_first_ties_and_null_children_are_distinct() -> Result<()> {
++    let first = row(5.0, -7, 8, 2); // first field is NULL
++    let equal = row(-100.0, -7, 8, 7); // skipped first field makes a full tie
++    let input = rows(
++        &[
++            first,
++            equal,
++            row(f64::NEG_INFINITY, i64::MIN, i64::MIN, 7),
++            Group::default(),
++            row(-999.0, i64::MIN, 0, 7),
++            row(0.0, 0, 0, 0), // valid struct whose three children are NULL
++        ],
++        fields(true),
++    );
++    let filter = BooleanArray::from(vec![
++        Some(true),
++        Some(true),
++        Some(false),
++        Some(true),
++        None,
++        Some(true),
++    ]);
++    let mut acc = new(input.data_type())?;
++    acc.update_batch(
++        std::slice::from_ref(&input),
++        &[0, 0, 0, 1, 1, 2],
++        Some(&filter),
++        4,
++    )?;
++    let output = acc.evaluate(EmitTo::All)?;
++    assert_eq!(output.data_type(), input.data_type());
++    assert_rows(
++        &output,
++        &[first, Group::default(), row(0.0, 0, 0, 0), Group::default()],
++    );
++    let converted = acc.convert_to_state(&[input], Some(&filter))?;
++    assert_eq!(converted.len(), 1);
++    assert_eq!(converted[0].null_count(), 3);
++    let mut merged = new(converted[0].data_type())?;
++    merged.merge_batch(&converted, &[0, 0, 0, 1, 1, 2], 4)?;
++    assert_rows(
++        &merged.evaluate(EmitTo::All)?,
++        &[first, Group::default(), row(0.0, 0, 0, 0), Group::default()],
++    );
++    Ok(())
++}
++
++#[test]
++fn state_merge_prefix_shift_and_capacity_accounting_remain_valid() -> Result<()> {
++    let values: Vec<_> = (0..37).map(|i| row(i as f64, i, -i, 7)).collect();
++    let array = rows(&values, fields(false));
++    let mut acc = CompactStructMin {
++        data_type: array.data_type().clone(),
++        groups: Vec::with_capacity(128),
++    };
++    let fixed = size_of_val(&acc) + acc.data_type.size() - size_of::<DataType>();
++    acc.update_batch(&[array], &(0..37).collect::<Vec<_>>(), None, 37)?;
++    assert_eq!(acc.size(), fixed + 128 * size_of::<Group>());
++    let prefix = acc.state(EmitTo::First(3))?;
++    assert_rows(&prefix[0], &values[..3]);
++    // First(3) retains the original allocation. Size must not shrink to len.
++    assert_eq!(acc.size(), fixed + 128 * size_of::<Group>());
++    let replacement = row(-1.0, -1, -1, 7);
++    acc.update_batch(&[rows(&[replacement], fields(false))], &[0], None, 34)?;
++    let mut expected = values[3..].to_vec();
++    expected[0] = replacement;
++    assert_rows(&acc.evaluate(EmitTo::All)?, &expected);
++    assert_eq!(acc.size(), fixed);
++    let mut merged = new(&acc.data_type)?;
++    merged.merge_batch(&prefix, &[2, 0, 1], 4)?;
++    assert_rows(
++        &merged.evaluate(EmitTo::All)?,
++        &[values[1], values[2], values[0], Group::default()],
++    );
++    assert_eq!(acc.evaluate(EmitTo::All)?.len(), 0);
++    assert_eq!(acc.evaluate(EmitTo::First(0))?.len(), 0);
++    Ok(())
++}
++
++#[test]
++fn specialization_rejects_other_shapes_and_keeps_field_metadata() -> Result<()> {
++    let supported = DataType::Struct(fields(true));
++    assert!(supports_type(&supported));
++    for ty in [
++        DataType::Float64,
++        DataType::Struct(Fields::empty()),
++        DataType::Struct(vec![Field::new("x", DataType::Float64, true)].into()),
++        DataType::Struct(
++            vec![
++                Field::new("a", DataType::Float32, true),
++                Field::new("b", DataType::Int64, true),
++                Field::new("c", DataType::Int64, true),
++            ]
++            .into(),
++        ),
++        DataType::Struct(
++            vec![
++                Field::new("a", DataType::Float64, true),
++                Field::new("b", DataType::UInt64, true),
++                Field::new("c", DataType::Int64, true),
++            ]
++            .into(),
++        ),
++        DataType::Struct(
++            vec![
++                Field::new("a", DataType::Float64, true),
++                Field::new("b", DataType::Int64, true),
++                Field::new("c", supported.clone(), true),
++            ]
++            .into(),
++        ),
++    ] {
++        assert!(!supports_type(&ty));
++        assert!(new(&ty).is_err());
++    }
++    let mut acc = new(&supported)?;
++    let output = acc.evaluate(EmitTo::All)?;
++    assert_eq!(output.data_type(), &supported);
++    Ok(())
++}
+diff --git a/crates/sail-function/src/aggregate/mod.rs b/crates/sail-function/src/aggregate/mod.rs
+index 1ac61e29d..a7a8d2e4f 100644
+--- a/crates/sail-function/src/aggregate/mod.rs
++++ b/crates/sail-function/src/aggregate/mod.rs
+@@ -76,6 +76,7 @@ macro_rules! duration_none {
+ pub mod bitmap_and_agg;
+ pub mod bitmap_construct_agg;
+ pub mod bitmap_or_agg;
++mod compact_struct_min;
+ pub mod count_min_sketch;
+ pub mod grouping_id;
+ pub mod histogram_numeric;
+@@ -90,6 +91,7 @@ pub mod product;
+ pub mod regr;
+ pub mod schema_of_variant_agg;
+ pub mod skewness;
++pub mod struct_min;
+ pub mod theta_sketch;
+ pub mod try_avg;
+ pub mod utils;
+diff --git a/crates/sail-function/src/aggregate/struct_min.rs b/crates/sail-function/src/aggregate/struct_min.rs
+new file mode 100644
+index 000000000..8c4409b09
+--- /dev/null
++++ b/crates/sail-function/src/aggregate/struct_min.rs
+@@ -0,0 +1,114 @@
++use std::sync::{Arc, LazyLock};
++
++use datafusion::arrow::datatypes::{DataType, FieldRef};
++use datafusion::common::{Result, ScalarValue};
++use datafusion::functions_aggregate::min_max::Min;
++use datafusion::logical_expr::function::{AccumulatorArgs, StateFieldsArgs};
++use datafusion::logical_expr::utils::AggregateOrderSensitivity;
++use datafusion::logical_expr::{
++    Accumulator, AggregateUDF, AggregateUDFImpl, Documentation, GroupsAccumulator, ReversedUDAF,
++    SetMonotonicity, Signature, StatisticsArgs,
++};
++
++use crate::aggregate::compact_struct_min;
++
++/// DataFusion MIN with compact grouped state for a fixed three-field struct.
++///
++/// Scalar, sliding, and other grouped types keep DataFusion's implementation.
++/// The ordinary name is intentional: the remote codec encodes this concrete
++/// implementation explicitly so worker registry lookup cannot replace it.
++#[derive(Debug, Default, PartialEq, Eq, Hash)]
++pub struct StructMin {
++    inner: Min,
++}
++
++pub fn supports_struct_min(data_type: &DataType) -> bool {
++    compact_struct_min::supports_type(data_type)
++}
++
++pub fn struct_min_udaf() -> Arc<AggregateUDF> {
++    static UDAF: LazyLock<Arc<AggregateUDF>> =
++        LazyLock::new(|| Arc::new(AggregateUDF::from(StructMin::default())));
++    Arc::clone(&UDAF)
++}
++
++impl AggregateUDFImpl for StructMin {
++    fn name(&self) -> &str {
++        self.inner.name()
++    }
++
++    fn signature(&self) -> &Signature {
++        self.inner.signature()
++    }
++
++    fn return_type(&self, arg_types: &[DataType]) -> Result<DataType> {
++        self.inner.return_type(arg_types)
++    }
++
++    fn return_field(&self, arg_fields: &[FieldRef]) -> Result<FieldRef> {
++        self.inner.return_field(arg_fields)
++    }
++
++    fn is_nullable(&self) -> bool {
++        self.inner.is_nullable()
++    }
++
++    fn accumulator(&self, args: AccumulatorArgs) -> Result<Box<dyn Accumulator>> {
++        self.inner.accumulator(args)
++    }
++
++    fn state_fields(&self, args: StateFieldsArgs) -> Result<Vec<FieldRef>> {
++        self.inner.state_fields(args)
++    }
++
++    fn groups_accumulator_supported(&self, args: AccumulatorArgs) -> bool {
++        self.inner.groups_accumulator_supported(args)
++    }
++
++    fn create_groups_accumulator(
++        &self,
++        args: AccumulatorArgs,
++    ) -> Result<Box<dyn GroupsAccumulator>> {
++        if supports_struct_min(args.return_type()) {
++            compact_struct_min::new(args.return_type())
++        } else {
++            self.inner.create_groups_accumulator(args)
++        }
++    }
++
++    fn create_sliding_accumulator(&self, args: AccumulatorArgs) -> Result<Box<dyn Accumulator>> {
++        self.inner.create_sliding_accumulator(args)
++    }
++
++    fn is_descending(&self) -> Option<bool> {
++        self.inner.is_descending()
++    }
++
++    fn value_from_stats(&self, args: &StatisticsArgs) -> Option<ScalarValue> {
++        self.inner.value_from_stats(args)
++    }
++
++    fn order_sensitivity(&self) -> AggregateOrderSensitivity {
++        self.inner.order_sensitivity()
++    }
++
++    fn coerce_types(&self, arg_types: &[DataType]) -> Result<Vec<DataType>> {
++        self.inner.coerce_types(arg_types)
++    }
++
++    fn reverse_expr(&self) -> ReversedUDAF {
++        self.inner.reverse_expr()
++    }
++
++    fn documentation(&self) -> Option<&Documentation> {
++        self.inner.documentation()
++    }
++
++    fn set_monotonicity(&self, data_type: &DataType) -> SetMonotonicity {
++        self.inner.set_monotonicity(data_type)
++    }
++}
++
++#[cfg(test)]
++#[path = "struct_min_tests.rs"]
++mod tests;
+diff --git a/crates/sail-function/src/aggregate/struct_min_tests.rs b/crates/sail-function/src/aggregate/struct_min_tests.rs
+new file mode 100644
+index 000000000..b9e3b0267
+--- /dev/null
++++ b/crates/sail-function/src/aggregate/struct_min_tests.rs
+@@ -0,0 +1,126 @@
++use std::sync::Arc;
++
++use datafusion::arrow::array::{
++    Array, ArrayRef, Float64Array, Int64Array, StringArray, StructArray,
++};
++use datafusion::arrow::datatypes::{DataType, Field, Schema};
++use datafusion::common::{Result, internal_err};
++use datafusion::functions_aggregate::min_max::min_udaf;
++use datafusion::logical_expr::{AggregateUDF, EmitTo};
++use datafusion::physical_expr::aggregate::{AggregateExprBuilder, AggregateFunctionExpr};
++use datafusion::physical_expr::expressions::Column;
++
++use super::{struct_min_udaf, supports_struct_min};
++
++fn expression(function: Arc<AggregateUDF>, data_type: DataType) -> Result<AggregateFunctionExpr> {
++    AggregateExprBuilder::new(function, vec![Arc::new(Column::new("value", 0))])
++        .schema(Arc::new(Schema::new(vec![Field::new(
++            "value", data_type, true,
++        )])))
++        .alias("minimum")
++        .build()
++}
++
++fn arrays() -> Vec<ArrayRef> {
++    let distances: ArrayRef = Arc::new(Float64Array::from(vec![Some(3.0), None, Some(1.0)]));
++    let integers: ArrayRef = Arc::new(Int64Array::from(vec![Some(3), None, Some(-1)]));
++    vec![
++        Arc::new(StructArray::from(vec![
++            (
++                Arc::new(Field::new("distance", DataType::Float64, true)),
++                Arc::clone(&distances),
++            ),
++            (
++                Arc::new(Field::new("hops", DataType::Int64, true)),
++                Arc::clone(&integers),
++            ),
++            (
++                Arc::new(Field::new("parent", DataType::Int64, true)),
++                Arc::clone(&integers),
++            ),
++        ])),
++        Arc::clone(&integers),
++        Arc::new(StringArray::from(vec![Some("z"), None, Some("a")])),
++        Arc::new(StructArray::from(vec![
++            (
++                Arc::new(Field::new("distance", DataType::Int64, true)),
++                Arc::clone(&integers),
++            ),
++            (
++                Arc::new(Field::new("hops", DataType::Int64, true)),
++                Arc::clone(&integers),
++            ),
++            (
++                Arc::new(Field::new("parent", DataType::Int64, true)),
++                integers,
++            ),
++        ])),
++    ]
++}
++
++#[test]
++fn scalar_and_sliding_accumulators_keep_datafusion_behavior() -> Result<()> {
++    for array in arrays() {
++        let wrapped = expression(struct_min_udaf(), array.data_type().clone())?;
++        let original = expression(min_udaf(), array.data_type().clone())?;
++        assert_eq!(wrapped.field(), original.field());
++        assert_eq!(wrapped.state_fields()?, original.state_fields()?);
++        let mut left = wrapped.create_accumulator()?;
++        let mut right = original.create_accumulator()?;
++        left.update_batch(&[Arc::clone(&array)])?;
++        right.update_batch(&[Arc::clone(&array)])?;
++        assert_eq!(left.evaluate()?, right.evaluate()?);
++        assert_eq!(left.state()?, right.state()?);
++
++        match (
++            wrapped.create_sliding_accumulator(),
++            original.create_sliding_accumulator(),
++        ) {
++            (Ok(mut left), Ok(mut right)) => {
++                left.update_batch(&[Arc::clone(&array)])?;
++                right.update_batch(&[Arc::clone(&array)])?;
++                assert_eq!(left.evaluate()?, right.evaluate()?);
++                let first = array.slice(0, 1);
++                left.retract_batch(&[Arc::clone(&first)])?;
++                right.retract_batch(&[first])?;
++                assert_eq!(left.evaluate()?, right.evaluate()?);
++            }
++            (Err(left), Err(right)) => assert_eq!(left.to_string(), right.to_string()),
++            _ => return internal_err!("wrapper changed sliding support"),
++        }
++    }
++    Ok(())
++}
++
++#[test]
++fn other_grouped_types_and_planner_properties_keep_datafusion_behavior() -> Result<()> {
++    let wrapped = struct_min_udaf();
++    let original = min_udaf();
++    assert_eq!(wrapped.signature(), original.signature());
++    assert_eq!(wrapped.order_sensitivity(), original.order_sensitivity());
++    assert_eq!(wrapped.is_descending(), original.is_descending());
++    for array in arrays() {
++        assert_eq!(
++            wrapped.coerce_types(&[array.data_type().clone()])?,
++            original.coerce_types(&[array.data_type().clone()])?,
++        );
++        if supports_struct_min(array.data_type()) {
++            continue;
++        }
++        let left = expression(Arc::clone(&wrapped), array.data_type().clone())?;
++        let right = expression(Arc::clone(&original), array.data_type().clone())?;
++        assert_eq!(
++            left.groups_accumulator_supported(),
++            right.groups_accumulator_supported()
++        );
++        let mut left = left.create_groups_accumulator()?;
++        let mut right = right.create_groups_accumulator()?;
++        left.update_batch(&[Arc::clone(&array)], &[0, 1, 0], None, 2)?;
++        right.update_batch(&[array], &[0, 1, 0], None, 2)?;
++        assert_eq!(
++            left.evaluate(EmitTo::All)?.to_data(),
++            right.evaluate(EmitTo::All)?.to_data()
++        );
++    }
++    Ok(())
++}
+diff --git a/crates/sail-plan/src/function/aggregate.rs b/crates/sail-plan/src/function/aggregate.rs
+index 96ab37592..f1bd945ce 100644
+--- a/crates/sail-plan/src/function/aggregate.rs
++++ b/crates/sail-plan/src/function/aggregate.rs
+@@ -35,6 +35,7 @@ use sail_function::aggregate::product::ProductFunction;
+ use sail_function::aggregate::regr::{Regr, RegrType};
+ use sail_function::aggregate::schema_of_variant_agg::SchemaOfVariantAggFunction;
+ use sail_function::aggregate::skewness::SkewnessFunc;
++use sail_function::aggregate::struct_min::{struct_min_udaf, supports_struct_min};
+ use sail_function::aggregate::theta_sketch::{
+     ThetaIntersectionAggFunction, ThetaSketchAggFunction, ThetaUnionAggFunction,
+ };
+@@ -605,7 +606,20 @@ fn is_non_null_literal(expression: &expr::Expr) -> bool {
+ }
+ 
+ fn min_value(input: AggFunctionInput) -> PlanResult<expr::Expr> {
+-    duplicate_agnostic_extreme(input, min_max::min_udaf)
++    // Keep other MIN expressions as DataFusion's concrete UDAF so metadata
++    // aggregate rules and their existing type-based dispatch remain unchanged.
++    let compact = match input.arguments.as_slice() {
++        [argument] => supports_struct_min(&argument.get_type(input.function_context.schema)?),
++        _ => false,
++    };
++    duplicate_agnostic_extreme(
++        input,
++        if compact {
++            struct_min_udaf
++        } else {
++            min_max::min_udaf
++        },
++    )
+ }
+ 
+ fn max_value(input: AggFunctionInput) -> PlanResult<expr::Expr> {
+@@ -1075,6 +1089,10 @@ pub(crate) fn list_built_in_aggregate_function_names() -> impl Iterator<Item = &
+     BUILT_IN_AGGREGATE_FUNCTIONS.keys().copied()
+ }
+ 
++#[cfg(test)]
++#[path = "aggregate_struct_min_tests.rs"]
++mod struct_min_tests;
++
+ #[cfg(test)]
+ mod tests {
+     use std::sync::Arc;
+diff --git a/crates/sail-plan/src/function/aggregate_struct_min_tests.rs b/crates/sail-plan/src/function/aggregate_struct_min_tests.rs
+new file mode 100644
+index 000000000..bdae50bad
+--- /dev/null
++++ b/crates/sail-plan/src/function/aggregate_struct_min_tests.rs
+@@ -0,0 +1,71 @@
++use arrow::datatypes::Schema;
++use datafusion::prelude::SessionContext;
++use datafusion_expr::col;
++
++use super::*;
++use crate::config::PlanConfig;
++use crate::function::common::FunctionContextInput;
++
++#[test]
++fn min_specializes_only_the_supported_struct_and_preserves_clauses() -> PlanResult<()> {
++    use sail_function::aggregate::struct_min::StructMin;
++
++    let target = DataType::Struct(
++        vec![
++            Field::new("distance", DataType::Float64, true),
++            Field::new("hops", DataType::Int64, true),
++            Field::new("parent", DataType::Int64, true),
++        ]
++        .into(),
++    );
++    let other_struct = DataType::Struct(
++        vec![
++            Field::new("distance", DataType::Int64, true),
++            Field::new("hops", DataType::Int64, true),
++            Field::new("parent", DataType::Int64, true),
++        ]
++        .into(),
++    );
++    for (data_type, compact) in [
++        (target, true),
++        (other_struct, false),
++        (DataType::Int64, false),
++    ] {
++        let schema = Arc::new(DFSchema::try_from(Schema::new(vec![
++            Field::new("value", data_type.clone(), true),
++            Field::new("included", DataType::Boolean, true),
++        ]))?);
++        let argument_display_names = ["value".to_string()];
++        let plan_config = Arc::new(PlanConfig::default());
++        let session_context = SessionContext::new();
++        let filter = col("included");
++        let expression = min_value(AggFunctionInput {
++            arguments: vec![col("value")],
++            distinct: true,
++            ignore_nulls: None,
++            filter: Some(Box::new(filter.clone())),
++            order_by: vec![],
++            preserve_count_argument_columns: false,
++            function_context: FunctionContextInput {
++                argument_display_names: &argument_display_names,
++                plan_config: &plan_config,
++                session_context: &session_context,
++                schema: &schema,
++            },
++        })?;
++        assert_eq!(expression.get_type(schema.as_ref())?, data_type);
++        let expr::Expr::AggregateFunction(minimum) = expression else {
++            return Err(PlanError::internal("expected aggregate MIN expression"));
++        };
++        assert_eq!(minimum.func.inner().is::<StructMin>(), compact);
++        assert_eq!(minimum.func.inner().is::<min_max::Min>(), !compact);
++        assert_eq!(minimum.params.filter, Some(Box::new(filter)));
++        assert!(!minimum.params.distinct);
++        assert!(crate::resolver::PlanResolver::is_order_irrelevant_udaf(
++            &minimum.func,
++            &minimum.params.args,
++            &schema,
++        )?);
++    }
++    Ok(())
++}
+diff --git a/crates/sail-plan/src/resolver/query/aggregate.rs b/crates/sail-plan/src/resolver/query/aggregate.rs
+index ad9a99783..1ad4fdcfe 100644
+--- a/crates/sail-plan/src/resolver/query/aggregate.rs
++++ b/crates/sail-plan/src/resolver/query/aggregate.rs
+@@ -16,6 +16,7 @@ use datafusion_expr::{
+ use datafusion_spark::function::aggregate::try_sum::SparkTrySum;
+ use sail_common::spec;
+ use sail_common_datafusion::utils::items::ItemTaker;
++use sail_function::aggregate::struct_min::StructMin;
+ use sail_function::aggregate::try_avg::TryAvgFunction;
+ use sail_function::scalar::explode::Explode;
+ use sail_logical_plan::monotonic_id::MonotonicIdNode;
+@@ -448,6 +449,7 @@ impl PlanResolver<'_> {
+         schema: &DFSchemaRef,
+     ) -> PlanResult<bool> {
+         if udf == min_max::min_udaf().as_ref()
++            || udf.inner().is::<StructMin>()
+             || udf == min_max::max_udaf().as_ref()
+             || udf == count::count_udaf().as_ref()
+             || udf == bit_and_or_xor::bit_and_udaf().as_ref()

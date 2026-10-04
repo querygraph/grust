@@ -1,0 +1,113 @@
+{
+  "started_utc": "2026-09-30T17:21:11.654201+00:00",
+  "outcome": "passed",
+  "identity": "exact clean detached commit 56194b170155301ba91077f0ba3df31fe2c78b6b",
+  "source": "/private/tmp/sail-compact-struct-min",
+  "target": "/private/tmp/sail-compact-struct-min-target",
+  "before": {
+    "head": "56194b170155301ba91077f0ba3df31fe2c78b6b",
+    "detached": true,
+    "branch_head": "56194b170155301ba91077f0ba3df31fe2c78b6b",
+    "tracked_source_sha256": "cade42b09fe3ee11f3ee82302eaa82674fb445e592c3bc320383dae49943862e",
+    "index_sha256": "a2c1ca56e69dc283dc6ad45dd6791e0f9b2902f9cce00054009dfc2ede0c9842",
+    "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "status": ""
+  },
+  "steps": [
+    {
+      "name": "fmt",
+      "command": [
+        "cargo",
+        "fmt",
+        "--all",
+        "--check"
+      ],
+      "started_utc": "2026-09-30T17:21:11.680529+00:00",
+      "returncode": 0,
+      "finished_utc": "2026-09-30T17:21:14.894120+00:00",
+      "elapsed_seconds": 3.2131659579463303
+    },
+    {
+      "name": "clippy",
+      "command": [
+        "cargo",
+        "clippy",
+        "--locked",
+        "-p",
+        "sail-function",
+        "-p",
+        "sail-plan",
+        "-p",
+        "sail-execution",
+        "--all-targets",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "started_utc": "2026-09-30T17:21:14.894843+00:00",
+      "returncode": 0,
+      "finished_utc": "2026-09-30T17:21:54.109820+00:00",
+      "elapsed_seconds": 39.21464808401652
+    },
+    {
+      "name": "tests",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "sail-function",
+        "-p",
+        "sail-plan",
+        "-p",
+        "sail-execution",
+        "--lib"
+      ],
+      "started_utc": "2026-09-30T17:21:54.110507+00:00",
+      "returncode": 0,
+      "finished_utc": "2026-09-30T17:22:59.613421+00:00",
+      "elapsed_seconds": 65.50243108300492
+    },
+    {
+      "name": "pecan-nonintegration",
+      "command": [
+        "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "-m",
+        "not integration",
+        "examples/extensions/graph-algorithms/tests"
+      ],
+      "started_utc": "2026-09-30T17:22:59.707790+00:00",
+      "returncode": 0,
+      "finished_utc": "2026-09-30T17:23:00.815194+00:00",
+      "elapsed_seconds": 1.1069937078282237
+    }
+  ],
+  "environment": {
+    "CARGO_TARGET_DIR": "/private/tmp/sail-compact-struct-min-target",
+    "CARGO_INCREMENTAL": "0",
+    "CARGO_PROFILE_DEV_DEBUG": "0",
+    "CARGO_PROFILE_TEST_DEBUG": "0",
+    "CARGO_BUILD_JOBS": "6"
+  },
+  "free_bytes_before": 467752341504,
+  "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)",
+  "target_seed": "own compact target reused after the unchanged-content staged candidate passed",
+  "python_versions": "{\"pyspark\": \"4.0.1\", \"protobuf\": \"7.36.2\", \"pytest\": \"8.4.2\"}",
+  "after": {
+    "head": "56194b170155301ba91077f0ba3df31fe2c78b6b",
+    "detached": true,
+    "branch_head": "56194b170155301ba91077f0ba3df31fe2c78b6b",
+    "tracked_source_sha256": "cade42b09fe3ee11f3ee82302eaa82674fb445e592c3bc320383dae49943862e",
+    "index_sha256": "a2c1ca56e69dc283dc6ad45dd6791e0f9b2902f9cce00054009dfc2ede0c9842",
+    "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "status": ""
+  },
+  "source_unchanged": true,
+  "finished_utc": "2026-09-30T17:23:01.417505+00:00",
+  "free_bytes_after": 467156656128
+}

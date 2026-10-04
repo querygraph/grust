@@ -1,0 +1,154 @@
+{
+  "recorded_utc": "2026-09-30T22:05:19.484551+00:00",
+  "outcome": "LOGGING02_EXACT_CGROUP_WORKER_OOM_KILLS_CONFIRMED",
+  "boot_id": "f5443bfc-c939-491a-a984-b73cc6d1cb20",
+  "container_id": "277559b777e04a8bdda5f0cb8931480269de472f0fbf2e2125375496118fab16",
+  "roles": [
+    {
+      "role": "driver",
+      "host_pid": 183665,
+      "namespace_pid": 50,
+      "start_ticks": 14376571
+    },
+    {
+      "role": "worker 2",
+      "host_pid": 183782,
+      "namespace_pid": 167,
+      "start_ticks": 14376781
+    },
+    {
+      "role": "worker 1",
+      "host_pid": 183784,
+      "namespace_pid": 169,
+      "start_ticks": 14376782
+    }
+  ],
+  "live_executable_sha256": "40a78182a420152e8e3651f9cdb38a4196eaf8bc7aead092d10e258a17ac3497",
+  "identity_scope": "Worker names/namespace IDs are directly recorded at startup. Prior live executable hashes and repeated host PID/NSpid/start-tick/cgroup mapping establish identity before death. Kernel records exact host PIDs and cgroup, not roles, start ticks or executable hashes. Continuous sampled namespace PID presence supports continuity; it is not continuous process tracing.",
+  "kernel_kill_monotonic_seconds": [
+    150579.928398,
+    150580.000884
+  ],
+  "kernel_kill_estimated_utc": [
+    "2026-09-30T21:57:57.642391+00:00",
+    "2026-09-30T21:57:57.714877+00:00"
+  ],
+  "utc_conversion_scope": "Approximation from post-closure guest UTC and /proc/uptime in the same boot; not an event UTC recorded by the kernel. Native monotonic coordinates are authoritative. No sub-second cross-clock ordering claim.",
+  "clock_anchor": {
+    "started_utc": "2026-09-30T22:00:03.233993+00:00",
+    "finished_utc": "2026-09-30T22:00:03.321524+00:00",
+    "uptime": "150705.52 2411667.71",
+    "boot_id": "f5443bfc-c939-491a-a984-b73cc6d1cb20",
+    "boot_id_after": "f5443bfc-c939-491a-a984-b73cc6d1cb20"
+  },
+  "kill_straddling_sample_line": 6805,
+  "first_sample_without_workers_line": 6806,
+  "first_sample_without_workers_interval": [
+    150584.26980267,
+    150584.296372949
+  ],
+  "first_runtime_fault": {
+    "line": 20250,
+    "text": "[2026-09-30T21:58:03Z WARN sail_execution::diagnostics] execution_failure pid=50 event=flight_client_error phase=body peer=http://127.0.0.1:43503 owner=Worker key=TaskStreamKey { job_id: JobId(31), stage: 5, partition: 0, attempt: 0, channel: 0 } error_chain=grpc_code=Unknown message=h2 protocol error: error reading a body from connection caused_by=error reading a body from connection caused_by=stream closed because of a broken pipe"
+  },
+  "fault_peer_attribution": "Port 43503 is directly logged as worker 2's advertised endpoint; that worker is one of the kernel victims.",
+  "terminal_memory_events": {
+    "low": 0,
+    "high": 0,
+    "max": 5359,
+    "oom": 14,
+    "oom_kill": 2,
+    "oom_group_kill": 0
+  },
+  "terminal_memory_peak_bytes": 107374235648,
+  "memory_max_bytes": 107374182400,
+  "cgroup_after_current_bytes": 100675584,
+  "outcomes": {
+    "outer": "oom",
+    "producer": "error",
+    "container_exit": 1,
+    "container_oom_killed": true,
+    "outer_timeout": false
+  },
+  "iteration_events": [
+    {
+      "kind": "iteration_start",
+      "algorithm": "sssp-delta-star",
+      "iteration": 1,
+      "bucket": 0,
+      "elapsed_seconds": 834.9883379290113
+    },
+    {
+      "kind": "iteration_end",
+      "algorithm": "sssp-delta-star",
+      "iteration": 1,
+      "bucket": 0,
+      "elapsed_seconds": 872.9102066100168
+    },
+    {
+      "kind": "iteration_start",
+      "algorithm": "sssp-delta-star",
+      "iteration": 2,
+      "bucket": 0,
+      "elapsed_seconds": 873.2548360640067
+    }
+  ],
+  "elapsed_until_error_seconds": 6815.326034008001,
+  "cleanup": {
+    "first_sample_line": 6818,
+    "last_directory_sample_line": 6821,
+    "last_directory_scan_interval": [
+      150585.318966472,
+      150585.343799575
+    ],
+    "last_directory_scan_phase": "cleanup",
+    "last_directory_scan_driver_present": true,
+    "last_sampled_directories": {
+      "staging": {
+        "files": 27,
+        "bytes": 8257432359
+      },
+      "temporary": {
+        "files": 0,
+        "bytes": 0
+      }
+    },
+    "post_shutdown_staging_inventory_present": false,
+    "cleanup_errors": [],
+    "write_uncertainty_note": "write completion is uncertain; cleanup deferred for file:///targets/sail-stream-experiments-20260930/logging02/cells/stream-log02-r1-scale24-pecan-sssp-delta_star/staging/e11de82c-9b96-49dd-b923-8cb5464dc166. The server session retains ownership and attempts cleanup at teardown; this is best effort, not a guarantee that all writers have drained.",
+    "container_state": {
+      "Dead": false,
+      "Error": "",
+      "ExitCode": 1,
+      "FinishedAt": "2026-09-30T21:58:06.310953881Z",
+      "OOMKilled": true,
+      "Paused": false,
+      "Pid": 0,
+      "Restarting": false,
+      "Running": false,
+      "StartedAt": "2026-09-30T20:03:49.717483806Z",
+      "Status": "exited"
+    },
+    "container_remove_returncode": 0
+  },
+  "sampling": {
+    "rows": 6836,
+    "requested_interval_seconds": 0.05,
+    "actual_scan_span_seconds": {
+      "min": 0.008703008003067225,
+      "median": 0.5227551735006273,
+      "max": 62.49040346901165
+    },
+    "max_span_line": 2897,
+    "peak_straddling_scan_seconds": 5.6552319019974675,
+    "all_step_values_null": true
+  },
+  "limits": [
+    "This closed replay has direct cgroup OOM evidence and its affected peer disappears before the recorded broken-pipe stream failure. It does not identify the allocation site or prove which operator exhausted memory.",
+    "The original twelve zero-OOM historical failures remain unexplained; this result must not be retroactively applied to them.",
+    "The startup DEBUG preface-close record is preserved separately and is not treated as this terminal runtime failure.",
+    "Sample 6805 crosses both kills/reaping and combines sequential process reads; its RSS/PSS peak and post-kill cgroup current are not simultaneous.",
+    "No correctness result or completed iteration 2 exists. This shared-host diagnostic is not a performance measurement.",
+    "cleanup_errors=[] and successful container removal do not prove staging cleanup. The last directory scan was nonempty while the driver was still sampled, before its later disappearance; it is not a post-shutdown inventory and does not prove retained staging bytes at final exit. No staging_files_after_shutdown field exists in the receipt."
+  ]
+}

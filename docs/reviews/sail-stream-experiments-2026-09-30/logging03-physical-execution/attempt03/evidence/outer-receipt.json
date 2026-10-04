@@ -1,0 +1,434 @@
+{
+  "started_utc": "2026-10-01T01:46:53.393885+00:00",
+  "outcome": "container_completed",
+  "request_sha256": "9a0f956c78c0583489c3b456ef2b276a17049fa31091ba6f922b4dcdc7a8bc65",
+  "commands": [
+    {
+      "started_utc": "2026-10-01T01:46:53.397509+00:00",
+      "command": [
+        "/usr/local/bin/docker",
+        "--context",
+        "colima-sail-gate",
+        "ps",
+        "-q"
+      ],
+      "stdout": "01-running-before.stdout",
+      "stderr": "01-running-before.stderr",
+      "timeout_seconds": 60,
+      "returncode": 0,
+      "finished_utc": "2026-10-01T01:46:53.528206+00:00",
+      "stdout_file": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr_file": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "started_utc": "2026-10-01T01:46:53.529474+00:00",
+      "command": [
+        "/usr/local/bin/docker",
+        "--context",
+        "colima-sail-gate",
+        "image",
+        "inspect",
+        "--format",
+        "{{.Id}}",
+        "sha256:f3518d652fbea8b9b9f9ebf9849277ca3bd39d0c21bb2c6e36fbaeaa2dc2678e"
+      ],
+      "stdout": "02-image.stdout",
+      "stderr": "02-image.stderr",
+      "timeout_seconds": 60,
+      "returncode": 0,
+      "finished_utc": "2026-10-01T01:46:53.760691+00:00",
+      "stdout_file": {
+        "bytes": 72,
+        "sha256": "9fa84e8683a9f53fcb93c1e2e4147070ab06aa1bf5ddbaabe146322569127834"
+      },
+      "stderr_file": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "started_utc": "2026-10-01T01:46:53.762028+00:00",
+      "command": [
+        "/usr/local/bin/docker",
+        "--context",
+        "colima-sail-gate",
+        "volume",
+        "inspect",
+        "--format",
+        "{{.Name}}",
+        "sail-extension-targets"
+      ],
+      "stdout": "03-volume.stdout",
+      "stderr": "03-volume.stderr",
+      "timeout_seconds": 60,
+      "returncode": 0,
+      "finished_utc": "2026-10-01T01:46:53.807920+00:00",
+      "stdout_file": {
+        "bytes": 23,
+        "sha256": "a4ea179cbfbf1acc8c9757ecd838be857ee83af4006f5efc68e79a0229cd3fcb"
+      },
+      "stderr_file": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "started_utc": "2026-10-01T01:46:53.809226+00:00",
+      "command": [
+        "/usr/local/bin/docker",
+        "--context",
+        "colima-sail-gate",
+        "ps",
+        "-q"
+      ],
+      "stdout": "04-running-before-create.stdout",
+      "stderr": "04-running-before-create.stderr",
+      "timeout_seconds": 60,
+      "returncode": 0,
+      "finished_utc": "2026-10-01T01:46:53.851434+00:00",
+      "stdout_file": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr_file": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "started_utc": "2026-10-01T01:46:53.852993+00:00",
+      "command": [
+        "/usr/local/bin/docker",
+        "--context",
+        "colima-sail-gate",
+        "create",
+        "--name",
+        "physical-output-log03-69585c14f5ef4408",
+        "--label",
+        "physical-check.request=9a0f956c78c0583489c3b456ef2b276a17049fa31091ba6f922b4dcdc7a8bc65",
+        "--label",
+        "physical-check.execution=ae8cfb33d1014800a7f795f327d6d65a",
+        "--pull=never",
+        "--user=0:20",
+        "--read-only",
+        "--network=none",
+        "--cpus=1",
+        "--memory=2147483648",
+        "--memory-swap=2147483648",
+        "--pids-limit=64",
+        "--cap-drop=ALL",
+        "--security-opt=no-new-privileges",
+        "--mount",
+        "type=volume,source=sail-extension-targets,target=/targets,readonly,volume-nocopy",
+        "--mount",
+        "type=bind,source=/Users/alexy/src/sail-extensions-gates/stream-experiments-20260930/physical-output-log03-69585c14f5ef4408-v4-bundle,target=/work,readonly",
+        "--mount",
+        "type=bind,source=/Users/alexy/src/sail-extensions-gates/stream-experiments-20260930/physical-output-log03-69585c14f5ef4408-v4-evidence,target=/evidence",
+        "--workdir=/targets",
+        "--env",
+        "PYTHONDONTWRITEBYTECODE=1",
+        "--env",
+        "OMP_NUM_THREADS=1",
+        "--env",
+        "OPENBLAS_NUM_THREADS=1",
+        "--env",
+        "MKL_NUM_THREADS=1",
+        "--env",
+        "NUMEXPR_NUM_THREADS=1",
+        "--entrypoint=/targets/graph-nuts-ffcfbd569/venv/bin/python",
+        "sha256:f3518d652fbea8b9b9f9ebf9849277ca3bd39d0c21bb2c6e36fbaeaa2dc2678e",
+        "-I",
+        "-B",
+        "/work/container_check.py",
+        "9a0f956c78c0583489c3b456ef2b276a17049fa31091ba6f922b4dcdc7a8bc65"
+      ],
+      "stdout": "05-create.stdout",
+      "stderr": "05-create.stderr",
+      "timeout_seconds": 60,
+      "returncode": 0,
+      "finished_utc": "2026-10-01T01:46:54.093810+00:00",
+      "stdout_file": {
+        "bytes": 65,
+        "sha256": "d9fb847bec33926e62e083d08a7f9b120f450c56ed70c69de5a5775b24151845"
+      },
+      "stderr_file": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "started_utc": "2026-10-01T01:46:54.095375+00:00",
+      "command": [
+        "/usr/local/bin/docker",
+        "--context",
+        "colima-sail-gate",
+        "inspect",
+        "--format",
+        "{\"Id\":{{json .Id}},\"State\":{{json .State}},\"Labels\":{{json .Config.Labels}},\"User\":{{json .Config.User}},\"Mounts\":{{json .Mounts}},\"Memory\":{{.HostConfig.Memory}},\"MemorySwap\":{{.HostConfig.MemorySwap}},\"NanoCpus\":{{.HostConfig.NanoCpus}},\"ReadonlyRootfs\":{{.HostConfig.ReadonlyRootfs}},\"NetworkMode\":{{json .HostConfig.NetworkMode}}}",
+        "e044ebd1c16161b2f0f071d7e32f7e5564cd8123d71a89a4bdc1fd507f80a520"
+      ],
+      "stdout": "06-inspect-created.stdout",
+      "stderr": "06-inspect-created.stderr",
+      "timeout_seconds": 60,
+      "returncode": 0,
+      "finished_utc": "2026-10-01T01:46:54.172980+00:00",
+      "stdout_file": {
+        "bytes": 1285,
+        "sha256": "964e4954f28fabc142a43bb486f571ecda9aa5967fdd8edf3a1dba121aab751a"
+      },
+      "stderr_file": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "started_utc": "2026-10-01T01:46:54.174599+00:00",
+      "command": [
+        "/usr/local/bin/docker",
+        "--context",
+        "colima-sail-gate",
+        "ps",
+        "-q"
+      ],
+      "stdout": "07-running-before-start.stdout",
+      "stderr": "07-running-before-start.stderr",
+      "timeout_seconds": 60,
+      "returncode": 0,
+      "finished_utc": "2026-10-01T01:46:54.218024+00:00",
+      "stdout_file": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr_file": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "started_utc": "2026-10-01T01:46:54.219518+00:00",
+      "command": [
+        "/usr/local/bin/docker",
+        "--context",
+        "colima-sail-gate",
+        "start",
+        "e044ebd1c16161b2f0f071d7e32f7e5564cd8123d71a89a4bdc1fd507f80a520"
+      ],
+      "stdout": "08-start.stdout",
+      "stderr": "08-start.stderr",
+      "timeout_seconds": 60,
+      "returncode": 0,
+      "finished_utc": "2026-10-01T01:46:54.614719+00:00",
+      "stdout_file": {
+        "bytes": 65,
+        "sha256": "d9fb847bec33926e62e083d08a7f9b120f450c56ed70c69de5a5775b24151845"
+      },
+      "stderr_file": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "started_utc": "2026-10-01T01:46:54.616271+00:00",
+      "command": [
+        "/usr/local/bin/docker",
+        "--context",
+        "colima-sail-gate",
+        "wait",
+        "e044ebd1c16161b2f0f071d7e32f7e5564cd8123d71a89a4bdc1fd507f80a520"
+      ],
+      "stdout": "09-wait.stdout",
+      "stderr": "09-wait.stderr",
+      "timeout_seconds": 1800,
+      "returncode": 0,
+      "finished_utc": "2026-10-01T01:47:00.359694+00:00",
+      "stdout_file": {
+        "bytes": 2,
+        "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+      },
+      "stderr_file": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "started_utc": "2026-10-01T01:47:00.361387+00:00",
+      "command": [
+        "/usr/local/bin/docker",
+        "--context",
+        "colima-sail-gate",
+        "inspect",
+        "--format",
+        "{\"Id\":{{json .Id}},\"State\":{{json .State}},\"Labels\":{{json .Config.Labels}},\"User\":{{json .Config.User}},\"Mounts\":{{json .Mounts}},\"Memory\":{{.HostConfig.Memory}},\"MemorySwap\":{{.HostConfig.MemorySwap}},\"NanoCpus\":{{.HostConfig.NanoCpus}},\"ReadonlyRootfs\":{{.HostConfig.ReadonlyRootfs}},\"NetworkMode\":{{json .HostConfig.NetworkMode}}}",
+        "e044ebd1c16161b2f0f071d7e32f7e5564cd8123d71a89a4bdc1fd507f80a520"
+      ],
+      "stdout": "10-inspect-final.stdout",
+      "stderr": "10-inspect-final.stderr",
+      "timeout_seconds": 60,
+      "returncode": 0,
+      "finished_utc": "2026-10-01T01:47:00.435988+00:00",
+      "stdout_file": {
+        "bytes": 1304,
+        "sha256": "1d5d7f9abe60af4521a693593b2f5ce221d3d7633017369bdf596fc465b3a9f3"
+      },
+      "stderr_file": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "started_utc": "2026-10-01T01:47:00.438215+00:00",
+      "command": [
+        "/usr/local/bin/docker",
+        "--context",
+        "colima-sail-gate",
+        "logs",
+        "e044ebd1c16161b2f0f071d7e32f7e5564cd8123d71a89a4bdc1fd507f80a520"
+      ],
+      "stdout": "11-logs.stdout",
+      "stderr": "11-logs.stderr",
+      "timeout_seconds": 60,
+      "returncode": 0,
+      "finished_utc": "2026-10-01T01:47:00.514344+00:00",
+      "stdout_file": {
+        "bytes": 21,
+        "sha256": "2d8b7463bc96aef1cfcb7ac88622573988ce8c9630abed7c03083303b536df9a"
+      },
+      "stderr_file": {
+        "bytes": 348,
+        "sha256": "e158cae50a39e1b8ab4219dbe412ea6616449156540ee48343b301a18cc9dc69"
+      }
+    },
+    {
+      "started_utc": "2026-10-01T01:47:00.516223+00:00",
+      "command": [
+        "/usr/local/bin/docker",
+        "--context",
+        "colima-sail-gate",
+        "rm",
+        "e044ebd1c16161b2f0f071d7e32f7e5564cd8123d71a89a4bdc1fd507f80a520"
+      ],
+      "stdout": "12-remove-owned-checker.stdout",
+      "stderr": "12-remove-owned-checker.stderr",
+      "timeout_seconds": 60,
+      "returncode": 0,
+      "finished_utc": "2026-10-01T01:47:00.597485+00:00",
+      "stdout_file": {
+        "bytes": 65,
+        "sha256": "d9fb847bec33926e62e083d08a7f9b120f450c56ed70c69de5a5775b24151845"
+      },
+      "stderr_file": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    }
+  ],
+  "errors": [],
+  "container_state": {
+    "Dead": false,
+    "Error": "",
+    "ExitCode": 0,
+    "FinishedAt": "2026-10-01T01:47:00.268392335Z",
+    "OOMKilled": false,
+    "Paused": false,
+    "Pid": 0,
+    "Restarting": false,
+    "Running": false,
+    "StartedAt": "2026-10-01T01:46:54.385236365Z",
+    "Status": "exited"
+  },
+  "cleanup": "removed_after_state_capture",
+  "scope": "Physical-value audit only; original benchmark outcome is unchanged. No timing comparison.",
+  "execution_id": "ae8cfb33d1014800a7f795f327d6d65a",
+  "host_identity": {
+    "uid": 501,
+    "gid": 20
+  },
+  "evidence_permissions": {
+    "uid": 501,
+    "gid": 20,
+    "mode": "0770"
+  },
+  "bundle_permissions": {
+    "uid": 501,
+    "gid": 20,
+    "mode": "0755"
+  },
+  "supervisor_pid": 96834,
+  "supervisor_sha256": "25815183fb9bc471cabf977cc3bb567b9ed4a0407fcd305a0b5316868e17ef69",
+  "host_evidence_disk_before": {
+    "path": "/Users/alexy/src/sail-extensions-gates/stream-experiments-20260930/physical-output-log03-69585c14f5ef4408-v4-evidence",
+    "total_bytes": 4001907707904,
+    "used_bytes": 3931529601024,
+    "free_bytes": 70378106880,
+    "minimum_free_bytes": 268435456
+  },
+  "container_id": "e044ebd1c16161b2f0f071d7e32f7e5564cd8123d71a89a4bdc1fd507f80a520",
+  "created_container": {
+    "Id": "e044ebd1c16161b2f0f071d7e32f7e5564cd8123d71a89a4bdc1fd507f80a520",
+    "State": {
+      "Dead": false,
+      "Error": "",
+      "ExitCode": 0,
+      "FinishedAt": "0001-01-01T00:00:00Z",
+      "OOMKilled": false,
+      "Paused": false,
+      "Pid": 0,
+      "Restarting": false,
+      "Running": false,
+      "StartedAt": "0001-01-01T00:00:00Z",
+      "Status": "created"
+    },
+    "Labels": {
+      "org.opencontainers.image.source": "https://github.com/rust-lang/docker-rust",
+      "physical-check.execution": "ae8cfb33d1014800a7f795f327d6d65a",
+      "physical-check.request": "9a0f956c78c0583489c3b456ef2b276a17049fa31091ba6f922b4dcdc7a8bc65"
+    },
+    "User": "0:20",
+    "Mounts": [
+      {
+        "Destination": "/targets",
+        "Driver": "local",
+        "Mode": "z",
+        "Name": "sail-extension-targets",
+        "Propagation": "",
+        "RW": false,
+        "Source": "/var/lib/docker/volumes/sail-extension-targets/_data",
+        "Type": "volume"
+      },
+      {
+        "Destination": "/work",
+        "Mode": "",
+        "Propagation": "rprivate",
+        "RW": false,
+        "Source": "/Users/alexy/src/sail-extensions-gates/stream-experiments-20260930/physical-output-log03-69585c14f5ef4408-v4-bundle",
+        "Type": "bind"
+      },
+      {
+        "Destination": "/evidence",
+        "Mode": "",
+        "Propagation": "rprivate",
+        "RW": true,
+        "Source": "/Users/alexy/src/sail-extensions-gates/stream-experiments-20260930/physical-output-log03-69585c14f5ef4408-v4-evidence",
+        "Type": "bind"
+      }
+    ],
+    "Memory": 2147483648,
+    "MemorySwap": 2147483648,
+    "NanoCpus": 1000000000,
+    "ReadonlyRootfs": true,
+    "NetworkMode": "none"
+  },
+  "physical_report": {
+    "bytes": 8246,
+    "sha256": "bf5f2716000c67385fb0b28ef3ebecac51342972e573a5a6047d1ae6ea8cfec7"
+  },
+  "physical_status": "physical_values_pass",
+  "bundle_unchanged": true,
+  "finished_utc": "2026-10-01T01:47:00.602193+00:00"
+}

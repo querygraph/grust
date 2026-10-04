@@ -1,0 +1,18 @@
+diff --git a/crates/sail-execution/src/worker_manager/mod.rs b/crates/sail-execution/src/worker_manager/mod.rs
+index 044c53edc4586c2d3bde741f26e4239573895dee..e946f1329d2dd3a0b81574ed0ac0237f422878c9 100644
+--- a/crates/sail-execution/src/worker_manager/mod.rs
++++ b/crates/sail-execution/src/worker_manager/mod.rs
+@@ -1,6 +1,8 @@
+ mod kubernetes;
+ mod local;
+ mod options;
++mod process;
++mod process_command;
+ 
+ use futures::future::BoxFuture;
+ pub(crate) use options::WorkerLaunchOptions;
+@@ -35,3 +37,4 @@ pub trait WorkerManager: Send + Sync + 'static {
+ 
+ pub use kubernetes::{KubernetesWorkerManager, KubernetesWorkerManagerOptions};
+ pub use local::LocalWorkerManager;
++pub use process::ProcessWorkerManager;

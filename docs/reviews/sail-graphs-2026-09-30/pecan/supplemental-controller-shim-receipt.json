@@ -1,0 +1,164 @@
+{
+  "utc": "2026-09-30T15:13:46.896945+00:00",
+  "client_sha": "ffcfbd5690e3f3681ef9ac18ba959bc231cf9f73",
+  "binary": "/Users/alexy/src/sail-extensions-poc/target/extensions-datafusion-final/mac-arm64-de8e67098/artifacts/sail",
+  "limitation": "Exact Pecan controller and StagingRun with local-only filesystem receipt shim, because existing server predates compiled GraphUtils. Engine SparkFloor source byte-identical between de8e67098 and ffcfbd569. This is an algorithm probe, not a target-runtime gate.",
+  "cases": [
+    {
+      "name": "infinite_quotient",
+      "delta": 1e-310,
+      "weights": [
+        1.0
+      ],
+      "cap": 2,
+      "outcome": "returned",
+      "iterations": 2,
+      "rows": [
+        {
+          "id": 0,
+          "distance": 0.0,
+          "hops": 0,
+          "parent": 0
+        },
+        {
+          "id": 1,
+          "distance": 1.0,
+          "hops": 1,
+          "parent": 0
+        }
+      ],
+      "events": [
+        {
+          "kind": "iteration_start",
+          "algorithm": "sssp-delta-star",
+          "iteration": 1,
+          "run_path": "file:///private/tmp/pecan-bucket-review-evidence/staging/f9175907-306f-4928-83ef-571aaaf31a0e",
+          "bucket": 0
+        },
+        {
+          "kind": "iteration_end",
+          "algorithm": "sssp-delta-star",
+          "iteration": 1,
+          "run_path": "file:///private/tmp/pecan-bucket-review-evidence/staging/f9175907-306f-4928-83ef-571aaaf31a0e",
+          "bucket": 0
+        },
+        {
+          "kind": "iteration_start",
+          "algorithm": "sssp-delta-star",
+          "iteration": 2,
+          "run_path": "file:///private/tmp/pecan-bucket-review-evidence/staging/f9175907-306f-4928-83ef-571aaaf31a0e",
+          "bucket": 9223372036854775807
+        },
+        {
+          "kind": "iteration_end",
+          "algorithm": "sssp-delta-star",
+          "iteration": 2,
+          "run_path": "file:///private/tmp/pecan-bucket-review-evidence/staging/f9175907-306f-4928-83ef-571aaaf31a0e",
+          "bucket": 9223372036854775807
+        }
+      ]
+    },
+    {
+      "name": "finite_large_buckets",
+      "delta": 1.0,
+      "weights": [
+        1e+20,
+        2e+20
+      ],
+      "cap": 2,
+      "outcome": "returned",
+      "iterations": 2,
+      "rows": [
+        {
+          "id": 0,
+          "distance": 0.0,
+          "hops": 0,
+          "parent": 0
+        },
+        {
+          "id": 1,
+          "distance": 1e+20,
+          "hops": 1,
+          "parent": 0
+        },
+        {
+          "id": 2,
+          "distance": 2e+20,
+          "hops": 1,
+          "parent": 0
+        }
+      ],
+      "events": [
+        {
+          "kind": "iteration_start",
+          "algorithm": "sssp-delta-star",
+          "iteration": 1,
+          "run_path": "file:///private/tmp/pecan-bucket-review-evidence/staging/ca785612-3a71-4d84-8c8f-b6af80e20077",
+          "bucket": 0
+        },
+        {
+          "kind": "iteration_end",
+          "algorithm": "sssp-delta-star",
+          "iteration": 1,
+          "run_path": "file:///private/tmp/pecan-bucket-review-evidence/staging/ca785612-3a71-4d84-8c8f-b6af80e20077",
+          "bucket": 0
+        },
+        {
+          "kind": "iteration_start",
+          "algorithm": "sssp-delta-star",
+          "iteration": 2,
+          "run_path": "file:///private/tmp/pecan-bucket-review-evidence/staging/ca785612-3a71-4d84-8c8f-b6af80e20077",
+          "bucket": 9223372036854775807
+        },
+        {
+          "kind": "iteration_end",
+          "algorithm": "sssp-delta-star",
+          "iteration": 2,
+          "run_path": "file:///private/tmp/pecan-bucket-review-evidence/staging/ca785612-3a71-4d84-8c8f-b6af80e20077",
+          "bucket": 9223372036854775807
+        }
+      ]
+    },
+    {
+      "name": "ordinary_buckets",
+      "delta": 1.0,
+      "weights": [
+        1.0,
+        2.0
+      ],
+      "cap": 2,
+      "outcome": "error",
+      "error": "ConvergenceError('sssp-delta-star did not converge in 2 iterations')",
+      "events": [
+        {
+          "kind": "iteration_start",
+          "algorithm": "sssp-delta-star",
+          "iteration": 1,
+          "run_path": "file:///private/tmp/pecan-bucket-review-evidence/staging/49b6e7cc-f8d8-4429-abe2-b960ce32ba5d",
+          "bucket": 0
+        },
+        {
+          "kind": "iteration_end",
+          "algorithm": "sssp-delta-star",
+          "iteration": 1,
+          "run_path": "file:///private/tmp/pecan-bucket-review-evidence/staging/49b6e7cc-f8d8-4429-abe2-b960ce32ba5d",
+          "bucket": 0
+        },
+        {
+          "kind": "iteration_start",
+          "algorithm": "sssp-delta-star",
+          "iteration": 2,
+          "run_path": "file:///private/tmp/pecan-bucket-review-evidence/staging/49b6e7cc-f8d8-4429-abe2-b960ce32ba5d",
+          "bucket": 1
+        },
+        {
+          "kind": "iteration_end",
+          "algorithm": "sssp-delta-star",
+          "iteration": 2,
+          "run_path": "file:///private/tmp/pecan-bucket-review-evidence/staging/49b6e7cc-f8d8-4429-abe2-b960ce32ba5d",
+          "bucket": 1
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,56 @@
+{
+  "started_utc": "2026-09-30T17:34:32.389193+00:00",
+  "expected_sha": null,
+  "candidate_not_commit": true,
+  "free_bytes_before": 466992922624,
+  "host": "Capitola.local",
+  "scope": "Combined local host, Pecan nonintegration, Argentea core, and full native adapter gates; no release or remote execution verdict.",
+  "steps": [
+    {
+      "name": "host",
+      "command": [
+        "python3",
+        "/tmp/stream-review-integrated-evidence/run_host.py",
+        "/tmp/stream-review-integrated-evidence/candidate/host"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "native",
+      "command": [
+        "python3",
+        "/tmp/stream-review-integrated-evidence/run_native.py",
+        "/tmp/stream-review-integrated-evidence/candidate/native"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "core",
+      "command": [
+        "python3",
+        "/private/tmp/sail-stream-review-integrated-gate/examples/extensions/argentea/probe.py",
+        "--output",
+        "/tmp/stream-review-integrated-evidence/candidate/core",
+        "--target-dir",
+        "/private/tmp/sail-stream-review-integrated-core-target",
+        "--allow-working-tree"
+      ],
+      "exit_code": 0
+    }
+  ],
+  "counts": {
+    "host": 490,
+    "native": 49,
+    "core": 103,
+    "pecan": 46
+  },
+  "expected_counts": {
+    "host": 490,
+    "native": 49,
+    "core": 103,
+    "pecan": 46
+  },
+  "finished_utc": "2026-09-30T17:37:22.431190+00:00",
+  "free_bytes_after": 465090420736,
+  "outcome": "passed"
+}

@@ -1,0 +1,49 @@
+From 9dc75bee8902cd741cc787a76587be0f3e6a372d Mon Sep 17 00:00:00 2001
+From: Alexy Khrabrov <deliverable@gmail.com>
+Date: Mon, 28 Sep 2026 21:50:24 -0700
+Subject: [PATCH] Raise the decode limit of the internal gRPC clients to the
+ servers' limit
+
+The driver, worker, Celeborn and Flight servers accept messages up to
+`GRPC_MAX_MESSAGE_LENGTH_DEFAULT` (128 MiB), but the clients built by
+`impl_client_builder!` kept Tonic's 4 MiB default. A response above
+4 MiB fails with "Error, decoded message length too large: found
+8234561 bytes, the limit is: 4194304 bytes"; a Graph500 scale-25 BFS
+(536,870,912 edges, 2048 Parquet files, 32 partitions) hit it on the
+first relational iteration. The clients now decode up to the same limit
+the servers accept.
+
+Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
+---
+ crates/sail-execution/src/rpc.rs | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
+
+diff --git a/crates/sail-execution/src/rpc.rs b/crates/sail-execution/src/rpc.rs
+index 2fe6dd3b6..63c16b16f 100644
+--- a/crates/sail-execution/src/rpc.rs
++++ b/crates/sail-execution/src/rpc.rs
+@@ -2,6 +2,7 @@ use std::future::Future;
+ use std::sync::Arc;
+ 
+ use arrow_flight::flight_service_client::FlightServiceClient;
++use sail_common::config::GRPC_MAX_MESSAGE_LENGTH_DEFAULT;
+ use sail_common::telemetry::{TracingClientLayer, TracingClientService};
+ use tokio::sync::{OnceCell, oneshot};
+ use tokio::task::JoinHandle;
+@@ -109,7 +110,12 @@ macro_rules! impl_client_builder {
+                 let channel = ServiceBuilder::new()
+                     .layer(TracingClientLayer)
+                     .service(channel);
+-                Ok(<$client_type>::new(channel))
++                // The servers accept messages up to `GRPC_MAX_MESSAGE_LENGTH_DEFAULT`;
++                // without this the clients keep Tonic's 4 MiB default and a large
++                // response (for example one shuffle batch of a wide plan) fails with
++                // "decoded message length too large".
++                Ok(<$client_type>::new(channel)
++                    .max_decoding_message_size(GRPC_MAX_MESSAGE_LENGTH_DEFAULT))
+             }
+         }
+     };
+-- 
+2.50.1 (Apple Git-155)
+

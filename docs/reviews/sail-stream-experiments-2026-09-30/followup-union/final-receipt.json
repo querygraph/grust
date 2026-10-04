@@ -1,0 +1,108 @@
+{
+  "recorded_utc": "2026-09-30T19:42:17.745741+00:00",
+  "repository": "querygraph/sail",
+  "branch": "work/stream-review-followup",
+  "commit": "200d1cf8eb1db5e9057e09e071ebd57391f4b376",
+  "base": "b4babe87cb50d16b4d439a0841a6291991c433d2",
+  "source_commits": [
+    "f63f992766fe17ee2163a1187373449e79192be6",
+    "c8fe857848f3ba1698ee0f9d1daf000790d691d4",
+    "fe44428c9bfb43680affed0abae07240220df852"
+  ],
+  "tree": "fd33c56019a00205ce5588760d744b6bdb132b58",
+  "verdict": "PASS",
+  "exact_receipt": "exact-gate/receipt.json",
+  "source_proofs": [
+    {
+      "scope": "host Rust and workspace metadata",
+      "reference": "b569e75de625885b3d919fa4196b2e0bed14c618",
+      "tracked_files": 1456,
+      "all_equal": true,
+      "inventory": "host-source-inventory.json",
+      "inventory_sha256": "2b4a66997a4f208c3d7cb5e13eaa6a04261b2c62ca5091216ca75c91bfaf0b4d"
+    },
+    {
+      "scope": "Argentea core and native adapter",
+      "reference": "b4babe87cb50d16b4d439a0841a6291991c433d2",
+      "tracked_files": 193,
+      "all_equal": true,
+      "inventory": "argentea-source-inventory.json",
+      "inventory_sha256": "6e0b016df343d574d54a251b86d702bcfd481628289fbd6c50a585853e3e74f7"
+    },
+    {
+      "scope": "benchmark harness",
+      "reference": "c8fe857848f3ba1698ee0f9d1daf000790d691d4",
+      "tracked_files": 60,
+      "all_equal": true,
+      "inventory": "benchmark-source-inventory.json",
+      "inventory_sha256": "46f4340489c0e22fb30732d9850500ff5abfd8383b262f8fc9f12377c2ccc948"
+    },
+    {
+      "scope": "Pecan client",
+      "reference": "fe44428c9bfb43680affed0abae07240220df852",
+      "tracked_files": 30,
+      "all_equal": true,
+      "inventory": "pecan-source-inventory.json",
+      "inventory_sha256": "2cfbaeb20b159bb9486f0d3f5e1aac5423eb33ce924a068ef9342e314b0bd553"
+    }
+  ],
+  "gates": {
+    "argentea_core": 113,
+    "native_adapter": 49,
+    "argentea_within_native_adapter": 43,
+    "loaded_core": 113,
+    "loaded_native": 49,
+    "load_processes": 10,
+    "benchmark_python_passed": 333,
+    "benchmark_optional_skipped": 39,
+    "pecan_unit_passed": 78,
+    "pecan_integration_deselected_from_unit_run": 83,
+    "pecan_sql_passed": 4,
+    "wcc_certificate_sql_passed": 6
+  },
+  "changes": "Integrated previously reviewed partial-WCC receipt/outcome audits and opt-in checkpoint repartition control onto the BFS/WCC inbox snapshot. No additional implementation changes.",
+  "scope": "Experimental review snapshot; default checkpoint repartition remains True. No default promotion, release, remote run or performance claim.",
+  "limitations": [
+    "Host Rust and workspace metadata: all 1,456 tracked files equal b569; the earlier 490 host test gate is not rerun or reissued as a verdict on this union.",
+    "Argentea/Nutmeg all 193 tracked files equal b4; local full release and CPU-saturated suites rerun on the union. Native full formatting inherits disclosed baseline exceptions; Argentea core fmt and strict clippy passed.",
+    "Full benchmark Python tests: 333 passed and 39 optional cases skipped. Pecan unit run: 78 passed with 83 integration cases deselected; four focused actualSQL checkpoints ran separately, not all Pecan graph integrations.",
+    "Six WCC certificate/reference controls and four Pecan checkpoint controls use installed Sail 0.7.0 with pinned native hash, not a runtime built from this union; they do not qualify remote cluster execution.",
+    "The separate production min_by worker control was prepared without launch by this agent; it is not part of this union gate."
+  ],
+  "commit_control": "Detached combined candidate gates && source guard && git commit, followed by exact detached union gates.",
+  "generated_fixtures": [
+    {
+      "original": "candidate-gate/benchmarks/integration/pytest-temp",
+      "retained_at": "/private/tmp/sail-followup-union-generated-fixtures/candidate-gate--benchmarks--integration--pytest-temp"
+    },
+    {
+      "original": "exact-gate/benchmarks/integration/pytest-temp",
+      "retained_at": "/private/tmp/sail-followup-union-generated-fixtures/exact-gate--benchmarks--integration--pytest-temp"
+    },
+    {
+      "original": "candidate-gate/pecan/sql-temp",
+      "retained_at": "/private/tmp/sail-followup-union-generated-fixtures/candidate-gate--pecan--sql-temp"
+    },
+    {
+      "original": "candidate-gate/benchmarks/pytest-temp",
+      "retained_at": "/private/tmp/sail-followup-union-generated-fixtures/candidate-gate--benchmarks--pytest-temp"
+    },
+    {
+      "original": "exact-gate/pecan/sql-temp",
+      "retained_at": "/private/tmp/sail-followup-union-generated-fixtures/exact-gate--pecan--sql-temp"
+    },
+    {
+      "original": "exact-gate/benchmarks/pytest-temp",
+      "retained_at": "/private/tmp/sail-followup-union-generated-fixtures/exact-gate--benchmarks--pytest-temp"
+    }
+  ],
+  "pushed": true,
+  "independent_review_pending": false,
+  "updated_utc": "2026-09-30T19:43:17.520907+00:00",
+  "independent_review": {
+    "receipt": "independent-exact-audit.json",
+    "sha256": "b5ea6aacddf77402c141df524c5c305ef9f2d9db660dd092d2d240526f9e2441",
+    "verdict": "PASS_SOURCE_AUDIT"
+  },
+  "delivery_receipt": "delivery.json"
+}

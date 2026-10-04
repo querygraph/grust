@@ -1,0 +1,37 @@
+diff --git a/crates/sail-session/src/session_factory/job_runner.rs b/crates/sail-session/src/session_factory/job_runner.rs
+index 616b0855ba3c31c716fe5275ee959d823aaf2013..85038a84ce4301cf7f8d38b0b0e2315ca5ba5cfd 100644
+--- a/crates/sail-session/src/session_factory/job_runner.rs
++++ b/crates/sail-session/src/session_factory/job_runner.rs
+@@ -13,6 +13,7 @@ use sail_execution::worker_manager::{
+ use sail_telemetry::events::SystemEventReporter;
+ 
+ use crate::error::{SessionError, SessionResult};
++use crate::runtime::MemoryResourceDomain;
+ use crate::session_factory::{SessionFactory, WorkerSessionFactory};
+ 
+ pub struct SessionJobRunner {
+@@ -42,6 +43,7 @@ impl SessionJobRunner {
+ }
+ 
+ pub struct SessionJobRunnerInfo {
++    pub resource_domain: Option<MemoryResourceDomain>,
+     pub session_id: String,
+     pub driver_id: DriverId,
+     pub driver_server_port: Option<u16>,
+@@ -103,8 +105,16 @@ impl SessionJobRunnerFactory for ServerSessionJobRunnerFactory {
+                 info.session_id,
+             ))),
+             ExecutionMode::LocalCluster => {
++                if std::env::var("SAIL_EXPERIMENTAL_PROCESS_WORKERS").as_deref() == Ok("1") {
++                    return self.create_cluster_runner(
++                        system,
++                        info,
++                        Box::new(sail_execution::worker_manager::ProcessWorkerManager::default()),
++                    );
++                }
+                 let worker_session =
+                     WorkerSessionFactory::new(self.config.clone(), self.runtime.clone())
++                        .with_resource_domain(info.resource_domain.clone())
+                         .create(())?;
+                 self.create_cluster_runner(
+                     system,

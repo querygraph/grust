@@ -1,0 +1,41 @@
+cypher first parse (cold DFA): 1.134625ms errs=0
+antlr-cypher accept=true | MATCH (n:Person) RETURN n.name
+antlr-cypher accept=true | MATCH (n:Person {name: 'Ada'}) WHERE n.age >= 18 RETURN n.name
+antlr-cypher accept=true | MATCH (a:Person) OPTIONAL MATCH (a)-[:KNOWS]->(b) RETURN a.name, b.name
+antlr-cypher accept=true | MATCH (a:Person {name:'Ada'})-[:KNOWS*1..2]->(b) RETURN b.name
+antlr-cypher accept=true | MATCH (n) RETURN n.label AS label, count(*) AS c
+antlr-cypher accept=true | MATCH (n) RETURN DISTINCT n.label AS l ORDER BY l
+antlr-cypher accept=true | MATCH p = (:Person)-[:KNOWS]->(:Person) RETURN length(p)
+antlr-cypher accept=true | MATCH (a:Person)-[:KNOWS]->()-[:KNOWS]->(c:Person) WHERE a.age >= 21 AND c.active = true RETURN a.name, c.name
+antlr-cypher accept=true | MATCH (n:Person) WHERE NOT n.name IN ['Ada', 'Alan'] RETURN n
+antlr-cypher accept=true | MATCH (n:Person) WHERE n.age >= 40 RETURN n.name ORDER BY n.age DESC SKIP 1 LIMIT 2
+antlr-cypher: median 26120 ns/query, min 26015 ns/query (warm: DFA cache shared across runs)
+antlr-cypher malformed | MATCH (n:Person RETURN n.name
+    ["line 1:16 no viable alternative at input 'MATCH (n:Person RETURN'"]
+antlr-cypher malformed | MATCH (a)-[:KNOWS]->(b) WHERE a.age > RETURN b.name
+    ["line 1:38 no viable alternative at input 'MATCH (a)-[:KNOWS]->(b) WHERE a.age > RETURN'"]
+antlr-cypher malformed | MATCH (n:Person) RETRUN n.name
+    ["line 1:17 no viable alternative at input 'MATCH (n:Person) RETRUN'"]
+antlr-cypher malformed | MATCH (a:Person {name: })-[:KNOWS]->(b) WHERE b.age > (3 + ) RETURN b
+    ["line 1:23 no viable alternative at input 'MATCH (a:Person {name: }'"]
+gql first parse (cold DFA): 9.919583ms errs=0
+antlr-gql accept=true | MATCH (n:Person) RETURN n.name
+antlr-gql accept=true | MATCH (n:Person {name: 'Ada'}) WHERE n.age >= 18 RETURN n.name
+antlr-gql accept=true | MATCH (a:Person) OPTIONAL MATCH (a)-[:KNOWS]->(b) RETURN a.name, b.name
+antlr-gql accept=true | MATCH (a:Person {name:'Ada'})-[:KNOWS]->{1,2}(b) RETURN b.name
+antlr-gql accept=true | MATCH (n) RETURN n.label AS label, count(*) AS c
+antlr-gql accept=true | MATCH (n) RETURN DISTINCT n.label AS l ORDER BY l
+antlr-gql accept=true | MATCH p = (:Person)-[:KNOWS]->(:Person) RETURN path_length(p)
+antlr-gql accept=true | MATCH (a:Person)-[:KNOWS]->()-[:KNOWS]->(c:Person) WHERE a.age >= 21 AND c.active = true RETURN a.name, c.name
+antlr-gql accept=true | MATCH (n:Person) WHERE NOT n.name = 'Ada' RETURN n
+antlr-gql accept=true | MATCH (n:Person) WHERE n.age >= 40 RETURN n.name ORDER BY n.age DESC OFFSET 1 LIMIT 2
+antlr-gql: median 1812871 ns/query, min 1804850 ns/query (warm: DFA cache shared across runs)
+antlr-gql malformed | MATCH (n:Person RETURN n.name
+    ["line 1:16 no viable alternative at input 'MATCH (n:Person RETURN'"]
+antlr-gql malformed | MATCH (a)-[:KNOWS]->(b) WHERE a.age > RETURN b.name
+    ["line 1:38 no viable alternative at input 'MATCH (a)-[:KNOWS]->(b) WHERE a.age > RETURN'"]
+antlr-gql malformed | MATCH (n:Person) RETRUN n.name
+    ["line 1:17 mismatched input 'RETRUN' expecting {<EOF>, 'SESSION'}"]
+antlr-gql malformed | MATCH (a:Person {name: })-[:KNOWS]->(b) WHERE b.age > (3 + ) RETURN b
+    ["line 1:23 no viable alternative at input 'MATCH (a:Person {name: }'"]
+# load: load averages: 5.02 9.01 14.78

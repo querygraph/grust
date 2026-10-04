@@ -1,0 +1,21 @@
+{
+  "recorded_utc": "2026-10-01T05:31:57.387279+00:00",
+  "script": "from pathlib import Path\nimport subprocess,json,hashlib\nroot=Path('/Users/alexy/src/sail-extensions-gates/stream-experiments-20260930');run='sem-wcc-01-local-randomized'\npython='/usr/local/bin/python3.12'\np=subprocess.run([python,'-I','-B','-c','import sys,hashlib,tarfile,inspect,json;print(json.dumps({\"version\":sys.version,\"executable\":sys.executable,\"file_digest\":hasattr(hashlib,\"file_digest\"),\"extractall\":str(inspect.signature(tarfile.TarFile.extractall))}))'],capture_output=True,text=True)\nprint(json.dumps({'failed_launch':{'stdout':(root/(run+'-launcher.stdout')).read_text(),'stderr':(root/(run+'-launcher.stderr')).read_text(),'output_directory_exists':(root/run).exists()},'selected_interpreter':{'path':python,'binary_sha256':hashlib.sha256(Path(python).read_bytes()).hexdigest(),'returncode':p.returncode,'stdout':p.stdout,'stderr':p.stderr},'running_containers':subprocess.check_output(['/usr/local/bin/docker','--context','colima-sail-gate','ps','-q'],text=True)}))\n",
+  "returncode": 0,
+  "observation": {
+    "failed_launch": {
+      "stdout": "",
+      "stderr": "Traceback (most recent call last):\n  File \"/Users/alexy/src/sail-extensions-gates/stream-experiments-20260930/sem-wcc-pilot-support/run_one.py\", line 150, in <module>\n    raise SystemExit(main())\n  File \"/Users/alexy/src/sail-extensions-gates/stream-experiments-20260930/sem-wcc-pilot-support/run_one.py\", line 65, in main\n    assert digest(support_file) == '23ee8504d18cd8db931421f81854e0e01d05dcb6bb5a5c031e1684089f3d69ad'\n  File \"/Users/alexy/src/sail-extensions-gates/stream-experiments-20260930/sem-wcc-pilot-support/run_one.py\", line 28, in digest\n    return hashlib.file_digest(stream, 'sha256').hexdigest()\nAttributeError: module 'hashlib' has no attribute 'file_digest'\n",
+      "output_directory_exists": false
+    },
+    "selected_interpreter": {
+      "path": "/usr/local/bin/python3.12",
+      "binary_sha256": "6b16a99ff27a6d499940cf121510ddac0b8a24378ca822ebbb70fd11c426a7a5",
+      "returncode": 0,
+      "stdout": "{\"version\": \"3.12.6 (main, Sep  6 2024, 19:03:47) [Clang 15.0.0 (clang-1500.3.9.4)]\", \"executable\": \"/usr/local/opt/python@3.12/bin/python3.12\", \"file_digest\": true, \"extractall\": \"(self, path='.', members=None, *, numeric_owner=False, filter=None)\"}\n",
+      "stderr": ""
+    },
+    "running_containers": ""
+  },
+  "stderr": ""
+}

@@ -1,0 +1,18 @@
+[package]
+name = "local-forest-sim"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+# A counting helper for the WCC first-round design note, not a Grust crate.
+[workspace]
+
+[dependencies]
+arrow-array = "59"
+parquet = { version = "59", default-features = false, features = ["arrow", "snap", "zstd", "lz4"] }
+rayon = "1"
+rustc-hash = "2"
+
+[profile.release]
+codegen-units = 1
+lto = "thin"

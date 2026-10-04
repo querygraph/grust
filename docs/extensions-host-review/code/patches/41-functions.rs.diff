@@ -1,0 +1,104 @@
+diff --git a/crates/sail-session/src/extensions/graph_utils/functions.rs b/crates/sail-session/src/extensions/graph_utils/functions.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..9caa557a5a0b940cd01754c7b735cd09e7f1ad5f
+--- /dev/null
++++ b/crates/sail-session/src/extensions/graph_utils/functions.rs
+@@ -0,0 +1,98 @@
++use std::sync::Arc;
++
++use datafusion::arrow::array::{Array, Int64Array};
++use datafusion::arrow::datatypes::DataType;
++use datafusion_common::{Result, ScalarValue, exec_datafusion_err};
++use datafusion_expr::{ColumnarValue, ScalarUDF, Volatility, create_udf};
++use sail_common_datafusion::native_scalar::{OwnedScalar, retain_scalar};
++
++// Carry-less multiplication modulo x^64 + x^4 + x^3 + x + 1. Signed SQL
++// BIGINTs represent all 64 bit patterns; wrapping is polynomial arithmetic.
++fn multiply(mut a: u64, mut x: u64) -> u64 {
++    let mut result = 0;
++    for _ in 0..64 {
++        result ^= a & (0_u64.wrapping_sub(x & 1));
++        let high = a >> 63;
++        a = (a << 1) ^ (0x1b & (0_u64.wrapping_sub(high)));
++        x >>= 1;
++    }
++    result
++}
++
++pub(super) fn register() -> Result<Vec<ScalarUDF>> {
++    let axpb = create_udf(
++        "gf_axpb",
++        vec![DataType::Int64; 3],
++        DataType::Int64,
++        Volatility::Immutable,
++        Arc::new(|args| {
++            let arrays = ColumnarValue::values_to_arrays(args)?;
++            let arrays = arrays
++                .iter()
++                .map(|array| {
++                    array.as_any().downcast_ref::<Int64Array>().ok_or_else(|| {
++                        exec_datafusion_err!("gf_axpb requires three BIGINT arguments")
++                    })
++                })
++                .collect::<Result<Vec<_>>>()?;
++            if arrays.len() != 3 {
++                return Err(exec_datafusion_err!(
++                    "gf_axpb requires three BIGINT arguments"
++                ));
++            }
++            let result = Int64Array::from_iter((0..arrays[0].len()).map(|i| {
++                if arrays.iter().any(|a| a.is_null(i)) {
++                    None
++                } else {
++                    Some(
++                        (multiply(arrays[0].value(i) as u64, arrays[1].value(i) as u64)
++                            ^ arrays[2].value(i) as u64) as i64,
++                    )
++                }
++            }));
++            Ok(ColumnarValue::Array(Arc::new(result)))
++        }),
++    );
++    let version = create_udf(
++        "gf_version",
++        vec![],
++        DataType::Utf8,
++        Volatility::Immutable,
++        Arc::new(|_| {
++            Ok(ColumnarValue::Scalar(ScalarValue::Utf8(Some(
++                "sail-gf-utils/1".into(),
++            ))))
++        }),
++    );
++    [axpb, version]
++        .into_iter()
++        .map(|udf| {
++            let scalar = ScalarUDF::new_from_impl(OwnedScalar {
++                name: udf.name().into(),
++                identity: "sail-gf-utils/1:gf64-polynomial-1b".into(),
++                udf,
++                owner: Arc::new(()),
++            });
++            retain_scalar(scalar.clone())?;
++            Ok(scalar)
++        })
++        .collect()
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++    #[test]
++    fn gf64_vectors_and_field_properties() {
++        assert_eq!(multiply(1 << 63, 2), 0x1b);
++        assert_eq!(multiply(u64::MAX, 2), 0xffff_ffff_ffff_ffe5);
++        assert_eq!(multiply(0, u64::MAX), 0);
++        assert_eq!(multiply(1, u64::MAX), u64::MAX);
++        for a in [0, 1, 2, 0x83, 1 << 63, u64::MAX] {
++            for x in [0, 1, 2, 0xaabb_ccdd_1122_3344, u64::MAX] {
++                assert_eq!(multiply(a, x), multiply(x, a));
++                assert_eq!(multiply(a, x ^ 0x42), multiply(a, x) ^ multiply(a, 0x42));
++            }
++        }
++    }
++}

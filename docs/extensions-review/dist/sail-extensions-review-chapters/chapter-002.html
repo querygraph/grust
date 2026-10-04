@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en-US" xml:lang="en-US">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <meta name="author" content="Querygraph" />
+  <meta name="dcterms.date" content="2026-10-01" />
+  <meta name="description" content="Version 1.0. Review target: querygraph/sail bd8ce9ae8839477e2c08a0475ab7900b115c5366." />
+  <title>From the brief to the design</title>
+  <style>
+    div.sitenav { display: flex; flex-direction: row; flex-wrap: wrap; }
+    span.navlink { flex: 1; }
+    span.navlink-label { display: inline-block; min-width: 4em; }
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: 1.5em;}
+    div.column{flex: auto;}
+    @media screen {
+    div.columns{gap: min(4vw, 1.5em);}
+    div.column{overflow-x: auto;}
+    }
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <link rel="stylesheet" href="book.css" />
+</head>
+<body>
+<nav id="sitenav">
+<div class="sitenav">
+<span class="navlink">
+<span class="navlink-label">Up:</span> <a href="index.html" accesskey="u" rel="up">Sail Extensions: A Design Review</a>
+</span>
+<span class="navlink">
+<span class="navlink-label">Top:</span> <a href="index.html" accesskey="t" rel="top">Sail Extensions: A Design Review</a>
+</span>
+</div>
+<div class="sitenav">
+<span class="navlink">
+<span class="navlink-label">Next:</span> <a href="chapter-003.html" accesskey="n" rel="next">1. Discovery and binding</a>
+</span>
+<span class="navlink">
+<span class="navlink-label">Previous:</span> <a href="chapter-001.html" accesskey="p" rel="previous">Sail extensions: the first contract</a>
+</span>
+</div>
+</nav>
+<h1 data-number="2" id="overview"><span
+class="header-section-number">2</span> From the brief to the design</h1>
+<p>The brief asks for three decisions. The following maps connect those
+decisions to the eight parts of the existing prototype. Read them as an
+index of review responsibilities: an implemented component can establish
+feasibility without becoming part of the stable author-facing
+contract.</p>
+<h2 data-number="2.1" id="overview--module-map"><span
+class="header-section-number">2.1</span> The eight-module map</h2>
+<p>This retains Fable's module map, with the scope and choices made
+explicit. The rows also provide the consecutive reading order.</p>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr>
+<th>Module</th>
+<th>Owner</th>
+<th>Prototype status</th>
+<th>Choice to review</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="chapter-003.html#module-01-discovery">Module 1: Discovery
+and binding</a></td>
+<td>Sail session integration; package author</td>
+<td>Flag-gated Python entry points and per-session binding</td>
+<td>Wheel discovery plus FFI, versus statically linked embedding or
+another package loader</td>
+</tr>
+<tr>
+<td><a href="chapter-004.html#module-02-functions">Module 2:
+Functions</a></td>
+<td>Extension; Sail registry and codec</td>
+<td>Native scalar functions, including workers</td>
+<td>Names, collisions, metadata and identity; later specialized planning
+needs a separate decision</td>
+</tr>
+<tr>
+<td><a href="chapter-005.html#module-03-relations">Module 3:
+Relations</a></td>
+<td>Sail Connect/planner; extension handler</td>
+<td>Bounded envelope, driver-local provider</td>
+<td>Explicit DataFrame inputs versus table-function or catalog-based
+invocation</td>
+</tr>
+<tr>
+<td><a href="chapter-006.html#module-04-commands">Module 4:
+Commands</a></td>
+<td>Extension execution; host outcome handling</td>
+<td>Mutating relations emit receipts</td>
+<td>Reuse the relation path versus a dedicated command entry point;
+effects remain explicit</td>
+</tr>
+<tr>
+<td><a href="chapter-007.html#module-05-placement">Module 5: Placement
+and replay</a></td>
+<td>Sail scheduler; extension declarations</td>
+<td>Driver-native regions receive one attempt</td>
+<td>Separate placement, state ownership and replay safety; preserve a
+path to worker operators</td>
+</tr>
+<tr>
+<td><a href="chapter-008.html#module-06-memory">Module 6: Native
+memory</a></td>
+<td>Sail admission; participating extension</td>
+<td>Prepaid, non-spillable driver quota</td>
+<td>Shared admission and lease lifetime versus the particular prepayment
+policy</td>
+</tr>
+<tr>
+<td><a href="chapter-009.html#module-07-lifecycle">Module 7: Lifecycle
+and teardown</a></td>
+<td>Sail session/executor lifecycle; native owner</td>
+<td>Cleanup corrections; stuck-owner policy open</td>
+<td>Cooperative cancellation, retained ownership and a bounded
+operational failure policy</td>
+</tr>
+<tr>
+<td><a href="chapter-010.html#module-08-compatibility">Module 8:
+Packaging and compatibility</a></td>
+<td>Package author; host/worker validation</td>
+<td>Exact version pins and content identities</td>
+<td>Initial tested combinations versus a future compatibility
+promise</td>
+</tr>
+</tbody>
+</table>
+<p>The scalar foundation primarily needs modules 1, 2 and 8, plus the
+applicable ownership and cancellation behavior in module 7. The stateful
+relation surface adds modules 3 to 6. This is a capability split, not a
+claim that memory or lifecycle correctness can be omitted from scalar
+execution. Some generic codec and lifecycle corrections apply with
+extension discovery disabled.</p>
+<h2 data-number="2.2" id="overview--decision-matrix"><span
+class="header-section-number">2.2</span> The decision map</h2>
+<p>This second table turns the implementation inventory into questions
+that can change its shape. It preserves the review's comparison while
+identifying the cost of each choice.</p>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>Topic</th>
+<th>What the prototype establishes</th>
+<th>Decision and trade-off</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Minimum contract</td>
+<td>A set of host adapters can support independent packages.</td>
+<td>Promise schemas, ownership and errors; keep wrapper and manager
+structure private. A smaller ABI still needs adequate semantic
+information.</td>
+</tr>
+<tr>
+<td>Distributed execution</td>
+<td>Scalars travel to workers; native relations gather on the
+driver.</td>
+<td>Gathering simplifies state ownership but concentrates data and work.
+Compare partition-preserving stateless operators separately from
+recoverable graph state.</td>
+</tr>
+<tr>
+<td>Sedona integration</td>
+<td>Native scalar predicates compose with general Sail joins.</td>
+<td>A focused join hook can constrain complexity; broad optimizer hooks
+offer more freedom but expose ordering and plan internals. Neither is
+proved by the scalar example.</td>
+</tr>
+<tr>
+<td>Native memory</td>
+<td>Prepaid quota remains charged through its final owner.</td>
+<td>Prepayment simplifies admission but holds idle capacity. Coordinated
+subpools or dynamic admission can preserve one authority with more
+bookkeeping.</td>
+</tr>
+<tr>
+<td>Compatibility</td>
+<td>Exact versions and package identity reject known mismatches.</td>
+<td>Start with qualified combinations; expand only with compatibility
+evidence. Discovery and manifest checks do not make arbitrary native
+code safe.</td>
+</tr>
+</tbody>
+</table>
+<h2 data-number="2.3" id="overview--how-this-fits-sails-design"><span
+class="header-section-number">2.3</span> How this fits Sail's
+design</h2>
+<p>The upstream maintainer's public feedback endorses Python packaging
+and an FFI built on DataFusion, while treating the session mutator as an
+internal detail. The prototype follows that direction. The original
+broad Rust-trait proposal is an alternative from an extension author,
+not evidence that Sail prefers that API. <a
+href="https://github.com/lakehq/sail/discussions/2001#discussioncomment-17083578">the
+maintainer's comment</a></p>
+<p>Sail's authors also describe lakehouse operations as engine-visible
+plans that can be optimized and distributed. Applying that principle
+here is a design inference: independently shipped extensions should
+describe enough semantics for Sail to manage their work. An opaque
+driver region is a useful initial boundary, with an explicit limit; it
+does not establish the distributed operator model. <a
+href="https://lakesail.com/blog/lakehouse-engine-contract/">Engine-contract
+article</a></p>
+<p>The next chapters move from finding a package, to calling its
+functions, to constructing relations and effects, and then to the
+placement, ownership and compatibility obligations that make those
+operations reliable. Each ends by connecting to the next concern. The
+final code section gives the complete small sample and the supporting
+listings without interrupting that argument.</p>
+<p>Continue to <a href="chapter-003.html#module-01-discovery">Module 1:
+Discovery and binding</a>.</p>
+</body>
+</html>

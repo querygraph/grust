@@ -1,0 +1,15 @@
+truth: 4,000,000 rows, 1,000,003 distinct k
+repartition(10, k).checkpoint()
+    rows 4,000,000; GROUP BY k: 1,000,003 groups; DISTINCT k: 1,000,003; join on k: 4,000,000 rows; 0 of 10 files sorted by k  -> ok
+repartition(10, k).sortWithinPartitions(k).checkpoint()
+    rows 4,000,000; GROUP BY k: 4,000,000 groups; DISTINCT k: 4,000,000; join on k: 4,000,000 rows; 0 of 10 files sorted by k  -> WRONG
+orderBy(k).checkpoint()
+    rows 4,000,000; GROUP BY k: 3,963,113 groups; DISTINCT k: 3,963,113; join on k: 4,000,000 rows; 0 of 1 files sorted by k  -> WRONG
+
+plan of GROUP BY k over the sorted checkpoint:
+== Physical Plan ==
+ProjectionExec: expr=[#2@0 as k, #3@1 as count]
+  ProjectionExec: expr=[#0@0 as #2, count(Int64(1))@1 as #3]
+    AggregateExec: mode=SinglePartitioned, gby=[#0@0 as #0], aggr=[count(Int64(1))], ordering_mode=Sorted
+      ProjectionExec: expr=[#0@0 as #0]
+        DataSourceExec: file_groups={10 groups: [[var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/sail-checkpoint-_6f0josf/checkpoints/db98392b-fd80-4d2e-a158-6b781ca815fd/ed3af47f-54b1-4278-9211-4925eea15d0b/part-00000-212f215b-c5a8-474d-b6f7-a9db44db03b3.parquet], [var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/sail-checkpoint-_6f0josf/checkpoints/db98392b-fd80-4d2e-a158-6b781ca815fd/ed3af47f-54b1-4278-9211-4925eea15d0b/part-00001-a5e46856-c979-48c2-a58d-f5072ba9d1ef.parquet], [var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/sail-checkpoint-_6f0josf/checkpoints/db98392b-fd80-4d2e-a158-6b781ca815fd/ed3af47f-54b1-4278-9211-4925eea15d0b/part-00002-4df1f596-ccde-4813-8bf2-bf7c14a78352.parquet], [var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/sail-checkpoint-_6f0josf/checkpoints/db98392b-fd80-4d2e-a158-6b781ca815fd/ed3af47f-54b1-4278-9211-4925eea15d0b/part-00003-0783cf5b-1a46-4c07-ba93-6d25d0a68c68.parquet], [var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/sail-checkpoint-_6f0josf/checkpoints/db98392b-fd80-4d2e-a158-6b781ca815fd/ed3af47f-54b1-4278-9211-4925eea15d0b/part-00004-038b059b-dd07-4320-a945-2d03009c707b.parquet], ...]}, projection=[_c0@0 as #0, _c1@1 as #1], file_type=parquet

@@ -1,0 +1,85 @@
+{
+  "attach_returncode": 0,
+  "command": [
+    "docker",
+    "--context",
+    "colima-sail-gate",
+    "create",
+    "--name",
+    "sail-grenada-precheck",
+    "--init",
+    "--cpus",
+    "8",
+    "--cpuset-cpus",
+    "0-7",
+    "--memory",
+    "12g",
+    "--memory-swap",
+    "12g",
+    "--pids-limit",
+    "1024",
+    "--mount",
+    "type=volume,source=sail-extension-targets,target=/targets",
+    "--workdir",
+    "/targets/graph-nuts-ffcfbd569/source",
+    "--env",
+    "PYTHONUNBUFFERED=1",
+    "--entrypoint",
+    "/targets/graph-nuts-ffcfbd569/venv/bin/python",
+    "sha256:f3518d652fbea8b9b9f9ebf9849277ca3bd39d0c21bb2c6e36fbaeaa2dc2678e",
+    "-I",
+    "-c",
+    "\nfrom pathlib import Path\nimport json,shutil,sys\nroot=Path(sys.argv[1]); assert not root.exists()\nassert shutil.disk_usage('/targets').free >= 4*1024**3\nassert json.loads(Path(sys.argv[2]).read_text()) == json.loads(sys.argv[3]), 'fixture manifest changed'\nroot.mkdir(parents=True)\n",
+    "/targets/sail-stream-experiments-20260930/grenada-gate3",
+    "/targets/sail-stream-experiments-20260930/pecan-gate3/datasets/weighted16k/manifest.json",
+    "{\"counts\": {\"edges\": 529723, \"vertices\": 16384}, \"family\": \"traversal\", \"files\": {\"edges.parquet\": {\"bytes\": 1375846, \"sha256\": \"d350d66a97f352916e3944657a0d2ae2ddff5718f651e335b33d7c5d7cdfc013\"}, \"reference.parquet\": {\"bytes\": 104754, \"sha256\": \"243f396cd5900402acfea18875a423c9dd40f37f0dc343ba4fa42c90bb2497ef\"}, \"vertices.parquet\": {\"bytes\": 94785, \"sha256\": \"65fbeb27779f3eade77cb9a74528952628893137b92ae88017f3fe93a96a91a7\"}}, \"parameters\": {\"degree\": 32, \"directed\": true, \"source\": 0}, \"purpose\": \"bounded correctness fixture; not a Graph500 input\", \"seed\": 42, \"traversal\": {\"directed\": true, \"seed\": 42, \"source\": 0, \"weight_policy\": \"seeded integers 0..15 stored as float64\"}}"
+  ],
+  "copied": {},
+  "create": {
+    "returncode": 0,
+    "stderr": "",
+    "stdout": "2a993a3cb1e76ef33c5236ee4a8cecc37d4aa195dd66ac444987a998563a0d76\n"
+  },
+  "finished_utc": "2026-09-30T17:12:05.908711+00:00",
+  "host_load_before": [
+    3.1484375,
+    4.53466796875,
+    6.51318359375
+  ],
+  "inspect": {
+    "id": "2a993a3cb1e76ef33c5236ee4a8cecc37d4aa195dd66ac444987a998563a0d76",
+    "image": "sha256:f3518d652fbea8b9b9f9ebf9849277ca3bd39d0c21bb2c6e36fbaeaa2dc2678e",
+    "limits": {
+      "CpuPeriod": 0,
+      "CpuQuota": 0,
+      "CpusetCpus": "0-7",
+      "Init": true,
+      "Memory": 12884901888,
+      "MemorySwap": 12884901888,
+      "NanoCpus": 8000000000,
+      "PidMode": "",
+      "PidsLimit": 1024
+    },
+    "state": {
+      "Dead": false,
+      "Error": "",
+      "ExitCode": 0,
+      "FinishedAt": "2026-09-30T17:12:00.439246835Z",
+      "OOMKilled": false,
+      "Paused": false,
+      "Pid": 0,
+      "Restarting": false,
+      "Running": false,
+      "StartedAt": "2026-09-30T17:11:58.276831817Z",
+      "Status": "exited"
+    }
+  },
+  "outer_timeout": false,
+  "remove": {
+    "returncode": 0,
+    "stderr": "",
+    "stdout": "sail-grenada-precheck\n"
+  },
+  "started_utc": "2026-09-30T17:11:55.827835+00:00",
+  "transport_errors": []
+}

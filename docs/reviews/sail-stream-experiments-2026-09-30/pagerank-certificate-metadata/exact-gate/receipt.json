@@ -1,0 +1,98 @@
+{
+  "started_utc": "2026-09-30T23:09:27.506626+00:00",
+  "source_commit": "7df2f32f070e041eed5416eb44f7ff8fa4ce0d01",
+  "detached": true,
+  "free_disk_before": 456544886784,
+  "source_pins": {
+    "/private/tmp/sail-pagerank-metadata-exact-gate/examples/extensions/benchmarks/graph_cell.py": "bee64cba85e7d4d47d3bc05c4ace076954aa727b35ad17146530dcf4da7b5630",
+    "/private/tmp/sail-pagerank-metadata-exact-gate/examples/extensions/benchmarks/ranking_validation.py": "f2da6ac6e75af27d5355567ef4269b7c2c06b2292dae761eee4f18a747ad53d6",
+    "/private/tmp/sail-pagerank-metadata-exact-gate/examples/extensions/benchmarks/test_pagerank_metadata.py": "ef54f8e45f4be794ce9b6d4a7bd14d10fd22e353ca099267770f8561f0114dd8",
+    "/Users/alexy/src/sail/.venvs/default/bin/sail": "27c01027afe78f6403d8c02c34199e30ef9103d11adb24403a6575b4bca40a09",
+    "/Users/alexy/src/sail/python/pysail/_native.abi3.so": "b99f1717cf49706f17eefd44d78c3751e6fd2b46a34ce3fd2cc360087b7f9685",
+    "/Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/pagerank-certificate-metadata/run_gate.py": "89717f31866975ff3f5c1c6a6d4de8726211ebc581fb4a37e8a7f4bd10e304cb"
+  },
+  "private_fixtures": "/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pagerank-metadata-gate-31xrswft",
+  "commands": [
+    {
+      "label": "diff-check",
+      "command": [
+        "git",
+        "diff",
+        "--check",
+        "HEAD"
+      ],
+      "returncode": 0
+    },
+    {
+      "label": "unit",
+      "command": [
+        "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/bin/python",
+        "-B",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "/private/tmp/sail-pagerank-metadata-exact-gate/examples/extensions/benchmarks",
+        "--junitxml=/Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/pagerank-certificate-metadata/exact-gate/unit.xml",
+        "--basetemp=/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pagerank-metadata-gate-31xrswft/unit"
+      ],
+      "returncode": 0
+    },
+    {
+      "label": "sql",
+      "command": [
+        "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/bin/python",
+        "-B",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "/private/tmp/sail-pagerank-metadata-exact-gate/examples/extensions/benchmarks/test_pagerank_metadata.py",
+        "/private/tmp/sail-pagerank-metadata-exact-gate/examples/extensions/benchmarks/test_wcc_certificate.py",
+        "--junitxml=/Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/pagerank-certificate-metadata/exact-gate/sql.xml",
+        "--basetemp=/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pagerank-metadata-gate-31xrswft/sql"
+      ],
+      "returncode": 0
+    }
+  ],
+  "driver_python": {
+    "executable": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/bin/python",
+    "version": "3.12.8 (main, Jan  5 2025, 06:55:30) [Clang 19.1.6 ]"
+  },
+  "scope": "Python benchmark suite plus actual local SQL/Parquet on pinned installed Sail 0.7.0. No candidate runtime build, distributed or performance verdict.",
+  "server_command": [
+    "/Users/alexy/src/sail/.venvs/default/bin/sail",
+    "spark",
+    "server",
+    "--ip",
+    "127.0.0.1",
+    "--port",
+    "63551"
+  ],
+  "outcome": "passed",
+  "server_reaped": true,
+  "source_and_runtime_unchanged": true,
+  "unit_tests": {
+    "tests": 430,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 97
+  },
+  "sql_tests": {
+    "tests": 58,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "logs_sha256": {
+    "sql.xml": "889efbfb6c60d0169b5fd8b76709c07d539c09d3ad559729463c119cc1606284",
+    "diff-check.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "unit.xml": "81ce2684dcfac09d344a8b2884763c9621aa6402f3267af421699db132bce8cd",
+    "sql.log": "7a877dc940e01eb004c127d2194c0230467c4822e830b92828664b06285d93fd",
+    "unit.log": "e44e0e0b407d6c83ad8a57010ed625bcb118aadeb3f78d0f18222a3f40e8515d",
+    "server.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "finished_utc": "2026-09-30T23:09:38.686734+00:00"
+}

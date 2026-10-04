@@ -1,0 +1,134 @@
+{
+  "recorded_utc": "2026-09-30T20:46:50.735429+00:00",
+  "outcome": "HOST_MEMORY_AND_OBSERVER_COMPARISON_RECORDED",
+  "baseline_utc": "2026-09-30T20:03:47.704440+00:00",
+  "current_started_utc": "2026-09-30T20:45:06.751520+00:00",
+  "current_finished_utc": "2026-09-30T20:45:12.056054+00:00",
+  "source_sha256": {
+    "host-before.json": "a6af907c7b7f387fa75a9049962b118959f5a8eda441232f85a8166a0feabc61",
+    "host-control-20260930T204454196825Z.json": "551971f3c894b7b5692e9bf1d5afbaf32ca1c158bc601a1272342de5da171d0f"
+  },
+  "host_physical_memory_bytes": 137438953472,
+  "swap_before_raw": "vm.swapusage: total = 36864.00M  used = 35658.50M  free = 1205.50M  (encrypted)\n",
+  "swap_current_raw": "vm.swapusage: total = 24576.00M  used = 23259.50M  free = 1316.50M  (encrypted)\n",
+  "vm_stat_page_bytes": 4096,
+  "vm_stat_counters": {
+    "Pages stored in compressor": {
+      "before_pages_or_count": 25920728,
+      "current_pages_or_count": 29392562,
+      "delta": 3471834,
+      "before_gib": 98.87973022460938,
+      "current_gib": 112.12372589111328,
+      "delta_gib": 13.243995666503906
+    },
+    "Pages occupied by compressor": {
+      "before_pages_or_count": 4765865,
+      "current_pages_or_count": 12866895,
+      "delta": 8101030,
+      "before_gib": 18.18033218383789,
+      "current_gib": 49.083309173583984,
+      "delta_gib": 30.902976989746094
+    },
+    "Compressions": {
+      "before_pages_or_count": 609433990,
+      "current_pages_or_count": 641112323,
+      "delta": 31678333
+    },
+    "Decompressions": {
+      "before_pages_or_count": 536645879,
+      "current_pages_or_count": 563928724,
+      "delta": 27282845
+    },
+    "Swapins": {
+      "before_pages_or_count": 2089530588,
+      "current_pages_or_count": 2207106194,
+      "delta": 117575606
+    },
+    "Swapouts": {
+      "before_pages_or_count": 2102613072,
+      "current_pages_or_count": 2217090044,
+      "delta": 114476972
+    }
+  },
+  "largest_rss_executables": [
+    {
+      "pid": 28591,
+      "ppid": 28580,
+      "rss_kib": 47565992,
+      "executable": "/usr/local/bin/qemu-system-x86_64",
+      "rss_gib": 45.362464904785156
+    },
+    {
+      "pid": 92152,
+      "ppid": 1,
+      "rss_kib": 6785588,
+      "executable": "/System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine",
+      "rss_gib": 6.471240997314453
+    }
+  ],
+  "selected_host_processes": [
+    {
+      "pid": 16299,
+      "ppid": 92088,
+      "rss_kib": 64960,
+      "executable": "/usr/local/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/Resources/Python.app/Contents/MacOS/Python",
+      "present_in_host_before_pid_inventory": true
+    },
+    {
+      "pid": 28568,
+      "ppid": 1,
+      "rss_kib": 10676,
+      "executable": "/usr/local/bin/limactl",
+      "present_in_host_before_pid_inventory": true
+    },
+    {
+      "pid": 28580,
+      "ppid": 1,
+      "rss_kib": 8124,
+      "executable": "/usr/local/bin/limactl",
+      "present_in_host_before_pid_inventory": true
+    },
+    {
+      "pid": 37453,
+      "ppid": 37452,
+      "rss_kib": 3896,
+      "executable": "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/Resources/Python.app/Contents/MacOS/Python",
+      "present_in_host_before_pid_inventory": true
+    },
+    {
+      "pid": 42000,
+      "ppid": 41999,
+      "rss_kib": 10996,
+      "executable": "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/Resources/Python.app/Contents/MacOS/Python",
+      "present_in_host_before_pid_inventory": false
+    },
+    {
+      "pid": 68201,
+      "ppid": 68198,
+      "rss_kib": 37608,
+      "executable": "/usr/local/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/Resources/Python.app/Contents/MacOS/Python",
+      "present_in_host_before_pid_inventory": true
+    },
+    {
+      "pid": 92143,
+      "ppid": 1,
+      "rss_kib": 17268,
+      "executable": "/usr/local/bin/limactl",
+      "present_in_host_before_pid_inventory": true
+    },
+    {
+      "pid": 92803,
+      "ppid": 1,
+      "rss_kib": 5072,
+      "executable": "python3",
+      "present_in_host_before_pid_inventory": true
+    }
+  ],
+  "observer_check": "Every visible selected Python/limactl PID except the current host-only collector PID42000 is already in the20:03 baseline PID inventory. The20:43 selected process elapsed snapshot separately puts the limactl processes and persistent Python processes before the monitor; prior collector41953 is absent from the20:45 snapshot. Names/PIDs alone cannot prove ownership or exclude still-running VM-side Python readers.",
+  "limits": [
+    "Host swap was already substantial before logging02; current used swap is lower, not higher. Compressor occupied pages increased. These are observed host conditions, not a cell-failure cause.",
+    "Swapins/Swapouts are cumulative counters; their deltas are retained as counts, not asserted physical disk bytes.",
+    "RSS is a point-in-time per-process value; baseline process inventory did not record RSS, so no per-process growth is claimed. Executable names/PPIDs alone do not prove VM profile identity.",
+    "The local repeated monitor is stopped; no remote process or workload was signaled. No further remote observation will run without root coordination."
+  ]
+}

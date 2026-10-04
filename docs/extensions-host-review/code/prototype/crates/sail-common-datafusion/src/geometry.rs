@@ -1,0 +1,65 @@
+//! Conservative propagation of GeoArrow logical types through value selectors.
+use std::collections::HashMap;
+
+use arrow_schema::{DataType, FieldRef};
+
+/// Preserve a geometry type only when every non-NULL alternative has the same
+/// storage type and GeoArrow extension metadata. Plain binary is not geometry;
+/// neither mixed CRS nor geometry/geography alternatives may be relabelled.
+pub fn common_geometry_metadata(fields: &[FieldRef]) -> Option<HashMap<String, String>> {
+    const NAME: &str = "ARROW:extension:name";
+    const METADATA: &str = "ARROW:extension:metadata";
+    let mut fields = fields.iter().filter(|field| !field.data_type().is_null());
+    let first = fields.next()?;
+    if !matches!(
+        first.data_type(),
+        DataType::Binary | DataType::LargeBinary | DataType::BinaryView
+    ) || first.metadata().get(NAME).map(String::as_str) != Some("geoarrow.wkb")
+    {
+        return None;
+    }
+    if fields.any(|field| {
+        field.data_type() != first.data_type()
+            || field.metadata().get(NAME) != first.metadata().get(NAME)
+            || field.metadata().get(METADATA) != first.metadata().get(METADATA)
+    }) {
+        return None;
+    }
+    Some(
+        first
+            .metadata()
+            .iter()
+            .filter(|(key, _)| matches!(key.as_str(), NAME | METADATA))
+            .map(|(key, value)| (key.clone(), value.clone()))
+            .collect(),
+    )
+}
+
+#[cfg(test)]
+mod tests {
+    use std::sync::Arc;
+
+    use arrow_schema::Field;
+
+    use super::*;
+
+    #[test]
+    fn geometry_alternatives_require_compatible_types_and_crs() {
+        let geometry = Arc::new(Field::new("g", DataType::Binary, true).with_metadata(
+            HashMap::from([
+                ("ARROW:extension:name".into(), "geoarrow.wkb".into()),
+                ("ARROW:extension:metadata".into(), "{}".into()),
+            ]),
+        ));
+        let null = Arc::new(Field::new("null", DataType::Null, true));
+        assert!(common_geometry_metadata(&[geometry.clone(), null]).is_some());
+        let plain = Arc::new(Field::new("binary", DataType::Binary, true));
+        assert!(common_geometry_metadata(&[geometry.clone(), plain]).is_none());
+        let mut other = geometry.as_ref().clone();
+        other.metadata_mut().insert(
+            "ARROW:extension:metadata".into(),
+            r#"{"edges":"spherical"}"#.into(),
+        );
+        assert!(common_geometry_metadata(&[geometry, Arc::new(other)]).is_none());
+    }
+}

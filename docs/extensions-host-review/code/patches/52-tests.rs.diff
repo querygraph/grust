@@ -1,0 +1,96 @@
+diff --git a/crates/sail-session/src/extensions/plan/tests.rs b/crates/sail-session/src/extensions/plan/tests.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..bbfffd2f512e83c4c7fbd74b7d13e7ce700c96a2
+--- /dev/null
++++ b/crates/sail-session/src/extensions/plan/tests.rs
+@@ -0,0 +1,90 @@
++use datafusion::arrow::array::Int64Array;
++use datafusion::arrow::datatypes::{DataType, Field, Schema};
++use datafusion::arrow::record_batch::RecordBatch;
++use datafusion::physical_optimizer::PhysicalOptimizerRule;
++use datafusion::physical_optimizer::ensure_requirements::EnsureRequirements;
++use datafusion::physical_plan::coalesce_partitions::CoalescePartitionsExec;
++use datafusion::physical_plan::common::collect;
++use datafusion::physical_plan::displayable;
++use datafusion::prelude::{SessionConfig, SessionContext};
++use datafusion_datasource::memory::MemorySourceConfig;
++use datafusion_ffi::execution_plan::{FFI_ExecutionPlan, ForeignExecutionPlan};
++use sail_common_datafusion::connect_extension::HostInputExec;
++
++use super::*;
++
++#[derive(Debug)]
++struct FixedProvider(Arc<dyn ExecutionPlan>);
++
++#[async_trait]
++impl TableProvider for FixedProvider {
++    fn schema(&self) -> SchemaRef {
++        self.0.schema()
++    }
++    fn table_type(&self) -> TableType {
++        TableType::Temporary
++    }
++    async fn scan(
++        &self,
++        _session: &dyn Session,
++        _projection: Option<&Vec<usize>>,
++        _filters: &[Expr],
++        _limit: Option<usize>,
++    ) -> Result<Arc<dyn ExecutionPlan>> {
++        Ok(Arc::clone(&self.0))
++    }
++}
++
++#[tokio::test]
++async fn native_region_blocks_host_repartition_insertion_inside_ffi_plan() -> Result<()> {
++    // Keep the two-row fixture above the optimizer's one-batch threshold;
++    // otherwise its exact in-memory statistics suppress repartitioning.
++    let ctx = SessionContext::new_with_config(
++        SessionConfig::new()
++            .with_target_partitions(4)
++            .with_batch_size(1),
++    );
++    let state = ctx.state();
++    let schema = Arc::new(Schema::new(vec![Field::new("id", DataType::Int64, false)]));
++    let batch = RecordBatch::try_new(schema.clone(), vec![Arc::new(Int64Array::from(vec![1, 2]))])?;
++    let source = MemorySourceConfig::try_new_exec(&[vec![batch]], schema, None)?;
++    let input = Arc::new(HostInputExec::new(
++        source,
++        ctx.task_ctx(),
++        tokio::runtime::Handle::current(),
++    ));
++    // Force the actual foreign adapter even in this one-library fixture. Its
++    // default input requirements permit host repartitioning of its local child.
++    let ffi = FFI_ExecutionPlan::new(
++        Arc::new(CoalescePartitionsExec::new(input)),
++        Some(tokio::runtime::Handle::current()),
++    );
++    let foreign: Arc<dyn ExecutionPlan> = Arc::new(ForeignExecutionPlan::try_from(ffi)?);
++    assert!(!foreign.children().is_empty());
++    let optimizer = EnsureRequirements::new();
++    let rewritten = optimizer.optimize(Arc::clone(&foreign), state.config_options())?;
++    assert!(
++        displayable(rewritten.as_ref())
++            .indent(true)
++            .to_string()
++            .contains("RepartitionExec"),
++        "fixture must reproduce host insertion within an exposed foreign graph"
++    );
++
++    let provider = NativeTableProvider::new(Arc::new(FixedProvider(Arc::clone(&foreign))));
++    let plan = provider.scan(&state, None, &[], None).await?;
++    assert_eq!(plan.schema(), foreign.schema());
++    assert!(Arc::ptr_eq(plan.properties(), foreign.properties()));
++    let plan = optimizer.optimize(plan, state.config_options())?;
++    assert_eq!(plan.name(), "NativeRelationExec");
++    assert!(plan.children().is_empty());
++    #[expect(deprecated)]
++    let unchanged = Arc::clone(&plan).with_new_children(vec![])?;
++    #[expect(deprecated)]
++    let rejected = Arc::clone(&plan).with_new_children(vec![foreign]);
++    assert!(rejected.is_err());
++    assert!(Arc::ptr_eq(&plan, &unchanged));
++    let batches = collect(plan.execute(0, ctx.task_ctx())?).await?;
++    assert_eq!(batches.iter().map(RecordBatch::num_rows).sum::<usize>(), 2);
++    Ok(())
++}

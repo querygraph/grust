@@ -1,0 +1,29 @@
+    Checking sail-function v0.7.1 (/private/tmp/sail-compact-struct-min/crates/sail-function)
+    Checking sail-catalog-system v0.7.1 (/private/tmp/sail-compact-struct-min/crates/sail-catalog-system)
+    Checking sail-catalog-memory v0.7.1 (/private/tmp/sail-compact-struct-min/crates/sail-catalog-memory)
+    Checking sail-logical-plan v0.7.1 (/private/tmp/sail-compact-struct-min/crates/sail-logical-plan)
+    Checking sail-physical-plan v0.7.1 (/private/tmp/sail-compact-struct-min/crates/sail-physical-plan)
+    Checking sail-data-source v0.7.1 (/private/tmp/sail-compact-struct-min/crates/sail-data-source)
+    Checking sail-delta-lake v0.7.1 (/private/tmp/sail-compact-struct-min/crates/sail-delta-lake)
+    Checking sail-iceberg v0.7.1 (/private/tmp/sail-compact-struct-min/crates/sail-iceberg)
+    Checking sail-plan v0.7.1 (/private/tmp/sail-compact-struct-min/crates/sail-plan)
+    Checking sail-execution v0.7.1 (/private/tmp/sail-compact-struct-min/crates/sail-execution)
+error[E0599]: no method named `udaf` found for struct `std::sync::Arc<datafusion::execution::TaskContext>` in the current scope
+  --> crates/sail-execution/src/proto/struct_min_tests.rs:69:20
+   |
+69 |     assert!(worker.udaf("min")?.inner().is::<min_max::Min>());
+   |                    ^^^^
+   |
+   = help: items from traits can only be used if the trait is in scope
+help: there is a method `udafs` with a similar name, but with different arguments
+  --> /Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-expr-55.1.0/src/registry.rs:48:5
+   |
+48 |     fn udafs(&self) -> HashSet<String>;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+help: trait `FunctionRegistry` which provides `udaf` is implemented but not in scope; perhaps you want to import it
+   |
+ 1 + use datafusion::execution::FunctionRegistry;
+   |
+
+For more information about this error, try `rustc --explain E0599`.
+error: could not compile `sail-execution` (lib test) due to 1 previous error

@@ -1,0 +1,863 @@
+{
+  "algorithm": "wcc",
+  "dataset": "cit-Patents",
+  "size_class": "native_unclassified",
+  "engine": "Banda / registry Grust 0.24.0",
+  "params": {
+    "ids": "int64",
+    "calls": 1,
+    "order": "asStaged",
+    "kernel": "wcc",
+    "workers": 16,
+    "concurrency": 16,
+    "runs": 1
+  },
+  "graph": {
+    "vertices": 3774768,
+    "edges_reported_by_stage": 16518947,
+    "vertices_path": "/Users/alexy/src/grust-benchmark-data/cit-Patents/cit-Patents-v.parquet",
+    "edges_path": "/Users/alexy/src/grust-benchmark-data/cit-Patents/cit-Patents-e.parquet"
+  },
+  "warmup": {
+    "count": 0,
+    "performed": false,
+    "cache_flush": false
+  },
+  "monitor": {
+    "rss_interval_s": 0.5,
+    "samples": 9,
+    "observed_worker_peak_rss_kib": 144976,
+    "observed_server_peak_rss_kib": 1140168,
+    "errors": [],
+    "scope": "Sampled direct PID RSS; OS peak and capacity were not measured."
+  },
+  "runs": [
+    {
+      "index": 0,
+      "wall_time_s": 4.424468022,
+      "returncode": 0,
+      "peak_rss_kb": null,
+      "peak_disk_bytes": null,
+      "worker": {
+        "algorithm": "wcc",
+        "phases_s": {
+          "read_parquet_s": null,
+          "csr_and_graph_s": null,
+          "algorithm_s": null,
+          "write_parquet_s": null,
+          "wall_in_process_s": 1.707639226
+        },
+        "observed_spans": [
+          {
+            "name": "read_and_stage",
+            "call": null,
+            "seconds": 0.665133781,
+            "completed": true
+          },
+          {
+            "name": "projection_stats_action",
+            "call": null,
+            "seconds": 0.719998127,
+            "completed": true
+          },
+          {
+            "name": "wcc_and_parquet_write",
+            "call": 1,
+            "seconds": 0.322306313,
+            "completed": true
+          }
+        ],
+        "calls": 1,
+        "full_outputs": 1
+      }
+    }
+  ],
+  "stats": {
+    "parent_launch_to_wait_s": {
+      "n": 1,
+      "mean": 4.424468022,
+      "median": 4.424468022,
+      "min": 4.424468022,
+      "max": 4.424468022,
+      "std": null
+    },
+    "continuous_pipeline_s": {
+      "n": 1,
+      "mean": 1.707639226,
+      "median": 1.707639226,
+      "min": 1.707639226,
+      "max": 1.707639226,
+      "std": null
+    }
+  },
+  "series": {
+    "parent_launch_to_wait_s": [
+      4.424468022
+    ],
+    "continuous_pipeline_s": [
+      1.707639226
+    ]
+  },
+  "raw_series": {
+    "worker": {
+      "observed_utc": "2026-10-02T18:26:41.075956+00:00",
+      "started_utc": "2026-10-02T18:26:38.978750+00:00",
+      "outcome": "completed_unvalidated",
+      "configuration": {
+        "dataset": "cit-Patents",
+        "vertices": "/Users/alexy/src/grust-benchmark-data/cit-Patents/cit-Patents-v.parquet",
+        "edges": "/Users/alexy/src/grust-benchmark-data/cit-Patents/cit-Patents-e.parquet",
+        "vertex_id_column": "id",
+        "edge_source_column": "source",
+        "edge_target_column": "target",
+        "output_root": "/Users/alexy/src/grust-benchmark-runs/F2a-native-024-run01/cit-Patents-int64-c1",
+        "receipt": "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-024-run01/series/cit-Patents-int64-c1.json",
+        "ids": "int64",
+        "calls": 1,
+        "workers": 16,
+        "binary": "/Volumes/Apo/graph-tests/results/sem-review-20261001/native-optimized-build01/sail-target/release/sail",
+        "venv": "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-int64-build01/venv",
+        "python_home": "/Users/alexy/.asdf/installs/python/3.12.6",
+        "python_purelib": "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-int64-build01/venv/lib/python3.12/site-packages",
+        "python_library_directory": "/Users/alexy/.asdf/installs/python/3.12.6/lib",
+        "sail_pool_bytes": 32212254720,
+        "native_quota_bytes": 23622320128,
+        "timeout_seconds": 1800,
+        "extension_source_commit": "4b88c8fb4504ab1d2a896c9e49e4a09df4905bbb",
+        "native_runtime_commit": "9f0aa7d2a50f1258544d37c05dd19b3ff3d915b3"
+      },
+      "configuration_pin": {
+        "path": "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-024-run01/plans/cit-Patents-int64-c1.json",
+        "bytes": 1306,
+        "sha256": "0faf26dd4cde9831c7deaca6c27f1eb5a2caa67fa81086fd962513ee5d90e202"
+      },
+      "worker_source": {
+        "path": "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-024-run01/f2a_worker.py",
+        "bytes": 12908,
+        "sha256": "b829b93c23f7ffd6447c5bec8e54012dc82370191210593cb148c428a6a76812"
+      },
+      "models_source": {
+        "path": "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-024-run01/f2a_models.py",
+        "bytes": 6998,
+        "sha256": "4423dd873f359ac96c91a01422c0a7a7f2b97009cb4840319350e9c9507e14ca"
+      },
+      "owner_pid": 97140,
+      "python_version": "3.12.6 (main, Sep 13 2024, 17:29:18) [Clang 15.0.0 (clang-1500.3.9.4)]",
+      "python_executable": "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-int64-build01/venv/bin/python",
+      "environment": {
+        "PYTHONHOME": "/Users/alexy/.asdf/installs/python/3.12.6",
+        "PYTHONPATH": "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-int64-build01/venv/lib/python3.12/site-packages",
+        "DYLD_LIBRARY_PATH": "/Users/alexy/.asdf/installs/python/3.12.6/lib",
+        "SAIL_EXPERIMENTAL_EXTENSIONS": "1",
+        "SAIL_MODE": "local",
+        "SAIL_EXECUTION__DEFAULT_PARALLELISM": "16",
+        "SAIL_RUNTIME__MEMORY_POOL__TYPE": "greedy",
+        "SAIL_RUNTIME__MEMORY_POOL__GREEDY__MAX_SIZE": "32212254720",
+        "SAIL_NUTMEG_MEMORY_BYTES": "23622320128",
+        "NUTMEG_MEMORY_BYTES": "23622320128",
+        "NUTMEG_WORKERS": "16",
+        "SAIL_GRAPH_UTILS_ROOT": "file:///Users/alexy/src/grust-benchmark-runs/F2a-native-024-run01/cit-Patents-int64-c1/staging",
+        "TOKIO_WORKER_THREADS": "16",
+        "RAYON_NUM_THREADS": "16",
+        "TMPDIR": "/Users/alexy/src/grust-benchmark-runs/F2a-native-024-run01/cit-Patents-int64-c1/temporary",
+        "RUST_LOG": "warn"
+      },
+      "server": {
+        "pid": 97153,
+        "pgid": 97153,
+        "argv": [
+          "/Volumes/Apo/graph-tests/results/sem-review-20261001/native-optimized-build01/sail-target/release/sail",
+          "spark",
+          "server",
+          "--ip",
+          "127.0.0.1",
+          "--port",
+          "56888"
+        ],
+        "launched_utc": "2026-10-02T18:26:38.980643+00:00",
+        "closed_utc": "2026-10-02T18:26:41.075229+00:00",
+        "returncode": -15,
+        "wait_completed": true,
+        "termination_requested": true,
+        "forced_kill": false,
+        "scope": "Direct owned native server was waited; group closure is parent-owned."
+      },
+      "pipeline": {
+        "started_ns": 813325897578291,
+        "ended_ns": 813327605217517
+      },
+      "pipeline_seconds": 1.707639226,
+      "pipeline_completed": true,
+      "phases": [
+        {
+          "name": "read_and_stage",
+          "call": null,
+          "span": {
+            "started_ns": 813325897581238,
+            "ended_ns": 813326562715019
+          },
+          "completed": true
+        },
+        {
+          "name": "projection_stats_action",
+          "call": null,
+          "span": {
+            "started_ns": 813326562778667,
+            "ended_ns": 813327282776794
+          },
+          "completed": true
+        },
+        {
+          "name": "wcc_and_parquet_write",
+          "call": 1,
+          "span": {
+            "started_ns": 813327282911204,
+            "ended_ns": 813327605217517
+          },
+          "completed": true
+        }
+      ],
+      "outputs": [
+        {
+          "call": 1,
+          "path": "/Users/alexy/src/grust-benchmark-runs/F2a-native-024-run01/cit-Patents-int64-c1/result-call1",
+          "completed": true
+        }
+      ],
+      "output_projection": [
+        "id",
+        "component"
+      ],
+      "stage_receipt": {
+        "graph": "g",
+        "nodeCount": 3774768,
+        "edgeCount": 16518947,
+        "revision": 1,
+        "nodeSortPermutationBytes": 0,
+        "nodeSortKeysBytes": 0,
+        "nodeSortedCopyBytes": 0,
+        "nodeFillBytes": 0,
+        "nodeNormalizedBytes": 45299060,
+        "nodeRetainedBytes": 45299060,
+        "nodeSortSeconds": 0.0,
+        "nodeSorted": false,
+        "edgeSortPermutationBytes": 0,
+        "edgeSortKeysBytes": 0,
+        "edgeSortedCopyBytes": 0,
+        "edgeFillBytes": 0,
+        "edgeNormalizedBytes": 398535733,
+        "edgeRetainedBytes": 398535733,
+        "edgeSortSeconds": 0.0,
+        "edgeSorted": false
+      },
+      "projection_receipt": {
+        "nodes": 3774768,
+        "edges": 16518947,
+        "arcs": 16518947,
+        "selfLoops": 0,
+        "csrBytes": 147250652
+      },
+      "native_status": {
+        "memory": {
+          "limit_bytes": 23622320128,
+          "used_bytes": 1059019312,
+          "peak_bytes": 1175864274,
+          "staged_bytes": 443834793
+        },
+        "graphs": [
+          {
+            "name": "g",
+            "node_count": 3774768,
+            "edge_count": 16518947,
+            "revision": 1,
+            "projections": 1,
+            "staged_bytes": 443834793,
+            "projection_builds": [
+              {
+                "key": "{\"defaultWeight\": \"Some(Null)\", \"nodeLabels\": \"Some(Null)\", \"orientation\": \"Some(String(\\\"outgoing\\\"))\", \"relationshipTypes\": \"Some(Null)\", \"weightProperty\": \"Some(Null)\"}",
+                "seconds": 0.711708427,
+                "live_bytes_before": 443834793,
+                "admitted_bytes": 615184519
+              }
+            ]
+          }
+        ],
+        "reads": [
+          {
+            "id": 1,
+            "algorithm": "projectionStats",
+            "graph": "g",
+            "state": "finished",
+            "message": null,
+            "batches": 1,
+            "rows": 1,
+            "live_bytes": 0,
+            "peak_bytes": 0,
+            "work_units": 16518947,
+            "diagnostics": null
+          },
+          {
+            "id": 2,
+            "algorithm": "wcc",
+            "graph": "g",
+            "state": "finished",
+            "message": null,
+            "batches": 461,
+            "rows": 3774768,
+            "live_bytes": 535711,
+            "peak_bytes": 60396288,
+            "work_units": 35389185,
+            "diagnostics": null
+          }
+        ]
+      },
+      "projection_reused": true,
+      "exclusive_sem_phases": {
+        "read_seconds": null,
+        "csr_and_graph_build_seconds": null,
+        "algorithm_seconds": null,
+        "write_seconds": null,
+        "availability": "unavailable_exclusive_native_parquet_phases",
+        "reason": "Native stage includes read, normalization and retention; the lazy WCC executes during its Parquet write. Exclusive Sem phases were not measured."
+      },
+      "graph_dropped": true,
+      "spark_stopped": true,
+      "errors": [],
+      "scope": "One unvalidated native WCC series on a shared host. Main continuous clock starts before input-read plans and ends at the last full write. Session setup, post-pipeline diagnostics, all validation, graph/session teardown and native process exit are outside that clock. Parent supplies source/input admission, physical output oracles and full process closure."
+    },
+    "parent_series": {
+      "plan": {
+        "path": "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-024-run01/plans/cit-Patents-int64-c1.json",
+        "bytes": 1306,
+        "sha256": "0faf26dd4cde9831c7deaca6c27f1eb5a2caa67fa81086fd962513ee5d90e202"
+      },
+      "argv": [
+        "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-int64-build01/venv/bin/python",
+        "-I",
+        "-B",
+        "-c",
+        "import runpy,sys;r=sys.argv[1];sys.path.insert(0,r);sys.argv=[r+\"/f2a_worker.py\"]+sys.argv[2:];runpy.run_path(sys.argv[0],run_name=\"__main__\")",
+        "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-024-run01",
+        "--plan",
+        "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-024-run01/plans/cit-Patents-int64-c1.json"
+      ],
+      "outcome": "completed_unvalidated",
+      "launched_utc": "2026-10-02T18:26:36.816835+00:00",
+      "closed_utc": "2026-10-02T18:26:41.241206+00:00",
+      "pid": 97140,
+      "pgid": 97140,
+      "wait_completed": true,
+      "returncode": 0,
+      "launch_to_wait": {
+        "started_ns": 813323651195489,
+        "ended_ns": 813328075663511
+      },
+      "driver_group_absent": true,
+      "server_group_absent": true,
+      "server_pid": 97153,
+      "server_pgid": 97153,
+      "worker_receipt": {
+        "path": "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-024-run01/series/cit-Patents-int64-c1.json",
+        "bytes": 8024,
+        "sha256": "1cae862dd91b41ff7efb644c458d051bedb09dcc2232f5b09217a0f5d253edcd"
+      },
+      "forced_cleanup": false,
+      "rss_samples": 9,
+      "observed_worker_peak_rss_kib": 144976,
+      "observed_server_peak_rss_kib": 1140168,
+      "rss_errors": [],
+      "rss_sampler_closed": true,
+      "rss_file": {
+        "path": "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-024-main-campaign02/series-1-rss.jsonl",
+        "bytes": 1476,
+        "sha256": "628118519833d367e1874a25981ac297d9661abfaf8376b8be91fe1bf8d28789"
+      }
+    },
+    "physical_oracle": {
+      "outcome": "passed_full_physical_wcc",
+      "started_utc": "2026-10-02T18:35:38.092672+00:00",
+      "finished_utc": "2026-10-02T18:35:41.977700+00:00",
+      "config": {
+        "vertices": {
+          "bytes": 3861941,
+          "sha256": "0969ea9ede0969e18e76a2c70191ed7ccecaecb9f1da6d954093dbefbc8958aa",
+          "path": "/Users/alexy/src/grust-benchmark-data/cit-Patents/cit-Patents-v.parquet"
+        },
+        "expected_rows": 3774768,
+        "reference": {
+          "directory": "/Volumes/Apo/graph-tests/results/sem-review-20261001/A5-native-fable-exact-post-result01/raw/cit-Patents/wcc-b0-p0-graphframes/result",
+          "files": {
+            "Tonjs5pvgNaK2nPJ_0.parquet": {
+              "bytes": 1508074,
+              "sha256": "72b8e74e09967c3ed7f86a1d973eede44ff10fc151041bd4475633372c63a157"
+            },
+            "Tonjs5pvgNaK2nPJ_1.parquet": {
+              "bytes": 1509666,
+              "sha256": "b2603c2267b9071cefecc395630a9ecf4cb850fff36859334ecb47e20b5920fb"
+            },
+            "Tonjs5pvgNaK2nPJ_2.parquet": {
+              "bytes": 1504056,
+              "sha256": "1620e8eaa9d0c8c1565525de0bdd7a38a57039f8db0233821f210b4d13a51dee"
+            },
+            "Tonjs5pvgNaK2nPJ_3.parquet": {
+              "bytes": 1505565,
+              "sha256": "4f1b1799d33a44f5e3b95dd77bc86cd5e0866f881bc71946388ea44b74a463ac"
+            }
+          }
+        },
+        "outputs": [
+          {
+            "directory": "/Users/alexy/src/grust-benchmark-runs/F2a-native-024-run01/cit-Patents-int64-c1/result-call1",
+            "files": {
+              "Qbw7bS5v7SIQ6cLa_0.zst.parquet": {
+                "bytes": 1256704,
+                "sha256": "c7fcecb55378c6ebd4c77b3377dbc865d2d5dafe1c73528806186ca97dea96ef"
+              },
+              "Qbw7bS5v7SIQ6cLa_1.zst.parquet": {
+                "bytes": 1256038,
+                "sha256": "3607192ba3d0c6b12158e995991b0e0481cd8014217634d56d46797c11772e15"
+              },
+              "Qbw7bS5v7SIQ6cLa_2.zst.parquet": {
+                "bytes": 1248912,
+                "sha256": "1dd7ef9a9c7c71df86391084eb89984493ba9dc3033854acead5b0fe4c814cda"
+              },
+              "Qbw7bS5v7SIQ6cLa_3.zst.parquet": {
+                "bytes": 1252661,
+                "sha256": "517ab6a94f0c92d48624e211780a317787c61ce14dcbb1cddc3298a9a73ea529"
+              }
+            },
+            "number": 1
+          }
+        ],
+        "output": "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-024-run01/oracle-cit-Patents-int64-c1-01",
+        "metadata_pins": [
+          {
+            "bytes": 8024,
+            "sha256": "1cae862dd91b41ff7efb644c458d051bedb09dcc2232f5b09217a0f5d253edcd",
+            "path": "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-024-run01/series/cit-Patents-int64-c1.json"
+          },
+          {
+            "bytes": 1306,
+            "sha256": "0faf26dd4cde9831c7deaca6c27f1eb5a2caa67fa81086fd962513ee5d90e202",
+            "path": "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-024-run01/plans/cit-Patents-int64-c1.json"
+          },
+          {
+            "bytes": 41259,
+            "sha256": "55977f9fe083c64421812a427d303a7c0ac42d153c88cec81b0446c0174853d2",
+            "path": "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-024-main-campaign02/receipt.json"
+          },
+          {
+            "bytes": 1288,
+            "sha256": "3c9789b4aa9efd567d16b0b9ee031a0879d4eb52980fe2a7fe3dce9eba72de96",
+            "path": "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-024-main-campaign02/launch-receipt.json"
+          },
+          {
+            "bytes": 190557,
+            "sha256": "81f5c1ae534aaf8e96e158e6abc418ba0c1083780ba918ebac11b16ceff06799",
+            "path": "/Volumes/Apo/graph-tests/results/sem-review-20261001/A5-native-fable-exact-post-result01/receipt.json"
+          },
+          {
+            "bytes": 2190,
+            "sha256": "e41be9ee1066e5b8351acd454dd78fe1f5353618480486c3a424fad47094807c",
+            "path": "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-024-run01/input-admission01.json"
+          },
+          {
+            "bytes": 18487,
+            "sha256": "6514d12838a558336bfbeee0340682f500938e750ccf39698fdf8fb621b2bbc3",
+            "path": "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-024-run01/f2a_oracle.py"
+          }
+        ],
+        "batch_rows": 262144,
+        "work_seconds": 300.0,
+        "closure_seconds": 300.0,
+        "memory_bytes": 25769803776
+      },
+      "configuration": {
+        "bytes": 3808,
+        "sha256": "71b30a28f2569216d989fd2bfa72322525d73b9dc65c3899ae4f97dd11c36455",
+        "path": "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-024-run01/oracle-cit-Patents-int64-c1-plan01.json"
+      },
+      "identities_before": {
+        "/Users/alexy/src/grust-benchmark-data/cit-Patents/cit-Patents-v.parquet": {
+          "bytes": 3861941,
+          "sha256": "0969ea9ede0969e18e76a2c70191ed7ccecaecb9f1da6d954093dbefbc8958aa"
+        },
+        "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-024-run01/oracle-cit-Patents-int64-c1-plan01.json": {
+          "bytes": 3808,
+          "sha256": "71b30a28f2569216d989fd2bfa72322525d73b9dc65c3899ae4f97dd11c36455"
+        },
+        "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-024-run01/series/cit-Patents-int64-c1.json": {
+          "bytes": 8024,
+          "sha256": "1cae862dd91b41ff7efb644c458d051bedb09dcc2232f5b09217a0f5d253edcd"
+        },
+        "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-024-run01/plans/cit-Patents-int64-c1.json": {
+          "bytes": 1306,
+          "sha256": "0faf26dd4cde9831c7deaca6c27f1eb5a2caa67fa81086fd962513ee5d90e202"
+        },
+        "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-024-main-campaign02/receipt.json": {
+          "bytes": 41259,
+          "sha256": "55977f9fe083c64421812a427d303a7c0ac42d153c88cec81b0446c0174853d2"
+        },
+        "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-024-main-campaign02/launch-receipt.json": {
+          "bytes": 1288,
+          "sha256": "3c9789b4aa9efd567d16b0b9ee031a0879d4eb52980fe2a7fe3dce9eba72de96"
+        },
+        "/Volumes/Apo/graph-tests/results/sem-review-20261001/A5-native-fable-exact-post-result01/receipt.json": {
+          "bytes": 190557,
+          "sha256": "81f5c1ae534aaf8e96e158e6abc418ba0c1083780ba918ebac11b16ceff06799"
+        },
+        "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-024-run01/input-admission01.json": {
+          "bytes": 2190,
+          "sha256": "e41be9ee1066e5b8351acd454dd78fe1f5353618480486c3a424fad47094807c"
+        },
+        "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-024-run01/f2a_oracle.py": {
+          "bytes": 18487,
+          "sha256": "6514d12838a558336bfbeee0340682f500938e750ccf39698fdf8fb621b2bbc3"
+        },
+        "/Volumes/Apo/graph-tests/results/sem-review-20261001/A5-native-fable-exact-post-result01/raw/cit-Patents/wcc-b0-p0-graphframes/result/Tonjs5pvgNaK2nPJ_0.parquet": {
+          "bytes": 1508074,
+          "sha256": "72b8e74e09967c3ed7f86a1d973eede44ff10fc151041bd4475633372c63a157"
+        },
+        "/Volumes/Apo/graph-tests/results/sem-review-20261001/A5-native-fable-exact-post-result01/raw/cit-Patents/wcc-b0-p0-graphframes/result/Tonjs5pvgNaK2nPJ_1.parquet": {
+          "bytes": 1509666,
+          "sha256": "b2603c2267b9071cefecc395630a9ecf4cb850fff36859334ecb47e20b5920fb"
+        },
+        "/Volumes/Apo/graph-tests/results/sem-review-20261001/A5-native-fable-exact-post-result01/raw/cit-Patents/wcc-b0-p0-graphframes/result/Tonjs5pvgNaK2nPJ_2.parquet": {
+          "bytes": 1504056,
+          "sha256": "1620e8eaa9d0c8c1565525de0bdd7a38a57039f8db0233821f210b4d13a51dee"
+        },
+        "/Volumes/Apo/graph-tests/results/sem-review-20261001/A5-native-fable-exact-post-result01/raw/cit-Patents/wcc-b0-p0-graphframes/result/Tonjs5pvgNaK2nPJ_3.parquet": {
+          "bytes": 1505565,
+          "sha256": "4f1b1799d33a44f5e3b95dd77bc86cd5e0866f881bc71946388ea44b74a463ac"
+        },
+        "/Users/alexy/src/grust-benchmark-runs/F2a-native-024-run01/cit-Patents-int64-c1/result-call1/Qbw7bS5v7SIQ6cLa_0.zst.parquet": {
+          "bytes": 1256704,
+          "sha256": "c7fcecb55378c6ebd4c77b3377dbc865d2d5dafe1c73528806186ca97dea96ef"
+        },
+        "/Users/alexy/src/grust-benchmark-runs/F2a-native-024-run01/cit-Patents-int64-c1/result-call1/Qbw7bS5v7SIQ6cLa_1.zst.parquet": {
+          "bytes": 1256038,
+          "sha256": "3607192ba3d0c6b12158e995991b0e0481cd8014217634d56d46797c11772e15"
+        },
+        "/Users/alexy/src/grust-benchmark-runs/F2a-native-024-run01/cit-Patents-int64-c1/result-call1/Qbw7bS5v7SIQ6cLa_2.zst.parquet": {
+          "bytes": 1248912,
+          "sha256": "1dd7ef9a9c7c71df86391084eb89984493ba9dc3033854acead5b0fe4c814cda"
+        },
+        "/Users/alexy/src/grust-benchmark-runs/F2a-native-024-run01/cit-Patents-int64-c1/result-call1/Qbw7bS5v7SIQ6cLa_3.zst.parquet": {
+          "bytes": 1252661,
+          "sha256": "517ab6a94f0c92d48624e211780a317787c61ce14dcbb1cddc3298a9a73ea529"
+        }
+      },
+      "identities_after": {
+        "/Users/alexy/src/grust-benchmark-data/cit-Patents/cit-Patents-v.parquet": {
+          "bytes": 3861941,
+          "sha256": "0969ea9ede0969e18e76a2c70191ed7ccecaecb9f1da6d954093dbefbc8958aa"
+        },
+        "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-024-run01/oracle-cit-Patents-int64-c1-plan01.json": {
+          "bytes": 3808,
+          "sha256": "71b30a28f2569216d989fd2bfa72322525d73b9dc65c3899ae4f97dd11c36455"
+        },
+        "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-024-run01/series/cit-Patents-int64-c1.json": {
+          "bytes": 8024,
+          "sha256": "1cae862dd91b41ff7efb644c458d051bedb09dcc2232f5b09217a0f5d253edcd"
+        },
+        "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-024-run01/plans/cit-Patents-int64-c1.json": {
+          "bytes": 1306,
+          "sha256": "0faf26dd4cde9831c7deaca6c27f1eb5a2caa67fa81086fd962513ee5d90e202"
+        },
+        "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-024-main-campaign02/receipt.json": {
+          "bytes": 41259,
+          "sha256": "55977f9fe083c64421812a427d303a7c0ac42d153c88cec81b0446c0174853d2"
+        },
+        "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-024-main-campaign02/launch-receipt.json": {
+          "bytes": 1288,
+          "sha256": "3c9789b4aa9efd567d16b0b9ee031a0879d4eb52980fe2a7fe3dce9eba72de96"
+        },
+        "/Volumes/Apo/graph-tests/results/sem-review-20261001/A5-native-fable-exact-post-result01/receipt.json": {
+          "bytes": 190557,
+          "sha256": "81f5c1ae534aaf8e96e158e6abc418ba0c1083780ba918ebac11b16ceff06799"
+        },
+        "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-024-run01/input-admission01.json": {
+          "bytes": 2190,
+          "sha256": "e41be9ee1066e5b8351acd454dd78fe1f5353618480486c3a424fad47094807c"
+        },
+        "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-024-run01/f2a_oracle.py": {
+          "bytes": 18487,
+          "sha256": "6514d12838a558336bfbeee0340682f500938e750ccf39698fdf8fb621b2bbc3"
+        },
+        "/Volumes/Apo/graph-tests/results/sem-review-20261001/A5-native-fable-exact-post-result01/raw/cit-Patents/wcc-b0-p0-graphframes/result/Tonjs5pvgNaK2nPJ_0.parquet": {
+          "bytes": 1508074,
+          "sha256": "72b8e74e09967c3ed7f86a1d973eede44ff10fc151041bd4475633372c63a157"
+        },
+        "/Volumes/Apo/graph-tests/results/sem-review-20261001/A5-native-fable-exact-post-result01/raw/cit-Patents/wcc-b0-p0-graphframes/result/Tonjs5pvgNaK2nPJ_1.parquet": {
+          "bytes": 1509666,
+          "sha256": "b2603c2267b9071cefecc395630a9ecf4cb850fff36859334ecb47e20b5920fb"
+        },
+        "/Volumes/Apo/graph-tests/results/sem-review-20261001/A5-native-fable-exact-post-result01/raw/cit-Patents/wcc-b0-p0-graphframes/result/Tonjs5pvgNaK2nPJ_2.parquet": {
+          "bytes": 1504056,
+          "sha256": "1620e8eaa9d0c8c1565525de0bdd7a38a57039f8db0233821f210b4d13a51dee"
+        },
+        "/Volumes/Apo/graph-tests/results/sem-review-20261001/A5-native-fable-exact-post-result01/raw/cit-Patents/wcc-b0-p0-graphframes/result/Tonjs5pvgNaK2nPJ_3.parquet": {
+          "bytes": 1505565,
+          "sha256": "4f1b1799d33a44f5e3b95dd77bc86cd5e0866f881bc71946388ea44b74a463ac"
+        },
+        "/Users/alexy/src/grust-benchmark-runs/F2a-native-024-run01/cit-Patents-int64-c1/result-call1/Qbw7bS5v7SIQ6cLa_0.zst.parquet": {
+          "bytes": 1256704,
+          "sha256": "c7fcecb55378c6ebd4c77b3377dbc865d2d5dafe1c73528806186ca97dea96ef"
+        },
+        "/Users/alexy/src/grust-benchmark-runs/F2a-native-024-run01/cit-Patents-int64-c1/result-call1/Qbw7bS5v7SIQ6cLa_1.zst.parquet": {
+          "bytes": 1256038,
+          "sha256": "3607192ba3d0c6b12158e995991b0e0481cd8014217634d56d46797c11772e15"
+        },
+        "/Users/alexy/src/grust-benchmark-runs/F2a-native-024-run01/cit-Patents-int64-c1/result-call1/Qbw7bS5v7SIQ6cLa_2.zst.parquet": {
+          "bytes": 1248912,
+          "sha256": "1dd7ef9a9c7c71df86391084eb89984493ba9dc3033854acead5b0fe4c814cda"
+        },
+        "/Users/alexy/src/grust-benchmark-runs/F2a-native-024-run01/cit-Patents-int64-c1/result-call1/Qbw7bS5v7SIQ6cLa_3.zst.parquet": {
+          "bytes": 1252661,
+          "sha256": "517ab6a94f0c92d48624e211780a317787c61ce14dcbb1cddc3298a9a73ea529"
+        }
+      },
+      "original_vertices_schema": {
+        "name": "/Users/alexy/src/grust-benchmark-data/cit-Patents/cit-Patents-v.parquet",
+        "fields": [
+          {
+            "name": "id",
+            "arrow_type": "int64",
+            "nullable": true
+          }
+        ],
+        "footer_rows": 3774768,
+        "row_groups": 31,
+        "largest_row_group_uncompressed_bytes": 983071,
+        "scanned_rows": 3774768
+      },
+      "reference": {
+        "number": 0,
+        "rows": 3774768,
+        "unique_rows": 3774768,
+        "components": 3627,
+        "canonical_member_mismatches": null,
+        "full_original_domain_passed": true,
+        "labels_in_original_domain": true,
+        "full_partition_equivalence_passed": false,
+        "physical_schemas": [
+          {
+            "name": "/Volumes/Apo/graph-tests/results/sem-review-20261001/A5-native-fable-exact-post-result01/raw/cit-Patents/wcc-b0-p0-graphframes/result/Tonjs5pvgNaK2nPJ_0.parquet",
+            "fields": [
+              {
+                "name": "id",
+                "arrow_type": "int64",
+                "nullable": true
+              },
+              {
+                "name": "component",
+                "arrow_type": "int64",
+                "nullable": true
+              }
+            ],
+            "footer_rows": 944610,
+            "row_groups": 1,
+            "largest_row_group_uncompressed_bytes": 7844804,
+            "scanned_rows": 944610
+          },
+          {
+            "name": "/Volumes/Apo/graph-tests/results/sem-review-20261001/A5-native-fable-exact-post-result01/raw/cit-Patents/wcc-b0-p0-graphframes/result/Tonjs5pvgNaK2nPJ_1.parquet",
+            "fields": [
+              {
+                "name": "id",
+                "arrow_type": "int64",
+                "nullable": true
+              },
+              {
+                "name": "component",
+                "arrow_type": "int64",
+                "nullable": true
+              }
+            ],
+            "footer_rows": 944853,
+            "row_groups": 1,
+            "largest_row_group_uncompressed_bytes": 7848093,
+            "scanned_rows": 944853
+          },
+          {
+            "name": "/Volumes/Apo/graph-tests/results/sem-review-20261001/A5-native-fable-exact-post-result01/raw/cit-Patents/wcc-b0-p0-graphframes/result/Tonjs5pvgNaK2nPJ_2.parquet",
+            "fields": [
+              {
+                "name": "id",
+                "arrow_type": "int64",
+                "nullable": true
+              },
+              {
+                "name": "component",
+                "arrow_type": "int64",
+                "nullable": true
+              }
+            ],
+            "footer_rows": 941123,
+            "row_groups": 1,
+            "largest_row_group_uncompressed_bytes": 7818636,
+            "scanned_rows": 941123
+          },
+          {
+            "name": "/Volumes/Apo/graph-tests/results/sem-review-20261001/A5-native-fable-exact-post-result01/raw/cit-Patents/wcc-b0-p0-graphframes/result/Tonjs5pvgNaK2nPJ_3.parquet",
+            "fields": [
+              {
+                "name": "id",
+                "arrow_type": "int64",
+                "nullable": true
+              },
+              {
+                "name": "component",
+                "arrow_type": "int64",
+                "nullable": true
+              }
+            ],
+            "footer_rows": 944182,
+            "row_groups": 1,
+            "largest_row_group_uncompressed_bytes": 7840132,
+            "scanned_rows": 944182
+          }
+        ]
+      },
+      "outputs": [
+        {
+          "number": 1,
+          "rows": 3774768,
+          "unique_rows": 3774768,
+          "components": 3627,
+          "canonical_member_mismatches": 0,
+          "full_original_domain_passed": true,
+          "labels_in_original_domain": true,
+          "full_partition_equivalence_passed": true,
+          "physical_schemas": [
+            {
+              "name": "/Users/alexy/src/grust-benchmark-runs/F2a-native-024-run01/cit-Patents-int64-c1/result-call1/Qbw7bS5v7SIQ6cLa_0.zst.parquet",
+              "fields": [
+                {
+                  "name": "id",
+                  "arrow_type": "int64",
+                  "nullable": false
+                },
+                {
+                  "name": "component",
+                  "arrow_type": "int64",
+                  "nullable": false
+                }
+              ],
+              "footer_rows": 948528,
+              "row_groups": 1,
+              "largest_row_group_uncompressed_bytes": 7910349,
+              "scanned_rows": 948528
+            },
+            {
+              "name": "/Users/alexy/src/grust-benchmark-runs/F2a-native-024-run01/cit-Patents-int64-c1/result-call1/Qbw7bS5v7SIQ6cLa_1.zst.parquet",
+              "fields": [
+                {
+                  "name": "id",
+                  "arrow_type": "int64",
+                  "nullable": false
+                },
+                {
+                  "name": "component",
+                  "arrow_type": "int64",
+                  "nullable": false
+                }
+              ],
+              "footer_rows": 942080,
+              "row_groups": 1,
+              "largest_row_group_uncompressed_bytes": 7860242,
+              "scanned_rows": 942080
+            },
+            {
+              "name": "/Users/alexy/src/grust-benchmark-runs/F2a-native-024-run01/cit-Patents-int64-c1/result-call1/Qbw7bS5v7SIQ6cLa_2.zst.parquet",
+              "fields": [
+                {
+                  "name": "id",
+                  "arrow_type": "int64",
+                  "nullable": false
+                },
+                {
+                  "name": "component",
+                  "arrow_type": "int64",
+                  "nullable": false
+                }
+              ],
+              "footer_rows": 942080,
+              "row_groups": 1,
+              "largest_row_group_uncompressed_bytes": 7859452,
+              "scanned_rows": 942080
+            },
+            {
+              "name": "/Users/alexy/src/grust-benchmark-runs/F2a-native-024-run01/cit-Patents-int64-c1/result-call1/Qbw7bS5v7SIQ6cLa_3.zst.parquet",
+              "fields": [
+                {
+                  "name": "id",
+                  "arrow_type": "int64",
+                  "nullable": false
+                },
+                {
+                  "name": "component",
+                  "arrow_type": "int64",
+                  "nullable": false
+                }
+              ],
+              "footer_rows": 942080,
+              "row_groups": 1,
+              "largest_row_group_uncompressed_bytes": 7862325,
+              "scanned_rows": 942080
+            }
+          ]
+        }
+      ],
+      "memory_admission": {
+        "ordinal_array_budget_bytes": 483170304,
+        "bounded_batch_budget_bytes": 33554432,
+        "largest_actual_row_group_bytes": 7910349,
+        "modeled_managed_bytes": 524635085,
+        "declared_budget_bytes": 25769803776,
+        "scope": "Conservative O(V) array/workspace admission model, not measured RSS/OS peak or cap."
+      },
+      "work_seconds": 3.842068418976851,
+      "closure_seconds": 0.04029847902711481,
+      "own_identity_closure_passed": true,
+      "full_output_oracle_passed": true,
+      "errors": [],
+      "scope": "Full partition comparison to the sealed caller-supplied GF reference; reference engine provenance and waited producer closure are separate root proofs. No official Graphalytics topology/ground-truth or performance verdict."
+    }
+  },
+  "environment": {
+    "python": "3.12.6 (main, Sep 13 2024, 17:29:18) [Clang 15.0.0 (clang-1500.3.9.4)]",
+    "python_executable": "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-int64-build01/venv/bin/python",
+    "extension_source": "4b88c8fb4504ab1d2a896c9e49e4a09df4905bbb",
+    "native_runtime_source": "9f0aa7d2a50f1258544d37c05dd19b3ff3d915b3",
+    "binary": {
+      "path": "/Volumes/Apo/graph-tests/results/sem-review-20261001/native-optimized-build01/sail-target/release/sail",
+      "bytes": 150472188,
+      "sha256": "ee80ac3cf9d028639561f3cf32435985192719d629807fcf6a368324fa84946e"
+    },
+    "wheel": {
+      "path": "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-int64-build01/wheels/sail_nutmeg-0.1.0-cp312-cp312-macosx_10_12_x86_64.whl",
+      "bytes": 15680368,
+      "sha256": "347c41034d2eae6b00e84633d3adf20ddc69a41e4665743b29d8b1cd04b5673b"
+    },
+    "controlled_environment": {
+      "PYTHONHOME": "/Users/alexy/.asdf/installs/python/3.12.6",
+      "PYTHONPATH": "/Volumes/Apo/graph-tests/results/sem-review-20261001/F2a-native-int64-build01/venv/lib/python3.12/site-packages",
+      "DYLD_LIBRARY_PATH": "/Users/alexy/.asdf/installs/python/3.12.6/lib",
+      "SAIL_EXPERIMENTAL_EXTENSIONS": "1",
+      "SAIL_MODE": "local",
+      "SAIL_EXECUTION__DEFAULT_PARALLELISM": "16",
+      "SAIL_RUNTIME__MEMORY_POOL__TYPE": "greedy",
+      "SAIL_RUNTIME__MEMORY_POOL__GREEDY__MAX_SIZE": "32212254720",
+      "SAIL_NUTMEG_MEMORY_BYTES": "23622320128",
+      "NUTMEG_MEMORY_BYTES": "23622320128",
+      "NUTMEG_WORKERS": "16",
+      "SAIL_GRAPH_UTILS_ROOT": "file:///Users/alexy/src/grust-benchmark-runs/F2a-native-024-run01/cit-Patents-int64-c1/staging",
+      "TOKIO_WORKER_THREADS": "16",
+      "RAYON_NUM_THREADS": "16",
+      "TMPDIR": "/Users/alexy/src/grust-benchmark-runs/F2a-native-024-run01/cit-Patents-int64-c1/temporary",
+      "RUST_LOG": "warn"
+    },
+    "scope": "Shared uncapped native host, n=1 per condition; no Sem resource/CSR-work parity. Exclusive four phases unavailable; observed spans are not a subtractive decomposition."
+  }
+}

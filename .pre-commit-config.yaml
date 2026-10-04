@@ -1,0 +1,16 @@
+# Pre-commit hooks. Install once per clone:
+#
+#     pip install pre-commit   # or: uv tool install pre-commit, brew install pre-commit
+#     pre-commit install
+#
+# Run on demand: `pre-commit run --files <paths>`, or `pre-commit run --all-files`.
+repos:
+  # Prettier formats Markdown so that tables are aligned in the source and
+  # readable in a diff without rendering. Prose is not rewrapped
+  # (`proseWrap: preserve` in .prettierrc.yaml). Generated and recorded files
+  # are excluded in .prettierignore.
+  - repo: https://github.com/rbubley/mirrors-prettier
+    rev: v3.9.9
+    hooks:
+      - id: prettier
+        types: [markdown]

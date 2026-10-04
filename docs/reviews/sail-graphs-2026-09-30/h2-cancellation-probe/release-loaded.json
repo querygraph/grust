@@ -1,0 +1,32 @@
+{
+  "captured_utc": "2026-09-30T15:14:46.207116+00:00",
+  "host": "Capitola.local",
+  "logical_cpus": 10,
+  "load": "one yes process per logical CPU, all stdout /dev/null; terminated and reaped in finally",
+  "binary": "/private/tmp/grust-sail-review-h2-target/release/h2-cancellation-review-probe",
+  "build_command": "CARGO_INCREMENTAL=0 CARGO_TARGET_DIR=/private/tmp/grust-sail-review-h2-target cargo build --release --locked --offline --manifest-path docs/reviews/sail-graphs-2026-09-30/h2-cancellation-probe/Cargo.toml",
+  "runs": [
+    {
+      "trial": 1,
+      "exit_code": 0,
+      "stdout": "PASS: 1100 accepted response-body cancellations observed by peer, then another response, on one connection; local error-reset cap=1 on both peers\n",
+      "stderr": "",
+      "load_processes_alive": 10
+    },
+    {
+      "trial": 2,
+      "exit_code": 0,
+      "stdout": "PASS: 1100 accepted response-body cancellations observed by peer, then another response, on one connection; local error-reset cap=1 on both peers\n",
+      "stderr": "",
+      "load_processes_alive": 10
+    },
+    {
+      "trial": 3,
+      "exit_code": 0,
+      "stdout": "PASS: 1100 accepted response-body cancellations observed by peer, then another response, on one connection; local error-reset cap=1 on both peers\n",
+      "stderr": "",
+      "load_processes_alive": 10
+    }
+  ],
+  "scope": "h2 0.4.15 cancellation semantics only; not a Sail concurrency gate or timing claim"
+}

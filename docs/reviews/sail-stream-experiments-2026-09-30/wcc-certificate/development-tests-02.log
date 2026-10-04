@@ -1,0 +1,22 @@
+...........F............................................................ [ 97%]
+..                                                                       [100%]
+=================================== FAILURES ===================================
+_____ test_reference_fixtures_remain_exact_unless_certificate_is_requested _____
+
+    def test_reference_fixtures_remain_exact_unless_certificate_is_requested():
+        configuration = json.loads(Path(__file__).with_name('matrix.example.json').read_text())
+        uncapped = [c for c in plan_cells(configuration) if c['expected_outcome'] != 'nonconverged']
+        assert {c['expected_outcome'] for c in uncapped} == {'passed'}
+        configuration['extra_cell_args'] = ['--ranking-validation=certificate']
+        cells = [c for c in plan_cells(configuration) if c['expected_outcome'] != 'nonconverged']
+>       assert {c['expected_outcome'] for c in cells if c['algorithm'] == 'wcc'} == {'partially_verified'}
+E       AssertionError: assert {'partially_v...ed', 'passed'} == {'partially_verified'}
+E         
+E         Extra items in the left set:
+E         'passed'
+E         Use -v to get more diff
+
+examples/extensions/benchmarks/test_validation_outcome.py:81: AssertionError
+=========================== short test summary info ============================
+FAILED examples/extensions/benchmarks/test_validation_outcome.py::test_reference_fixtures_remain_exact_unless_certificate_is_requested
+1 failed, 73 passed in 1.97s

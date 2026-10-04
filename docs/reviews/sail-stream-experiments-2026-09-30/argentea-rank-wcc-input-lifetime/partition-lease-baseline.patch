@@ -1,0 +1,471 @@
+diff --git a/examples/extensions/argentea/tests/partition_lease.rs b/examples/extensions/argentea/tests/partition_lease.rs
+new file mode 100644
+index 000000000..21ba51e26
+--- /dev/null
++++ b/examples/extensions/argentea/tests/partition_lease.rs
+@@ -0,0 +1,109 @@
++//! Sole-owner teardown must retain the host lease through admitted storage.
++#[path = "delta_support/mod.rs"]
++mod support;
++use grust_procedures::{ExecutionContext, ExecutionLimits};
++use sail_argentea_core::*;
++use sail_native_resource_ffi::MemoryLease;
++use std::{
++    any::Any,
++    sync::{
++        Arc,
++        atomic::{AtomicUsize, Ordering},
++    },
++};
++const LIMIT: usize = 16 << 20;
++struct Probe(ExecutionContext, Arc<AtomicUsize>);
++impl Drop for Probe {
++    fn drop(&mut self) {
++        self.1
++            .store(self.0.usage().unwrap().live_bytes, Ordering::SeqCst);
++    }
++}
++fn check(kind: &str, build: impl FnOnce(Resources) -> Box<dyn Any>) {
++    let usage = ExecutionContext::new(ExecutionLimits {
++        memory_bytes: LIMIT,
++        work_units: usize::MAX,
++        batch_rows: 16,
++        deadline: None,
++    })
++    .unwrap();
++    let at_release = Arc::new(AtomicUsize::new(usize::MAX));
++    let lease = MemoryLease::new(
++        Arc::new(Probe(usage.clone(), at_release.clone())),
++        LIMIT as u64,
++    );
++    // Only the returned partition owns Resources; the callback's context is an
++    // accounting observer, not another host-lease owner.
++    let part = build(Resources::new(usage.clone(), lease).unwrap());
++    assert_eq!(at_release.load(Ordering::SeqCst), usize::MAX);
++    assert!(usage.usage().unwrap().live_bytes > 0);
++    drop(part);
++    println!(
++        "PARTITION_SUCCESSFUL_DROP kind={kind} admitted_at_lease_release={} final_live_bytes={}",
++        at_release.load(Ordering::SeqCst),
++        usage.usage().unwrap().live_bytes
++    );
++    assert_eq!(usage.usage().unwrap().live_bytes, 0);
++    assert_eq!(at_release.load(Ordering::SeqCst), 0);
++}
++#[test]
++fn bfs_successful_sole_owner_retains_host_lease_through_storage_drop() {
++    check("bfs", |r| {
++        Box::new(
++            BfsPartition::build(
++                support::operation(1, 3),
++                0,
++                7,
++                &[2, 0, 1],
++                &[(0, 1), (0, 1), (1, 2)],
++                BfsOptions {
++                    source: 0,
++                    algorithm: BfsAlgorithm::Frontier,
++                    max_levels: 8,
++                    alpha: 14,
++                    beta: 24,
++                },
++                r,
++            )
++            .unwrap(),
++        )
++    });
++}
++#[test]
++fn sssp_successful_sole_owner_retains_host_lease_through_storage_drop() {
++    check("sssp", |r| {
++        Box::new(
++            SsspPartition::build(
++                support::operation(1, 3),
++                0,
++                7,
++                &[2, 0, 1],
++                &[(0, 1, 1.0), (0, 1, 0.5), (1, 2, 0.0)],
++                SsspOptions {
++                    source: 0,
++                    algorithm: SsspAlgorithm::DeltaStar,
++                    max_rounds: 8,
++                    delta: 1.0,
++                },
++                r,
++            )
++            .unwrap(),
++        )
++    });
++}
++#[test]
++fn residual_pagerank_successful_sole_owner_retains_host_lease_through_storage_drop() {
++    check("residual_pagerank", |r| {
++        Box::new(
++            DeltaPartition::build(
++                support::operation(1, 3),
++                0,
++                &[2, 0, 1],
++                &[(0, 1), (0, 1), (1, 2)],
++                support::options(),
++                r,
++            )
++            .unwrap(),
++        )
++    });
++}
+diff --git a/examples/extensions/argentea/tests/rank_wcc_lease.rs b/examples/extensions/argentea/tests/rank_wcc_lease.rs
+new file mode 100644
+index 000000000..cb28f3ba0
+--- /dev/null
++++ b/examples/extensions/argentea/tests/rank_wcc_lease.rs
+@@ -0,0 +1,91 @@
++//! A successful partition must keep the host lease until native storage drops.
++#[path = "delta_support/mod.rs"]
++mod support;
++use grust_procedures::{ExecutionContext, ExecutionLimits};
++use sail_argentea_core::*;
++use sail_native_resource_ffi::MemoryLease;
++use std::sync::{
++    Arc,
++    atomic::{AtomicUsize, Ordering},
++};
++
++const LIMIT: usize = 16 << 20;
++struct LeaseProbe(ExecutionContext, Arc<AtomicUsize>);
++impl Drop for LeaseProbe {
++    fn drop(&mut self) {
++        self.1
++            .store(self.0.usage().unwrap().live_bytes, Ordering::SeqCst);
++    }
++}
++fn resources() -> (Resources, ExecutionContext, Arc<AtomicUsize>) {
++    let usage = ExecutionContext::new(ExecutionLimits {
++        memory_bytes: LIMIT,
++        work_units: usize::MAX,
++        batch_rows: 16,
++        deadline: None,
++    })
++    .unwrap();
++    let at_release = Arc::new(AtomicUsize::new(usize::MAX));
++    let lease = MemoryLease::new(
++        Arc::new(LeaseProbe(usage.clone(), at_release.clone())),
++        LIMIT as u64,
++    );
++    (
++        Resources::new(usage.clone(), lease).unwrap(),
++        usage,
++        at_release,
++    )
++}
++fn wcc_successful_drop(algorithm: WccAlgorithm) {
++        let (resources, usage, at_release) = resources();
++        // Move the sole Resources owner: an external clone would mask ordering.
++        let part = WccPartition::build(
++            support::operation(1, 3),
++            0,
++            7,
++            &[2, 0, 1],
++            &[(0, 1), (0, 1), (1, 2)],
++            WccOptions {
++                algorithm,
++                seed: 42,
++                max_rounds: 16,
++            },
++            resources,
++        )
++        .unwrap();
++        assert_eq!(part.state_rows().count(), 3);
++        assert_eq!(at_release.load(Ordering::SeqCst), usize::MAX);
++        drop(part);
++        println!(
++            "WCC_SUCCESSFUL_DROP algorithm={algorithm:?} bytes_at_lease_release={} final_live_bytes={}",
++            at_release.load(Ordering::SeqCst),
++            usage.usage().unwrap().live_bytes
++        );
++        assert_eq!(usage.usage().unwrap().live_bytes, 0);
++        assert_eq!(at_release.load(Ordering::SeqCst), 0);
++}
++#[test]
++fn successful_wcc_reference_sole_owner_releases_storage_before_host_lease() {
++    wcc_successful_drop(WccAlgorithm::Reference);
++}
++#[test]
++fn successful_wcc_star_sole_owner_releases_storage_before_host_lease() {
++    wcc_successful_drop(WccAlgorithm::StarContraction);
++}
++#[test]
++fn successful_pagerank_sole_owner_releases_storage_before_host_lease() {
++    let (resources, usage, at_release) = resources();
++    let part = PageRankPartition::build(
++        support::operation(1, 3),
++        0,
++        &[2, 0, 1],
++        &[(0, 1), (0, 1), (1, 2)],
++        resources,
++    )
++    .unwrap();
++    assert_eq!(part.ranks().count(), 3);
++    assert_eq!(at_release.load(Ordering::SeqCst), usize::MAX);
++    drop(part);
++    assert_eq!(usage.usage().unwrap().live_bytes, 0);
++    assert_eq!(at_release.load(Ordering::SeqCst), 0);
++}
+diff --git a/examples/extensions/nutmeg/src/argentea/tests.rs b/examples/extensions/nutmeg/src/argentea/tests.rs
+index 7ab5936cd..28c2fb749 100644
+--- a/examples/extensions/nutmeg/src/argentea/tests.rs
++++ b/examples/extensions/nutmeg/src/argentea/tests.rs
+@@ -1,5 +1,7 @@
+ use super::*;
+ mod controls;
++pub(super) mod initialization;
++pub(super) mod lifetime_allocations;
+ use arrow::{
+     array::{Array, ArrayRef, Float64Array, Int64Array},
+     datatypes::{DataType, Field, Schema},
+diff --git a/examples/extensions/nutmeg/src/argentea/tests/initialization.rs b/examples/extensions/nutmeg/src/argentea/tests/initialization.rs
+new file mode 100644
+index 000000000..700a3d126
+--- /dev/null
++++ b/examples/extensions/nutmeg/src/argentea/tests/initialization.rs
+@@ -0,0 +1,75 @@
++//! Production initialization: split batches, retained CSR arcs and raw release.
++use super::*;
++
++pub(in crate::argentea) async fn inputs(
++    ctx: &SessionContext,
++    n: usize,
++) -> Vec<Arc<dyn ExecutionPlan>> {
++    let nodes = memory(
++        ctx,
++        vec![
++            (0..n)
++                .collect::<Vec<_>>()
++                .chunks(n / 2)
++                .map(|chunk| {
++                    ints(
++                        &["id", "owner"],
++                        &chunk
++                            .iter()
++                            .map(|&i| vec![i as i64 * 3, 0])
++                            .collect::<Vec<_>>(),
++                    )
++                })
++                .collect(),
++        ],
++    )
++    .await;
++    let edges = memory(
++        ctx,
++        vec![vec![
++            ints(&["src", "dst", "owner"], &[vec![0, 3, 0], vec![0, 3, 0]]),
++            ints(&["src", "dst", "owner"], &[vec![3, 6, 0], vec![6, 6, 0]]),
++        ]],
++    )
++    .await;
++    vec![nodes, edges]
++}
++#[tokio::test]
++async fn pagerank_initialization_releases_raw_vertex_storage_before_ranks() {
++    let mut observed = vec![];
++    for n in [1_024, 65_536] {
++        let ctx = SessionContext::new();
++        let drops = Arc::new(AtomicUsize::new(0));
++        let state = worker(7, 32 << 20, &drops);
++        let request = request(request::Verb::Init, 0, 3, n as u64);
++        let op = state.configure(&request).unwrap();
++        let inputs = inputs(&ctx, n).await;
++        let usage = state.resources.execution.clone();
++        let before = usage.usage().unwrap().live_bytes;
++        let (result, counts) = lifetime_allocations::measure(
++            n * 8,
++            input::initialize(&state, &request, op, 0, &inputs, ctx.task_ctx()),
++        )
++        .await;
++        let part = result.unwrap();
++        assert_eq!(part.ranks().count(), n);
++        assert!(
++            part.ranks()
++                .all(|(_, value)| value.to_bits() == (1.0 / n as f64).to_bits())
++        );
++        // The raw final-capacity vertices, CSR IDs, and ranks all allocate n*8.
++        // The old path keeps all three live; the split path holds at most two.
++        assert_eq!(counts.calls, 3);
++        observed.push((n, counts.peak));
++        println!(
++            "NATIVE_RANK_INPUT_LIFETIME n={n} matched_allocations={} peak_simultaneous_vertex_buffers={}",
++            counts.calls, counts.peak
++        );
++        drop(part);
++        assert_eq!(usage.usage().unwrap().live_bytes, before);
++        drop(state);
++        assert_eq!(usage.usage().unwrap().live_bytes, 0);
++        assert_eq!(drops.load(Ordering::SeqCst), 1);
++    }
++    assert_eq!(observed, vec![(1_024, 2), (65_536, 2)]);
++}
+diff --git a/examples/extensions/nutmeg/src/argentea/tests/lifetime_allocations.rs b/examples/extensions/nutmeg/src/argentea/tests/lifetime_allocations.rs
+new file mode 100644
+index 000000000..23dce247b
+--- /dev/null
++++ b/examples/extensions/nutmeg/src/argentea/tests/lifetime_allocations.rs
+@@ -0,0 +1,98 @@
++//! Test-only lifetime tracking for exactly-sized raw/CSR/state vertex buffers.
++//! Thread-local current-thread async controls exclude prebuilt Arrow fixtures.
++use std::{
++    alloc::{GlobalAlloc, Layout, System},
++    cell::Cell,
++    future::Future,
++};
++
++#[derive(Clone, Copy, Debug)]
++pub(in crate::argentea) struct Counts {
++    wanted: usize,
++    pointers: [usize; 16],
++    pub calls: usize,
++    pub peak: usize,
++    overflow: bool,
++}
++thread_local! { static ACTIVE: Cell<Option<Counts>> = const { Cell::new(None) }; }
++fn event(remove: usize, add: usize, bytes: usize) {
++    let _ = ACTIVE.try_with(|active| {
++        if let Some(mut c) = active.get() {
++            if remove != 0 {
++                for pointer in &mut c.pointers {
++                    if *pointer == remove {
++                        *pointer = 0;
++                    }
++                }
++            }
++            if add != 0 && bytes == c.wanted {
++                c.calls += 1;
++                if let Some(pointer) = c.pointers.iter_mut().find(|p| **p == 0) {
++                    *pointer = add;
++                } else {
++                    c.overflow = true;
++                }
++                c.peak = c.peak.max(c.pointers.iter().filter(|p| **p != 0).count());
++            }
++            active.set(Some(c));
++        }
++    });
++}
++struct Tracked;
++#[global_allocator]
++static ALLOCATOR: Tracked = Tracked;
++// SAFETY: Every request delegates to System with its original layout/pointer.
++// Recording uses allocation-free thread-local Cells and a fixed pointer array.
++unsafe impl GlobalAlloc for Tracked {
++    unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
++        let p = unsafe { System.alloc(layout) };
++        event(0, p as usize, layout.size());
++        p
++    }
++    unsafe fn alloc_zeroed(&self, layout: Layout) -> *mut u8 {
++        let p = unsafe { System.alloc_zeroed(layout) };
++        event(0, p as usize, layout.size());
++        p
++    }
++    unsafe fn dealloc(&self, p: *mut u8, layout: Layout) {
++        event(p as usize, 0, 0);
++        unsafe { System.dealloc(p, layout) };
++    }
++    unsafe fn realloc(&self, p: *mut u8, layout: Layout, bytes: usize) -> *mut u8 {
++        let next = unsafe { System.realloc(p, layout, bytes) };
++        if !next.is_null() {
++            event(p as usize, next as usize, bytes);
++        }
++        next
++    }
++}
++pub(in crate::argentea) async fn measure<F: Future>(
++    wanted: usize,
++    future: F,
++) -> (F::Output, Counts) {
++    struct Reset;
++    impl Drop for Reset {
++        fn drop(&mut self) {
++            ACTIVE.with(|active| active.set(None));
++        }
++    }
++    ACTIVE.with(|active| {
++        assert!(active.get().is_none());
++        active.set(Some(Counts {
++            wanted,
++            pointers: [0; 16],
++            calls: 0,
++            peak: 0,
++            overflow: false,
++        }));
++    });
++    let reset = Reset;
++    let output = future.await;
++    let counts = ACTIVE.with(|active| active.get().unwrap());
++    drop(reset);
++    assert!(
++        !counts.overflow,
++        "lifetime probe exhausted its fixed pointer slots"
++    );
++    (output, counts)
++}
+diff --git a/examples/extensions/nutmeg/src/argentea/wcc/tests.rs b/examples/extensions/nutmeg/src/argentea/wcc/tests.rs
+index 0a467416c..939c8e8eb 100644
+--- a/examples/extensions/nutmeg/src/argentea/wcc/tests.rs
++++ b/examples/extensions/nutmeg/src/argentea/wcc/tests.rs
+@@ -431,3 +431,5 @@ async fn signed_extremes_survive_wcc_wire_and_retained_result_slice() {
+ 
+ #[path = "tests/resource_failure.rs"]
+ mod resource_failure;
++
++mod initialization;
+diff --git a/examples/extensions/nutmeg/src/argentea/wcc/tests/initialization.rs b/examples/extensions/nutmeg/src/argentea/wcc/tests/initialization.rs
+new file mode 100644
+index 000000000..fcc3a73ec
+--- /dev/null
++++ b/examples/extensions/nutmeg/src/argentea/wcc/tests/initialization.rs
+@@ -0,0 +1,46 @@
++//! Production WCC initialization releases raw vertex buffers before roots.
++use super::super::super::tests::{initialization::inputs, lifetime_allocations};
++use super::*;
++async fn initialize(algorithm: &str) {
++    let mut observed = vec![];
++    for n in [1_024, 65_536] {
++        let ctx = SessionContext::new();
++        let drops = Arc::new(AtomicUsize::new(0));
++        let state = WccState::new(worker(7, 32 << 20, &drops)).unwrap();
++        let request = request(Verb::Init, 0, 3, n as u64, algorithm);
++        let op = state.configure(&request).unwrap();
++        let inputs = inputs(&ctx, n).await;
++        let usage = state.base.resources.execution.clone();
++        let before = usage.usage().unwrap().live_bytes;
++        let (result, counts) = lifetime_allocations::measure(
++            n * 8,
++            input::initialize(&state, &request, op, 0, &inputs, ctx.task_ctx()),
++        )
++        .await;
++        let part = result.unwrap();
++        assert_eq!(part.state_rows().count(), n);
++        assert!(part.state_rows().all(|row| row.id == row.component));
++        assert_eq!(part.collecting_phase(), Some(0));
++        assert_eq!(counts.calls, 3);
++        observed.push((n, counts.peak));
++        println!(
++            "NATIVE_WCC_INPUT_LIFETIME algorithm={algorithm} n={n} matched_allocations={} peak_simultaneous_vertex_buffers={}",
++            counts.calls, counts.peak
++        );
++        drop(part);
++        assert_eq!(usage.usage().unwrap().live_bytes, before);
++        drop(state);
++        assert_eq!(usage.usage().unwrap().live_bytes, 0);
++        assert_eq!(drops.load(Ordering::SeqCst), 1);
++    }
++    assert_eq!(observed, vec![(1_024, 2), (65_536, 2)]);
++}
++
++#[tokio::test]
++async fn wcc_reference_initialization_releases_raw_vertex_storage_before_roots() {
++    initialize("wcc_reference").await;
++}
++#[tokio::test]
++async fn wcc_star_initialization_releases_raw_vertex_storage_before_roots() {
++    initialize("wcc_star").await;
++}

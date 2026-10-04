@@ -1,0 +1,45 @@
+diff --git a/crates/sail-session/proto/gf/utils/v1/utils.proto b/crates/sail-session/proto/gf/utils/v1/utils.proto
+new file mode 100644
+index 0000000000000000000000000000000000000000..d3829bc7aa524f1639b1f5f0e8d5c1b8fd15a273
+--- /dev/null
++++ b/crates/sail-session/proto/gf/utils/v1/utils.proto
+@@ -0,0 +1,39 @@
++syntax = "proto3";
++package gf.utils.v1;
++
++// Zero-input Relation.extension, collected eagerly. This is an experimental
++// contract; protocol_version in every receipt is 1. No effects during analysis.
++message Request {
++  oneof verb {
++    Ping ping = 1;
++    Exists exists = 2;
++    Ls ls = 3;
++    Rm rm = 4;
++    Mkdir mkdir = 5;
++  }
++}
++message Ping { string client_version = 1; }
++message Exists { string path = 1; string token = 2; }
++message Ls { string path = 1; uint32 limit = 2; string token = 3; }
++message Rm { string path = 1; string token = 2; }
++// Empty root uses the configured root. A retry with the same UUID returns the
++// same run within this server session; an already released run cannot reopen.
++message Mkdir { string root = 1; string request_id = 2; }
++
++// Response is Arrow, not a protobuf Receipt. All verbs return the same schema:
++// kind: utf8 non-null, path: utf8 nullable, size: int64 nullable,
++// value: bool nullable, count: int64 nullable, capabilities: utf8 nullable,
++// token: utf8 nullable, truncated: bool non-null, engine: utf8 non-null,
++// protocol_version: int32 non-null, lease_seconds: int64 non-null.
++// Ping: kind=pong, path=root, capabilities=JSON string array.
++// Mkdir: kind=mkdir, path=run URI, token=opaque capability.
++// Exists: kind=exists, path=request path, value=prefix exists.
++// Rm: kind=rm, path=request path, count=objects removed; repeated remove is safe.
++// Ls: kind=entry rows (path,size), followed by exactly one kind=ls row with count
++// and truncated. limit is 1..1000, default 100; internal ownership markers hidden.
++// lease_seconds=0: ownership lasts for this server session. Explicit Rm(run)
++// releases it; session expiration/close requests job shutdown, then attempts
++// best-effort cleanup with bounded storage-error retries. Detached writers are
++// not fully joined; interrupted writes may require operator cleanup of late files.
++// A URI under the configured root alone is NOT authority: all FS verbs require
++// the matching run token in the same session. Root deletion is always rejected.

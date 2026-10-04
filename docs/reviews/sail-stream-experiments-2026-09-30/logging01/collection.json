@@ -1,0 +1,25 @@
+{
+  "utc": "2026-09-30T16:46:40.232864+00:00",
+  "command": [
+    "/usr/local/bin/docker",
+    "--context",
+    "colima-sail-gate",
+    "run",
+    "--rm",
+    "--mount",
+    "type=volume,source=sail-extension-targets,target=/targets,readonly",
+    "--entrypoint",
+    "/targets/graph-nuts-ffcfbd569/venv/bin/python",
+    "sha256:f3518d652fbea8b9b9f9ebf9849277ca3bd39d0c21bb2c6e36fbaeaa2dc2678e",
+    "-I",
+    "-c",
+    "\nfrom pathlib import Path\nimport sys,tarfile\np=Path(sys.argv[1])\nwith tarfile.open(fileobj=sys.stdout.buffer,mode='w|') as t:\n for f in sorted(p.iterdir()):\n  if f.is_file() and not f.is_symlink(): t.add(f,arcname=f.name,recursive=False)\n",
+    "/targets/sail-stream-experiments-20260930/logging01/cells/stream-log01-r1-scale24-pecan-bfs-frontier"
+  ],
+  "returncode": 0,
+  "stderr": "",
+  "bytes": 11755520,
+  "sha256": "65e6000211bd2a123ac4c99ccfeac007df7d371cd31d682a68f8318ae2ed33d7",
+  "full_artifact_path": "/targets/sail-stream-experiments-20260930/logging01/cells/stream-log01-r1-scale24-pecan-bfs-frontier",
+  "retention": "all full artifacts remain in sail-extension-targets volume"
+}

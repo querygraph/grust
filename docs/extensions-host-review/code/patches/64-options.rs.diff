@@ -1,0 +1,36 @@
+diff --git a/crates/sail-session/src/session_manager/actor/options.rs b/crates/sail-session/src/session_manager/actor/options.rs
+index 5956d741b427a32820dba4c34b6a3ae148cd4e1e..44aa034ee76de1c67a487cfd40ab090de5980f72 100644
+--- a/crates/sail-session/src/session_manager/actor/options.rs
++++ b/crates/sail-session/src/session_manager/actor/options.rs
+@@ -4,10 +4,12 @@ use sail_common::runtime::RuntimeHandle;
+ use sail_execution::driver::DriverGateway;
+ use sail_telemetry::events::SystemEventReporter;
+ 
++use crate::runtime::MemoryResourceDomain;
+ use crate::session_factory::{ServerSessionInfo, SessionFactory, SessionJobRunnerFactory};
+ 
+ #[readonly::make]
+ pub struct SessionManagerOptions {
++    pub resource_domain: Option<MemoryResourceDomain>,
+     pub session_timeout: Duration,
+     pub runtime: RuntimeHandle,
+     /// The application configuration options as key-value pairs,
+@@ -25,12 +27,18 @@ pub struct SessionManagerComponents {
+ impl SessionManagerOptions {
+     pub fn new(runtime: RuntimeHandle) -> Self {
+         Self {
++            resource_domain: None,
+             session_timeout: Duration::MAX,
+             runtime,
+             options: Vec::new(),
+         }
+     }
+ 
++    pub fn with_resource_domain(mut self, domain: MemoryResourceDomain) -> Self {
++        self.resource_domain = Some(domain);
++        self
++    }
++
+     pub fn with_session_timeout(mut self, timeout: Duration) -> Self {
+         self.session_timeout = timeout;
+         self

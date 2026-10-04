@@ -1,0 +1,108 @@
+{
+  "started_utc": "2026-10-01T01:46:51.583118+00:00",
+  "request_sha256": "9a0f956c78c0583489c3b456ef2b276a17049fa31091ba6f922b4dcdc7a8bc65",
+  "remote_bundle": "/Users/alexy/src/sail-extensions-gates/stream-experiments-20260930/physical-output-log03-69585c14f5ef4408-v4-bundle",
+  "remote_output": "/Users/alexy/src/sail-extensions-gates/stream-experiments-20260930/physical-output-log03-69585c14f5ef4408-v4-evidence",
+  "commands": [
+    {
+      "label": "remote-new-directory",
+      "command": [
+        "ssh",
+        "morrobay",
+        "/usr/local/bin/python3 -I -B -c 'import os; from pathlib import Path; b=Path('\"'\"'/Users/alexy/src/sail-extensions-gates/stream-experiments-20260930/physical-output-log03-69585c14f5ef4408-v4-bundle'\"'\"'); o=Path('\"'\"'/Users/alexy/src/sail-extensions-gates/stream-experiments-20260930/physical-output-log03-69585c14f5ef4408-v4-evidence'\"'\"'); assert not b.exists() and not o.exists(); b.mkdir(mode=0o755); b.chmod(0o755)'"
+      ],
+      "started_utc": "2026-10-01T01:46:51.583740+00:00",
+      "finished_utc": "2026-10-01T01:46:51.963451+00:00",
+      "returncode": 0,
+      "stdout": {
+        "path": "remote-new-directory.stdout",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "path": "remote-new-directory.stderr",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "label": "stage",
+      "command": [
+        "scp",
+        "-p",
+        "/private/tmp/physical-log03-v4-bundle/audit_output.py",
+        "/private/tmp/physical-log03-v4-bundle/closed-audit.json",
+        "/private/tmp/physical-log03-v4-bundle/configuration.json",
+        "/private/tmp/physical-log03-v4-bundle/container_check.py",
+        "/private/tmp/physical-log03-v4-bundle/producer-receipt.json",
+        "/private/tmp/physical-log03-v4-bundle/request.json",
+        "/private/tmp/physical-log03-v4-bundle/supervise.py",
+        "morrobay:/Users/alexy/src/sail-extensions-gates/stream-experiments-20260930/physical-output-log03-69585c14f5ef4408-v4-bundle/"
+      ],
+      "started_utc": "2026-10-01T01:46:51.963892+00:00",
+      "finished_utc": "2026-10-01T01:46:52.632490+00:00",
+      "returncode": 0,
+      "stdout": {
+        "path": "stage.stdout",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "path": "stage.stderr",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "label": "dry",
+      "command": [
+        "ssh",
+        "morrobay",
+        "/usr/local/bin/python3 -I -B /Users/alexy/src/sail-extensions-gates/stream-experiments-20260930/physical-output-log03-69585c14f5ef4408-v4-bundle/supervise.py --request /Users/alexy/src/sail-extensions-gates/stream-experiments-20260930/physical-output-log03-69585c14f5ef4408-v4-bundle/request.json --request-sha256 9a0f956c78c0583489c3b456ef2b276a17049fa31091ba6f922b4dcdc7a8bc65 --output /Users/alexy/src/sail-extensions-gates/stream-experiments-20260930/physical-output-log03-69585c14f5ef4408-v4-evidence"
+      ],
+      "started_utc": "2026-10-01T01:46:52.633006+00:00",
+      "finished_utc": "2026-10-01T01:46:52.988781+00:00",
+      "returncode": 0,
+      "stdout": {
+        "path": "dry.stdout",
+        "bytes": 1576,
+        "sha256": "d5ee6f731b5354e2c52973fda2eaf391b84dfc4159b18e13ead26711192745dd"
+      },
+      "stderr": {
+        "path": "dry.stderr",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "label": "launch",
+      "command": [
+        "ssh",
+        "morrobay",
+        "/usr/local/bin/python3 -I -B /Users/alexy/src/sail-extensions-gates/stream-experiments-20260930/physical-output-log03-69585c14f5ef4408-v4-bundle/supervise.py --request /Users/alexy/src/sail-extensions-gates/stream-experiments-20260930/physical-output-log03-69585c14f5ef4408-v4-bundle/request.json --request-sha256 9a0f956c78c0583489c3b456ef2b276a17049fa31091ba6f922b4dcdc7a8bc65 --output /Users/alexy/src/sail-extensions-gates/stream-experiments-20260930/physical-output-log03-69585c14f5ef4408-v4-evidence --execute-after-closure"
+      ],
+      "started_utc": "2026-10-01T01:46:52.989460+00:00",
+      "finished_utc": "2026-10-01T01:46:53.423814+00:00",
+      "returncode": 0,
+      "stdout": {
+        "path": "launch.stdout",
+        "bytes": 164,
+        "sha256": "c2229b2c44c59f4105e2a9d87d87d2cd6a83f5d236ece6cdfc8fee328f9229c0"
+      },
+      "stderr": {
+        "path": "launch.stderr",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    }
+  ],
+  "launched": true,
+  "driver_sha256": "5a1e52b6844b23b47e3a2e46b94c6ab7f3b82f4019ece9bdeec0ab1f320a7736",
+  "driver_source": "import hashlib\nimport json\nfrom pathlib import Path\nimport shlex\nimport subprocess\nfrom datetime import datetime, timezone\n\nEXP = Path('/Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30')\nBUNDLE = Path('/private/tmp/physical-log03-v4-bundle')\nOUT = EXP / 'logging03-physical-execution' / 'attempt03'\nDIGEST = '9a0f956c78c0583489c3b456ef2b276a17049fa31091ba6f922b4dcdc7a8bc65'\nROOT = '/Users/alexy/src/sail-extensions-gates/stream-experiments-20260930'\nREMOTE_BUNDLE = ROOT + '/physical-output-log03-69585c14f5ef4408-v4-bundle'\nREMOTE_OUTPUT = ROOT + '/physical-output-log03-69585c14f5ef4408-v4-evidence'\n\ndef utc():\n    return datetime.now(timezone.utc).isoformat()\n\ndef sha(p):\n    with p.open('rb') as f:\n        return hashlib.file_digest(f, 'sha256').hexdigest()\n\ndef write(p, value):\n    with p.open('x') as f:\n        json.dump(value, f, indent=2, allow_nan=False)\n        f.write('\\n')\n\nassert sha(BUNDLE / 'request.json') == DIGEST\nrequest = json.loads((BUNDLE / 'request.json').read_text())\nassert set(p.name for p in BUNDLE.iterdir()) == set(request['files']) | {'request.json'}\nfor name, pin in request['files'].items():\n    p = BUNDLE / name\n    assert p.is_file() and not p.is_symlink()\n    assert p.stat().st_size == pin['bytes'] and sha(p) == pin['sha256']\nOUT.mkdir(exist_ok=False)\nrecord = dict(started_utc=utc(), request_sha256=DIGEST, remote_bundle=REMOTE_BUNDLE,\n              remote_output=REMOTE_OUTPUT, commands=[], launched=False,\n              driver_sha256=sha(Path(__file__)), driver_source=Path(__file__).read_text())\nwrite(OUT / 'intent.json', record)\n\ndef run(label, args, timeout=120):\n    item = dict(label=label, command=args, started_utc=utc())\n    record['commands'].append(item)\n    with (OUT / (label + '.stdout')).open('xb') as out, (OUT / (label + '.stderr')).open('xb') as err:\n        p = subprocess.run(args, stdout=out, stderr=err, timeout=timeout)\n    item.update(finished_utc=utc(), returncode=p.returncode)\n    for suffix in ('stdout', 'stderr'):\n        file = OUT / (label + '.' + suffix)\n        item[suffix] = dict(path=file.name, bytes=file.stat().st_size, sha256=sha(file))\n    p.check_returncode()\n    return (OUT / (label + '.stdout')).read_text()\n\ntry:\n    setup = 'import os; from pathlib import Path; b=Path(' + repr(REMOTE_BUNDLE) + '); o=Path(' + repr(REMOTE_OUTPUT) + '); assert not b.exists() and not o.exists(); b.mkdir(mode=0o755); b.chmod(0o755)'\n    run('remote-new-directory', ['ssh', 'morrobay', '/usr/local/bin/python3 -I -B -c ' + shlex.quote(setup)])\n    run('stage', ['scp', '-p', *[str(p) for p in sorted(BUNDLE.iterdir())], 'morrobay:' + REMOTE_BUNDLE + '/'])\n    command = ['/usr/local/bin/python3', '-I', '-B', REMOTE_BUNDLE + '/supervise.py', '--request', REMOTE_BUNDLE + '/request.json', '--request-sha256', DIGEST, '--output', REMOTE_OUTPUT]\n    dry = json.loads(run('dry', ['ssh', 'morrobay', shlex.join(command)]))\n    assert dry['prepared_only'] is True\n    write(OUT / 'dry.json', dry)\n    launch = json.loads(run('launch', ['ssh', 'morrobay', shlex.join(command + ['--execute-after-closure'])]))\n    assert launch['launched'] is True and launch['output'] == REMOTE_OUTPUT and type(launch['pid']) is int\n    record.update(launched=True, launch=launch)\nexcept BaseException as error:\n    record['error'] = repr(error)\n    raise\nfinally:\n    record['finished_utc'] = utc()\n    write(OUT / 'staging-launch.json', record)\nprint(json.dumps(dict(launched=record['launched'], launch=record.get('launch'), receipt=str(OUT / 'staging-launch.json'))))\n",
+  "launch": {
+    "pid": 96834,
+    "output": "/Users/alexy/src/sail-extensions-gates/stream-experiments-20260930/physical-output-log03-69585c14f5ef4408-v4-evidence",
+    "launched": true
+  },
+  "finished_utc": "2026-10-01T01:46:53.425969+00:00"
+}

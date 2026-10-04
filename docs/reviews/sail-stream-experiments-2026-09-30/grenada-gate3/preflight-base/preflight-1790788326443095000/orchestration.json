@@ -1,0 +1,85 @@
+{
+  "attach_returncode": 0,
+  "command": [
+    "docker",
+    "--context",
+    "colima-sail-gate",
+    "create",
+    "--name",
+    "sail-grenada-gate3-preflight",
+    "--init",
+    "--cpus",
+    "8",
+    "--cpuset-cpus",
+    "0-7",
+    "--memory",
+    "12g",
+    "--memory-swap",
+    "12g",
+    "--pids-limit",
+    "1024",
+    "--mount",
+    "type=volume,source=sail-extension-targets,target=/targets",
+    "--workdir",
+    "/targets/graph-nuts-ffcfbd569/source",
+    "--env",
+    "PYTHONUNBUFFERED=1",
+    "--entrypoint",
+    "/targets/graph-nuts-ffcfbd569/venv/bin/python",
+    "sha256:f3518d652fbea8b9b9f9ebf9849277ca3bd39d0c21bb2c6e36fbaeaa2dc2678e",
+    "-I",
+    "-c",
+    "import pathlib,subprocess,sys; p=pathlib.Path(sys.argv[1]); assert subprocess.check_output([\"git\",\"-C\",str(p),\"rev-parse\",\"HEAD\"],text=True).strip()==sys.argv[2]; assert not subprocess.check_output([\"git\",\"-C\",str(p),\"status\",\"--porcelain\"],text=True).strip(); assert pathlib.Path(sys.argv[3]).is_file(); print(\"preflight passed\")",
+    "/targets/graph-nuts-ffcfbd569/source",
+    "ffcfbd5690e3f3681ef9ac18ba959bc231cf9f73",
+    "/targets/graph-nuts-ffcfbd569/sail-linux-x86_64-ffcfbd5690e3-release"
+  ],
+  "copied": {},
+  "create": {
+    "returncode": 0,
+    "stderr": "",
+    "stdout": "82d877429ccffdc59e25d2edac4dd89def37151a978a2d1bd4d4463e82b057c5\n"
+  },
+  "finished_utc": "2026-09-30T17:12:23.167596+00:00",
+  "host_load_before": [
+    4.40771484375,
+    4.73779296875,
+    6.5498046875
+  ],
+  "inspect": {
+    "id": "82d877429ccffdc59e25d2edac4dd89def37151a978a2d1bd4d4463e82b057c5",
+    "image": "sha256:f3518d652fbea8b9b9f9ebf9849277ca3bd39d0c21bb2c6e36fbaeaa2dc2678e",
+    "limits": {
+      "CpuPeriod": 0,
+      "CpuQuota": 0,
+      "CpusetCpus": "0-7",
+      "Init": true,
+      "Memory": 12884901888,
+      "MemorySwap": 12884901888,
+      "NanoCpus": 8000000000,
+      "PidMode": "",
+      "PidsLimit": 1024
+    },
+    "state": {
+      "Dead": false,
+      "Error": "",
+      "ExitCode": 0,
+      "FinishedAt": "2026-09-30T17:12:18.950630677Z",
+      "OOMKilled": false,
+      "Paused": false,
+      "Pid": 0,
+      "Restarting": false,
+      "Running": false,
+      "StartedAt": "2026-09-30T17:12:08.363815768Z",
+      "Status": "exited"
+    }
+  },
+  "outer_timeout": false,
+  "remove": {
+    "returncode": 0,
+    "stderr": "",
+    "stdout": "sail-grenada-gate3-preflight\n"
+  },
+  "started_utc": "2026-09-30T17:12:06.443699+00:00",
+  "transport_errors": []
+}

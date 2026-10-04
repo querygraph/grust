@@ -1,0 +1,37 @@
+{
+  "recorded_utc": "2026-09-30T23:24:52.256426+00:00",
+  "outcome": "PASS_BOUNDED_INDEPENDENT_SOURCE_REVIEW",
+  "repository": "querygraph/sail",
+  "base_head": "200d1cf8eb1db5e9057e09e071ebd57391f4b376",
+  "frozen_index_tree": "b1a636462f4dc3a466a2083b5313af5cd632fe4d",
+  "patch_sha256": "cd759ed3d2f9579bab340fa75b8a9388715aace737543dc38c1568a726d4eec3",
+  "source_hashes": {
+    "crates/sail-data-source/src/formats/parquet/mod.rs": "f4e1feb379822ed159b007951447e26e445eeb39e09d9d479b2081b85f807041",
+    "crates/sail-data-source/src/formats/parquet/read.rs": "017bd6da132ed5668801cc5fe4379661fc12afa9ab0a949ae37f6d6b77abc65a",
+    "crates/sail-data-source/src/formats/parquet/read_statistics_tests.rs": "b7e41375d25f8c43207d8ba96d9d7e257ad8f81148bddbc287ad177846d3db5a",
+    "crates/sail-data-source/src/formats/parquet/statistics.rs": "61e53b07e64d5fe0c2ac3ddb13a9bb46d71dc993669cbbad3e7b571d6c74fa6c",
+    "crates/sail-data-source/src/formats/parquet/statistics_tests.rs": "97c9ecaebdc74b162c1b5ea63eb1998419df7e7ec878e645660b0402a4d5094f"
+  },
+  "source_boundary_hashes": {
+    "Cargo.lock": "46121478d56b0d911d4f295f428b2816bd4a976d22265994afc2a5378bb00546",
+    "crates/sail-data-source/src/listing/planner.rs": "086a18633b0132b3dcb6f2c2cadd078c8b0b6076145fabe8285bebb183de8ef3",
+    "/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-datasource-parquet-55.1.0/src/metadata.rs": "1e33328eea576ef409221ddeb25fb93a4b2e5bea7fb3ed10b645f65be9e69e1c",
+    "/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-datasource-parquet-55.1.0/src/source.rs": "688db929dd8198e5fc69e330f0a8d4de619867b7f507459fd5b135153530c961",
+    "/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-datasource-parquet-55.1.0/src/row_group_filter.rs": "ed181ff318d0396ae3c0f1282553a32039e7859899e5f77b88f3d53de89c3217"
+  },
+  "findings": [
+    "No blocking introduced issue found within file-level Parquet statistics scope.",
+    "read.rs126-133 clears only floating min/max in logical file-schema statistics before ListingFileMeta is returned. New helper unwraps dictionary value types recursively, matching DataFusion metadata.rs580-603 dictionary min/max accumulator typing.",
+    "listing/planner.rs453-499 validates cached schema fingerprint/field count, otherwise calls infer_file_meta then inserts its normalized statistics. Normal Sail cache misses and subsequent hits retain cleared bounds; type changes use a distinct schema identity.",
+    "Logical requested schema feeds DataFusion statistics (metadata.rs442-535); clearing float logical types conservatively covers allowed Float32-to-Float64 and Int32-to-Float64 evolution in read.rs246-251.",
+    "Only min_value/max_value are changed. Row/null counts, sizes, distinct_count, sum metadata and nonfloating bounds remain untouched.",
+    "Readback tests use real Parquet bytes, independent Arrow decoder and actual Sail infer_file_meta/scan boundary; dictionary Float16 unsupported outcome is preserved separately, rather than silently skipped or claimed supported."
+  ],
+  "limits": [
+    "Source review only; no independent Rust build, SQL execution, remote workload, benchmark or fresh gate performed by this reviewer. Author gates remain separate.",
+    "Raw footer ordering and row-group/page pruning paths remain unchanged (read.rs130, pinned DataFusion source.rs650/670 and row_group_filter.rs491/497). This is file-level statistics protection, not blanket NaN-safe Parquet filtering/order certification.",
+    "Cache-hit behavior and schema evolution covered by source tracing, not additional executed controls.",
+    "No process-cluster, Linux, PageRank end-to-end, performance or memory qualification follows from this review."
+  ],
+  "remaining_blockers": []
+}

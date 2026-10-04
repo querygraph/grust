@@ -1,0 +1,2584 @@
+.........FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF....FFFFFF...................  [100%]
+=================================== FAILURES ===================================
+_ test_integral_parent_tree_matches_distance_only_certificate_and_oracle[hop_type0-False] _
+
+spark = <pyspark.sql.connect.session.SparkSession object at 0x1108170b0>
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/certificate-witness-fixtures-mn5y6d_r/sql/test_integral_parent_tree_matc0')
+weighted = False, hop_type = DataType(int8)
+
+    @pytest.mark.parametrize('weighted',[False,True])
+    @pytest.mark.parametrize('hop_type',[pa.int8(),pa.int16(),pa.int32(),pa.int64()])
+    def test_integral_parent_tree_matches_distance_only_certificate_and_oracle(spark,tmp_path,weighted,hop_type):
+        from traversal_reference import distances
+        frames=fixture(spark,tmp_path/'data',hop_type=hop_type)
+        v,e,a=frames
+>       proof=certify(spark,frames,weighted=weighted)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+examples/extensions/benchmarks/test_traversal_parent_witness.py:53: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+examples/extensions/benchmarks/test_traversal_parent_witness.py:37: in certify
+    return implementation(spark,a,v,e,source=options.pop('source',0),
+examples/extensions/benchmarks/traversal_certificate.py:59: in certify
+    wanted=reached.count()
+           ^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:313: in count
+    )._to_table()  # type: ignore[operator]
+      ^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:1794: in _to_table
+    table, schema, self._execution_info = self._session.client.to_table(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:925: in to_table
+    table, schema, metrics, observed_metrics, _ = self._execute_and_fetch(req, observations)
+                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1560: in _execute_and_fetch
+    for response in self._execute_and_fetch_as_iterator(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1537: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1812: in _handle_error
+    raise error
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1523: in _execute_and_fetch_as_iterator
+    for b in generator:
+             ^^^^^^^^^
+<frozen _collections_abc>:356: in __next__
+    ???
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py:148: in send
+    self._release_until(self._last_returned_response_id)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py:216: in _release_until
+    self._release_thread_pool.submit(target)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <concurrent.futures.thread.ThreadPoolExecutor object at 0x11086c050>
+fn = <function ExecutePlanResponseReattachableIterator._release_until.<locals>.target at 0x11080fc40>
+args = (), kwargs = {}
+
+    def submit(self, fn, /, *args, **kwargs):
+        with self._shutdown_lock, _global_shutdown_lock:
+            if self._broken:
+                raise BrokenThreadPool(self._broken)
+    
+            if self._shutdown:
+>               raise RuntimeError('cannot schedule new futures after shutdown')
+E               RuntimeError: cannot schedule new futures after shutdown
+
+/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/lib/python3.12/concurrent/futures/thread.py:171: RuntimeError
+_ test_integral_parent_tree_matches_distance_only_certificate_and_oracle[hop_type0-True] _
+
+spark = <pyspark.sql.connect.session.SparkSession object at 0x1108170b0>
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/certificate-witness-fixtures-mn5y6d_r/sql/test_integral_parent_tree_matc1')
+weighted = True, hop_type = DataType(int8)
+
+    @pytest.mark.parametrize('weighted',[False,True])
+    @pytest.mark.parametrize('hop_type',[pa.int8(),pa.int16(),pa.int32(),pa.int64()])
+    def test_integral_parent_tree_matches_distance_only_certificate_and_oracle(spark,tmp_path,weighted,hop_type):
+        from traversal_reference import distances
+        frames=fixture(spark,tmp_path/'data',hop_type=hop_type)
+        v,e,a=frames
+>       proof=certify(spark,frames,weighted=weighted)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+examples/extensions/benchmarks/test_traversal_parent_witness.py:53: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+examples/extensions/benchmarks/test_traversal_parent_witness.py:37: in certify
+    return implementation(spark,a,v,e,source=options.pop('source',0),
+examples/extensions/benchmarks/traversal_certificate.py:24: in certify
+    count=vertices.count()
+          ^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:313: in count
+    )._to_table()  # type: ignore[operator]
+      ^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:1794: in _to_table
+    table, schema, self._execution_info = self._session.client.to_table(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:925: in to_table
+    table, schema, metrics, observed_metrics, _ = self._execute_and_fetch(req, observations)
+                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1560: in _execute_and_fetch
+    for response in self._execute_and_fetch_as_iterator(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1537: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1812: in _handle_error
+    raise error
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1523: in _execute_and_fetch_as_iterator
+    for b in generator:
+             ^^^^^^^^^
+<frozen _collections_abc>:356: in __next__
+    ???
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py:148: in send
+    self._release_until(self._last_returned_response_id)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py:216: in _release_until
+    self._release_thread_pool.submit(target)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <concurrent.futures.thread.ThreadPoolExecutor object at 0x11086c050>
+fn = <function ExecutePlanResponseReattachableIterator._release_until.<locals>.target at 0x11080ff60>
+args = (), kwargs = {}
+
+    def submit(self, fn, /, *args, **kwargs):
+        with self._shutdown_lock, _global_shutdown_lock:
+            if self._broken:
+                raise BrokenThreadPool(self._broken)
+    
+            if self._shutdown:
+>               raise RuntimeError('cannot schedule new futures after shutdown')
+E               RuntimeError: cannot schedule new futures after shutdown
+
+/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/lib/python3.12/concurrent/futures/thread.py:171: RuntimeError
+_ test_integral_parent_tree_matches_distance_only_certificate_and_oracle[hop_type1-False] _
+
+spark = <pyspark.sql.connect.session.SparkSession object at 0x1108170b0>
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/certificate-witness-fixtures-mn5y6d_r/sql/test_integral_parent_tree_matc2')
+weighted = False, hop_type = DataType(int16)
+
+    @pytest.mark.parametrize('weighted',[False,True])
+    @pytest.mark.parametrize('hop_type',[pa.int8(),pa.int16(),pa.int32(),pa.int64()])
+    def test_integral_parent_tree_matches_distance_only_certificate_and_oracle(spark,tmp_path,weighted,hop_type):
+        from traversal_reference import distances
+        frames=fixture(spark,tmp_path/'data',hop_type=hop_type)
+        v,e,a=frames
+>       proof=certify(spark,frames,weighted=weighted)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+examples/extensions/benchmarks/test_traversal_parent_witness.py:53: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+examples/extensions/benchmarks/test_traversal_parent_witness.py:37: in certify
+    return implementation(spark,a,v,e,source=options.pop('source',0),
+examples/extensions/benchmarks/traversal_certificate.py:24: in certify
+    count=vertices.count()
+          ^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:313: in count
+    )._to_table()  # type: ignore[operator]
+      ^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:1794: in _to_table
+    table, schema, self._execution_info = self._session.client.to_table(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:925: in to_table
+    table, schema, metrics, observed_metrics, _ = self._execute_and_fetch(req, observations)
+                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1560: in _execute_and_fetch
+    for response in self._execute_and_fetch_as_iterator(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1537: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1812: in _handle_error
+    raise error
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1523: in _execute_and_fetch_as_iterator
+    for b in generator:
+             ^^^^^^^^^
+<frozen _collections_abc>:356: in __next__
+    ???
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py:148: in send
+    self._release_until(self._last_returned_response_id)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py:216: in _release_until
+    self._release_thread_pool.submit(target)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <concurrent.futures.thread.ThreadPoolExecutor object at 0x11086c050>
+fn = <function ExecutePlanResponseReattachableIterator._release_until.<locals>.target at 0x1108a5a80>
+args = (), kwargs = {}
+
+    def submit(self, fn, /, *args, **kwargs):
+        with self._shutdown_lock, _global_shutdown_lock:
+            if self._broken:
+                raise BrokenThreadPool(self._broken)
+    
+            if self._shutdown:
+>               raise RuntimeError('cannot schedule new futures after shutdown')
+E               RuntimeError: cannot schedule new futures after shutdown
+
+/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/lib/python3.12/concurrent/futures/thread.py:171: RuntimeError
+_ test_integral_parent_tree_matches_distance_only_certificate_and_oracle[hop_type1-True] _
+
+spark = <pyspark.sql.connect.session.SparkSession object at 0x1108170b0>
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/certificate-witness-fixtures-mn5y6d_r/sql/test_integral_parent_tree_matc3')
+weighted = True, hop_type = DataType(int16)
+
+    @pytest.mark.parametrize('weighted',[False,True])
+    @pytest.mark.parametrize('hop_type',[pa.int8(),pa.int16(),pa.int32(),pa.int64()])
+    def test_integral_parent_tree_matches_distance_only_certificate_and_oracle(spark,tmp_path,weighted,hop_type):
+        from traversal_reference import distances
+        frames=fixture(spark,tmp_path/'data',hop_type=hop_type)
+        v,e,a=frames
+>       proof=certify(spark,frames,weighted=weighted)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+examples/extensions/benchmarks/test_traversal_parent_witness.py:53: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+examples/extensions/benchmarks/test_traversal_parent_witness.py:37: in certify
+    return implementation(spark,a,v,e,source=options.pop('source',0),
+examples/extensions/benchmarks/traversal_certificate.py:24: in certify
+    count=vertices.count()
+          ^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:313: in count
+    )._to_table()  # type: ignore[operator]
+      ^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:1794: in _to_table
+    table, schema, self._execution_info = self._session.client.to_table(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:925: in to_table
+    table, schema, metrics, observed_metrics, _ = self._execute_and_fetch(req, observations)
+                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1560: in _execute_and_fetch
+    for response in self._execute_and_fetch_as_iterator(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1537: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1812: in _handle_error
+    raise error
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1523: in _execute_and_fetch_as_iterator
+    for b in generator:
+             ^^^^^^^^^
+<frozen _collections_abc>:356: in __next__
+    ???
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py:148: in send
+    self._release_until(self._last_returned_response_id)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py:216: in _release_until
+    self._release_thread_pool.submit(target)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <concurrent.futures.thread.ThreadPoolExecutor object at 0x11086c050>
+fn = <function ExecutePlanResponseReattachableIterator._release_until.<locals>.target at 0x110842fc0>
+args = (), kwargs = {}
+
+    def submit(self, fn, /, *args, **kwargs):
+        with self._shutdown_lock, _global_shutdown_lock:
+            if self._broken:
+                raise BrokenThreadPool(self._broken)
+    
+            if self._shutdown:
+>               raise RuntimeError('cannot schedule new futures after shutdown')
+E               RuntimeError: cannot schedule new futures after shutdown
+
+/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/lib/python3.12/concurrent/futures/thread.py:171: RuntimeError
+_ test_integral_parent_tree_matches_distance_only_certificate_and_oracle[hop_type2-False] _
+
+spark = <pyspark.sql.connect.session.SparkSession object at 0x1108170b0>
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/certificate-witness-fixtures-mn5y6d_r/sql/test_integral_parent_tree_matc4')
+weighted = False, hop_type = DataType(int32)
+
+    @pytest.mark.parametrize('weighted',[False,True])
+    @pytest.mark.parametrize('hop_type',[pa.int8(),pa.int16(),pa.int32(),pa.int64()])
+    def test_integral_parent_tree_matches_distance_only_certificate_and_oracle(spark,tmp_path,weighted,hop_type):
+        from traversal_reference import distances
+        frames=fixture(spark,tmp_path/'data',hop_type=hop_type)
+        v,e,a=frames
+>       proof=certify(spark,frames,weighted=weighted)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+examples/extensions/benchmarks/test_traversal_parent_witness.py:53: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+examples/extensions/benchmarks/test_traversal_parent_witness.py:37: in certify
+    return implementation(spark,a,v,e,source=options.pop('source',0),
+examples/extensions/benchmarks/traversal_certificate.py:24: in certify
+    count=vertices.count()
+          ^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:313: in count
+    )._to_table()  # type: ignore[operator]
+      ^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:1794: in _to_table
+    table, schema, self._execution_info = self._session.client.to_table(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:925: in to_table
+    table, schema, metrics, observed_metrics, _ = self._execute_and_fetch(req, observations)
+                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1560: in _execute_and_fetch
+    for response in self._execute_and_fetch_as_iterator(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1537: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1812: in _handle_error
+    raise error
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1523: in _execute_and_fetch_as_iterator
+    for b in generator:
+             ^^^^^^^^^
+<frozen _collections_abc>:356: in __next__
+    ???
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py:148: in send
+    self._release_until(self._last_returned_response_id)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py:216: in _release_until
+    self._release_thread_pool.submit(target)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <concurrent.futures.thread.ThreadPoolExecutor object at 0x11086c050>
+fn = <function ExecutePlanResponseReattachableIterator._release_until.<locals>.target at 0x1108a5b20>
+args = (), kwargs = {}
+
+    def submit(self, fn, /, *args, **kwargs):
+        with self._shutdown_lock, _global_shutdown_lock:
+            if self._broken:
+                raise BrokenThreadPool(self._broken)
+    
+            if self._shutdown:
+>               raise RuntimeError('cannot schedule new futures after shutdown')
+E               RuntimeError: cannot schedule new futures after shutdown
+
+/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/lib/python3.12/concurrent/futures/thread.py:171: RuntimeError
+_ test_integral_parent_tree_matches_distance_only_certificate_and_oracle[hop_type2-True] _
+
+spark = <pyspark.sql.connect.session.SparkSession object at 0x1108170b0>
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/certificate-witness-fixtures-mn5y6d_r/sql/test_integral_parent_tree_matc5')
+weighted = True, hop_type = DataType(int32)
+
+    @pytest.mark.parametrize('weighted',[False,True])
+    @pytest.mark.parametrize('hop_type',[pa.int8(),pa.int16(),pa.int32(),pa.int64()])
+    def test_integral_parent_tree_matches_distance_only_certificate_and_oracle(spark,tmp_path,weighted,hop_type):
+        from traversal_reference import distances
+        frames=fixture(spark,tmp_path/'data',hop_type=hop_type)
+        v,e,a=frames
+>       proof=certify(spark,frames,weighted=weighted)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+examples/extensions/benchmarks/test_traversal_parent_witness.py:53: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+examples/extensions/benchmarks/test_traversal_parent_witness.py:37: in certify
+    return implementation(spark,a,v,e,source=options.pop('source',0),
+examples/extensions/benchmarks/traversal_certificate.py:24: in certify
+    count=vertices.count()
+          ^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:313: in count
+    )._to_table()  # type: ignore[operator]
+      ^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:1794: in _to_table
+    table, schema, self._execution_info = self._session.client.to_table(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:925: in to_table
+    table, schema, metrics, observed_metrics, _ = self._execute_and_fetch(req, observations)
+                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1560: in _execute_and_fetch
+    for response in self._execute_and_fetch_as_iterator(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1537: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1812: in _handle_error
+    raise error
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1523: in _execute_and_fetch_as_iterator
+    for b in generator:
+             ^^^^^^^^^
+<frozen _collections_abc>:356: in __next__
+    ???
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py:148: in send
+    self._release_until(self._last_returned_response_id)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py:216: in _release_until
+    self._release_thread_pool.submit(target)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <concurrent.futures.thread.ThreadPoolExecutor object at 0x11086c050>
+fn = <function ExecutePlanResponseReattachableIterator._release_until.<locals>.target at 0x110a91300>
+args = (), kwargs = {}
+
+    def submit(self, fn, /, *args, **kwargs):
+        with self._shutdown_lock, _global_shutdown_lock:
+            if self._broken:
+                raise BrokenThreadPool(self._broken)
+    
+            if self._shutdown:
+>               raise RuntimeError('cannot schedule new futures after shutdown')
+E               RuntimeError: cannot schedule new futures after shutdown
+
+/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/lib/python3.12/concurrent/futures/thread.py:171: RuntimeError
+_ test_integral_parent_tree_matches_distance_only_certificate_and_oracle[hop_type3-False] _
+
+spark = <pyspark.sql.connect.session.SparkSession object at 0x1108170b0>
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/certificate-witness-fixtures-mn5y6d_r/sql/test_integral_parent_tree_matc6')
+weighted = False, hop_type = DataType(int64)
+
+    @pytest.mark.parametrize('weighted',[False,True])
+    @pytest.mark.parametrize('hop_type',[pa.int8(),pa.int16(),pa.int32(),pa.int64()])
+    def test_integral_parent_tree_matches_distance_only_certificate_and_oracle(spark,tmp_path,weighted,hop_type):
+        from traversal_reference import distances
+        frames=fixture(spark,tmp_path/'data',hop_type=hop_type)
+        v,e,a=frames
+>       proof=certify(spark,frames,weighted=weighted)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+examples/extensions/benchmarks/test_traversal_parent_witness.py:53: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+examples/extensions/benchmarks/test_traversal_parent_witness.py:37: in certify
+    return implementation(spark,a,v,e,source=options.pop('source',0),
+examples/extensions/benchmarks/traversal_certificate.py:24: in certify
+    count=vertices.count()
+          ^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:313: in count
+    )._to_table()  # type: ignore[operator]
+      ^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:1794: in _to_table
+    table, schema, self._execution_info = self._session.client.to_table(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:925: in to_table
+    table, schema, metrics, observed_metrics, _ = self._execute_and_fetch(req, observations)
+                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1560: in _execute_and_fetch
+    for response in self._execute_and_fetch_as_iterator(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1537: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1812: in _handle_error
+    raise error
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1523: in _execute_and_fetch_as_iterator
+    for b in generator:
+             ^^^^^^^^^
+<frozen _collections_abc>:356: in __next__
+    ???
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py:148: in send
+    self._release_until(self._last_returned_response_id)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py:216: in _release_until
+    self._release_thread_pool.submit(target)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <concurrent.futures.thread.ThreadPoolExecutor object at 0x11086c050>
+fn = <function ExecutePlanResponseReattachableIterator._release_until.<locals>.target at 0x110a91760>
+args = (), kwargs = {}
+
+    def submit(self, fn, /, *args, **kwargs):
+        with self._shutdown_lock, _global_shutdown_lock:
+            if self._broken:
+                raise BrokenThreadPool(self._broken)
+    
+            if self._shutdown:
+>               raise RuntimeError('cannot schedule new futures after shutdown')
+E               RuntimeError: cannot schedule new futures after shutdown
+
+/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/lib/python3.12/concurrent/futures/thread.py:171: RuntimeError
+_ test_integral_parent_tree_matches_distance_only_certificate_and_oracle[hop_type3-True] _
+
+spark = <pyspark.sql.connect.session.SparkSession object at 0x1108170b0>
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/certificate-witness-fixtures-mn5y6d_r/sql/test_integral_parent_tree_matc7')
+weighted = True, hop_type = DataType(int64)
+
+    @pytest.mark.parametrize('weighted',[False,True])
+    @pytest.mark.parametrize('hop_type',[pa.int8(),pa.int16(),pa.int32(),pa.int64()])
+    def test_integral_parent_tree_matches_distance_only_certificate_and_oracle(spark,tmp_path,weighted,hop_type):
+        from traversal_reference import distances
+        frames=fixture(spark,tmp_path/'data',hop_type=hop_type)
+        v,e,a=frames
+>       proof=certify(spark,frames,weighted=weighted)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+examples/extensions/benchmarks/test_traversal_parent_witness.py:53: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+examples/extensions/benchmarks/test_traversal_parent_witness.py:37: in certify
+    return implementation(spark,a,v,e,source=options.pop('source',0),
+examples/extensions/benchmarks/traversal_certificate.py:24: in certify
+    count=vertices.count()
+          ^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:313: in count
+    )._to_table()  # type: ignore[operator]
+      ^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:1794: in _to_table
+    table, schema, self._execution_info = self._session.client.to_table(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:925: in to_table
+    table, schema, metrics, observed_metrics, _ = self._execute_and_fetch(req, observations)
+                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1560: in _execute_and_fetch
+    for response in self._execute_and_fetch_as_iterator(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1537: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1812: in _handle_error
+    raise error
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1523: in _execute_and_fetch_as_iterator
+    for b in generator:
+             ^^^^^^^^^
+<frozen _collections_abc>:356: in __next__
+    ???
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py:148: in send
+    self._release_until(self._last_returned_response_id)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py:216: in _release_until
+    self._release_thread_pool.submit(target)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <concurrent.futures.thread.ThreadPoolExecutor object at 0x11086c050>
+fn = <function ExecutePlanResponseReattachableIterator._release_until.<locals>.target at 0x110a92020>
+args = (), kwargs = {}
+
+    def submit(self, fn, /, *args, **kwargs):
+        with self._shutdown_lock, _global_shutdown_lock:
+            if self._broken:
+                raise BrokenThreadPool(self._broken)
+    
+            if self._shutdown:
+>               raise RuntimeError('cannot schedule new futures after shutdown')
+E               RuntimeError: cannot schedule new futures after shutdown
+
+/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/lib/python3.12/concurrent/futures/thread.py:171: RuntimeError
+__________________ test_cap_trap_retains_shorter_bfs_fallback __________________
+
+spark = <pyspark.sql.connect.session.SparkSession object at 0x1108170b0>
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/certificate-witness-fixtures-mn5y6d_r/sql/test_cap_trap_retains_shorter_0')
+
+    def test_cap_trap_retains_shorter_bfs_fallback(spark,tmp_path):
+        frames=fixture(spark,tmp_path/'data',rows=[(0,0.,0,0),(1,0.,0,1),(2,0.,1,2)],
+                       edges=[(0,1,0.),(1,2,0.),(0,2,0.)])
+>       proof=certify(spark,frames,max_rounds=1)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+examples/extensions/benchmarks/test_traversal_parent_witness.py:66: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+examples/extensions/benchmarks/test_traversal_parent_witness.py:37: in certify
+    return implementation(spark,a,v,e,source=options.pop('source',0),
+examples/extensions/benchmarks/traversal_certificate.py:24: in certify
+    count=vertices.count()
+          ^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:313: in count
+    )._to_table()  # type: ignore[operator]
+      ^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:1794: in _to_table
+    table, schema, self._execution_info = self._session.client.to_table(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:925: in to_table
+    table, schema, metrics, observed_metrics, _ = self._execute_and_fetch(req, observations)
+                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1560: in _execute_and_fetch
+    for response in self._execute_and_fetch_as_iterator(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1537: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1812: in _handle_error
+    raise error
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1523: in _execute_and_fetch_as_iterator
+    for b in generator:
+             ^^^^^^^^^
+<frozen _collections_abc>:356: in __next__
+    ???
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py:148: in send
+    self._release_until(self._last_returned_response_id)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py:216: in _release_until
+    self._release_thread_pool.submit(target)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <concurrent.futures.thread.ThreadPoolExecutor object at 0x11086c050>
+fn = <function ExecutePlanResponseReattachableIterator._release_until.<locals>.target at 0x110a914e0>
+args = (), kwargs = {}
+
+    def submit(self, fn, /, *args, **kwargs):
+        with self._shutdown_lock, _global_shutdown_lock:
+            if self._broken:
+                raise BrokenThreadPool(self._broken)
+    
+            if self._shutdown:
+>               raise RuntimeError('cannot schedule new futures after shutdown')
+E               RuntimeError: cannot schedule new futures after shutdown
+
+/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/lib/python3.12/concurrent/futures/thread.py:171: RuntimeError
+__________ test_old_parent_tolerance_does_not_prove_exact_tight_edge ___________
+
+spark = <pyspark.sql.connect.session.SparkSession object at 0x1108170b0>
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/certificate-witness-fixtures-mn5y6d_r/sql/test_old_parent_tolerance_does0')
+
+    def test_old_parent_tolerance_does_not_prove_exact_tight_edge(spark,tmp_path):
+        # Chosen root->2 parent is allowed by old parent validation but not tight at
+        # tolerance0; actual tight path needs two rounds, beyond the cap of one.
+        frames=fixture(spark,tmp_path/'data',rows=[(0,0.,0,0),(1,1.,0,1),(2,1.,0,1)],
+                       edges=[(0,1,1.),(1,2,0.),(0,2,1.+5e-13)])
+        with pytest.raises(RuntimeError,match='round limit'):
+>           certify(spark,frames,max_rounds=1)
+
+examples/extensions/benchmarks/test_traversal_parent_witness.py:77: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+examples/extensions/benchmarks/test_traversal_parent_witness.py:37: in certify
+    return implementation(spark,a,v,e,source=options.pop('source',0),
+examples/extensions/benchmarks/traversal_certificate.py:24: in certify
+    count=vertices.count()
+          ^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:313: in count
+    )._to_table()  # type: ignore[operator]
+      ^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:1794: in _to_table
+    table, schema, self._execution_info = self._session.client.to_table(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:925: in to_table
+    table, schema, metrics, observed_metrics, _ = self._execute_and_fetch(req, observations)
+                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1560: in _execute_and_fetch
+    for response in self._execute_and_fetch_as_iterator(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1537: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1812: in _handle_error
+    raise error
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1523: in _execute_and_fetch_as_iterator
+    for b in generator:
+             ^^^^^^^^^
+<frozen _collections_abc>:356: in __next__
+    ???
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py:148: in send
+    self._release_until(self._last_returned_response_id)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py:216: in _release_until
+    self._release_thread_pool.submit(target)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <concurrent.futures.thread.ThreadPoolExecutor object at 0x11086c050>
+fn = <function ExecutePlanResponseReattachableIterator._release_until.<locals>.target at 0x110a90860>
+args = (), kwargs = {}
+
+    def submit(self, fn, /, *args, **kwargs):
+        with self._shutdown_lock, _global_shutdown_lock:
+            if self._broken:
+                raise BrokenThreadPool(self._broken)
+    
+            if self._shutdown:
+>               raise RuntimeError('cannot schedule new futures after shutdown')
+E               RuntimeError: cannot schedule new futures after shutdown
+
+/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/lib/python3.12/concurrent/futures/thread.py:171: RuntimeError
+
+During handling of the above exception, another exception occurred:
+
+spark = <pyspark.sql.connect.session.SparkSession object at 0x1108170b0>
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/certificate-witness-fixtures-mn5y6d_r/sql/test_old_parent_tolerance_does0')
+
+    def test_old_parent_tolerance_does_not_prove_exact_tight_edge(spark,tmp_path):
+        # Chosen root->2 parent is allowed by old parent validation but not tight at
+        # tolerance0; actual tight path needs two rounds, beyond the cap of one.
+        frames=fixture(spark,tmp_path/'data',rows=[(0,0.,0,0),(1,1.,0,1),(2,1.,0,1)],
+                       edges=[(0,1,1.),(1,2,0.),(0,2,1.+5e-13)])
+>       with pytest.raises(RuntimeError,match='round limit'):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: Regex pattern did not match.
+E        Regex: 'round limit'
+E        Input: 'cannot schedule new futures after shutdown'
+
+examples/extensions/benchmarks/test_traversal_parent_witness.py:76: AssertionError
+_________ test_stricter_existing_parent_output_rejection_is_preserved __________
+
+spark = <pyspark.sql.connect.session.SparkSession object at 0x1108170b0>
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/certificate-witness-fixtures-mn5y6d_r/sql/test_stricter_existing_parent_0')
+
+    def test_stricter_existing_parent_output_rejection_is_preserved(spark,tmp_path):
+        root=tmp_path/'data'
+        frames=fixture(spark,root,rows=[(0,0.,0,0),(1,1.,0,1),(2,2.+4e-12,1,2),(3,None,None,None)])
+>       assert certify(spark,frames,tolerance=1e-12)['witness_method']=='parent_hops'
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+examples/extensions/benchmarks/test_traversal_parent_witness.py:83: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+examples/extensions/benchmarks/test_traversal_parent_witness.py:37: in certify
+    return implementation(spark,a,v,e,source=options.pop('source',0),
+examples/extensions/benchmarks/traversal_certificate.py:24: in certify
+    count=vertices.count()
+          ^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:313: in count
+    )._to_table()  # type: ignore[operator]
+      ^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:1794: in _to_table
+    table, schema, self._execution_info = self._session.client.to_table(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:925: in to_table
+    table, schema, metrics, observed_metrics, _ = self._execute_and_fetch(req, observations)
+                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1560: in _execute_and_fetch
+    for response in self._execute_and_fetch_as_iterator(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1537: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1812: in _handle_error
+    raise error
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1523: in _execute_and_fetch_as_iterator
+    for b in generator:
+             ^^^^^^^^^
+<frozen _collections_abc>:356: in __next__
+    ???
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py:148: in send
+    self._release_until(self._last_returned_response_id)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py:216: in _release_until
+    self._release_thread_pool.submit(target)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <concurrent.futures.thread.ThreadPoolExecutor object at 0x11086c050>
+fn = <function ExecutePlanResponseReattachableIterator._release_until.<locals>.target at 0x110a93420>
+args = (), kwargs = {}
+
+    def submit(self, fn, /, *args, **kwargs):
+        with self._shutdown_lock, _global_shutdown_lock:
+            if self._broken:
+                raise BrokenThreadPool(self._broken)
+    
+            if self._shutdown:
+>               raise RuntimeError('cannot schedule new futures after shutdown')
+E               RuntimeError: cannot schedule new futures after shutdown
+
+/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/lib/python3.12/concurrent/futures/thread.py:171: RuntimeError
+_ test_invalid_parent_metadata_falls_back_and_caller_still_rejects[null_parent] _
+
+spark = <pyspark.sql.connect.session.SparkSession object at 0x1108170b0>
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/certificate-witness-fixtures-mn5y6d_r/sql/test_invalid_parent_metadata_f0')
+case = 'null_parent'
+
+    @pytest.mark.parametrize('case',['null_parent','null_hops','missing_parent','cycle','unreachable_metadata',
+                                      'root_parent','root_hops','zero_nonroot_hops','oversized_hops','missing_edge'])
+    def test_invalid_parent_metadata_falls_back_and_caller_still_rejects(spark,tmp_path,case):
+        rows=[[0,0.,0,0],[1,1.,0,1],[2,2.,1,2],[3,None,None,None]]
+        if case=='null_parent':rows[1][2]=None
+        if case=='null_hops':rows[1][3]=None
+        if case=='missing_parent':rows[1][2]=99
+        if case=='cycle':rows[1][2]=2
+        if case=='unreachable_metadata':rows[3][2]=0
+        if case=='root_parent':rows[0][2]=1
+        if case=='root_hops':rows[0][3]=1
+        if case=='zero_nonroot_hops':rows[1][3]=0
+        if case=='oversized_hops':rows[2][3]=4
+        if case=='missing_edge':rows[2][2:]=[0,1]
+        root=tmp_path/'data';frames=fixture(spark,root,rows=rows)
+>       proof=certify(spark,frames)
+              ^^^^^^^^^^^^^^^^^^^^^
+
+examples/extensions/benchmarks/test_traversal_parent_witness.py:103: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+examples/extensions/benchmarks/test_traversal_parent_witness.py:37: in certify
+    return implementation(spark,a,v,e,source=options.pop('source',0),
+examples/extensions/benchmarks/traversal_certificate.py:24: in certify
+    count=vertices.count()
+          ^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:313: in count
+    )._to_table()  # type: ignore[operator]
+      ^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:1794: in _to_table
+    table, schema, self._execution_info = self._session.client.to_table(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:925: in to_table
+    table, schema, metrics, observed_metrics, _ = self._execute_and_fetch(req, observations)
+                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1560: in _execute_and_fetch
+    for response in self._execute_and_fetch_as_iterator(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1537: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1812: in _handle_error
+    raise error
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1523: in _execute_and_fetch_as_iterator
+    for b in generator:
+             ^^^^^^^^^
+<frozen _collections_abc>:356: in __next__
+    ???
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py:148: in send
+    self._release_until(self._last_returned_response_id)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py:216: in _release_until
+    self._release_thread_pool.submit(target)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <concurrent.futures.thread.ThreadPoolExecutor object at 0x11086c050>
+fn = <function ExecutePlanResponseReattachableIterator._release_until.<locals>.target at 0x110a931a0>
+args = (), kwargs = {}
+
+    def submit(self, fn, /, *args, **kwargs):
+        with self._shutdown_lock, _global_shutdown_lock:
+            if self._broken:
+                raise BrokenThreadPool(self._broken)
+    
+            if self._shutdown:
+>               raise RuntimeError('cannot schedule new futures after shutdown')
+E               RuntimeError: cannot schedule new futures after shutdown
+
+/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/lib/python3.12/concurrent/futures/thread.py:171: RuntimeError
+_ test_invalid_parent_metadata_falls_back_and_caller_still_rejects[null_hops] __
+
+spark = <pyspark.sql.connect.session.SparkSession object at 0x1108170b0>
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/certificate-witness-fixtures-mn5y6d_r/sql/test_invalid_parent_metadata_f1')
+case = 'null_hops'
+
+    @pytest.mark.parametrize('case',['null_parent','null_hops','missing_parent','cycle','unreachable_metadata',
+                                      'root_parent','root_hops','zero_nonroot_hops','oversized_hops','missing_edge'])
+    def test_invalid_parent_metadata_falls_back_and_caller_still_rejects(spark,tmp_path,case):
+        rows=[[0,0.,0,0],[1,1.,0,1],[2,2.,1,2],[3,None,None,None]]
+        if case=='null_parent':rows[1][2]=None
+        if case=='null_hops':rows[1][3]=None
+        if case=='missing_parent':rows[1][2]=99
+        if case=='cycle':rows[1][2]=2
+        if case=='unreachable_metadata':rows[3][2]=0
+        if case=='root_parent':rows[0][2]=1
+        if case=='root_hops':rows[0][3]=1
+        if case=='zero_nonroot_hops':rows[1][3]=0
+        if case=='oversized_hops':rows[2][3]=4
+        if case=='missing_edge':rows[2][2:]=[0,1]
+        root=tmp_path/'data';frames=fixture(spark,root,rows=rows)
+>       proof=certify(spark,frames)
+              ^^^^^^^^^^^^^^^^^^^^^
+
+examples/extensions/benchmarks/test_traversal_parent_witness.py:103: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+examples/extensions/benchmarks/test_traversal_parent_witness.py:37: in certify
+    return implementation(spark,a,v,e,source=options.pop('source',0),
+examples/extensions/benchmarks/traversal_certificate.py:24: in certify
+    count=vertices.count()
+          ^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:313: in count
+    )._to_table()  # type: ignore[operator]
+      ^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:1794: in _to_table
+    table, schema, self._execution_info = self._session.client.to_table(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:925: in to_table
+    table, schema, metrics, observed_metrics, _ = self._execute_and_fetch(req, observations)
+                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1560: in _execute_and_fetch
+    for response in self._execute_and_fetch_as_iterator(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1537: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1812: in _handle_error
+    raise error
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1523: in _execute_and_fetch_as_iterator
+    for b in generator:
+             ^^^^^^^^^
+<frozen _collections_abc>:356: in __next__
+    ???
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py:148: in send
+    self._release_until(self._last_returned_response_id)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py:216: in _release_until
+    self._release_thread_pool.submit(target)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <concurrent.futures.thread.ThreadPoolExecutor object at 0x11086c050>
+fn = <function ExecutePlanResponseReattachableIterator._release_until.<locals>.target at 0x110a928e0>
+args = (), kwargs = {}
+
+    def submit(self, fn, /, *args, **kwargs):
+        with self._shutdown_lock, _global_shutdown_lock:
+            if self._broken:
+                raise BrokenThreadPool(self._broken)
+    
+            if self._shutdown:
+>               raise RuntimeError('cannot schedule new futures after shutdown')
+E               RuntimeError: cannot schedule new futures after shutdown
+
+/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/lib/python3.12/concurrent/futures/thread.py:171: RuntimeError
+_ test_invalid_parent_metadata_falls_back_and_caller_still_rejects[missing_parent] _
+
+spark = <pyspark.sql.connect.session.SparkSession object at 0x1108170b0>
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/certificate-witness-fixtures-mn5y6d_r/sql/test_invalid_parent_metadata_f2')
+case = 'missing_parent'
+
+    @pytest.mark.parametrize('case',['null_parent','null_hops','missing_parent','cycle','unreachable_metadata',
+                                      'root_parent','root_hops','zero_nonroot_hops','oversized_hops','missing_edge'])
+    def test_invalid_parent_metadata_falls_back_and_caller_still_rejects(spark,tmp_path,case):
+        rows=[[0,0.,0,0],[1,1.,0,1],[2,2.,1,2],[3,None,None,None]]
+        if case=='null_parent':rows[1][2]=None
+        if case=='null_hops':rows[1][3]=None
+        if case=='missing_parent':rows[1][2]=99
+        if case=='cycle':rows[1][2]=2
+        if case=='unreachable_metadata':rows[3][2]=0
+        if case=='root_parent':rows[0][2]=1
+        if case=='root_hops':rows[0][3]=1
+        if case=='zero_nonroot_hops':rows[1][3]=0
+        if case=='oversized_hops':rows[2][3]=4
+        if case=='missing_edge':rows[2][2:]=[0,1]
+        root=tmp_path/'data';frames=fixture(spark,root,rows=rows)
+>       proof=certify(spark,frames)
+              ^^^^^^^^^^^^^^^^^^^^^
+
+examples/extensions/benchmarks/test_traversal_parent_witness.py:103: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+examples/extensions/benchmarks/test_traversal_parent_witness.py:37: in certify
+    return implementation(spark,a,v,e,source=options.pop('source',0),
+examples/extensions/benchmarks/traversal_certificate.py:24: in certify
+    count=vertices.count()
+          ^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:313: in count
+    )._to_table()  # type: ignore[operator]
+      ^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:1794: in _to_table
+    table, schema, self._execution_info = self._session.client.to_table(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:925: in to_table
+    table, schema, metrics, observed_metrics, _ = self._execute_and_fetch(req, observations)
+                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1560: in _execute_and_fetch
+    for response in self._execute_and_fetch_as_iterator(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1537: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1812: in _handle_error
+    raise error
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1523: in _execute_and_fetch_as_iterator
+    for b in generator:
+             ^^^^^^^^^
+<frozen _collections_abc>:356: in __next__
+    ???
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py:148: in send
+    self._release_until(self._last_returned_response_id)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py:216: in _release_until
+    self._release_thread_pool.submit(target)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <concurrent.futures.thread.ThreadPoolExecutor object at 0x11086c050>
+fn = <function ExecutePlanResponseReattachableIterator._release_until.<locals>.target at 0x110a93f60>
+args = (), kwargs = {}
+
+    def submit(self, fn, /, *args, **kwargs):
+        with self._shutdown_lock, _global_shutdown_lock:
+            if self._broken:
+                raise BrokenThreadPool(self._broken)
+    
+            if self._shutdown:
+>               raise RuntimeError('cannot schedule new futures after shutdown')
+E               RuntimeError: cannot schedule new futures after shutdown
+
+/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/lib/python3.12/concurrent/futures/thread.py:171: RuntimeError
+___ test_invalid_parent_metadata_falls_back_and_caller_still_rejects[cycle] ____
+
+spark = <pyspark.sql.connect.session.SparkSession object at 0x1108170b0>
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/certificate-witness-fixtures-mn5y6d_r/sql/test_invalid_parent_metadata_f3')
+case = 'cycle'
+
+    @pytest.mark.parametrize('case',['null_parent','null_hops','missing_parent','cycle','unreachable_metadata',
+                                      'root_parent','root_hops','zero_nonroot_hops','oversized_hops','missing_edge'])
+    def test_invalid_parent_metadata_falls_back_and_caller_still_rejects(spark,tmp_path,case):
+        rows=[[0,0.,0,0],[1,1.,0,1],[2,2.,1,2],[3,None,None,None]]
+        if case=='null_parent':rows[1][2]=None
+        if case=='null_hops':rows[1][3]=None
+        if case=='missing_parent':rows[1][2]=99
+        if case=='cycle':rows[1][2]=2
+        if case=='unreachable_metadata':rows[3][2]=0
+        if case=='root_parent':rows[0][2]=1
+        if case=='root_hops':rows[0][3]=1
+        if case=='zero_nonroot_hops':rows[1][3]=0
+        if case=='oversized_hops':rows[2][3]=4
+        if case=='missing_edge':rows[2][2:]=[0,1]
+        root=tmp_path/'data';frames=fixture(spark,root,rows=rows)
+>       proof=certify(spark,frames)
+              ^^^^^^^^^^^^^^^^^^^^^
+
+examples/extensions/benchmarks/test_traversal_parent_witness.py:103: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+examples/extensions/benchmarks/test_traversal_parent_witness.py:37: in certify
+    return implementation(spark,a,v,e,source=options.pop('source',0),
+examples/extensions/benchmarks/traversal_certificate.py:24: in certify
+    count=vertices.count()
+          ^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:313: in count
+    )._to_table()  # type: ignore[operator]
+      ^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:1794: in _to_table
+    table, schema, self._execution_info = self._session.client.to_table(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:925: in to_table
+    table, schema, metrics, observed_metrics, _ = self._execute_and_fetch(req, observations)
+                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1560: in _execute_and_fetch
+    for response in self._execute_and_fetch_as_iterator(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1537: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1812: in _handle_error
+    raise error
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1523: in _execute_and_fetch_as_iterator
+    for b in generator:
+             ^^^^^^^^^
+<frozen _collections_abc>:356: in __next__
+    ???
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py:148: in send
+    self._release_until(self._last_returned_response_id)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py:216: in _release_until
+    self._release_thread_pool.submit(target)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <concurrent.futures.thread.ThreadPoolExecutor object at 0x11086c050>
+fn = <function ExecutePlanResponseReattachableIterator._release_until.<locals>.target at 0x110a93380>
+args = (), kwargs = {}
+
+    def submit(self, fn, /, *args, **kwargs):
+        with self._shutdown_lock, _global_shutdown_lock:
+            if self._broken:
+                raise BrokenThreadPool(self._broken)
+    
+            if self._shutdown:
+>               raise RuntimeError('cannot schedule new futures after shutdown')
+E               RuntimeError: cannot schedule new futures after shutdown
+
+/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/lib/python3.12/concurrent/futures/thread.py:171: RuntimeError
+_ test_invalid_parent_metadata_falls_back_and_caller_still_rejects[unreachable_metadata] _
+
+spark = <pyspark.sql.connect.session.SparkSession object at 0x1108170b0>
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/certificate-witness-fixtures-mn5y6d_r/sql/test_invalid_parent_metadata_f4')
+case = 'unreachable_metadata'
+
+    @pytest.mark.parametrize('case',['null_parent','null_hops','missing_parent','cycle','unreachable_metadata',
+                                      'root_parent','root_hops','zero_nonroot_hops','oversized_hops','missing_edge'])
+    def test_invalid_parent_metadata_falls_back_and_caller_still_rejects(spark,tmp_path,case):
+        rows=[[0,0.,0,0],[1,1.,0,1],[2,2.,1,2],[3,None,None,None]]
+        if case=='null_parent':rows[1][2]=None
+        if case=='null_hops':rows[1][3]=None
+        if case=='missing_parent':rows[1][2]=99
+        if case=='cycle':rows[1][2]=2
+        if case=='unreachable_metadata':rows[3][2]=0
+        if case=='root_parent':rows[0][2]=1
+        if case=='root_hops':rows[0][3]=1
+        if case=='zero_nonroot_hops':rows[1][3]=0
+        if case=='oversized_hops':rows[2][3]=4
+        if case=='missing_edge':rows[2][2:]=[0,1]
+        root=tmp_path/'data';frames=fixture(spark,root,rows=rows)
+>       proof=certify(spark,frames)
+              ^^^^^^^^^^^^^^^^^^^^^
+
+examples/extensions/benchmarks/test_traversal_parent_witness.py:103: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+examples/extensions/benchmarks/test_traversal_parent_witness.py:37: in certify
+    return implementation(spark,a,v,e,source=options.pop('source',0),
+examples/extensions/benchmarks/traversal_certificate.py:24: in certify
+    count=vertices.count()
+          ^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:313: in count
+    )._to_table()  # type: ignore[operator]
+      ^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:1794: in _to_table
+    table, schema, self._execution_info = self._session.client.to_table(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:925: in to_table
+    table, schema, metrics, observed_metrics, _ = self._execute_and_fetch(req, observations)
+                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1560: in _execute_and_fetch
+    for response in self._execute_and_fetch_as_iterator(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1537: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1812: in _handle_error
+    raise error
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1523: in _execute_and_fetch_as_iterator
+    for b in generator:
+             ^^^^^^^^^
+<frozen _collections_abc>:356: in __next__
+    ???
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py:148: in send
+    self._release_until(self._last_returned_response_id)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py:216: in _release_until
+    self._release_thread_pool.submit(target)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <concurrent.futures.thread.ThreadPoolExecutor object at 0x11086c050>
+fn = <function ExecutePlanResponseReattachableIterator._release_until.<locals>.target at 0x1109f4900>
+args = (), kwargs = {}
+
+    def submit(self, fn, /, *args, **kwargs):
+        with self._shutdown_lock, _global_shutdown_lock:
+            if self._broken:
+                raise BrokenThreadPool(self._broken)
+    
+            if self._shutdown:
+>               raise RuntimeError('cannot schedule new futures after shutdown')
+E               RuntimeError: cannot schedule new futures after shutdown
+
+/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/lib/python3.12/concurrent/futures/thread.py:171: RuntimeError
+_ test_invalid_parent_metadata_falls_back_and_caller_still_rejects[root_parent] _
+
+spark = <pyspark.sql.connect.session.SparkSession object at 0x1108170b0>
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/certificate-witness-fixtures-mn5y6d_r/sql/test_invalid_parent_metadata_f5')
+case = 'root_parent'
+
+    @pytest.mark.parametrize('case',['null_parent','null_hops','missing_parent','cycle','unreachable_metadata',
+                                      'root_parent','root_hops','zero_nonroot_hops','oversized_hops','missing_edge'])
+    def test_invalid_parent_metadata_falls_back_and_caller_still_rejects(spark,tmp_path,case):
+        rows=[[0,0.,0,0],[1,1.,0,1],[2,2.,1,2],[3,None,None,None]]
+        if case=='null_parent':rows[1][2]=None
+        if case=='null_hops':rows[1][3]=None
+        if case=='missing_parent':rows[1][2]=99
+        if case=='cycle':rows[1][2]=2
+        if case=='unreachable_metadata':rows[3][2]=0
+        if case=='root_parent':rows[0][2]=1
+        if case=='root_hops':rows[0][3]=1
+        if case=='zero_nonroot_hops':rows[1][3]=0
+        if case=='oversized_hops':rows[2][3]=4
+        if case=='missing_edge':rows[2][2:]=[0,1]
+        root=tmp_path/'data';frames=fixture(spark,root,rows=rows)
+>       proof=certify(spark,frames)
+              ^^^^^^^^^^^^^^^^^^^^^
+
+examples/extensions/benchmarks/test_traversal_parent_witness.py:103: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+examples/extensions/benchmarks/test_traversal_parent_witness.py:37: in certify
+    return implementation(spark,a,v,e,source=options.pop('source',0),
+examples/extensions/benchmarks/traversal_certificate.py:24: in certify
+    count=vertices.count()
+          ^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:313: in count
+    )._to_table()  # type: ignore[operator]
+      ^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:1794: in _to_table
+    table, schema, self._execution_info = self._session.client.to_table(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:925: in to_table
+    table, schema, metrics, observed_metrics, _ = self._execute_and_fetch(req, observations)
+                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1560: in _execute_and_fetch
+    for response in self._execute_and_fetch_as_iterator(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1537: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1812: in _handle_error
+    raise error
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1523: in _execute_and_fetch_as_iterator
+    for b in generator:
+             ^^^^^^^^^
+<frozen _collections_abc>:356: in __next__
+    ???
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py:148: in send
+    self._release_until(self._last_returned_response_id)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py:216: in _release_until
+    self._release_thread_pool.submit(target)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <concurrent.futures.thread.ThreadPoolExecutor object at 0x11086c050>
+fn = <function ExecutePlanResponseReattachableIterator._release_until.<locals>.target at 0x110a93060>
+args = (), kwargs = {}
+
+    def submit(self, fn, /, *args, **kwargs):
+        with self._shutdown_lock, _global_shutdown_lock:
+            if self._broken:
+                raise BrokenThreadPool(self._broken)
+    
+            if self._shutdown:
+>               raise RuntimeError('cannot schedule new futures after shutdown')
+E               RuntimeError: cannot schedule new futures after shutdown
+
+/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/lib/python3.12/concurrent/futures/thread.py:171: RuntimeError
+_ test_invalid_parent_metadata_falls_back_and_caller_still_rejects[root_hops] __
+
+spark = <pyspark.sql.connect.session.SparkSession object at 0x1108170b0>
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/certificate-witness-fixtures-mn5y6d_r/sql/test_invalid_parent_metadata_f6')
+case = 'root_hops'
+
+    @pytest.mark.parametrize('case',['null_parent','null_hops','missing_parent','cycle','unreachable_metadata',
+                                      'root_parent','root_hops','zero_nonroot_hops','oversized_hops','missing_edge'])
+    def test_invalid_parent_metadata_falls_back_and_caller_still_rejects(spark,tmp_path,case):
+        rows=[[0,0.,0,0],[1,1.,0,1],[2,2.,1,2],[3,None,None,None]]
+        if case=='null_parent':rows[1][2]=None
+        if case=='null_hops':rows[1][3]=None
+        if case=='missing_parent':rows[1][2]=99
+        if case=='cycle':rows[1][2]=2
+        if case=='unreachable_metadata':rows[3][2]=0
+        if case=='root_parent':rows[0][2]=1
+        if case=='root_hops':rows[0][3]=1
+        if case=='zero_nonroot_hops':rows[1][3]=0
+        if case=='oversized_hops':rows[2][3]=4
+        if case=='missing_edge':rows[2][2:]=[0,1]
+        root=tmp_path/'data';frames=fixture(spark,root,rows=rows)
+>       proof=certify(spark,frames)
+              ^^^^^^^^^^^^^^^^^^^^^
+
+examples/extensions/benchmarks/test_traversal_parent_witness.py:103: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+examples/extensions/benchmarks/test_traversal_parent_witness.py:37: in certify
+    return implementation(spark,a,v,e,source=options.pop('source',0),
+examples/extensions/benchmarks/traversal_certificate.py:24: in certify
+    count=vertices.count()
+          ^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:313: in count
+    )._to_table()  # type: ignore[operator]
+      ^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:1794: in _to_table
+    table, schema, self._execution_info = self._session.client.to_table(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:925: in to_table
+    table, schema, metrics, observed_metrics, _ = self._execute_and_fetch(req, observations)
+                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1560: in _execute_and_fetch
+    for response in self._execute_and_fetch_as_iterator(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1537: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1812: in _handle_error
+    raise error
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1523: in _execute_and_fetch_as_iterator
+    for b in generator:
+             ^^^^^^^^^
+<frozen _collections_abc>:356: in __next__
+    ???
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py:148: in send
+    self._release_until(self._last_returned_response_id)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py:216: in _release_until
+    self._release_thread_pool.submit(target)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <concurrent.futures.thread.ThreadPoolExecutor object at 0x11086c050>
+fn = <function ExecutePlanResponseReattachableIterator._release_until.<locals>.target at 0x1109f5580>
+args = (), kwargs = {}
+
+    def submit(self, fn, /, *args, **kwargs):
+        with self._shutdown_lock, _global_shutdown_lock:
+            if self._broken:
+                raise BrokenThreadPool(self._broken)
+    
+            if self._shutdown:
+>               raise RuntimeError('cannot schedule new futures after shutdown')
+E               RuntimeError: cannot schedule new futures after shutdown
+
+/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/lib/python3.12/concurrent/futures/thread.py:171: RuntimeError
+_ test_invalid_parent_metadata_falls_back_and_caller_still_rejects[zero_nonroot_hops] _
+
+spark = <pyspark.sql.connect.session.SparkSession object at 0x1108170b0>
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/certificate-witness-fixtures-mn5y6d_r/sql/test_invalid_parent_metadata_f7')
+case = 'zero_nonroot_hops'
+
+    @pytest.mark.parametrize('case',['null_parent','null_hops','missing_parent','cycle','unreachable_metadata',
+                                      'root_parent','root_hops','zero_nonroot_hops','oversized_hops','missing_edge'])
+    def test_invalid_parent_metadata_falls_back_and_caller_still_rejects(spark,tmp_path,case):
+        rows=[[0,0.,0,0],[1,1.,0,1],[2,2.,1,2],[3,None,None,None]]
+        if case=='null_parent':rows[1][2]=None
+        if case=='null_hops':rows[1][3]=None
+        if case=='missing_parent':rows[1][2]=99
+        if case=='cycle':rows[1][2]=2
+        if case=='unreachable_metadata':rows[3][2]=0
+        if case=='root_parent':rows[0][2]=1
+        if case=='root_hops':rows[0][3]=1
+        if case=='zero_nonroot_hops':rows[1][3]=0
+        if case=='oversized_hops':rows[2][3]=4
+        if case=='missing_edge':rows[2][2:]=[0,1]
+        root=tmp_path/'data';frames=fixture(spark,root,rows=rows)
+>       proof=certify(spark,frames)
+              ^^^^^^^^^^^^^^^^^^^^^
+
+examples/extensions/benchmarks/test_traversal_parent_witness.py:103: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+examples/extensions/benchmarks/test_traversal_parent_witness.py:37: in certify
+    return implementation(spark,a,v,e,source=options.pop('source',0),
+examples/extensions/benchmarks/traversal_certificate.py:24: in certify
+    count=vertices.count()
+          ^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:313: in count
+    )._to_table()  # type: ignore[operator]
+      ^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:1794: in _to_table
+    table, schema, self._execution_info = self._session.client.to_table(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:925: in to_table
+    table, schema, metrics, observed_metrics, _ = self._execute_and_fetch(req, observations)
+                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1560: in _execute_and_fetch
+    for response in self._execute_and_fetch_as_iterator(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1537: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1812: in _handle_error
+    raise error
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1523: in _execute_and_fetch_as_iterator
+    for b in generator:
+             ^^^^^^^^^
+<frozen _collections_abc>:356: in __next__
+    ???
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py:148: in send
+    self._release_until(self._last_returned_response_id)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py:216: in _release_until
+    self._release_thread_pool.submit(target)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <concurrent.futures.thread.ThreadPoolExecutor object at 0x11086c050>
+fn = <function ExecutePlanResponseReattachableIterator._release_until.<locals>.target at 0x1109f4ea0>
+args = (), kwargs = {}
+
+    def submit(self, fn, /, *args, **kwargs):
+        with self._shutdown_lock, _global_shutdown_lock:
+            if self._broken:
+                raise BrokenThreadPool(self._broken)
+    
+            if self._shutdown:
+>               raise RuntimeError('cannot schedule new futures after shutdown')
+E               RuntimeError: cannot schedule new futures after shutdown
+
+/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/lib/python3.12/concurrent/futures/thread.py:171: RuntimeError
+_ test_invalid_parent_metadata_falls_back_and_caller_still_rejects[oversized_hops] _
+
+spark = <pyspark.sql.connect.session.SparkSession object at 0x1108170b0>
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/certificate-witness-fixtures-mn5y6d_r/sql/test_invalid_parent_metadata_f8')
+case = 'oversized_hops'
+
+    @pytest.mark.parametrize('case',['null_parent','null_hops','missing_parent','cycle','unreachable_metadata',
+                                      'root_parent','root_hops','zero_nonroot_hops','oversized_hops','missing_edge'])
+    def test_invalid_parent_metadata_falls_back_and_caller_still_rejects(spark,tmp_path,case):
+        rows=[[0,0.,0,0],[1,1.,0,1],[2,2.,1,2],[3,None,None,None]]
+        if case=='null_parent':rows[1][2]=None
+        if case=='null_hops':rows[1][3]=None
+        if case=='missing_parent':rows[1][2]=99
+        if case=='cycle':rows[1][2]=2
+        if case=='unreachable_metadata':rows[3][2]=0
+        if case=='root_parent':rows[0][2]=1
+        if case=='root_hops':rows[0][3]=1
+        if case=='zero_nonroot_hops':rows[1][3]=0
+        if case=='oversized_hops':rows[2][3]=4
+        if case=='missing_edge':rows[2][2:]=[0,1]
+        root=tmp_path/'data';frames=fixture(spark,root,rows=rows)
+>       proof=certify(spark,frames)
+              ^^^^^^^^^^^^^^^^^^^^^
+
+examples/extensions/benchmarks/test_traversal_parent_witness.py:103: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+examples/extensions/benchmarks/test_traversal_parent_witness.py:37: in certify
+    return implementation(spark,a,v,e,source=options.pop('source',0),
+examples/extensions/benchmarks/traversal_certificate.py:24: in certify
+    count=vertices.count()
+          ^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:313: in count
+    )._to_table()  # type: ignore[operator]
+      ^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:1794: in _to_table
+    table, schema, self._execution_info = self._session.client.to_table(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:925: in to_table
+    table, schema, metrics, observed_metrics, _ = self._execute_and_fetch(req, observations)
+                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1560: in _execute_and_fetch
+    for response in self._execute_and_fetch_as_iterator(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1537: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1812: in _handle_error
+    raise error
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1523: in _execute_and_fetch_as_iterator
+    for b in generator:
+             ^^^^^^^^^
+<frozen _collections_abc>:356: in __next__
+    ???
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py:148: in send
+    self._release_until(self._last_returned_response_id)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py:216: in _release_until
+    self._release_thread_pool.submit(target)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <concurrent.futures.thread.ThreadPoolExecutor object at 0x11086c050>
+fn = <function ExecutePlanResponseReattachableIterator._release_until.<locals>.target at 0x1109f60c0>
+args = (), kwargs = {}
+
+    def submit(self, fn, /, *args, **kwargs):
+        with self._shutdown_lock, _global_shutdown_lock:
+            if self._broken:
+                raise BrokenThreadPool(self._broken)
+    
+            if self._shutdown:
+>               raise RuntimeError('cannot schedule new futures after shutdown')
+E               RuntimeError: cannot schedule new futures after shutdown
+
+/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/lib/python3.12/concurrent/futures/thread.py:171: RuntimeError
+_ test_invalid_parent_metadata_falls_back_and_caller_still_rejects[missing_edge] _
+
+spark = <pyspark.sql.connect.session.SparkSession object at 0x1108170b0>
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/certificate-witness-fixtures-mn5y6d_r/sql/test_invalid_parent_metadata_f9')
+case = 'missing_edge'
+
+    @pytest.mark.parametrize('case',['null_parent','null_hops','missing_parent','cycle','unreachable_metadata',
+                                      'root_parent','root_hops','zero_nonroot_hops','oversized_hops','missing_edge'])
+    def test_invalid_parent_metadata_falls_back_and_caller_still_rejects(spark,tmp_path,case):
+        rows=[[0,0.,0,0],[1,1.,0,1],[2,2.,1,2],[3,None,None,None]]
+        if case=='null_parent':rows[1][2]=None
+        if case=='null_hops':rows[1][3]=None
+        if case=='missing_parent':rows[1][2]=99
+        if case=='cycle':rows[1][2]=2
+        if case=='unreachable_metadata':rows[3][2]=0
+        if case=='root_parent':rows[0][2]=1
+        if case=='root_hops':rows[0][3]=1
+        if case=='zero_nonroot_hops':rows[1][3]=0
+        if case=='oversized_hops':rows[2][3]=4
+        if case=='missing_edge':rows[2][2:]=[0,1]
+        root=tmp_path/'data';frames=fixture(spark,root,rows=rows)
+>       proof=certify(spark,frames)
+              ^^^^^^^^^^^^^^^^^^^^^
+
+examples/extensions/benchmarks/test_traversal_parent_witness.py:103: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+examples/extensions/benchmarks/test_traversal_parent_witness.py:37: in certify
+    return implementation(spark,a,v,e,source=options.pop('source',0),
+examples/extensions/benchmarks/traversal_certificate.py:24: in certify
+    count=vertices.count()
+          ^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:313: in count
+    )._to_table()  # type: ignore[operator]
+      ^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:1794: in _to_table
+    table, schema, self._execution_info = self._session.client.to_table(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:925: in to_table
+    table, schema, metrics, observed_metrics, _ = self._execute_and_fetch(req, observations)
+                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1560: in _execute_and_fetch
+    for response in self._execute_and_fetch_as_iterator(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1537: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1812: in _handle_error
+    raise error
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1523: in _execute_and_fetch_as_iterator
+    for b in generator:
+             ^^^^^^^^^
+<frozen _collections_abc>:356: in __next__
+    ???
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py:148: in send
+    self._release_until(self._last_returned_response_id)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py:216: in _release_until
+    self._release_thread_pool.submit(target)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <concurrent.futures.thread.ThreadPoolExecutor object at 0x11086c050>
+fn = <function ExecutePlanResponseReattachableIterator._release_until.<locals>.target at 0x110a90c20>
+args = (), kwargs = {}
+
+    def submit(self, fn, /, *args, **kwargs):
+        with self._shutdown_lock, _global_shutdown_lock:
+            if self._broken:
+                raise BrokenThreadPool(self._broken)
+    
+            if self._shutdown:
+>               raise RuntimeError('cannot schedule new futures after shutdown')
+E               RuntimeError: cannot schedule new futures after shutdown
+
+/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/lib/python3.12/concurrent/futures/thread.py:171: RuntimeError
+_____________ test_floating_hops_keep_existing_fallback_acceptance _____________
+
+spark = <pyspark.sql.connect.session.SparkSession object at 0x1108170b0>
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/certificate-witness-fixtures-mn5y6d_r/sql/test_floating_hops_keep_existi0')
+
+    def test_floating_hops_keep_existing_fallback_acceptance(spark,tmp_path):
+        root=tmp_path/'data';frames=fixture(spark,root,hop_type=pa.float64())
+>       assert certify(spark,frames)['witness_method']=='tight_edge_bfs'
+               ^^^^^^^^^^^^^^^^^^^^^
+
+examples/extensions/benchmarks/test_traversal_parent_witness.py:110: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+examples/extensions/benchmarks/test_traversal_parent_witness.py:37: in certify
+    return implementation(spark,a,v,e,source=options.pop('source',0),
+examples/extensions/benchmarks/traversal_certificate.py:24: in certify
+    count=vertices.count()
+          ^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:313: in count
+    )._to_table()  # type: ignore[operator]
+      ^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:1794: in _to_table
+    table, schema, self._execution_info = self._session.client.to_table(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:925: in to_table
+    table, schema, metrics, observed_metrics, _ = self._execute_and_fetch(req, observations)
+                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1560: in _execute_and_fetch
+    for response in self._execute_and_fetch_as_iterator(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1537: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1812: in _handle_error
+    raise error
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1523: in _execute_and_fetch_as_iterator
+    for b in generator:
+             ^^^^^^^^^
+<frozen _collections_abc>:356: in __next__
+    ???
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py:148: in send
+    self._release_until(self._last_returned_response_id)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py:216: in _release_until
+    self._release_thread_pool.submit(target)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <concurrent.futures.thread.ThreadPoolExecutor object at 0x11086c050>
+fn = <function ExecutePlanResponseReattachableIterator._release_until.<locals>.target at 0x110a93a60>
+args = (), kwargs = {}
+
+    def submit(self, fn, /, *args, **kwargs):
+        with self._shutdown_lock, _global_shutdown_lock:
+            if self._broken:
+                raise BrokenThreadPool(self._broken)
+    
+            if self._shutdown:
+>               raise RuntimeError('cannot schedule new futures after shutdown')
+E               RuntimeError: cannot schedule new futures after shutdown
+
+/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/lib/python3.12/concurrent/futures/thread.py:171: RuntimeError
+____ test_one_missing_optional_native_field_keeps_original_contract[parent] ____
+
+spark = <pyspark.sql.connect.session.SparkSession object at 0x1108170b0>
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/certificate-witness-fixtures-mn5y6d_r/sql/test_one_missing_optional_nati0')
+missing = 'parent'
+
+    @pytest.mark.parametrize('missing',['parent','hops'])
+    def test_one_missing_optional_native_field_keeps_original_contract(spark,tmp_path,missing):
+        from traversal_cell import validate_parents
+        root=tmp_path/'data';v,e,a=fixture(spark,root);a=a.drop(missing)
+>       assert certify(spark,(v,e,a))['witness_method']=='tight_edge_bfs'
+               ^^^^^^^^^^^^^^^^^^^^^^
+
+examples/extensions/benchmarks/test_traversal_parent_witness.py:118: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+examples/extensions/benchmarks/test_traversal_parent_witness.py:37: in certify
+    return implementation(spark,a,v,e,source=options.pop('source',0),
+examples/extensions/benchmarks/traversal_certificate.py:24: in certify
+    count=vertices.count()
+          ^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:313: in count
+    )._to_table()  # type: ignore[operator]
+      ^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:1794: in _to_table
+    table, schema, self._execution_info = self._session.client.to_table(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:925: in to_table
+    table, schema, metrics, observed_metrics, _ = self._execute_and_fetch(req, observations)
+                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1560: in _execute_and_fetch
+    for response in self._execute_and_fetch_as_iterator(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1537: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1812: in _handle_error
+    raise error
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1523: in _execute_and_fetch_as_iterator
+    for b in generator:
+             ^^^^^^^^^
+<frozen _collections_abc>:356: in __next__
+    ???
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py:148: in send
+    self._release_until(self._last_returned_response_id)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py:216: in _release_until
+    self._release_thread_pool.submit(target)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <concurrent.futures.thread.ThreadPoolExecutor object at 0x11086c050>
+fn = <function ExecutePlanResponseReattachableIterator._release_until.<locals>.target at 0x110a92fc0>
+args = (), kwargs = {}
+
+    def submit(self, fn, /, *args, **kwargs):
+        with self._shutdown_lock, _global_shutdown_lock:
+            if self._broken:
+                raise BrokenThreadPool(self._broken)
+    
+            if self._shutdown:
+>               raise RuntimeError('cannot schedule new futures after shutdown')
+E               RuntimeError: cannot schedule new futures after shutdown
+
+/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/lib/python3.12/concurrent/futures/thread.py:171: RuntimeError
+_____ test_one_missing_optional_native_field_keeps_original_contract[hops] _____
+
+spark = <pyspark.sql.connect.session.SparkSession object at 0x1108170b0>
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/certificate-witness-fixtures-mn5y6d_r/sql/test_one_missing_optional_nati1')
+missing = 'hops'
+
+    @pytest.mark.parametrize('missing',['parent','hops'])
+    def test_one_missing_optional_native_field_keeps_original_contract(spark,tmp_path,missing):
+        from traversal_cell import validate_parents
+        root=tmp_path/'data';v,e,a=fixture(spark,root);a=a.drop(missing)
+>       assert certify(spark,(v,e,a))['witness_method']=='tight_edge_bfs'
+               ^^^^^^^^^^^^^^^^^^^^^^
+
+examples/extensions/benchmarks/test_traversal_parent_witness.py:118: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+examples/extensions/benchmarks/test_traversal_parent_witness.py:37: in certify
+    return implementation(spark,a,v,e,source=options.pop('source',0),
+examples/extensions/benchmarks/traversal_certificate.py:24: in certify
+    count=vertices.count()
+          ^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:313: in count
+    )._to_table()  # type: ignore[operator]
+      ^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:1794: in _to_table
+    table, schema, self._execution_info = self._session.client.to_table(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:925: in to_table
+    table, schema, metrics, observed_metrics, _ = self._execute_and_fetch(req, observations)
+                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1560: in _execute_and_fetch
+    for response in self._execute_and_fetch_as_iterator(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1537: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1812: in _handle_error
+    raise error
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1523: in _execute_and_fetch_as_iterator
+    for b in generator:
+             ^^^^^^^^^
+<frozen _collections_abc>:356: in __next__
+    ???
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py:148: in send
+    self._release_until(self._last_returned_response_id)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py:216: in _release_until
+    self._release_thread_pool.submit(target)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <concurrent.futures.thread.ThreadPoolExecutor object at 0x11086c050>
+fn = <function ExecutePlanResponseReattachableIterator._release_until.<locals>.target at 0x1109f6020>
+args = (), kwargs = {}
+
+    def submit(self, fn, /, *args, **kwargs):
+        with self._shutdown_lock, _global_shutdown_lock:
+            if self._broken:
+                raise BrokenThreadPool(self._broken)
+    
+            if self._shutdown:
+>               raise RuntimeError('cannot schedule new futures after shutdown')
+E               RuntimeError: cannot schedule new futures after shutdown
+
+/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/lib/python3.12/concurrent/futures/thread.py:171: RuntimeError
+_____________ test_disconnected_zero_cycle_cannot_be_parent_proof ______________
+
+spark = <pyspark.sql.connect.session.SparkSession object at 0x1108170b0>
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/certificate-witness-fixtures-mn5y6d_r/sql/test_disconnected_zero_cycle_c0')
+
+    def test_disconnected_zero_cycle_cannot_be_parent_proof(spark,tmp_path):
+        frames=fixture(spark,tmp_path/'data',rows=[(0,0.,0,0),(1,0.,2,1),(2,0.,1,2)],
+                       edges=[(1,2,0.),(2,1,0.)])
+>       with pytest.raises(AssertionError,match='tight-edge witness'):certify(spark,frames)
+                                                                      ^^^^^^^^^^^^^^^^^^^^^
+
+examples/extensions/benchmarks/test_traversal_parent_witness.py:127: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+examples/extensions/benchmarks/test_traversal_parent_witness.py:37: in certify
+    return implementation(spark,a,v,e,source=options.pop('source',0),
+examples/extensions/benchmarks/traversal_certificate.py:24: in certify
+    count=vertices.count()
+          ^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:313: in count
+    )._to_table()  # type: ignore[operator]
+      ^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:1794: in _to_table
+    table, schema, self._execution_info = self._session.client.to_table(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:925: in to_table
+    table, schema, metrics, observed_metrics, _ = self._execute_and_fetch(req, observations)
+                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1560: in _execute_and_fetch
+    for response in self._execute_and_fetch_as_iterator(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1537: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1812: in _handle_error
+    raise error
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1523: in _execute_and_fetch_as_iterator
+    for b in generator:
+             ^^^^^^^^^
+<frozen _collections_abc>:356: in __next__
+    ???
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py:148: in send
+    self._release_until(self._last_returned_response_id)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py:216: in _release_until
+    self._release_thread_pool.submit(target)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <concurrent.futures.thread.ThreadPoolExecutor object at 0x11086c050>
+fn = <function ExecutePlanResponseReattachableIterator._release_until.<locals>.target at 0x110a93f60>
+args = (), kwargs = {}
+
+    def submit(self, fn, /, *args, **kwargs):
+        with self._shutdown_lock, _global_shutdown_lock:
+            if self._broken:
+                raise BrokenThreadPool(self._broken)
+    
+            if self._shutdown:
+>               raise RuntimeError('cannot schedule new futures after shutdown')
+E               RuntimeError: cannot schedule new futures after shutdown
+
+/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/lib/python3.12/concurrent/futures/thread.py:171: RuntimeError
+__________ test_parent_tree_never_bypasses_all_edge_checks[shortcut] ___________
+
+spark = <pyspark.sql.connect.session.SparkSession object at 0x1108170b0>
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/certificate-witness-fixtures-mn5y6d_r/sql/test_parent_tree_never_bypasse0')
+case = 'shortcut'
+
+    @pytest.mark.parametrize('case',['shortcut','unreachable','overflow'])
+    def test_parent_tree_never_bypasses_all_edge_checks(spark,tmp_path,case):
+        rows=[(0,0.,0,0),(1,1.,0,1),(2,2.,1,2),(3,None,None,None)]
+        edges=[(0,1,1.),(1,2,1.)]
+        if case=='shortcut':edges.append((0,2,.5));message='triangle'
+        if case=='unreachable':edges.append((1,3,1.));message='reachable'
+        if case=='overflow':
+            rows=[(0,0.,0,0),(1,1e308,0,1),(2,1e308,1,2),(3,None,None,None)]
+            edges=[(0,1,1e308),(1,2,1e308)];message='overflow'
+>       with pytest.raises(AssertionError,match=message):certify(spark,fixture(spark,tmp_path/'data',rows,edges))
+                                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+examples/extensions/benchmarks/test_traversal_parent_witness.py:139: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+examples/extensions/benchmarks/test_traversal_parent_witness.py:37: in certify
+    return implementation(spark,a,v,e,source=options.pop('source',0),
+examples/extensions/benchmarks/traversal_certificate.py:24: in certify
+    count=vertices.count()
+          ^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:313: in count
+    )._to_table()  # type: ignore[operator]
+      ^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:1794: in _to_table
+    table, schema, self._execution_info = self._session.client.to_table(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:925: in to_table
+    table, schema, metrics, observed_metrics, _ = self._execute_and_fetch(req, observations)
+                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1560: in _execute_and_fetch
+    for response in self._execute_and_fetch_as_iterator(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1537: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1812: in _handle_error
+    raise error
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1523: in _execute_and_fetch_as_iterator
+    for b in generator:
+             ^^^^^^^^^
+<frozen _collections_abc>:356: in __next__
+    ???
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py:148: in send
+    self._release_until(self._last_returned_response_id)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py:216: in _release_until
+    self._release_thread_pool.submit(target)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <concurrent.futures.thread.ThreadPoolExecutor object at 0x11086c050>
+fn = <function ExecutePlanResponseReattachableIterator._release_until.<locals>.target at 0x1109f6d40>
+args = (), kwargs = {}
+
+    def submit(self, fn, /, *args, **kwargs):
+        with self._shutdown_lock, _global_shutdown_lock:
+            if self._broken:
+                raise BrokenThreadPool(self._broken)
+    
+            if self._shutdown:
+>               raise RuntimeError('cannot schedule new futures after shutdown')
+E               RuntimeError: cannot schedule new futures after shutdown
+
+/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/lib/python3.12/concurrent/futures/thread.py:171: RuntimeError
+_________ test_parent_tree_never_bypasses_all_edge_checks[unreachable] _________
+
+spark = <pyspark.sql.connect.session.SparkSession object at 0x1108170b0>
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/certificate-witness-fixtures-mn5y6d_r/sql/test_parent_tree_never_bypasse1')
+case = 'unreachable'
+
+    @pytest.mark.parametrize('case',['shortcut','unreachable','overflow'])
+    def test_parent_tree_never_bypasses_all_edge_checks(spark,tmp_path,case):
+        rows=[(0,0.,0,0),(1,1.,0,1),(2,2.,1,2),(3,None,None,None)]
+        edges=[(0,1,1.),(1,2,1.)]
+        if case=='shortcut':edges.append((0,2,.5));message='triangle'
+        if case=='unreachable':edges.append((1,3,1.));message='reachable'
+        if case=='overflow':
+            rows=[(0,0.,0,0),(1,1e308,0,1),(2,1e308,1,2),(3,None,None,None)]
+            edges=[(0,1,1e308),(1,2,1e308)];message='overflow'
+>       with pytest.raises(AssertionError,match=message):certify(spark,fixture(spark,tmp_path/'data',rows,edges))
+                                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+examples/extensions/benchmarks/test_traversal_parent_witness.py:139: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+examples/extensions/benchmarks/test_traversal_parent_witness.py:37: in certify
+    return implementation(spark,a,v,e,source=options.pop('source',0),
+examples/extensions/benchmarks/traversal_certificate.py:24: in certify
+    count=vertices.count()
+          ^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:313: in count
+    )._to_table()  # type: ignore[operator]
+      ^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:1794: in _to_table
+    table, schema, self._execution_info = self._session.client.to_table(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:925: in to_table
+    table, schema, metrics, observed_metrics, _ = self._execute_and_fetch(req, observations)
+                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1560: in _execute_and_fetch
+    for response in self._execute_and_fetch_as_iterator(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1537: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1812: in _handle_error
+    raise error
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1523: in _execute_and_fetch_as_iterator
+    for b in generator:
+             ^^^^^^^^^
+<frozen _collections_abc>:356: in __next__
+    ???
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py:148: in send
+    self._release_until(self._last_returned_response_id)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py:216: in _release_until
+    self._release_thread_pool.submit(target)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <concurrent.futures.thread.ThreadPoolExecutor object at 0x11086c050>
+fn = <function ExecutePlanResponseReattachableIterator._release_until.<locals>.target at 0x1109f7920>
+args = (), kwargs = {}
+
+    def submit(self, fn, /, *args, **kwargs):
+        with self._shutdown_lock, _global_shutdown_lock:
+            if self._broken:
+                raise BrokenThreadPool(self._broken)
+    
+            if self._shutdown:
+>               raise RuntimeError('cannot schedule new futures after shutdown')
+E               RuntimeError: cannot schedule new futures after shutdown
+
+/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/lib/python3.12/concurrent/futures/thread.py:171: RuntimeError
+__________ test_parent_tree_never_bypasses_all_edge_checks[overflow] ___________
+
+spark = <pyspark.sql.connect.session.SparkSession object at 0x1108170b0>
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/certificate-witness-fixtures-mn5y6d_r/sql/test_parent_tree_never_bypasse2')
+case = 'overflow'
+
+    @pytest.mark.parametrize('case',['shortcut','unreachable','overflow'])
+    def test_parent_tree_never_bypasses_all_edge_checks(spark,tmp_path,case):
+        rows=[(0,0.,0,0),(1,1.,0,1),(2,2.,1,2),(3,None,None,None)]
+        edges=[(0,1,1.),(1,2,1.)]
+        if case=='shortcut':edges.append((0,2,.5));message='triangle'
+        if case=='unreachable':edges.append((1,3,1.));message='reachable'
+        if case=='overflow':
+            rows=[(0,0.,0,0),(1,1e308,0,1),(2,1e308,1,2),(3,None,None,None)]
+            edges=[(0,1,1e308),(1,2,1e308)];message='overflow'
+>       with pytest.raises(AssertionError,match=message):certify(spark,fixture(spark,tmp_path/'data',rows,edges))
+                                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+examples/extensions/benchmarks/test_traversal_parent_witness.py:139: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+examples/extensions/benchmarks/test_traversal_parent_witness.py:37: in certify
+    return implementation(spark,a,v,e,source=options.pop('source',0),
+examples/extensions/benchmarks/traversal_certificate.py:24: in certify
+    count=vertices.count()
+          ^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:313: in count
+    )._to_table()  # type: ignore[operator]
+      ^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:1794: in _to_table
+    table, schema, self._execution_info = self._session.client.to_table(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:925: in to_table
+    table, schema, metrics, observed_metrics, _ = self._execute_and_fetch(req, observations)
+                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1560: in _execute_and_fetch
+    for response in self._execute_and_fetch_as_iterator(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1537: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1812: in _handle_error
+    raise error
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1523: in _execute_and_fetch_as_iterator
+    for b in generator:
+             ^^^^^^^^^
+<frozen _collections_abc>:356: in __next__
+    ???
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py:148: in send
+    self._release_until(self._last_returned_response_id)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py:216: in _release_until
+    self._release_thread_pool.submit(target)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <concurrent.futures.thread.ThreadPoolExecutor object at 0x11086c050>
+fn = <function ExecutePlanResponseReattachableIterator._release_until.<locals>.target at 0x1109f72e0>
+args = (), kwargs = {}
+
+    def submit(self, fn, /, *args, **kwargs):
+        with self._shutdown_lock, _global_shutdown_lock:
+            if self._broken:
+                raise BrokenThreadPool(self._broken)
+    
+            if self._shutdown:
+>               raise RuntimeError('cannot schedule new futures after shutdown')
+E               RuntimeError: cannot schedule new futures after shutdown
+
+/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/lib/python3.12/concurrent/futures/thread.py:171: RuntimeError
+________ test_parent_metadata_never_bypasses_output_coverage[duplicate] ________
+
+spark = <pyspark.sql.connect.session.SparkSession object at 0x1108170b0>
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/certificate-witness-fixtures-mn5y6d_r/sql/test_parent_metadata_never_byp0')
+case = 'duplicate'
+
+    @pytest.mark.parametrize('case',['duplicate','missing','unknown'])
+    def test_parent_metadata_never_bypasses_output_coverage(spark,tmp_path,case):
+        from pyspark.sql.connect import functions as F
+        v,e,a=fixture(spark,tmp_path/'data')
+        if case=='duplicate':a=a.unionByName(a.where(F.col('id')==1))
+        if case=='missing':a=a.where(F.col('id')!=2)
+        if case=='unknown':a=a.withColumn('id',F.when(F.col('id')==2,99).otherwise(F.col('id')))
+        with pytest.raises(AssertionError,match='output cardinality|output vertex set'):
+>           certify(spark,(v,e,a))
+
+examples/extensions/benchmarks/test_traversal_parent_witness.py:150: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+examples/extensions/benchmarks/test_traversal_parent_witness.py:37: in certify
+    return implementation(spark,a,v,e,source=options.pop('source',0),
+examples/extensions/benchmarks/traversal_certificate.py:24: in certify
+    count=vertices.count()
+          ^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:313: in count
+    )._to_table()  # type: ignore[operator]
+      ^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:1794: in _to_table
+    table, schema, self._execution_info = self._session.client.to_table(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:925: in to_table
+    table, schema, metrics, observed_metrics, _ = self._execute_and_fetch(req, observations)
+                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1560: in _execute_and_fetch
+    for response in self._execute_and_fetch_as_iterator(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1537: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1812: in _handle_error
+    raise error
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1523: in _execute_and_fetch_as_iterator
+    for b in generator:
+             ^^^^^^^^^
+<frozen _collections_abc>:356: in __next__
+    ???
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py:148: in send
+    self._release_until(self._last_returned_response_id)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py:216: in _release_until
+    self._release_thread_pool.submit(target)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <concurrent.futures.thread.ThreadPoolExecutor object at 0x11086c050>
+fn = <function ExecutePlanResponseReattachableIterator._release_until.<locals>.target at 0x1109f7e20>
+args = (), kwargs = {}
+
+    def submit(self, fn, /, *args, **kwargs):
+        with self._shutdown_lock, _global_shutdown_lock:
+            if self._broken:
+                raise BrokenThreadPool(self._broken)
+    
+            if self._shutdown:
+>               raise RuntimeError('cannot schedule new futures after shutdown')
+E               RuntimeError: cannot schedule new futures after shutdown
+
+/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/lib/python3.12/concurrent/futures/thread.py:171: RuntimeError
+_________ test_parent_metadata_never_bypasses_output_coverage[missing] _________
+
+spark = <pyspark.sql.connect.session.SparkSession object at 0x1108170b0>
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/certificate-witness-fixtures-mn5y6d_r/sql/test_parent_metadata_never_byp1')
+case = 'missing'
+
+    @pytest.mark.parametrize('case',['duplicate','missing','unknown'])
+    def test_parent_metadata_never_bypasses_output_coverage(spark,tmp_path,case):
+        from pyspark.sql.connect import functions as F
+        v,e,a=fixture(spark,tmp_path/'data')
+        if case=='duplicate':a=a.unionByName(a.where(F.col('id')==1))
+        if case=='missing':a=a.where(F.col('id')!=2)
+        if case=='unknown':a=a.withColumn('id',F.when(F.col('id')==2,99).otherwise(F.col('id')))
+        with pytest.raises(AssertionError,match='output cardinality|output vertex set'):
+>           certify(spark,(v,e,a))
+
+examples/extensions/benchmarks/test_traversal_parent_witness.py:150: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+examples/extensions/benchmarks/test_traversal_parent_witness.py:37: in certify
+    return implementation(spark,a,v,e,source=options.pop('source',0),
+examples/extensions/benchmarks/traversal_certificate.py:24: in certify
+    count=vertices.count()
+          ^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:313: in count
+    )._to_table()  # type: ignore[operator]
+      ^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:1794: in _to_table
+    table, schema, self._execution_info = self._session.client.to_table(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:925: in to_table
+    table, schema, metrics, observed_metrics, _ = self._execute_and_fetch(req, observations)
+                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1560: in _execute_and_fetch
+    for response in self._execute_and_fetch_as_iterator(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1537: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1812: in _handle_error
+    raise error
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1523: in _execute_and_fetch_as_iterator
+    for b in generator:
+             ^^^^^^^^^
+<frozen _collections_abc>:356: in __next__
+    ???
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py:148: in send
+    self._release_until(self._last_returned_response_id)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py:216: in _release_until
+    self._release_thread_pool.submit(target)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <concurrent.futures.thread.ThreadPoolExecutor object at 0x11086c050>
+fn = <function ExecutePlanResponseReattachableIterator._release_until.<locals>.target at 0x1109f8220>
+args = (), kwargs = {}
+
+    def submit(self, fn, /, *args, **kwargs):
+        with self._shutdown_lock, _global_shutdown_lock:
+            if self._broken:
+                raise BrokenThreadPool(self._broken)
+    
+            if self._shutdown:
+>               raise RuntimeError('cannot schedule new futures after shutdown')
+E               RuntimeError: cannot schedule new futures after shutdown
+
+/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/lib/python3.12/concurrent/futures/thread.py:171: RuntimeError
+_________ test_parent_metadata_never_bypasses_output_coverage[unknown] _________
+
+spark = <pyspark.sql.connect.session.SparkSession object at 0x1108170b0>
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/certificate-witness-fixtures-mn5y6d_r/sql/test_parent_metadata_never_byp2')
+case = 'unknown'
+
+    @pytest.mark.parametrize('case',['duplicate','missing','unknown'])
+    def test_parent_metadata_never_bypasses_output_coverage(spark,tmp_path,case):
+        from pyspark.sql.connect import functions as F
+        v,e,a=fixture(spark,tmp_path/'data')
+        if case=='duplicate':a=a.unionByName(a.where(F.col('id')==1))
+        if case=='missing':a=a.where(F.col('id')!=2)
+        if case=='unknown':a=a.withColumn('id',F.when(F.col('id')==2,99).otherwise(F.col('id')))
+        with pytest.raises(AssertionError,match='output cardinality|output vertex set'):
+>           certify(spark,(v,e,a))
+
+examples/extensions/benchmarks/test_traversal_parent_witness.py:150: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+examples/extensions/benchmarks/test_traversal_parent_witness.py:37: in certify
+    return implementation(spark,a,v,e,source=options.pop('source',0),
+examples/extensions/benchmarks/traversal_certificate.py:24: in certify
+    count=vertices.count()
+          ^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:313: in count
+    )._to_table()  # type: ignore[operator]
+      ^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:1794: in _to_table
+    table, schema, self._execution_info = self._session.client.to_table(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:925: in to_table
+    table, schema, metrics, observed_metrics, _ = self._execute_and_fetch(req, observations)
+                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1560: in _execute_and_fetch
+    for response in self._execute_and_fetch_as_iterator(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1537: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1812: in _handle_error
+    raise error
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1523: in _execute_and_fetch_as_iterator
+    for b in generator:
+             ^^^^^^^^^
+<frozen _collections_abc>:356: in __next__
+    ???
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py:148: in send
+    self._release_until(self._last_returned_response_id)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py:216: in _release_until
+    self._release_thread_pool.submit(target)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <concurrent.futures.thread.ThreadPoolExecutor object at 0x11086c050>
+fn = <function ExecutePlanResponseReattachableIterator._release_until.<locals>.target at 0x1109f8b80>
+args = (), kwargs = {}
+
+    def submit(self, fn, /, *args, **kwargs):
+        with self._shutdown_lock, _global_shutdown_lock:
+            if self._broken:
+                raise BrokenThreadPool(self._broken)
+    
+            if self._shutdown:
+>               raise RuntimeError('cannot schedule new futures after shutdown')
+E               RuntimeError: cannot schedule new futures after shutdown
+
+/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/lib/python3.12/concurrent/futures/thread.py:171: RuntimeError
+__________ test_signed_ids_parallel_edges_and_undirected_orientation ___________
+
+spark = <pyspark.sql.connect.session.SparkSession object at 0x1108170b0>
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/certificate-witness-fixtures-mn5y6d_r/sql/test_signed_ids_parallel_edges0')
+
+    def test_signed_ids_parallel_edges_and_undirected_orientation(spark,tmp_path):
+        ids=[-(1<<63),-1,(1<<63)-1]
+        frames=fixture(spark,tmp_path/'data',rows=[(ids[0],0.,ids[0],0),(ids[1],1.,ids[0],1),(ids[2],2.,ids[1],2)],
+                       edges=[(ids[1],ids[0],8.),(ids[1],ids[0],1.),(ids[1],ids[2],1.)])
+>       assert certify(spark,frames,source=ids[0],directed=False)['witness_method']=='parent_hops'
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+examples/extensions/benchmarks/test_traversal_parent_witness.py:157: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+examples/extensions/benchmarks/test_traversal_parent_witness.py:37: in certify
+    return implementation(spark,a,v,e,source=options.pop('source',0),
+examples/extensions/benchmarks/traversal_certificate.py:24: in certify
+    count=vertices.count()
+          ^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:313: in count
+    )._to_table()  # type: ignore[operator]
+      ^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:1794: in _to_table
+    table, schema, self._execution_info = self._session.client.to_table(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:925: in to_table
+    table, schema, metrics, observed_metrics, _ = self._execute_and_fetch(req, observations)
+                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1560: in _execute_and_fetch
+    for response in self._execute_and_fetch_as_iterator(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1537: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1812: in _handle_error
+    raise error
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1523: in _execute_and_fetch_as_iterator
+    for b in generator:
+             ^^^^^^^^^
+<frozen _collections_abc>:356: in __next__
+    ???
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py:148: in send
+    self._release_until(self._last_returned_response_id)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py:216: in _release_until
+    self._release_thread_pool.submit(target)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <concurrent.futures.thread.ThreadPoolExecutor object at 0x11086c050>
+fn = <function ExecutePlanResponseReattachableIterator._release_until.<locals>.target at 0x1109f91c0>
+args = (), kwargs = {}
+
+    def submit(self, fn, /, *args, **kwargs):
+        with self._shutdown_lock, _global_shutdown_lock:
+            if self._broken:
+                raise BrokenThreadPool(self._broken)
+    
+            if self._shutdown:
+>               raise RuntimeError('cannot schedule new futures after shutdown')
+E               RuntimeError: cannot schedule new futures after shutdown
+
+/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/lib/python3.12/concurrent/futures/thread.py:171: RuntimeError
+________________ test_float_expression_order_and_isolated_root _________________
+
+spark = <pyspark.sql.connect.session.SparkSession object at 0x1108170b0>
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/certificate-witness-fixtures-mn5y6d_r/sql/test_float_expression_order_an0')
+
+    def test_float_expression_order_and_isolated_root(spark,tmp_path):
+        frames=fixture(spark,tmp_path/'rounding',rows=[(0,0.,0,0),(1,1.,0,1),(2,1.,1,2)],
+                       edges=[(0,1,1.),(1,2,2.**-53)])
+>       assert certify(spark,frames,tolerance=0.)['witness_method']=='parent_hops'
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+examples/extensions/benchmarks/test_traversal_parent_witness.py:163: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+examples/extensions/benchmarks/test_traversal_parent_witness.py:37: in certify
+    return implementation(spark,a,v,e,source=options.pop('source',0),
+examples/extensions/benchmarks/traversal_certificate.py:24: in certify
+    count=vertices.count()
+          ^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:313: in count
+    )._to_table()  # type: ignore[operator]
+      ^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:1794: in _to_table
+    table, schema, self._execution_info = self._session.client.to_table(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:925: in to_table
+    table, schema, metrics, observed_metrics, _ = self._execute_and_fetch(req, observations)
+                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1560: in _execute_and_fetch
+    for response in self._execute_and_fetch_as_iterator(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1537: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1812: in _handle_error
+    raise error
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1523: in _execute_and_fetch_as_iterator
+    for b in generator:
+             ^^^^^^^^^
+<frozen _collections_abc>:356: in __next__
+    ???
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py:148: in send
+    self._release_until(self._last_returned_response_id)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py:216: in _release_until
+    self._release_thread_pool.submit(target)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <concurrent.futures.thread.ThreadPoolExecutor object at 0x11086c050>
+fn = <function ExecutePlanResponseReattachableIterator._release_until.<locals>.target at 0x1109f9440>
+args = (), kwargs = {}
+
+    def submit(self, fn, /, *args, **kwargs):
+        with self._shutdown_lock, _global_shutdown_lock:
+            if self._broken:
+                raise BrokenThreadPool(self._broken)
+    
+            if self._shutdown:
+>               raise RuntimeError('cannot schedule new futures after shutdown')
+E               RuntimeError: cannot schedule new futures after shutdown
+
+/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/lib/python3.12/concurrent/futures/thread.py:171: RuntimeError
+_ test_original_graph_run_preconditions_apply_before_parent_selection[partitions0] _
+
+spark = <pyspark.sql.connect.session.SparkSession object at 0x1108170b0>
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/certificate-witness-fixtures-mn5y6d_r/sql/test_original_graph_run_precon0')
+case = 'partitions0'
+
+    @pytest.mark.parametrize('case',['partitions0','partitions_bool','partitions_float',
+                                      'vertices_int32','edges_int32','duplicate_names'])
+    def test_original_graph_run_preconditions_apply_before_parent_selection(spark,tmp_path,case):
+        from pyspark.sql.connect import functions as F
+        v,e,a=fixture(spark,tmp_path/'data')
+        partitions=2;message='partitions'
+        if case=='partitions0':partitions=0
+        if case=='partitions_bool':partitions=True
+        if case=='partitions_float':partitions=1.5
+        if case=='vertices_int32':v=v.select(F.col('id').cast('int').alias('id'));message='BIGINT'
+        if case=='edges_int32':e=e.select(F.col('src').cast('int').alias('src'),'dst','weight');message='BIGINT'
+        if case=='duplicate_names':v=v.select('id',F.lit(1).alias('extra'),F.lit(2).alias('extra'));message='unique column'
+        with pytest.raises(ValueError,match=message):
+>           certify(spark,(v,e,a),partitions=partitions)
+
+examples/extensions/benchmarks/test_traversal_parent_witness.py:189: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+examples/extensions/benchmarks/test_traversal_parent_witness.py:37: in certify
+    return implementation(spark,a,v,e,source=options.pop('source',0),
+examples/extensions/benchmarks/traversal_certificate.py:24: in certify
+    count=vertices.count()
+          ^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:313: in count
+    )._to_table()  # type: ignore[operator]
+      ^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:1794: in _to_table
+    table, schema, self._execution_info = self._session.client.to_table(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:925: in to_table
+    table, schema, metrics, observed_metrics, _ = self._execute_and_fetch(req, observations)
+                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1560: in _execute_and_fetch
+    for response in self._execute_and_fetch_as_iterator(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1537: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1812: in _handle_error
+    raise error
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1523: in _execute_and_fetch_as_iterator
+    for b in generator:
+             ^^^^^^^^^
+<frozen _collections_abc>:356: in __next__
+    ???
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py:148: in send
+    self._release_until(self._last_returned_response_id)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py:216: in _release_until
+    self._release_thread_pool.submit(target)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <concurrent.futures.thread.ThreadPoolExecutor object at 0x11086c050>
+fn = <function ExecutePlanResponseReattachableIterator._release_until.<locals>.target at 0x1109fa200>
+args = (), kwargs = {}
+
+    def submit(self, fn, /, *args, **kwargs):
+        with self._shutdown_lock, _global_shutdown_lock:
+            if self._broken:
+                raise BrokenThreadPool(self._broken)
+    
+            if self._shutdown:
+>               raise RuntimeError('cannot schedule new futures after shutdown')
+E               RuntimeError: cannot schedule new futures after shutdown
+
+/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/lib/python3.12/concurrent/futures/thread.py:171: RuntimeError
+_ test_original_graph_run_preconditions_apply_before_parent_selection[partitions_bool] _
+
+spark = <pyspark.sql.connect.session.SparkSession object at 0x1108170b0>
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/certificate-witness-fixtures-mn5y6d_r/sql/test_original_graph_run_precon1')
+case = 'partitions_bool'
+
+    @pytest.mark.parametrize('case',['partitions0','partitions_bool','partitions_float',
+                                      'vertices_int32','edges_int32','duplicate_names'])
+    def test_original_graph_run_preconditions_apply_before_parent_selection(spark,tmp_path,case):
+        from pyspark.sql.connect import functions as F
+        v,e,a=fixture(spark,tmp_path/'data')
+        partitions=2;message='partitions'
+        if case=='partitions0':partitions=0
+        if case=='partitions_bool':partitions=True
+        if case=='partitions_float':partitions=1.5
+        if case=='vertices_int32':v=v.select(F.col('id').cast('int').alias('id'));message='BIGINT'
+        if case=='edges_int32':e=e.select(F.col('src').cast('int').alias('src'),'dst','weight');message='BIGINT'
+        if case=='duplicate_names':v=v.select('id',F.lit(1).alias('extra'),F.lit(2).alias('extra'));message='unique column'
+        with pytest.raises(ValueError,match=message):
+>           certify(spark,(v,e,a),partitions=partitions)
+
+examples/extensions/benchmarks/test_traversal_parent_witness.py:189: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+examples/extensions/benchmarks/test_traversal_parent_witness.py:37: in certify
+    return implementation(spark,a,v,e,source=options.pop('source',0),
+examples/extensions/benchmarks/traversal_certificate.py:24: in certify
+    count=vertices.count()
+          ^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:313: in count
+    )._to_table()  # type: ignore[operator]
+      ^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:1794: in _to_table
+    table, schema, self._execution_info = self._session.client.to_table(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:925: in to_table
+    table, schema, metrics, observed_metrics, _ = self._execute_and_fetch(req, observations)
+                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1560: in _execute_and_fetch
+    for response in self._execute_and_fetch_as_iterator(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1537: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1812: in _handle_error
+    raise error
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1523: in _execute_and_fetch_as_iterator
+    for b in generator:
+             ^^^^^^^^^
+<frozen _collections_abc>:356: in __next__
+    ???
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py:148: in send
+    self._release_until(self._last_returned_response_id)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py:216: in _release_until
+    self._release_thread_pool.submit(target)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <concurrent.futures.thread.ThreadPoolExecutor object at 0x11086c050>
+fn = <function ExecutePlanResponseReattachableIterator._release_until.<locals>.target at 0x1109fa520>
+args = (), kwargs = {}
+
+    def submit(self, fn, /, *args, **kwargs):
+        with self._shutdown_lock, _global_shutdown_lock:
+            if self._broken:
+                raise BrokenThreadPool(self._broken)
+    
+            if self._shutdown:
+>               raise RuntimeError('cannot schedule new futures after shutdown')
+E               RuntimeError: cannot schedule new futures after shutdown
+
+/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/lib/python3.12/concurrent/futures/thread.py:171: RuntimeError
+_ test_original_graph_run_preconditions_apply_before_parent_selection[partitions_float] _
+
+spark = <pyspark.sql.connect.session.SparkSession object at 0x1108170b0>
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/certificate-witness-fixtures-mn5y6d_r/sql/test_original_graph_run_precon2')
+case = 'partitions_float'
+
+    @pytest.mark.parametrize('case',['partitions0','partitions_bool','partitions_float',
+                                      'vertices_int32','edges_int32','duplicate_names'])
+    def test_original_graph_run_preconditions_apply_before_parent_selection(spark,tmp_path,case):
+        from pyspark.sql.connect import functions as F
+        v,e,a=fixture(spark,tmp_path/'data')
+        partitions=2;message='partitions'
+        if case=='partitions0':partitions=0
+        if case=='partitions_bool':partitions=True
+        if case=='partitions_float':partitions=1.5
+        if case=='vertices_int32':v=v.select(F.col('id').cast('int').alias('id'));message='BIGINT'
+        if case=='edges_int32':e=e.select(F.col('src').cast('int').alias('src'),'dst','weight');message='BIGINT'
+        if case=='duplicate_names':v=v.select('id',F.lit(1).alias('extra'),F.lit(2).alias('extra'));message='unique column'
+        with pytest.raises(ValueError,match=message):
+>           certify(spark,(v,e,a),partitions=partitions)
+
+examples/extensions/benchmarks/test_traversal_parent_witness.py:189: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+examples/extensions/benchmarks/test_traversal_parent_witness.py:37: in certify
+    return implementation(spark,a,v,e,source=options.pop('source',0),
+examples/extensions/benchmarks/traversal_certificate.py:24: in certify
+    count=vertices.count()
+          ^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:313: in count
+    )._to_table()  # type: ignore[operator]
+      ^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:1794: in _to_table
+    table, schema, self._execution_info = self._session.client.to_table(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:925: in to_table
+    table, schema, metrics, observed_metrics, _ = self._execute_and_fetch(req, observations)
+                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1560: in _execute_and_fetch
+    for response in self._execute_and_fetch_as_iterator(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1537: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1812: in _handle_error
+    raise error
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1523: in _execute_and_fetch_as_iterator
+    for b in generator:
+             ^^^^^^^^^
+<frozen _collections_abc>:356: in __next__
+    ???
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py:148: in send
+    self._release_until(self._last_returned_response_id)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py:216: in _release_until
+    self._release_thread_pool.submit(target)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <concurrent.futures.thread.ThreadPoolExecutor object at 0x11086c050>
+fn = <function ExecutePlanResponseReattachableIterator._release_until.<locals>.target at 0x1109f9940>
+args = (), kwargs = {}
+
+    def submit(self, fn, /, *args, **kwargs):
+        with self._shutdown_lock, _global_shutdown_lock:
+            if self._broken:
+                raise BrokenThreadPool(self._broken)
+    
+            if self._shutdown:
+>               raise RuntimeError('cannot schedule new futures after shutdown')
+E               RuntimeError: cannot schedule new futures after shutdown
+
+/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/lib/python3.12/concurrent/futures/thread.py:171: RuntimeError
+_ test_original_graph_run_preconditions_apply_before_parent_selection[vertices_int32] _
+
+spark = <pyspark.sql.connect.session.SparkSession object at 0x1108170b0>
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/certificate-witness-fixtures-mn5y6d_r/sql/test_original_graph_run_precon3')
+case = 'vertices_int32'
+
+    @pytest.mark.parametrize('case',['partitions0','partitions_bool','partitions_float',
+                                      'vertices_int32','edges_int32','duplicate_names'])
+    def test_original_graph_run_preconditions_apply_before_parent_selection(spark,tmp_path,case):
+        from pyspark.sql.connect import functions as F
+        v,e,a=fixture(spark,tmp_path/'data')
+        partitions=2;message='partitions'
+        if case=='partitions0':partitions=0
+        if case=='partitions_bool':partitions=True
+        if case=='partitions_float':partitions=1.5
+        if case=='vertices_int32':v=v.select(F.col('id').cast('int').alias('id'));message='BIGINT'
+        if case=='edges_int32':e=e.select(F.col('src').cast('int').alias('src'),'dst','weight');message='BIGINT'
+        if case=='duplicate_names':v=v.select('id',F.lit(1).alias('extra'),F.lit(2).alias('extra'));message='unique column'
+        with pytest.raises(ValueError,match=message):
+>           certify(spark,(v,e,a),partitions=partitions)
+
+examples/extensions/benchmarks/test_traversal_parent_witness.py:189: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+examples/extensions/benchmarks/test_traversal_parent_witness.py:37: in certify
+    return implementation(spark,a,v,e,source=options.pop('source',0),
+examples/extensions/benchmarks/traversal_certificate.py:24: in certify
+    count=vertices.count()
+          ^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:313: in count
+    )._to_table()  # type: ignore[operator]
+      ^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:1794: in _to_table
+    table, schema, self._execution_info = self._session.client.to_table(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:925: in to_table
+    table, schema, metrics, observed_metrics, _ = self._execute_and_fetch(req, observations)
+                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1560: in _execute_and_fetch
+    for response in self._execute_and_fetch_as_iterator(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1537: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1812: in _handle_error
+    raise error
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1523: in _execute_and_fetch_as_iterator
+    for b in generator:
+             ^^^^^^^^^
+<frozen _collections_abc>:356: in __next__
+    ???
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py:148: in send
+    self._release_until(self._last_returned_response_id)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py:216: in _release_until
+    self._release_thread_pool.submit(target)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <concurrent.futures.thread.ThreadPoolExecutor object at 0x11086c050>
+fn = <function ExecutePlanResponseReattachableIterator._release_until.<locals>.target at 0x1109fade0>
+args = (), kwargs = {}
+
+    def submit(self, fn, /, *args, **kwargs):
+        with self._shutdown_lock, _global_shutdown_lock:
+            if self._broken:
+                raise BrokenThreadPool(self._broken)
+    
+            if self._shutdown:
+>               raise RuntimeError('cannot schedule new futures after shutdown')
+E               RuntimeError: cannot schedule new futures after shutdown
+
+/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/lib/python3.12/concurrent/futures/thread.py:171: RuntimeError
+_ test_original_graph_run_preconditions_apply_before_parent_selection[edges_int32] _
+
+spark = <pyspark.sql.connect.session.SparkSession object at 0x1108170b0>
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/certificate-witness-fixtures-mn5y6d_r/sql/test_original_graph_run_precon4')
+case = 'edges_int32'
+
+    @pytest.mark.parametrize('case',['partitions0','partitions_bool','partitions_float',
+                                      'vertices_int32','edges_int32','duplicate_names'])
+    def test_original_graph_run_preconditions_apply_before_parent_selection(spark,tmp_path,case):
+        from pyspark.sql.connect import functions as F
+        v,e,a=fixture(spark,tmp_path/'data')
+        partitions=2;message='partitions'
+        if case=='partitions0':partitions=0
+        if case=='partitions_bool':partitions=True
+        if case=='partitions_float':partitions=1.5
+        if case=='vertices_int32':v=v.select(F.col('id').cast('int').alias('id'));message='BIGINT'
+        if case=='edges_int32':e=e.select(F.col('src').cast('int').alias('src'),'dst','weight');message='BIGINT'
+        if case=='duplicate_names':v=v.select('id',F.lit(1).alias('extra'),F.lit(2).alias('extra'));message='unique column'
+        with pytest.raises(ValueError,match=message):
+>           certify(spark,(v,e,a),partitions=partitions)
+
+examples/extensions/benchmarks/test_traversal_parent_witness.py:189: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+examples/extensions/benchmarks/test_traversal_parent_witness.py:37: in certify
+    return implementation(spark,a,v,e,source=options.pop('source',0),
+examples/extensions/benchmarks/traversal_certificate.py:24: in certify
+    count=vertices.count()
+          ^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:313: in count
+    )._to_table()  # type: ignore[operator]
+      ^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:1794: in _to_table
+    table, schema, self._execution_info = self._session.client.to_table(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:925: in to_table
+    table, schema, metrics, observed_metrics, _ = self._execute_and_fetch(req, observations)
+                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1560: in _execute_and_fetch
+    for response in self._execute_and_fetch_as_iterator(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1537: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1812: in _handle_error
+    raise error
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1523: in _execute_and_fetch_as_iterator
+    for b in generator:
+             ^^^^^^^^^
+<frozen _collections_abc>:356: in __next__
+    ???
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py:148: in send
+    self._release_until(self._last_returned_response_id)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py:216: in _release_until
+    self._release_thread_pool.submit(target)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <concurrent.futures.thread.ThreadPoolExecutor object at 0x11086c050>
+fn = <function ExecutePlanResponseReattachableIterator._release_until.<locals>.target at 0x1109fa340>
+args = (), kwargs = {}
+
+    def submit(self, fn, /, *args, **kwargs):
+        with self._shutdown_lock, _global_shutdown_lock:
+            if self._broken:
+                raise BrokenThreadPool(self._broken)
+    
+            if self._shutdown:
+>               raise RuntimeError('cannot schedule new futures after shutdown')
+E               RuntimeError: cannot schedule new futures after shutdown
+
+/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/lib/python3.12/concurrent/futures/thread.py:171: RuntimeError
+_ test_original_graph_run_preconditions_apply_before_parent_selection[duplicate_names] _
+
+spark = <pyspark.sql.connect.session.SparkSession object at 0x1108170b0>
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/certificate-witness-fixtures-mn5y6d_r/sql/test_original_graph_run_precon5')
+case = 'duplicate_names'
+
+    @pytest.mark.parametrize('case',['partitions0','partitions_bool','partitions_float',
+                                      'vertices_int32','edges_int32','duplicate_names'])
+    def test_original_graph_run_preconditions_apply_before_parent_selection(spark,tmp_path,case):
+        from pyspark.sql.connect import functions as F
+        v,e,a=fixture(spark,tmp_path/'data')
+        partitions=2;message='partitions'
+        if case=='partitions0':partitions=0
+        if case=='partitions_bool':partitions=True
+        if case=='partitions_float':partitions=1.5
+        if case=='vertices_int32':v=v.select(F.col('id').cast('int').alias('id'));message='BIGINT'
+        if case=='edges_int32':e=e.select(F.col('src').cast('int').alias('src'),'dst','weight');message='BIGINT'
+        if case=='duplicate_names':v=v.select('id',F.lit(1).alias('extra'),F.lit(2).alias('extra'));message='unique column'
+        with pytest.raises(ValueError,match=message):
+>           certify(spark,(v,e,a),partitions=partitions)
+
+examples/extensions/benchmarks/test_traversal_parent_witness.py:189: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+examples/extensions/benchmarks/test_traversal_parent_witness.py:37: in certify
+    return implementation(spark,a,v,e,source=options.pop('source',0),
+examples/extensions/benchmarks/traversal_certificate.py:24: in certify
+    count=vertices.count()
+          ^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:313: in count
+    )._to_table()  # type: ignore[operator]
+      ^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:1794: in _to_table
+    table, schema, self._execution_info = self._session.client.to_table(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:925: in to_table
+    table, schema, metrics, observed_metrics, _ = self._execute_and_fetch(req, observations)
+                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1560: in _execute_and_fetch
+    for response in self._execute_and_fetch_as_iterator(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1537: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1812: in _handle_error
+    raise error
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1523: in _execute_and_fetch_as_iterator
+    for b in generator:
+             ^^^^^^^^^
+<frozen _collections_abc>:356: in __next__
+    ???
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py:148: in send
+    self._release_until(self._last_returned_response_id)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py:216: in _release_until
+    self._release_thread_pool.submit(target)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <concurrent.futures.thread.ThreadPoolExecutor object at 0x11086c050>
+fn = <function ExecutePlanResponseReattachableIterator._release_until.<locals>.target at 0x1109fb7e0>
+args = (), kwargs = {}
+
+    def submit(self, fn, /, *args, **kwargs):
+        with self._shutdown_lock, _global_shutdown_lock:
+            if self._broken:
+                raise BrokenThreadPool(self._broken)
+    
+            if self._shutdown:
+>               raise RuntimeError('cannot schedule new futures after shutdown')
+E               RuntimeError: cannot schedule new futures after shutdown
+
+/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/lib/python3.12/concurrent/futures/thread.py:171: RuntimeError
+=============================== warnings summary ===============================
+examples/extensions/benchmarks/test_traversal_parent_witness.py: 19 warnings
+  /Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/_pytest/unraisableexception.py:67: PytestUnraisableExceptionWarning: Exception ignored in: <function ExecutePlanResponseReattachableIterator.__del__ at 0x1107aa700>
+  
+  Traceback (most recent call last):
+    File "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py", line 335, in __del__
+      return self.close()
+             ^^^^^^^^^^^^
+    File "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py", line 331, in close
+      self._release_all()
+    File "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py", line 241, in _release_all
+      self._release_thread_pool.submit(target)
+    File "/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/lib/python3.12/concurrent/futures/thread.py", line 171, in submit
+      raise RuntimeError('cannot schedule new futures after shutdown')
+  RuntimeError: cannot schedule new futures after shutdown
+  
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+    warnings.warn(pytest.PytestUnraisableExceptionWarning(msg))
+
+::test_null_or_missing_parent_metadata_is_not_silently_proved[parents2-hops2]
+  /Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/logger/logger.py:221: DeprecationWarning: The 'warn' method is deprecated, use 'warning' instead
+    super().warn(msg, *args, **kwargs)  # type: ignore[arg-type]
+
+::test_matched_certificate_work[depth0]
+::test_matched_certificate_work[depth1]
+::test_matched_certificate_work[depth2]
+::test_matched_certificate_work[depth4]
+::test_matched_certificate_work[depth8]
+::test_matched_certificate_work[distance_only]
+::test_matched_certificate_work[cap_fallback]
+  ../../../Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/certificate-parent-witness/test_work.py:8: PytestWarning: record_property is incompatible with junit_family 'xunit2' (use 'legacy' or 'xunit1')
+    @pytest.mark.parametrize('case',['depth0','depth1','depth2','depth4','depth8','distance_only','cap_fallback'])
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+- generated xml file: /Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/certificate-parent-witness/exact-gate/sql.xml -
+=========================== short test summary info ============================
+FAILED examples/extensions/benchmarks/test_traversal_parent_witness.py::test_integral_parent_tree_matches_distance_only_certificate_and_oracle[hop_type0-False]
+FAILED examples/extensions/benchmarks/test_traversal_parent_witness.py::test_integral_parent_tree_matches_distance_only_certificate_and_oracle[hop_type0-True]
+FAILED examples/extensions/benchmarks/test_traversal_parent_witness.py::test_integral_parent_tree_matches_distance_only_certificate_and_oracle[hop_type1-False]
+FAILED examples/extensions/benchmarks/test_traversal_parent_witness.py::test_integral_parent_tree_matches_distance_only_certificate_and_oracle[hop_type1-True]
+FAILED examples/extensions/benchmarks/test_traversal_parent_witness.py::test_integral_parent_tree_matches_distance_only_certificate_and_oracle[hop_type2-False]
+FAILED examples/extensions/benchmarks/test_traversal_parent_witness.py::test_integral_parent_tree_matches_distance_only_certificate_and_oracle[hop_type2-True]
+FAILED examples/extensions/benchmarks/test_traversal_parent_witness.py::test_integral_parent_tree_matches_distance_only_certificate_and_oracle[hop_type3-False]
+FAILED examples/extensions/benchmarks/test_traversal_parent_witness.py::test_integral_parent_tree_matches_distance_only_certificate_and_oracle[hop_type3-True]
+FAILED examples/extensions/benchmarks/test_traversal_parent_witness.py::test_cap_trap_retains_shorter_bfs_fallback
+FAILED examples/extensions/benchmarks/test_traversal_parent_witness.py::test_old_parent_tolerance_does_not_prove_exact_tight_edge
+FAILED examples/extensions/benchmarks/test_traversal_parent_witness.py::test_stricter_existing_parent_output_rejection_is_preserved
+FAILED examples/extensions/benchmarks/test_traversal_parent_witness.py::test_invalid_parent_metadata_falls_back_and_caller_still_rejects[null_parent]
+FAILED examples/extensions/benchmarks/test_traversal_parent_witness.py::test_invalid_parent_metadata_falls_back_and_caller_still_rejects[null_hops]
+FAILED examples/extensions/benchmarks/test_traversal_parent_witness.py::test_invalid_parent_metadata_falls_back_and_caller_still_rejects[missing_parent]
+FAILED examples/extensions/benchmarks/test_traversal_parent_witness.py::test_invalid_parent_metadata_falls_back_and_caller_still_rejects[cycle]
+FAILED examples/extensions/benchmarks/test_traversal_parent_witness.py::test_invalid_parent_metadata_falls_back_and_caller_still_rejects[unreachable_metadata]
+FAILED examples/extensions/benchmarks/test_traversal_parent_witness.py::test_invalid_parent_metadata_falls_back_and_caller_still_rejects[root_parent]
+FAILED examples/extensions/benchmarks/test_traversal_parent_witness.py::test_invalid_parent_metadata_falls_back_and_caller_still_rejects[root_hops]
+FAILED examples/extensions/benchmarks/test_traversal_parent_witness.py::test_invalid_parent_metadata_falls_back_and_caller_still_rejects[zero_nonroot_hops]
+FAILED examples/extensions/benchmarks/test_traversal_parent_witness.py::test_invalid_parent_metadata_falls_back_and_caller_still_rejects[oversized_hops]
+FAILED examples/extensions/benchmarks/test_traversal_parent_witness.py::test_invalid_parent_metadata_falls_back_and_caller_still_rejects[missing_edge]
+FAILED examples/extensions/benchmarks/test_traversal_parent_witness.py::test_floating_hops_keep_existing_fallback_acceptance
+FAILED examples/extensions/benchmarks/test_traversal_parent_witness.py::test_one_missing_optional_native_field_keeps_original_contract[parent]
+FAILED examples/extensions/benchmarks/test_traversal_parent_witness.py::test_one_missing_optional_native_field_keeps_original_contract[hops]
+FAILED examples/extensions/benchmarks/test_traversal_parent_witness.py::test_disconnected_zero_cycle_cannot_be_parent_proof
+FAILED examples/extensions/benchmarks/test_traversal_parent_witness.py::test_parent_tree_never_bypasses_all_edge_checks[shortcut]
+FAILED examples/extensions/benchmarks/test_traversal_parent_witness.py::test_parent_tree_never_bypasses_all_edge_checks[unreachable]
+FAILED examples/extensions/benchmarks/test_traversal_parent_witness.py::test_parent_tree_never_bypasses_all_edge_checks[overflow]
+FAILED examples/extensions/benchmarks/test_traversal_parent_witness.py::test_parent_metadata_never_bypasses_output_coverage[duplicate]
+FAILED examples/extensions/benchmarks/test_traversal_parent_witness.py::test_parent_metadata_never_bypasses_output_coverage[missing]
+FAILED examples/extensions/benchmarks/test_traversal_parent_witness.py::test_parent_metadata_never_bypasses_output_coverage[unknown]
+FAILED examples/extensions/benchmarks/test_traversal_parent_witness.py::test_signed_ids_parallel_edges_and_undirected_orientation
+FAILED examples/extensions/benchmarks/test_traversal_parent_witness.py::test_float_expression_order_and_isolated_root
+FAILED examples/extensions/benchmarks/test_traversal_parent_witness.py::test_original_graph_run_preconditions_apply_before_parent_selection[partitions0]
+FAILED examples/extensions/benchmarks/test_traversal_parent_witness.py::test_original_graph_run_preconditions_apply_before_parent_selection[partitions_bool]
+FAILED examples/extensions/benchmarks/test_traversal_parent_witness.py::test_original_graph_run_preconditions_apply_before_parent_selection[partitions_float]
+FAILED examples/extensions/benchmarks/test_traversal_parent_witness.py::test_original_graph_run_preconditions_apply_before_parent_selection[vertices_int32]
+FAILED examples/extensions/benchmarks/test_traversal_parent_witness.py::test_original_graph_run_preconditions_apply_before_parent_selection[edges_int32]
+FAILED examples/extensions/benchmarks/test_traversal_parent_witness.py::test_original_graph_run_preconditions_apply_before_parent_selection[duplicate_names]
+39 failed, 32 passed, 27 warnings in 15.07s

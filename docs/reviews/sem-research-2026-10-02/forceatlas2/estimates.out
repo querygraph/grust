@@ -1,0 +1,93 @@
+== Part 1. Quadtree cells per point (simulation, numpy) ==
+n, distribution, bucket, depth cap, internal/n, leaves/n, 4-slot cells/n, compressed nodes/n, depth
+  100000, uniform  ,  1, 16, 0.721, 1.000, 2.884, 1.622, 16
+  100000, uniform  ,  1, 26, 0.721, 1.000, 2.884, 1.622, 16
+  100000, uniform  , 16, 16, 0.053, 0.158, 0.211, 0.211, 8
+  100000, uniform  , 16, 26, 0.053, 0.158, 0.211, 0.211, 8
+  100000, clustered,  1, 16, 0.629, 0.878, 2.516, 1.417, 16
+  100000, clustered,  1, 26, 0.744, 1.000, 2.974, 1.632, 26
+  100000, clustered, 16, 16, 0.056, 0.141, 0.226, 0.193, 16
+  100000, clustered, 16, 26, 0.058, 0.145, 0.230, 0.198, 17
+  100000, core-halo,  1, 16, 0.104, 0.177, 0.418, 0.272, 16
+  100000, core-halo,  1, 26, 0.720, 0.998, 2.881, 1.619, 26
+  100000, core-halo, 16, 16, 0.015, 0.046, 0.061, 0.061, 16
+  100000, core-halo, 16, 26, 0.045, 0.136, 0.182, 0.181, 24
+ 1000000, uniform  ,  1, 16, 0.721, 1.000, 2.883, 1.623, 16
+ 1000000, uniform  ,  1, 26, 0.722, 1.000, 2.886, 1.623, 19
+ 1000000, uniform  , 16, 16, 0.046, 0.136, 0.182, 0.182, 9
+ 1000000, uniform  , 16, 26, 0.046, 0.136, 0.182, 0.182, 9
+ 1000000, clustered,  1, 16, 0.432, 0.689, 1.729, 1.072, 16
+ 1000000, clustered,  1, 26, 0.724, 1.000, 2.897, 1.624, 26
+ 1000000, clustered, 16, 16, 0.046, 0.134, 0.185, 0.180, 16
+ 1000000, clustered, 16, 26, 0.047, 0.136, 0.187, 0.183, 18
+ 1000000, core-halo,  1, 16, 0.032, 0.057, 0.128, 0.086, 16
+ 1000000, core-halo,  1, 26, 0.668, 0.951, 2.671, 1.532, 26
+ 1000000, core-halo, 16, 16, 0.006, 0.017, 0.023, 0.023, 16
+ 1000000, core-halo, 16, 26, 0.045, 0.135, 0.181, 0.180, 26
+
+== Part 2. Bytes: tree versus position table ==
+cell = 24 B (f32) or 48 B (f64); body = 12/24 B; state row = 28/48 B
+bucket 1: 0.72 internal cells per point (measured in part 1)
+  |V|=1e+06: cells 7.20e+05; cells+bodies f32 27.9 MiB, f64 55.8 MiB; cells only f32 16.5 MiB; state table f32 26.7 MiB, f64 45.8 MiB
+  |V|=1e+07: cells 7.20e+06; cells+bodies f32 279.2 MiB, f64 558.5 MiB; cells only f32 164.8 MiB; state table f32 267.0 MiB, f64 457.8 MiB
+  |V|=1e+08: cells 7.20e+07; cells+bodies f32 2.7 GiB, f64 5.5 GiB; cells only f32 1.6 GiB; state table f32 2.6 GiB, f64 4.5 GiB
+  |V|=1e+09: cells 7.20e+08; cells+bodies f32 27.3 GiB, f64 54.5 GiB; cells only f32 16.1 GiB; state table f32 26.1 GiB, f64 44.7 GiB
+bucket 1: 1.0 internal cells per point (bound for a compressed tree)
+  |V|=1e+06: cells 1.00e+06; cells+bodies f32 34.3 MiB, f64 68.7 MiB; cells only f32 22.9 MiB; state table f32 26.7 MiB, f64 45.8 MiB
+  |V|=1e+07: cells 1.00e+07; cells+bodies f32 343.3 MiB, f64 686.6 MiB; cells only f32 228.9 MiB; state table f32 267.0 MiB, f64 457.8 MiB
+  |V|=1e+08: cells 1.00e+08; cells+bodies f32 3.4 GiB, f64 6.7 GiB; cells only f32 2.2 GiB; state table f32 2.6 GiB, f64 4.5 GiB
+  |V|=1e+09: cells 1.00e+09; cells+bodies f32 33.5 GiB, f64 67.1 GiB; cells only f32 22.4 GiB; state table f32 26.1 GiB, f64 44.7 GiB
+bucket 16: 0.05 internal cells per point (measured in part 1)
+  |V|=1e+06: cells 5.00e+04; cells+bodies f32 12.6 MiB, f64 25.2 MiB; cells only f32 1.1 MiB; state table f32 26.7 MiB, f64 45.8 MiB
+  |V|=1e+07: cells 5.00e+05; cells+bodies f32 125.9 MiB, f64 251.8 MiB; cells only f32 11.4 MiB; state table f32 267.0 MiB, f64 457.8 MiB
+  |V|=1e+08: cells 5.00e+06; cells+bodies f32 1.2 GiB, f64 2.5 GiB; cells only f32 114.4 MiB; state table f32 2.6 GiB, f64 4.5 GiB
+  |V|=1e+09: cells 5.00e+07; cells+bodies f32 12.3 GiB, f64 24.6 GiB; cells only f32 1.1 GiB; state table f32 26.1 GiB, f64 44.7 GiB
+Truncated pyramid (levels 0..L, dense upper bound (4^(L+1)-1)/3 cells, 24 B each):
+  L=6: 5,461 cells, 0.1 MiB
+  L=8: 87,381 cells, 2.0 MiB
+  L=10: 1,398,101 cells, 32.0 MiB
+  L=11: 5,592,405 cells, 128.0 MiB
+  L=12: 22,369,621 cells, 512.0 MiB
+
+== Part 3. Reviewer's architecture: bytes moved per iteration ==
+collect up = |V| x 12 B (x, y, mass as f32); tree down per consumer = cells x 24 B + |V| x 12 B, 0.72 cells per point
+  |V|=1e+06: up 11.4 MiB; down per consumer 27.9 MiB; x8 workers 223.4 MiB; x64 tasks 1.7 GiB; fits one 128 MiB message: yes
+  |V|=1e+07: up 114.4 MiB; down per consumer 279.2 MiB; x8 workers 2.2 GiB; x64 tasks 17.5 GiB; fits one 128 MiB message: no
+  |V|=1e+08: up 1.1 GiB; down per consumer 2.7 GiB; x8 workers 21.8 GiB; x64 tasks 174.5 GiB; fits one 128 MiB message: no
+  |V|=1e+09: up 11.2 GiB; down per consumer 27.3 GiB; x8 workers 218.2 GiB; x64 tasks 1745.2 GiB; fits one 128 MiB message: no
+largest |V| whose full tree fits one 128 MiB message: 4.58e+06 (at 29.3 B per vertex); positions only (12 B): 1.12e+07
+coarse grid at level L (dense upper bound 4^L cells x 24 B):
+  L=6: 4,096 cells, 0.1 MiB
+  L=8: 65,536 cells, 1.5 MiB
+  L=10: 1,048,576 cells, 24.0 MiB
+  L=11: 4,194,304 cells, 96.0 MiB
+
+== Part 4. Interactions per vertex and rows per iteration ==
+Barnes-Hut annulus model, theta=1.2: 6.5 accepted and 2.2 opened cells per level
+  |V|=1e+06: 10.0 levels, about 65 cell interactions per vertex; as join rows 87
+  |V|=1e+07: 11.6 levels, about 76 cell interactions per vertex; as join rows 101
+  |V|=1e+08: 13.3 levels, about 87 cell interactions per vertex; as join rows 116
+  |V|=1e+09: 14.9 levels, about 98 cell interactions per vertex; as join rows 130
+Barnes-Hut annulus model, theta=0.5: 37.7 accepted and 12.6 opened cells per level
+  |V|=1e+06: 10.0 levels, about 376 cell interactions per vertex; as join rows 501
+  |V|=1e+07: 11.6 levels, about 438 cell interactions per vertex; as join rows 584
+  |V|=1e+08: 13.3 levels, about 501 cell interactions per vertex; as join rows 668
+  |V|=1e+09: 14.9 levels, about 564 cell interactions per vertex; as join rows 751
+attraction rows per vertex = 2|E|/|V| = 32 at |E| = 16|V|
+relational multilevel grid, leaf bucket 16:
+  |V|=1e+06: levels 7.0; point-cell far 188, near 144 rows per vertex, total 332 (10.4x attraction); cell-cell variant 153 rows per vertex (4.8x)
+  |V|=1e+07: levels 8.6; point-cell far 233, near 144 rows per vertex, total 377 (11.8x attraction); cell-cell variant 155 rows per vertex (4.8x)
+  |V|=1e+08: levels 10.3; point-cell far 278, near 144 rows per vertex, total 422 (13.2x attraction); cell-cell variant 157 rows per vertex (4.9x)
+  |V|=1e+09: levels 11.9; point-cell far 323, near 144 rows per vertex, total 467 (14.6x attraction); cell-cell variant 158 rows per vertex (4.9x)
+relational multilevel grid, leaf bucket 64:
+  |V|=1e+06: levels 6.0; point-cell far 161, near 576 rows per vertex, total 737 (23.0x attraction); cell-cell variant 583 rows per vertex (18.2x)
+  |V|=1e+07: levels 7.6; point-cell far 206, near 576 rows per vertex, total 782 (24.4x attraction); cell-cell variant 584 rows per vertex (18.3x)
+  |V|=1e+08: levels 9.3; point-cell far 251, near 576 rows per vertex, total 827 (25.8x attraction); cell-cell variant 586 rows per vertex (18.3x)
+  |V|=1e+09: levels 10.9; point-cell far 296, near 576 rows per vertex, total 872 (27.2x attraction); cell-cell variant 588 rows per vertex (18.4x)
+sampling: M negatives per vertex per iteration = M rows per vertex; M=5 is 5/32 of the attraction rows
+
+== Part 5. Attraction shuffle versus tree traffic, bytes per iteration ==
+  |V|=1e+06: attraction messages 488.3 MiB; tree to one consumer 27.9 MiB (5.7%); collect 11.4 MiB (2.3%)
+  |V|=1e+07: attraction messages 4.8 GiB; tree to one consumer 279.2 MiB (5.7%); collect 114.4 MiB (2.3%)
+  |V|=1e+08: attraction messages 47.7 GiB; tree to one consumer 2.7 GiB (5.7%); collect 1.1 GiB (2.3%)
+  |V|=1e+09: attraction messages 476.8 GiB; tree to one consumer 27.3 GiB (5.7%); collect 11.2 GiB (2.3%)

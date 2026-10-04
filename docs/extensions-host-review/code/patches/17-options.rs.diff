@@ -1,0 +1,23 @@
+diff --git a/crates/sail-execution/src/driver/job_scheduler/options.rs b/crates/sail-execution/src/driver/job_scheduler/options.rs
+index c341718cf6d7d073bace6be5889df06fa57377ac..4a67906436ad1f9ad416ba99b59951732418ffde 100644
+--- a/crates/sail-execution/src/driver/job_scheduler/options.rs
++++ b/crates/sail-execution/src/driver/job_scheduler/options.rs
+@@ -23,3 +23,18 @@ impl From<&DriverOptions> for JobSchedulerOptions {
+         }
+     }
+ }
++
++#[cfg(test)]
++impl JobSchedulerOptions {
++    pub(super) fn for_retry_test(
++        task_max_attempts: usize,
++        shuffle_backend: ShuffleBackendKind,
++    ) -> Self {
++        Self {
++            session_id: "fault-fixture".into(),
++            task_launch_timeout: Duration::from_secs(30),
++            task_max_attempts,
++            shuffle_backend,
++        }
++    }
++}

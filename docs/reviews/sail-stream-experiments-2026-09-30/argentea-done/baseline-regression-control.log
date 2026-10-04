@@ -1,0 +1,37 @@
+   Compiling sail-argentea-core v0.1.0 (/private/tmp/sail-argentea-done-baseline/examples/extensions/argentea)
+    Finished `release` profile [optimized] target(s) in 1.02s
+     Running tests/sssp.rs (/tmp/sail-argentea-done-baseline-target/release/deps/sssp-825c299078313f04)
+
+running 1 test
+SSSP_DONE_COUNTERS algorithm=Reference vertices=16 partitions=1 relays=4 work_units=72 peak_admitted_bytes=3240
+SSSP_DONE_COUNTERS algorithm=Reference vertices=65536 partitions=1 relays=4 work_units=262152 peak_admitted_bytes=4784912
+SSSP_DONE_COUNTERS algorithm=Reference vertices=16 partitions=3 relays=4 work_units=136 peak_admitted_bytes=8632
+SSSP_DONE_COUNTERS algorithm=Reference vertices=65536 partitions=3 relays=4 work_units=262216 peak_admitted_bytes=2994477
+SSSP_DONE_COUNTERS algorithm=Reference vertices=16 partitions=8 relays=4 work_units=576 peak_admitted_bytes=23232
+SSSP_DONE_COUNTERS algorithm=Reference vertices=65536 partitions=8 relays=4 work_units=262656 peak_admitted_bytes=2437504
+SSSP_DONE_COUNTERS algorithm=Reference vertices=16 partitions=32 relays=4 work_units=8256 peak_admitted_bytes=115584
+SSSP_DONE_COUNTERS algorithm=Reference vertices=65536 partitions=32 relays=4 work_units=270336 peak_admitted_bytes=2212480
+SSSP_DONE_COUNTERS algorithm=DeltaStar vertices=16 partitions=1 relays=4 work_units=72 peak_admitted_bytes=3240
+SSSP_DONE_COUNTERS algorithm=DeltaStar vertices=65536 partitions=1 relays=4 work_units=262152 peak_admitted_bytes=4784912
+SSSP_DONE_COUNTERS algorithm=DeltaStar vertices=16 partitions=3 relays=4 work_units=136 peak_admitted_bytes=8632
+SSSP_DONE_COUNTERS algorithm=DeltaStar vertices=65536 partitions=3 relays=4 work_units=262216 peak_admitted_bytes=2994477
+SSSP_DONE_COUNTERS algorithm=DeltaStar vertices=16 partitions=8 relays=4 work_units=576 peak_admitted_bytes=23232
+SSSP_DONE_COUNTERS algorithm=DeltaStar vertices=65536 partitions=8 relays=4 work_units=262656 peak_admitted_bytes=2437504
+SSSP_DONE_COUNTERS algorithm=DeltaStar vertices=16 partitions=32 relays=4 work_units=8256 peak_admitted_bytes=115584
+SSSP_DONE_COUNTERS algorithm=DeltaStar vertices=65536 partitions=32 relays=4 work_units=270336 peak_admitted_bytes=2212480
+
+thread 'done::done_relay_cost_is_independent_of_vertex_count' (54488526) panicked at tests/sssp_done/mod.rs:125:9:
+assertion `left == right` failed: fixed owner count must bound relay cost
+  left: RelayCost { work: 72, peak_admitted: 3240 }
+ right: RelayCost { work: 262152, peak_admitted: 4784912 }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test done::done_relay_cost_is_independent_of_vertex_count ... FAILED
+
+failures:
+
+failures:
+    done::done_relay_cost_is_independent_of_vertex_count
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 15 filtered out; finished in 0.18s
+
+error: test failed, to rerun pass `--test sssp`

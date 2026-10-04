@@ -1,0 +1,78 @@
+{
+  "started_utc": "2026-09-30T17:28:10.075330+00:00",
+  "source_sha": "2894a962076d3cc404dd72ec736ebeb9239901f6",
+  "candidate_not_commit": true,
+  "detached_clean_gate": false,
+  "candidate_patch_sha256": "14327aa75f1b383172de37265fa75d3a8d6ba4721d88234537f526f52ba8102c",
+  "worktree": "/tmp/sail-bfs-completion-check",
+  "host": "Capitola.local",
+  "machine": "arm64",
+  "environment": {
+    "CARGO_INCREMENTAL": "0",
+    "CARGO_BUILD_JOBS": "4",
+    "CARGO_TARGET_DIR": "/tmp/sail-bfs-completion-native-target",
+    "PYO3_PYTHON": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/bin/python",
+    "PYTHONHOME": "/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none",
+    "PYTHONPATH": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages",
+    "DYLD_LIBRARY_PATH": "/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/lib"
+  },
+  "source_hashes": {
+    "examples/extensions/argentea/src/bfs/protocol.rs": "0751d3ce79f80c14914f798a451bc50c210ea6605a3e61b73737a938a5a019cf",
+    "examples/extensions/argentea/tests/bfs_completion.rs": "82bbbaf32eeea5a697ab257257687febcca9732cdbdf3ff894a92251cdd12d68",
+    "examples/extensions/nutmeg/src/argentea/bfs/tests/controls.rs": "a5be8bb62ec1b8469c0c0f5228f03c0bb110cbf57e2b964b4920c0f06422a481"
+  },
+  "commands": [
+    {
+      "name": "format",
+      "command": [
+        "rustfmt",
+        "--edition",
+        "2024",
+        "--check",
+        "/tmp/sail-bfs-completion-check/examples/extensions/nutmeg/src/argentea/bfs/tests/controls.rs"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "inventory",
+      "command": [
+        "cargo",
+        "test",
+        "--manifest-path",
+        "/tmp/sail-bfs-completion-check/examples/extensions/nutmeg/Cargo.toml",
+        "--locked",
+        "--release",
+        "--lib",
+        "--",
+        "--list"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "release",
+      "command": [
+        "cargo",
+        "test",
+        "--manifest-path",
+        "/tmp/sail-bfs-completion-check/examples/extensions/nutmeg/Cargo.toml",
+        "--locked",
+        "--release",
+        "--lib",
+        "--",
+        "--nocapture"
+      ],
+      "exit_code": 0
+    }
+  ],
+  "scope": "Full native adapter release library tests, including all Argentea tests. No remote transport or cluster execution.",
+  "format_scope": "Changed native file. Full native crate format has baseline-identical failures in unchanged mutation.rs/tests.rs; see baseline-native-format and precommit-native.",
+  "test_summary": [
+    "test result: ok. 49 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.80s"
+  ],
+  "tests_passed": 49,
+  "argentea_tests_passed": 43,
+  "inventory_matches": true,
+  "unchanged": true,
+  "finished_utc": "2026-09-30T17:28:11.665760+00:00",
+  "outcome": "passed"
+}

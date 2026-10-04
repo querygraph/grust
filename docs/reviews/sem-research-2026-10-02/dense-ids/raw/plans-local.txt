@@ -1,0 +1,982 @@
+### a_row_number
+== Physical Plan ==
+ProjectionExec: expr=[#2@0 as id, #3@1 as dense]
+  ProjectionExec: expr=[#0@0 as #2, CAST(CAST(row_number() ORDER BY [?table?.#0 ASC NULLS FIRST] RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW@1 AS Int32) - 1 AS Int64) as #3]
+    RepartitionExec: partitioning=RoundRobinBatch(10), input_partitions=1, maintains_sort_order=true
+      BoundedWindowAggExec: wdw=[row_number() ORDER BY [?table?.#0 ASC NULLS FIRST] RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW: Field { "row_number() ORDER BY [?table?.#0 ASC NULLS FIRST] RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW": UInt64 }, frame: RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW], mode=[Sorted]
+        SortPreservingMergeExec: [#0@0 ASC]
+          ProjectionExec: expr=[id@0 as #0]
+            SortExec: expr=[id@0 ASC], preserve_partitioning=[true]
+              DataSourceExec: file_groups={10 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:0..386195], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:386195..772390], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:772390..1158585], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1158585..1544780], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1544780..1930975], ...]}, projection=[id], file_type=parquet, sort_order_for_reorder=[id@0 ASC]
+
+
+### a_running_count_bigint
+== Physical Plan ==
+ProjectionExec: expr=[#2@0 as id, #3@1 as dense]
+  ProjectionExec: expr=[#0@0 as #2, count(Int32(1)) ORDER BY [?table?.#0 ASC NULLS FIRST] ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW@1 - 1 as #3]
+    RepartitionExec: partitioning=RoundRobinBatch(10), input_partitions=1, maintains_sort_order=true
+      BoundedWindowAggExec: wdw=[count(Int32(1)) ORDER BY [?table?.#0 ASC NULLS FIRST] ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW: Field { "count(Int32(1)) ORDER BY [?table?.#0 ASC NULLS FIRST] ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW": Int64 }, frame: ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW], mode=[Sorted]
+        SortPreservingMergeExec: [#0@0 ASC]
+          ProjectionExec: expr=[id@0 as #0]
+            SortExec: expr=[id@0 ASC], preserve_partitioning=[true]
+              DataSourceExec: file_groups={10 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:0..386195], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:386195..772390], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:772390..1158585], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1158585..1544780], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1544780..1930975], ...]}, projection=[id], file_type=parquet, sort_order_for_reorder=[id@0 ASC]
+
+
+### a_orderby_monotonic_id
+== Physical Plan ==
+ProjectionExec: expr=[#2@0 as id, #3@1 as dense]
+  ProjectionExec: expr=[#0@0 as #2, #1@1 as #3]
+    MonotonicIdExec: col=#1
+      SortPreservingMergeExec: [#0@0 ASC]
+        ProjectionExec: expr=[id@0 as #0]
+          SortExec: expr=[id@0 ASC], preserve_partitioning=[true]
+            DataSourceExec: file_groups={10 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:0..386195], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:386195..772390], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:772390..1158585], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1158585..1544780], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1544780..1930975], ...]}, projection=[id], file_type=parquet, sort_order_for_reorder=[id@0 ASC]
+
+
+### a_coalesce1_monotonic_id
+== Physical Plan ==
+ProjectionExec: expr=[#2@0 as id, #3@1 as dense]
+  ProjectionExec: expr=[#0@0 as #2, #1@1 as #3]
+    MonotonicIdExec: col=#1
+      CoalescePartitionsExec
+        DataSourceExec: file_groups={10 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:0..386195], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:386195..772390], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:772390..1158585], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1158585..1544780], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1544780..1930975], ...]}, projection=[id@0 as #0], file_type=parquet
+
+
+### b_two_pass_direct_scan
+== Physical Plan ==
+ProjectionExec: expr=[#2@0 as id, #3@1 as dense]
+  ProjectionExec: expr=[#0@0 as #2, array_element([0, 368640, 860160, 1228800, 1597440, 1966080, 2334720, 2668848, 3037488, 3406128], CAST(#2@2 AS Int64) + 1) + (#1@1 & 8589934591) as #3]
+    SparkPartitionIdExec: col=#2
+      MonotonicIdExec: col=#1
+        DataSourceExec: file_groups={10 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:0..386195], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:386195..772390], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:772390..1158585], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1158585..1544780], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1544780..1930975], ...]}, projection=[id@0 as #0], file_type=parquet
+
+
+### b_two_pass_checkpoint
+== Physical Plan ==
+ProjectionExec: expr=[#2@0 as id, #3@1 as dense]
+  ProjectionExec: expr=[#0@0 as #2, array_element([0, 368640, 860160, 1228800, 1597440, 1966080, 2334720, 2703360, 3072000, 3406128], CAST(#2@2 AS Int64) + 1) + (#1@1 & 8589934591) as #3]
+    SparkPartitionIdExec: col=#2
+      MonotonicIdExec: col=#1
+        DataSourceExec: file_groups={10 groups: [[private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/checkpoints/2d46e0ad-b3bd-4d05-b3b3-b800fbdbaf0b/c4d9c941-eca1-4962-8b6c-9dbf8945c5c4/part-00000-e6935c2a-ed54-4576-aeaf-e5de42077ee1.parquet], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/checkpoints/2d46e0ad-b3bd-4d05-b3b3-b800fbdbaf0b/c4d9c941-eca1-4962-8b6c-9dbf8945c5c4/part-00001-66ad9129-9c59-4a72-b11c-04f6c6dc1571.parquet], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/checkpoints/2d46e0ad-b3bd-4d05-b3b3-b800fbdbaf0b/c4d9c941-eca1-4962-8b6c-9dbf8945c5c4/part-00002-94c7b0ec-5f45-45d4-a241-af7c4c43cf8a.parquet], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/checkpoints/2d46e0ad-b3bd-4d05-b3b3-b800fbdbaf0b/c4d9c941-eca1-4962-8b6c-9dbf8945c5c4/part-00003-cd534fae-b33b-420d-b11d-2d2734cc0603.parquet], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/checkpoints/2d46e0ad-b3bd-4d05-b3b3-b800fbdbaf0b/c4d9c941-eca1-4962-8b6c-9dbf8945c5c4/part-00004-d19dc0ac-70eb-4a18-a79d-3caa8b10fe90.parquet], ...]}, projection=[_c0@0 as #0], file_type=parquet
+
+
+### b_one_pass_materialized (second step)
+== Physical Plan ==
+ProjectionExec: expr=[#2@0 as id, #3@1 as dense]
+  DataSourceExec: file_groups={10 groups: [[private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/b-staged/xQXgqlq1lXXMaIQZ_0.zst.parquet:0..975318], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/b-staged/xQXgqlq1lXXMaIQZ_0.zst.parquet:975318..1950636], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/b-staged/xQXgqlq1lXXMaIQZ_0.zst.parquet:1950636..2445942, private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/b-staged/xQXgqlq1lXXMaIQZ_1.zst.parquet:0..480012], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/b-staged/xQXgqlq1lXXMaIQZ_1.zst.parquet:480012..1455330], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/b-staged/xQXgqlq1lXXMaIQZ_1.zst.parquet:1455330..2412562, private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/b-staged/xQXgqlq1lXXMaIQZ_2.zst.parquet:0..18086], ...]}, projection=[id@0 as #2, array_element([0, 368640, 860160, 1228800, 1597440, 1966080, 2334720, 2703360, 3072000, 3440640], (m@1 >> 33) + 1) + (m@1 & 8589934591) as #3], file_type=parquet
+
+
+### b_map_in_arrow_checkpoint
+== Physical Plan ==
+ProjectionExec: expr=[#2@0 as id, #3@1 as dense]
+  ProjectionExec: expr=[#6@0 as #2, array_element([0, 368640, 737280, 1105920, 1440048, 1931568, 2300208, 2668848, 3037488, 3406128], CAST(#7@1 AS Int64) + 1) + #8@2 as #3]
+    MapPartitionsExec
+      ProjectionExec: expr=[#0@0 as #4, #1@1 as #5]
+        SparkPartitionIdExec: col=#1
+          DataSourceExec: file_groups={10 groups: [[private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/checkpoints/2d46e0ad-b3bd-4d05-b3b3-b800fbdbaf0b/d8218d0e-e308-4bcb-b692-3d27b66b72a4/part-00000-78faeada-f9ee-4126-86ca-731e6d7ebdbd.parquet], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/checkpoints/2d46e0ad-b3bd-4d05-b3b3-b800fbdbaf0b/d8218d0e-e308-4bcb-b692-3d27b66b72a4/part-00001-d00a5075-edf1-438f-b40c-045d11e93c87.parquet], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/checkpoints/2d46e0ad-b3bd-4d05-b3b3-b800fbdbaf0b/d8218d0e-e308-4bcb-b692-3d27b66b72a4/part-00002-f5ad5f01-1eb8-46cd-86c0-48347cbf0634.parquet], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/checkpoints/2d46e0ad-b3bd-4d05-b3b3-b800fbdbaf0b/d8218d0e-e308-4bcb-b692-3d27b66b72a4/part-00003-2876881c-5730-4618-8a04-e97e9c2dd5c0.parquet], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/checkpoints/2d46e0ad-b3bd-4d05-b3b3-b800fbdbaf0b/d8218d0e-e308-4bcb-b692-3d27b66b72a4/part-00004-88fe9474-019b-417f-96ee-8bf26e26935b.parquet], ...]}, projection=[_c0@0 as #0], file_type=parquet
+
+
+### e_distinct_row_number
+== Physical Plan ==
+ProjectionExec: expr=[#2@0 as id, #3@1 as dense]
+  ProjectionExec: expr=[#1@0 as #2, CAST(CAST(row_number() ORDER BY [#1 ASC NULLS FIRST] RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW@1 AS Int32) - 1 AS Int64) as #3]
+    RepartitionExec: partitioning=RoundRobinBatch(10), input_partitions=1, maintains_sort_order=true
+      BoundedWindowAggExec: wdw=[row_number() ORDER BY [#1 ASC NULLS FIRST] RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW: Field { "row_number() ORDER BY [#1 ASC NULLS FIRST] RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW": UInt64 }, frame: RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW], mode=[Sorted]
+        SortPreservingMergeExec: [#1@0 ASC]
+          SortExec: expr=[#1@0 ASC], preserve_partitioning=[true]
+            AggregateExec: mode=FinalPartitioned, gby=[#1@0 as #1], aggr=[]
+              RepartitionExec: partitioning=Hash([#1@0], 10), input_partitions=10
+                AggregateExec: mode=Partial, gby=[#1@0 as #1], aggr=[]
+                  DataSourceExec: file_groups={10 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:0..386195], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:386195..772390], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:772390..1158585], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1158585..1544780], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1544780..1930975], ...]}, projection=[id@0 as #1], file_type=parquet
+
+
+### e_bucketed_row_number
+== Physical Plan ==
+ProjectionExec: expr=[#2@0 as id, #3@1 as dense]
+  ProjectionExec: expr=[#2@0 as #2, array_element([0, 58813, 118211, 177297, 236130, 294816, 353725, 413123, 472209, 531023, 589728, 648637, 708035, 766891, 825935, 884640, 943549, 1002786, 1061803, 1120847, 1179552, 1238422, 1297698, 1356715, 1415759, 1474384, 1533334, 1592610, 1651627, 1710487, 1769296, 1828246, 1887522, 1946253, 2005399, 2064208, 2123158, 2182136, 2241165, 2300311, 2359120, 2418019, 2477048, 2536077, 2595223, 2653848, 2712931, 2771960, 2830989, 2890130, 2948760, 3007843, 3066872, 3125797, 3185042, 3243672, 3302755, 3361775, 3420709, 3479954, 3538584, 3597631, 3656687, 3715621], CAST(#3@1 AS Int64) + 1) + CAST(CAST(row_number() PARTITION BY [#3] ORDER BY [#2 ASC NULLS FIRST] RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW@2 AS Int32) AS Int64) - 1 as #3]
+    BoundedWindowAggExec: wdw=[row_number() PARTITION BY [#3] ORDER BY [#2 ASC NULLS FIRST] RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW: Field { "row_number() PARTITION BY [#3] ORDER BY [#2 ASC NULLS FIRST] RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW": UInt64 }, frame: RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW], mode=[Sorted]
+      SortExec: expr=[#3@1 ASC NULLS LAST, #2@0 ASC], preserve_partitioning=[true]
+        RepartitionExec: partitioning=Hash([#3@1], 10), input_partitions=10
+          DataSourceExec: file_groups={10 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:0..386195], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:386195..772390], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:772390..1158585], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1158585..1544780], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1544780..1930975], ...]}, projection=[id@0 as #2, CASE WHEN id@0 >= 4092709 THEN CASE WHEN id@0 >= 5041399 THEN CASE WHEN id@0 >= 5519821 THEN CASE WHEN id@0 >= 5763256 THEN CASE WHEN id@0 >= 5887542 THEN CASE WHEN id@0 >= 5948273 THEN 63 ELSE 62 END ELSE CASE WHEN id@0 >= 5825421 THEN 61 ELSE 60 END END ELSE CASE WHEN id@0 >= 5640741 THEN CASE WHEN id@0 >= 5702179 THEN 59 ELSE 58 END ELSE CASE WHEN id@0 >= 5580050 THEN 57 ELSE 56 END END END ELSE CASE WHEN id@0 >= 5280045 THEN CASE WHEN id@0 >= 5400006 THEN CASE WHEN id@0 >= 5459615 THEN 55 ELSE 54 END ELSE CASE WHEN id@0 >= 5339827 THEN 53 ELSE 52 END END ELSE CASE WHEN id@0 >= 5160423 THEN CASE WHEN id@0 >= 5220262 THEN 51 ELSE 50 END ELSE CASE WHEN id@0 >= 5101116 THEN 49 ELSE 48 END END END END ELSE CASE WHEN id@0 >= 4566784 THEN CASE WHEN id@0 >= 4804006 THEN CASE WHEN id@0 >= 4922390 THEN CASE WHEN id@0 >= 4981832 THEN 47 ELSE 46 END ELSE CASE WHEN id@0 >= 4862953 THEN 45 ELSE 44 END END ELSE CASE WHEN id@0 >= 4685221 THEN CASE WHEN id@0 >= 4744539 THEN 43 ELSE 42 END ELSE CASE WHEN id@0 >= 4625955 THEN 41 ELSE 40 END END END ELSE CASE WHEN id@0 >= 4329698 THEN CASE WHEN id@0 >= 4448241 THEN CASE WHEN id@0 >= 4507690 THEN 39 ELSE 38 END ELSE CASE WHEN id@0 >= 4388932 THEN 37 ELSE 36 END END ELSE CASE WHEN id@0 >= 4211242 THEN CASE WHEN id@0 >= 4270423 THEN 35 ELSE 34 END ELSE CASE WHEN id@0 >= 4151758 THEN 33 ELSE 32 END END END END END ELSE CASE WHEN id@0 >= 2961311 THEN CASE WHEN id@0 >= 3585356 THEN CASE WHEN id@0 >= 3855067 THEN CASE WHEN id@0 >= 3973828 THEN CASE WHEN id@0 >= 4033119 THEN 31 ELSE 30 END ELSE CASE WHEN id@0 >= 3914569 THEN 29 ELSE 28 END END ELSE CASE WHEN id@0 >= 3722430 THEN CASE WHEN id@0 >= 3789178 THEN 27 ELSE 26 END ELSE CASE WHEN id@0 >= 3653665 THEN 25 ELSE 24 END END END ELSE CASE WHEN id@0 >= 3289805 THEN CASE WHEN id@0 >= 3440170 THEN CASE WHEN id@0 >= 3513155 THEN 23 ELSE 22 END ELSE CASE WHEN id@0 >= 3365554 THEN 21 ELSE 20 END END ELSE CASE WHEN id@0 >= 3132090 THEN CASE WHEN id@0 >= 3212177 THEN 19 ELSE 18 END ELSE CASE WHEN id@0 >= 3048977 THEN 17 ELSE 16 END END END END ELSE CASE WHEN id@0 >= 2064418 THEN CASE WHEN id@0 >= 2572403 THEN CASE WHEN id@0 >= 2774415 THEN CASE WHEN id@0 >= 2869619 THEN 15 ELSE 14 END ELSE CASE WHEN id@0 >= 2675888 THEN 13 ELSE 12 END END ELSE CASE WHEN id@0 >= 2332972 THEN CASE WHEN id@0 >= 2458294 THEN 11 ELSE 10 END ELSE CASE WHEN id@0 >= 2202631 THEN 9 ELSE 8 END END END ELSE CASE WHEN id@0 >= 1315187 THEN CASE WHEN id@0 >= 1731988 THEN CASE WHEN id@0 >= 1910323 THEN 7 ELSE 6 END ELSE CASE WHEN id@0 >= 1533725 THEN 5 ELSE 4 END END ELSE CASE WHEN id@0 >= 786318 THEN CASE WHEN id@0 >= 1068279 THEN 3 ELSE 2 END ELSE CASE WHEN id@0 >= 461812 THEN 1 ELSE 0 END END END END END END as #3], file_type=parquet
+
+
+### e_from_edges_row_number
+== Physical Plan ==
+ProjectionExec: expr=[#2@0 as id, #3@1 as dense]
+  ProjectionExec: expr=[#2@0 as #2, CAST(CAST(row_number() ORDER BY [#2 ASC NULLS FIRST] RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW@1 AS Int32) - 1 AS Int64) as #3]
+    RepartitionExec: partitioning=RoundRobinBatch(10), input_partitions=1, maintains_sort_order=true
+      BoundedWindowAggExec: wdw=[row_number() ORDER BY [#2 ASC NULLS FIRST] RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW: Field { "row_number() ORDER BY [#2 ASC NULLS FIRST] RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW": UInt64 }, frame: RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW], mode=[Sorted]
+        SortPreservingMergeExec: [#2@0 ASC]
+          SortExec: expr=[#2@0 ASC], preserve_partitioning=[true]
+            AggregateExec: mode=FinalPartitioned, gby=[#2@0 as #2], aggr=[]
+              RepartitionExec: partitioning=Hash([#2@0], 10), input_partitions=20
+                AggregateExec: mode=Partial, gby=[#2@0 as #2], aggr=[]
+                  UnionExec
+                    DataSourceExec: file_groups={10 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:0..7003739], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:7003739..14007478], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:14007478..21011217], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:21011217..28014956], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:28014956..35018695], ...]}, projection=[source@0 as #2], file_type=parquet
+                    DataSourceExec: file_groups={10 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:0..7003739], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:7003739..14007478], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:14007478..21011217], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:21011217..28014956], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:28014956..35018695], ...]}, projection=[target@1 as #2], file_type=parquet
+
+
+### e_from_edges_bucketed
+== Physical Plan ==
+ProjectionExec: expr=[#2@0 as id, #3@1 as dense]
+  ProjectionExec: expr=[#6@0 as #2, array_element([0, 62804, 126860, 185247, 249171, 302810, 354639, 413267, 472951, 540263, 602142, 660836, 714981, 776190, 833148, 890575, 947884, 1010128, 1074108, 1126235, 1179623, 1233313, 1293115, 1355979, 1415823, 1474575, 1538402, 1601055, 1655280, 1716714, 1773548, 1834516, 1893266, 1949896, 2008028, 2069067, 2123499, 2182503, 2240282, 2295757, 2352513, 2407506, 2467371, 2530555, 2589205, 2652370, 2713077, 2769761, 2828882, 2884787, 2946168, 3002906, 3060326, 3117267, 3179154, 3236029, 3301493, 3363024, 3420804, 3479927, 3546580, 3600405, 3656081, 3713472], CAST(#7@1 AS Int64) + 1) + CAST(CAST(row_number() PARTITION BY [#7] ORDER BY [#6 ASC NULLS FIRST] RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW@2 AS Int32) AS Int64) - 1 as #3]
+    BoundedWindowAggExec: wdw=[row_number() PARTITION BY [#7] ORDER BY [#6 ASC NULLS FIRST] RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW: Field { "row_number() PARTITION BY [#7] ORDER BY [#6 ASC NULLS FIRST] RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW": UInt64 }, frame: RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW], mode=[Sorted]
+      SortExec: expr=[#7@1 ASC NULLS LAST, #6@0 ASC], preserve_partitioning=[true]
+        RepartitionExec: partitioning=Hash([#7@1], 10), input_partitions=10
+          ProjectionExec: expr=[#2@0 as #6, CASE WHEN #2@0 >= 4098487 THEN CASE WHEN #2@0 >= 5039269 THEN CASE WHEN #2@0 >= 5518521 THEN CASE WHEN #2@0 >= 5771683 THEN CASE WHEN #2@0 >= 5886917 THEN CASE WHEN #2@0 >= 5946107 THEN 63 ELSE 62 END ELSE CASE WHEN #2@0 >= 5828344 THEN 61 ELSE 60 END END ELSE CASE WHEN #2@0 >= 5640837 THEN CASE WHEN #2@0 >= 5702152 THEN 59 ELSE 58 END ELSE CASE WHEN #2@0 >= 5581338 THEN 57 ELSE 56 END END END ELSE CASE WHEN #2@0 >= 5273402 THEN CASE WHEN #2@0 >= 5394038 THEN CASE WHEN #2@0 >= 5451863 THEN 55 ELSE 54 END ELSE CASE WHEN #2@0 >= 5331151 THEN 53 ELSE 52 END END ELSE CASE WHEN #2@0 >= 5157807 THEN CASE WHEN #2@0 >= 5215262 THEN 51 ELSE 50 END ELSE CASE WHEN #2@0 >= 5095722 THEN 49 ELSE 48 END END END END ELSE CASE WHEN #2@0 >= 4560150 THEN CASE WHEN #2@0 >= 4797951 THEN CASE WHEN #2@0 >= 4922537 THEN CASE WHEN #2@0 >= 4979616 THEN 47 ELSE 46 END ELSE CASE WHEN #2@0 >= 4861466 THEN 45 ELSE 44 END END ELSE CASE WHEN #2@0 >= 4675515 THEN CASE WHEN #2@0 >= 4738990 THEN 43 ELSE 42 END ELSE CASE WHEN #2@0 >= 4615406 THEN 41 ELSE 40 END END END ELSE CASE WHEN #2@0 >= 4330040 THEN CASE WHEN #2@0 >= 4447354 THEN CASE WHEN #2@0 >= 4503113 THEN 39 ELSE 38 END ELSE CASE WHEN #2@0 >= 4389301 THEN 37 ELSE 36 END END ELSE CASE WHEN #2@0 >= 4213891 THEN CASE WHEN #2@0 >= 4275306 THEN 35 ELSE 34 END ELSE CASE WHEN #2@0 >= 4155422 THEN 33 ELSE 32 END END END END END ELSE CASE WHEN #2@0 >= 2967859 THEN CASE WHEN #2@0 >= 3585431 THEN CASE WHEN #2@0 >= 3859042 THEN CASE WHEN #2@0 >= 3978117 THEN CASE WHEN #2@0 >= 4039409 THEN 31 ELSE 30 END ELSE CASE WHEN #2@0 >= 3920837 THEN 29 ELSE 28 END END ELSE CASE WHEN #2@0 >= 3728190 THEN CASE WHEN #2@0 >= 3798642 THEN 27 ELSE 26 END ELSE CASE WHEN #2@0 >= 3653876 THEN 25 ELSE 24 END END END ELSE CASE WHEN #2@0 >= 3289891 THEN CASE WHEN #2@0 >= 3434399 THEN CASE WHEN #2@0 >= 3512299 THEN 23 ELSE 22 END ELSE CASE WHEN #2@0 >= 3359050 THEN 21 ELSE 20 END END ELSE CASE WHEN #2@0 >= 3149001 THEN CASE WHEN #2@0 >= 3219364 THEN 19 ELSE 18 END ELSE CASE WHEN #2@0 >= 3059560 THEN 17 ELSE 16 END END END END ELSE CASE WHEN #2@0 >= 2066199 THEN CASE WHEN #2@0 >= 2584995 THEN CASE WHEN #2@0 >= 2786165 THEN CASE WHEN #2@0 >= 2879029 THEN 15 ELSE 14 END ELSE CASE WHEN #2@0 >= 2691876 THEN 13 ELSE 12 END END ELSE CASE WHEN #2@0 >= 2359936 THEN CASE WHEN #2@0 >= 2482749 THEN 11 ELSE 10 END ELSE CASE WHEN #2@0 >= 2223625 THEN 9 ELSE 8 END END END ELSE CASE WHEN #2@0 >= 1366161 THEN CASE WHEN #2@0 >= 1734979 THEN CASE WHEN #2@0 >= 1910729 THEN 7 ELSE 6 END ELSE CASE WHEN #2@0 >= 1561813 THEN 5 ELSE 4 END END ELSE CASE WHEN #2@0 >= 829902 THEN CASE WHEN #2@0 >= 1104093 THEN 3 ELSE 2 END ELSE CASE WHEN #2@0 >= 486066 THEN 1 ELSE 0 END END END END END END as #7]
+            AggregateExec: mode=FinalPartitioned, gby=[#2@0 as #2], aggr=[]
+              RepartitionExec: partitioning=Hash([#2@0], 10), input_partitions=20
+                AggregateExec: mode=Partial, gby=[#2@0 as #2], aggr=[]
+                  UnionExec
+                    DataSourceExec: file_groups={10 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:0..7003739], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:7003739..14007478], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:14007478..21011217], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:21011217..28014956], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:28014956..35018695], ...]}, projection=[source@0 as #2], file_type=parquet
+                    DataSourceExec: file_groups={10 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:0..7003739], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:7003739..14007478], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:14007478..21011217], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:21011217..28014956], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:28014956..35018695], ...]}, projection=[target@1 as #2], file_type=parquet
+
+
+### a_row_number
+== Physical Plan ==
+ProjectionExec: expr=[#2@0 as id, #3@1 as dense]
+  ProjectionExec: expr=[#0@0 as #2, CAST(CAST(row_number() ORDER BY [?table?.#0 ASC NULLS FIRST] RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW@1 AS Int32) - 1 AS Int64) as #3]
+    RepartitionExec: partitioning=RoundRobinBatch(10), input_partitions=1, maintains_sort_order=true
+      BoundedWindowAggExec: wdw=[row_number() ORDER BY [?table?.#0 ASC NULLS FIRST] RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW: Field { "row_number() ORDER BY [?table?.#0 ASC NULLS FIRST] RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW": UInt64 }, frame: RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW], mode=[Sorted]
+        SortPreservingMergeExec: [#0@0 ASC]
+          ProjectionExec: expr=[id@0 as #0]
+            SortExec: expr=[id@0 ASC], preserve_partitioning=[true]
+              DataSourceExec: file_groups={10 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:0..386195], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:386195..772390], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:772390..1158585], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1158585..1544780], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1544780..1930975], ...]}, projection=[id], file_type=parquet, sort_order_for_reorder=[id@0 ASC]
+
+
+### a_running_count_bigint
+== Physical Plan ==
+ProjectionExec: expr=[#2@0 as id, #3@1 as dense]
+  ProjectionExec: expr=[#0@0 as #2, count(Int32(1)) ORDER BY [?table?.#0 ASC NULLS FIRST] ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW@1 - 1 as #3]
+    RepartitionExec: partitioning=RoundRobinBatch(10), input_partitions=1, maintains_sort_order=true
+      BoundedWindowAggExec: wdw=[count(Int32(1)) ORDER BY [?table?.#0 ASC NULLS FIRST] ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW: Field { "count(Int32(1)) ORDER BY [?table?.#0 ASC NULLS FIRST] ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW": Int64 }, frame: ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW], mode=[Sorted]
+        SortPreservingMergeExec: [#0@0 ASC]
+          ProjectionExec: expr=[id@0 as #0]
+            SortExec: expr=[id@0 ASC], preserve_partitioning=[true]
+              DataSourceExec: file_groups={10 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:0..386195], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:386195..772390], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:772390..1158585], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1158585..1544780], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1544780..1930975], ...]}, projection=[id], file_type=parquet, sort_order_for_reorder=[id@0 ASC]
+
+
+### a_orderby_monotonic_id
+== Physical Plan ==
+ProjectionExec: expr=[#2@0 as id, #3@1 as dense]
+  ProjectionExec: expr=[#0@0 as #2, #1@1 as #3]
+    MonotonicIdExec: col=#1
+      SortPreservingMergeExec: [#0@0 ASC]
+        ProjectionExec: expr=[id@0 as #0]
+          SortExec: expr=[id@0 ASC], preserve_partitioning=[true]
+            DataSourceExec: file_groups={10 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:0..386195], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:386195..772390], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:772390..1158585], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1158585..1544780], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1544780..1930975], ...]}, projection=[id], file_type=parquet, sort_order_for_reorder=[id@0 ASC]
+
+
+### a_coalesce1_monotonic_id
+== Physical Plan ==
+ProjectionExec: expr=[#2@0 as id, #3@1 as dense]
+  ProjectionExec: expr=[#0@0 as #2, #1@1 as #3]
+    MonotonicIdExec: col=#1
+      CoalescePartitionsExec
+        DataSourceExec: file_groups={10 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:0..386195], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:386195..772390], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:772390..1158585], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1158585..1544780], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1544780..1930975], ...]}, projection=[id@0 as #0], file_type=parquet
+
+
+### b_two_pass_direct_scan
+== Physical Plan ==
+ProjectionExec: expr=[#2@0 as id, #3@1 as dense]
+  ProjectionExec: expr=[#0@0 as #2, array_element([0, 368640, 860160, 1228800, 1597440, 1966080, 2334720, 2703360, 3072000, 3440640], CAST(#2@2 AS Int64) + 1) + (#1@1 & 8589934591) as #3]
+    SparkPartitionIdExec: col=#2
+      MonotonicIdExec: col=#1
+        DataSourceExec: file_groups={10 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:0..386195], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:386195..772390], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:772390..1158585], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1158585..1544780], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1544780..1930975], ...]}, projection=[id@0 as #0], file_type=parquet
+
+
+### b_two_pass_checkpoint
+== Physical Plan ==
+ProjectionExec: expr=[#2@0 as id, #3@1 as dense]
+  ProjectionExec: expr=[#0@0 as #2, array_element([0, 368640, 860160, 1228800, 1597440, 1966080, 2334720, 2703360, 3037488, 3406128], CAST(#2@2 AS Int64) + 1) + (#1@1 & 8589934591) as #3]
+    SparkPartitionIdExec: col=#2
+      MonotonicIdExec: col=#1
+        DataSourceExec: file_groups={10 groups: [[private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/checkpoints/2d46e0ad-b3bd-4d05-b3b3-b800fbdbaf0b/f90d3c5a-d491-4ac5-9bee-35e49244e23e/part-00000-6501a2ad-16fa-44db-8874-c9ae9b914a2e.parquet], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/checkpoints/2d46e0ad-b3bd-4d05-b3b3-b800fbdbaf0b/f90d3c5a-d491-4ac5-9bee-35e49244e23e/part-00001-5dedd947-f88f-4c8f-b2c3-d2f86243ae51.parquet], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/checkpoints/2d46e0ad-b3bd-4d05-b3b3-b800fbdbaf0b/f90d3c5a-d491-4ac5-9bee-35e49244e23e/part-00002-55d7e1df-2b7a-4991-8083-82a416460aaf.parquet], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/checkpoints/2d46e0ad-b3bd-4d05-b3b3-b800fbdbaf0b/f90d3c5a-d491-4ac5-9bee-35e49244e23e/part-00003-fed81cd2-d40b-4477-a898-b25088522b6b.parquet], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/checkpoints/2d46e0ad-b3bd-4d05-b3b3-b800fbdbaf0b/f90d3c5a-d491-4ac5-9bee-35e49244e23e/part-00004-f4afe636-9f93-46b3-9ecc-a8d137191009.parquet], ...]}, projection=[_c0@0 as #0], file_type=parquet
+
+
+### b_one_pass_materialized (second step)
+== Physical Plan ==
+ProjectionExec: expr=[#2@0 as id, #3@1 as dense]
+  DataSourceExec: file_groups={10 groups: [[private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/b-staged/n2aDFm0gnyvBzpml_0.zst.parquet:0..970946], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/b-staged/n2aDFm0gnyvBzpml_0.zst.parquet:970946..1941892], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/b-staged/n2aDFm0gnyvBzpml_0.zst.parquet:1941892..2461676, private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/b-staged/n2aDFm0gnyvBzpml_1.zst.parquet:0..451162], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/b-staged/n2aDFm0gnyvBzpml_1.zst.parquet:451162..1422108], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/b-staged/n2aDFm0gnyvBzpml_1.zst.parquet:1422108..2393054], ...]}, projection=[id@0 as #2, array_element([0, 368640, 737280, 1105920, 1440048, 1808688, 2177328, 2545968, 3037488, 3406128], (m@1 >> 33) + 1) + (m@1 & 8589934591) as #3], file_type=parquet
+
+
+### b_map_in_arrow_checkpoint
+== Physical Plan ==
+ProjectionExec: expr=[#2@0 as id, #3@1 as dense]
+  ProjectionExec: expr=[#6@0 as #2, array_element([0, 368640, 737280, 1105920, 1440048, 1808688, 2177328, 2545968, 3037488, 3406128], CAST(#7@1 AS Int64) + 1) + #8@2 as #3]
+    MapPartitionsExec
+      ProjectionExec: expr=[#0@0 as #4, #1@1 as #5]
+        SparkPartitionIdExec: col=#1
+          DataSourceExec: file_groups={10 groups: [[private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/checkpoints/2d46e0ad-b3bd-4d05-b3b3-b800fbdbaf0b/e774d8ed-3f9e-4340-85c9-52dff2492b2c/part-00000-a85568a5-da2f-4734-9677-b92169926b83.parquet], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/checkpoints/2d46e0ad-b3bd-4d05-b3b3-b800fbdbaf0b/e774d8ed-3f9e-4340-85c9-52dff2492b2c/part-00001-5a3b5bd7-dd9c-4520-abab-1332d573ee11.parquet], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/checkpoints/2d46e0ad-b3bd-4d05-b3b3-b800fbdbaf0b/e774d8ed-3f9e-4340-85c9-52dff2492b2c/part-00002-96cdafc2-104b-4ba1-9ebd-703433523146.parquet], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/checkpoints/2d46e0ad-b3bd-4d05-b3b3-b800fbdbaf0b/e774d8ed-3f9e-4340-85c9-52dff2492b2c/part-00003-027da2db-1e6e-47ea-9f45-a68cb0318d34.parquet], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/checkpoints/2d46e0ad-b3bd-4d05-b3b3-b800fbdbaf0b/e774d8ed-3f9e-4340-85c9-52dff2492b2c/part-00004-588ff9e9-06a5-4cbb-b8f1-902bd1393ac6.parquet], ...]}, projection=[_c0@0 as #0], file_type=parquet
+
+
+### e_distinct_row_number
+== Physical Plan ==
+ProjectionExec: expr=[#2@0 as id, #3@1 as dense]
+  ProjectionExec: expr=[#1@0 as #2, CAST(CAST(row_number() ORDER BY [#1 ASC NULLS FIRST] RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW@1 AS Int32) - 1 AS Int64) as #3]
+    RepartitionExec: partitioning=RoundRobinBatch(10), input_partitions=1, maintains_sort_order=true
+      BoundedWindowAggExec: wdw=[row_number() ORDER BY [#1 ASC NULLS FIRST] RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW: Field { "row_number() ORDER BY [#1 ASC NULLS FIRST] RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW": UInt64 }, frame: RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW], mode=[Sorted]
+        SortPreservingMergeExec: [#1@0 ASC]
+          SortExec: expr=[#1@0 ASC], preserve_partitioning=[true]
+            AggregateExec: mode=FinalPartitioned, gby=[#1@0 as #1], aggr=[]
+              RepartitionExec: partitioning=Hash([#1@0], 10), input_partitions=10
+                AggregateExec: mode=Partial, gby=[#1@0 as #1], aggr=[]
+                  DataSourceExec: file_groups={10 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:0..386195], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:386195..772390], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:772390..1158585], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1158585..1544780], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1544780..1930975], ...]}, projection=[id@0 as #1], file_type=parquet
+
+
+### e_bucketed_row_number
+== Physical Plan ==
+ProjectionExec: expr=[#2@0 as id, #3@1 as dense]
+  ProjectionExec: expr=[#2@0 as #2, array_element([0, 58813, 118211, 177297, 236130, 294816, 353725, 413123, 472209, 531023, 589728, 648637, 708035, 766891, 825935, 884640, 943549, 1002786, 1061803, 1120847, 1179552, 1238422, 1297698, 1356715, 1415759, 1474384, 1533334, 1592610, 1651627, 1710487, 1769296, 1828246, 1887522, 1946253, 2005399, 2064208, 2123158, 2182136, 2241165, 2300311, 2359120, 2418019, 2477048, 2536077, 2595223, 2653848, 2712931, 2771960, 2830989, 2890130, 2948760, 3007843, 3066872, 3125797, 3185042, 3243672, 3302755, 3361775, 3420709, 3479954, 3538584, 3597631, 3656687, 3715621], CAST(#3@1 AS Int64) + 1) + CAST(CAST(row_number() PARTITION BY [#3] ORDER BY [#2 ASC NULLS FIRST] RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW@2 AS Int32) AS Int64) - 1 as #3]
+    BoundedWindowAggExec: wdw=[row_number() PARTITION BY [#3] ORDER BY [#2 ASC NULLS FIRST] RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW: Field { "row_number() PARTITION BY [#3] ORDER BY [#2 ASC NULLS FIRST] RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW": UInt64 }, frame: RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW], mode=[Sorted]
+      SortExec: expr=[#3@1 ASC NULLS LAST, #2@0 ASC], preserve_partitioning=[true]
+        RepartitionExec: partitioning=Hash([#3@1], 10), input_partitions=10
+          DataSourceExec: file_groups={10 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:0..386195], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:386195..772390], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:772390..1158585], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1158585..1544780], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1544780..1930975], ...]}, projection=[id@0 as #2, CASE WHEN id@0 >= 4092709 THEN CASE WHEN id@0 >= 5041399 THEN CASE WHEN id@0 >= 5519821 THEN CASE WHEN id@0 >= 5763256 THEN CASE WHEN id@0 >= 5887542 THEN CASE WHEN id@0 >= 5948273 THEN 63 ELSE 62 END ELSE CASE WHEN id@0 >= 5825421 THEN 61 ELSE 60 END END ELSE CASE WHEN id@0 >= 5640741 THEN CASE WHEN id@0 >= 5702179 THEN 59 ELSE 58 END ELSE CASE WHEN id@0 >= 5580050 THEN 57 ELSE 56 END END END ELSE CASE WHEN id@0 >= 5280045 THEN CASE WHEN id@0 >= 5400006 THEN CASE WHEN id@0 >= 5459615 THEN 55 ELSE 54 END ELSE CASE WHEN id@0 >= 5339827 THEN 53 ELSE 52 END END ELSE CASE WHEN id@0 >= 5160423 THEN CASE WHEN id@0 >= 5220262 THEN 51 ELSE 50 END ELSE CASE WHEN id@0 >= 5101116 THEN 49 ELSE 48 END END END END ELSE CASE WHEN id@0 >= 4566784 THEN CASE WHEN id@0 >= 4804006 THEN CASE WHEN id@0 >= 4922390 THEN CASE WHEN id@0 >= 4981832 THEN 47 ELSE 46 END ELSE CASE WHEN id@0 >= 4862953 THEN 45 ELSE 44 END END ELSE CASE WHEN id@0 >= 4685221 THEN CASE WHEN id@0 >= 4744539 THEN 43 ELSE 42 END ELSE CASE WHEN id@0 >= 4625955 THEN 41 ELSE 40 END END END ELSE CASE WHEN id@0 >= 4329698 THEN CASE WHEN id@0 >= 4448241 THEN CASE WHEN id@0 >= 4507690 THEN 39 ELSE 38 END ELSE CASE WHEN id@0 >= 4388932 THEN 37 ELSE 36 END END ELSE CASE WHEN id@0 >= 4211242 THEN CASE WHEN id@0 >= 4270423 THEN 35 ELSE 34 END ELSE CASE WHEN id@0 >= 4151758 THEN 33 ELSE 32 END END END END END ELSE CASE WHEN id@0 >= 2961311 THEN CASE WHEN id@0 >= 3585356 THEN CASE WHEN id@0 >= 3855067 THEN CASE WHEN id@0 >= 3973828 THEN CASE WHEN id@0 >= 4033119 THEN 31 ELSE 30 END ELSE CASE WHEN id@0 >= 3914569 THEN 29 ELSE 28 END END ELSE CASE WHEN id@0 >= 3722430 THEN CASE WHEN id@0 >= 3789178 THEN 27 ELSE 26 END ELSE CASE WHEN id@0 >= 3653665 THEN 25 ELSE 24 END END END ELSE CASE WHEN id@0 >= 3289805 THEN CASE WHEN id@0 >= 3440170 THEN CASE WHEN id@0 >= 3513155 THEN 23 ELSE 22 END ELSE CASE WHEN id@0 >= 3365554 THEN 21 ELSE 20 END END ELSE CASE WHEN id@0 >= 3132090 THEN CASE WHEN id@0 >= 3212177 THEN 19 ELSE 18 END ELSE CASE WHEN id@0 >= 3048977 THEN 17 ELSE 16 END END END END ELSE CASE WHEN id@0 >= 2064418 THEN CASE WHEN id@0 >= 2572403 THEN CASE WHEN id@0 >= 2774415 THEN CASE WHEN id@0 >= 2869619 THEN 15 ELSE 14 END ELSE CASE WHEN id@0 >= 2675888 THEN 13 ELSE 12 END END ELSE CASE WHEN id@0 >= 2332972 THEN CASE WHEN id@0 >= 2458294 THEN 11 ELSE 10 END ELSE CASE WHEN id@0 >= 2202631 THEN 9 ELSE 8 END END END ELSE CASE WHEN id@0 >= 1315187 THEN CASE WHEN id@0 >= 1731988 THEN CASE WHEN id@0 >= 1910323 THEN 7 ELSE 6 END ELSE CASE WHEN id@0 >= 1533725 THEN 5 ELSE 4 END END ELSE CASE WHEN id@0 >= 786318 THEN CASE WHEN id@0 >= 1068279 THEN 3 ELSE 2 END ELSE CASE WHEN id@0 >= 461812 THEN 1 ELSE 0 END END END END END END as #3], file_type=parquet
+
+
+### e_from_edges_row_number
+== Physical Plan ==
+ProjectionExec: expr=[#2@0 as id, #3@1 as dense]
+  ProjectionExec: expr=[#2@0 as #2, CAST(CAST(row_number() ORDER BY [#2 ASC NULLS FIRST] RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW@1 AS Int32) - 1 AS Int64) as #3]
+    RepartitionExec: partitioning=RoundRobinBatch(10), input_partitions=1, maintains_sort_order=true
+      BoundedWindowAggExec: wdw=[row_number() ORDER BY [#2 ASC NULLS FIRST] RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW: Field { "row_number() ORDER BY [#2 ASC NULLS FIRST] RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW": UInt64 }, frame: RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW], mode=[Sorted]
+        SortPreservingMergeExec: [#2@0 ASC]
+          SortExec: expr=[#2@0 ASC], preserve_partitioning=[true]
+            AggregateExec: mode=FinalPartitioned, gby=[#2@0 as #2], aggr=[]
+              RepartitionExec: partitioning=Hash([#2@0], 10), input_partitions=20
+                AggregateExec: mode=Partial, gby=[#2@0 as #2], aggr=[]
+                  UnionExec
+                    DataSourceExec: file_groups={10 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:0..7003739], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:7003739..14007478], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:14007478..21011217], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:21011217..28014956], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:28014956..35018695], ...]}, projection=[source@0 as #2], file_type=parquet
+                    DataSourceExec: file_groups={10 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:0..7003739], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:7003739..14007478], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:14007478..21011217], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:21011217..28014956], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:28014956..35018695], ...]}, projection=[target@1 as #2], file_type=parquet
+
+
+### e_from_edges_bucketed
+== Physical Plan ==
+ProjectionExec: expr=[#2@0 as id, #3@1 as dense]
+  ProjectionExec: expr=[#6@0 as #2, array_element([0, 52586, 112465, 172917, 226704, 281459, 342771, 402553, 466557, 530545, 586089, 638891, 693274, 747051, 809662, 867256, 925835, 987092, 1044114, 1105490, 1163179, 1221996, 1285494, 1345906, 1410496, 1467606, 1530546, 1588718, 1646912, 1702068, 1765178, 1819621, 1879296, 1932574, 1987459, 2043781, 2110297, 2167632, 2227272, 2289832, 2345176, 2396519, 2463093, 2516349, 2580400, 2638564, 2699122, 2754798, 2814801, 2875360, 2937069, 2999693, 3056204, 3115962, 3176411, 3238433, 3297608, 3353079, 3414766, 3475284, 3529453, 3592469, 3652313, 3709714], CAST(#7@1 AS Int64) + 1) + CAST(CAST(row_number() PARTITION BY [#7] ORDER BY [#6 ASC NULLS FIRST] RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW@2 AS Int32) AS Int64) - 1 as #3]
+    BoundedWindowAggExec: wdw=[row_number() PARTITION BY [#7] ORDER BY [#6 ASC NULLS FIRST] RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW: Field { "row_number() PARTITION BY [#7] ORDER BY [#6 ASC NULLS FIRST] RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW": UInt64 }, frame: RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW], mode=[Sorted]
+      SortExec: expr=[#7@1 ASC NULLS LAST, #6@0 ASC], preserve_partitioning=[true]
+        RepartitionExec: partitioning=Hash([#7@1], 10), input_partitions=10
+          ProjectionExec: expr=[#2@0 as #6, CASE WHEN #2@0 >= 4084438 THEN CASE WHEN #2@0 >= 5025065 THEN CASE WHEN #2@0 >= 5514552 THEN CASE WHEN #2@0 >= 5753788 THEN CASE WHEN #2@0 >= 5882969 THEN CASE WHEN #2@0 >= 5942205 THEN 63 ELSE 62 END ELSE CASE WHEN #2@0 >= 5819946 THEN 61 ELSE 60 END END ELSE CASE WHEN #2@0 >= 5634597 THEN CASE WHEN #2@0 >= 5697337 THEN 59 ELSE 58 END ELSE CASE WHEN #2@0 >= 5571155 THEN 57 ELSE 56 END END END ELSE CASE WHEN #2@0 >= 5269227 THEN CASE WHEN #2@0 >= 5391252 THEN CASE WHEN #2@0 >= 5454289 THEN 55 ELSE 54 END ELSE CASE WHEN #2@0 >= 5329822 THEN 53 ELSE 52 END END ELSE CASE WHEN #2@0 >= 5148612 THEN CASE WHEN #2@0 >= 5212005 THEN 51 ELSE 50 END ELSE CASE WHEN #2@0 >= 5086175 THEN 49 ELSE 48 END END END END ELSE CASE WHEN #2@0 >= 4552775 THEN CASE WHEN #2@0 >= 4789098 THEN CASE WHEN #2@0 >= 4908475 THEN CASE WHEN #2@0 >= 4964541 THEN 47 ELSE 46 END ELSE CASE WHEN #2@0 >= 4847594 THEN 45 ELSE 44 END END ELSE CASE WHEN #2@0 >= 4671215 THEN CASE WHEN #2@0 >= 4724717 THEN 43 ELSE 42 END ELSE CASE WHEN #2@0 >= 4604371 THEN 41 ELSE 40 END END END ELSE CASE WHEN #2@0 >= 4316775 THEN CASE WHEN #2@0 >= 4434273 THEN CASE WHEN #2@0 >= 4497161 THEN 39 ELSE 38 END ELSE CASE WHEN #2@0 >= 4374360 THEN 37 ELSE 36 END END ELSE CASE WHEN #2@0 >= 4193197 THEN CASE WHEN #2@0 >= 4249832 THEN 35 ELSE 34 END ELSE CASE WHEN #2@0 >= 4137995 THEN 33 ELSE 32 END END END END END ELSE CASE WHEN #2@0 >= 2934215 THEN CASE WHEN #2@0 >= 3579101 THEN CASE WHEN #2@0 >= 3849821 THEN CASE WHEN #2@0 >= 3969691 THEN CASE WHEN #2@0 >= 4024455 THEN 31 ELSE 30 END ELSE CASE WHEN #2@0 >= 3906119 THEN 29 ELSE 28 END END ELSE CASE WHEN #2@0 >= 3719281 THEN CASE WHEN #2@0 >= 3784837 THEN 27 ELSE 26 END ELSE CASE WHEN #2@0 >= 3645848 THEN 25 ELSE 24 END END END ELSE CASE WHEN #2@0 >= 3268333 THEN CASE WHEN #2@0 >= 3424804 THEN CASE WHEN #2@0 >= 3499947 THEN 23 ELSE 22 END ELSE CASE WHEN #2@0 >= 3344523 THEN 21 ELSE 20 END END ELSE CASE WHEN #2@0 >= 3107483 THEN CASE WHEN #2@0 >= 3191552 THEN 19 ELSE 18 END ELSE CASE WHEN #2@0 >= 3026247 THEN 17 ELSE 16 END END END END ELSE CASE WHEN #2@0 >= 2050334 THEN CASE WHEN #2@0 >= 2545053 THEN CASE WHEN #2@0 >= 2747573 THEN CASE WHEN #2@0 >= 2841433 THEN 15 ELSE 14 END ELSE CASE WHEN #2@0 >= 2641766 THEN 13 ELSE 12 END END ELSE CASE WHEN #2@0 >= 2325282 THEN CASE WHEN #2@0 >= 2438190 THEN 11 ELSE 10 END ELSE CASE WHEN #2@0 >= 2201507 THEN 9 ELSE 8 END END END ELSE CASE WHEN #2@0 >= 1277829 THEN CASE WHEN #2@0 >= 1696730 THEN CASE WHEN #2@0 >= 1880558 THEN 7 ELSE 6 END ELSE CASE WHEN #2@0 >= 1486491 THEN 5 ELSE 4 END END ELSE CASE WHEN #2@0 >= 756338 THEN CASE WHEN #2@0 >= 1048449 THEN 3 ELSE 2 END ELSE CASE WHEN #2@0 >= 422651 THEN 1 ELSE 0 END END END END END END as #7]
+            AggregateExec: mode=FinalPartitioned, gby=[#2@0 as #2], aggr=[]
+              RepartitionExec: partitioning=Hash([#2@0], 10), input_partitions=20
+                AggregateExec: mode=Partial, gby=[#2@0 as #2], aggr=[]
+                  UnionExec
+                    DataSourceExec: file_groups={10 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:0..7003739], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:7003739..14007478], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:14007478..21011217], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:21011217..28014956], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:28014956..35018695], ...]}, projection=[source@0 as #2], file_type=parquet
+                    DataSourceExec: file_groups={10 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:0..7003739], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:7003739..14007478], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:14007478..21011217], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:21011217..28014956], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:28014956..35018695], ...]}, projection=[target@1 as #2], file_type=parquet
+
+
+### a_row_number
+== Physical Plan ==
+ProjectionExec: expr=[#2@0 as id, #3@1 as dense]
+  ProjectionExec: expr=[#0@0 as #2, CAST(CAST(row_number() ORDER BY [?table?.#0 ASC NULLS FIRST] RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW@1 AS Int32) - 1 AS Int64) as #3]
+    RepartitionExec: partitioning=RoundRobinBatch(10), input_partitions=1, maintains_sort_order=true
+      BoundedWindowAggExec: wdw=[row_number() ORDER BY [?table?.#0 ASC NULLS FIRST] RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW: Field { "row_number() ORDER BY [?table?.#0 ASC NULLS FIRST] RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW": UInt64 }, frame: RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW], mode=[Sorted]
+        SortPreservingMergeExec: [#0@0 ASC]
+          ProjectionExec: expr=[id@0 as #0]
+            SortExec: expr=[id@0 ASC], preserve_partitioning=[true]
+              DataSourceExec: file_groups={10 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:0..386195], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:386195..772390], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:772390..1158585], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1158585..1544780], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1544780..1930975], ...]}, projection=[id], file_type=parquet, sort_order_for_reorder=[id@0 ASC]
+
+
+### a_running_count_bigint
+== Physical Plan ==
+ProjectionExec: expr=[#2@0 as id, #3@1 as dense]
+  ProjectionExec: expr=[#0@0 as #2, count(Int32(1)) ORDER BY [?table?.#0 ASC NULLS FIRST] ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW@1 - 1 as #3]
+    RepartitionExec: partitioning=RoundRobinBatch(10), input_partitions=1, maintains_sort_order=true
+      BoundedWindowAggExec: wdw=[count(Int32(1)) ORDER BY [?table?.#0 ASC NULLS FIRST] ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW: Field { "count(Int32(1)) ORDER BY [?table?.#0 ASC NULLS FIRST] ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW": Int64 }, frame: ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW], mode=[Sorted]
+        SortPreservingMergeExec: [#0@0 ASC]
+          ProjectionExec: expr=[id@0 as #0]
+            SortExec: expr=[id@0 ASC], preserve_partitioning=[true]
+              DataSourceExec: file_groups={10 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:0..386195], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:386195..772390], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:772390..1158585], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1158585..1544780], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1544780..1930975], ...]}, projection=[id], file_type=parquet, sort_order_for_reorder=[id@0 ASC]
+
+
+### a_orderby_monotonic_id
+== Physical Plan ==
+ProjectionExec: expr=[#2@0 as id, #3@1 as dense]
+  ProjectionExec: expr=[#0@0 as #2, #1@1 as #3]
+    MonotonicIdExec: col=#1
+      SortPreservingMergeExec: [#0@0 ASC]
+        ProjectionExec: expr=[id@0 as #0]
+          SortExec: expr=[id@0 ASC], preserve_partitioning=[true]
+            DataSourceExec: file_groups={10 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:0..386195], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:386195..772390], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:772390..1158585], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1158585..1544780], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1544780..1930975], ...]}, projection=[id], file_type=parquet, sort_order_for_reorder=[id@0 ASC]
+
+
+### a_coalesce1_monotonic_id
+== Physical Plan ==
+ProjectionExec: expr=[#2@0 as id, #3@1 as dense]
+  ProjectionExec: expr=[#0@0 as #2, #1@1 as #3]
+    MonotonicIdExec: col=#1
+      CoalescePartitionsExec
+        DataSourceExec: file_groups={10 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:0..386195], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:386195..772390], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:772390..1158585], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1158585..1544780], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1544780..1930975], ...]}, projection=[id@0 as #0], file_type=parquet
+
+
+### b_two_pass_direct_scan
+== Physical Plan ==
+ProjectionExec: expr=[#2@0 as id, #3@1 as dense]
+  ProjectionExec: expr=[#0@0 as #2, array_element([0, 368640, 860160, 1228800, 1597440, 1966080, 2334720, 2703360, 3072000, 3440640], CAST(#2@2 AS Int64) + 1) + (#1@1 & 8589934591) as #3]
+    SparkPartitionIdExec: col=#2
+      MonotonicIdExec: col=#1
+        DataSourceExec: file_groups={10 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:0..386195], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:386195..772390], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:772390..1158585], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1158585..1544780], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1544780..1930975], ...]}, projection=[id@0 as #0], file_type=parquet
+
+
+### b_two_pass_checkpoint
+== Physical Plan ==
+ProjectionExec: expr=[#2@0 as id, #3@1 as dense]
+  ProjectionExec: expr=[#0@0 as #2, array_element([0, 368640, 737280, 1105920, 1474560, 1843200, 2334720, 2703360, 3072000, 3440640], CAST(#2@2 AS Int64) + 1) + (#1@1 & 8589934591) as #3]
+    SparkPartitionIdExec: col=#2
+      MonotonicIdExec: col=#1
+        DataSourceExec: file_groups={10 groups: [[private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/checkpoints/2d46e0ad-b3bd-4d05-b3b3-b800fbdbaf0b/76cb223c-6a44-4fad-b7de-a6e82fb010d5/part-00000-439e3d93-3fef-446f-a0a0-ef6b0c061187.parquet], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/checkpoints/2d46e0ad-b3bd-4d05-b3b3-b800fbdbaf0b/76cb223c-6a44-4fad-b7de-a6e82fb010d5/part-00001-7e1e388b-66aa-497c-946d-0ce5972df92c.parquet], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/checkpoints/2d46e0ad-b3bd-4d05-b3b3-b800fbdbaf0b/76cb223c-6a44-4fad-b7de-a6e82fb010d5/part-00002-08ad326a-8ceb-4111-bdd4-287112d355b6.parquet], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/checkpoints/2d46e0ad-b3bd-4d05-b3b3-b800fbdbaf0b/76cb223c-6a44-4fad-b7de-a6e82fb010d5/part-00003-8dacc680-083a-405e-a4f3-f854c6d5a49b.parquet], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/checkpoints/2d46e0ad-b3bd-4d05-b3b3-b800fbdbaf0b/76cb223c-6a44-4fad-b7de-a6e82fb010d5/part-00004-eb300772-187c-4c86-9fda-246085092b2f.parquet], ...]}, projection=[_c0@0 as #0], file_type=parquet
+
+
+### b_one_pass_materialized (second step)
+== Physical Plan ==
+ProjectionExec: expr=[#2@0 as id, #3@1 as dense]
+  DataSourceExec: file_groups={10 groups: [[private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/b-staged/iCiy2aOdgRRJs4FY_0.zst.parquet:0..969576], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/b-staged/iCiy2aOdgRRJs4FY_0.zst.parquet:969576..1939152], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/b-staged/iCiy2aOdgRRJs4FY_0.zst.parquet:1939152..2412933, private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/b-staged/iCiy2aOdgRRJs4FY_1.zst.parquet:0..495795], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/b-staged/iCiy2aOdgRRJs4FY_1.zst.parquet:495795..1465371], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/b-staged/iCiy2aOdgRRJs4FY_1.zst.parquet:1465371..2434947], ...]}, projection=[id@0 as #2, array_element([0, 368640, 860160, 1194288, 1562928, 1931568, 2300208, 2668848, 3037488, 3406128], (m@1 >> 33) + 1) + (m@1 & 8589934591) as #3], file_type=parquet
+
+
+### b_map_in_arrow_checkpoint
+== Physical Plan ==
+ProjectionExec: expr=[#2@0 as id, #3@1 as dense]
+  ProjectionExec: expr=[#6@0 as #2, array_element([0, 368640, 737280, 1105920, 1440048, 1808688, 2177328, 2545968, 2914608, 3406128], CAST(#7@1 AS Int64) + 1) + #8@2 as #3]
+    MapPartitionsExec
+      ProjectionExec: expr=[#0@0 as #4, #1@1 as #5]
+        SparkPartitionIdExec: col=#1
+          DataSourceExec: file_groups={10 groups: [[private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/checkpoints/2d46e0ad-b3bd-4d05-b3b3-b800fbdbaf0b/0c85012b-1c65-433f-a453-514d7124a9ab/part-00000-fe4495b1-fa6c-4f7d-ba5d-be32702254a9.parquet], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/checkpoints/2d46e0ad-b3bd-4d05-b3b3-b800fbdbaf0b/0c85012b-1c65-433f-a453-514d7124a9ab/part-00001-5d75135a-bdd8-4afb-92f0-ced877c39403.parquet], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/checkpoints/2d46e0ad-b3bd-4d05-b3b3-b800fbdbaf0b/0c85012b-1c65-433f-a453-514d7124a9ab/part-00002-762635a2-d020-42ce-bcc8-f97facbcf6c1.parquet], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/checkpoints/2d46e0ad-b3bd-4d05-b3b3-b800fbdbaf0b/0c85012b-1c65-433f-a453-514d7124a9ab/part-00003-e36f0113-b192-42f6-af4c-22ae620cb972.parquet], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/checkpoints/2d46e0ad-b3bd-4d05-b3b3-b800fbdbaf0b/0c85012b-1c65-433f-a453-514d7124a9ab/part-00004-47d80ebe-826f-45f2-a2b3-17ce0face168.parquet], ...]}, projection=[_c0@0 as #0], file_type=parquet
+
+
+### e_distinct_row_number
+== Physical Plan ==
+ProjectionExec: expr=[#2@0 as id, #3@1 as dense]
+  ProjectionExec: expr=[#1@0 as #2, CAST(CAST(row_number() ORDER BY [#1 ASC NULLS FIRST] RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW@1 AS Int32) - 1 AS Int64) as #3]
+    RepartitionExec: partitioning=RoundRobinBatch(10), input_partitions=1, maintains_sort_order=true
+      BoundedWindowAggExec: wdw=[row_number() ORDER BY [#1 ASC NULLS FIRST] RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW: Field { "row_number() ORDER BY [#1 ASC NULLS FIRST] RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW": UInt64 }, frame: RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW], mode=[Sorted]
+        SortPreservingMergeExec: [#1@0 ASC]
+          SortExec: expr=[#1@0 ASC], preserve_partitioning=[true]
+            AggregateExec: mode=FinalPartitioned, gby=[#1@0 as #1], aggr=[]
+              RepartitionExec: partitioning=Hash([#1@0], 10), input_partitions=10
+                AggregateExec: mode=Partial, gby=[#1@0 as #1], aggr=[]
+                  DataSourceExec: file_groups={10 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:0..386195], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:386195..772390], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:772390..1158585], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1158585..1544780], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1544780..1930975], ...]}, projection=[id@0 as #1], file_type=parquet
+
+
+### e_bucketed_row_number
+== Physical Plan ==
+ProjectionExec: expr=[#2@0 as id, #3@1 as dense]
+  ProjectionExec: expr=[#2@0 as #2, array_element([0, 58813, 118211, 177297, 236130, 294816, 353725, 413123, 472209, 531023, 589728, 648637, 708035, 766891, 825935, 884640, 943549, 1002786, 1061803, 1120847, 1179552, 1238422, 1297698, 1356715, 1415759, 1474384, 1533334, 1592610, 1651627, 1710487, 1769296, 1828246, 1887522, 1946253, 2005399, 2064208, 2123158, 2182136, 2241165, 2300311, 2359120, 2418019, 2477048, 2536077, 2595223, 2653848, 2712931, 2771960, 2830989, 2890130, 2948760, 3007843, 3066872, 3125797, 3185042, 3243672, 3302755, 3361775, 3420709, 3479954, 3538584, 3597631, 3656687, 3715621], CAST(#3@1 AS Int64) + 1) + CAST(CAST(row_number() PARTITION BY [#3] ORDER BY [#2 ASC NULLS FIRST] RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW@2 AS Int32) AS Int64) - 1 as #3]
+    BoundedWindowAggExec: wdw=[row_number() PARTITION BY [#3] ORDER BY [#2 ASC NULLS FIRST] RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW: Field { "row_number() PARTITION BY [#3] ORDER BY [#2 ASC NULLS FIRST] RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW": UInt64 }, frame: RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW], mode=[Sorted]
+      SortExec: expr=[#3@1 ASC NULLS LAST, #2@0 ASC], preserve_partitioning=[true]
+        RepartitionExec: partitioning=Hash([#3@1], 10), input_partitions=10
+          DataSourceExec: file_groups={10 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:0..386195], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:386195..772390], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:772390..1158585], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1158585..1544780], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1544780..1930975], ...]}, projection=[id@0 as #2, CASE WHEN id@0 >= 4092709 THEN CASE WHEN id@0 >= 5041399 THEN CASE WHEN id@0 >= 5519821 THEN CASE WHEN id@0 >= 5763256 THEN CASE WHEN id@0 >= 5887542 THEN CASE WHEN id@0 >= 5948273 THEN 63 ELSE 62 END ELSE CASE WHEN id@0 >= 5825421 THEN 61 ELSE 60 END END ELSE CASE WHEN id@0 >= 5640741 THEN CASE WHEN id@0 >= 5702179 THEN 59 ELSE 58 END ELSE CASE WHEN id@0 >= 5580050 THEN 57 ELSE 56 END END END ELSE CASE WHEN id@0 >= 5280045 THEN CASE WHEN id@0 >= 5400006 THEN CASE WHEN id@0 >= 5459615 THEN 55 ELSE 54 END ELSE CASE WHEN id@0 >= 5339827 THEN 53 ELSE 52 END END ELSE CASE WHEN id@0 >= 5160423 THEN CASE WHEN id@0 >= 5220262 THEN 51 ELSE 50 END ELSE CASE WHEN id@0 >= 5101116 THEN 49 ELSE 48 END END END END ELSE CASE WHEN id@0 >= 4566784 THEN CASE WHEN id@0 >= 4804006 THEN CASE WHEN id@0 >= 4922390 THEN CASE WHEN id@0 >= 4981832 THEN 47 ELSE 46 END ELSE CASE WHEN id@0 >= 4862953 THEN 45 ELSE 44 END END ELSE CASE WHEN id@0 >= 4685221 THEN CASE WHEN id@0 >= 4744539 THEN 43 ELSE 42 END ELSE CASE WHEN id@0 >= 4625955 THEN 41 ELSE 40 END END END ELSE CASE WHEN id@0 >= 4329698 THEN CASE WHEN id@0 >= 4448241 THEN CASE WHEN id@0 >= 4507690 THEN 39 ELSE 38 END ELSE CASE WHEN id@0 >= 4388932 THEN 37 ELSE 36 END END ELSE CASE WHEN id@0 >= 4211242 THEN CASE WHEN id@0 >= 4270423 THEN 35 ELSE 34 END ELSE CASE WHEN id@0 >= 4151758 THEN 33 ELSE 32 END END END END END ELSE CASE WHEN id@0 >= 2961311 THEN CASE WHEN id@0 >= 3585356 THEN CASE WHEN id@0 >= 3855067 THEN CASE WHEN id@0 >= 3973828 THEN CASE WHEN id@0 >= 4033119 THEN 31 ELSE 30 END ELSE CASE WHEN id@0 >= 3914569 THEN 29 ELSE 28 END END ELSE CASE WHEN id@0 >= 3722430 THEN CASE WHEN id@0 >= 3789178 THEN 27 ELSE 26 END ELSE CASE WHEN id@0 >= 3653665 THEN 25 ELSE 24 END END END ELSE CASE WHEN id@0 >= 3289805 THEN CASE WHEN id@0 >= 3440170 THEN CASE WHEN id@0 >= 3513155 THEN 23 ELSE 22 END ELSE CASE WHEN id@0 >= 3365554 THEN 21 ELSE 20 END END ELSE CASE WHEN id@0 >= 3132090 THEN CASE WHEN id@0 >= 3212177 THEN 19 ELSE 18 END ELSE CASE WHEN id@0 >= 3048977 THEN 17 ELSE 16 END END END END ELSE CASE WHEN id@0 >= 2064418 THEN CASE WHEN id@0 >= 2572403 THEN CASE WHEN id@0 >= 2774415 THEN CASE WHEN id@0 >= 2869619 THEN 15 ELSE 14 END ELSE CASE WHEN id@0 >= 2675888 THEN 13 ELSE 12 END END ELSE CASE WHEN id@0 >= 2332972 THEN CASE WHEN id@0 >= 2458294 THEN 11 ELSE 10 END ELSE CASE WHEN id@0 >= 2202631 THEN 9 ELSE 8 END END END ELSE CASE WHEN id@0 >= 1315187 THEN CASE WHEN id@0 >= 1731988 THEN CASE WHEN id@0 >= 1910323 THEN 7 ELSE 6 END ELSE CASE WHEN id@0 >= 1533725 THEN 5 ELSE 4 END END ELSE CASE WHEN id@0 >= 786318 THEN CASE WHEN id@0 >= 1068279 THEN 3 ELSE 2 END ELSE CASE WHEN id@0 >= 461812 THEN 1 ELSE 0 END END END END END END as #3], file_type=parquet
+
+
+### e_from_edges_row_number
+== Physical Plan ==
+ProjectionExec: expr=[#2@0 as id, #3@1 as dense]
+  ProjectionExec: expr=[#2@0 as #2, CAST(CAST(row_number() ORDER BY [#2 ASC NULLS FIRST] RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW@1 AS Int32) - 1 AS Int64) as #3]
+    RepartitionExec: partitioning=RoundRobinBatch(10), input_partitions=1, maintains_sort_order=true
+      BoundedWindowAggExec: wdw=[row_number() ORDER BY [#2 ASC NULLS FIRST] RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW: Field { "row_number() ORDER BY [#2 ASC NULLS FIRST] RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW": UInt64 }, frame: RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW], mode=[Sorted]
+        SortPreservingMergeExec: [#2@0 ASC]
+          SortExec: expr=[#2@0 ASC], preserve_partitioning=[true]
+            AggregateExec: mode=FinalPartitioned, gby=[#2@0 as #2], aggr=[]
+              RepartitionExec: partitioning=Hash([#2@0], 10), input_partitions=20
+                AggregateExec: mode=Partial, gby=[#2@0 as #2], aggr=[]
+                  UnionExec
+                    DataSourceExec: file_groups={10 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:0..7003739], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:7003739..14007478], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:14007478..21011217], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:21011217..28014956], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:28014956..35018695], ...]}, projection=[source@0 as #2], file_type=parquet
+                    DataSourceExec: file_groups={10 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:0..7003739], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:7003739..14007478], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:14007478..21011217], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:21011217..28014956], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:28014956..35018695], ...]}, projection=[target@1 as #2], file_type=parquet
+
+
+### e_from_edges_bucketed
+== Physical Plan ==
+ProjectionExec: expr=[#2@0 as id, #3@1 as dense]
+  ProjectionExec: expr=[#6@0 as #2, array_element([0, 60975, 122741, 179364, 241062, 296004, 350454, 418391, 472305, 533909, 602873, 654455, 719112, 773162, 838584, 899401, 963515, 1024671, 1088382, 1144061, 1203224, 1260377, 1316373, 1375910, 1440337, 1501895, 1560335, 1617592, 1672764, 1734139, 1798432, 1856273, 1911417, 1964785, 2020528, 2074421, 2130209, 2191494, 2252402, 2312618, 2378929, 2437231, 2493603, 2548719, 2601773, 2656288, 2715193, 2777060, 2840895, 2899379, 2957842, 3021672, 3079354, 3138730, 3189962, 3249130, 3307704, 3366105, 3418405, 3479454, 3540544, 3594507, 3658958, 3714317], CAST(#7@1 AS Int64) + 1) + CAST(CAST(row_number() PARTITION BY [#7] ORDER BY [#6 ASC NULLS FIRST] RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW@2 AS Int32) AS Int64) - 1 as #3]
+    BoundedWindowAggExec: wdw=[row_number() PARTITION BY [#7] ORDER BY [#6 ASC NULLS FIRST] RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW: Field { "row_number() PARTITION BY [#7] ORDER BY [#6 ASC NULLS FIRST] RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW": UInt64 }, frame: RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW], mode=[Sorted]
+      SortExec: expr=[#7@1 ASC NULLS LAST, #6@0 ASC], preserve_partitioning=[true]
+        RepartitionExec: partitioning=Hash([#7@1], 10), input_partitions=10
+          ProjectionExec: expr=[#2@0 as #6, CASE WHEN #2@0 >= 4116737 THEN CASE WHEN #2@0 >= 5051389 THEN CASE WHEN #2@0 >= 5524871 THEN CASE WHEN #2@0 >= 5765302 THEN CASE WHEN #2@0 >= 5889950 THEN CASE WHEN #2@0 >= 5946958 THEN 63 ELSE 62 END ELSE CASE WHEN #2@0 >= 5822113 THEN 61 ELSE 60 END END ELSE CASE WHEN #2@0 >= 5638357 THEN CASE WHEN #2@0 >= 5701669 THEN 59 ELSE 58 END ELSE CASE WHEN #2@0 >= 5584495 THEN 57 ELSE 56 END END END ELSE CASE WHEN #2@0 >= 5292715 THEN CASE WHEN #2@0 >= 5404987 THEN CASE WHEN #2@0 >= 5465153 THEN 55 ELSE 54 END ELSE CASE WHEN #2@0 >= 5353004 THEN 53 ELSE 52 END END ELSE CASE WHEN #2@0 >= 5169624 THEN CASE WHEN #2@0 >= 5234265 THEN 51 ELSE 50 END ELSE CASE WHEN #2@0 >= 5110469 THEN 49 ELSE 48 END END END END ELSE CASE WHEN #2@0 >= 4586686 THEN CASE WHEN #2@0 >= 4810593 THEN CASE WHEN #2@0 >= 4924669 THEN CASE WHEN #2@0 >= 4986968 THEN 47 ELSE 46 END ELSE CASE WHEN #2@0 >= 4865406 THEN 45 ELSE 44 END END ELSE CASE WHEN #2@0 >= 4701857 THEN CASE WHEN #2@0 >= 4757244 THEN 43 ELSE 42 END ELSE CASE WHEN #2@0 >= 4645226 THEN 41 ELSE 40 END END END ELSE CASE WHEN #2@0 >= 4336777 THEN CASE WHEN #2@0 >= 4459539 THEN CASE WHEN #2@0 >= 4520052 THEN 39 ELSE 38 END ELSE CASE WHEN #2@0 >= 4398334 THEN 37 ELSE 36 END END ELSE CASE WHEN #2@0 >= 4226450 THEN CASE WHEN #2@0 >= 4280680 THEN 35 ELSE 34 END ELSE CASE WHEN #2@0 >= 4170407 THEN 33 ELSE 32 END END END END END ELSE CASE WHEN #2@0 >= 2991474 THEN CASE WHEN #2@0 >= 3614119 THEN CASE WHEN #2@0 >= 3876629 THEN CASE WHEN #2@0 >= 4003142 THEN CASE WHEN #2@0 >= 4061287 THEN 31 ELSE 30 END ELSE CASE WHEN #2@0 >= 3938462 THEN 29 ELSE 28 END END ELSE CASE WHEN #2@0 >= 3752984 THEN CASE WHEN #2@0 >= 3817085 THEN 27 ELSE 26 END ELSE CASE WHEN #2@0 >= 3685592 THEN 25 ELSE 24 END END END ELSE CASE WHEN #2@0 >= 3320476 THEN CASE WHEN #2@0 >= 3463517 THEN CASE WHEN #2@0 >= 3536552 THEN 23 ELSE 22 END ELSE CASE WHEN #2@0 >= 3393357 THEN 21 ELSE 20 END END ELSE CASE WHEN #2@0 >= 3168549 THEN CASE WHEN #2@0 >= 3243144 THEN 19 ELSE 18 END ELSE CASE WHEN #2@0 >= 3080256 THEN 17 ELSE 16 END END END END ELSE CASE WHEN #2@0 >= 2064627 THEN CASE WHEN #2@0 >= 2592573 THEN CASE WHEN #2@0 >= 2795037 THEN CASE WHEN #2@0 >= 2893027 THEN 15 ELSE 14 END ELSE CASE WHEN #2@0 >= 2686620 THEN 13 ELSE 12 END END ELSE CASE WHEN #2@0 >= 2361462 THEN CASE WHEN #2@0 >= 2470126 THEN 11 ELSE 10 END ELSE CASE WHEN #2@0 >= 2209274 THEN 9 ELSE 8 END END END ELSE CASE WHEN #2@0 >= 1334586 THEN CASE WHEN #2@0 >= 1721227 THEN CASE WHEN #2@0 >= 1924781 THEN 7 ELSE 6 END ELSE CASE WHEN #2@0 >= 1537956 THEN 5 ELSE 4 END END ELSE CASE WHEN #2@0 >= 808800 THEN CASE WHEN #2@0 >= 1077707 THEN 3 ELSE 2 END ELSE CASE WHEN #2@0 >= 474903 THEN 1 ELSE 0 END END END END END END as #7]
+            AggregateExec: mode=FinalPartitioned, gby=[#2@0 as #2], aggr=[]
+              RepartitionExec: partitioning=Hash([#2@0], 10), input_partitions=20
+                AggregateExec: mode=Partial, gby=[#2@0 as #2], aggr=[]
+                  UnionExec
+                    DataSourceExec: file_groups={10 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:0..7003739], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:7003739..14007478], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:14007478..21011217], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:21011217..28014956], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:28014956..35018695], ...]}, projection=[source@0 as #2], file_type=parquet
+                    DataSourceExec: file_groups={10 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:0..7003739], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:7003739..14007478], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:14007478..21011217], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:21011217..28014956], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:28014956..35018695], ...]}, projection=[target@1 as #2], file_type=parquet
+
+
+### map_two_joins
+== Physical Plan ==
+ProjectionExec: expr=[#2@0 as s, #3@1 as d]
+  ProjectionExec: expr=[#5@0 as #2, #12@1 as #3]
+    HashJoinExec: mode=Partitioned, join_type=Inner, on=[(#11@0, #1@0)], projection=[#5@3, #12@1]
+      RepartitionExec: partitioning=Hash([#11@0], 10), input_partitions=10
+        DataSourceExec: file_groups={10 groups: [[private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_0.zst.parquet:0..981704], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_0.zst.parquet:981704..1963408], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_0.zst.parquet:1963408..2484784, private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_1.zst.parquet:0..460328], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_1.zst.parquet:460328..1442032], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_1.zst.parquet:1442032..2423736], ...]}, projection=[id@0 as #11, dense@1 as #12], file_type=parquet
+      RepartitionExec: partitioning=Hash([#1@0], 10), input_partitions=10
+        HashJoinExec: mode=Partitioned, join_type=Inner, on=[(#4@0, #0@0)], projection=[#1@3, #5@1]
+          RepartitionExec: partitioning=Hash([#4@0], 10), input_partitions=10
+            DataSourceExec: file_groups={10 groups: [[private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_0.zst.parquet:0..981704], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_0.zst.parquet:981704..1963408], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_0.zst.parquet:1963408..2484784, private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_1.zst.parquet:0..460328], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_1.zst.parquet:460328..1442032], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_1.zst.parquet:1442032..2423736], ...]}, projection=[id@0 as #4, dense@1 as #5], file_type=parquet
+          RepartitionExec: partitioning=Hash([#0@0], 10), input_partitions=10
+            DataSourceExec: file_groups={10 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:0..7003739], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:7003739..14007478], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:14007478..21011217], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:21011217..28014956], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:28014956..35018695], ...]}, projection=[source@0 as #0, target@1 as #1], file_type=parquet, predicate=DynamicFilter [ empty ] AND DynamicFilter [ empty ], dynamic_rg_pruning=eligible
+
+
+### map_two_joins_sort
+== Physical Plan ==
+ProjectionExec: expr=[#2@0 as s, #3@1 as d]
+  ProjectionExec: expr=[#16@0 as #2, #17@1 as #3]
+    SortPreservingMergeExec: [#16@0 ASC, #17@1 ASC]
+      SortExec: expr=[#16@0 ASC, #17@1 ASC], preserve_partitioning=[true]
+        ProjectionExec: expr=[#5@0 as #16, #12@1 as #17]
+          HashJoinExec: mode=Partitioned, join_type=Inner, on=[(#11@0, #1@0)], projection=[#5@3, #12@1]
+            RepartitionExec: partitioning=Hash([#11@0], 10), input_partitions=10
+              DataSourceExec: file_groups={10 groups: [[private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_0.zst.parquet:0..981704], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_0.zst.parquet:981704..1963408], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_0.zst.parquet:1963408..2484784, private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_1.zst.parquet:0..460328], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_1.zst.parquet:460328..1442032], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_1.zst.parquet:1442032..2423736], ...]}, projection=[id@0 as #11, dense@1 as #12], file_type=parquet
+            RepartitionExec: partitioning=Hash([#1@0], 10), input_partitions=10
+              HashJoinExec: mode=Partitioned, join_type=Inner, on=[(#4@0, #0@0)], projection=[#1@3, #5@1]
+                RepartitionExec: partitioning=Hash([#4@0], 10), input_partitions=10
+                  DataSourceExec: file_groups={10 groups: [[private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_0.zst.parquet:0..981704], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_0.zst.parquet:981704..1963408], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_0.zst.parquet:1963408..2484784, private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_1.zst.parquet:0..460328], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_1.zst.parquet:460328..1442032], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_1.zst.parquet:1442032..2423736], ...]}, projection=[id@0 as #4, dense@1 as #5], file_type=parquet
+                RepartitionExec: partitioning=Hash([#0@0], 10), input_partitions=10
+                  DataSourceExec: file_groups={10 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:0..7003739], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:7003739..14007478], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:14007478..21011217], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:21011217..28014956], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:28014956..35018695], ...]}, projection=[source@0 as #0, target@1 as #1], file_type=parquet, predicate=DynamicFilter [ empty ] AND DynamicFilter [ empty ], dynamic_rg_pruning=eligible
+
+
+### map_two_joins_inline_row_number
+== Physical Plan ==
+ProjectionExec: expr=[#2@0 as s, #3@1 as d]
+  ProjectionExec: expr=[#7@0 as #2, #16@1 as #3]
+    HashJoinExec: mode=Partitioned, join_type=Inner, on=[(#15@0, #1@0)], projection=[#7@3, #16@1]
+      RepartitionExec: partitioning=Hash([#15@0], 10), input_partitions=10
+        ProjectionExec: expr=[#11@0 as #15, CAST(CAST(row_number() ORDER BY [?table?.#11 ASC NULLS FIRST] RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW@1 AS Int32) - 1 AS Int64) as #16]
+          RepartitionExec: partitioning=RoundRobinBatch(10), input_partitions=1, maintains_sort_order=true
+            BoundedWindowAggExec: wdw=[row_number() ORDER BY [?table?.#11 ASC NULLS FIRST] RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW: Field { "row_number() ORDER BY [?table?.#11 ASC NULLS FIRST] RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW": UInt64 }, frame: RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW], mode=[Sorted]
+              SortPreservingMergeExec: [#11@0 ASC]
+                ProjectionExec: expr=[id@0 as #11]
+                  SortExec: expr=[id@0 ASC], preserve_partitioning=[true]
+                    DataSourceExec: file_groups={10 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:0..386195], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:386195..772390], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:772390..1158585], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1158585..1544780], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1544780..1930975], ...]}, projection=[id], file_type=parquet, sort_order_for_reorder=[id@0 ASC]
+      RepartitionExec: partitioning=Hash([#1@0], 10), input_partitions=10
+        HashJoinExec: mode=Partitioned, join_type=Inner, on=[(#6@0, #0@0)], projection=[#1@3, #7@1]
+          RepartitionExec: partitioning=Hash([#6@0], 10), input_partitions=10
+            ProjectionExec: expr=[#2@0 as #6, CAST(CAST(row_number() ORDER BY [?table?.#2 ASC NULLS FIRST] RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW@1 AS Int32) - 1 AS Int64) as #7]
+              RepartitionExec: partitioning=RoundRobinBatch(10), input_partitions=1, maintains_sort_order=true
+                BoundedWindowAggExec: wdw=[row_number() ORDER BY [?table?.#2 ASC NULLS FIRST] RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW: Field { "row_number() ORDER BY [?table?.#2 ASC NULLS FIRST] RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW": UInt64 }, frame: RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW], mode=[Sorted]
+                  SortPreservingMergeExec: [#2@0 ASC]
+                    ProjectionExec: expr=[id@0 as #2]
+                      SortExec: expr=[id@0 ASC], preserve_partitioning=[true]
+                        DataSourceExec: file_groups={10 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:0..386195], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:386195..772390], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:772390..1158585], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1158585..1544780], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1544780..1930975], ...]}, projection=[id], file_type=parquet, sort_order_for_reorder=[id@0 ASC]
+          RepartitionExec: partitioning=Hash([#0@0], 10), input_partitions=10
+            DataSourceExec: file_groups={10 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:0..7003739], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:7003739..14007478], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:14007478..21011217], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:21011217..28014956], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:28014956..35018695], ...]}, projection=[source@0 as #0, target@1 as #1], file_type=parquet, predicate=DynamicFilter [ empty ] AND DynamicFilter [ empty ], dynamic_rg_pruning=eligible
+
+
+### map_two_joins_inline_orderby_monotonic_id
+== Physical Plan ==
+ProjectionExec: expr=[#2@0 as s, #3@1 as d]
+  ProjectionExec: expr=[#7@0 as #2, #16@1 as #3]
+    HashJoinExec: mode=Partitioned, join_type=Inner, on=[(#15@0, #1@0)], projection=[#7@3, #16@1]
+      RepartitionExec: partitioning=Hash([#15@0], 10), input_partitions=1
+        ProjectionExec: expr=[#11@0 as #15, #12@1 as #16]
+          MonotonicIdExec: col=#12
+            CoalescePartitionsExec
+              DataSourceExec: file_groups={10 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:0..386195], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:386195..772390], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:772390..1158585], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1158585..1544780], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1544780..1930975], ...]}, projection=[id@0 as #11], file_type=parquet
+      RepartitionExec: partitioning=Hash([#1@0], 10), input_partitions=10
+        HashJoinExec: mode=Partitioned, join_type=Inner, on=[(#6@0, #0@0)], projection=[#1@3, #7@1]
+          RepartitionExec: partitioning=Hash([#6@0], 10), input_partitions=1
+            ProjectionExec: expr=[#2@0 as #6, #3@1 as #7]
+              MonotonicIdExec: col=#3
+                CoalescePartitionsExec
+                  DataSourceExec: file_groups={10 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:0..386195], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:386195..772390], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:772390..1158585], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1158585..1544780], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1544780..1930975], ...]}, projection=[id@0 as #2], file_type=parquet
+          RepartitionExec: partitioning=Hash([#0@0], 10), input_partitions=10
+            DataSourceExec: file_groups={10 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:0..7003739], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:7003739..14007478], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:14007478..21011217], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:21011217..28014956], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:28014956..35018695], ...]}, projection=[source@0 as #0, target@1 as #1], file_type=parquet, predicate=DynamicFilter [ empty ] AND DynamicFilter [ empty ], dynamic_rg_pruning=eligible
+
+
+### map_one_join_rekey
+== Physical Plan ==
+ProjectionExec: expr=[#2@0 as s, #3@1 as d]
+  ProjectionExec: expr=[max(CASE WHEN #8 = Int32(0) THEN ?table?.#11 END)@1 as #2, max(CASE WHEN #8 = Int32(1) THEN ?table?.#11 END)@2 as #3]
+    AggregateExec: mode=FinalPartitioned, gby=[#7@0 as #7], aggr=[max(CASE WHEN #8 = Int32(0) THEN ?table?.#11 END), max(CASE WHEN #8 = Int32(1) THEN ?table?.#11 END)]
+      RepartitionExec: partitioning=Hash([#7@0], 10), input_partitions=10
+        AggregateExec: mode=Partial, gby=[#7@0 as #7], aggr=[max(CASE WHEN #8 = Int32(0) THEN ?table?.#11 END), max(CASE WHEN #8 = Int32(1) THEN ?table?.#11 END)]
+          HashJoinExec: mode=Partitioned, join_type=Inner, on=[(#9@2, #10@0)], projection=[#7@0, #8@1, #11@4]
+            RepartitionExec: partitioning=Hash([#9@2], 10), input_partitions=10
+              ProjectionExec: expr=[#3@0 as #7, get_field(#6@1, pos) as #8, get_field(#6@1, col) as #9]
+                UnnestExec
+                  ProjectionExec: expr=[#2@2 as #3, array_item_with_position(spark_array(#0@0, #1@1)) as #6]
+                    MonotonicIdExec: col=#2
+                      DataSourceExec: file_groups={10 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:0..7003739], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:7003739..14007478], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:14007478..21011217], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:21011217..28014956], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:28014956..35018695], ...]}, projection=[source@0 as #0, target@1 as #1], file_type=parquet
+            RepartitionExec: partitioning=Hash([#10@0], 10), input_partitions=10
+              DataSourceExec: file_groups={10 groups: [[private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_0.zst.parquet:0..981704], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_0.zst.parquet:981704..1963408], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_0.zst.parquet:1963408..2484784, private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_1.zst.parquet:0..460328], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_1.zst.parquet:460328..1442032], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_1.zst.parquet:1442032..2423736], ...]}, projection=[id@0 as #10, dense@1 as #11], file_type=parquet, predicate=DynamicFilter [ empty ], dynamic_rg_pruning=eligible
+
+
+### map_one_join_rekey_two_scans
+== Physical Plan ==
+ProjectionExec: expr=[#2@0 as s, #3@1 as d]
+  ProjectionExec: expr=[max(CASE WHEN #7 = Int32(0) THEN ?table?.#19 END)@1 as #2, max(CASE WHEN #7 = Int32(1) THEN ?table?.#19 END)@2 as #3]
+    AggregateExec: mode=FinalPartitioned, gby=[#6@0 as #6], aggr=[max(CASE WHEN #7 = Int32(0) THEN ?table?.#19 END), max(CASE WHEN #7 = Int32(1) THEN ?table?.#19 END)]
+      RepartitionExec: partitioning=Hash([#6@0], 10), input_partitions=10
+        AggregateExec: mode=Partial, gby=[#6@0 as #6], aggr=[max(CASE WHEN #7 = Int32(0) THEN ?table?.#19 END), max(CASE WHEN #7 = Int32(1) THEN ?table?.#19 END)]
+          HashJoinExec: mode=Partitioned, join_type=Inner, on=[(#18@0, #8@2)], projection=[#6@2, #7@3, #19@1]
+            RepartitionExec: partitioning=Hash([#18@0], 10), input_partitions=10
+              DataSourceExec: file_groups={10 groups: [[private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_0.zst.parquet:0..981704], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_0.zst.parquet:981704..1963408], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_0.zst.parquet:1963408..2484784, private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_1.zst.parquet:0..460328], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_1.zst.parquet:460328..1442032], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_1.zst.parquet:1442032..2423736], ...]}, projection=[id@0 as #18, dense@1 as #19], file_type=parquet
+            RepartitionExec: partitioning=Hash([#8@2], 10), input_partitions=20
+              UnionExec
+                ProjectionExec: expr=[#2@2 as #6, 0 as #7, #0@0 as #8]
+                  MonotonicIdExec: col=#2
+                    DataSourceExec: file_groups={10 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:0..7003739], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:7003739..14007478], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:14007478..21011217], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:21011217..28014956], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:28014956..35018695], ...]}, projection=[source@0 as #0, target@1 as #1], file_type=parquet
+                ProjectionExec: expr=[#11@2 as #6, 1 as #7, #10@1 as #8]
+                  MonotonicIdExec: col=#11
+                    DataSourceExec: file_groups={10 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:0..7003739], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:7003739..14007478], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:14007478..21011217], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:21011217..28014956], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:28014956..35018695], ...]}, projection=[source@0 as #9, target@1 as #10], file_type=parquet
+
+
+### sort_only (mapped edges from Parquet)
+== Physical Plan ==
+ProjectionExec: expr=[#2@0 as s, #3@1 as d]
+  ProjectionExec: expr=[#0@0 as #2, #1@1 as #3]
+    SortPreservingMergeExec: [#0@0 ASC, #1@1 ASC]
+      ProjectionExec: expr=[s@0 as #0, d@1 as #1]
+        SortExec: expr=[s@0 ASC, d@1 ASC], preserve_partitioning=[true]
+          DataSourceExec: file_groups={10 groups: [[private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapped/ggcHKSeyNhLsEhJp_0.zst.parquet:0..8428211], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapped/ggcHKSeyNhLsEhJp_0.zst.parquet:8428211..16856422], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapped/ggcHKSeyNhLsEhJp_1.zst.parquet:0..4206928, private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapped/ggcHKSeyNhLsEhJp_0.zst.parquet:16856422..21077705], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapped/ggcHKSeyNhLsEhJp_1.zst.parquet:4206928..12635139], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapped/ggcHKSeyNhLsEhJp_1.zst.parquet:12635139..21053478, private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapped/ggcHKSeyNhLsEhJp_2.zst.parquet:0..9872], ...]}, projection=[s, d], file_type=parquet, sort_order_for_reorder=[s@0 ASC, d@1 ASC]
+
+
+### offsets_from_sorted
+== Physical Plan ==
+ProjectionExec: expr=[#2@0 as v, #3@1 as offset]
+  ProjectionExec: expr=[#6@0 as #2, CASE WHEN sum(#7) ORDER BY [#6 ASC NULLS FIRST] ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING@2 IS NOT NULL THEN sum(#7) ORDER BY [#6 ASC NULLS FIRST] ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING@2 ELSE 0 END as #3]
+    RepartitionExec: partitioning=RoundRobinBatch(10), input_partitions=1, maintains_sort_order=true
+      BoundedWindowAggExec: wdw=[sum(#7) ORDER BY [#6 ASC NULLS FIRST] ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING: Field { "sum(#7) ORDER BY [#6 ASC NULLS FIRST] ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING": nullable Int64 }, frame: ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING], mode=[Sorted]
+        SortPreservingMergeExec: [#6@0 ASC]
+          SortExec: expr=[#6@0 ASC], preserve_partitioning=[true]
+            ProjectionExec: expr=[#1@0 as #6, CASE WHEN #5@1 IS NOT NULL THEN #5@1 ELSE 0 END as #7]
+              HashJoinExec: mode=Partitioned, join_type=Left, on=[(#1@0, #4@0)], projection=[#1@0, #5@2]
+                RepartitionExec: partitioning=Hash([#1@0], 10), input_partitions=1
+                  ProjectionExec: expr=[#0@0 as #1]
+                    RangeExec: start=0, end=3774769, step=1, num_partitions=1, projection=[0]
+                ProjectionExec: expr=[#2@0 as #4, count(Int64(1))@1 as #5]
+                  AggregateExec: mode=FinalPartitioned, gby=[#2@0 as #2], aggr=[count(Int64(1))]
+                    RepartitionExec: partitioning=Hash([#2@0], 10), input_partitions=10
+                      AggregateExec: mode=Partial, gby=[#2@0 as #2], aggr=[count(Int64(1))]
+                        DataSourceExec: file_groups={10 groups: [[private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/sorted/uHjDGFZG2Qnkwmu8_0.zst.parquet:0..7302591], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/sorted/uHjDGFZG2Qnkwmu8_0.zst.parquet:7302591..14605182], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/sorted/uHjDGFZG2Qnkwmu8_0.zst.parquet:14605182..18272883, private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/sorted/uHjDGFZG2Qnkwmu8_1.zst.parquet:0..3634890], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/sorted/uHjDGFZG2Qnkwmu8_1.zst.parquet:3634890..10937481], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/sorted/uHjDGFZG2Qnkwmu8_1.zst.parquet:10937481..18240072], ...]}, projection=[s@0 as #2], file_type=parquet, predicate=DynamicFilter [ empty ], dynamic_rg_pruning=eligible
+
+
+### map_two_joins
+== Physical Plan ==
+ProjectionExec: expr=[#2@0 as s, #3@1 as d]
+  ProjectionExec: expr=[#5@0 as #2, #12@1 as #3]
+    HashJoinExec: mode=Partitioned, join_type=Inner, on=[(#11@0, #1@0)], projection=[#5@3, #12@1]
+      RepartitionExec: partitioning=Hash([#11@0], 10), input_partitions=10
+        DataSourceExec: file_groups={10 groups: [[private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_0.zst.parquet:0..981704], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_0.zst.parquet:981704..1963408], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_0.zst.parquet:1963408..2484784, private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_1.zst.parquet:0..460328], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_1.zst.parquet:460328..1442032], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_1.zst.parquet:1442032..2423736], ...]}, projection=[id@0 as #11, dense@1 as #12], file_type=parquet
+      RepartitionExec: partitioning=Hash([#1@0], 10), input_partitions=10
+        HashJoinExec: mode=Partitioned, join_type=Inner, on=[(#4@0, #0@0)], projection=[#1@3, #5@1]
+          RepartitionExec: partitioning=Hash([#4@0], 10), input_partitions=10
+            DataSourceExec: file_groups={10 groups: [[private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_0.zst.parquet:0..981704], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_0.zst.parquet:981704..1963408], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_0.zst.parquet:1963408..2484784, private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_1.zst.parquet:0..460328], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_1.zst.parquet:460328..1442032], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_1.zst.parquet:1442032..2423736], ...]}, projection=[id@0 as #4, dense@1 as #5], file_type=parquet
+          RepartitionExec: partitioning=Hash([#0@0], 10), input_partitions=10
+            DataSourceExec: file_groups={10 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:0..7003739], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:7003739..14007478], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:14007478..21011217], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:21011217..28014956], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:28014956..35018695], ...]}, projection=[source@0 as #0, target@1 as #1], file_type=parquet, predicate=DynamicFilter [ empty ] AND DynamicFilter [ empty ], dynamic_rg_pruning=eligible
+
+
+### map_two_joins_sort
+== Physical Plan ==
+ProjectionExec: expr=[#2@0 as s, #3@1 as d]
+  ProjectionExec: expr=[#16@0 as #2, #17@1 as #3]
+    SortPreservingMergeExec: [#16@0 ASC, #17@1 ASC]
+      SortExec: expr=[#16@0 ASC, #17@1 ASC], preserve_partitioning=[true]
+        ProjectionExec: expr=[#5@0 as #16, #12@1 as #17]
+          HashJoinExec: mode=Partitioned, join_type=Inner, on=[(#11@0, #1@0)], projection=[#5@3, #12@1]
+            RepartitionExec: partitioning=Hash([#11@0], 10), input_partitions=10
+              DataSourceExec: file_groups={10 groups: [[private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_0.zst.parquet:0..981704], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_0.zst.parquet:981704..1963408], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_0.zst.parquet:1963408..2484784, private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_1.zst.parquet:0..460328], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_1.zst.parquet:460328..1442032], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_1.zst.parquet:1442032..2423736], ...]}, projection=[id@0 as #11, dense@1 as #12], file_type=parquet
+            RepartitionExec: partitioning=Hash([#1@0], 10), input_partitions=10
+              HashJoinExec: mode=Partitioned, join_type=Inner, on=[(#4@0, #0@0)], projection=[#1@3, #5@1]
+                RepartitionExec: partitioning=Hash([#4@0], 10), input_partitions=10
+                  DataSourceExec: file_groups={10 groups: [[private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_0.zst.parquet:0..981704], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_0.zst.parquet:981704..1963408], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_0.zst.parquet:1963408..2484784, private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_1.zst.parquet:0..460328], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_1.zst.parquet:460328..1442032], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_1.zst.parquet:1442032..2423736], ...]}, projection=[id@0 as #4, dense@1 as #5], file_type=parquet
+                RepartitionExec: partitioning=Hash([#0@0], 10), input_partitions=10
+                  DataSourceExec: file_groups={10 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:0..7003739], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:7003739..14007478], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:14007478..21011217], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:21011217..28014956], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:28014956..35018695], ...]}, projection=[source@0 as #0, target@1 as #1], file_type=parquet, predicate=DynamicFilter [ empty ] AND DynamicFilter [ empty ], dynamic_rg_pruning=eligible
+
+
+### map_two_joins_inline_row_number
+== Physical Plan ==
+ProjectionExec: expr=[#2@0 as s, #3@1 as d]
+  ProjectionExec: expr=[#7@0 as #2, #16@1 as #3]
+    HashJoinExec: mode=Partitioned, join_type=Inner, on=[(#15@0, #1@0)], projection=[#7@3, #16@1]
+      RepartitionExec: partitioning=Hash([#15@0], 10), input_partitions=10
+        ProjectionExec: expr=[#11@0 as #15, CAST(CAST(row_number() ORDER BY [?table?.#11 ASC NULLS FIRST] RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW@1 AS Int32) - 1 AS Int64) as #16]
+          RepartitionExec: partitioning=RoundRobinBatch(10), input_partitions=1, maintains_sort_order=true
+            BoundedWindowAggExec: wdw=[row_number() ORDER BY [?table?.#11 ASC NULLS FIRST] RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW: Field { "row_number() ORDER BY [?table?.#11 ASC NULLS FIRST] RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW": UInt64 }, frame: RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW], mode=[Sorted]
+              SortPreservingMergeExec: [#11@0 ASC]
+                ProjectionExec: expr=[id@0 as #11]
+                  SortExec: expr=[id@0 ASC], preserve_partitioning=[true]
+                    DataSourceExec: file_groups={10 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:0..386195], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:386195..772390], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:772390..1158585], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1158585..1544780], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1544780..1930975], ...]}, projection=[id], file_type=parquet, sort_order_for_reorder=[id@0 ASC]
+      RepartitionExec: partitioning=Hash([#1@0], 10), input_partitions=10
+        HashJoinExec: mode=Partitioned, join_type=Inner, on=[(#6@0, #0@0)], projection=[#1@3, #7@1]
+          RepartitionExec: partitioning=Hash([#6@0], 10), input_partitions=10
+            ProjectionExec: expr=[#2@0 as #6, CAST(CAST(row_number() ORDER BY [?table?.#2 ASC NULLS FIRST] RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW@1 AS Int32) - 1 AS Int64) as #7]
+              RepartitionExec: partitioning=RoundRobinBatch(10), input_partitions=1, maintains_sort_order=true
+                BoundedWindowAggExec: wdw=[row_number() ORDER BY [?table?.#2 ASC NULLS FIRST] RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW: Field { "row_number() ORDER BY [?table?.#2 ASC NULLS FIRST] RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW": UInt64 }, frame: RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW], mode=[Sorted]
+                  SortPreservingMergeExec: [#2@0 ASC]
+                    ProjectionExec: expr=[id@0 as #2]
+                      SortExec: expr=[id@0 ASC], preserve_partitioning=[true]
+                        DataSourceExec: file_groups={10 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:0..386195], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:386195..772390], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:772390..1158585], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1158585..1544780], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1544780..1930975], ...]}, projection=[id], file_type=parquet, sort_order_for_reorder=[id@0 ASC]
+          RepartitionExec: partitioning=Hash([#0@0], 10), input_partitions=10
+            DataSourceExec: file_groups={10 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:0..7003739], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:7003739..14007478], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:14007478..21011217], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:21011217..28014956], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:28014956..35018695], ...]}, projection=[source@0 as #0, target@1 as #1], file_type=parquet, predicate=DynamicFilter [ empty ] AND DynamicFilter [ empty ], dynamic_rg_pruning=eligible
+
+
+### map_two_joins_inline_orderby_monotonic_id
+== Physical Plan ==
+ProjectionExec: expr=[#2@0 as s, #3@1 as d]
+  ProjectionExec: expr=[#7@0 as #2, #16@1 as #3]
+    HashJoinExec: mode=Partitioned, join_type=Inner, on=[(#15@0, #1@0)], projection=[#7@3, #16@1]
+      RepartitionExec: partitioning=Hash([#15@0], 10), input_partitions=1
+        ProjectionExec: expr=[#11@0 as #15, #12@1 as #16]
+          MonotonicIdExec: col=#12
+            CoalescePartitionsExec
+              DataSourceExec: file_groups={10 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:0..386195], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:386195..772390], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:772390..1158585], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1158585..1544780], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1544780..1930975], ...]}, projection=[id@0 as #11], file_type=parquet
+      RepartitionExec: partitioning=Hash([#1@0], 10), input_partitions=10
+        HashJoinExec: mode=Partitioned, join_type=Inner, on=[(#6@0, #0@0)], projection=[#1@3, #7@1]
+          RepartitionExec: partitioning=Hash([#6@0], 10), input_partitions=1
+            ProjectionExec: expr=[#2@0 as #6, #3@1 as #7]
+              MonotonicIdExec: col=#3
+                CoalescePartitionsExec
+                  DataSourceExec: file_groups={10 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:0..386195], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:386195..772390], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:772390..1158585], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1158585..1544780], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1544780..1930975], ...]}, projection=[id@0 as #2], file_type=parquet
+          RepartitionExec: partitioning=Hash([#0@0], 10), input_partitions=10
+            DataSourceExec: file_groups={10 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:0..7003739], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:7003739..14007478], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:14007478..21011217], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:21011217..28014956], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:28014956..35018695], ...]}, projection=[source@0 as #0, target@1 as #1], file_type=parquet, predicate=DynamicFilter [ empty ] AND DynamicFilter [ empty ], dynamic_rg_pruning=eligible
+
+
+### map_one_join_rekey
+== Physical Plan ==
+ProjectionExec: expr=[#2@0 as s, #3@1 as d]
+  ProjectionExec: expr=[max(CASE WHEN #8 = Int32(0) THEN ?table?.#11 END)@1 as #2, max(CASE WHEN #8 = Int32(1) THEN ?table?.#11 END)@2 as #3]
+    AggregateExec: mode=FinalPartitioned, gby=[#7@0 as #7], aggr=[max(CASE WHEN #8 = Int32(0) THEN ?table?.#11 END), max(CASE WHEN #8 = Int32(1) THEN ?table?.#11 END)]
+      RepartitionExec: partitioning=Hash([#7@0], 10), input_partitions=10
+        AggregateExec: mode=Partial, gby=[#7@0 as #7], aggr=[max(CASE WHEN #8 = Int32(0) THEN ?table?.#11 END), max(CASE WHEN #8 = Int32(1) THEN ?table?.#11 END)]
+          HashJoinExec: mode=Partitioned, join_type=Inner, on=[(#9@2, #10@0)], projection=[#7@0, #8@1, #11@4]
+            RepartitionExec: partitioning=Hash([#9@2], 10), input_partitions=10
+              ProjectionExec: expr=[#3@0 as #7, get_field(#6@1, pos) as #8, get_field(#6@1, col) as #9]
+                UnnestExec
+                  ProjectionExec: expr=[#2@2 as #3, array_item_with_position(spark_array(#0@0, #1@1)) as #6]
+                    MonotonicIdExec: col=#2
+                      DataSourceExec: file_groups={10 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:0..7003739], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:7003739..14007478], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:14007478..21011217], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:21011217..28014956], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:28014956..35018695], ...]}, projection=[source@0 as #0, target@1 as #1], file_type=parquet
+            RepartitionExec: partitioning=Hash([#10@0], 10), input_partitions=10
+              DataSourceExec: file_groups={10 groups: [[private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_0.zst.parquet:0..981704], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_0.zst.parquet:981704..1963408], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_0.zst.parquet:1963408..2484784, private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_1.zst.parquet:0..460328], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_1.zst.parquet:460328..1442032], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_1.zst.parquet:1442032..2423736], ...]}, projection=[id@0 as #10, dense@1 as #11], file_type=parquet, predicate=DynamicFilter [ empty ], dynamic_rg_pruning=eligible
+
+
+### map_one_join_rekey_two_scans
+== Physical Plan ==
+ProjectionExec: expr=[#2@0 as s, #3@1 as d]
+  ProjectionExec: expr=[max(CASE WHEN #7 = Int32(0) THEN ?table?.#19 END)@1 as #2, max(CASE WHEN #7 = Int32(1) THEN ?table?.#19 END)@2 as #3]
+    AggregateExec: mode=FinalPartitioned, gby=[#6@0 as #6], aggr=[max(CASE WHEN #7 = Int32(0) THEN ?table?.#19 END), max(CASE WHEN #7 = Int32(1) THEN ?table?.#19 END)]
+      RepartitionExec: partitioning=Hash([#6@0], 10), input_partitions=10
+        AggregateExec: mode=Partial, gby=[#6@0 as #6], aggr=[max(CASE WHEN #7 = Int32(0) THEN ?table?.#19 END), max(CASE WHEN #7 = Int32(1) THEN ?table?.#19 END)]
+          HashJoinExec: mode=Partitioned, join_type=Inner, on=[(#18@0, #8@2)], projection=[#6@2, #7@3, #19@1]
+            RepartitionExec: partitioning=Hash([#18@0], 10), input_partitions=10
+              DataSourceExec: file_groups={10 groups: [[private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_0.zst.parquet:0..981704], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_0.zst.parquet:981704..1963408], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_0.zst.parquet:1963408..2484784, private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_1.zst.parquet:0..460328], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_1.zst.parquet:460328..1442032], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_1.zst.parquet:1442032..2423736], ...]}, projection=[id@0 as #18, dense@1 as #19], file_type=parquet
+            RepartitionExec: partitioning=Hash([#8@2], 10), input_partitions=20
+              UnionExec
+                ProjectionExec: expr=[#2@2 as #6, 0 as #7, #0@0 as #8]
+                  MonotonicIdExec: col=#2
+                    DataSourceExec: file_groups={10 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:0..7003739], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:7003739..14007478], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:14007478..21011217], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:21011217..28014956], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:28014956..35018695], ...]}, projection=[source@0 as #0, target@1 as #1], file_type=parquet
+                ProjectionExec: expr=[#11@2 as #6, 1 as #7, #10@1 as #8]
+                  MonotonicIdExec: col=#11
+                    DataSourceExec: file_groups={10 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:0..7003739], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:7003739..14007478], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:14007478..21011217], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:21011217..28014956], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:28014956..35018695], ...]}, projection=[source@0 as #9, target@1 as #10], file_type=parquet
+
+
+### sort_only (mapped edges from Parquet)
+== Physical Plan ==
+ProjectionExec: expr=[#2@0 as s, #3@1 as d]
+  ProjectionExec: expr=[#0@0 as #2, #1@1 as #3]
+    SortPreservingMergeExec: [#0@0 ASC, #1@1 ASC]
+      ProjectionExec: expr=[s@0 as #0, d@1 as #1]
+        SortExec: expr=[s@0 ASC, d@1 ASC], preserve_partitioning=[true]
+          DataSourceExec: file_groups={10 groups: [[private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapped/ggcHKSeyNhLsEhJp_0.zst.parquet:0..8428211], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapped/ggcHKSeyNhLsEhJp_0.zst.parquet:8428211..16856422], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapped/ggcHKSeyNhLsEhJp_1.zst.parquet:0..4206928, private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapped/ggcHKSeyNhLsEhJp_0.zst.parquet:16856422..21077705], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapped/ggcHKSeyNhLsEhJp_1.zst.parquet:4206928..12635139], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapped/ggcHKSeyNhLsEhJp_1.zst.parquet:12635139..21053478, private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapped/ggcHKSeyNhLsEhJp_2.zst.parquet:0..9872], ...]}, projection=[s, d], file_type=parquet, sort_order_for_reorder=[s@0 ASC, d@1 ASC]
+
+
+### offsets_from_sorted
+== Physical Plan ==
+ProjectionExec: expr=[#2@0 as v, #3@1 as offset]
+  ProjectionExec: expr=[#6@0 as #2, CASE WHEN sum(#7) ORDER BY [#6 ASC NULLS FIRST] ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING@2 IS NOT NULL THEN sum(#7) ORDER BY [#6 ASC NULLS FIRST] ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING@2 ELSE 0 END as #3]
+    RepartitionExec: partitioning=RoundRobinBatch(10), input_partitions=1, maintains_sort_order=true
+      BoundedWindowAggExec: wdw=[sum(#7) ORDER BY [#6 ASC NULLS FIRST] ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING: Field { "sum(#7) ORDER BY [#6 ASC NULLS FIRST] ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING": nullable Int64 }, frame: ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING], mode=[Sorted]
+        SortPreservingMergeExec: [#6@0 ASC]
+          SortExec: expr=[#6@0 ASC], preserve_partitioning=[true]
+            ProjectionExec: expr=[#1@0 as #6, CASE WHEN #5@1 IS NOT NULL THEN #5@1 ELSE 0 END as #7]
+              HashJoinExec: mode=Partitioned, join_type=Left, on=[(#1@0, #4@0)], projection=[#1@0, #5@2]
+                RepartitionExec: partitioning=Hash([#1@0], 10), input_partitions=1
+                  ProjectionExec: expr=[#0@0 as #1]
+                    RangeExec: start=0, end=3774769, step=1, num_partitions=1, projection=[0]
+                ProjectionExec: expr=[#2@0 as #4, count(Int64(1))@1 as #5]
+                  AggregateExec: mode=FinalPartitioned, gby=[#2@0 as #2], aggr=[count(Int64(1))]
+                    RepartitionExec: partitioning=Hash([#2@0], 10), input_partitions=10
+                      AggregateExec: mode=Partial, gby=[#2@0 as #2], aggr=[count(Int64(1))]
+                        DataSourceExec: file_groups={10 groups: [[private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/sorted/uHjDGFZG2Qnkwmu8_0.zst.parquet:0..7302591], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/sorted/uHjDGFZG2Qnkwmu8_0.zst.parquet:7302591..14605182], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/sorted/uHjDGFZG2Qnkwmu8_0.zst.parquet:14605182..18272883, private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/sorted/uHjDGFZG2Qnkwmu8_1.zst.parquet:0..3634890], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/sorted/uHjDGFZG2Qnkwmu8_1.zst.parquet:3634890..10937481], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/sorted/uHjDGFZG2Qnkwmu8_1.zst.parquet:10937481..18240072], ...]}, projection=[s@0 as #2], file_type=parquet, predicate=DynamicFilter [ empty ], dynamic_rg_pruning=eligible
+
+
+### map_two_joins
+== Physical Plan ==
+ProjectionExec: expr=[#2@0 as s, #3@1 as d]
+  ProjectionExec: expr=[#5@0 as #2, #12@1 as #3]
+    HashJoinExec: mode=Partitioned, join_type=Inner, on=[(#11@0, #1@0)], projection=[#5@3, #12@1]
+      RepartitionExec: partitioning=Hash([#11@0], 10), input_partitions=10
+        DataSourceExec: file_groups={10 groups: [[private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_0.zst.parquet:0..981704], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_0.zst.parquet:981704..1963408], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_0.zst.parquet:1963408..2484784, private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_1.zst.parquet:0..460328], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_1.zst.parquet:460328..1442032], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_1.zst.parquet:1442032..2423736], ...]}, projection=[id@0 as #11, dense@1 as #12], file_type=parquet
+      RepartitionExec: partitioning=Hash([#1@0], 10), input_partitions=10
+        HashJoinExec: mode=Partitioned, join_type=Inner, on=[(#4@0, #0@0)], projection=[#1@3, #5@1]
+          RepartitionExec: partitioning=Hash([#4@0], 10), input_partitions=10
+            DataSourceExec: file_groups={10 groups: [[private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_0.zst.parquet:0..981704], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_0.zst.parquet:981704..1963408], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_0.zst.parquet:1963408..2484784, private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_1.zst.parquet:0..460328], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_1.zst.parquet:460328..1442032], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_1.zst.parquet:1442032..2423736], ...]}, projection=[id@0 as #4, dense@1 as #5], file_type=parquet
+          RepartitionExec: partitioning=Hash([#0@0], 10), input_partitions=10
+            DataSourceExec: file_groups={10 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:0..7003739], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:7003739..14007478], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:14007478..21011217], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:21011217..28014956], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:28014956..35018695], ...]}, projection=[source@0 as #0, target@1 as #1], file_type=parquet, predicate=DynamicFilter [ empty ] AND DynamicFilter [ empty ], dynamic_rg_pruning=eligible
+
+
+### map_two_joins_sort
+== Physical Plan ==
+ProjectionExec: expr=[#2@0 as s, #3@1 as d]
+  ProjectionExec: expr=[#16@0 as #2, #17@1 as #3]
+    SortPreservingMergeExec: [#16@0 ASC, #17@1 ASC]
+      SortExec: expr=[#16@0 ASC, #17@1 ASC], preserve_partitioning=[true]
+        ProjectionExec: expr=[#5@0 as #16, #12@1 as #17]
+          HashJoinExec: mode=Partitioned, join_type=Inner, on=[(#11@0, #1@0)], projection=[#5@3, #12@1]
+            RepartitionExec: partitioning=Hash([#11@0], 10), input_partitions=10
+              DataSourceExec: file_groups={10 groups: [[private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_0.zst.parquet:0..981704], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_0.zst.parquet:981704..1963408], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_0.zst.parquet:1963408..2484784, private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_1.zst.parquet:0..460328], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_1.zst.parquet:460328..1442032], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_1.zst.parquet:1442032..2423736], ...]}, projection=[id@0 as #11, dense@1 as #12], file_type=parquet
+            RepartitionExec: partitioning=Hash([#1@0], 10), input_partitions=10
+              HashJoinExec: mode=Partitioned, join_type=Inner, on=[(#4@0, #0@0)], projection=[#1@3, #5@1]
+                RepartitionExec: partitioning=Hash([#4@0], 10), input_partitions=10
+                  DataSourceExec: file_groups={10 groups: [[private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_0.zst.parquet:0..981704], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_0.zst.parquet:981704..1963408], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_0.zst.parquet:1963408..2484784, private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_1.zst.parquet:0..460328], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_1.zst.parquet:460328..1442032], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_1.zst.parquet:1442032..2423736], ...]}, projection=[id@0 as #4, dense@1 as #5], file_type=parquet
+                RepartitionExec: partitioning=Hash([#0@0], 10), input_partitions=10
+                  DataSourceExec: file_groups={10 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:0..7003739], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:7003739..14007478], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:14007478..21011217], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:21011217..28014956], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:28014956..35018695], ...]}, projection=[source@0 as #0, target@1 as #1], file_type=parquet, predicate=DynamicFilter [ empty ] AND DynamicFilter [ empty ], dynamic_rg_pruning=eligible
+
+
+### map_two_joins_inline_row_number
+== Physical Plan ==
+ProjectionExec: expr=[#2@0 as s, #3@1 as d]
+  ProjectionExec: expr=[#7@0 as #2, #16@1 as #3]
+    HashJoinExec: mode=Partitioned, join_type=Inner, on=[(#15@0, #1@0)], projection=[#7@3, #16@1]
+      RepartitionExec: partitioning=Hash([#15@0], 10), input_partitions=10
+        ProjectionExec: expr=[#11@0 as #15, CAST(CAST(row_number() ORDER BY [?table?.#11 ASC NULLS FIRST] RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW@1 AS Int32) - 1 AS Int64) as #16]
+          RepartitionExec: partitioning=RoundRobinBatch(10), input_partitions=1, maintains_sort_order=true
+            BoundedWindowAggExec: wdw=[row_number() ORDER BY [?table?.#11 ASC NULLS FIRST] RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW: Field { "row_number() ORDER BY [?table?.#11 ASC NULLS FIRST] RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW": UInt64 }, frame: RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW], mode=[Sorted]
+              SortPreservingMergeExec: [#11@0 ASC]
+                ProjectionExec: expr=[id@0 as #11]
+                  SortExec: expr=[id@0 ASC], preserve_partitioning=[true]
+                    DataSourceExec: file_groups={10 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:0..386195], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:386195..772390], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:772390..1158585], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1158585..1544780], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1544780..1930975], ...]}, projection=[id], file_type=parquet, sort_order_for_reorder=[id@0 ASC]
+      RepartitionExec: partitioning=Hash([#1@0], 10), input_partitions=10
+        HashJoinExec: mode=Partitioned, join_type=Inner, on=[(#6@0, #0@0)], projection=[#1@3, #7@1]
+          RepartitionExec: partitioning=Hash([#6@0], 10), input_partitions=10
+            ProjectionExec: expr=[#2@0 as #6, CAST(CAST(row_number() ORDER BY [?table?.#2 ASC NULLS FIRST] RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW@1 AS Int32) - 1 AS Int64) as #7]
+              RepartitionExec: partitioning=RoundRobinBatch(10), input_partitions=1, maintains_sort_order=true
+                BoundedWindowAggExec: wdw=[row_number() ORDER BY [?table?.#2 ASC NULLS FIRST] RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW: Field { "row_number() ORDER BY [?table?.#2 ASC NULLS FIRST] RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW": UInt64 }, frame: RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW], mode=[Sorted]
+                  SortPreservingMergeExec: [#2@0 ASC]
+                    ProjectionExec: expr=[id@0 as #2]
+                      SortExec: expr=[id@0 ASC], preserve_partitioning=[true]
+                        DataSourceExec: file_groups={10 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:0..386195], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:386195..772390], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:772390..1158585], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1158585..1544780], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1544780..1930975], ...]}, projection=[id], file_type=parquet, sort_order_for_reorder=[id@0 ASC]
+          RepartitionExec: partitioning=Hash([#0@0], 10), input_partitions=10
+            DataSourceExec: file_groups={10 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:0..7003739], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:7003739..14007478], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:14007478..21011217], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:21011217..28014956], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:28014956..35018695], ...]}, projection=[source@0 as #0, target@1 as #1], file_type=parquet, predicate=DynamicFilter [ empty ] AND DynamicFilter [ empty ], dynamic_rg_pruning=eligible
+
+
+### map_two_joins_inline_orderby_monotonic_id
+== Physical Plan ==
+ProjectionExec: expr=[#2@0 as s, #3@1 as d]
+  ProjectionExec: expr=[#7@0 as #2, #16@1 as #3]
+    HashJoinExec: mode=Partitioned, join_type=Inner, on=[(#15@0, #1@0)], projection=[#7@3, #16@1]
+      RepartitionExec: partitioning=Hash([#15@0], 10), input_partitions=1
+        ProjectionExec: expr=[#11@0 as #15, #12@1 as #16]
+          MonotonicIdExec: col=#12
+            CoalescePartitionsExec
+              DataSourceExec: file_groups={10 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:0..386195], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:386195..772390], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:772390..1158585], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1158585..1544780], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1544780..1930975], ...]}, projection=[id@0 as #11], file_type=parquet
+      RepartitionExec: partitioning=Hash([#1@0], 10), input_partitions=10
+        HashJoinExec: mode=Partitioned, join_type=Inner, on=[(#6@0, #0@0)], projection=[#1@3, #7@1]
+          RepartitionExec: partitioning=Hash([#6@0], 10), input_partitions=1
+            ProjectionExec: expr=[#2@0 as #6, #3@1 as #7]
+              MonotonicIdExec: col=#3
+                CoalescePartitionsExec
+                  DataSourceExec: file_groups={10 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:0..386195], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:386195..772390], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:772390..1158585], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1158585..1544780], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1544780..1930975], ...]}, projection=[id@0 as #2], file_type=parquet
+          RepartitionExec: partitioning=Hash([#0@0], 10), input_partitions=10
+            DataSourceExec: file_groups={10 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:0..7003739], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:7003739..14007478], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:14007478..21011217], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:21011217..28014956], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:28014956..35018695], ...]}, projection=[source@0 as #0, target@1 as #1], file_type=parquet, predicate=DynamicFilter [ empty ] AND DynamicFilter [ empty ], dynamic_rg_pruning=eligible
+
+
+### map_one_join_rekey
+== Physical Plan ==
+ProjectionExec: expr=[#2@0 as s, #3@1 as d]
+  ProjectionExec: expr=[max(CASE WHEN #8 = Int32(0) THEN ?table?.#11 END)@1 as #2, max(CASE WHEN #8 = Int32(1) THEN ?table?.#11 END)@2 as #3]
+    AggregateExec: mode=FinalPartitioned, gby=[#7@0 as #7], aggr=[max(CASE WHEN #8 = Int32(0) THEN ?table?.#11 END), max(CASE WHEN #8 = Int32(1) THEN ?table?.#11 END)]
+      RepartitionExec: partitioning=Hash([#7@0], 10), input_partitions=10
+        AggregateExec: mode=Partial, gby=[#7@0 as #7], aggr=[max(CASE WHEN #8 = Int32(0) THEN ?table?.#11 END), max(CASE WHEN #8 = Int32(1) THEN ?table?.#11 END)]
+          HashJoinExec: mode=Partitioned, join_type=Inner, on=[(#9@2, #10@0)], projection=[#7@0, #8@1, #11@4]
+            RepartitionExec: partitioning=Hash([#9@2], 10), input_partitions=10
+              ProjectionExec: expr=[#3@0 as #7, get_field(#6@1, pos) as #8, get_field(#6@1, col) as #9]
+                UnnestExec
+                  ProjectionExec: expr=[#2@2 as #3, array_item_with_position(spark_array(#0@0, #1@1)) as #6]
+                    MonotonicIdExec: col=#2
+                      DataSourceExec: file_groups={10 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:0..7003739], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:7003739..14007478], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:14007478..21011217], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:21011217..28014956], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:28014956..35018695], ...]}, projection=[source@0 as #0, target@1 as #1], file_type=parquet
+            RepartitionExec: partitioning=Hash([#10@0], 10), input_partitions=10
+              DataSourceExec: file_groups={10 groups: [[private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_0.zst.parquet:0..981704], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_0.zst.parquet:981704..1963408], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_0.zst.parquet:1963408..2484784, private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_1.zst.parquet:0..460328], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_1.zst.parquet:460328..1442032], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_1.zst.parquet:1442032..2423736], ...]}, projection=[id@0 as #10, dense@1 as #11], file_type=parquet, predicate=DynamicFilter [ empty ], dynamic_rg_pruning=eligible
+
+
+### map_one_join_rekey_two_scans
+== Physical Plan ==
+ProjectionExec: expr=[#2@0 as s, #3@1 as d]
+  ProjectionExec: expr=[max(CASE WHEN #7 = Int32(0) THEN ?table?.#19 END)@1 as #2, max(CASE WHEN #7 = Int32(1) THEN ?table?.#19 END)@2 as #3]
+    AggregateExec: mode=FinalPartitioned, gby=[#6@0 as #6], aggr=[max(CASE WHEN #7 = Int32(0) THEN ?table?.#19 END), max(CASE WHEN #7 = Int32(1) THEN ?table?.#19 END)]
+      RepartitionExec: partitioning=Hash([#6@0], 10), input_partitions=10
+        AggregateExec: mode=Partial, gby=[#6@0 as #6], aggr=[max(CASE WHEN #7 = Int32(0) THEN ?table?.#19 END), max(CASE WHEN #7 = Int32(1) THEN ?table?.#19 END)]
+          HashJoinExec: mode=Partitioned, join_type=Inner, on=[(#18@0, #8@2)], projection=[#6@2, #7@3, #19@1]
+            RepartitionExec: partitioning=Hash([#18@0], 10), input_partitions=10
+              DataSourceExec: file_groups={10 groups: [[private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_0.zst.parquet:0..981704], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_0.zst.parquet:981704..1963408], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_0.zst.parquet:1963408..2484784, private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_1.zst.parquet:0..460328], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_1.zst.parquet:460328..1442032], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapping/W9jaaij2oFKl1gHW_1.zst.parquet:1442032..2423736], ...]}, projection=[id@0 as #18, dense@1 as #19], file_type=parquet
+            RepartitionExec: partitioning=Hash([#8@2], 10), input_partitions=20
+              UnionExec
+                ProjectionExec: expr=[#2@2 as #6, 0 as #7, #0@0 as #8]
+                  MonotonicIdExec: col=#2
+                    DataSourceExec: file_groups={10 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:0..7003739], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:7003739..14007478], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:14007478..21011217], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:21011217..28014956], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:28014956..35018695], ...]}, projection=[source@0 as #0, target@1 as #1], file_type=parquet
+                ProjectionExec: expr=[#11@2 as #6, 1 as #7, #10@1 as #8]
+                  MonotonicIdExec: col=#11
+                    DataSourceExec: file_groups={10 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:0..7003739], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:7003739..14007478], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:14007478..21011217], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:21011217..28014956], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-e.parquet:28014956..35018695], ...]}, projection=[source@0 as #9, target@1 as #10], file_type=parquet
+
+
+### sort_only (mapped edges from Parquet)
+== Physical Plan ==
+ProjectionExec: expr=[#2@0 as s, #3@1 as d]
+  ProjectionExec: expr=[#0@0 as #2, #1@1 as #3]
+    SortPreservingMergeExec: [#0@0 ASC, #1@1 ASC]
+      ProjectionExec: expr=[s@0 as #0, d@1 as #1]
+        SortExec: expr=[s@0 ASC, d@1 ASC], preserve_partitioning=[true]
+          DataSourceExec: file_groups={10 groups: [[private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapped/ggcHKSeyNhLsEhJp_0.zst.parquet:0..8428211], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapped/ggcHKSeyNhLsEhJp_0.zst.parquet:8428211..16856422], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapped/ggcHKSeyNhLsEhJp_1.zst.parquet:0..4206928, private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapped/ggcHKSeyNhLsEhJp_0.zst.parquet:16856422..21077705], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapped/ggcHKSeyNhLsEhJp_1.zst.parquet:4206928..12635139], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapped/ggcHKSeyNhLsEhJp_1.zst.parquet:12635139..21053478, private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapped/ggcHKSeyNhLsEhJp_2.zst.parquet:0..9872], ...]}, projection=[s, d], file_type=parquet, sort_order_for_reorder=[s@0 ASC, d@1 ASC]
+
+
+### offsets_from_sorted
+== Physical Plan ==
+ProjectionExec: expr=[#2@0 as v, #3@1 as offset]
+  ProjectionExec: expr=[#6@0 as #2, CASE WHEN sum(#7) ORDER BY [#6 ASC NULLS FIRST] ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING@2 IS NOT NULL THEN sum(#7) ORDER BY [#6 ASC NULLS FIRST] ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING@2 ELSE 0 END as #3]
+    RepartitionExec: partitioning=RoundRobinBatch(10), input_partitions=1, maintains_sort_order=true
+      BoundedWindowAggExec: wdw=[sum(#7) ORDER BY [#6 ASC NULLS FIRST] ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING: Field { "sum(#7) ORDER BY [#6 ASC NULLS FIRST] ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING": nullable Int64 }, frame: ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING], mode=[Sorted]
+        SortPreservingMergeExec: [#6@0 ASC]
+          SortExec: expr=[#6@0 ASC], preserve_partitioning=[true]
+            ProjectionExec: expr=[#1@0 as #6, CASE WHEN #5@1 IS NOT NULL THEN #5@1 ELSE 0 END as #7]
+              HashJoinExec: mode=Partitioned, join_type=Left, on=[(#1@0, #4@0)], projection=[#1@0, #5@2]
+                RepartitionExec: partitioning=Hash([#1@0], 10), input_partitions=1
+                  ProjectionExec: expr=[#0@0 as #1]
+                    RangeExec: start=0, end=3774769, step=1, num_partitions=1, projection=[0]
+                ProjectionExec: expr=[#2@0 as #4, count(Int64(1))@1 as #5]
+                  AggregateExec: mode=FinalPartitioned, gby=[#2@0 as #2], aggr=[count(Int64(1))]
+                    RepartitionExec: partitioning=Hash([#2@0], 10), input_partitions=10
+                      AggregateExec: mode=Partial, gby=[#2@0 as #2], aggr=[count(Int64(1))]
+                        DataSourceExec: file_groups={10 groups: [[private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/sorted/uHjDGFZG2Qnkwmu8_0.zst.parquet:0..7302591], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/sorted/uHjDGFZG2Qnkwmu8_0.zst.parquet:7302591..14605182], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/sorted/uHjDGFZG2Qnkwmu8_0.zst.parquet:14605182..18272883, private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/sorted/uHjDGFZG2Qnkwmu8_1.zst.parquet:0..3634890], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/sorted/uHjDGFZG2Qnkwmu8_1.zst.parquet:3634890..10937481], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/sorted/uHjDGFZG2Qnkwmu8_1.zst.parquet:10937481..18240072], ...]}, projection=[s@0 as #2], file_type=parquet, predicate=DynamicFilter [ empty ], dynamic_rg_pruning=eligible
+
+
+### b_two_pass_direct_scan_no_work_stealing
+== Physical Plan ==
+ProjectionExec: expr=[#2@0 as id, #3@1 as dense]
+  ProjectionExec: expr=[#0@0 as #2, array_element([0, 368640, 860160, 1228800, 1597440, 1966080, 2334720, 2703360, 3072000, 3440640], CAST(#2@2 AS Int64) + 1) + (#1@1 & 8589934591) as #3]
+    SparkPartitionIdExec: col=#2
+      MonotonicIdExec: col=#1
+        DataSourceExec: file_groups={10 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:0..386195], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:386195..772390], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:772390..1158585], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1158585..1544780], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1544780..1930975], ...]}, projection=[id@0 as #0], file_type=parquet
+
+
+### b_two_pass_direct_scan_no_work_stealing
+== Physical Plan ==
+ProjectionExec: expr=[#2@0 as id, #3@1 as dense]
+  ProjectionExec: expr=[#0@0 as #2, array_element([0, 368640, 860160, 1228800, 1597440, 1966080, 2334720, 2703360, 3072000, 3440640], CAST(#2@2 AS Int64) + 1) + (#1@1 & 8589934591) as #3]
+    SparkPartitionIdExec: col=#2
+      MonotonicIdExec: col=#1
+        DataSourceExec: file_groups={10 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:0..386195], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:386195..772390], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:772390..1158585], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1158585..1544780], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1544780..1930975], ...]}, projection=[id@0 as #0], file_type=parquet
+
+
+### b_two_pass_direct_scan_no_work_stealing
+== Physical Plan ==
+ProjectionExec: expr=[#2@0 as id, #3@1 as dense]
+  ProjectionExec: expr=[#0@0 as #2, array_element([0, 368640, 860160, 1228800, 1597440, 1966080, 2334720, 2703360, 3072000, 3440640], CAST(#2@2 AS Int64) + 1) + (#1@1 & 8589934591) as #3]
+    SparkPartitionIdExec: col=#2
+      MonotonicIdExec: col=#1
+        DataSourceExec: file_groups={10 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:0..386195], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:386195..772390], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:772390..1158585], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1158585..1544780], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1544780..1930975], ...]}, projection=[id@0 as #0], file_type=parquet
+
+
+### a_row_number
+== Physical Plan ==
+ProjectionExec: expr=[#2@0 as id, #3@1 as dense]
+  ProjectionExec: expr=[#0@0 as #2, CAST(CAST(row_number() ORDER BY [?table?.#0 ASC NULLS FIRST] RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW@1 AS Int32) - 1 AS Int64) as #3]
+    RepartitionExec: partitioning=RoundRobinBatch(10), input_partitions=1, maintains_sort_order=true
+      BoundedWindowAggExec: wdw=[row_number() ORDER BY [?table?.#0 ASC NULLS FIRST] RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW: Field { "row_number() ORDER BY [?table?.#0 ASC NULLS FIRST] RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW": UInt64 }, frame: RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW], mode=[Sorted]
+        SortPreservingMergeExec: [#0@0 ASC]
+          ProjectionExec: expr=[id@0 as #0]
+            SortExec: expr=[id@0 ASC], preserve_partitioning=[true]
+              DataSourceExec: file_groups={10 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:0..386195], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:386195..772390], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:772390..1158585], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1158585..1544780], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1544780..1930975], ...]}, projection=[id], file_type=parquet, sort_order_for_reorder=[id@0 ASC]
+
+
+### a_row_number_then_order
+== Physical Plan ==
+ProjectionExec: expr=[#2@0 as id, #3@1 as dense]
+  SortPreservingMergeExec: [#3@1 ASC]
+    SortExec: expr=[#3@1 ASC], preserve_partitioning=[true]
+      ProjectionExec: expr=[#0@0 as #2, CAST(CAST(row_number() ORDER BY [?table?.#0 ASC NULLS FIRST] RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW@1 AS Int32) - 1 AS Int64) as #3]
+        RepartitionExec: partitioning=RoundRobinBatch(10), input_partitions=1, maintains_sort_order=true
+          BoundedWindowAggExec: wdw=[row_number() ORDER BY [?table?.#0 ASC NULLS FIRST] RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW: Field { "row_number() ORDER BY [?table?.#0 ASC NULLS FIRST] RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW": UInt64 }, frame: RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW], mode=[Sorted]
+            SortPreservingMergeExec: [#0@0 ASC]
+              ProjectionExec: expr=[id@0 as #0]
+                SortExec: expr=[id@0 ASC], preserve_partitioning=[true]
+                  DataSourceExec: file_groups={10 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:0..386195], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:386195..772390], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:772390..1158585], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1158585..1544780], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1544780..1930975], ...]}, projection=[id], file_type=parquet, sort_order_for_reorder=[id@0 ASC]
+
+
+### sort_only (mapped edges from Parquet)
+== Physical Plan ==
+ProjectionExec: expr=[#2@0 as s, #3@1 as d]
+  ProjectionExec: expr=[#0@0 as #2, #1@1 as #3]
+    SortPreservingMergeExec: [#0@0 ASC, #1@1 ASC]
+      ProjectionExec: expr=[s@0 as #0, d@1 as #1]
+        SortExec: expr=[s@0 ASC, d@1 ASC], preserve_partitioning=[true]
+          DataSourceExec: file_groups={10 groups: [[private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapped/ggcHKSeyNhLsEhJp_0.zst.parquet:0..8428211], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapped/ggcHKSeyNhLsEhJp_0.zst.parquet:8428211..16856422], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapped/ggcHKSeyNhLsEhJp_1.zst.parquet:0..4206928, private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapped/ggcHKSeyNhLsEhJp_0.zst.parquet:16856422..21077705], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapped/ggcHKSeyNhLsEhJp_1.zst.parquet:4206928..12635139], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapped/ggcHKSeyNhLsEhJp_1.zst.parquet:12635139..21053478, private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapped/ggcHKSeyNhLsEhJp_2.zst.parquet:0..9872], ...]}, projection=[s, d], file_type=parquet, sort_order_for_reorder=[s@0 ASC, d@1 ASC]
+
+
+### a_row_number
+== Physical Plan ==
+ProjectionExec: expr=[#2@0 as id, #3@1 as dense]
+  ProjectionExec: expr=[#0@0 as #2, CAST(CAST(row_number() ORDER BY [?table?.#0 ASC NULLS FIRST] RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW@1 AS Int32) - 1 AS Int64) as #3]
+    RepartitionExec: partitioning=RoundRobinBatch(10), input_partitions=1, maintains_sort_order=true
+      BoundedWindowAggExec: wdw=[row_number() ORDER BY [?table?.#0 ASC NULLS FIRST] RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW: Field { "row_number() ORDER BY [?table?.#0 ASC NULLS FIRST] RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW": UInt64 }, frame: RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW], mode=[Sorted]
+        SortPreservingMergeExec: [#0@0 ASC]
+          ProjectionExec: expr=[id@0 as #0]
+            SortExec: expr=[id@0 ASC], preserve_partitioning=[true]
+              DataSourceExec: file_groups={10 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:0..386195], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:386195..772390], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:772390..1158585], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1158585..1544780], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1544780..1930975], ...]}, projection=[id], file_type=parquet, sort_order_for_reorder=[id@0 ASC]
+
+
+### a_row_number_then_order
+== Physical Plan ==
+ProjectionExec: expr=[#2@0 as id, #3@1 as dense]
+  SortPreservingMergeExec: [#3@1 ASC]
+    SortExec: expr=[#3@1 ASC], preserve_partitioning=[true]
+      ProjectionExec: expr=[#0@0 as #2, CAST(CAST(row_number() ORDER BY [?table?.#0 ASC NULLS FIRST] RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW@1 AS Int32) - 1 AS Int64) as #3]
+        RepartitionExec: partitioning=RoundRobinBatch(10), input_partitions=1, maintains_sort_order=true
+          BoundedWindowAggExec: wdw=[row_number() ORDER BY [?table?.#0 ASC NULLS FIRST] RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW: Field { "row_number() ORDER BY [?table?.#0 ASC NULLS FIRST] RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW": UInt64 }, frame: RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW], mode=[Sorted]
+            SortPreservingMergeExec: [#0@0 ASC]
+              ProjectionExec: expr=[id@0 as #0]
+                SortExec: expr=[id@0 ASC], preserve_partitioning=[true]
+                  DataSourceExec: file_groups={10 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:0..386195], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:386195..772390], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:772390..1158585], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1158585..1544780], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1544780..1930975], ...]}, projection=[id], file_type=parquet, sort_order_for_reorder=[id@0 ASC]
+
+
+### sort_only (mapped edges from Parquet)
+== Physical Plan ==
+ProjectionExec: expr=[#2@0 as s, #3@1 as d]
+  ProjectionExec: expr=[#0@0 as #2, #1@1 as #3]
+    SortPreservingMergeExec: [#0@0 ASC, #1@1 ASC]
+      ProjectionExec: expr=[s@0 as #0, d@1 as #1]
+        SortExec: expr=[s@0 ASC, d@1 ASC], preserve_partitioning=[true]
+          DataSourceExec: file_groups={10 groups: [[private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapped/ggcHKSeyNhLsEhJp_0.zst.parquet:0..8428211], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapped/ggcHKSeyNhLsEhJp_0.zst.parquet:8428211..16856422], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapped/ggcHKSeyNhLsEhJp_1.zst.parquet:0..4206928, private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapped/ggcHKSeyNhLsEhJp_0.zst.parquet:16856422..21077705], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapped/ggcHKSeyNhLsEhJp_1.zst.parquet:4206928..12635139], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapped/ggcHKSeyNhLsEhJp_1.zst.parquet:12635139..21053478, private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapped/ggcHKSeyNhLsEhJp_2.zst.parquet:0..9872], ...]}, projection=[s, d], file_type=parquet, sort_order_for_reorder=[s@0 ASC, d@1 ASC]
+
+
+### a_row_number
+== Physical Plan ==
+ProjectionExec: expr=[#2@0 as id, #3@1 as dense]
+  ProjectionExec: expr=[#0@0 as #2, CAST(CAST(row_number() ORDER BY [?table?.#0 ASC NULLS FIRST] RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW@1 AS Int32) - 1 AS Int64) as #3]
+    RepartitionExec: partitioning=RoundRobinBatch(10), input_partitions=1, maintains_sort_order=true
+      BoundedWindowAggExec: wdw=[row_number() ORDER BY [?table?.#0 ASC NULLS FIRST] RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW: Field { "row_number() ORDER BY [?table?.#0 ASC NULLS FIRST] RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW": UInt64 }, frame: RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW], mode=[Sorted]
+        SortPreservingMergeExec: [#0@0 ASC]
+          ProjectionExec: expr=[id@0 as #0]
+            SortExec: expr=[id@0 ASC], preserve_partitioning=[true]
+              DataSourceExec: file_groups={10 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:0..386195], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:386195..772390], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:772390..1158585], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1158585..1544780], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1544780..1930975], ...]}, projection=[id], file_type=parquet, sort_order_for_reorder=[id@0 ASC]
+
+
+### a_row_number_then_order
+== Physical Plan ==
+ProjectionExec: expr=[#2@0 as id, #3@1 as dense]
+  SortPreservingMergeExec: [#3@1 ASC]
+    SortExec: expr=[#3@1 ASC], preserve_partitioning=[true]
+      ProjectionExec: expr=[#0@0 as #2, CAST(CAST(row_number() ORDER BY [?table?.#0 ASC NULLS FIRST] RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW@1 AS Int32) - 1 AS Int64) as #3]
+        RepartitionExec: partitioning=RoundRobinBatch(10), input_partitions=1, maintains_sort_order=true
+          BoundedWindowAggExec: wdw=[row_number() ORDER BY [?table?.#0 ASC NULLS FIRST] RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW: Field { "row_number() ORDER BY [?table?.#0 ASC NULLS FIRST] RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW": UInt64 }, frame: RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW], mode=[Sorted]
+            SortPreservingMergeExec: [#0@0 ASC]
+              ProjectionExec: expr=[id@0 as #0]
+                SortExec: expr=[id@0 ASC], preserve_partitioning=[true]
+                  DataSourceExec: file_groups={10 groups: [[Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:0..386195], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:386195..772390], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:772390..1158585], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1158585..1544780], [Users/alexy/src/reference/data/cit-Patents/cit-Patents-v.parquet:1544780..1930975], ...]}, projection=[id], file_type=parquet, sort_order_for_reorder=[id@0 ASC]
+
+
+### sort_only (mapped edges from Parquet)
+== Physical Plan ==
+ProjectionExec: expr=[#2@0 as s, #3@1 as d]
+  ProjectionExec: expr=[#0@0 as #2, #1@1 as #3]
+    SortPreservingMergeExec: [#0@0 ASC, #1@1 ASC]
+      ProjectionExec: expr=[s@0 as #0, d@1 as #1]
+        SortExec: expr=[s@0 ASC, d@1 ASC], preserve_partitioning=[true]
+          DataSourceExec: file_groups={10 groups: [[private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapped/ggcHKSeyNhLsEhJp_0.zst.parquet:0..8428211], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapped/ggcHKSeyNhLsEhJp_0.zst.parquet:8428211..16856422], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapped/ggcHKSeyNhLsEhJp_1.zst.parquet:0..4206928, private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapped/ggcHKSeyNhLsEhJp_0.zst.parquet:16856422..21077705], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapped/ggcHKSeyNhLsEhJp_1.zst.parquet:4206928..12635139], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapped/ggcHKSeyNhLsEhJp_1.zst.parquet:12635139..21053478, private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/dense-ids-tmp/dense-ids-bench-t_s661ox/mapped/ggcHKSeyNhLsEhJp_2.zst.parquet:0..9872], ...]}, projection=[s, d], file_type=parquet, sort_order_for_reorder=[s@0 ASC, d@1 ASC]

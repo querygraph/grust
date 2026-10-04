@@ -1,0 +1,241 @@
+{
+  "written_utc": "2026-09-30T16:30:07.575251+00:00",
+  "repository": "querygraph/sail",
+  "host": "Capitola.local",
+  "machine": "arm64",
+  "baseline_commit": "ffcfbd5690e3f3681ef9ac18ba959bc231cf9f73",
+  "candidate_commit": "dc712bac6b7465b4e3473ed8d5ed1c423739d6ad",
+  "baseline_changes": "Only new test module and its inclusion; production core source matches baseline commit. Size-independence assertion intentionally fails after every matched cell is printed.",
+  "baseline_command": "CARGO_INCREMENTAL=0 CARGO_TARGET_DIR=/tmp/sail-argentea-done-baseline-target cargo test --manifest-path examples/extensions/argentea/Cargo.toml --locked --release --test sssp done::done_relay_cost_is_independent_of_vertex_count -- --nocapture",
+  "baseline_exit_code": 101,
+  "candidate_gate": "ARGENTEA_CORE_PROBE PASSED dc712bac6b7465b4e3473ed8d5ed1c423739d6ad detached_clean=True",
+  "measurement": "Four post-convergence core relays; counted work and incremental peak of admitted live reservations above a held 32 MiB baseline. Includes all owner partitions. These are not allocator, RSS or timing measurements.",
+  "cells": [
+    {
+      "algorithm": "DeltaStar",
+      "vertices": 16,
+      "partitions": 1,
+      "relays": 4,
+      "before": {
+        "work_units": 72,
+        "peak_admitted_bytes": 3240
+      },
+      "after": {
+        "work_units": 8,
+        "peak_admitted_bytes": 2728
+      }
+    },
+    {
+      "algorithm": "DeltaStar",
+      "vertices": 16,
+      "partitions": 3,
+      "relays": 4,
+      "before": {
+        "work_units": 136,
+        "peak_admitted_bytes": 8632
+      },
+      "after": {
+        "work_units": 72,
+        "peak_admitted_bytes": 8120
+      }
+    },
+    {
+      "algorithm": "DeltaStar",
+      "vertices": 16,
+      "partitions": 8,
+      "relays": 4,
+      "before": {
+        "work_units": 576,
+        "peak_admitted_bytes": 23232
+      },
+      "after": {
+        "work_units": 512,
+        "peak_admitted_bytes": 22720
+      }
+    },
+    {
+      "algorithm": "DeltaStar",
+      "vertices": 16,
+      "partitions": 32,
+      "relays": 4,
+      "before": {
+        "work_units": 8256,
+        "peak_admitted_bytes": 115584
+      },
+      "after": {
+        "work_units": 8192,
+        "peak_admitted_bytes": 115072
+      }
+    },
+    {
+      "algorithm": "DeltaStar",
+      "vertices": 65536,
+      "partitions": 1,
+      "relays": 4,
+      "before": {
+        "work_units": 262152,
+        "peak_admitted_bytes": 4784912
+      },
+      "after": {
+        "work_units": 8,
+        "peak_admitted_bytes": 2728
+      }
+    },
+    {
+      "algorithm": "DeltaStar",
+      "vertices": 65536,
+      "partitions": 3,
+      "relays": 4,
+      "before": {
+        "work_units": 262216,
+        "peak_admitted_bytes": 2994477
+      },
+      "after": {
+        "work_units": 72,
+        "peak_admitted_bytes": 8120
+      }
+    },
+    {
+      "algorithm": "DeltaStar",
+      "vertices": 65536,
+      "partitions": 8,
+      "relays": 4,
+      "before": {
+        "work_units": 262656,
+        "peak_admitted_bytes": 2437504
+      },
+      "after": {
+        "work_units": 512,
+        "peak_admitted_bytes": 22720
+      }
+    },
+    {
+      "algorithm": "DeltaStar",
+      "vertices": 65536,
+      "partitions": 32,
+      "relays": 4,
+      "before": {
+        "work_units": 270336,
+        "peak_admitted_bytes": 2212480
+      },
+      "after": {
+        "work_units": 8192,
+        "peak_admitted_bytes": 115072
+      }
+    },
+    {
+      "algorithm": "Reference",
+      "vertices": 16,
+      "partitions": 1,
+      "relays": 4,
+      "before": {
+        "work_units": 72,
+        "peak_admitted_bytes": 3240
+      },
+      "after": {
+        "work_units": 8,
+        "peak_admitted_bytes": 2728
+      }
+    },
+    {
+      "algorithm": "Reference",
+      "vertices": 16,
+      "partitions": 3,
+      "relays": 4,
+      "before": {
+        "work_units": 136,
+        "peak_admitted_bytes": 8632
+      },
+      "after": {
+        "work_units": 72,
+        "peak_admitted_bytes": 8120
+      }
+    },
+    {
+      "algorithm": "Reference",
+      "vertices": 16,
+      "partitions": 8,
+      "relays": 4,
+      "before": {
+        "work_units": 576,
+        "peak_admitted_bytes": 23232
+      },
+      "after": {
+        "work_units": 512,
+        "peak_admitted_bytes": 22720
+      }
+    },
+    {
+      "algorithm": "Reference",
+      "vertices": 16,
+      "partitions": 32,
+      "relays": 4,
+      "before": {
+        "work_units": 8256,
+        "peak_admitted_bytes": 115584
+      },
+      "after": {
+        "work_units": 8192,
+        "peak_admitted_bytes": 115072
+      }
+    },
+    {
+      "algorithm": "Reference",
+      "vertices": 65536,
+      "partitions": 1,
+      "relays": 4,
+      "before": {
+        "work_units": 262152,
+        "peak_admitted_bytes": 4784912
+      },
+      "after": {
+        "work_units": 8,
+        "peak_admitted_bytes": 2728
+      }
+    },
+    {
+      "algorithm": "Reference",
+      "vertices": 65536,
+      "partitions": 3,
+      "relays": 4,
+      "before": {
+        "work_units": 262216,
+        "peak_admitted_bytes": 2994477
+      },
+      "after": {
+        "work_units": 72,
+        "peak_admitted_bytes": 8120
+      }
+    },
+    {
+      "algorithm": "Reference",
+      "vertices": 65536,
+      "partitions": 8,
+      "relays": 4,
+      "before": {
+        "work_units": 262656,
+        "peak_admitted_bytes": 2437504
+      },
+      "after": {
+        "work_units": 512,
+        "peak_admitted_bytes": 22720
+      }
+    },
+    {
+      "algorithm": "Reference",
+      "vertices": 65536,
+      "partitions": 32,
+      "relays": 4,
+      "before": {
+        "work_units": 270336,
+        "peak_admitted_bytes": 2212480
+      },
+      "after": {
+        "work_units": 8192,
+        "peak_admitted_bytes": 115072
+      }
+    }
+  ],
+  "test_source_sha256": "c3da031c1d898c4e9046689ef01407735fe27fb341d837307ea7a601f2e7e898",
+  "matched_test_source_identical": true
+}

@@ -1,0 +1,22 @@
+{
+  "recorded_utc": "2026-09-30T20:45:29.393427+00:00",
+  "scope": "Supplement to static logging02/logging03 parity audit, derived from an existing read-only parent observation; no new remote action or causal inference",
+  "source": "docs/reviews/sail-stream-experiments-2026-09-30/logging02-monitor/host-memory-control-20260930T204036159002Z.json",
+  "source_sha256": "b80e49fa878524f8992d86440ad18431ad6f445b3860eb2ac0e7399fe3e34b27",
+  "observed_host_utc": "2026-09-30T20:40:46.076437+00:00",
+  "physical_bytes": 137438953472,
+  "physical_gib": 128.0,
+  "swap_used_reported_M": 28116.75,
+  "swap_unit_note": "Retain sysctl vm.swapusage reported M value; no conversion required for the comparison.",
+  "vm_stat_page_bytes": 4096,
+  "pages_occupied_by_compressor": 10657930,
+  "compressor_occupied_bytes": 43654881280,
+  "compressor_occupied_gib": 40.656776428222656,
+  "interpretation": [
+    "Container memory.swap.max=0 constrains Linux cgroup swap; it does not prevent macOS from swapping or compressing memory backing the Linux VM.",
+    "These counters cover the entire macOS host, not specifically this container or VM. This observation alone neither attributes the host pressure to logging02 nor explains the stream failure.",
+    "Zero Linux VM steal and zero Docker/Linux OOM counters do not establish a quiet host or exclude host paging/compression.",
+    "Before timing interpretation, retain measured macOS before/after swap, compressor occupancy and paging counter deltas for both cells, alongside Linux cgroup/phase data and clock-domain evidence. Keep pinned configurations unchanged mid-pair."
+  ],
+  "base_audit_receipt_sha256": "eab5e595c62b16a554c2bb91174f0dcfc5ba3f7a7335b5399cf06e85c95978cb"
+}

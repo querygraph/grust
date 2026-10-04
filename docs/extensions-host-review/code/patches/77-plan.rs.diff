@@ -1,0 +1,51 @@
+diff --git a/crates/sail-spark-connect/src/proto/plan.rs b/crates/sail-spark-connect/src/proto/plan.rs
+index f7d41776c81541130ea0d47ed6063282fdd9e79d..fe8dadf5f43b17216d689774d4569c56372098b6 100644
+--- a/crates/sail-spark-connect/src/proto/plan.rs
++++ b/crates/sail-spark-connect/src/proto/plan.rs
+@@ -102,9 +102,10 @@ impl TryFrom<Relation> for spec::Plan {
+ 
+     /// Converts a relation to a plan, somehow SQL text is parsed here.
+     fn try_from(relation: Relation) -> SparkResult<spec::Plan> {
++        let _depth = super::extension::RelationConversionGuard::enter()?;
+         let Relation { common, rel_type } = relation;
+         let rel_type = rel_type.required("relation type")?;
+-        let node: RelationNode = rel_type.try_into()?;
++        let node: RelationNode = super::extension::with_conversion_stack(|| rel_type.try_into())?;
+         let metadata: RelationMetadata = common.into();
+         match node {
+             RelationNode::Query(query) => Ok(spec::Plan::Query(spec::QueryPlan {
+@@ -123,9 +124,10 @@ impl TryFrom<Relation> for spec::QueryPlan {
+     type Error = SparkError;
+ 
+     fn try_from(relation: Relation) -> SparkResult<spec::QueryPlan> {
++        let _depth = super::extension::RelationConversionGuard::enter()?;
+         let Relation { common, rel_type } = relation;
+         let rel_type = rel_type.required("relation type")?;
+-        let node: RelationNode = rel_type.try_into()?;
++        let node: RelationNode = super::extension::with_conversion_stack(|| rel_type.try_into())?;
+         let metadata: RelationMetadata = common.into();
+         Ok(spec::QueryPlan {
+             node: node.try_into_query()?,
+@@ -138,9 +140,10 @@ impl TryFrom<Relation> for spec::CommandPlan {
+     type Error = SparkError;
+ 
+     fn try_from(relation: Relation) -> SparkResult<spec::CommandPlan> {
++        let _depth = super::extension::RelationConversionGuard::enter()?;
+         let Relation { common, rel_type } = relation;
+         let rel_type = rel_type.required("relation type")?;
+-        let node: RelationNode = rel_type.try_into()?;
++        let node: RelationNode = super::extension::with_conversion_stack(|| rel_type.try_into())?;
+         let metadata: RelationMetadata = common.into();
+         Ok(spec::CommandPlan {
+             node: node.try_into_command()?,
+@@ -1336,7 +1339,9 @@ impl TryFrom<RelType> for RelationNode {
+             RelType::RelationChanges(_) => Err(SparkError::unsupported("relation changes")),
+             RelType::NearestByJoin(_) => Err(SparkError::unsupported("nearest-by join")),
+             RelType::MlRelation(_) => Err(SparkError::unsupported("ML relation")),
+-            RelType::Extension(_) => Err(SparkError::unsupported("extension relation")),
++            RelType::Extension(extension) => Ok(RelationNode::Query(
++                super::extension::convert_relation_extension(extension)?,
++            )),
+             RelType::Unknown(_) => Err(SparkError::unsupported("unknown relation")),
+         }
+     }

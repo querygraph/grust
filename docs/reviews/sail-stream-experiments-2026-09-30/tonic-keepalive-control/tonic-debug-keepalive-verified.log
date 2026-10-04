@@ -1,0 +1,8 @@
+2026-09-30T17:24:23.560997Z  INFO ThreadId(01) sail_tonic_keepalive_control: CONTROL start; this is not Sail mode=keepalive hyper_tracing=false
+2026-09-30T17:24:23.663815Z  INFO ThreadId(03) peer{side="proxy-client-to-server"}: sail_tonic_keepalive_control: CONTROL proxy deliberately dropped client PING ACK
+2026-09-30T17:24:23.817113Z DEBUG ThreadId(07) tonic::transport::server: failed serving connection: http2 error: keep-alive timed out: operation timed out
+2026-09-30T17:24:23.817529Z  INFO ThreadId(07) peer{side="client"}: sail_tonic_keepalive_control: CONTROL client connection future completed result=Ok(())
+2026-09-30T17:24:23.818899Z  INFO ThreadId(01) sail_tonic_keepalive_control: CONTROL body error chain display=error reading a body from connection debug=hyper::Error(Body, Error { kind: Io(Custom { kind: BrokenPipe, error: "stream closed because of a broken pipe" }) })
+2026-09-30T17:24:23.818955Z  INFO ThreadId(01) sail_tonic_keepalive_control: CONTROL body error chain display=stream closed because of a broken pipe debug=Error { kind: Io(Custom { kind: BrokenPipe, error: "stream closed because of a broken pipe" }) }
+2026-09-30T17:24:23.819144Z  INFO ThreadId(01) sail_tonic_keepalive_control: CONTROL Tonic conversion code=Unknown h2 protocol error: error reading a body from connection debug=Status { code: Unknown, message: "h2 protocol error: error reading a body from connection", source: Some(hyper::Error(Body, Error { kind: Io(Custom { kind: BrokenPipe, error: "stream closed because of a broken pipe" }) })) }
+PASS: induced keepalive failure produced the same outer Tonic body-read message

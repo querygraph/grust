@@ -1,0 +1,205 @@
+{
+  "recorded_utc": "2026-09-30T18:31:19.311414+00:00",
+  "repository": "/private/tmp/sail-stream-review-integrated",
+  "commit": "b569e75de625885b3d919fa4196b2e0bed14c618",
+  "scope": "SQLite reproduction of four integer-label predicates plus actual Python classify/audited_rows/aggregate functions; no Spark/Sail server, no remote workload, no timing claim",
+  "source_sha256": {
+    "graph_cell.py": "8666741b91887dfbc40eb831d6fa54149b6a5f4437e683d79c7ffc8f731eaa55",
+    "run_matrix.py": "21d12c888caabb59acece11a2ee27837974c1f34b08cc499600e305d6341e1a0",
+    "summarize.py": "c2f76469eb13058c7673416d6fb4d9cd995568149dc571d63a41de576c97fb24",
+    "test_summarize.py": "914c70a7bfacf73e2b7e6ab293e8f9c4fefc7279660c9c38f04e5f5f0ebc85bb"
+  },
+  "extracted_certificate_assertions": [
+    "not actual.where(F.col('component').isNull()).limit(1).count()",
+    "crossing == 0",
+    "foreign == 0"
+  ],
+  "fixture": {
+    "vertices": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "edges": [
+      [
+        0,
+        1
+      ],
+      [
+        2,
+        3
+      ]
+    ],
+    "reference_components": [
+      [
+        0,
+        1
+      ],
+      [
+        2,
+        3
+      ]
+    ]
+  },
+  "cases": [
+    {
+      "name": "correct_partition",
+      "labels": [
+        "0",
+        "0",
+        "2",
+        "2"
+      ],
+      "predicates": {
+        "rows": 4,
+        "unique_ids": 4,
+        "null_ids": 0,
+        "missing_vertices": 0,
+        "null_labels": 0,
+        "crossing_edges": 0,
+        "foreign_labels": 0,
+        "labels_not_in_own_group": 0,
+        "reported_components": 2
+      },
+      "original_certificate_predicates_accept": true,
+      "exact_reference_partition_accept": true
+    },
+    {
+      "name": "merged_disconnected_components",
+      "labels": [
+        "0",
+        "0",
+        "0",
+        "0"
+      ],
+      "predicates": {
+        "rows": 4,
+        "unique_ids": 4,
+        "null_ids": 0,
+        "missing_vertices": 0,
+        "null_labels": 0,
+        "crossing_edges": 0,
+        "foreign_labels": 0,
+        "labels_not_in_own_group": 0,
+        "reported_components": 1
+      },
+      "original_certificate_predicates_accept": true,
+      "exact_reference_partition_accept": false
+    },
+    {
+      "name": "representatives_in_other_group",
+      "labels": [
+        "2",
+        "2",
+        "0",
+        "0"
+      ],
+      "predicates": {
+        "rows": 4,
+        "unique_ids": 4,
+        "null_ids": 0,
+        "missing_vertices": 0,
+        "null_labels": 0,
+        "crossing_edges": 0,
+        "foreign_labels": 0,
+        "labels_not_in_own_group": 2,
+        "reported_components": 2
+      },
+      "original_certificate_predicates_accept": true,
+      "exact_reference_partition_accept": true
+    },
+    {
+      "name": "split_connected_components",
+      "labels": [
+        "0",
+        "1",
+        "2",
+        "3"
+      ],
+      "predicates": {
+        "rows": 4,
+        "unique_ids": 4,
+        "null_ids": 0,
+        "missing_vertices": 0,
+        "null_labels": 0,
+        "crossing_edges": 2,
+        "foreign_labels": 0,
+        "labels_not_in_own_group": 0,
+        "reported_components": 4
+      },
+      "original_certificate_predicates_accept": false,
+      "exact_reference_partition_accept": false
+    }
+  ],
+  "downstream": {
+    "new_partial_receipt_exit_1_classification": "partially_verified",
+    "oom_overrides_partial": "oom",
+    "legacy_passed_partial_certificate_integrity_errors": [
+      [],
+      [],
+      []
+    ],
+    "legacy_passed_partial_certificate_aggregate": {
+      "suite": "distributed",
+      "dataset": "sparse-10000",
+      "mode": "process-cluster",
+      "algorithm": "wcc",
+      "engine": "nutmeg-native",
+      "variant": "optimized",
+      "planned": 3,
+      "passed": 3,
+      "outcomes": {
+        "passed": 3
+      },
+      "metrics": {
+        "seconds": {
+          "samples": 3,
+          "median": 5,
+          "minimum": 5,
+          "maximum": 5
+        },
+        "execution_rss_bytes": null,
+        "execution_pss_bytes": null,
+        "cgroup_peak_through_result_bytes": null,
+        "cgroup_lifetime_peak_bytes": null,
+        "native_pool_peak_bytes": null,
+        "native_read_peak_bytes": null,
+        "iterations": null,
+        "true_residual": null,
+        "whole_vm_steal_fraction": null
+      }
+    },
+    "explicit_partial_aggregate": {
+      "suite": "distributed",
+      "dataset": "sparse-10000",
+      "mode": "process-cluster",
+      "algorithm": "wcc",
+      "engine": "nutmeg-native",
+      "variant": "optimized",
+      "planned": 3,
+      "passed": 0,
+      "outcomes": {
+        "partially_verified": 3
+      },
+      "metrics": {
+        "seconds": null,
+        "execution_rss_bytes": null,
+        "execution_pss_bytes": null,
+        "cgroup_peak_through_result_bytes": null,
+        "cgroup_lifetime_peak_bytes": null,
+        "native_pool_peak_bytes": null,
+        "native_read_peak_bytes": null,
+        "iterations": null,
+        "true_residual": null,
+        "whole_vm_steal_fraction": null
+      }
+    },
+    "explicit_partial_per_cell_seconds_retained": [
+      5,
+      5,
+      5
+    ]
+  },
+  "verdict": "All bounded controls reproduced expected current behavior"
+}

@@ -1,0 +1,169 @@
+{
+  "started_utc": "2026-09-30T19:19:55.876127+00:00",
+  "container_name": "sail-worker-smoke-instrumented289-cpu16-23-1",
+  "scope": "read-only process identity; no arguments or environment",
+  "inspect": {
+    "command": [
+      "/usr/local/bin/docker",
+      "--context",
+      "colima-sail-gate",
+      "inspect",
+      "--format",
+      "{{json .Id}} {{json .State.Pid}} {{json .State.Running}}",
+      "sail-worker-smoke-instrumented289-cpu16-23-1"
+    ],
+    "returncode": 0,
+    "stdout": "\"0c909c1944a6d8806606bc2aaa2ef8d85e4b06655b1d6ac31317755c69327c76\" 179354 true\n",
+    "stderr": ""
+  },
+  "top": {
+    "command": [
+      "/usr/local/bin/docker",
+      "--context",
+      "colima-sail-gate",
+      "top",
+      "0c909c1944a6d8806606bc2aaa2ef8d85e4b06655b1d6ac31317755c69327c76",
+      "-eo",
+      "pid,ppid,comm"
+    ],
+    "returncode": 0,
+    "stdout": "PID                 PPID                COMMAND\n179354              179329              docker-init\n179377              179354              python\n179416              179377              sail-linux-x86_\n179452              179416              sail-linux-x86_\n179453              179416              sail-linux-x86_\n",
+    "stderr": ""
+  },
+  "identity": {
+    "container_id": "0c909c1944a6d8806606bc2aaa2ef8d85e4b06655b1d6ac31317755c69327c76",
+    "init_host_pid": 179354,
+    "host_pids": [
+      179354,
+      179377,
+      179416,
+      179452,
+      179453
+    ]
+  },
+  "capture": {
+    "command": [
+      "/usr/local/bin/colima",
+      "--profile",
+      "sail-gate",
+      "ssh",
+      "--",
+      "sudo",
+      "/usr/bin/python3",
+      "-c",
+      "<VM_READER from capture_process_identity.py>",
+      "{\"container_id\": \"0c909c1944a6d8806606bc2aaa2ef8d85e4b06655b1d6ac31317755c69327c76\", \"init_host_pid\": 179354, \"host_pids\": [179354, 179377, 179416, 179452, 179453]}"
+    ],
+    "returncode": 0,
+    "stderr": ""
+  },
+  "mapping": {
+    "monotonic_started": 141050.787538409,
+    "monotonic_finished": 141050.790409543,
+    "clock_ticks_per_second": 100,
+    "processes": [
+      {
+        "host_pid": 179354,
+        "start_ticks": 14101446,
+        "cgroup": "0::/docker/0c909c1944a6d8806606bc2aaa2ef8d85e4b06655b1d6ac31317755c69327c76\n",
+        "status": {
+          "Name": "docker-init",
+          "State": "S (sleeping)",
+          "Tgid": "179354",
+          "Pid": "179354",
+          "PPid": "179329",
+          "FDSize": "64",
+          "NSpid": "179354\t1",
+          "VmSize": "1056 kB",
+          "VmRSS": "748 kB",
+          "RssAnon": "48 kB",
+          "RssFile": "700 kB",
+          "VmSwap": "0 kB",
+          "Threads": "1"
+        }
+      },
+      {
+        "host_pid": 179377,
+        "start_ticks": 14101479,
+        "cgroup": "0::/docker/0c909c1944a6d8806606bc2aaa2ef8d85e4b06655b1d6ac31317755c69327c76\n",
+        "status": {
+          "Name": "python",
+          "State": "S (sleeping)",
+          "Tgid": "179377",
+          "Pid": "179377",
+          "PPid": "179354",
+          "FDSize": "64",
+          "NSpid": "179377\t7",
+          "VmSize": "2727460 kB",
+          "VmRSS": "142160 kB",
+          "RssAnon": "75424 kB",
+          "RssFile": "66736 kB",
+          "VmSwap": "0 kB",
+          "Threads": "37"
+        }
+      },
+      {
+        "host_pid": 179416,
+        "start_ticks": 14102256,
+        "cgroup": "0::/docker/0c909c1944a6d8806606bc2aaa2ef8d85e4b06655b1d6ac31317755c69327c76\n",
+        "status": {
+          "Name": "sail-linux-x86_",
+          "State": "S (sleeping)",
+          "Tgid": "179416",
+          "Pid": "179416",
+          "PPid": "179377",
+          "FDSize": "64",
+          "NSpid": "179416\t26",
+          "VmSize": "2738784 kB",
+          "VmRSS": "238300 kB",
+          "RssAnon": "135440 kB",
+          "RssFile": "102860 kB",
+          "VmSwap": "0 kB",
+          "Threads": "22"
+        }
+      },
+      {
+        "host_pid": 179452,
+        "start_ticks": 14102586,
+        "cgroup": "0::/docker/0c909c1944a6d8806606bc2aaa2ef8d85e4b06655b1d6ac31317755c69327c76\n",
+        "status": {
+          "Name": "sail-linux-x86_",
+          "State": "S (sleeping)",
+          "Tgid": "179452",
+          "Pid": "179452",
+          "PPid": "179416",
+          "FDSize": "64",
+          "NSpid": "179452\t62",
+          "VmSize": "2605312 kB",
+          "VmRSS": "328652 kB",
+          "RssAnon": "251852 kB",
+          "RssFile": "76800 kB",
+          "VmSwap": "0 kB",
+          "Threads": "19"
+        }
+      },
+      {
+        "host_pid": 179453,
+        "start_ticks": 14102586,
+        "cgroup": "0::/docker/0c909c1944a6d8806606bc2aaa2ef8d85e4b06655b1d6ac31317755c69327c76\n",
+        "status": {
+          "Name": "sail-linux-x86_",
+          "State": "S (sleeping)",
+          "Tgid": "179453",
+          "Pid": "179453",
+          "PPid": "179416",
+          "FDSize": "64",
+          "NSpid": "179453\t63",
+          "VmSize": "2531436 kB",
+          "VmRSS": "328812 kB",
+          "RssAnon": "252992 kB",
+          "RssFile": "75820 kB",
+          "VmSwap": "0 kB",
+          "Threads": "18"
+        }
+      }
+    ]
+  },
+  "outcome": "captured",
+  "finished_utc": "2026-09-30T19:20:03.559484+00:00"
+}

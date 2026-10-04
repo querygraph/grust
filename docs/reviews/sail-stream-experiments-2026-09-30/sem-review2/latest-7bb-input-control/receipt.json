@@ -1,0 +1,93 @@
+{
+  "recorded_utc": "2026-09-30T21:15:10.170174+00:00",
+  "review_commit": "7bb00a299db9a24c35a47022614d6f572309b9a2",
+  "review_blob_sha256": "73c5e73366904d2f2a03298ca44843d1b0ef7c7ac96f95c0ba791bd39e653740",
+  "source_files": {
+    "own_manifest_receipt": {
+      "path": "docs/reviews/sail-stream-experiments-2026-09-30/logging01/diagnostics/receipt.json",
+      "sha256": "969a7811615eeef3190b7b0f5f87a72f637b430edd37db48e031e5819d235e84"
+    },
+    "own_reach_evidence": {
+      "path": "docs/reviews/sail-graphs-2026-09-30/benchmark/collect_receipt_evidence.json",
+      "sha256": "03df6982edbdea83aa8883dcd5d2267133312698ba76fd0feacd7a1d727ec549"
+    },
+    "official_statistics": {
+      "path": "docs/reviews/sail-stream-experiments-2026-09-30/sem-review2/input-catalog/finding.json",
+      "sha256": "0ecba446b7338b6ca1a5841c5e9d047f89cd5a5c9b9b6412e02e13291ec839d7"
+    }
+  },
+  "probe_sha256": "f847dd28db1284008671c7a9af176fc946136500ac2a27ad429a7053c4e758af",
+  "own_input": {
+    "vertices": 16777216,
+    "edges": 268435456,
+    "reached": 8862601,
+    "unreached": 7914615,
+    "self_loops": 2798,
+    "duplicate_count": null,
+    "isolated_count": null,
+    "distinct_endpoint_count": null,
+    "canonical_vertices": {
+      "bytes": 134217728,
+      "format": "little-endian int64 id; ascending 0..2^scale-1",
+      "sha256": "a083dc749ad3f1f731613fac95eea8fb5331cacfd29ca490caa24d937d87cc3b"
+    },
+    "canonical_edges": {
+      "bytes": 6442450944,
+      "duplicate_policy": "preserved; not counted or deduplicated",
+      "format": "little-endian int64 src, int64 dst, float64 weight; 24 bytes per record",
+      "maximum_weight": 1.0,
+      "minimum_weight": 9.313225746154785e-10,
+      "ordering": "generator edge index; preserved in increasing partition filename and row order",
+      "self_loops": 2798,
+      "sha256": "cacd401faca8b8da8cd81fcbedfadce5b355c7029c6c53fc9bec947b60d6649e"
+    }
+  },
+  "external_reported_input": {
+    "vertices": 8870942,
+    "edges": 260379520
+  },
+  "arithmetic_only": {
+    "reached_over_own_vertices": "8862601/16777216",
+    "reached_over_external_vertices": "8862601/8870942",
+    "cross_input_ratio_decimal": 0.9990597390897156,
+    "edge_count_difference": 8055936
+  },
+  "counterexample": {
+    "own_vertices": [
+      0,
+      1,
+      2,
+      3,
+      4
+    ],
+    "own_edges_undirected": [
+      [
+        0,
+        1
+      ],
+      [
+        1,
+        2
+      ],
+      [
+        3,
+        4
+      ]
+    ],
+    "own_source": 0,
+    "own_reached": [
+      0,
+      1,
+      2
+    ],
+    "own_unreached": [
+      3,
+      4
+    ],
+    "own_isolates": [],
+    "other_graph_vertex_count": 3,
+    "cross_graph_ratio": 1.0
+  },
+  "conclusion": "Cross-graph reach/vertex ratio cannot establish the own graph's isolated count or giant-component share among incident vertices. Existing own manifest counts self-loops but explicitly does not count duplicates. Exact decomposition of the cross-input edge difference remains unverified.",
+  "scope": "Source/receipt audit and a five-vertex Python counterexample. No scan of either large dataset, no new Sail or external engine execution, no claim that the own large graph actually has extra nontrivial components."
+}

@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en-US" xml:lang="en-US">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <meta name="author" content="Querygraph" />
+  <meta name="dcterms.date" content="2026-10-01" />
+  <meta name="description" content="Version 1.0. Review target: querygraph/sail bd8ce9ae8839477e2c08a0475ab7900b115c5366." />
+  <title>8. Packaging and compatibility</title>
+  <style>
+    div.sitenav { display: flex; flex-direction: row; flex-wrap: wrap; }
+    span.navlink { flex: 1; }
+    span.navlink-label { display: inline-block; min-width: 4em; }
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: 1.5em;}
+    div.column{flex: auto;}
+    @media screen {
+    div.columns{gap: min(4vw, 1.5em);}
+    div.column{overflow-x: auto;}
+    }
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <link rel="stylesheet" href="book.css" />
+</head>
+<body>
+<nav id="sitenav">
+<div class="sitenav">
+<span class="navlink">
+<span class="navlink-label">Up:</span> <a href="index.html" accesskey="u" rel="up">Sail Extensions: A Design Review</a>
+</span>
+<span class="navlink">
+<span class="navlink-label">Top:</span> <a href="index.html" accesskey="t" rel="top">Sail Extensions: A Design Review</a>
+</span>
+</div>
+<div class="sitenav">
+<span class="navlink">
+<span class="navlink-label">Next:</span> <a href="chapter-011.html" accesskey="n" rel="next">Complete code and reading path</a>
+</span>
+<span class="navlink">
+<span class="navlink-label">Previous:</span> <a href="chapter-009.html" accesskey="p" rel="previous">7. Lifecycle and teardown</a>
+</span>
+</div>
+</nav>
+<h1 data-number="10" id="module-08-compatibility"><span
+class="header-section-number">10</span> 8. Packaging and
+compatibility</h1>
+<p>The <a href="chapter-009.html#module-07-lifecycle">lifecycle
+contract</a> assumes that both sides interpret their shared objects
+correctly. Packaging makes an extension discoverable; compatibility
+determines whether Sail may call into it. Those are related concerns,
+but a wheel that installs successfully is not by itself evidence that
+its native boundary is compatible.</p>
+<p>The public contract should identify the supported extension API and
+native interchange versions, reject declared incompatibility before
+accessing capsule layouts, and define package identity consistently
+across driver and workers. It must also make the trust boundary
+explicit: native packages promise the named capsule layout and ownership
+rules. Their declarations are not a proof that arbitrary native code is
+safe. Function pointers remain process-local; workers resolve their
+installed implementation from a serialized identity.</p>
+<p>At <code>bd8ce9ae</code>, the loader accepts
+<code>api_version: 1</code>, DataFusion 55.1.0 and Arrow 59.3.0,
+checking these declarations before binding native objects. Its <a
+href="https://github.com/querygraph/sail/blob/bd8ce9ae8839477e2c08a0475ab7900b115c5366/crates/sail-session/src/extensions/manifest.rs#L31">manifest
+checks</a> are deliberately exact. The <a
+href="https://github.com/querygraph/sail/blob/bd8ce9ae8839477e2c08a0475ab7900b115c5366/crates/sail-session/src/extensions/package_identity.py">package
+fingerprint</a> combines manifest options and installed package-file
+contents. It detects a different installed package identity; it is not a
+universal ABI certificate, an approved-artifact signature, or a
+fingerprint of every external dependency. Sail does not distribute
+extension wheels to workers. Operators must install matching packages
+there.</p>
+<p>This is a qualified prototype boundary, not a promise that extensions
+must forever share Sail's release cadence. The upstream maintainer's <a
+href="https://github.com/lakehq/sail/discussions/2001">extension design
+response</a> explicitly favors Python distribution and DataFusion FFI so
+Sail and extensions can release independently, while treating session
+mutators as implementation details. Avoiding a public Sail Rust trait
+supports that direction. Exact pins currently limit the demonstrated
+compatibility; they do not establish the range that a future stable
+interface could support.</p>
+<p>A tested compatibility range would reduce rebuilds but needs evidence
+for every admitted boundary and a policy for breaking changes. Exact
+artifact pairs are easier to qualify initially and can fail closed when
+declarations differ. A custom C ABI could provide another stability
+boundary, but requires its own versioning and ownership design. It is an
+alternative with maintenance costs, not an impossibility ruled out by
+choosing wheels.</p>
+<p>Acceptance should include wrong API and engine-version declarations,
+invalid capsule names or types, missing worker packages, and changed
+package identities. Positive controls should exercise the qualified
+artifacts across the actual planning, codec and execution path. Only
+those tested pairs should be advertised as supported; matching version
+strings alone cannot extend the claim.</p>
+<p>The decision is the initial support statement and the evidence
+required to widen it. With the eight boundaries explicit, the <a
+href="chapter-011.html#code-listings">code listings</a> show the
+concrete extension surface reviewers can inspect next.</p>
+</body>
+</html>

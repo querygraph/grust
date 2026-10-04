@@ -1,0 +1,6 @@
+2026-09-30T16:18:31.543102Z  INFO ThreadId(01) sail_transport_log_control: CONTROL start; this is not Sail mode=reset hyper_tracing=true
+2026-09-30T16:18:31.543629Z  INFO ThreadId(08) peer{side="server"}:peer{side="server-reset"}: sail_transport_log_control: CONTROL server deliberately resets the open body INTERNAL_ERROR
+2026-09-30T16:18:31.543698Z  INFO ThreadId(01) sail_transport_log_control: CONTROL body error chain display=error reading a body from connection debug=hyper::Error(Body, Error { kind: Reset(StreamId(1), INTERNAL_ERROR, Remote) })
+2026-09-30T16:18:31.543709Z  INFO ThreadId(01) sail_transport_log_control: CONTROL body error chain display=stream error received: unexpected internal error encountered debug=Error { kind: Reset(StreamId(1), INTERNAL_ERROR, Remote) }
+2026-09-30T16:18:31.543721Z  INFO ThreadId(01) sail_transport_log_control: CONTROL Tonic conversion code=Internal h2 protocol error: error reading a body from connection debug=Status { code: Internal, message: "h2 protocol error: error reading a body from connection", source: Some(hyper::Error(Body, Error { kind: Reset(StreamId(1), INTERNAL_ERROR, Remote) })) }
+PASS: induced reset failure produced the same outer Tonic body-read message

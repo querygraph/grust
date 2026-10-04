@@ -1,0 +1,672 @@
+diff --git a/examples/extensions/argentea/src/bfs.rs b/examples/extensions/argentea/src/bfs.rs
+index eb5136bcb..b062f8dcd 100644
+--- a/examples/extensions/argentea/src/bfs.rs
++++ b/examples/extensions/argentea/src/bfs.rs
+@@ -167,7 +167,6 @@ pub struct BfsPartition {
+     options: BfsOptions,
+     adjacency: Arc<Adjacency>,
+     incoming: Option<Arc<Incoming>>,
+-    resources: Resources,
+     values: Arc<Values>,
+     origins: Vec<Option<BfsOrigin>>,
+     shapes: Vec<Option<(u64, u64, u64)>>,
+@@ -178,6 +177,8 @@ pub struct BfsPartition {
+     completed: BfsMode,
+     work: BfsWork,
+     terminal: Option<BfsConvergence>,
++    // Keep the host lease until every owned admitted buffer has dropped.
++    resources: Resources,
+ }
+ impl BfsPartition {
+     /// Each vertex occurs once, on owner(id). Arcs are owned by their source.
+diff --git a/examples/extensions/argentea/src/delta.rs b/examples/extensions/argentea/src/delta.rs
+index 2faae9d43..b5de77022 100644
+--- a/examples/extensions/argentea/src/delta.rs
++++ b/examples/extensions/argentea/src/delta.rs
+@@ -1,6 +1,8 @@
+ //! Signed residual PageRank. These are partition protocol primitives, not a
+ //! scheduler: callers supply complete, ordered producer streams and barriers.
+ mod emission;
++mod initialization;
++pub use initialization::DeltaInitialization;
+ mod failure;
+ pub use failure::DeltaCapFailure;
+ mod protocol;
+@@ -108,7 +110,6 @@ pub struct DeltaPartition {
+     operation: Operation,
+     partition: usize,
+     adjacency: Arc<Adjacency>,
+-    resources: Resources,
+     options: DeltaOptions,
+     values: Arc<Values>,
+     next_phase: u64,
+@@ -118,6 +119,8 @@ pub struct DeltaPartition {
+     metrics: Metrics,
+     state: State,
+     terminal: Option<Convergence>,
++    // Keep the host lease until every owned admitted buffer has dropped.
++    resources: Resources,
+ }
+ 
+ impl DeltaPartition {
+@@ -129,25 +132,25 @@ impl DeltaPartition {
+         options: DeltaOptions,
+         resources: Resources,
+     ) -> Result<Self> {
++        Self::prepare(operation, partition, vertices, edges, options, resources)?.finish()
++    }
++    /// Own the validated CSR before allocating dense score and residual state.
++    pub fn prepare(
++        operation: Operation,
++        partition: usize,
++        vertices: &[i64],
++        edges: &[(i64, i64)],
++        options: DeltaOptions,
++        resources: Resources,
++    ) -> Result<DeltaInitialization> {
+         options.validate()?;
+         let adjacency = Adjacency::build(&operation, partition, vertices, edges, &resources)?;
+-        let mut values = Values::allocate(adjacency.vertices.len(), &resources)?;
+-        values.scores.fill(1.0 / operation.vertices as f64);
+-        let statistics = StatisticsInbox::new(operation.partitions, &resources)?;
+-        Ok(Self {
++        Ok(DeltaInitialization {
+             operation,
+             partition,
++            options,
+             adjacency,
+             resources,
+-            options,
+-            values: Arc::new(values),
+-            next_phase: 0,
+-            completed: DeltaMode::Initial,
+-            pushes: 0,
+-            certificates: 0,
+-            metrics: Metrics::default(),
+-            state: State::Statistics(statistics),
+-            terminal: None,
+         })
+     }
+     pub fn partition(&self) -> usize {
+diff --git a/examples/extensions/argentea/src/delta/initialization.rs b/examples/extensions/argentea/src/delta/initialization.rs
+new file mode 100644
+index 000000000..127ad22a0
+--- /dev/null
++++ b/examples/extensions/argentea/src/delta/initialization.rs
+@@ -0,0 +1,43 @@
++//! Validated CSR ownership boundary before dense residual state allocation.
++use super::*;
++
++/// Owns the admitted CSR independently of the borrowed input arrays.
++#[derive(Debug)]
++pub struct DeltaInitialization {
++    pub(super) operation: Operation,
++    pub(super) partition: usize,
++    pub(super) options: DeltaOptions,
++    // Storage and admission must drop before the host memory lease.
++    pub(super) adjacency: Arc<Adjacency>,
++    pub(super) resources: Resources,
++}
++impl DeltaInitialization {
++    /// Consume this preparation after releasing temporary input storage.
++    pub fn finish(self) -> Result<DeltaPartition> {
++        let Self {
++            operation,
++            partition,
++            options,
++            resources,
++            adjacency,
++        } = self;
++        let mut values = Values::allocate(adjacency.vertices.len(), &resources)?;
++        values.scores.fill(1.0 / operation.vertices as f64);
++        let statistics = StatisticsInbox::new(operation.partitions, &resources)?;
++        Ok(DeltaPartition {
++            operation,
++            partition,
++            adjacency,
++            resources,
++            options,
++            values: Arc::new(values),
++            next_phase: 0,
++            completed: DeltaMode::Initial,
++            pushes: 0,
++            certificates: 0,
++            metrics: Metrics::default(),
++            state: State::Statistics(statistics),
++            terminal: None,
++        })
++    }
++}
+diff --git a/examples/extensions/argentea/src/lib.rs b/examples/extensions/argentea/src/lib.rs
+index 6e2de1b3b..6b34e0ae4 100644
+--- a/examples/extensions/argentea/src/lib.rs
++++ b/examples/extensions/argentea/src/lib.rs
+@@ -27,7 +27,7 @@ mod delta;
+ mod pagerank;
+ pub use delta::{
+     Convergence, DeltaCapFailure, DeltaCompletion, DeltaContribution, DeltaEmissionCursor,
+-    DeltaMode, DeltaOptions, DeltaPartition, DeltaRankCursor, DeltaStatistics,
++    DeltaInitialization, DeltaMode, DeltaOptions, DeltaPartition, DeltaRankCursor, DeltaStatistics,
+     DeltaStatisticsValues,
+ };
+ 
+diff --git a/examples/extensions/argentea/src/sssp/partition.rs b/examples/extensions/argentea/src/sssp/partition.rs
+index cfe1ffba1..3c9c7da12 100644
+--- a/examples/extensions/argentea/src/sssp/partition.rs
++++ b/examples/extensions/argentea/src/sssp/partition.rs
+@@ -141,7 +141,6 @@ pub struct SsspPartition {
+     origin: SsspOrigin,
+     options: SsspOptions,
+     adjacency: Arc<WeightedAdjacency>,
+-    resources: Resources,
+     values: Arc<Values>,
+     origins: Vec<Option<SsspOrigin>>,
+     shapes: Vec<Option<(u64, u64, u64)>>,
+@@ -152,6 +151,8 @@ pub struct SsspPartition {
+     completed: SsspMode,
+     work: SsspWork,
+     terminal: Option<SsspConvergence>,
++    // Keep the host lease until every owned admitted buffer has dropped.
++    resources: Resources,
+ }
+ impl SsspPartition {
+     pub fn build(
+diff --git a/examples/extensions/argentea/tests/partition_lease.rs b/examples/extensions/argentea/tests/partition_lease.rs
+new file mode 100644
+index 000000000..21ba51e26
+--- /dev/null
++++ b/examples/extensions/argentea/tests/partition_lease.rs
+@@ -0,0 +1,109 @@
++//! Sole-owner teardown must retain the host lease through admitted storage.
++#[path = "delta_support/mod.rs"]
++mod support;
++use grust_procedures::{ExecutionContext, ExecutionLimits};
++use sail_argentea_core::*;
++use sail_native_resource_ffi::MemoryLease;
++use std::{
++    any::Any,
++    sync::{
++        Arc,
++        atomic::{AtomicUsize, Ordering},
++    },
++};
++const LIMIT: usize = 16 << 20;
++struct Probe(ExecutionContext, Arc<AtomicUsize>);
++impl Drop for Probe {
++    fn drop(&mut self) {
++        self.1
++            .store(self.0.usage().unwrap().live_bytes, Ordering::SeqCst);
++    }
++}
++fn check(kind: &str, build: impl FnOnce(Resources) -> Box<dyn Any>) {
++    let usage = ExecutionContext::new(ExecutionLimits {
++        memory_bytes: LIMIT,
++        work_units: usize::MAX,
++        batch_rows: 16,
++        deadline: None,
++    })
++    .unwrap();
++    let at_release = Arc::new(AtomicUsize::new(usize::MAX));
++    let lease = MemoryLease::new(
++        Arc::new(Probe(usage.clone(), at_release.clone())),
++        LIMIT as u64,
++    );
++    // Only the returned partition owns Resources; the callback's context is an
++    // accounting observer, not another host-lease owner.
++    let part = build(Resources::new(usage.clone(), lease).unwrap());
++    assert_eq!(at_release.load(Ordering::SeqCst), usize::MAX);
++    assert!(usage.usage().unwrap().live_bytes > 0);
++    drop(part);
++    println!(
++        "PARTITION_SUCCESSFUL_DROP kind={kind} admitted_at_lease_release={} final_live_bytes={}",
++        at_release.load(Ordering::SeqCst),
++        usage.usage().unwrap().live_bytes
++    );
++    assert_eq!(usage.usage().unwrap().live_bytes, 0);
++    assert_eq!(at_release.load(Ordering::SeqCst), 0);
++}
++#[test]
++fn bfs_successful_sole_owner_retains_host_lease_through_storage_drop() {
++    check("bfs", |r| {
++        Box::new(
++            BfsPartition::build(
++                support::operation(1, 3),
++                0,
++                7,
++                &[2, 0, 1],
++                &[(0, 1), (0, 1), (1, 2)],
++                BfsOptions {
++                    source: 0,
++                    algorithm: BfsAlgorithm::Frontier,
++                    max_levels: 8,
++                    alpha: 14,
++                    beta: 24,
++                },
++                r,
++            )
++            .unwrap(),
++        )
++    });
++}
++#[test]
++fn sssp_successful_sole_owner_retains_host_lease_through_storage_drop() {
++    check("sssp", |r| {
++        Box::new(
++            SsspPartition::build(
++                support::operation(1, 3),
++                0,
++                7,
++                &[2, 0, 1],
++                &[(0, 1, 1.0), (0, 1, 0.5), (1, 2, 0.0)],
++                SsspOptions {
++                    source: 0,
++                    algorithm: SsspAlgorithm::DeltaStar,
++                    max_rounds: 8,
++                    delta: 1.0,
++                },
++                r,
++            )
++            .unwrap(),
++        )
++    });
++}
++#[test]
++fn residual_pagerank_successful_sole_owner_retains_host_lease_through_storage_drop() {
++    check("residual_pagerank", |r| {
++        Box::new(
++            DeltaPartition::build(
++                support::operation(1, 3),
++                0,
++                &[2, 0, 1],
++                &[(0, 1), (0, 1), (1, 2)],
++                support::options(),
++                r,
++            )
++            .unwrap(),
++        )
++    });
++}
+diff --git a/examples/extensions/argentea/tests/rank_wcc_initialization.rs b/examples/extensions/argentea/tests/rank_wcc_initialization.rs
+index f1c27a5df..46b7e8645 100644
+--- a/examples/extensions/argentea/tests/rank_wcc_initialization.rs
++++ b/examples/extensions/argentea/tests/rank_wcc_initialization.rs
+@@ -143,4 +143,40 @@ fn prepare_preserves_input_validation_and_cancellation_errors() {
+             .finish()
+             .unwrap();
+     }
++    for (damping, tolerance, max_pushes) in
++        [(f64::NAN, 1e-3, 8), (0.85, 0.0, 8), (0.85, 1e-3, u64::MAX)]
++    {
++        let (r, _, _) = resources(LIMIT);
++        let opts = DeltaOptions {
++            damping,
++            tolerance,
++            max_pushes,
++        };
++        let mut op = operation(1, 1);
++        op.generation = 0;
++        let old = DeltaPartition::build(op.clone(), 0, &[0], &[], opts, r.clone())
++            .err()
++            .unwrap();
++        let new = DeltaPartition::prepare(op, 0, &[0], &[], opts, r)
++            .err()
++            .unwrap();
++        assert_eq!(new, old);
++        assert!(old.contains("options") || old.contains("phase budget"));
++    }
++    let (r, _, _) = resources(LIMIT);
++    DeltaPartition::prepare(
++        operation(1, 1),
++        0,
++        &[0],
++        &[],
++        DeltaOptions {
++            damping: 0.85,
++            tolerance: 1e-3,
++            max_pushes: 0,
++        },
++        r,
++    )
++    .unwrap()
++    .finish()
++    .unwrap();
+ }
+diff --git a/examples/extensions/argentea/tests/rank_wcc_lease.rs b/examples/extensions/argentea/tests/rank_wcc_lease.rs
+index f9d8c7632..021a26cdf 100644
+--- a/examples/extensions/argentea/tests/rank_wcc_lease.rs
++++ b/examples/extensions/argentea/tests/rank_wcc_lease.rs
+@@ -93,7 +93,7 @@ fn successful_pagerank_sole_owner_releases_storage_before_host_lease() {
+ #[test]
+ fn prepared_sole_owner_abandon_cancel_failure_and_success_drop_in_order() {
+     use grust_procedures::MemoryReservation;
+-    for kind in 0..3 {
++    for kind in 0..4 {
+         for action in 0..4 {
+             let (resources, usage, at_release) = resources();
+             let op = support::operation(3, 1_024);
+@@ -101,10 +101,16 @@ fn prepared_sole_owner_abandon_cancel_failure_and_success_drop_in_order() {
+             let arcs = vec![(0, 3), (3, 6), (0, 3)];
+             enum Prepared {
+                 Pr(PageRankInitialization),
++                Delta(DeltaInitialization),
+                 Wcc(WccInitialization),
+             }
+             let prepared = if kind == 0 {
+                 Prepared::Pr(PageRankPartition::prepare(op, 0, &ids, &arcs, resources).unwrap())
++            } else if kind == 3 {
++                Prepared::Delta(
++                    DeltaPartition::prepare(op, 0, &ids, &arcs, support::options(), resources)
++                        .unwrap(),
++                )
+             } else {
+                 Prepared::Wcc(
+                     WccPartition::prepare(
+@@ -133,6 +139,9 @@ fn prepared_sole_owner_abandon_cancel_failure_and_success_drop_in_order() {
+             let blocker: Option<MemoryReservation> = if action == 2 {
+                 let headroom = if kind == 0 {
+                     8 * 1_024 + 127
++                } else if kind == 3 {
++                    // Admit dense residual state exactly, then reject statistics.
++                    18 * 1_024 + 256
+                 } else {
+                     // Admit origins+roots exactly, then reject StatisticsInbox.
+                     3 * (size_of::<Option<WccOrigin>>() + size_of::<Option<(u64, u64)>>())
+@@ -157,6 +166,7 @@ fn prepared_sole_owner_abandon_cancel_failure_and_success_drop_in_order() {
+                 }
+                 let result = match prepared {
+                     Prepared::Pr(p) => p.finish().map(drop),
++                    Prepared::Delta(p) => p.finish().map(drop),
+                     Prepared::Wcc(p) => p.finish().map(drop),
+                 };
+                 if action == 3 {
+diff --git a/examples/extensions/argentea/tests/rank_wcc_support/mod.rs b/examples/extensions/argentea/tests/rank_wcc_support/mod.rs
+index 3b62dd9df..cab4f0f07 100644
+--- a/examples/extensions/argentea/tests/rank_wcc_support/mod.rs
++++ b/examples/extensions/argentea/tests/rank_wcc_support/mod.rs
+@@ -9,10 +9,11 @@ pub const LIMIT: usize = 256 << 20;
+ #[derive(Clone, Copy, Debug)]
+ pub enum Kind {
+     PageRank,
++    Residual,
+     Reference,
+     Star,
+ }
+-pub const KINDS: [Kind; 3] = [Kind::PageRank, Kind::Reference, Kind::Star];
++pub const KINDS: [Kind; 4] = [Kind::PageRank, Kind::Residual, Kind::Reference, Kind::Star];
+ impl Kind {
+     pub fn options(self) -> WccOptions {
+         WccOptions {
+@@ -44,10 +45,12 @@ impl Raw {
+ }
+ pub enum Prepared {
+     PageRank(PageRankInitialization),
++    Residual(DeltaInitialization),
+     Wcc(WccInitialization),
+ }
+ pub enum Partition {
+     PageRank(PageRankPartition),
++    Residual(DeltaPartition),
+     Wcc(WccPartition),
+ }
+ impl Prepared {
+@@ -55,6 +58,10 @@ impl Prepared {
+         match kind {
+             Kind::PageRank => PageRankPartition::prepare(op, 0, &raw.ids, &raw.edges, resources)
+                 .map(Self::PageRank),
++            Kind::Residual => {
++                DeltaPartition::prepare(op, 0, &raw.ids, &raw.edges, shared::options(), resources)
++                    .map(Self::Residual)
++            }
+             _ => WccPartition::prepare(op, 0, 7, &raw.ids, &raw.edges, kind.options(), resources)
+                 .map(Self::Wcc),
+         }
+@@ -62,6 +69,7 @@ impl Prepared {
+     pub fn finish(self) -> Result<Partition> {
+         match self {
+             Self::PageRank(p) => p.finish().map(Partition::PageRank),
++            Self::Residual(p) => p.finish().map(Partition::Residual),
+             Self::Wcc(p) => p.finish().map(Partition::Wcc),
+         }
+     }
+@@ -72,6 +80,10 @@ impl Partition {
+             Kind::PageRank => {
+                 PageRankPartition::build(op, 0, &raw.ids, &raw.edges, resources).map(Self::PageRank)
+             }
++            Kind::Residual => {
++                DeltaPartition::build(op, 0, &raw.ids, &raw.edges, shared::options(), resources)
++                    .map(Self::Residual)
++            }
+             _ => WccPartition::build(op, 0, 7, &raw.ids, &raw.edges, kind.options(), resources)
+                 .map(Self::Wcc),
+         }
+@@ -87,6 +99,16 @@ impl Partition {
+                     assert_eq!(rank.to_bits(), (1.0 / n as f64).to_bits());
+                 }
+             }
++            Self::Residual(p) => {
++                assert_eq!(p.collecting_phase(), Some(0));
++                assert_eq!(p.completed_mode(), DeltaMode::Initial);
++                assert_eq!(p.state_rows().count(), n);
++                for (i, (id, score, residual)) in p.state_rows().enumerate() {
++                    assert_eq!(id, i as i64 * 3);
++                    assert_eq!(score.to_bits(), (1.0 / n as f64).to_bits());
++                    assert_eq!(residual.to_bits(), 0.0f64.to_bits());
++                }
++            }
+             Self::Wcc(p) => {
+                 assert_eq!(p.collecting_phase(), Some(0));
+                 assert_eq!(p.completed_mode(), WccMode::Topology);
+diff --git a/examples/extensions/argentea/tests/residual_initialization.rs b/examples/extensions/argentea/tests/residual_initialization.rs
+new file mode 100644
+index 000000000..3bc771ca2
+--- /dev/null
++++ b/examples/extensions/argentea/tests/residual_initialization.rs
+@@ -0,0 +1,122 @@
++//! Exact local protocol and float-bit parity across the ownership boundary.
++#[path = "delta_support/mod.rs"]
++mod support;
++use sail_argentea_core::*;
++const IDS: [i64; 8] = [i64::MIN, -9, -2, 0, 3, 11, 9_007_199_254_740_993, i64::MAX];
++const EDGES: [(i64, i64); 8] = [
++    (-9, -2),
++    (-9, -2),
++    (-2, 0),
++    (0, 0),
++    (3, 11),
++    (11, 3),
++    (i64::MIN, i64::MAX),
++    (9_007_199_254_740_993, 0),
++];
++#[derive(Debug, PartialEq)]
++struct Trace {
++    updates: Vec<(DeltaMode, usize, u64, i64, u64)>,
++    completions: Vec<(DeltaMode, usize, Vec<u64>, u64)>,
++    states: Vec<Vec<(i64, u64, u64)>>,
++}
++fn run(p: usize, split: bool) -> Trace {
++    let (r, usage, _) = support::resources(16 << 20);
++    let op = support::operation(p, IDS.len() as u64);
++    let mut parts = (0..p)
++        .map(|p| {
++            let ids = IDS
++                .iter()
++                .rev()
++                .copied()
++                .filter(|&id| op.owner(id) == p)
++                .collect::<Vec<_>>();
++            let arcs = EDGES
++                .iter()
++                .copied()
++                .filter(|&(src, _)| op.owner(src) == p)
++                .collect::<Vec<_>>();
++            if split {
++                let ready = DeltaPartition::prepare(
++                    op.clone(),
++                    p,
++                    &ids,
++                    &arcs,
++                    support::options(),
++                    r.clone(),
++                )
++                .unwrap();
++                drop(ids);
++                drop(arcs);
++                ready.finish().unwrap()
++            } else {
++                DeltaPartition::build(op.clone(), p, &ids, &arcs, support::options(), r.clone())
++                    .unwrap()
++            }
++        })
++        .collect::<Vec<_>>();
++    let mut trace = Trace {
++        updates: vec![],
++        completions: vec![],
++        states: vec![],
++    };
++    for _ in 0..16 {
++        support::stats(&mut parts).unwrap();
++        let phase = support::phase(&op, &parts);
++        let mut cursors = parts
++            .iter_mut()
++            .map(|part| part.start_emission(&phase).unwrap())
++            .collect::<Vec<_>>();
++        loop {
++            let mut any = false;
++            for cursor in &mut cursors {
++                if let Some(update) = cursor.next_update().unwrap() {
++                    any = true;
++                    trace.updates.push((
++                        update.mode,
++                        update.producer,
++                        update.sequence,
++                        update.target,
++                        update.value.to_bits(),
++                    ));
++                    parts[op.owner(update.target)].receive(&update).unwrap();
++                }
++            }
++            if !any {
++                break;
++            }
++        }
++        for cursor in cursors {
++            let complete = cursor.finish().unwrap();
++            trace.completions.push((
++                complete.mode,
++                complete.producer,
++                complete.sequences.clone(),
++                complete.dangling.to_bits(),
++            ));
++            for part in &mut parts {
++                part.finish_producer(&complete).unwrap();
++            }
++        }
++        for part in &mut parts {
++            part.finish(&phase).unwrap();
++        }
++        trace.states.push(
++            parts
++                .iter()
++                .flat_map(|part| {
++                    part.state_rows()
++                        .map(|(id, score, residual)| (id, score.to_bits(), residual.to_bits()))
++                })
++                .collect(),
++        );
++    }
++    drop(parts);
++    assert_eq!(usage.usage().unwrap().live_bytes, 0);
++    trace
++}
++#[test]
++fn prepared_residual_pagerank_preserves_exact_message_and_state_bits() {
++    for p in [1, 3, 11] {
++        assert_eq!(run(p, false), run(p, true));
++    }
++}
+diff --git a/examples/extensions/nutmeg/src/argentea/delta/input.rs b/examples/extensions/nutmeg/src/argentea/delta/input.rs
+index fdcc7769a..0f3336526 100644
+--- a/examples/extensions/nutmeg/src/argentea/delta/input.rs
++++ b/examples/extensions/nutmeg/src/argentea/delta/input.rs
+@@ -71,7 +71,7 @@ pub async fn initialize(
+             edges.push((sources.value(i), targets.value(i)));
+         }
+     }
+-    DeltaPartition::build(
++    let prepared = DeltaPartition::prepare(
+         operation,
+         p,
+         &vertices,
+@@ -79,7 +79,12 @@ pub async fn initialize(
+         request.options(),
+         state.base.resources.clone(),
+     )
+-    .map_err(error)
++    .map_err(error)?;
++    // Release actual input storage before its charge and dense residual state.
++    drop(vertices);
++    drop(edges);
++    drop(admission);
++    prepared.finish().map_err(error)
+ }
+ fn ready(state: &DeltaState, p: usize, phase: u64, stats: bool) -> Result<Option<Partition>> {
+     let Some(part) = state.partition(p)? else {
+diff --git a/examples/extensions/nutmeg/src/argentea/delta/tests.rs b/examples/extensions/nutmeg/src/argentea/delta/tests.rs
+index 89555d58d..d729a0c2a 100644
+--- a/examples/extensions/nutmeg/src/argentea/delta/tests.rs
++++ b/examples/extensions/nutmeg/src/argentea/delta/tests.rs
+@@ -14,6 +14,7 @@ use datafusion::{
+     prelude::SessionContext,
+ };
+ mod controls;
++mod initialization;
+ use request::{Request, Verb};
+ use state::DeltaState;
+ use std::{
+diff --git a/examples/extensions/nutmeg/src/argentea/delta/tests/initialization.rs b/examples/extensions/nutmeg/src/argentea/delta/tests/initialization.rs
+new file mode 100644
+index 000000000..070c6c51f
+--- /dev/null
++++ b/examples/extensions/nutmeg/src/argentea/delta/tests/initialization.rs
+@@ -0,0 +1,41 @@
++//! Production residual initialization releases raw vertices before dense state.
++use super::super::super::tests::{initialization::inputs, lifetime_allocations};
++use super::*;
++#[tokio::test]
++async fn residual_initialization_releases_raw_vertex_storage_before_dense_state() {
++    let mut observed = vec![];
++    for n in [1_024, 65_536] {
++        let ctx = SessionContext::new();
++        let drops = Arc::new(AtomicUsize::new(0));
++        let state = DeltaState::new(worker(7, 32 << 20, &drops)).unwrap();
++        let request = request(Verb::Init, 0, 3, n as u64);
++        let op = state.configure(&request).unwrap();
++        let inputs = inputs(&ctx, n).await;
++        let usage = state.base.resources.execution.clone();
++        let before = usage.usage().unwrap().live_bytes;
++        let (result, counts) = lifetime_allocations::measure(
++            n * 8,
++            input::initialize(&state, &request, op, 0, &inputs, ctx.task_ctx()),
++        )
++        .await;
++        let part = result.unwrap();
++        assert_eq!(part.state_rows().count(), n);
++        assert!(part.state_rows().all(|(_, score, residual)| score.to_bits()
++            == (1.0 / n as f64).to_bits()
++            && residual.to_bits() == 0.0f64.to_bits()));
++        assert_eq!(part.collecting_phase(), Some(0));
++        // Raw vertices, CSR IDs, scores and residuals each allocate n*8.
++        assert_eq!(counts.calls, 4);
++        observed.push((n, counts.peak));
++        println!(
++            "NATIVE_RESIDUAL_INPUT_LIFETIME n={n} matched_allocations={} peak_simultaneous_vertex_buffers={}",
++            counts.calls, counts.peak
++        );
++        drop(part);
++        assert_eq!(usage.usage().unwrap().live_bytes, before);
++        drop(state);
++        assert_eq!(usage.usage().unwrap().live_bytes, 0);
++        assert_eq!(drops.load(Ordering::SeqCst), 1);
++    }
++    assert_eq!(observed, vec![(1_024, 3), (65_536, 3)]);
++}

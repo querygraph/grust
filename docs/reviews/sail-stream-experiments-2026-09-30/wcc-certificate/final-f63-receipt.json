@@ -1,0 +1,54 @@
+{
+  "recorded_utc": "2026-09-30T18:48:32.643779+00:00",
+  "repository": "querygraph/sail",
+  "branch": "work/wcc-certificate-outcomes",
+  "base": "b569e75de625885b3d919fa4196b2e0bed14c618",
+  "commit": "f63f992766fe17ee2163a1187373449e79192be6",
+  "verdict": "PASS",
+  "source_tree": "35c2c3094d0cd35c0db9d0de0f5a9c3d8a470be2",
+  "python_passed": 232,
+  "python_skipped": 39,
+  "local_sql_passed": 6,
+  "exact_receipt": "exact-gate/receipt.json",
+  "local_runtime": "installed sail 0.7.0; native bytes b99f1717cf49706f17eefd44d78c3751e6fd2b46a34ce3fd2cc360087b7f9685; runtime source commit not inferred",
+  "change": "WCC certificate-only results are partially_verified; reference WCC and PageRank remain eligible for passed. Legacy summary/restart outcomes are derived without rewriting original receipts or per-cell summaries, and partial trials cannot enter successful metrics. Matrix default expectations reflect actual certificate flags; explicit expectations take precedence.",
+  "limitations": [
+    "No component connectivity proof added; the existing partial predicates remain unchanged.",
+    "Existing non-pass summarize path does not perform full success identity auditing; partial outcomes remain excluded from successful metrics. Existing no-reference manifest limitations in the success auditor are not broadened here.",
+    "39 optional tests require external generators, driver binaries, or traversal endpoints; six new WCC SQL tests ran against a real local server with no skips.",
+    "No Rust build, remote workload, network benchmark, performance claim, or upstream push."
+  ],
+  "retained_failures": [
+    {
+      "path": "development-tests-02.log",
+      "cause": "Default-only fixture unintentionally included the example matrix\u2019s explicit passed overrides; implementation correctly preserved them. Fixture isolated defaults; separate explicit-override assertions retained."
+    }
+  ],
+  "commit_control_correction": "The first local commit followed passing gates but a heredoc separated it from the intended && chain. It was amended under a new complete gate && source guard && commit --amend chain, then the resulting exact SHA passed the detached gate. Intermediate logs retained.",
+  "generated_fixtures": [
+    {
+      "original": "candidate-gate/integration/pytest-temp",
+      "retained_at": "/private/tmp/sail-wcc-certificate-generated-fixtures/0"
+    },
+    {
+      "original": "candidate-gate/pytest-temp",
+      "retained_at": "/private/tmp/sail-wcc-certificate-generated-fixtures/1"
+    },
+    {
+      "original": "conditional-commit-gate/integration/pytest-temp",
+      "retained_at": "/private/tmp/sail-wcc-certificate-generated-fixtures/2"
+    },
+    {
+      "original": "conditional-commit-gate/pytest-temp",
+      "retained_at": "/private/tmp/sail-wcc-certificate-generated-fixtures/3"
+    },
+    {
+      "original": "exact-gate/integration/pytest-temp",
+      "retained_at": "/private/tmp/sail-wcc-certificate-generated-fixtures/4"
+    },
+    {
+      "original": "exact-gate/pytest-temp",
+      "retained_at": "/private/tmp/sail-wcc-certificate-generated-fixtures/5"
+    }
+  ]
+}

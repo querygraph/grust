@@ -1,0 +1,7 @@
+distinct k: 2,000,000 of 2,000,000
+orderBy(k) + monotonically_increasing_id(), read by an aggregate: rows where i == k: 1
+    plan: CoalescePartitionsExec
+    plan: MonotonicIdExec: col=#2
+    plan: RepartitionExec: partitioning=RoundRobinBatch(10), input_partitions=1
+the same frame written to Parquet, then read: rows where i == k: 2000000
+row_number() over (order by k) - 1, read by an aggregate: rows where it equals k: 2000000

@@ -1,0 +1,586 @@
+diff --git a/examples/extensions/benchmarks/graph_cell.py b/examples/extensions/benchmarks/graph_cell.py
+index 8e6d27cf5..f864ca645 100644
+--- a/examples/extensions/benchmarks/graph_cell.py
++++ b/examples/extensions/benchmarks/graph_cell.py
+@@ -18,6 +18,7 @@ from traversal_source import MAX_DEGREE, parse_source
+ from measurement import Sampler, cgroup_snapshot, cpu_ticks, read_text, steal_fraction
+ from runtime import (algorithm_method, git, native_package_identity, package_versions, record_result_evidence,
+                      server, sha256, validate_admission_settings)
++from validation_outcome import effective_outcome
+ 
+ 
+ REPO = Path(__file__).resolve().parents[3]
+@@ -242,12 +243,12 @@ def certify(spark, actual, dataset, algorithm, expected_rows, tolerance, damping
+     PageRank: every vertex present once, finite nonnegative scores summing to
+     one, convergence claimed by every row, and the true fixed-point L1 residual
+     recomputed from the edges at or below the tolerance. WCC: every vertex
+-    labeled, both endpoints of every edge share a label, and every label is the
+-    ID of a vertex in the component it labels. Which member: Pecan and Grenada
+-    take the numeric minimum, Banda's min-label kernel the minimum in canonical
+-    Utf8 order ("10" before "9"), so numeric minimality is reported, not
+-    required. The component count is reported, not verified: a partition can be
+-    finer than the true one and still pass these checks.
++    labeled, both endpoints of every edge share a label, and every label names
++    an input vertex. The label's membership in its own group is not checked.
++    Numeric minimality is reported, not required, since native min-label uses
++    canonical Utf8 order ("10" before "9"). Component connectivity and count
++    are not verified: coarser partitions can merge disconnected components and
++    still pass these partial checks.
+     """
+     vertices = spark.read.parquet((dataset / 'vertices.parquet').as_uri()).select('id')
+     assert not vertices.join(actual.select('id'), 'id', 'left_anti').limit(1).count(), 'a vertex is missing from the result'
+@@ -260,13 +261,14 @@ def certify(spark, actual, dataset, algorithm, expected_rows, tolerance, damping
+         assert crossing == 0, f'{crossing} edges cross component labels'
+         minima = labels.groupBy('label').agg(F.min('id').alias('minimum'))
+         foreign = minima.join(labels, minima.label.cast('long') == labels.id, 'left_anti').count()
+-        assert foreign == 0, f'{foreign} labels are not the ID of a vertex they label'
++        assert foreign == 0, f'{foreign} labels do not name input vertices'
+         non_minimal = minima.where(F.col('label').cast('long') != F.col('minimum')).count()
+         return dict(**cardinality, policy='certificate', crossing_edges=crossing, foreign_labels=foreign,
+                     non_minimal_labels=non_minimal,
+-                    label_convention='numeric minimum' if non_minimal == 0 else 'a member that is not the numeric minimum (canonical Utf8 order for native min-label)',
++                    label_convention='numeric minimum' if non_minimal == 0 else 'not the numeric minimum; representative membership unverified',
+                     components=minima.count(), component_count_verified=False,
+-                    certificate='edge-consistent partition whose labels name members; count not independently verified')
++                    verification_scope='partial_wcc_partition',
++                    certificate='edge-consistent partition whose labels name input vertices; component connectivity and count unverified')
+     invalid = actual.where(F.col('score').isNull() | F.isnan('score') |
+                            (F.abs(F.col('score')) == F.lit(float('inf'))) | (F.col('score') < 0)).count()
+     assert invalid == 0, f'{invalid} invalid PageRank scores'
+@@ -400,7 +402,7 @@ def main():
+                         help='native staging order: canonical sorts every staged row after admitting the sort working space; '
+                              'asStaged keeps arrival order and skips the sort (sent to the server only when not canonical)')
+     parser.add_argument('--ranking-validation', choices=['reference', 'certificate'], default='reference',
+-                        help='PageRank/WCC: compare with reference.parquet, or certify without one')
++                        help='compare with reference.parquet, or check a PageRank residual / partial WCC partition without one')
+     parser.add_argument('--certificate-max-rounds', type=int, default=10000)
+     parser.add_argument('--seed', type=int, default=42)
+     parser.add_argument('--mode', choices=['local', 'process-cluster'], default='process-cluster')
+@@ -516,7 +518,7 @@ def main():
+                             manifest['counts']['vertices'], args.tolerance, args.damping,
+                             args.max_iterations, args.engine == 'nutmeg-native', args.variant != 'reference',
+                             policy=args.ranking_validation)
+-                    receipt['outcome'] = 'passed'
++                    receipt['outcome'] = effective_outcome(receipt, outcome='passed')
+                 finally:
+                     active_error = sys.exc_info()[1]
+                     signal.alarm(0)
+diff --git a/examples/extensions/benchmarks/run_matrix.py b/examples/extensions/benchmarks/run_matrix.py
+index f7a3f0bb2..5c0073016 100644
+--- a/examples/extensions/benchmarks/run_matrix.py
++++ b/examples/extensions/benchmarks/run_matrix.py
+@@ -20,6 +20,7 @@ from traversal_source import MAX_DEGREE
+ import time
+ 
+ from runtime import algorithm_method, validate_admission_settings
++from validation_outcome import effective_outcome, expected_validation_outcome, resumed_outcome
+ 
+ 
+ ENGINES = ('pecan', 'nutmeg-native', 'nutmeg-datafusion')
+@@ -184,12 +185,14 @@ def plan_cells(config):
+                     for algorithm in suite['algorithms']:
+                         for variant in suite.get('variants', config.get('variants', DEFAULT_VARIANTS)):
+                             name = f"{suite['name']}-r{repeat}-{dataset}-{engine}-{algorithm}-{variant}"
+-                            expected = suite.get('expected_outcomes', {}).get(variant, {}).get(engine, 'passed')
+-                            group.append(dict(cell_id=name, suite=suite['name'], repeat=repeat,
++                            cell = dict(cell_id=name, suite=suite['name'], repeat=repeat,
+                                 dataset=dataset, engine=engine, algorithm=algorithm, variant=variant,
+                                 mode=suite['mode'], stage_order=suite.get('stage_order', 'canonical'),
+                                 max_iterations=suite.get('max_iterations', config['defaults']['max_iterations']),
+-                                expected_outcome=expected, diagnostic=bool(suite.get('diagnostic', False))))
++                                diagnostic=bool(suite.get('diagnostic', False)))
++                            expected = expected_validation_outcome(cell_command(config, cell))
++                            cell['expected_outcome'] = suite.get('expected_outcomes', {}).get(variant, {}).get(engine, expected)
++                            group.append(cell)
+             rng.shuffle(group)
+             result.extend(group)
+     if len({cell['cell_id'] for cell in result}) != len(result):
+@@ -370,7 +373,7 @@ def classify(record, receipt, expected_sha):
+         return 'source_mismatch'
+     if receipt.get('outcome') == 'passed' and record.get('attach_returncode') != 0:
+         return 'exit_receipt_mismatch'
+-    return receipt.get('outcome', 'invalid_receipt')
++    return effective_outcome(receipt)
+ 
+ 
+ def preflight(config, output):
+@@ -482,6 +485,9 @@ def main():
+                 result = json.loads(completed.read_text())
+                 if result['configuration_sha256'] != fingerprint:
+                     raise RuntimeError('resume configuration differs from recorded cell')
++                receipt_path = cell_output / 'artifacts/receipt.json'
++                if result.get('outcome') == 'passed' and receipt_path.exists():
++                    result = resumed_outcome(result, json.loads(receipt_path.read_text()), cell['expected_outcome'])
+                 results.append(result)
+                 continue
+             record = run_container(config, 'sail-' + config['run_id'] + '-' + str(cell['sequence']),
+diff --git a/examples/extensions/benchmarks/summarize.py b/examples/extensions/benchmarks/summarize.py
+index f811dbcb2..1c27d4fbd 100644
+--- a/examples/extensions/benchmarks/summarize.py
++++ b/examples/extensions/benchmarks/summarize.py
+@@ -12,6 +12,7 @@ import re
+ from statistics import median
+ 
+ from run_matrix import configuration_fingerprint, plan_cells
++from validation_outcome import effective_outcome
+ 
+ 
+ GROUP = ('suite', 'dataset', 'mode', 'algorithm', 'engine', 'variant')
+@@ -29,6 +30,7 @@ def cell_row(cell, summary, receipt):
+     row = {k: cell[k] for k in ('cell_id', 'sequence', 'repeat', *GROUP, 'expected_outcome')}
+     outcome = summary['outcome'] if summary else ('incomplete_record' if receipt else 'not_run')
+     row.update(outcome=outcome, original_outcome=outcome,
++               original_expected_outcome=summary.get('expected_outcome') if summary else None,
+                receipt_outcome=receipt.get('outcome') if receipt else None,
+                integrity_errors=[], expected_outcome_observed=outcome == cell['expected_outcome'])
+     row.update({key: None for key in METRICS})
+@@ -61,6 +63,9 @@ def cell_row(cell, summary, receipt):
+         runtime_source_sha=receipt.get('runtime_source_sha'),
+         harness_source_sha=receipt.get('harness_source_sha'),
+         binary_sha256=receipt.get('binary_sha256'),
++        verification_policy=correctness.get('policy'),
++        verification_scope=correctness.get('verification_scope'),
++        component_count_verified=correctness.get('component_count_verified'),
+     )
+     frontier = [e['active_edges'] for e in events if e['kind'] == 'iteration_end' and 'active_edges' in e]
+     contraction = [e for e in events if e['kind'] == 'iteration_end' and 'edges_after' in e]
+@@ -84,7 +89,16 @@ def integrity_errors(cell, summary, receipt, config):
+     errors = []
+     if summary.get('configuration_sha256') != configuration_fingerprint(config):
+         errors.append('configuration fingerprint differs')
++    suite = next((s for s in config['suites'] if s['name'] == cell['suite']), {})
++    overrides = suite.get('expected_outcomes', {}).get(cell['variant'], {})
++    legacy_partial_default = (cell['expected_outcome'] == 'partially_verified' and
++                              summary.get('expected_outcome') == 'passed' and
++                              cell['engine'] not in overrides and receipt is not None and
++                              receipt.get('outcome') == 'passed' and
++                              effective_outcome(receipt) == 'partially_verified')
+     for key, value in cell.items():
++        if key == 'expected_outcome' and legacy_partial_default:
++            continue
+         if summary.get(key) != value:
+             errors.append(f'summary cell field differs: {key}')
+     if not receipt:
+@@ -170,6 +184,10 @@ def audited_rows(entries, config):
+                 identities[('Sail binary', 'all cells')].append((row, receipt['binary_sha256']))
+                 identities[('native installed files', 'all cells')].append((row, digest(native)))
+                 identities[('dataset files', cell['dataset'])].append((row, digest(files)))
++                # Audit the original apparent pass before deriving its weaker
++                # scope. Keep the original labels and identities as evidence.
++                row['outcome'] = effective_outcome(receipt)
++                row['expected_outcome_observed'] = row['outcome'] == cell['expected_outcome']
+         rows.append(row)
+     for (kind, scope), observations in identities.items():
+         if len({identity for _, identity in observations}) > 1:
+diff --git a/examples/extensions/benchmarks/test_summarize.py b/examples/extensions/benchmarks/test_summarize.py
+index b89ed7cd3..20e3118ae 100644
+--- a/examples/extensions/benchmarks/test_summarize.py
++++ b/examples/extensions/benchmarks/test_summarize.py
+@@ -37,12 +37,12 @@ def test_missing_memory_and_failed_only_groups_are_not_zero():
+     assert '(n=2)' in display(group['metrics']['seconds'])
+ 
+ 
+-def records():
++def records(algorithm='pagerank'):
+     config = json.loads(Path(__file__).with_name('matrix.example.json').read_text())
+     config.update(harness_source_sha='a' * 40, runtime_source_sha='b' * 40, native_source_sha='c' * 40)
+     cells = [cell for cell in plan_cells(config) if cell['suite'] == 'distributed' and
+              cell['dataset'] == 'sparse-10000' and cell['engine'] == 'nutmeg-native' and
+-             cell['algorithm'] == 'pagerank' and cell['variant'] == 'optimized']
++             cell['algorithm'] == algorithm and cell['variant'] == 'optimized']
+     entries = []
+     for cell in cells:
+         command = cell_command(config, cell)
+diff --git a/examples/extensions/benchmarks/test_validation_outcome.py b/examples/extensions/benchmarks/test_validation_outcome.py
+new file mode 100644
+index 000000000..8991632fb
+--- /dev/null
++++ b/examples/extensions/benchmarks/test_validation_outcome.py
+@@ -0,0 +1,124 @@
++"""Partial validation cannot become an exact pass or replace a failure."""
++from copy import deepcopy
++import json
++from pathlib import Path
++import sys
++
++import pytest
++
++from run_matrix import classify, plan_cells
++import run_matrix
++from test_imported_snap import config
++from validation_outcome import effective_outcome
++
++
++def certificate_receipt(outcome='passed'):
++    return dict(outcome=outcome, harness_source_sha='a' * 40,
++                arguments={'algorithm': 'wcc'},
++                correctness={'policy': 'certificate', 'component_count_verified': False})
++
++
++def test_partial_scope_is_derived_without_mutating_original_evidence():
++    receipt = certificate_receipt()
++    original = deepcopy(receipt)
++    assert effective_outcome(receipt) == 'partially_verified'
++    assert effective_outcome(receipt, outcome='passed') == 'partially_verified'
++    assert receipt == original
++
++
++@pytest.mark.parametrize('outcome', ['mismatch', 'error', 'timeout', 'nonconverged', 'partially_verified'])
++def test_existing_outcomes_are_preserved(outcome):
++    assert effective_outcome(certificate_receipt(outcome)) == outcome
++
++
++def test_reference_wcc_pagerank_and_independent_certificates_remain_passes():
++    receipt = certificate_receipt()
++    receipt['correctness']['policy'] = 'reference'
++    assert effective_outcome(receipt) == 'passed'
++    receipt = certificate_receipt()
++    receipt['arguments']['algorithm'] = 'pagerank'
++    assert effective_outcome(receipt) == 'passed'
++    receipt = certificate_receipt()
++    receipt['correctness']['component_count_verified'] = True
++    assert effective_outcome(receipt) == 'passed'
++
++
++def test_classifier_keeps_partial_scope_and_failure_precedence():
++    record = dict(transport_errors=[], attach_returncode=0, inspect={'state': {'OOMKilled': False}})
++    receipt = certificate_receipt()
++    assert classify(record, receipt, 'a' * 40) == 'partially_verified'
++    record['attach_returncode'] = 7
++    assert classify(record, receipt, 'a' * 40) == 'exit_receipt_mismatch'
++    receipt['outcome'] = 'partially_verified'
++    record['attach_returncode'] = 1
++    assert classify(record, receipt, 'a' * 40) == 'partially_verified'
++    record['outer_timeout'] = True
++    assert classify(record, receipt, 'a' * 40) == 'outer_timeout'
++    record['inspect']['state']['OOMKilled'] = True
++    assert classify(record, receipt, 'a' * 40) == 'oom'
++
++
++def test_matrix_defaults_distinguish_certificate_wcc_from_other_algorithms():
++    configuration = config('certificate')
++    cells = plan_cells(configuration)
++    assert {c['expected_outcome'] for c in cells if c['algorithm'] == 'wcc'} == {'partially_verified'}
++    assert {c['expected_outcome'] for c in cells if c['algorithm'] != 'wcc'} == {'passed'}
++
++
++@pytest.mark.parametrize('extra', [['--ranking-validation', 'reference'], ['--ranking-validation=reference']])
++def test_matrix_defaults_use_final_validation_flags(extra):
++    configuration = config('certificate')
++    configuration['extra_cell_args'] = extra
++    assert {c['expected_outcome'] for c in plan_cells(configuration)} == {'passed'}
++
++
++def test_reference_fixtures_remain_exact_unless_certificate_is_requested():
++    configuration = json.loads(Path(__file__).with_name('matrix.example.json').read_text())
++    uncapped = [c for c in plan_cells(configuration) if c['expected_outcome'] != 'nonconverged']
++    assert {c['expected_outcome'] for c in uncapped} == {'passed'}
++    # This control exercises defaults. The example's cap suite also contains
++    # explicit passed expectations, whose precedence is tested separately.
++    for suite in configuration['suites']:
++        suite.pop('expected_outcomes', None)
++    configuration['extra_cell_args'] = ['--ranking-validation=certificate']
++    cells = [c for c in plan_cells(configuration) if c['expected_outcome'] != 'nonconverged']
++    assert {c['expected_outcome'] for c in cells if c['algorithm'] == 'wcc'} == {'partially_verified'}
++    assert {c['expected_outcome'] for c in cells if c['algorithm'] == 'pagerank'} == {'passed'}
++
++
++@pytest.mark.parametrize('expected', ['passed', 'nonconverged'])
++def test_matrix_explicit_expectation_overrides_are_preserved(expected):
++    configuration = config('certificate')
++    configuration['suites'][0]['expected_outcomes'] = {'reference': {'pecan': expected}}
++    cells = plan_cells(configuration)
++    assert {c['expected_outcome'] for c in cells if c['engine'] == 'pecan'} == {expected}
++    assert {c['expected_outcome'] for c in cells if c['engine'] != 'pecan' and c['algorithm'] == 'wcc'} == {'partially_verified'}
++
++
++@pytest.mark.parametrize('explicit', [False, True])
++def test_resume_restates_legacy_partial_pass_without_rewriting_cell_evidence(tmp_path, monkeypatch, explicit):
++    configuration = config('certificate')
++    configuration['host_output'] = str(tmp_path / 'matrix')
++    configuration['suites'][0].update(engines=['pecan'], algorithms=['wcc'])
++    if explicit:
++        configuration['suites'][0]['expected_outcomes'] = {'reference': {'pecan': 'passed'}}
++    cell, = plan_cells(configuration)
++    directory = Path(configuration['host_output']) / 'cells' / cell['cell_id']
++    (directory / 'artifacts').mkdir(parents=True)
++    legacy = dict(cell, expected_outcome='passed', outcome='passed', expected_outcome_observed=True,
++                  configuration_sha256=run_matrix.configuration_fingerprint(configuration))
++    summary_path, receipt_path = directory / 'summary.json', directory / 'artifacts/receipt.json'
++    summary_path.write_text(json.dumps(legacy))
++    receipt_path.write_text(json.dumps(certificate_receipt()))
++    original_summary, original_receipt = summary_path.read_bytes(), receipt_path.read_bytes()
++    configuration_path = tmp_path / 'configuration.json'
++    configuration_path.write_text(json.dumps(configuration))
++    monkeypatch.setattr(sys, 'argv', ['run_matrix.py', '--config', str(configuration_path), '--resume', '--skip-prepare'])
++    monkeypatch.setattr(run_matrix, 'preflight', lambda *args: configuration['image'])
++    assert run_matrix.main() == (1 if explicit else 0)
++    result, = json.loads((Path(configuration['host_output']) / 'matrix-results.json').read_text())['results']
++    assert result['outcome'] == 'partially_verified'
++    assert result['original_outcome'] == result['original_expected_outcome'] == 'passed'
++    assert result['expected_outcome_observed'] is (not explicit)
++    assert summary_path.read_bytes() == original_summary
++    assert receipt_path.read_bytes() == original_receipt
+diff --git a/examples/extensions/benchmarks/test_wcc_certificate.py b/examples/extensions/benchmarks/test_wcc_certificate.py
+new file mode 100644
+index 000000000..c6bc007f1
+--- /dev/null
++++ b/examples/extensions/benchmarks/test_wcc_certificate.py
+@@ -0,0 +1,62 @@
++"""Exercise WCC partial and reference checks on an actual configured Sail server."""
++import os
++
++import pyarrow as pa
++import pyarrow.parquet as pq
++import pytest
++
++from graph_cell import validate
++from validation_outcome import effective_outcome
++
++
++@pytest.fixture(scope='module')
++def spark():
++    endpoint = os.environ.get('SAIL_GRAPH_TEST_REMOTE')
++    if not endpoint:
++        pytest.skip('set SAIL_GRAPH_TEST_REMOTE for actual WCC certificate checks')
++    from pyspark.sql.connect.session import SparkSession
++    session = SparkSession.builder.remote(endpoint).create()
++    yield session
++    session.stop()
++
++
++def fixture(tmp_path, labels):
++    dataset, output = tmp_path / 'dataset', tmp_path / 'result'
++    dataset.mkdir()
++    output.mkdir()
++    pq.write_table(pa.table({'id': [0, 1, 2, 3]}), dataset / 'vertices.parquet')
++    pq.write_table(pa.table({'src': [0, 2], 'dst': [1, 3]}), dataset / 'edges.parquet')
++    pq.write_table(pa.table({'id': [0, 1, 2, 3], 'component': [0, 0, 2, 2]}), dataset / 'reference.parquet')
++    pq.write_table(pa.table({'id': [0, 1, 2, 3], 'component': pa.array(labels, type=pa.string())}), output / 'part.parquet')
++    return dataset, output
++
++
++def check(spark, tmp_path, labels, policy):
++    dataset, output = fixture(tmp_path, labels)
++    return validate(spark, output, dataset, 'wcc', 4, 1e-8, .85, 100, False, False, policy=policy)
++
++
++@pytest.mark.parametrize('labels', [['0', '0', '0', '0'], ['0', '0', '2', '2'], ['2', '2', '0', '0']])
++def test_edge_consistency_only_is_partial_even_for_a_correct_partition(spark, tmp_path, labels):
++    correctness = check(spark, tmp_path, labels, 'certificate')
++    assert correctness['component_count_verified'] is False
++    assert correctness['verification_scope'] == 'partial_wcc_partition'
++    assert correctness['crossing_edges'] == correctness['foreign_labels'] == 0
++    assert effective_outcome({'arguments': {'algorithm': 'wcc'}, 'correctness': correctness}, outcome='passed') == 'partially_verified'
++
++
++def test_reference_rejects_merged_components(spark, tmp_path):
++    with pytest.raises(AssertionError, match='WCC membership mismatches'):
++        check(spark, tmp_path, ['0', '0', '0', '0'], 'reference')
++
++
++def test_reference_normalizes_valid_representative_conventions(spark, tmp_path):
++    correctness = check(spark, tmp_path, ['1', '1', '3', '3'], 'reference')
++    assert correctness['membership_mismatches'] == 0
++    assert correctness['components'] == 2
++    assert effective_outcome({'arguments': {'algorithm': 'wcc'}, 'correctness': correctness}, outcome='passed') == 'passed'
++
++
++def test_partial_check_still_rejects_split_connected_components(spark, tmp_path):
++    with pytest.raises(AssertionError, match='edges cross component labels'):
++        check(spark, tmp_path, ['0', '1', '2', '3'], 'certificate')
+diff --git a/examples/extensions/benchmarks/test_wcc_outcome_consumers.py b/examples/extensions/benchmarks/test_wcc_outcome_consumers.py
+new file mode 100644
+index 000000000..1ae16ccb1
+--- /dev/null
++++ b/examples/extensions/benchmarks/test_wcc_outcome_consumers.py
+@@ -0,0 +1,112 @@
++"""Retain partial evidence while excluding it from exact-pass aggregates."""
++from copy import deepcopy
++import json
++from types import SimpleNamespace
++
++import pytest
++
++from summarize import aggregate, audited_rows
++from run_matrix import configuration_fingerprint, plan_cells
++from test_summarize import records
++import tutorial_methods
++
++
++def wcc_records():
++    return records('wcc')
++
++
++def partial(receipt):
++    receipt['arguments']['ranking_validation'] = 'certificate'
++    receipt['correctness'] = dict(policy='certificate', component_count_verified=False,
++                                  verification_scope='partial_wcc_partition')
++
++
++def test_legacy_partial_pass_cannot_improve_exact_pass_metrics_or_rewrite_evidence():
++    configuration, entries = wcc_records()
++    partial(entries[0][2])
++    for entry, seconds in zip(entries, [.01, 5., 7.]):
++        entry[2]['end_to_end_seconds'] = seconds
++    original = deepcopy(entries)
++    rows = audited_rows(entries, configuration)
++    assert entries == original
++    assert [row['outcome'] for row in rows] == ['partially_verified', 'passed', 'passed']
++    assert rows[0]['original_outcome'] == rows[0]['receipt_outcome'] == 'passed'
++    assert rows[0]['component_count_verified'] is False
++    assert rows[0]['verification_scope'] == 'partial_wcc_partition'
++    assert rows[0]['dataset_files_identity'] == rows[1]['dataset_files_identity']
++    assert rows[0]['native_installed_files_identity'] == rows[1]['native_installed_files_identity']
++    group, = aggregate(rows)
++    assert group['outcomes'] == {'partially_verified': 1, 'passed': 2}
++    assert group['metrics']['seconds'] == dict(samples=2, median=6., minimum=5., maximum=7.)
++
++
++def test_explicit_partial_only_group_retains_counts_and_raw_metrics():
++    configuration, entries = wcc_records()
++    for cell, summary, receipt in entries:
++        partial(receipt)
++        summary['outcome'] = receipt['outcome'] = 'partially_verified'
++        cell['expected_outcome'] = summary['expected_outcome'] = 'partially_verified'
++    rows = audited_rows(entries, configuration)
++    assert all(row['seconds'] == 5 and row['expected_outcome_observed'] for row in rows)
++    group, = aggregate(rows)
++    assert group['passed'] == 0 and group['outcomes'] == {'partially_verified': 3}
++    assert all(metric is None for metric in group['metrics'].values())
++
++
++@pytest.mark.parametrize('explicit', [None, 'passed', 'partially_verified'])
++def test_historical_matrix_is_replanned_without_erasing_explicit_expectations(explicit):
++    configuration, entries = wcc_records()
++    configuration['extra_cell_args'] = ['--ranking-validation=certificate']
++    if explicit is not None:
++        suite = next(s for s in configuration['suites'] if s['name'] == entries[0][0]['suite'])
++        suite.setdefault('expected_outcomes', {}).setdefault('optimized', {})['nutmeg-native'] = explicit
++    for _, summary, receipt in entries:
++        partial(receipt)
++        # A historical default (or explicit passed) was recorded as passed.
++        # An explicit partial expectation must not be silently grandfathered.
++        summary['configuration_sha256'] = configuration_fingerprint(configuration)
++    new_cells = {cell['cell_id']: cell for cell in plan_cells(configuration)}
++    entries = [(new_cells[cell['cell_id']], summary, receipt) for cell, summary, receipt in entries]
++    original = deepcopy(entries)
++    rows = audited_rows(entries, configuration)
++    assert entries == original
++    assert all(row['original_expected_outcome'] == 'passed' for row in rows)
++    assert all(row['original_outcome'] == row['receipt_outcome'] == 'passed' for row in rows)
++    if explicit == 'partially_verified':
++        assert all(row['outcome'] == 'integrity_error' for row in rows)
++    else:
++        assert all(row['outcome'] == 'partially_verified' for row in rows)
++        assert all(row['expected_outcome_observed'] is (explicit is None) for row in rows)
++        assert aggregate(rows)[0]['passed'] == 0
++
++
++@pytest.mark.parametrize('binary', ['invalid', '1' * 64])
++def test_legacy_scope_downgrade_does_not_bypass_integrity_or_cross_cell_identity(binary):
++    configuration, entries = wcc_records()
++    partial(entries[0][2])
++    entries[0][2]['binary_sha256'] = binary
++    rows = audited_rows(entries, configuration)
++    assert rows[0]['outcome'] == 'integrity_error'
++    assert rows[0]['original_outcome'] == rows[0]['receipt_outcome'] == 'passed'
++    assert rows[0]['integrity_errors']
++    if binary != 'invalid':
++        assert all(row['outcome'] == 'integrity_error' for row in rows)
++
++
++@pytest.mark.parametrize('reported,exit_status,expected', [
++    ('partially_verified', 1, 'partially_verified'),
++    ('passed', 0, 'partially_verified'),
++    ('passed', 7, 'orchestration_error'),
++])
++def test_tutorial_keeps_partial_and_original_outcomes(tmp_path, monkeypatch, reported, exit_status, expected):
++    receipt = dict(outcome=reported, arguments={'algorithm': 'wcc'}, end_to_end_seconds=1.)
++    partial(receipt)
++    path = tmp_path / 'receipt.json'
++    path.write_text(json.dumps(receipt))
++    original = path.read_bytes()
++    monkeypatch.setattr(tutorial_methods.subprocess, 'run', lambda *args, **kwargs: SimpleNamespace(returncode=exit_status))
++    row = tutorial_methods.run_case(['placeholder'], tmp_path / 'cell.log', path, False)
++    assert row['outcome'] == expected
++    assert row['original_receipt_outcome'] == reported
++    assert row['end_to_end_seconds'] == 1.
++    assert path.read_bytes() == original
+diff --git a/examples/extensions/benchmarks/tutorial_methods.py b/examples/extensions/benchmarks/tutorial_methods.py
+index 88e7e1b4a..fa1377e3b 100644
+--- a/examples/extensions/benchmarks/tutorial_methods.py
++++ b/examples/extensions/benchmarks/tutorial_methods.py
+@@ -14,6 +14,7 @@ import subprocess
+ import sys
+ 
+ from graph_fixtures import prepare
++from validation_outcome import effective_outcome, PARTIALLY_VERIFIED
+ 
+ 
+ ENGINES = ("pecan", "nutmeg-native", "nutmeg-datafusion")
+@@ -60,7 +61,7 @@ def run_case(command, log_path, receipt_path, private_container):
+             if not isinstance(receipt, dict):
+                 raise ValueError('receipt must be a JSON object')
+             row['original_receipt_outcome'] = receipt.get('outcome')
+-            if receipt.get('outcome') not in ('passed', 'error', 'mismatch', 'nonconverged', 'timeout'):
++            if receipt.get('outcome') not in ('passed', PARTIALLY_VERIFIED, 'error', 'mismatch', 'nonconverged', 'timeout'):
+                 raise ValueError('receipt has no completed outcome')
+             memory = receipt.get('memory', {})
+             if not isinstance(memory, dict):
+@@ -78,10 +79,10 @@ def run_case(command, log_path, receipt_path, private_container):
+                 if value is not None and (not isinstance(value, (int, float)) or
+                                           not math.isfinite(value) or value < 0):
+                     raise ValueError(f'invalid numeric receipt field: {key}')
+-            row.update(metrics, outcome=receipt['outcome'])
++            row.update(metrics, outcome=effective_outcome(receipt))
+     except (OSError, UnicodeError, ValueError, TypeError, AttributeError) as error:
+         errors.append(f'receipt unavailable or invalid: {error!r}')
+-    if row['outcome'] == 'passed' and row['returncode'] != 0:
++    if row['original_receipt_outcome'] == 'passed' and row['returncode'] != 0:
+         errors.append('passed receipt disagrees with nonzero or unavailable child exit status')
+     if errors:
+         row.update(outcome='orchestration_error', error='; '.join(errors))
+diff --git a/examples/extensions/benchmarks/validation_outcome.py b/examples/extensions/benchmarks/validation_outcome.py
+new file mode 100644
+index 000000000..6a1941c00
+--- /dev/null
++++ b/examples/extensions/benchmarks/validation_outcome.py
+@@ -0,0 +1,37 @@
++"""Separate a completed partial WCC check from independently verified results."""
++import argparse
++
++
++PARTIALLY_VERIFIED = 'partially_verified'
++
++
++def effective_outcome(receipt, *, outcome=None):
++    """Derive scope without changing an original receipt or masking a failure."""
++    reported = receipt.get('outcome', 'invalid_receipt') if outcome is None else outcome
++    correctness = receipt.get('correctness') or {}
++    arguments = receipt.get('arguments') or {}
++    if (reported == 'passed' and arguments.get('algorithm') == 'wcc' and
++            correctness.get('policy') == 'certificate' and
++            correctness.get('component_count_verified') is False):
++        return PARTIALLY_VERIFIED
++    return reported
++
++
++def expected_validation_outcome(command):
++    """Read the effective flags, including any final extra-cell overrides."""
++    parser = argparse.ArgumentParser(add_help=False, allow_abbrev=False)
++    parser.add_argument('--algorithm')
++    parser.add_argument('--ranking-validation', default='reference')
++    arguments, _ = parser.parse_known_args(command)
++    return (PARTIALLY_VERIFIED if arguments.algorithm == 'wcc' and
++            arguments.ranking_validation == 'certificate' else 'passed')
++
++
++def resumed_outcome(result, receipt, expected):
++    """Restate a legacy summary in memory; retain its original outcome labels."""
++    if result.get('outcome') != 'passed' or effective_outcome(receipt) != PARTIALLY_VERIFIED:
++        return result
++    return dict(result, original_outcome=result['outcome'],
++                original_expected_outcome=result.get('expected_outcome'),
++                outcome=PARTIALLY_VERIFIED, expected_outcome=expected,
++                expected_outcome_observed=expected == PARTIALLY_VERIFIED)

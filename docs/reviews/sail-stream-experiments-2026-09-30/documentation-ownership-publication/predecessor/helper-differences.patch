@@ -1,0 +1,179 @@
+--- reviewed-validation/common.py
++++ ownership-preparation/common.py
+@@ -7,10 +7,10 @@
+ import subprocess
+ 
+ SRC = Path('/Users/alexy/src/grust')
+-DST = Path('/private/tmp/grust-sail-review-validation-docs')
+-OUT = Path('/private/tmp/grust-sail-review-validation-publication')
++DST = Path('/private/tmp/grust-sail-review-ownership-docs')
++OUT = Path('/private/tmp/grust-sail-review-ownership-publication')
+ REL = Path('docs/reviews/sail-stream-experiments-2026-09-30')
+-BASE = 'd9df4b0e89b1e4a1838b1b536d05f47ba4f12808'
++BASE = '980da04151cd5860017a06580a658bdf7e133c40'
+ ORIGIN = 'git@github.com:querygraph/grust.git'
+ REFS = ['refs/heads/work/proposal-v5', 'refs/heads/work/sail-graph-review']
+ BRANCH = REFS[0]
+@@ -19,16 +19,17 @@
+ MUTABLE_PROSE = {REL/'RESULTS.md'}
+ REVIEW_INPUTS = {Path('docs/SEM-REVIEW-2.md'), Path('docs/STREAM-LOSS-STATUS.md')}
+ ALLOWED_DIRS = {
+-    'argentea-input-lifetime', 'pagerank-certificate-metadata',
+-    'parquet-float-statistics', 'resource-validation-union',
+-    'physical-output-audit', 'host-pair-collection-audit',
+-    'compact-qualification-review', 'documentation-closed2-publication',
++    'argentea-rank-wcc-input-lifetime', 'documentation-validation-publication',
++    'physical-output-execution-preparation',
+ }
+ ALLOWED_FILES = {
+-    'RESULTS.md', 'argentea-input-lifetime-delivery.json',
+-    'parquet-float-statistics-delivery.json', 'resource-validation-union-delivery.json',
+-    'documentation-closed2-activation.json', 'logging03-recovery01.json',
+-    'physical-output-pair-recipe.md',
++    'RESULTS.md', 'documentation-validation-activation.json',
++    'argentea-rank-wcc-input-lifetime-delivery.json',
++}
++REQUIRED_CLOSURES = {
++    str(REL/'argentea-rank-wcc-input-lifetime/final-receipt.json'),
++    str(REL/'argentea-rank-wcc-input-lifetime/exact-gate/receipt.json'),
++    str(REL/'argentea-rank-wcc-input-lifetime-delivery.json'),
+ }
+ ENV = dict(os.environ, GIT_OPTIONAL_LOCKS='0', PYTHONDONTWRITEBYTECODE='1')
+ 
+@@ -132,8 +133,8 @@
+         check(isinstance(item, dict) and item.get('path') in auth['selected_sources'], 'closure receipt not selected')
+         check(isinstance(item.get('equals'), dict) and item['equals']
+               and all(isinstance(k, str) and k and all(k.split('.')) for k in item['equals']), 'invalid closure guard')
+-    check(any(x['path'].startswith(str(REL/'resource-validation-union')+'/') for x in auth['required_json']),
+-          'combined union closure receipt required')
++    check(REQUIRED_CLOSURES <= {x['path'] for x in auth['required_json']},
++          'new component final/exact gate and outer delivery closure receipts required')
+ 
+ 
+ def index_path():
+--- reviewed-validation/prepare_snapshot.py
++++ ownership-preparation/prepare_snapshot.py
+@@ -34,8 +34,8 @@
+         for key in pointer.split('.'):
+             actual = actual[key]
+         check(actual == value, 'closed-result guard failed: '+item['path']+' '+pointer)
+-check(any(x['path'].startswith(str(REL/'resource-validation-union')+'/') for x in auth['required_json']),
+-      'combined union closure receipt required')
++check(REQUIRED_CLOSURES <= {x['path'] for x in auth['required_json']},
++      'new component final/exact gate and outer delivery closure receipts required')
+ prep = dict(recorded_utc=utc(), base_commit=BASE, selected_sources=selected, shared_before=state,
+             authorization_sha256=args.authorization_sha256, authorization=auth,
+             expected_remote_refs=dict.fromkeys(REFS, BASE))
+--- reviewed-validation/commit_and_gate.sh
++++ ownership-preparation/commit_and_gate.sh
+@@ -2,13 +2,13 @@
+ # Root executes only after frozen-input authorization and independent review.
+ # No command may follow a failed gate; candidate/exact outputs are kept separate.
+ set -C
+-cd /private/tmp/grust-sail-review-validation-docs &&
++cd /private/tmp/grust-sail-review-ownership-docs &&
+ export GIT_OPTIONAL_LOCKS=0 PYTHONDONTWRITEBYTECODE=1 &&
+-python3 /private/tmp/grust-sail-review-validation-publication/guard.py candidate-before &&
+-python3 docs/reviews/sail-stream-experiments-2026-09-30/verify_documentation_snapshot.py --expected-head d9df4b0e89b1e4a1838b1b536d05f47ba4f12808 > /private/tmp/grust-sail-review-validation-publication/candidate-gate.log 2>&1 &&
+-python3 /private/tmp/grust-sail-review-validation-publication/guard.py candidate-after &&
+-git commit -F /private/tmp/grust-sail-review-validation-publication/commit-message.txt &&
++python3 /private/tmp/grust-sail-review-ownership-publication/guard.py candidate-before &&
++python3 docs/reviews/sail-stream-experiments-2026-09-30/verify_documentation_snapshot.py --expected-head 980da04151cd5860017a06580a658bdf7e133c40 > /private/tmp/grust-sail-review-ownership-publication/candidate-gate.log 2>&1 &&
++python3 /private/tmp/grust-sail-review-ownership-publication/guard.py candidate-after &&
++git commit -F /private/tmp/grust-sail-review-ownership-publication/commit-message.txt &&
+ snapshot_commit=$(git rev-parse HEAD) &&
+-python3 /private/tmp/grust-sail-review-validation-publication/guard.py exact-before "$snapshot_commit" &&
+-python3 docs/reviews/sail-stream-experiments-2026-09-30/verify_documentation_snapshot.py --expected-head "$snapshot_commit" > /private/tmp/grust-sail-review-validation-publication/exact-gate.log 2>&1 &&
+-python3 /private/tmp/grust-sail-review-validation-publication/guard.py exact-after "$snapshot_commit"
++python3 /private/tmp/grust-sail-review-ownership-publication/guard.py exact-before "$snapshot_commit" &&
++python3 docs/reviews/sail-stream-experiments-2026-09-30/verify_documentation_snapshot.py --expected-head "$snapshot_commit" > /private/tmp/grust-sail-review-ownership-publication/exact-gate.log 2>&1 &&
++python3 /private/tmp/grust-sail-review-ownership-publication/guard.py exact-after "$snapshot_commit"
+--- reviewed-validation/activate_shared.py
++++ ownership-preparation/activate_shared.py
+@@ -13,7 +13,7 @@
+ head = None
+ fd = None
+ lock = None
+-receipt_path = SRC/REL/'documentation-validation-activation.json'
++receipt_path = SRC/REL/'documentation-ownership-activation.json'
+ check(not receipt_path.exists() and not (OUT/'activation-intent.json').exists()
+       and not (OUT/'activation-failure.json').exists(), 'activation already attempted')
+ try:
+@@ -44,7 +44,7 @@
+     before = {name: info(SRC/name) for name in preserved}
+     index = index_path()
+     index_before = info(index)
+-    backup = Path(tempfile.mkdtemp(prefix='grust-validation-activation-', dir='/private/tmp'))
++    backup = Path(tempfile.mkdtemp(prefix='grust-ownership-activation-', dir='/private/tmp'))
+     shutil.copy2(index, backup/'index')
+     (backup/'coordination-before-lock.md').write_bytes(current_coord)
+     (backup/'manifest.json').write_bytes(old_manifest)
+--- reviewed-validation/run_offline_controls.py
++++ ownership-preparation/run_offline_controls.py
+@@ -35,15 +35,19 @@
+                  c.REL/'RESULTS.md': b'reviewed results\n',
+                  Path('docs/SEM-REVIEW-2.md'): b'reviewed SEM input\n',
+                  Path('docs/STREAM-LOSS-STATUS.md'): b'reviewed stream input\n',
+-                 c.REL/'resource-validation-union/control.json': b'{"outcome":"PASS"}\n'}
++                 c.REL/'argentea-rank-wcc-input-lifetime/exact-gate/receipt.json': b'{"verdict":"PASS"}\n',
++                 c.REL/'argentea-rank-wcc-input-lifetime/final-receipt.json': b'{"outcome":"EXACT_COMPONENT_GATE_PASS"}\n',
++                 c.REL/'argentea-rank-wcc-input-lifetime-delivery.json': b'{"outcome":"PUSHED_AND_REMOTELY_VERIFIED"}\n'}
+         for relative, data in files.items():
+             (root/relative).parent.mkdir(parents=True, exist_ok=True)
+             (root/relative).write_bytes(data)
+         c.git(root, 'add', '.')
+         c.git(root, '-c', 'user.name=Offline Control', '-c', 'user.email=control@example.invalid',
+               '-c', 'core.hooksPath=/dev/null', 'commit', '-qm', 'Synthetic fixture')
+-        selected = str(c.REL/'resource-validation-union/control.json')
+-        preparation = dict(shared_before=c.shared_state(), selected_sources={selected:c.info(root/selected)})
++        selected = str(c.REL/'argentea-rank-wcc-input-lifetime/exact-gate/receipt.json')
++        final = str(c.REL/'argentea-rank-wcc-input-lifetime/final-receipt.json')
++        delivery = str(c.REL/'argentea-rank-wcc-input-lifetime-delivery.json')
++        preparation = dict(shared_before=c.shared_state(), selected_sources={name:c.info(root/name) for name in [selected, final, delivery]})
+         test('unchanged_shared_state', lambda: c.check_shared(preparation))
+         original = (root/c.COORD).read_bytes()
+         def appended():
+@@ -86,14 +90,16 @@
+             (root/'linked').symlink_to(root/'elsewhere', target_is_directory=True)
+             rejected(lambda:c.safe_path(root, 'linked/file.json'), 'symlink in selected path')
+         test('selected_ancestor_symlink_rejected', ancestor_symlink)
+-        for name in ('logging03/cell.json', 'followup02/receipt.json', 'host-pair-16k/new-cell.json'):
++        for name in ('logging03/cell.json', 'followup02/receipt.json', 'host-pair-16k/new-cell.json', 'resource-validation-union/receipt.json'):
+             test('active_scope_rejected:'+name, lambda name=name:rejected(lambda:c.selected_path(str(c.REL/name)), 'outside fixed preparation scope'))
+         auth = dict(status='AUTHORIZED_FROZEN_INPUTS', base=c.BASE, scope='Offline synthetic test only',
+                     coordination_title='ACK synthetic', coordination_body='Synthetic fixture',
+                     commit_message='Synthetic fixture', activation_done_body='Synthetic {commit}',
+                     cutoff='Synthetic closed boundary', excluded_scopes=['all active runs'],
+                     selected_sources=preparation['selected_sources'],
+-                    required_json=[dict(path=selected, equals={'outcome':'PASS'})])
++                    required_json=[dict(path=selected, equals={'verdict':'PASS'}),
++                                   dict(path=final, equals={'outcome':'EXACT_COMPONENT_GATE_PASS'}),
++                                   dict(path=delivery, equals={'outcome':'PUSHED_AND_REMOTELY_VERIFIED'})])
+         test('well_formed_authorization_accepted', lambda:c.validate_authorization(auth))
+         for key, value, reason in [('status','DRAFT_NOT_AUTHORIZED','inputs not authorized'),
+                                    ('excluded_scopes',None,'missing exclusions'),
+@@ -101,6 +107,12 @@
+                                    ('required_json',[],'missing closure guards')]:
+             changed=copy.deepcopy(auth); changed[key]=value
+             test('invalid_authorization_rejected:'+key, lambda changed=changed,reason=reason:rejected(lambda:c.validate_authorization(changed),reason))
++        for path in (selected, final, delivery):
++            changed=copy.deepcopy(auth)
++            changed['required_json']=[item for item in changed['required_json'] if item['path'] != path]
++            test('missing_component_closure_rejected:'+path,
++                 lambda changed=changed:rejected(lambda:c.validate_authorization(changed),
++                     'new component final/exact gate and outer delivery closure receipts required'))
+     receipt=dict(recorded_utc=c.utc(), outcome='PASS_OFFLINE_TOOLING_CONTROLS', controls=results,
+                  count=len(results), production_helpers={name:c.sha(c.OUT/name) for name in
+                     ('common.py','prepare_snapshot.py','guard.py','commit_and_gate.sh','publish.py','activate_shared.py')},
+--- reviewed-validation/authorization-template.json
++++ ownership-preparation/authorization-template.json
+@@ -1,7 +1,7 @@
+ {
+   "status": "DRAFT_NOT_AUTHORIZED",
+-  "base": "d9df4b0e89b1e4a1838b1b536d05f47ba4f12808",
+-  "scope": "Root must provide the reviewed documentation-only scope after the union closes.",
++  "base": "980da04151cd5860017a06580a658bdf7e133c40",
++  "scope": "Root must provide the reviewed documentation-only scope after the new Argentea ownership component final/exact gate and outer delivery receipts close.",
+   "cutoff": "Root must supply the exact closed evidence boundary; active run observations remain excluded.",
+   "excluded_scopes": [
+     "All active logging03 and followup02 data",

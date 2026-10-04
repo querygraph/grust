@@ -1,0 +1,28 @@
+diff --git a/crates/sail-plan/src/resolver/query/mod.rs b/crates/sail-plan/src/resolver/query/mod.rs
+index fb117e5bcd292ab02a4ac548a9894901426c8558..35507d68c24fc3685fab3c70eaea0143c99da237 100644
+--- a/crates/sail-plan/src/resolver/query/mod.rs
++++ b/crates/sail-plan/src/resolver/query/mod.rs
+@@ -17,6 +17,7 @@ mod alias;
+ mod column_op;
+ mod cte;
+ mod dedup;
++mod extension;
+ mod filter;
+ mod join;
+ mod lateral;
+@@ -69,6 +70,15 @@ impl PlanResolver<'_> {
+ 
+         let plan_id = plan.plan_id;
+         let plan = match plan.node {
++            QueryNode::Extension {
++                payload_type_url,
++                payload,
++                inputs,
++                is_envelope,
++            } => {
++                self.resolve_query_extension(payload_type_url, payload, inputs, is_envelope, state)
++                    .await?
++            }
+             QueryNode::Read {
+                 read_type,
+                 is_streaming: _,

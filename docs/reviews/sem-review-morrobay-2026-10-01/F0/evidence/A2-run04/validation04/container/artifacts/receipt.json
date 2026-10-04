@@ -1,0 +1,122 @@
+{
+  "started_utc": "2026-10-01T22:54:20.022029+00:00",
+  "finished_utc": "2026-10-01T22:54:26.793278+00:00",
+  "outcome": "passed",
+  "arguments": {
+    "inputs": "/targets/sail-stream-experiments-20260930/sem-wcc-pilot-inputs",
+    "output": "/targets/sem-review-20261001/A2-run04/references",
+    "source": 5795784
+  },
+  "boundary": "explicit input validation and independent reference phase; outside engine timers",
+  "helpers_sha256": {
+    "prepare_inputs.py": "e8b8e5eb060683ca408e1d0b20d4951c8300be82861b9b4b412445f41bea0471",
+    "output_oracle.py": "2d1dd6adeffc19457cb96ef378a39b53b8b1ce2f5150127fbda5e9666a1f483e"
+  },
+  "packages": {
+    "python": "3.12.14",
+    "numpy": "2.5.3",
+    "pyarrow": "21.0.0"
+  },
+  "originals_before": {
+    "vertices": {
+      "bytes": 3861941,
+      "sha256": "0969ea9ede0969e18e76a2c70191ed7ccecaecb9f1da6d954093dbefbc8958aa"
+    },
+    "edges": {
+      "bytes": 70037384,
+      "sha256": "70bcba17b5a7762ef5a0c3d16c1dc37a352461b83e338f550ae897d844f0268f"
+    },
+    "wcc_membership": {
+      "bytes": 60396288,
+      "sha256": "b07f8665c87f94286da7beb1ac5a9d13c4932fea31d8f1a382f9ecb1d3c0c8dc"
+    }
+  },
+  "originals_after": {
+    "vertices": {
+      "bytes": 3861941,
+      "sha256": "0969ea9ede0969e18e76a2c70191ed7ccecaecb9f1da6d954093dbefbc8958aa"
+    },
+    "edges": {
+      "bytes": 70037384,
+      "sha256": "70bcba17b5a7762ef5a0c3d16c1dc37a352461b83e338f550ae897d844f0268f"
+    },
+    "wcc_membership": {
+      "bytes": 60396288,
+      "sha256": "b07f8665c87f94286da7beb1ac5a9d13c4932fea31d8f1a382f9ecb1d3c0c8dc"
+    }
+  },
+  "validation": {
+    "vertex_rows": 3774768,
+    "unique_vertices": 3774768,
+    "edge_rows": 16518947,
+    "minimum_id": 1,
+    "maximum_id": 6009554,
+    "isolated_vertex_count": 0,
+    "source": 5795784,
+    "endpoint_membership": "every directed edge source and target names a vertex",
+    "direction": "original source -> target",
+    "duplicate_edges": "preserved; neither counted nor removed",
+    "isolated_vertices": "preserved in full vertex domain"
+  },
+  "certificate": {
+    "source": 5795784,
+    "reachable_vertices": 126298,
+    "unreachable_vertices": 3648470,
+    "maximum_finite_distance": 13,
+    "all_edges_examined": 16518947,
+    "reachable_source_edges_examined": 213122,
+    "predecessor_witness_vertices": 126297,
+    "criterion": "source-only zero; all reachable-edge triangle bounds; reached predecessor witnesses"
+  },
+  "references": {
+    "ids": {
+      "path": "/targets/sem-review-20261001/A2-run04/references/ids.i64le",
+      "identity": {
+        "bytes": 30198144,
+        "sha256": "31141d26acd30d6a72890f0a105ec38f5b542daa56f8408e4f4ab12274d6ccfb"
+      },
+      "format": "little-endian signed64, one value per row"
+    },
+    "bfs_distances": {
+      "path": "/targets/sem-review-20261001/A2-run04/references/bfs-distances.i64le",
+      "identity": {
+        "bytes": 30198144,
+        "sha256": "1c4398eb1636acc355dc7f98310bd13c110ea9d8021ff2cb9c98b41560602e79"
+      },
+      "format": "little-endian signed64, one value per row"
+    },
+    "wcc_membership": {
+      "path": "/targets/sail-stream-experiments-20260930/sem-wcc-pilot-inputs/wcc-membership.i64le",
+      "identity": {
+        "bytes": 60396288,
+        "sha256": "b07f8665c87f94286da7beb1ac5a9d13c4932fea31d8f1a382f9ecb1d3c0c8dc"
+      },
+      "format": "little-endian signed64 pairs (id,minimum-id)"
+    }
+  },
+  "timings": {
+    "initial_identity_seconds": 0.3273455879825633,
+    "parquet_load_seconds": 0.6190067089919467,
+    "schema_and_domain_seconds": 0.6376011540123727,
+    "csr_seconds": 2.798228640021989,
+    "bfs_seconds": 0.3686125749954954,
+    "certificate_seconds": 0.7964199539856054,
+    "write_and_bind_seconds": 0.7235354720032774,
+    "final_identity_seconds": 0.4948131459823344,
+    "whole_phase_seconds": 6.771241677983198
+  },
+  "memory": {
+    "process_maxrss_bytes": 1189040128,
+    "process_maxrss_observation": "getrusage self maximum RSS; macOS bytes, Linux KiB converted",
+    "cgroup_memory_peak_bytes": 1123536896,
+    "cgroup_memory_current_bytes": 789749760
+  },
+  "adapters": [
+    "ids.i64le: ascending positive signed64 IDs, little-endian int64",
+    "bfs-distances.i64le: same row ordinal as ids; little-endian int64; -1 unreachable",
+    "graphframes physical int32 2147483647 -> reference -1 solely in output oracle",
+    "Pecan physical DOUBLE NULL -> reference -1 solely in output oracle",
+    "wcc-membership.i64le: original pinned sorted int64 little-endian (id,minimum-id) pairs"
+  ],
+  "error": null
+}

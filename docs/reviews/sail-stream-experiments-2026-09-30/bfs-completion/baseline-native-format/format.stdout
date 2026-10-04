@@ -1,0 +1,99 @@
+Diff in /private/tmp/sail-bfs-completion-baseline/examples/extensions/nutmeg/src/mutation.rs:334:
+                     Arc::new(Int64Array::from(vec![report.info.staged_nodes as i64])) as ArrayRef,
+                     Arc::new(Int64Array::from(vec![report.info.staged_edges as i64])) as ArrayRef,
+                     Arc::new(Int64Array::from(vec![report.info.revision as i64])) as ArrayRef,
+[31m-                    Arc::new(Int64Array::from(vec![report.nodes.sort_permutation_bytes as i64])) as ArrayRef,
+[m[31m-                    Arc::new(Int64Array::from(vec![report.nodes.sort_keys_bytes as i64])) as ArrayRef,
+[m[31m-                    Arc::new(Int64Array::from(vec![report.nodes.sorted_copy_bytes as i64])) as ArrayRef,
+[m[32m+                    Arc::new(Int64Array::from(vec![
+[m[32m+                        report.nodes.sort_permutation_bytes as i64,
+[m[32m+                    ])) as ArrayRef,
+[m[32m+                    Arc::new(Int64Array::from(vec![report.nodes.sort_keys_bytes as i64]))
+[m[32m+                        as ArrayRef,
+[m[32m+                    Arc::new(Int64Array::from(vec![
+[m[32m+                        report.nodes.sorted_copy_bytes as i64,
+[m[32m+                    ])) as ArrayRef,
+[m                     Arc::new(Int64Array::from(vec![report.nodes.fill_bytes as i64])) as ArrayRef,
+[31m-                    Arc::new(Int64Array::from(vec![report.nodes.normalized_bytes as i64])) as ArrayRef,
+[m[31m-                    Arc::new(Int64Array::from(vec![report.nodes.retained_bytes as i64])) as ArrayRef,
+[m[32m+                    Arc::new(Int64Array::from(vec![report.nodes.normalized_bytes as i64]))
+[m[32m+                        as ArrayRef,
+[m[32m+                    Arc::new(Int64Array::from(vec![report.nodes.retained_bytes as i64]))
+[m[32m+                        as ArrayRef,
+[m                     Arc::new(Float64Array::from(vec![report.nodes.sort_seconds])) as ArrayRef,
+                     Arc::new(BooleanArray::from(vec![report.nodes.sorted])) as ArrayRef,
+[31m-                    Arc::new(Int64Array::from(vec![report.edges.sort_permutation_bytes as i64])) as ArrayRef,
+[m[31m-                    Arc::new(Int64Array::from(vec![report.edges.sort_keys_bytes as i64])) as ArrayRef,
+[m[31m-                    Arc::new(Int64Array::from(vec![report.edges.sorted_copy_bytes as i64])) as ArrayRef,
+[m[32m+                    Arc::new(Int64Array::from(vec![
+[m[32m+                        report.edges.sort_permutation_bytes as i64,
+[m[32m+                    ])) as ArrayRef,
+[m[32m+                    Arc::new(Int64Array::from(vec![report.edges.sort_keys_bytes as i64]))
+[m[32m+                        as ArrayRef,
+[m[32m+                    Arc::new(Int64Array::from(vec![
+[m[32m+                        report.edges.sorted_copy_bytes as i64,
+[m[32m+                    ])) as ArrayRef,
+[m                     Arc::new(Int64Array::from(vec![report.edges.fill_bytes as i64])) as ArrayRef,
+[31m-                    Arc::new(Int64Array::from(vec![report.edges.normalized_bytes as i64])) as ArrayRef,
+[m[31m-                    Arc::new(Int64Array::from(vec![report.edges.retained_bytes as i64])) as ArrayRef,
+[m[32m+                    Arc::new(Int64Array::from(vec![report.edges.normalized_bytes as i64]))
+[m[32m+                        as ArrayRef,
+[m[32m+                    Arc::new(Int64Array::from(vec![report.edges.retained_bytes as i64]))
+[m[32m+                        as ArrayRef,
+[m                     Arc::new(Float64Array::from(vec![report.edges.sort_seconds])) as ArrayRef,
+                     Arc::new(BooleanArray::from(vec![report.edges.sorted])) as ArrayRef,
+                 ]
+Diff in /private/tmp/sail-bfs-completion-baseline/examples/extensions/nutmeg/src/tests.rs:80:
+             .iter()
+             .map(|f| f.name().as_str())
+             .collect::<Vec<_>>(),
+[31m-        ["graph", "nodeCount", "edgeCount", "revision", "nodeSortPermutationBytes", "nodeSortKeysBytes", "nodeSortedCopyBytes", "nodeFillBytes", "nodeNormalizedBytes", "nodeRetainedBytes", "nodeSortSeconds", "nodeSorted", "edgeSortPermutationBytes", "edgeSortKeysBytes", "edgeSortedCopyBytes", "edgeFillBytes", "edgeNormalizedBytes", "edgeRetainedBytes", "edgeSortSeconds", "edgeSorted"]
+[m[32m+        [
+[m[32m+            "graph",
+[m[32m+            "nodeCount",
+[m[32m+            "edgeCount",
+[m[32m+            "revision",
+[m[32m+            "nodeSortPermutationBytes",
+[m[32m+            "nodeSortKeysBytes",
+[m[32m+            "nodeSortedCopyBytes",
+[m[32m+            "nodeFillBytes",
+[m[32m+            "nodeNormalizedBytes",
+[m[32m+            "nodeRetainedBytes",
+[m[32m+            "nodeSortSeconds",
+[m[32m+            "nodeSorted",
+[m[32m+            "edgeSortPermutationBytes",
+[m[32m+            "edgeSortKeysBytes",
+[m[32m+            "edgeSortedCopyBytes",
+[m[32m+            "edgeFillBytes",
+[m[32m+            "edgeNormalizedBytes",
+[m[32m+            "edgeRetainedBytes",
+[m[32m+            "edgeSortSeconds",
+[m[32m+            "edgeSorted"
+[m[32m+        ]
+[m     );
+     let physical = provider.scan(&ctx.state(), None, &[], None).await.unwrap();
+     assert!(registry.list().unwrap().is_empty(), "scan must not stage");
+Diff in /private/tmp/sail-bfs-completion-baseline/examples/extensions/nutmeg/src/tests.rs:447:
+         .err()
+         .unwrap()
+         .to_string();
+[31m-    assert!(error.contains("order") && error.contains("asStaged"), "{error}");
+[m[32m+    assert!(
+[m[32m+        error.contains("order") && error.contains("asStaged"),
+[m[32m+        "{error}"
+[m[32m+    );
+[m     for request in [
+         serde_json::json!({"version":1,"verb":"run","graph":"g","algorithm":"degree","order":"asStaged"}),
+         serde_json::json!({"version":1,"verb":"nodes","graph":"g","order":"asStaged"}),
+Diff in /private/tmp/sail-bfs-completion-baseline/examples/extensions/nutmeg/src/tests.rs:464:
+             "{request}"
+         );
+     }
+[31m-    assert_eq!(registry.list().unwrap()[0].revision, 2, "rejections do not mutate");
+[m[32m+    assert_eq!(
+[m[32m+        registry.list().unwrap()[0].revision,
+[m[32m+        2,
+[m[32m+        "rejections do not mutate"
+[m[32m+    );
+[m }
+ 

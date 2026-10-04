@@ -1,0 +1,27 @@
+{
+  "utc": "2026-09-30T16:50:10.137654+00:00",
+  "command": [
+    "docker",
+    "--context",
+    "colima-sail-gate",
+    "run",
+    "--rm",
+    "--mount",
+    "type=volume,source=sail-extension-targets,target=/targets",
+    "--mount",
+    "type=bind,source=/Users/alexy/src/sail-extensions-gates/stream-experiments-20260930,target=/work,readonly",
+    "--workdir",
+    "/targets",
+    "--entrypoint",
+    "/targets/graph-nuts-ffcfbd569/venv/bin/python",
+    "sha256:f3518d652fbea8b9b9f9ebf9849277ca3bd39d0c21bb2c6e36fbaeaa2dc2678e",
+    "-I",
+    "-c",
+    "\nfrom pathlib import Path\nimport hashlib,json,shutil,subprocess,sys\nc=json.loads(Path(sys.argv[1]).read_text()); root=Path(c['container_root']); root.mkdir(parents=True,exist_ok=False)\nassert shutil.disk_usage('/targets').free >= 12*1024**3, 'less than 12GiB VM disk free'\nbase=Path(c['container_repo']); candidate=root/'source-edc2c7c8'\nsubprocess.run(['git','clone','--shared','--no-checkout',str(base),str(candidate)],check=True)\nsubprocess.run(['git','-C',str(candidate),'fetch','/work/pecan.bundle','refs/heads/work/pecan-single-expansion'],check=True)\nsubprocess.run(['git','-C',str(candidate),'checkout','--detach',sys.argv[2]],check=True)\nfor repo,sha in ((base,c['harness_source_sha']),(candidate,sys.argv[2])):\n    assert subprocess.check_output(['git','-C',str(repo),'rev-parse','HEAD'],text=True).strip()==sha\n    assert not subprocess.check_output(['git','-C',str(repo),'status','--porcelain'],text=True).strip()\nfor name in ('graph_cell.py','measurement.py','runtime.py','traversal_cell.py','traversal_fixture.py','traversal_reference.py'):\n    relative=Path('examples/extensions/benchmarks')/name\n    assert (base/relative).read_bytes()==(candidate/relative).read_bytes(), name\nscripts=root/'scripts'; scripts.mkdir()\nshutil.copyfile('/work/pecan_gate3_cell.py',scripts/'pecan_gate3_cell.py')\nprint(json.dumps(dict(root=str(root),free_bytes=shutil.disk_usage('/targets').free,\n    cell_script_sha256=hashlib.sha256((scripts/'pecan_gate3_cell.py').read_bytes()).hexdigest())))\n",
+    "/work/pecan-gate3-config.json",
+    "edc2c7c8cfc17cfc02f4f3a794bd4a3ec86ee3ed"
+  ],
+  "returncode": 0,
+  "stdout": "{\"root\": \"/targets/sail-stream-experiments-20260930/pecan-gate3\", \"free_bytes\": 44110913536, \"cell_script_sha256\": \"8837f5fc844beea024af2be9071d7ff71455b99c3e20e11ff32aa0c2563d7f7f\"}\n",
+  "stderr": "Cloning into '/targets/sail-stream-experiments-20260930/pecan-gate3/source-edc2c7c8'...\nhint: Using 'master' as the name for the initial branch. This default branch name\nhint: is subject to change. To configure the initial branch name to use in all\nhint: of your new repositories, which will suppress this warning, call:\nhint:\nhint: \tgit config --global init.defaultBranch <name>\nhint:\nhint: Names commonly chosen instead of 'master' are 'main', 'trunk' and\nhint: 'development'. The just-created branch can be renamed via this command:\nhint:\nhint: \tgit branch -m <name>\ndone.\nFrom /work/pecan.bundle\n * branch                  work/pecan-single-expansion -> FETCH_HEAD\nPrevious HEAD position was ffcfbd5690 Pecan: the frontier is the left input of every expansion join\nHEAD is now at edc2c7c8cf Pecan: validate weighted overflow in the expansion materialization\n"
+}

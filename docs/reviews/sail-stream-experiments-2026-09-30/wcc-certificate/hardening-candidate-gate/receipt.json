@@ -1,0 +1,68 @@
+{
+  "recorded_utc": "2026-09-30T19:09:26.449519+00:00",
+  "repo": "/private/tmp/sail-wcc-certificate-gate",
+  "head": "f63f992766fe17ee2163a1187373449e79192be6",
+  "index_tree": "70c92d35bc3dfc6f023dadf6655084e5208ffbea",
+  "named_branch_head": "f63f992766fe17ee2163a1187373449e79192be6",
+  "source_scope": "precommit candidate: base HEAD plus staged patch, not a commit verdict",
+  "free_disk_bytes": 461353353216,
+  "steps": [
+    {
+      "name": "diff-check",
+      "command": [
+        "git",
+        "-C",
+        "/private/tmp/sail-wcc-certificate-gate",
+        "diff",
+        "--check",
+        "--cached"
+      ],
+      "returncode": 0
+    },
+    {
+      "name": "python-tests",
+      "command": [
+        "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "examples/extensions/benchmarks",
+        "--ignore=examples/extensions/benchmarks/test_wcc_certificate.py",
+        "--basetemp=/Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/wcc-certificate/hardening-candidate-gate/pytest-temp",
+        "--junitxml=/Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/wcc-certificate/hardening-candidate-gate/junit.xml"
+      ],
+      "returncode": 0
+    },
+    {
+      "name": "local-sql-integration",
+      "command": [
+        "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/bin/python",
+        "/Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/wcc-certificate/run_integration.py",
+        "--repo",
+        "/private/tmp/sail-wcc-certificate-gate",
+        "--output",
+        "/Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/wcc-certificate/hardening-candidate-gate/integration"
+      ],
+      "returncode": 0
+    }
+  ],
+  "script_sha256": "098bf3ebd6a27233088d0df892ae44db952e371d41178dc256dc8fd05e309b4d",
+  "python_tests": {
+    "tests": 372,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 39
+  },
+  "local_sql_tests": {
+    "tests": 6,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "verdict": "PASS",
+  "finished_utc": "2026-09-30T19:09:35.355914+00:00",
+  "observed_head": "f63f992766fe17ee2163a1187373449e79192be6",
+  "observed_index_tree": "70c92d35bc3dfc6f023dadf6655084e5208ffbea"
+}

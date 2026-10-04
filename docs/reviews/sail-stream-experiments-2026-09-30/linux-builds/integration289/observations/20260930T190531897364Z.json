@@ -1,0 +1,559 @@
+{
+  "observed_utc": "2026-09-30T19:05:27.685748+00:00",
+  "container": "sail-stream-build289",
+  "run": "/targets/sail-stream-2894a962076d",
+  "state": {
+    "Status": "running",
+    "Running": true,
+    "Paused": false,
+    "Restarting": false,
+    "OOMKilled": false,
+    "Dead": false,
+    "Pid": 152578,
+    "ExitCode": 0,
+    "Error": "",
+    "StartedAt": "2026-09-30T17:17:08.797751212Z",
+    "FinishedAt": "0001-01-01T00:00:00Z"
+  },
+  "image": "sha256:f3518d652fbea8b9b9f9ebf9849277ca3bd39d0c21bb2c6e36fbaeaa2dc2678e",
+  "limits": {
+    "NanoCpus": 16000000000,
+    "CpusetCpus": "0-15",
+    "Memory": 51539607552,
+    "MemorySwap": 51539607552,
+    "PidsLimit": 2048
+  },
+  "running_containers": [
+    "sail-stream-build289"
+  ],
+  "receipt": {
+    "started_utc": "2026-09-30T17:18:44.155667+00:00",
+    "outcome": "running",
+    "source_sha": "2894a962076d3cc404dd72ec736ebeb9239901f6",
+    "seed_sha": "ffcfbd5690e3f3681ef9ac18ba959bc231cf9f73",
+    "seed": "/targets/graph-nuts-ffcfbd569",
+    "seed_targets": {
+      "target-native": {
+        "metadata_sha256": "f1cfdad0992e7207522136ed4a6ed704535f5320d6de11ca7890eb0999d01fc1",
+        "logical_bytes": 7987640704,
+        "entries": 12816
+      },
+      "target-host": {
+        "metadata_sha256": "9d1865717545499e115ecbe243d4686d68970832acac03b872d7ead7eb87b52d",
+        "logical_bytes": 5096780904,
+        "entries": 11867
+      }
+    },
+    "bundle": {
+      "path": "/work/sail-stream-integration.bundle",
+      "sha256": "4a9f8b5d486ca2cb156ad1fa317d761ac4c0acc6009b836022a2da46d02ead6f",
+      "ref": "refs/heads/work/stream-performance-review"
+    },
+    "launch_image_claim": "sha256:f3518d652fbea8b9b9f9ebf9849277ca3bd39d0c21bb2c6e36fbaeaa2dc2678e",
+    "platform": {
+      "system": "Linux",
+      "node": "7184973e6bd0",
+      "release": "6.8.0-117-generic",
+      "version": "#117-Ubuntu SMP PREEMPT_DYNAMIC Tue May  5 19:26:24 UTC 2026",
+      "machine": "x86_64",
+      "processor": ""
+    },
+    "script_sha256": "8e66477e7232fe84112375d8a4fdd306429bf10d37b6af6ffe6537e6dd210782",
+    "arguments": {
+      "sha": "2894a962076d3cc404dd72ec736ebeb9239901f6",
+      "bundle": "/work/sail-stream-integration.bundle",
+      "bundle_ref": "refs/heads/work/stream-performance-review",
+      "image_id": "sha256:f3518d652fbea8b9b9f9ebf9849277ca3bd39d0c21bb2c6e36fbaeaa2dc2678e",
+      "bundle_sha256": "4a9f8b5d486ca2cb156ad1fa317d761ac4c0acc6009b836022a2da46d02ead6f",
+      "seed": "/targets/graph-nuts-ffcfbd569",
+      "run": null,
+      "sedona": "/targets/linux-gates/wheels/sail_sedona_extension-0.1.0-cp312-cp312-manylinux_2_34_x86_64.whl",
+      "jobs": 16,
+      "reserve_gib": 12,
+      "setuptools_version": "75.1.0",
+      "wheel_version": "0.45.1"
+    },
+    "free_bytes_before": 44076244992,
+    "steps": [
+      {
+        "name": "clone",
+        "command": [
+          "git",
+          "clone",
+          "--no-hardlinks",
+          "--no-checkout",
+          "/targets/graph-nuts-ffcfbd569/source",
+          "/targets/sail-stream-2894a962076d/source"
+        ],
+        "started_utc": "2026-09-30T17:18:45.702663+00:00",
+        "free_bytes_before": 44076236800,
+        "returncode": 0,
+        "finished_utc": "2026-09-30T17:18:51.939716+00:00",
+        "free_bytes_after": 43847602176
+      },
+      {
+        "name": "bundle-verify",
+        "command": [
+          "git",
+          "-C",
+          "/targets/sail-stream-2894a962076d/source",
+          "bundle",
+          "verify",
+          "/work/sail-stream-integration.bundle"
+        ],
+        "started_utc": "2026-09-30T17:18:51.941517+00:00",
+        "free_bytes_before": 43847602176,
+        "returncode": 0,
+        "finished_utc": "2026-09-30T17:18:51.963402+00:00",
+        "free_bytes_after": 43847593984
+      },
+      {
+        "name": "fetch",
+        "command": [
+          "git",
+          "-C",
+          "/targets/sail-stream-2894a962076d/source",
+          "fetch",
+          "--no-tags",
+          "/work/sail-stream-integration.bundle",
+          "refs/heads/work/stream-performance-review"
+        ],
+        "started_utc": "2026-09-30T17:18:51.964706+00:00",
+        "free_bytes_before": 43847593984,
+        "returncode": 0,
+        "finished_utc": "2026-09-30T17:18:52.895156+00:00",
+        "free_bytes_after": 43847413760
+      },
+      {
+        "name": "detach",
+        "command": [
+          "git",
+          "-C",
+          "/targets/sail-stream-2894a962076d/source",
+          "checkout",
+          "--detach",
+          "2894a962076d3cc404dd72ec736ebeb9239901f6"
+        ],
+        "started_utc": "2026-09-30T17:18:52.902408+00:00",
+        "free_bytes_before": 43847413760,
+        "returncode": 0,
+        "finished_utc": "2026-09-30T17:19:00.554180+00:00",
+        "free_bytes_after": 43763105792
+      },
+      {
+        "name": "venv",
+        "command": [
+          "uv",
+          "venv",
+          "--python",
+          "/targets/graph-nuts-ffcfbd569/venv/bin/python",
+          "/targets/sail-stream-2894a962076d/venv"
+        ],
+        "started_utc": "2026-09-30T17:19:00.746790+00:00",
+        "free_bytes_before": 43763105792,
+        "returncode": 0,
+        "finished_utc": "2026-09-30T17:19:01.666312+00:00",
+        "free_bytes_after": 43762982912
+      },
+      {
+        "name": "dependencies",
+        "command": [
+          "uv",
+          "pip",
+          "sync",
+          "--python",
+          "/targets/sail-stream-2894a962076d/venv/bin/python",
+          "/targets/sail-stream-2894a962076d/source/examples/extensions/requirements.lock"
+        ],
+        "started_utc": "2026-09-30T17:19:01.667647+00:00",
+        "free_bytes_before": 43762982912,
+        "returncode": 0,
+        "finished_utc": "2026-09-30T17:22:11.996269+00:00",
+        "free_bytes_after": 40785260544
+      },
+      {
+        "name": "seed-native-target",
+        "command": [
+          "cp",
+          "-a",
+          "--reflink=auto",
+          "/targets/graph-nuts-ffcfbd569/target-native",
+          "/targets/sail-stream-2894a962076d/target-native"
+        ],
+        "started_utc": "2026-09-30T17:22:14.482258+00:00",
+        "free_bytes_before": 40785149952,
+        "returncode": 0,
+        "finished_utc": "2026-09-30T17:28:31.687299+00:00",
+        "free_bytes_after": 32923836416
+      },
+      {
+        "name": "nutmeg-core-tests",
+        "command": [
+          "cargo",
+          "test",
+          "--locked",
+          "--release",
+          "--manifest-path",
+          "/targets/sail-stream-2894a962076d/source/examples/extensions/vendor/nutmeg-graph/Cargo.toml"
+        ],
+        "started_utc": "2026-09-30T17:28:31.695299+00:00",
+        "free_bytes_before": 32923836416,
+        "returncode": 0,
+        "finished_utc": "2026-09-30T17:36:19.077616+00:00",
+        "free_bytes_after": 32678334464
+      },
+      {
+        "name": "nutmeg-core-clippy",
+        "command": [
+          "cargo",
+          "clippy",
+          "--locked",
+          "--manifest-path",
+          "/targets/sail-stream-2894a962076d/source/examples/extensions/vendor/nutmeg-graph/Cargo.toml",
+          "--all-targets",
+          "--",
+          "-D",
+          "warnings"
+        ],
+        "started_utc": "2026-09-30T17:36:19.272854+00:00",
+        "free_bytes_before": 32678330368,
+        "returncode": 0,
+        "finished_utc": "2026-09-30T17:37:04.919364+00:00",
+        "free_bytes_after": 32678326272
+      },
+      {
+        "name": "argentea-core-tests",
+        "command": [
+          "cargo",
+          "test",
+          "--locked",
+          "--release",
+          "--manifest-path",
+          "/targets/sail-stream-2894a962076d/source/examples/extensions/argentea/Cargo.toml"
+        ],
+        "started_utc": "2026-09-30T17:37:04.922209+00:00",
+        "free_bytes_before": 32678326272,
+        "returncode": 0,
+        "finished_utc": "2026-09-30T17:38:34.283495+00:00",
+        "free_bytes_after": 32575709184
+      },
+      {
+        "name": "argentea-core-clippy",
+        "command": [
+          "cargo",
+          "clippy",
+          "--locked",
+          "--manifest-path",
+          "/targets/sail-stream-2894a962076d/source/examples/extensions/argentea/Cargo.toml",
+          "--all-targets",
+          "--",
+          "-D",
+          "warnings"
+        ],
+        "started_utc": "2026-09-30T17:38:34.686659+00:00",
+        "free_bytes_before": 32575709184,
+        "returncode": 0,
+        "finished_utc": "2026-09-30T17:39:19.729142+00:00",
+        "free_bytes_after": 32532103168
+      },
+      {
+        "name": "native-adapter-tests",
+        "command": [
+          "cargo",
+          "test",
+          "--locked",
+          "--release",
+          "--manifest-path",
+          "/targets/sail-stream-2894a962076d/source/examples/extensions/nutmeg/Cargo.toml",
+          "--lib"
+        ],
+        "started_utc": "2026-09-30T17:39:19.815499+00:00",
+        "free_bytes_before": 32532103168,
+        "returncode": 0,
+        "finished_utc": "2026-09-30T17:48:23.474482+00:00",
+        "free_bytes_after": 32341344256
+      },
+      {
+        "name": "native-adapter-clippy",
+        "command": [
+          "cargo",
+          "clippy",
+          "--locked",
+          "--manifest-path",
+          "/targets/sail-stream-2894a962076d/source/examples/extensions/nutmeg/Cargo.toml",
+          "--all-targets",
+          "--",
+          "-D",
+          "warnings",
+          "-A",
+          "clippy::large_enum_variant"
+        ],
+        "started_utc": "2026-09-30T17:48:24.149248+00:00",
+        "free_bytes_before": 32341344256,
+        "returncode": 0,
+        "finished_utc": "2026-09-30T17:48:56.057573+00:00",
+        "free_bytes_after": 32337666048
+      },
+      {
+        "name": "wheel",
+        "command": [
+          "/targets/sail-stream-2894a962076d/venv/bin/python",
+          "-m",
+          "maturin",
+          "build",
+          "--locked",
+          "--manifest-path",
+          "/targets/sail-stream-2894a962076d/source/examples/extensions/nutmeg/Cargo.toml",
+          "--release",
+          "--interpreter",
+          "/targets/sail-stream-2894a962076d/venv/bin/python",
+          "--out",
+          "/targets/sail-stream-2894a962076d/wheels"
+        ],
+        "started_utc": "2026-09-30T17:48:56.074670+00:00",
+        "free_bytes_before": 32337661952,
+        "returncode": 0,
+        "finished_utc": "2026-09-30T17:49:54.200972+00:00",
+        "free_bytes_after": 32282357760
+      },
+      {
+        "name": "install-native",
+        "command": [
+          "uv",
+          "pip",
+          "install",
+          "--python",
+          "/targets/sail-stream-2894a962076d/venv/bin/python",
+          "--no-deps",
+          "/targets/sail-stream-2894a962076d/wheels/sail_nutmeg-0.1.0-cp312-cp312-manylinux_2_34_x86_64.whl",
+          "/targets/linux-gates/wheels/sail_sedona_extension-0.1.0-cp312-cp312-manylinux_2_34_x86_64.whl"
+        ],
+        "started_utc": "2026-09-30T17:49:54.378704+00:00",
+        "free_bytes_before": 32282357760,
+        "returncode": 0,
+        "finished_utc": "2026-09-30T17:50:02.237186+00:00",
+        "free_bytes_after": 31963172864
+      },
+      {
+        "name": "pecan-build-tools",
+        "command": [
+          "uv",
+          "pip",
+          "install",
+          "--python",
+          "/targets/sail-stream-2894a962076d/venv/bin/python",
+          "--no-deps",
+          "setuptools==75.1.0",
+          "wheel==0.45.1"
+        ],
+        "started_utc": "2026-09-30T17:50:02.244461+00:00",
+        "free_bytes_before": 31963172864,
+        "returncode": 0,
+        "finished_utc": "2026-09-30T17:50:05.045737+00:00",
+        "free_bytes_after": 31950585856
+      },
+      {
+        "name": "install-pecan",
+        "command": [
+          "uv",
+          "pip",
+          "install",
+          "--python",
+          "/targets/sail-stream-2894a962076d/venv/bin/python",
+          "--no-deps",
+          "--no-build-isolation",
+          "/targets/sail-stream-2894a962076d/pecan-package"
+        ],
+        "started_utc": "2026-09-30T17:50:05.215398+00:00",
+        "free_bytes_before": 31950356480,
+        "returncode": 0,
+        "finished_utc": "2026-09-30T17:50:13.395443+00:00",
+        "free_bytes_after": 31949914112
+      },
+      {
+        "name": "seed-host-target",
+        "command": [
+          "cp",
+          "-a",
+          "--reflink=auto",
+          "/targets/graph-nuts-ffcfbd569/target-host",
+          "/targets/sail-stream-2894a962076d/target-host"
+        ],
+        "started_utc": "2026-09-30T17:50:14.057157+00:00",
+        "free_bytes_before": 31948570624,
+        "returncode": 0,
+        "finished_utc": "2026-09-30T18:10:09.003853+00:00",
+        "free_bytes_after": 27151265792
+      },
+      {
+        "name": "host-release-build",
+        "command": [
+          "cargo",
+          "build",
+          "--locked",
+          "--release",
+          "-p",
+          "sail-cli"
+        ],
+        "started_utc": "2026-09-30T18:10:09.008922+00:00",
+        "free_bytes_before": 27151265792
+      }
+    ],
+    "scope": "detached exact-source build and actual native unit/integration tests; no cluster qualification",
+    "seed_source_before": {
+      "head": "ffcfbd5690e3f3681ef9ac18ba959bc231cf9f73",
+      "status": ""
+    },
+    "sedona": {
+      "path": "/targets/linux-gates/wheels/sail_sedona_extension-0.1.0-cp312-cp312-manylinux_2_34_x86_64.whl",
+      "sha256": "7aad880b8ffe911af14faf1f7522a6108c0d1d4b26fa2df22c4d6dec1532e06d"
+    },
+    "source_log": "2894a96207 Graph extensions: reduce traversal allocations and retain stream failure causes\n3a9028057c benchmarks: allow recorded stream diagnostic logging filters\nae3b08f4f6 run_matrix: optional environment map of SAIL_* settings for cell containers\n837a8ecf5c Argentea two-host qualifier: SAIL_QUALIFY_EXTRA_ENV passthrough",
+    "locks": {
+      "Cargo.lock": "46121478d56b0d911d4f295f428b2816bd4a976d22265994afc2a5378bb00546",
+      "examples/extensions/argentea/Cargo.lock": "7389554cbd0d0703f42b613a33fd3af5af234d9896a4faafa1f9ae151aea7594",
+      "examples/extensions/nutmeg/Cargo.lock": "697bc267e79c3c51720b6efa73cf89718a53e2d97b690865d5c52ab92142cf95",
+      "examples/extensions/vendor/nutmeg-graph/Cargo.lock": "70106a44e03aa7ca2348997fd2b792826e7a4206cd9db51852a94bbaf6dc54d5",
+      "examples/extensions/requirements.lock": "e77f5992affe1b946903d7c6459a559bf7b48fcbb064a7f972733800b66d27f0"
+    },
+    "python": {
+      "base": "/root/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu",
+      "lib": "/root/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib",
+      "purelib": "/targets/sail-stream-2894a962076d/venv/lib/python3.12/site-packages",
+      "version": "3.12.14 (main, Sep 24 2026, 17:57:43) [Clang 22.1.3 ]"
+    },
+    "rust": "rustc 1.97.1 (8bab26f4f 2026-07-14)",
+    "uv": "uv 0.12.19 (x86_64-unknown-linux-gnu)",
+    "cgroup": {
+      "cpu.max": "1600000 100000",
+      "memory.max": "51539607552",
+      "memory.swap.max": "0"
+    },
+    "native_environment": {
+      "CARGO_HOME": "/usr/local/cargo",
+      "CARGO_INCREMENTAL": "0",
+      "RUSTUP_TOOLCHAIN": "1.97.1",
+      "CARGO_BUILD_JOBS": "16",
+      "CARGO_TARGET_DIR": "/targets/sail-stream-2894a962076d/target-native",
+      "CARGO_PROFILE_DEV_DEBUG": "0",
+      "CARGO_PROFILE_TEST_DEBUG": "0",
+      "PYO3_PYTHON": "/targets/sail-stream-2894a962076d/venv/bin/python",
+      "PYTHONHOME": "/root/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu",
+      "PYTHONPATH": "/targets/sail-stream-2894a962076d/venv/lib/python3.12/site-packages",
+      "LD_LIBRARY_PATH": "/root/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib"
+    },
+    "clippy_exception": "native adapter only: inherited gate3 clippy::large_enum_variant flag; no other lint exceptions",
+    "native_wheel": {
+      "path": "/targets/sail-stream-2894a962076d/wheels/sail_nutmeg-0.1.0-cp312-cp312-manylinux_2_34_x86_64.whl",
+      "sha256": "eb9e6a46cfc52d4e1ae4ec2b81205cf5b83d8f45d1e7268e44fa1c204bcb4681",
+      "bytes": 23001518
+    },
+    "packages": "apache-sedona==1.8.0\nattrs==26.1.0\ngoogleapis-common-protos==1.75.4\ngrpcio==1.84.0\ngrpcio-status==1.84.0\niniconfig==2.3.0\nmaturin==1.9.6\nnumpy==2.5.3\npackaging==26.3\npandas==3.0.6\npluggy==1.6.0\nprotobuf==7.36.2\npy4j==0.10.9.9\npyarrow==21.0.0\npygments==2.21.0\npyspark==4.0.1\npyspark-pecan @ file:///targets/sail-stream-2894a962076d/pecan-package\npytest==8.4.2\npython-dateutil==2.9.0.post0\nsail-nutmeg @ file:///targets/sail-stream-2894a962076d/wheels/sail_nutmeg-0.1.0-cp312-cp312-manylinux_2_34_x86_64.whl\nsail-sedona-extension @ file:///targets/linux-gates/wheels/sail_sedona_extension-0.1.0-cp312-cp312-manylinux_2_34_x86_64.whl\nsetuptools==75.1.0\nshapely==2.1.2\nsix==1.17.0\ntyping-extensions==4.16.0\nwheel==0.45.1",
+    "entry_points": [
+      {
+        "name": "sedona",
+        "value": "sail_sedona:extension",
+        "distribution": "sail-sedona-extension"
+      },
+      {
+        "name": "nutmeg",
+        "value": "sail_nutmeg:extension",
+        "distribution": "sail-nutmeg"
+      },
+      {
+        "name": "argentea",
+        "value": "sail_nutmeg.argentea_factory:extension",
+        "distribution": "sail-nutmeg"
+      }
+    ],
+    "host_environment": {
+      "CARGO_HOME": "/usr/local/cargo",
+      "CARGO_INCREMENTAL": "0",
+      "RUSTUP_TOOLCHAIN": "1.97.1",
+      "CARGO_BUILD_JOBS": "16",
+      "CARGO_TARGET_DIR": "/targets/sail-stream-2894a962076d/target-host",
+      "CARGO_PROFILE_DEV_DEBUG": "0",
+      "CARGO_PROFILE_TEST_DEBUG": "0",
+      "PYO3_PYTHON": "/targets/sail-stream-2894a962076d/venv/bin/python",
+      "PYTHONHOME": "/root/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu",
+      "PYTHONPATH": "/targets/sail-stream-2894a962076d/venv/lib/python3.12/site-packages",
+      "LD_LIBRARY_PATH": "/root/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu/lib",
+      "CARGO_PROFILE_RELEASE_DEBUG": "0",
+      "CARGO_PROFILE_RELEASE_OPT_LEVEL": "3",
+      "CARGO_PROFILE_RELEASE_LTO": "true",
+      "CARGO_PROFILE_RELEASE_CODEGEN_UNITS": "1",
+      "CARGO_PROFILE_RELEASE_STRIP": "true"
+    }
+  },
+  "completed_tests": {
+    "nutmeg-core-tests": {
+      "summaries": [
+        "test result: ok. 85 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.35s",
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.27s",
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s"
+      ],
+      "binaries": [
+        "/targets/sail-stream-2894a962076d/target-native/release/deps/nutmeg_graph-1bd57eda65b7559a",
+        "/targets/sail-stream-2894a962076d/target-native/release/deps/admission_before_allocation-e27e5fc7f44de016"
+      ]
+    },
+    "argentea-core-tests": {
+      "summaries": [
+        "test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.43s",
+        "test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s",
+        "test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s",
+        "test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.21s",
+        "test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s",
+        "test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s",
+        "test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s",
+        "test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.07s",
+        "test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+        "test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s",
+        "test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s",
+        "test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s",
+        "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s"
+      ],
+      "binaries": [
+        "/targets/sail-stream-2894a962076d/target-native/release/deps/sail_argentea_core-21e95e616ef01f69",
+        "/targets/sail-stream-2894a962076d/target-native/release/deps/bfs-e63c87a6c14eb0d2",
+        "/targets/sail-stream-2894a962076d/target-native/release/deps/bfs_protocol-c40e8bd77355b262",
+        "/targets/sail-stream-2894a962076d/target-native/release/deps/bfs_resources-559d2dcf0c189e97",
+        "/targets/sail-stream-2894a962076d/target-native/release/deps/delta-e7bb0e32689846f5",
+        "/targets/sail-stream-2894a962076d/target-native/release/deps/delta_protocol-e253fb3b915572bd",
+        "/targets/sail-stream-2894a962076d/target-native/release/deps/pagerank-5e0121ea818a558a",
+        "/targets/sail-stream-2894a962076d/target-native/release/deps/scheduler_probe-4e2ebcbaa7bd72c0",
+        "/targets/sail-stream-2894a962076d/target-native/release/deps/sssp-9a34634027fefe84",
+        "/targets/sail-stream-2894a962076d/target-native/release/deps/sssp_primitives-ec694ba12c0e437a",
+        "/targets/sail-stream-2894a962076d/target-native/release/deps/wcc-1407b48c25b05341",
+        "/targets/sail-stream-2894a962076d/target-native/release/deps/wcc_protocol-3a343ab4715f3196",
+        "/targets/sail-stream-2894a962076d/target-native/release/deps/wcc_resources-908f699322133588"
+      ]
+    },
+    "native-adapter-tests": {
+      "summaries": [
+        "test result: ok. 48 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 14.58s"
+      ],
+      "binaries": [
+        "/targets/sail-stream-2894a962076d/target-native/release/deps/_native-ffc9a421a89b09e5"
+      ]
+    }
+  },
+  "last_log_tail": [
+    "   Compiling sail-cache v0.7.1 (/targets/sail-stream-2894a962076d/source/crates/sail-cache)",
+    "   Compiling sail-catalog-system v0.7.1 (/targets/sail-stream-2894a962076d/source/crates/sail-catalog-system)",
+    "   Compiling sail-catalog-memory v0.7.1 (/targets/sail-stream-2894a962076d/source/crates/sail-catalog-memory)",
+    "   Compiling sail-catalog-glue v0.7.1 (/targets/sail-stream-2894a962076d/source/crates/sail-catalog-glue)",
+    "   Compiling sail-python-udf v0.7.1 (/targets/sail-stream-2894a962076d/source/crates/sail-python-udf)",
+    "   Compiling sail-function v0.7.1 (/targets/sail-stream-2894a962076d/source/crates/sail-function)",
+    "   Compiling sail-catalog-hms v0.7.1 (/targets/sail-stream-2894a962076d/source/crates/sail-catalog-hms)",
+    "   Compiling sail-logical-plan v0.7.1 (/targets/sail-stream-2894a962076d/source/crates/sail-logical-plan)",
+    "   Compiling sail-physical-plan v0.7.1 (/targets/sail-stream-2894a962076d/source/crates/sail-physical-plan)",
+    "   Compiling sail-logical-optimizer v0.7.1 (/targets/sail-stream-2894a962076d/source/crates/sail-logical-optimizer)",
+    "   Compiling sail-physical-optimizer v0.7.1 (/targets/sail-stream-2894a962076d/source/crates/sail-physical-optimizer)",
+    "   Compiling sail-catalog-onelake v0.7.1 (/targets/sail-stream-2894a962076d/source/crates/sail-catalog-onelake)",
+    "   Compiling sail-flight v0.7.1 (/targets/sail-stream-2894a962076d/source/crates/sail-flight)",
+    "   Compiling sail-cli v0.7.1 (/targets/sail-stream-2894a962076d/source/crates/sail-cli)"
+  ],
+  "free_bytes": 26472927232
+}

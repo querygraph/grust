@@ -1,0 +1,1706 @@
+diff --git a/crates/sail-execution/src/diagnostics.rs b/crates/sail-execution/src/diagnostics.rs
+new file mode 100644
+index 000000000..fcb806d5a
+--- /dev/null
++++ b/crates/sail-execution/src/diagnostics.rs
+@@ -0,0 +1,120 @@
++//! Failure-only diagnostics captured before transport/task error conversion.
++use std::error::Error;
++use std::fmt;
++
++use arrow_flight::error::FlightError;
++use log::warn;
++use tonic::Status;
++
++const MAX_TEXT_BYTES: usize = 4096;
++const TRUNCATED: &str = " [truncated]";
++
++/// Keep the original error and its sources in one attributable log record.
++/// Neither gRPC metadata nor binary status details are diagnostic log fields.
++pub(crate) fn log_failure(context: fmt::Arguments<'_>, error: &(dyn Error + 'static)) {
++    warn!(
++        "execution_failure pid={} {context} error_chain={}",
++        std::process::id(),
++        ErrorChain(error)
++    );
++}
++
++/// The body hook already reports Tonic errors propagated through a codec.
++pub(crate) fn log_codec_failure(context: fmt::Arguments<'_>, error: &FlightError) {
++    if !matches!(error, FlightError::Tonic(_)) {
++        log_failure(context, error);
++    }
++}
++
++/// Bound each free-text field, preserve UTF-8, and keep it on one log line.
++pub(crate) fn bounded_text(value: impl fmt::Display) -> String {
++    struct Writer {
++        text: String,
++        truncated: bool,
++    }
++    impl fmt::Write for Writer {
++        fn write_str(&mut self, value: &str) -> fmt::Result {
++            for character in value.chars() {
++                let escaped;
++                let mut utf8 = [0; 4];
++                let value = if character.is_control() {
++                    escaped = character.escape_default().to_string();
++                    escaped.as_str()
++                } else {
++                    character.encode_utf8(&mut utf8)
++                };
++                if self.text.len() + value.len() > MAX_TEXT_BYTES - TRUNCATED.len() {
++                    self.truncated = true;
++                    return Err(fmt::Error);
++                }
++                self.text.push_str(value);
++            }
++            Ok(())
++        }
++    }
++    let mut writer = Writer {
++        text: String::new(),
++        truncated: false,
++    };
++    // Stop formatting at the bound instead of allocating an unbounded String
++    // and truncating it after the allocation has already happened.
++    let _ = fmt::write(&mut writer, format_args!("{value}"));
++    if writer.truncated {
++        writer.text.push_str(TRUNCATED);
++    }
++    writer.text
++}
++
++struct ErrorChain<'a>(&'a (dyn Error + 'static));
++
++impl fmt::Display for ErrorChain<'_> {
++    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
++        f.write_str(&bounded_text(Chain(self.0)))
++    }
++}
++
++struct Chain<'a>(&'a (dyn Error + 'static));
++
++impl fmt::Display for Chain<'_> {
++    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
++        let mut errors = Vec::with_capacity(32);
++        let mut current = Some(self.0);
++        while errors.len() < 32 {
++            let Some(error) = current else { break };
++            errors.push(error);
++            current = error.source();
++        }
++        let last_status = errors.iter().rposition(|e| e.is::<Status>());
++        for (depth, error) in errors.iter().enumerate() {
++            if depth > 0 {
++                write!(f, " caused_by=")?;
++            }
++            if let Some(status) = error.downcast_ref::<Status>() {
++                write!(
++                    f,
++                    "grpc_code={:?} message={}",
++                    status.code(),
++                    status.message()
++                )?;
++            } else if current.is_some() || last_status.is_some_and(|last| depth < last) {
++                // Wrapper Display implementations may include Debug(Status),
++                // exposing metadata/details. A bounded but unfinished source
++                // walk might hide a later Status or be cyclic: do not recurse
++                // through wrapper formatting in either case.
++                write!(f, "[wrapper omitted]")?;
++            } else {
++                // h2 Display retains reset/GOAWAY direction and reason; hyper
++                // source Display retains the keepalive timeout explanation.
++                write!(f, "{error}")?;
++            }
++        }
++        if current.is_some() {
++            write!(f, " [source chain truncated after 32 errors]")?;
++        }
++        Ok(())
++    }
++}
++
++#[cfg(test)]
++#[path = "diagnostics/tests.rs"]
++mod tests;
+diff --git a/crates/sail-execution/src/diagnostics/tests.rs b/crates/sail-execution/src/diagnostics/tests.rs
+new file mode 100644
+index 000000000..fd94d049f
+--- /dev/null
++++ b/crates/sail-execution/src/diagnostics/tests.rs
+@@ -0,0 +1,178 @@
++use std::sync::Mutex;
++
++use log::{Level, LevelFilter, Log, Metadata, Record};
++use tonic::Code;
++
++use super::*;
++
++struct Capture(Mutex<Vec<String>>);
++
++impl Log for Capture {
++    fn enabled(&self, metadata: &Metadata<'_>) -> bool {
++        metadata.level() <= Level::Warn
++    }
++
++    #[expect(
++        clippy::unwrap_used,
++        reason = "a poisoned capture mutex fails this test"
++    )]
++    fn log(&self, record: &Record<'_>) {
++        if self.enabled(record.metadata()) {
++            self.0.lock().unwrap().push(record.args().to_string());
++        }
++    }
++
++    fn flush(&self) {}
++}
++
++static CAPTURE: Capture = Capture(Mutex::new(Vec::new()));
++
++#[derive(Debug)]
++struct Outer(Status);
++
++impl fmt::Display for Outer {
++    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
++        // Real error wrappers can print a source using Debug from Display.
++        write!(f, "opaque outer error {:?}", self.0)
++    }
++}
++
++impl Error for Outer {
++    fn source(&self) -> Option<&(dyn Error + 'static)> {
++        Some(&self.0)
++    }
++}
++
++#[test]
++#[expect(
++    clippy::unwrap_used,
++    clippy::expect_used,
++    reason = "fixed valid fixtures and required captured evidence must fail the test if absent"
++)]
++fn failure_log_preserves_peer_key_original_status_and_nested_cause() {
++    log::set_logger(&CAPTURE).unwrap();
++    log::set_max_level(LevelFilter::Warn);
++    let mut status = Status::with_details(
++        Code::Unavailable,
++        "injected body failure",
++        bytes::Bytes::from_static(b"private-binary-details"),
++    );
++    status
++        .metadata_mut()
++        .insert("private-header", "private-header-value".parse().unwrap());
++    status.set_source(std::sync::Arc::new(std::io::Error::new(
++        std::io::ErrorKind::BrokenPipe,
++        "socket closed during body",
++    )));
++    let error = Outer(status);
++    log_failure(
++        format_args!(
++            "event=flight_client_error phase=body peer=http://127.0.0.1:50051 job_id=7 stage=2 partition=3 attempt=0 channel=4"
++        ),
++        &error,
++    );
++    let records = CAPTURE.0.lock().unwrap();
++    let record = records
++        .iter()
++        .find(|record| record.contains("injected body failure"))
++        .expect("failure should emit a warning");
++    for expected in [
++        "execution_failure pid=",
++        "phase=body",
++        "peer=http://127.0.0.1:50051",
++        "job_id=7 stage=2 partition=3 attempt=0 channel=4",
++        "injected body failure",
++        "caused_by=",
++        "grpc_code=Unavailable",
++        "socket closed during body",
++    ] {
++        assert!(record.contains(expected), "missing {expected:?}: {record}");
++    }
++    assert!(!record.contains("private-header"));
++    assert!(!record.contains("private-binary-details"));
++    drop(records);
++    // Only real codec failures add a codec warning after the body boundary.
++    log_codec_failure(
++        format_args!("codec-passthrough"),
++        &FlightError::Tonic(Box::new(error.0.clone())),
++    );
++    log_codec_failure(
++        format_args!("codec-genuine"),
++        &FlightError::DecodeError("bad IPC".into()),
++    );
++    let records = CAPTURE.0.lock().unwrap();
++    assert!(
++        !records
++            .iter()
++            .any(|record| record.contains("codec-passthrough"))
++    );
++    assert!(
++        records
++            .iter()
++            .any(|record| record.contains("codec-genuine") && record.contains("bad IPC"))
++    );
++    // Diagnostics borrow the error; callers still receive the original status.
++    assert_eq!(error.0.code(), Code::Unavailable);
++    assert_eq!(error.0.message(), "injected body failure");
++}
++
++#[derive(Debug)]
++struct Cyclic;
++
++impl fmt::Display for Cyclic {
++    fn fmt(&self, _: &mut fmt::Formatter<'_>) -> fmt::Result {
++        std::panic::resume_unwind(Box::new("cyclic wrappers must not be formatted"))
++    }
++}
++
++impl Error for Cyclic {
++    fn source(&self) -> Option<&(dyn Error + 'static)> {
++        Some(self)
++    }
++}
++
++#[test]
++fn cyclic_error_sources_cannot_block_failure_reporting() {
++    let chain = ErrorChain(&Cyclic).to_string();
++    assert_eq!(chain.matches("[wrapper omitted]").count(), 32);
++    assert!(chain.ends_with("[source chain truncated after 32 errors]"));
++}
++
++#[test]
++fn multibyte_status_and_task_fields_are_bounded_single_line_utf8() {
++    let message = "漢🙂\n\r\t".repeat(4096);
++    let status = Outer(Status::internal(message.clone()));
++    let chain = ErrorChain(&status).to_string();
++    let field = bounded_text(message);
++    for text in [chain, field] {
++        assert!(text.len() <= MAX_TEXT_BYTES);
++        assert!(text.ends_with(TRUNCATED));
++        assert!(text.contains("漢🙂\\n\\r\\t"));
++        assert!(!text.chars().any(char::is_control));
++    }
++}
++
++#[test]
++#[expect(
++    clippy::unwrap_used,
++    reason = "the fixed header value is valid test data"
++)]
++fn direct_status_omits_metadata_and_details_without_losing_its_source() {
++    let mut status = Status::with_details(
++        Code::Internal,
++        "body failure",
++        bytes::Bytes::from_static(b"secret-details"),
++    );
++    status
++        .metadata_mut()
++        .insert("secret-header", "secret-value".parse().unwrap());
++    status.set_source(std::sync::Arc::new(std::io::Error::new(
++        std::io::ErrorKind::TimedOut,
++        "keep-alive timed out",
++    )));
++    let chain = ErrorChain(&status).to_string();
++    assert!(
++        chain.contains("grpc_code=Internal message=body failure caused_by=keep-alive timed out")
++    );
++    assert!(!chain.contains("secret"));
++}
+diff --git a/crates/sail-execution/src/lib.rs b/crates/sail-execution/src/lib.rs
+index c6f59d0e8..f01782d68 100644
+--- a/crates/sail-execution/src/lib.rs
++++ b/crates/sail-execution/src/lib.rs
+@@ -1,3 +1,4 @@
++mod diagnostics;
+ pub mod driver;
+ pub mod error;
+ mod id;
+diff --git a/crates/sail-execution/src/rpc.rs b/crates/sail-execution/src/rpc.rs
+index 63c16b16f..a4469dc8d 100644
+--- a/crates/sail-execution/src/rpc.rs
++++ b/crates/sail-execution/src/rpc.rs
+@@ -151,6 +151,11 @@ impl<T: ClientBuilder + Clone> ClientHandle<T> {
+         }
+     }
+ 
++    /// Share endpoint options with diagnostics without enlarging client owners.
++    pub(crate) fn options(&self) -> Arc<ClientOptions> {
++        Arc::clone(&self.options)
++    }
++
+     /// Returns a clone of the RPC client.
+     /// The client requires `&mut self` when making RPC requests,
+     /// so it is less useful to return `&T` here.
+diff --git a/crates/sail-execution/src/stream/service/client.rs b/crates/sail-execution/src/stream/service/client.rs
+index 84c5c3f32..0633b2685 100644
+--- a/crates/sail-execution/src/stream/service/client.rs
++++ b/crates/sail-execution/src/stream/service/client.rs
+@@ -7,6 +7,7 @@ use futures::TryStreamExt;
+ use prost::Message;
+ use sail_common_datafusion::array::record_batch::cast_record_batch_positionally;
+ 
++use crate::diagnostics::{log_codec_failure, log_failure};
+ use crate::error::ExecutionResult;
+ use crate::id::{DriverId, TaskStreamKey};
+ use crate::rpc::{ClientHandle, ClientOptions, ClientService};
+@@ -60,17 +61,72 @@ impl TaskStreamFlightClient {
+         let request = arrow_flight::Ticket {
+             ticket: ticket.into(),
+         };
+-        let response = self.inner.get().await?.do_get(request).await?;
+-        let stream = response.into_inner().map_err(|e| e.into());
+-        let stream = FlightRecordBatchStream::new_from_flight_data(stream).map_err(|e| e.into());
++        let mut client = self.inner.get().await.inspect_err(|error| {
++            log_failure(
++                format_args!(
++                    "event=flight_client_error phase=connect peer={} owner={:?} key={key:?}",
++                    self.inner.options().to_url_string(),
++                    self.owner
++                ),
++                error,
++            );
++        })?;
++        let response = client.do_get(request).await.inspect_err(|error| {
++            log_failure(
++                format_args!(
++                    "event=flight_client_error phase=do_get peer={} owner={:?} key={key:?}",
++                    self.inner.options().to_url_string(),
++                    self.owner
++                ),
++                error,
++            );
++        })?;
++        let peer = self.inner.options();
++        let owner = self.owner;
++        let body_key = key.clone();
++        let stream = response
++            .into_inner()
++            .inspect_err(move |error| {
++                log_failure(
++                    format_args!(
++                        "event=flight_client_error phase=body peer={} owner={owner:?} key={body_key:?}",
++                        peer.to_url_string()
++                    ),
++                    error,
++                );
++            })
++            .map_err(|e| e.into());
++        let peer = self.inner.options();
++        let decode_key = key.clone();
++        let stream = FlightRecordBatchStream::new_from_flight_data(stream)
++            .inspect_err(move |error| {
++                log_codec_failure(
++                    format_args!(
++                        "event=flight_client_error phase=decode peer={} owner={owner:?} key={decode_key:?}",
++                        peer.to_url_string()
++                    ),
++                    error,
++                );
++            })
++            .map_err(|e| e.into());
+         // The Flight data encoder may have issue with the `LargeList` data type, causing
+         // schema mismatch. As a workaround, here we cast the record batch to the expected schema.
+         // https://github.com/apache/arrow-rs/issues/10291
++        let peer = self.inner.options();
+         let stream = stream.and_then(move |batch| {
+             let result = if batch.schema().as_ref() == schema.as_ref() {
+                 Ok(batch)
+             } else {
+                 cast_record_batch_positionally(batch, schema.clone())
++                    .inspect_err(|error| {
++                        log_failure(
++                            format_args!(
++                                "event=flight_client_error phase=cast peer={} owner={owner:?} key={key:?}",
++                                peer.to_url_string()
++                            ),
++                            error,
++                        );
++                    })
+                     .map_err(|e| TaskStreamError::External(Arc::new(e)))
+             };
+             futures::future::ready(result)
+diff --git a/crates/sail-execution/src/stream/service/server.rs b/crates/sail-execution/src/stream/service/server.rs
+index 7d7ec147e..96d88bba7 100644
+--- a/crates/sail-execution/src/stream/service/server.rs
++++ b/crates/sail-execution/src/stream/service/server.rs
+@@ -14,6 +14,7 @@ use prost::Message;
+ use tokio::sync::oneshot;
+ use tonic::{Request, Response, Status, Streaming, async_trait};
+ 
++use crate::diagnostics::{log_codec_failure, log_failure};
+ use crate::error::ExecutionResult;
+ use crate::id::TaskStreamKey;
+ use crate::shuffle::ShuffleCompression;
+@@ -128,15 +129,55 @@ where
+         &self,
+         request: Request<Ticket>,
+     ) -> Result<Response<Self::DoGetStream>, Status> {
++        let peer = request.remote_addr();
+         let Ticket { ticket } = request.into_inner();
+-        let key = K::decode(&ticket)?;
++        let key = K::decode(&ticket).inspect_err(|error| {
++            log_failure(
++                format_args!("event=flight_server_error phase=ticket peer={peer:?}"),
++                error,
++            );
++        })?;
+         debug!("{key:?}");
++        let diagnostic_key = std::sync::Arc::<str>::from(format!("{key:?}"));
+         let (tx, rx) = oneshot::channel();
+-        self.fetcher.fetch(key, tx).await?;
++        self.fetcher.fetch(key, tx).await.inspect_err(|error| {
++            log_failure(
++                format_args!(
++                    "event=flight_server_error phase=fetch peer={peer:?} key={diagnostic_key}"
++                ),
++                error,
++            );
++        })?;
+         let stream = rx
+             .await
+-            .map_err(|_| Status::internal("failed to receive task stream"))??;
+-        let stream = stream.map_err(|e| FlightError::Tonic(Box::new(e.into())));
++            .inspect_err(|error| {
++                log_failure(
++                    format_args!(
++                        "event=flight_server_error phase=fetch_receiver peer={peer:?} key={diagnostic_key}"
++                    ),
++                    error,
++                );
++            })
++            .map_err(|_| Status::internal("failed to receive task stream"))?
++            .inspect_err(|error| {
++                log_failure(
++                    format_args!(
++                        "event=flight_server_error phase=fetch_result peer={peer:?} key={diagnostic_key}"
++                    ),
++                    error,
++                );
++            })?;
++        let body_key = diagnostic_key.clone();
++        let stream = stream
++            .inspect_err(move |error| {
++                log_failure(
++                    format_args!(
++                        "event=flight_server_error phase=body peer={peer:?} key={body_key}"
++                    ),
++                    error,
++                );
++            })
++            .map_err(|e| FlightError::Tonic(Box::new(e.into())));
+         let options = self
+             .compression
+             .ipc_write_options()
+@@ -144,6 +185,14 @@ where
+         let stream = FlightDataEncoderBuilder::new()
+             .with_options(options)
+             .build(stream)
++            .inspect_err(move |error| {
++                log_codec_failure(
++                    format_args!(
++                        "event=flight_server_error phase=encode peer={peer:?} key={diagnostic_key}"
++                    ),
++                    error,
++                );
++            })
+             .map_err(Status::from);
+         Ok(Response::new(Box::pin(stream) as Self::DoGetStream))
+     }
+diff --git a/crates/sail-execution/src/task_runner/actor/handler.rs b/crates/sail-execution/src/task_runner/actor/handler.rs
+index e39524e9d..3eabbc533 100644
+--- a/crates/sail-execution/src/task_runner/actor/handler.rs
++++ b/crates/sail-execution/src/task_runner/actor/handler.rs
+@@ -10,6 +10,7 @@ use sail_common::actor::{ActorAction, ActorContext};
+ use sail_common_datafusion::error::CommonErrorCause;
+ use tokio::sync::oneshot;
+ 
++use crate::diagnostics::bounded_text;
+ use crate::driver::{DriverMessage, TaskStatus};
+ use crate::error::{ExecutionError, ExecutionResult};
+ use crate::id::{JobId, TaskAttempt, TaskKey, TaskStreamKey, WorkerId};
+@@ -112,6 +113,22 @@ impl TaskRunnerActor {
+         message: Option<String>,
+         cause: Option<CommonErrorCause>,
+     ) -> ActorAction {
++        if matches!(status, TaskStatus::Failed) {
++            let worker_id = match &self.placement {
++                TaskRunnerPlacement::Worker { worker_id, .. } => Some(*worker_id),
++                TaskRunnerPlacement::Driver { .. } => None,
++            };
++            warn!(
++                "task_failure pid={} session_id={} worker_id={worker_id:?} key={key:?} message={} cause={}",
++                std::process::id(),
++                bounded_text(&self.session_id),
++                bounded_text(message.as_deref().unwrap_or("<none>")),
++                cause
++                    .as_ref()
++                    .map(bounded_text)
++                    .unwrap_or_else(|| "<none>".into())
++            );
++        }
+         if !matches!(status, TaskStatus::Running) {
+             self.signals.remove(&key);
+         }
+diff --git a/crates/sail-execution/src/task_runner/monitor.rs b/crates/sail-execution/src/task_runner/monitor.rs
+index f7fb182dc..a87cef874 100644
+--- a/crates/sail-execution/src/task_runner/monitor.rs
++++ b/crates/sail-execution/src/task_runner/monitor.rs
+@@ -11,6 +11,7 @@ use sail_python_udf::error::PyErrExtractor;
+ use tokio::sync::oneshot;
+ use tokio_util::task::AbortOnDropHandle;
+ 
++use crate::diagnostics::log_failure;
+ use crate::driver::TaskStatus;
+ use crate::id::{TaskKey, TaskKeyDisplay};
+ use crate::task_runner::{TaskRunnerActor, TaskRunnerMessage};
+@@ -148,6 +149,10 @@ impl TaskMonitor {
+                 break Self::status(key, TaskStatus::Succeeded, None, None);
+             };
+             if let Err(error) = batch {
++                log_failure(
++                    format_args!("event=task_execution_error key={key:?}"),
++                    &error,
++                );
+                 break Self::status(
+                     key,
+                     TaskStatus::Failed,
+diff --git a/examples/extensions/argentea/src/adjacency.rs b/examples/extensions/argentea/src/adjacency.rs
+index ac7592d8d..695d580ef 100644
+--- a/examples/extensions/argentea/src/adjacency.rs
++++ b/examples/extensions/argentea/src/adjacency.rs
+@@ -1,5 +1,5 @@
+ //! Immutable admitted adjacency shared by Argentea's reference and residual PR.
+-use crate::{Operation, Resources, Result, reserve_vec};
++use crate::{Operation, Resources, Result, reserve_vec, source_index::SourceIndex};
+ use grust_procedures::MemoryReservation;
+ use std::sync::{
+     Arc,
+@@ -29,7 +29,7 @@ impl Adjacency {
+         }
+         let n = vertices.len();
+         let bytes = n
+-            .checked_mul(64)
++            .checked_mul(64 - size_of::<usize>())
+             .and_then(|v| edges.len().checked_mul(16).and_then(|e| v.checked_add(e)))
+             .and_then(|v| v.checked_add(4096 + size_of::<usize>()))
+             .ok_or("partition admission overflow")?;
+@@ -47,32 +47,29 @@ impl Adjacency {
+                 return Err("vertices are duplicated or belong to another partition".into());
+             }
+         }
++        let sources = SourceIndex::new(&ids, operation.partitions);
+         let mut offsets = reserve_vec(n + 1)?;
+         offsets.resize(n + 1, 0usize);
+         for &(source, _) in edges {
+             meter.charge(1).map_err(|e| e.to_string())?;
+-            let local = ids
+-                .binary_search(&source)
+-                .map_err(|_| "source is not owned")?;
++            let local = sources.lookup(source).ok_or("source is not owned")?;
+             offsets[local + 1] += 1;
+         }
+         for i in 0..n {
+             meter.charge(1).map_err(|e| e.to_string())?;
+             offsets[i + 1] += offsets[i];
+         }
+-        let mut cursor = reserve_vec(n)?;
+-        cursor.extend_from_slice(&offsets[..n]);
++        // Reuse starts as fill cursors; restore them from the resulting ends.
+         let mut targets = reserve_vec(edges.len())?;
+         targets.resize(edges.len(), 0i64);
+         for &(source, target) in edges {
+             meter.charge(1).map_err(|e| e.to_string())?;
+-            let local = ids
+-                .binary_search(&source)
+-                .map_err(|_| "source is not owned")?;
+-            targets[cursor[local]] = target;
+-            cursor[local] += 1;
++            let local = sources.lookup(source).ok_or("source is not owned")?;
++            targets[offsets[local]] = target;
++            offsets[local] += 1;
+         }
+-        drop(cursor);
++        offsets.copy_within(..n, 1);
++        offsets[0] = 0;
+         // Retain conservative metadata and all CSR bytes, release build scratch.
+         admission
+             .shrink(n * 8 + (n + 1) * size_of::<usize>() + edges.len() * 8 + 4096)
+diff --git a/examples/extensions/argentea/src/adjacency_tests/allocations.rs b/examples/extensions/argentea/src/adjacency_tests/allocations.rs
+new file mode 100644
+index 000000000..f62d85afe
+--- /dev/null
++++ b/examples/extensions/argentea/src/adjacency_tests/allocations.rs
+@@ -0,0 +1,77 @@
++//! Thread-local requested-allocation counters, excluding fixture construction.
++use std::alloc::{GlobalAlloc, Layout, System};
++use std::cell::Cell;
++
++#[derive(Clone, Copy, Debug, Default)]
++pub(super) struct Counts {
++    pub calls: usize,
++    pub bytes: usize,
++    pub peak: usize,
++    live: isize,
++}
++thread_local! { static ACTIVE: Cell<Option<Counts>> = const { Cell::new(None) }; }
++struct Measured;
++#[global_allocator]
++static ALLOCATOR: Measured = Measured;
++fn allocated(bytes: usize, old: usize) {
++    ACTIVE.with(|active| {
++        if let Some(mut counts) = active.get() {
++            counts.calls += 1;
++            counts.bytes += bytes;
++            counts.live += bytes as isize - old as isize;
++            counts.peak = counts.peak.max(counts.live.max(0) as usize);
++            active.set(Some(counts));
++        }
++    });
++}
++// SAFETY: Every allocation and deallocation uses System with its original
++// pointer and layout. Recording uses allocation-free thread-local Cells.
++unsafe impl GlobalAlloc for Measured {
++    unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
++        let pointer = unsafe { System.alloc(layout) };
++        if !pointer.is_null() {
++            allocated(layout.size(), 0);
++        }
++        pointer
++    }
++    unsafe fn alloc_zeroed(&self, layout: Layout) -> *mut u8 {
++        let pointer = unsafe { System.alloc_zeroed(layout) };
++        if !pointer.is_null() {
++            allocated(layout.size(), 0);
++        }
++        pointer
++    }
++    unsafe fn dealloc(&self, pointer: *mut u8, layout: Layout) {
++        ACTIVE.with(|active| {
++            if let Some(mut counts) = active.get() {
++                counts.live -= layout.size() as isize;
++                active.set(Some(counts));
++            }
++        });
++        unsafe { System.dealloc(pointer, layout) };
++    }
++    unsafe fn realloc(&self, pointer: *mut u8, layout: Layout, size: usize) -> *mut u8 {
++        let result = unsafe { System.realloc(pointer, layout, size) };
++        if !result.is_null() {
++            allocated(size, layout.size());
++        }
++        result
++    }
++}
++pub(super) fn measure<T>(f: impl FnOnce() -> T) -> (T, Counts) {
++    struct Reset;
++    impl Drop for Reset {
++        fn drop(&mut self) {
++            ACTIVE.with(|active| active.set(None));
++        }
++    }
++    ACTIVE.with(|active| {
++        assert!(active.get().is_none());
++        active.set(Some(Counts::default()));
++    });
++    let reset = Reset;
++    let result = f();
++    let counts = ACTIVE.with(|active| active.get().unwrap());
++    drop(reset);
++    (result, counts)
++}
+diff --git a/examples/extensions/argentea/src/adjacency_tests/mod.rs b/examples/extensions/argentea/src/adjacency_tests/mod.rs
+new file mode 100644
+index 000000000..543628e20
+--- /dev/null
++++ b/examples/extensions/argentea/src/adjacency_tests/mod.rs
+@@ -0,0 +1,234 @@
++mod allocations;
++use crate::{Operation, Resources, WeightedAdjacency, adjacency::Adjacency};
++use grust_procedures::{ExecutionContext, ExecutionLimits};
++use sail_native_resource_ffi::MemoryLease;
++use std::sync::Arc;
++
++fn operation(partitions: usize, vertices: usize) -> Operation {
++    Operation {
++        package: "csr-test".into(),
++        session: "session".into(),
++        operation: "operation".into(),
++        snapshot: "snapshot".into(),
++        generation: 1,
++        partitions,
++        vertices: vertices.max(1) as u64,
++    }
++}
++fn resources(bytes: usize, work_units: usize) -> Resources {
++    Resources::new(
++        ExecutionContext::new(ExecutionLimits {
++            memory_bytes: bytes,
++            work_units,
++            batch_rows: 16,
++            deadline: None,
++        })
++        .unwrap(),
++        MemoryLease::new(Arc::new(()), bytes as u64),
++    )
++    .unwrap()
++}
++fn check_graph(ids: &[i64], p: usize) {
++    let op = operation(p, ids.len());
++    let owner = ids.first().map_or(0, |id| op.owner(*id));
++    let r = resources(1 << 24, usize::MAX);
++    // Reverse source order, parallel arcs, self loops, isolates, remote targets,
++    // and repeated source runs distinguish offsets from end offsets.
++    let weighted: Vec<_> = ids
++        .iter()
++        .rev()
++        .enumerate()
++        .filter(|(i, _)| i % 3 != 0)
++        .flat_map(|(_, &source)| [(source, i64::MAX, 2.5), (source, source, -0.0)])
++        .chain(ids.first().map(|&source| (source, i64::MIN, 4.0)))
++        .collect();
++    let edges: Vec<_> = weighted.iter().map(|&(s, t, _)| (s, t)).collect();
++    let graph = Adjacency::build(&op, owner, ids, &edges, &r).unwrap();
++    let weights = WeightedAdjacency::build(&op, owner, ids, &weighted, &r).unwrap();
++    let mut sorted = ids.to_vec();
++    sorted.sort_unstable();
++    assert_eq!(graph.vertices, sorted);
++    assert_eq!(weights.vertices(), sorted);
++    assert_eq!(graph.offsets.len(), ids.len() + 1);
++    assert_eq!(graph.offsets[0], 0);
++    assert_eq!(*graph.offsets.last().unwrap(), edges.len());
++    for (i, &id) in sorted.iter().enumerate() {
++        let expected: Vec<_> = weighted
++            .iter()
++            .filter(|(source, _, _)| *source == id)
++            .map(|&(_, target, weight)| (target, if weight == 0.0 { 0.0 } else { weight }))
++            .collect();
++        let actual = weights.outgoing(id).unwrap();
++        assert_eq!(actual, expected);
++        for (a, b) in actual.iter().zip(&expected) {
++            assert_eq!(a.1.to_bits(), b.1.to_bits());
++        }
++        let expected_targets: Vec<_> = expected.iter().map(|&(target, _)| target).collect();
++        assert_eq!(
++            &graph.targets[graph.offsets[i]..graph.offsets[i + 1]],
++            expected_targets
++        );
++    }
++    drop((graph, weights));
++    assert_eq!(r.execution.usage().unwrap().live_bytes, 0);
++}
++
++#[test]
++fn adjacency_restores_offsets_and_preserves_arc_order_for_all_id_layouts() {
++    for p in [1, 3, 32, 65_536] {
++        let ids: Vec<_> = (0..37).rev().map(|i| (i - 19) * p as i64).collect();
++        check_graph(&ids, p);
++        let irregular: Vec<_> = ids.iter().copied().filter(|id| *id != 0).collect();
++        check_graph(&irregular, p);
++    }
++    for ids in [
++        vec![],
++        vec![i64::MIN],
++        vec![i64::MAX],
++        vec![i64::MIN, 0, i64::MAX],
++        vec![i64::MIN + 2, i64::MIN + 1, i64::MIN],
++        vec![i64::MAX, i64::MAX - 1, i64::MAX - 2],
++    ] {
++        check_graph(&ids, 1);
++    }
++}
++
++#[test]
++fn adjacency_lookup_rejects_missing_and_foreign_sources_without_leaks() {
++    let r = resources(1 << 24, usize::MAX);
++    for (p, ids, sources) in [
++        (
++            3,
++            vec![-6, -3, 0, 3],
++            vec![-9, -5, -2, 6, i64::MIN, i64::MAX],
++        ),
++        (3, vec![-6, 0, 3], vec![-3, -5, 6]),
++        (1, vec![i64::MIN], vec![i64::MIN + 1, i64::MAX]),
++        (1, vec![i64::MAX], vec![i64::MIN, i64::MAX - 1]),
++        (1, vec![], vec![0]),
++    ] {
++        let op = operation(p, ids.len());
++        let owner = ids.first().map_or(0, |id| op.owner(*id));
++        for source in sources {
++            assert_eq!(
++                Adjacency::build(&op, owner, &ids, &[(source, 0)], &r).unwrap_err(),
++                "source is not owned"
++            );
++            assert_eq!(
++                WeightedAdjacency::build(&op, owner, &ids, &[(source, 0, 1.0)], &r).unwrap_err(),
++                "weighted source is not owned"
++            );
++            assert_eq!(r.execution.usage().unwrap().live_bytes, 0);
++        }
++    }
++    for ids in [&[0, 0][..], &[0, 1][..]] {
++        let op = operation(3, ids.len());
++        assert!(Adjacency::build(&op, 0, ids, &[], &r).is_err());
++        assert!(WeightedAdjacency::build(&op, 0, ids, &[], &r).is_err());
++        assert_eq!(r.execution.usage().unwrap().live_bytes, 0);
++    }
++}
++
++#[test]
++fn adjacency_build_allocation_and_work_counters() {
++    let mut cells = Vec::new();
++    for p in [1, 3, 32] {
++        for dense in [true, false] {
++            for n in [16usize, 65_536] {
++                let stride = p * if dense { 1 } else { 2 };
++                let ids: Vec<_> = (0..n)
++                    .rev()
++                    .map(|i| (i as i64 - 7) * stride as i64)
++                    .collect();
++                let edges: Vec<_> = ids.iter().flat_map(|&id| [(id, 0); 4]).collect();
++                let weighted: Vec<_> = edges.iter().map(|&(s, t)| (s, t, 1.0)).collect();
++                let op = operation(p, n);
++                for is_weighted in [false, true] {
++                    let r = resources(1 << 28, usize::MAX);
++                    let counts = if is_weighted {
++                        let (graph, counts) = allocations::measure(|| {
++                            WeightedAdjacency::build(&op, 0, &ids, &weighted, &r).unwrap()
++                        });
++                        assert_eq!(graph.arc_count(), weighted.len());
++                        drop(graph);
++                        counts
++                    } else {
++                        let (graph, counts) = allocations::measure(|| {
++                            Adjacency::build(&op, 0, &ids, &edges, &r).unwrap()
++                        });
++                        assert_eq!(graph.targets.len(), edges.len());
++                        drop(graph);
++                        counts
++                    };
++                    let usage = r.execution.usage().unwrap();
++                    let work = usage.counted_work().unwrap();
++                    println!(
++                        "CSR_COUNTER p={p} dense={dense} n={n} m={} weighted={is_weighted} allocation_calls={} allocated_bytes={} peak_requested_bytes={} peak_admitted_bytes={} work={work}",
++                        edges.len(),
++                        counts.calls,
++                        counts.bytes,
++                        counts.peak,
++                        usage.peak_bytes
++                    );
++                    assert_eq!(usage.live_bytes, 0);
++                    cells.push((p, dense, n, is_weighted, counts, work));
++                }
++            }
++        }
++    }
++    // No additional V-sized allocation beyond the final CSR, regardless of ID
++    // layout. Compare two sizes to exclude fixed metadata/reservation overhead.
++    for pair in cells.chunks_exact(4) {
++        for weighted in 0..2 {
++            let (_, dense, n0, _, c0, _) = pair[weighted];
++            let (_, _, n1, _, c1, work) = pair[weighted + 2];
++            let width = 8 + size_of::<usize>() + 4 * if weighted == 1 { 16 } else { 8 };
++            assert_eq!(c1.bytes - c0.bytes, (n1 - n0) * width);
++            assert_eq!(c1.peak - c0.peak, (n1 - n0) * width);
++            let bits = n1.ilog2() as usize + 1;
++            let expected = if weighted == 1 {
++                n1 * bits + 2 * n1 + 8 * n1 * if dense { 1 } else { bits }
++            } else {
++                10 * n1
++            };
++            assert_eq!(work, expected);
++        }
++    }
++}
++
++#[test]
++fn adjacency_reduced_scratch_admission_and_weighted_work_budget_are_enforced() {
++    let n = 8192;
++    let ids: Vec<_> = (0..n as i64).collect();
++    let op = operation(1, n);
++    let budget = n * (64 - size_of::<usize>()) + 4096 + size_of::<usize>();
++    for weighted in [false, true] {
++        let r = resources(budget, usize::MAX);
++        if weighted {
++            drop(WeightedAdjacency::build(&op, 0, &ids, &[], &r).unwrap());
++        } else {
++            drop(Adjacency::build(&op, 0, &ids, &[], &r).unwrap());
++        }
++        assert_eq!(r.execution.usage().unwrap().live_bytes, 0);
++        let r = resources(budget - 1, usize::MAX);
++        let error = if weighted {
++            WeightedAdjacency::build(&op, 0, &ids, &[], &r).unwrap_err()
++        } else {
++            Adjacency::build(&op, 0, &ids, &[], &r).unwrap_err()
++        };
++        assert!(error.contains("memory"));
++        assert_eq!(r.execution.usage().unwrap().live_bytes, 0);
++    }
++    let edges: Vec<_> = ids.iter().map(|&id| (id, 0, 1.0)).collect();
++    let work = n * (n.ilog2() as usize + 1) + 4 * n;
++    let r = resources(1 << 24, work);
++    drop(WeightedAdjacency::build(&op, 0, &ids, &edges, &r).unwrap());
++    assert_eq!(r.execution.usage().unwrap().counted_work(), Some(work));
++    let r = resources(1 << 24, work - 1);
++    assert!(
++        WeightedAdjacency::build(&op, 0, &ids, &edges, &r)
++            .unwrap_err()
++            .contains("work")
++    );
++    assert_eq!(r.execution.usage().unwrap().live_bytes, 0);
++}
+diff --git a/examples/extensions/argentea/src/lib.rs b/examples/extensions/argentea/src/lib.rs
+index 1ec67dfbc..5b51245e7 100644
+--- a/examples/extensions/argentea/src/lib.rs
++++ b/examples/extensions/argentea/src/lib.rs
+@@ -4,6 +4,9 @@
+ //! must establish placement, input completeness, operation cleanup and a real
+ //! host memory lease before these primitives can execute remotely.
+ mod adjacency;
++#[cfg(test)]
++mod adjacency_tests;
++mod source_index;
+ mod sssp;
+ pub use sssp::*;
+ mod wcc;
+diff --git a/examples/extensions/argentea/src/source_index.rs b/examples/extensions/argentea/src/source_index.rs
+new file mode 100644
+index 000000000..f446c0dce
+--- /dev/null
++++ b/examples/extensions/argentea/src/source_index.rs
+@@ -0,0 +1,42 @@
++//! Build-time source lookup over sorted, unique IDs already checked for ownership.
++pub(crate) struct SourceIndex<'a> {
++    ids: &'a [i64],
++    stride: usize,
++    dense: bool,
++}
++impl<'a> SourceIndex<'a> {
++    /// Every ID must already have the same owner modulo the nonzero stride.
++    pub(crate) fn new(ids: &'a [i64], stride: usize) -> Self {
++        // Unique IDs with one residue occupy a contiguous owner-strided interval
++        // exactly when the endpoint span has room for only those IDs. Use i128
++        // here so signed IDs spanning i64::MIN through i64::MAX cannot overflow.
++        let dense = ids.last().is_some_and(|last| {
++            (ids.len() - 1)
++                .checked_mul(stride)
++                .is_some_and(|span| *last as i128 - ids[0] as i128 == span as i128)
++        });
++        Self { ids, stride, dense }
++    }
++    pub(crate) fn lookup(&self, source: i64) -> Option<usize> {
++        if !self.dense {
++            return self.ids.binary_search(&source).ok();
++        }
++        let first = self.ids[0];
++        if source < first {
++            return None;
++        }
++        // The nonnegative distance fits u64 even across the signed boundary.
++        let distance = source.wrapping_sub(first) as u64;
++        let index = usize::try_from(distance / self.stride as u64).ok()?;
++        // Check equality as well as bounds: a foreign owner's ID can fall inside
++        // the interval without belonging to this local arithmetic sequence.
++        (self.ids.get(index) == Some(&source)).then_some(index)
++    }
++    pub(crate) fn lookup_work(&self) -> usize {
++        if self.dense {
++            1
++        } else {
++            1 + self.ids.len().max(1).ilog2() as usize
++        }
++    }
++}
+diff --git a/examples/extensions/argentea/src/sssp/adjacency.rs b/examples/extensions/argentea/src/sssp/adjacency.rs
+index 31f4828d2..4ece3a3cc 100644
+--- a/examples/extensions/argentea/src/sssp/adjacency.rs
++++ b/examples/extensions/argentea/src/sssp/adjacency.rs
+@@ -1,5 +1,5 @@
+ //! Source-owned weighted CSR. Target existence is a distributed topology check.
+-use crate::{Operation, Resources, Result, reserve_vec};
++use crate::{Operation, Resources, Result, reserve_vec, source_index::SourceIndex};
+ use grust_procedures::MemoryReservation;
+ use std::sync::{
+     Arc,
+@@ -30,7 +30,7 @@ impl WeightedAdjacency {
+         }
+         let n = vertices.len();
+         let bytes = n
+-            .checked_mul(64)
++            .checked_mul(64 - size_of::<usize>())
+             .and_then(|x| edges.len().checked_mul(24).and_then(|e| x.checked_add(e)))
+             .and_then(|x| x.checked_add(4096 + size_of::<usize>()))
+             .ok_or("weighted adjacency admission overflow")?;
+@@ -56,18 +56,19 @@ impl WeightedAdjacency {
+                 return Err("weighted vertices duplicated or owned by another partition".into());
+             }
+         }
++        let sources = SourceIndex::new(&ids, operation.partitions);
+         let mut offsets = reserve_vec(n + 1)?;
+         offsets.resize(n + 1, 0usize);
+         for &(source, _, weight) in edges {
+             meter
+-                .charge(1 + n.max(1).ilog2() as usize)
++                .charge(sources.lookup_work())
+                 .map_err(|e| e.to_string())?;
+             if !weight.is_finite() || weight < 0.0 {
+                 return Err("SSSP weight must be finite and nonnegative".into());
+             }
+-            let local = ids
+-                .binary_search(&source)
+-                .map_err(|_| "weighted source is not owned")?;
++            let local = sources
++                .lookup(source)
++                .ok_or("weighted source is not owned")?;
+             offsets[local + 1] = offsets[local + 1]
+                 .checked_add(1)
+                 .ok_or("weighted degree overflow")?;
+@@ -78,26 +79,26 @@ impl WeightedAdjacency {
+                 .checked_add(offsets[i])
+                 .ok_or("weighted arc count overflow")?;
+         }
+-        let mut cursor = reserve_vec(n)?;
+-        cursor.extend_from_slice(&offsets[..n]);
++        // Reuse starts as fill cursors; restore them from the resulting ends.
+         let mut arcs = reserve_vec(edges.len())?;
+         arcs.resize(edges.len(), (0, 0.0));
+         for &(source, target, weight) in edges {
+             meter
+-                .charge(1 + n.max(1).ilog2() as usize)
++                .charge(sources.lookup_work())
+                 .map_err(|e| e.to_string())?;
+-            let local = ids
+-                .binary_search(&source)
+-                .map_err(|_| "weighted source is not owned")?;
+-            arcs[cursor[local]] = (target, if weight == 0.0 { 0.0 } else { weight });
+-            cursor[local] += 1;
++            let local = sources
++                .lookup(source)
++                .ok_or("weighted source is not owned")?;
++            arcs[offsets[local]] = (target, if weight == 0.0 { 0.0 } else { weight });
++            offsets[local] += 1;
+         }
+         meter.finish();
+         resources
+             .execution
+             .checkpoint()
+             .map_err(|e| e.to_string())?;
+-        drop(cursor);
++        offsets.copy_within(..n, 1);
++        offsets[0] = 0;
+         let retained = std::mem::size_of_val(ids.as_slice())
+             + std::mem::size_of_val(offsets.as_slice())
+             + std::mem::size_of_val(arcs.as_slice())
+diff --git a/examples/extensions/argentea/src/sssp/partition/protocol.rs b/examples/extensions/argentea/src/sssp/partition/protocol.rs
+index 23913a7e8..1b29325f0 100644
+--- a/examples/extensions/argentea/src/sssp/partition/protocol.rs
++++ b/examples/extensions/argentea/src/sssp/partition/protocol.rs
+@@ -20,7 +20,10 @@ impl Inbox {
+         n: usize,
+         r: &Resources,
+     ) -> Result<Self> {
+-        let bytes = n
++        // A converged phase accepts completions only. Keep producer validation,
++        // but do not allocate a vertex-sized candidate array for an empty relay.
++        let candidates = if mode == SsspMode::Done { 0 } else { n };
++        let bytes = candidates
+             .checked_mul(size_of::<Option<SsspLabel>>())
+             .and_then(|x| {
+                 x.checked_add(reports.len() * (size_of::<SsspStatisticsValues>() + 16) + 512)
+@@ -37,7 +40,7 @@ impl Inbox {
+             expected,
+             sequences: filled(reports.len(), 0)?,
+             finished: filled(reports.len(), false)?,
+-            candidates: filled(n, None)?,
++            candidates: filled(candidates, None)?,
+             emitted: Arc::new(OnceLock::new()),
+             received: 0,
+             _admission: admission,
+@@ -182,6 +185,25 @@ impl SsspPartition {
+             .get()
+             .ok_or("local SSSP emission not complete")?;
+         work.received_messages = inbox.received;
++        if inbox.mode == SsspMode::Done {
++            // All producer markers and local emission EOF were checked above.
++            // Preserve the immutable labels and round count, admitting the next
++            // barrier before publishing any phase change, just as active rounds do.
++            let state = State::Statistics(StatisticsInbox::new(
++                self.operation.partitions,
++                &self.resources,
++            )?);
++            let next_phase = add(self.next_phase, 1)?;
++            self.resources
++                .execution
++                .checkpoint()
++                .map_err(|e| e.to_string())?;
++            self.completed = SsspMode::Done;
++            self.work = work;
++            self.next_phase = next_phase;
++            self.state = state;
++            return Ok(());
++        }
+         // Charge replacement labels and a pending mask before copying/mutation.
+         let n = self.values.labels.len();
+         let pending_admission = self
+diff --git a/examples/extensions/argentea/src/sssp/partition/statistics.rs b/examples/extensions/argentea/src/sssp/partition/statistics.rs
+index 8d930d93c..0632d70ac 100644
+--- a/examples/extensions/argentea/src/sssp/partition/statistics.rs
++++ b/examples/extensions/argentea/src/sssp/partition/statistics.rs
+@@ -78,11 +78,19 @@ impl SsspPartition {
+             rounds: self.rounds,
+             vertices: self.adjacency.vertices().len() as u64,
+             arcs: self.adjacency.arc_count() as u64,
+-            source_count: u64::from(
+-                self.adjacency
+-                    .vertices()
+-                    .binary_search(&self.options.source)
+-                    .is_ok(),
++            // Source membership is immutable and checked against local storage
++            // before the first own report pins this shape. Later barriers,
++            // including Done relays, need not search the graph again.
++            source_count: self.shapes[self.partition].map_or_else(
++                || {
++                    u64::from(
++                        self.adjacency
++                            .vertices()
++                            .binary_search(&self.options.source)
++                            .is_ok(),
++                    )
++                },
++                |(_, _, sources)| sources,
+             ),
+             reached: self.values.reached,
+             reachable_edges: self.values.reachable_edges,
+diff --git a/examples/extensions/argentea/tests/sssp.rs b/examples/extensions/argentea/tests/sssp.rs
+index c19b56db8..2068465d4 100644
+--- a/examples/extensions/argentea/tests/sssp.rs
++++ b/examples/extensions/argentea/tests/sssp.rs
+@@ -1,3 +1,5 @@
++#[path = "sssp_done/mod.rs"]
++mod done;
+ #[path = "delta_support/mod.rs"]
+ mod support;
+ use sail_argentea_core::*;
+diff --git a/examples/extensions/argentea/tests/sssp_done/mod.rs b/examples/extensions/argentea/tests/sssp_done/mod.rs
+new file mode 100644
+index 000000000..f1ee2cba7
+--- /dev/null
++++ b/examples/extensions/argentea/tests/sssp_done/mod.rs
+@@ -0,0 +1,309 @@
++//! Converged relays preserve state and producer barriers within a fixed quota.
++use super::*;
++use grust_procedures::ExecutionContext;
++
++const LIMIT: usize = 64 << 20;
++const RELAYS: usize = 4;
++
++fn converged(
++    n: usize,
++    width: usize,
++    algorithm: SsspAlgorithm,
++) -> (Operation, Vec<SsspPartition>, Resources, ExecutionContext) {
++    let (r, usage, _) = support::resources(LIMIT);
++    let op = support::operation(width, n as u64);
++    let mut ids = vec![-5];
++    ids.extend(0..n as i64 - 1);
++    let mut ps = parts(
++        &op,
++        &ids,
++        &[(-5, 0, 1.0), (0, 1, 2.0), (1, 2, 0.0), (-5, 2, 7.0)],
++        options(algorithm),
++        &r,
++    );
++    loop {
++        stats(&op, &mut ps).unwrap();
++        exchange(&op, &mut ps).unwrap();
++        if ps.iter().all(|p| p.active_count() == 0) {
++            break;
++        }
++        assert!(ps[0].rounds() < 10, "fixture must converge before its cap");
++    }
++    (op, ps, r, usage)
++}
++
++#[derive(Debug, PartialEq)]
++struct RelayCost {
++    work: usize,
++    peak_admitted: usize,
++}
++
++fn relay_cost(n: usize, width: usize, algorithm: SsspAlgorithm, headroom: usize) -> RelayCost {
++    let (op, mut ps, r, usage) = converged(n, width, algorithm);
++    let rows = ps
++        .iter()
++        .flat_map(SsspPartition::state_rows)
++        .collect::<Vec<_>>();
++    let origins = ps.iter().map(SsspPartition::origin).collect::<Vec<_>>();
++    let rounds = ps[0].rounds();
++    let first_phase = ps[0].next_phase();
++    let live = usage.usage().unwrap().live_bytes;
++    // Raise the cumulative peak above setup, then hold a fixed headroom. This
++    // measures admitted relay scratch, not setup's peak, allocator bytes or RSS.
++    let floor = LIMIT - headroom;
++    assert!(floor > usage.usage().unwrap().peak_bytes);
++    let blocker = usage.reserve(floor - live).unwrap();
++    let before = usage.usage().unwrap();
++    for relay in 0..RELAYS {
++        stats(&op, &mut ps).unwrap();
++        assert_eq!(exchange(&op, &mut ps).unwrap(), (SsspMode::Done, None));
++        for p in &ps {
++            assert_eq!(p.rounds(), rounds);
++            assert_eq!(p.next_phase(), first_phase + relay as u64 + 1);
++            assert_eq!(p.active_count(), 0);
++            assert_eq!(p.last_work(), SsspWork::default());
++            assert!(p.row_cursor().is_err(), "Done is not a sealed result");
++        }
++    }
++    let after = usage.usage().unwrap();
++    let cost = RelayCost {
++        work: after.counted_work().unwrap() - before.counted_work().unwrap(),
++        peak_admitted: after.peak_bytes - before.peak_bytes,
++    };
++    println!(
++        "SSSP_DONE_COUNTERS algorithm={algorithm:?} vertices={n} partitions={width} relays={RELAYS} work_units={} peak_admitted_bytes={}",
++        cost.work, cost.peak_admitted
++    );
++    assert_eq!(
++        after.live_bytes, before.live_bytes,
++        "no retained relay scratch"
++    );
++    assert_eq!(
++        ps.iter()
++            .flat_map(SsspPartition::state_rows)
++            .collect::<Vec<_>>(),
++        rows
++    );
++    assert_eq!(
++        ps.iter().map(SsspPartition::origin).collect::<Vec<_>>(),
++        origins
++    );
++    drop(blocker);
++    stats(&op, &mut ps).unwrap();
++    let phase = phase(&op, &ps);
++    for p in &mut ps {
++        assert_eq!(
++            p.seal(&phase).unwrap(),
++            Some(SsspConvergence { rounds, reached: 4 })
++        );
++    }
++    let actual = collected(&ps);
++    assert_eq!(actual[&-5], Some((0.0, 0, -5)));
++    assert_eq!(actual[&0], Some((1.0, 1, -5)));
++    assert_eq!(actual[&1], Some((3.0, 2, 0)));
++    assert_eq!(actual[&2], Some((3.0, 3, 1)));
++    assert!(actual.iter().all(|(&id, value)| id <= 2 || value.is_none()));
++    drop(ps);
++    drop(r);
++    assert_eq!(usage.usage().unwrap().live_bytes, 0);
++    cost
++}
++
++#[test]
++fn done_relay_cost_is_independent_of_vertex_count() {
++    let mut costs = vec![];
++    for algorithm in [SsspAlgorithm::Reference, SsspAlgorithm::DeltaStar] {
++        for width in [1, 3, 8, 32] {
++            for n in [16, 65_536] {
++                costs.push(relay_cost(n, width, algorithm, LIMIT / 2));
++            }
++        }
++    }
++    // Gather every matched cell before asserting, so a regression retains
++    // counter evidence for both sizes and both methods instead of one failure.
++    for pair in costs.chunks_exact(2) {
++        assert_eq!(pair[0], pair[1], "fixed owner count must bound relay cost");
++    }
++}
++
++#[test]
++fn done_relays_fit_partition_sized_headroom_with_exact_results() {
++    for algorithm in [SsspAlgorithm::Reference, SsspAlgorithm::DeltaStar] {
++        for width in [1, 3, 8, 32] {
++            // A 65,536-row candidate vector alone is 2 MiB on this layout.
++            // Allow protocol metadata per owner, not another graph-sized array.
++            relay_cost(65_536, width, algorithm, width * 32 * 1024);
++        }
++    }
++}
++
++#[test]
++fn done_statistics_still_obey_the_shared_work_limit() {
++    for algorithm in [SsspAlgorithm::Reference, SsspAlgorithm::DeltaStar] {
++        let (op, mut ps, r, usage) = converged(16, 3, algorithm);
++        let before = ps
++            .iter()
++            .flat_map(SsspPartition::state_rows)
++            .collect::<Vec<_>>();
++        let phase = phase(&op, &ps);
++        let remaining = usize::MAX - usage.usage().unwrap().counted_work().unwrap();
++        usage.charge_work(remaining).unwrap();
++        assert!(stats(&op, &mut ps).unwrap_err().contains("work"));
++        assert_eq!(
++            ps.iter()
++                .flat_map(SsspPartition::state_rows)
++                .collect::<Vec<_>>(),
++            before
++        );
++        assert!(
++            ps.iter()
++                .all(|p| p.next_phase() == phase.number && p.row_cursor().is_err())
++        );
++        drop(ps);
++        drop(r);
++        assert_eq!(usage.usage().unwrap().live_bytes, 0);
++    }
++}
++
++fn done_completions(op: &Operation, ps: &mut [SsspPartition]) -> Vec<SsspCompletion> {
++    stats(op, ps).unwrap();
++    let phase = phase(op, ps);
++    ps.iter_mut()
++        .map(|p| {
++            let mut cursor = p.start_emission(&phase).unwrap();
++            assert_eq!(cursor.mode(), SsspMode::Done);
++            assert!(cursor.next_values().unwrap().is_none());
++            cursor.finish().unwrap()
++        })
++        .collect()
++}
++
++#[test]
++fn done_relays_reject_missing_replayed_foreign_and_nonempty_producers() {
++    for fault in 0..9 {
++        let (op, mut ps, _, _) = converged(16, 3, SsspAlgorithm::DeltaStar);
++        let phase = phase(&op, &ps);
++        let before = ps[0].state_rows().collect::<Vec<_>>();
++        let rounds = ps[0].rounds();
++        let mut completions = done_completions(&op, &mut ps);
++        let other_origin = ps[1].origin();
++        let error = match fault {
++            0 => ps[0].finish(&phase), // A local EOF is not a complete barrier.
++            1 => {
++                ps[0].finish_producer(&completions[0]).unwrap();
++                ps[0].finish_producer(&completions[0])
++            }
++            2 => {
++                completions[0].sequences[0] = 1;
++                ps[0].finish_producer(&completions[0])
++            }
++            3 => {
++                completions[0].origin.adjacency_id += 1;
++                ps[0].finish_producer(&completions[0])
++            }
++            4 => {
++                completions[0].mode = SsspMode::DeltaStar;
++                ps[0].finish_producer(&completions[0])
++            }
++            5 => {
++                completions[0].bucket = Some(0.0);
++                ps[0].finish_producer(&completions[0])
++            }
++            6 => {
++                let mut foreign = phase.clone();
++                foreign.operation.generation += 1;
++                ps[0].finish(&foreign)
++            }
++            7 | 8 => ps[0].receive_values(
++                &phase,
++                SsspMessageValues {
++                    origin: other_origin,
++                    producer: 1,
++                    recipient: 0,
++                    sequence: 0,
++                    mode: SsspMode::Done,
++                    bucket: None,
++                    payload: if fault == 7 {
++                        SsspPayload::Topology {
++                            source: 1,
++                            target: 0,
++                        }
++                    } else {
++                        SsspPayload::Candidate {
++                            target: 0,
++                            label: SsspLabel::from_parts(1.0, 1, 1).unwrap(),
++                        }
++                    },
++                },
++            ),
++            _ => unreachable!(),
++        };
++        assert!(error.is_err(), "fault {fault} must fail");
++        assert_eq!(ps[0].state_rows().collect::<Vec<_>>(), before);
++        assert_eq!(ps[0].next_phase(), phase.number);
++        assert_eq!(ps[0].rounds(), rounds);
++        assert!(ps[0].row_cursor().is_err());
++        assert!(ps[0].statistics().is_err());
++    }
++}
++
++#[test]
++fn done_publication_still_requires_local_eof_admission_and_cancellation_checks() {
++    for fault in 0..4 {
++        let (op, mut ps, r, usage) = converged(16, 1, SsspAlgorithm::Reference);
++        let phase = phase(&op, &ps);
++        let before = ps[0].state_rows().collect::<Vec<_>>();
++        let rounds = ps[0].rounds();
++        let mut cursor = None;
++        if fault == 0 {
++            stats(&op, &mut ps).unwrap();
++            cursor = Some(ps[0].start_emission(&phase).unwrap());
++            // A producer marker cannot substitute for the local cursor's EOF.
++            let origin = ps[0].origin();
++            ps[0]
++                .finish_producer_values(
++                    &phase,
++                    SsspCompletionValues {
++                        origin,
++                        producer: 0,
++                        mode: SsspMode::Done,
++                        bucket: None,
++                        sequence: 0,
++                        total_messages: 0,
++                    },
++                )
++                .unwrap();
++        } else {
++            let completions = done_completions(&op, &mut ps);
++            ps[0].finish_producer(&completions[0]).unwrap();
++        }
++        let blocker = match fault {
++            1 => Some(
++                usage
++                    .reserve(LIMIT - usage.usage().unwrap().live_bytes)
++                    .unwrap(),
++            ),
++            2 => {
++                usage.cancel().unwrap();
++                None
++            }
++            _ => None,
++        };
++        let result = ps[0].finish(&phase);
++        if fault == 3 {
++            assert!(result.is_ok(), "unfaulted control must publish");
++            assert_eq!(ps[0].next_phase(), phase.number + 1);
++        } else {
++            assert!(result.is_err(), "fault {fault} must prevent publication");
++            assert_eq!(ps[0].next_phase(), phase.number);
++            assert!(ps[0].row_cursor().is_err());
++        }
++        assert_eq!(ps[0].state_rows().collect::<Vec<_>>(), before);
++        assert_eq!(ps[0].rounds(), rounds);
++        drop(cursor);
++        drop(blocker);
++        drop(ps);
++        drop(r);
++        assert_eq!(usage.usage().unwrap().live_bytes, 0);
++    }
++}
+diff --git a/examples/extensions/graph-algorithms/src/pyspark_pecan/traversal.py b/examples/extensions/graph-algorithms/src/pyspark_pecan/traversal.py
+index aff1464d8..5fa33787c 100644
+--- a/examples/extensions/graph-algorithms/src/pyspark_pecan/traversal.py
++++ b/examples/extensions/graph-algorithms/src/pyspark_pecan/traversal.py
+@@ -3,6 +3,7 @@ from pyspark.sql.connect import functions as F
+ from pyspark.sql.types import DoubleType
+ 
+ from .algorithms import ConvergenceError, _positive_integer
++from .traversal_relaxation import weighted_relaxation, materialize_weighted_relaxation
+ 
+ 
+ def execute(graph, vertices, edges, *, source, weighted, method, directed,
+@@ -54,18 +55,16 @@ def execute(graph, vertices, edges, *, source, weighted, method, directed,
+                 adjacency.dst.alias("id"),
+                 (active.distance + adjacency.weight).alias("distance"),
+                 (active.hops + 1).alias("hops"), active.id.alias("parent"))
+-            if weighted and candidates.where(F.col("distance") == float("inf")).limit(1).count():
+-                # Match the native contract, including a dominated overflowing
+-                # relaxation: input weights being finite does not bound sums.
+-                raise OverflowError("shortest-path distance overflow")
+             # Lexicographic minimization makes parent choice deterministic and
+             # gives every parent a strictly smaller hop count, even at weight 0.
+-            updated = reached.unionByName(candidates).groupBy("id").agg(
+-                F.min(F.struct("distance", "hops", "parent")).alias("best")
+-            ).select("id", "best.*")
++            updated = (weighted_relaxation(reached, candidates) if weighted else
++                       reached.unionByName(candidates).groupBy("id").agg(
++                           F.min(F.struct("distance", "hops", "parent")).alias("best")
++                       ).select("id", "best.*"))
+             graph._observe(run, algorithm, step, "iteration_start", plan_of=updated)
+-            next_path, next_reached = run.materialize(updated)
+-            if next_reached.where(F.col("distance") == float("inf")).limit(1).count():
++            next_path, next_reached = (materialize_weighted_relaxation(run, updated)
++                                       if weighted else run.materialize(updated))
++            if not weighted and next_reached.where(F.col("distance") == float("inf")).limit(1).count():
+                 raise OverflowError("shortest-path distance overflow")
+             before = reached.select("id", F.struct("distance", "hops", "parent").alias("before"))
+             changed = next_reached.join(before, "id", "left").where(
+diff --git a/examples/extensions/graph-algorithms/src/pyspark_pecan/traversal_relaxation.py b/examples/extensions/graph-algorithms/src/pyspark_pecan/traversal_relaxation.py
+new file mode 100644
+index 000000000..c44418653
+--- /dev/null
++++ b/examples/extensions/graph-algorithms/src/pyspark_pecan/traversal_relaxation.py
+@@ -0,0 +1,27 @@
++"""One weighted expansion write, including evidence of dominated overflow."""
++from pyspark.sql.connect import functions as F
++
++
++_OVERFLOW = "__pecan_distance_overflow"
++
++
++def weighted_relaxation(state, candidates):
++    # The overflow reduction must see every candidate, not only the winning
++    # distance: a finite existing label can dominate an overflowing relaxation.
++    # Group both reductions together so they share the same expansion join.
++    return state.unionByName(candidates).groupBy("id").agg(
++        F.min(F.struct("distance", "hops", "parent")).alias("best"),
++        F.bool_or(F.col("distance") == float("inf")).alias(_OVERFLOW),
++    ).select("id", "best.*", _OVERFLOW)
++
++
++def materialize_weighted_relaxation(run, frame):
++    path, stored = run.materialize(frame)
++    run.cancellation.check()
++    overflow = stored.where(F.col(_OVERFLOW)).limit(1).count()
++    run.cancellation.check()
++    if overflow:
++        raise OverflowError("shortest-path distance overflow")
++    # This projection reads only the committed generation. No second write or
++    # expansion is needed, and internal evidence never enters the public state.
++    return path, stored.drop(_OVERFLOW)
+diff --git a/examples/extensions/graph-algorithms/src/pyspark_pecan/traversal_stepping.py b/examples/extensions/graph-algorithms/src/pyspark_pecan/traversal_stepping.py
+index 1c6f18632..1e3406e0f 100644
+--- a/examples/extensions/graph-algorithms/src/pyspark_pecan/traversal_stepping.py
++++ b/examples/extensions/graph-algorithms/src/pyspark_pecan/traversal_stepping.py
+@@ -9,6 +9,7 @@ import math
+ from pyspark.sql.connect import functions as F
+ 
+ from .algorithms import ConvergenceError
++from .traversal_relaxation import weighted_relaxation, materialize_weighted_relaxation
+ 
+ 
+ def execute(graph, run, vertices, adjacency, size, source, delta, limit):
+@@ -30,14 +31,9 @@ def execute(graph, run, vertices, adjacency, size, source, delta, limit):
+         candidates = active.join(adjacency, active.id == adjacency.src).select(
+             adjacency.dst.alias('id'), (active.distance + adjacency.weight).alias('distance'),
+             (active.hops + 1).alias('hops'), active.id.alias('parent'))
+-        relaxed = state.unionByName(candidates).groupBy('id').agg(
+-            F.min(F.struct('distance', 'hops', 'parent')).alias('best')).select('id', 'best.*')
++        relaxed = weighted_relaxation(state, candidates)
+         graph._observe(run, 'sssp-delta-star', step, 'iteration_start', bucket=bucket, plan_of=relaxed)
+-        if candidates.where(F.col('distance') == float('inf')).limit(1).count():
+-            raise OverflowError('shortest-path distance overflow')
+-        next_path, updated = run.materialize(relaxed)
+-        if updated.where(F.col('distance') == float('inf')).limit(1).count():
+-            raise OverflowError('shortest-path distance overflow')
++        next_path, updated = materialize_weighted_relaxation(run, relaxed)
+         before = state.select('id', F.struct('distance', 'hops', 'parent').alias('before'))
+         changed = updated.join(before, 'id', 'left').where(
+             F.col('before').isNull() | (F.struct('distance','hops','parent') != F.col('before'))
+diff --git a/examples/extensions/graph-algorithms/tests/test_traversal.py b/examples/extensions/graph-algorithms/tests/test_traversal.py
+index 0a1acfa49..3b7a0acd6 100644
+--- a/examples/extensions/graph-algorithms/tests/test_traversal.py
++++ b/examples/extensions/graph-algorithms/tests/test_traversal.py
+@@ -69,19 +69,98 @@ def test_delta_star_bucket_closure(spark, delta):
+ def test_push_pull_distances_and_trace(spark):
+     v,e=frames(spark)
+     events=[]
+-    with GraphAlgorithms(spark,observer=events.append).bfs(v,e,source=0,method='push_pull',partitions=2) as r:
++    def observe(event):
++        # Work metrics describe the completed iteration; start events only
++        # announce its direction and optional plan.
++        if event['kind'] == 'iteration_end':
++            events.append(event)
++    with GraphAlgorithms(spark,observer=observe).bfs(v,e,source=0,method='push_pull',partitions=2) as r:
+         assert {x.id:x.distance for x in r.frame.collect()} == {0:0.,1:1.,2:1.,3:2.,4:3.,-7:None,5:None}
++        assert len(events) == r.iterations
+         assert any(x.get('direction')=='pull' for x in events)
+         assert all(x['pull_early_exit'] is False for x in events)
+ 
+ 
+ @pytest.mark.parametrize('method', ['reference', 'frontier', 'delta_star'])
+-def test_overflowing_relaxation_is_rejected_even_when_dominated(spark, method):
++@pytest.mark.parametrize('dominated', [False, True])
++def test_overflowing_relaxation_is_rejected_even_when_dominated(spark, monkeypatch, method, dominated):
+     v=spark.createDataFrame([(0,),(1,),(2,)],'id long')
+-    e=spark.createDataFrame([(0,1,1e308),(1,2,1e308),(0,2,1.)],
++    edges = [(0,1,1e308),(1,2,1e308)] + ([(0,2,1.)] if dominated else [])
++    e=spark.createDataFrame(edges,
+                             'src long,dst long,weight double')
++    graph = GraphAlgorithms(spark)
++    allocated = []
++    allocate = graph.utils.allocate
++    def track(**kwargs):
++        owned = allocate(**kwargs)
++        allocated.append(owned)
++        return owned
++    monkeypatch.setattr(graph.utils, 'allocate', track)
+     with pytest.raises(OverflowError,match='distance overflow'):
+-        GraphAlgorithms(spark).sssp(v,e,source=0,method=method,delta=1e308,partitions=2)
++        graph.sssp(v,e,source=0,method=method,delta=1e308,partitions=2)
++    assert len(allocated) == 1 and graph.utils.remove(*allocated[0]) == 0
++
++
++@pytest.mark.parametrize('method', ['reference', 'frontier', 'delta_star'])
++def test_weighted_relaxation_preserves_hop_then_signed_parent_ties(spark, method):
++    vertices = spark.createDataFrame([(i,) for i in [-5, 0, 1, 2, 3, 4, 9]], 'id long')
++    edges = spark.createDataFrame([
++        (0, -5, 1.), (0, 1, 1.), (0, 2, 1.), (0, 3, 2.),
++        (-5, 3, 1.), (1, 3, 1.), (2, 3, 1.),
++        (-5, 4, 1.), (1, 4, 1.), (2, 4, 1.), (-5, -5, 0.),
++    ], 'src long, dst long, weight double')
++    with GraphAlgorithms(spark).sssp(vertices, edges, source=0, method=method,
++                                    delta=1., partitions=2) as result:
++        rows = {row.id: row for row in result.frame.collect()}
++        assert (rows[3].distance, rows[3].hops, rows[3].parent) == (2., 1, 0)
++        assert (rows[4].distance, rows[4].hops, rows[4].parent) == (2., 2, -5)
++        assert rows[9].distance is None and rows[9].parent is None and rows[9].hops is None
++
++
++@pytest.mark.parametrize('method', ['reference', 'frontier', 'delta_star'])
++def test_weighted_round_executes_only_one_expansion_action(spark, monkeypatch, method):
++    from pyspark.sql.connect.dataframe import DataFrame
++    from pyspark.sql.types import BooleanType
++    from pyspark_pecan.staging import StagingRun
++
++    materialize, count = StagingRun.materialize, DataFrame.count
++    adjacency_path = None
++    edge_stages = 0
++    expansion_actions = []
++
++    def reads_adjacency(frame):
++        return adjacency_path is not None and adjacency_path in str(frame._plan.to_proto(spark.client))
++
++    def trace_materialize(run, frame, **kwargs):
++        nonlocal adjacency_path, edge_stages
++        if reads_adjacency(frame):
++            expansion_actions.append('materialize')
++            assert isinstance(frame.schema['__pecan_distance_overflow'].dataType, BooleanType)
++        result = materialize(run, frame, **kwargs)
++        if frame.columns == ['src', 'dst', 'weight']:
++            edge_stages += 1
++            # The first edge write snapshots input; the second commits the
++            # traversal adjacency after validation. Count only expansion jobs.
++            if edge_stages == 2:
++                adjacency_path = result[0]
++        return result
++
++    def trace_count(frame):
++        if reads_adjacency(frame):
++            expansion_actions.append('count')
++        return count(frame)
++
++    monkeypatch.setattr(StagingRun, 'materialize', trace_materialize)
++    monkeypatch.setattr(DataFrame, 'count', trace_count)
++    with GraphAlgorithms(spark).sssp(*frames(spark), source=0, method=method,
++                                    delta=1., partitions=2) as result:
++        assert result.frame.columns == ['id', 'distance', 'hops', 'parent']
++        rows = {row.id: row for row in result.frame.collect()}
++        assert {key: row.distance for key, row in rows.items()} == {
++            0: 0., 1: 2., 2: 1., 3: 2., 4: 4., -7: None, 5: None}
++        assert (rows[1].parent, rows[3].parent, rows[4].parent) == (2, 1, 3)
++        assert adjacency_path is not None
++        assert expansion_actions == ['materialize'] * result.iterations
+ 
+ 
+ @pytest.mark.parametrize('algorithm,method', [('bfs','reference'),('bfs','frontier'),

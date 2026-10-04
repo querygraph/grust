@@ -1,0 +1,18 @@
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last/state.rs:329:     fn update(&mut self, group_idx: usize, array: &ArrayRef, idx: usize) -> Result<()> {
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last/state.rs:330:         if let Some(v) = &self.vals[group_idx] {
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last/state.rs:331:             self.total_size -= v.size();
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last/state.rs:332:         }
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last/state.rs:333:         let mut scalar = ScalarValue::try_from_array(array, idx)?;
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last/state.rs:334:         // `try_from_array` for nested types returns Arc slices into the source
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last/state.rs:335:         // batch buffers, so a single stored winner would pin the entire batch
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last/state.rs:336:         // in memory. Compact copies the referenced bytes into an owned buffer
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last/state.rs:337:         // so old batches can be dropped as new ones arrive.
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last/state.rs:338:         scalar.compact();
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last/state.rs:339:         self.total_size += scalar.size();
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last/state.rs:340:         self.vals[group_idx] = Some(scalar);
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last/state.rs:341:         Ok(())
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last/state.rs:342:     }
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last/state.rs:360:     fn size(&self) -> usize {
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last/state.rs:361:         self.vals.capacity() * size_of::<Option<ScalarValue>>() + self.total_size
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last/state.rs:362:     }
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last/state.rs:363: }

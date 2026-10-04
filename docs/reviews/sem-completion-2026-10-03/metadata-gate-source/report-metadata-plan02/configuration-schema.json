@@ -1,0 +1,55 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "mode": {
+      "enum": [
+        "candidate",
+        "committed"
+      ],
+      "title": "Mode",
+      "type": "string"
+    },
+    "commit": {
+      "pattern": "^[0-9a-f]{40}$",
+      "title": "Commit",
+      "type": "string"
+    },
+    "base_commit": {
+      "pattern": "^[0-9a-f]{40}$",
+      "title": "Base Commit",
+      "type": "string"
+    },
+    "tree": {
+      "pattern": "^[0-9a-f]{40}$",
+      "title": "Tree",
+      "type": "string"
+    },
+    "root": {
+      "format": "path",
+      "title": "Root",
+      "type": "string"
+    },
+    "output": {
+      "format": "path",
+      "title": "Output",
+      "type": "string"
+    },
+    "primary_markdown": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Primary Markdown",
+      "type": "array"
+    }
+  },
+  "required": [
+    "mode",
+    "commit",
+    "base_commit",
+    "tree",
+    "root",
+    "output"
+  ],
+  "title": "Config",
+  "type": "object"
+}

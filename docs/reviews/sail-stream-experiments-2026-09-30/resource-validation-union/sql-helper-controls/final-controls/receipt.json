@@ -1,0 +1,92 @@
+{
+  "started_utc": "2026-09-30T23:48:18.430721+00:00",
+  "helper_sha256": "0aca81a5819f29095d2592804aea836250d7640de917ce7d959a264ec80f124e",
+  "control_source_sha256": "f5a103d715e51e4cdb10919c5ac99e2182109813c47433f06fe2bd413cc228ee",
+  "private_fixture": "/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/union-sql-offline-guards-k487ubae",
+  "checks": [
+    {
+      "name": "clean exact source/index stable",
+      "outcome": "passed"
+    },
+    {
+      "name": "unstaged source",
+      "outcome": "expected_rejection"
+    },
+    {
+      "name": "staged candidate identity",
+      "outcome": "passed"
+    },
+    {
+      "name": "candidate claiming exact",
+      "outcome": "expected_rejection"
+    },
+    {
+      "name": "untracked source",
+      "outcome": "expected_rejection"
+    },
+    {
+      "name": "explicit statistics and optional-lock environment",
+      "outcome": "passed",
+      "settings": {
+        "SAIL_MODE": "local",
+        "SAIL_EXECUTION__DEFAULT_PARALLELISM": "2",
+        "SAIL_EXECUTION__COLLECT_STATISTICS": "true",
+        "TOKIO_WORKER_THREADS": "2",
+        "RAYON_NUM_THREADS": "2",
+        "RUST_LOG": "warn"
+      }
+    },
+    {
+      "name": "both signal handlers request controlled unwind",
+      "outcome": "passed",
+      "limitation": "Direct handler calls; no OS signal or process-group cleanup experiment."
+    },
+    {
+      "name": "pinned client Python and imports",
+      "outcome": "passed"
+    }
+  ],
+  "scope": "Private tiny Git fixture and pinned client-interpreter imports only. No Sail binary build, SQL, server, benchmark, remote read or workload.",
+  "client_returncode": 0,
+  "client_interpreter": {
+    "executable": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/bin/python",
+    "real_executable": "/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/bin/python3.12",
+    "executable_sha256": "7ab28aab7042141d3d97175edec3045ff15b5d0cbf885817c7c1ad0dad393f9f",
+    "version": "3.12.8 (main, Jan  5 2025, 06:55:30) [Clang 19.1.6 ]",
+    "prefix": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion",
+    "base_prefix": "/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none",
+    "modules": {
+      "pyspark": {
+        "version": "4.0.1",
+        "file": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/__init__.py",
+        "sha256": "e1776e11568f4231f8079502270a2c84828f335ef61cc60561b225d636c7bcdc"
+      },
+      "pyarrow": {
+        "version": "21.0.0",
+        "file": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyarrow/__init__.py",
+        "sha256": "9f52fe44ffd0653d93eeac470a26ee12cf7c054760bfc4915493db4a99105aa0"
+      },
+      "numpy": {
+        "version": "2.5.3",
+        "file": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/numpy/__init__.py",
+        "sha256": "09295a80660f17925ae23765ce8cbd7ff7ceae968d5f2f89349f1cb74c0b9e11"
+      },
+      "grpc": {
+        "version": "1.84.0",
+        "file": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/grpc/__init__.py",
+        "sha256": "7e3a88cf8430c74ec70ca65ba615a3c0419d3a4f59f9c59c01500ade2d88dd39"
+      },
+      "pytest": {
+        "version": "8.4.2",
+        "file": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pytest/__init__.py",
+        "sha256": "66993a5e3905005e0981159b4794d10b1adacf341a58a44d696ad2c4442dcdc6"
+      }
+    }
+  },
+  "outcome": "PASS_OFFLINE_PREPARATION_ONLY",
+  "finished_utc": "2026-09-30T23:48:19.656306+00:00",
+  "artifact_hashes": {
+    "client.stdout": "b2280b147226b2dfaa7a8d3d63961d45eec64c8ad1315b17d7fe06d07d851631",
+    "client.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+}

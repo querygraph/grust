@@ -1,0 +1,79 @@
+{
+  "recorded_utc": "2026-10-01T01:26:03.494673+00:00",
+  "outcome": "PASS_INDEPENDENT_SSSP_REUSE_SOURCE_AND_GATE_AUDIT",
+  "repository": "querygraph/sail",
+  "commit": "fc094a0c25a49edeac2f9f0195aa973421a21a43",
+  "tree": "5abc3e30eadb878402b3a90bcbeb0a48ac8c4b25",
+  "base": "33adfce1d2ab77c3e108aa542f7eda80dd5f5cf9",
+  "source_hashes": {
+    "examples/extensions/argentea/src/adjacency_tests/allocations.rs": "47426eb4a7f5e6145d7c3e88ba4a75cb6aad76d7178807e3b6cfb40ccee991c8",
+    "examples/extensions/argentea/src/adjacency_tests/allocations/watch.rs": "6ce3a2e6355dfde2e280d63a1359a549d34adc17ab77a2956ae78a27ed7ade83",
+    "examples/extensions/argentea/src/adjacency_tests/mod.rs": "99ceb2611a2b2cfdab7cda6bd35461549e788547ee7d25409d99c66d2dc73310",
+    "examples/extensions/argentea/src/sssp/partition.rs": "8367765f19325ab8f7e4d9e1a38b30b584dd010c5d2a3d892c068e791e222421",
+    "examples/extensions/argentea/src/sssp/partition/protocol.rs": "6e2ceaa8fa87b796041ad215c91ebcffd52e6c826bd7b98c900161ed8185fc8f",
+    "examples/extensions/argentea/src/sssp/partition/reuse_tests/controls.rs": "a88635ae6b4546fbaa46e6e36702ed7fc91b65ec31f3c2b0473dc78de6f776a8",
+    "examples/extensions/argentea/src/sssp/partition/reuse_tests/mod.rs": "b13302aa421cfd5cb48787cfbadbec809d50523b532df7eff6d24309900bbb2a"
+  },
+  "receipt_hashes": {
+    "baseline03": "9370b811a83dbdc1e2d52d211a00355d56eaac587a30c7b1945aebb50c8e9be0",
+    "candidate03": "c5edc902fde093a370ff09f73b0a0087a20208860e10287666e1c2c546c08cdb",
+    "candidate-gate": "0f2dfa0e4bc1ca4745b00b485dabcdd04a4722afa6c1b0c7de93794b8e1d8d33",
+    "exact-gate": "857c4e27d36f7ebb0932c69026acdf07e32fe42e0c2f97f3db887ee8421f1530",
+    "frozen.json": "b9bda25b2d2a8fcfada7462a02c213d8e3babe855b148657f1f0c117f65359dc",
+    "candidate.patch": "b616faf0df60e2b608995319bd7dc7c5219d56c0eb33ae457e4900ee8c6642ec",
+    "README.md": "e287a881931f3cdab01a57ff7e83e1cac603684e8808283bc560e3581c76e991",
+    "baseline-source-proof.json": "417fa4374b11743e480701f4fcf3eaa58106da8a1bbab8ba8897e326ec7651c1",
+    "allocation-comparison.json": "ddedc6cf12cbdd5f1520bc1e9f85284adeed1074e910302cf916028b9031b74d",
+    "allocation-repeat-verification.json": "8f50727753c0727359cc8399148ec607a8eff69ad72a7cc9c19851d587f29f93"
+  },
+  "readme_sha256": "e287a881931f3cdab01a57ff7e83e1cac603684e8808283bc560e3581c76e991",
+  "verified_gates": {
+    "candidate-gate": {
+      "tests": {
+        "core-release": 141,
+        "native-release": 55,
+        "core-loaded": 141,
+        "native-loaded": 55
+      },
+      "argentea_native_tests": 49,
+      "saturated_cores": 10,
+      "all_owned_groups_reaped": true
+    },
+    "exact-gate": {
+      "tests": {
+        "core-release": 141,
+        "native-release": 55,
+        "core-loaded": 141,
+        "native-loaded": 55
+      },
+      "argentea_native_tests": 49,
+      "saturated_cores": 10,
+      "all_owned_groups_reaped": true
+    }
+  },
+  "allocation_checks": {
+    "raw_cells": 36,
+    "matched_pairs": 18,
+    "formal_candidate_repeat_logs": 4,
+    "all_retained_admission_and_work_equal": true,
+    "non_done_allocation_calls_removed": 1,
+    "non_done_requested_volume_reduction_formula_bytes": "32 * local_vertices - 8 on the recorded 64-bit build",
+    "large_label_buffer_overlap": "3 to 2 for local N=1024 and 65536",
+    "done_counters_unchanged": true
+  },
+  "review_findings": [
+    "Only two production files change. Candidate labels move into next Values; old Arc labels remain immutable. Existing charged merge order, lexicographic selection, reachability, parent-only witness changes and DeltaStar pending carryover are preserved.",
+    "Full inbox reservation stays shared while producer vectors are live. Inbox drops before shrinking to checked label capacity; labels/frontier precede both reservations in Values destruction. Failure before publication drops the private candidate successor, retaining old labels and phase.",
+    "Producer completion and local emission EOF checks precede transfer; next statistics admission and final checkpoint precede Arc publication. Done path avoids vertex allocations unchanged.",
+    "Baseline production identity independently checked by removing only the cfg(test) declaration; all five test helper sources match candidate. Baseline03 retains two passing and three expected failing controls; candidate03 passes all five.",
+    "Reviewed actual old row cursor retention, sole-owner lease callbacks, early/late quota, work exhaustion, pre-cancellation and deterministic final-checkpoint cancellation. White-box merge cases supplement existing full protocol/oracle tests.",
+    "Reparsed raw allocator records independently: all 18 before/after pairs match comparison JSON; all four formal ordinary/loaded candidate logs repeat the same rows. Exact gate source guards, log hashes, test counts and cleanup receipts match."
+  ],
+  "limits": [
+    "Read-only source and retained-evidence review; no independent tests, builds, workloads or remote reads executed.",
+    "Allocator peak is positive net requested-byte change within finish, including deallocations of pre-window objects; pointer watch is separate. Admission peak is controlled incremental cumulative-peak delta above a 64-MiB normalization reservation. Neither is process RSS or whole-program peak.",
+    "One owner has all local vertices and fixed sparse arcs while three owners are configured; singleton same-size watch has metadata collisions. No timing, Linux, worker/Flight, combined wheel or cluster-scaling claim.",
+    "Full vertex merge scan remains. No empty-allocation microbenchmark or new race-freedom claim is added; existing full core/native tests cover broader protocol paths."
+  ],
+  "blockers": []
+}

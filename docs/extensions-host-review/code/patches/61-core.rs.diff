@@ -1,0 +1,74 @@
+diff --git a/crates/sail-session/src/session_manager/actor/core.rs b/crates/sail-session/src/session_manager/actor/core.rs
+index f3fb136cba15130426467877c34b273f99c7e264..85c12e1429dca1b2d3ce04ae025cdc75c3a207ef 100644
+--- a/crates/sail-session/src/session_manager/actor/core.rs
++++ b/crates/sail-session/src/session_manager/actor/core.rs
+@@ -3,12 +3,16 @@ use std::sync::Arc;
+ use indexmap::IndexMap;
+ use log::{info, warn};
+ use sail_common::actor::{Actor, ActorAction, ActorContext, ActorHandle};
++use sail_common_datafusion::extension::SessionExtensionAccessor;
++use sail_common_datafusion::native_resource::NativeResourceTracker;
++use sail_common_datafusion::session::lifecycle::SessionLifecycle;
+ use sail_execution::driver::{DriverHandle, DriverRegistryAccessor};
+ use sail_execution::error::{ExecutionError, ExecutionResult};
+ use sail_execution::{DriverId, IdGenerator};
+ use sail_system_store::SystemEvent;
+ 
+ use crate::session_manager::actor::SessionManagerActor;
++use crate::session_manager::session::ServerSessionState;
+ use crate::session_manager::{
+     SessionManagerComponents, SessionManagerMessage, SessionManagerOptions,
+ };
+@@ -53,6 +57,7 @@ impl Actor for SessionManagerActor {
+             session_factory,
+             job_runner_factory,
+             sessions: IndexMap::new(),
++            cleanup: Default::default(),
+             drivers: Default::default(),
+             driver_gateway,
+             driver_id_generator: IdGenerator::new(),
+@@ -118,6 +123,26 @@ impl Actor for SessionManagerActor {
+     }
+ 
+     async fn stop(mut self, ctx: &mut ActorContext<Self>) {
++        let native_resources = self
++            .sessions
++            .values()
++            .filter_map(|session| {
++                let ServerSessionState::Running { context, .. } = &session.state else {
++                    return None;
++                };
++                context.extension::<NativeResourceTracker>().ok()
++            })
++            .collect::<Vec<_>>();
++        // A local job has no driver to stop its client-owned stream. Protocol
++        // operations must terminate before contexts are dropped or gRPC drains.
++        for (session_id, session) in &self.sessions {
++            if let ServerSessionState::Running { context, .. } = &session.state
++                && let Ok(lifecycle) = context.extension::<SessionLifecycle>()
++                && let Err(error) = lifecycle.stop().await
++            {
++                warn!("failed to stop session resources for {session_id}: {error}");
++            }
++        }
+         // Keep the gateway available while drivers stop. Graceful gateway shutdown waits for
+         // active task stream connections, which are owned by the drivers.
+         let drivers = self.drivers.drain().collect::<Vec<_>>();
+@@ -127,6 +152,17 @@ impl Actor for SessionManagerActor {
+             }
+         }
+         ctx.children_mut().join().await;
++        self.sessions.clear();
++        // Stream cancellation signals detached native producers; their final
++        // buffers may be released afterwards. Do not let process exit race that
++        // release or silently reclaim their quota through OS teardown.
++        for resources in native_resources {
++            resources.wait_for_release().await;
++        }
++        // A Deleted session has already left self.sessions' live contexts, but
++        // its final native producer may still be releasing retained outputs.
++        // Unlike idle-probe timers, this work must finish before actor teardown.
++        self.cleanup.finish().await;
+         if let Some(mut driver_gateway) = self.driver_gateway {
+             driver_gateway.stop().await;
+             info!("driver server has stopped");

@@ -1,0 +1,511 @@
+{
+  "started_utc": "2026-09-30T23:01:31.102267+00:00",
+  "source_commit": "200d1cf8eb1db5e9057e09e071ebd57391f4b376",
+  "source_pins": {
+    "/private/tmp/sail-stream-review-followup-gate/examples/extensions/benchmarks/graph_cell.py": "61745a77f3de414bdcf766507eecbf3480fda42e43808b1391bdbdf264d8993a",
+    "/Users/alexy/src/sail/.venvs/default/bin/sail": "27c01027afe78f6403d8c02c34199e30ef9103d11adb24403a6575b4bca40a09",
+    "/Users/alexy/src/sail/python/pysail/_native.abi3.so": "b99f1717cf49706f17eefd44d78c3751e6fd2b46a34ce3fd2cc360087b7f9685",
+    "/Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/pagerank-certificate-metadata/probe_nan_no_statistics.py": "f77304536b4d621a8f1f6d27e4082839185ec8fc88bdfff8a3258a15d7157dc4"
+  },
+  "private_fixtures": "/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pagerank-metadata-probe-wbdvht8i",
+  "results": [
+    {
+      "case": "valid",
+      "policy": "reference",
+      "iterations": [
+        1,
+        1
+      ],
+      "converged": [
+        true,
+        true
+      ],
+      "scores": [
+        "0.5",
+        "0.5"
+      ],
+      "direct_rows": "[Row(id=0, score=0.5, isnan=False), Row(id=1, score=0.5, isnan=False)]",
+      "output_statistics_written": false,
+      "parquet_rows": "[{'id': 0, 'score': 0.5, 'iterations': 1, 'converged': True, 'residual': 0.0}, {'id': 1, 'score': 0.5, 'iterations': 1, 'converged': True, 'residual': 0.0}]",
+      "correctness": {
+        "rows": 2,
+        "unique_ids": 2,
+        "null_ids": 0,
+        "rank_sum": 1.0,
+        "l1_error": 0.0,
+        "max_error": 0.0,
+        "min_iterations": 1,
+        "max_iterations": 1,
+        "all_converged": 1,
+        "reported_residual": 0.0,
+        "min_reported_residual": 0.0,
+        "l1_error_limit": 1.1333433333333332e-07,
+        "true_fixed_point_residual": 0.0,
+        "stationary_l1_error_bound": 0.0
+      },
+      "outcome": "accepted"
+    },
+    {
+      "case": "valid",
+      "policy": "certificate",
+      "iterations": [
+        1,
+        1
+      ],
+      "converged": [
+        true,
+        true
+      ],
+      "scores": [
+        "0.5",
+        "0.5"
+      ],
+      "direct_rows": "[Row(id=0, score=0.5, isnan=False), Row(id=1, score=0.5, isnan=False)]",
+      "output_statistics_written": false,
+      "parquet_rows": "[{'id': 0, 'score': 0.5, 'iterations': 1, 'converged': True, 'residual': 0.0}, {'id': 1, 'score': 0.5, 'iterations': 1, 'converged': True, 'residual': 0.0}]",
+      "correctness": {
+        "rows": 2,
+        "unique_ids": 2,
+        "null_ids": 0,
+        "rank_sum": 1.0,
+        "min_iterations": 1,
+        "max_iterations": 1,
+        "all_converged": 1,
+        "reported_residual": 0.0,
+        "policy": "certificate",
+        "true_fixed_point_residual": 0.0,
+        "stationary_l1_error_bound": 0.0,
+        "certificate": "independent fixed-point residual at or below tolerance; no reference vector"
+      },
+      "outcome": "accepted"
+    },
+    {
+      "case": "nan_score",
+      "policy": "reference",
+      "iterations": [
+        1,
+        1
+      ],
+      "converged": [
+        true,
+        true
+      ],
+      "scores": [
+        "nan",
+        "0.5"
+      ],
+      "direct_rows": "[Row(id=0, score=nan, isnan=True), Row(id=1, score=0.5, isnan=False)]",
+      "output_statistics_written": false,
+      "parquet_rows": "[{'id': 0, 'score': nan, 'iterations': 1, 'converged': True, 'residual': 0.0}, {'id': 1, 'score': 0.5, 'iterations': 1, 'converged': True, 'residual': 0.0}]",
+      "outcome": "rejected",
+      "error_type": "AssertionError",
+      "error": "1 invalid PageRank scores"
+    },
+    {
+      "case": "nan_score",
+      "policy": "certificate",
+      "iterations": [
+        1,
+        1
+      ],
+      "converged": [
+        true,
+        true
+      ],
+      "scores": [
+        "nan",
+        "0.5"
+      ],
+      "direct_rows": "[Row(id=0, score=nan, isnan=True), Row(id=1, score=0.5, isnan=False)]",
+      "output_statistics_written": false,
+      "parquet_rows": "[{'id': 0, 'score': nan, 'iterations': 1, 'converged': True, 'residual': 0.0}, {'id': 1, 'score': 0.5, 'iterations': 1, 'converged': True, 'residual': 0.0}]",
+      "outcome": "rejected",
+      "error_type": "AssertionError",
+      "error": "1 invalid PageRank scores"
+    },
+    {
+      "case": "partial_null_converged",
+      "policy": "reference",
+      "iterations": [
+        1,
+        1
+      ],
+      "converged": [
+        true,
+        null
+      ],
+      "scores": [
+        "0.5",
+        "0.5"
+      ],
+      "direct_rows": "[Row(id=0, score=0.5, isnan=False), Row(id=1, score=0.5, isnan=False)]",
+      "output_statistics_written": false,
+      "parquet_rows": "[{'id': 0, 'score': 0.5, 'iterations': 1, 'converged': True, 'residual': 0.0}, {'id': 1, 'score': 0.5, 'iterations': 1, 'converged': None, 'residual': 0.0}]",
+      "outcome": "rejected",
+      "error_type": "AssertionError",
+      "error": "1 invalid PageRank metadata rows"
+    },
+    {
+      "case": "partial_null_converged",
+      "policy": "certificate",
+      "iterations": [
+        1,
+        1
+      ],
+      "converged": [
+        true,
+        null
+      ],
+      "scores": [
+        "0.5",
+        "0.5"
+      ],
+      "direct_rows": "[Row(id=0, score=0.5, isnan=False), Row(id=1, score=0.5, isnan=False)]",
+      "output_statistics_written": false,
+      "parquet_rows": "[{'id': 0, 'score': 0.5, 'iterations': 1, 'converged': True, 'residual': 0.0}, {'id': 1, 'score': 0.5, 'iterations': 1, 'converged': None, 'residual': 0.0}]",
+      "correctness": {
+        "rows": 2,
+        "unique_ids": 2,
+        "null_ids": 0,
+        "rank_sum": 1.0,
+        "min_iterations": 1,
+        "max_iterations": 1,
+        "all_converged": 1,
+        "reported_residual": 0.0,
+        "policy": "certificate",
+        "true_fixed_point_residual": 0.0,
+        "stationary_l1_error_bound": 0.0,
+        "certificate": "independent fixed-point residual at or below tolerance; no reference vector"
+      },
+      "outcome": "accepted"
+    },
+    {
+      "case": "partial_null_iterations",
+      "policy": "reference",
+      "iterations": [
+        1,
+        null
+      ],
+      "converged": [
+        true,
+        true
+      ],
+      "scores": [
+        "0.5",
+        "0.5"
+      ],
+      "direct_rows": "[Row(id=0, score=0.5, isnan=False), Row(id=1, score=0.5, isnan=False)]",
+      "output_statistics_written": false,
+      "parquet_rows": "[{'id': 0, 'score': 0.5, 'iterations': 1, 'converged': True, 'residual': 0.0}, {'id': 1, 'score': 0.5, 'iterations': None, 'converged': True, 'residual': 0.0}]",
+      "outcome": "rejected",
+      "error_type": "AssertionError",
+      "error": "1 invalid PageRank metadata rows"
+    },
+    {
+      "case": "partial_null_iterations",
+      "policy": "certificate",
+      "iterations": [
+        1,
+        null
+      ],
+      "converged": [
+        true,
+        true
+      ],
+      "scores": [
+        "0.5",
+        "0.5"
+      ],
+      "direct_rows": "[Row(id=0, score=0.5, isnan=False), Row(id=1, score=0.5, isnan=False)]",
+      "output_statistics_written": false,
+      "parquet_rows": "[{'id': 0, 'score': 0.5, 'iterations': 1, 'converged': True, 'residual': 0.0}, {'id': 1, 'score': 0.5, 'iterations': None, 'converged': True, 'residual': 0.0}]",
+      "correctness": {
+        "rows": 2,
+        "unique_ids": 2,
+        "null_ids": 0,
+        "rank_sum": 1.0,
+        "min_iterations": 1,
+        "max_iterations": 1,
+        "all_converged": 1,
+        "reported_residual": 0.0,
+        "policy": "certificate",
+        "true_fixed_point_residual": 0.0,
+        "stationary_l1_error_bound": 0.0,
+        "certificate": "independent fixed-point residual at or below tolerance; no reference vector"
+      },
+      "outcome": "accepted"
+    },
+    {
+      "case": "negative_iterations",
+      "policy": "reference",
+      "iterations": [
+        -1,
+        -1
+      ],
+      "converged": [
+        true,
+        true
+      ],
+      "scores": [
+        "0.5",
+        "0.5"
+      ],
+      "direct_rows": "[Row(id=0, score=0.5, isnan=False), Row(id=1, score=0.5, isnan=False)]",
+      "output_statistics_written": false,
+      "parquet_rows": "[{'id': 0, 'score': 0.5, 'iterations': -1, 'converged': True, 'residual': 0.0}, {'id': 1, 'score': 0.5, 'iterations': -1, 'converged': True, 'residual': 0.0}]",
+      "outcome": "rejected",
+      "error_type": "AssertionError",
+      "error": "2 invalid PageRank metadata rows"
+    },
+    {
+      "case": "negative_iterations",
+      "policy": "certificate",
+      "iterations": [
+        -1,
+        -1
+      ],
+      "converged": [
+        true,
+        true
+      ],
+      "scores": [
+        "0.5",
+        "0.5"
+      ],
+      "direct_rows": "[Row(id=0, score=0.5, isnan=False), Row(id=1, score=0.5, isnan=False)]",
+      "output_statistics_written": false,
+      "parquet_rows": "[{'id': 0, 'score': 0.5, 'iterations': -1, 'converged': True, 'residual': 0.0}, {'id': 1, 'score': 0.5, 'iterations': -1, 'converged': True, 'residual': 0.0}]",
+      "correctness": {
+        "rows": 2,
+        "unique_ids": 2,
+        "null_ids": 0,
+        "rank_sum": 1.0,
+        "min_iterations": -1,
+        "max_iterations": -1,
+        "all_converged": 1,
+        "reported_residual": 0.0,
+        "policy": "certificate",
+        "true_fixed_point_residual": 0.0,
+        "stationary_l1_error_bound": 0.0,
+        "certificate": "independent fixed-point residual at or below tolerance; no reference vector"
+      },
+      "outcome": "accepted"
+    },
+    {
+      "case": "over_cap_iterations",
+      "policy": "reference",
+      "iterations": [
+        101,
+        101
+      ],
+      "converged": [
+        true,
+        true
+      ],
+      "scores": [
+        "0.5",
+        "0.5"
+      ],
+      "direct_rows": "[Row(id=0, score=0.5, isnan=False), Row(id=1, score=0.5, isnan=False)]",
+      "output_statistics_written": false,
+      "parquet_rows": "[{'id': 0, 'score': 0.5, 'iterations': 101, 'converged': True, 'residual': 0.0}, {'id': 1, 'score': 0.5, 'iterations': 101, 'converged': True, 'residual': 0.0}]",
+      "outcome": "rejected",
+      "error_type": "AssertionError",
+      "error": "2 invalid PageRank metadata rows"
+    },
+    {
+      "case": "over_cap_iterations",
+      "policy": "certificate",
+      "iterations": [
+        101,
+        101
+      ],
+      "converged": [
+        true,
+        true
+      ],
+      "scores": [
+        "0.5",
+        "0.5"
+      ],
+      "direct_rows": "[Row(id=0, score=0.5, isnan=False), Row(id=1, score=0.5, isnan=False)]",
+      "output_statistics_written": false,
+      "parquet_rows": "[{'id': 0, 'score': 0.5, 'iterations': 101, 'converged': True, 'residual': 0.0}, {'id': 1, 'score': 0.5, 'iterations': 101, 'converged': True, 'residual': 0.0}]",
+      "correctness": {
+        "rows": 2,
+        "unique_ids": 2,
+        "null_ids": 0,
+        "rank_sum": 1.0,
+        "min_iterations": 101,
+        "max_iterations": 101,
+        "all_converged": 1,
+        "reported_residual": 0.0,
+        "policy": "certificate",
+        "true_fixed_point_residual": 0.0,
+        "stationary_l1_error_bound": 0.0,
+        "certificate": "independent fixed-point residual at or below tolerance; no reference vector"
+      },
+      "outcome": "accepted"
+    },
+    {
+      "case": "mixed_iterations",
+      "policy": "reference",
+      "iterations": [
+        1,
+        2
+      ],
+      "converged": [
+        true,
+        true
+      ],
+      "scores": [
+        "0.5",
+        "0.5"
+      ],
+      "direct_rows": "[Row(id=0, score=0.5, isnan=False), Row(id=1, score=0.5, isnan=False)]",
+      "output_statistics_written": false,
+      "parquet_rows": "[{'id': 0, 'score': 0.5, 'iterations': 1, 'converged': True, 'residual': 0.0}, {'id': 1, 'score': 0.5, 'iterations': 2, 'converged': True, 'residual': 0.0}]",
+      "outcome": "rejected",
+      "error_type": "AssertionError",
+      "error": "{'rank_sum': 1.0, 'l1_error': 0.0, 'max_error': 0.0, 'min_iterations': 1, 'max_iterations': 2, 'all_converged': 1, 'reported_residual': 0.0, 'min_reported_residual': 0.0}"
+    },
+    {
+      "case": "mixed_iterations",
+      "policy": "certificate",
+      "iterations": [
+        1,
+        2
+      ],
+      "converged": [
+        true,
+        true
+      ],
+      "scores": [
+        "0.5",
+        "0.5"
+      ],
+      "direct_rows": "[Row(id=0, score=0.5, isnan=False), Row(id=1, score=0.5, isnan=False)]",
+      "output_statistics_written": false,
+      "parquet_rows": "[{'id': 0, 'score': 0.5, 'iterations': 1, 'converged': True, 'residual': 0.0}, {'id': 1, 'score': 0.5, 'iterations': 2, 'converged': True, 'residual': 0.0}]",
+      "correctness": {
+        "rows": 2,
+        "unique_ids": 2,
+        "null_ids": 0,
+        "rank_sum": 1.0,
+        "min_iterations": 1,
+        "max_iterations": 2,
+        "all_converged": 1,
+        "reported_residual": 0.0,
+        "policy": "certificate",
+        "true_fixed_point_residual": 0.0,
+        "stationary_l1_error_bound": 0.0,
+        "certificate": "independent fixed-point residual at or below tolerance; no reference vector"
+      },
+      "outcome": "accepted"
+    },
+    {
+      "case": "not_converged",
+      "policy": "reference",
+      "iterations": [
+        1,
+        1
+      ],
+      "converged": [
+        true,
+        false
+      ],
+      "scores": [
+        "0.5",
+        "0.5"
+      ],
+      "direct_rows": "[Row(id=0, score=0.5, isnan=False), Row(id=1, score=0.5, isnan=False)]",
+      "output_statistics_written": false,
+      "parquet_rows": "[{'id': 0, 'score': 0.5, 'iterations': 1, 'converged': True, 'residual': 0.0}, {'id': 1, 'score': 0.5, 'iterations': 1, 'converged': False, 'residual': 0.0}]",
+      "outcome": "rejected",
+      "error_type": "NonConvergedError",
+      "error": "native PageRank reached its iteration cap: {'rank_sum': 1.0, 'l1_error': 0.0, 'max_error': 0.0, 'min_iterations': 1, 'max_iterations': 1, 'all_converged': 0, 'reported_residual': 0.0, 'min_reported_residual': 0.0}"
+    },
+    {
+      "case": "not_converged",
+      "policy": "certificate",
+      "iterations": [
+        1,
+        1
+      ],
+      "converged": [
+        true,
+        false
+      ],
+      "scores": [
+        "0.5",
+        "0.5"
+      ],
+      "direct_rows": "[Row(id=0, score=0.5, isnan=False), Row(id=1, score=0.5, isnan=False)]",
+      "output_statistics_written": false,
+      "parquet_rows": "[{'id': 0, 'score': 0.5, 'iterations': 1, 'converged': True, 'residual': 0.0}, {'id': 1, 'score': 0.5, 'iterations': 1, 'converged': False, 'residual': 0.0}]",
+      "outcome": "rejected",
+      "error_type": "NonConvergedError",
+      "error": "PageRank reached its iteration cap: {'rank_sum': 1.0, 'min_iterations': 1, 'max_iterations': 1, 'all_converged': 0, 'reported_residual': 0.0}"
+    },
+    {
+      "case": "wrong_scores",
+      "policy": "reference",
+      "iterations": [
+        1,
+        1
+      ],
+      "converged": [
+        true,
+        true
+      ],
+      "scores": [
+        "0.4",
+        "0.6"
+      ],
+      "direct_rows": "[Row(id=0, score=0.4, isnan=False), Row(id=1, score=0.6, isnan=False)]",
+      "output_statistics_written": false,
+      "parquet_rows": "[{'id': 0, 'score': 0.4, 'iterations': 1, 'converged': True, 'residual': 0.0}, {'id': 1, 'score': 0.6, 'iterations': 1, 'converged': True, 'residual': 0.0}]",
+      "outcome": "rejected",
+      "error_type": "AssertionError",
+      "error": "{'rank_sum': 1.0, 'l1_error': 0.19999999999999996, 'max_error': 0.09999999999999998, 'min_iterations': 1, 'max_iterations': 1, 'all_converged': 1, 'reported_residual': 0.0, 'min_reported_residual': 0.0}"
+    },
+    {
+      "case": "wrong_scores",
+      "policy": "certificate",
+      "iterations": [
+        1,
+        1
+      ],
+      "converged": [
+        true,
+        true
+      ],
+      "scores": [
+        "0.4",
+        "0.6"
+      ],
+      "direct_rows": "[Row(id=0, score=0.4, isnan=False), Row(id=1, score=0.6, isnan=False)]",
+      "output_statistics_written": false,
+      "parquet_rows": "[{'id': 0, 'score': 0.4, 'iterations': 1, 'converged': True, 'residual': 0.0}, {'id': 1, 'score': 0.6, 'iterations': 1, 'converged': True, 'residual': 0.0}]",
+      "outcome": "rejected",
+      "error_type": "AssertionError",
+      "error": "0.3699999999999999"
+    }
+  ],
+  "installed_version": "sail 0.7.0",
+  "scope": "Actual Python validator and local SQL/Parquet, installed runtime only; two-vertex fixed point. No algorithm timing, cluster or stream-cause claim.",
+  "server_command": [
+    "/Users/alexy/src/sail/.venvs/default/bin/sail",
+    "spark",
+    "server",
+    "--ip",
+    "127.0.0.1",
+    "--port",
+    "62875"
+  ],
+  "outcome": "observations_complete",
+  "server_reaped": true,
+  "source_and_runtime_unchanged": true,
+  "head_unchanged": true,
+  "finished_utc": "2026-09-30T23:01:33.598794+00:00"
+}

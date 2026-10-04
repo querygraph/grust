@@ -1,0 +1,16 @@
+diff --git a/crates/sail-execution/src/worker_manager/kubernetes.rs b/crates/sail-execution/src/worker_manager/kubernetes.rs
+index c5a43e026df341f0730c3fe9b0ad4693a02b1cc4..fad04a8993b1c050dae1fbae95c28f48481f61e5 100644
+--- a/crates/sail-execution/src/worker_manager/kubernetes.rs
++++ b/crates/sail-execution/src/worker_manager/kubernetes.rs
+@@ -169,6 +169,11 @@ impl KubernetesWorkerService {
+             }
+         };
+         let mut env = vec![
++            EnvVar {
++                name: "SAIL_EXPERIMENTAL_EXTENSIONS".to_string(),
++                value: Some(env::var("SAIL_EXPERIMENTAL_EXTENSIONS").unwrap_or_default()),
++                value_from: None,
++            },
+             EnvVar {
+                 name: "RUST_LOG".to_string(),
+                 value: Some(env::var("RUST_LOG").unwrap_or("info".to_string())),

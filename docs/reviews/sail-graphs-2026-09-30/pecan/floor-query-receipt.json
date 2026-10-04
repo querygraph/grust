@@ -1,0 +1,44 @@
+{
+  "utc": "2026-09-30T15:12:21.763848+00:00",
+  "client_sha": "ffcfbd5690e3f3681ef9ac18ba959bc231cf9f73",
+  "binary": "/Users/alexy/src/sail-extensions-poc/target/extensions-datafusion-final/mac-arm64-de8e67098/artifacts/sail",
+  "runtime_source_claim": "de8e67098 from artifact path; floor source unchanged to ffcfbd569",
+  "cases": [
+    {
+      "name": "infinite_quotient",
+      "delta": 1e-310,
+      "bucket_schema": "StructType([StructField('weight', DoubleType(), True), StructField('quotient', DoubleType(), True), StructField('bucket', LongType(), True)])",
+      "buckets": [
+        {
+          "weight": 1.0,
+          "quotient": "Infinity",
+          "bucket": 9223372036854775807
+        }
+      ],
+      "outcome": "error",
+      "error": "CapabilityError(\"graph utils Ping failed: enable the server's owned-run storage service\")",
+      "events": []
+    },
+    {
+      "name": "finite_large_buckets",
+      "delta": 1.0,
+      "bucket_schema": "StructType([StructField('weight', DoubleType(), True), StructField('quotient', DoubleType(), True), StructField('bucket', LongType(), True)])",
+      "buckets": [
+        {
+          "weight": 1e+20,
+          "quotient": 1e+20,
+          "bucket": 9223372036854775807
+        },
+        {
+          "weight": 2e+20,
+          "quotient": 2e+20,
+          "bucket": 9223372036854775807
+        }
+      ],
+      "outcome": "error",
+      "error": "CapabilityError(\"graph utils Ping failed: enable the server's owned-run storage service\")",
+      "events": []
+    }
+  ],
+  "nonfinite_number_encoding": "Infinity is represented as a string for strict JSON; the source diagnostic used Python JSON Infinity."
+}

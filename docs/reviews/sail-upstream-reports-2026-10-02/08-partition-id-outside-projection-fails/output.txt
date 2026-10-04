@@ -1,0 +1,8 @@
+select(spark_partition_id()), distinct values: [0, 1, 2, 3]
+withColumn(p, spark_partition_id()).groupBy(p).count(): [(0, 250), (1, 250), (2, 250), (3, 250)]
+groupBy(spark_partition_id()).count(): ERROR: spark_partition_id() was not rewritten into a partition-aware operator
+filter(spark_partition_id() == 0).count(): ERROR: round-robin repartition failed while reading input partition 0: Execution error: spark_partition_id() was not rewritten into a partition-aware operator
+orderBy(spark_partition_id()).limit(2): ERROR: spark_partition_id() was not rewritten into a partition-aware operator
+SQL: GROUP BY spark_partition_id(): ERROR: Non-deterministic expression spark_partition_id should not appear in an aggregate query
+groupBy(monotonically_increasing_id() % 2).count(): ERROR: monotonically_increasing_id() was not rewritten into a partition-aware operator
+filter(monotonically_increasing_id() < 5).count(): ERROR: round-robin repartition failed while reading input partition 0: Execution error: monotonically_increasing_id() was not rewritten into a partition-aware operator

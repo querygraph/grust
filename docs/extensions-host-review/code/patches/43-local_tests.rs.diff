@@ -1,0 +1,144 @@
+diff --git a/crates/sail-session/src/extensions/graph_utils/local_tests.rs b/crates/sail-session/src/extensions/graph_utils/local_tests.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..b0a1a362fd16344c2ef89f37ad78a4075ed1093e
+--- /dev/null
++++ b/crates/sail-session/src/extensions/graph_utils/local_tests.rs
+@@ -0,0 +1,138 @@
++use std::os::unix::fs::symlink;
++use std::path::PathBuf;
++
++use datafusion::execution::runtime_env::RuntimeEnv;
++use datafusion_common::{Result, plan_datafusion_err};
++
++use super::proto::request::Verb;
++use super::proto::{Exists, Ls, Mkdir, Request, Rm};
++use super::storage::GraphRuns;
++
++async fn allocate(runs: &GraphRuns) -> Result<(String, String, String, PathBuf)> {
++    let id = uuid::Uuid::new_v4().to_string();
++    let rows = runs.execute(mkdir(&id)).await?;
++    let uri = rows[0]
++        .path
++        .clone()
++        .ok_or_else(|| plan_datafusion_err!("missing path"))?;
++    let token = rows[0]
++        .token
++        .clone()
++        .ok_or_else(|| plan_datafusion_err!("missing token"))?;
++    let path = url::Url::parse(&uri)
++        .map_err(|e| plan_datafusion_err!("{e}"))?
++        .to_file_path()
++        .map_err(|()| plan_datafusion_err!("invalid local receipt URI"))?;
++    Ok((id, uri, token, path))
++}
++fn mkdir(id: &str) -> Request {
++    Request {
++        verb: Some(Verb::Mkdir(Mkdir {
++            root: String::new(),
++            request_id: id.into(),
++        })),
++    }
++}
++fn remove(path: &str, token: &str) -> Request {
++    Request {
++        verb: Some(Verb::Rm(Rm {
++            path: path.into(),
++            token: token.into(),
++        })),
++    }
++}
++fn fixture(root: &std::path::Path) -> Result<GraphRuns> {
++    let uri = url::Url::from_directory_path(root)
++        .map_err(|()| plan_datafusion_err!("invalid fixture directory"))?;
++    GraphRuns::new(&RuntimeEnv::default(), uri.as_str())
++}
++
++#[tokio::test]
++async fn local_link_cannot_list_or_delete_outside_run_and_other_cleanup_continues() -> Result<()> {
++    let directory = tempfile::tempdir()?;
++    let root = directory.path().join("root");
++    let outside = directory.path().join("outside");
++    std::fs::create_dir_all(&root)?;
++    std::fs::create_dir_all(&outside)?;
++    let sentinel = outside.join("keep.parquet");
++    std::fs::write(&sentinel, b"outside sentinel")?;
++    let runs = fixture(&root)?;
++    let (id, uri, token, path) = allocate(&runs).await?;
++    let (_, _, _, sibling) = allocate(&runs).await?;
++    std::fs::write(sibling.join("part.parquet"), b"owned")?;
++    symlink(&outside, path.join("escape"))?;
++    for verb in [
++        Verb::Exists(Exists {
++            path: uri.clone(),
++            token: token.clone(),
++        }),
++        Verb::Ls(Ls {
++            path: uri.clone(),
++            token: token.clone(),
++            limit: 1,
++        }),
++        Verb::Rm(Rm {
++            path: uri.clone(),
++            token: token.clone(),
++        }),
++        Verb::Rm(Rm {
++            path: format!("{uri}/escape/keep.parquet"),
++            token: token.clone(),
++        }),
++    ] {
++        let error = runs
++            .execute(Request { verb: Some(verb) })
++            .await
++            .err()
++            .ok_or_else(|| plan_datafusion_err!("symlink request unexpectedly succeeded"))?;
++        assert!(error.to_string().contains("symbolic links"));
++        assert_eq!(std::fs::read(&sentinel)?, b"outside sentinel");
++    }
++    assert!(runs.execute(mkdir(&id)).await.is_err());
++    assert!(runs.cleanup().await.is_err());
++    assert_eq!(std::fs::read(&sentinel)?, b"outside sentinel");
++    assert!(!sibling.join("part.parquet").exists());
++    assert!(!sibling.join("_sail_graph_run").exists());
++    // A dangling link is equally invalid and must not be mistaken for a missing path.
++    std::fs::remove_file(path.join("escape"))?;
++    symlink(outside.join("missing"), path.join("escape"))?;
++    assert!(runs.cleanup().await.is_err());
++    std::fs::remove_file(path.join("escape"))?;
++    runs.cleanup().await?;
++    Ok(())
++}
++
++#[tokio::test]
++async fn local_run_replaced_by_link_cannot_mutate_sibling_run() -> Result<()> {
++    let root = tempfile::tempdir()?;
++    let runs = fixture(root.path())?;
++    let (id, uri, token, path) = allocate(&runs).await?;
++    let (_, _, _, sibling) = allocate(&runs).await?;
++    let sentinel = sibling.join("keep.parquet");
++    std::fs::write(&sentinel, b"sibling sentinel")?;
++    std::fs::remove_dir_all(&path)?;
++    symlink(&sibling, &path)?;
++    assert!(runs.execute(remove(&uri, &token)).await.is_err());
++    assert!(runs.execute(mkdir(&id)).await.is_err());
++    assert_eq!(std::fs::read(&sentinel)?, b"sibling sentinel");
++    std::fs::remove_file(&path)?;
++    runs.cleanup().await?;
++    Ok(())
++}
++
++#[tokio::test]
++async fn local_root_alias_is_canonicalized_before_ownership_is_assigned() -> Result<()> {
++    let directory = tempfile::tempdir()?;
++    let root = directory.path().join("actual");
++    std::fs::create_dir(&root)?;
++    let alias = directory.path().join("alias");
++    symlink(&root, &alias)?;
++    let runs = fixture(&alias)?;
++    let (_, _, _, allocated) = allocate(&runs).await?;
++    let canonical = root.canonicalize()?;
++    assert_eq!(allocated.parent(), Some(canonical.as_path()));
++    runs.cleanup().await?;
++    let missing = directory.path().join("not-created");
++    assert!(fixture(&missing).is_err());
++    Ok(())
++}

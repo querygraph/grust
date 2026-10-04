@@ -1,0 +1,57 @@
+{
+  "recorded_utc": "2026-09-30T17:45:43.671456+00:00",
+  "status": "prepared_not_launched",
+  "all_shared_workload_arguments_match": true,
+  "unchanged": {
+    "native_source_sha": "ffcfbd5690e3f3681ef9ac18ba959bc231cf9f73",
+    "expected_dataset_family": "graph500",
+    "expected_vertices": 16777216,
+    "engine": "pecan",
+    "algorithm": "sssp",
+    "variant": "delta_star",
+    "mode": "process-cluster",
+    "repeat": 1,
+    "max_iterations": 1000,
+    "partitions": 32,
+    "threads": 32,
+    "worker_task_slots": 64,
+    "sail_pool_bytes": 103079215104,
+    "native_quota": 85899345920,
+    "tolerance": 1e-08,
+    "damping": 0.85,
+    "timeout": 14400,
+    "seed": 42,
+    "source": 13507776,
+    "delta": 0.1,
+    "directed": false,
+    "traversal_validation": "certificate",
+    "certificate_max_rounds": 10000,
+    "record_plans": true,
+    "http2_keepalive_timeout": 120
+  },
+  "disclosed_changes": {
+    "dataset": {
+      "baseline": "/targets/gn-capacity-b87fb27a-hub/datasets/scale24",
+      "candidate": "/targets/sail-stream-experiments-20260930/logging02/datasets/scale24"
+    },
+    "expected_graph500_sha256": {
+      "baseline": null,
+      "candidate": "cacd401faca8b8da8cd81fcbedfadce5b355c7029c6c53fc9bec947b60d6649e"
+    },
+    "output": {
+      "baseline": "/targets/gn-decide/cells/decide-pecan-s24-sssp-r1-scale24-pecan-sssp-delta_star",
+      "candidate": "/targets/sail-stream-experiments-20260930/logging02/cells/stream-log02-r1-scale24-pecan-sssp-delta_star"
+    },
+    "runtime_source_sha": {
+      "baseline": "ffcfbd5690e3f3681ef9ac18ba959bc231cf9f73",
+      "candidate": "2894a962076d3cc404dd72ec736ebeb9239901f6"
+    },
+    "sail_binary": {
+      "baseline": "/targets/graph-nuts-ffcfbd569/sail-linux-x86_64-ffcfbd5690e3-release",
+      "candidate": "/targets/sail-stream-2894a962076d/sail-linux-x86_64-2894a962076d-release"
+    }
+  },
+  "harness": "3a9028057 logging-only/controller byte identity toffcf",
+  "extra_logging": "tonic::transport::server=debug plus existing h2 control-frame and task filters",
+  "scope": "configuration comparison, not execution evidence"
+}

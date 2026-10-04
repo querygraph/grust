@@ -1,0 +1,110 @@
+diff --git a/crates/sail-execution/src/worker_manager/process.rs b/crates/sail-execution/src/worker_manager/process.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..4bf0035880b1652fd69ebf16d3970ac6698bc42a
+--- /dev/null
++++ b/crates/sail-execution/src/worker_manager/process.rs
+@@ -0,0 +1,104 @@
++//! Experimental local-cluster workers launched as separate Sail executables.
++use std::sync::Arc;
++use std::time::Duration;
++
++use futures::future::BoxFuture;
++use sail_common::actor::ActorSystem;
++use sail_common::config::{CliConfigEnv, ClusterConfigEnv, ExecutionConfigEnv};
++use tokio::process::Child;
++use tokio::sync::Mutex;
++
++use super::process_command::{WORKER_COMMAND_ENV, worker_command};
++use crate::error::{ExecutionError, ExecutionResult};
++use crate::id::WorkerId;
++use crate::worker_manager::{WorkerLaunchOptions, WorkerManager};
++
++#[derive(Default)]
++pub struct ProcessWorkerManager {
++    children: Arc<Mutex<Vec<Child>>>,
++}
++
++#[tonic::async_trait]
++impl WorkerManager for ProcessWorkerManager {
++    fn launch_worker(
++        &self,
++        _system: &mut ActorSystem,
++        id: WorkerId,
++        options: WorkerLaunchOptions,
++    ) -> BoxFuture<'static, ExecutionResult<()>> {
++        let children = self.children.clone();
++        Box::pin(async move {
++            let configured = std::env::var(WORKER_COMMAND_ENV).ok();
++            let mut command = worker_command(configured.as_deref())?;
++            command
++                .kill_on_drop(true)
++                .env_remove(CliConfigEnv::RUN_PYTHON)
++                .env(ClusterConfigEnv::ENABLE_TLS, options.enable_tls.to_string())
++                .env(ClusterConfigEnv::SESSION_ID, &options.session_id)
++                .env(
++                    ClusterConfigEnv::DRIVER_ID,
++                    u64::from(options.driver_id).to_string(),
++                )
++                .env(ClusterConfigEnv::WORKER_ID, u64::from(id).to_string())
++                .env(
++                    ClusterConfigEnv::DRIVER_EXTERNAL_HOST,
++                    &options.driver_external_host,
++                )
++                .env(
++                    ClusterConfigEnv::DRIVER_EXTERNAL_PORT,
++                    options.driver_external_port.to_string(),
++                )
++                .env(ClusterConfigEnv::WORKER_LISTEN_HOST, "127.0.0.1")
++                .env("SAIL_CLUSTER__WORKER_LISTEN_PORT", "0")
++                .env(ClusterConfigEnv::WORKER_EXTERNAL_HOST, "127.0.0.1")
++                .env("SAIL_CLUSTER__WORKER_EXTERNAL_PORT", "0")
++                .env(
++                    ClusterConfigEnv::WORKER_HEARTBEAT_INTERVAL_SECS,
++                    options.worker_heartbeat_interval.as_secs().to_string(),
++                )
++                .env(
++                    ClusterConfigEnv::TASK_STREAM_BUFFER,
++                    options.task_stream_buffer.to_string(),
++                )
++                .env(
++                    ClusterConfigEnv::TASK_STREAM_CREATION_TIMEOUT_SECS,
++                    options.task_stream_creation_timeout.as_secs().to_string(),
++                )
++                .env(
++                    ExecutionConfigEnv::BATCH_SIZE,
++                    options.batch_size.to_string(),
++                );
++            if let Some(path) = std::env::var_os("SAIL_EXPERIMENTAL_WORKER_PYTHONPATH") {
++                command.env("PYTHONPATH", path);
++            }
++            let child = command
++                .spawn()
++                .map_err(|e| ExecutionError::InternalError(format!("launch worker {id}: {e}")))?;
++            log::info!(
++                "extension process worker {id}: pid={:?}, driver_pid={}, session={}",
++                child.id(),
++                std::process::id(),
++                options.session_id
++            );
++            children.lock().await.push(child);
++            Ok(())
++        })
++    }
++
++    async fn stop(&self) -> ExecutionResult<()> {
++        for mut child in self.children.lock().await.drain(..) {
++            match tokio::time::timeout(Duration::from_secs(3), child.wait()).await {
++                Ok(result) => {
++                    result.map_err(|e| ExecutionError::InternalError(e.to_string()))?;
++                }
++                Err(_) => {
++                    child
++                        .kill()
++                        .await
++                        .map_err(|e| ExecutionError::InternalError(e.to_string()))?;
++                }
++            }
++        }
++        Ok(())
++    }
++}

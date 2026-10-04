@@ -1,0 +1,225 @@
+{
+  "outcome": "PASS_PINNED_BASELINE_AND_SERVER_CLIENT_DISCOVERY",
+  "started_utc": "2026-10-01T16:22:44.085953+00:00",
+  "source": {
+    "head": "cab6bacc0ad0d1fc8b3070e9e4267e99751909fe",
+    "tree": "cd73d093230153857de196abc17ea8e98464149b"
+  },
+  "pins": {
+    "/private/tmp/grust-pecan-explicit-validation/docs/reviews/pecan-validation-2026-10-01/config-control/run_control.py": "80d0e59a05b6598c301d701b9a8370b048011c8663c4d0b814d1f33c02beec12",
+    "/private/tmp/grust-pecan-explicit-validation/docs/reviews/pecan-validation-2026-10-01/run_gate.py": "bd24c58be92ff17e0caeaa80c09f0de936446ed55ca545c8aaa8342ae1c3a4cd",
+    "/private/tmp/sail-resource-validation-union-target/host/debug/sail": "4b976fd7a809cb059c72a2119293f490105ff0ed375feaf0ccb5f3e5dad88662",
+    "/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/bin/python3.12": "7ab28aab7042141d3d97175edec3045ff15b5d0cbf885817c7c1ad0dad393f9f",
+    "/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/lib/libpython3.12.dylib": "51454eefef9d30acb598f19a0a8e0c5ef3641d5e81b3611d5f634343475321a5"
+  },
+  "cells": [
+    {
+      "label": "without-server-client-path",
+      "server_pythonpath": null,
+      "server_environment": {
+        "SAIL_MODE": "local",
+        "SAIL_EXPERIMENTAL_EXTENSIONS": "1",
+        "SAIL_EXPERIMENTAL_PROCESS_WORKERS": "0",
+        "SAIL_EXECUTION__DEFAULT_PARALLELISM": "2",
+        "SAIL_EXECUTION__COLLECT_STATISTICS": "true",
+        "SAIL_RUNTIME__MEMORY_POOL__TYPE": "greedy",
+        "SAIL_RUNTIME__MEMORY_POOL__GREEDY__MAX_SIZE": "2147483648",
+        "SAIL_GRAPH_UTILS_ROOT": "file:///var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pecan-config-control-ccxx6cvc/staging",
+        "TOKIO_WORKER_THREADS": "2",
+        "RAYON_NUM_THREADS": "2",
+        "RUST_LOG": "warn"
+      },
+      "server_command": [
+        "/private/tmp/sail-resource-validation-union-target/host/debug/sail",
+        "spark",
+        "server",
+        "--ip",
+        "127.0.0.1",
+        "--port",
+        "63564"
+      ],
+      "server_pid_and_pgid": 29521,
+      "client_command": [
+        "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/bin/python",
+        "-B",
+        "/private/tmp/grust-pecan-explicit-validation/docs/reviews/pecan-validation-2026-10-01/config-control/run_control.py",
+        "--client",
+        "sc://127.0.0.1:63564",
+        "--label",
+        "without-server-client-path"
+      ],
+      "client_returncode": 0,
+      "client": {
+        "outcome": "PASS",
+        "written_utc": "2026-10-01T16:22:44.692944+00:00",
+        "configs": {
+          "spark.sql.timestampType": {
+            "value": "TIMESTAMP_LTZ"
+          },
+          "spark.sql.session.timeZone": {
+            "value": "America/Los_Angeles"
+          },
+          "spark.sql.session.localRelationCacheThreshold": {
+            "value": "2147483647"
+          },
+          "spark.sql.execution.pandas.convertToArrowArraySafely": {
+            "value": "false"
+          },
+          "spark.sql.execution.pandas.inferPandasDictAsMap": {
+            "error": "IllegalArgumentException('invalid argument: configuration not found: spark.sql.execution.pandas.inferPandasDictAsMap')"
+          },
+          "spark.sql.pyspark.inferNestedDictAsStruct.enabled": {
+            "value": "false"
+          },
+          "spark.sql.pyspark.legacy.inferArrayTypeFromFirstElement.enabled": {
+            "value": "false"
+          },
+          "spark.sql.pyspark.legacy.inferMapTypeFromFirstPair.enabled": {
+            "error": "IllegalArgumentException('invalid argument: configuration not found: spark.sql.pyspark.legacy.inferMapTypeFromFirstPair.enabled')"
+          },
+          "spark.sql.execution.arrow.useLargeVarTypes": {
+            "value": "false"
+          }
+        },
+        "explicit_conf_sets": [],
+        "spark_version_error": "IllegalArgumentException(\"invalid argument: failed to get PySpark version: ModuleNotFoundError: No module named 'pyspark'\")",
+        "fixture_error": "IllegalArgumentException('invalid argument: configuration not found: spark.sql.execution.pandas.inferPandasDictAsMap')",
+        "fixture_traceback": "Traceback (most recent call last):\n  File \"/private/tmp/grust-pecan-explicit-validation/docs/reviews/pecan-validation-2026-10-01/config-control/run_control.py\", line 51, in client\n    vertices, edges = fixture['frames'](spark)\n                      ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/sail-certificate-parent-witness-gate/examples/extensions/graph-algorithms/tests/test_algorithms.py\", line 14, in frames\n    return (spark.createDataFrame([(i,) for i in ids], \"id long\"),\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/session.py\", line 501, in createDataFrame\n    configs = self._client.get_config_dict(\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 1624, in get_config_dict\n    return dict(self.config(op).pairs)\n                ^^^^^^^^^^^^^^^\n  File \"/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 1662, in config\n    self._handle_error(error)\n  File \"/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 1811, in _handle_error\n    self._handle_rpc_error(error)\n  File \"/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 1882, in _handle_rpc_error\n    raise convert_exception(\npyspark.errors.exceptions.connect.IllegalArgumentException: invalid argument: configuration not found: spark.sql.execution.pandas.inferPandasDictAsMap\n",
+        "baseline_failure_reproduced": true,
+        "session_closed": true
+      },
+      "server_reaped": true,
+      "server_group_absent": true,
+      "returncode": -15
+    },
+    {
+      "label": "with-server-client-path",
+      "server_pythonpath": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages",
+      "server_environment": {
+        "SAIL_MODE": "local",
+        "SAIL_EXPERIMENTAL_EXTENSIONS": "1",
+        "SAIL_EXPERIMENTAL_PROCESS_WORKERS": "0",
+        "SAIL_EXECUTION__DEFAULT_PARALLELISM": "2",
+        "SAIL_EXECUTION__COLLECT_STATISTICS": "true",
+        "SAIL_RUNTIME__MEMORY_POOL__TYPE": "greedy",
+        "SAIL_RUNTIME__MEMORY_POOL__GREEDY__MAX_SIZE": "2147483648",
+        "SAIL_GRAPH_UTILS_ROOT": "file:///var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pecan-config-control-rmysanc0/staging",
+        "TOKIO_WORKER_THREADS": "2",
+        "RAYON_NUM_THREADS": "2",
+        "RUST_LOG": "warn"
+      },
+      "server_command": [
+        "/private/tmp/sail-resource-validation-union-target/host/debug/sail",
+        "spark",
+        "server",
+        "--ip",
+        "127.0.0.1",
+        "--port",
+        "63573"
+      ],
+      "server_pid_and_pgid": 29540,
+      "client_command": [
+        "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/bin/python",
+        "-B",
+        "/private/tmp/grust-pecan-explicit-validation/docs/reviews/pecan-validation-2026-10-01/config-control/run_control.py",
+        "--client",
+        "sc://127.0.0.1:63573",
+        "--label",
+        "with-server-client-path"
+      ],
+      "client_returncode": 0,
+      "client": {
+        "outcome": "PASS",
+        "written_utc": "2026-10-01T16:22:45.604568+00:00",
+        "configs": {
+          "spark.sql.timestampType": {
+            "value": "TIMESTAMP_LTZ"
+          },
+          "spark.sql.session.timeZone": {
+            "value": "America/Los_Angeles"
+          },
+          "spark.sql.session.localRelationCacheThreshold": {
+            "value": "2147483647"
+          },
+          "spark.sql.execution.pandas.convertToArrowArraySafely": {
+            "value": "false"
+          },
+          "spark.sql.execution.pandas.inferPandasDictAsMap": {
+            "value": "false"
+          },
+          "spark.sql.pyspark.inferNestedDictAsStruct.enabled": {
+            "value": "false"
+          },
+          "spark.sql.pyspark.legacy.inferArrayTypeFromFirstElement.enabled": {
+            "value": "false"
+          },
+          "spark.sql.pyspark.legacy.inferMapTypeFromFirstPair.enabled": {
+            "value": "false"
+          },
+          "spark.sql.execution.arrow.useLargeVarTypes": {
+            "value": "false"
+          }
+        },
+        "explicit_conf_sets": [],
+        "spark_version": "4.0.1",
+        "actual_vertices": [
+          -5,
+          0,
+          1,
+          2,
+          3,
+          7,
+          9
+        ],
+        "actual_edges": [
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            2
+          ],
+          [
+            1,
+            2
+          ],
+          [
+            2,
+            3
+          ],
+          [
+            2,
+            9
+          ],
+          [
+            3,
+            1
+          ],
+          [
+            7,
+            7
+          ]
+        ],
+        "unchanged_fixture_exact_rows": true,
+        "session_closed": true
+      },
+      "server_reaped": true,
+      "server_group_absent": true,
+      "returncode": -15
+    }
+  ],
+  "source_runtime_unchanged": true,
+  "original_failed_gate_unchanged": true,
+  "finished_utc": "2026-10-01T16:22:47.244681+00:00",
+  "files_sha256": {
+    "run_control.py": "80d0e59a05b6598c301d701b9a8370b048011c8663c4d0b814d1f33c02beec12",
+    "with-server-client-path-server.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "without-server-client-path-client.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "without-server-client-path-client.json": "d2b08b60b5f471f668303c984850a1cce77475dc1aac0d085c43da9f424ebf65",
+    "with-server-client-path-client.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "without-server-client-path-server.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "with-server-client-path-client.json": "e9cb6b13d8178c7f0ca59c5a8406001b2a776fef48ed2557b45c0f045a0a0fb2"
+  },
+  "scope": "Two local 2-thread/2GiB server cells; original cab6 nonempty fixture creation/readback only, no graph algorithm, native build, remote host or performance measurement."
+}

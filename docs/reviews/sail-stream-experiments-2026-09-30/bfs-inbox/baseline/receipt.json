@@ -1,0 +1,42 @@
+{
+  "started_utc": "2026-09-30T18:04:20.002985+00:00",
+  "base_sha": "b569e75de625885b3d919fa4196b2e0bed14c618",
+  "scope": "Unchanged b569 production plus new allocation/protocol test only.",
+  "new_test_sha256": "45a2329d38c94173a9277f36e9584980489688cf2e48d9123345a801325f0847",
+  "commands": [
+    {
+      "name": "new",
+      "command": [
+        "cargo",
+        "test",
+        "--manifest-path",
+        "examples/extensions/argentea/Cargo.toml",
+        "--locked",
+        "--release",
+        "--test",
+        "bfs_inbox",
+        "--",
+        "--nocapture"
+      ],
+      "exit_code": 101
+    },
+    {
+      "name": "existing-idle",
+      "command": [
+        "cargo",
+        "test",
+        "--manifest-path",
+        "examples/extensions/argentea/Cargo.toml",
+        "--locked",
+        "--release",
+        "--test",
+        "bfs_resources",
+        "cancellation_and_work_exhaustion_block_before_publication_and_done_is_idle",
+        "--",
+        "--nocapture"
+      ],
+      "exit_code": 0
+    }
+  ],
+  "finished_utc": "2026-09-30T18:04:25.985537+00:00"
+}

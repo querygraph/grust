@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en-US" xml:lang="en-US">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <meta name="author" content="Querygraph" />
+  <meta name="dcterms.date" content="2026-10-01" />
+  <meta name="description" content="Version 1.0. Review target: querygraph/sail bd8ce9ae8839477e2c08a0475ab7900b115c5366." />
+  <title>5. Placement and replay</title>
+  <style>
+    div.sitenav { display: flex; flex-direction: row; flex-wrap: wrap; }
+    span.navlink { flex: 1; }
+    span.navlink-label { display: inline-block; min-width: 4em; }
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: 1.5em;}
+    div.column{flex: auto;}
+    @media screen {
+    div.columns{gap: min(4vw, 1.5em);}
+    div.column{overflow-x: auto;}
+    }
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <link rel="stylesheet" href="book.css" />
+</head>
+<body>
+<nav id="sitenav">
+<div class="sitenav">
+<span class="navlink">
+<span class="navlink-label">Up:</span> <a href="index.html" accesskey="u" rel="up">Sail Extensions: A Design Review</a>
+</span>
+<span class="navlink">
+<span class="navlink-label">Top:</span> <a href="index.html" accesskey="t" rel="top">Sail Extensions: A Design Review</a>
+</span>
+</div>
+<div class="sitenav">
+<span class="navlink">
+<span class="navlink-label">Next:</span> <a href="chapter-008.html" accesskey="n" rel="next">6. Native memory</a>
+</span>
+<span class="navlink">
+<span class="navlink-label">Previous:</span> <a href="chapter-006.html" accesskey="p" rel="previous">4. Commands and receipts</a>
+</span>
+</div>
+</nav>
+<h1 data-number="7" id="module-05-placement"><span
+class="header-section-number">7</span> 5. Placement and replay</h1>
+<p>The <a href="chapter-006.html#module-04-commands">command
+contract</a> makes an uncertain mutation outcome explicit. Placement
+determines where that mutation may execute; replay policy determines
+whether another attempt is safe. These are separate decisions. A
+function over ordinary input batches can be stateless even when it runs
+on a worker, while an operation tied to a process-local graph needs that
+owner's state to remain available.</p>
+<p>The public contract should require Sail to respect declared
+placement, reject invalid or expired ownership, and avoid replaying work
+whose effects are unknown. A serialized reference must identify the
+intended owner and plan, and decoding must validate input arity and
+schemas. A live pointer cannot identify an object in another process.
+This does not require publishing Sail's registry layout or scheduler
+types as extension APIs.</p>
+<p>At the review commit, <code>bd8ce9ae</code>,
+<code>DriverExtensionExec</code> references a bound plan through owner
+and plan identifiers. Its registry holds weak references so it does not
+independently prolong query state. A driver-native region receives one
+scheduler attempt, including reads, because the host has no general
+classification of extension effects. The host input adapter gathers
+partitions for this initial driver policy. These are concrete
+implementation choices, with the ownership and retry checks visible in
+the <a
+href="https://github.com/querygraph/sail/blob/bd8ce9ae8839477e2c08a0475ab7900b115c5366/crates/sail-common-datafusion/src/driver_extension.rs">driver
+boundary</a> and <a
+href="https://github.com/querygraph/sail/blob/bd8ce9ae8839477e2c08a0475ab7900b115c5366/crates/sail-execution/src/driver/job_scheduler/core.rs#L264">scheduler</a>.
+One attempt within a job does not provide deduplication across client
+requests.</p>
+<p>The next alternative need not be replicated native state. A stateless
+foreign worker operator could use serializable parameters and ordinary
+partitioned inputs, provided its codec, execution context, ownership and
+replay behavior are defined. Declared replay-safe reads are another
+possible increment. Recoverable stateful worker stages require a larger
+design. None follows merely from accepting an execution-plan capsule.
+Keeping these alternatives separate also preserves Sail's goal of
+engine-visible distributed execution, illustrated by its <a
+href="https://lakesail.com/blog/lakehouse-engine-contract/">lakehouse
+planning design</a>.</p>
+<p>Acceptance should demonstrate rejection of wrong-owner, expired and
+wrong-schema handles; no scheduler replay after a mutation loses its
+acknowledgement; and ordinary retry behavior for unaffected regions.
+Explain output should expose the placement boundary. A later distributed
+extension must also demonstrate the partitioning properties it
+advertises, rather than inherit an accidental single-partition
+assumption.</p>
+<p>The immediate decision is whether conservative driver placement and
+one attempt are acceptable initial policies. Approving them should not
+make gathering or <code>DriverExtensionExec</code> permanent public
+requirements. Once placement is explicit, the next question is <a
+href="chapter-008.html#module-06-memory">whose memory budget admits the
+native work</a>.</p>
+</body>
+</html>

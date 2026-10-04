@@ -1,0 +1,40 @@
+{
+  "recorded_utc": "2026-09-30T17:25:32.129471+00:00",
+  "scope": "Local orchestration/command/fixture-bound validation of uncommitted source snapshot; not Sail runtime or performance",
+  "gate_worktree": "/private/tmp/grust-pecan-experiment-gate",
+  "gate_base_sha": "b91828b2765ec2018e21011aea686e931af68c99",
+  "files_sha256": {
+    "run_pecan64k_gate3.py": "40b235e6c6c98c2e8dd229df18b0716f6cad6d67a181aeccafae2c9ef891c49f",
+    "test_pecan64k_gate3.py": "11f1966349c12467ea756fa436381773095515da187dfe1c923b225fb228ef29",
+    "run_pecan_gate3.py": "98dcb881989a1a65cc6090b49d39abe97c8c5831dfbf8bc1f0dbdf66ac267cca",
+    "pecan-gate3-dry-plan.json": "023d122e9f6dcb8424ec6b2bfad755c612b4a460f4e3fe7d393d36e7ecea1612"
+  },
+  "checks": [
+    {
+      "command": [
+        "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/bin/python",
+        "-m",
+        "unittest",
+        "-v",
+        "test_pecan64k_gate3.py"
+      ],
+      "returncode": 0,
+      "stdout": "",
+      "stderr": "test_actual_commands_hold_sources_envelope_and_new_fixture (test_pecan64k_gate3.LargerControllerTests.test_actual_commands_hold_sources_envelope_and_new_fixture) ... ok\ntest_candidate_gate_required_and_prior_failures_remain_visible (test_pecan64k_gate3.LargerControllerTests.test_candidate_gate_required_and_prior_failures_remain_visible) ... ok\ntest_changed_runtime_or_envelope_is_rejected (test_pecan64k_gate3.LargerControllerTests.test_changed_runtime_or_envelope_is_rejected) ... ok\ntest_existing_successful_runtime_identity_must_be_uniform (test_pecan64k_gate3.LargerControllerTests.test_existing_successful_runtime_identity_must_be_uniform) ... ok\ntest_fixture_bound_and_edge_formula_against_real_generator (test_pecan64k_gate3.LargerControllerTests.test_fixture_bound_and_edge_formula_against_real_generator) ... ok\ntest_warmups_excluded_and_measured_order_balanced (test_pecan64k_gate3.LargerControllerTests.test_warmups_excluded_and_measured_order_balanced) ... ok\n\n----------------------------------------------------------------------\nRan 6 tests in 0.212s\n\nOK\n"
+    },
+    {
+      "command": [
+        "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/bin/python",
+        "run_pecan64k_gate3.py",
+        "--matrix",
+        "/private/tmp/sail-stream-diagnostic-harness-gate/examples/extensions/benchmarks",
+        "--prior-plan",
+        "/private/tmp/grust-pecan-experiment-gate/docs/reviews/sail-stream-experiments-2026-09-30/pecan-gate3-dry-plan.json"
+      ],
+      "returncode": 0,
+      "stdout": "dry plan saved separately",
+      "stderr": ""
+    }
+  ],
+  "remote_loads_launched": false
+}

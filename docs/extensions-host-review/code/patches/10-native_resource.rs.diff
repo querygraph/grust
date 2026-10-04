@@ -1,0 +1,215 @@
+diff --git a/crates/sail-common-datafusion/src/native_resource.rs b/crates/sail-common-datafusion/src/native_resource.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..3f4ffe9458d62a35f06ff29bd7fdf0520c19045e
+--- /dev/null
++++ b/crates/sail-common-datafusion/src/native_resource.rs
+@@ -0,0 +1,209 @@
++//! Coarse native quotas admitted from the exact pool used by Sail operators.
++use std::fs::OpenOptions;
++use std::io::Write;
++use std::path::PathBuf;
++use std::sync::Arc;
++use std::sync::atomic::{AtomicU64, Ordering};
++
++use datafusion::execution::memory_pool::{MemoryConsumer, MemoryPool, MemoryReservation};
++use datafusion_common::{DataFusionError, Result, plan_err};
++pub use sail_native_resource_ffi::{MEMORY_LEASE_CAPSULE, MemoryLease};
++use tokio::sync::watch;
++
++use crate::extension::SessionExtension;
++
++struct NativeQuota {
++    reservation: Option<MemoryReservation>,
++    audit: Option<QuotaAudit>,
++    tracker: Option<watch::Sender<usize>>,
++}
++
++/// A session-local shutdown barrier for native producer and Arrow owners.
++/// The tracker never owns a lease; its counter reaches zero only on final drop.
++pub struct NativeResourceTracker(watch::Sender<usize>);
++
++impl Default for NativeResourceTracker {
++    fn default() -> Self {
++        Self(watch::channel(0).0)
++    }
++}
++
++impl SessionExtension for NativeResourceTracker {
++    fn name() -> &'static str {
++        "NativeResourceTracker"
++    }
++}
++
++impl NativeResourceTracker {
++    pub fn reserve(
++        &self,
++        pool: &Arc<dyn MemoryPool>,
++        extension: &str,
++        bytes: usize,
++    ) -> Result<MemoryLease> {
++        reserve_native_quota_inner(pool, extension, bytes, Some(self.0.clone()))
++    }
++
++    pub async fn wait_for_release(&self) {
++        let mut receiver = self.0.subscribe();
++        // The sender in self remains alive throughout this wait.
++        let _ = receiver.wait_for(|count| *count == 0).await;
++    }
++}
++
++/// Opt-in lifecycle evidence for integration tests. Normal execution does no
++/// filesystem logging. A release event is written by the last lease owner after
++/// its reservation is returned, rather than by a cancellation request handler.
++struct QuotaAudit {
++    path: PathBuf,
++    id: u64,
++    extension: String,
++    bytes: usize,
++    pool: Arc<dyn MemoryPool>,
++}
++
++impl QuotaAudit {
++    fn write(&self, event: &str) -> Result<()> {
++        static WRITER: std::sync::Mutex<()> = std::sync::Mutex::new(());
++        let _lock = WRITER.lock().map_err(|_| {
++            DataFusionError::Execution("native resource audit writer poisoned".into())
++        })?;
++        let record = serde_json::json!({
++            "timestamp_utc": chrono::Utc::now().to_rfc3339(),
++            "pid": std::process::id(), "id": self.id, "event": event,
++            "extension": self.extension, "bytes": self.bytes,
++            "pool_reserved": self.pool.reserved(),
++        });
++        let mut bytes = serde_json::to_vec(&record)
++            .map_err(|error| DataFusionError::Execution(error.to_string()))?;
++        bytes.push(b'\n');
++        OpenOptions::new()
++            .create(true)
++            .append(true)
++            .open(&self.path)?
++            .write_all(&bytes)?;
++        Ok(())
++    }
++}
++
++impl Drop for NativeQuota {
++    fn drop(&mut self) {
++        // Release first: the audit is evidence about completed accounting.
++        self.reservation.take();
++        if let Some(audit) = &self.audit
++            && let Err(error) = audit.write("released")
++        {
++            eprintln!("native resource release audit failed: {error}");
++        }
++        if let Some(tracker) = &self.tracker {
++            tracker.send_modify(|count| *count -= 1);
++        }
++    }
++}
++
++/// Admit the entire native session cap before any extension state is allocated.
++/// The lease is non-spillable; the native subpool must stay within this prepaid
++/// cap. This accounts participating native allocations, not total process RSS.
++pub fn reserve_native_quota(
++    pool: &Arc<dyn MemoryPool>,
++    extension: &str,
++    bytes: usize,
++) -> Result<MemoryLease> {
++    reserve_native_quota_inner(pool, extension, bytes, None)
++}
++
++fn reserve_native_quota_inner(
++    pool: &Arc<dyn MemoryPool>,
++    extension: &str,
++    bytes: usize,
++    tracker: Option<watch::Sender<usize>>,
++) -> Result<MemoryLease> {
++    if bytes == 0 {
++        return plan_err!("native extension {extension} requires a positive memory quota");
++    }
++    let reservation = MemoryConsumer::new(format!("native extension {extension} session quota"))
++        .with_can_spill(false)
++        .register(pool);
++    reservation.try_grow(bytes).map_err(|error| {
++        // Spark's error transport unwraps Context variants. Keep the admission
++        // boundary in the actual resource error so the client sees it too.
++        DataFusionError::ResourcesExhausted(format!(
++            "native extension {extension} host memory admission of {bytes} bytes refused: {error}"
++        ))
++    })?;
++    let audit = std::env::var_os("SAIL_NATIVE_RESOURCE_AUDIT").map(|path| {
++        static IDS: AtomicU64 = AtomicU64::new(1);
++        QuotaAudit {
++            path: path.into(),
++            id: IDS.fetch_add(1, Ordering::Relaxed),
++            extension: extension.to_owned(),
++            bytes,
++            pool: pool.clone(),
++        }
++    });
++    if let Some(audit) = &audit {
++        audit.write("admitted")?;
++    }
++    if let Some(tracker) = &tracker {
++        tracker.send_modify(|count| *count += 1);
++    }
++    Ok(MemoryLease::new(
++        Arc::new(NativeQuota {
++            reservation: Some(reservation),
++            audit,
++            tracker,
++        }),
++        bytes as u64,
++    ))
++}
++
++#[cfg(test)]
++mod tests {
++    use datafusion::execution::memory_pool::GreedyMemoryPool;
++
++    use super::*;
++
++    #[tokio::test]
++    async fn shutdown_barrier_waits_for_the_last_detached_output_owner() -> Result<()> {
++        let tracker = NativeResourceTracker::default();
++        let pool: Arc<dyn MemoryPool> = Arc::new(GreedyMemoryPool::new(64));
++        let lease = tracker.reserve(&pool, "native-output", 64)?;
++        let output = lease.clone();
++        drop(lease);
++        let mut waiting = Box::pin(tracker.wait_for_release());
++        assert!(futures::poll!(waiting.as_mut()).is_pending());
++        std::thread::spawn(move || drop(output))
++            .join()
++            .map_err(|_| DataFusionError::Execution("output owner thread panicked".into()))?;
++        waiting.await;
++        assert_eq!(pool.reserved(), 0);
++        Ok(())
++    }
++
++    #[test]
++    fn native_quota_and_datafusion_operators_contend_until_the_last_owner_drops() -> Result<()> {
++        let pool: Arc<dyn MemoryPool> = Arc::new(GreedyMemoryPool::new(96));
++        let lease = reserve_native_quota(&pool, "session-a", 64)?;
++        assert_eq!(pool.reserved(), 64);
++        assert!(reserve_native_quota(&pool, "session-b", 33).is_err());
++        let input = MemoryConsumer::new("host foreign input").register(&pool);
++        assert!(input.try_grow(33).is_err());
++        input.try_grow(32)?;
++        assert_eq!(pool.reserved(), 96);
++        let output = lease.clone();
++        drop(lease);
++        drop(input);
++        assert_eq!(
++            pool.reserved(),
++            64,
++            "retained output still owns the native quota"
++        );
++        drop(output);
++        assert_eq!(pool.reserved(), 0);
++        let next = reserve_native_quota(&pool, "session-b", 96)?;
++        assert_eq!(next.bytes(), 96);
++        drop(next);
++        assert_eq!(pool.reserved(), 0);
++        Ok(())
++    }
++}

@@ -1,0 +1,20 @@
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-common-55.1.0/src/utils/mod.rs:94: /// Extracts a row at the specified index from a set of columns and stores it in the provided buffer.
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-common-55.1.0/src/utils/mod.rs:95: pub fn extract_row_at_idx_to_buf(
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-common-55.1.0/src/utils/mod.rs:96:     columns: &[ArrayRef],
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-common-55.1.0/src/utils/mod.rs:97:     idx: usize,
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-common-55.1.0/src/utils/mod.rs:98:     buf: &mut Vec<ScalarValue>,
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-common-55.1.0/src/utils/mod.rs:99: ) -> Result<()> {
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-common-55.1.0/src/utils/mod.rs:100:     buf.clear();
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-common-55.1.0/src/utils/mod.rs:101: 
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-common-55.1.0/src/utils/mod.rs:102:     let iter = columns
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-common-55.1.0/src/utils/mod.rs:103:         .iter()
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-common-55.1.0/src/utils/mod.rs:104:         .map(|arr| ScalarValue::try_from_array(arr, idx));
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-common-55.1.0/src/utils/mod.rs:105:     for v in iter.into_iter() {
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-common-55.1.0/src/utils/mod.rs:106:         buf.push(v?);
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-common-55.1.0/src/utils/mod.rs:107:     }
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-common-55.1.0/src/utils/mod.rs:108: 
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-common-55.1.0/src/utils/mod.rs:109:     Ok(())
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-common-55.1.0/src/utils/mod.rs:110: }
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-common-55.1.0/src/utils/mod.rs:111: /// Given column vectors, returns row at `idx`.
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-common-55.1.0/src/utils/mod.rs:112: pub fn get_row_at_idx(columns: &[ArrayRef], idx: usize) -> Result<Vec<ScalarValue>> {
+/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-common-55.1.0/src/utils/mod.rs:113:     columns

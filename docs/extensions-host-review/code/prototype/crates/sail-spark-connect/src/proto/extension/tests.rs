@@ -1,0 +1,230 @@
+use super::*;
+use crate::spark::connect::{Command, Range, Relation, RelationCommon, plan, relation};
+
+fn request(inputs: Vec<Vec<u8>>) -> SailExtensionRequest {
+    SailExtensionRequest {
+        payload_type_url: "type.test/Nutmeg".into(),
+        payload: b"payload".to_vec(),
+        inputs,
+        input_expressions: vec![],
+        envelope_version: 1,
+    }
+}
+
+fn pack(request: SailExtensionRequest) -> Any {
+    Any {
+        type_url: ENVELOPE_TYPE_URL.into(),
+        value: request.encode_to_vec().into(),
+    }
+}
+
+fn range_plan() -> Plan {
+    Plan {
+        op_type: Some(plan::OpType::Root(Relation {
+            common: Some(RelationCommon {
+                plan_id: Some(91),
+                ..Default::default()
+            }),
+            rel_type: Some(relation::RelType::Range(Range {
+                start: Some(0),
+                end: 5,
+                step: 1,
+                num_partitions: Some(4),
+            })),
+        })),
+    }
+}
+
+#[test]
+fn envelope_retains_input_plans_payload_and_plan_ids() -> SparkResult<()> {
+    let node = convert_relation_extension(pack(request(vec![range_plan().encode_to_vec()])))?;
+    match node {
+        spec::QueryNode::Extension {
+            payload_type_url,
+            payload,
+            inputs,
+            is_envelope,
+        } => {
+            assert_eq!(payload_type_url, "type.test/Nutmeg");
+            assert_eq!(payload, b"payload");
+            assert!(is_envelope);
+            assert_eq!(inputs.len(), 1);
+            assert_eq!(inputs[0].plan_id, Some(91));
+            assert!(
+                matches!(&inputs[0].node, spec::QueryNode::Range(range) if range.num_partitions == Some(4))
+            );
+        }
+        other => return Err(SparkError::internal(format!("unexpected node {other:?}"))),
+    }
+    Ok(())
+}
+
+#[test]
+fn bare_any_keeps_its_type_url_and_has_no_inputs() -> SparkResult<()> {
+    let node = convert_relation_extension(Any {
+        type_url: "type.test/Read".into(),
+        value: vec![1, 2, 3].into(),
+    })?;
+    assert!(
+        matches!(node, spec::QueryNode::Extension { payload_type_url, inputs, is_envelope: false, .. }
+        if payload_type_url == "type.test/Read" && inputs.is_empty())
+    );
+    Ok(())
+}
+
+#[test]
+fn rejects_version_expressions_nonquery_inputs_and_malformed_payloads() {
+    let mut version = request(vec![]);
+    version.envelope_version = 0;
+    assert!(
+        matches!(convert_relation_extension(pack(version)), Err(e) if e.to_string().contains("expected 1"))
+    );
+    let mut expressions = request(vec![vec![255]]);
+    expressions.input_expressions.push(vec![255]);
+    assert!(
+        matches!(convert_relation_extension(pack(expressions)), Err(e) if e.to_string().contains("input expressions"))
+    );
+    let command = Plan {
+        op_type: Some(plan::OpType::Command(Command::default())),
+    };
+    assert!(
+        matches!(convert_relation_extension(pack(request(vec![command.encode_to_vec()]))), Err(e) if e.to_string().contains("relation expected"))
+    );
+    assert!(convert_relation_extension(pack(request(vec![vec![255]]))).is_err());
+}
+
+#[test]
+fn limits_input_count_before_decoding_any_child() {
+    // Each child is invalid protobuf; the count error must be returned first.
+    let envelope = request(vec![vec![255]; MAX_INPUTS + 1]);
+    assert!(
+        matches!(convert_relation_extension(pack(envelope)), Err(e) if e.to_string().contains("at most 16"))
+    );
+}
+
+#[test]
+fn limits_payload_and_envelope_bytes() {
+    let bare = Any {
+        type_url: "type.test/Read".into(),
+        value: vec![0; MAX_PAYLOAD_BYTES + 1].into(),
+    };
+    assert!(
+        matches!(convert_relation_extension(bare), Err(e) if e.to_string().contains("exceeds 1 MiB"))
+    );
+    let envelope = Any {
+        type_url: ENVELOPE_TYPE_URL.into(),
+        value: vec![0; MAX_ENVELOPE_BYTES + 1].into(),
+    };
+    assert!(
+        matches!(convert_relation_extension(envelope), Err(e) if e.to_string().contains("exceeds 8 MiB"))
+    );
+}
+
+#[test]
+fn nested_any_does_not_reset_recursion_budget_and_failure_releases_guard() -> SparkResult<()> {
+    let mut input = range_plan();
+    for _ in 0..1000 {
+        input = Plan {
+            op_type: Some(plan::OpType::Root(Relation {
+                common: None,
+                rel_type: Some(relation::RelType::Extension(pack(request(vec![
+                    input.encode_to_vec(),
+                ])))),
+            })),
+        };
+    }
+    let result = spec::QueryPlan::try_from(input);
+    assert!(matches!(result, Err(e) if e.to_string().contains("nesting exceeds")));
+    convert_relation_extension(pack(request(vec![range_plan().encode_to_vec()])))?;
+    Ok(())
+}
+
+#[test]
+fn accepts_near_limit_nested_envelopes_on_small_initial_stack() -> SparkResult<()> {
+    let mut input = range_plan();
+    // Each nested envelope traverses four protobuf message edges. Fifteen
+    // layers plus the final Plan/Relation/Range stay just below the 64 limit.
+    for _ in 0..15 {
+        input = Plan {
+            op_type: Some(plan::OpType::Root(Relation {
+                common: None,
+                rel_type: Some(relation::RelType::Extension(pack(request(vec![
+                    input.encode_to_vec(),
+                ])))),
+            })),
+        };
+    }
+    let envelope = pack(request(vec![input.encode_to_vec()]));
+    let thread = std::thread::Builder::new()
+        .stack_size(128 * 1024)
+        .spawn(move || convert_relation_extension(envelope).is_ok())?;
+    assert!(
+        thread
+            .join()
+            .map_err(|_| SparkError::internal("accepted input conversion thread panicked"))?
+    );
+    Ok(())
+}
+
+fn length_delimited(tag: u32, payload: &[u8]) -> Vec<u8> {
+    use prost::encoding::{WireType, encode_key, encode_varint};
+    let mut output = vec![];
+    encode_key(tag, WireType::LengthDelimited, &mut output);
+    encode_varint(payload.len() as u64, &mut output);
+    output.extend_from_slice(payload);
+    output
+}
+
+#[test]
+fn rejects_thousand_nested_projects_before_prost_decode_on_small_stack() -> SparkResult<()> {
+    // Construct wire bytes iteratively: Relation.project = 3, Project.input = 1.
+    // Never construct a recursive Rust message whose own Drop could overflow.
+    let mut relation = vec![];
+    for _ in 0..1000 {
+        relation = length_delimited(3, &length_delimited(1, &relation));
+    }
+    let plan = length_delimited(1, &relation);
+    let envelope = pack(request(vec![plan]));
+    let thread = std::thread::Builder::new()
+        .stack_size(128 * 1024)
+        .spawn(move || {
+            matches!(convert_relation_extension(envelope), Err(e) if e.to_string().contains("nesting exceeds"))
+        })?;
+    assert!(
+        thread
+            .join()
+            .map_err(|_| SparkError::internal("input validation thread panicked"))?
+    );
+    Ok(())
+}
+
+#[test]
+fn rejects_unknown_group_fields_without_recursive_skip() {
+    let groups = vec![0x0b; 1000]; // Field 1, start-group wire type.
+    let envelope = Any {
+        type_url: ENVELOPE_TYPE_URL.into(),
+        value: groups.clone().into(),
+    };
+    assert!(
+        matches!(convert_relation_extension(envelope), Err(e) if e.to_string().contains("groups are not supported"))
+    );
+    assert!(
+        matches!(wire::validate_plan(&groups, MAX_INPUT_DEPTH), Err(e) if e.to_string().contains("groups are not supported"))
+    );
+}
+
+#[test]
+fn preflight_treats_arrow_data_as_opaque_bytes() -> SparkResult<()> {
+    use crate::spark::connect::LocalRelation;
+    let input = Plan {
+        op_type: Some(plan::OpType::Root(Relation {
+            common: None,
+            rel_type: Some(relation::RelType::LocalRelation(LocalRelation {
+                data: Some(vec![0x0b; 1000]),
+                schema: None,
+            })),
+        })),
+    };
+    wire::validate_plan(&input.encode_to_vec(), MAX_INPUT_DEPTH)?;
+    Ok(())
+}

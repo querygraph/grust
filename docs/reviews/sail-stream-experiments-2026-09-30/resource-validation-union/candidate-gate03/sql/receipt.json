@@ -1,0 +1,238 @@
+{
+  "started_utc": "2026-10-01T00:13:49.800700+00:00",
+  "expected_head": "200d1cf8eb1db5e9057e09e071ebd57391f4b376",
+  "expected_tree": "d43293b4e5de64878c85c1d3d756077e2b7b749b",
+  "mode": "candidate",
+  "private_fixtures": "/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/resource-validation-sql-mbt3kiin",
+  "commands": [
+    {
+      "label": "client-before",
+      "command": [
+        "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/bin/python",
+        "-B",
+        "/Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/resource-validation-union/sql_gate.py",
+        "--interpreter-probe"
+      ],
+      "started_utc": "2026-10-01T00:13:51.060003+00:00",
+      "returncode": 0,
+      "finished_utc": "2026-10-01T00:13:51.308418+00:00"
+    },
+    {
+      "label": "diff-check",
+      "command": [
+        "git",
+        "diff",
+        "--check",
+        "HEAD"
+      ],
+      "started_utc": "2026-10-01T00:13:51.308762+00:00",
+      "returncode": 0,
+      "finished_utc": "2026-10-01T00:13:51.349720+00:00"
+    },
+    {
+      "label": "unit",
+      "command": [
+        "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/bin/python",
+        "-B",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "/private/tmp/sail-resource-validation-union-gate/examples/extensions/benchmarks",
+        "--junitxml=/Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/resource-validation-union/candidate-gate03/sql/unit.xml",
+        "--basetemp=/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/resource-validation-sql-mbt3kiin/unit"
+      ],
+      "started_utc": "2026-10-01T00:13:51.349868+00:00",
+      "returncode": 0,
+      "finished_utc": "2026-10-01T00:13:56.695495+00:00"
+    },
+    {
+      "label": "sql",
+      "command": [
+        "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/bin/python",
+        "-B",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "/private/tmp/sail-resource-validation-union-gate/examples/extensions/benchmarks/test_pagerank_metadata.py",
+        "/private/tmp/sail-resource-validation-union-gate/examples/extensions/benchmarks/test_wcc_certificate.py",
+        "--junitxml=/Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/resource-validation-union/candidate-gate03/sql/sql.xml",
+        "--basetemp=/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/resource-validation-sql-mbt3kiin/sql"
+      ],
+      "started_utc": "2026-10-01T00:14:04.469760+00:00",
+      "returncode": 0,
+      "finished_utc": "2026-10-01T00:14:09.004422+00:00"
+    },
+    {
+      "label": "default-statistics",
+      "command": [
+        "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/bin/python",
+        "-B",
+        "/Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/resource-validation-union/sql_gate.py",
+        "--default-statistics-control",
+        "sc://127.0.0.1:51970",
+        "/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/resource-validation-sql-mbt3kiin",
+        "/Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/resource-validation-union/candidate-gate03/sql/default-statistics.json"
+      ],
+      "started_utc": "2026-10-01T00:14:09.004805+00:00",
+      "returncode": 0,
+      "finished_utc": "2026-10-01T00:14:09.936398+00:00"
+    },
+    {
+      "label": "client-after",
+      "command": [
+        "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/bin/python",
+        "-B",
+        "/Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/resource-validation-union/sql_gate.py",
+        "--interpreter-probe"
+      ],
+      "started_utc": "2026-10-01T00:14:10.792444+00:00",
+      "returncode": 0,
+      "finished_utc": "2026-10-01T00:14:11.052427+00:00"
+    }
+  ],
+  "driver_python": {
+    "executable": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/bin/python",
+    "real_executable": "/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/bin/python3.12",
+    "version": "3.12.8 (main, Jan  5 2025, 06:55:30) [Clang 19.1.6 ]"
+  },
+  "scope": "New explicitly pinned Sail CLI built separately from union; builtin local SQL only. No installed-runtime fallback, experimental extension/native import requirement, cluster or performance verdict.",
+  "runtime_and_interpreter_pins": {
+    "/private/tmp/sail-resource-validation-union-target/host/debug/sail": "4b976fd7a809cb059c72a2119293f490105ff0ed375feaf0ccb5f3e5dad88662",
+    "/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/bin/python3.12": "7ab28aab7042141d3d97175edec3045ff15b5d0cbf885817c7c1ad0dad393f9f",
+    "/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/lib/libpython3.12.dylib": "51454eefef9d30acb598f19a0a8e0c5ef3641d5e81b3611d5f634343475321a5",
+    "/Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/resource-validation-union/sql_gate.py": "eaebc96443f9edc621adb1a937d7042ef3b8decaae757693f03872d7ad8fbb96"
+  },
+  "client_before": {
+    "executable": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/bin/python",
+    "real_executable": "/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/bin/python3.12",
+    "executable_sha256": "7ab28aab7042141d3d97175edec3045ff15b5d0cbf885817c7c1ad0dad393f9f",
+    "version": "3.12.8 (main, Jan  5 2025, 06:55:30) [Clang 19.1.6 ]",
+    "path_python3": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/bin/python3",
+    "path_python3_real": "/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/bin/python3.12",
+    "path_python3_sha256": "7ab28aab7042141d3d97175edec3045ff15b5d0cbf885817c7c1ad0dad393f9f",
+    "stdlib_encodings_file": "/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/lib/python3.12/encodings/__init__.py",
+    "stdlib_encodings_sha256": "78c4744d407690f321565488710b5aaf6486b5afa8d185637aa1e7633ab59cd8",
+    "prefix": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion",
+    "base_prefix": "/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none",
+    "modules": {
+      "pyspark": {
+        "version": "4.0.1",
+        "file": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/__init__.py",
+        "sha256": "e1776e11568f4231f8079502270a2c84828f335ef61cc60561b225d636c7bcdc"
+      },
+      "pyarrow": {
+        "version": "21.0.0",
+        "file": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyarrow/__init__.py",
+        "sha256": "9f52fe44ffd0653d93eeac470a26ee12cf7c054760bfc4915493db4a99105aa0"
+      },
+      "numpy": {
+        "version": "2.5.3",
+        "file": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/numpy/__init__.py",
+        "sha256": "09295a80660f17925ae23765ce8cbd7ff7ceae968d5f2f89349f1cb74c0b9e11"
+      },
+      "grpc": {
+        "version": "1.84.0",
+        "file": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/grpc/__init__.py",
+        "sha256": "7e3a88cf8430c74ec70ca65ba615a3c0419d3a4f59f9c59c01500ade2d88dd39"
+      },
+      "pytest": {
+        "version": "8.4.2",
+        "file": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pytest/__init__.py",
+        "sha256": "66993a5e3905005e0981159b4794d10b1adacf341a58a44d696ad2c4442dcdc6"
+      }
+    }
+  },
+  "selected_server_environment": {
+    "SAIL_MODE": "local",
+    "SAIL_EXECUTION__DEFAULT_PARALLELISM": "2",
+    "SAIL_EXECUTION__COLLECT_STATISTICS": "true",
+    "TOKIO_WORKER_THREADS": "2",
+    "RAYON_NUM_THREADS": "2",
+    "RUST_LOG": "warn"
+  },
+  "server_command": [
+    "/private/tmp/sail-resource-validation-union-target/host/debug/sail",
+    "spark",
+    "server",
+    "--ip",
+    "127.0.0.1",
+    "--port",
+    "51970"
+  ],
+  "server_pid": 13988,
+  "outcome": "passed",
+  "server_reaped": true,
+  "server_returncode": -15,
+  "client_after": {
+    "executable": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/bin/python",
+    "real_executable": "/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/bin/python3.12",
+    "executable_sha256": "7ab28aab7042141d3d97175edec3045ff15b5d0cbf885817c7c1ad0dad393f9f",
+    "version": "3.12.8 (main, Jan  5 2025, 06:55:30) [Clang 19.1.6 ]",
+    "path_python3": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/bin/python3",
+    "path_python3_real": "/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/bin/python3.12",
+    "path_python3_sha256": "7ab28aab7042141d3d97175edec3045ff15b5d0cbf885817c7c1ad0dad393f9f",
+    "stdlib_encodings_file": "/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/lib/python3.12/encodings/__init__.py",
+    "stdlib_encodings_sha256": "78c4744d407690f321565488710b5aaf6486b5afa8d185637aa1e7633ab59cd8",
+    "prefix": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion",
+    "base_prefix": "/Users/alexy/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none",
+    "modules": {
+      "pyspark": {
+        "version": "4.0.1",
+        "file": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/__init__.py",
+        "sha256": "e1776e11568f4231f8079502270a2c84828f335ef61cc60561b225d636c7bcdc"
+      },
+      "pyarrow": {
+        "version": "21.0.0",
+        "file": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyarrow/__init__.py",
+        "sha256": "9f52fe44ffd0653d93eeac470a26ee12cf7c054760bfc4915493db4a99105aa0"
+      },
+      "numpy": {
+        "version": "2.5.3",
+        "file": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/numpy/__init__.py",
+        "sha256": "09295a80660f17925ae23765ce8cbd7ff7ceae968d5f2f89349f1cb74c0b9e11"
+      },
+      "grpc": {
+        "version": "1.84.0",
+        "file": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/grpc/__init__.py",
+        "sha256": "7e3a88cf8430c74ec70ca65ba615a3c0419d3a4f59f9c59c01500ade2d88dd39"
+      },
+      "pytest": {
+        "version": "8.4.2",
+        "file": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pytest/__init__.py",
+        "sha256": "66993a5e3905005e0981159b4794d10b1adacf341a58a44d696ad2c4442dcdc6"
+      }
+    }
+  },
+  "source_and_runtime_unchanged": true,
+  "unit_tests": {
+    "tests": 430,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 97
+  },
+  "sql_tests": {
+    "tests": 58,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "logs_sha256": {
+    "source-before.json": "4e823dca5155a5f549cb5bc84a2ba0de96e53613ab7001df3714f2c573f528ce",
+    "source-after.json": "4e823dca5155a5f549cb5bc84a2ba0de96e53613ab7001df3714f2c573f528ce",
+    "sql.xml": "a0443e13cfbfe8d5c05c9372a514cd2a36380724915447fa7e8aa19fbc2c6c84",
+    "client-before.log": "f50b17d9b3009ca2400c24b5fe166f55db485c895f63275ed1bc74e65df6e660",
+    "diff-check.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "unit.xml": "2ee3397a525cbaf6a45ca00d053cd99308940c0bae7695e5037356b7569cd421",
+    "client-after.log": "f50b17d9b3009ca2400c24b5fe166f55db485c895f63275ed1bc74e65df6e660",
+    "sql.log": "3f761a295810cfabc95027758ab5380cc8c13e94ad147c0e0cb07162a41dce08",
+    "unit.log": "c613a6bd6f44e3271258f1be94942b3c2612051bb1d748973abd9b0cfbb253b4",
+    "server.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "default-statistics.json": "0174aa9538374504c1dc0ed952aa2c5b423cd0e31ca64321531985c51c1cd5db",
+    "default-statistics.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "finished_utc": "2026-10-01T00:14:11.058013+00:00"
+}

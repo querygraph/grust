@@ -1,0 +1,113 @@
+{
+  "started_utc": "2026-09-30T17:18:17.124637+00:00",
+  "outcome": "passed",
+  "identity": "detached staged candidate, not a committed-SHA verdict",
+  "source": "/private/tmp/sail-compact-struct-min",
+  "target": "/private/tmp/sail-compact-struct-min-target",
+  "before": {
+    "head": "2894a962076d3cc404dd72ec736ebeb9239901f6",
+    "detached": true,
+    "tracked_source_sha256": "cade42b09fe3ee11f3ee82302eaa82674fb445e592c3bc320383dae49943862e",
+    "index_sha256": "a2c1ca56e69dc283dc6ad45dd6791e0f9b2902f9cce00054009dfc2ede0c9842",
+    "diff_sha256": "e81b18b2bd076f629a20e8ab6a6889efed3a0af03c32d3da7206cfc3d540ea51",
+    "patch_file_sha256": "e81b18b2bd076f629a20e8ab6a6889efed3a0af03c32d3da7206cfc3d540ea51",
+    "status": "M  crates/sail-execution/src/proto/codec.rs\nM  crates/sail-execution/src/proto/mod.rs\nA  crates/sail-execution/src/proto/struct_min_tests.rs\nA  crates/sail-function/src/aggregate/compact_struct_min.rs\nA  crates/sail-function/src/aggregate/compact_struct_min_tests.rs\nM  crates/sail-function/src/aggregate/mod.rs\nA  crates/sail-function/src/aggregate/struct_min.rs\nA  crates/sail-function/src/aggregate/struct_min_tests.rs\nM  crates/sail-plan/src/function/aggregate.rs\nA  crates/sail-plan/src/function/aggregate_struct_min_tests.rs\nM  crates/sail-plan/src/resolver/query/aggregate.rs\n"
+  },
+  "steps": [
+    {
+      "name": "fmt",
+      "command": [
+        "cargo",
+        "fmt",
+        "--all",
+        "--check"
+      ],
+      "started_utc": "2026-09-30T17:18:17.150157+00:00",
+      "returncode": 0,
+      "finished_utc": "2026-09-30T17:18:20.243894+00:00",
+      "elapsed_seconds": 3.0936013751197606
+    },
+    {
+      "name": "clippy",
+      "command": [
+        "cargo",
+        "clippy",
+        "--locked",
+        "-p",
+        "sail-function",
+        "-p",
+        "sail-plan",
+        "-p",
+        "sail-execution",
+        "--all-targets",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "started_utc": "2026-09-30T17:18:20.244576+00:00",
+      "returncode": 0,
+      "finished_utc": "2026-09-30T17:18:48.610302+00:00",
+      "elapsed_seconds": 28.36529012490064
+    },
+    {
+      "name": "tests",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "sail-function",
+        "-p",
+        "sail-plan",
+        "-p",
+        "sail-execution",
+        "--lib"
+      ],
+      "started_utc": "2026-09-30T17:18:48.610852+00:00",
+      "returncode": 0,
+      "finished_utc": "2026-09-30T17:19:10.828300+00:00",
+      "elapsed_seconds": 22.21722854208201
+    },
+    {
+      "name": "pecan-nonintegration",
+      "command": [
+        "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "-m",
+        "not integration",
+        "examples/extensions/graph-algorithms/tests"
+      ],
+      "started_utc": "2026-09-30T17:19:10.887865+00:00",
+      "returncode": 0,
+      "finished_utc": "2026-09-30T17:19:11.761626+00:00",
+      "elapsed_seconds": 0.8733613330405205
+    }
+  ],
+  "environment": {
+    "CARGO_TARGET_DIR": "/private/tmp/sail-compact-struct-min-target",
+    "CARGO_INCREMENTAL": "0",
+    "CARGO_PROFILE_DEV_DEBUG": "0",
+    "CARGO_PROFILE_TEST_DEBUG": "0",
+    "CARGO_BUILD_JOBS": "6"
+  },
+  "free_bytes_before": 467914305536,
+  "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)",
+  "target_seed": "APFS clone-copy of idle /private/tmp/sail-stream-performance-target",
+  "python_versions": "{\"pyspark\": \"4.0.1\", \"protobuf\": \"7.36.2\", \"pytest\": \"8.4.2\"}",
+  "after": {
+    "head": "2894a962076d3cc404dd72ec736ebeb9239901f6",
+    "detached": true,
+    "tracked_source_sha256": "cade42b09fe3ee11f3ee82302eaa82674fb445e592c3bc320383dae49943862e",
+    "index_sha256": "a2c1ca56e69dc283dc6ad45dd6791e0f9b2902f9cce00054009dfc2ede0c9842",
+    "diff_sha256": "e81b18b2bd076f629a20e8ab6a6889efed3a0af03c32d3da7206cfc3d540ea51",
+    "patch_file_sha256": "e81b18b2bd076f629a20e8ab6a6889efed3a0af03c32d3da7206cfc3d540ea51",
+    "status": "M  crates/sail-execution/src/proto/codec.rs\nM  crates/sail-execution/src/proto/mod.rs\nA  crates/sail-execution/src/proto/struct_min_tests.rs\nA  crates/sail-function/src/aggregate/compact_struct_min.rs\nA  crates/sail-function/src/aggregate/compact_struct_min_tests.rs\nM  crates/sail-function/src/aggregate/mod.rs\nA  crates/sail-function/src/aggregate/struct_min.rs\nA  crates/sail-function/src/aggregate/struct_min_tests.rs\nM  crates/sail-plan/src/function/aggregate.rs\nA  crates/sail-plan/src/function/aggregate_struct_min_tests.rs\nM  crates/sail-plan/src/resolver/query/aggregate.rs\n"
+  },
+  "source_unchanged": true,
+  "finished_utc": "2026-09-30T17:19:12.105224+00:00",
+  "free_bytes_after": 467862982656
+}

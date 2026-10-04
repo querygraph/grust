@@ -1,0 +1,45 @@
+versions: datafusion 55.1.0 ; datafusion-substrait 55.1.0 ; substrait crate 0.63.0 (spec Version { major_number: 0, minor_number: 85, patch_number: 0, git_hash: "", producer: "" })
+
+== Part 1: hand-built Substrait two-hop vs SQL ==
+SQL      : 4060 rows, digest 35bb4e6daee6919e, 55 ms
+Substrait: 4060 rows, digest 35bb4e6daee6919e, 170 ms, plan 852 bytes
+same rows: true
+first rows (sorted): ["4000001|3885587|2758716", "4000001|3885587|2900176", "4000001|3885587|2959055"]
+Substrait, filter above joins: 4060 rows, digest 35bb4e6daee6919e, 46 ms; same rows: true
+timing SQL: [63, 49, 46, 44, 55] ms (plan + execute)
+timing Substrait filter on n0 read: [158, 161, 154, 154, 160] ms (plan + execute)
+timing Substrait filter above joins: [45, 49, 46, 45, 48] ms (plan + execute)
+
+-- full graph: count(*), sum(a), sum(b), sum(c) over every two-hop path
+SQL      : ["82152988|440634906497932|390813393255520|321991011040247"] (1404 ms)
+Substrait: ["82152988|440634906497932|390813393255520|321991011040247"] (1392 ms)
+same: true
+
+== Part 2: Grust's SQL shapes through producer -> consumer -> unparser ==
+id   | shape                                                          |    rows | produce  | consume  | urn refs   | unparse
+Q01  | node scan, filter, ORDER BY, LIMIT/OFFSET                      |      10 | ok       | same     | 3/3 dangl. | DIFFERS
+Q02  | fixed segment: inner-join chain (two hops)                     |    4060 | ok       | same     | 4/4 dangl. | same
+Q03  | multi-pattern: comma join, conditions in WHERE                 |    5853 | ok       | same     | 4/4 dangl. | same
+Q04  | OPTIONAL MATCH: LEFT JOIN to a subquery                        |     899 | ok       | same     | 4/4 dangl. | exec err
+Q05  | undirected segment: OR join condition                          |     657 | ok       | same     | 5/5 dangl. | exec err
+Q06  | UNION (distinct)                                               | 1695137 | ok       | same     | 1/1 dangl. | same
+Q07  | UNION ALL                                                      | 6020296 | ok       | same     | 1/1 dangl. | same
+Q08  | scalar COUNT(*) over a join                                    |       1 | ok       | same     | 2/2 dangl. | exec err
+Q09  | SELECT DISTINCT (catalog procedures)                           |   40620 | ok       | same     | 1/1 dangl. | same
+Q10  | GROUP BY aggregate (degree)                                    |   40620 | ok       | same     | 2/2 dangl. | same
+Q11  | correlated scalar subquery with MIN (shortest-path tie-break shape) |   11437 | ok       | same     | 4/4 dangl. | same
+Q12  | EXISTS subquery                                                |   40620 | ok       | same     | 2/2 dangl. | DIFFERS
+Q13  | NOT IN subquery                                                |    3803 | ok       | same     | 2/2 dangl. | DIFFERS
+Q14  | window: row_number() OVER (ORDER BY id) - 1 (dense ids)        | 1695990 | ok       | same     | 3/3 dangl. | same
+Q15  | CASE (undirected walk step)                                    |      29 | ok       | same     | 2/2 dangl. | same
+Q16  | string ops: starts_with, strpos, ||, encode hex (walk tokens)  |       2 | ok       | same     | 6/6 dangl. | error
+Q17  | JSON property access (json_get_str UDF)                        |       1 | ok       | same     | 2/2 dangl. | same
+Q18  | map property access m['name']                                  |       2 | ok       | same     | 1/1 dangl. | same
+Q19  | WITH RECURSIVE bounded walk (variable-length path)             |      13 | error    | -        | -          | -
+
+== Part 3: a plan that names a non-standard function, consumed elsewhere ==
+declared function: name="json_get_str" anchor=0 extension_urn_reference=4294967295 (declared URNs: 0)
+declared function: name="equal" anchor=1 extension_urn_reference=4294967295 (declared URNs: 0)
+consumer without the UDF: This feature is not implemented: Unsupported function name: "json_get_str"
+
+done

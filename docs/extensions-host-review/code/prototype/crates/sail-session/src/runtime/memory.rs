@@ -1,0 +1,126 @@
+//! Explicit admission domains. Configuration equality never implies shared ownership.
+use std::sync::Arc;
+
+use datafusion::execution::memory_pool::{
+    FairSpillPool, GreedyMemoryPool, MemoryPool, UnboundedMemoryPool,
+};
+use sail_common::config::{FairMemoryPoolConfig, GreedyMemoryPoolConfig, MemoryPoolConfig};
+
+/// One explicitly owned admission domain. Clone this value to share admission;
+/// constructing another domain, even with identical settings, creates isolation.
+/// The standard server owns one per session manager and injects it into its
+/// sessions and in-process workers. Separate worker processes own their own.
+#[derive(Clone, Debug)]
+pub struct MemoryResourceDomain {
+    pool: Arc<dyn MemoryPool>,
+}
+
+impl MemoryResourceDomain {
+    pub fn new(config: &MemoryPoolConfig) -> Self {
+        Self {
+            pool: new_pool(config),
+        }
+    }
+
+    pub fn pool(&self) -> Arc<dyn MemoryPool> {
+        self.pool.clone()
+    }
+}
+
+pub(super) fn new_pool(config: &MemoryPoolConfig) -> Arc<dyn MemoryPool> {
+    match config {
+        MemoryPoolConfig::Unbounded => Arc::new(UnboundedMemoryPool::default()),
+        MemoryPoolConfig::Greedy(GreedyMemoryPoolConfig { max_size }) => {
+            Arc::new(GreedyMemoryPool::new(*max_size))
+        }
+        MemoryPoolConfig::Fair(FairMemoryPoolConfig { max_size }) => {
+            Arc::new(FairSpillPool::new(*max_size))
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use datafusion::execution::memory_pool::MemoryConsumer;
+    use sail_common_datafusion::native_resource::reserve_native_quota;
+
+    use super::*;
+
+    #[test]
+    fn explicit_clones_contend_but_equal_config_domains_are_isolated()
+    -> datafusion_common::Result<()> {
+        for config in [
+            MemoryPoolConfig::Greedy(GreedyMemoryPoolConfig { max_size: 113 }),
+            MemoryPoolConfig::Fair(FairMemoryPoolConfig { max_size: 113 }),
+        ] {
+            let domain = MemoryResourceDomain::new(&config);
+            let worker = domain.clone();
+            let unrelated = MemoryResourceDomain::new(&config);
+            assert!(Arc::ptr_eq(&domain.pool(), &worker.pool()));
+            assert!(!Arc::ptr_eq(&domain.pool(), &unrelated.pool()));
+            let a = reserve_native_quota(&domain.pool(), "session-a", 64)?;
+            let b = reserve_native_quota(&domain.pool(), "session-b", 32)?;
+            let query = MemoryConsumer::new("worker join").register(&worker.pool());
+            assert!(query.try_grow(18).is_err());
+            query.try_grow(17)?;
+            let other = reserve_native_quota(&unrelated.pool(), "other-server", 113)?;
+            assert_eq!(domain.pool().reserved(), 113);
+            drop(domain);
+            // A lease and an explicitly shared worker keep admission alive.
+            drop(a);
+            assert_eq!(worker.pool().reserved(), 49);
+            assert_eq!(unrelated.pool().reserved(), 113);
+            query.try_grow(64)?;
+            drop(b);
+            drop(query);
+            assert_eq!(worker.pool().reserved(), 0);
+            drop(other);
+            assert_eq!(unrelated.pool().reserved(), 0);
+        }
+        Ok(())
+    }
+    #[tokio::test]
+    async fn runtime_factories_share_only_the_injected_domain() -> datafusion_common::Result<()> {
+        use sail_common::config::AppConfig;
+        use sail_common::runtime::RuntimeHandle;
+
+        use crate::runtime::RuntimeEnvFactory;
+
+        let mut config = AppConfig::load()
+            .map_err(|e| datafusion_common::DataFusionError::External(Box::new(e)))?;
+        config.runtime.memory_pool =
+            MemoryPoolConfig::Greedy(GreedyMemoryPoolConfig { max_size: 113 });
+        let domain = MemoryResourceDomain::new(&config.runtime.memory_pool);
+        let other = MemoryResourceDomain::new(&config.runtime.memory_pool);
+        let handle = tokio::runtime::Handle::current();
+        let runtime = RuntimeHandle::new(handle.clone(), handle);
+        let config = Arc::new(config);
+        let mut server = RuntimeEnvFactory::new(config.clone(), runtime.clone());
+        let mut worker = RuntimeEnvFactory::new(config, runtime);
+        let a = server.create(Some(&domain), Ok)?;
+        let b = server.create(Some(&domain), Ok)?;
+        let w = worker.create(Some(&domain), Ok)?;
+        let unrelated = server.create(Some(&other), Ok)?;
+        let standalone = server.create(None, Ok)?;
+        let standalone2 = server.create(None, Ok)?;
+        assert!(Arc::ptr_eq(&a.memory_pool, &b.memory_pool));
+        assert!(Arc::ptr_eq(&a.memory_pool, &w.memory_pool));
+        assert!(!Arc::ptr_eq(&a.memory_pool, &unrelated.memory_pool));
+        assert!(!Arc::ptr_eq(&a.memory_pool, &standalone.memory_pool));
+        assert!(!Arc::ptr_eq(
+            &standalone.memory_pool,
+            &standalone2.memory_pool
+        ));
+        let native = reserve_native_quota(&a.memory_pool, "native", 100)?;
+        let query = MemoryConsumer::new("worker").register(&w.memory_pool);
+        assert!(query.try_grow(14).is_err());
+        query.try_grow(13)?;
+        let independent = reserve_native_quota(&unrelated.memory_pool, "independent", 113)?;
+        drop(native);
+        drop(query);
+        drop(independent);
+        assert_eq!(a.memory_pool.reserved(), 0);
+        assert_eq!(unrelated.memory_pool.reserved(), 0);
+        Ok(())
+    }
+}

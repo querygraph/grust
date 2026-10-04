@@ -1,0 +1,91 @@
+{
+  "attach_returncode": 0,
+  "command": [
+    "docker",
+    "--context",
+    "colima-sail-gate",
+    "create",
+    "--name",
+    "sail-pair16k-20260930201356-01-a-preflight",
+    "--init",
+    "--cpus",
+    "8",
+    "--cpuset-cpus",
+    "16-23",
+    "--memory",
+    "12g",
+    "--memory-swap",
+    "12g",
+    "--pids-limit",
+    "1024",
+    "--mount",
+    "type=volume,source=sail-extension-targets,target=/targets",
+    "--workdir",
+    "/targets/sail-stream-experiments-20260930/source-3a9028057",
+    "--env",
+    "PYTHONUNBUFFERED=1",
+    "--env",
+    "SAIL_BENCHMARK_RUST_LOG=info,h2::proto::connection=debug,h2::proto::streams=warn,h2::frame::go_away=trace,h2::frame::reset=trace,h2::frame::ping=trace,h2::proto::ping_pong=trace,sail_execution::task_runner=debug,tonic::transport::server=debug",
+    "--env",
+    "SAIL_CLUSTER__TASK_STREAM_CREATION_TIMEOUT_SECS=900",
+    "--env",
+    "SAIL_CLUSTER__WORKER_MAX_IDLE_TIME_SECS=86400",
+    "--entrypoint",
+    "/targets/graph-nuts-ffcfbd569/venv/bin/python",
+    "sha256:f3518d652fbea8b9b9f9ebf9849277ca3bd39d0c21bb2c6e36fbaeaa2dc2678e",
+    "-I",
+    "-c",
+    "import pathlib,subprocess,sys; p=pathlib.Path(sys.argv[1]); assert subprocess.check_output([\"git\",\"-C\",str(p),\"rev-parse\",\"HEAD\"],text=True).strip()==sys.argv[2]; assert not subprocess.check_output([\"git\",\"-C\",str(p),\"status\",\"--porcelain\"],text=True).strip(); assert pathlib.Path(sys.argv[3]).is_file(); print(\"preflight passed\")",
+    "/targets/sail-stream-experiments-20260930/source-3a9028057",
+    "3a9028057c6c6c5034492845926fc4bc18f9626f",
+    "/targets/sail-stream-2894a962076d/sail-linux-x86_64-2894a962076d-release"
+  ],
+  "copied": {},
+  "create": {
+    "returncode": 0,
+    "stderr": "",
+    "stdout": "c471e906ed6bfb000ca09eabbd37e5077339977c13110ebef9c9829f580ce4ef\n"
+  },
+  "finished_utc": "2026-10-01T01:50:41.297996+00:00",
+  "host_load_before": [
+    2.35888671875,
+    1.84814453125,
+    2.87939453125
+  ],
+  "inspect": {
+    "id": "c471e906ed6bfb000ca09eabbd37e5077339977c13110ebef9c9829f580ce4ef",
+    "image": "sha256:f3518d652fbea8b9b9f9ebf9849277ca3bd39d0c21bb2c6e36fbaeaa2dc2678e",
+    "limits": {
+      "CpuPeriod": 0,
+      "CpuQuota": 0,
+      "CpusetCpus": "16-23",
+      "Init": true,
+      "Memory": 12884901888,
+      "MemorySwap": 12884901888,
+      "NanoCpus": 8000000000,
+      "PidMode": "",
+      "PidsLimit": 1024
+    },
+    "state": {
+      "Dead": false,
+      "Error": "",
+      "ExitCode": 0,
+      "FinishedAt": "2026-10-01T01:50:40.856932173Z",
+      "OOMKilled": false,
+      "Paused": false,
+      "Pid": 0,
+      "Restarting": false,
+      "Running": false,
+      "StartedAt": "2026-10-01T01:50:40.218261827Z",
+      "Status": "exited"
+    }
+  },
+  "outer_timeout": false,
+  "remove": {
+    "returncode": 0,
+    "stderr": "",
+    "stdout": "sail-pair16k-20260930201356-01-a-preflight\n"
+  },
+  "started_utc": "2026-10-01T01:50:39.883398+00:00",
+  "transport_errors": []
+}

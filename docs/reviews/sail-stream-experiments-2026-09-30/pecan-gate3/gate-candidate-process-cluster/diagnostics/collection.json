@@ -1,0 +1,24 @@
+{
+  "utc": "2026-09-30T17:00:23.893953+00:00",
+  "command": [
+    "docker",
+    "--context",
+    "colima-sail-gate",
+    "run",
+    "--rm",
+    "--mount",
+    "type=volume,source=sail-extension-targets,target=/targets,readonly",
+    "--entrypoint",
+    "/targets/graph-nuts-ffcfbd569/venv/bin/python",
+    "sha256:f3518d652fbea8b9b9f9ebf9849277ca3bd39d0c21bb2c6e36fbaeaa2dc2678e",
+    "-I",
+    "-c",
+    "\nfrom pathlib import Path\nimport sys,tarfile\np=Path(sys.argv[1])\nallowed={'receipt.json','manifest.json','server.log','pytest.log','junit.xml','graphutils-probe.log','memory-samples.jsonl'}\nwith tarfile.open(fileobj=sys.stdout.buffer,mode='w|') as t:\n    for name in sorted(allowed):\n        f=p/name\n        if f.is_file() and not f.is_symlink(): t.add(f,arcname=name,recursive=False)\n",
+    "/targets/sail-stream-experiments-20260930/pecan-gate3/cells/gate-candidate-process-cluster"
+  ],
+  "returncode": 0,
+  "stderr": "",
+  "bytes": 1904640,
+  "sha256": "f417f1784a48cac59dceacebc34b583846348ac0a2fc66d71460a0afb1e90e69",
+  "full_artifacts": "/targets/sail-stream-experiments-20260930/pecan-gate3/cells/gate-candidate-process-cluster"
+}

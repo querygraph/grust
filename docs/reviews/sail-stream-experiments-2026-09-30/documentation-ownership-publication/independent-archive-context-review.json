@@ -1,0 +1,53 @@
+{
+  "recorded_utc": "2026-10-01T01:23:09.668138+00:00",
+  "outcome": "PASS_INDEPENDENT_ARCHIVE_CONTEXT_SOURCE_TOOLING_REVIEW",
+  "frozen_index_tree": "36ddfe339051d11afc86b9a144669f6f7bca3aae",
+  "manifest_sha256": "c18d5aea38d3d81fff6b808e8e003f7157db53b2e977ea0f0b83657c71dcd347",
+  "authorization_sha256": "0f5b862c96f0fcab343c3c62ffae989138e9d475dfd972ea6dfba46bd0816e28",
+  "verifier_sha256": "d27e1c2703f60167eb758529d3df4ad00b5df15eb2a03ee2d4b2e6fa6f754808",
+  "archive_context_receipt_sha256": "39f321db8e096fa40a8a2aad7f5717590dfab945533abf7019988b043cc02adf",
+  "tooling_preparation_sha256": "624fb49e4c6a2f6c5a1d9d93786bbf35d63664b8fc5a8ca5175f6f7e97316c68",
+  "tooling_helpers": {
+    "common.py": "9f9dec06c08e96cde339cc64e952111dfd1417240a362c33d525e1c94754f9d1",
+    "prepare_snapshot.py": "c1df73246103435792cf694d8c5a31a06aa7c8223b8f6f3c711be69c561d035f",
+    "guard.py": "aa4c08f14d648fef6d1e9f19fbd4b51725ea06a7845b5fa115b40b566d6cb43f",
+    "commit_and_gate.sh": "a9f2caf1b17c3d6602970f2bb17aeb3534d6c06ebf2709fd0fc9eb25e89929ff",
+    "publish.py": "a2817a7262c2ec6ead69b812b2de75d15c24aac4993848a863369cfe5b0d0b3a",
+    "activate_shared.py": "cc9b28965b518107eb1e8dffbd61cf492919c820d29123fa205295329e1866e1",
+    "run_offline_controls.py": "e82481af202c5adf412c99ebe0336f823fc35305e111c398e0c785b68cb53465",
+    "README.md": "5f5023a12fef4f7c410a6d3eba517c2c29a35781d1ab5a9b29c1851e79926c38",
+    "authorization-template.json": "a9358842e0570879c68765639aab9120d5e0839864c9c8d0ab1faa252597132e"
+  },
+  "reviewed_actual_provenance": [
+    {
+      "archive": "docs/reviews/sail-stream-experiments-2026-09-30/documentation-validation-publication/preparation-attempt01/RESULTS.md",
+      "sha256": "7cf7f2e3fb677f3e547db4214de2dd9d48c2db8f4a5463a3234bc002444e7d9a",
+      "bytes": 33684,
+      "source_manifest_sha256": "ed836fc097c91323003015c1584bc34699c45e1ba76f62dd9810daef46f38232",
+      "historical_row": {
+        "path": "docs/reviews/sail-stream-experiments-2026-09-30/RESULTS.md",
+        "sha256": "7cf7f2e3fb677f3e547db4214de2dd9d48c2db8f4a5463a3234bc002444e7d9a",
+        "bytes": 33684
+      },
+      "relative_links_checked": 68
+    }
+  ],
+  "recorded_controls": {
+    "archive": 16,
+    "tooling": 35,
+    "rerun_by_reviewer": false
+  },
+  "checks": [
+    "Source review: one provenance-bound archive link base; every parsed link remains checked, with canonical inventory paths, historical bytes/hash, duplicate-row rejection and symlink/traversal guards. No historical Markdown bytes rewritten.",
+    "Independent direct checks matched actual archive to retained historical manifest row and verified all 68 local link destinations from the original directory without importing the production parser.",
+    "Reviewed 16 focused control definitions/results and 35 recorded tooling controls; verified their source and receipt/log hashes.",
+    "Tooling delta adds only the explicitly authorized verifier and closed archive-context folder; exact mapping required in authorization and manifest. Prior scope, source/index guards, conditional gate/commit and atomic fast-forward compare-and-swap delivery retained.",
+    "Frozen index matches stated tree; verifier, helper, manifest and authorization pins match."
+  ],
+  "limitations": [
+    "This is bounded source, provenance and recorded-control review, not a fresh execution of the control suite or full documentation gate. The main snapshot auditor and candidate/exact gates remain separate.",
+    "Historical manifest authenticity is grounded in the reviewed pinned provenance and authorization, not a cryptographic signature.",
+    "Existing Markdown regex and heuristic privacy checks are not a complete Markdown parser or exhaustive secret detector. No runtime, performance, Linux or workload outcome is established."
+  ],
+  "blockers": []
+}

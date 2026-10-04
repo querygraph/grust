@@ -1,0 +1,7 @@
+{
+  "recorded_utc": "2026-10-01T05:46:13.073308+00:00",
+  "script": "import subprocess,json\nD=[\"/usr/local/bin/docker\",\"--context\",\"colima-sail-gate\"];name=\"sail-sem-wcc-01b-local-randomized\"\ncmd=D+[\"exec\",name,\"/targets/graph-nuts-ffcfbd569/venv/bin/python\",\"-I\",\"-B\",\"-c\",\"from pathlib import Path\\nimport json,shutil\\np=Path('/targets/sail-stream-experiments-20260930/sem-wcc-01b-local-randomized')\\nf=p/'events.jsonl'\\nprint(json.dumps({'free_bytes':shutil.disk_usage('/targets').free,'last_events':f.read_text().splitlines()[-3:] if f.exists() else [],'receipt_exists':(p/'receipt.json').exists(),'cgroup_current':Path('/sys/fs/cgroup/memory.current').read_text().strip(),'memory_events':Path('/sys/fs/cgroup/memory.events').read_text(),'server_log_tail':(p/'server.log').read_text()[-1000:] if (p/'server.log').exists() else ''}))\\n\"]\np=subprocess.run(cmd,capture_output=True,text=True,timeout=15)\nprint(json.dumps({\"returncode\":p.returncode,\"stdout\":p.stdout,\"stderr\":p.stderr,\"running\":subprocess.check_output(D+[\"ps\",\"--format\",\"{{.Names}}\"],text=True),\"host_memory\":subprocess.check_output([\"/usr/sbin/sysctl\",\"vm.swapusage\",\"vm.loadavg\"],text=True)}))\n",
+  "returncode": 0,
+  "stdout": "{\"returncode\": 1, \"stdout\": \"\", \"stderr\": \"Error response from daemon: No such container: sail-sem-wcc-01b-local-randomized\\n\", \"running\": \"\", \"host_memory\": \"vm.swapusage: total = 5120.00M  used = 3417.25M  free = 1702.75M  (encrypted)\\nvm.loadavg: { 5.95 3.54 2.73 }\\n\"}\n",
+  "stderr": ""
+}

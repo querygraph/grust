@@ -1,0 +1,125 @@
+    Checking sail-common v0.7.1 (/private/tmp/sail-stream-diagnostics-typecheck/crates/sail-common)
+   Compiling sail-common-datafusion v0.7.1 (/private/tmp/sail-stream-diagnostics-typecheck/crates/sail-common-datafusion)
+    Checking sail-native-resource-ffi v0.1.0 (/private/tmp/sail-stream-diagnostics-typecheck/crates/sail-native-resource-ffi)
+   Compiling sail-build-scripts v0.7.1 (/private/tmp/sail-stream-diagnostics-typecheck/crates/sail-build-scripts)
+   Compiling sail-sql-parser v0.7.1 (/private/tmp/sail-stream-diagnostics-typecheck/crates/sail-sql-parser)
+   Compiling sail-sql-macro v0.7.1 (/private/tmp/sail-stream-diagnostics-typecheck/crates/sail-sql-macro)
+    Checking pyo3-ffi v0.29.2
+    Checking pyo3 v0.29.2
+   Compiling sail-system-store v0.7.1 (/private/tmp/sail-stream-diagnostics-typecheck/crates/sail-system-store)
+   Compiling sail-telemetry v0.7.1 (/private/tmp/sail-stream-diagnostics-typecheck/crates/sail-telemetry)
+   Compiling sail-celeborn v0.7.1 (/private/tmp/sail-stream-diagnostics-typecheck/crates/sail-celeborn)
+   Compiling sail-data-source v0.7.1 (/private/tmp/sail-stream-diagnostics-typecheck/crates/sail-data-source)
+   Compiling sail-delta-lake v0.7.1 (/private/tmp/sail-stream-diagnostics-typecheck/crates/sail-delta-lake)
+   Compiling sail-iceberg v0.7.1 (/private/tmp/sail-stream-diagnostics-typecheck/crates/sail-iceberg)
+    Checking arrow-pyarrow v59.3.0
+   Compiling sail-execution v0.7.1 (/private/tmp/sail-stream-diagnostics-typecheck/crates/sail-execution)
+    Checking sail-object-store v0.7.1 (/private/tmp/sail-stream-diagnostics-typecheck/crates/sail-object-store)
+    Checking sail-catalog v0.7.1 (/private/tmp/sail-stream-diagnostics-typecheck/crates/sail-catalog)
+    Checking sail-cache v0.7.1 (/private/tmp/sail-stream-diagnostics-typecheck/crates/sail-cache)
+    Checking sail-python-udf v0.7.1 (/private/tmp/sail-stream-diagnostics-typecheck/crates/sail-python-udf)
+    Checking sail-sql-analyzer v0.7.1 (/private/tmp/sail-stream-diagnostics-typecheck/crates/sail-sql-analyzer)
+    Checking sail-function v0.7.1 (/private/tmp/sail-stream-diagnostics-typecheck/crates/sail-function)
+    Checking sail-logical-plan v0.7.1 (/private/tmp/sail-stream-diagnostics-typecheck/crates/sail-logical-plan)
+    Checking sail-physical-plan v0.7.1 (/private/tmp/sail-stream-diagnostics-typecheck/crates/sail-physical-plan)
+    Checking sail-catalog-system v0.7.1 (/private/tmp/sail-stream-diagnostics-typecheck/crates/sail-catalog-system)
+error: used `unwrap()` on a `Result` value
+  --> crates/sail-execution/src/diagnostics/tests.rs:17:13
+   |
+17 |             self.0.lock().unwrap().push(record.args().to_string());
+   |             ^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: if this value is an `Err`, it will panic
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.97.0/index.html#unwrap_used
+   = note: requested on the command line with `-D clippy::unwrap-used`
+
+error: used `unwrap()` on a `Result` value
+  --> crates/sail-execution/src/diagnostics/tests.rs:44:5
+   |
+44 |     log::set_logger(&CAPTURE).unwrap();
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: if this value is an `Err`, it will panic
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.97.0/index.html#unwrap_used
+
+error: used `unwrap()` on a `Result` value
+  --> crates/sail-execution/src/diagnostics/tests.rs:53:35
+   |
+53 |         .insert("private-header", "private-header-value".parse().unwrap());
+   |                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: if this value is an `Err`, it will panic
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.97.0/index.html#unwrap_used
+
+error: used `unwrap()` on a `Result` value
+  --> crates/sail-execution/src/diagnostics/tests.rs:65:19
+   |
+65 |     let records = CAPTURE.0.lock().unwrap();
+   |                   ^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: if this value is an `Err`, it will panic
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.97.0/index.html#unwrap_used
+
+error: used `expect()` on an `Option` value
+  --> crates/sail-execution/src/diagnostics/tests.rs:66:18
+   |
+66 |       let record = records
+   |  __________________^
+67 | |         .iter()
+68 | |         .find(|record| record.contains("injected body failure"))
+69 | |         .expect("failure should emit a warning");
+   | |________________________________________________^
+   |
+   = note: if this value is `None`, it will panic
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.97.0/index.html#expect_used
+   = note: requested on the command line with `-D clippy::expect-used`
+
+error: used `unwrap()` on a `Result` value
+  --> crates/sail-execution/src/diagnostics/tests.rs:94:19
+   |
+94 |     let records = CAPTURE.0.lock().unwrap();
+   |                   ^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: if this value is an `Err`, it will panic
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.97.0/index.html#unwrap_used
+
+error: used `unwrap()` on a `Result` value
+   --> crates/sail-execution/src/diagnostics/tests.rs:155:34
+    |
+155 |         .insert("secret-header", "secret-value".parse().unwrap());
+    |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: if this value is an `Err`, it will panic
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.97.0/index.html#unwrap_used
+
+error: large size difference between variants
+  --> crates/sail-execution/src/task_runner/actor/options.rs:29:1
+   |
+29 | /   pub enum TaskRunnerPlacement {
+30 | | /     Driver {
+31 | | |         driver: ActorHandle<DriverActor>,
+32 | | |     },
+   | | |_____- the second-largest variant contains at least 8 bytes
+33 | | /     Worker {
+34 | | |         worker_id: WorkerId,
+35 | | |         /// A monotonically increasing sequence number for ordered messages.
+36 | | |         sequence: u64,
+...  | |
+40 | | |         retry_strategy: RetryStrategy,
+41 | | |     },
+   | | |_____- the largest variant contains at least 224 bytes
+42 | |   }
+   | |___^ the entire enum is at least 224 bytes
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.97.0/index.html#large_enum_variant
+   = note: `-D clippy::large-enum-variant` implied by `-D warnings`
+   = help: to override `-D warnings` add `#[allow(clippy::large_enum_variant)]`
+help: consider boxing the large fields or introducing indirection in some other way to reduce the total size of the enum
+   |
+37 -         driver: DriverClientSet,
+37 +         driver: Box<DriverClientSet>,
+   |
+
+error: could not compile `sail-execution` (lib) due to 1 previous error
+warning: build failed, waiting for other jobs to finish...
+error: could not compile `sail-execution` (lib test) due to 8 previous errors

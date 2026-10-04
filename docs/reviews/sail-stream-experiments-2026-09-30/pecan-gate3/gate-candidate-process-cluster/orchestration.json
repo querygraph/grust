@@ -1,0 +1,92 @@
+{
+  "attach_returncode": 0,
+  "command": [
+    "docker",
+    "--context",
+    "colima-sail-gate",
+    "create",
+    "--name",
+    "sail-pecan-gate-candidate-process-cluster",
+    "--init",
+    "--cpus",
+    "8",
+    "--cpuset-cpus",
+    "0-7",
+    "--memory",
+    "12g",
+    "--memory-swap",
+    "12g",
+    "--pids-limit",
+    "1024",
+    "--mount",
+    "type=volume,source=sail-extension-targets,target=/targets",
+    "--workdir",
+    "/targets/sail-stream-experiments-20260930/pecan-gate3/source-edc2c7c8",
+    "--env",
+    "PYTHONUNBUFFERED=1",
+    "--entrypoint",
+    "/targets/graph-nuts-ffcfbd569/venv/bin/python",
+    "sha256:f3518d652fbea8b9b9f9ebf9849277ca3bd39d0c21bb2c6e36fbaeaa2dc2678e",
+    "/targets/sail-stream-experiments-20260930/pecan-gate3/scripts/pecan_gate3_cell.py",
+    "--repo",
+    "/targets/sail-stream-experiments-20260930/pecan-gate3/source-edc2c7c8",
+    "--expected-sha",
+    "edc2c7c8cfc17cfc02f4f3a794bd4a3ec86ee3ed",
+    "--sail-binary",
+    "/targets/graph-nuts-ffcfbd569/sail-linux-x86_64-ffcfbd5690e3-release",
+    "--output",
+    "/targets/sail-stream-experiments-20260930/pecan-gate3/cells/gate-candidate-process-cluster",
+    "--mode",
+    "process-cluster",
+    "--timeout",
+    "1200"
+  ],
+  "copied": {},
+  "create": {
+    "returncode": 0,
+    "stderr": "",
+    "stdout": "c73dd54831dd72dd04c99fa8364864697db6ef3b998866acf955d529942a4683\n"
+  },
+  "finished_utc": "2026-09-30T17:00:22.141174+00:00",
+  "host_load_before": [
+    6.541015625,
+    7.1591796875,
+    9.03466796875
+  ],
+  "inspect": {
+    "id": "c73dd54831dd72dd04c99fa8364864697db6ef3b998866acf955d529942a4683",
+    "image": "sha256:f3518d652fbea8b9b9f9ebf9849277ca3bd39d0c21bb2c6e36fbaeaa2dc2678e",
+    "limits": {
+      "CpuPeriod": 0,
+      "CpuQuota": 0,
+      "CpusetCpus": "0-7",
+      "Init": true,
+      "Memory": 12884901888,
+      "MemorySwap": 12884901888,
+      "NanoCpus": 8000000000,
+      "PidMode": "",
+      "PidsLimit": 1024
+    },
+    "state": {
+      "Dead": false,
+      "Error": "",
+      "ExitCode": 0,
+      "FinishedAt": "2026-09-30T17:00:21.366401792Z",
+      "OOMKilled": false,
+      "Paused": false,
+      "Pid": 0,
+      "Restarting": false,
+      "Running": false,
+      "StartedAt": "2026-09-30T16:57:24.175167549Z",
+      "Status": "exited"
+    }
+  },
+  "outer_timeout": false,
+  "remove": {
+    "returncode": 0,
+    "stderr": "",
+    "stdout": "sail-pecan-gate-candidate-process-cluster\n"
+  },
+  "started_utc": "2026-09-30T16:57:23.511093+00:00",
+  "transport_errors": []
+}

@@ -1,0 +1,78 @@
+{
+  "recorded_utc": "2026-09-30T23:45:33.082490+00:00",
+  "outcome": "PASS",
+  "script_sha256": "31d5f6b3a41f796e0bbc91171df70cbeac59692ed9ffbb7ca4ccd67dd0674b76",
+  "scope": "Only stop_group controls; no source worktree or build. Test-local TERM/KILL grace .2/3seconds; production30/10seconds.",
+  "controls": [
+    {
+      "case": "finished",
+      "pid": 1238,
+      "leader_complete_on_entry": true,
+      "group_alive_on_entry": false,
+      "signals": [],
+      "permission_probes": [],
+      "leader_returncode": 0,
+      "leader_reaped": true,
+      "group_absent": true
+    },
+    {
+      "case": "active",
+      "pid": 1242,
+      "leader_complete_on_entry": false,
+      "group_alive_on_entry": true,
+      "signals": [
+        "SIGTERM"
+      ],
+      "permission_probes": [
+        {
+          "recorded_utc": "2026-09-30T23:45:33.167966+00:00",
+          "pid": 1242,
+          "member_pids": [
+            1242
+          ],
+          "proof": "successful complete ps pid/pgid snapshot"
+        }
+      ],
+      "leader_returncode": -15,
+      "leader_reaped": true,
+      "group_absent": true
+    },
+    {
+      "case": "leader_exited_child_ignores_term",
+      "pid": 1245,
+      "descendant": 1246,
+      "leader_complete_on_entry": true,
+      "group_alive_on_entry": true,
+      "signals": [
+        "SIGTERM",
+        "SIGKILL"
+      ],
+      "permission_probes": [],
+      "leader_returncode": 0,
+      "leader_reaped": true,
+      "group_absent": true
+    }
+  ],
+  "cleanup": [
+    {
+      "pid": 1238,
+      "reaped": true,
+      "returncode": 0
+    },
+    {
+      "pid": 1242,
+      "reaped": true,
+      "returncode": -15
+    },
+    {
+      "pid": 1245,
+      "reaped": true,
+      "returncode": 0
+    },
+    {
+      "descendant": 1246,
+      "absent": true
+    }
+  ],
+  "finished_utc": "2026-09-30T23:45:33.530006+00:00"
+}

@@ -1,0 +1,25 @@
+{
+  "utc": "2026-09-30T20:01:30.489112+00:00",
+  "command": [
+    "/usr/local/bin/docker",
+    "--context",
+    "colima-sail-gate",
+    "run",
+    "--rm",
+    "--mount",
+    "type=volume,source=sail-extension-targets,target=/targets,readonly",
+    "--entrypoint",
+    "/targets/graph-nuts-ffcfbd569/venv/bin/python",
+    "sha256:f3518d652fbea8b9b9f9ebf9849277ca3bd39d0c21bb2c6e36fbaeaa2dc2678e",
+    "-I",
+    "-c",
+    "\nfrom pathlib import Path\nimport sys,tarfile\np=Path(sys.argv[1])\nwith tarfile.open(fileobj=sys.stdout.buffer,mode='w|') as t:\n for f in sorted(p.iterdir()):\n  if f.is_file() and not f.is_symlink(): t.add(f,arcname=f.name,recursive=False)\n",
+    "/targets/sail-stream-experiments-20260930/pecan-gate3/cells/worker-smoke-compact561-cpu16-23-r1-weighted16k-pecan-sssp-frontier"
+  ],
+  "returncode": 0,
+  "stderr": "",
+  "bytes": 2437120,
+  "sha256": "6cf4d1b172a9059314647b6c38b9fac44876e006a33a60c20d7dc7cce7fa1678",
+  "full_artifact_path": "/targets/sail-stream-experiments-20260930/pecan-gate3/cells/worker-smoke-compact561-cpu16-23-r1-weighted16k-pecan-sssp-frontier",
+  "retention": "all full artifacts remain in sail-extension-targets volume"
+}

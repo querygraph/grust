@@ -1,0 +1,22 @@
+{
+  "recorded_utc": "2026-09-30T23:24:53.379721+00:00",
+  "sources": {
+    "/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-datasource-parquet-55.1.0/src/opener/mod.rs": "9c5cb58ce06a357679259e23b279877452f17e758db54e43704920d379642f8a",
+    "/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-datasource-parquet-55.1.0/src/metadata.rs": "1e33328eea576ef409221ddeb25fb93a4b2e5bea7fb3ed10b645f65be9e69e1c",
+    "/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-common-55.1.0/src/stats.rs": "187e1d259108ff8ea4d56e773a1c0c1e69871a8caf50f42bdc2c8ea6a9877094",
+    "/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-physical-plan-55.1.0/src/filter.rs": "17ea47712265b2c25d33328a00aaae7b0a3b24a1d994c0f24905296f14342c0b",
+    "/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/parquet-59.3.0/src/column/writer/mod.rs": "0e8e71d1919b739ee0a1efad93610fb67012b6572192d738bd4de954f4c3894e",
+    "/private/tmp/sail-parquet-float-statistics/crates/sail-data-source/src/listing/planner.rs": "086a18633b0132b3dcb6f2c2cadd078c8b0b6076145fabe8285bebb183de8ef3",
+    "/private/tmp/sail-parquet-float-statistics/crates/sail-data-source/src/formats/parquet/read.rs": "017bd6da132ed5668801cc5fe4379661fc12afa9ab0a949ae37f6d6b77abc65a"
+  },
+  "findings": [
+    "DF Parquet opener/mod.rs constant_value_from_stats accepts exact equal non-null min/max plus exact zero nulls as a whole-column literal; it has no proof of NaN absence.",
+    "Parquet writer update_stat skips NaNs for FLOAT/DOUBLE and logical Float16; min/max exactness describes bounds rather than proving all rows equal to those bounds.",
+    "DF ColumnStatistics has no NaN count. is_singleton and physical filter equivalence also consume min/max, so normalizing only the opener would leave other consumers.",
+    "DF metadata summarize_distinct_counts reads footer NDV independently; it does not infer NDV from min==max. Preserve explicit NDV.",
+    "Sail infer_file_meta is before listing file-statistics cache insert and aggregation; its logical schema is the schema used to derive these column statistics.",
+    "Clearing float bounds loses file-statistics MIN/MAX, singleton substitution and range/equivalence simplification opportunities even on finite-only files; count/null/integer information survives.",
+    "Raw footer row-group/page pruning and ordering remain separate, unchanged paths. Nested leaf statistics, nonlisting readers and cache entries injected outside this normalized path are not covered."
+  ],
+  "scope": "Read-only pinned source inspection; no dependency edits, no timing or general Parquet correctness claim"
+}

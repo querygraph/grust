@@ -1,0 +1,12 @@
+diff --git a/crates/sail-session/build.rs b/crates/sail-session/build.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..8d7a2311dbfd0143509a6bb8c0e0b6f80ef3e99f
+--- /dev/null
++++ b/crates/sail-session/build.rs
+@@ -0,0 +1,6 @@
++fn main() -> Result<(), Box<dyn std::error::Error>> {
++    let proto = "proto";
++    println!("cargo:rerun-if-changed={proto}/gf/utils/v1/utils.proto");
++    prost_build::compile_protos(&[format!("{proto}/gf/utils/v1/utils.proto")], &[proto])?;
++    Ok(())
++}

@@ -1,0 +1,126 @@
+diff --git a/crates/sail-spark-connect/src/session.rs b/crates/sail-spark-connect/src/session.rs
+index 277060435d503c3b72bd9534d694dc57f0545948..c2e98ff3d8133874e04bc57e5d0a1fd6f06a07a4 100644
+--- a/crates/sail-spark-connect/src/session.rs
++++ b/crates/sail-spark-connect/src/session.rs
+@@ -7,6 +7,7 @@ use datafusion::execution::SendableRecordBatchStream;
+ use datafusion::logical_expr::StringifiedPlan;
+ use sail_common::utils::datetime::get_system_timezone;
+ use sail_common_datafusion::extension::SessionExtension;
++use sail_common_datafusion::session::lifecycle::SessionResource;
+ use sail_plan::config::PlanConfig;
+ 
+ use crate::config::{ConfigKeyValue, SparkRuntimeConfig};
+@@ -49,6 +50,34 @@ impl SessionExtension for SparkSession {
+     }
+ }
+ 
++#[tonic::async_trait]
++impl SessionResource for SparkSession {
++    async fn stop(&self) -> datafusion::common::Result<()> {
++        let executors = {
++            let mut state = self.state.lock().map_err(|error| {
++                datafusion::common::DataFusionError::Execution(error.to_string())
++            })?;
++            state.stopped = true;
++            // Dropping streaming query signals also cancels their producers.
++            state.streaming_queries = StreamingQueryManager::new();
++            state
++                .executors
++                .drain()
++                .map(|(_, executor)| executor)
++                .collect::<Vec<_>>()
++        };
++        let mut failure = None;
++        for executor in executors {
++            if let Err(error) = executor.interrupt().await {
++                failure = Some(datafusion::common::DataFusionError::Execution(
++                    error.to_string(),
++                ));
++            }
++        }
++        failure.map_or(Ok(()), Err)
++    }
++}
++
+ impl SparkSession {
+     pub(crate) fn try_new(
+         session_id: String,
+@@ -172,6 +201,9 @@ impl SparkSession {
+     pub(crate) fn add_executor(&self, executor: Executor) -> SparkResult<()> {
+         let mut state = self.state.lock()?;
+         let id = executor.metadata.operation_id.clone();
++        if state.stopped {
++            return Err(SparkError::OperationInterrupted(id));
++        }
+         state.executors.insert(id, Arc::new(executor));
+         Ok(())
+     }
+@@ -189,31 +221,19 @@ impl SparkSession {
+             .map(|(_, executor)| executor))
+     }
+ 
+-    pub(crate) fn remove_all_executors(&self) -> SparkResult<Vec<Arc<Executor>>> {
+-        let mut state = self.state.lock()?;
+-        let mut out = Vec::new();
+-        for (_, executor) in state.executors.drain() {
+-            out.push(executor);
+-        }
+-        Ok(out)
++    pub(crate) fn all_executors(&self) -> SparkResult<Vec<Arc<Executor>>> {
++        let state = self.state.lock()?;
++        Ok(state.executors.values().cloned().collect())
+     }
+ 
+-    pub(crate) fn remove_executors_by_tag(&self, tag: &str) -> SparkResult<Vec<Arc<Executor>>> {
+-        let mut state = self.state.lock()?;
+-        let tag = tag.to_string();
+-        let mut ids = Vec::new();
+-        let mut removed = Vec::new();
+-        for (key, executor) in &state.executors {
+-            if executor.metadata.tags.contains(&tag) {
+-                ids.push(key.clone());
+-            }
+-        }
+-        for key in ids.iter() {
+-            if let Some(executor) = state.executors.remove(key) {
+-                removed.push(executor);
+-            }
+-        }
+-        Ok(removed)
++    pub(crate) fn executors_by_tag(&self, tag: &str) -> SparkResult<Vec<Arc<Executor>>> {
++        let state = self.state.lock()?;
++        Ok(state
++            .executors
++            .values()
++            .filter(|executor| executor.metadata.tags.iter().any(|value| value == tag))
++            .cloned()
++            .collect())
+     }
+ 
+     pub(crate) fn start_streaming_query(
+@@ -234,6 +254,9 @@ impl SparkSession {
+             run_id: uuid::Uuid::new_v4().to_string(),
+         };
+         let mut state = self.state.lock()?;
++        if state.stopped {
++            return Err(SparkError::OperationInterrupted(self.session_id.clone()));
++        }
+         let query = StreamingQuery::new(name, info, stream);
+         state.streaming_queries.add_query(id.clone(), query);
+         Ok(id)
+@@ -306,6 +329,7 @@ impl SparkSession {
+ }
+ 
+ struct SparkSessionState {
++    stopped: bool,
+     config: SparkRuntimeConfig,
+     executors: HashMap<String, Arc<Executor>>,
+     streaming_queries: StreamingQueryManager,
+@@ -314,6 +338,7 @@ struct SparkSessionState {
+ impl SparkSessionState {
+     fn try_new() -> SparkResult<Self> {
+         Ok(Self {
++            stopped: false,
+             config: SparkRuntimeConfig::try_new()?,
+             executors: HashMap::new(),
+             streaming_queries: StreamingQueryManager::new(),

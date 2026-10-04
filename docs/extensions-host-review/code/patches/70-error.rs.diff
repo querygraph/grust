@@ -1,0 +1,23 @@
+diff --git a/crates/sail-spark-connect/src/error.rs b/crates/sail-spark-connect/src/error.rs
+index acfe4e8737530758f1f9d27f9b9bb922cf9bd498..955776f93976032484a4e5bc8cc343e86b5ed29b 100644
+--- a/crates/sail-spark-connect/src/error.rs
++++ b/crates/sail-spark-connect/src/error.rs
+@@ -49,6 +49,8 @@ pub enum SparkError {
+     AnalysisError(String),
+     #[error("parse error: {0}")]
+     ParseError(String),
++    #[error("operation interrupted: {0}")]
++    OperationInterrupted(String),
+ }
+ 
+ impl SparkError {
+@@ -460,6 +462,9 @@ impl From<SparkError> for Status {
+             }
+             SparkError::AnalysisError(s) => SparkThrowable::AnalysisException(s).into(),
+             SparkError::ParseError(s) => SparkThrowable::ParseException(s).into(),
++            e @ SparkError::OperationInterrupted(_) => {
++                SparkThrowable::QueryExecutionException(e.to_string()).into()
++            }
+             e @ SparkError::SendError(_) => {
+                 Status::cancelled(truncate_grpc_message(&e.to_string()))
+             }

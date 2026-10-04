@@ -1,0 +1,92 @@
+{
+  "started_utc": "2026-09-30T20:00:40.297851+00:00",
+  "outcome": "passed",
+  "scope": "point-in-time identity and disk admission; no host lock or full-run capacity guarantee",
+  "config_sha256": "cda092d0bd07e2bf9860df227b36ca2d072ad13ffafcf767aad2dc34723db864",
+  "running_before": {
+    "command": [
+      "/usr/local/bin/docker",
+      "--context",
+      "colima-sail-gate",
+      "ps",
+      "--format",
+      "{{.ID}} {{.Names}} {{.Image}}"
+    ],
+    "returncode": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  "observation": {
+    "command": [
+      "/usr/local/bin/docker",
+      "--context",
+      "colima-sail-gate",
+      "run",
+      "--rm",
+      "--read-only",
+      "--network",
+      "none",
+      "--memory",
+      "256m",
+      "--memory-swap",
+      "256m",
+      "--cpus",
+      "1",
+      "--pids-limit",
+      "32",
+      "--mount",
+      "type=volume,source=sail-extension-targets,target=/targets,readonly",
+      "--entrypoint",
+      "/targets/graph-nuts-ffcfbd569/venv/bin/python",
+      "sha256:f3518d652fbea8b9b9f9ebf9849277ca3bd39d0c21bb2c6e36fbaeaa2dc2678e",
+      "-I",
+      "-B",
+      "-c",
+      "\nimport hashlib,json,os,shutil,subprocess,sys\nfrom pathlib import Path\nc=json.loads(sys.argv[1])\ndef sha(path):\n    with Path(path).open('rb') as stream:\n        return hashlib.file_digest(stream,'sha256').hexdigest()\nbinary=Path(c['container_sail_binary'])\nbefore=binary.stat()\nbinary_sha=sha(binary)\nafter=binary.stat()\nassert (before.st_dev,before.st_ino,before.st_size,before.st_mtime_ns)==(after.st_dev,after.st_ino,after.st_size,after.st_mtime_ns)\nsource=c['container_repo']\nhead=subprocess.check_output(['git','-C',source,'rev-parse','HEAD'],text=True).strip()\nstatus=subprocess.check_output(['git','-C',source,'status','--porcelain'],text=True).strip()\ndatasets={}\nfor name in c['datasets']:\n    path=Path(c['container_root'])/'datasets'/name/'manifest.json'\n    manifest=json.loads(path.read_text())\n    datasets[name]={'path':str(path.resolve()),'sha256':sha(path),\n                    'counts':manifest.get('counts'),'canonical':manifest.get('canonical'),\n                    'files':len(manifest.get('files',{}))}\nnative=Path('/targets/graph-nuts-ffcfbd569/venv/lib/python3.12/site-packages/sail_nutmeg/_native.cpython-312-x86_64-linux-gnu.so')\nprint(json.dumps({'binary_sha256':binary_sha,'binary_bytes':after.st_size,\n                 'harness_head':head,'harness_status':status,\n                 'native_sha256':sha(native),'datasets':datasets,\n                 'free_bytes':shutil.disk_usage('/targets').free,\n                 'boot_id':Path('/proc/sys/kernel/random/boot_id').read_text().strip(),\n                 'uptime':Path('/proc/uptime').read_text().strip(),\n                 'cpu_stat':Path('/proc/stat').read_text().splitlines()[0],\n                 'memory_info':Path('/proc/meminfo').read_text(),\n                 'kernel_release':os.uname().release}))\n",
+      "{\"run_id\": \"worker-smoke-compact561-cpu16-23\", \"docker_context\": \"colima-sail-gate\", \"image\": \"sha256:f3518d652fbea8b9b9f9ebf9849277ca3bd39d0c21bb2c6e36fbaeaa2dc2678e\", \"target_volume\": \"sail-extension-targets\", \"container_python\": \"/targets/graph-nuts-ffcfbd569/venv/bin/python\", \"container_repo\": \"/targets/sail-stream-experiments-20260930/source-3a9028057\", \"container_sail_binary\": \"/targets/sail-compact-host-56194b170155/sail-linux-x86_64-56194b170155-release\", \"runtime_source_sha\": \"56194b170155301ba91077f0ba3df31fe2c78b6b\", \"native_source_sha\": \"ffcfbd5690e3f3681ef9ac18ba959bc231cf9f73\", \"harness_source_sha\": \"3a9028057c6c6c5034492845926fc4bc18f9626f\", \"container_root\": \"/targets/sail-stream-experiments-20260930/pecan-gate3\", \"host_output\": \"/Users/alexy/src/sail-extensions-gates/stream-experiments-20260930/worker-smoke-compact561-cpu16-23\", \"limits\": {\"cpus\": 8, \"cpuset_cpus\": \"16-23\", \"memory_gib\": 12, \"outer_timeout_seconds\": 1350}, \"defaults\": {\"partitions\": 4, \"threads\": 4, \"worker_task_slots\": 16, \"sail_pool_bytes\": 3221225472, \"native_quota\": 268435456, \"tolerance\": 1e-08, \"damping\": 0.85, \"timeout\": 600, \"seed\": 42, \"delta\": 1.0, \"max_iterations\": 1000}, \"datasets\": {\"weighted16k\": {\"family\": \"traversal\", \"vertices\": 16384, \"degree\": 32, \"seed\": 42, \"source\": 0, \"directed\": true}}, \"extra_cell_args\": [\"--http2-keepalive-timeout\", \"120\", \"--record-plans\"], \"environment\": {\"SAIL_CLUSTER__TASK_STREAM_CREATION_TIMEOUT_SECS\": \"900\", \"SAIL_CLUSTER__WORKER_MAX_IDLE_TIME_SECS\": \"86400\", \"SAIL_BENCHMARK_RUST_LOG\": \"info,h2::proto::connection=debug,h2::proto::streams=warn,h2::frame::go_away=trace,h2::frame::reset=trace,h2::frame::ping=trace,h2::proto::ping_pong=trace,sail_execution::task_runner=debug,tonic::transport::server=debug\"}, \"suites\": [{\"name\": \"worker-smoke-compact561-cpu16-23\", \"mode\": \"process-cluster\", \"repetitions\": 1, \"datasets\": [\"weighted16k\"], \"engines\": [\"pecan\"], \"algorithms\": [\"sssp\"], \"variants\": [\"frontier\"], \"max_iterations\": 1000}], \"note\": \"Prepared real two-worker smoke: original controller/native, existing weighted16k input and independent heap-Dijkstra/parent checks. Container_root intentionally reuses original dataset location, with new suite/cell namespace. No bootstrap needed or allowed for this existing dataset root. No absolute timing claim. CPU16-23 variant: correctness/worker transport only; instrumented289 may run beside the compact561 build pinnedCPU0-15 with48GiB. Smoke has disjoint8CPU and12GiB; no timing or isolated performance claim. Uses originalffcf Python/native to preserve561 seed289 venv/cache.\", \"seed\": 20260929}"
+    ],
+    "returncode": 0,
+    "stdout": "{\"binary_sha256\": \"5b7f506c19afd76a28b84c1459397b4ab30ff4cfc761f4195789425b963facec\", \"binary_bytes\": 160192912, \"harness_head\": \"3a9028057c6c6c5034492845926fc4bc18f9626f\", \"harness_status\": \"\", \"native_sha256\": \"eb0be839de652e059799dea3bba22cc0908998bd97cfa2f4cf04c67817e2ee50\", \"datasets\": {\"weighted16k\": {\"path\": \"/targets/sail-stream-experiments-20260930/pecan-gate3/datasets/weighted16k/manifest.json\", \"sha256\": \"6d71d459df71e2a0de23d34c80c5faff6d40829cfa59c85c5f6cef16ae203134\", \"counts\": {\"vertices\": 16384, \"edges\": 529723}, \"canonical\": null, \"files\": 3}}, \"free_bytes\": 37851049984, \"boot_id\": \"f5443bfc-c939-491a-a984-b73cc6d1cb20\", \"uptime\": \"143493.95 2366679.59\", \"cpu_stat\": \"cpu  35430299 0 59620129 236667964 891998 0 2012672 0 0 0\", \"memory_info\": \"MemTotal:       113312000 kB\\nMemFree:        86661028 kB\\nMemAvailable:   111543556 kB\\nBuffers:          260312 kB\\nCached:         24655920 kB\\nSwapCached:            0 kB\\nActive:          3471092 kB\\nInactive:       21587556 kB\\nActive(anon):     155808 kB\\nInactive(anon):     2140 kB\\nActive(file):    3315284 kB\\nInactive(file): 21585416 kB\\nUnevictable:       14600 kB\\nMlocked:               0 kB\\nSwapTotal:             0 kB\\nSwapFree:              0 kB\\nZswap:                 0 kB\\nZswapped:              0 kB\\nDirty:                 0 kB\\nWriteback:             0 kB\\nAnonPages:        156808 kB\\nMapped:            93964 kB\\nShmem:               920 kB\\nKReclaimable:    1086964 kB\\nSlab:            1419164 kB\\nSReclaimable:    1086964 kB\\nSUnreclaim:       332200 kB\\nKernelStack:        7376 kB\\nPageTables:         2900 kB\\nSecPageTables:         0 kB\\nNFS_Unstable:          0 kB\\nBounce:                0 kB\\nWritebackTmp:          0 kB\\nCommitLimit:    56656000 kB\\nCommitted_AS:     844240 kB\\nVmallocTotal:   34359738367 kB\\nVmallocUsed:       16180 kB\\nVmallocChunk:          0 kB\\nPercpu:            23040 kB\\nHardwareCorrupted:     0 kB\\nAnonHugePages:         0 kB\\nShmemHugePages:        0 kB\\nShmemPmdMapped:        0 kB\\nFileHugePages:         0 kB\\nFilePmdMapped:         0 kB\\nUnaccepted:            0 kB\\nHugePages_Total:       0\\nHugePages_Free:        0\\nHugePages_Rsvd:        0\\nHugePages_Surp:        0\\nHugepagesize:       2048 kB\\nHugetlb:               0 kB\\nDirectMap4k:      160940 kB\\nDirectMap2M:    115175424 kB\\n\", \"kernel_release\": \"6.8.0-117-generic\"}\n",
+    "stderr": ""
+  },
+  "observed": {
+    "binary_sha256": "5b7f506c19afd76a28b84c1459397b4ab30ff4cfc761f4195789425b963facec",
+    "binary_bytes": 160192912,
+    "harness_head": "3a9028057c6c6c5034492845926fc4bc18f9626f",
+    "harness_status": "",
+    "native_sha256": "eb0be839de652e059799dea3bba22cc0908998bd97cfa2f4cf04c67817e2ee50",
+    "datasets": {
+      "weighted16k": {
+        "path": "/targets/sail-stream-experiments-20260930/pecan-gate3/datasets/weighted16k/manifest.json",
+        "sha256": "6d71d459df71e2a0de23d34c80c5faff6d40829cfa59c85c5f6cef16ae203134",
+        "counts": {
+          "vertices": 16384,
+          "edges": 529723
+        },
+        "canonical": null,
+        "files": 3
+      }
+    },
+    "free_bytes": 37851049984,
+    "boot_id": "f5443bfc-c939-491a-a984-b73cc6d1cb20",
+    "uptime": "143493.95 2366679.59",
+    "cpu_stat": "cpu  35430299 0 59620129 236667964 891998 0 2012672 0 0 0",
+    "memory_info": "MemTotal:       113312000 kB\nMemFree:        86661028 kB\nMemAvailable:   111543556 kB\nBuffers:          260312 kB\nCached:         24655920 kB\nSwapCached:            0 kB\nActive:          3471092 kB\nInactive:       21587556 kB\nActive(anon):     155808 kB\nInactive(anon):     2140 kB\nActive(file):    3315284 kB\nInactive(file): 21585416 kB\nUnevictable:       14600 kB\nMlocked:               0 kB\nSwapTotal:             0 kB\nSwapFree:              0 kB\nZswap:                 0 kB\nZswapped:              0 kB\nDirty:                 0 kB\nWriteback:             0 kB\nAnonPages:        156808 kB\nMapped:            93964 kB\nShmem:               920 kB\nKReclaimable:    1086964 kB\nSlab:            1419164 kB\nSReclaimable:    1086964 kB\nSUnreclaim:       332200 kB\nKernelStack:        7376 kB\nPageTables:         2900 kB\nSecPageTables:         0 kB\nNFS_Unstable:          0 kB\nBounce:                0 kB\nWritebackTmp:          0 kB\nCommitLimit:    56656000 kB\nCommitted_AS:     844240 kB\nVmallocTotal:   34359738367 kB\nVmallocUsed:       16180 kB\nVmallocChunk:          0 kB\nPercpu:            23040 kB\nHardwareCorrupted:     0 kB\nAnonHugePages:         0 kB\nShmemHugePages:        0 kB\nShmemPmdMapped:        0 kB\nFileHugePages:         0 kB\nFilePmdMapped:         0 kB\nUnaccepted:            0 kB\nHugePages_Total:       0\nHugePages_Free:        0\nHugePages_Rsvd:        0\nHugePages_Surp:        0\nHugepagesize:       2048 kB\nHugetlb:               0 kB\nDirectMap4k:      160940 kB\nDirectMap2M:    115175424 kB\n",
+    "kernel_release": "6.8.0-117-generic"
+  },
+  "minimum_free_bytes": 12884901888,
+  "running_after": {
+    "command": [
+      "/usr/local/bin/docker",
+      "--context",
+      "colima-sail-gate",
+      "ps",
+      "--format",
+      "{{.ID}} {{.Names}} {{.Image}}"
+    ],
+    "returncode": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  "finished_utc": "2026-09-30T20:00:42.118905+00:00"
+}

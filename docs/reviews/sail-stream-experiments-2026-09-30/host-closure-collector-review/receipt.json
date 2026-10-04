@@ -1,0 +1,37 @@
+{
+  "recorded_utc": "2026-09-30T21:52:26.890439+00:00",
+  "outcome": "PASS_LOCAL_MOCK_REVIEW_NO_REMOTE_RUN",
+  "source": "docs/reviews/sail-stream-experiments-2026-09-30/collect_host_closure.py",
+  "source_sha256": "0ae1715b03e23198b86544560c21f15b9b33edef450aec7fdabac2e36a4b5c2a",
+  "source_lines": 226,
+  "tests": {
+    "path": "/private/tmp/host-closure-collector-review-20260930/test_collector.py",
+    "sha256": "331d562daefad4bcc0e59839882a1aadd6a69e5c8c4425a79343363f5808de78",
+    "count": 11,
+    "command": "python3 -I -B /private/tmp/host-closure-collector-review-20260930/test_collector.py",
+    "log": {
+      "path": "/private/tmp/host-closure-collector-review-20260930/test-final.log",
+      "sha256": "5e93ec0e8e610d7e582dfcda5c88eb65d698ae595b9f1d34719f759f1bd27bc3"
+    },
+    "outcome": "PASS"
+  },
+  "config_pins_unchanged": {
+    "logging02.json": "520b244165096bd2bb17a45d22effe50210d8bcf4bca5e546364f273cba36ff0",
+    "logging03-compact.json": "b28132996612b11edb77bb02019288e4a562db5e4d22c4430a6a8815a220aea0"
+  },
+  "changes": [
+    "Outer launch/configuration/JSON exceptions produce FAILED receipts and exact private SSH stdout/stderr; private exception detail kept out of public receipt.",
+    "Nested host/VM readers retain per-command errors and continue where possible; each call has timeout, sum of remote command budgets39s within local SSH55s (nested dmesg15s).",
+    "Public stderr is size/hash only. Host process capture remains pid/ppid/rss/comm; no args/env, mutation or workload command. Guest Python adds -B; sudo -n prevents interactive prompt.",
+    "Boot IDs captured before/after kernel read; CAPTURED requires successful reads and matching valid IDs. OOM selection retains exact decoded line text/line number, with complete SSH payload privately hashed.",
+    "PARTIAL_CAPTURE and FAILED do not imply no OOM; selected lines are whole boot-buffer observations, not cell-specific filtering or worker attribution. Exclusive output refuses overwrite."
+  ],
+  "limitations": [
+    "No SSH, Colima, Docker, host sysctl, ps or dmesg execution in this review; all invocation paths mocked.",
+    "Caller must establish cell termination. Local SSH timeout does not establish remote-reader termination; per-command budgets are not a hard wall-clock guarantee for remote process startup.",
+    "Exact outer SSH bytes retained; nested dmesg text is decoded by Python. The public dmesg hash explicitly describes decoded UTF-8 re-encoding, not an independent raw kernel-byte hash.",
+    "Public receipt requires writable output storage. If private storage fails, explicit retention_errors and FAILED are recorded; no impossible guarantee of retained bytes during disk/permission failure.",
+    "Snapshot records only command-time pressure/boot/kernel evidence; it neither establishes per-cell physical I/O nor diagnoses cause or worker identity."
+  ],
+  "changed_scope": "Only new collect_host_closure.py; local mock script/logs/receipt outside repository. Prior runner/config/prose and captured evidence were not edited."
+}

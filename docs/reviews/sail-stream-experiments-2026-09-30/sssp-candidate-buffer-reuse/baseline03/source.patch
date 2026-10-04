@@ -1,0 +1,646 @@
+diff --git a/examples/extensions/argentea/src/adjacency_tests/allocations.rs b/examples/extensions/argentea/src/adjacency_tests/allocations.rs
+index f62d85afe..8c4f778aa 100644
+--- a/examples/extensions/argentea/src/adjacency_tests/allocations.rs
++++ b/examples/extensions/argentea/src/adjacency_tests/allocations.rs
+@@ -1,9 +1,13 @@
+ //! Thread-local requested-allocation counters, excluding fixture construction.
+ use std::alloc::{GlobalAlloc, Layout, System};
+ use std::cell::Cell;
++// This allocator is also included by integration tests that only use measure.
++#[allow(dead_code)]
++#[path = "allocations/watch.rs"]
++pub(crate) mod watch;
+ 
+ #[derive(Clone, Copy, Debug, Default)]
+-pub(super) struct Counts {
++pub(crate) struct Counts {
+     pub calls: usize,
+     pub bytes: usize,
+     pub peak: usize,
+@@ -30,6 +34,7 @@ unsafe impl GlobalAlloc for Measured {
+     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
+         let pointer = unsafe { System.alloc(layout) };
+         if !pointer.is_null() {
++            watch::event(0, pointer as usize, layout.size());
+             allocated(layout.size(), 0);
+         }
+         pointer
+@@ -37,11 +42,13 @@ unsafe impl GlobalAlloc for Measured {
+     unsafe fn alloc_zeroed(&self, layout: Layout) -> *mut u8 {
+         let pointer = unsafe { System.alloc_zeroed(layout) };
+         if !pointer.is_null() {
++            watch::event(0, pointer as usize, layout.size());
+             allocated(layout.size(), 0);
+         }
+         pointer
+     }
+     unsafe fn dealloc(&self, pointer: *mut u8, layout: Layout) {
++        watch::event(pointer as usize, 0, 0);
+         ACTIVE.with(|active| {
+             if let Some(mut counts) = active.get() {
+                 counts.live -= layout.size() as isize;
+@@ -53,12 +60,13 @@ unsafe impl GlobalAlloc for Measured {
+     unsafe fn realloc(&self, pointer: *mut u8, layout: Layout, size: usize) -> *mut u8 {
+         let result = unsafe { System.realloc(pointer, layout, size) };
+         if !result.is_null() {
++            watch::event(pointer as usize, result as usize, size);
+             allocated(size, layout.size());
+         }
+         result
+     }
+ }
+-pub(super) fn measure<T>(f: impl FnOnce() -> T) -> (T, Counts) {
++pub(crate) fn measure<T>(f: impl FnOnce() -> T) -> (T, Counts) {
+     struct Reset;
+     impl Drop for Reset {
+         fn drop(&mut self) {
+diff --git a/examples/extensions/argentea/src/adjacency_tests/allocations/watch.rs b/examples/extensions/argentea/src/adjacency_tests/allocations/watch.rs
+new file mode 100644
+index 000000000..25a874fac
+--- /dev/null
++++ b/examples/extensions/argentea/src/adjacency_tests/allocations/watch.rs
+@@ -0,0 +1,103 @@
++//! Track seeded live pointers and new same-size allocations without allocating.
++use std::cell::Cell;
++use std::cell::RefCell;
++
++#[derive(Clone, Copy, Debug, Default)]
++pub(crate) struct Watch {
++    bytes: usize,
++    pointers: [usize; 32],
++    pub live: usize,
++    pub peak: usize,
++    pub allocations: usize,
++    overflow: bool,
++}
++thread_local! { static STATE: Cell<Option<Watch>> = const { Cell::new(None) }; }
++
++pub(crate) fn event(remove: usize, add: usize, bytes: usize) {
++    let _ = STATE.try_with(|state| {
++        if let Some(mut watch) = state.get() {
++            if remove != 0
++                && let Some(slot) = watch.pointers.iter_mut().find(|p| **p == remove)
++            {
++                *slot = 0;
++                watch.live -= 1;
++            }
++            if add != 0 && bytes == watch.bytes {
++                watch.allocations += 1;
++                if let Some(slot) = watch.pointers.iter_mut().find(|p| **p == 0) {
++                    *slot = add;
++                    watch.live += 1;
++                    watch.peak = watch.peak.max(watch.live);
++                } else {
++                    watch.overflow = true;
++                }
++            }
++            state.set(Some(watch));
++        }
++    });
++    if add != 0 {
++        let action = HOOK
++            .try_with(|hook| {
++                let mut hook = hook.borrow_mut();
++                if hook.as_ref().is_some_and(|(size, _)| *size == bytes) {
++                    hook.take().map(|(_, action)| action)
++                } else {
++                    None
++                }
++            })
++            .ok()
++            .flatten();
++        // Release the TLS borrow before invoking: cancellation may itself
++        // allocate. Removing the one-shot hook first prevents recursion.
++        if let Some(action) = action {
++            action();
++        }
++    }
++}
++
++type Hook = (usize, Box<dyn FnOnce()>);
++thread_local! { static HOOK: RefCell<Option<Hook>> = const { RefCell::new(None) }; }
++pub(crate) struct HookGuard;
++impl Drop for HookGuard {
++    fn drop(&mut self) {
++        HOOK.with(|hook| {
++            hook.borrow_mut().take();
++        });
++    }
++}
++pub(crate) fn on_next_size(bytes: usize, action: impl FnOnce() + 'static) -> HookGuard {
++    HOOK.with(|hook| {
++        assert!(hook.borrow().is_none());
++        *hook.borrow_mut() = Some((bytes, Box::new(action)));
++    });
++    HookGuard
++}
++
++pub(crate) struct Guard;
++impl Drop for Guard {
++    fn drop(&mut self) {
++        STATE.with(|state| state.set(None));
++    }
++}
++pub(crate) fn start(bytes: usize, pointers: &[usize]) -> Guard {
++    assert!(bytes > 0 && pointers.len() <= 32 && !pointers.contains(&0));
++    STATE.with(|state| {
++        assert!(state.get().is_none());
++        let mut watch = Watch {
++            bytes,
++            live: pointers.len(),
++            peak: pointers.len(),
++            ..Watch::default()
++        };
++        watch.pointers[..pointers.len()].copy_from_slice(pointers);
++        state.set(Some(watch));
++    });
++    Guard
++}
++pub(crate) fn snapshot() -> Watch {
++    STATE.with(|state| {
++        let watch = state.get().unwrap();
++        assert!(!watch.overflow, "allocation pointer inventory overflow");
++        watch
++    })
++}
+diff --git a/examples/extensions/argentea/src/adjacency_tests/mod.rs b/examples/extensions/argentea/src/adjacency_tests/mod.rs
+index 543628e20..f41ed02db 100644
+--- a/examples/extensions/argentea/src/adjacency_tests/mod.rs
++++ b/examples/extensions/argentea/src/adjacency_tests/mod.rs
+@@ -1,4 +1,4 @@
+-mod allocations;
++pub(crate) mod allocations;
+ use crate::{Operation, Resources, WeightedAdjacency, adjacency::Adjacency};
+ use grust_procedures::{ExecutionContext, ExecutionLimits};
+ use sail_native_resource_ffi::MemoryLease;
+diff --git a/examples/extensions/argentea/src/sssp/partition/protocol.rs b/examples/extensions/argentea/src/sssp/partition/protocol.rs
+index 1b29325f0..f15e74fca 100644
+--- a/examples/extensions/argentea/src/sssp/partition/protocol.rs
++++ b/examples/extensions/argentea/src/sssp/partition/protocol.rs
+@@ -1,5 +1,8 @@
+ //! Candidate publication occurs only after complete producer markers and EOF.
+ use super::*;
++#[cfg(test)]
++#[path = "reuse_tests/mod.rs"]
++mod reuse_tests;
+ #[derive(Debug)]
+ pub(super) struct Inbox {
+     mode: SsspMode,
+diff --git a/examples/extensions/argentea/src/sssp/partition/reuse_tests/controls.rs b/examples/extensions/argentea/src/sssp/partition/reuse_tests/controls.rs
+new file mode 100644
+index 000000000..682e06c4d
+--- /dev/null
++++ b/examples/extensions/argentea/src/sssp/partition/reuse_tests/controls.rs
+@@ -0,0 +1,215 @@
++use super::*;
++
++#[test]
++fn tight_admission_accepts_transferred_storage_for_both_algorithms() {
++    let mut failed = vec![];
++    for algorithm in [SsspAlgorithm::Reference, SsspAlgorithm::DeltaStar] {
++        let mut f = fixture(65536, algorithm, "active");
++        let _watch = watch::start(65536 * size_of::<Option<SsspLabel>>(), &pointers(&f.part));
++        let available = LIMIT - f.execution.usage().unwrap().live_bytes;
++        // Pending mask + frontier fits, while one additional dense label
++        // vector does not. Hold this blocker through next-barrier publication.
++        let headroom = 1 << 20;
++        let blocker = f.execution.reserve(available - headroom).unwrap();
++        let result = f.part.finish(&f.phase);
++        println!(
++            "SSSP_REUSE_HEADROOM algorithm={algorithm:?} local_vertices=65536 headroom={headroom} result={result:?}"
++        );
++        if result.is_err() {
++            failed.push(algorithm);
++        } else {
++            assert_eq!(f.part.next_phase(), f.phase.number + 1);
++        }
++        drop(blocker);
++        check_release(f);
++    }
++    assert!(
++        failed.is_empty(),
++        "replacement label admission remained: {failed:?}"
++    );
++}
++
++#[test]
++fn old_row_cursor_retains_snapshot_and_last_lease_after_publication() {
++    for algorithm in [SsspAlgorithm::Reference, SsspAlgorithm::DeltaStar] {
++        let mut f = fixture(1024, algorithm, "active");
++        let _watch = watch::start(1024 * size_of::<Option<SsspLabel>>(), &pointers(&f.part));
++        // Exercise the actual row cursor's Arc/lease ownership, deliberately
++        // retaining a pre-publication snapshot through this private test seam.
++        // Public row_cursor() still requires a sealed result.
++        let mut cursor = SsspRowCursor {
++            adjacency: f.part.adjacency.clone(),
++            values: f.part.values.clone(),
++            resources: f.part.resources.clone(),
++            position: 0,
++        };
++        let expected = f.part.values.labels.clone();
++        f.part.finish(&f.phase).unwrap();
++        assert_ne!(f.part.values.labels, expected);
++        let observed = f.observed.clone();
++        let execution = f.execution.clone();
++        drop(f);
++        assert_eq!(observed.callbacks.load(Ordering::SeqCst), 0);
++        for label in expected {
++            assert_eq!(cursor.next_row().unwrap().unwrap().label, label);
++        }
++        assert!(cursor.next_row().unwrap().is_none());
++        drop(cursor);
++        assert_eq!(observed.callbacks.load(Ordering::SeqCst), 1);
++        assert_eq!(observed.admitted.load(Ordering::SeqCst), 0);
++        assert_eq!(observed.watched_live.load(Ordering::SeqCst), 0);
++        assert_eq!(execution.usage().unwrap().live_bytes, 0);
++    }
++}
++
++#[test]
++fn selection_preserves_ties_parent_only_updates_and_bucket_carryover() {
++    for algorithm in [SsspAlgorithm::Reference, SsspAlgorithm::DeltaStar] {
++        let mut f = fixture(6, algorithm, "active");
++        let label = |d, h, p| Some(SsspLabel::from_parts(d, h, p).unwrap());
++        // White-box merge operands isolate branches that a final-distance-only
++        // oracle misses. End-to-end weighted protocol/oracle tests remain separate.
++        let values = Arc::get_mut(&mut f.part.values).unwrap();
++        values.labels = vec![
++            label(0.0, 0, 0),
++            label(2.0, 2, 9),
++            label(8.0, 2, 9),
++            label(8.0, 2, 3),
++            None,
++            None,
++        ];
++        values.active = vec![0, 1, 2, 3];
++        values.reached = 4;
++        values.reachable_edges = 5;
++        let State::Receiving(inbox) = &mut f.part.state else {
++            unreachable!()
++        };
++        inbox.candidates.copy_from_slice(&[
++            label(1.0, 1, 0),
++            label(2.0, 2, 6),
++            label(3.0, 2, 3),
++            label(8.0, 2, 3),
++            label(4.0, 1, 0),
++            None,
++        ]);
++        let _watch = watch::start(6 * size_of::<Option<SsspLabel>>(), &pointers(&f.part));
++        let before_work = f.execution.usage().unwrap().counted_work().unwrap();
++        f.part.finish(&f.phase).unwrap();
++        assert_eq!(
++            f.part.values.labels,
++            vec![
++                label(0.0, 0, 0),
++                label(2.0, 2, 6),
++                label(3.0, 2, 3),
++                label(8.0, 2, 3),
++                label(4.0, 1, 0),
++                None
++            ]
++        );
++        let expected = if algorithm == SsspAlgorithm::Reference {
++            vec![2, 4]
++        } else {
++            vec![2, 3, 4]
++        };
++        assert_eq!(f.part.values.active, expected);
++        assert_eq!(f.part.values.reached, 5);
++        assert_eq!(f.part.values.reachable_edges, 5); // newly reached isolate
++        assert_eq!(
++            f.execution.usage().unwrap().counted_work().unwrap() - before_work,
++            10
++        );
++        check_release(f);
++    }
++}
++
++#[test]
++fn failures_do_not_publish_mutated_candidates_or_release_live_storage() {
++    let mut late_failure_before_merge = vec![];
++    for algorithm in [SsspAlgorithm::Reference, SsspAlgorithm::DeltaStar] {
++        for failure in [
++            "early_quota",
++            "late_quota",
++            "work",
++            "cancel",
++            "final_checkpoint",
++        ] {
++            let mut f = fixture(6, algorithm, "active");
++            let old = f.part.values.clone();
++            let expected = old.labels.clone();
++            let work = f.execution.usage().unwrap().counted_work().unwrap();
++            let _watch = watch::start(6 * size_of::<Option<SsspLabel>>(), &pointers(&f.part));
++            let mut blocker = None;
++            let fired = Arc::new(AtomicUsize::new(0));
++            let mut hook = None;
++            match failure {
++                "early_quota" | "late_quota" => {
++                    let available = LIMIT - f.execution.usage().unwrap().live_bytes;
++                    let headroom = if failure == "early_quota" { 0 } else { 500 };
++                    blocker = Some(f.execution.reserve(available - headroom).unwrap());
++                }
++                "work" => {
++                    f.execution
++                        .charge_work(usize::MAX - work - old.active.len() - 2)
++                        .unwrap();
++                }
++                "cancel" => f.execution.cancel().unwrap(),
++                "final_checkpoint" => {
++                    let execution = f.execution.clone();
++                    let fired = fired.clone();
++                    // StatisticsInbox::new allocates this vector after admitting
++                    // its charge and after every merge work check. Cancel there;
++                    // no wall-clock race or machine-speed assumption is involved.
++                    hook = Some(watch::on_next_size(
++                        3 * size_of::<Option<SsspStatisticsValues>>(),
++                        move || {
++                            fired.fetch_add(1, Ordering::SeqCst);
++                            execution.cancel().unwrap();
++                        },
++                    ));
++                }
++                _ => unreachable!(),
++            }
++            let before_finish = f.execution.usage().unwrap().counted_work().unwrap();
++            let error = f.part.finish(&f.phase).unwrap_err();
++            println!(
++                "SSSP_REUSE_FAILURE algorithm={algorithm:?} case={failure} finish_work={} error={error}",
++                f.execution.usage().unwrap().counted_work().unwrap() - before_finish
++            );
++            let expected_error = match failure {
++                "early_quota" | "late_quota" => "memory",
++                "work" => "work",
++                _ => "cancel",
++            };
++            assert!(error.contains(expected_error), "{error}");
++            assert!(Arc::ptr_eq(&old, &f.part.values));
++            assert_eq!(f.part.values.labels, expected);
++            assert_eq!(f.part.next_phase(), f.phase.number);
++            assert!(f.part.row_cursor().is_err());
++            if failure != "cancel" {
++                assert!(matches!(f.part.state, State::Failed));
++            }
++            if failure == "late_quota"
++                && f.execution.usage().unwrap().counted_work().unwrap() - work
++                    != old.active.len() + 6
++            {
++                late_failure_before_merge.push(algorithm);
++            }
++            if failure == "final_checkpoint" {
++                assert_eq!(fired.load(Ordering::SeqCst), 1);
++                assert_eq!(
++                    f.execution.usage().unwrap().counted_work().unwrap() - work,
++                    old.active.len() + 6
++                );
++            }
++            drop(hook);
++            drop(blocker);
++            drop(old);
++            drop(expected);
++            check_release(f);
++        }
++    }
++    assert!(
++        late_failure_before_merge.is_empty(),
++        "late quota failed before merge: {late_failure_before_merge:?}"
++    );
++}
+diff --git a/examples/extensions/argentea/src/sssp/partition/reuse_tests/mod.rs b/examples/extensions/argentea/src/sssp/partition/reuse_tests/mod.rs
+new file mode 100644
+index 000000000..36cd38f61
+--- /dev/null
++++ b/examples/extensions/argentea/src/sssp/partition/reuse_tests/mod.rs
+@@ -0,0 +1,231 @@
++//! Baseline-compatible finish controls: the old source fails the reuse bound.
++use super::*;
++use crate::adjacency_tests::allocations::{measure, watch};
++use grust_procedures::{ExecutionContext, ExecutionLimits};
++use sail_native_resource_ffi::MemoryLease;
++use std::sync::atomic::{AtomicUsize, Ordering};
++mod controls;
++
++const LIMIT: usize = 128 << 20;
++#[derive(Default)]
++struct Observation {
++    callbacks: AtomicUsize,
++    admitted: AtomicUsize,
++    watched_live: AtomicUsize,
++}
++struct LeaseProbe(ExecutionContext, Arc<Observation>);
++impl Drop for LeaseProbe {
++    fn drop(&mut self) {
++        self.1.callbacks.fetch_add(1, Ordering::SeqCst);
++        self.1
++            .admitted
++            .store(self.0.usage().unwrap().live_bytes, Ordering::SeqCst);
++        self.1
++            .watched_live
++            .store(watch::snapshot().live, Ordering::SeqCst);
++    }
++}
++struct Fixture {
++    part: SsspPartition,
++    phase: Round,
++    execution: ExecutionContext,
++    observed: Arc<Observation>,
++}
++fn barrier(parts: &mut [SsspPartition]) -> Round {
++    let phase = Round {
++        operation: parts[0].operation.clone(),
++        number: parts[0].next_phase(),
++    };
++    let reports = parts
++        .iter()
++        .map(|p| p.statistics().unwrap())
++        .collect::<Vec<_>>();
++    for part in &mut *parts {
++        for report in reports.iter().rev() {
++            part.receive_statistics(report).unwrap();
++        }
++        part.finish_statistics(&phase).unwrap();
++    }
++    let mut cursors = parts
++        .iter_mut()
++        .map(|p| p.start_emission(&phase).unwrap())
++        .collect::<Vec<_>>();
++    for cursor in cursors.iter_mut().rev() {
++        while let Some(message) = cursor.next_values().unwrap() {
++            parts[message.recipient]
++                .receive_values(&phase, message)
++                .unwrap();
++        }
++    }
++    for cursor in cursors {
++        let completion = cursor.finish().unwrap();
++        for part in &mut *parts {
++            part.finish_producer(&completion).unwrap();
++        }
++    }
++    phase
++}
++fn fixture(n: usize, algorithm: SsspAlgorithm, wanted: &str) -> Fixture {
++    let execution = ExecutionContext::new(ExecutionLimits {
++        memory_bytes: LIMIT,
++        work_units: usize::MAX,
++        batch_rows: 16,
++        deadline: None,
++    })
++    .unwrap();
++    let observed = Arc::new(Observation::default());
++    let r = Resources::new(
++        execution.clone(),
++        MemoryLease::new(
++            Arc::new(LeaseProbe(execution.clone(), observed.clone())),
++            LIMIT as u64,
++        ),
++    )
++    .unwrap();
++    let operation = Operation {
++        package: "sssp-buffer-test".into(),
++        session: "session".into(),
++        operation: "operation".into(),
++        snapshot: "snapshot".into(),
++        generation: 1,
++        partitions: 3,
++        vertices: n as u64,
++    };
++    let ids = (0..n).map(|i| i as i64 * 3).collect::<Vec<_>>();
++    let edges = if n >= 4 {
++        vec![
++            (0, 3, 1.0),
++            (0, 6, 9.0),
++            (3, 6, 1.0),
++            (6, 9, 0.0),
++            (0, 3, 1.0),
++        ]
++    } else {
++        vec![(0, 0, 0.0)]
++    };
++    let options = SsspOptions {
++        source: 0,
++        algorithm,
++        max_rounds: 100,
++        delta: 4.0,
++    };
++    let mut parts = (0..3)
++        .map(|p| {
++            SsspPartition::build(
++                operation.clone(),
++                p,
++                p as u64,
++                if p == 0 { &ids } else { &[] },
++                if p == 0 { &edges } else { &[] },
++                options,
++                r.clone(),
++            )
++            .unwrap()
++        })
++        .collect::<Vec<_>>();
++    drop(r);
++    let phase = loop {
++        let phase = barrier(&mut parts);
++        let State::Receiving(inbox) = &parts[0].state else {
++            unreachable!()
++        };
++        let matched = match wanted {
++            "topology" => inbox.mode == SsspMode::Topology,
++            "active" => matches!(inbox.mode, SsspMode::Reference | SsspMode::DeltaStar),
++            "done" => inbox.mode == SsspMode::Done,
++            _ => unreachable!(),
++        };
++        if matched {
++            break phase;
++        }
++        for part in &mut parts {
++            part.finish(&phase).unwrap();
++        }
++        assert!(parts[0].next_phase() < 20);
++    };
++    let part = parts.remove(0);
++    drop(parts);
++    Fixture {
++        part,
++        phase,
++        execution,
++        observed,
++    }
++}
++fn pointers(part: &SsspPartition) -> Vec<usize> {
++    let State::Receiving(inbox) = &part.state else {
++        unreachable!()
++    };
++    let mut pointers = vec![part.values.labels.as_ptr() as usize];
++    if !inbox.candidates.is_empty() {
++        pointers.push(inbox.candidates.as_ptr() as usize);
++    }
++    pointers
++}
++fn check_release(f: Fixture) {
++    let observed = f.observed.clone();
++    let execution = f.execution.clone();
++    drop(f);
++    assert_eq!(observed.callbacks.load(Ordering::SeqCst), 1);
++    assert_eq!(observed.admitted.load(Ordering::SeqCst), 0);
++    assert_eq!(observed.watched_live.load(Ordering::SeqCst), 0);
++    assert_eq!(execution.usage().unwrap().live_bytes, 0);
++}
++
++#[test]
++fn finish_allocation_inventory_and_transferred_pointer() {
++    let mut failures = Vec::new();
++    for algorithm in [SsspAlgorithm::Reference, SsspAlgorithm::DeltaStar] {
++        for n in [1, 1024, 65536] {
++            for mode in ["topology", "active", "done"] {
++                let mut f = fixture(n, algorithm, mode);
++                let State::Receiving(inbox) = &f.part.state else {
++                    unreachable!()
++                };
++                let candidate_capacity = inbox.candidates.capacity();
++                assert_eq!(candidate_capacity, if mode == "done" { 0 } else { n });
++                let old = f.part.values.clone();
++                let old_labels = old.labels.clone();
++                let pointers = pointers(&f.part);
++                let label_bytes = n * size_of::<Option<SsspLabel>>();
++                let _watch = watch::start(label_bytes, &pointers);
++                // Lift the historical admission peak without changing live bytes.
++                let before = f.execution.usage().unwrap();
++                assert!(before.peak_bytes < LIMIT / 2);
++                let lift = f.execution.reserve(LIMIT / 2 - before.live_bytes).unwrap();
++                let before = f.execution.usage().unwrap();
++                let (result, cost) = measure(|| f.part.finish(&f.phase));
++                result.unwrap();
++                let after = f.execution.usage().unwrap();
++                let labels = watch::snapshot();
++                let reused = f.part.values.labels.as_ptr() as usize == *pointers.last().unwrap();
++                println!(
++                    "SSSP_REUSE algorithm={algorithm:?} local_vertices={n} partitions=3 mode={mode} candidate_capacity={candidate_capacity} calls={} bytes={} requested_peak={} matched_allocations={} matched_peak={} transferred={} admitted_before={} admitted_after={} finish_peak_admitted_delta={} work={}",
++                    cost.calls,
++                    cost.bytes,
++                    cost.peak,
++                    labels.allocations,
++                    labels.peak,
++                    usize::from(reused),
++                    before.live_bytes,
++                    after.live_bytes,
++                    after.peak_bytes - before.peak_bytes,
++                    after.counted_work().unwrap() - before.counted_work().unwrap()
++                );
++                assert_eq!(old.labels, old_labels, "published snapshot mutated");
++                assert_eq!(f.part.next_phase(), f.phase.number + 1);
++                if !reused || (n >= 1024 && labels.allocations != 0) {
++                    failures.push((algorithm, n, mode));
++                }
++                drop(lift);
++                drop(old_labels);
++                drop(old);
++                check_release(f);
++            }
++        }
++    }
++    assert!(
++        failures.is_empty(),
++        "finish allocated/copied labels: {failures:?}"
++    );
++}

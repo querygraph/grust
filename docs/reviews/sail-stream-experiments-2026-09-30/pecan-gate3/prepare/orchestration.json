@@ -1,0 +1,91 @@
+{
+  "attach_returncode": 0,
+  "command": [
+    "docker",
+    "--context",
+    "colima-sail-gate",
+    "create",
+    "--name",
+    "sail-pecan-prepare",
+    "--init",
+    "--cpus",
+    "8",
+    "--cpuset-cpus",
+    "0-7",
+    "--memory",
+    "12g",
+    "--memory-swap",
+    "12g",
+    "--pids-limit",
+    "1024",
+    "--mount",
+    "type=volume,source=sail-extension-targets,target=/targets",
+    "--workdir",
+    "/targets/graph-nuts-ffcfbd569/source",
+    "--env",
+    "PYTHONUNBUFFERED=1",
+    "--entrypoint",
+    "/targets/graph-nuts-ffcfbd569/venv/bin/python",
+    "sha256:f3518d652fbea8b9b9f9ebf9849277ca3bd39d0c21bb2c6e36fbaeaa2dc2678e",
+    "/targets/graph-nuts-ffcfbd569/source/examples/extensions/benchmarks/traversal_fixture.py",
+    "--output",
+    "/targets/sail-stream-experiments-20260930/pecan-gate3/datasets/weighted16k",
+    "--vertices",
+    "16384",
+    "--degree",
+    "32",
+    "--seed",
+    "42",
+    "--source",
+    "0",
+    "--directed"
+  ],
+  "copied": {},
+  "create": {
+    "returncode": 0,
+    "stderr": "",
+    "stdout": "0c323a0b8c007d3a49f2b0cc7921d6a288268bd1abfcab7b58c3de29aae2bfb2\n"
+  },
+  "finished_utc": "2026-09-30T16:50:21.176656+00:00",
+  "host_load_before": [
+    4.2705078125,
+    8.64453125,
+    10.58935546875
+  ],
+  "inspect": {
+    "id": "0c323a0b8c007d3a49f2b0cc7921d6a288268bd1abfcab7b58c3de29aae2bfb2",
+    "image": "sha256:f3518d652fbea8b9b9f9ebf9849277ca3bd39d0c21bb2c6e36fbaeaa2dc2678e",
+    "limits": {
+      "CpuPeriod": 0,
+      "CpuQuota": 0,
+      "CpusetCpus": "0-7",
+      "Init": true,
+      "Memory": 12884901888,
+      "MemorySwap": 12884901888,
+      "NanoCpus": 8000000000,
+      "PidMode": "",
+      "PidsLimit": 1024
+    },
+    "state": {
+      "Dead": false,
+      "Error": "",
+      "ExitCode": 0,
+      "FinishedAt": "2026-09-30T16:50:20.7303886Z",
+      "OOMKilled": false,
+      "Paused": false,
+      "Pid": 0,
+      "Restarting": false,
+      "Running": false,
+      "StartedAt": "2026-09-30T16:50:16.330519064Z",
+      "Status": "exited"
+    }
+  },
+  "outer_timeout": false,
+  "remove": {
+    "returncode": 0,
+    "stderr": "",
+    "stdout": "sail-pecan-prepare\n"
+  },
+  "started_utc": "2026-09-30T16:50:15.982581+00:00",
+  "transport_errors": []
+}

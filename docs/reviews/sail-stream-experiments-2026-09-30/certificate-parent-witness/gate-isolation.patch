@@ -1,0 +1,28 @@
+--- before
++++ after
+@@ -99,8 +99,23 @@
+                 if time.monotonic()>deadline:raise TimeoutError('server readiness')
+                 time.sleep(.05)
+         sql_env=dict(env,SAIL_GRAPH_TEST_REMOTE=f'sc://127.0.0.1:{port}')
+-        run('sql',[str(PYTHON),'-B','-m','pytest','-q','-p','no:cacheprovider',*map(str,a.sql_tests),
+-            '--junitxml='+str(a.output/'sql.xml'),'--basetemp='+str(private/'sql')],sql_env)
++        # A stopped Connect session's late destructor closes the process-global
++        # release executor. Each unchanged module owns its session in a fresh
++        # client process; the Sail server and all execution settings stay fixed.
++        assert len(set(a.sql_tests))==len(a.sql_tests), 'duplicate SQL module'
++        receipt['sql_isolation']='one fresh pytest subprocess per test module'
++        receipt['sql_modules']=[]
++        combined=ET.Element('testsuites')
++        for number,test in enumerate(a.sql_tests,1):
++            label=f'sql-{number:02}'
++            run(label,[str(PYTHON),'-B','-m','pytest','-q','-p','no:cacheprovider',str(test),
++                '--junitxml='+str(a.output/(label+'.xml')),
++                '--basetemp='+str(private/label)],sql_env)
++            actual=counts(label)
++            receipt['sql_modules'].append(dict(test=str(test),label=label,counts=actual))
++            assert actual['tests']>0 and all(actual[key]==0 for key in ('failures','errors','skipped'))
++            combined.extend(ET.parse(a.output/(label+'.xml')).getroot().findall('testsuite'))
++        ET.ElementTree(combined).write(a.output/'sql.xml',encoding='utf-8',xml_declaration=True)
+         receipt['sql_counts']=counts('sql')
+         assert receipt['sql_counts']==dict(tests=a.expected_sql,failures=0,errors=0,skipped=0)
+         receipt['outcome']='PASS'

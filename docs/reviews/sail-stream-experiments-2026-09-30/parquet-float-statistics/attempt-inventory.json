@@ -1,0 +1,49 @@
+{
+  "recorded_utc": "2026-09-30T23:31:19.860287+00:00",
+  "attempts": [
+    {
+      "name": "initial-tests",
+      "outcome": "COMPILE_FAILURE",
+      "reason": "new fixture used ObjectStore extension methods without ObjectStoreExt and nonexistent Constraints::empty; corrected fixture only",
+      "log": "initial-tests.log",
+      "source": "read_statistics_tests-attempt01.rs"
+    },
+    {
+      "name": "initial-tests02",
+      "outcome": "FAILED_TEST",
+      "reason": "new fixture assumed Dictionary(Int32, Float16) read support; pinned Parquet reader rejects it before Sail scan",
+      "log": "initial-tests02.log",
+      "source": "read_statistics_tests-attempt02.rs"
+    },
+    {
+      "name": "initial-tests03",
+      "outcome": "PASS",
+      "scope": "9 exploratory Parquet tests; production frozen, later extra metadata assertions and test error propagation applied",
+      "log": "initial-tests03.log"
+    },
+    {
+      "name": "candidate-gate",
+      "outcome": "CLIPPY_FAILURE",
+      "reason": "29 denied unwrap_used calls in new tests; fixed using Result propagation and typed Arrow downcasts, no lint suppression or relaxed assertion",
+      "log": "candidate-gate/clippy.log",
+      "source": "candidate-attempt01.patch"
+    },
+    {
+      "name": "baseline",
+      "outcome": "EXPECTED_REGRESSION_FAILURE",
+      "reason": "unchanged parent production substitutes NaN with0.5; pre-lint-correction test fixture",
+      "log": "baseline.log"
+    },
+    {
+      "name": "baseline02",
+      "outcome": "EXPECTED_REGRESSION_FAILURE",
+      "reason": "identical final test fixture on unchanged production;2fail2pass",
+      "log": "baseline02/baseline.log"
+    },
+    {
+      "name": "candidate-gate02",
+      "outcome": "PASS",
+      "scope": "frozen detached final staged tree; fmt,strictclippy,77tests; followed by guarded conditional commit"
+    }
+  ]
+}

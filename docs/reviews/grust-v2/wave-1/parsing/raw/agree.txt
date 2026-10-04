@@ -1,0 +1,12 @@
+today=true winnow=true chumsky=true same_ast=true | MATCH (n:Person) RETURN n.name
+today=true winnow=true chumsky=true same_ast=true | MATCH (n:Person {name: 'Ada'}) WHERE n.age >= 18 RETURN n.name
+today=true winnow=true chumsky=true same_ast=true | MATCH (a:Person) OPTIONAL MATCH (a)-[:KNOWS]->(b) RETURN a.name, b.name
+today=true winnow=true chumsky=true same_ast=true | MATCH (a:Person {name:'Ada'})-[:KNOWS*1..2]->(b) RETURN b.name
+today=true winnow=true chumsky=true same_ast=true | MATCH (n) RETURN n.label AS label, count(*) AS c
+today=true winnow=true chumsky=true same_ast=true | MATCH (n) RETURN DISTINCT n.label AS l ORDER BY l
+today=true winnow=true chumsky=true same_ast=true | MATCH p = (:Person)-[:KNOWS]->(:Person) RETURN length(p)
+today=true winnow=true chumsky=true same_ast=true | MATCH (a:Person)-[:KNOWS]->()-[:KNOWS]->(c:Person) WHERE a.age >= 21 AND c.active = true RETURN a.name, c.name
+today=true winnow=true chumsky=true same_ast=true | MATCH (n:Person) WHERE NOT n.name IN ['Ada', 'Alan'] RETURN n
+today=true winnow=true chumsky=true same_ast=true | MATCH (n:Person) WHERE n.age >= 40 RETURN n.name ORDER BY n.age DESC SKIP 1 LIMIT 2
+ALL_AGREE=true
+sample AST (query 8, winnow): Query { matches: [Match { optional: false, patterns: [Path { var: None, start: Node { var: Some("a"), labels: ["Person"], props: [] }, hops: [(Rel { var: None, types: ["KNOWS"], range: None, props: [], dir: Out }, Node { var: None, labels: [], props: [] }), (Rel { var: None, types: ["KNOWS"], range: None, props: [], dir: Out }, Node { var: Some("c"), labels: ["Person"], props: [] })] }], filter: Some(Bin(And, Bin(Ge, Prop(Var("a"), "age"), Int(21)), Bin(Eq, Prop(Var("c"), "active"), Bool(true)))) }], ret: Return { distinct: false, items: [(Prop(Var("a"), "name"), None), (Prop(Var("c"), "name"), None)], order: [], skip: None, limit: None } }

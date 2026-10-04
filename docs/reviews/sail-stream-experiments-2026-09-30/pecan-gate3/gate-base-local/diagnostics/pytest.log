@@ -1,0 +1,36 @@
+......................................................................F. [ 62%]
+............................................                             [100%]
+=================================== FAILURES ===================================
+______________________ test_push_pull_distances_and_trace ______________________
+
+spark = <pyspark.sql.connect.session.SparkSession object at 0x7cd25053e090>
+
+    def test_push_pull_distances_and_trace(spark):
+        v,e=frames(spark)
+        events=[]
+        with GraphAlgorithms(spark,observer=events.append).bfs(v,e,source=0,method='push_pull',partitions=2) as r:
+            assert {x.id:x.distance for x in r.frame.collect()} == {0:0.,1:1.,2:1.,3:2.,4:3.,-7:None,5:None}
+            assert any(x.get('direction')=='pull' for x in events)
+>           assert all(x['pull_early_exit'] is False for x in events)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+examples/extensions/graph-algorithms/tests/test_traversal.py:75: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+.0 = <list_iterator object at 0x7cd250775930>
+
+>   assert all(x['pull_early_exit'] is False for x in events)
+               ^^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'pull_early_exit'
+
+examples/extensions/graph-algorithms/tests/test_traversal.py:75: KeyError
+=============================== warnings summary ===============================
+tests/test_wcc_randomized.py::test_cancellation_and_cap_retain_cleanup_contract[randomized_fused]
+  /targets/graph-nuts-ffcfbd569/venv/lib/python3.12/site-packages/pyspark/logger/logger.py:221: DeprecationWarning: The 'warn' method is deprecated, use 'warning' instead
+    super().warn(msg, *args, **kwargs)  # type: ignore[arg-type]
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+- generated xml file: /targets/sail-stream-experiments-20260930/pecan-gate3/cells/gate-base-local/junit.xml -
+=========================== short test summary info ============================
+FAILED examples/extensions/graph-algorithms/tests/test_traversal.py::test_push_pull_distances_and_trace
+1 failed, 115 passed, 1 warning in 112.72s (0:01:52)

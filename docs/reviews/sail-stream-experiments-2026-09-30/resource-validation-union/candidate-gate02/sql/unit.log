@@ -1,0 +1,117 @@
+.................................................................FssF... [ 16%]
+.........s.............................................................. [ 33%]
+...........................sssssssssssssssssssssssssssssssssssssssssssss [ 50%]
+sssssss................................................................s [ 66%]
+ssssssss......sssssssssssssssssssssssssss............................... [ 83%]
+........................ssssss........................................   [100%]
+=================================== FAILURES ===================================
+______________ test_nonzero_generator_exit_cannot_publish_success ______________
+
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/resource-validation-sql-i_6woe7t/unit/test_nonzero_generator_exit_ca0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10f5dd8e0>
+
+    def test_nonzero_generator_exit_cannot_publish_success(tmp_path, monkeypatch):
+        binary = tmp_path / 'failed-generator'
+        binary.write_text('#!/usr/bin/env python3\nimport struct, sys\n'
+                          'sys.stdout.buffer.write(struct.pack("<qqd", 0, 1, 0.5) * 8)\n'
+                          'print("generator failed after output", file=sys.stderr)\n'
+                          'sys.exit(7)\n')
+        binary.chmod(0o755)
+        monkeypatch.setattr(fixture, 'checked_build', lambda path: dict(binary_sha256=fixture.sha256(path)))
+        with pytest.raises(ValueError, match='status 7'):
+>           fixture.prepare(tmp_path / 'out', binary, scale=3, edge_factor=1)
+
+examples/extensions/benchmarks/test_graph500_fixture.py:92: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+examples/extensions/benchmarks/graph500_fixture.py:183: in prepare
+    edge_identity = convert_edges(process.stdout, output / 'edges.parquet', vertices=vertices,
+examples/extensions/benchmarks/graph500_fixture.py:98: in convert_edges
+    raw = read_exact(stream, count * RECORD.itemsize)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+stream = <_io.BufferedReader name=12>, size = 192
+
+    def read_exact(stream, size):
+        """Pipes can return short reads without EOF; allocation stays <= size."""
+        data = bytearray(size)
+        view = memoryview(data)
+        offset = 0
+        while offset < size:
+            count = stream.readinto(view[offset:])
+            if not count:
+>               raise ValueError(f'truncated generator stream: expected {size}, received {offset} bytes in chunk')
+E               ValueError: truncated generator stream: expected 192, received 0 bytes in chunk
+
+examples/extensions/benchmarks/graph500_fixture.py:68: ValueError
+
+During handling of the above exception, another exception occurred:
+
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/resource-validation-sql-i_6woe7t/unit/test_nonzero_generator_exit_ca0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10f5dd8e0>
+
+    def test_nonzero_generator_exit_cannot_publish_success(tmp_path, monkeypatch):
+        binary = tmp_path / 'failed-generator'
+        binary.write_text('#!/usr/bin/env python3\nimport struct, sys\n'
+                          'sys.stdout.buffer.write(struct.pack("<qqd", 0, 1, 0.5) * 8)\n'
+                          'print("generator failed after output", file=sys.stderr)\n'
+                          'sys.exit(7)\n')
+        binary.chmod(0o755)
+        monkeypatch.setattr(fixture, 'checked_build', lambda path: dict(binary_sha256=fixture.sha256(path)))
+>       with pytest.raises(ValueError, match='status 7'):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: Regex pattern did not match.
+E        Regex: 'status 7'
+E        Input: 'truncated generator stream: expected 192, received 0 bytes in chunk'
+
+examples/extensions/benchmarks/test_graph500_fixture.py:91: AssertionError
+_________ test_max_degree_source_is_resolved_from_the_streamed_degrees _________
+
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/resource-validation-sql-i_6woe7t/unit/test_max_degree_source_is_reso0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10f5df260>
+
+    def test_max_degree_source_is_resolved_from_the_streamed_degrees(tmp_path, monkeypatch):
+        # 8 vertices, 8 tuples: vertex 5 touches four tuples, vertex 0 none.
+        tuples = [(5, 1), (5, 2), (5, 3), (1, 2), (2, 3), (6, 7), (4, 4), (5, 6)]
+        binary = tmp_path / 'generator'
+        binary.write_text('#!/usr/bin/env python3\nimport struct, sys\n'
+                          + ''.join(f'sys.stdout.buffer.write(struct.pack("<qqd", {a}, {b}, 0.5))\n' for a, b in tuples))
+        binary.chmod(0o755)
+        monkeypatch.setattr(fixture, 'checked_build', lambda path: dict(binary_sha256=fixture.sha256(path)))
+>       manifest = fixture.prepare(tmp_path / 'max', binary, scale=3, edge_factor=1, source='max-degree')
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+examples/extensions/benchmarks/test_graph500_fixture.py:159: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+examples/extensions/benchmarks/graph500_fixture.py:183: in prepare
+    edge_identity = convert_edges(process.stdout, output / 'edges.parquet', vertices=vertices,
+examples/extensions/benchmarks/graph500_fixture.py:98: in convert_edges
+    raw = read_exact(stream, count * RECORD.itemsize)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+stream = <_io.BufferedReader name=12>, size = 192
+
+    def read_exact(stream, size):
+        """Pipes can return short reads without EOF; allocation stays <= size."""
+        data = bytearray(size)
+        view = memoryview(data)
+        offset = 0
+        while offset < size:
+            count = stream.readinto(view[offset:])
+            if not count:
+>               raise ValueError(f'truncated generator stream: expected {size}, received {offset} bytes in chunk')
+E               ValueError: truncated generator stream: expected 192, received 0 bytes in chunk
+
+examples/extensions/benchmarks/graph500_fixture.py:68: ValueError
+=============================== warnings summary ===============================
+examples/extensions/benchmarks/test_imported_fixture.py::test_empty_edge_list_retains_vertices
+  /private/tmp/sail-resource-validation-union-gate/examples/extensions/benchmarks/imported_fixture.py:29: UserWarning: loadtxt: input contained no data: "<_io.TextIOWrapper name='/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/resource-validation-sql-i_6woe7t/unit/test_empty_edge_list_retains_v0/input.edges' mode='r' encoding='ascii'>"
+    rows = np.loadtxt(stream, dtype=np.int64, ndmin=2, comments=None)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+- generated xml file: /Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/resource-validation-union/candidate-gate02/sql/unit.xml -
+=========================== short test summary info ============================
+FAILED examples/extensions/benchmarks/test_graph500_fixture.py::test_nonzero_generator_exit_cannot_publish_success
+FAILED examples/extensions/benchmarks/test_graph500_fixture.py::test_max_degree_source_is_resolved_from_the_streamed_degrees
+2 failed, 331 passed, 97 skipped, 1 warning in 5.01s

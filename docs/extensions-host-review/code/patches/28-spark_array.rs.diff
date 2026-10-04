@@ -1,0 +1,165 @@
+diff --git a/crates/sail-function/src/scalar/array/spark_array.rs b/crates/sail-function/src/scalar/array/spark_array.rs
+index 6f7d06d735bd82cbbae33c79cddeb34d2882d03e..7b48d34316e471fa868a0b6c224201576b77b88f 100644
+--- a/crates/sail-function/src/scalar/array/spark_array.rs
++++ b/crates/sail-function/src/scalar/array/spark_array.rs
+@@ -9,12 +9,13 @@ use datafusion::arrow::array::{
+ use datafusion::arrow::buffer::OffsetBuffer;
+ use datafusion::arrow::datatypes::{DataType, Field, FieldRef};
+ use datafusion_common::utils::SingleRowListArrayBuilder;
+-use datafusion_common::{Result, plan_datafusion_err, plan_err};
++use datafusion_common::{Result, ScalarValue, plan_datafusion_err, plan_err};
+ use datafusion_expr::type_coercion::binary::comparison_coercion;
+ use datafusion_expr::{
+     ColumnarValue, ReturnFieldArgs, ScalarFunctionArgs, ScalarUDFImpl, Signature, TypeSignature,
+     Volatility,
+ };
++use sail_common_datafusion::geometry::common_geometry_metadata;
+ 
+ use crate::functions_nested_utils::make_scalar_function;
+ 
+@@ -76,9 +77,29 @@ impl ScalarUDFImpl for SparkArray {
+             .cloned()
+             .collect::<Vec<_>>();
+         let contains_null = args.arg_fields.iter().any(|f| f.is_nullable());
++        // Coercion can already have changed a NULL literal's storage type to
++        // Binary. It remains neutral when choosing the list's geometry type.
++        let alternatives = args
++            .arg_fields
++            .iter()
++            .enumerate()
++            .map(|(index, field)| {
++                if matches!(args.scalar_arguments.get(index), Some(Some(value)) if value.is_null())
++                {
++                    Arc::new(Field::new("null", DataType::Null, true))
++                } else {
++                    Arc::clone(field)
++                }
++            })
++            .collect::<Vec<_>>();
++        let metadata = common_geometry_metadata(&alternatives).unwrap_or_default();
+         let return_type = match self.return_type(&data_types)? {
+             DataType::List(field) => DataType::List(Arc::new(
+-                field.as_ref().clone().with_nullable(contains_null),
++                field
++                    .as_ref()
++                    .clone()
++                    .with_nullable(contains_null)
++                    .with_metadata(metadata),
+             )),
+             data_type => data_type,
+         };
+@@ -93,10 +114,36 @@ impl ScalarUDFImpl for SparkArray {
+             DataType::List(field) | DataType::LargeList(field) => field.is_nullable(),
+             _ => true,
+         };
++        let return_type = return_field.data_type().clone();
+         let func = make_scalar_function(move |arrays| {
+             make_array_inner_with_nullable(arrays, value_nullable)
+         });
+-        func(args.as_slice())
++        let result = func(args.as_slice())?;
++        if !matches!(&return_type, DataType::List(field) if !field.metadata().is_empty()) {
++            return Ok(result);
++        }
++        // Restore the descriptor after scalar conversion: DataFusion 55's
++        // SingleRowListArrayBuilder::with_field copies name/nullability but
++        // omits metadata. Both result variants must retain the planned item
++        // field, including a scalar list later broadcast to multiple rows.
++        let restore = |array: &dyn Array| {
++            array
++                .to_data()
++                .into_builder()
++                .data_type(return_type.clone())
++                .build()
++        };
++        match result {
++            ColumnarValue::Array(array) => {
++                Ok(ColumnarValue::Array(make_array(restore(array.as_ref())?)))
++            }
++            ColumnarValue::Scalar(ScalarValue::List(array)) => {
++                Ok(ColumnarValue::Scalar(ScalarValue::List(Arc::new(
++                    GenericListArray::<i32>::from(restore(array.as_ref())?),
++                ))))
++            }
++            _ => plan_err!("geometry array result must be a list"),
++        }
+     }
+ 
+     fn aliases(&self) -> &[String] {
+@@ -297,3 +344,76 @@ fn array_array<O: OffsetSizeTrait>(
+         None,
+     )?))
+ }
++
++#[cfg(test)]
++mod tests {
++    use datafusion::arrow::array::BinaryArray;
++
++    use super::*;
++
++    #[test]
++    fn geometry_array_retains_item_metadata_in_the_actual_arrow_array() -> Result<()> {
++        let geometry = Arc::new(
++            Field::new("g", DataType::Binary, true).with_metadata(
++                [
++                    ("ARROW:extension:name".into(), "geoarrow.wkb".into()),
++                    ("ARROW:extension:metadata".into(), "{}".into()),
++                ]
++                .into(),
++            ),
++        );
++        let null = ScalarValue::Binary(None);
++        let fields = vec![
++            Arc::new(Field::new("null", DataType::Binary, true)),
++            geometry.clone(),
++        ];
++        let function = SparkArray::new();
++        let returned = function.return_field_from_args(ReturnFieldArgs {
++            arg_fields: &fields,
++            scalar_arguments: &[Some(&null), None],
++        })?;
++        let DataType::List(item) = returned.data_type() else {
++            return plan_err!("expected list result");
++        };
++        assert_eq!(item.metadata(), geometry.metadata());
++        for value in [
++            ColumnarValue::Scalar(ScalarValue::Binary(Some(vec![1, 2, 3]))),
++            ColumnarValue::Array(Arc::new(BinaryArray::from(vec![Some(&[1, 2, 3][..]); 3]))),
++            ColumnarValue::Array(Arc::new(BinaryArray::from(Vec::<Option<&[u8]>>::new()))),
++        ] {
++            let is_scalar = matches!(value, ColumnarValue::Scalar(_));
++            let number_rows = match &value {
++                ColumnarValue::Scalar(_) => 3,
++                ColumnarValue::Array(array) => array.len(),
++            };
++            let result = function.invoke_with_args(ScalarFunctionArgs {
++                args: vec![ColumnarValue::Scalar(null.clone()), value],
++                arg_fields: fields.clone(),
++                number_rows,
++                return_field: returned.clone(),
++                config_options: Arc::new(Default::default()),
++            })?;
++            assert_eq!(matches!(result, ColumnarValue::Scalar(_)), is_scalar);
++            let lengths = if is_scalar {
++                vec![0, 1, 3]
++            } else {
++                vec![number_rows]
++            };
++            for length in lengths {
++                let array = result.to_array(length)?;
++                assert_eq!(array.data_type(), returned.data_type());
++                assert_eq!(array.len(), length);
++            }
++        }
++        let plain = Arc::new(Field::new("raw", DataType::Binary, true));
++        let mixed = function.return_field_from_args(ReturnFieldArgs {
++            arg_fields: &[geometry, plain],
++            scalar_arguments: &[None, None],
++        })?;
++        let DataType::List(item) = mixed.data_type() else {
++            return plan_err!("expected list result");
++        };
++        assert!(item.metadata().is_empty());
++        Ok(())
++    }
++}

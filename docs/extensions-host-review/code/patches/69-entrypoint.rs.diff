@@ -1,0 +1,35 @@
+diff --git a/crates/sail-spark-connect/src/entrypoint.rs b/crates/sail-spark-connect/src/entrypoint.rs
+index b95cb4dfce456921f362fa51260e9f3f342cff04..4d8fa4187ed492c9805c2593f1f3f22e460a5068 100644
+--- a/crates/sail-spark-connect/src/entrypoint.rs
++++ b/crates/sail-spark-connect/src/entrypoint.rs
+@@ -50,6 +50,7 @@ where
+     let session_manager =
+         create_spark_session_manager_with_factory(config, runtime, &mut system, session_factory_fn)
+             .await?;
++    let mut shutdown_result = None;
+     let result = {
+         let server = SparkConnectServer::new(session_manager.clone());
+         let service = SparkConnectServiceServer::new(server)
+@@ -63,11 +64,20 @@ where
+         ServerBuilder::new("sail_spark_connect", Default::default())
+             .add_service(service, Some(crate::spark::connect::FILE_DESCRIPTOR_SET))
+             .await
+-            .serve(listener, signal)
++            .serve(listener, async {
++                signal.await;
++                // Tonic's graceful drain waits for active responses. Stop their
++                // session-owned producers first so unbounded work cannot keep
++                // the server and native reservations alive during shutdown.
++                shutdown_result = Some(session_manager.shutdown().await);
++            })
+             .await
+             .map_err(|e| std::io::Error::other(e.to_string()))
+     };
+-    session_manager.shutdown().await?;
++    match shutdown_result {
++        Some(result) => result?,
++        None => session_manager.shutdown().await?,
++    }
+     system.join().await;
+     result.map_err(Into::into)
+ }

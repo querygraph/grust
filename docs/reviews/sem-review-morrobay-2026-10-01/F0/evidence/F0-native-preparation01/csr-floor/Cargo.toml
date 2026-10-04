@@ -1,0 +1,17 @@
+[package]
+name = "csr-floor"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+# A measurement helper for docs/SEM-REVIEW-2.md item F0, not a Grust crate.
+[workspace]
+
+[dependencies]
+arrow-array = "59"
+parquet = { version = "59", default-features = false, features = ["arrow", "snap", "zstd", "lz4"] }
+rayon = "1"
+
+[profile.release]
+codegen-units = 1
+lto = "thin"

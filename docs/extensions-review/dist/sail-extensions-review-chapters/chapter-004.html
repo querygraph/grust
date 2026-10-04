@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en-US" xml:lang="en-US">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <meta name="author" content="Querygraph" />
+  <meta name="dcterms.date" content="2026-10-01" />
+  <meta name="description" content="Version 1.0. Review target: querygraph/sail bd8ce9ae8839477e2c08a0475ab7900b115c5366." />
+  <title>2. Functions</title>
+  <style>
+    div.sitenav { display: flex; flex-direction: row; flex-wrap: wrap; }
+    span.navlink { flex: 1; }
+    span.navlink-label { display: inline-block; min-width: 4em; }
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: 1.5em;}
+    div.column{flex: auto;}
+    @media screen {
+    div.columns{gap: min(4vw, 1.5em);}
+    div.column{overflow-x: auto;}
+    }
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <link rel="stylesheet" href="book.css" />
+</head>
+<body>
+<nav id="sitenav">
+<div class="sitenav">
+<span class="navlink">
+<span class="navlink-label">Up:</span> <a href="index.html" accesskey="u" rel="up">Sail Extensions: A Design Review</a>
+</span>
+<span class="navlink">
+<span class="navlink-label">Top:</span> <a href="index.html" accesskey="t" rel="top">Sail Extensions: A Design Review</a>
+</span>
+</div>
+<div class="sitenav">
+<span class="navlink">
+<span class="navlink-label">Next:</span> <a href="chapter-005.html" accesskey="n" rel="next">3. Relations</a>
+</span>
+<span class="navlink">
+<span class="navlink-label">Previous:</span> <a href="chapter-003.html" accesskey="p" rel="previous">1. Discovery and binding</a>
+</span>
+</div>
+</nav>
+<h1 data-number="4" id="module-02-functions"><span
+class="header-section-number">4</span> 2. Functions</h1>
+<p><a href="chapter-003.html#module-01-discovery">Discovery</a> gives
+Sail a bound package owner. The simplest use of that owner is a scalar
+function: the client submits an ordinary named function call, and Sail
+resolves it without a custom expression protocol. Sedona provides the
+concrete example. Its <a
+href="chapter-011.html#code-listings--listing-sedona-lib">170-line Rust
+adapter</a> wraps existing Apache SedonaDB Rust and GEOS kernels rather
+than reimplementing spatial operations in Sail.</p>
+<p>The <strong>public behavior</strong> is <code>scalar_udfs()</code>
+returning objects whose <code>__datafusion_scalar_udf__()</code> method
+exports a <code>datafusion_scalar_udf</code> capsule containing
+<code>FFI_ScalarUDF</code>. Names, aliases, argument and return
+semantics, including metadata-bearing fields, must survive planning and
+worker execution. The package owner remains live for every exported
+callback. The current policy rejects collisions with built-ins or other
+registrations. Scalar packages use <code>placement: "any"</code>; every
+executing worker must have the matching installed package identity.
+Native function pointers do not travel over the network.</p>
+<p>The <strong>implementation</strong> retains Python owners, wraps
+imported functions and encodes package identity plus expression fields
+in Sail's task codec. Those wrapper types and registry structures can
+change without becoming an API that extension authors implement. The
+semantic requirement is that a geometry's metadata survives intervening
+built-ins and a shuffle, and that a worker rejects an unavailable or
+different package instead of selecting another implementation by
+name.</p>
+<p>The Sedona scope is deliberately smaller than a spatial engine. The
+package exports 128 native scalar functions, not the entire SedonaDB
+catalog. It omits five colliding functions: <code>st_asbinary</code>,
+<code>st_geomfromwkb</code>, <code>st_geogfromwkb</code>,
+<code>st_setsrid</code> and <code>st_srid</code>. Each binding captures
+immutable default options because the FFI configuration path does not
+preserve Sedona's typed runtime services; host <code>SET sedona.*</code>
+propagation is absent. Raster, GeoParquet readers, PROJ services and
+indexed <code>SpatialJoinExec</code> are not supplied. General Sail
+joins can use spatial predicates, but this does not demonstrate an
+indexed spatial join or its performance. <a
+href="https://github.com/querygraph/sail/blob/bd8ce9ae8839477e2c08a0475ab7900b115c5366/examples/extensions/sedona/README.md#L70">Exact
+package scope</a>.</p>
+<p>A raw <code>Expression.extension</code> would support custom
+expression syntax but require another client representation and dispatch
+contract. A linked built-in would avoid dynamic loading while coupling
+domain releases to the host build. Driver-only functions could serve
+local use, but would need an explicit placement restriction in
+distributed queries. Name resolution is the smallest current choice for
+existing DataFusion scalar kernels, not an answer to every extension
+shape.</p>
+<p>Acceptance should cover nulls, aliases, geometry-field composition,
+worker identity mismatch and an actual shuffle; the repository contains
+corresponding fixtures, not a fresh execution verdict from this
+document. Reviewers should decide the collision and configuration
+policies explicitly. A function still returns values within a row:
+producing a new table requires the <a
+href="chapter-005.html#module-03-relations">relation boundary</a>.</p>
+</body>
+</html>

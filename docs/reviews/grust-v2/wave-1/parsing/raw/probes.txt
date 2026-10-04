@@ -1,0 +1,70 @@
+--- today's typed parser (grust_cypher::parser::parse_query) on GQL / newer Cypher syntax
+REJECT | GQL quantified edge {m,n}          | MATCH (a)-[:KNOWS]->{1,3}(b) RETURN b
+       |   expected '(' to start a node pattern, found LBrace at line 1, column 21 (bytes 20..21)
+REJECT | GQL/Cypher25 parenthesized QPP     | MATCH ((a)-[:KNOWS]->(b)){1,3} RETURN b
+       |   expected ')' to close a node pattern, found LParen at line 1, column 8 (bytes 7..8)
+REJECT | GQL quantifier +                   | MATCH (a)-[:KNOWS]->+(b) RETURN b
+       |   expected '(' to start a node pattern, found Plus at line 1, column 21 (bytes 20..21)
+REJECT | GQL label disjunction              | MATCH (n:Person|Robot) RETURN n
+       |   expected ')' to close a node pattern, found Pipe at line 1, column 16 (bytes 15..16)
+REJECT | GQL label conjunction/negation     | MATCH (n:Person&!Robot) RETURN n
+       |   unexpected character: '&' at line 1, column 16 (bytes 15..16)
+REJECT | GQL IS label                       | MATCH (n IS Person) RETURN n
+       |   expected ')' to close a node pattern, found Keyword(Is) at line 1, column 10 (bytes 9..11)
+REJECT | GQL element WHERE                  | MATCH (n:Person WHERE n.age > 30) RETURN n
+       |   expected ')' to close a node pattern, found Keyword(Where) at line 1, column 17 (bytes 16..21)
+REJECT | GQL abbreviated edge ->            | MATCH (a)->(b) RETURN b
+       |   unexpected trailing input: Arrow at line 1, column 10 (bytes 9..11)
+REJECT | GQL path search ANY SHORTEST       | MATCH ANY SHORTEST (a)-[:KNOWS]->*(b) RETURN b
+       |   expected '(' to start a node pattern, found Identifier("ANY") at line 1, column 7 (bytes 6..9)
+REJECT | GQL path mode TRAIL                | MATCH TRAIL (a)-[:KNOWS]->*(b) RETURN b
+       |   expected '(' to start a node pattern, found Identifier("TRAIL") at line 1, column 7 (bytes 6..11)
+REJECT | GQL match mode                     | MATCH DIFFERENT EDGES (a)-[e]->(b) RETURN e
+       |   expected '(' to start a node pattern, found Identifier("DIFFERENT") at line 1, column 7 (bytes 6..15)
+REJECT | GQL graph pattern YIELD            | MATCH (a)-[e]->(b) YIELD a, b RETURN a
+       |   unexpected trailing input: Keyword(Yield) at line 1, column 20 (bytes 19..24)
+REJECT | GQL INSERT                         | INSERT (:Person {name: 'Ada'})
+       |   expected a clause, found Identifier("INSERT") at line 1, column 1 (bytes 0..6)
+REJECT | GQL FILTER and LET                 | MATCH (n:Person) FILTER n.age > 30 LET x = n.age RETURN x
+       |   unexpected trailing input: Identifier("FILTER") at line 1, column 18 (bytes 17..23)
+REJECT | GQL NEXT                           | MATCH (n) RETURN n NEXT MATCH (m) RETURN m
+       |   unexpected trailing input: Identifier("NEXT") at line 1, column 20 (bytes 19..23)
+REJECT | GQL OFFSET                         | MATCH (n) RETURN n OFFSET 1 LIMIT 2
+       |   unexpected trailing input: Identifier("OFFSET") at line 1, column 20 (bytes 19..25)
+REJECT | GQL graph type DDL                 | CREATE GRAPH TYPE t AS { (:Person {name STRING}) }
+       |   expected '(' to start a node pattern, found Identifier("GRAPH") at line 1, column 8 (bytes 7..12)
+ACCEPT | Cypher UNWIND                      | UNWIND [1, 2] AS x RETURN x
+REJECT | Cypher EXISTS subquery             | MATCH (n) WHERE EXISTS { (n)-[:KNOWS]->() } RETURN n
+       |   expected an expression, found Keyword(Exists) at line 1, column 17 (bytes 16..22)
+REJECT | Cypher COUNT subquery              | MATCH (n) RETURN COUNT { (n)-[:KNOWS]->() } AS c
+       |   unexpected trailing input: LBrace at line 1, column 24 (bytes 23..24)
+REJECT | Cypher map projection              | MATCH (n) RETURN n {.name, .age}
+       |   unexpected trailing input: LBrace at line 1, column 20 (bytes 19..20)
+REJECT | Cypher list slice                  | RETURN [1, 2, 3][0..2] AS xs
+       |   expected ']' to close an index, found DotDot at line 1, column 19 (bytes 18..20)
+REJECT | Cypher pattern comprehension       | MATCH (n) RETURN [(n)-[:KNOWS]->(m) | m.name] AS xs
+       |   expected an expression, found Colon at line 1, column 24 (bytes 23..24)
+REJECT | Cypher FOREACH                     | MATCH (n) FOREACH (x IN [1] | SET n.v = x)
+       |   unexpected trailing input: Identifier("FOREACH") at line 1, column 11 (bytes 10..17)
+
+--- legacy string-scanning write path vs typed parser
+';' inside a backtick label
+    CREATE (n:`A;B` {id: 'x'})
+    typed parser: Ok(())
+    write planner: Err(CypherSyntax("[gql:syntax] unterminated quoted identifier at line 1, column 11 (bytes 10..12)"))
+keyword inside a backtick property name
+    MATCH (n:Person {id: 'p1'}) SET n.`x CREATE y` = 1
+    typed parser: Ok(())
+    write planner: Err(CypherSyntax("unsupported writable Cypher MATCH pattern suffix: SET n.`x"))
+control: same statement, plain name
+    MATCH (n:Person {id: 'p1'}) SET n.x = 1
+    typed parser: Ok(())
+    write planner: Ok(1)
+
+--- DDL goes to the string-scanning path, not the typed parser
+    CREATE CONSTRAINT FOR (n:Person) REQUIRE n.id IS UNIQUE
+    typed parser: Err("expected '(' to start a node pattern, found Keyword(Constraint) at line 1, column 8 (bytes 7..17)")
+    cypher_ddl:   Ok(1)
+    CREATE GRAPH TYPE g AS NODE Person (name STRING)
+    typed parser: Err("expected '(' to start a node pattern, found Identifier(\"GRAPH\") at line 1, column 8 (bytes 7..12)")
+    cypher_ddl:   Ok(1)

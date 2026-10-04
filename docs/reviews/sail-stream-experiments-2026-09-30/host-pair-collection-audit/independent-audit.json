@@ -1,0 +1,51 @@
+{
+  "recorded_utc": "2026-09-30T23:01:01.573433+00:00",
+  "outcome": "PASS_INDEPENDENT_SOURCE_AND_OFFLINE_CONTROL_REVIEW",
+  "frozen_index_tree": "e82702b2ef9c285b764c1d1bf4b43a0a89e9b5e3",
+  "files": {
+    "README.md": "022a6a769cdf30314822607bcb5669ed10a960124b8ad6dbb2df804e1cb2d9a6",
+    "audit_pair.py": "6a377820d65649a72ce4317da11e13245e404109deaa1eef573edff262816987",
+    "test_audit_pair.py": "4e791029d2b69f10b9480159b0a81da7aca7edc95f5b8a7dac9fb2b93fabcfae"
+  },
+  "additional_controls": [
+    {
+      "case": "null_execution_end",
+      "integrity_status": "integrity_error",
+      "ratio_eligible": false,
+      "first_cell_errors": [
+        "resources: TypeError: 'NoneType' object is not subscriptable"
+      ]
+    },
+    {
+      "case": "nonnumeric_execution_end",
+      "integrity_status": "integrity_error",
+      "ratio_eligible": false,
+      "first_cell_errors": [
+        "cgroup_execution_after: memory limits differ",
+        "resources: KeyError: 'cpu.max'"
+      ]
+    },
+    {
+      "case": "wrong_boolean_rowcount",
+      "integrity_status": "integrity_error",
+      "ratio_eligible": false,
+      "first_cell_errors": [
+        "copied metric differs: correctness",
+        "passed receipt lacks complete reference/parent checks"
+      ]
+    }
+  ],
+  "review": [
+    "Exact fixed plan/config profiles and controller/native/dataset/runtime identities checked through pinned closed-cell helper.",
+    "Archive closure and missing records stay separate from retained failed outcomes. Failed trials cannot produce ratios.",
+    "Claimed passes require complete recorded reference/parent/convergence/result inventory and execution-end cgroup snapshot. No new reference algorithm runs.",
+    "Only all six ordered closed eligible cells on one observed boot admit four measured-cell descriptive ratios; no quiet-host, isolated-runtime or per-cell macOS pressure qualification.",
+    "Reviewed eight author controls; independently executed three additional malformed claimed-pass controls. All fixture bodies stay private."
+  ],
+  "limitations": [
+    "No actual paired collection exists or was audited. Ratios in synthetic controls are not benchmark observations.",
+    "No remote access, workload, result Parquet rehash/recomputation or second reference algorithm.",
+    "Pinned producer and helper trust boundary; not an exhaustive adversarial parser/security certification."
+  ],
+  "remaining_blockers": []
+}

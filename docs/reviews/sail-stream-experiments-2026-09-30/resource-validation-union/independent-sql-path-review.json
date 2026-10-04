@@ -1,0 +1,69 @@
+{
+  "generated_utc": "2026-10-01T00:14:18.709751+00:00",
+  "outcome": "PASS_BOUNDED_SQL_PATH_CORRECTION_REVIEW",
+  "files": {
+    "sql-helper-controls/attempt-failed02/sql_gate.py": {
+      "bytes": 16800,
+      "sha256": "0aca81a5819f29095d2592804aea836250d7640de917ce7d959a264ec80f124e"
+    },
+    "sql_gate.py": {
+      "bytes": 17499,
+      "sha256": "eaebc96443f9edc621adb1a937d7042ef3b8decaae757693f03872d7ad8fbb96"
+    },
+    "sql-helper-controls/path-correction-controls/receipt.json": {
+      "bytes": 5355,
+      "sha256": "6b3197e48322e1bc984d76e6bfcd424582a1d8d912e70d6d9e3156d9443baa4d"
+    },
+    "sql-helper-controls/path_environment_control.py": {
+      "bytes": 4565,
+      "sha256": "b521e79b35fe3effbd30c09282bafcd3a63442ad7470315ea8c00f629e5ffd08"
+    },
+    "sql-helper-controls/path-correction-controls/focused.xml": {
+      "bytes": 556,
+      "sha256": "ab080357449d0243b5d6713793ea4d4fcb8ea91ef6e324d9fbc9316ba0a7a245"
+    },
+    "sql-helper-controls/path-correction-controls/good_312_path_only.stderr": {
+      "bytes": 30,
+      "sha256": "055051479ac42924f06ddffbe30789172174d7a77f5dd7463f480c009f661e78"
+    },
+    "sql-helper-controls/path-correction-controls/two-unit-fixtures.log": {
+      "bytes": 276,
+      "sha256": "dab94abc6eb43ea2951d009546f8a6434c05ef89704dbfd372a6fbfa9e5b8f80"
+    },
+    "sql-helper-controls/path-correction-controls/bad_314_with_312_home.stderr": {
+      "bytes": 2330,
+      "sha256": "90835cb9e01448952c07e1013e9bc9aceee03701127eea161dde0cc47ff0e9ce"
+    },
+    "sql-helper-controls/path-correction-controls/client-stdlib.log": {
+      "bytes": 2240,
+      "sha256": "f50b17d9b3009ca2400c24b5fe166f55db485c895f63275ed1bc74e65df6e660"
+    }
+  },
+  "scope": "Read-only helper diff, retained control/fixture/log/XML and hash review; no control rerun, build, SQL request or remote operation. Full union candidate/exact gates remain required.",
+  "change": "Prefix pinned CPython bin on client PATH, assert env-python3 resolution and stdlib encodings location, retain before/after executable and module hashes. No source test or production assertion changed.",
+  "observed_controls": {
+    "path_only_bad_then_good": [
+      [
+        1,
+        0
+      ],
+      [
+        7,
+        192
+      ]
+    ],
+    "unchanged_unit_fixtures": {
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "fixture_component_sha": "7df2f32f070e041eed5416eb44f7ff8fa4ce0d01",
+    "fixture_sha256": "8c11b6796dfa2421bab79c1134741229fdc702d7537fd702a5ae43f5debad2ec"
+  },
+  "review_tool_note": "Initial review-only XML parse with system Python3.14 stopped on unavailable expat symbol before writing a receipt. This successful read-only parse uses pinned CPython3.12.8. No test or control was rerun.",
+  "limitations": [
+    "The path-only control explains the local fake-generator startup issue, not a benchmark runtime failure.",
+    "Candidate02 remains failed; no commit or exact union verdict follows from this bounded review."
+  ]
+}

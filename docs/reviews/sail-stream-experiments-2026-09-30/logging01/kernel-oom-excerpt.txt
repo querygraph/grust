@@ -1,0 +1,99 @@
+[131804.998882] tokio-rt-worker invoked oom-killer: gfp_mask=0xcc0(GFP_KERNEL), order=0, oom_score_adj=0
+[131804.998924] CPU: 26 PID: 130182 Comm: tokio-rt-worker Tainted: G             L     6.8.0-117-generic #117-Ubuntu
+[131804.998960] Hardware name: QEMU Standard PC (Q35 + ICH9, 2009), BIOS edk2-stable202408-prebuilt.qemu.org 08/13/2024
+[131804.998991] Call Trace:
+[131804.999002]  <TASK>
+[131804.999080]  dump_stack_lvl+0x76/0xa0
+[131805.140664]  dump_stack+0x10/0x20
+[131805.140664]  dump_header+0x49/0x210
+[131805.140664]  oom_kill_process+0x118/0x280
+[131805.140664]  out_of_memory+0x103/0x350
+[131805.140664]  mem_cgroup_out_of_memory+0x145/0x170
+[131805.140664]  try_charge_memcg+0x6d6/0x7d0
+[131805.140664]  ? vma_alloc_folio+0x7a/0xd0
+[131805.140664]  __mem_cgroup_charge+0x45/0xc0
+[131805.140664]  do_anonymous_page+0xb2/0x430
+[131805.140664]  handle_pte_fault+0x1cb/0x1d0
+[131805.140664]  __handle_mm_fault+0x654/0x790
+[131805.140664]  handle_mm_fault+0x18a/0x380
+[131805.140664]  do_user_addr_fault+0x169/0x670
+[131805.140664]  exc_page_fault+0x83/0x1b0
+[131805.140664]  asm_exc_page_fault+0x27/0x30
+[131805.140664] RIP: 0033:0x563ce6cbd486
+[131805.140664] Code: 8d 44 10 ff 4c 0f af c6 48 0f af c6 49 01 c8 48 01 c1 4c 39 c1 72 1b 4c 89 c0 66 2e 0f 1f 84 00 00 00 00 00 48 89 c2 48 01 f0 <48> 89 02 48 39 c1 73 f2 48 8b 47 08 48 89 01 4c 89 47 08 c3 cc cc
+[131805.140664] RSP: 002b:000078bab27f79b8 EFLAGS: 00010206
+[131805.140664] RAX: 000005d0653c0500 RBX: 000005cfee421060 RCX: 000005d0653c0a00
+[131805.140664] RDX: 000005d0653c0000 RSI: 0000000000000500 RDI: 000005cfee421060
+[131805.140664] RBP: 0000000000000003 R08: 000005d0653c0000 R09: 0000000000000000
+[131805.140664] R10: 000005d0653c0000 R11: 0000000000000000 R12: 0000000000000500
+[131805.140664] R13: 0000000000000019 R14: 0000000000000000 R15: 0000563ce73ad2b0
+[131805.140664]  </TASK>
+[131805.357071] memory: usage 104857216kB, limit 104857600kB, failcnt 48574
+[131805.357071] swap: usage 0kB, limit 0kB, failcnt 0
+[131805.357071] Memory cgroup stats for /docker/4fe816b778a4a857325219ff9b9ae64d2de7f730f1ea7d50149bb72e85b6c011:
+[131805.357071] anon 107124027392
+[131805.357071] file 4096
+[131805.357071] kernel 244355072
+[131805.357071] kernel_stack 4702208
+[131805.357071] pagetables 221634560
+[131805.357071] sec_pagetables 0
+[131805.357071] percpu 14144
+[131805.357071] sock 290816
+[131805.357071] vmalloc 12288
+[131805.357071] shmem 0
+[131805.357071] zswap 0
+[131805.357071] zswapped 0
+[131805.357071] file_mapped 0
+[131805.357071] file_dirty 0
+[131805.357071] file_writeback 0
+[131805.357071] swapcached 0
+[131805.357071] anon_thp 70160220160
+[131805.357071] file_thp 0
+[131805.357071] shmem_thp 0
+[131805.357071] inactive_anon 95686254592
+[131805.357071] active_anon 11442745344
+[131805.357071] inactive_file 0
+[131805.357071] active_file 4096
+[131805.357071] unevictable 0
+[131805.357071] slab_reclaimable 13864120
+[131805.357071] slab_unreclaimable 4074880
+[131805.357071] slab 17939000
+[131805.357071] workingset_refault_anon 0
+[131805.357071] workingset_refault_file 2596
+[131805.357071] workingset_activate_anon 0
+[131805.357071] workingset_activate_file 13
+[131805.357071] workingset_restore_anon 0
+[131805.357071] workingset_restore_file 12
+[131805.357071] workingset_nodereclaim 0
+[131805.357071] pgscan 1617890
+[131805.357071] pgsteal 1617650
+[131805.357071] pgscan_kswapd 0
+[131805.357071] pgscan_direct 1615330
+[131805.357071] pgscan_khugepaged 2560
+[131805.357071] pgsteal_kswapd 0
+[131805.357071] pgsteal_direct 1615090
+[131805.357071] pgsteal_khugepaged 2560
+[131805.357071] pgfault 18945954
+[131805.357071] pgmajfault 14
+[131805.357071] pgrefill 404535
+[131805.357071] pgactivate 219
+[131805.357071] pgdeactivate 0
+[131805.357071] pglazyfree 0
+[131805.357071] pglazyfreed 0
+[131805.357071] zswpin 0
+[131805.357071] zswpout 0
+[131805.357071] zswpwb 0
+[131805.357071] thp_fault_alloc 62223
+[131805.357071] thp_collapse_alloc 80
+[131805.357071] thp_swpout 0
+[131805.357071] thp_swpout_fallback 0
+[131805.357071] Tasks state (memory values in pages):
+[131805.357071] [  pid  ]   uid  tgid total_vm      rss rss_anon rss_file rss_shmem pgtables_bytes swapents oom_score_adj name
+[131805.357071] [ 129900]     0 129900      264      128        0      128         0    28672        0             0 docker-init
+[131805.357071] [ 129919]     0 129919   854438    35897    19577    16320         0   888832        0             0 python
+[131805.357071] [ 129983]     0 129983  2028422   105239    80279    24960         0  2019328        0             0 sail-linux-x86_
+[131805.357071] [ 130100]     0 130100 16783197 13035287 13016855    18432         0 108908544        0             0 sail-linux-x86_
+[131805.357071] [ 130101]     0 130101 16734061 13052733 13034557    18176         0 109789184        0             0 sail-linux-x86_
+[131805.357071] oom-kill:constraint=CONSTRAINT_MEMCG,nodemask=(null),cpuset=4fe816b778a4a857325219ff9b9ae64d2de7f730f1ea7d50149bb72e85b6c011,mems_allowed=0,oom_memcg=/docker/4fe816b778a4a857325219ff9b9ae64d2de7f730f1ea7d50149bb72e85b6c011,task_memcg=/docker/4fe816b778a4a857325219ff9b9ae64d2de7f730f1ea7d50149bb72e85b6c011,task=sail-linux-x86_,pid=130101,uid=0
+[131805.374507] Memory cgroup out of memory: Killed process 130101 (sail-linux-x86_) total-vm:66936244kB, anon-rss:52138228kB, file-rss:72704kB, shmem-rss:0kB, UID:0 pgtables:107216kB oom_score_adj:0
+[131808.780097] oom_reaper: reaped process 130101 (sail-linux-x86_), now anon-rss:0kB, file-rss:0kB, shmem-rss:0kB

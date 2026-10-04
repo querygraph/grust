@@ -1,0 +1,54 @@
+{
+  "docker_context": "colima-sail-gate",
+  "image": "sha256:f3518d652fbea8b9b9f9ebf9849277ca3bd39d0c21bb2c6e36fbaeaa2dc2678e",
+  "target_volume": "sail-extension-targets",
+  "container_python": "/targets/graph-nuts-ffcfbd569/venv/bin/python",
+  "container_repo": "/targets/sail-stream-experiments-20260930/source-3a9028057",
+  "container_sail_binary": "/targets/sail-stream-2894a962076d/sail-linux-x86_64-2894a962076d-release",
+  "runtime_source_sha": "2894a962076d3cc404dd72ec736ebeb9239901f6",
+  "native_source_sha": "ffcfbd5690e3f3681ef9ac18ba959bc231cf9f73",
+  "harness_source_sha": "3a9028057c6c6c5034492845926fc4bc18f9626f",
+  "defaults": {
+    "partitions": 4,
+    "threads": 4,
+    "worker_task_slots": 16,
+    "sail_pool_bytes": 3221225472,
+    "native_quota": 268435456,
+    "tolerance": 1e-08,
+    "damping": 0.85,
+    "timeout": 600,
+    "seed": 42,
+    "delta": 1.0,
+    "max_iterations": 1000
+  },
+  "environment": {
+    "SAIL_CLUSTER__TASK_STREAM_CREATION_TIMEOUT_SECS": "900",
+    "SAIL_CLUSTER__WORKER_MAX_IDLE_TIME_SECS": "86400",
+    "SAIL_BENCHMARK_RUST_LOG": "info,h2::proto::connection=debug,h2::proto::streams=warn,h2::frame::go_away=trace,h2::frame::reset=trace,h2::frame::ping=trace,h2::proto::ping_pong=trace,sail_execution::task_runner=debug,tonic::transport::server=debug"
+  },
+  "run_id": "wcc-fused-representatives289-cpu16-23",
+  "host_output": "/Users/alexy/src/sail-extensions-gates/stream-experiments-20260930/wcc-fused-representatives289-cpu16-23",
+  "probe_output": "/targets/sail-stream-experiments-20260930/wcc-fused-representatives289-cpu16-23",
+  "limits": {
+    "cpus": 8,
+    "cpuset_cpus": "16-23",
+    "memory_gib": 12,
+    "outer_timeout_seconds": 360
+  },
+  "probe_timeout_seconds": 240,
+  "binary_sha256": "40a78182a420152e8e3651f9cdb38a4196eaf8bc7aead092d10e258a17ac3497",
+  "native_files_sha256": {
+    "__init__.py": "8ab1469a2f7411203604d2faaae29b30a35689599eb62d0bb397ab672cdb53ab",
+    "_native.cpython-312-x86_64-linux-gnu.so": "eb0be839de652e059799dea3bba22cc0908998bd97cfa2f4cf04c67817e2ee50",
+    "argentea_factory.py": "b79bb66e6dab06a8d3b405fcad3633614f394e89a35012ed2d1fb2095e43271a",
+    "client.py": "0e184de1daf55d1ea483c7153ea9df6951445b6e1206bd29027e3283a2ed803e",
+    "graph.py": "6ec3cb51c88dcbf677bde93bc2320dead5703e3f586d1b0a59b34919dc20cb57"
+  },
+  "source_files_sha256": {
+    "examples/extensions/benchmarks/runtime.py": "27a76460792bac9668e18c8e32961f34a936060dc15cd3fe06f115124757b6e4",
+    "examples/extensions/graph-algorithms/src/pyspark_pecan/wcc_fused.py": "2641dceda3da898cb4ab44b9da60031d1ccf25112409e05d433fad914417a80e",
+    "examples/extensions/graph-algorithms/src/pyspark_pecan/algorithms.py": "3f486e62383e680d4c0c77b4703e9beba4771533f62852587ed9ee321f575b77"
+  },
+  "host_matrix_sha256": "21d12c888caabb59acece11a2ee27837974c1f34b08cc499600e305d6341e1a0",
+  "probe_sha256": "70c5e217b5e8ce12bddc710578d22e679e2f0c67c9d0168454c924cf629bb401"
+}

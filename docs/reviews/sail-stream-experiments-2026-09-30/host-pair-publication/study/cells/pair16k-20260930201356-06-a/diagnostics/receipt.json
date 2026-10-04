@@ -1,0 +1,845 @@
+{
+  "started_utc": "2026-10-01T01:52:58.288386+00:00",
+  "arguments": {
+    "sail_binary": "/targets/sail-stream-2894a962076d/sail-linux-x86_64-2894a962076d-release",
+    "runtime_source_sha": "2894a962076d3cc404dd72ec736ebeb9239901f6",
+    "native_source_sha": "ffcfbd5690e3f3681ef9ac18ba959bc231cf9f73",
+    "dataset": "/targets/sail-stream-experiments-20260930/pecan-gate3/datasets/weighted16k",
+    "expected_dataset_family": "traversal",
+    "expected_vertices": 16384,
+    "expected_graph500_sha256": null,
+    "expected_input_sha256": null,
+    "expected_edge_sha256": null,
+    "expected_weight_policy": null,
+    "expected_weight_seed": null,
+    "output": "/targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier",
+    "engine": "pecan",
+    "algorithm": "sssp",
+    "variant": "frontier",
+    "source": 0,
+    "directed": true,
+    "delta": 1.0,
+    "traversal_validation": "reference",
+    "http2_keepalive_timeout": 120,
+    "record_plans": true,
+    "argentea_max_rounds": 62,
+    "stage_order": "canonical",
+    "ranking_validation": "reference",
+    "certificate_max_rounds": 10000,
+    "seed": 42,
+    "mode": "process-cluster",
+    "partitions": 4,
+    "threads": 4,
+    "worker_task_slots": 16,
+    "sail_pool_bytes": 3221225472,
+    "native_quota": 268435456,
+    "tolerance": 1e-08,
+    "damping": 0.85,
+    "max_iterations": 1000,
+    "timeout": 600,
+    "repeat": 1,
+    "allow_unisolated": false,
+    "allow_dirty": false
+  },
+  "source_request": 0,
+  "source_degree": null,
+  "source_policy": null,
+  "harness_source_sha": "3a9028057c6c6c5034492845926fc4bc18f9626f",
+  "source_dirty": "",
+  "runtime_source_sha": "2894a962076d3cc404dd72ec736ebeb9239901f6",
+  "binary_sha256": "40a78182a420152e8e3651f9cdb38a4196eaf8bc7aead092d10e258a17ac3497",
+  "native_source_sha": "ffcfbd5690e3f3681ef9ac18ba959bc231cf9f73",
+  "native_package_identity": {
+    "root": "/targets/graph-nuts-ffcfbd569/venv/lib/python3.12/site-packages/sail_nutmeg",
+    "files_sha256": {
+      "__init__.py": "8ab1469a2f7411203604d2faaae29b30a35689599eb62d0bb397ab672cdb53ab",
+      "_native.cpython-312-x86_64-linux-gnu.so": "eb0be839de652e059799dea3bba22cc0908998bd97cfa2f4cf04c67817e2ee50",
+      "argentea_factory.py": "b79bb66e6dab06a8d3b405fcad3633614f394e89a35012ed2d1fb2095e43271a",
+      "client.py": "0e184de1daf55d1ea483c7153ea9df6951445b6e1206bd29027e3283a2ed803e",
+      "graph.py": "6ec3cb51c88dcbf677bde93bc2320dead5703e3f586d1b0a59b34919dc20cb57"
+    }
+  },
+  "packages": {
+    "pyspark": "4.0.1",
+    "numpy": "2.5.3",
+    "pyarrow": "21.0.0",
+    "protobuf": "7.36.2",
+    "sail-nutmeg": "0.1.0",
+    "sail-sedona-extension": "0.1.0",
+    "pyspark-pecan": "0.1.0"
+  },
+  "platform": "Linux-6.8.0-117-generic-x86_64-with-glibc2.41",
+  "python": "3.12.14 (main, Sep 24 2026, 17:57:43) [Clang 22.1.3 ]",
+  "dataset": {
+    "family": "traversal",
+    "seed": 42,
+    "parameters": {
+      "degree": 32,
+      "source": 0,
+      "directed": true
+    },
+    "counts": {
+      "vertices": 16384,
+      "edges": 529723
+    },
+    "traversal": {
+      "source": 0,
+      "directed": true,
+      "seed": 42,
+      "weight_policy": "seeded integers 0..15 stored as float64"
+    },
+    "purpose": "bounded correctness fixture; not a Graph500 input",
+    "files": {
+      "vertices.parquet": {
+        "sha256": "65fbeb27779f3eade77cb9a74528952628893137b92ae88017f3fe93a96a91a7",
+        "bytes": 94785
+      },
+      "edges.parquet": {
+        "sha256": "d350d66a97f352916e3944657a0d2ae2ddff5718f651e335b33d7c5d7cdfc013",
+        "bytes": 1375846
+      },
+      "reference.parquet": {
+        "sha256": "243f396cd5900402acfea18875a423c9dd40f37f0dc343ba4fa42c90bb2497ef",
+        "bytes": 104754
+      }
+    }
+  },
+  "cgroup_before": {
+    "memory.current": "86036480",
+    "memory.peak": "88834048",
+    "memory.max": "12884901888",
+    "memory.swap.max": "0",
+    "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0",
+    "memory.stat": "anon 78213120\nfile 4907008\nkernel 2371584\nkernel_stack 163840\npagetables 602112\nsec_pagetables 0\npercpu 13600\nsock 0\nvmalloc 12288\nshmem 0\nzswap 0\nzswapped 0\nfile_mapped 0\nfile_dirty 4907008\nfile_writeback 0\nswapcached 0\nanon_thp 0\nfile_thp 0\nshmem_thp 0\ninactive_anon 0\nactive_anon 78204928\ninactive_file 4907008\nactive_file 0\nunevictable 0\nslab_reclaimable 1092136\nslab_unreclaimable 430672\nslab 1522808\nworkingset_refault_anon 0\nworkingset_refault_file 0\nworkingset_activate_anon 0\nworkingset_activate_file 0\nworkingset_restore_anon 0\nworkingset_restore_file 0\nworkingset_nodereclaim 0\npgscan 0\npgsteal 0\npgscan_kswapd 0\npgscan_direct 0\npgscan_khugepaged 0\npgsteal_kswapd 0\npgsteal_direct 0\npgsteal_khugepaged 0\npgfault 24769\npgmajfault 0\npgrefill 0\npgactivate 0\npgdeactivate 0\npglazyfree 0\npglazyfreed 0\nzswpin 0\nzswpout 0\nzswpwb 0\nthp_fault_alloc 0\nthp_collapse_alloc 0\nthp_swpout 0\nthp_swpout_fallback 0",
+    "cpu.max": "800000 100000",
+    "cpu.stat": "usage_usec 3127962\nuser_usec 2557678\nsystem_usec 570284\ncore_sched.force_idle_usec 0\nnr_periods 25\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0",
+    "cpuset.cpus.effective": "16-23"
+  },
+  "host_load_before": "2.02 0.93 1.82 1/523 23",
+  "installed_extension_boundary": "Experimental extension loading enabled; installed package inventory is recorded separately and does not by itself prove runtime use",
+  "prepaid_native_quota_bytes": 268435456,
+  "sail_pool_per_process_bytes": 3221225472,
+  "remaining_participating_df_budget_bytes": 2952790016,
+  "worker_task_slots_per_worker": 16,
+  "worker_task_slots_total": 32,
+  "boundary": "input DataFrame handles to completed full result Parquet write; server startup and correctness verification excluded",
+  "cache_boundary": "fresh Sail state; dataset checksum reads before timing warm OS page cache; no cache flushing",
+  "outcome": "passed",
+  "cleanup_errors": [],
+  "rlimit_nofile": {
+    "soft": 1024,
+    "hard": 524288
+  },
+  "temporary_directory": "/tmp",
+  "driver_pid": 25,
+  "cgroup_execution_before": {
+    "memory.current": "253947904",
+    "memory.peak": "254214144",
+    "memory.max": "12884901888",
+    "memory.swap.max": "0",
+    "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0",
+    "memory.stat": "anon 241074176\nfile 4980736\nkernel 6496256\nkernel_stack 1130496\npagetables 2715648\nsec_pagetables 0\npercpu 14144\nsock 0\nvmalloc 12288\nshmem 0\nzswap 0\nzswapped 0\nfile_mapped 0\nfile_dirty 4980736\nfile_writeback 0\nswapcached 0\nanon_thp 88080384\nfile_thp 0\nshmem_thp 0\ninactive_anon 0\nactive_anon 241029120\ninactive_file 4980736\nactive_file 0\nunevictable 0\nslab_reclaimable 1234816\nslab_unreclaimable 1305696\nslab 2540512\nworkingset_refault_anon 0\nworkingset_refault_file 0\nworkingset_activate_anon 0\nworkingset_activate_file 0\nworkingset_restore_anon 0\nworkingset_restore_file 0\nworkingset_nodereclaim 0\npgscan 0\npgsteal 0\npgscan_kswapd 0\npgscan_direct 0\npgscan_khugepaged 0\npgsteal_kswapd 0\npgsteal_direct 0\npgsteal_khugepaged 0\npgfault 47522\npgmajfault 0\npgrefill 0\npgactivate 0\npgdeactivate 0\npglazyfree 0\npglazyfreed 0\nzswpin 0\nzswpout 0\nzswpwb 0\nthp_fault_alloc 42\nthp_collapse_alloc 0\nthp_swpout 0\nthp_swpout_fallback 0",
+    "cpu.max": "800000 100000",
+    "cpu.stat": "usage_usec 6791724\nuser_usec 5216023\nsystem_usec 1575701\ncore_sched.force_idle_usec 0\nnr_periods 43\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0",
+    "cpuset.cpus.effective": "16-23"
+  },
+  "algorithm_ready_seconds": 18.63253084299504,
+  "algorithm_iterations": 24,
+  "algorithm_converged": true,
+  "parent_output": "rooted parent tree and hop count",
+  "kernel": "frontier",
+  "end_to_end_seconds": 18.6612420649908,
+  "iteration_events": [
+    {
+      "kind": "iteration_start",
+      "algorithm": "sssp-frontier",
+      "iteration": 1,
+      "plan": "== Physical Plan ==\nProjectionExec: expr=[#17@0 as id, #18@1 as distance, #19@2 as hops, #20@3 as parent]\n  ProjectionExec: expr=[#0@0 as #17, get_field(min(struct(#1,#2,#3))@1, distance) as #18, get_field(min(struct(#1,#2,#3))@1, hops) as #19, get_field(min(struct(#1,#2,#3))@1, parent) as #20]\n    AggregateExec: mode=FinalPartitioned, gby=[#0@0 as #0], aggr=[min(struct(#1,#2,#3))]\n      RepartitionExec: partitioning=Hash([#0@0], 4), input_partitions=5\n        AggregateExec: mode=Partial, gby=[#0@0 as #0], aggr=[min(struct(#1,#2,#3))]\n          UnionExec\n            DataSourceExec: file_groups={1 group: [[targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00003/RRqmmMxS1T8FpdaR_0.zst.parquet]]}, projection=[id@0 as #0, CAST(distance@1 AS Float64) as #1, hops@2 as #2, parent@3 as #3], file_type=parquet\n            ProjectionExec: expr=[#9@0 as #0, #5@1 + #10@2 as #1, #6@3 + 1 as #2, #4@4 as #3]\n              HashJoinExec: mode=CollectLeft, join_type=Inner, on=[(#4@0, #8@0)], projection=[#9@4, #5@1, #10@5, #6@2, #4@0]\n                DataSourceExec: file_groups={1 group: [[targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00003/RRqmmMxS1T8FpdaR_0.zst.parquet]]}, projection=[id@0 as #4, distance@1 as #5, hops@2 as #6], file_type=parquet\n                DataSourceExec: file_groups={4 groups: [[targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_0.zst.parquet:0..580134], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_0.zst.parquet:580134..597351, targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_1.zst.parquet:0..562917], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_1.zst.parquet:562917..586352, targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_2.zst.parquet:0..556699], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_2.zst.parquet:556699..574516, targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_3.zst.parquet:0..562316]]}, projection=[src@0 as #8, dst@1 as #9, weight@2 as #10], file_type=parquet\n",
+      "elapsed_seconds": 0.9030845699890051
+    },
+    {
+      "kind": "iteration_end",
+      "algorithm": "sssp-frontier",
+      "iteration": 1,
+      "active_vertices": 34,
+      "elapsed_seconds": 1.1696765939996112
+    },
+    {
+      "kind": "iteration_start",
+      "algorithm": "sssp-frontier",
+      "iteration": 2,
+      "plan": "== Physical Plan ==\nProjectionExec: expr=[#17@0 as id, #18@1 as distance, #19@2 as hops, #20@3 as parent]\n  ProjectionExec: expr=[#0@0 as #17, get_field(min(struct(#1,#2,#3))@1, distance) as #18, get_field(min(struct(#1,#2,#3))@1, hops) as #19, get_field(min(struct(#1,#2,#3))@1, parent) as #20]\n    AggregateExec: mode=FinalPartitioned, gby=[#0@0 as #0], aggr=[min(struct(#1,#2,#3))]\n      RepartitionExec: partitioning=Hash([#0@0], 4), input_partitions=5\n        AggregateExec: mode=Partial, gby=[#0@0 as #0], aggr=[min(struct(#1,#2,#3))]\n          UnionExec\n            DataSourceExec: file_groups={1 group: [[targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00004/uXiFSkBRuGZDy56S_0.zst.parquet]]}, projection=[id@0 as #0, distance@1 as #1, hops@2 as #2, parent@3 as #3], file_type=parquet\n            ProjectionExec: expr=[#9@0 as #0, #5@1 + #10@2 as #1, #6@3 + 1 as #2, #4@4 as #3]\n              HashJoinExec: mode=CollectLeft, join_type=Inner, on=[(#4@0, #8@0)], projection=[#9@4, #5@1, #10@5, #6@2, #4@0]\n                DataSourceExec: file_groups={1 group: [[targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00005/0xN9SsQkDIE4eQjE_0.zst.parquet]]}, projection=[id@0 as #4, distance@1 as #5, hops@2 as #6], file_type=parquet\n                DataSourceExec: file_groups={4 groups: [[targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_0.zst.parquet:0..580134], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_0.zst.parquet:580134..597351, targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_1.zst.parquet:0..562917], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_1.zst.parquet:562917..586352, targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_2.zst.parquet:0..556699], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_2.zst.parquet:556699..574516, targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_3.zst.parquet:0..562316]]}, projection=[src@0 as #8, dst@1 as #9, weight@2 as #10], file_type=parquet\n",
+      "elapsed_seconds": 1.267597822996322
+    },
+    {
+      "kind": "iteration_end",
+      "algorithm": "sssp-frontier",
+      "iteration": 2,
+      "active_vertices": 1047,
+      "elapsed_seconds": 1.575702441012254
+    },
+    {
+      "kind": "iteration_start",
+      "algorithm": "sssp-frontier",
+      "iteration": 3,
+      "plan": "== Physical Plan ==\nProjectionExec: expr=[#17@0 as id, #18@1 as distance, #19@2 as hops, #20@3 as parent]\n  ProjectionExec: expr=[#0@0 as #17, get_field(min(struct(#1,#2,#3))@1, distance) as #18, get_field(min(struct(#1,#2,#3))@1, hops) as #19, get_field(min(struct(#1,#2,#3))@1, parent) as #20]\n    AggregateExec: mode=FinalPartitioned, gby=[#0@0 as #0], aggr=[min(struct(#1,#2,#3))]\n      RepartitionExec: partitioning=Hash([#0@0], 4), input_partitions=5\n        AggregateExec: mode=Partial, gby=[#0@0 as #0], aggr=[min(struct(#1,#2,#3))]\n          UnionExec\n            DataSourceExec: file_groups={1 group: [[targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00006/YfLMNHb0bpT7cZOX_0.zst.parquet]]}, projection=[id@0 as #0, distance@1 as #1, hops@2 as #2, parent@3 as #3], file_type=parquet\n            ProjectionExec: expr=[#9@0 as #0, #5@1 + #10@2 as #1, #6@3 + 1 as #2, #4@4 as #3]\n              HashJoinExec: mode=CollectLeft, join_type=Inner, on=[(#4@0, #8@0)], projection=[#9@4, #5@1, #10@5, #6@2, #4@0]\n                DataSourceExec: file_groups={1 group: [[targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00007/pz031TnNGJW7X8al_0.zst.parquet]]}, projection=[id@0 as #4, distance@1 as #5, hops@2 as #6], file_type=parquet\n                DataSourceExec: file_groups={4 groups: [[targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_0.zst.parquet:0..580134], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_0.zst.parquet:580134..597351, targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_1.zst.parquet:0..562917], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_1.zst.parquet:562917..586352, targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_2.zst.parquet:0..556699], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_2.zst.parquet:556699..574516, targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_3.zst.parquet:0..562316]]}, projection=[src@0 as #8, dst@1 as #9, weight@2 as #10], file_type=parquet\n",
+      "elapsed_seconds": 1.6593549259996507
+    },
+    {
+      "kind": "iteration_end",
+      "algorithm": "sssp-frontier",
+      "iteration": 3,
+      "active_vertices": 13655,
+      "elapsed_seconds": 2.1038306370028295
+    },
+    {
+      "kind": "iteration_start",
+      "algorithm": "sssp-frontier",
+      "iteration": 4,
+      "plan": "== Physical Plan ==\nProjectionExec: expr=[#17@0 as id, #18@1 as distance, #19@2 as hops, #20@3 as parent]\n  ProjectionExec: expr=[#0@0 as #17, get_field(min(struct(#1,#2,#3))@1, distance) as #18, get_field(min(struct(#1,#2,#3))@1, hops) as #19, get_field(min(struct(#1,#2,#3))@1, parent) as #20]\n    AggregateExec: mode=FinalPartitioned, gby=[#0@0 as #0], aggr=[min(struct(#1,#2,#3))]\n      RepartitionExec: partitioning=Hash([#0@0], 4), input_partitions=6\n        AggregateExec: mode=Partial, gby=[#0@0 as #0], aggr=[min(struct(#1,#2,#3))]\n          UnionExec\n            DataSourceExec: file_groups={2 groups: [[targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00008/Pkv0EX1UidaqTG22_0.zst.parquet], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00008/Pkv0EX1UidaqTG22_1.zst.parquet]]}, projection=[id@0 as #0, distance@1 as #1, hops@2 as #2, parent@3 as #3], file_type=parquet\n            ProjectionExec: expr=[#9@0 as #0, #5@1 + #10@2 as #1, #6@3 + 1 as #2, #4@4 as #3]\n              HashJoinExec: mode=CollectLeft, join_type=Inner, on=[(#4@0, #8@0)], projection=[#9@4, #5@1, #10@5, #6@2, #4@0]\n                CoalescePartitionsExec\n                  DataSourceExec: file_groups={2 groups: [[targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00009/UCO5KEdcAY5UEMtd_0.zst.parquet], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00009/UCO5KEdcAY5UEMtd_1.zst.parquet]]}, projection=[id@0 as #4, distance@1 as #5, hops@2 as #6], file_type=parquet\n                DataSourceExec: file_groups={4 groups: [[targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_0.zst.parquet:0..580134], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_0.zst.parquet:580134..597351, targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_1.zst.parquet:0..562917], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_1.zst.parquet:562917..586352, targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_2.zst.parquet:0..556699], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_2.zst.parquet:556699..574516, targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_3.zst.parquet:0..562316]]}, projection=[src@0 as #8, dst@1 as #9, weight@2 as #10], file_type=parquet\n",
+      "elapsed_seconds": 2.204351243999554
+    },
+    {
+      "kind": "iteration_end",
+      "algorithm": "sssp-frontier",
+      "iteration": 4,
+      "active_vertices": 13841,
+      "elapsed_seconds": 3.2796426900022198
+    },
+    {
+      "kind": "iteration_start",
+      "algorithm": "sssp-frontier",
+      "iteration": 5,
+      "plan": "== Physical Plan ==\nProjectionExec: expr=[#17@0 as id, #18@1 as distance, #19@2 as hops, #20@3 as parent]\n  ProjectionExec: expr=[#0@0 as #17, get_field(min(struct(#1,#2,#3))@1, distance) as #18, get_field(min(struct(#1,#2,#3))@1, hops) as #19, get_field(min(struct(#1,#2,#3))@1, parent) as #20]\n    AggregateExec: mode=FinalPartitioned, gby=[#0@0 as #0], aggr=[min(struct(#1,#2,#3))]\n      RepartitionExec: partitioning=Hash([#0@0], 4), input_partitions=6\n        AggregateExec: mode=Partial, gby=[#0@0 as #0], aggr=[min(struct(#1,#2,#3))]\n          UnionExec\n            DataSourceExec: file_groups={2 groups: [[targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00010/ZTro4xRRr3aVR65X_0.zst.parquet], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00010/ZTro4xRRr3aVR65X_1.zst.parquet]]}, projection=[id@0 as #0, distance@1 as #1, hops@2 as #2, parent@3 as #3], file_type=parquet\n            ProjectionExec: expr=[#9@0 as #0, #5@1 + #10@2 as #1, #6@3 + 1 as #2, #4@4 as #3]\n              HashJoinExec: mode=CollectLeft, join_type=Inner, on=[(#4@0, #8@0)], projection=[#9@4, #5@1, #10@5, #6@2, #4@0]\n                CoalescePartitionsExec\n                  DataSourceExec: file_groups={2 groups: [[targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00011/CPPJboxihPhdytvc_0.zst.parquet], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00011/CPPJboxihPhdytvc_1.zst.parquet]]}, projection=[id@0 as #4, distance@1 as #5, hops@2 as #6], file_type=parquet\n                DataSourceExec: file_groups={4 groups: [[targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_0.zst.parquet:0..580134], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_0.zst.parquet:580134..597351, targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_1.zst.parquet:0..562917], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_1.zst.parquet:562917..586352, targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_2.zst.parquet:0..556699], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_2.zst.parquet:556699..574516, targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_3.zst.parquet:0..562316]]}, projection=[src@0 as #8, dst@1 as #9, weight@2 as #10], file_type=parquet\n",
+      "elapsed_seconds": 3.3640515120059717
+    },
+    {
+      "kind": "iteration_end",
+      "algorithm": "sssp-frontier",
+      "iteration": 5,
+      "active_vertices": 12051,
+      "elapsed_seconds": 4.945534319995204
+    },
+    {
+      "kind": "iteration_start",
+      "algorithm": "sssp-frontier",
+      "iteration": 6,
+      "plan": "== Physical Plan ==\nProjectionExec: expr=[#17@0 as id, #18@1 as distance, #19@2 as hops, #20@3 as parent]\n  ProjectionExec: expr=[#0@0 as #17, get_field(min(struct(#1,#2,#3))@1, distance) as #18, get_field(min(struct(#1,#2,#3))@1, hops) as #19, get_field(min(struct(#1,#2,#3))@1, parent) as #20]\n    AggregateExec: mode=FinalPartitioned, gby=[#0@0 as #0], aggr=[min(struct(#1,#2,#3))]\n      RepartitionExec: partitioning=Hash([#0@0], 4), input_partitions=6\n        AggregateExec: mode=Partial, gby=[#0@0 as #0], aggr=[min(struct(#1,#2,#3))]\n          UnionExec\n            DataSourceExec: file_groups={2 groups: [[targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00012/VeUmmeLz6jCVqEOG_0.zst.parquet], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00012/VeUmmeLz6jCVqEOG_1.zst.parquet]]}, projection=[id@0 as #0, distance@1 as #1, hops@2 as #2, parent@3 as #3], file_type=parquet\n            ProjectionExec: expr=[#9@0 as #0, #5@1 + #10@2 as #1, #6@3 + 1 as #2, #4@4 as #3]\n              HashJoinExec: mode=CollectLeft, join_type=Inner, on=[(#4@0, #8@0)], projection=[#9@4, #5@1, #10@5, #6@2, #4@0]\n                CoalescePartitionsExec\n                  DataSourceExec: file_groups={2 groups: [[targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00013/wKbiquHhSWu7usrj_0.zst.parquet], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00013/wKbiquHhSWu7usrj_1.zst.parquet]]}, projection=[id@0 as #4, distance@1 as #5, hops@2 as #6], file_type=parquet\n                DataSourceExec: file_groups={4 groups: [[targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_0.zst.parquet:0..580134], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_0.zst.parquet:580134..597351, targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_1.zst.parquet:0..562917], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_1.zst.parquet:562917..586352, targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_2.zst.parquet:0..556699], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_2.zst.parquet:556699..574516, targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_3.zst.parquet:0..562316]]}, projection=[src@0 as #8, dst@1 as #9, weight@2 as #10], file_type=parquet\n",
+      "elapsed_seconds": 5.037759272992844
+    },
+    {
+      "kind": "iteration_end",
+      "algorithm": "sssp-frontier",
+      "iteration": 6,
+      "active_vertices": 9971,
+      "elapsed_seconds": 6.488231440016534
+    },
+    {
+      "kind": "iteration_start",
+      "algorithm": "sssp-frontier",
+      "iteration": 7,
+      "plan": "== Physical Plan ==\nProjectionExec: expr=[#17@0 as id, #18@1 as distance, #19@2 as hops, #20@3 as parent]\n  ProjectionExec: expr=[#0@0 as #17, get_field(min(struct(#1,#2,#3))@1, distance) as #18, get_field(min(struct(#1,#2,#3))@1, hops) as #19, get_field(min(struct(#1,#2,#3))@1, parent) as #20]\n    AggregateExec: mode=FinalPartitioned, gby=[#0@0 as #0], aggr=[min(struct(#1,#2,#3))]\n      RepartitionExec: partitioning=Hash([#0@0], 4), input_partitions=6\n        AggregateExec: mode=Partial, gby=[#0@0 as #0], aggr=[min(struct(#1,#2,#3))]\n          UnionExec\n            DataSourceExec: file_groups={2 groups: [[targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00014/I9kw3pgkMWu3gfqY_0.zst.parquet], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00014/I9kw3pgkMWu3gfqY_1.zst.parquet]]}, projection=[id@0 as #0, distance@1 as #1, hops@2 as #2, parent@3 as #3], file_type=parquet\n            ProjectionExec: expr=[#9@0 as #0, #5@1 + #10@2 as #1, #6@3 + 1 as #2, #4@4 as #3]\n              HashJoinExec: mode=CollectLeft, join_type=Inner, on=[(#4@0, #8@0)], projection=[#9@4, #5@1, #10@5, #6@2, #4@0]\n                CoalescePartitionsExec\n                  DataSourceExec: file_groups={2 groups: [[targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00015/NWch2Oo4VcvpS6Vr_0.zst.parquet], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00015/NWch2Oo4VcvpS6Vr_1.zst.parquet]]}, projection=[id@0 as #4, distance@1 as #5, hops@2 as #6], file_type=parquet\n                DataSourceExec: file_groups={4 groups: [[targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_0.zst.parquet:0..580134], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_0.zst.parquet:580134..597351, targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_1.zst.parquet:0..562917], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_1.zst.parquet:562917..586352, targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_2.zst.parquet:0..556699], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_2.zst.parquet:556699..574516, targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_3.zst.parquet:0..562316]]}, projection=[src@0 as #8, dst@1 as #9, weight@2 as #10], file_type=parquet\n",
+      "elapsed_seconds": 6.575585001002764
+    },
+    {
+      "kind": "iteration_end",
+      "algorithm": "sssp-frontier",
+      "iteration": 7,
+      "active_vertices": 8162,
+      "elapsed_seconds": 7.493226840015268
+    },
+    {
+      "kind": "iteration_start",
+      "algorithm": "sssp-frontier",
+      "iteration": 8,
+      "plan": "== Physical Plan ==\nProjectionExec: expr=[#17@0 as id, #18@1 as distance, #19@2 as hops, #20@3 as parent]\n  ProjectionExec: expr=[#0@0 as #17, get_field(min(struct(#1,#2,#3))@1, distance) as #18, get_field(min(struct(#1,#2,#3))@1, hops) as #19, get_field(min(struct(#1,#2,#3))@1, parent) as #20]\n    AggregateExec: mode=FinalPartitioned, gby=[#0@0 as #0], aggr=[min(struct(#1,#2,#3))]\n      RepartitionExec: partitioning=Hash([#0@0], 4), input_partitions=6\n        AggregateExec: mode=Partial, gby=[#0@0 as #0], aggr=[min(struct(#1,#2,#3))]\n          UnionExec\n            DataSourceExec: file_groups={2 groups: [[targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00016/ofYTkIrY89GsL9lp_0.zst.parquet], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00016/ofYTkIrY89GsL9lp_1.zst.parquet]]}, projection=[id@0 as #0, distance@1 as #1, hops@2 as #2, parent@3 as #3], file_type=parquet\n            ProjectionExec: expr=[#9@0 as #0, #5@1 + #10@2 as #1, #6@3 + 1 as #2, #4@4 as #3]\n              HashJoinExec: mode=CollectLeft, join_type=Inner, on=[(#4@0, #8@0)], projection=[#9@4, #5@1, #10@5, #6@2, #4@0]\n                DataSourceExec: file_groups={1 group: [[targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00017/rzHfliHVhYqL5uZK_0.zst.parquet]]}, projection=[id@0 as #4, distance@1 as #5, hops@2 as #6], file_type=parquet\n                DataSourceExec: file_groups={4 groups: [[targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_0.zst.parquet:0..580134], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_0.zst.parquet:580134..597351, targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_1.zst.parquet:0..562917], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_1.zst.parquet:562917..586352, targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_2.zst.parquet:0..556699], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_2.zst.parquet:556699..574516, targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_3.zst.parquet:0..562316]]}, projection=[src@0 as #8, dst@1 as #9, weight@2 as #10], file_type=parquet\n",
+      "elapsed_seconds": 7.59673667800962
+    },
+    {
+      "kind": "iteration_end",
+      "algorithm": "sssp-frontier",
+      "iteration": 8,
+      "active_vertices": 6689,
+      "elapsed_seconds": 8.420632109016879
+    },
+    {
+      "kind": "iteration_start",
+      "algorithm": "sssp-frontier",
+      "iteration": 9,
+      "plan": "== Physical Plan ==\nProjectionExec: expr=[#17@0 as id, #18@1 as distance, #19@2 as hops, #20@3 as parent]\n  ProjectionExec: expr=[#0@0 as #17, get_field(min(struct(#1,#2,#3))@1, distance) as #18, get_field(min(struct(#1,#2,#3))@1, hops) as #19, get_field(min(struct(#1,#2,#3))@1, parent) as #20]\n    AggregateExec: mode=FinalPartitioned, gby=[#0@0 as #0], aggr=[min(struct(#1,#2,#3))]\n      RepartitionExec: partitioning=Hash([#0@0], 4), input_partitions=6\n        AggregateExec: mode=Partial, gby=[#0@0 as #0], aggr=[min(struct(#1,#2,#3))]\n          UnionExec\n            DataSourceExec: file_groups={2 groups: [[targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00018/KRq4uhbwDAgjGrEG_0.zst.parquet], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00018/KRq4uhbwDAgjGrEG_1.zst.parquet]]}, projection=[id@0 as #0, distance@1 as #1, hops@2 as #2, parent@3 as #3], file_type=parquet\n            ProjectionExec: expr=[#9@0 as #0, #5@1 + #10@2 as #1, #6@3 + 1 as #2, #4@4 as #3]\n              HashJoinExec: mode=CollectLeft, join_type=Inner, on=[(#4@0, #8@0)], projection=[#9@4, #5@1, #10@5, #6@2, #4@0]\n                DataSourceExec: file_groups={1 group: [[targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00019/uK9pTMSwSCcPXPwC_0.zst.parquet]]}, projection=[id@0 as #4, distance@1 as #5, hops@2 as #6], file_type=parquet\n                DataSourceExec: file_groups={4 groups: [[targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_0.zst.parquet:0..580134], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_0.zst.parquet:580134..597351, targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_1.zst.parquet:0..562917], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_1.zst.parquet:562917..586352, targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_2.zst.parquet:0..556699], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_2.zst.parquet:556699..574516, targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_3.zst.parquet:0..562316]]}, projection=[src@0 as #8, dst@1 as #9, weight@2 as #10], file_type=parquet\n",
+      "elapsed_seconds": 8.50038387600216
+    },
+    {
+      "kind": "iteration_end",
+      "algorithm": "sssp-frontier",
+      "iteration": 9,
+      "active_vertices": 5496,
+      "elapsed_seconds": 9.32093080598861
+    },
+    {
+      "kind": "iteration_start",
+      "algorithm": "sssp-frontier",
+      "iteration": 10,
+      "plan": "== Physical Plan ==\nProjectionExec: expr=[#17@0 as id, #18@1 as distance, #19@2 as hops, #20@3 as parent]\n  ProjectionExec: expr=[#0@0 as #17, get_field(min(struct(#1,#2,#3))@1, distance) as #18, get_field(min(struct(#1,#2,#3))@1, hops) as #19, get_field(min(struct(#1,#2,#3))@1, parent) as #20]\n    AggregateExec: mode=FinalPartitioned, gby=[#0@0 as #0], aggr=[min(struct(#1,#2,#3))]\n      RepartitionExec: partitioning=Hash([#0@0], 4), input_partitions=6\n        AggregateExec: mode=Partial, gby=[#0@0 as #0], aggr=[min(struct(#1,#2,#3))]\n          UnionExec\n            DataSourceExec: file_groups={2 groups: [[targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00020/doDuQDGU6nIUdqkb_0.zst.parquet], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00020/doDuQDGU6nIUdqkb_1.zst.parquet]]}, projection=[id@0 as #0, distance@1 as #1, hops@2 as #2, parent@3 as #3], file_type=parquet\n            ProjectionExec: expr=[#9@0 as #0, #5@1 + #10@2 as #1, #6@3 + 1 as #2, #4@4 as #3]\n              HashJoinExec: mode=CollectLeft, join_type=Inner, on=[(#4@0, #8@0)], projection=[#9@4, #5@1, #10@5, #6@2, #4@0]\n                DataSourceExec: file_groups={1 group: [[targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00021/LkJeYbJrz6rNqdls_0.zst.parquet]]}, projection=[id@0 as #4, distance@1 as #5, hops@2 as #6], file_type=parquet\n                DataSourceExec: file_groups={4 groups: [[targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_0.zst.parquet:0..580134], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_0.zst.parquet:580134..597351, targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_1.zst.parquet:0..562917], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_1.zst.parquet:562917..586352, targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_2.zst.parquet:0..556699], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_2.zst.parquet:556699..574516, targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_3.zst.parquet:0..562316]]}, projection=[src@0 as #8, dst@1 as #9, weight@2 as #10], file_type=parquet\n",
+      "elapsed_seconds": 9.406335445994046
+    },
+    {
+      "kind": "iteration_end",
+      "algorithm": "sssp-frontier",
+      "iteration": 10,
+      "active_vertices": 4770,
+      "elapsed_seconds": 10.09167185399565
+    },
+    {
+      "kind": "iteration_start",
+      "algorithm": "sssp-frontier",
+      "iteration": 11,
+      "plan": "== Physical Plan ==\nProjectionExec: expr=[#17@0 as id, #18@1 as distance, #19@2 as hops, #20@3 as parent]\n  ProjectionExec: expr=[#0@0 as #17, get_field(min(struct(#1,#2,#3))@1, distance) as #18, get_field(min(struct(#1,#2,#3))@1, hops) as #19, get_field(min(struct(#1,#2,#3))@1, parent) as #20]\n    AggregateExec: mode=FinalPartitioned, gby=[#0@0 as #0], aggr=[min(struct(#1,#2,#3))]\n      RepartitionExec: partitioning=Hash([#0@0], 4), input_partitions=6\n        AggregateExec: mode=Partial, gby=[#0@0 as #0], aggr=[min(struct(#1,#2,#3))]\n          UnionExec\n            DataSourceExec: file_groups={2 groups: [[targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00022/uw6kXW6fEl10bkHV_0.zst.parquet], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00022/uw6kXW6fEl10bkHV_1.zst.parquet]]}, projection=[id@0 as #0, distance@1 as #1, hops@2 as #2, parent@3 as #3], file_type=parquet\n            ProjectionExec: expr=[#9@0 as #0, #5@1 + #10@2 as #1, #6@3 + 1 as #2, #4@4 as #3]\n              HashJoinExec: mode=CollectLeft, join_type=Inner, on=[(#4@0, #8@0)], projection=[#9@4, #5@1, #10@5, #6@2, #4@0]\n                DataSourceExec: file_groups={1 group: [[targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00023/PzP6bKKAum6tYtdn_0.zst.parquet]]}, projection=[id@0 as #4, distance@1 as #5, hops@2 as #6], file_type=parquet\n                DataSourceExec: file_groups={4 groups: [[targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_0.zst.parquet:0..580134], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_0.zst.parquet:580134..597351, targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_1.zst.parquet:0..562917], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_1.zst.parquet:562917..586352, targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_2.zst.parquet:0..556699], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_2.zst.parquet:556699..574516, targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_3.zst.parquet:0..562316]]}, projection=[src@0 as #8, dst@1 as #9, weight@2 as #10], file_type=parquet\n",
+      "elapsed_seconds": 10.17791860899888
+    },
+    {
+      "kind": "iteration_end",
+      "algorithm": "sssp-frontier",
+      "iteration": 11,
+      "active_vertices": 4025,
+      "elapsed_seconds": 10.806236017990159
+    },
+    {
+      "kind": "iteration_start",
+      "algorithm": "sssp-frontier",
+      "iteration": 12,
+      "plan": "== Physical Plan ==\nProjectionExec: expr=[#17@0 as id, #18@1 as distance, #19@2 as hops, #20@3 as parent]\n  ProjectionExec: expr=[#0@0 as #17, get_field(min(struct(#1,#2,#3))@1, distance) as #18, get_field(min(struct(#1,#2,#3))@1, hops) as #19, get_field(min(struct(#1,#2,#3))@1, parent) as #20]\n    AggregateExec: mode=FinalPartitioned, gby=[#0@0 as #0], aggr=[min(struct(#1,#2,#3))]\n      RepartitionExec: partitioning=Hash([#0@0], 4), input_partitions=6\n        AggregateExec: mode=Partial, gby=[#0@0 as #0], aggr=[min(struct(#1,#2,#3))]\n          UnionExec\n            DataSourceExec: file_groups={2 groups: [[targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00024/HVqNEMmi18arFLiP_0.zst.parquet], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00024/HVqNEMmi18arFLiP_1.zst.parquet]]}, projection=[id@0 as #0, distance@1 as #1, hops@2 as #2, parent@3 as #3], file_type=parquet\n            ProjectionExec: expr=[#9@0 as #0, #5@1 + #10@2 as #1, #6@3 + 1 as #2, #4@4 as #3]\n              HashJoinExec: mode=CollectLeft, join_type=Inner, on=[(#4@0, #8@0)], projection=[#9@4, #5@1, #10@5, #6@2, #4@0]\n                DataSourceExec: file_groups={1 group: [[targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00025/hG4P8tXZQhRZSaiw_0.zst.parquet]]}, projection=[id@0 as #4, distance@1 as #5, hops@2 as #6], file_type=parquet\n                DataSourceExec: file_groups={4 groups: [[targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_0.zst.parquet:0..580134], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_0.zst.parquet:580134..597351, targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_1.zst.parquet:0..562917], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_1.zst.parquet:562917..586352, targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_2.zst.parquet:0..556699], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_2.zst.parquet:556699..574516, targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_3.zst.parquet:0..562316]]}, projection=[src@0 as #8, dst@1 as #9, weight@2 as #10], file_type=parquet\n",
+      "elapsed_seconds": 10.898084654007107
+    },
+    {
+      "kind": "iteration_end",
+      "algorithm": "sssp-frontier",
+      "iteration": 12,
+      "active_vertices": 3499,
+      "elapsed_seconds": 11.52260097299586
+    },
+    {
+      "kind": "iteration_start",
+      "algorithm": "sssp-frontier",
+      "iteration": 13,
+      "plan": "== Physical Plan ==\nProjectionExec: expr=[#17@0 as id, #18@1 as distance, #19@2 as hops, #20@3 as parent]\n  ProjectionExec: expr=[#0@0 as #17, get_field(min(struct(#1,#2,#3))@1, distance) as #18, get_field(min(struct(#1,#2,#3))@1, hops) as #19, get_field(min(struct(#1,#2,#3))@1, parent) as #20]\n    AggregateExec: mode=FinalPartitioned, gby=[#0@0 as #0], aggr=[min(struct(#1,#2,#3))]\n      RepartitionExec: partitioning=Hash([#0@0], 4), input_partitions=6\n        AggregateExec: mode=Partial, gby=[#0@0 as #0], aggr=[min(struct(#1,#2,#3))]\n          UnionExec\n            DataSourceExec: file_groups={2 groups: [[targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00026/hoTecXnEKMrzvCB9_0.zst.parquet], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00026/hoTecXnEKMrzvCB9_1.zst.parquet]]}, projection=[id@0 as #0, distance@1 as #1, hops@2 as #2, parent@3 as #3], file_type=parquet\n            ProjectionExec: expr=[#9@0 as #0, #5@1 + #10@2 as #1, #6@3 + 1 as #2, #4@4 as #3]\n              HashJoinExec: mode=CollectLeft, join_type=Inner, on=[(#4@0, #8@0)], projection=[#9@4, #5@1, #10@5, #6@2, #4@0]\n                DataSourceExec: file_groups={1 group: [[targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00027/EWuuIjKGrV5LUgEX_0.zst.parquet]]}, projection=[id@0 as #4, distance@1 as #5, hops@2 as #6], file_type=parquet\n                DataSourceExec: file_groups={4 groups: [[targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_0.zst.parquet:0..580134], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_0.zst.parquet:580134..597351, targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_1.zst.parquet:0..562917], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_1.zst.parquet:562917..586352, targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_2.zst.parquet:0..556699], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_2.zst.parquet:556699..574516, targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_3.zst.parquet:0..562316]]}, projection=[src@0 as #8, dst@1 as #9, weight@2 as #10], file_type=parquet\n",
+      "elapsed_seconds": 11.607224720995873
+    },
+    {
+      "kind": "iteration_end",
+      "algorithm": "sssp-frontier",
+      "iteration": 13,
+      "active_vertices": 3352,
+      "elapsed_seconds": 12.276396713015856
+    },
+    {
+      "kind": "iteration_start",
+      "algorithm": "sssp-frontier",
+      "iteration": 14,
+      "plan": "== Physical Plan ==\nProjectionExec: expr=[#17@0 as id, #18@1 as distance, #19@2 as hops, #20@3 as parent]\n  ProjectionExec: expr=[#0@0 as #17, get_field(min(struct(#1,#2,#3))@1, distance) as #18, get_field(min(struct(#1,#2,#3))@1, hops) as #19, get_field(min(struct(#1,#2,#3))@1, parent) as #20]\n    AggregateExec: mode=FinalPartitioned, gby=[#0@0 as #0], aggr=[min(struct(#1,#2,#3))]\n      RepartitionExec: partitioning=Hash([#0@0], 4), input_partitions=6\n        AggregateExec: mode=Partial, gby=[#0@0 as #0], aggr=[min(struct(#1,#2,#3))]\n          UnionExec\n            DataSourceExec: file_groups={2 groups: [[targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00028/DxLRAceszwGQJzUz_0.zst.parquet], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00028/DxLRAceszwGQJzUz_1.zst.parquet]]}, projection=[id@0 as #0, distance@1 as #1, hops@2 as #2, parent@3 as #3], file_type=parquet\n            ProjectionExec: expr=[#9@0 as #0, #5@1 + #10@2 as #1, #6@3 + 1 as #2, #4@4 as #3]\n              HashJoinExec: mode=CollectLeft, join_type=Inner, on=[(#4@0, #8@0)], projection=[#9@4, #5@1, #10@5, #6@2, #4@0]\n                DataSourceExec: file_groups={1 group: [[targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00029/uO4KtSZmAqZdelAI_0.zst.parquet]]}, projection=[id@0 as #4, distance@1 as #5, hops@2 as #6], file_type=parquet\n                DataSourceExec: file_groups={4 groups: [[targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_0.zst.parquet:0..580134], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_0.zst.parquet:580134..597351, targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_1.zst.parquet:0..562917], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_1.zst.parquet:562917..586352, targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_2.zst.parquet:0..556699], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_2.zst.parquet:556699..574516, targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_3.zst.parquet:0..562316]]}, projection=[src@0 as #8, dst@1 as #9, weight@2 as #10], file_type=parquet\n",
+      "elapsed_seconds": 12.357167025009403
+    },
+    {
+      "kind": "iteration_end",
+      "algorithm": "sssp-frontier",
+      "iteration": 14,
+      "active_vertices": 3318,
+      "elapsed_seconds": 12.926210723991971
+    },
+    {
+      "kind": "iteration_start",
+      "algorithm": "sssp-frontier",
+      "iteration": 15,
+      "plan": "== Physical Plan ==\nProjectionExec: expr=[#17@0 as id, #18@1 as distance, #19@2 as hops, #20@3 as parent]\n  ProjectionExec: expr=[#0@0 as #17, get_field(min(struct(#1,#2,#3))@1, distance) as #18, get_field(min(struct(#1,#2,#3))@1, hops) as #19, get_field(min(struct(#1,#2,#3))@1, parent) as #20]\n    AggregateExec: mode=FinalPartitioned, gby=[#0@0 as #0], aggr=[min(struct(#1,#2,#3))]\n      RepartitionExec: partitioning=Hash([#0@0], 4), input_partitions=6\n        AggregateExec: mode=Partial, gby=[#0@0 as #0], aggr=[min(struct(#1,#2,#3))]\n          UnionExec\n            DataSourceExec: file_groups={2 groups: [[targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00030/PYBEFGOKYwcPMQi2_0.zst.parquet], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00030/PYBEFGOKYwcPMQi2_1.zst.parquet]]}, projection=[id@0 as #0, distance@1 as #1, hops@2 as #2, parent@3 as #3], file_type=parquet\n            ProjectionExec: expr=[#9@0 as #0, #5@1 + #10@2 as #1, #6@3 + 1 as #2, #4@4 as #3]\n              HashJoinExec: mode=CollectLeft, join_type=Inner, on=[(#4@0, #8@0)], projection=[#9@4, #5@1, #10@5, #6@2, #4@0]\n                DataSourceExec: file_groups={1 group: [[targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00031/BnrDbhSH8RSpgPTp_0.zst.parquet]]}, projection=[id@0 as #4, distance@1 as #5, hops@2 as #6], file_type=parquet\n                DataSourceExec: file_groups={4 groups: [[targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_0.zst.parquet:0..580134], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_0.zst.parquet:580134..597351, targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_1.zst.parquet:0..562917], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_1.zst.parquet:562917..586352, targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_2.zst.parquet:0..556699], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_2.zst.parquet:556699..574516, targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_3.zst.parquet:0..562316]]}, projection=[src@0 as #8, dst@1 as #9, weight@2 as #10], file_type=parquet\n",
+      "elapsed_seconds": 13.011364650999894
+    },
+    {
+      "kind": "iteration_end",
+      "algorithm": "sssp-frontier",
+      "iteration": 15,
+      "active_vertices": 2668,
+      "elapsed_seconds": 13.5788935990131
+    },
+    {
+      "kind": "iteration_start",
+      "algorithm": "sssp-frontier",
+      "iteration": 16,
+      "plan": "== Physical Plan ==\nProjectionExec: expr=[#17@0 as id, #18@1 as distance, #19@2 as hops, #20@3 as parent]\n  ProjectionExec: expr=[#0@0 as #17, get_field(min(struct(#1,#2,#3))@1, distance) as #18, get_field(min(struct(#1,#2,#3))@1, hops) as #19, get_field(min(struct(#1,#2,#3))@1, parent) as #20]\n    AggregateExec: mode=FinalPartitioned, gby=[#0@0 as #0], aggr=[min(struct(#1,#2,#3))]\n      RepartitionExec: partitioning=Hash([#0@0], 4), input_partitions=6\n        AggregateExec: mode=Partial, gby=[#0@0 as #0], aggr=[min(struct(#1,#2,#3))]\n          UnionExec\n            DataSourceExec: file_groups={2 groups: [[targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00032/vv2VAclBbQOi9Aqk_0.zst.parquet], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00032/vv2VAclBbQOi9Aqk_1.zst.parquet]]}, projection=[id@0 as #0, distance@1 as #1, hops@2 as #2, parent@3 as #3], file_type=parquet\n            ProjectionExec: expr=[#9@0 as #0, #5@1 + #10@2 as #1, #6@3 + 1 as #2, #4@4 as #3]\n              HashJoinExec: mode=CollectLeft, join_type=Inner, on=[(#4@0, #8@0)], projection=[#9@4, #5@1, #10@5, #6@2, #4@0]\n                DataSourceExec: file_groups={1 group: [[targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00033/OMDAo1jud1eZbCOJ_0.zst.parquet]]}, projection=[id@0 as #4, distance@1 as #5, hops@2 as #6], file_type=parquet\n                DataSourceExec: file_groups={4 groups: [[targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_0.zst.parquet:0..580134], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_0.zst.parquet:580134..597351, targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_1.zst.parquet:0..562917], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_1.zst.parquet:562917..586352, targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_2.zst.parquet:0..556699], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_2.zst.parquet:556699..574516, targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_3.zst.parquet:0..562316]]}, projection=[src@0 as #8, dst@1 as #9, weight@2 as #10], file_type=parquet\n",
+      "elapsed_seconds": 13.66223337300471
+    },
+    {
+      "kind": "iteration_end",
+      "algorithm": "sssp-frontier",
+      "iteration": 16,
+      "active_vertices": 1630,
+      "elapsed_seconds": 14.274237923003966
+    },
+    {
+      "kind": "iteration_start",
+      "algorithm": "sssp-frontier",
+      "iteration": 17,
+      "plan": "== Physical Plan ==\nProjectionExec: expr=[#17@0 as id, #18@1 as distance, #19@2 as hops, #20@3 as parent]\n  ProjectionExec: expr=[#0@0 as #17, get_field(min(struct(#1,#2,#3))@1, distance) as #18, get_field(min(struct(#1,#2,#3))@1, hops) as #19, get_field(min(struct(#1,#2,#3))@1, parent) as #20]\n    AggregateExec: mode=FinalPartitioned, gby=[#0@0 as #0], aggr=[min(struct(#1,#2,#3))]\n      RepartitionExec: partitioning=Hash([#0@0], 4), input_partitions=6\n        AggregateExec: mode=Partial, gby=[#0@0 as #0], aggr=[min(struct(#1,#2,#3))]\n          UnionExec\n            DataSourceExec: file_groups={2 groups: [[targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00034/FEOYDJmBjqih40ME_0.zst.parquet], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00034/FEOYDJmBjqih40ME_1.zst.parquet]]}, projection=[id@0 as #0, distance@1 as #1, hops@2 as #2, parent@3 as #3], file_type=parquet\n            ProjectionExec: expr=[#9@0 as #0, #5@1 + #10@2 as #1, #6@3 + 1 as #2, #4@4 as #3]\n              HashJoinExec: mode=CollectLeft, join_type=Inner, on=[(#4@0, #8@0)], projection=[#9@4, #5@1, #10@5, #6@2, #4@0]\n                DataSourceExec: file_groups={1 group: [[targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00035/Adf7lB9aZvlUfxDd_0.zst.parquet]]}, projection=[id@0 as #4, distance@1 as #5, hops@2 as #6], file_type=parquet\n                DataSourceExec: file_groups={4 groups: [[targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_0.zst.parquet:0..580134], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_0.zst.parquet:580134..597351, targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_1.zst.parquet:0..562917], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_1.zst.parquet:562917..586352, targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_2.zst.parquet:0..556699], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_2.zst.parquet:556699..574516, targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_3.zst.parquet:0..562316]]}, projection=[src@0 as #8, dst@1 as #9, weight@2 as #10], file_type=parquet\n",
+      "elapsed_seconds": 14.357084726012545
+    },
+    {
+      "kind": "iteration_end",
+      "algorithm": "sssp-frontier",
+      "iteration": 17,
+      "active_vertices": 819,
+      "elapsed_seconds": 14.803942391008604
+    },
+    {
+      "kind": "iteration_start",
+      "algorithm": "sssp-frontier",
+      "iteration": 18,
+      "plan": "== Physical Plan ==\nProjectionExec: expr=[#17@0 as id, #18@1 as distance, #19@2 as hops, #20@3 as parent]\n  ProjectionExec: expr=[#0@0 as #17, get_field(min(struct(#1,#2,#3))@1, distance) as #18, get_field(min(struct(#1,#2,#3))@1, hops) as #19, get_field(min(struct(#1,#2,#3))@1, parent) as #20]\n    AggregateExec: mode=FinalPartitioned, gby=[#0@0 as #0], aggr=[min(struct(#1,#2,#3))]\n      RepartitionExec: partitioning=Hash([#0@0], 4), input_partitions=6\n        AggregateExec: mode=Partial, gby=[#0@0 as #0], aggr=[min(struct(#1,#2,#3))]\n          UnionExec\n            DataSourceExec: file_groups={2 groups: [[targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00036/13InEgCzmIdPcKr0_0.zst.parquet], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00036/13InEgCzmIdPcKr0_1.zst.parquet]]}, projection=[id@0 as #0, distance@1 as #1, hops@2 as #2, parent@3 as #3], file_type=parquet\n            ProjectionExec: expr=[#9@0 as #0, #5@1 + #10@2 as #1, #6@3 + 1 as #2, #4@4 as #3]\n              HashJoinExec: mode=CollectLeft, join_type=Inner, on=[(#4@0, #8@0)], projection=[#9@4, #5@1, #10@5, #6@2, #4@0]\n                DataSourceExec: file_groups={1 group: [[targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00037/h3U4HyxZE5X2MZOP_0.zst.parquet]]}, projection=[id@0 as #4, distance@1 as #5, hops@2 as #6], file_type=parquet\n                DataSourceExec: file_groups={4 groups: [[targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_0.zst.parquet:0..580134], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_0.zst.parquet:580134..597351, targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_1.zst.parquet:0..562917], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_1.zst.parquet:562917..586352, targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_2.zst.parquet:0..556699], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_2.zst.parquet:556699..574516, targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_3.zst.parquet:0..562316]]}, projection=[src@0 as #8, dst@1 as #9, weight@2 as #10], file_type=parquet\n",
+      "elapsed_seconds": 14.897822766011814
+    },
+    {
+      "kind": "iteration_end",
+      "algorithm": "sssp-frontier",
+      "iteration": 18,
+      "active_vertices": 361,
+      "elapsed_seconds": 15.329881475016009
+    },
+    {
+      "kind": "iteration_start",
+      "algorithm": "sssp-frontier",
+      "iteration": 19,
+      "plan": "== Physical Plan ==\nProjectionExec: expr=[#17@0 as id, #18@1 as distance, #19@2 as hops, #20@3 as parent]\n  ProjectionExec: expr=[#0@0 as #17, get_field(min(struct(#1,#2,#3))@1, distance) as #18, get_field(min(struct(#1,#2,#3))@1, hops) as #19, get_field(min(struct(#1,#2,#3))@1, parent) as #20]\n    AggregateExec: mode=FinalPartitioned, gby=[#0@0 as #0], aggr=[min(struct(#1,#2,#3))]\n      RepartitionExec: partitioning=Hash([#0@0], 4), input_partitions=6\n        AggregateExec: mode=Partial, gby=[#0@0 as #0], aggr=[min(struct(#1,#2,#3))]\n          UnionExec\n            DataSourceExec: file_groups={2 groups: [[targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00038/J5SoBBWbZjLdESiB_0.zst.parquet], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00038/J5SoBBWbZjLdESiB_1.zst.parquet]]}, projection=[id@0 as #0, distance@1 as #1, hops@2 as #2, parent@3 as #3], file_type=parquet\n            ProjectionExec: expr=[#9@0 as #0, #5@1 + #10@2 as #1, #6@3 + 1 as #2, #4@4 as #3]\n              HashJoinExec: mode=CollectLeft, join_type=Inner, on=[(#4@0, #8@0)], projection=[#9@4, #5@1, #10@5, #6@2, #4@0]\n                DataSourceExec: file_groups={1 group: [[targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00039/yNAUFRfulPx58JXF_0.zst.parquet]]}, projection=[id@0 as #4, distance@1 as #5, hops@2 as #6], file_type=parquet\n                DataSourceExec: file_groups={4 groups: [[targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_0.zst.parquet:0..580134], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_0.zst.parquet:580134..597351, targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_1.zst.parquet:0..562917], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_1.zst.parquet:562917..586352, targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_2.zst.parquet:0..556699], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_2.zst.parquet:556699..574516, targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_3.zst.parquet:0..562316]]}, projection=[src@0 as #8, dst@1 as #9, weight@2 as #10], file_type=parquet\n",
+      "elapsed_seconds": 15.39754419500241
+    },
+    {
+      "kind": "iteration_end",
+      "algorithm": "sssp-frontier",
+      "iteration": 19,
+      "active_vertices": 150,
+      "elapsed_seconds": 15.852416537003592
+    },
+    {
+      "kind": "iteration_start",
+      "algorithm": "sssp-frontier",
+      "iteration": 20,
+      "plan": "== Physical Plan ==\nProjectionExec: expr=[#17@0 as id, #18@1 as distance, #19@2 as hops, #20@3 as parent]\n  ProjectionExec: expr=[#0@0 as #17, get_field(min(struct(#1,#2,#3))@1, distance) as #18, get_field(min(struct(#1,#2,#3))@1, hops) as #19, get_field(min(struct(#1,#2,#3))@1, parent) as #20]\n    AggregateExec: mode=FinalPartitioned, gby=[#0@0 as #0], aggr=[min(struct(#1,#2,#3))]\n      RepartitionExec: partitioning=Hash([#0@0], 4), input_partitions=6\n        AggregateExec: mode=Partial, gby=[#0@0 as #0], aggr=[min(struct(#1,#2,#3))]\n          UnionExec\n            DataSourceExec: file_groups={2 groups: [[targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00040/kRmSkQWj4US2WJWc_0.zst.parquet], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00040/kRmSkQWj4US2WJWc_1.zst.parquet]]}, projection=[id@0 as #0, distance@1 as #1, hops@2 as #2, parent@3 as #3], file_type=parquet\n            ProjectionExec: expr=[#9@0 as #0, #5@1 + #10@2 as #1, #6@3 + 1 as #2, #4@4 as #3]\n              HashJoinExec: mode=CollectLeft, join_type=Inner, on=[(#4@0, #8@0)], projection=[#9@4, #5@1, #10@5, #6@2, #4@0]\n                DataSourceExec: file_groups={1 group: [[targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00041/1E8KdGAuaLxewq6L_0.zst.parquet]]}, projection=[id@0 as #4, distance@1 as #5, hops@2 as #6], file_type=parquet\n                DataSourceExec: file_groups={4 groups: [[targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_0.zst.parquet:0..580134], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_0.zst.parquet:580134..597351, targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_1.zst.parquet:0..562917], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_1.zst.parquet:562917..586352, targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_2.zst.parquet:0..556699], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_2.zst.parquet:556699..574516, targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_3.zst.parquet:0..562316]]}, projection=[src@0 as #8, dst@1 as #9, weight@2 as #10], file_type=parquet\n",
+      "elapsed_seconds": 15.947218154993607
+    },
+    {
+      "kind": "iteration_end",
+      "algorithm": "sssp-frontier",
+      "iteration": 20,
+      "active_vertices": 51,
+      "elapsed_seconds": 16.34762284500175
+    },
+    {
+      "kind": "iteration_start",
+      "algorithm": "sssp-frontier",
+      "iteration": 21,
+      "plan": "== Physical Plan ==\nProjectionExec: expr=[#17@0 as id, #18@1 as distance, #19@2 as hops, #20@3 as parent]\n  ProjectionExec: expr=[#0@0 as #17, get_field(min(struct(#1,#2,#3))@1, distance) as #18, get_field(min(struct(#1,#2,#3))@1, hops) as #19, get_field(min(struct(#1,#2,#3))@1, parent) as #20]\n    AggregateExec: mode=FinalPartitioned, gby=[#0@0 as #0], aggr=[min(struct(#1,#2,#3))]\n      RepartitionExec: partitioning=Hash([#0@0], 4), input_partitions=6\n        AggregateExec: mode=Partial, gby=[#0@0 as #0], aggr=[min(struct(#1,#2,#3))]\n          UnionExec\n            DataSourceExec: file_groups={2 groups: [[targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00042/6CqLKIsE0nW1omPg_0.zst.parquet], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00042/6CqLKIsE0nW1omPg_1.zst.parquet]]}, projection=[id@0 as #0, distance@1 as #1, hops@2 as #2, parent@3 as #3], file_type=parquet\n            ProjectionExec: expr=[#9@0 as #0, #5@1 + #10@2 as #1, #6@3 + 1 as #2, #4@4 as #3]\n              HashJoinExec: mode=CollectLeft, join_type=Inner, on=[(#4@0, #8@0)], projection=[#9@4, #5@1, #10@5, #6@2, #4@0]\n                DataSourceExec: file_groups={1 group: [[targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00043/T5iUnqRGgRzV4GE3_0.zst.parquet]]}, projection=[id@0 as #4, distance@1 as #5, hops@2 as #6], file_type=parquet\n                DataSourceExec: file_groups={4 groups: [[targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_0.zst.parquet:0..580134], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_0.zst.parquet:580134..597351, targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_1.zst.parquet:0..562917], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_1.zst.parquet:562917..586352, targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_2.zst.parquet:0..556699], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_2.zst.parquet:556699..574516, targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_3.zst.parquet:0..562316]]}, projection=[src@0 as #8, dst@1 as #9, weight@2 as #10], file_type=parquet\n",
+      "elapsed_seconds": 16.426577278005425
+    },
+    {
+      "kind": "iteration_end",
+      "algorithm": "sssp-frontier",
+      "iteration": 21,
+      "active_vertices": 16,
+      "elapsed_seconds": 16.884011518995976
+    },
+    {
+      "kind": "iteration_start",
+      "algorithm": "sssp-frontier",
+      "iteration": 22,
+      "plan": "== Physical Plan ==\nProjectionExec: expr=[#17@0 as id, #18@1 as distance, #19@2 as hops, #20@3 as parent]\n  ProjectionExec: expr=[#0@0 as #17, get_field(min(struct(#1,#2,#3))@1, distance) as #18, get_field(min(struct(#1,#2,#3))@1, hops) as #19, get_field(min(struct(#1,#2,#3))@1, parent) as #20]\n    AggregateExec: mode=FinalPartitioned, gby=[#0@0 as #0], aggr=[min(struct(#1,#2,#3))]\n      RepartitionExec: partitioning=Hash([#0@0], 4), input_partitions=6\n        AggregateExec: mode=Partial, gby=[#0@0 as #0], aggr=[min(struct(#1,#2,#3))]\n          UnionExec\n            DataSourceExec: file_groups={2 groups: [[targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00044/DNkMg5o6DghFoIGk_0.zst.parquet], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00044/DNkMg5o6DghFoIGk_1.zst.parquet]]}, projection=[id@0 as #0, distance@1 as #1, hops@2 as #2, parent@3 as #3], file_type=parquet\n            ProjectionExec: expr=[#9@0 as #0, #5@1 + #10@2 as #1, #6@3 + 1 as #2, #4@4 as #3]\n              HashJoinExec: mode=CollectLeft, join_type=Inner, on=[(#4@0, #8@0)], projection=[#9@4, #5@1, #10@5, #6@2, #4@0]\n                DataSourceExec: file_groups={1 group: [[targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00045/iDWW5G3bYAPFzKHs_0.zst.parquet]]}, projection=[id@0 as #4, distance@1 as #5, hops@2 as #6], file_type=parquet\n                DataSourceExec: file_groups={4 groups: [[targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_0.zst.parquet:0..580134], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_0.zst.parquet:580134..597351, targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_1.zst.parquet:0..562917], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_1.zst.parquet:562917..586352, targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_2.zst.parquet:0..556699], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_2.zst.parquet:556699..574516, targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_3.zst.parquet:0..562316]]}, projection=[src@0 as #8, dst@1 as #9, weight@2 as #10], file_type=parquet\n",
+      "elapsed_seconds": 16.978202158003114
+    },
+    {
+      "kind": "iteration_end",
+      "algorithm": "sssp-frontier",
+      "iteration": 22,
+      "active_vertices": 8,
+      "elapsed_seconds": 17.401771725999424
+    },
+    {
+      "kind": "iteration_start",
+      "algorithm": "sssp-frontier",
+      "iteration": 23,
+      "plan": "== Physical Plan ==\nProjectionExec: expr=[#17@0 as id, #18@1 as distance, #19@2 as hops, #20@3 as parent]\n  ProjectionExec: expr=[#0@0 as #17, get_field(min(struct(#1,#2,#3))@1, distance) as #18, get_field(min(struct(#1,#2,#3))@1, hops) as #19, get_field(min(struct(#1,#2,#3))@1, parent) as #20]\n    AggregateExec: mode=FinalPartitioned, gby=[#0@0 as #0], aggr=[min(struct(#1,#2,#3))]\n      RepartitionExec: partitioning=Hash([#0@0], 4), input_partitions=6\n        AggregateExec: mode=Partial, gby=[#0@0 as #0], aggr=[min(struct(#1,#2,#3))]\n          UnionExec\n            DataSourceExec: file_groups={2 groups: [[targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00046/eEVrqMtzidvDbzRf_0.zst.parquet], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00046/eEVrqMtzidvDbzRf_1.zst.parquet]]}, projection=[id@0 as #0, distance@1 as #1, hops@2 as #2, parent@3 as #3], file_type=parquet\n            ProjectionExec: expr=[#9@0 as #0, #5@1 + #10@2 as #1, #6@3 + 1 as #2, #4@4 as #3]\n              HashJoinExec: mode=CollectLeft, join_type=Inner, on=[(#4@0, #8@0)], projection=[#9@4, #5@1, #10@5, #6@2, #4@0]\n                DataSourceExec: file_groups={1 group: [[targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00047/jVITQOqia2M4qhPS_0.zst.parquet]]}, projection=[id@0 as #4, distance@1 as #5, hops@2 as #6], file_type=parquet\n                DataSourceExec: file_groups={4 groups: [[targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_0.zst.parquet:0..580134], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_0.zst.parquet:580134..597351, targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_1.zst.parquet:0..562917], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_1.zst.parquet:562917..586352, targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_2.zst.parquet:0..556699], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_2.zst.parquet:556699..574516, targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_3.zst.parquet:0..562316]]}, projection=[src@0 as #8, dst@1 as #9, weight@2 as #10], file_type=parquet\n",
+      "elapsed_seconds": 17.47826989099849
+    },
+    {
+      "kind": "iteration_end",
+      "algorithm": "sssp-frontier",
+      "iteration": 23,
+      "active_vertices": 3,
+      "elapsed_seconds": 17.893162444990594
+    },
+    {
+      "kind": "iteration_start",
+      "algorithm": "sssp-frontier",
+      "iteration": 24,
+      "plan": "== Physical Plan ==\nProjectionExec: expr=[#17@0 as id, #18@1 as distance, #19@2 as hops, #20@3 as parent]\n  ProjectionExec: expr=[#0@0 as #17, get_field(min(struct(#1,#2,#3))@1, distance) as #18, get_field(min(struct(#1,#2,#3))@1, hops) as #19, get_field(min(struct(#1,#2,#3))@1, parent) as #20]\n    AggregateExec: mode=FinalPartitioned, gby=[#0@0 as #0], aggr=[min(struct(#1,#2,#3))]\n      RepartitionExec: partitioning=Hash([#0@0], 4), input_partitions=6\n        AggregateExec: mode=Partial, gby=[#0@0 as #0], aggr=[min(struct(#1,#2,#3))]\n          UnionExec\n            DataSourceExec: file_groups={2 groups: [[targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00048/DwqLCP2tQN1jOmAp_0.zst.parquet], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00048/DwqLCP2tQN1jOmAp_1.zst.parquet]]}, projection=[id@0 as #0, distance@1 as #1, hops@2 as #2, parent@3 as #3], file_type=parquet\n            ProjectionExec: expr=[#9@0 as #0, #5@1 + #10@2 as #1, #6@3 + 1 as #2, #4@4 as #3]\n              HashJoinExec: mode=CollectLeft, join_type=Inner, on=[(#4@0, #8@0)], projection=[#9@4, #5@1, #10@5, #6@2, #4@0]\n                DataSourceExec: file_groups={1 group: [[targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00049/4oywot3U4XRHO3Se_0.zst.parquet]]}, projection=[id@0 as #4, distance@1 as #5, hops@2 as #6], file_type=parquet\n                DataSourceExec: file_groups={4 groups: [[targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_0.zst.parquet:0..580134], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_0.zst.parquet:580134..597351, targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_1.zst.parquet:0..562917], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_1.zst.parquet:562917..586352, targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_2.zst.parquet:0..556699], [targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_2.zst.parquet:556699..574516, targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging/4cd8556f-6595-4f60-afa2-ab9fc51b0664/stage-00002/YpQydVEx0JVvmBt5_3.zst.parquet:0..562316]]}, projection=[src@0 as #8, dst@1 as #9, weight@2 as #10], file_type=parquet\n",
+      "elapsed_seconds": 17.988665382988984
+    },
+    {
+      "kind": "iteration_end",
+      "algorithm": "sssp-frontier",
+      "iteration": 24,
+      "active_vertices": 0,
+      "elapsed_seconds": 18.40761176298838
+    }
+  ],
+  "cgroup_execution_after": {
+    "memory.current": "885940224",
+    "memory.peak": "1043095552",
+    "memory.max": "12884901888",
+    "memory.swap.max": "0",
+    "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0",
+    "memory.stat": "anon 714633216\nfile 7708672\nkernel 9510912\nkernel_stack 1703936\npagetables 4505600\nsec_pagetables 0\npercpu 14144\nsock 16384\nvmalloc 12288\nshmem 0\nzswap 0\nzswapped 0\nfile_mapped 0\nfile_dirty 2306048\nfile_writeback 0\nswapcached 0\nanon_thp 230686720\nfile_thp 0\nshmem_thp 0\ninactive_anon 0\nactive_anon 867426304\ninactive_file 7659520\nactive_file 0\nunevictable 0\nslab_reclaimable 1445200\nslab_unreclaimable 1752376\nslab 3197576\nworkingset_refault_anon 0\nworkingset_refault_file 0\nworkingset_activate_anon 0\nworkingset_activate_file 0\nworkingset_restore_anon 0\nworkingset_restore_file 0\nworkingset_nodereclaim 0\npgscan 0\npgsteal 0\npgscan_kswapd 0\npgscan_direct 0\npgscan_khugepaged 0\npgsteal_kswapd 0\npgsteal_direct 0\npgsteal_khugepaged 0\npgfault 425709\npgmajfault 0\npgrefill 0\npgactivate 0\npgdeactivate 0\npglazyfree 0\npglazyfreed 0\nzswpin 0\nzswpout 0\nzswpwb 0\nthp_fault_alloc 601\nthp_collapse_alloc 2\nthp_swpout 0\nthp_swpout_fallback 0",
+    "cpu.max": "800000 100000",
+    "cpu.stat": "usage_usec 81843379\nuser_usec 25960833\nsystem_usec 55882545\ncore_sched.force_idle_usec 0\nnr_periods 230\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0",
+    "cpuset.cpus.effective": "16-23"
+  },
+  "result_files": [
+    {
+      "name": "KZvDOZrK7Dv9iQYG_0.zst.parquet",
+      "bytes": 67660,
+      "sha256": "71296e727b2119b56c320a97535c3ca194cb5b23cd4b740125508eea49cf10da"
+    },
+    {
+      "name": "KZvDOZrK7Dv9iQYG_1.zst.parquet",
+      "bytes": 68074,
+      "sha256": "affe4f208ca8110447d2de4d7ae60a0ff31df64d745dac97ed3905888e7a3d8d"
+    }
+  ],
+  "correctness": {
+    "rows": 16384,
+    "unique": 16384,
+    "parent_tree_checked": true,
+    "reference": "independent BFS/heap-Dijkstra"
+  },
+  "staging_files_after_shutdown": [],
+  "finished_utc": "2026-10-01T01:53:20.228171+00:00",
+  "memory": {
+    "interval_seconds": 0.05,
+    "samples": 268,
+    "phase_peaks": {
+      "startup": {
+        "rss_bytes": 448106496,
+        "pss_bytes": 361929728,
+        "cgroup_current_bytes": 229687296,
+        "fd_total": 60
+      },
+      "baseline": {
+        "rss_bytes": 512516096,
+        "pss_bytes": 400751616,
+        "cgroup_current_bytes": 253947904,
+        "fd_total": 70
+      },
+      "execute": {
+        "rss_bytes": 1191112704,
+        "pss_bytes": 1045556224,
+        "cgroup_current_bytes": 1040224256,
+        "fd_total": 79
+      },
+      "verification": {
+        "rss_bytes": 1057718272,
+        "pss_bytes": 911719424,
+        "cgroup_current_bytes": 899039232,
+        "fd_total": 78
+      },
+      "cleanup": {
+        "rss_bytes": 432889856,
+        "pss_bytes": 423383040,
+        "cgroup_current_bytes": 526999552,
+        "fd_total": 31
+      }
+    },
+    "phase_first_samples": {
+      "startup": {
+        "scan_started_seconds": 164713.151135331,
+        "scan_finished_seconds": 164713.167790319,
+        "phase": "startup",
+        "step": null,
+        "rss_bytes": 140963840,
+        "pss_bytes": 140494848,
+        "pss_processes_available": 2,
+        "cgroup_current_bytes": 92839936,
+        "fd_total": 10,
+        "directories": {
+          "staging": {
+            "files": 0,
+            "bytes": 0
+          },
+          "temporary": {
+            "files": 0,
+            "bytes": 0
+          }
+        },
+        "processes": [
+          {
+            "pid": 1,
+            "name": "docker-init",
+            "rss_bytes": 741376,
+            "pss_bytes": 737280,
+            "fd_count": 3
+          },
+          {
+            "pid": 6,
+            "name": "python",
+            "rss_bytes": 140222464,
+            "pss_bytes": 139757568,
+            "fd_count": 7
+          }
+        ]
+      },
+      "baseline": {
+        "scan_started_seconds": 164714.883108554,
+        "scan_finished_seconds": 164714.899282533,
+        "phase": "baseline",
+        "step": null,
+        "rss_bytes": 512512000,
+        "pss_bytes": 400747520,
+        "pss_processes_available": 5,
+        "cgroup_current_bytes": 253947904,
+        "fd_total": 70,
+        "directories": null,
+        "processes": [
+          {
+            "pid": 1,
+            "name": "docker-init",
+            "rss_bytes": 741376,
+            "pss_bytes": 737280,
+            "fd_count": 3
+          },
+          {
+            "pid": 6,
+            "name": "python",
+            "rss_bytes": 147755008,
+            "pss_bytes": 142474240,
+            "fd_count": 11
+          },
+          {
+            "pid": 25,
+            "name": "sail-linux-x86_",
+            "rss_bytes": 170840064,
+            "pss_bytes": 133919744,
+            "fd_count": 23
+          },
+          {
+            "pid": 61,
+            "name": "sail-linux-x86_",
+            "rss_bytes": 89055232,
+            "pss_bytes": 55689216,
+            "fd_count": 16
+          },
+          {
+            "pid": 62,
+            "name": "sail-linux-x86_",
+            "rss_bytes": 104120320,
+            "pss_bytes": 67927040,
+            "fd_count": 17
+          }
+        ]
+      },
+      "execute": {
+        "scan_started_seconds": 164715.032158795,
+        "scan_finished_seconds": 164715.057545902,
+        "phase": "execute",
+        "step": null,
+        "rss_bytes": 543072256,
+        "pss_bytes": 423901184,
+        "pss_processes_available": 5,
+        "cgroup_current_bytes": 279629824,
+        "fd_total": 74,
+        "directories": null,
+        "processes": [
+          {
+            "pid": 1,
+            "name": "docker-init",
+            "rss_bytes": 741376,
+            "pss_bytes": 737280,
+            "fd_count": 3
+          },
+          {
+            "pid": 6,
+            "name": "python",
+            "rss_bytes": 147779584,
+            "pss_bytes": 142498816,
+            "fd_count": 11
+          },
+          {
+            "pid": 25,
+            "name": "sail-linux-x86_",
+            "rss_bytes": 178044928,
+            "pss_bytes": 139207680,
+            "fd_count": 25
+          },
+          {
+            "pid": 61,
+            "name": "sail-linux-x86_",
+            "rss_bytes": 112386048,
+            "pss_bytes": 74939392,
+            "fd_count": 18
+          },
+          {
+            "pid": 62,
+            "name": "sail-linux-x86_",
+            "rss_bytes": 104120320,
+            "pss_bytes": 66518016,
+            "fd_count": 17
+          }
+        ]
+      },
+      "verification": {
+        "scan_started_seconds": 164733.704886758,
+        "scan_finished_seconds": 164733.743683464,
+        "phase": "verification",
+        "step": null,
+        "rss_bytes": 1049067520,
+        "pss_bytes": 903134208,
+        "pss_processes_available": 5,
+        "cgroup_current_bytes": 892751872,
+        "fd_total": 78,
+        "directories": null,
+        "processes": [
+          {
+            "pid": 1,
+            "name": "docker-init",
+            "rss_bytes": 741376,
+            "pss_bytes": 737280,
+            "fd_count": 3
+          },
+          {
+            "pid": 6,
+            "name": "python",
+            "rss_bytes": 146526208,
+            "pss_bytes": 141229056,
+            "fd_count": 11
+          },
+          {
+            "pid": 25,
+            "name": "sail-linux-x86_",
+            "rss_bytes": 272642048,
+            "pss_bytes": 225866752,
+            "fd_count": 25
+          },
+          {
+            "pid": 61,
+            "name": "sail-linux-x86_",
+            "rss_bytes": 323383296,
+            "pss_bytes": 276541440,
+            "fd_count": 20
+          },
+          {
+            "pid": 62,
+            "name": "sail-linux-x86_",
+            "rss_bytes": 305774592,
+            "pss_bytes": 258759680,
+            "fd_count": 19
+          }
+        ]
+      },
+      "cleanup": {
+        "scan_started_seconds": 164734.300656466,
+        "scan_finished_seconds": 164734.324022928,
+        "phase": "cleanup",
+        "step": null,
+        "rss_bytes": 429936640,
+        "pss_bytes": 377264128,
+        "pss_processes_available": 3,
+        "cgroup_current_bytes": 526999552,
+        "fd_total": 31,
+        "directories": null,
+        "processes": [
+          {
+            "pid": 1,
+            "name": "docker-init",
+            "rss_bytes": 741376,
+            "pss_bytes": 737280,
+            "fd_count": 3
+          },
+          {
+            "pid": 6,
+            "name": "python",
+            "rss_bytes": 146370560,
+            "pss_bytes": 140995584,
+            "fd_count": 11
+          },
+          {
+            "pid": 25,
+            "name": "sail-linux-x86_",
+            "rss_bytes": 282824704,
+            "pss_bytes": 235531264,
+            "fd_count": 17
+          }
+        ]
+      }
+    },
+    "phase_sample_counts": {
+      "startup": 27,
+      "transition": 3,
+      "baseline": 2,
+      "execute": 228,
+      "verification": 6,
+      "cleanup": 2
+    },
+    "step_peaks": {},
+    "directory_peaks": {
+      "staging": {
+        "startup": {
+          "files": 0,
+          "bytes": 0
+        },
+        "execute": {
+          "files": 15,
+          "bytes": 4175995
+        },
+        "verification": {
+          "files": 3,
+          "bytes": 135745
+        }
+      },
+      "temporary": {
+        "startup": {
+          "files": 0,
+          "bytes": 0
+        },
+        "execute": {
+          "files": 0,
+          "bytes": 0
+        },
+        "verification": {
+          "files": 0,
+          "bytes": 0
+        }
+      }
+    },
+    "watched_directories": {
+      "staging": "/targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier/staging",
+      "temporary": "/tmp"
+    },
+    "directory_scan_every": 20,
+    "fd_boundary": "sum of open descriptors over all visible processes; None when any /proc/<pid>/fd was unreadable",
+    "directory_boundary": "files and bytes under each watched directory at scan time; a walk sees a tree in motion",
+    "execution_sampled": true,
+    "thread_alive": false,
+    "error": null,
+    "scope": "all visible processes: requires a private PID namespace",
+    "rss_boundary": "sum of contemporaneous process RSS, shared pages counted per process",
+    "pss_boundary": "sum of contemporaneous Linux proportional set size",
+    "cgroup_boundary": "container current/peak includes page cache and allocator overhead"
+  },
+  "cgroup_after": {
+    "memory.current": "89493504",
+    "memory.peak": "1043095552",
+    "memory.max": "12884901888",
+    "memory.swap.max": "0",
+    "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0",
+    "memory.stat": "anon 77709312\nfile 7692288\nkernel 2863104\nkernel_stack 163840\npagetables 802816\nsec_pagetables 0\npercpu 14144\nsock 0\nvmalloc 12288\nshmem 0\nzswap 0\nzswapped 0\nfile_mapped 0\nfile_dirty 2293760\nfile_writeback 0\nswapcached 0\nanon_thp 0\nfile_thp 0\nshmem_thp 0\ninactive_anon 0\nactive_anon 77709312\ninactive_file 7692288\nactive_file 0\nunevictable 0\nslab_reclaimable 1337024\nslab_unreclaimable 472712\nslab 1809736\nworkingset_refault_anon 0\nworkingset_refault_file 0\nworkingset_activate_anon 0\nworkingset_activate_file 0\nworkingset_restore_anon 0\nworkingset_restore_file 0\nworkingset_nodereclaim 0\npgscan 0\npgsteal 0\npgscan_kswapd 0\npgscan_direct 0\npgscan_khugepaged 0\npgsteal_kswapd 0\npgsteal_direct 0\npgsteal_khugepaged 0\npgfault 432937\npgmajfault 0\npgrefill 0\npgactivate 0\npgdeactivate 0\npglazyfree 0\npglazyfreed 0\nzswpin 0\nzswpout 0\nzswpwb 0\nthp_fault_alloc 613\nthp_collapse_alloc 7\nthp_swpout 0\nthp_swpout_fallback 0",
+    "cpu.max": "800000 100000",
+    "cpu.stat": "usage_usec 85063658\nuser_usec 26338623\nsystem_usec 58725034\ncore_sched.force_idle_usec 0\nnr_periods 238\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0",
+    "cpuset.cpus.effective": "16-23"
+  },
+  "guest_steal_fraction": 0.0,
+  "steal_scope": "whole Linux VM from /proc/stat, not container or assigned cpuset",
+  "host_load_after": "2.70 1.15 1.87 1/469 318"
+}

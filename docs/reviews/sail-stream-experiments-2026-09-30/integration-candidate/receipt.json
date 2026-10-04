@@ -1,0 +1,105 @@
+{
+  "started_utc": "2026-09-30T16:51:20.124729+00:00",
+  "outcome": "failed",
+  "identity": "detached staged candidate, not a committed-SHA verdict",
+  "source": "/private/tmp/sail-stream-performance-gate",
+  "target": "/private/tmp/sail-stream-performance-target",
+  "before": {
+    "head": "3a9028057c6c6c5034492845926fc4bc18f9626f",
+    "detached": true,
+    "tracked_source_sha256": "1268ae5f40ea966411b2e37bdc96b8389841697bfde0c24b522eb47a92f6f8f3",
+    "index_sha256": "dfbdb82c8a639fbcb8398ad8a7373a51f6283d1483f53a2ad9a9f72b18a56e05",
+    "diff_sha256": "bc36fd49450334af4bc1c68fb434c61a5497ca78bdad8bfa9c17d9dbe2046156",
+    "patch_file_sha256": "bc36fd49450334af4bc1c68fb434c61a5497ca78bdad8bfa9c17d9dbe2046156",
+    "status": "A  crates/sail-execution/src/diagnostics.rs\nA  crates/sail-execution/src/diagnostics/tests.rs\nM  crates/sail-execution/src/lib.rs\nM  crates/sail-execution/src/rpc.rs\nM  crates/sail-execution/src/stream/service/client.rs\nM  crates/sail-execution/src/stream/service/server.rs\nM  crates/sail-execution/src/task_runner/actor/handler.rs\nM  crates/sail-execution/src/task_runner/monitor.rs\nM  examples/extensions/argentea/src/adjacency.rs\nA  examples/extensions/argentea/src/adjacency_tests/allocations.rs\nA  examples/extensions/argentea/src/adjacency_tests/mod.rs\nM  examples/extensions/argentea/src/lib.rs\nA  examples/extensions/argentea/src/source_index.rs\nM  examples/extensions/argentea/src/sssp/adjacency.rs\nM  examples/extensions/argentea/src/sssp/partition/protocol.rs\nM  examples/extensions/argentea/src/sssp/partition/statistics.rs\nM  examples/extensions/argentea/tests/sssp.rs\nA  examples/extensions/argentea/tests/sssp_done/mod.rs\nM  examples/extensions/graph-algorithms/src/pyspark_pecan/traversal.py\nA  examples/extensions/graph-algorithms/src/pyspark_pecan/traversal_relaxation.py\nM  examples/extensions/graph-algorithms/src/pyspark_pecan/traversal_stepping.py\nM  examples/extensions/graph-algorithms/tests/test_traversal.py\n"
+  },
+  "steps": [
+    {
+      "name": "fmt",
+      "command": [
+        "cargo",
+        "fmt",
+        "--all",
+        "--check"
+      ],
+      "started_utc": "2026-09-30T16:51:20.151797+00:00",
+      "returncode": 1,
+      "finished_utc": "2026-09-30T16:51:23.509578+00:00",
+      "elapsed_seconds": 3.357633083127439
+    },
+    {
+      "name": "clippy",
+      "command": [
+        "cargo",
+        "clippy",
+        "--locked",
+        "-p",
+        "sail-execution",
+        "--all-targets",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "started_utc": "2026-09-30T16:51:23.510557+00:00",
+      "returncode": 0,
+      "finished_utc": "2026-09-30T16:52:30.055788+00:00",
+      "elapsed_seconds": 66.54481529211625
+    },
+    {
+      "name": "tests",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "sail-execution",
+        "--lib"
+      ],
+      "started_utc": "2026-09-30T16:52:30.056530+00:00",
+      "returncode": 0,
+      "finished_utc": "2026-09-30T16:54:16.796612+00:00",
+      "elapsed_seconds": 106.73944641696289
+    },
+    {
+      "name": "pecan-nonintegration",
+      "command": [
+        "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "-m",
+        "not integration",
+        "examples/extensions/graph-algorithms/tests"
+      ],
+      "started_utc": "2026-09-30T16:54:17.113256+00:00",
+      "returncode": 0,
+      "finished_utc": "2026-09-30T16:54:20.978754+00:00",
+      "elapsed_seconds": 3.863396167056635
+    }
+  ],
+  "environment": {
+    "CARGO_TARGET_DIR": "/private/tmp/sail-stream-performance-target",
+    "CARGO_INCREMENTAL": "0",
+    "CARGO_PROFILE_DEV_DEBUG": "0",
+    "CARGO_PROFILE_TEST_DEBUG": "0",
+    "CARGO_BUILD_JOBS": "6"
+  },
+  "free_bytes_before": 472883916800,
+  "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)",
+  "target_seed": "APFS clone-copy of idle /private/tmp/sail-stream-diagnostics-target",
+  "python_versions": "{\"pyspark\": \"4.0.1\", \"protobuf\": \"7.36.2\", \"pytest\": \"8.4.2\"}",
+  "after": {
+    "head": "3a9028057c6c6c5034492845926fc4bc18f9626f",
+    "detached": true,
+    "tracked_source_sha256": "1268ae5f40ea966411b2e37bdc96b8389841697bfde0c24b522eb47a92f6f8f3",
+    "index_sha256": "dfbdb82c8a639fbcb8398ad8a7373a51f6283d1483f53a2ad9a9f72b18a56e05",
+    "diff_sha256": "bc36fd49450334af4bc1c68fb434c61a5497ca78bdad8bfa9c17d9dbe2046156",
+    "patch_file_sha256": "bc36fd49450334af4bc1c68fb434c61a5497ca78bdad8bfa9c17d9dbe2046156",
+    "status": "A  crates/sail-execution/src/diagnostics.rs\nA  crates/sail-execution/src/diagnostics/tests.rs\nM  crates/sail-execution/src/lib.rs\nM  crates/sail-execution/src/rpc.rs\nM  crates/sail-execution/src/stream/service/client.rs\nM  crates/sail-execution/src/stream/service/server.rs\nM  crates/sail-execution/src/task_runner/actor/handler.rs\nM  crates/sail-execution/src/task_runner/monitor.rs\nM  examples/extensions/argentea/src/adjacency.rs\nA  examples/extensions/argentea/src/adjacency_tests/allocations.rs\nA  examples/extensions/argentea/src/adjacency_tests/mod.rs\nM  examples/extensions/argentea/src/lib.rs\nA  examples/extensions/argentea/src/source_index.rs\nM  examples/extensions/argentea/src/sssp/adjacency.rs\nM  examples/extensions/argentea/src/sssp/partition/protocol.rs\nM  examples/extensions/argentea/src/sssp/partition/statistics.rs\nM  examples/extensions/argentea/tests/sssp.rs\nA  examples/extensions/argentea/tests/sssp_done/mod.rs\nM  examples/extensions/graph-algorithms/src/pyspark_pecan/traversal.py\nA  examples/extensions/graph-algorithms/src/pyspark_pecan/traversal_relaxation.py\nM  examples/extensions/graph-algorithms/src/pyspark_pecan/traversal_stepping.py\nM  examples/extensions/graph-algorithms/tests/test_traversal.py\n"
+  },
+  "source_unchanged": true,
+  "finished_utc": "2026-09-30T16:54:21.634978+00:00",
+  "free_bytes_after": 471341858816
+}

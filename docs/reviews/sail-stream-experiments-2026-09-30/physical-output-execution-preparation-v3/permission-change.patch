@@ -1,0 +1,262 @@
+--- v2/prepare.py
++++ v3/prepare.py
+@@ -31,6 +31,12 @@
+     with path.open('x') as stream:
+         json.dump(value, stream, indent=2, allow_nan=False)
+         stream.write('\n')
++    path.chmod(0o644)
++
++
++def create_bundle_directory(bundle):
++    bundle.mkdir(parents=False, exist_ok=False)
++    bundle.chmod(0o755)
+ 
+ 
+ def pinned(path, digest):
+@@ -73,6 +79,7 @@
+     for name, source in sources.items():
+         target = bundle / name
+         shutil.copyfile(source, target)
++        target.chmod(0o644)
+         digest = sha(target)
+         need(digest == before[name], 'copied source differs: ' + name)
+         files[name] = dict(sha256=digest, bytes=target.stat().st_size)
+@@ -100,7 +107,7 @@
+     bundle = args.bundle.resolve()
+     for source in (args.receipt.resolve().parent, args.closure_audit.resolve().parent, own, helper.parent):
+         need(not bundle.is_relative_to(source), 'bundle must be outside evidence/source trees')
+-    bundle.mkdir(parents=False, exist_ok=False)
++    create_bundle_directory(bundle)
+     sources = {'configuration.json': config_path, 'producer-receipt.json': args.receipt,
+                'closed-audit.json': args.closure_audit, 'audit_output.py': helper,
+                'container_check.py': own / 'container_check.py', 'supervise.py': own / 'supervise.py'}
+@@ -112,6 +119,8 @@
+         native_path='/targets/graph-nuts-ffcfbd569/venv/lib/python3.12/site-packages/sail_nutmeg/_native.cpython-312-x86_64-linux-gnu.so',
+         native_sha256=NATIVE, expected_python_version='3.12.14', expected_pyarrow='21.0.0', expected_numpy='2.5.3',
+         container_name='physical-output-log03-' + uuid.uuid4().hex[:16], timeout_seconds=1800,
++        execution_identity=dict(host_uid=501, host_gid=20, container_user='501:20',
++            bundle_mode='0755', bundle_file_mode='0644', evidence_mode='0700'),
+         limits=dict(cpus=1, memory_bytes=2147483648, memory_swap_bytes=2147483648, pids=64),
+         disk_admission=dict(host_evidence_minimum_free_bytes=268435456, target_volume_minimum_free_bytes=1073741824),
+         scope='Prepared only. Physical value/domain check, not shortest paths, benchmark correctness, or timing. '
+--- v2/supervise.py
++++ v3/supervise.py
+@@ -8,6 +8,7 @@
+ from pathlib import Path
+ import re
+ import shutil
++import stat
+ import subprocess
+ import sys
+ import uuid
+@@ -17,7 +18,7 @@
+ CONFIG_SHA = 'b28132996612b11edb77bb02019288e4a562db5e4d22c4430a6a8815a220aea0'
+ HELPER_SHA = '4c5fe87d0eb0b3f4aec3e70841bc7db968017f952dda6978840d101d2f2f7872'
+ VOLUME = 'sail-extension-targets'
+-INSPECT = '{"Id":{{json .Id}},"State":{{json .State}},"Labels":{{json .Config.Labels}},"Mounts":{{json .Mounts}},"Memory":{{.HostConfig.Memory}},"MemorySwap":{{.HostConfig.MemorySwap}},"NanoCpus":{{.HostConfig.NanoCpus}},"ReadonlyRootfs":{{.HostConfig.ReadonlyRootfs}},"NetworkMode":{{json .HostConfig.NetworkMode}}}'
++INSPECT = '{"Id":{{json .Id}},"State":{{json .State}},"Labels":{{json .Config.Labels}},"User":{{json .Config.User}},"Mounts":{{json .Mounts}},"Memory":{{.HostConfig.Memory}},"MemorySwap":{{.HostConfig.MemorySwap}},"NanoCpus":{{.HostConfig.NanoCpus}},"ReadonlyRootfs":{{.HostConfig.ReadonlyRootfs}},"NetworkMode":{{json .HostConfig.NetworkMode}}}'
+ 
+ 
+ def utc():
+@@ -49,6 +50,37 @@
+     result = dict(path=str(path), total_bytes=usage.total, used_bytes=usage.used,
+                   free_bytes=usage.free, minimum_free_bytes=minimum)
+     return result
++
++
++IDENTITY = dict(host_uid=501, host_gid=20, container_user='501:20',
++                bundle_mode='0755', bundle_file_mode='0644', evidence_mode='0700')
++
++
++def path_permissions(path):
++    info = path.lstat()
++    return dict(uid=info.st_uid, gid=info.st_gid, mode=format(stat.S_IMODE(info.st_mode), '04o'))
++
++
++def validate_bundle_permissions(root, request):
++    need(request.get('execution_identity') == IDENTITY, 'execution identity differs')
++    need(os.getuid() == IDENTITY['host_uid'] and os.getgid() == IDENTITY['host_gid'], 'host UID/GID differs')
++    need(root.is_dir() and not root.is_symlink() and path_permissions(root)['mode'] == '0755', 'bundle mode must be0755')
++    for name in ['request.json', *request['files']]:
++        path = root / name
++        need(path.is_file() and not path.is_symlink() and path_permissions(path)['mode'] == '0644', 'bundle file mode must be0644: ' + name)
++
++
++def create_evidence_directory(output):
++    # The parent creates only a new directory; never chmod earlier evidence.
++    output.mkdir(parents=False, exist_ok=False)
++    output.chmod(0o700)
++
++
++def validate_evidence_directory(output):
++    need(output.is_dir() and not output.is_symlink(), 'evidence directory invalid')
++    value = path_permissions(output)
++    need(value['uid'] == IDENTITY['host_uid'] and value['mode'] == '0700', 'evidence owner/mode differs')
++    return value
+ 
+ 
+ def validate(request_path, digest, output):
+@@ -61,6 +93,7 @@
+     need(all(',' not in str(p) and '\n' not in str(p) for p in (root, output)), 'unsafe Docker mount path')
+     names = {'configuration.json', 'producer-receipt.json', 'closed-audit.json', 'audit_output.py', 'container_check.py', 'supervise.py'}
+     need(set(request['files']) == names, 'bundle inventory differs')
++    validate_bundle_permissions(root, request)
+     for name, pin in request['files'].items():
+         path = root / name
+         need(path.is_file() and not path.is_symlink() and path.stat().st_size == pin['bytes'] and sha(path) == pin['sha256'], 'bundle changed: ' + name)
+@@ -75,7 +108,7 @@
+ 
+ def create_command(request, root, output, digest, execution_id):
+     return DOCKER + ['create', '--name', request['container_name'], '--label', 'physical-check.request=' + digest, '--label', 'physical-check.execution=' + execution_id,
+-        '--pull=never', '--read-only', '--network=none', '--cpus=1', '--memory=2147483648',
++        '--pull=never', '--user=501:20', '--read-only', '--network=none', '--cpus=1', '--memory=2147483648',
+         '--memory-swap=2147483648', '--pids-limit=64', '--cap-drop=ALL', '--security-opt=no-new-privileges',
+         '--mount', 'type=volume,source=' + VOLUME + ',target=/targets,readonly,volume-nocopy',
+         '--mount', 'type=bind,source=' + str(root) + ',target=/work,readonly',
+@@ -87,6 +120,7 @@
+ 
+ 
+ def run_supervisor(request_path, digest, output):
++    validate_evidence_directory(output)
+     with (output / 'supervisor-claim.json').open('x') as stream:
+         json.dump(dict(utc=utc(), pid=os.getpid(), request_sha256=digest), stream)
+         stream.write('\n')
+@@ -134,6 +168,9 @@
+ 
+     try:
+         request = validate(request_path, digest, output)
++        report['host_identity'] = dict(uid=os.getuid(), gid=os.getgid())
++        report['evidence_permissions'] = validate_evidence_directory(output)
++        report['bundle_permissions'] = path_permissions(request_path.parent)
+         report['supervisor_pid'] = os.getpid()
+         report['supervisor_sha256'] = sha(Path(__file__).resolve())
+         save(output / 'outer-receipt.json', report)
+@@ -152,6 +189,7 @@
+         report['container_id'] = container_id
+         initial = inspect(container_id, 'inspect-created')
+         report['created_container'] = initial
++        need(initial['User'] == request['execution_identity']['container_user'], 'created container user differs')
+         need(initial['Memory'] == 2147483648 and initial['MemorySwap'] == 2147483648 and
+              initial['NanoCpus'] == 1000000000 and initial['ReadonlyRootfs'] is True and
+              initial['NetworkMode'] == 'none', 'created resource policy differs')
+@@ -228,7 +266,7 @@
+     if not args.execute_after_closure:
+         print(json.dumps(dict(prepared_only=True, docker_command=create_command(request, request_path.parent, output, args.request_sha256, '<new-per-execution-UUID>')), indent=2))
+         return 0
+-    output.mkdir(parents=False, exist_ok=False)
++    create_evidence_directory(output)
+     child = [sys.executable, '-I', '-B', str(Path(__file__).resolve()), '--request', str(request_path),
+              '--request-sha256', args.request_sha256, '--output', str(output), '--execute-after-closure', '--detached-child']
+     with (output / 'supervisor.stdout').open('xb') as out, (output / 'supervisor.stderr').open('xb') as err:
+--- v2/container_check.py
++++ v3/container_check.py
+@@ -5,6 +5,7 @@
+ import json
+ import os
+ import shutil
++import stat
+ from pathlib import Path
+ import subprocess
+ import sys
+@@ -33,6 +34,23 @@
+     need(report['target_volume_disk_before']['free_bytes'] >= minimum, 'retained target volume has insufficient free space')
+ 
+ 
++def validate_reader_permissions(request, report):
++    identity = request['execution_identity']
++    need(identity == dict(host_uid=501, host_gid=20, container_user='501:20',
++        bundle_mode='0755', bundle_file_mode='0644', evidence_mode='0700'), 'execution identity differs')
++    report['reader_identity'] = dict(uid=os.getuid(), gid=os.getgid())
++    need(report['reader_identity'] == dict(uid=501, gid=20), 'container UID/GID differs')
++    report['mounted_permissions'] = {}
++    for name in ('/work', '/work/container_check.py', '/evidence'):
++        info = Path(name).stat()
++        report['mounted_permissions'][name] = dict(uid=info.st_uid, gid=info.st_gid,
++            mode=format(stat.S_IMODE(info.st_mode), '04o'))
++    need(report['mounted_permissions']['/work']['mode'] == '0755' and
++         report['mounted_permissions']['/work/container_check.py']['mode'] == '0644', 'mounted bundle modes differ')
++    need(report['mounted_permissions']['/evidence']['uid'] == 501 and
++         report['mounted_permissions']['/evidence']['mode'] == '0700', 'mounted evidence owner/mode differs')
++
++
+ def main():
+     report = dict(started_utc=datetime.now(timezone.utc).isoformat(), outcome='admission_error')
+     rc = 2
+@@ -43,6 +61,7 @@
+         for name, pin in request['files'].items():
+             path = root / name
+             need(path.stat().st_size == pin['bytes'] and sha(path) == pin['sha256'], 'bundle file differs: ' + name)
++        validate_reader_permissions(request, report)
+         c = json.loads((root / 'configuration.json').read_text())
+         report['boot_id'] = Path('/proc/sys/kernel/random/boot_id').read_text().strip()
+         need(report['boot_id'] == request['boot_id'], 'VM boot differs')
+--- v2/test_preparation.py
++++ v3/test_preparation.py
+@@ -55,7 +55,7 @@
+ 
+     def test_command_has_caps_readonly_inputs_and_no_auto_remove(self):
+         cmd = s.create_command({'container_name': 'test'}, Path('/bundle'), Path('/evidence-new'), 'a' * 64, 'nonce')
+-        for item in ('--read-only', '--network=none', '--memory=2147483648', '--memory-swap=2147483648', '--cpus=1', '--pids-limit=64'):
++        for item in ('--user=501:20', '--read-only', '--network=none', '--memory=2147483648', '--memory-swap=2147483648', '--cpus=1', '--pids-limit=64'):
+             self.assertIn(item, cmd)
+         self.assertNotIn('--rm', cmd)
+         self.assertIn('type=volume,source=sail-extension-targets,target=/targets,readonly,volume-nocopy', cmd)
+@@ -106,11 +106,13 @@
+                 'container_check.py': ROOT / 'container_check.py', 'supervise.py': ROOT / 'supervise.py'}
+             for name, path in sources.items(): shutil.copyfile(path, root / name)
+             for name in ('producer-receipt.json', 'closed-audit.json'): (root / name).write_text('{}')
+-            request = dict(files={f.name: dict(sha256=s.sha(f), bytes=f.stat().st_size) for f in root.iterdir()},
++            request = dict(execution_identity=s.IDENTITY, files={f.name: dict(sha256=s.sha(f), bytes=f.stat().st_size) for f in root.iterdir()},
+                 container_name='physical-output-log03-' + '1' * 16,
+                 limits=dict(cpus=1, memory_bytes=2147483648, memory_swap_bytes=2147483648, pids=64), timeout_seconds=1800,
+                 disk_admission=dict(host_evidence_minimum_free_bytes=268435456, target_volume_minimum_free_bytes=1073741824))
+             path = root / 'request.json'; path.write_text(json.dumps(request)); digest = s.sha(path)
++            root.chmod(0o755)
++            for file in root.iterdir(): file.chmod(0o644)
+             s.validate(path, digest, root.parent / 'output')
+             with self.assertRaises(ValueError): s.validate(path, digest, root / 'output')
+             (root / 'producer-receipt.json').write_text('{"changed":true}')
+@@ -120,9 +122,9 @@
+ class Supervisor(unittest.TestCase):
+     def exercise(self, scenario):
+         with tempfile.TemporaryDirectory(prefix='physical-supervisor-control-') as directory:
+-            root = Path(directory); output = root / 'output'; output.mkdir()
++            root = Path(directory); output = root / 'output'; s.create_evidence_directory(output)
+             request_path = root / 'request.json'; request_path.write_text('{}')
+-            request = dict(container_name='physical-output-log03-' + '1' * 16, timeout_seconds=1)
++            request = dict(execution_identity=s.IDENTITY, container_name='physical-output-log03-' + '1' * 16, timeout_seconds=1)
+             commands, labels = [], {}
+             running = False
+             created = False
+@@ -151,7 +153,7 @@
+                         state = dict(Running=running, Status='running' if running else 'exited',
+                                      ExitCode=137 if scenario == 'oom' else 0, OOMKilled=scenario in ('oom', 'oom_exit_zero'))
+                         if scenario == 'created_with_pass': state['Status'] = 'created'
+-                        response = json.dumps(dict(Id=cid, State=state, Labels=current_labels,
++                        response = json.dumps(dict(Id=cid, State=state, Labels=current_labels, User='0:0' if scenario == 'wrong_user' else '501:20',
+                             Memory=2147483648, MemorySwap=2147483648, NanoCpus=1000000000, ReadonlyRootfs=True, NetworkMode='none',
+                             Mounts=[dict(Destination=d, RW=d == '/evidence') for d in ('/targets', '/work', '/evidence')]))
+                         if scenario == 'bad_inspect': response = '{invalid'
+@@ -181,7 +183,7 @@
+ 
+     def test_child_admission_exception_retains_outer_receipt_without_docker(self):
+         with tempfile.TemporaryDirectory(prefix='physical-admission-control-') as directory:
+-            root = Path(directory); output = root / 'output'; output.mkdir()
++            root = Path(directory); output = root / 'output'; s.create_evidence_directory(output)
+             with patch.object(s, 'validate', side_effect=ValueError('controlled changed source')), patch.object(s.subprocess, 'run') as run:
+                 rc = s.run_supervisor(root / 'request.json', 'a' * 64, output)
+             self.assertEqual(rc, 2); run.assert_not_called()
+@@ -244,6 +246,13 @@
+                 self.assertEqual(rc, 2); self.assertTrue(r['errors'])
+                 if scenario == 'bad_inspect': self.assertFalse(any(x[0] in ('kill', 'rm') for x in calls))
+ 
++    def test_wrong_container_user_never_started(self):
++        rc, r, calls = self.exercise('wrong_user')
++        self.assertEqual(rc, 2)
++        self.assertTrue(any('container user differs' in error for error in r['errors']))
++        self.assertFalse(any(command[0] == 'start' for command in calls))
++        self.assertEqual(r['cleanup'], 'removed_after_state_capture')
++
+     def test_same_request_different_execution_never_killed(self):
+         rc, r, calls = self.exercise('foreign')
+         self.assertEqual(rc, 2); self.assertIn('ownership differs', ' '.join(r['errors']))

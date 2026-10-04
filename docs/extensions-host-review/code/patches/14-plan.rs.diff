@@ -1,0 +1,18 @@
+diff --git a/crates/sail-common/src/spec/plan.rs b/crates/sail-common/src/spec/plan.rs
+index 33c14d0d485a6a12d6fecbeaa5ffca3898db741b..33f736ebda67536a01bacaa2bb5939bd72e97182 100644
+--- a/crates/sail-common/src/spec/plan.rs
++++ b/crates/sail-common/src/spec/plan.rs
+@@ -73,6 +73,13 @@ impl CommandPlan {
+ #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+ #[serde(rename_all = "camelCase", rename_all_fields = "camelCase")]
+ pub enum QueryNode {
++    /// Experimental, local-mode Spark Connect relation extension.
++    Extension {
++        payload_type_url: String,
++        payload: Vec<u8>,
++        inputs: Vec<QueryPlan>,
++        is_envelope: bool,
++    },
+     Read {
+         #[serde(flatten)]
+         read_type: ReadType,

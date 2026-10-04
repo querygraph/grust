@@ -1,0 +1,406 @@
+From 80a750067f647bf025e86ed23b239adb191abd67 Mon Sep 17 00:00:00 2001
+From: Alexy Khrabrov <deliverable@gmail.com>
+Date: Mon, 28 Sep 2026 21:49:56 -0700
+Subject: [PATCH] Nutmeg: let the Spark client choose the staging order
+
+The nutmeg-graph library already stages either `canonical` (sort every
+row after admitting the sort's working space from the memory budget) or
+`asStaged` (arrival order, no sort), and its refusal message tells the
+caller to "stage with `order` = `asStaged` to skip the sort". The Sail
+extension hard-coded `StageOrder::Canonical` and its request schema
+(`deny_unknown_fields`) rejected the option, so no Spark client could
+follow that advice. On Graph500 scale 25 (536,870,912 edges) the
+canonical sort's admitted working space came to 404 GB against an
+80 GiB quota and every native cell was refused in about 90 s.
+
+- `Request.order` (optional) is parsed with `StageOrder::parse` for
+  `stage` and rejected on every other verb.
+- `Nutmeg.stage(..., order=None)` sends the option only when given, so
+  a server without it still accepts the default.
+- `graph_cell.py --stage-order {canonical,asStaged}` (default canonical,
+  not sent) and a suite-level `stage_order` in `run_matrix.py`.
+- Test: `asStaged` reports no sort tiers and `edgeSorted = false`, the
+  default still sorts, misspelled or misplaced `order` is a plan error.
+  48 extension tests and 196 harness tests pass.
+
+Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
+---
+ examples/extensions/benchmarks/graph_cell.py  |  6 +-
+ examples/extensions/benchmarks/run_matrix.py  |  8 +-
+ .../extensions/benchmarks/test_run_matrix.py  | 15 +++
+ .../extensions/benchmarks/traversal_cell.py   |  8 +-
+ examples/extensions/nutmeg/README.md          |  5 +-
+ .../nutmeg/python/sail_nutmeg/client.py       | 11 ++-
+ examples/extensions/nutmeg/src/lib.rs         | 11 +++
+ examples/extensions/nutmeg/src/mutation.rs    | 16 ++-
+ examples/extensions/nutmeg/src/tests.rs       | 98 ++++++++++++++++++-
+ 9 files changed, 167 insertions(+), 11 deletions(-)
+
+diff --git a/examples/extensions/benchmarks/graph_cell.py b/examples/extensions/benchmarks/graph_cell.py
+index b289a8cfd..d5cdac031 100644
+--- a/examples/extensions/benchmarks/graph_cell.py
++++ b/examples/extensions/benchmarks/graph_cell.py
+@@ -145,7 +145,8 @@ def execute(spark, args, manifest, receipt, sampler):
+             # projection ahead of it and reports the CSR bytes. Whether the
+             # kernel then reused that projection is checked after the run.
+             sampler.mark_step('stage')
+-            staged = nm.stage('benchmark', nodes, links)
++            from traversal_cell import stage_order
++            staged = nm.stage('benchmark', nodes, links, order=stage_order(args))
+             receipt['stage_seconds'] = time.perf_counter() - started
+             receipt['stage_receipt'] = staged.asDict()
+             receipt['native_status_after_stage'] = nm.status()
+@@ -365,6 +366,9 @@ def main():
+     parser.add_argument('--directed', action=argparse.BooleanOptionalAction, default=True)
+     parser.add_argument('--delta', type=float, default=1.0)
+     parser.add_argument('--traversal-validation', choices=['reference', 'certificate'], default='reference')
++    parser.add_argument('--stage-order', choices=['canonical', 'asStaged'], default='canonical',
++                        help='native staging order: canonical sorts every staged row after admitting the sort working space; '
++                             'asStaged keeps arrival order and skips the sort (sent to the server only when not canonical)')
+     parser.add_argument('--ranking-validation', choices=['reference', 'certificate'], default='reference',
+                         help='PageRank/WCC: compare with reference.parquet, or certify without one')
+     parser.add_argument('--certificate-max-rounds', type=int, default=10000)
+diff --git a/examples/extensions/benchmarks/run_matrix.py b/examples/extensions/benchmarks/run_matrix.py
+index 8f0c707e5..7920b3c9c 100644
+--- a/examples/extensions/benchmarks/run_matrix.py
++++ b/examples/extensions/benchmarks/run_matrix.py
+@@ -153,6 +153,8 @@ def validate_config(config):
+         variants = suite.get('variants', config.get('variants', DEFAULT_VARIANTS))
+         if set(variants) - set(VARIANTS):
+             raise ValueError('suite names an unknown variant')
++        if suite.get('stage_order', 'canonical') not in STAGE_ORDERS:
++            raise ValueError('suite stage_order must be canonical or asStaged')
+         for engine in suite.get('engines', ENGINES):
+             for algorithm in suite['algorithms']:
+                 for variant in variants:
+@@ -160,6 +162,8 @@ def validate_config(config):
+ 
+ 
+ TRAVERSAL_FAMILIES = ('traversal', 'graph500', 'edge-list-traversal', 'snap-edge-list')
++# Native staging order per suite; canonical is the server default and is not sent.
++STAGE_ORDERS = ('canonical', 'asStaged')
+ 
+ 
+ def plan_cells(config):
+@@ -177,7 +181,7 @@ def plan_cells(config):
+                             expected = suite.get('expected_outcomes', {}).get(variant, {}).get(engine, 'passed')
+                             group.append(dict(cell_id=name, suite=suite['name'], repeat=repeat,
+                                 dataset=dataset, engine=engine, algorithm=algorithm, variant=variant,
+-                                mode=suite['mode'],
++                                mode=suite['mode'], stage_order=suite.get('stage_order', 'canonical'),
+                                 max_iterations=suite.get('max_iterations', config['defaults']['max_iterations']),
+                                 expected_outcome=expected, diagnostic=bool(suite.get('diagnostic', False))))
+             rng.shuffle(group)
+@@ -221,6 +225,8 @@ def cell_command(config, cell):
+     for name in ('partitions', 'threads', 'worker_task_slots', 'sail_pool_bytes',
+                  'native_quota', 'tolerance', 'damping', 'timeout', 'seed'):
+         command.extend(['--' + name.replace('_', '-'), str(defaults[name])])
++    if cell.get('stage_order', 'canonical') != 'canonical':
++        command.extend(['--stage-order', cell['stage_order']])
+     if cell['algorithm'] in ('bfs', 'sssp'):
+         command.extend(['--source', str(dataset.get('source', 0)), '--delta', str(defaults.get('delta', 1.0))])
+         command.append('--directed' if dataset.get('directed', dataset['family'] != 'graph500') else '--no-directed')
+diff --git a/examples/extensions/benchmarks/test_run_matrix.py b/examples/extensions/benchmarks/test_run_matrix.py
+index 3c2f4e037..04da4d87c 100644
+--- a/examples/extensions/benchmarks/test_run_matrix.py
++++ b/examples/extensions/benchmarks/test_run_matrix.py
+@@ -115,6 +115,21 @@ def test_explicit_admission_propagates_without_changing_container_cpu_envelope()
+     assert container[container.index('--memory') + 1] == f"{original_limits['memory_gib']}g"
+ 
+ 
++def test_suite_stage_order_reaches_the_cell_only_when_it_is_not_canonical():
++    config = json.loads(Path(__file__).with_name('matrix.example.json').read_text())
++    cell = plan_cells(config)[0]
++    assert cell['stage_order'] == 'canonical'
++    assert '--stage-order' not in run_matrix.cell_command(config, cell)
++    config['suites'][0]['stage_order'] = 'asStaged'
++    cell = plan_cells(config)[0]
++    assert cell['stage_order'] == 'asStaged'
++    command = run_matrix.cell_command(config, cell)
++    assert command[command.index('--stage-order') + 1] == 'asStaged'
++    config['suites'][0]['stage_order'] = 'sorted'
++    with pytest.raises(ValueError, match='stage_order'):
++        plan_cells(config)
++
++
+ @pytest.mark.parametrize('key,value', [('worker_task_slots', 0), ('sail_pool_bytes', 0),
+                                      ('native_quota', 16 * 1024**3)])
+ def test_invalid_admission_configuration_cannot_plan_a_matrix(key, value):
+diff --git a/examples/extensions/benchmarks/traversal_cell.py b/examples/extensions/benchmarks/traversal_cell.py
+index 1c17437a4..9deccfeae 100644
+--- a/examples/extensions/benchmarks/traversal_cell.py
++++ b/examples/extensions/benchmarks/traversal_cell.py
+@@ -8,6 +8,12 @@ from sail_nutmeg.client import Nutmeg
+ from traversal_methods import method
+ 
+ 
++def stage_order(args):
++    """The native staging order to send: None for the server default (canonical)."""
++    order=getattr(args,'stage_order','canonical')
++    return None if order=='canonical' else order
++
++
+ def execute(spark,args,receipt,sampler):
+     vertices=spark.read.parquet((args.dataset/'vertices.parquet').as_uri())
+     edges=spark.read.parquet((args.dataset/'edges.parquet').as_uri())
+@@ -23,7 +29,7 @@ def execute(spark,args,receipt,sampler):
+             nodes=vertices.select(F.col('id').cast('string').alias('node_id'))
+             links=edges.select(F.col('src').cast('string').alias('source'),
+                                F.col('dst').cast('string').alias('target'),'weight')
+-            receipt['stage_receipt']=nm.stage('benchmark',nodes,links).asDict()
++            receipt['stage_receipt']=nm.stage('benchmark',nodes,links,order=stage_order(args)).asDict()
+             receipt['stage_seconds']=time.perf_counter()-started
+             options=dict(source=str(args.source), concurrency=args.threads,
+                          orientation='outgoing' if args.directed else 'undirected')
+diff --git a/examples/extensions/nutmeg/README.md b/examples/extensions/nutmeg/README.md
+index 79056c78f..23f05a09f 100644
+--- a/examples/extensions/nutmeg/README.md
++++ b/examples/extensions/nutmeg/README.md
+@@ -102,7 +102,10 @@ Staging casts structural IDs to UTF8 and normalizes supported properties to
+ Raw node scans return explicitly staged nodes, without synthesizing nodes from
+ edge endpoints. Canonical staging retains empty schemas and fills absent
+ properties. The lower-level legacy `asStaged` mode still accepts heterogeneous
+-batches, but relational scans require a common schema. Staged sources have one
++batches, but relational scans require a common schema. The Spark client
++chooses the order per write: `nm.stage(graph, nodes, edges, order="asStaged")`
++keeps arrival order and skips the canonical sort and its admitted working space;
++the default (`canonical`, not sent) sorts. Staged sources have one
+ driver partition; downstream relational operators may redistribute their output.
+ 
+ ## Banda and Grenada algorithm paths
+diff --git a/examples/extensions/nutmeg/python/sail_nutmeg/client.py b/examples/extensions/nutmeg/python/sail_nutmeg/client.py
+index 02b92b35b..471d3dbf3 100644
+--- a/examples/extensions/nutmeg/python/sail_nutmeg/client.py
++++ b/examples/extensions/nutmeg/python/sail_nutmeg/client.py
+@@ -50,7 +50,7 @@ class Nutmeg:
+     def _relation(self, verb, graph, *, inputs=(), **kwargs):
+         return DataFrame(ExtensionRelation({"version": 1, "verb": verb, "graph": graph, **kwargs}, inputs), self.spark)
+ 
+-    def stage(self, graph, nodes, edges, *, node_mapping=None, edge_mapping=None):
++    def stage(self, graph, nodes, edges, *, node_mapping=None, edge_mapping=None, order=None):
+         """Atomically overwrite one graph; eagerly collect its one-row receipt.
+ 
+         Both DataFrames must belong to this session. Each receipt reports graph,
+@@ -58,10 +58,17 @@ class Nutmeg:
+         each part, tier by tier: node/edge SortPermutationBytes, SortKeysBytes,
+         SortedCopyBytes, FillBytes, NormalizedBytes, RetainedBytes, SortSeconds
+         and Sorted. All input partitions are consumed.
++
++        ``order`` is ``"canonical"`` (the server default: every staged row is
++        sorted, and the sort's working space is admitted from the memory budget
++        before it starts) or ``"asStaged"`` (arrival order, no sort). It is sent
++        only when given, so a server without the option still accepts the
++        default.
+         """
+         if nodes.sparkSession is not self.spark or edges.sparkSession is not self.spark:
+             raise ValueError("stage inputs must belong to this Nutmeg Spark session")
+-        return self._relation("stage", graph, inputs=(nodes, edges), nodeMapping=node_mapping or {}, edgeMapping=edge_mapping or {}).collect()[0]
++        options = {"order": order} if order is not None else {}
++        return self._relation("stage", graph, inputs=(nodes, edges), nodeMapping=node_mapping or {}, edgeMapping=edge_mapping or {}, **options).collect()[0]
+ 
+     def run(self, graph, algorithm, *, column_names="grust", **options):
+         """Return a lazy DataFrame, with a graph snapshot pinned during planning."""
+diff --git a/examples/extensions/nutmeg/src/lib.rs b/examples/extensions/nutmeg/src/lib.rs
+index 0a6b0b146..9863b3dcf 100644
+--- a/examples/extensions/nutmeg/src/lib.rs
++++ b/examples/extensions/nutmeg/src/lib.rs
+@@ -47,6 +47,12 @@ pub(crate) struct Request {
+     pub node_mapping: std::collections::BTreeMap<String, String>,
+     #[serde(default, rename = "edgeMapping")]
+     pub edge_mapping: std::collections::BTreeMap<String, String>,
++    /// Staging order, a `stage` option: `canonical` (the default) sorts every
++    /// staged row and admits the sort's working space before it starts;
++    /// `asStaged` keeps arrival order and skips the sort. See
++    /// `nutmeg_graph::StageOrder`.
++    #[serde(default)]
++    pub order: Option<String>,
+ }
+ 
+ fn plan(
+@@ -93,6 +99,9 @@ fn plan(
+             if !request.node_mapping.is_empty() || !request.edge_mapping.is_empty() {
+                 return plan_err!("nutmeg: column mappings apply only to stage");
+             }
++            if request.order.is_some() {
++                return plan_err!("nutmeg: order applies only to stage");
++            }
+             let Some(algorithm) = request.algorithm else {
+                 return plan_err!("nutmeg: run requires algorithm");
+             };
+@@ -111,6 +120,7 @@ fn plan(
+                 || request.column_names.is_some()
+                 || !request.node_mapping.is_empty()
+                 || !request.edge_mapping.is_empty()
++                || request.order.is_some()
+             {
+                 return plan_err!(
+                     "nutmeg: nodes/edges/diagnostics accept only version, verb and graph"
+@@ -133,6 +143,7 @@ fn plan(
+                 || request.column_names.is_some()
+                 || !request.node_mapping.is_empty()
+                 || !request.edge_mapping.is_empty()
++                || request.order.is_some()
+             {
+                 return plan_err!("nutmeg: drop accepts only version, verb and graph");
+             }
+diff --git a/examples/extensions/nutmeg/src/mutation.rs b/examples/extensions/nutmeg/src/mutation.rs
+index 8a6610a31..96b89356b 100644
+--- a/examples/extensions/nutmeg/src/mutation.rs
++++ b/examples/extensions/nutmeg/src/mutation.rs
+@@ -28,6 +28,7 @@ enum Operation {
+     Stage {
+         nodes: ColumnMapping,
+         edges: Box<ColumnMapping>,
++        order: StageOrder,
+     },
+     Drop,
+ }
+@@ -71,6 +72,10 @@ impl MutationTable {
+         }
+         let nodes = mapping(request.node_mapping)?;
+         let edges = mapping(request.edge_mapping)?;
++        let order = match request.order.as_deref() {
++            Some(text) => StageOrder::parse(text)?,
++            None => StageOrder::default(),
++        };
+         // Empty streams still have schemas. Reject missing/mistyped structural
+         // fields before a lazy provider can replace a graph with empty inputs.
+         nutmeg_graph::normalize_nodes(&RecordBatch::new_empty(inputs[0].schema()), &nodes)?;
+@@ -82,6 +87,7 @@ impl MutationTable {
+                 operation: Operation::Stage {
+                     nodes,
+                     edges: Box::new(edges),
++                    order,
+                 },
+                 schema: Arc::new(Schema::new(vec![
+                     Field::new("graph", DataType::Utf8, false),
+@@ -296,10 +302,12 @@ impl Mutation {
+                     self.registry.drop_graph(&self.graph)?,
+                 ])) as ArrayRef,
+             ],
+-            Operation::Stage { nodes, edges } => {
+-                let mut staging =
+-                    self.registry
+-                        .replacing(&self.graph, nodes, edges, StageOrder::Canonical);
++            Operation::Stage {
++                nodes,
++                edges,
++                order,
++            } => {
++                let mut staging = self.registry.replacing(&self.graph, nodes, edges, *order);
+                 for (index, input) in inputs.into_iter().enumerate() {
+                     // A completely empty stream still carries property fields.
+                     // Retain its schema before execution yields any row batches.
+diff --git a/examples/extensions/nutmeg/src/tests.rs b/examples/extensions/nutmeg/src/tests.rs
+index 647e93ada..468d6657e 100644
+--- a/examples/extensions/nutmeg/src/tests.rs
++++ b/examples/extensions/nutmeg/src/tests.rs
+@@ -1,4 +1,4 @@
+-use arrow::array::{Array, ArrayRef, Int64Array, StringArray};
++use arrow::array::{Array, ArrayRef, BooleanArray, Int64Array, StringArray};
+ use arrow::record_batch::RecordBatch;
+ use datafusion::datasource::MemTable;
+ use datafusion::physical_plan::collect;
+@@ -370,3 +370,99 @@ async fn empty_inputs_validate_schema_and_mapping_before_mutation() {
+     );
+     assert_eq!(registry.list().unwrap()[0].revision, before[0].revision);
+ }
++
++#[tokio::test]
++async fn as_staged_order_skips_the_sort_and_is_only_a_stage_option() {
++    nutmeg_graph::prepare_output_schemas().unwrap();
++    let registry = SessionRegistry::new(16 << 20);
++    let ctx = SessionContext::new();
++    let nodes = input(&ctx, vec![vec![batch(&[("node_id", vec!["b", "a"])])]]).await;
++    let edges = input(
++        &ctx,
++        vec![vec![batch(&[
++            ("source", vec!["b", "a"]),
++            ("target", vec!["a", "b"]),
++        ])]],
++    )
++    .await;
++    fn flag(batch: &RecordBatch, name: &str) -> bool {
++        batch
++            .column_by_name(name)
++            .unwrap()
++            .as_any()
++            .downcast_ref::<BooleanArray>()
++            .unwrap()
++            .value(0)
++    }
++    fn count(batch: &RecordBatch, name: &str) -> i64 {
++        batch
++            .column_by_name(name)
++            .unwrap()
++            .as_any()
++            .downcast_ref::<Int64Array>()
++            .unwrap()
++            .value(0)
++    }
++
++    // `asStaged` stages in arrival order: no sort, no sort tiers admitted.
++    let request = serde_json::to_vec(
++        &serde_json::json!({"version":1,"verb":"stage","graph":"g","order":"asStaged"}),
++    )
++    .unwrap();
++    let provider = plan(
++        &registry,
++        TYPE_URL,
++        &request,
++        vec![nodes.clone(), edges.clone()],
++    )
++    .unwrap();
++    let receipt = execute(&ctx, provider).await.unwrap();
++    assert_eq!(count(&receipt[0], "edgeCount"), 2);
++    assert!(!flag(&receipt[0], "nodeSorted"));
++    assert!(!flag(&receipt[0], "edgeSorted"));
++    assert_eq!(count(&receipt[0], "edgeSortPermutationBytes"), 0);
++    assert_eq!(count(&receipt[0], "edgeSortKeysBytes"), 0);
++    assert_eq!(count(&receipt[0], "edgeSortedCopyBytes"), 0);
++    assert!(count(&receipt[0], "edgeRetainedBytes") > 0);
++
++    // The default is still canonical, and it reports its sort.
++    let provider = plan(
++        &registry,
++        TYPE_URL,
++        &payload("stage", "g"),
++        vec![nodes.clone(), edges.clone()],
++    )
++    .unwrap();
++    let receipt = execute(&ctx, provider).await.unwrap();
++    assert!(flag(&receipt[0], "edgeSorted"));
++    assert!(count(&receipt[0], "edgeSortPermutationBytes") > 0);
++    assert_eq!(registry.list().unwrap()[0].revision, 2);
++
++    // `order` is a stage option, spelled `canonical` or `asStaged`.
++    let bad_stage = serde_json::to_vec(
++        &serde_json::json!({"version":1,"verb":"stage","graph":"g","order":"sorted"}),
++    )
++    .unwrap();
++    let error = plan(&registry, TYPE_URL, &bad_stage, vec![nodes, edges])
++        .err()
++        .unwrap()
++        .to_string();
++    assert!(error.contains("order") && error.contains("asStaged"), "{error}");
++    for request in [
++        serde_json::json!({"version":1,"verb":"run","graph":"g","algorithm":"degree","order":"asStaged"}),
++        serde_json::json!({"version":1,"verb":"nodes","graph":"g","order":"asStaged"}),
++        serde_json::json!({"version":1,"verb":"drop","graph":"g","order":"canonical"}),
++    ] {
++        assert!(
++            plan(
++                &registry,
++                TYPE_URL,
++                &serde_json::to_vec(&request).unwrap(),
++                vec![]
++            )
++            .is_err(),
++            "{request}"
++        );
++    }
++    assert_eq!(registry.list().unwrap()[0].revision, 2, "rejections do not mutate");
++}
+-- 
+2.50.1 (Apple Git-155)
+

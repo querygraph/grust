@@ -1,0 +1,715 @@
+FFFFFF                                                                   [100%]
+=================================== FAILURES ===================================
+___ test_supplied_parent_depth_above_cap_does_not_reject_shorter_tight_path ____
+
+self = <pyspark_pecan.utils.GraphUtils object at 0x11235f170>
+spark = <pyspark.sql.connect.session.SparkSession object at 0x10706e990>
+
+    def __init__(self, spark):
+        self.spark = spark
+        try:
+>           rows = self._request(wire.Request(ping=wire.Ping(client_version=CLIENT_VERSION)))
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+examples/extensions/graph-algorithms/src/pyspark_pecan/utils.py:42: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+examples/extensions/graph-algorithms/src/pyspark_pecan/utils.py:62: in _request
+    return DataFrame(_UtilsRelation(request), self.spark).collect()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:1781: in collect
+    table, schema = self._to_table()
+                    ^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:1794: in _to_table
+    table, schema, self._execution_info = self._session.client.to_table(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:925: in to_table
+    table, schema, metrics, observed_metrics, _ = self._execute_and_fetch(req, observations)
+                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1560: in _execute_and_fetch
+    for response in self._execute_and_fetch_as_iterator(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1537: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1811: in _handle_error
+    self._handle_rpc_error(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <pyspark.sql.connect.client.core.SparkConnectClient object at 0x1073690d0>
+rpc_error = <_MultiThreadedRendezvous of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = "unregistered Connect ..._string = "INTERNAL:unregistered Connect extension type URL: type.googleapis.com/gf.utils.v1.Request; registered: []"
+>
+
+    def _handle_rpc_error(self, rpc_error: grpc.RpcError) -> NoReturn:
+        """
+        Error handling helper for dealing with GRPC Errors. On the server side, certain
+        exceptions are enriched with additional RPC Status information. These are
+        unpacked in this function and put into the exception.
+    
+        To avoid overloading the user with GRPC errors, this message explicitly
+        swallows the error context from the call. This GRPC Error is logged however,
+        and can be enabled.
+    
+        Parameters
+        ----------
+        rpc_error : grpc.RpcError
+           RPC Error containing the details of the exception.
+    
+        Returns
+        -------
+        Throws the appropriate internal Python exception.
+        """
+        logger.exception("GRPC Error received")
+        # We have to cast the value here because, a RpcError is a Call as well.
+        # https://grpc.github.io/grpc/python/grpc.html#grpc.UnaryUnaryMultiCallable.__call__
+        status = rpc_status.from_call(cast(grpc.Call, rpc_error))
+        if status:
+            for d in status.details:
+                if d.Is(error_details_pb2.ErrorInfo.DESCRIPTOR):
+                    info = error_details_pb2.ErrorInfo()
+                    d.Unpack(info)
+                    logger.debug(f"Received ErrorInfo: {info}")
+    
+                    if info.metadata["errorClass"] == "INVALID_HANDLE.SESSION_CHANGED":
+                        self._closed = True
+    
+>                   raise convert_exception(
+                        info,
+                        status.message,
+                        self._fetch_enriched_error(info),
+                        self._display_server_stack_trace(),
+                    ) from None
+E                   pyspark.errors.exceptions.connect.AnalysisException: unregistered Connect extension type URL: type.googleapis.com/gf.utils.v1.Request; registered: []
+
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1882: AnalysisException
+
+The above exception was the direct cause of the following exception:
+
+spark = <pyspark.sql.connect.session.SparkSession object at 0x10706e990>
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/certificate-witness-fixtures-ak9e0vux/sql/test_supplied_parent_depth_abo0')
+
+    def test_supplied_parent_depth_above_cap_does_not_reject_shorter_tight_path(spark,tmp_path):
+        from traversal_certificate import certify
+        v,e,a=frames(spark,tmp_path,[0.,0.,0.],[0,0,1],[0,1,2],[(0,1,0.),(1,2,0.),(0,2,0.)])
+>       proof=certify(spark,a,v,e,source=0,weighted=True,max_rounds=1,partitions=2)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+/Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/certificate-parent-witness/test_baseline.py:38: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+examples/extensions/benchmarks/traversal_certificate.py:58: in certify
+    graph=GraphAlgorithms(spark)
+          ^^^^^^^^^^^^^^^^^^^^^^
+examples/extensions/graph-algorithms/src/pyspark_pecan/algorithms.py:78: in __init__
+    self.utils = GraphUtils(spark)
+                 ^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <pyspark_pecan.utils.GraphUtils object at 0x11235f170>
+spark = <pyspark.sql.connect.session.SparkSession object at 0x10706e990>
+
+    def __init__(self, spark):
+        self.spark = spark
+        try:
+            rows = self._request(wire.Request(ping=wire.Ping(client_version=CLIENT_VERSION)))
+        except Exception as exc:
+>           raise CapabilityError(
+                "graph utils Ping failed: enable the server's owned-run storage service"
+            ) from exc
+E           pyspark_pecan.utils.CapabilityError: graph utils Ping failed: enable the server's owned-run storage service
+
+examples/extensions/graph-algorithms/src/pyspark_pecan/utils.py:44: CapabilityError
+____ test_certificate_tolerance_does_not_replace_stricter_parent_predicate _____
+
+self = <pyspark_pecan.utils.GraphUtils object at 0x112346330>
+spark = <pyspark.sql.connect.session.SparkSession object at 0x10706e990>
+
+    def __init__(self, spark):
+        self.spark = spark
+        try:
+>           rows = self._request(wire.Request(ping=wire.Ping(client_version=CLIENT_VERSION)))
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+examples/extensions/graph-algorithms/src/pyspark_pecan/utils.py:42: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+examples/extensions/graph-algorithms/src/pyspark_pecan/utils.py:62: in _request
+    return DataFrame(_UtilsRelation(request), self.spark).collect()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:1781: in collect
+    table, schema = self._to_table()
+                    ^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:1794: in _to_table
+    table, schema, self._execution_info = self._session.client.to_table(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:925: in to_table
+    table, schema, metrics, observed_metrics, _ = self._execute_and_fetch(req, observations)
+                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1560: in _execute_and_fetch
+    for response in self._execute_and_fetch_as_iterator(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1537: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1811: in _handle_error
+    self._handle_rpc_error(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <pyspark.sql.connect.client.core.SparkConnectClient object at 0x1073690d0>
+rpc_error = <_MultiThreadedRendezvous of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = "unregistered Connect ..._string = "INTERNAL:unregistered Connect extension type URL: type.googleapis.com/gf.utils.v1.Request; registered: []"
+>
+
+    def _handle_rpc_error(self, rpc_error: grpc.RpcError) -> NoReturn:
+        """
+        Error handling helper for dealing with GRPC Errors. On the server side, certain
+        exceptions are enriched with additional RPC Status information. These are
+        unpacked in this function and put into the exception.
+    
+        To avoid overloading the user with GRPC errors, this message explicitly
+        swallows the error context from the call. This GRPC Error is logged however,
+        and can be enabled.
+    
+        Parameters
+        ----------
+        rpc_error : grpc.RpcError
+           RPC Error containing the details of the exception.
+    
+        Returns
+        -------
+        Throws the appropriate internal Python exception.
+        """
+        logger.exception("GRPC Error received")
+        # We have to cast the value here because, a RpcError is a Call as well.
+        # https://grpc.github.io/grpc/python/grpc.html#grpc.UnaryUnaryMultiCallable.__call__
+        status = rpc_status.from_call(cast(grpc.Call, rpc_error))
+        if status:
+            for d in status.details:
+                if d.Is(error_details_pb2.ErrorInfo.DESCRIPTOR):
+                    info = error_details_pb2.ErrorInfo()
+                    d.Unpack(info)
+                    logger.debug(f"Received ErrorInfo: {info}")
+    
+                    if info.metadata["errorClass"] == "INVALID_HANDLE.SESSION_CHANGED":
+                        self._closed = True
+    
+>                   raise convert_exception(
+                        info,
+                        status.message,
+                        self._fetch_enriched_error(info),
+                        self._display_server_stack_trace(),
+                    ) from None
+E                   pyspark.errors.exceptions.connect.AnalysisException: unregistered Connect extension type URL: type.googleapis.com/gf.utils.v1.Request; registered: []
+
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1882: AnalysisException
+
+The above exception was the direct cause of the following exception:
+
+spark = <pyspark.sql.connect.session.SparkSession object at 0x10706e990>
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/certificate-witness-fixtures-ak9e0vux/sql/test_certificate_tolerance_doe0')
+
+    def test_certificate_tolerance_does_not_replace_stricter_parent_predicate(spark,tmp_path):
+        from traversal_certificate import certify
+        v,e,a=frames(spark,tmp_path,[0.,1.,2.+4e-12],[0,0,1],[0,1,2],[(0,1,1.),(1,2,1.)])
+>       assert certify(spark,a,v,e,source=0,weighted=True,tolerance=1e-12,partitions=2)['reached']==3
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+/Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/certificate-parent-witness/test_baseline.py:46: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+examples/extensions/benchmarks/traversal_certificate.py:58: in certify
+    graph=GraphAlgorithms(spark)
+          ^^^^^^^^^^^^^^^^^^^^^^
+examples/extensions/graph-algorithms/src/pyspark_pecan/algorithms.py:78: in __init__
+    self.utils = GraphUtils(spark)
+                 ^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <pyspark_pecan.utils.GraphUtils object at 0x112346330>
+spark = <pyspark.sql.connect.session.SparkSession object at 0x10706e990>
+
+    def __init__(self, spark):
+        self.spark = spark
+        try:
+            rows = self._request(wire.Request(ping=wire.Ping(client_version=CLIENT_VERSION)))
+        except Exception as exc:
+>           raise CapabilityError(
+                "graph utils Ping failed: enable the server's owned-run storage service"
+            ) from exc
+E           pyspark_pecan.utils.CapabilityError: graph utils Ping failed: enable the server's owned-run storage service
+
+examples/extensions/graph-algorithms/src/pyspark_pecan/utils.py:44: CapabilityError
+_ test_null_or_missing_parent_metadata_is_not_silently_proved[parents0-hops0] __
+
+self = <pyspark_pecan.utils.GraphUtils object at 0x11241d8e0>
+spark = <pyspark.sql.connect.session.SparkSession object at 0x10706e990>
+
+    def __init__(self, spark):
+        self.spark = spark
+        try:
+>           rows = self._request(wire.Request(ping=wire.Ping(client_version=CLIENT_VERSION)))
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+examples/extensions/graph-algorithms/src/pyspark_pecan/utils.py:42: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+examples/extensions/graph-algorithms/src/pyspark_pecan/utils.py:62: in _request
+    return DataFrame(_UtilsRelation(request), self.spark).collect()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:1781: in collect
+    table, schema = self._to_table()
+                    ^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:1794: in _to_table
+    table, schema, self._execution_info = self._session.client.to_table(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:925: in to_table
+    table, schema, metrics, observed_metrics, _ = self._execute_and_fetch(req, observations)
+                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1560: in _execute_and_fetch
+    for response in self._execute_and_fetch_as_iterator(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1537: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1811: in _handle_error
+    self._handle_rpc_error(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <pyspark.sql.connect.client.core.SparkConnectClient object at 0x1073690d0>
+rpc_error = <_MultiThreadedRendezvous of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = "unregistered Connect ..._string = "INTERNAL:unregistered Connect extension type URL: type.googleapis.com/gf.utils.v1.Request; registered: []"
+>
+
+    def _handle_rpc_error(self, rpc_error: grpc.RpcError) -> NoReturn:
+        """
+        Error handling helper for dealing with GRPC Errors. On the server side, certain
+        exceptions are enriched with additional RPC Status information. These are
+        unpacked in this function and put into the exception.
+    
+        To avoid overloading the user with GRPC errors, this message explicitly
+        swallows the error context from the call. This GRPC Error is logged however,
+        and can be enabled.
+    
+        Parameters
+        ----------
+        rpc_error : grpc.RpcError
+           RPC Error containing the details of the exception.
+    
+        Returns
+        -------
+        Throws the appropriate internal Python exception.
+        """
+        logger.exception("GRPC Error received")
+        # We have to cast the value here because, a RpcError is a Call as well.
+        # https://grpc.github.io/grpc/python/grpc.html#grpc.UnaryUnaryMultiCallable.__call__
+        status = rpc_status.from_call(cast(grpc.Call, rpc_error))
+        if status:
+            for d in status.details:
+                if d.Is(error_details_pb2.ErrorInfo.DESCRIPTOR):
+                    info = error_details_pb2.ErrorInfo()
+                    d.Unpack(info)
+                    logger.debug(f"Received ErrorInfo: {info}")
+    
+                    if info.metadata["errorClass"] == "INVALID_HANDLE.SESSION_CHANGED":
+                        self._closed = True
+    
+>                   raise convert_exception(
+                        info,
+                        status.message,
+                        self._fetch_enriched_error(info),
+                        self._display_server_stack_trace(),
+                    ) from None
+E                   pyspark.errors.exceptions.connect.AnalysisException: unregistered Connect extension type URL: type.googleapis.com/gf.utils.v1.Request; registered: []
+
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1882: AnalysisException
+
+The above exception was the direct cause of the following exception:
+
+spark = <pyspark.sql.connect.session.SparkSession object at 0x10706e990>
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/certificate-witness-fixtures-ak9e0vux/sql/test_null_or_missing_parent_me0')
+parents = [0, None, 1], hops = [0, 1, 2]
+
+    @pytest.mark.parametrize('parents,hops', [([0,None,1],[0,1,2]),([0,0,1],[0,None,2]),([0,99,1],[0,1,2])])
+    def test_null_or_missing_parent_metadata_is_not_silently_proved(spark,tmp_path,parents,hops):
+        from traversal_certificate import certify
+        v,e,a=frames(spark,tmp_path,[0.,1.,2.],parents,hops,[(0,1,1.),(1,2,1.)])
+>       assert certify(spark,a,v,e,source=0,weighted=True,partitions=2)['reached']==3
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+/Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/certificate-parent-witness/test_baseline.py:55: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+examples/extensions/benchmarks/traversal_certificate.py:58: in certify
+    graph=GraphAlgorithms(spark)
+          ^^^^^^^^^^^^^^^^^^^^^^
+examples/extensions/graph-algorithms/src/pyspark_pecan/algorithms.py:78: in __init__
+    self.utils = GraphUtils(spark)
+                 ^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <pyspark_pecan.utils.GraphUtils object at 0x11241d8e0>
+spark = <pyspark.sql.connect.session.SparkSession object at 0x10706e990>
+
+    def __init__(self, spark):
+        self.spark = spark
+        try:
+            rows = self._request(wire.Request(ping=wire.Ping(client_version=CLIENT_VERSION)))
+        except Exception as exc:
+>           raise CapabilityError(
+                "graph utils Ping failed: enable the server's owned-run storage service"
+            ) from exc
+E           pyspark_pecan.utils.CapabilityError: graph utils Ping failed: enable the server's owned-run storage service
+
+examples/extensions/graph-algorithms/src/pyspark_pecan/utils.py:44: CapabilityError
+_ test_null_or_missing_parent_metadata_is_not_silently_proved[parents1-hops1] __
+
+self = <pyspark_pecan.utils.GraphUtils object at 0x1123460f0>
+spark = <pyspark.sql.connect.session.SparkSession object at 0x10706e990>
+
+    def __init__(self, spark):
+        self.spark = spark
+        try:
+>           rows = self._request(wire.Request(ping=wire.Ping(client_version=CLIENT_VERSION)))
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+examples/extensions/graph-algorithms/src/pyspark_pecan/utils.py:42: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+examples/extensions/graph-algorithms/src/pyspark_pecan/utils.py:62: in _request
+    return DataFrame(_UtilsRelation(request), self.spark).collect()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:1781: in collect
+    table, schema = self._to_table()
+                    ^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:1794: in _to_table
+    table, schema, self._execution_info = self._session.client.to_table(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:925: in to_table
+    table, schema, metrics, observed_metrics, _ = self._execute_and_fetch(req, observations)
+                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1560: in _execute_and_fetch
+    for response in self._execute_and_fetch_as_iterator(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1537: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1811: in _handle_error
+    self._handle_rpc_error(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <pyspark.sql.connect.client.core.SparkConnectClient object at 0x1073690d0>
+rpc_error = <_MultiThreadedRendezvous of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = "unregistered Connect ..._string = "INTERNAL:unregistered Connect extension type URL: type.googleapis.com/gf.utils.v1.Request; registered: []"
+>
+
+    def _handle_rpc_error(self, rpc_error: grpc.RpcError) -> NoReturn:
+        """
+        Error handling helper for dealing with GRPC Errors. On the server side, certain
+        exceptions are enriched with additional RPC Status information. These are
+        unpacked in this function and put into the exception.
+    
+        To avoid overloading the user with GRPC errors, this message explicitly
+        swallows the error context from the call. This GRPC Error is logged however,
+        and can be enabled.
+    
+        Parameters
+        ----------
+        rpc_error : grpc.RpcError
+           RPC Error containing the details of the exception.
+    
+        Returns
+        -------
+        Throws the appropriate internal Python exception.
+        """
+        logger.exception("GRPC Error received")
+        # We have to cast the value here because, a RpcError is a Call as well.
+        # https://grpc.github.io/grpc/python/grpc.html#grpc.UnaryUnaryMultiCallable.__call__
+        status = rpc_status.from_call(cast(grpc.Call, rpc_error))
+        if status:
+            for d in status.details:
+                if d.Is(error_details_pb2.ErrorInfo.DESCRIPTOR):
+                    info = error_details_pb2.ErrorInfo()
+                    d.Unpack(info)
+                    logger.debug(f"Received ErrorInfo: {info}")
+    
+                    if info.metadata["errorClass"] == "INVALID_HANDLE.SESSION_CHANGED":
+                        self._closed = True
+    
+>                   raise convert_exception(
+                        info,
+                        status.message,
+                        self._fetch_enriched_error(info),
+                        self._display_server_stack_trace(),
+                    ) from None
+E                   pyspark.errors.exceptions.connect.AnalysisException: unregistered Connect extension type URL: type.googleapis.com/gf.utils.v1.Request; registered: []
+
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1882: AnalysisException
+
+The above exception was the direct cause of the following exception:
+
+spark = <pyspark.sql.connect.session.SparkSession object at 0x10706e990>
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/certificate-witness-fixtures-ak9e0vux/sql/test_null_or_missing_parent_me1')
+parents = [0, 0, 1], hops = [0, None, 2]
+
+    @pytest.mark.parametrize('parents,hops', [([0,None,1],[0,1,2]),([0,0,1],[0,None,2]),([0,99,1],[0,1,2])])
+    def test_null_or_missing_parent_metadata_is_not_silently_proved(spark,tmp_path,parents,hops):
+        from traversal_certificate import certify
+        v,e,a=frames(spark,tmp_path,[0.,1.,2.],parents,hops,[(0,1,1.),(1,2,1.)])
+>       assert certify(spark,a,v,e,source=0,weighted=True,partitions=2)['reached']==3
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+/Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/certificate-parent-witness/test_baseline.py:55: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+examples/extensions/benchmarks/traversal_certificate.py:58: in certify
+    graph=GraphAlgorithms(spark)
+          ^^^^^^^^^^^^^^^^^^^^^^
+examples/extensions/graph-algorithms/src/pyspark_pecan/algorithms.py:78: in __init__
+    self.utils = GraphUtils(spark)
+                 ^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <pyspark_pecan.utils.GraphUtils object at 0x1123460f0>
+spark = <pyspark.sql.connect.session.SparkSession object at 0x10706e990>
+
+    def __init__(self, spark):
+        self.spark = spark
+        try:
+            rows = self._request(wire.Request(ping=wire.Ping(client_version=CLIENT_VERSION)))
+        except Exception as exc:
+>           raise CapabilityError(
+                "graph utils Ping failed: enable the server's owned-run storage service"
+            ) from exc
+E           pyspark_pecan.utils.CapabilityError: graph utils Ping failed: enable the server's owned-run storage service
+
+examples/extensions/graph-algorithms/src/pyspark_pecan/utils.py:44: CapabilityError
+_ test_null_or_missing_parent_metadata_is_not_silently_proved[parents2-hops2] __
+
+self = <pyspark_pecan.utils.GraphUtils object at 0x112439040>
+spark = <pyspark.sql.connect.session.SparkSession object at 0x10706e990>
+
+    def __init__(self, spark):
+        self.spark = spark
+        try:
+>           rows = self._request(wire.Request(ping=wire.Ping(client_version=CLIENT_VERSION)))
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+examples/extensions/graph-algorithms/src/pyspark_pecan/utils.py:42: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+examples/extensions/graph-algorithms/src/pyspark_pecan/utils.py:62: in _request
+    return DataFrame(_UtilsRelation(request), self.spark).collect()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:1781: in collect
+    table, schema = self._to_table()
+                    ^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:1794: in _to_table
+    table, schema, self._execution_info = self._session.client.to_table(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:925: in to_table
+    table, schema, metrics, observed_metrics, _ = self._execute_and_fetch(req, observations)
+                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1560: in _execute_and_fetch
+    for response in self._execute_and_fetch_as_iterator(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1537: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1811: in _handle_error
+    self._handle_rpc_error(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <pyspark.sql.connect.client.core.SparkConnectClient object at 0x1073690d0>
+rpc_error = <_MultiThreadedRendezvous of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = "unregistered Connect ..._string = "INTERNAL:unregistered Connect extension type URL: type.googleapis.com/gf.utils.v1.Request; registered: []"
+>
+
+    def _handle_rpc_error(self, rpc_error: grpc.RpcError) -> NoReturn:
+        """
+        Error handling helper for dealing with GRPC Errors. On the server side, certain
+        exceptions are enriched with additional RPC Status information. These are
+        unpacked in this function and put into the exception.
+    
+        To avoid overloading the user with GRPC errors, this message explicitly
+        swallows the error context from the call. This GRPC Error is logged however,
+        and can be enabled.
+    
+        Parameters
+        ----------
+        rpc_error : grpc.RpcError
+           RPC Error containing the details of the exception.
+    
+        Returns
+        -------
+        Throws the appropriate internal Python exception.
+        """
+        logger.exception("GRPC Error received")
+        # We have to cast the value here because, a RpcError is a Call as well.
+        # https://grpc.github.io/grpc/python/grpc.html#grpc.UnaryUnaryMultiCallable.__call__
+        status = rpc_status.from_call(cast(grpc.Call, rpc_error))
+        if status:
+            for d in status.details:
+                if d.Is(error_details_pb2.ErrorInfo.DESCRIPTOR):
+                    info = error_details_pb2.ErrorInfo()
+                    d.Unpack(info)
+                    logger.debug(f"Received ErrorInfo: {info}")
+    
+                    if info.metadata["errorClass"] == "INVALID_HANDLE.SESSION_CHANGED":
+                        self._closed = True
+    
+>                   raise convert_exception(
+                        info,
+                        status.message,
+                        self._fetch_enriched_error(info),
+                        self._display_server_stack_trace(),
+                    ) from None
+E                   pyspark.errors.exceptions.connect.AnalysisException: unregistered Connect extension type URL: type.googleapis.com/gf.utils.v1.Request; registered: []
+
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1882: AnalysisException
+
+The above exception was the direct cause of the following exception:
+
+spark = <pyspark.sql.connect.session.SparkSession object at 0x10706e990>
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/certificate-witness-fixtures-ak9e0vux/sql/test_null_or_missing_parent_me2')
+parents = [0, 99, 1], hops = [0, 1, 2]
+
+    @pytest.mark.parametrize('parents,hops', [([0,None,1],[0,1,2]),([0,0,1],[0,None,2]),([0,99,1],[0,1,2])])
+    def test_null_or_missing_parent_metadata_is_not_silently_proved(spark,tmp_path,parents,hops):
+        from traversal_certificate import certify
+        v,e,a=frames(spark,tmp_path,[0.,1.,2.],parents,hops,[(0,1,1.),(1,2,1.)])
+>       assert certify(spark,a,v,e,source=0,weighted=True,partitions=2)['reached']==3
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+/Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/certificate-parent-witness/test_baseline.py:55: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+examples/extensions/benchmarks/traversal_certificate.py:58: in certify
+    graph=GraphAlgorithms(spark)
+          ^^^^^^^^^^^^^^^^^^^^^^
+examples/extensions/graph-algorithms/src/pyspark_pecan/algorithms.py:78: in __init__
+    self.utils = GraphUtils(spark)
+                 ^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <pyspark_pecan.utils.GraphUtils object at 0x112439040>
+spark = <pyspark.sql.connect.session.SparkSession object at 0x10706e990>
+
+    def __init__(self, spark):
+        self.spark = spark
+        try:
+            rows = self._request(wire.Request(ping=wire.Ping(client_version=CLIENT_VERSION)))
+        except Exception as exc:
+>           raise CapabilityError(
+                "graph utils Ping failed: enable the server's owned-run storage service"
+            ) from exc
+E           pyspark_pecan.utils.CapabilityError: graph utils Ping failed: enable the server's owned-run storage service
+
+examples/extensions/graph-algorithms/src/pyspark_pecan/utils.py:44: CapabilityError
+___ test_distance_only_native_keeps_bfs_witness_and_optional_parent_contract ___
+
+self = <pyspark_pecan.utils.GraphUtils object at 0x11243a480>
+spark = <pyspark.sql.connect.session.SparkSession object at 0x10706e990>
+
+    def __init__(self, spark):
+        self.spark = spark
+        try:
+>           rows = self._request(wire.Request(ping=wire.Ping(client_version=CLIENT_VERSION)))
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+examples/extensions/graph-algorithms/src/pyspark_pecan/utils.py:42: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+examples/extensions/graph-algorithms/src/pyspark_pecan/utils.py:62: in _request
+    return DataFrame(_UtilsRelation(request), self.spark).collect()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:1781: in collect
+    table, schema = self._to_table()
+                    ^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:1794: in _to_table
+    table, schema, self._execution_info = self._session.client.to_table(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:925: in to_table
+    table, schema, metrics, observed_metrics, _ = self._execute_and_fetch(req, observations)
+                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1560: in _execute_and_fetch
+    for response in self._execute_and_fetch_as_iterator(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1537: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1811: in _handle_error
+    self._handle_rpc_error(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <pyspark.sql.connect.client.core.SparkConnectClient object at 0x1073690d0>
+rpc_error = <_MultiThreadedRendezvous of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = "unregistered Connect ..._string = "INTERNAL:unregistered Connect extension type URL: type.googleapis.com/gf.utils.v1.Request; registered: []"
+>
+
+    def _handle_rpc_error(self, rpc_error: grpc.RpcError) -> NoReturn:
+        """
+        Error handling helper for dealing with GRPC Errors. On the server side, certain
+        exceptions are enriched with additional RPC Status information. These are
+        unpacked in this function and put into the exception.
+    
+        To avoid overloading the user with GRPC errors, this message explicitly
+        swallows the error context from the call. This GRPC Error is logged however,
+        and can be enabled.
+    
+        Parameters
+        ----------
+        rpc_error : grpc.RpcError
+           RPC Error containing the details of the exception.
+    
+        Returns
+        -------
+        Throws the appropriate internal Python exception.
+        """
+        logger.exception("GRPC Error received")
+        # We have to cast the value here because, a RpcError is a Call as well.
+        # https://grpc.github.io/grpc/python/grpc.html#grpc.UnaryUnaryMultiCallable.__call__
+        status = rpc_status.from_call(cast(grpc.Call, rpc_error))
+        if status:
+            for d in status.details:
+                if d.Is(error_details_pb2.ErrorInfo.DESCRIPTOR):
+                    info = error_details_pb2.ErrorInfo()
+                    d.Unpack(info)
+                    logger.debug(f"Received ErrorInfo: {info}")
+    
+                    if info.metadata["errorClass"] == "INVALID_HANDLE.SESSION_CHANGED":
+                        self._closed = True
+    
+>                   raise convert_exception(
+                        info,
+                        status.message,
+                        self._fetch_enriched_error(info),
+                        self._display_server_stack_trace(),
+                    ) from None
+E                   pyspark.errors.exceptions.connect.AnalysisException: unregistered Connect extension type URL: type.googleapis.com/gf.utils.v1.Request; registered: []
+
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1882: AnalysisException
+
+The above exception was the direct cause of the following exception:
+
+spark = <pyspark.sql.connect.session.SparkSession object at 0x10706e990>
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/certificate-witness-fixtures-ak9e0vux/sql/test_distance_only_native_keep0')
+
+    def test_distance_only_native_keeps_bfs_witness_and_optional_parent_contract(spark,tmp_path):
+        from traversal_certificate import certify
+        from traversal_cell import validate_parents
+        v,e,a=frames(spark,tmp_path,[0.,1.,2.],[0,0,1],[0,1,2],[(0,1,1.),(1,2,1.)])
+        a=a.select('id','distance')
+>       assert certify(spark,a,v,e,source=0,weighted=True,partitions=2)['witness_rounds']==2
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+/Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/certificate-parent-witness/test_baseline.py:65: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+examples/extensions/benchmarks/traversal_certificate.py:58: in certify
+    graph=GraphAlgorithms(spark)
+          ^^^^^^^^^^^^^^^^^^^^^^
+examples/extensions/graph-algorithms/src/pyspark_pecan/algorithms.py:78: in __init__
+    self.utils = GraphUtils(spark)
+                 ^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <pyspark_pecan.utils.GraphUtils object at 0x11243a480>
+spark = <pyspark.sql.connect.session.SparkSession object at 0x10706e990>
+
+    def __init__(self, spark):
+        self.spark = spark
+        try:
+            rows = self._request(wire.Request(ping=wire.Ping(client_version=CLIENT_VERSION)))
+        except Exception as exc:
+>           raise CapabilityError(
+                "graph utils Ping failed: enable the server's owned-run storage service"
+            ) from exc
+E           pyspark_pecan.utils.CapabilityError: graph utils Ping failed: enable the server's owned-run storage service
+
+examples/extensions/graph-algorithms/src/pyspark_pecan/utils.py:44: CapabilityError
+- generated xml file: /Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/certificate-parent-witness/baseline02/sql.xml -
+=========================== short test summary info ============================
+FAILED ../../../Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/certificate-parent-witness/test_baseline.py::test_supplied_parent_depth_above_cap_does_not_reject_shorter_tight_path
+FAILED ../../../Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/certificate-parent-witness/test_baseline.py::test_certificate_tolerance_does_not_replace_stricter_parent_predicate
+FAILED ../../../Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/certificate-parent-witness/test_baseline.py::test_null_or_missing_parent_metadata_is_not_silently_proved[parents0-hops0]
+FAILED ../../../Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/certificate-parent-witness/test_baseline.py::test_null_or_missing_parent_metadata_is_not_silently_proved[parents1-hops1]
+FAILED ../../../Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/certificate-parent-witness/test_baseline.py::test_null_or_missing_parent_metadata_is_not_silently_proved[parents2-hops2]
+FAILED ../../../Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/certificate-parent-witness/test_baseline.py::test_distance_only_native_keeps_bfs_witness_and_optional_parent_contract
+6 failed in 2.48s

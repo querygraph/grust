@@ -1,0 +1,130 @@
+{
+ "graph": "graph500-24",
+ "order": "asStaged",
+ "threads": 10,
+ "ids": "int64",
+ "workers": 0,
+ "phases": {
+  "server_and_session": 0.39658049999707146,
+  "read_and_stage": 1.568174166000972,
+  "wcc_call_1": 16.537271583998518,
+  "wcc_call_2": 1.4941768329990737,
+  "projection_stats_outgoing": 1.6636140830014483,
+  "pagerank_10_steps": 3.6680261670007894
+ },
+ "stage_receipt": {
+  "graph": "g",
+  "nodeCount": 8870942,
+  "edgeCount": 260379520,
+  "revision": 1,
+  "nodeSortPermutationBytes": 0,
+  "nodeSortKeysBytes": 0,
+  "nodeSortedCopyBytes": 0,
+  "nodeFillBytes": 0,
+  "nodeNormalizedBytes": 106455636,
+  "nodeRetainedBytes": 106455636,
+  "nodeSortSeconds": 0.0,
+  "nodeSorted": false,
+  "edgeSortPermutationBytes": 0,
+  "edgeSortKeysBytes": 0,
+  "edgeSortedCopyBytes": 0,
+  "edgeFillBytes": 0,
+  "edgeNormalizedBytes": 6281910200,
+  "edgeRetainedBytes": 6281910200,
+  "edgeSortSeconds": 0.0,
+  "edgeSorted": false
+ },
+ "rows": {
+  "wcc_call_1": 8870942,
+  "wcc_call_2": 8870942,
+  "pagerank_10_steps": 8870942
+ },
+ "projection_stats": {
+  "nodes": 8870942,
+  "edges": 260379520,
+  "arcs": 260379520,
+  "selfLoops": 0,
+  "csrBytes": 2118519932
+ },
+ "status": {
+  "memory": {
+   "limit_bytes": 47244640256,
+   "used_bytes": 12459434633,
+   "peak_bytes": 12672371897,
+   "staged_bytes": 6388365836
+  },
+  "graphs": [
+   {
+    "name": "g",
+    "node_count": 8870942,
+    "edge_count": 260379520,
+    "revision": 1,
+    "projections": 1,
+    "staged_bytes": 6388365836,
+    "projection_builds": [
+     {
+      "key": "{\"defaultWeight\": \"Some(Null)\", \"nodeLabels\": \"Some(Null)\", \"orientation\": \"Some(String(\\\"outgoing\\\"))\", \"relationshipTypes\": \"Some(Null)\", \"weightProperty\": \"Some(Null)\"}",
+      "seconds": 15.067619,
+      "live_bytes_before": 6388365836,
+      "admitted_bytes": 4994066945
+     }
+    ]
+   }
+  ],
+  "reads": [
+   {
+    "id": 1,
+    "algorithm": "wcc",
+    "graph": "g",
+    "state": "finished",
+    "message": null,
+    "batches": 1083,
+    "rows": 8870942,
+    "live_bytes": 594211,
+    "peak_bytes": 141935072,
+    "work_units": 304731356,
+    "diagnostics": null
+   },
+   {
+    "id": 2,
+    "algorithm": "wcc",
+    "graph": "g",
+    "state": "finished",
+    "message": null,
+    "batches": 1083,
+    "rows": 8870942,
+    "live_bytes": 594211,
+    "peak_bytes": 141935072,
+    "work_units": 304731364,
+    "diagnostics": null
+   },
+   {
+    "id": 3,
+    "algorithm": "projectionStats",
+    "graph": "g",
+    "state": "finished",
+    "message": null,
+    "batches": 1,
+    "rows": 1,
+    "live_bytes": 0,
+    "peak_bytes": 0,
+    "work_units": 260379520,
+    "diagnostics": null
+   },
+   {
+    "id": 4,
+    "algorithm": "pagerank",
+    "graph": "g",
+    "state": "finished",
+    "message": null,
+    "batches": 1083,
+    "rows": 8870942,
+    "live_bytes": 1158226,
+    "peak_bytes": 212937264,
+    "work_units": 3722029557,
+    "diagnostics": null
+   }
+  ]
+ },
+ "launch_to_exit_seconds": 25.902200124997762
+}

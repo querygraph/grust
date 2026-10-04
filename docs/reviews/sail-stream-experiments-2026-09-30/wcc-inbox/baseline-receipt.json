@@ -1,0 +1,24 @@
+{
+  "recorded_utc": "2026-09-30T19:17:18.764532+00:00",
+  "base": "c6126c27aae1b6262be3b1ecd6271008cc64fc69",
+  "index_tree": "645331c0d905c8a6d1b37cd29cea9d852e05ab7a",
+  "test_sha256": "d931954ed4a3429512deb66219d47b945b4d58aedac844a738aa81960453dfe6",
+  "source_sha256": "a851fce08549b80d13cb40839f809639c758f71ac940981f1a95cbfa1564ba04",
+  "new_tests_exit": 101,
+  "old_idle_exit": 0,
+  "scope": "Base production plus staged regression tests. Existing idle fixture passes; new allocation/headroom assertions fail, while active modes and malformed payload checks pass.",
+  "commands": [
+    {
+      "log": "baseline-final-tests.log",
+      "command": "CARGO_INCREMENTAL=0 CARGO_BUILD_JOBS=4 CARGO_TARGET_DIR=/private/tmp/sail-wcc-inbox-core-target cargo test --manifest-path /private/tmp/sail-argentea-wcc-inbox-gate/examples/extensions/argentea/Cargo.toml --locked --release --test wcc_inbox -- --nocapture",
+      "exit_code": 101,
+      "result": "2 passed; 3 failed"
+    },
+    {
+      "log": "baseline-old-idle.log",
+      "command": "CARGO_INCREMENTAL=0 CARGO_BUILD_JOBS=4 CARGO_TARGET_DIR=/private/tmp/sail-wcc-inbox-core-target cargo test --manifest-path examples/extensions/argentea/Cargo.toml --locked --release --test wcc_resources done_relays_have_no_graph_work_and_cancellation_blocks_publication -- --exact --nocapture",
+      "exit_code": 0,
+      "result": "1 passed; 5 filtered"
+    }
+  ]
+}

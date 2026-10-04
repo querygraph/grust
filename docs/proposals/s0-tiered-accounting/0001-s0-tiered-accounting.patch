@@ -1,0 +1,715 @@
+From e33d130f8ce72cbf62f458e5fcfaa68ac560ad77 Mon Sep 17 00:00:00 2001
+From: Alexy Khrabrov <deliverable@gmail.com>
+Date: Mon, 28 Sep 2026 10:32:14 -0700
+Subject: [PATCH] S0 tiered accounting: staging tiers, projection build cost,
+ sampler steps
+
+Local, unpushed, for review. Nutmeg's stage receipt reports what each part
+admitted (sort permutation, keys, sorted copy, fill, normalized, retained,
+sort seconds, sorted flag); each projection build records its seconds and
+admitted bytes and the diagnostics expose them; the sampler counts open
+descriptors and walks watched directories, with per-step peaks; the cell
+times staging, projectionStats and the kernel as separate steps and checks
+that the kernel reused the projection.
+
+Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
+---
+ examples/extensions/benchmarks/graph_cell.py  |  49 ++++++++-
+ examples/extensions/benchmarks/measurement.py | 100 ++++++++++++++++--
+ .../nutmeg/python/sail_nutmeg/client.py       |   5 +-
+ examples/extensions/nutmeg/src/diagnostics.rs |   4 +
+ examples/extensions/nutmeg/src/mutation.rs    |  44 +++++++-
+ examples/extensions/nutmeg/src/tests.rs       |   2 +-
+ examples/extensions/tests/test_nutmeg.py      |   5 +-
+ .../vendor/nutmeg-graph/src/graph_tables.rs   |   1 +
+ .../extensions/vendor/nutmeg-graph/src/lib.rs |  88 +++++++++++++--
+ .../vendor/nutmeg-graph/src/session.rs        |  26 ++++-
+ 10 files changed, 289 insertions(+), 35 deletions(-)
+
+diff --git a/examples/extensions/benchmarks/graph_cell.py b/examples/extensions/benchmarks/graph_cell.py
+index ec9053b87..6dc2636b9 100644
+--- a/examples/extensions/benchmarks/graph_cell.py
++++ b/examples/extensions/benchmarks/graph_cell.py
+@@ -7,8 +7,10 @@ import math
+ import os
+ from pathlib import Path
+ import platform
++import resource
+ import signal
+ import sys
++import tempfile
+ import time
+ import traceback
+ 
+@@ -132,9 +134,17 @@ def execute(spark, args, manifest, receipt, sampler):
+             nodes = vertices.select(F.col('id').cast('string').alias('node_id'))
+             links = edges.select(F.col('src').cast('string').alias('source'),
+                                  F.col('dst').cast('string').alias('target'))
++            # Staging, projection and kernel are timed and sampled as separate
++            # steps of the one 'execute' phase. The stage receipt carries the
++            # admitted sort tiers; the status after each step carries the
++            # pool's live and peak bytes; projectionStats builds the kernel's
++            # projection ahead of it and reports the CSR bytes. Whether the
++            # kernel then reused that projection is checked after the run.
++            sampler.mark_step('stage')
+             staged = nm.stage('benchmark', nodes, links)
+             receipt['stage_seconds'] = time.perf_counter() - started
+             receipt['stage_receipt'] = staged.asDict()
++            receipt['native_status_after_stage'] = nm.status()
+             options = dict(concurrency=args.threads)
+             if args.algorithm == 'pagerank':
+                 options.update(damping=args.damping, tolerance=args.tolerance,
+@@ -143,6 +153,14 @@ def execute(spark, args, manifest, receipt, sampler):
+                 options.update(maxIterations=args.max_iterations, seed=args.seed)
+             kernel = method
+             receipt['kernel'] = kernel
++            sampler.mark_step('projection')
++            projection_started = time.perf_counter()
++            projection_options = {key: options[key] for key in ('orientation',) if key in options}
++            receipt['projection_stats'] = nm.run('benchmark', 'projectionStats', **projection_options).first().asDict()
++            receipt['projection_seconds'] = time.perf_counter() - projection_started
++            receipt['native_status_after_projection'] = nm.status()
++            sampler.mark_step('kernel')
++            kernel_started = time.perf_counter()
+             frame = nm.run('benchmark', kernel, **options)
+             if args.algorithm == 'pagerank':
+                 exported = frame.select(F.col('nodeId').cast('long').alias('id'), 'score',
+@@ -165,6 +183,7 @@ def execute(spark, args, manifest, receipt, sampler):
+             else:
+                 options.update(method=method, seed=args.seed)
+             receipt['kernel'] = options['method']
++            sampler.mark_step('rounds')
+             handle = getattr(graph, args.algorithm)(vertices, edges, **options)
+             receipt['algorithm_ready_seconds'] = time.perf_counter() - started
+             receipt['algorithm_iterations'] = handle.iterations
+@@ -176,12 +195,23 @@ def execute(spark, args, manifest, receipt, sampler):
+                     F.lit(getattr(handle, 'residual', None)).cast('double').alias('residual'))
+             else:
+                 exported = handle.frame.select('id', F.col('component').cast('string').alias('component'))
++        if nm is None:
++            sampler.mark_step('output')
+         write_started = time.perf_counter()
+         exported.write.mode('error').parquet(output.as_uri())
+         receipt['end_to_end_seconds'] = time.perf_counter() - started
+         receipt['output_action_seconds'] = time.perf_counter() - write_started
+-        receipt['output_action_boundary'] = (
+-            'includes native kernel/CSR execution' if nm else 'export of already materialized Pecan result')
++        if nm is not None:
++            receipt['kernel_and_output_seconds'] = time.perf_counter() - kernel_started
++            receipt['output_action_boundary'] = ('native kernel execution on the projection built by projectionStats, '
++                                                 'plus the result write; the kernel is lazy until the write')
++        else:
++            receipt['output_action_boundary'] = 'export of already materialized Pecan result'
++            rounds = [e['elapsed_seconds'] for e in events if e.get('kind') == 'iteration_end']
++            if rounds:
++                receipt['round_end_seconds'] = rounds
++                receipt['first_round_seconds'] = rounds[0]
++                receipt['mean_round_seconds'] = rounds[-1] / len(rounds)
+         return output, handle, nm
+     except BaseException:
+         receipt['elapsed_until_error_seconds'] = time.perf_counter() - started
+@@ -340,7 +370,11 @@ def main():
+                    boundary='input DataFrame handles to completed full result Parquet write; server startup and correctness verification excluded',
+                    cache_boundary='fresh Sail state; dataset checksum reads before timing warm OS page cache; no cache flushing',
+                    outcome='started', cleanup_errors=[])
+-    sampler = Sampler(args.output / 'memory-samples.jsonl')
++    soft_nofile, hard_nofile = resource.getrlimit(resource.RLIMIT_NOFILE)
++    receipt['rlimit_nofile'] = {'soft': soft_nofile, 'hard': hard_nofile}
++    receipt['temporary_directory'] = tempfile.gettempdir()
++    sampler = Sampler(args.output / 'memory-samples.jsonl',
++                      watch={'staging': args.output / 'staging', 'temporary': tempfile.gettempdir()})
+     handle = nm = spark = None
+     signal.signal(signal.SIGALRM, timeout_handler)
+     before_ticks = cpu_ticks()
+@@ -366,6 +400,15 @@ def main():
+                     signal.alarm(args.timeout)
+                     receipt['cgroup_execution_after'] = cgroup_snapshot()
+                     record_result_evidence(result, nm, receipt['kernel'], manifest['counts']['vertices'], receipt)
++                    if nm is not None:
++                        graphs = [g for g in receipt['native_status_after'].get('graphs', []) if g['name'] == 'benchmark']
++                        builds = graphs[0].get('projection_builds', []) if graphs else []
++                        receipt['projection_builds'] = builds
++                        receipt['projection_reused_by_kernel'] = len(builds) == 1
++                        receipt['projection_boundary'] = (
++                            'one projection built by projectionStats and reused by the kernel' if len(builds) == 1
++                            else f'{len(builds)} projections built: the kernel did not reuse the projectionStats build, '
++                                 'so kernel_and_output_seconds includes a second build')
+                     if args.algorithm in ('bfs', 'sssp'):
+                         from traversal_cell import validate as traversal_validate
+                         receipt['correctness'] = traversal_validate(spark, result, args.dataset, args.algorithm,
+diff --git a/examples/extensions/benchmarks/measurement.py b/examples/extensions/benchmarks/measurement.py
+index 290d393f5..c90d9453a 100644
+--- a/examples/extensions/benchmarks/measurement.py
++++ b/examples/extensions/benchmarks/measurement.py
+@@ -51,6 +51,14 @@ def steal_fraction(before, after):
+     return delta[7] / sum(delta) if sum(delta) else 0.0
+ 
+ 
++def descriptor_count(path):
++    """Open descriptors of one process, or None when /proc/<pid>/fd cannot be listed."""
++    try:
++        return sum(1 for _ in (Path(path) / 'fd').iterdir())
++    except OSError:
++        return None
++
++
+ def process_memory():
+     rows = []
+     for path in Path('/proc').glob('[0-9]*'):
+@@ -60,22 +68,58 @@ def process_memory():
+         rollup = counters(path / 'smaps_rollup') if (path / 'smaps_rollup').exists() else {}
+         rows.append({'pid': int(path.name), 'name': read_text(path / 'comm'),
+                      'rss_bytes': status['VmRSS'] * 1024,
+-                     'pss_bytes': rollup['Pss'] * 1024 if 'Pss' in rollup else None})
++                     'pss_bytes': rollup['Pss'] * 1024 if 'Pss' in rollup else None,
++                     'fd_count': descriptor_count(path)})
+     return rows
+ 
+ 
++def directory_usage(path):
++    """Files and bytes under one directory now; None when it cannot be walked.
++
++    A file removed between listing and stat is skipped, not counted as zero.
++    """
++    files = total = 0
++    try:
++        for item in Path(path).rglob('*'):
++            try:
++                if item.is_file() and not item.is_symlink():
++                    files += 1
++                    total += item.stat().st_size
++            except OSError:
++                continue
++    except OSError:
++        return None
++    return {'files': files, 'bytes': total}
++
++
+ class Sampler:
+-    def __init__(self, output, interval=0.05):
++    """Sample memory, descriptors and watched directories while a trial runs.
++
++    A phase is the coarse interval the summaries read ('execute', 'verification',
++    'cleanup'). A step subdivides a phase ('stage', 'projection', 'kernel',
++    'output' for a native trial; 'rounds' for a relational one) so that staging
++    and kernel work are measured separately without changing what 'execute'
++    means. Watched directories are walked every `directory_every` scans, since a
++    walk of a large staging tree is not free; their peaks are per phase and step.
++    """
++    PEAK_KEYS = ('rss_bytes', 'pss_bytes', 'cgroup_current_bytes', 'fd_total')
++
++    def __init__(self, output, interval=0.05, watch=None, directory_every=20):
+         self.output = Path(output)
+         self.interval = interval
+         self.phase = 'startup'
++        self.step = None
+         self.generation = 0
+         self.stop = threading.Event()
+         self.lock = threading.Lock()
+         self.peaks = {}
++        self.step_peaks = {}
++        self.directory_peaks = {}
+         self.first = {}
+         self.count = 0
+         self.phase_counts = {}
++        self.watch = {str(name): Path(path) for name, path in (watch or {}).items()}
++        self.directory_every = max(1, int(directory_every))
+         self.error = None
+         self.thread = threading.Thread(target=self._run, daemon=True)
+ 
+@@ -88,19 +132,26 @@ class Sampler:
+             with self.output.open('w') as stream:
+                 while not self.stop.is_set():
+                     with self.lock:
+-                        phase, generation = self.phase, self.generation
++                        phase, step, generation = self.phase, self.step, self.generation
+                     started = time.monotonic()
+                     processes = process_memory() if Path('/proc/stat').exists() else []
+                     current = read_text(CGROUP / 'memory.current')
++                    directories = None
++                    if self.watch and self.count % self.directory_every == 0:
++                        directories = {name: directory_usage(path) for name, path in self.watch.items()}
+                     with self.lock:
+                         if generation != self.generation:
+-                            phase = 'transition'
+-                    row = {'scan_started_seconds': started, 'scan_finished_seconds': time.monotonic(), 'phase': phase,
++                            phase, step = 'transition', None
++                    fd_counts = [p.get('fd_count') for p in processes]
++                    row = {'scan_started_seconds': started, 'scan_finished_seconds': time.monotonic(),
++                           'phase': phase, 'step': step,
+                            'rss_bytes': sum(p['rss_bytes'] for p in processes) if processes else None,
+                            'pss_bytes': sum(p['pss_bytes'] for p in processes)
+                                if processes and all(p['pss_bytes'] is not None for p in processes) else None,
+                            'pss_processes_available': sum(p['pss_bytes'] is not None for p in processes),
+                            'cgroup_current_bytes': int(current) if current else None,
++                           'fd_total': sum(fd_counts) if processes and all(c is not None for c in fd_counts) else None,
++                           'directories': directories,
+                            'processes': processes}
+                     stream.write(json.dumps(row) + '\n')
+                     stream.flush()
+@@ -110,18 +161,39 @@ class Sampler:
+                         if phase == 'transition':
+                             continue
+                         self.first.setdefault(phase, row)
+-                        peak = self.peaks.setdefault(phase, {})
+-                        for key in ('rss_bytes', 'pss_bytes', 'cgroup_current_bytes'):
+-                            value = row[key]
+-                            if value is not None:
+-                                peak[key] = max(peak.get(key, 0), value)
++                        targets = [self.peaks.setdefault(phase, {})]
++                        if step is not None:
++                            targets.append(self.step_peaks.setdefault(phase, {}).setdefault(step, {}))
++                        for peak in targets:
++                            for key in self.PEAK_KEYS:
++                                value = row[key]
++                                if value is not None:
++                                    peak[key] = max(peak.get(key, 0), value)
++                        if directories:
++                            for name, usage in directories.items():
++                                if usage is None:
++                                    continue
++                                for scope in (phase, f'{phase}/{step}' if step is not None else None):
++                                    if scope is None:
++                                        continue
++                                    peak = self.directory_peaks.setdefault(name, {}).setdefault(scope, {})
++                                    for key, value in usage.items():
++                                        peak[key] = max(peak.get(key, 0), value)
+                     self.stop.wait(self.interval)
+         except BaseException as error:
+             self.error = repr(error)
+ 
+-    def mark(self, phase):
++    def mark(self, phase, step=None):
++        """Enter `phase`, optionally at `step`; the scan in flight is a transition."""
+         with self.lock:
+             self.phase = phase
++            self.step = step
++            self.generation += 1
++
++    def mark_step(self, step):
++        """Move to `step` within the current phase."""
++        with self.lock:
++            self.step = step
+             self.generation += 1
+ 
+     def __exit__(self, *_):
+@@ -134,6 +206,12 @@ class Sampler:
+         return {'interval_seconds': self.interval, 'samples': self.count,
+                 'phase_peaks': self.peaks, 'phase_first_samples': self.first,
+                 'phase_sample_counts': self.phase_counts,
++                'step_peaks': self.step_peaks,
++                'directory_peaks': self.directory_peaks,
++                'watched_directories': {name: str(path) for name, path in self.watch.items()},
++                'directory_scan_every': self.directory_every,
++                'fd_boundary': 'sum of open descriptors over all visible processes; None when any /proc/<pid>/fd was unreadable',
++                'directory_boundary': 'files and bytes under each watched directory at scan time; a walk sees a tree in motion',
+                 'execution_sampled': bool(self.phase_counts.get('execute')),
+                 'thread_alive': self.thread.is_alive(),
+                 'error': self.error, 'scope': 'all visible processes: requires a private PID namespace',
+diff --git a/examples/extensions/nutmeg/python/sail_nutmeg/client.py b/examples/extensions/nutmeg/python/sail_nutmeg/client.py
+index 515526283..02b92b35b 100644
+--- a/examples/extensions/nutmeg/python/sail_nutmeg/client.py
++++ b/examples/extensions/nutmeg/python/sail_nutmeg/client.py
+@@ -54,7 +54,10 @@ class Nutmeg:
+         """Atomically overwrite one graph; eagerly collect its one-row receipt.
+ 
+         Both DataFrames must belong to this session. Each receipt reports graph,
+-        nodeCount, edgeCount and revision. All input partitions are consumed.
++        nodeCount, edgeCount and revision, then what the write admitted for
++        each part, tier by tier: node/edge SortPermutationBytes, SortKeysBytes,
++        SortedCopyBytes, FillBytes, NormalizedBytes, RetainedBytes, SortSeconds
++        and Sorted. All input partitions are consumed.
+         """
+         if nodes.sparkSession is not self.spark or edges.sparkSession is not self.spark:
+             raise ValueError("stage inputs must belong to this Nutmeg Spark session")
+diff --git a/examples/extensions/nutmeg/src/diagnostics.rs b/examples/extensions/nutmeg/src/diagnostics.rs
+index f26d71f73..d5157b86f 100644
+--- a/examples/extensions/nutmeg/src/diagnostics.rs
++++ b/examples/extensions/nutmeg/src/diagnostics.rs
+@@ -114,6 +114,10 @@ impl ExecutionPlan for DiagnosticsExec {
+                 let graphs = registry.list()?.into_iter().map(|g| json!({
+                 "name": g.name, "node_count": g.staged_nodes, "edge_count": g.staged_edges,
+                 "revision": g.revision, "projections": g.projections, "staged_bytes": g.staged_bytes,
++                "projection_builds": g.projection_builds.iter().map(|b| json!({
++                    "key": b.key, "seconds": b.seconds,
++                    "live_bytes_before": b.live_bytes_before, "admitted_bytes": b.admitted_bytes,
++                })).collect::<Vec<_>>(),
+             })).collect::<Vec<_>>();
+                 let reads = registry.reads()?.into_iter().map(|r| json!({
+                 "id": r.id, "algorithm": r.algorithm, "graph": r.graph, "state": r.state.name(),
+diff --git a/examples/extensions/nutmeg/src/mutation.rs b/examples/extensions/nutmeg/src/mutation.rs
+index dfb7e8481..8a6610a31 100644
+--- a/examples/extensions/nutmeg/src/mutation.rs
++++ b/examples/extensions/nutmeg/src/mutation.rs
+@@ -2,7 +2,7 @@
+ use std::fmt;
+ use std::sync::{Arc, Mutex};
+ 
+-use arrow::array::{ArrayRef, BooleanArray, Int64Array, StringArray};
++use arrow::array::{ArrayRef, BooleanArray, Float64Array, Int64Array, StringArray};
+ use arrow::datatypes::{DataType, Field, Schema, SchemaRef};
+ use arrow::record_batch::RecordBatch;
+ use async_trait::async_trait;
+@@ -88,6 +88,24 @@ impl MutationTable {
+                     Field::new("nodeCount", DataType::Int64, false),
+                     Field::new("edgeCount", DataType::Int64, false),
+                     Field::new("revision", DataType::Int64, false),
++                    // What the write admitted, tier by tier, for the record:
++                    // the same figures a refusal names, on success.
++                    Field::new("nodeSortPermutationBytes", DataType::Int64, false),
++                    Field::new("nodeSortKeysBytes", DataType::Int64, false),
++                    Field::new("nodeSortedCopyBytes", DataType::Int64, false),
++                    Field::new("nodeFillBytes", DataType::Int64, false),
++                    Field::new("nodeNormalizedBytes", DataType::Int64, false),
++                    Field::new("nodeRetainedBytes", DataType::Int64, false),
++                    Field::new("nodeSortSeconds", DataType::Float64, false),
++                    Field::new("nodeSorted", DataType::Boolean, false),
++                    Field::new("edgeSortPermutationBytes", DataType::Int64, false),
++                    Field::new("edgeSortKeysBytes", DataType::Int64, false),
++                    Field::new("edgeSortedCopyBytes", DataType::Int64, false),
++                    Field::new("edgeFillBytes", DataType::Int64, false),
++                    Field::new("edgeNormalizedBytes", DataType::Int64, false),
++                    Field::new("edgeRetainedBytes", DataType::Int64, false),
++                    Field::new("edgeSortSeconds", DataType::Float64, false),
++                    Field::new("edgeSorted", DataType::Boolean, false),
+                 ])),
+                 attempt: Mutex::new(Attempt::Ready),
+             }),
+@@ -302,12 +320,28 @@ impl Mutation {
+                         }
+                     }
+                 }
+-                let info = staging.finish()?;
++                let report = staging.finish()?;
+                 vec![
+                     graph,
+-                    Arc::new(Int64Array::from(vec![info.staged_nodes as i64])) as ArrayRef,
+-                    Arc::new(Int64Array::from(vec![info.staged_edges as i64])) as ArrayRef,
+-                    Arc::new(Int64Array::from(vec![info.revision as i64])) as ArrayRef,
++                    Arc::new(Int64Array::from(vec![report.info.staged_nodes as i64])) as ArrayRef,
++                    Arc::new(Int64Array::from(vec![report.info.staged_edges as i64])) as ArrayRef,
++                    Arc::new(Int64Array::from(vec![report.info.revision as i64])) as ArrayRef,
++                    Arc::new(Int64Array::from(vec![report.nodes.sort_permutation_bytes as i64])) as ArrayRef,
++                    Arc::new(Int64Array::from(vec![report.nodes.sort_keys_bytes as i64])) as ArrayRef,
++                    Arc::new(Int64Array::from(vec![report.nodes.sorted_copy_bytes as i64])) as ArrayRef,
++                    Arc::new(Int64Array::from(vec![report.nodes.fill_bytes as i64])) as ArrayRef,
++                    Arc::new(Int64Array::from(vec![report.nodes.normalized_bytes as i64])) as ArrayRef,
++                    Arc::new(Int64Array::from(vec![report.nodes.retained_bytes as i64])) as ArrayRef,
++                    Arc::new(Float64Array::from(vec![report.nodes.sort_seconds])) as ArrayRef,
++                    Arc::new(BooleanArray::from(vec![report.nodes.sorted])) as ArrayRef,
++                    Arc::new(Int64Array::from(vec![report.edges.sort_permutation_bytes as i64])) as ArrayRef,
++                    Arc::new(Int64Array::from(vec![report.edges.sort_keys_bytes as i64])) as ArrayRef,
++                    Arc::new(Int64Array::from(vec![report.edges.sorted_copy_bytes as i64])) as ArrayRef,
++                    Arc::new(Int64Array::from(vec![report.edges.fill_bytes as i64])) as ArrayRef,
++                    Arc::new(Int64Array::from(vec![report.edges.normalized_bytes as i64])) as ArrayRef,
++                    Arc::new(Int64Array::from(vec![report.edges.retained_bytes as i64])) as ArrayRef,
++                    Arc::new(Float64Array::from(vec![report.edges.sort_seconds])) as ArrayRef,
++                    Arc::new(BooleanArray::from(vec![report.edges.sorted])) as ArrayRef,
+                 ]
+             }
+         };
+diff --git a/examples/extensions/nutmeg/src/tests.rs b/examples/extensions/nutmeg/src/tests.rs
+index b2b870c6d..647e93ada 100644
+--- a/examples/extensions/nutmeg/src/tests.rs
++++ b/examples/extensions/nutmeg/src/tests.rs
+@@ -80,7 +80,7 @@ async fn two_input_stage_reads_all_four_partitions_and_replays_receipt() {
+             .iter()
+             .map(|f| f.name().as_str())
+             .collect::<Vec<_>>(),
+-        ["graph", "nodeCount", "edgeCount", "revision"]
++        ["graph", "nodeCount", "edgeCount", "revision", "nodeSortPermutationBytes", "nodeSortKeysBytes", "nodeSortedCopyBytes", "nodeFillBytes", "nodeNormalizedBytes", "nodeRetainedBytes", "nodeSortSeconds", "nodeSorted", "edgeSortPermutationBytes", "edgeSortKeysBytes", "edgeSortedCopyBytes", "edgeFillBytes", "edgeNormalizedBytes", "edgeRetainedBytes", "edgeSortSeconds", "edgeSorted"]
+     );
+     let physical = provider.scan(&ctx.state(), None, &[], None).await.unwrap();
+     assert!(registry.list().unwrap().is_empty(), "scan must not stage");
+diff --git a/examples/extensions/tests/test_nutmeg.py b/examples/extensions/tests/test_nutmeg.py
+index 2c8eb2c22..6c0664f54 100644
+--- a/examples/extensions/tests/test_nutmeg.py
++++ b/examples/extensions/tests/test_nutmeg.py
+@@ -35,7 +35,10 @@ def test_analysis_has_no_mutation_and_bad_overwrite_is_atomic(spark):
+     nm = Nutmeg(spark)
+     nodes, edges = cycle(spark)
+     lazy_stage = nm._relation("stage", "analysis", inputs=(nodes, edges))
+-    assert lazy_stage.columns == ["graph", "nodeCount", "edgeCount", "revision"]
++    assert lazy_stage.columns[:4] == ["graph", "nodeCount", "edgeCount", "revision"]
++    assert lazy_stage.columns[4:] == [f"{part}{name}" for part in ("node", "edge") for name in (
++        "SortPermutationBytes", "SortKeysBytes", "SortedCopyBytes", "FillBytes",
++        "NormalizedBytes", "RetainedBytes", "SortSeconds", "Sorted")]
+     lazy_stage.explain()
+     with pytest.raises(Exception, match="no graph named `analysis`"):
+         nm.run("analysis", "degree").collect()
+diff --git a/examples/extensions/vendor/nutmeg-graph/src/graph_tables.rs b/examples/extensions/vendor/nutmeg-graph/src/graph_tables.rs
+index b1c414c90..d3526df06 100644
+--- a/examples/extensions/vendor/nutmeg-graph/src/graph_tables.rs
++++ b/examples/extensions/vendor/nutmeg-graph/src/graph_tables.rs
+@@ -63,6 +63,7 @@ impl GraphSnapshot {
+             staged_edges: e.edges.iter().map(RecordBatch::num_rows).sum(),
+             staged_bytes: e.node_bytes.bytes() + e.edge_bytes.bytes(),
+             projections: e.projections.len(),
++            projection_builds: e.projection_builds.clone(),
+         })
+     }
+ 
+diff --git a/examples/extensions/vendor/nutmeg-graph/src/lib.rs b/examples/extensions/vendor/nutmeg-graph/src/lib.rs
+index d3973ab4c..d29c77825 100644
+--- a/examples/extensions/vendor/nutmeg-graph/src/lib.rs
++++ b/examples/extensions/vendor/nutmeg-graph/src/lib.rs
+@@ -591,6 +591,25 @@ pub enum StageOrder {
+ /// The write option, and Python client keyword, that chooses [`StageOrder`].
+ pub const ORDER_OPTION: &str = "order";
+ 
++/// What staging one part admitted, tier by tier, for the record: the sort's
++/// working space as the three components its refusal names (permutation,
++/// keys, sorted copy), the schema fill, what the normalized rows held before
++/// the sort, what the part keeps afterwards, and the time the canonical sort
++/// took. Under [`StageOrder::AsStaged`] `sorted` is false and the sort
++/// fields are zero. These are the admitted bounds, not measured RSS, so a
++/// successful stage reports the same figures a refused one would have.
++#[derive(Clone, Copy, Debug, Default, PartialEq)]
++pub struct StageTiers {
++    pub sorted: bool,
++    pub fill_bytes: usize,
++    pub sort_permutation_bytes: usize,
++    pub sort_keys_bytes: usize,
++    pub sorted_copy_bytes: usize,
++    pub normalized_bytes: usize,
++    pub retained_bytes: usize,
++    pub sort_seconds: f64,
++}
++
+ impl StageOrder {
+     pub fn parse(text: &str) -> Result<Self> {
+         match text.trim().to_ascii_lowercase().as_str() {
+@@ -623,12 +642,17 @@ fn canonicalize(
+     mut batches: Vec<RecordBatch>,
+     declared: Option<SchemaRef>,
+     budget: &Budget<'_>,
+-) -> Result<(Vec<RecordBatch>, Admitted)> {
++) -> Result<(Vec<RecordBatch>, Admitted, StageTiers)> {
++    let started = Instant::now();
++    let mut tiers = StageTiers {
++        sorted: true,
++        ..StageTiers::default()
++    };
+     if let Some(schema) = declared {
+         batches.push(RecordBatch::new_empty(schema));
+     }
+     if batches.is_empty() {
+-        return Ok((batches, Admitted::default()));
++        return Ok((batches, Admitted::default(), tiers));
+     }
+     let mut work = Admitted::default();
+     let fill_bound = admission::unify_bound(&batches);
+@@ -640,9 +664,11 @@ fn canonicalize(
+         return internal_err!("nutmeg: schema unification exceeded its pre-admitted bound");
+     }
+     work.shrink_to(filled).map_err(err)?;
++    tiers.fill_bytes = filled;
+     let batches: Vec<RecordBatch> = batches.into_iter().filter(|b| b.num_rows() > 0).collect();
+     if batches.is_empty() {
+-        return Ok((batches, Admitted::default()));
++        tiers.sort_seconds = started.elapsed().as_secs_f64();
++        return Ok((batches, Admitted::default(), tiers));
+     }
+     let schema = batches[0].schema();
+     let structural: &[&str] = match part {
+@@ -688,6 +714,9 @@ fn canonicalize(
+     let keys = admission::sort_keys_bound(&batches, &key);
+     let beyond_copy = keys.saturating_sub(copy);
+     let need = permutation.saturating_add(beyond_copy).saturating_add(copy);
++    tiers.sort_permutation_bytes = permutation;
++    tiers.sort_keys_bytes = keys;
++    tiers.sorted_copy_bytes = copy;
+     let describe = || {
+         format!(
+             "the sort's working space: {permutation} bytes of permutation, about {keys} of sort \
+@@ -742,7 +771,9 @@ fn canonicalize(
+     } else {
+         sorted.shrink_to(held).map_err(err)?;
+     }
+-    Ok((out, sorted))
++    tiers.retained_bytes = sorted.bytes();
++    tiers.sort_seconds = started.elapsed().as_secs_f64();
++    Ok((out, sorted, tiers))
+ }
+ 
+ /// An upper bound on the bytes Arrow's row format takes to encode the `key`
+@@ -1053,6 +1084,21 @@ struct Entry {
+     edges_canonical: bool,
+     revision: u64,
+     projections: HashMap<String, GraphProjection>,
++    /// Every projection built for this revision, in build order, with what
++    /// it cost: kept for the record, beside the projections themselves.
++    projection_builds: Vec<ProjectionBuild>,
++}
++
++/// One projection build: its cache key, the wall time the build took, and
++/// the pool's live bytes before it and admitted by it. The bytes are the
++/// pool's live delta over the build, so a concurrent read's own admissions
++/// would be counted too; a benchmark cell builds alone.
++#[derive(Clone, Debug, PartialEq)]
++pub struct ProjectionBuild {
++    pub key: String,
++    pub seconds: f64,
++    pub live_bytes_before: usize,
++    pub admitted_bytes: usize,
+ }
+ 
+ /// What [`Registry::list`] reports for one graph.
+@@ -1068,6 +1114,8 @@ pub struct GraphInfo {
+     pub staged_bytes: usize,
+     pub revision: u64,
+     pub projections: usize,
++    /// The builds behind `projections`, in order; see [`ProjectionBuild`].
++    pub projection_builds: Vec<ProjectionBuild>,
+ }
+ 
+ /// What [`Registry::memory`] reports: the budget and what holds it.
+@@ -1217,6 +1265,7 @@ impl Store {
+                 staged_bytes: e.node_bytes.bytes() + e.edge_bytes.bytes(),
+                 revision: e.revision,
+                 projections: e.projections.len(),
++                projection_builds: e.projection_builds.clone(),
+             });
+         }
+         out.sort_by(|a, b| a.name.cmp(&b.name));
+@@ -1311,6 +1360,8 @@ impl Store {
+             "nutmeg".into(),
+         )
+         .map_err(err)?;
++        let build_started = Instant::now();
++        let live_bytes_before = self.pool.usage().map_or(0, |u| u.live_bytes);
+         // Built in the pool's own context, which owns it: its reservations,
+         // and the transpose an in-arc kernel builds on first use, stay on the
+         // pool for as long as it is cached. Kernels do not run here; each
+@@ -1346,6 +1397,13 @@ impl Store {
+             }
+             other => err(other),
+         })?;
++        let live_bytes_after = self.pool.usage().map_or(0, |u| u.live_bytes);
++        e.projection_builds.push(ProjectionBuild {
++            key: key.clone(),
++            seconds: build_started.elapsed().as_secs_f64(),
++            live_bytes_before,
++            admitted_bytes: live_bytes_after.saturating_sub(live_bytes_before),
++        });
+         e.projections.insert(key, graph.clone());
+         Ok(graph)
+     }
+@@ -1608,6 +1666,12 @@ impl Staging<'_> {
+     /// the order given, and the part is no longer canonical until a canonical
+     /// write sorts it again.
+     pub fn finish(self) -> Result<usize> {
++        self.finish_reporting().map(|(rows, _)| rows)
++    }
++
++    /// [`Staging::finish`], also returning what the write admitted, tier by
++    /// tier ([`StageTiers`]).
++    pub fn finish_reporting(self) -> Result<(usize, StageTiers)> {
+         let store = self.store;
+         let (entry, created) = {
+             let mut map = store.graphs.write().map_err(|_| poisoned())?;
+@@ -1635,7 +1699,7 @@ impl Staging<'_> {
+         result
+     }
+ 
+-    fn swap_into(&self, entry: &RwLock<Entry>) -> Result<usize> {
++    fn swap_into(&self, entry: &RwLock<Entry>) -> Result<(usize, StageTiers)> {
+         let mut e = entry.write().map_err(|_| poisoned())?;
+         let (rows, admitted) = match self.part {
+             Part::Nodes => (&e.nodes, &e.node_bytes),
+@@ -1651,7 +1715,8 @@ impl Staging<'_> {
+         };
+         staged.extend(self.normalized.iter().cloned());
+         let canonical = self.order == StageOrder::Canonical;
+-        let (staged, held) = if canonical {
++        let normalized_bytes = self.fresh.bytes();
++        let (staged, held, mut tiers) = if canonical {
+             canonicalize(self.part, staged, self.schema.clone(), &self.budget())?
+         } else {
+             let mut held = if self.replace {
+@@ -1660,8 +1725,14 @@ impl Staging<'_> {
+                 admitted.clone()
+             };
+             held.absorb(self.fresh.clone());
+-            (staged, held)
++            let tiers = StageTiers {
++                sorted: false,
++                retained_bytes: held.bytes(),
++                ..StageTiers::default()
++            };
++            (staged, held, tiers)
+         };
++        tiers.normalized_bytes = normalized_bytes;
+         let total = staged.iter().map(|b| b.num_rows()).sum();
+         match self.part {
+             Part::Nodes => {
+@@ -1686,7 +1757,8 @@ impl Staging<'_> {
+         }
+         e.revision += 1;
+         e.projections.clear();
+-        Ok(total)
++        e.projection_builds.clear();
++        Ok((total, tiers))
+     }
+ }
+ 
+diff --git a/examples/extensions/vendor/nutmeg-graph/src/session.rs b/examples/extensions/vendor/nutmeg-graph/src/session.rs
+index bbba19f8a..373be89ac 100644
+--- a/examples/extensions/vendor/nutmeg-graph/src/session.rs
++++ b/examples/extensions/vendor/nutmeg-graph/src/session.rs
+@@ -176,10 +176,10 @@ impl GraphStaging<'_> {
+     }
+ 
+     /// Linearize one graph revision only after both parts are complete.
+-    pub fn finish(self) -> Result<GraphInfo> {
++    pub fn finish(self) -> Result<StageReport> {
+         let entry = RwLock::new(Entry::default());
+-        self.nodes.swap_into(&entry)?;
+-        self.edges.swap_into(&entry)?;
++        let (_, nodes) = self.nodes.swap_into(&entry)?;
++        let (_, edges) = self.edges.swap_into(&entry)?;
+         let mut prepared = entry.into_inner().map_err(|_| poisoned())?;
+         let mut graphs = self.registry.store.graphs.write().map_err(|_| poisoned())?;
+         let previous = graphs
+@@ -198,12 +198,22 @@ impl GraphStaging<'_> {
+             staged_bytes: prepared.node_bytes.bytes() + prepared.edge_bytes.bytes(),
+             revision: prepared.revision,
+             projections: 0,
++            projection_builds: Vec::new(),
+         };
+         graphs.insert(self.name, Arc::new(RwLock::new(prepared)));
+-        Ok(info)
++        Ok(StageReport { info, nodes, edges })
+     }
+ }
+ 
++/// What [`GraphStaging::finish`] reports: the graph as staged, and what each
++/// part's write admitted ([`StageTiers`]).
++#[derive(Clone, Debug)]
++pub struct StageReport {
++    pub info: GraphInfo,
++    pub nodes: StageTiers,
++    pub edges: StageTiers,
++}
++
+ #[cfg(test)]
+ mod tests {
+     use super::*;
+@@ -226,7 +236,13 @@ mod tests {
+         let mapping = ColumnMapping::default();
+         let mut tx = registry.replacing("g", &mapping, &mapping, StageOrder::Canonical);
+         tx.push_edges(&edges).unwrap();
+-        tx.finish().unwrap();
++        let report = tx.finish().unwrap();
++        assert!(report.edges.sorted, "canonical staging reports its sort");
++        assert!(
++            report.edges.retained_bytes > 0 && report.edges.sorted_copy_bytes >= report.edges.retained_bytes,
++            "{:?}",
++            report.edges
++        );
+     }
+ 
+     #[test]
+-- 
+2.50.1 (Apple Git-155)
+

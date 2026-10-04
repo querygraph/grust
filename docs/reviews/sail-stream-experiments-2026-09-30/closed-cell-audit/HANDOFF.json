@@ -1,0 +1,41 @@
+{
+  "recorded_utc": "2026-09-30T21:44:24.790984+00:00",
+  "outcome": "PREPARED_LOCAL_CLOSED_CELL_VERIFIER_NOT_PUBLISHED",
+  "helper_sha256": "c8d59db362136879bbd3a6efe8f527311849e3e0be18ddb64e6da996bdfcd318",
+  "profiles_sha256": "dfe38f1cb23f8b689ec7cf839e6016fa037e013396d80fbdc6dce4f65d89eb76",
+  "candidate_tree": "045744062a0e52a9dc2215993137cc2fb94fbce4",
+  "detached_gate": {
+    "path": "detached-gate-v2.json",
+    "sha256": "bc55cdea5e1460cc1b8e1397a6598d0724e4e24414c8df450d1e745877d9569a",
+    "tests": 16
+  },
+  "independent_review": {
+    "path": "independent-audit.json",
+    "sha256": "eedb55b78016828cc5a01bbb6c4fca1cb7d0b790dde4272732737a4b0e429579",
+    "additional_controls": 5
+  },
+  "completed_cell_checks": {
+    "logging01": {
+      "receipt": "logging01-verification-v2.json",
+      "sha256": "ad253d21034529fc0923835fc5f3136cb28c5f28d84435275700ad046a13c873",
+      "integrity_status": "integrity_verified",
+      "runner_outcome": "oom",
+      "receipt_outcome": "error"
+    },
+    "compact561-smoke": {
+      "receipt": "compact561-smoke-verification-v2.json",
+      "sha256": "63510705f052b9cf97a00341702e620705f7dba6efd0aa13637e65d33d34a6b6",
+      "integrity_status": "integrity_verified",
+      "runner_outcome": "passed",
+      "receipt_outcome": "passed"
+    }
+  },
+  "prepared_pending_cases": [
+    "logging02",
+    "logging03"
+  ],
+  "pending_cell_checks_run": false,
+  "scope": "No remote read/workload, no source/runtime build, no commit/push, no pinned runner/config/prose edits. Local identity/archive/resource agreement only; correctness/certificate validation not performed. Missing receipt/collection/result/closure evidence is inconclusive unless an integrity contradiction is also detected.",
+  "command_from_experiment_directory": "PYTHONDONTWRITEBYTECODE=1 python3 closed-cell-audit/audit_cell.py --case logging02 --cell-dir logging02 --output closed-cell-audit/logging02-verification.json",
+  "history": "Initial passing helper and gate receipts retained; v2 adds explicit policy/case/directory provenance without changing integrity assertions."
+}

@@ -1,0 +1,75 @@
+{
+  "generated_utc": "2026-09-30T15:13:34.507827+00:00",
+  "kind": "counterexample to extracted accepted predicates; not a Spark integration test",
+  "source": {
+    "repo": "/Users/alexy/src/sail-large-graphs",
+    "commit": "ffcfbd5690e3f3681ef9ac18ba959bc231cf9f73",
+    "file": "examples/extensions/benchmarks/graph_cell.py",
+    "sha256": "8666741b91887dfbc40eb831d6fa54149b6a5f4437e683d79c7ffc8f731eaa55",
+    "certificate_assertions": [
+      "not actual.where(F.col('component').isNull()).limit(1).count()",
+      "crossing == 0",
+      "foreign == 0"
+    ]
+  },
+  "input": {
+    "vertices": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "edges": [
+      [
+        0,
+        1
+      ],
+      [
+        2,
+        3
+      ]
+    ]
+  },
+  "corrupt_output": [
+    [
+      0,
+      "0"
+    ],
+    [
+      1,
+      "0"
+    ],
+    [
+      2,
+      "0"
+    ],
+    [
+      3,
+      "0"
+    ]
+  ],
+  "observed_predicates": {
+    "rows": 4,
+    "unique_ids": 4,
+    "null_ids": 0,
+    "missing_vertices": 0,
+    "null_labels": 0,
+    "crossing_edges": 0,
+    "foreign_labels": 0,
+    "non_minimal_labels": 0,
+    "reported_components": 1
+  },
+  "accepted_by_certificate_predicates": true,
+  "actual_components": [
+    [
+      0,
+      1
+    ],
+    [
+      2,
+      3
+    ]
+  ],
+  "actual_component_count": 2,
+  "reason": "No edge crosses a reported label, but disconnected components may be merged. A connectedness witness for every label is absent."
+}

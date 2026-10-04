@@ -1,0 +1,66 @@
+use pyo3::prelude::*;
+
+/// Finalize session-owned Python objects when the last native owner is dropped.
+/// PyO3 otherwise queues a decref outside the GIL until a later Python entry,
+/// which can retain native session quotas indefinitely on an idle server.
+pub(super) struct PythonOwner(Option<Py<PyAny>>);
+
+impl PythonOwner {
+    pub(super) fn new(value: Py<PyAny>) -> Self {
+        Self(Some(value))
+    }
+
+    pub(super) fn bind<'py>(&self, py: Python<'py>) -> PyResult<&Bound<'py, PyAny>> {
+        self.0.as_ref().map(|value| value.bind(py)).ok_or_else(|| {
+            pyo3::exceptions::PyRuntimeError::new_err("native Python owner was already dropped")
+        })
+    }
+}
+
+impl Drop for PythonOwner {
+    fn drop(&mut self) {
+        if let Some(value) = self.0.take() {
+            Python::attach(|_| drop(value));
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::sync::Arc;
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
+    use pyo3::types::PyCapsule;
+
+    use super::*;
+
+    struct Released(Arc<AtomicUsize>);
+
+    impl Drop for Released {
+        fn drop(&mut self) {
+            self.0.fetch_add(1, Ordering::SeqCst);
+        }
+    }
+
+    #[test]
+    fn last_owner_releases_without_a_later_python_request() -> PyResult<()> {
+        Python::initialize();
+        let released = Arc::new(AtomicUsize::new(0));
+        let owner = Python::attach(|py| -> PyResult<_> {
+            Ok(Arc::new(PythonOwner::new(
+                PyCapsule::new_with_value(py, Released(released.clone()), c"resource_test")?
+                    .into_any()
+                    .unbind(),
+            )))
+        })?;
+        let output_owner = owner.clone();
+        drop(owner);
+        assert_eq!(released.load(Ordering::SeqCst), 0);
+        // No further request, Python attachment, or GC occurs after this drop.
+        std::thread::spawn(move || drop(output_owner))
+            .join()
+            .map_err(|_| pyo3::exceptions::PyRuntimeError::new_err("owner thread panicked"))?;
+        assert_eq!(released.load(Ordering::SeqCst), 1);
+        Ok(())
+    }
+}

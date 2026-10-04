@@ -1,0 +1,1572 @@
+diff --git a/crates/sail-data-source/src/formats/parquet/mod.rs b/crates/sail-data-source/src/formats/parquet/mod.rs
+index aa2136fa2..ab6f9365c 100644
+--- a/crates/sail-data-source/src/formats/parquet/mod.rs
++++ b/crates/sail-data-source/src/formats/parquet/mod.rs
+@@ -11,6 +11,12 @@ use crate::options::r#gen::{ParquetReadOptions, ParquetWriteOptions};
+ 
+ mod options;
+ mod read;
++mod statistics;
++
++#[cfg(test)]
++mod read_statistics_tests;
++#[cfg(test)]
++mod statistics_tests;
+ mod write;
+ 
+ pub use read::ParquetReadFormat;
+diff --git a/crates/sail-data-source/src/formats/parquet/read.rs b/crates/sail-data-source/src/formats/parquet/read.rs
+index 9ab157da5..6a71cf774 100644
+--- a/crates/sail-data-source/src/formats/parquet/read.rs
++++ b/crates/sail-data-source/src/formats/parquet/read.rs
+@@ -125,8 +125,9 @@ impl ReadFormat for ParquetReadFormat {
+             .with_file_metadata_cache(Some(metadata_cache))
+             .fetch_metadata()
+             .await?;
+-        let statistics =
++        let mut statistics =
+             DFParquetMetadata::statistics_from_parquet_metadata(&metadata, &file_schema)?;
++        super::statistics::clear_floating_bounds(&mut statistics, &file_schema);
+         let ordering = ordering_from_parquet_metadata(&metadata, &file_schema)?;
+         Ok(ListingFileMeta {
+             statistics,
+diff --git a/crates/sail-data-source/src/formats/parquet/read_statistics_tests.rs b/crates/sail-data-source/src/formats/parquet/read_statistics_tests.rs
+new file mode 100644
+index 000000000..56636d07c
+--- /dev/null
++++ b/crates/sail-data-source/src/formats/parquet/read_statistics_tests.rs
+@@ -0,0 +1,224 @@
++//! Real Parquet bytes through Sail's metadata and scan boundary. This module
++//! deliberately does not call the mitigation helper, so it also runs unchanged
++//! against the parent revision as a regression reproduction.
++use std::sync::Arc;
++
++use bytes::Bytes;
++use datafusion::arrow::array::{Array, ArrayRef, Float64Array, Int64Array, as_primitive_array};
++use datafusion::arrow::compute::{cast, concat};
++use datafusion::arrow::datatypes::{DataType, Field, Float64Type, Schema};
++use datafusion::arrow::record_batch::RecordBatch;
++use datafusion::execution::context::SessionContext;
++use datafusion::execution::object_store::ObjectStoreUrl;
++use datafusion::parquet::arrow::ArrowWriter;
++use datafusion::parquet::arrow::arrow_reader::ParquetRecordBatchReaderBuilder;
++use datafusion::physical_plan::collect;
++use datafusion_common::parsers::CompressionTypeVariant;
++use datafusion_common::stats::Precision;
++use datafusion_common::{Constraints, ScalarValue};
++use datafusion_datasource::file_groups::FileGroup;
++use datafusion_datasource::source::DataSourceExec;
++use datafusion_datasource::{PartitionedFile, TableSchema};
++use object_store::memory::InMemory;
++use object_store::path::Path;
++use object_store::{ObjectStore, ObjectStoreExt};
++
++use super::ParquetFormatFactory;
++use crate::listing::source::{FormatFactory, ListingScanInput, ReadFormat};
++
++type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
++
++async fn roundtrip(input: ArrayRef) -> TestResult<(ArrayRef, datafusion_common::Statistics)> {
++    let schema = Arc::new(Schema::new(vec![Field::new(
++        "value",
++        input.data_type().clone(),
++        true,
++    )]));
++    let batch = RecordBatch::try_new(Arc::clone(&schema), vec![Arc::clone(&input)])?;
++    let mut bytes = Vec::new();
++    let mut writer = ArrowWriter::try_new(&mut bytes, Arc::clone(&schema), None)?;
++    writer.write(&batch)?;
++    writer.close()?;
++    let bytes = Bytes::from(bytes);
++    // Independent decoder proves the writer retained the input values.
++    let decoded = ParquetRecordBatchReaderBuilder::try_new(bytes.clone())?
++        .build()?
++        .collect::<Result<Vec<_>, _>>()?;
++    let decoded = concat(
++        &decoded
++            .iter()
++            .map(|b| b.column(0).as_ref())
++            .collect::<Vec<_>>(),
++    )?;
++    assert_values(&input, &decoded)?;
++
++    let ctx = SessionContext::new();
++    let state = ctx.state();
++    let store: Arc<dyn ObjectStore> = Arc::new(InMemory::new());
++    let path = Path::from("values.parquet");
++    store.put(&path, bytes.into()).await?;
++    let object = store.head(&path).await?;
++    let url = ObjectStoreUrl::parse("memory://float-statistics")?;
++    ctx.runtime_env()
++        .register_object_store(url.as_ref(), Arc::clone(&store));
++    let format = ParquetFormatFactory::read(&state, vec![])?;
++    let meta = format
++        .infer_file_meta(
++            &state,
++            &store,
++            &object,
++            Arc::clone(&schema),
++            CompressionTypeVariant::UNCOMPRESSED,
++        )
++        .await?;
++    let statistics = meta.statistics;
++    let file = PartitionedFile::from(object).with_statistics(Arc::new(statistics.clone()));
++    let config = format
++        .scan(
++            &state,
++            ListingScanInput {
++                object_store_url: url,
++                file_groups: vec![FileGroup::new(vec![file])],
++                constraints: Constraints::default(),
++                projection: Some(vec![0]),
++                limit: None,
++                preserve_order: false,
++                output_ordering: vec![],
++                statistics: statistics.clone(),
++                output_partitioning: None,
++                schema: TableSchema::builder(schema).build(),
++                compression: CompressionTypeVariant::UNCOMPRESSED,
++            },
++        )
++        .await?;
++    let output = collect(DataSourceExec::from_data_source(config), ctx.task_ctx()).await?;
++    let output = concat(
++        &output
++            .iter()
++            .map(|b| b.column(0).as_ref())
++            .collect::<Vec<_>>(),
++    )?;
++    Ok((output, statistics))
++}
++
++fn assert_values(expected: &ArrayRef, actual: &ArrayRef) -> TestResult {
++    assert_eq!(expected.len(), actual.len());
++    assert_eq!(expected.data_type(), actual.data_type());
++    // Widen floats (and dictionary floats) to compare NaNs and signed zero.
++    let expected = cast(expected, &DataType::Float64)?;
++    let actual = cast(actual, &DataType::Float64)?;
++    let expected = as_primitive_array::<Float64Type>(expected.as_ref());
++    let actual = as_primitive_array::<Float64Type>(actual.as_ref());
++    for i in 0..expected.len() {
++        assert_eq!(expected.is_null(i), actual.is_null(i), "row {i}");
++        if expected.is_valid(i) {
++            if expected.value(i).is_nan() {
++                assert!(
++                    actual.value(i).is_nan(),
++                    "row {i}: NaN became {}",
++                    actual.value(i)
++                );
++            } else {
++                assert_eq!(
++                    expected.value(i).to_bits(),
++                    actual.value(i).to_bits(),
++                    "row {i}"
++                );
++            }
++        }
++    }
++    Ok(())
++}
++
++#[tokio::test]
++async fn parquet_float_values_survive_statistics() -> TestResult {
++    for data_type in [DataType::Float16, DataType::Float32, DataType::Float64] {
++        for values in [
++            vec![Some(f64::NAN), Some(0.5)],
++            vec![Some(0.5), Some(f64::NAN)],
++            vec![Some(0.5), Some(0.5)],
++            vec![Some(f64::NAN), Some(f64::NAN)],
++            vec![Some(-0.0), Some(0.0)],
++            vec![Some(0.5), None],
++            vec![None, None],
++        ] {
++            let input = cast(&Float64Array::from(values), &data_type)?;
++            let (actual, statistics) = roundtrip(Arc::clone(&input)).await?;
++            assert_values(&input, &actual)?;
++            assert_eq!(statistics.column_statistics[0].min_value, Precision::Absent);
++            assert_eq!(statistics.column_statistics[0].max_value, Precision::Absent);
++            assert_eq!(statistics.num_rows, Precision::Exact(2));
++            assert_eq!(
++                statistics.column_statistics[0].null_count,
++                Precision::Exact(input.null_count())
++            );
++        }
++    }
++    Ok(())
++}
++
++#[tokio::test]
++async fn parquet_dictionary_float_values_survive_statistics() -> TestResult {
++    // Dictionary(Float16) is not readable by this pinned Parquet version;
++    // the separate control below pins that existing unsupported case.
++    for value_type in [DataType::Float32, DataType::Float64] {
++        let data_type = DataType::Dictionary(Box::new(DataType::Int32), Box::new(value_type));
++        for values in [
++            vec![Some(f64::NAN), Some(0.5)],
++            vec![Some(0.5), Some(f64::NAN), None],
++            vec![Some(-0.0), Some(0.0)],
++        ] {
++            let input = cast(&Float64Array::from(values), &data_type)?;
++            let (actual, _) = roundtrip(Arc::clone(&input)).await?;
++            assert_values(&input, &actual)?;
++        }
++    }
++    Ok(())
++}
++
++#[test]
++fn parquet_dictionary_float16_reader_is_unsupported() -> TestResult {
++    let data_type = DataType::Dictionary(Box::new(DataType::Int32), Box::new(DataType::Float16));
++    let input = cast(&Float64Array::from(vec![f64::NAN, 0.5]), &data_type)?;
++    let schema = Arc::new(Schema::new(vec![Field::new("value", data_type, false)]));
++    let batch = RecordBatch::try_new(Arc::clone(&schema), vec![input])?;
++    let mut bytes = Vec::new();
++    let mut writer = ArrowWriter::try_new(&mut bytes, schema, None)?;
++    writer.write(&batch)?;
++    writer.close()?;
++    let error = match ParquetRecordBatchReaderBuilder::try_new(Bytes::from(bytes))?.build() {
++        Ok(_) => return Err("Dictionary(Float16) unexpectedly supported".into()),
++        Err(error) => error,
++    };
++    assert!(
++        error.to_string().contains(
++            "unsupported data type for byte array dictionary reader - Dictionary(Int32, Float16)"
++        ),
++        "{error}"
++    );
++    Ok(())
++}
++
++#[tokio::test]
++async fn parquet_integer_bounds_and_all_null_counts_survive() -> TestResult {
++    let input: ArrayRef = Arc::new(Int64Array::from(vec![7, 7]));
++    let (actual, statistics) = roundtrip(Arc::clone(&input)).await?;
++    assert_eq!(actual.as_ref(), input.as_ref());
++    assert_eq!(
++        statistics.column_statistics[0].min_value,
++        Precision::Exact(ScalarValue::Int64(Some(7)))
++    );
++    assert_eq!(
++        statistics.column_statistics[0].max_value,
++        Precision::Exact(ScalarValue::Int64(Some(7)))
++    );
++    let input: ArrayRef = Arc::new(Float64Array::from(vec![None, None]));
++    let (actual, statistics) = roundtrip(input).await?;
++    assert_eq!(actual.null_count(), 2);
++    assert_eq!(statistics.num_rows, Precision::Exact(2));
++    assert_eq!(
++        statistics.column_statistics[0].null_count,
++        Precision::Exact(2)
++    );
++    Ok(())
++}
+diff --git a/crates/sail-data-source/src/formats/parquet/statistics.rs b/crates/sail-data-source/src/formats/parquet/statistics.rs
+new file mode 100644
+index 000000000..ca3a1034e
+--- /dev/null
++++ b/crates/sail-data-source/src/formats/parquet/statistics.rs
+@@ -0,0 +1,25 @@
++use datafusion::arrow::datatypes::{DataType, Schema};
++use datafusion_common::Statistics;
++use datafusion_common::stats::Precision;
++
++/// Parquet bounds can exclude NaNs and therefore cannot prove that a floating
++/// column is constant. DataFusion can otherwise replace the whole column with
++/// an exact singleton bound, losing NaNs (and possibly the sign of zero).
++/// Clear the bounds before file statistics are cached or aggregated. Keep row
++/// and null counts, including the independent proof that a column is all null.
++pub(super) fn clear_floating_bounds(statistics: &mut Statistics, schema: &Schema) {
++    for (column, field) in statistics.column_statistics.iter_mut().zip(schema.fields()) {
++        if is_floating(field.data_type()) {
++            column.min_value = Precision::Absent;
++            column.max_value = Precision::Absent;
++        }
++    }
++}
++
++fn is_floating(data_type: &DataType) -> bool {
++    match data_type {
++        DataType::Float16 | DataType::Float32 | DataType::Float64 => true,
++        DataType::Dictionary(_, value) => is_floating(value),
++        _ => false,
++    }
++}
+diff --git a/crates/sail-data-source/src/formats/parquet/statistics_tests.rs b/crates/sail-data-source/src/formats/parquet/statistics_tests.rs
+new file mode 100644
+index 000000000..09de2e5b2
+--- /dev/null
++++ b/crates/sail-data-source/src/formats/parquet/statistics_tests.rs
+@@ -0,0 +1,55 @@
++use datafusion::arrow::datatypes::{DataType, Field, Schema};
++use datafusion_common::stats::Precision;
++use datafusion_common::{ColumnStatistics, ScalarValue, Statistics};
++
++use super::statistics::clear_floating_bounds;
++
++#[test]
++fn only_floating_bounds_are_removed() {
++    let types = [
++        DataType::Float16,
++        DataType::Float32,
++        DataType::Float64,
++        DataType::Dictionary(Box::new(DataType::Int8), Box::new(DataType::Float16)),
++        DataType::Dictionary(Box::new(DataType::Int8), Box::new(DataType::Float32)),
++        DataType::Dictionary(Box::new(DataType::Int8), Box::new(DataType::Float64)),
++        DataType::Int64,
++        DataType::Utf8,
++        DataType::Dictionary(Box::new(DataType::Int8), Box::new(DataType::Utf8)),
++    ];
++    let schema = Schema::new(
++        types
++            .iter()
++            .enumerate()
++            .map(|(i, t)| Field::new(i.to_string(), t.clone(), true))
++            .collect::<Vec<_>>(),
++    );
++    let column = ColumnStatistics {
++        null_count: Precision::Exact(2),
++        min_value: Precision::Exact(ScalarValue::Float64(Some(0.5))),
++        max_value: Precision::Inexact(ScalarValue::Float64(Some(0.5))),
++        sum_value: Precision::Absent,
++        distinct_count: Precision::Exact(3),
++        byte_size: Precision::Inexact(100),
++    };
++    let mut statistics = Statistics {
++        num_rows: Precision::Exact(5),
++        total_byte_size: Precision::Exact(700),
++        column_statistics: vec![column.clone(); types.len()],
++    };
++    let original = statistics.clone();
++    clear_floating_bounds(&mut statistics, &schema);
++    assert_eq!(statistics.num_rows, original.num_rows);
++    assert_eq!(statistics.total_byte_size, original.total_byte_size);
++    for (index, actual) in statistics.column_statistics.iter().enumerate() {
++        let mut expected = column.clone();
++        if index < 6 {
++            expected.min_value = Precision::Absent;
++            expected.max_value = Precision::Absent;
++        }
++        assert_eq!(actual, &expected);
++    }
++    let once = statistics.clone();
++    clear_floating_bounds(&mut statistics, &schema);
++    assert_eq!(statistics, once);
++}
+diff --git a/examples/extensions/argentea/src/bfs.rs b/examples/extensions/argentea/src/bfs.rs
+index aba932ac1..eb5136bcb 100644
+--- a/examples/extensions/argentea/src/bfs.rs
++++ b/examples/extensions/argentea/src/bfs.rs
+@@ -1,6 +1,8 @@
+ //! Integer BFS over retained source-owned partitions. No scheduler or transport.
+ //! Input arcs are directed; undirected callers normalize each edge to both arcs.
+ mod emission;
++mod initialization;
++pub use initialization::BfsInitialization;
+ mod protocol;
+ mod statistics;
+ use crate::{Operation, Resources, Result, Round, adjacency::Adjacency, reserve_vec};
+@@ -191,51 +193,32 @@ impl BfsPartition {
+         options: BfsOptions,
+         resources: Resources,
+     ) -> Result<Self> {
++        Self::prepare(
++            operation, partition, worker_id, vertices, arcs, options, resources,
++        )?
++        .finish()
++    }
++
++    /// Build and validate the CSR without allocating labels or the frontier.
++    /// The caller may release raw inputs and their admission before `finish`.
++    pub fn prepare(
++        operation: Operation,
++        partition: usize,
++        worker_id: u64,
++        vertices: &[i64],
++        arcs: &[(i64, i64)],
++        options: BfsOptions,
++        resources: Resources,
++    ) -> Result<BfsInitialization> {
+         options.validate()?;
+         let adjacency = Adjacency::build(&operation, partition, vertices, arcs, &resources)?;
+-        let origin = BfsOrigin {
+-            worker_id,
+-            adjacency_id: adjacency.identity,
+-        };
+-        let origin_admission = resources
+-            .execution
+-            .reserve(
+-                operation.partitions
+-                    * (size_of::<Option<BfsOrigin>>() + size_of::<Option<(u64, u64, u64)>>())
+-                    + 128,
+-            )
+-            .map_err(|e| e.to_string())?;
+-        let mut origins = filled(operation.partitions, None)?;
+-        let shapes = filled(operation.partitions, None)?;
+-        origins[partition] = Some(origin);
+-        let mut values = Values::new(vertices.len(), &resources)?;
+-        values.remaining = adjacency.targets.len() as u64;
+-        if let Ok(i) = adjacency.vertices.binary_search(&options.source) {
+-            values.depths[i] = Some(0);
+-            values.parents[i] = Some(options.source);
+-            values.frontier.push(i);
+-            values.reached = 1;
+-            values.remaining -= (adjacency.offsets[i + 1] - adjacency.offsets[i]) as u64;
+-        }
+-        let state = State::Statistics(StatisticsInbox::new(operation.partitions, &resources)?);
+-        Ok(Self {
++        Ok(BfsInitialization {
+             operation,
+             partition,
+-            origin,
++            worker_id,
+             options,
+-            adjacency,
+-            incoming: None,
+             resources,
+-            values: Arc::new(values),
+-            origins,
+-            shapes,
+-            _origin_admission: origin_admission,
+-            state,
+-            next_phase: 0,
+-            levels: 0,
+-            completed: BfsMode::Topology,
+-            work: BfsWork::default(),
+-            terminal: None,
++            adjacency,
+         })
+     }
+     pub fn partition(&self) -> usize {
+diff --git a/examples/extensions/argentea/src/bfs/initialization.rs b/examples/extensions/argentea/src/bfs/initialization.rs
+new file mode 100644
+index 000000000..fda8467f6
+--- /dev/null
++++ b/examples/extensions/argentea/src/bfs/initialization.rs
+@@ -0,0 +1,74 @@
++//! Validated CSR ownership boundary before per-vertex state allocation.
++use super::*;
++
++/// Prepared partition that owns its admitted CSR but has no labels or frontier.
++/// Dropping it abandons initialization and releases the retained CSR.
++#[derive(Debug)]
++pub struct BfsInitialization {
++    pub(super) operation: Operation,
++    pub(super) partition: usize,
++    pub(super) worker_id: u64,
++    pub(super) options: BfsOptions,
++    // CSR storage and its admission must drop before the host memory lease.
++    pub(super) adjacency: Arc<Adjacency>,
++    pub(super) resources: Resources,
++}
++
++impl BfsInitialization {
++    /// Allocate initial state after the caller has released temporary inputs.
++    /// This consumes the preparation; it cannot publish two states for one CSR.
++    pub fn finish(self) -> Result<BfsPartition> {
++        let Self {
++            operation,
++            partition,
++            worker_id,
++            options,
++            resources,
++            adjacency,
++        } = self;
++        let origin = BfsOrigin {
++            worker_id,
++            adjacency_id: adjacency.identity,
++        };
++        let origin_admission = resources
++            .execution
++            .reserve(
++                operation.partitions
++                    * (size_of::<Option<BfsOrigin>>() + size_of::<Option<(u64, u64, u64)>>())
++                    + 128,
++            )
++            .map_err(|e| e.to_string())?;
++        let mut origins = filled(operation.partitions, None)?;
++        let shapes = filled(operation.partitions, None)?;
++        origins[partition] = Some(origin);
++        let mut values = Values::new(adjacency.vertices.len(), &resources)?;
++        values.remaining = adjacency.targets.len() as u64;
++        if let Ok(i) = adjacency.vertices.binary_search(&options.source) {
++            values.depths[i] = Some(0);
++            values.parents[i] = Some(options.source);
++            values.frontier.push(i);
++            values.reached = 1;
++            values.remaining -= (adjacency.offsets[i + 1] - adjacency.offsets[i]) as u64;
++        }
++        let state = State::Statistics(StatisticsInbox::new(operation.partitions, &resources)?);
++        Ok(BfsPartition {
++            operation,
++            partition,
++            origin,
++            options,
++            adjacency,
++            incoming: None,
++            resources,
++            values: Arc::new(values),
++            origins,
++            shapes,
++            _origin_admission: origin_admission,
++            state,
++            next_phase: 0,
++            levels: 0,
++            completed: BfsMode::Topology,
++            work: BfsWork::default(),
++            terminal: None,
++        })
++    }
++}
+diff --git a/examples/extensions/argentea/src/lib.rs b/examples/extensions/argentea/src/lib.rs
+index 5b51245e7..0141bd446 100644
+--- a/examples/extensions/argentea/src/lib.rs
++++ b/examples/extensions/argentea/src/lib.rs
+@@ -18,8 +18,9 @@ pub use wcc::{
+ mod bfs;
+ pub use bfs::{
+     BfsAlgorithm, BfsCapFailure, BfsCompletion, BfsCompletionValues, BfsConvergence,
+-    BfsEmissionCursor, BfsMessage, BfsMessageValues, BfsMode, BfsOptions, BfsOrigin, BfsPartition,
+-    BfsPayload, BfsRow, BfsRowCursor, BfsStatistics, BfsStatisticsValues, BfsWork,
++    BfsEmissionCursor, BfsInitialization, BfsMessage, BfsMessageValues, BfsMode, BfsOptions,
++    BfsOrigin, BfsPartition, BfsPayload, BfsRow, BfsRowCursor, BfsStatistics, BfsStatisticsValues,
++    BfsWork,
+ };
+ mod delta;
+ mod pagerank;
+diff --git a/examples/extensions/argentea/src/sssp.rs b/examples/extensions/argentea/src/sssp.rs
+index adbee6c1d..de1838708 100644
+--- a/examples/extensions/argentea/src/sssp.rs
++++ b/examples/extensions/argentea/src/sssp.rs
+@@ -6,9 +6,9 @@ use crate::Result;
+ pub use adjacency::WeightedAdjacency;
+ pub use partition::{
+     SsspAlgorithm, SsspCapFailure, SsspCompletion, SsspCompletionValues, SsspConvergence,
+-    SsspEmissionCursor, SsspMessage, SsspMessageValues, SsspMode, SsspOptions, SsspOrigin,
+-    SsspPartition, SsspPayload, SsspRow, SsspRowCursor, SsspStatistics, SsspStatisticsValues,
+-    SsspWork,
++    SsspEmissionCursor, SsspInitialization, SsspMessage, SsspMessageValues, SsspMode, SsspOptions,
++    SsspOrigin, SsspPartition, SsspPayload, SsspRow, SsspRowCursor, SsspStatistics,
++    SsspStatisticsValues, SsspWork,
+ };
+ 
+ /// Finite nonnegative path distance, minimum hops, then numeric predecessor.
+diff --git a/examples/extensions/argentea/src/sssp/partition.rs b/examples/extensions/argentea/src/sssp/partition.rs
+index 49fc86a85..cfe1ffba1 100644
+--- a/examples/extensions/argentea/src/sssp/partition.rs
++++ b/examples/extensions/argentea/src/sssp/partition.rs
+@@ -1,5 +1,7 @@
+ //! Producer-complete weighted SSSP state, independent of Sail scheduling.
+ mod emission;
++mod initialization;
++pub use initialization::SsspInitialization;
+ mod protocol;
+ mod statistics;
+ use super::{SsspLabel, WeightedAdjacency};
+@@ -161,49 +163,33 @@ impl SsspPartition {
+         options: SsspOptions,
+         resources: Resources,
+     ) -> Result<Self> {
++        Self::prepare(
++            operation, partition, worker_id, vertices, arcs, options, resources,
++        )?
++        .finish()
++    }
++
++    /// Build and validate the CSR without allocating labels or the frontier.
++    /// The caller may release raw inputs and their admission before `finish`.
++    pub fn prepare(
++        operation: Operation,
++        partition: usize,
++        worker_id: u64,
++        vertices: &[i64],
++        arcs: &[(i64, i64, f64)],
++        options: SsspOptions,
++        resources: Resources,
++    ) -> Result<SsspInitialization> {
+         options.validate()?;
+         let adjacency =
+             WeightedAdjacency::build(&operation, partition, vertices, arcs, &resources)?;
+-        let origin = SsspOrigin {
+-            worker_id,
+-            adjacency_id: adjacency.identity(),
+-        };
+-        let admission = resources
+-            .execution
+-            .reserve(
+-                operation.partitions
+-                    * (size_of::<Option<SsspOrigin>>() + size_of::<Option<(u64, u64, u64)>>())
+-                    + 128,
+-            )
+-            .map_err(|e| e.to_string())?;
+-        let mut origins = filled(operation.partitions, None)?;
+-        origins[partition] = Some(origin);
+-        let shapes = filled(operation.partitions, None)?;
+-        let mut values = Values::new(vertices.len(), &resources)?;
+-        if let Ok(i) = adjacency.vertices().binary_search(&options.source) {
+-            values.labels[i] = Some(SsspLabel::source(options.source));
+-            values.active.push(i);
+-            values.reached = 1;
+-            values.reachable_edges = adjacency.outgoing_at(i).len() as u64;
+-        }
+-        let state = State::Statistics(StatisticsInbox::new(operation.partitions, &resources)?);
+-        Ok(Self {
++        Ok(SsspInitialization {
+             operation,
+             partition,
+-            origin,
++            worker_id,
+             options,
+-            adjacency,
+             resources,
+-            values: Arc::new(values),
+-            origins,
+-            shapes,
+-            _origin_admission: admission,
+-            state,
+-            next_phase: 0,
+-            rounds: 0,
+-            completed: SsspMode::Topology,
+-            work: SsspWork::default(),
+-            terminal: None,
++            adjacency,
+         })
+     }
+     pub fn partition(&self) -> usize {
+diff --git a/examples/extensions/argentea/src/sssp/partition/initialization.rs b/examples/extensions/argentea/src/sssp/partition/initialization.rs
+new file mode 100644
+index 000000000..83567ef08
+--- /dev/null
++++ b/examples/extensions/argentea/src/sssp/partition/initialization.rs
+@@ -0,0 +1,71 @@
++//! Validated CSR ownership boundary before per-vertex state allocation.
++use super::*;
++
++/// Prepared partition that owns its admitted CSR but has no labels or frontier.
++/// Dropping it abandons initialization and releases the retained CSR.
++#[derive(Debug)]
++pub struct SsspInitialization {
++    pub(super) operation: Operation,
++    pub(super) partition: usize,
++    pub(super) worker_id: u64,
++    pub(super) options: SsspOptions,
++    // CSR storage and its admission must drop before the host memory lease.
++    pub(super) adjacency: Arc<WeightedAdjacency>,
++    pub(super) resources: Resources,
++}
++
++impl SsspInitialization {
++    /// Allocate initial state after the caller has released temporary inputs.
++    /// This consumes the preparation; it cannot publish two states for one CSR.
++    pub fn finish(self) -> Result<SsspPartition> {
++        let Self {
++            operation,
++            partition,
++            worker_id,
++            options,
++            resources,
++            adjacency,
++        } = self;
++        let origin = SsspOrigin {
++            worker_id,
++            adjacency_id: adjacency.identity(),
++        };
++        let admission = resources
++            .execution
++            .reserve(
++                operation.partitions
++                    * (size_of::<Option<SsspOrigin>>() + size_of::<Option<(u64, u64, u64)>>())
++                    + 128,
++            )
++            .map_err(|e| e.to_string())?;
++        let mut origins = filled(operation.partitions, None)?;
++        origins[partition] = Some(origin);
++        let shapes = filled(operation.partitions, None)?;
++        let mut values = Values::new(adjacency.vertices().len(), &resources)?;
++        if let Ok(i) = adjacency.vertices().binary_search(&options.source) {
++            values.labels[i] = Some(SsspLabel::source(options.source));
++            values.active.push(i);
++            values.reached = 1;
++            values.reachable_edges = adjacency.outgoing_at(i).len() as u64;
++        }
++        let state = State::Statistics(StatisticsInbox::new(operation.partitions, &resources)?);
++        Ok(SsspPartition {
++            operation,
++            partition,
++            origin,
++            options,
++            adjacency,
++            resources,
++            values: Arc::new(values),
++            origins,
++            shapes,
++            _origin_admission: admission,
++            state,
++            next_phase: 0,
++            rounds: 0,
++            completed: SsspMode::Topology,
++            work: SsspWork::default(),
++            terminal: None,
++        })
++    }
++}
+diff --git a/examples/extensions/argentea/tests/initialization.rs b/examples/extensions/argentea/tests/initialization.rs
+new file mode 100644
+index 000000000..dd265a7d1
+--- /dev/null
++++ b/examples/extensions/argentea/tests/initialization.rs
+@@ -0,0 +1,320 @@
++//! Requested heap and admitted-memory controls across the raw-input lifetime.
++#[path = "../src/adjacency_tests/allocations.rs"]
++mod allocations;
++#[path = "delta_support/mod.rs"]
++mod support;
++use grust_procedures::MemoryAccount;
++use sail_argentea_core::*;
++use std::sync::atomic::Ordering;
++
++const LIMIT: usize = 256 << 20;
++fn bfs_options() -> BfsOptions {
++    BfsOptions {
++        source: 0,
++        algorithm: BfsAlgorithm::Frontier,
++        max_levels: 8,
++        alpha: 14,
++        beta: 24,
++    }
++}
++fn sssp_options() -> SsspOptions {
++    SsspOptions {
++        source: 0,
++        algorithm: SsspAlgorithm::DeltaStar,
++        max_rounds: 8,
++        delta: 1.0,
++    }
++}
++struct Raw {
++    ids: Vec<i64>,
++    bfs: Vec<(i64, i64)>,
++    sssp: Vec<(i64, i64, f64)>,
++    // Rust drops fields in declaration order, so the charge outlives the vectors.
++    _admission: MemoryAccount,
++}
++impl Raw {
++    fn new(n: usize, degree: usize, weighted: bool, r: &Resources) -> Self {
++        let mut admission = r.execution.memory_account();
++        admission
++            .charge(n * 8 + n * degree * if weighted { 24 } else { 16 })
++            .unwrap();
++        Self {
++            ids: (0..n as i64).rev().map(|i| i * 3).collect(),
++            bfs: if weighted {
++                vec![]
++            } else {
++                (0..n * degree).map(|i| ((i % n) as i64 * 3, 0)).collect()
++            },
++            sssp: if weighted {
++                (0..n * degree)
++                    .map(|i| ((i % n) as i64 * 3, 0, 0.5))
++                    .collect()
++            } else {
++                vec![]
++            },
++            _admission: admission,
++        }
++    }
++}
++enum Prepared {
++    Bfs(BfsInitialization),
++    Sssp(SsspInitialization),
++}
++enum Partition {
++    Bfs(BfsPartition),
++    Sssp(SsspPartition),
++}
++impl Prepared {
++    fn new(op: Operation, raw: &Raw, weighted: bool, r: &Resources) -> Result<Self> {
++        if weighted {
++            SsspPartition::prepare(op, 0, 7, &raw.ids, &raw.sssp, sssp_options(), r.clone())
++                .map(Self::Sssp)
++        } else {
++            BfsPartition::prepare(op, 0, 7, &raw.ids, &raw.bfs, bfs_options(), r.clone())
++                .map(Self::Bfs)
++        }
++    }
++    fn finish(self) -> Result<Partition> {
++        match self {
++            Self::Bfs(p) => p.finish().map(Partition::Bfs),
++            Self::Sssp(p) => p.finish().map(Partition::Sssp),
++        }
++    }
++}
++fn build(op: Operation, raw: &Raw, weighted: bool, r: &Resources) -> Result<Partition> {
++    if weighted {
++        SsspPartition::build(op, 0, 7, &raw.ids, &raw.sssp, sssp_options(), r.clone())
++            .map(Partition::Sssp)
++    } else {
++        BfsPartition::build(op, 0, 7, &raw.ids, &raw.bfs, bfs_options(), r.clone())
++            .map(Partition::Bfs)
++    }
++}
++impl Partition {
++    fn check(&self, n: usize) {
++        match self {
++            Self::Bfs(p) => {
++                assert_eq!(p.state_rows().count(), n);
++                assert_eq!(p.reached_count(), 1);
++                assert_eq!(p.frontier_count(), 1);
++                assert!(
++                    p.state_rows()
++                        .all(|r| r.distance == (r.id == 0).then_some(0))
++                );
++                assert_eq!(p.completed_mode(), BfsMode::Topology);
++            }
++            Self::Sssp(p) => {
++                assert_eq!(p.state_rows().count(), n);
++                assert_eq!(p.reached_count(), 1);
++                assert_eq!(p.active_count(), 1);
++                assert!(
++                    p.state_rows()
++                        .all(|r| r.label == (r.id == 0).then_some(SsspLabel::source(0)))
++                );
++                assert_eq!(p.completed_mode(), SsspMode::Topology);
++            }
++        }
++    }
++}
++fn cost(
++    n: usize,
++    degree: usize,
++    weighted: bool,
++    release: bool,
++) -> (allocations::Counts, usize, usize) {
++    let (r, usage, drops) = support::resources(LIMIT);
++    let op = support::operation(3, n as u64);
++    // Measure raw-vector allocation too: deallocating an unmeasured input would
++    // otherwise subtract bytes that were never added to the heap counter.
++    let (part, counts) = allocations::measure(|| {
++        let raw = Raw::new(n, degree, weighted, &r);
++        if release {
++            let ready = Prepared::new(op, &raw, weighted, &r).unwrap();
++            drop(raw);
++            ready.finish().unwrap()
++        } else {
++            build(op, &raw, weighted, &r).unwrap()
++        }
++    });
++    part.check(n);
++    let used = usage.usage().unwrap();
++    println!(
++        "INPUT_LIFETIME_COUNTER n={n} degree={degree} weighted={weighted} release={release} allocation_calls={} allocated_bytes={} peak_requested_bytes={} retained_admitted_bytes={} peak_admitted_bytes={} work={}",
++        counts.calls,
++        counts.bytes,
++        counts.peak,
++        used.live_bytes,
++        used.peak_bytes,
++        used.counted_work().unwrap()
++    );
++    drop(part);
++    assert_eq!(usage.usage().unwrap().live_bytes, 0);
++    drop(r);
++    assert_eq!(drops.load(Ordering::SeqCst), 1);
++    (counts, used.peak_bytes, used.counted_work().unwrap())
++}
++#[test]
++fn releasing_raw_input_reduces_heap_overlap_without_changing_work() {
++    for n in [1_024, 65_536] {
++        for degree in [0, 1, 8] {
++            for weighted in [false, true] {
++                let old = cost(n, degree, weighted, false);
++                let new = cost(n, degree, weighted, true);
++                assert_eq!(
++                    (new.0.calls, new.0.bytes, new.2),
++                    (old.0.calls, old.0.bytes, old.2)
++                );
++                assert!(old.0.peak >= new.0.peak + n * 8);
++                // Conservative build admission still overlaps raw input and CSR;
++                // dense graphs need not lower the overall admitted peak.
++                assert!(new.1 <= old.1);
++            }
++        }
++    }
++}
++#[test]
++fn abandoned_or_cancelled_preparation_releases_all_storage_and_leases() {
++    for weighted in [false, true] {
++        for cancel in [false, true] {
++            let (r, usage, drops) = support::resources(LIMIT);
++            let raw = Raw::new(1_024, 1, weighted, &r);
++            let prepared = Prepared::new(support::operation(3, 1_024), &raw, weighted, &r).unwrap();
++            drop(raw);
++            if cancel {
++                usage.cancel().unwrap();
++                assert!(prepared.finish().is_err());
++            } else {
++                drop(prepared);
++            }
++            assert_eq!(usage.usage().unwrap().live_bytes, 0);
++            drop(r);
++            assert_eq!(drops.load(Ordering::SeqCst), 1);
++        }
++    }
++}
++#[test]
++fn input_charge_is_released_before_finish_admission() {
++    for weighted in [false, true] {
++        for release in [false, true] {
++            let (r, usage, _) = support::resources(LIMIT);
++            let raw = Raw::new(1_024, 1, weighted, &r);
++            let prepared = Prepared::new(support::operation(3, 1_024), &raw, weighted, &r).unwrap();
++            let raw_bytes = raw._admission.bytes();
++            let before = usage.usage().unwrap().live_bytes;
++            // 32 KiB cannot hold the 40 KiB labels/frontier, but releasing raw
++            // input first creates enough room. The blocker stays until finish.
++            let blocker = usage.reserve(LIMIT - before - 32 * 1024).unwrap();
++            let raw = if release {
++                drop(raw);
++                None
++            } else {
++                Some(raw)
++            };
++            assert_eq!(
++                usage.usage().unwrap().live_bytes,
++                LIMIT - 32 * 1024 - if release { raw_bytes } else { 0 }
++            );
++            let result = prepared.finish();
++            if release {
++                result.as_ref().unwrap().check(1_024);
++            } else {
++                assert!(result.is_err_and(|e| e.contains("memory")));
++            }
++            drop(raw);
++            drop(blocker);
++        }
++    }
++}
++#[test]
++fn prepare_preserves_validation_errors_and_cancellation() {
++    for weighted in [false, true] {
++        for malformed in 0..6 {
++            let (r, usage, _) = support::resources(LIMIT);
++            let mut raw = Raw::new(3, 1, weighted, &r);
++            let mut op = support::operation(3, 3);
++            match malformed {
++                0 => raw.ids[1] = raw.ids[0],
++                1 => raw.ids[1] = 1,
++                2 => {
++                    raw.bfs.iter_mut().for_each(|e| e.0 = 30);
++                    raw.sssp.iter_mut().for_each(|e| e.0 = 30);
++                }
++                3 => op.generation = 0,
++                4 => op.vertices = 1,
++                5 => usage.cancel().unwrap(),
++                _ => unreachable!(),
++            }
++            let old = build(op.clone(), &raw, weighted, &r).err().unwrap();
++            let new = Prepared::new(op, &raw, weighted, &r).err().unwrap();
++            assert_eq!(new, old);
++            drop(raw);
++            assert_eq!(usage.usage().unwrap().live_bytes, 0);
++        }
++    }
++    for weight in [-1.0, f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
++        let (r, usage, _) = support::resources(LIMIT);
++        let mut raw = Raw::new(3, 1, true, &r);
++        raw.sssp[0].2 = weight;
++        let op = support::operation(3, 3);
++        let old = build(op.clone(), &raw, true, &r).err().unwrap();
++        assert!(old.contains("weight"));
++        assert_eq!(old, Prepared::new(op, &raw, true, &r).err().unwrap());
++        drop(raw);
++        assert_eq!(usage.usage().unwrap().live_bytes, 0);
++    }
++}
++
++#[test]
++fn last_preparation_owner_releases_csr_before_host_lease_on_abort_or_failure() {
++    use grust_procedures::{ExecutionContext, ExecutionLimits};
++    use sail_native_resource_ffi::MemoryLease;
++    use std::sync::{Arc, atomic::AtomicUsize};
++    struct LeaseProbe(ExecutionContext, Arc<AtomicUsize>);
++    impl Drop for LeaseProbe {
++        fn drop(&mut self) {
++            self.1
++                .store(self.0.usage().unwrap().live_bytes, Ordering::SeqCst);
++        }
++    }
++    for (weighted, cancel) in [false, true]
++        .into_iter()
++        .flat_map(|weighted| [false, true].map(|cancel| (weighted, cancel)))
++    {
++        let usage = ExecutionContext::new(ExecutionLimits {
++            memory_bytes: LIMIT,
++            work_units: usize::MAX,
++            batch_rows: 16,
++            deadline: None,
++        })
++        .unwrap();
++        let at_release = Arc::new(AtomicUsize::new(usize::MAX));
++        let lease = MemoryLease::new(
++            Arc::new(LeaseProbe(usage.clone(), at_release.clone())),
++            LIMIT as u64,
++        );
++        let r = Resources::new(usage.clone(), lease).unwrap();
++        let raw = Raw::new(1_024, 1, weighted, &r);
++        let op = support::operation(3, 1_024);
++        // Move the only Resources owner; retaining r here would mask ordering.
++        let prepared = if weighted {
++            Prepared::Sssp(
++                SsspPartition::prepare(op, 0, 7, &raw.ids, &raw.sssp, sssp_options(), r).unwrap(),
++            )
++        } else {
++            Prepared::Bfs(
++                BfsPartition::prepare(op, 0, 7, &raw.ids, &raw.bfs, bfs_options(), r).unwrap(),
++            )
++        };
++        drop(raw);
++        assert_eq!(at_release.load(Ordering::SeqCst), usize::MAX);
++        assert!(usage.usage().unwrap().live_bytes > 0);
++        if cancel {
++            usage.cancel().unwrap();
++            assert!(prepared.finish().is_err());
++        } else {
++            drop(prepared);
++        }
++        assert_eq!(at_release.load(Ordering::SeqCst), 0);
++        assert_eq!(usage.usage().unwrap().live_bytes, 0);
++    }
++}
+diff --git a/examples/extensions/argentea/tests/initialization_bfs.rs b/examples/extensions/argentea/tests/initialization_bfs.rs
+new file mode 100644
+index 000000000..7d47ea83d
+--- /dev/null
++++ b/examples/extensions/argentea/tests/initialization_bfs.rs
+@@ -0,0 +1,71 @@
++mod bfs_support;
++use bfs_support::*;
++use sail_argentea_core::*;
++
++#[test]
++fn prepared_bfs_matches_owned_input_oracle_and_protocol_trace() {
++    let ids = [i64::MIN, -17, -4, -1, 0, 2, 11, 40, 70, i64::MAX];
++    let edges = [
++        (i64::MIN, -17),
++        (-17, -4),
++        (-17, 11),
++        (-4, 2),
++        (11, 2),
++        (2, 40),
++        (2, 40),
++        (40, 40),
++        (0, -1),
++    ];
++    for directed in [false, true] {
++        for width in [1, 3, 13] {
++            for algorithm in [
++                BfsAlgorithm::Reference,
++                BfsAlgorithm::Frontier,
++                BfsAlgorithm::DirectionOptimizing,
++            ] {
++                let mut arcs = edges.to_vec();
++                if !directed {
++                    arcs.extend(edges.iter().map(|&(s, t)| (t, s)));
++                }
++                let op = operation(width, ids.len() as u64);
++                let (res, usage, _) = resources(16 << 20);
++                let opts = options(i64::MIN, algorithm);
++                let mut baseline = parts(&op, &ids, &arcs, opts, &res).unwrap();
++                let mut prepared = (0..width)
++                    .map(|p| {
++                        let vertices = ids
++                            .iter()
++                            .copied()
++                            .filter(|id| op.owner(*id) == p)
++                            .collect::<Vec<_>>();
++                        let edges = arcs
++                            .iter()
++                            .copied()
++                            .filter(|(s, _)| op.owner(*s) == p)
++                            .collect::<Vec<_>>();
++                        let ready = BfsPartition::prepare(
++                            op.clone(),
++                            p,
++                            100 + p as u64,
++                            &vertices,
++                            &edges,
++                            opts,
++                            res.clone(),
++                        )
++                        .unwrap();
++                        drop(vertices);
++                        drop(edges);
++                        ready.finish().unwrap()
++                    })
++                    .collect::<Vec<_>>();
++                let old = run(&op, &mut baseline).unwrap();
++                let new = run(&op, &mut prepared).unwrap();
++                assert_eq!((new.modes, new.work), (old.modes, old.work));
++                assert_eq!(collected(&prepared), collected(&baseline));
++                assert_eq!(collected(&prepared), oracle(&ids, &arcs, i64::MIN));
++                drop((prepared, baseline));
++                assert_eq!(usage.usage().unwrap().live_bytes, 0);
++            }
++        }
++    }
++}
+diff --git a/examples/extensions/argentea/tests/initialization_support/sssp.rs b/examples/extensions/argentea/tests/initialization_support/sssp.rs
+new file mode 100644
+index 000000000..3158a80b1
+--- /dev/null
++++ b/examples/extensions/argentea/tests/initialization_support/sssp.rs
+@@ -0,0 +1,61 @@
++use super::*;
++
++#[test]
++fn prepared_sssp_preserves_exact_labels_and_protocol_trace() {
++    // Include ties, duplicates, both signed zeros, subnormal and exact binary
++    // fractions, disconnected components and extreme signed vertex IDs.
++    let mut edges = EDGES.to_vec();
++    edges.extend([(1, 2, -0.0), (-5, 1, 1.0), (9, 10, f64::from_bits(1))]);
++    for algorithm in [SsspAlgorithm::Reference, SsspAlgorithm::DeltaStar] {
++        for width in [1, 3, 13] {
++            for delta in [0.25, 4.0] {
++                let op = support::operation(width, IDS.len() as u64);
++                let (r, usage, _) = support::resources(16 << 20);
++                let mut opts = options(algorithm);
++                opts.delta = delta;
++                let mut baseline = parts(&op, &IDS, &edges, opts, &r);
++                let mut candidate = (0..width)
++                    .map(|p| {
++                        let ids = IDS
++                            .iter()
++                            .copied()
++                            .filter(|id| op.owner(*id) == p)
++                            .collect::<Vec<_>>();
++                        let arcs = edges
++                            .iter()
++                            .copied()
++                            .filter(|(s, _, _)| op.owner(*s) == p)
++                            .collect::<Vec<_>>();
++                        let prepared = SsspPartition::prepare(
++                            op.clone(),
++                            p,
++                            100 + p as u64,
++                            &ids,
++                            &arcs,
++                            opts,
++                            r.clone(),
++                        )
++                        .unwrap();
++                        drop(ids);
++                        drop(arcs);
++                        prepared.finish().unwrap()
++                    })
++                    .collect::<Vec<_>>();
++                assert_eq!(
++                    run(&op, &mut candidate).unwrap(),
++                    run(&op, &mut baseline).unwrap()
++                );
++                let bits = |parts: &[SsspPartition]| {
++                    collected(parts)
++                        .into_iter()
++                        .map(|(id, label)| (id, label.map(|(d, h, p)| (d.to_bits(), h, p))))
++                        .collect::<BTreeMap<_, _>>()
++                };
++                assert_eq!(bits(&candidate), bits(&baseline));
++                assert_eq!(collected(&candidate), oracle(&IDS, &edges, -5));
++                drop((candidate, baseline));
++                assert_eq!(usage.usage().unwrap().live_bytes, 0);
++            }
++        }
++    }
++}
+diff --git a/examples/extensions/argentea/tests/sssp.rs b/examples/extensions/argentea/tests/sssp.rs
+index 2068465d4..0670a80ba 100644
+--- a/examples/extensions/argentea/tests/sssp.rs
++++ b/examples/extensions/argentea/tests/sssp.rs
+@@ -1,5 +1,7 @@
+ #[path = "sssp_done/mod.rs"]
+ mod done;
++#[path = "initialization_support/sssp.rs"]
++mod initialization;
+ #[path = "delta_support/mod.rs"]
+ mod support;
+ use sail_argentea_core::*;
+diff --git a/examples/extensions/benchmarks/graph_cell.py b/examples/extensions/benchmarks/graph_cell.py
+index f864ca645..7c491b73f 100644
+--- a/examples/extensions/benchmarks/graph_cell.py
++++ b/examples/extensions/benchmarks/graph_cell.py
+@@ -19,6 +19,7 @@ from measurement import Sampler, cgroup_snapshot, cpu_ticks, read_text, steal_fr
+ from runtime import (algorithm_method, git, native_package_identity, package_versions, record_result_evidence,
+                      server, sha256, validate_admission_settings)
+ from validation_outcome import effective_outcome
++from ranking_validation import validate_pagerank_rows
+ 
+ 
+ REPO = Path(__file__).resolve().parents[3]
+@@ -66,18 +67,8 @@ def validate(spark, output, dataset, algorithm, expected_rows, tolerance, dampin
+         assert not actual.where(F.col('component').isNull()).limit(1).count()
+         return dict(**cardinality, membership_mismatches=mismatches,
+                     components=minima.count(), canonicalization='minimum numeric vertex ID per output component')
+-    invalid = actual.where(F.col('score').isNull() | F.isnan('score') |
+-                           (F.abs(F.col('score')) == F.lit(float('inf'))) | (F.col('score') < 0)).count()
+-    assert invalid == 0, f'{invalid} invalid PageRank scores'
+-    invalid_meta = actual.where(F.col('iterations').isNull() | F.col('converged').isNull() |
+-                                (F.col('iterations') < (0 if optimized else 1)) |
+-                                (F.col('iterations') > max_iterations)).count()
+-    assert invalid_meta == 0, f'{invalid_meta} invalid PageRank metadata rows'
+-    if native or optimized:
+-        invalid_residual = actual.where(F.col('residual').isNull() | F.isnan('residual') |
+-                                       (F.col('residual') < 0) |
+-                                       (F.col('residual') == F.lit(float('inf')))).count()
+-        assert invalid_residual == 0, f'{invalid_residual} invalid native residual rows'
++    validate_pagerank_rows(actual, max_iterations=max_iterations,
++                           native=native, optimized=optimized)
+     joined = actual.join(reference.select('id', 'pagerank'), 'id')
+     checks = joined.agg(
+         F.sum('score').alias('rank_sum'),
+@@ -269,15 +260,19 @@ def certify(spark, actual, dataset, algorithm, expected_rows, tolerance, damping
+                     components=minima.count(), component_count_verified=False,
+                     verification_scope='partial_wcc_partition',
+                     certificate='edge-consistent partition whose labels name input vertices; component connectivity and count unverified')
+-    invalid = actual.where(F.col('score').isNull() | F.isnan('score') |
+-                           (F.abs(F.col('score')) == F.lit(float('inf'))) | (F.col('score') < 0)).count()
+-    assert invalid == 0, f'{invalid} invalid PageRank scores'
++    validate_pagerank_rows(actual, max_iterations=max_iterations,
++                           native=native, optimized=optimized)
+     checks = actual.agg(F.sum('score').alias('rank_sum'), F.min('iterations').alias('min_iterations'),
+                         F.max('iterations').alias('max_iterations'),
+                         F.min(F.col('converged').cast('int')).alias('all_converged'),
+-                        F.max('residual').alias('reported_residual')).first().asDict()
++                        F.max('residual').alias('reported_residual'),
++                        F.min('residual').alias('min_reported_residual')).first().asDict()
+     if checks['all_converged'] != 1:
+         raise NonConvergedError(f'PageRank reached its iteration cap: {checks}')
++    assert checks['min_iterations'] == checks['max_iterations'], checks
++    assert checks['reported_residual'] == checks['min_reported_residual'], checks
++    if checks['reported_residual'] is not None:
++        assert checks['reported_residual'] <= tolerance, checks
+     assert math.isclose(checks['rank_sum'], 1.0, abs_tol=1e-10), checks
+     degrees = edges.groupBy('src').count().withColumnRenamed('count', 'degree')
+     weighted = edges.join(degrees, 'src')
+diff --git a/examples/extensions/benchmarks/ranking_validation.py b/examples/extensions/benchmarks/ranking_validation.py
+new file mode 100644
+index 000000000..3c4345453
+--- /dev/null
++++ b/examples/extensions/benchmarks/ranking_validation.py
+@@ -0,0 +1,31 @@
++"""Row and metadata checks shared by PageRank's two verification policies."""
++from pyspark.sql.connect import functions as F
++
++
++def validate_pagerank_rows(actual, *, max_iterations, native, optimized):
++    """Check every row before nullable aggregate reductions can hide bad metadata.
++
++    Keep the baseline's optional residual convention. Native and optimized
++    outputs must report a finite, nonnegative residual on every row.
++    Scores, iteration bounds and convergence flags are checked for every path.
++    One aggregate replaces the reference path's separate invalid-row scans.
++    """
++    invalid_score = (F.col('score').isNull() | F.isnan('score') |
++                     (F.abs(F.col('score')) == F.lit(float('inf'))) | (F.col('score') < 0))
++    invalid_meta = (F.col('iterations').isNull() | F.col('converged').isNull() |
++                    (F.col('iterations') < (0 if optimized else 1)) |
++                    (F.col('iterations') > max_iterations))
++    fields = [
++        F.sum(invalid_score.cast('long')).alias('invalid_scores'),
++        F.sum(invalid_meta.cast('long')).alias('invalid_metadata'),
++    ]
++    if native or optimized:
++        invalid_residual = (F.col('residual').isNull() | F.isnan('residual') |
++                            (F.col('residual') < 0) |
++                            (F.col('residual') == F.lit(float('inf'))))
++        fields.append(F.sum(invalid_residual.cast('long')).alias('invalid_residuals'))
++    checks = actual.agg(*fields).first().asDict()
++    assert checks['invalid_scores'] == 0, f"{checks['invalid_scores']} invalid PageRank scores"
++    assert checks['invalid_metadata'] == 0, f"{checks['invalid_metadata']} invalid PageRank metadata rows"
++    if native or optimized:
++        assert checks['invalid_residuals'] == 0, f"{checks['invalid_residuals']} invalid native residual rows"
+diff --git a/examples/extensions/benchmarks/test_pagerank_metadata.py b/examples/extensions/benchmarks/test_pagerank_metadata.py
+new file mode 100644
+index 000000000..d2bc5550f
+--- /dev/null
++++ b/examples/extensions/benchmarks/test_pagerank_metadata.py
+@@ -0,0 +1,113 @@
++"""Reject malformed PageRank metadata through both real SQL validators."""
++import math
++import os
++
++import pyarrow as pa
++import pyarrow.parquet as pq
++import pytest
++
++from graph_cell import NonConvergedError, validate
++
++
++@pytest.fixture(scope='module')
++def spark():
++    endpoint = os.environ.get('SAIL_GRAPH_TEST_REMOTE')
++    if not endpoint:
++        pytest.skip('set SAIL_GRAPH_TEST_REMOTE for actual PageRank validation checks')
++    from pyspark.sql.connect.session import SparkSession
++    session = SparkSession.builder.remote(endpoint).create()
++    yield session
++    session.stop()
++
++
++def check(spark, tmp_path, policy, *, iterations=(1, 1), converged=(True, True),
++          scores=(.5, .5), residual=(0., 0.), native=False, optimized=False):
++    dataset, output = tmp_path/'dataset', tmp_path/'result'
++    dataset.mkdir()
++    output.mkdir()
++    # Uniform scores are the exact fixed point on this cycle. A malformed
++    # metadata test therefore cannot pass by failing the score proof first.
++    pq.write_table(pa.table({'id': [0, 1]}), dataset/'vertices.parquet')
++    pq.write_table(pa.table({'src': [0, 1], 'dst': [1, 0]}), dataset/'edges.parquet')
++    pq.write_table(pa.table({'id': [0, 1], 'pagerank': [.5, .5]}), dataset/'reference.parquet')
++    pq.write_table(pa.table({'id': [0, 1], 'score': pa.array(scores, type=pa.float64()),
++                   'iterations': pa.array(iterations, type=pa.int64()),
++                   'converged': pa.array(converged, type=pa.bool_()),
++                   'residual': pa.array(residual, type=pa.float64())}), output/'part.parquet',
++                   # These are validator controls. The separately retained
++                   # Parquet statistics control demonstrates that an older
++                   # reader can replace a NaN with the finite min=max value.
++                   # Keep these malformed values in the scanned payload.
++                   write_statistics=False)
++    if any(value is not None and math.isnan(value) for value in scores):
++        observed = spark.read.parquet(output.as_uri()).select('id', 'score').orderBy('id').collect()
++        assert math.isnan(observed[0].score), 'NaN fixture did not reach the validator intact'
++    return validate(spark, output, dataset, 'pagerank', 2, 1e-8, .85, 100,
++                    native, optimized, policy=policy)
++
++
++@pytest.mark.parametrize('policy', ['reference', 'certificate'])
++@pytest.mark.parametrize('change', [
++    {'converged': [True, None]}, {'iterations': [1, None]},
++    {'iterations': [-1, -1]}, {'iterations': [101, 101]},
++])
++def test_invalid_metadata_is_checked_on_every_row(spark, tmp_path, policy, change):
++    with pytest.raises(AssertionError, match='invalid PageRank metadata rows'):
++        check(spark, tmp_path, policy, **change)
++
++
++@pytest.mark.parametrize('policy', ['reference', 'certificate'])
++def test_iterations_describe_one_completed_run(spark, tmp_path, policy):
++    with pytest.raises(AssertionError):
++        check(spark, tmp_path, policy, iterations=[1, 2])
++
++
++@pytest.mark.parametrize('policy', ['reference', 'certificate'])
++@pytest.mark.parametrize('flags', [{'native': True}, {'optimized': True}])
++@pytest.mark.parametrize('residual', [[0., None], [-1., -1.], [float('nan'), 0.], [float('inf'), 0.]])
++def test_required_residuals_are_finite_and_present_on_every_row(spark, tmp_path, policy, flags, residual):
++    with pytest.raises(AssertionError, match='invalid native residual rows'):
++        check(spark, tmp_path, policy, residual=residual, **flags)
++
++
++@pytest.mark.parametrize('policy', ['reference', 'certificate'])
++@pytest.mark.parametrize('residual', [[0., 1e-10], [1e-4, 1e-4]])
++def test_reported_residual_is_uniform_and_within_tolerance(spark, tmp_path, policy, residual):
++    with pytest.raises(AssertionError):
++        check(spark, tmp_path, policy, residual=residual, native=True)
++
++
++@pytest.mark.parametrize('policy', ['reference', 'certificate'])
++@pytest.mark.parametrize('scores', [[None, .5], [float('nan'), .5], [float('inf'), .5], [-.5, 1.5]])
++def test_invalid_scores_remain_rejected(spark, tmp_path, policy, scores):
++    with pytest.raises(AssertionError, match='invalid PageRank scores'):
++        check(spark, tmp_path, policy, scores=scores)
++
++
++@pytest.mark.parametrize('policy', ['reference', 'certificate'])
++def test_nonconvergence_remains_distinct_from_mismatch(spark, tmp_path, policy):
++    # A finite residual above tolerance is expected when the cap is exhausted.
++    # Check this outcome before requiring the converged residual bound.
++    with pytest.raises(NonConvergedError):
++        check(spark, tmp_path, policy, converged=[False, False], residual=[1., 1.], native=True)
++
++
++@pytest.mark.parametrize('policy', ['reference', 'certificate'])
++@pytest.mark.parametrize('change', [{}, {'native': True}, {'optimized': True, 'iterations': [0, 0]},
++                                    {'residual': [None, None]}])
++def test_valid_fixed_point_and_optional_baseline_residual(spark, tmp_path, policy, change):
++    result = check(spark, tmp_path, policy, **change)
++    assert result['rows'] == result['unique_ids'] == 2
++    assert result['true_fixed_point_residual'] == 0
++
++
++@pytest.mark.parametrize('policy', ['reference', 'certificate'])
++def test_baseline_iterations_start_at_one(spark, tmp_path, policy):
++    with pytest.raises(AssertionError, match='invalid PageRank metadata rows'):
++        check(spark, tmp_path, policy, iterations=[0, 0])
++
++
++@pytest.mark.parametrize('policy', ['reference', 'certificate'])
++def test_metadata_validation_does_not_replace_the_score_proof(spark, tmp_path, policy):
++    with pytest.raises(AssertionError):
++        check(spark, tmp_path, policy, scores=[.4, .6])
+diff --git a/examples/extensions/nutmeg/src/argentea/bfs/input.rs b/examples/extensions/nutmeg/src/argentea/bfs/input.rs
+index 7e7e48427..da59d5ace 100644
+--- a/examples/extensions/nutmeg/src/argentea/bfs/input.rs
++++ b/examples/extensions/nutmeg/src/argentea/bfs/input.rs
+@@ -71,7 +71,7 @@ pub async fn initialize(
+             edges.push((sources.value(i), targets.value(i)));
+         }
+     }
+-    BfsPartition::build(
++    let prepared = BfsPartition::prepare(
+         operation,
+         p,
+         state.base.incarnation.worker_id,
+@@ -80,7 +80,12 @@ pub async fn initialize(
+         request.options(),
+         state.base.resources.clone(),
+     )
+-    .map_err(error)
++    .map_err(error)?;
++    // CSR owns its storage; raw input and its charge need not overlap labels.
++    drop(vertices);
++    drop(edges);
++    drop(admission);
++    prepared.finish().map_err(error)
+ }
+ fn ready(state: &BfsState, p: usize, phase: u64, stats: bool) -> Result<Option<Partition>> {
+     let Some(part) = state.partition(p)? else {
+diff --git a/examples/extensions/nutmeg/src/argentea/bfs/tests.rs b/examples/extensions/nutmeg/src/argentea/bfs/tests.rs
+index a0ddca31e..96a84407b 100644
+--- a/examples/extensions/nutmeg/src/argentea/bfs/tests.rs
++++ b/examples/extensions/nutmeg/src/argentea/bfs/tests.rs
+@@ -307,3 +307,6 @@ fn bfs_request_and_wire_schema_are_strict() {
+         );
+     }
+ }
++
++#[path = "tests/initialization.rs"]
++mod initialization;
+diff --git a/examples/extensions/nutmeg/src/argentea/bfs/tests/initialization.rs b/examples/extensions/nutmeg/src/argentea/bfs/tests/initialization.rs
+new file mode 100644
+index 000000000..abe2f69c4
+--- /dev/null
++++ b/examples/extensions/nutmeg/src/argentea/bfs/tests/initialization.rs
+@@ -0,0 +1,39 @@
++//! The production adapter must release temporary input admission before state.
++use super::*;
++
++#[tokio::test]
++async fn initialization_releases_raw_input_before_state() {
++    for n in [1_024usize, 65_536] {
++        let ctx = SessionContext::new();
++        let drops = Arc::new(AtomicUsize::new(0));
++        let state = BfsState::new(worker(7, 32 << 20, &drops)).unwrap();
++        let mut request = request(Verb::Init, 0, 1, n as u64, "bfs_frontier");
++        request.source = 0;
++        let op = state.configure(&request).unwrap();
++        let usage = state.base.resources.execution.clone();
++        let before = usage.usage().unwrap().live_bytes;
++        // For these 64-bit test targets: admitted raw vertices (8n) plus the
++        // conservative CSR build (56n + 4104). No arcs, all declared isolates.
++        // Retaining raw input through labels/statistics exceeds this envelope.
++        let build_bytes = n * 64 + 4096 + size_of::<usize>();
++        let blocker = usage.reserve((32 << 20) - before - build_bytes).unwrap();
++        let ids = (0..n as i64).collect::<Vec<_>>();
++        let inputs = graph(&ctx, &ids, &[], 1).await;
++        let part = input::initialize(&state, &request, op, 0, &inputs, ctx.task_ctx())
++            .await
++            .unwrap();
++        assert_eq!(part.state_rows().count(), n);
++        assert_eq!(part.reached_count(), 1);
++        assert_eq!(usage.usage().unwrap().peak_bytes, 32 << 20);
++        println!(
++            "NATIVE_INPUT_LIFETIME kind=bfs n={n} build_headroom={build_bytes} peak_admitted_bytes={}",
++            usage.usage().unwrap().peak_bytes
++        );
++        drop(part);
++        drop(blocker);
++        assert_eq!(usage.usage().unwrap().live_bytes, before);
++        drop(state);
++        assert_eq!(usage.usage().unwrap().live_bytes, 0);
++        assert_eq!(drops.load(Ordering::SeqCst), 1);
++    }
++}
+diff --git a/examples/extensions/nutmeg/src/argentea/sssp/input.rs b/examples/extensions/nutmeg/src/argentea/sssp/input.rs
+index 44d70871b..a99472ded 100644
+--- a/examples/extensions/nutmeg/src/argentea/sssp/input.rs
++++ b/examples/extensions/nutmeg/src/argentea/sssp/input.rs
+@@ -72,7 +72,7 @@ pub async fn initialize(
+             edges.push((sources.value(i), targets.value(i), weights.value(i)));
+         }
+     }
+-    SsspPartition::build(
++    let prepared = SsspPartition::prepare(
+         operation,
+         p,
+         state.base.incarnation.worker_id,
+@@ -81,7 +81,12 @@ pub async fn initialize(
+         request.options(),
+         state.base.resources.clone(),
+     )
+-    .map_err(error)
++    .map_err(error)?;
++    // CSR owns its storage; raw input and its charge need not overlap labels.
++    drop(vertices);
++    drop(edges);
++    drop(admission);
++    prepared.finish().map_err(error)
+ }
+ fn ready(state: &SsspState, p: usize, phase: u64, stats: bool) -> Result<Option<Partition>> {
+     let Some(part) = state.partition(p)? else {
+diff --git a/examples/extensions/nutmeg/src/argentea/sssp/tests.rs b/examples/extensions/nutmeg/src/argentea/sssp/tests.rs
+index 58522e7f9..117bea66d 100644
+--- a/examples/extensions/nutmeg/src/argentea/sssp/tests.rs
++++ b/examples/extensions/nutmeg/src/argentea/sssp/tests.rs
+@@ -484,3 +484,6 @@ mod adversarial;
+ 
+ #[path = "tests/resource_failure.rs"]
+ mod resource_failure;
++
++#[path = "tests/initialization.rs"]
++mod initialization;
+diff --git a/examples/extensions/nutmeg/src/argentea/sssp/tests/initialization.rs b/examples/extensions/nutmeg/src/argentea/sssp/tests/initialization.rs
+new file mode 100644
+index 000000000..50bccb272
+--- /dev/null
++++ b/examples/extensions/nutmeg/src/argentea/sssp/tests/initialization.rs
+@@ -0,0 +1,39 @@
++//! The production adapter must release temporary input admission before state.
++use super::*;
++
++#[tokio::test]
++async fn initialization_releases_raw_input_before_state() {
++    for n in [1_024usize, 65_536] {
++        let ctx = SessionContext::new();
++        let drops = Arc::new(AtomicUsize::new(0));
++        let state = SsspState::new(worker(7, 32 << 20, &drops)).unwrap();
++        let mut request = request(Verb::Init, 0, 1, n as u64, "sssp_delta_star");
++        request.source = 0;
++        let op = state.configure(&request).unwrap();
++        let usage = state.base.resources.execution.clone();
++        let before = usage.usage().unwrap().live_bytes;
++        // For these 64-bit test targets: admitted raw vertices (8n) plus the
++        // conservative CSR build (56n + 4104). No arcs, all declared isolates.
++        // Retaining raw input through labels/statistics exceeds this envelope.
++        let build_bytes = n * 64 + 4096 + size_of::<usize>();
++        let blocker = usage.reserve((32 << 20) - before - build_bytes).unwrap();
++        let ids = (0..n as i64).collect::<Vec<_>>();
++        let inputs = graph(&ctx, &ids, &[], 1).await;
++        let part = input::initialize(&state, &request, op, 0, &inputs, ctx.task_ctx())
++            .await
++            .unwrap();
++        assert_eq!(part.state_rows().count(), n);
++        assert_eq!(part.reached_count(), 1);
++        assert_eq!(usage.usage().unwrap().peak_bytes, 32 << 20);
++        println!(
++            "NATIVE_INPUT_LIFETIME kind=sssp n={n} build_headroom={build_bytes} peak_admitted_bytes={}",
++            usage.usage().unwrap().peak_bytes
++        );
++        drop(part);
++        drop(blocker);
++        assert_eq!(usage.usage().unwrap().live_bytes, before);
++        drop(state);
++        assert_eq!(usage.usage().unwrap().live_bytes, 0);
++        assert_eq!(drops.load(Ordering::SeqCst), 1);
++    }
++}

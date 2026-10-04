@@ -1,0 +1,356 @@
+{
+  "recorded_utc": "2026-09-30T22:56:27.460071+00:00",
+  "repository": "querygraph/sail",
+  "baseline_head": "200d1cf8eb1db5e9057e09e071ebd57391f4b376",
+  "baseline_source_scope": "Unchanged production at base plus only new local probe/native regression tests",
+  "candidate_source_scope": "Initial preparation split; later lease-drop field ordering does not change successful initialization allocation/work. Exact final gate will repeat all candidate counters.",
+  "input_files": {
+    "baseline-core-probe.log": "9ad6ce94251f81a49e86e81520f5f284e90a0aca617e0d7c0203ea4c97e8efdb",
+    "baseline-probe.rs": "329432820e0ca664c353923de307df8bf2c5dfc5fa2c456badf139a325aa24b8",
+    "focused-initial.log": "a4edf42cf0d92d980a70c6eb7777e73ca4e5400832e50f44df6b7eead3a64781"
+  },
+  "cells": [
+    {
+      "original_200d1cf8": {
+        "n": 1024,
+        "degree": 0,
+        "weighted": false,
+        "release": false,
+        "allocation_calls": 17,
+        "allocated_bytes": 66552,
+        "peak_requested_bytes": 66472,
+        "retained_admitted_bytes": 62512,
+        "peak_admitted_bytes": 70704,
+        "work": 2048
+      },
+      "candidate_released_input": {
+        "n": 1024,
+        "degree": 0,
+        "weighted": false,
+        "release": true,
+        "allocation_calls": 17,
+        "allocated_bytes": 66552,
+        "peak_requested_bytes": 58280,
+        "retained_admitted_bytes": 62512,
+        "peak_admitted_bytes": 69640,
+        "work": 2048
+      },
+      "peak_requested_reduction_bytes": 8192,
+      "peak_admitted_reduction_bytes": 1064
+    },
+    {
+      "original_200d1cf8": {
+        "n": 1024,
+        "degree": 0,
+        "weighted": true,
+        "release": false,
+        "allocation_calls": 17,
+        "allocated_bytes": 66586,
+        "peak_requested_bytes": 66480,
+        "retained_admitted_bytes": 62536,
+        "peak_admitted_bytes": 70728,
+        "work": 13312
+      },
+      "candidate_released_input": {
+        "n": 1024,
+        "degree": 0,
+        "weighted": true,
+        "release": true,
+        "allocation_calls": 17,
+        "allocated_bytes": 66586,
+        "peak_requested_bytes": 58288,
+        "retained_admitted_bytes": 62536,
+        "peak_admitted_bytes": 69640,
+        "work": 13312
+      },
+      "peak_requested_reduction_bytes": 8192,
+      "peak_admitted_reduction_bytes": 1088
+    },
+    {
+      "original_200d1cf8": {
+        "n": 1024,
+        "degree": 1,
+        "weighted": false,
+        "release": false,
+        "allocation_calls": 19,
+        "allocated_bytes": 91128,
+        "peak_requested_bytes": 91048,
+        "retained_admitted_bytes": 70704,
+        "peak_admitted_bytes": 102408,
+        "work": 4096
+      },
+      "candidate_released_input": {
+        "n": 1024,
+        "degree": 1,
+        "weighted": false,
+        "release": true,
+        "allocation_calls": 19,
+        "allocated_bytes": 91128,
+        "peak_requested_bytes": 66472,
+        "retained_admitted_bytes": 70704,
+        "peak_admitted_bytes": 102408,
+        "work": 4096
+      },
+      "peak_requested_reduction_bytes": 24576,
+      "peak_admitted_reduction_bytes": 0
+    },
+    {
+      "original_200d1cf8": {
+        "n": 1024,
+        "degree": 1,
+        "weighted": true,
+        "release": false,
+        "allocation_calls": 19,
+        "allocated_bytes": 107546,
+        "peak_requested_bytes": 107440,
+        "retained_admitted_bytes": 78920,
+        "peak_admitted_bytes": 118792,
+        "work": 15360
+      },
+      "candidate_released_input": {
+        "n": 1024,
+        "degree": 1,
+        "weighted": true,
+        "release": true,
+        "allocation_calls": 19,
+        "allocated_bytes": 107546,
+        "peak_requested_bytes": 74672,
+        "retained_admitted_bytes": 78920,
+        "peak_admitted_bytes": 118792,
+        "work": 15360
+      },
+      "peak_requested_reduction_bytes": 32768,
+      "peak_admitted_reduction_bytes": 0
+    },
+    {
+      "original_200d1cf8": {
+        "n": 1024,
+        "degree": 8,
+        "weighted": false,
+        "release": false,
+        "allocation_calls": 19,
+        "allocated_bytes": 263160,
+        "peak_requested_bytes": 263080,
+        "retained_admitted_bytes": 128048,
+        "peak_admitted_bytes": 331784,
+        "work": 18432
+      },
+      "candidate_released_input": {
+        "n": 1024,
+        "degree": 8,
+        "weighted": false,
+        "release": true,
+        "allocation_calls": 19,
+        "allocated_bytes": 263160,
+        "peak_requested_bytes": 221440,
+        "retained_admitted_bytes": 128048,
+        "peak_admitted_bytes": 331784,
+        "work": 18432
+      },
+      "peak_requested_reduction_bytes": 41640,
+      "peak_admitted_reduction_bytes": 0
+    },
+    {
+      "original_200d1cf8": {
+        "n": 1024,
+        "degree": 8,
+        "weighted": true,
+        "release": false,
+        "allocation_calls": 19,
+        "allocated_bytes": 394266,
+        "peak_requested_bytes": 394160,
+        "retained_admitted_bytes": 193608,
+        "peak_admitted_bytes": 462856,
+        "work": 29696
+      },
+      "candidate_released_input": {
+        "n": 1024,
+        "degree": 8,
+        "weighted": true,
+        "release": true,
+        "allocation_calls": 19,
+        "allocated_bytes": 394266,
+        "peak_requested_bytes": 352440,
+        "retained_admitted_bytes": 193608,
+        "peak_admitted_bytes": 462856,
+        "work": 29696
+      },
+      "peak_requested_reduction_bytes": 41720,
+      "peak_admitted_reduction_bytes": 0
+    },
+    {
+      "original_200d1cf8": {
+        "n": 65536,
+        "degree": 0,
+        "weighted": false,
+        "release": false,
+        "allocation_calls": 17,
+        "allocated_bytes": 4195320,
+        "peak_requested_bytes": 4195240,
+        "retained_admitted_bytes": 3675184,
+        "peak_admitted_bytes": 4199472,
+        "work": 131072
+      },
+      "candidate_released_input": {
+        "n": 65536,
+        "degree": 0,
+        "weighted": false,
+        "release": true,
+        "allocation_calls": 17,
+        "allocated_bytes": 4195320,
+        "peak_requested_bytes": 3670952,
+        "retained_admitted_bytes": 3675184,
+        "peak_admitted_bytes": 4198408,
+        "work": 131072
+      },
+      "peak_requested_reduction_bytes": 524288,
+      "peak_admitted_reduction_bytes": 1064
+    },
+    {
+      "original_200d1cf8": {
+        "n": 65536,
+        "degree": 0,
+        "weighted": true,
+        "release": false,
+        "allocation_calls": 17,
+        "allocated_bytes": 4195354,
+        "peak_requested_bytes": 4195248,
+        "retained_admitted_bytes": 3675208,
+        "peak_admitted_bytes": 4199496,
+        "work": 1245184
+      },
+      "candidate_released_input": {
+        "n": 65536,
+        "degree": 0,
+        "weighted": true,
+        "release": true,
+        "allocation_calls": 17,
+        "allocated_bytes": 4195354,
+        "peak_requested_bytes": 3670960,
+        "retained_admitted_bytes": 3675208,
+        "peak_admitted_bytes": 4198408,
+        "work": 1245184
+      },
+      "peak_requested_reduction_bytes": 524288,
+      "peak_admitted_reduction_bytes": 1088
+    },
+    {
+      "original_200d1cf8": {
+        "n": 65536,
+        "degree": 1,
+        "weighted": false,
+        "release": false,
+        "allocation_calls": 19,
+        "allocated_bytes": 5768184,
+        "peak_requested_bytes": 5768104,
+        "retained_admitted_bytes": 4199472,
+        "peak_admitted_bytes": 6295560,
+        "work": 262144
+      },
+      "candidate_released_input": {
+        "n": 65536,
+        "degree": 1,
+        "weighted": false,
+        "release": true,
+        "allocation_calls": 19,
+        "allocated_bytes": 5768184,
+        "peak_requested_bytes": 4195240,
+        "retained_admitted_bytes": 4199472,
+        "peak_admitted_bytes": 6295560,
+        "work": 262144
+      },
+      "peak_requested_reduction_bytes": 1572864,
+      "peak_admitted_reduction_bytes": 0
+    },
+    {
+      "original_200d1cf8": {
+        "n": 65536,
+        "degree": 1,
+        "weighted": true,
+        "release": false,
+        "allocation_calls": 19,
+        "allocated_bytes": 6816794,
+        "peak_requested_bytes": 6816688,
+        "retained_admitted_bytes": 4723784,
+        "peak_admitted_bytes": 7344136,
+        "work": 1376256
+      },
+      "candidate_released_input": {
+        "n": 65536,
+        "degree": 1,
+        "weighted": true,
+        "release": true,
+        "allocation_calls": 19,
+        "allocated_bytes": 6816794,
+        "peak_requested_bytes": 4719536,
+        "retained_admitted_bytes": 4723784,
+        "peak_admitted_bytes": 7344136,
+        "work": 1376256
+      },
+      "peak_requested_reduction_bytes": 2097152,
+      "peak_admitted_reduction_bytes": 0
+    },
+    {
+      "original_200d1cf8": {
+        "n": 65536,
+        "degree": 8,
+        "weighted": false,
+        "release": false,
+        "allocation_calls": 19,
+        "allocated_bytes": 16778232,
+        "peak_requested_bytes": 16778152,
+        "retained_admitted_bytes": 7869488,
+        "peak_admitted_bytes": 20975624,
+        "work": 1179648
+      },
+      "candidate_released_input": {
+        "n": 65536,
+        "degree": 8,
+        "weighted": false,
+        "release": true,
+        "allocation_calls": 19,
+        "allocated_bytes": 16778232,
+        "peak_requested_bytes": 14156032,
+        "retained_admitted_bytes": 7869488,
+        "peak_admitted_bytes": 20975624,
+        "work": 1179648
+      },
+      "peak_requested_reduction_bytes": 2622120,
+      "peak_admitted_reduction_bytes": 0
+    },
+    {
+      "original_200d1cf8": {
+        "n": 65536,
+        "degree": 8,
+        "weighted": true,
+        "release": false,
+        "allocation_calls": 19,
+        "allocated_bytes": 25166874,
+        "peak_requested_bytes": 25166768,
+        "retained_admitted_bytes": 12063816,
+        "peak_admitted_bytes": 29364232,
+        "work": 2293760
+      },
+      "candidate_released_input": {
+        "n": 65536,
+        "degree": 8,
+        "weighted": true,
+        "release": true,
+        "allocation_calls": 19,
+        "allocated_bytes": 25166874,
+        "peak_requested_bytes": 22544568,
+        "retained_admitted_bytes": 12063816,
+        "peak_admitted_bytes": 29364232,
+        "work": 2293760
+      },
+      "peak_requested_reduction_bytes": 2622200,
+      "peak_admitted_reduction_bytes": 0
+    }
+  ],
+  "limits": [
+    "Thread-local System allocator requested bytes, not resident memory or cluster execution.",
+    "Measured raw vector construction and initial state together; checks state after measurement.",
+    "Same total requested allocations, allocation calls, and metered work; no wall-time or speed claim.",
+    "Dense conservative CSR-build admission peaks are unchanged; raw-input/CSR construction overlap remains."
+  ]
+}

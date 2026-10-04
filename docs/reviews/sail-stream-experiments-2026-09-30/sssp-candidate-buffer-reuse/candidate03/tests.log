@@ -1,0 +1,43 @@
+   Compiling sail-argentea-core v0.1.0 (/private/tmp/sail-sssp-candidate-buffer-gate/examples/extensions/argentea)
+    Finished `release` profile [optimized] target(s) in 1.70s
+     Running unittests src/lib.rs (/private/tmp/sail-sssp-candidate-target/core/release/deps/sail_argentea_core-8d19e59ab5ab24a3)
+
+running 5 tests
+SSSP_REUSE algorithm=Reference local_vertices=1 partitions=3 mode=topology candidate_capacity=1 calls=8 bytes=630 requested_peak=501 matched_allocations=4 matched_peak=5 transferred=1 admitted_before=67108864 admitted_after=67108696 finish_peak_admitted_delta=800 work=2
+SSSP_REUSE_FAILURE algorithm=Reference case=early_quota finish_work=0 error=procedure memory budget exceeded (limit 134217728)
+SSSP_REUSE algorithm=Reference local_vertices=1 partitions=3 mode=active candidate_capacity=1 calls=9 bytes=651 requested_peak=501 matched_allocations=4 matched_peak=5 transferred=1 admitted_before=67108864 admitted_after=67108696 finish_peak_admitted_delta=800 work=2
+SSSP_REUSE_FAILURE algorithm=Reference case=late_quota finish_work=7 error=procedure memory budget exceeded (limit 134217728)
+SSSP_REUSE algorithm=Reference local_vertices=1 partitions=3 mode=done candidate_capacity=0 calls=3 bytes=461 requested_peak=461 matched_allocations=2 matched_peak=3 transferred=1 admitted_before=67108864 admitted_after=67108432 finish_peak_admitted_delta=536 work=0
+SSSP_REUSE_FAILURE algorithm=Reference case=work finish_work=3 error=procedure work budget exceeded (limit 18446744073709551615)
+test sssp::partition::protocol::reuse_tests::controls::selection_preserves_ties_parent_only_updates_and_bucket_carryover ... ok
+SSSP_REUSE_FAILURE algorithm=Reference case=cancel finish_work=0 error=procedure execution cancelled
+SSSP_REUSE algorithm=Reference local_vertices=1024 partitions=3 mode=topology candidate_capacity=1024 calls=8 bytes=9837 requested_peak=9280 matched_allocations=0 matched_peak=2 transferred=1 admitted_before=67108864 admitted_after=67116880 finish_peak_admitted_delta=9600 work=1025
+test sssp::partition::protocol::reuse_tests::controls::old_row_cursor_retains_snapshot_and_last_lease_after_publication ... ok
+SSSP_REUSE_FAILURE algorithm=Reference case=final_checkpoint finish_work=7 error=procedure execution cancelled
+SSSP_REUSE_FAILURE algorithm=DeltaStar case=early_quota finish_work=0 error=procedure memory budget exceeded (limit 134217728)
+SSSP_REUSE_FAILURE algorithm=DeltaStar case=late_quota finish_work=7 error=procedure memory budget exceeded (limit 134217728)
+SSSP_REUSE algorithm=Reference local_vertices=1024 partitions=3 mode=active candidate_capacity=1024 calls=13 bytes=9942 requested_peak=9301 matched_allocations=0 matched_peak=2 transferred=1 admitted_before=67108864 admitted_after=67116880 finish_peak_admitted_delta=9600 work=1025
+SSSP_REUSE_FAILURE algorithm=DeltaStar case=work finish_work=3 error=procedure work budget exceeded (limit 18446744073709551615)
+SSSP_REUSE_FAILURE algorithm=DeltaStar case=cancel finish_work=0 error=procedure execution cancelled
+SSSP_REUSE_FAILURE algorithm=DeltaStar case=final_checkpoint finish_work=7 error=procedure execution cancelled
+test sssp::partition::protocol::reuse_tests::controls::failures_do_not_publish_mutated_candidates_or_release_live_storage ... ok
+SSSP_REUSE algorithm=Reference local_vertices=1024 partitions=3 mode=done candidate_capacity=0 calls=3 bytes=461 requested_peak=461 matched_allocations=0 matched_peak=1 transferred=1 admitted_before=67108864 admitted_after=67108432 finish_peak_admitted_delta=536 work=0
+SSSP_REUSE algorithm=Reference local_vertices=65536 partitions=3 mode=topology candidate_capacity=65536 calls=8 bytes=590445 requested_peak=589888 matched_allocations=0 matched_peak=2 transferred=1 admitted_before=67108864 admitted_after=67632976 finish_peak_admitted_delta=590208 work=65537
+SSSP_REUSE_HEADROOM algorithm=Reference local_vertices=65536 headroom=1048576 result=Ok(())
+SSSP_REUSE_HEADROOM algorithm=DeltaStar local_vertices=65536 headroom=1048576 result=Ok(())
+test sssp::partition::protocol::reuse_tests::controls::tight_admission_accepts_transferred_storage_for_both_algorithms ... ok
+SSSP_REUSE algorithm=Reference local_vertices=65536 partitions=3 mode=active candidate_capacity=65536 calls=13 bytes=590550 requested_peak=589909 matched_allocations=0 matched_peak=2 transferred=1 admitted_before=67108864 admitted_after=67632976 finish_peak_admitted_delta=590208 work=65537
+SSSP_REUSE algorithm=Reference local_vertices=65536 partitions=3 mode=done candidate_capacity=0 calls=3 bytes=461 requested_peak=461 matched_allocations=0 matched_peak=1 transferred=1 admitted_before=67108864 admitted_after=67108432 finish_peak_admitted_delta=536 work=0
+SSSP_REUSE algorithm=DeltaStar local_vertices=1 partitions=3 mode=topology candidate_capacity=1 calls=8 bytes=630 requested_peak=501 matched_allocations=4 matched_peak=5 transferred=1 admitted_before=67108864 admitted_after=67108696 finish_peak_admitted_delta=800 work=2
+SSSP_REUSE algorithm=DeltaStar local_vertices=1 partitions=3 mode=active candidate_capacity=1 calls=9 bytes=651 requested_peak=501 matched_allocations=4 matched_peak=5 transferred=1 admitted_before=67108864 admitted_after=67108696 finish_peak_admitted_delta=800 work=2
+SSSP_REUSE algorithm=DeltaStar local_vertices=1 partitions=3 mode=done candidate_capacity=0 calls=3 bytes=461 requested_peak=461 matched_allocations=2 matched_peak=3 transferred=1 admitted_before=67108864 admitted_after=67108432 finish_peak_admitted_delta=536 work=0
+SSSP_REUSE algorithm=DeltaStar local_vertices=1024 partitions=3 mode=topology candidate_capacity=1024 calls=8 bytes=9837 requested_peak=9280 matched_allocations=0 matched_peak=2 transferred=1 admitted_before=67108864 admitted_after=67116880 finish_peak_admitted_delta=9600 work=1025
+SSSP_REUSE algorithm=DeltaStar local_vertices=1024 partitions=3 mode=active candidate_capacity=1024 calls=13 bytes=9942 requested_peak=9301 matched_allocations=0 matched_peak=2 transferred=1 admitted_before=67108864 admitted_after=67116880 finish_peak_admitted_delta=9600 work=1025
+SSSP_REUSE algorithm=DeltaStar local_vertices=1024 partitions=3 mode=done candidate_capacity=0 calls=3 bytes=461 requested_peak=461 matched_allocations=0 matched_peak=1 transferred=1 admitted_before=67108864 admitted_after=67108432 finish_peak_admitted_delta=536 work=0
+SSSP_REUSE algorithm=DeltaStar local_vertices=65536 partitions=3 mode=topology candidate_capacity=65536 calls=8 bytes=590445 requested_peak=589888 matched_allocations=0 matched_peak=2 transferred=1 admitted_before=67108864 admitted_after=67632976 finish_peak_admitted_delta=590208 work=65537
+SSSP_REUSE algorithm=DeltaStar local_vertices=65536 partitions=3 mode=active candidate_capacity=65536 calls=13 bytes=590550 requested_peak=589909 matched_allocations=0 matched_peak=2 transferred=1 admitted_before=67108864 admitted_after=67632976 finish_peak_admitted_delta=590208 work=65537
+SSSP_REUSE algorithm=DeltaStar local_vertices=65536 partitions=3 mode=done candidate_capacity=0 calls=3 bytes=461 requested_peak=461 matched_allocations=0 matched_peak=1 transferred=1 admitted_before=67108864 admitted_after=67108432 finish_peak_admitted_delta=536 work=0
+test sssp::partition::protocol::reuse_tests::finish_allocation_inventory_and_transferred_pointer ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 6 filtered out; finished in 0.04s
+

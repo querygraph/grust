@@ -1,0 +1,434 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="6" skipped="0" tests="6" time="1.265" timestamp="2026-09-30T19:02:17.334964-07:00" hostname="Capitola.local"><testcase classname="test_baseline" name="test_supplied_parent_depth_above_cap_does_not_reject_shorter_tight_path" time="0.884"><failure message="pyspark.errors.exceptions.connect.IllegalArgumentException: invalid argument: configuration not found: spark.sql.execution.pandas.inferPandasDictAsMap">spark = &lt;pyspark.sql.connect.session.SparkSession object at 0x10b38e840&gt;
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/certificate-witness-fixtures-v21sckh0/sql/test_supplied_parent_depth_abo0')
+
+    def test_supplied_parent_depth_above_cap_does_not_reject_shorter_tight_path(spark,tmp_path):
+        from traversal_certificate import certify
+&gt;       v,e,a=frames(spark,[0.,0.,0.],[0,0,1],[0,1,2],[(0,1,0.),(1,2,0.),(0,2,0.)])
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+/Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/certificate-parent-witness/test_baseline.py:30: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/certificate-parent-witness/test_baseline.py:15: in frames
+    vertices=spark.createDataFrame([(i,) for i in range(len(distances))],'id long')
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/session.py:501: in createDataFrame
+    configs = self._client.get_config_dict(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1624: in get_config_dict
+    return dict(self.config(op).pairs)
+                ^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1662: in config
+    self._handle_error(error)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1811: in _handle_error
+    self._handle_rpc_error(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;pyspark.sql.connect.client.core.SparkConnectClient object at 0x10bd8b1d0&gt;
+rpc_error = &lt;_InactiveRpcError of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = "invalid argument: configurat..._error_string = "INTERNAL:invalid argument: configuration not found: spark.sql.execution.pandas.inferPandasDictAsMap"
+&gt;
+
+    def _handle_rpc_error(self, rpc_error: grpc.RpcError) -&gt; NoReturn:
+        """
+        Error handling helper for dealing with GRPC Errors. On the server side, certain
+        exceptions are enriched with additional RPC Status information. These are
+        unpacked in this function and put into the exception.
+    
+        To avoid overloading the user with GRPC errors, this message explicitly
+        swallows the error context from the call. This GRPC Error is logged however,
+        and can be enabled.
+    
+        Parameters
+        ----------
+        rpc_error : grpc.RpcError
+           RPC Error containing the details of the exception.
+    
+        Returns
+        -------
+        Throws the appropriate internal Python exception.
+        """
+        logger.exception("GRPC Error received")
+        # We have to cast the value here because, a RpcError is a Call as well.
+        # https://grpc.github.io/grpc/python/grpc.html#grpc.UnaryUnaryMultiCallable.__call__
+        status = rpc_status.from_call(cast(grpc.Call, rpc_error))
+        if status:
+            for d in status.details:
+                if d.Is(error_details_pb2.ErrorInfo.DESCRIPTOR):
+                    info = error_details_pb2.ErrorInfo()
+                    d.Unpack(info)
+                    logger.debug(f"Received ErrorInfo: {info}")
+    
+                    if info.metadata["errorClass"] == "INVALID_HANDLE.SESSION_CHANGED":
+                        self._closed = True
+    
+&gt;                   raise convert_exception(
+                        info,
+                        status.message,
+                        self._fetch_enriched_error(info),
+                        self._display_server_stack_trace(),
+                    ) from None
+E                   pyspark.errors.exceptions.connect.IllegalArgumentException: invalid argument: configuration not found: spark.sql.execution.pandas.inferPandasDictAsMap
+
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1882: IllegalArgumentException</failure></testcase><testcase classname="test_baseline" name="test_certificate_tolerance_does_not_replace_stricter_parent_predicate" time="0.004"><failure message="pyspark.errors.exceptions.connect.IllegalArgumentException: invalid argument: configuration not found: spark.sql.execution.pandas.inferPandasDictAsMap">spark = &lt;pyspark.sql.connect.session.SparkSession object at 0x10b38e840&gt;
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/certificate-witness-fixtures-v21sckh0/sql/test_certificate_tolerance_doe0')
+
+    def test_certificate_tolerance_does_not_replace_stricter_parent_predicate(spark,tmp_path):
+        from traversal_certificate import certify
+&gt;       v,e,a=frames(spark,[0.,1.,2.+4e-12],[0,0,1],[0,1,2],[(0,1,1.),(1,2,1.)])
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+/Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/certificate-parent-witness/test_baseline.py:38: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/certificate-parent-witness/test_baseline.py:15: in frames
+    vertices=spark.createDataFrame([(i,) for i in range(len(distances))],'id long')
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/session.py:501: in createDataFrame
+    configs = self._client.get_config_dict(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1624: in get_config_dict
+    return dict(self.config(op).pairs)
+                ^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1662: in config
+    self._handle_error(error)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1811: in _handle_error
+    self._handle_rpc_error(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;pyspark.sql.connect.client.core.SparkConnectClient object at 0x10bd8b1d0&gt;
+rpc_error = &lt;_InactiveRpcError of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = "invalid argument: configurat..._error_string = "INTERNAL:invalid argument: configuration not found: spark.sql.execution.pandas.inferPandasDictAsMap"
+&gt;
+
+    def _handle_rpc_error(self, rpc_error: grpc.RpcError) -&gt; NoReturn:
+        """
+        Error handling helper for dealing with GRPC Errors. On the server side, certain
+        exceptions are enriched with additional RPC Status information. These are
+        unpacked in this function and put into the exception.
+    
+        To avoid overloading the user with GRPC errors, this message explicitly
+        swallows the error context from the call. This GRPC Error is logged however,
+        and can be enabled.
+    
+        Parameters
+        ----------
+        rpc_error : grpc.RpcError
+           RPC Error containing the details of the exception.
+    
+        Returns
+        -------
+        Throws the appropriate internal Python exception.
+        """
+        logger.exception("GRPC Error received")
+        # We have to cast the value here because, a RpcError is a Call as well.
+        # https://grpc.github.io/grpc/python/grpc.html#grpc.UnaryUnaryMultiCallable.__call__
+        status = rpc_status.from_call(cast(grpc.Call, rpc_error))
+        if status:
+            for d in status.details:
+                if d.Is(error_details_pb2.ErrorInfo.DESCRIPTOR):
+                    info = error_details_pb2.ErrorInfo()
+                    d.Unpack(info)
+                    logger.debug(f"Received ErrorInfo: {info}")
+    
+                    if info.metadata["errorClass"] == "INVALID_HANDLE.SESSION_CHANGED":
+                        self._closed = True
+    
+&gt;                   raise convert_exception(
+                        info,
+                        status.message,
+                        self._fetch_enriched_error(info),
+                        self._display_server_stack_trace(),
+                    ) from None
+E                   pyspark.errors.exceptions.connect.IllegalArgumentException: invalid argument: configuration not found: spark.sql.execution.pandas.inferPandasDictAsMap
+
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1882: IllegalArgumentException</failure></testcase><testcase classname="test_baseline" name="test_null_or_missing_parent_metadata_is_not_silently_proved[parents0-hops0]" time="0.010"><failure message="pyspark.errors.exceptions.connect.IllegalArgumentException: invalid argument: configuration not found: spark.sql.execution.pandas.inferPandasDictAsMap">spark = &lt;pyspark.sql.connect.session.SparkSession object at 0x10b38e840&gt;
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/certificate-witness-fixtures-v21sckh0/sql/test_null_or_missing_parent_me0')
+parents = [0, None, 1], hops = [0, 1, 2]
+
+    @pytest.mark.parametrize('parents,hops', [([0,None,1],[0,1,2]),([0,0,1],[0,None,2]),([0,99,1],[0,1,2])])
+    def test_null_or_missing_parent_metadata_is_not_silently_proved(spark,tmp_path,parents,hops):
+        from traversal_certificate import certify
+&gt;       v,e,a=frames(spark,[0.,1.,2.],parents,hops,[(0,1,1.),(1,2,1.)])
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+/Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/certificate-parent-witness/test_baseline.py:47: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/certificate-parent-witness/test_baseline.py:15: in frames
+    vertices=spark.createDataFrame([(i,) for i in range(len(distances))],'id long')
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/session.py:501: in createDataFrame
+    configs = self._client.get_config_dict(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1624: in get_config_dict
+    return dict(self.config(op).pairs)
+                ^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1662: in config
+    self._handle_error(error)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1811: in _handle_error
+    self._handle_rpc_error(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;pyspark.sql.connect.client.core.SparkConnectClient object at 0x10bd8b1d0&gt;
+rpc_error = &lt;_InactiveRpcError of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = "invalid argument: configurat..._error_string = "INTERNAL:invalid argument: configuration not found: spark.sql.execution.pandas.inferPandasDictAsMap"
+&gt;
+
+    def _handle_rpc_error(self, rpc_error: grpc.RpcError) -&gt; NoReturn:
+        """
+        Error handling helper for dealing with GRPC Errors. On the server side, certain
+        exceptions are enriched with additional RPC Status information. These are
+        unpacked in this function and put into the exception.
+    
+        To avoid overloading the user with GRPC errors, this message explicitly
+        swallows the error context from the call. This GRPC Error is logged however,
+        and can be enabled.
+    
+        Parameters
+        ----------
+        rpc_error : grpc.RpcError
+           RPC Error containing the details of the exception.
+    
+        Returns
+        -------
+        Throws the appropriate internal Python exception.
+        """
+        logger.exception("GRPC Error received")
+        # We have to cast the value here because, a RpcError is a Call as well.
+        # https://grpc.github.io/grpc/python/grpc.html#grpc.UnaryUnaryMultiCallable.__call__
+        status = rpc_status.from_call(cast(grpc.Call, rpc_error))
+        if status:
+            for d in status.details:
+                if d.Is(error_details_pb2.ErrorInfo.DESCRIPTOR):
+                    info = error_details_pb2.ErrorInfo()
+                    d.Unpack(info)
+                    logger.debug(f"Received ErrorInfo: {info}")
+    
+                    if info.metadata["errorClass"] == "INVALID_HANDLE.SESSION_CHANGED":
+                        self._closed = True
+    
+&gt;                   raise convert_exception(
+                        info,
+                        status.message,
+                        self._fetch_enriched_error(info),
+                        self._display_server_stack_trace(),
+                    ) from None
+E                   pyspark.errors.exceptions.connect.IllegalArgumentException: invalid argument: configuration not found: spark.sql.execution.pandas.inferPandasDictAsMap
+
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1882: IllegalArgumentException</failure></testcase><testcase classname="test_baseline" name="test_null_or_missing_parent_metadata_is_not_silently_proved[parents1-hops1]" time="0.004"><failure message="pyspark.errors.exceptions.connect.IllegalArgumentException: invalid argument: configuration not found: spark.sql.execution.pandas.inferPandasDictAsMap">spark = &lt;pyspark.sql.connect.session.SparkSession object at 0x10b38e840&gt;
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/certificate-witness-fixtures-v21sckh0/sql/test_null_or_missing_parent_me1')
+parents = [0, 0, 1], hops = [0, None, 2]
+
+    @pytest.mark.parametrize('parents,hops', [([0,None,1],[0,1,2]),([0,0,1],[0,None,2]),([0,99,1],[0,1,2])])
+    def test_null_or_missing_parent_metadata_is_not_silently_proved(spark,tmp_path,parents,hops):
+        from traversal_certificate import certify
+&gt;       v,e,a=frames(spark,[0.,1.,2.],parents,hops,[(0,1,1.),(1,2,1.)])
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+/Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/certificate-parent-witness/test_baseline.py:47: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/certificate-parent-witness/test_baseline.py:15: in frames
+    vertices=spark.createDataFrame([(i,) for i in range(len(distances))],'id long')
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/session.py:501: in createDataFrame
+    configs = self._client.get_config_dict(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1624: in get_config_dict
+    return dict(self.config(op).pairs)
+                ^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1662: in config
+    self._handle_error(error)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1811: in _handle_error
+    self._handle_rpc_error(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;pyspark.sql.connect.client.core.SparkConnectClient object at 0x10bd8b1d0&gt;
+rpc_error = &lt;_InactiveRpcError of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = "invalid argument: configurat..._error_string = "INTERNAL:invalid argument: configuration not found: spark.sql.execution.pandas.inferPandasDictAsMap"
+&gt;
+
+    def _handle_rpc_error(self, rpc_error: grpc.RpcError) -&gt; NoReturn:
+        """
+        Error handling helper for dealing with GRPC Errors. On the server side, certain
+        exceptions are enriched with additional RPC Status information. These are
+        unpacked in this function and put into the exception.
+    
+        To avoid overloading the user with GRPC errors, this message explicitly
+        swallows the error context from the call. This GRPC Error is logged however,
+        and can be enabled.
+    
+        Parameters
+        ----------
+        rpc_error : grpc.RpcError
+           RPC Error containing the details of the exception.
+    
+        Returns
+        -------
+        Throws the appropriate internal Python exception.
+        """
+        logger.exception("GRPC Error received")
+        # We have to cast the value here because, a RpcError is a Call as well.
+        # https://grpc.github.io/grpc/python/grpc.html#grpc.UnaryUnaryMultiCallable.__call__
+        status = rpc_status.from_call(cast(grpc.Call, rpc_error))
+        if status:
+            for d in status.details:
+                if d.Is(error_details_pb2.ErrorInfo.DESCRIPTOR):
+                    info = error_details_pb2.ErrorInfo()
+                    d.Unpack(info)
+                    logger.debug(f"Received ErrorInfo: {info}")
+    
+                    if info.metadata["errorClass"] == "INVALID_HANDLE.SESSION_CHANGED":
+                        self._closed = True
+    
+&gt;                   raise convert_exception(
+                        info,
+                        status.message,
+                        self._fetch_enriched_error(info),
+                        self._display_server_stack_trace(),
+                    ) from None
+E                   pyspark.errors.exceptions.connect.IllegalArgumentException: invalid argument: configuration not found: spark.sql.execution.pandas.inferPandasDictAsMap
+
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1882: IllegalArgumentException</failure></testcase><testcase classname="test_baseline" name="test_null_or_missing_parent_metadata_is_not_silently_proved[parents2-hops2]" time="0.004"><failure message="pyspark.errors.exceptions.connect.IllegalArgumentException: invalid argument: configuration not found: spark.sql.execution.pandas.inferPandasDictAsMap">spark = &lt;pyspark.sql.connect.session.SparkSession object at 0x10b38e840&gt;
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/certificate-witness-fixtures-v21sckh0/sql/test_null_or_missing_parent_me2')
+parents = [0, 99, 1], hops = [0, 1, 2]
+
+    @pytest.mark.parametrize('parents,hops', [([0,None,1],[0,1,2]),([0,0,1],[0,None,2]),([0,99,1],[0,1,2])])
+    def test_null_or_missing_parent_metadata_is_not_silently_proved(spark,tmp_path,parents,hops):
+        from traversal_certificate import certify
+&gt;       v,e,a=frames(spark,[0.,1.,2.],parents,hops,[(0,1,1.),(1,2,1.)])
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+/Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/certificate-parent-witness/test_baseline.py:47: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/certificate-parent-witness/test_baseline.py:15: in frames
+    vertices=spark.createDataFrame([(i,) for i in range(len(distances))],'id long')
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/session.py:501: in createDataFrame
+    configs = self._client.get_config_dict(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1624: in get_config_dict
+    return dict(self.config(op).pairs)
+                ^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1662: in config
+    self._handle_error(error)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1811: in _handle_error
+    self._handle_rpc_error(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;pyspark.sql.connect.client.core.SparkConnectClient object at 0x10bd8b1d0&gt;
+rpc_error = &lt;_InactiveRpcError of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = "invalid argument: configurat..._error_string = "INTERNAL:invalid argument: configuration not found: spark.sql.execution.pandas.inferPandasDictAsMap"
+&gt;
+
+    def _handle_rpc_error(self, rpc_error: grpc.RpcError) -&gt; NoReturn:
+        """
+        Error handling helper for dealing with GRPC Errors. On the server side, certain
+        exceptions are enriched with additional RPC Status information. These are
+        unpacked in this function and put into the exception.
+    
+        To avoid overloading the user with GRPC errors, this message explicitly
+        swallows the error context from the call. This GRPC Error is logged however,
+        and can be enabled.
+    
+        Parameters
+        ----------
+        rpc_error : grpc.RpcError
+           RPC Error containing the details of the exception.
+    
+        Returns
+        -------
+        Throws the appropriate internal Python exception.
+        """
+        logger.exception("GRPC Error received")
+        # We have to cast the value here because, a RpcError is a Call as well.
+        # https://grpc.github.io/grpc/python/grpc.html#grpc.UnaryUnaryMultiCallable.__call__
+        status = rpc_status.from_call(cast(grpc.Call, rpc_error))
+        if status:
+            for d in status.details:
+                if d.Is(error_details_pb2.ErrorInfo.DESCRIPTOR):
+                    info = error_details_pb2.ErrorInfo()
+                    d.Unpack(info)
+                    logger.debug(f"Received ErrorInfo: {info}")
+    
+                    if info.metadata["errorClass"] == "INVALID_HANDLE.SESSION_CHANGED":
+                        self._closed = True
+    
+&gt;                   raise convert_exception(
+                        info,
+                        status.message,
+                        self._fetch_enriched_error(info),
+                        self._display_server_stack_trace(),
+                    ) from None
+E                   pyspark.errors.exceptions.connect.IllegalArgumentException: invalid argument: configuration not found: spark.sql.execution.pandas.inferPandasDictAsMap
+
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1882: IllegalArgumentException</failure></testcase><testcase classname="test_baseline" name="test_distance_only_native_keeps_bfs_witness_and_optional_parent_contract" time="0.010"><failure message="pyspark.errors.exceptions.connect.IllegalArgumentException: invalid argument: configuration not found: spark.sql.execution.pandas.inferPandasDictAsMap">spark = &lt;pyspark.sql.connect.session.SparkSession object at 0x10b38e840&gt;
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/certificate-witness-fixtures-v21sckh0/sql/test_distance_only_native_keep0')
+
+    def test_distance_only_native_keeps_bfs_witness_and_optional_parent_contract(spark,tmp_path):
+        from traversal_certificate import certify
+        from traversal_cell import validate_parents
+&gt;       v,e,a=frames(spark,[0.,1.,2.],[0,0,1],[0,1,2],[(0,1,1.),(1,2,1.)])
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+/Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/certificate-parent-witness/test_baseline.py:56: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/certificate-parent-witness/test_baseline.py:15: in frames
+    vertices=spark.createDataFrame([(i,) for i in range(len(distances))],'id long')
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/session.py:501: in createDataFrame
+    configs = self._client.get_config_dict(
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1624: in get_config_dict
+    return dict(self.config(op).pairs)
+                ^^^^^^^^^^^^^^^
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1662: in config
+    self._handle_error(error)
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1811: in _handle_error
+    self._handle_rpc_error(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;pyspark.sql.connect.client.core.SparkConnectClient object at 0x10bd8b1d0&gt;
+rpc_error = &lt;_InactiveRpcError of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = "invalid argument: configurat..._error_string = "INTERNAL:invalid argument: configuration not found: spark.sql.execution.pandas.inferPandasDictAsMap"
+&gt;
+
+    def _handle_rpc_error(self, rpc_error: grpc.RpcError) -&gt; NoReturn:
+        """
+        Error handling helper for dealing with GRPC Errors. On the server side, certain
+        exceptions are enriched with additional RPC Status information. These are
+        unpacked in this function and put into the exception.
+    
+        To avoid overloading the user with GRPC errors, this message explicitly
+        swallows the error context from the call. This GRPC Error is logged however,
+        and can be enabled.
+    
+        Parameters
+        ----------
+        rpc_error : grpc.RpcError
+           RPC Error containing the details of the exception.
+    
+        Returns
+        -------
+        Throws the appropriate internal Python exception.
+        """
+        logger.exception("GRPC Error received")
+        # We have to cast the value here because, a RpcError is a Call as well.
+        # https://grpc.github.io/grpc/python/grpc.html#grpc.UnaryUnaryMultiCallable.__call__
+        status = rpc_status.from_call(cast(grpc.Call, rpc_error))
+        if status:
+            for d in status.details:
+                if d.Is(error_details_pb2.ErrorInfo.DESCRIPTOR):
+                    info = error_details_pb2.ErrorInfo()
+                    d.Unpack(info)
+                    logger.debug(f"Received ErrorInfo: {info}")
+    
+                    if info.metadata["errorClass"] == "INVALID_HANDLE.SESSION_CHANGED":
+                        self._closed = True
+    
+&gt;                   raise convert_exception(
+                        info,
+                        status.message,
+                        self._fetch_enriched_error(info),
+                        self._display_server_stack_trace(),
+                    ) from None
+E                   pyspark.errors.exceptions.connect.IllegalArgumentException: invalid argument: configuration not found: spark.sql.execution.pandas.inferPandasDictAsMap
+
+/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1882: IllegalArgumentException</failure></testcase></testsuite></testsuites>

@@ -1,0 +1,231 @@
+use std::sync::Arc;
+
+use async_trait::async_trait;
+use datafusion::arrow::array::{ArrayRef, BooleanArray, Int32Array, Int64Array, StringArray};
+use datafusion::arrow::datatypes::{DataType, Field, Schema, SchemaRef};
+use datafusion::arrow::record_batch::RecordBatch;
+use datafusion::catalog::{Session, TableProvider};
+use datafusion::execution::{SendableRecordBatchStream, TaskContext};
+use datafusion::physical_expr::{EquivalenceProperties, Partitioning};
+use datafusion::physical_plan::execution_plan::{Boundedness, EmissionType};
+use datafusion::physical_plan::stream::RecordBatchStreamAdapter;
+use datafusion::physical_plan::{DisplayAs, DisplayFormatType, ExecutionPlan, PlanProperties};
+use datafusion_common::{Result, plan_datafusion_err, plan_err};
+use datafusion_expr::{Expr, TableType};
+use prost::Message;
+use sail_common_datafusion::connect_extension::ConnectRelationHandler;
+use sail_common_datafusion::driver_extension::DriverExtensionRegistry;
+
+use super::super::driver::DriverTableProvider;
+use super::proto::Request;
+use super::storage::GraphRuns;
+
+#[derive(Default)]
+pub(super) struct Row {
+    pub kind: String,
+    pub path: Option<String>,
+    pub size: Option<i64>,
+    pub value: Option<bool>,
+    pub count: Option<i64>,
+    pub capabilities: Option<String>,
+    pub token: Option<String>,
+    pub truncated: bool,
+}
+impl Row {
+    pub fn new(kind: &str) -> Self {
+        Self {
+            kind: kind.into(),
+            ..Self::default()
+        }
+    }
+}
+
+pub(super) fn schema() -> SchemaRef {
+    Arc::new(Schema::new(vec![
+        Field::new("kind", DataType::Utf8, false),
+        Field::new("path", DataType::Utf8, true),
+        Field::new("size", DataType::Int64, true),
+        Field::new("value", DataType::Boolean, true),
+        Field::new("count", DataType::Int64, true),
+        Field::new("capabilities", DataType::Utf8, true),
+        Field::new("token", DataType::Utf8, true),
+        Field::new("truncated", DataType::Boolean, false),
+        Field::new("engine", DataType::Utf8, false),
+        Field::new("protocol_version", DataType::Int32, false),
+        Field::new("lease_seconds", DataType::Int64, false),
+    ]))
+}
+
+fn batch(rows: &[Row]) -> Result<RecordBatch> {
+    let arrays: Vec<ArrayRef> = vec![
+        Arc::new(StringArray::from_iter_values(
+            rows.iter().map(|r| r.kind.as_str()),
+        )),
+        Arc::new(StringArray::from_iter(
+            rows.iter().map(|r| r.path.as_deref()),
+        )),
+        Arc::new(Int64Array::from_iter(rows.iter().map(|r| r.size))),
+        Arc::new(BooleanArray::from_iter(rows.iter().map(|r| r.value))),
+        Arc::new(Int64Array::from_iter(rows.iter().map(|r| r.count))),
+        Arc::new(StringArray::from_iter(
+            rows.iter().map(|r| r.capabilities.as_deref()),
+        )),
+        Arc::new(StringArray::from_iter(
+            rows.iter().map(|r| r.token.as_deref()),
+        )),
+        Arc::new(BooleanArray::from_iter(
+            rows.iter().map(|r| Some(r.truncated)),
+        )),
+        Arc::new(StringArray::from_iter_values(rows.iter().map(|_| "sail"))),
+        Arc::new(Int32Array::from(vec![1; rows.len()])),
+        Arc::new(Int64Array::from(vec![0; rows.len()])),
+    ];
+    Ok(RecordBatch::try_new(schema(), arrays)?)
+}
+
+pub(super) struct Handler {
+    pub runs: Arc<GraphRuns>,
+    pub driver: Option<Arc<DriverExtensionRegistry>>,
+}
+impl ConnectRelationHandler for Handler {
+    fn plan(
+        &self,
+        payload: &[u8],
+        inputs: Vec<Arc<dyn ExecutionPlan>>,
+    ) -> Result<Arc<dyn TableProvider>> {
+        if payload.len() > 8192 || !inputs.is_empty() {
+            return plan_err!("graph utils requires zero inputs and at most 8192 request bytes");
+        }
+        let request = Request::decode(payload)
+            .map_err(|e| plan_datafusion_err!("graph utils protobuf: {e}"))?;
+        GraphRuns::validate(&request)?;
+        let provider: Arc<dyn TableProvider> = Arc::new(Provider {
+            runs: self.runs.clone(),
+            request,
+        });
+        match &self.driver {
+            Some(registry) => Ok(Arc::new(DriverTableProvider {
+                inner: provider,
+                inputs: vec![],
+                names: vec![],
+                owner: "sail-gf-utils/1".into(),
+                registry: registry.clone(),
+            })),
+            None => Ok(provider),
+        }
+    }
+}
+
+struct Provider {
+    runs: Arc<GraphRuns>,
+    request: Request,
+}
+impl std::fmt::Debug for Provider {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("GraphUtilsProvider").finish_non_exhaustive()
+    }
+}
+#[async_trait]
+impl TableProvider for Provider {
+    fn schema(&self) -> SchemaRef {
+        schema()
+    }
+    fn table_type(&self) -> TableType {
+        TableType::Temporary
+    }
+    async fn scan(
+        &self,
+        _session: &dyn Session,
+        projection: Option<&Vec<usize>>,
+        _filters: &[Expr],
+        _limit: Option<usize>,
+    ) -> Result<Arc<dyn ExecutionPlan>> {
+        let schema = match projection {
+            Some(p) => Arc::new(schema().project(p)?),
+            None => schema(),
+        };
+        let properties = Arc::new(PlanProperties::new(
+            EquivalenceProperties::new(schema),
+            Partitioning::UnknownPartitioning(1),
+            EmissionType::Final,
+            Boundedness::Bounded,
+        ));
+        Ok(Arc::new(UtilsExec {
+            runs: self.runs.clone(),
+            request: self.request.clone(),
+            projection: projection.cloned(),
+            properties,
+        }))
+    }
+}
+
+struct UtilsExec {
+    runs: Arc<GraphRuns>,
+    request: Request,
+    projection: Option<Vec<usize>>,
+    properties: Arc<PlanProperties>,
+}
+impl std::fmt::Debug for UtilsExec {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.fmt_as(DisplayFormatType::Default, f)
+    }
+}
+impl DisplayAs for UtilsExec {
+    fn fmt_as(&self, _: DisplayFormatType, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // Never print token-bearing requests in explain output or logs.
+        write!(f, "GraphUtilsExec: host storage, placement=driver")
+    }
+}
+impl ExecutionPlan for UtilsExec {
+    fn apply_expressions(
+        &self,
+        _f: &mut dyn FnMut(
+            &Arc<dyn datafusion::physical_expr::PhysicalExpr>,
+        ) -> Result<datafusion_common::tree_node::TreeNodeRecursion>,
+    ) -> Result<datafusion_common::tree_node::TreeNodeRecursion> {
+        Ok(datafusion_common::tree_node::TreeNodeRecursion::Continue)
+    }
+    fn name(&self) -> &'static str {
+        "GraphUtilsExec"
+    }
+    fn properties(&self) -> &Arc<PlanProperties> {
+        &self.properties
+    }
+    fn children(&self) -> Vec<&Arc<dyn ExecutionPlan>> {
+        vec![]
+    }
+    fn with_new_children(
+        self: Arc<Self>,
+        children: Vec<Arc<dyn ExecutionPlan>>,
+    ) -> Result<Arc<dyn ExecutionPlan>> {
+        if !children.is_empty() {
+            return plan_err!("graph utils has no children");
+        }
+        Ok(self)
+    }
+    fn execute(
+        &self,
+        partition: usize,
+        _context: Arc<TaskContext>,
+    ) -> Result<SendableRecordBatchStream> {
+        if partition != 0 {
+            return plan_err!("graph utils supports only partition zero");
+        }
+        let (runs, request, projection) = (
+            self.runs.clone(),
+            self.request.clone(),
+            self.projection.clone(),
+        );
+        let stream = futures::stream::once(async move {
+            let batch = batch(&runs.execute(request).await?)?;
+            match projection {
+                Some(p) => Ok(batch.project(&p)?),
+                None => Ok(batch),
+            }
+        });
+        Ok(Box::pin(RecordBatchStreamAdapter::new(
+            self.schema(),
+            stream,
+        )))
+    }
+}

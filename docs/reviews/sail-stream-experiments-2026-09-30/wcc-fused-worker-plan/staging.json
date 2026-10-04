@@ -1,0 +1,16 @@
+{
+  "recorded_utc": "2026-09-30T19:38:11.949605+00:00",
+  "command": [
+    "ssh",
+    "morrobay",
+    "python3 -c 'from pathlib import Path\nimport sys,json,hashlib\np=Path(sys.argv[1]); p.mkdir(exist_ok=False)\nfiles=json.load(sys.stdin)\nassert set(files)=={'\"'\"'probe.py'\"'\"','\"'\"'run_probe.py'\"'\"','\"'\"'configuration.json'\"'\"'}\nfor name,data in files.items():\n with (p/name).open('\"'\"'x'\"'\"') as f:f.write(data)\nprint(json.dumps({name:hashlib.sha256((p/name).read_bytes()).hexdigest() for name in files}))\n' /Users/alexy/src/sail-extensions-gates/stream-experiments-20260930/wcc-fused-worker-plan"
+  ],
+  "returncode": 0,
+  "stdout": "{\"probe.py\": \"70c5e217b5e8ce12bddc710578d22e679e2f0c67c9d0168454c924cf629bb401\", \"run_probe.py\": \"95441e4a5c17dd78dbe34fced6d6c4442e6ea3844eecf8b0d6446bb7e5b6bb44\", \"configuration.json\": \"8ee32e4a94fac2dc06662e1b67950daced043c52bafcaeb3cd329f5b80afde99\"}\n",
+  "stderr": "",
+  "files": {
+    "probe.py": "70c5e217b5e8ce12bddc710578d22e679e2f0c67c9d0168454c924cf629bb401",
+    "run_probe.py": "95441e4a5c17dd78dbe34fced6d6c4442e6ea3844eecf8b0d6446bb7e5b6bb44",
+    "configuration.json": "8ee32e4a94fac2dc06662e1b67950daced043c52bafcaeb3cd329f5b80afde99"
+  }
+}

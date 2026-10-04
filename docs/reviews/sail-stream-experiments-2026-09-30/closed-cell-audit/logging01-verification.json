@@ -1,0 +1,118 @@
+{
+  "recorded_utc": "2026-09-30T21:37:55.700925+00:00",
+  "integrity_status": "integrity_verified",
+  "errors": [],
+  "inconclusive_reasons": [],
+  "recorded_outcomes": {
+    "docker_state": {
+      "Dead": false,
+      "Error": "",
+      "ExitCode": 1,
+      "FinishedAt": "2026-09-30T16:46:32.118639037Z",
+      "OOMKilled": true,
+      "Paused": false,
+      "Pid": 0,
+      "Restarting": false,
+      "Running": false,
+      "StartedAt": "2026-09-30T16:25:07.77642098Z",
+      "Status": "exited"
+    },
+    "outer_timeout": false,
+    "attach_returncode": 1,
+    "transport_errors": [],
+    "receipt_outcome": "error",
+    "correctness": null,
+    "error": "Traceback (most recent call last):\n  File \"/targets/sail-stream-experiments-20260930/source-3a9028057/examples/extensions/benchmarks/graph_cell.py\", line 494, in main\n    result, handle, nm = execute(spark, args, manifest, receipt, sampler)\n                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/targets/sail-stream-experiments-20260930/source-3a9028057/examples/extensions/benchmarks/graph_cell.py\", line 124, in execute\n    return traversal_execute(spark, args, receipt, sampler)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/targets/sail-stream-experiments-20260930/source-3a9028057/examples/extensions/benchmarks/traversal_cell.py\", line 90, in execute\n    handle=getattr(graph,args.algorithm)(vertices,edges,**options)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/targets/sail-stream-experiments-20260930/source-3a9028057/examples/extensions/graph-algorithms/src/pyspark_pecan/algorithms.py\", line 279, in bfs\n    return execute(self, vertices, edges, source=source, weighted=False,\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/targets/sail-stream-experiments-20260930/source-3a9028057/examples/extensions/graph-algorithms/src/pyspark_pecan/traversal.py\", line 89, in execute\n    return graph._run(vertices, edges, partitions, cancellation, body,\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/targets/sail-stream-experiments-20260930/source-3a9028057/examples/extensions/graph-algorithms/src/pyspark_pecan/algorithms.py\", line 95, in _run\n    return body(run, vertices, edges, size)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/targets/sail-stream-experiments-20260930/source-3a9028057/examples/extensions/graph-algorithms/src/pyspark_pecan/traversal.py\", line 67, in body\n    next_path, next_reached = run.materialize(updated)\n                              ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/targets/sail-stream-experiments-20260930/source-3a9028057/examples/extensions/graph-algorithms/src/pyspark_pecan/staging.py\", line 36, in materialize\n    frame.repartition(self.partitions).write.mode(\"error\").parquet(path)\n  File \"/targets/graph-nuts-ffcfbd569/venv/lib/python3.12/site-packages/pyspark/sql/connect/readwriter.py\", line 755, in parquet\n    self.format(\"parquet\").save(path)\n  File \"/targets/graph-nuts-ffcfbd569/venv/lib/python3.12/site-packages/pyspark/sql/connect/readwriter.py\", line 679, in save\n    _, _, ei = self._spark.client.execute_command(\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/targets/graph-nuts-ffcfbd569/venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 1148, in execute_command\n    data, _, metrics, observed_metrics, properties = self._execute_and_fetch(\n                                                     ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/targets/graph-nuts-ffcfbd569/venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 1560, in _execute_and_fetch\n    for response in self._execute_and_fetch_as_iterator(\n                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/targets/graph-nuts-ffcfbd569/venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 1537, in _execute_and_fetch_as_iterator\n    self._handle_error(error)\n  File \"/targets/graph-nuts-ffcfbd569/venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 1811, in _handle_error\n    self._handle_rpc_error(error)\n  File \"/targets/graph-nuts-ffcfbd569/venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 1882, in _handle_rpc_error\n    raise convert_exception(\npyspark.errors.exceptions.connect.SparkRuntimeException: h2 protocol error: error reading a body from connection\nwrite completion is uncertain; cleanup deferred for file:///targets/sail-stream-experiments-20260930/logging01/cells/stream-log01-r1-scale24-pecan-bfs-frontier/staging/c5880dc0-f197-4bef-b6a1-288e5c3437c1. The server session retains ownership and attempts cleanup at teardown; this is best effort, not a guarantee that all writers have drained.\n",
+    "cleanup_errors": [],
+    "cgroup_after": {
+      "memory.current": "88457216",
+      "memory.peak": "107374247936",
+      "memory.max": "107374182400",
+      "memory.swap.max": "0",
+      "memory.events": "low 0\nhigh 0\nmax 5692\noom 22\noom_kill 1\noom_group_kill 0",
+      "memory.stat": "anon 81428480\nfile 811008\nkernel 2678784\nkernel_stack 557056\npagetables 851968\nsec_pagetables 0\npercpu 13600\nsock 0\nvmalloc 12288\nshmem 0\nzswap 0\nzswapped 0\nfile_mapped 40960\nfile_dirty 36864\nfile_writeback 0\nswapcached 0\nanon_thp 0\nfile_thp 0\nshmem_thp 0\ninactive_anon 675840\nactive_anon 80707584\ninactive_file 270336\nactive_file 495616\nunevictable 0\nslab_reclaimable 456672\nslab_unreclaimable 708848\nslab 1165520\nworkingset_refault_anon 0\nworkingset_refault_file 2627\nworkingset_activate_anon 0\nworkingset_activate_file 13\nworkingset_restore_anon 0\nworkingset_restore_file 12\nworkingset_nodereclaim 0\npgscan 1617890\npgsteal 1617650\npgscan_kswapd 0\npgscan_direct 1615330\npgscan_khugepaged 2560\npgsteal_kswapd 0\npgsteal_direct 1615090\npgsteal_khugepaged 2560\npgfault 18970255\npgmajfault 20\npgrefill 404535\npgactivate 219\npgdeactivate 0\npglazyfree 0\npglazyfreed 0\nzswpin 0\nzswpout 0\nzswpwb 0\nthp_fault_alloc 62398\nthp_collapse_alloc 80\nthp_swpout 0\nthp_swpout_fallback 0",
+      "cpu.max": "3200000 100000",
+      "cpu.stat": "usage_usec 32790499253\nuser_usec 7396762642\nsystem_usec 25393736610\ncore_sched.force_idle_usec 0\nnr_periods 12898\nnr_throttled 2369\nthrottled_usec 1026511756\nnr_bursts 0\nburst_usec 0",
+      "cpuset.cpus.effective": "0-31"
+    },
+    "producer_started_utc": "2026-09-30T16:26:01.629356+00:00",
+    "producer_finished_utc": "2026-09-30T16:46:31.879051+00:00",
+    "runner_outcome": "oom"
+  },
+  "correctness_verification": "not_performed",
+  "known_transformations": {
+    "host_before_redaction": {
+      "recorded_utc": "2026-09-30T17:48:46.702709+00:00",
+      "scope": "all host process arguments omitted; only PID, elapsed time, and first whitespace-delimited command token retained",
+      "process_rows": 777,
+      "original_sha256": "0b2950c61eb9a16a3df3f73eb88b79c56b5cfa32d00a134126d8bfe9ed6d6f6c",
+      "original_retained": "private local temporary evidence and original Morrobay run directory",
+      "reason": "host load context does not require unrelated application arguments"
+    },
+    "published_host_before_sha256": "8adf43a64dc7b0f1cdaa52f96bc04f02e341f6ec088cf7d1ffbe331958575488"
+  },
+  "notes": [
+    "Dataset checks compare the producer-embedded manifest to pinned local evidence; dataset/Parquet bytes were not read or recomputed.",
+    "Host snapshot is explicitly redacted; its private original hash is provenance, not an equality target. It is separate from the diagnostic archive."
+  ],
+  "files": {
+    "/private/tmp/grust-closed-cell-audit/docs/reviews/sail-stream-experiments-2026-09-30/logging01.json": {
+      "bytes": 2823,
+      "sha256": "c762e0c3156b29be6c5a8d23356b50d86c4dd88340df33aba9f39543c9875d6f"
+    },
+    "/private/tmp/grust-closed-cell-audit/docs/reviews/sail-stream-experiments-2026-09-30/logging01/diagnostics/receipt.json": {
+      "bytes": 214186,
+      "sha256": "969a7811615eeef3190b7b0f5f87a72f637b430edd37db48e031e5819d235e84"
+    },
+    "/private/tmp/grust-closed-cell-audit/docs/reviews/sail-stream-experiments-2026-09-30/pecan-gate3/measured-1-base/diagnostics/receipt.json": {
+      "bytes": 27867,
+      "sha256": "735432b56cfc47bd9f3e49579ab6d8834b3a4b4d962f6fea07b5bf5ba1bcb70a"
+    },
+    "docs/reviews/sail-stream-experiments-2026-09-30/logging01/configuration.json": {
+      "bytes": 2823,
+      "sha256": "c762e0c3156b29be6c5a8d23356b50d86c4dd88340df33aba9f39543c9875d6f"
+    },
+    "docs/reviews/sail-stream-experiments-2026-09-30/logging01/plan.json": {
+      "bytes": 1951,
+      "sha256": "094e0b8d84370dcf762131443a5210eee1b21bee419fb359dd06673a1efb7cc1"
+    },
+    "docs/reviews/sail-stream-experiments-2026-09-30/logging01/result.json": {
+      "bytes": 4890,
+      "sha256": "ab6af17acbd37952d9159f11291133d773425a973e6f71f9d22fc559d2035afe"
+    },
+    "docs/reviews/sail-stream-experiments-2026-09-30/logging01/cell/orchestration.json": {
+      "bytes": 3808,
+      "sha256": "1877f0a6e291060814418d79050423e97dd7a1e9fc8d4bb652889513eee1dff4"
+    },
+    "docs/reviews/sail-stream-experiments-2026-09-30/logging01/collection.json": {
+      "bytes": 1123,
+      "sha256": "9555b80c9faadef3c482f63b0029be54da86ef97ae931f7ee2bb708b2ad39587"
+    },
+    "docs/reviews/sail-stream-experiments-2026-09-30/logging01/diagnostics/receipt.json": {
+      "bytes": 214186,
+      "sha256": "969a7811615eeef3190b7b0f5f87a72f637b430edd37db48e031e5819d235e84"
+    },
+    "docs/reviews/sail-stream-experiments-2026-09-30/logging01/diagnostics/server-settings.json": {
+      "bytes": 256,
+      "sha256": "93c90dab742352cc91598d8c44db7b540dfe941dc604eaca157213fef5c543f9"
+    },
+    "docs/reviews/sail-stream-experiments-2026-09-30/logging01/host-before.json": {
+      "bytes": 75627,
+      "sha256": "8adf43a64dc7b0f1cdaa52f96bc04f02e341f6ec088cf7d1ffbe331958575488"
+    },
+    "docs/reviews/sail-stream-experiments-2026-09-30/logging01/diagnostics.tar": {
+      "bytes": 11755520,
+      "sha256": "65e6000211bd2a123ac4c99ccfeac007df7d371cd31d682a68f8318ae2ed33d7"
+    },
+    "docs/reviews/sail-stream-experiments-2026-09-30/logging01/diagnostics/memory-samples.jsonl": {
+      "bytes": 1754915,
+      "sha256": "743800e983bc76061ec62bb0ee6627d491932afdbfb7f111d3e52190148eceb1"
+    },
+    "docs/reviews/sail-stream-experiments-2026-09-30/logging01/diagnostics/server.log": {
+      "bytes": 9771978,
+      "sha256": "c037bb047f026be560fcea0d3a994cf47e96a5169b1a972a1c11dfa1dc508ae4"
+    }
+  },
+  "scope": "Local collected-byte and recorded-identity/resource agreement only. No remote access, binary execution, source rebuild, dataset/result Parquet recomputation, independent certificate validation, causal diagnosis or performance qualification. Recorded runner and receipt outcomes remain separate.",
+  "helper_sha256": "a2fcce2e03908a7070767ace84082e4c23740bf5e9201b587f4bdf3fe735da72"
+}

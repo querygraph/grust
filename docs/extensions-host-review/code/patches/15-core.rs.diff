@@ -1,0 +1,79 @@
+diff --git a/crates/sail-execution/src/driver/job_scheduler/core.rs b/crates/sail-execution/src/driver/job_scheduler/core.rs
+index 7161812f21a1062c0e4c34ee4eb9978f8bb5b205..c6b3ab1ec98832cc2dd925776df5211a2f82afb8 100644
+--- a/crates/sail-execution/src/driver/job_scheduler/core.rs
++++ b/crates/sail-execution/src/driver/job_scheduler/core.rs
+@@ -10,6 +10,9 @@ use datafusion_proto::physical_plan::PhysicalExtensionCodec;
+ use indexmap::{IndexMap, IndexSet};
+ use log::{debug, warn};
+ use sail_common::actor::ActorContext;
++use sail_common_datafusion::driver_extension::{
++    contains_driver_extension, release_driver_extensions,
++};
+ use sail_common_datafusion::error::CommonErrorCause;
+ use sail_python_udf::error::PyErrExtractor;
+ use sail_system_store::SystemEvent;
+@@ -203,6 +206,18 @@ impl JobScheduler {
+             .any(|x| matches!(x.state, TaskRegionState::Failed))
+         {
+             let cause = Self::infer_job_failure_cause(job);
++            let cause = if job
++                .graph
++                .stages()
++                .iter()
++                .any(|stage| contains_driver_extension(&stage.plan))
++            {
++                CommonErrorCause::Execution(format!(
++                    "driver extension task failed; automatic retry disabled; an unacknowledged mutation outcome is indeterminate: {cause}"
++                ))
++            } else {
++                cause
++            };
+             if let JobState::Running { output, .. } = &job.state {
+                 actions.push(JobAction::FailJobOutput {
+                     handle: output.handle(),
+@@ -248,11 +263,23 @@ impl JobScheduler {
+ 
+     fn update_task_regions(job: &mut JobDescriptor, options: &JobSchedulerOptions) {
+         for (r, region) in job.topology.regions.iter().enumerate() {
++            // A lost acknowledgement cannot distinguish a committed native
++            // mutation from one canceled before publication. Never re-execute
++            // a region containing a driver-resident native operation.
++            let max_attempts = if region
++                .tasks
++                .iter()
++                .any(|task| contains_driver_extension(&job.graph.stages()[task.stage].plan))
++            {
++                1
++            } else {
++                options.task_max_attempts
++            };
+             let failed = region.tasks.iter().any(|t| {
+                 let attempts = &job.stages[t.stage].tasks[t.partition].attempts;
+                 if let Some(attempt) = attempts.last()
+                     && matches!(attempt.state, TaskState::Failed | TaskState::Canceled)
+-                    && attempts.len() >= options.task_max_attempts
++                    && attempts.len() >= max_attempts
+                 {
+                     return true;
+                 }
+@@ -625,6 +652,9 @@ impl JobScheduler {
+             context: job.context.clone(),
+         });
+         job.state.finish_output(outcome);
++        for stage in job.graph.stages() {
++            release_driver_extensions(&stage.plan);
++        }
+         event_reporter.report(SystemEvent::JobUpdated {
+             session_id,
+             job_id: u64::from(job_id),
+@@ -1107,6 +1137,10 @@ impl StageGroup {
+     }
+ }
+ 
++#[cfg(test)]
++#[path = "native_retry_tests.rs"]
++mod native_retry_tests;
++
+ #[cfg(test)]
+ mod tests {
+     use std::collections::HashSet;

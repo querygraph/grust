@@ -1,0 +1,92 @@
+{
+  "attach_returncode": 1,
+  "command": [
+    "docker",
+    "--context",
+    "colima-sail-gate",
+    "create",
+    "--name",
+    "sail-pecan-gate-base-local",
+    "--init",
+    "--cpus",
+    "8",
+    "--cpuset-cpus",
+    "0-7",
+    "--memory",
+    "12g",
+    "--memory-swap",
+    "12g",
+    "--pids-limit",
+    "1024",
+    "--mount",
+    "type=volume,source=sail-extension-targets,target=/targets",
+    "--workdir",
+    "/targets/graph-nuts-ffcfbd569/source",
+    "--env",
+    "PYTHONUNBUFFERED=1",
+    "--entrypoint",
+    "/targets/graph-nuts-ffcfbd569/venv/bin/python",
+    "sha256:f3518d652fbea8b9b9f9ebf9849277ca3bd39d0c21bb2c6e36fbaeaa2dc2678e",
+    "/targets/sail-stream-experiments-20260930/pecan-gate3/scripts/pecan_gate3_cell.py",
+    "--repo",
+    "/targets/graph-nuts-ffcfbd569/source",
+    "--expected-sha",
+    "ffcfbd5690e3f3681ef9ac18ba959bc231cf9f73",
+    "--sail-binary",
+    "/targets/graph-nuts-ffcfbd569/sail-linux-x86_64-ffcfbd5690e3-release",
+    "--output",
+    "/targets/sail-stream-experiments-20260930/pecan-gate3/cells/gate-base-local",
+    "--mode",
+    "local",
+    "--timeout",
+    "1200"
+  ],
+  "copied": {},
+  "create": {
+    "returncode": 0,
+    "stderr": "",
+    "stdout": "32d94d089be499c6fca26784a05722353487b3d2a96cae6847500ed6ffa90697\n"
+  },
+  "finished_utc": "2026-09-30T16:52:25.512525+00:00",
+  "host_load_before": [
+    4.24853515625,
+    8.5673828125,
+    10.55029296875
+  ],
+  "inspect": {
+    "id": "32d94d089be499c6fca26784a05722353487b3d2a96cae6847500ed6ffa90697",
+    "image": "sha256:f3518d652fbea8b9b9f9ebf9849277ca3bd39d0c21bb2c6e36fbaeaa2dc2678e",
+    "limits": {
+      "CpuPeriod": 0,
+      "CpuQuota": 0,
+      "CpusetCpus": "0-7",
+      "Init": true,
+      "Memory": 12884901888,
+      "MemorySwap": 12884901888,
+      "NanoCpus": 8000000000,
+      "PidMode": "",
+      "PidsLimit": 1024
+    },
+    "state": {
+      "Dead": false,
+      "Error": "",
+      "ExitCode": 1,
+      "FinishedAt": "2026-09-30T16:52:25.027112872Z",
+      "OOMKilled": false,
+      "Paused": false,
+      "Pid": 0,
+      "Restarting": false,
+      "Running": false,
+      "StartedAt": "2026-09-30T16:50:24.515733931Z",
+      "Status": "exited"
+    }
+  },
+  "outer_timeout": false,
+  "remove": {
+    "returncode": 0,
+    "stderr": "",
+    "stdout": "sail-pecan-gate-base-local\n"
+  },
+  "started_utc": "2026-09-30T16:50:24.109767+00:00",
+  "transport_errors": []
+}

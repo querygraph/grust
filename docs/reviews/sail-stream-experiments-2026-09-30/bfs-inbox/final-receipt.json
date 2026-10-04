@@ -1,0 +1,36 @@
+{
+  "recorded_utc": "2026-09-30T18:10:06.995011+00:00",
+  "repository": "querygraph/sail",
+  "branch": "work/argentea-bfs-inbox",
+  "commit": "c6126c27aae1b6262be3b1ecd6271008cc64fc69",
+  "base_sha": "b569e75de625885b3d919fa4196b2e0bed14c618",
+  "production_change": "Eight lines shape inbox parent storage for Reference/Push/Pull and membership storage for Pull only. Producer metadata, sequence/count validation, local/input EOF checks, publication and SSSP unchanged.",
+  "source_and_gate_clean": true,
+  "gates": {
+    "core": "exact-core/receipt.json",
+    "native": "exact-native/receipt.json",
+    "loaded": "exact-loaded/receipt.json"
+  },
+  "verdicts": [
+    "ARGENTEA_CORE_PROBE PASSED c6126c27aae1b6262be3b1ecd6271008cc64fc69 detached_clean=True",
+    "BFS_INBOX_NATIVE PASSED c6126c27aae1b6262be3b1ecd6271008cc64fc69 detached_clean=True tests=49 argentea=43",
+    "BFS_INBOX_LOADED PASSED c6126c27aae1b6262be3b1ecd6271008cc64fc69 load=10 core=108 native=49"
+  ],
+  "validation_scope": "Core fmt/strict all-targets clippy and108 release tests; full native49 release library tests (43 Argentea); repeated core108/native49 under10 live local load processes, all reaped. No host490/remote/Linux rerun at this commit.",
+  "baseline": "Old idle test passes; unchanged b569 fails four new allocation/headroom cases, while wrong-mode protocol control passes. Initial four-test and final five-test sources and outputs retained.",
+  "measurements": "matched-counters.json (12 matched mode/size cells; actual requested heap and admitted peaks; no timing/RSS claim)",
+  "key_cell": {
+    "partitions": 3,
+    "vertices": 65536,
+    "ghosts": 65536,
+    "done_requested_before": 1117679,
+    "done_requested_after": 3567,
+    "done_peak_admitted_before": 1121512,
+    "done_peak_admitted_after": 7400,
+    "push_requested_and_admitted_saving": 65536,
+    "pull": "unchanged"
+  },
+  "work_claim_limit": "Removed parent/ghost Vec initialization inferred from code and measured storage; no elapsed-time or improved work-meter claim. BfsWork was zero in Done already; source-membership binary search and O(P^2) barriers remain.",
+  "format_limitation": "Native adapter unchanged. Full native crate format failures inherited from b569/289 remain documented in sibling bfs-completion baseline-native-format; no blanket native-format pass.",
+  "no_push_or_remote_action": true
+}

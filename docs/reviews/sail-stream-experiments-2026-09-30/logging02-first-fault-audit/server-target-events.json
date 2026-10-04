@@ -1,0 +1,69 @@
+{
+  "server_sha256": "cdd6f367bd47fd69062bf7527433bceba8023784c861c8821651c3d4f84a8b67",
+  "total_bytes": 12376738,
+  "total_lines": 20259,
+  "timestamped_fault_pattern": "(?i)(?<![a-z])(?:error|panic|panicked|OutOfMemory|failed|stream_error|execution_failure)(?![a-z])",
+  "matching_line_numbers": [
+    3,
+    20250
+  ],
+  "first_runtime_fault_byte_offset": 12375456,
+  "lines": [
+    {
+      "line_number": 3,
+      "value": "[2026-09-30T20:05:13Z DEBUG tonic::transport::server] failed serving connection: connection error: connection closed before reading preface"
+    },
+    {
+      "line_number": 17,
+      "value": "[2026-09-30T20:05:15Z INFO sail_execution::worker_manager::process] extension process worker 2: pid=Some(167), driver_pid=50, session=281c02dc-2f21-4d2a-8125-d4e38bbc896f"
+    },
+    {
+      "line_number": 18,
+      "value": "[2026-09-30T20:05:15Z INFO sail_execution::worker_manager::process] extension process worker 1: pid=Some(169), driver_pid=50, session=281c02dc-2f21-4d2a-8125-d4e38bbc896f"
+    },
+    {
+      "line_number": 57,
+      "value": "[2026-09-30T20:05:17Z INFO sail_execution::driver::actor::handler] worker 2 is available at 127.0.0.1:43503"
+    },
+    {
+      "line_number": 20250,
+      "value": "[2026-09-30T21:58:03Z WARN sail_execution::diagnostics] execution_failure pid=50 event=flight_client_error phase=body peer=http://127.0.0.1:43503 owner=Worker key=TaskStreamKey { job_id: JobId(31), stage: 5, partition: 0, attempt: 0, channel: 0 } error_chain=grpc_code=Unknown message=h2 protocol error: error reading a body from connection caused_by=error reading a body from connection caused_by=stream closed because of a broken pipe"
+    },
+    {
+      "line_number": 20251,
+      "value": "[2026-09-30T21:58:03Z INFO sail_session::session_manager::actor::handler] removing session 281c02dc-2f21-4d2a-8125-d4e38bbc896f"
+    },
+    {
+      "line_number": 20252,
+      "value": "[2026-09-30T21:58:03Z INFO sail_execution::driver::worker_pool::core] stopping worker 1"
+    },
+    {
+      "line_number": 20253,
+      "value": "[2026-09-30T21:58:03Z INFO sail_execution::driver::worker_pool::core] stopping worker 2"
+    },
+    {
+      "line_number": 20254,
+      "value": "[2026-09-30T21:58:03Z INFO sail_execution::driver::actor::core] driver 1 has stopped"
+    },
+    {
+      "line_number": 20255,
+      "value": "[2026-09-30T21:58:03Z INFO sail_cli::spark::server] Shutting down the Spark Connect server..."
+    },
+    {
+      "line_number": 20256,
+      "value": "[2026-09-30T21:58:03Z WARN sail_common::actor] aborting 494 task(s) for DriverActor"
+    },
+    {
+      "line_number": 20257,
+      "value": "[2026-09-30T21:58:04Z INFO sail_session::session_manager::actor::core] driver server has stopped"
+    },
+    {
+      "line_number": 20258,
+      "value": "[2026-09-30T21:58:04Z WARN sail_common::actor] aborting 62 task(s) for SessionManagerActor"
+    },
+    {
+      "line_number": 20259,
+      "value": "[2026-09-30T21:58:04Z INFO sail_cli::spark::server] The Spark Connect server has stopped."
+    }
+  ]
+}

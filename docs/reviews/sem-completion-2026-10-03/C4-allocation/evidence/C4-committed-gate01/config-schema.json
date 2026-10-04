@@ -1,0 +1,116 @@
+{
+  "$defs": {
+    "Pin": {
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "format": "path",
+          "title": "Path",
+          "type": "string"
+        },
+        "bytes": {
+          "minimum": 0,
+          "title": "Bytes",
+          "type": "integer"
+        },
+        "sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "bytes",
+        "sha256"
+      ],
+      "title": "Pin",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "root": {
+      "format": "path",
+      "title": "Root",
+      "type": "string"
+    },
+    "repository": {
+      "format": "path",
+      "title": "Repository",
+      "type": "string"
+    },
+    "commit": {
+      "const": "ef5fc415ab4b182fb3df4e238cf634cc9fc94cd9",
+      "default": "ef5fc415ab4b182fb3df4e238cf634cc9fc94cd9",
+      "title": "Commit",
+      "type": "string"
+    },
+    "tree": {
+      "const": "268779f765b88813ec737beb1b30442eb30a5e72",
+      "default": "268779f765b88813ec737beb1b30442eb30a5e72",
+      "title": "Tree",
+      "type": "string"
+    },
+    "source_prefix": {
+      "const": "probe",
+      "default": "probe",
+      "title": "Source Prefix",
+      "type": "string"
+    },
+    "candidate_configuration": {
+      "$ref": "#/$defs/Pin"
+    },
+    "candidate_receipt": {
+      "$ref": "#/$defs/Pin"
+    },
+    "candidate_launch": {
+      "$ref": "#/$defs/Pin"
+    },
+    "candidate_binary": {
+      "$ref": "#/$defs/Pin"
+    },
+    "reused_owner_freeze": {
+      "$ref": "#/$defs/Pin"
+    },
+    "helpers": {
+      "additionalProperties": {
+        "$ref": "#/$defs/Pin"
+      },
+      "title": "Helpers",
+      "type": "object"
+    },
+    "total_seconds": {
+      "default": 7200,
+      "maximum": 14400,
+      "minimum": 300,
+      "title": "Total Seconds",
+      "type": "integer"
+    },
+    "step_seconds": {
+      "default": 3600,
+      "maximum": 7200,
+      "minimum": 30,
+      "title": "Step Seconds",
+      "type": "integer"
+    },
+    "fd_soft": {
+      "const": 8192,
+      "default": 8192,
+      "title": "Fd Soft",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "root",
+    "repository",
+    "candidate_configuration",
+    "candidate_receipt",
+    "candidate_launch",
+    "candidate_binary",
+    "reused_owner_freeze",
+    "helpers"
+  ],
+  "title": "Config",
+  "type": "object"
+}

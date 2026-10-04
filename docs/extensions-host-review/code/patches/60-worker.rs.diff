@@ -1,0 +1,47 @@
+diff --git a/crates/sail-session/src/session_factory/worker.rs b/crates/sail-session/src/session_factory/worker.rs
+index 9ad40ec869dd566bcf6565f70481b3a2c26a877f..311cd38d61fc379e85ff7062519bebb84a30d717 100644
+--- a/crates/sail-session/src/session_factory/worker.rs
++++ b/crates/sail-session/src/session_factory/worker.rs
+@@ -9,10 +9,11 @@ use sail_common::runtime::RuntimeHandle;
+ use sail_common_datafusion::session::repartition::RepartitionBufferConfig;
+ use sail_delta_lake::session_extension::DeltaTableCache;
+ 
+-use crate::runtime::RuntimeEnvFactory;
++use crate::runtime::{MemoryResourceDomain, RuntimeEnvFactory};
+ use crate::session_factory::SessionFactory;
+ 
+ pub struct WorkerSessionFactory {
++    resource_domain: Option<MemoryResourceDomain>,
+     runtime_env: RuntimeEnvFactory,
+     batch_size: usize,
+     repartition_buffer_size: usize,
+@@ -22,18 +23,28 @@ impl WorkerSessionFactory {
+     pub fn new(config: Arc<AppConfig>, runtime: RuntimeHandle) -> Self {
+         let batch_size = config.execution.batch_size;
+         let repartition_buffer_size = config.cluster.task_stream_buffer;
++        let resource_domain = (std::env::var("SAIL_EXPERIMENTAL_EXTENSIONS").as_deref() == Ok("1"))
++            .then(|| MemoryResourceDomain::new(&config.runtime.memory_pool));
+         let runtime_env = RuntimeEnvFactory::new(config, runtime.clone());
+         Self {
++            resource_domain,
+             runtime_env,
+             batch_size,
+             repartition_buffer_size,
+         }
+     }
++    pub fn with_resource_domain(mut self, domain: Option<MemoryResourceDomain>) -> Self {
++        self.resource_domain = domain;
++        self
++    }
+ }
+ 
+ impl SessionFactory<()> for WorkerSessionFactory {
+     fn create(&mut self, _info: ()) -> Result<SessionContext> {
+-        let runtime = self.runtime_env.create(Ok)?;
++        if std::env::var("SAIL_EXPERIMENTAL_EXTENSIONS").as_deref() == Ok("1") {
++            crate::extensions::load_worker_extensions()?;
++        }
++        let runtime = self.runtime_env.create(self.resource_domain.as_ref(), Ok)?;
+         // We still add default features for the worker session
+         // since we need built-in functions to be available for the codec
+         // when decoding the execution plan.

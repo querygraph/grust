@@ -1,0 +1,1186 @@
+{
+  "recorded_utc": "2026-10-01T05:37:34.379995+00:00",
+  "scope": "READ_ONLY_HOST_FILESYSTEM_AND_PROCESS_INVENTORY_NO_DOCKER_NO_VM_COMMAND_NO_DELETION",
+  "ssh_command": [
+    "ssh",
+    "-o",
+    "BatchMode=yes",
+    "-o",
+    "ConnectTimeout=10",
+    "morrobay",
+    "/usr/local/bin/python3 -"
+  ],
+  "remote_source": "\nimport datetime,json,pathlib,subprocess,os,re,stat\nbase=pathlib.Path('/Users/alexy/src/sail-extensions-gates')\nresult={'started_utc':datetime.datetime.now(datetime.timezone.utc).isoformat(),'hostname':os.uname().nodename,'commands':[]}\ndef run(cmd,timeout=35):\n entry={'command':cmd,'started_utc':datetime.datetime.now(datetime.timezone.utc).isoformat()}\n try:\n  r=subprocess.run(cmd,capture_output=True,text=True,timeout=timeout)\n  entry.update(exit_code=r.returncode,stdout=r.stdout,stderr=r.stderr)\n except subprocess.TimeoutExpired as e:\n  entry.update(error='TIMEOUT_CHILD_KILLED_AND_REAPED',stdout=e.stdout.decode(errors='replace') if isinstance(e.stdout,bytes) else e.stdout,stderr=e.stderr.decode(errors='replace') if isinstance(e.stderr,bytes) else e.stderr)\n entry['ended_utc']=datetime.datetime.now(datetime.timezone.utc).isoformat();result['commands'].append(entry);return entry\nrun(['df','-k',str(base)])\nrun(['df','-h','/'])\nroots=[base,pathlib.Path('/Users/alexy/.cargo'),pathlib.Path('/Users/alexy/.cache/uv'),pathlib.Path('/Users/alexy/Library/Caches/Homebrew'),pathlib.Path('/Users/alexy/Library/Caches/pip'),pathlib.Path('/Users/alexy/Library/Caches/colima')]\nfor p in roots:run(['du','-k','-d','1',str(p)])\nselected=['mac-target-d7143e0','mac-target-de8e67098','mac-development','argentea','graph-algorithms','pecan-benchmark','graph-nuts-b87fb27ac','graph-nuts-gate-next','graph-kernels-traversal-1f18','qemu-migration']\nfor name in selected:run(['du','-k','-d','2',str(base/name)])\npaths=[base/'argentea/target-macos-038c9b9597d3/debug',base/'graph-algorithms/target-70b0d1cab2cab945d4dbaf6842ee0e38c8aa1822/debug']\npaths += [base/root/component/'debug' for root in ['mac-development','mac-target-d7143e0','mac-target-de8e67098'] for component in ['host','nutmeg','sedona']]\nresult['intermediate_classes']=[]\nfor p in paths:\n run(['du','-k','-d','1',str(p)])\n for child in ['deps','incremental']:\n  q=p/child\n  totals={suffix:{'files':0,'logical_bytes':0,'allocated_bytes':0,'executable_mode_files':0} for suffix in ['.rlib','.rmeta','.o','.d']}\n  for directory,folders,files in os.walk(q,followlinks=False):\n   folders[:]=[name for name in folders if not pathlib.Path(directory,name).is_symlink()]\n   for name in files:\n    file=pathlib.Path(directory,name);suffix=file.suffix\n    if suffix not in totals:continue\n    info=file.lstat()\n    if not stat.S_ISREG(info.st_mode):continue\n    cell=totals[suffix];cell['files']+=1;cell['logical_bytes']+=info.st_size;cell['allocated_bytes']+=info.st_blocks*512;cell['executable_mode_files']+=int(bool(info.st_mode&0o111))\n  result['intermediate_classes'].append({'root':str(q),'suffix_totals':totals,'measurement':'lstat sums of regular files only, no symlink traversal; hard links/APFS shared extents not deduplicated'})\nps=run(['ps','-axo','pid=,ppid=,pgid=,lstart=,comm='])\nall_lines=ps.pop('stdout','')\nselected=[]\nfor line in all_lines.splitlines():\n fields=line.strip().split(None,8)\n if len(fields)!=9:continue\n name=pathlib.Path(fields[8]).name.lower()\n if name.startswith(('python','cargo','rustc','rustdoc','clippy','maturin','ninja','cmake','sail')) or name in {'bash','zsh','sh','make','gmake','ld','clang','clang++','gcc','g++','xcrun'}:\n  selected.append({'pid':int(fields[0]),'ppid':int(fields[1]),'pgid':int(fields[2]),'lstart':' '.join(fields[3:8]),'comm':fields[8]})\nps['stdout_selected_records']=selected;ps['selection']='process executable names for build/gate candidates only; argv/env not read; unrelated process rows omitted'\nresult['host_process_check']={'matching_processes':selected,'limits':'Generic Python/shell names alone cannot establish absence of a gate; cwd capture below is additional context. No process is signalled.'}\nif selected:\n run(['/usr/sbin/lsof','-a','-p',','.join(str(x['pid']) for x in selected),'-d','cwd','-Fn'],20)\nresult['ended_utc']=datetime.datetime.now(datetime.timezone.utc).isoformat()\nprint(json.dumps(result))\n",
+  "started_utc": "2026-10-01T05:37:21.288738+00:00",
+  "ssh_exit": 0,
+  "ssh_stderr": "",
+  "prior_observations": {
+    "first_df_utc": "2026-10-01T05:32:56.496766+00:00",
+    "filesystem": "/dev/disk1s1",
+    "available_KiB": 64294940,
+    "total_KiB": 3908112996,
+    "used_KiB": 3820036756,
+    "host_base_du_KiB": 122168620,
+    "cache_subdirectory_du_sum_KiB": 51069420,
+    "prior_timestamps": [
+      "2026-10-01T05:33:13.677894+00:00",
+      "2026-10-01T05:33:44.731169+00:00",
+      "2026-10-01T05:34:18.252212+00:00"
+    ],
+    "retention_boundary": "Earlier observations were emitted in tool outputs, not saved to a raw file. This receipt preserves their reported key values and a new complete raw replay of the df/du commands. It does not claim byte-identical archival retention of prior tool output."
+  },
+  "limits": [
+    "Allocated sizes are not guaranteed reclaimable APFS bytes.",
+    "No active-use clearance is inferred merely from a name or empty process selection.",
+    "Preserve exported executables, dylibs, wheels, venvs, source, datasets, outputs, logs and receipts.",
+    "Host free space is not guest filesystem free space."
+  ],
+  "fresh_capture": {
+    "started_utc": "2026-10-01T05:37:21.647707+00:00",
+    "hostname": "morrobay.local",
+    "commands": [
+      {
+        "command": [
+          "df",
+          "-k",
+          "/Users/alexy/src/sail-extensions-gates"
+        ],
+        "started_utc": "2026-10-01T05:37:21.648364+00:00",
+        "exit_code": 0,
+        "stdout": "Filesystem   1024-blocks       Used Available Capacity  iused     ifree %iused  Mounted on\n/dev/disk1s1  3908112996 3820029540  67447888    99% 10458969 674478880    2%   /System/Volumes/Data\n",
+        "stderr": "",
+        "ended_utc": "2026-10-01T05:37:21.654189+00:00"
+      },
+      {
+        "command": [
+          "df",
+          "-h",
+          "/"
+        ],
+        "started_utc": "2026-10-01T05:37:21.654219+00:00",
+        "exit_code": 0,
+        "stdout": "Filesystem        Size    Used   Avail Capacity iused ifree %iused  Mounted on\n/dev/disk1s4s1   3.6Ti    10Gi    64Gi    15%    427k  674M    0%   /\n",
+        "stderr": "",
+        "ended_utc": "2026-10-01T05:37:21.658583+00:00"
+      },
+      {
+        "command": [
+          "du",
+          "-k",
+          "-d",
+          "1",
+          "/Users/alexy/src/sail-extensions-gates"
+        ],
+        "started_utc": "2026-10-01T05:37:21.658639+00:00",
+        "exit_code": 0,
+        "stdout": "1042648\t/Users/alexy/src/sail-extensions-gates/linux-venv\n140\t/Users/alexy/src/sail-extensions-gates/final-linux-d7143e0\n5165136\t/Users/alexy/src/sail-extensions-gates/graph-nuts-gate-next\n528056\t/Users/alexy/src/sail-extensions-gates/repository\n7413368\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark\n18431556\t/Users/alexy/src/sail-extensions-gates/graph-algorithms\n982868\t/Users/alexy/src/sail-extensions-gates/mac-venv-d7143e0\n9848244\t/Users/alexy/src/sail-extensions-gates/mac-development\n62872\t/Users/alexy/src/sail-extensions-gates/bootstrap\n982268\t/Users/alexy/src/sail-extensions-gates/mac-portable-venv\n20678708\t/Users/alexy/src/sail-extensions-gates/argentea\n794016\t/Users/alexy/src/sail-extensions-gates/final-linux-de8e67098\n988520\t/Users/alexy/src/sail-extensions-gates/mac-venv-de8e67098\n81724\t/Users/alexy/src/sail-extensions-gates/mac-candidate-d7143e0\n9780844\t/Users/alexy/src/sail-extensions-gates/mac-target-d7143e0\n0\t/Users/alexy/src/sail-extensions-gates/sail\n161760\t/Users/alexy/src/sail-extensions-gates/traversal-linux-038c\n4651528\t/Users/alexy/src/sail-extensions-gates/graph-kernels-traversal-1f18\n21335272\t/Users/alexy/src/sail-extensions-gates/graph-nuts-b87fb27ac\n1068764\t/Users/alexy/src/sail-extensions-gates/stream-experiments-20260930\n9785784\t/Users/alexy/src/sail-extensions-gates/mac-target-de8e67098\n81732\t/Users/alexy/src/sail-extensions-gates/mac-candidate-de8e67098\n7243272\t/Users/alexy/src/sail-extensions-gates/qemu-migration\n985148\t/Users/alexy/src/sail-extensions-gates/mac-venv\n122168620\t/Users/alexy/src/sail-extensions-gates\n",
+        "stderr": "",
+        "ended_utc": "2026-10-01T05:37:27.515323+00:00"
+      },
+      {
+        "command": [
+          "du",
+          "-k",
+          "-d",
+          "1",
+          "/Users/alexy/.cargo"
+        ],
+        "started_utc": "2026-10-01T05:37:27.515418+00:00",
+        "exit_code": 0,
+        "stdout": "12644\t/Users/alexy/.cargo/bin\n1784420\t/Users/alexy/.cargo/registry\n251280\t/Users/alexy/.cargo/git\n2048636\t/Users/alexy/.cargo\n",
+        "stderr": "",
+        "ended_utc": "2026-10-01T05:37:29.146908+00:00"
+      },
+      {
+        "command": [
+          "du",
+          "-k",
+          "-d",
+          "1",
+          "/Users/alexy/.cache/uv"
+        ],
+        "started_utc": "2026-10-01T05:37:29.146979+00:00",
+        "exit_code": 0,
+        "stdout": "0\t/Users/alexy/.cache/uv/builds-v0\n8348\t/Users/alexy/.cache/uv/simple-v25\n204\t/Users/alexy/.cache/uv/wheels-v6\n64\t/Users/alexy/.cache/uv/interpreter-v4\n1356776\t/Users/alexy/.cache/uv/sdists-v9\n2486932\t/Users/alexy/.cache/uv/archive-v0\n3852332\t/Users/alexy/.cache/uv\n",
+        "stderr": "",
+        "ended_utc": "2026-10-01T05:37:29.302977+00:00"
+      },
+      {
+        "command": [
+          "du",
+          "-k",
+          "-d",
+          "1",
+          "/Users/alexy/Library/Caches/Homebrew"
+        ],
+        "started_utc": "2026-10-01T05:37:29.303047+00:00",
+        "exit_code": 0,
+        "stdout": "504648\t/Users/alexy/Library/Caches/Homebrew/go_mod_cache\n340616\t/Users/alexy/Library/Caches/Homebrew/docker--git\n0\t/Users/alexy/Library/Caches/Homebrew/api-source\n12584\t/Users/alexy/Library/Caches/Homebrew/bootsnap\n1675904\t/Users/alexy/Library/Caches/Homebrew/go_cache\n5408\t/Users/alexy/Library/Caches/Homebrew/pip_cache\n30168\t/Users/alexy/Library/Caches/Homebrew/api\n0\t/Users/alexy/Library/Caches/Homebrew/Cask\n119396\t/Users/alexy/Library/Caches/Homebrew/tailscale--git\n0\t/Users/alexy/Library/Caches/Homebrew/Backup\n1663236\t/Users/alexy/Library/Caches/Homebrew/downloads\n4364276\t/Users/alexy/Library/Caches/Homebrew\n",
+        "stderr": "",
+        "ended_utc": "2026-10-01T05:37:30.474069+00:00"
+      },
+      {
+        "command": [
+          "du",
+          "-k",
+          "-d",
+          "1",
+          "/Users/alexy/Library/Caches/pip"
+        ],
+        "started_utc": "2026-10-01T05:37:30.474140+00:00",
+        "exit_code": 0,
+        "stdout": "44804\t/Users/alexy/Library/Caches/pip/http-v2\n20\t/Users/alexy/Library/Caches/pip/wheels\n12\t/Users/alexy/Library/Caches/pip/selfcheck\n44836\t/Users/alexy/Library/Caches/pip\n",
+        "stderr": "",
+        "ended_utc": "2026-10-01T05:37:30.485947+00:00"
+      },
+      {
+        "command": [
+          "du",
+          "-k",
+          "-d",
+          "1",
+          "/Users/alexy/Library/Caches/colima"
+        ],
+        "started_utc": "2026-10-01T05:37:30.486008+00:00",
+        "exit_code": 0,
+        "stdout": "349904\t/Users/alexy/Library/Caches/colima/caches\n349904\t/Users/alexy/Library/Caches/colima\n",
+        "stderr": "",
+        "ended_utc": "2026-10-01T05:37:30.491569+00:00"
+      },
+      {
+        "command": [
+          "du",
+          "-k",
+          "-d",
+          "2",
+          "/Users/alexy/src/sail-extensions-gates/mac-target-d7143e0"
+        ],
+        "started_utc": "2026-10-01T05:37:30.491672+00:00",
+        "exit_code": 0,
+        "stdout": "29120\t/Users/alexy/src/sail-extensions-gates/mac-target-d7143e0/raw-wheel-nutmeg.nKUAm9/repaired\n58192\t/Users/alexy/src/sail-extensions-gates/mac-target-d7143e0/raw-wheel-nutmeg.nKUAm9\n6449532\t/Users/alexy/src/sail-extensions-gates/mac-target-d7143e0/host/debug\n6449540\t/Users/alexy/src/sail-extensions-gates/mac-target-d7143e0/host\n48692\t/Users/alexy/src/sail-extensions-gates/mac-target-d7143e0/sedona/maturin\n1290484\t/Users/alexy/src/sail-extensions-gates/mac-target-d7143e0/sedona/debug\n1339184\t/Users/alexy/src/sail-extensions-gates/mac-target-d7143e0/sedona\n178880\t/Users/alexy/src/sail-extensions-gates/mac-target-d7143e0/nutmeg/maturin\n1699024\t/Users/alexy/src/sail-extensions-gates/mac-target-d7143e0/nutmeg/debug\n1877912\t/Users/alexy/src/sail-extensions-gates/mac-target-d7143e0/nutmeg\n38604\t/Users/alexy/src/sail-extensions-gates/mac-target-d7143e0/wheels\n9484\t/Users/alexy/src/sail-extensions-gates/mac-target-d7143e0/raw-wheel-sedona.7AUu28/repaired\n17396\t/Users/alexy/src/sail-extensions-gates/mac-target-d7143e0/raw-wheel-sedona.7AUu28\n9780844\t/Users/alexy/src/sail-extensions-gates/mac-target-d7143e0\n",
+        "stderr": "",
+        "ended_utc": "2026-10-01T05:37:30.605018+00:00"
+      },
+      {
+        "command": [
+          "du",
+          "-k",
+          "-d",
+          "2",
+          "/Users/alexy/src/sail-extensions-gates/mac-target-de8e67098"
+        ],
+        "started_utc": "2026-10-01T05:37:30.605137+00:00",
+        "exit_code": 0,
+        "stdout": "6449596\t/Users/alexy/src/sail-extensions-gates/mac-target-de8e67098/host/debug\n6449604\t/Users/alexy/src/sail-extensions-gates/mac-target-de8e67098/host\n48692\t/Users/alexy/src/sail-extensions-gates/mac-target-de8e67098/sedona/maturin\n1290484\t/Users/alexy/src/sail-extensions-gates/mac-target-de8e67098/sedona/debug\n1339184\t/Users/alexy/src/sail-extensions-gates/mac-target-de8e67098/sedona\n29120\t/Users/alexy/src/sail-extensions-gates/mac-target-de8e67098/raw-wheel-nutmeg.Z0uwMp/repaired\n58192\t/Users/alexy/src/sail-extensions-gates/mac-target-de8e67098/raw-wheel-nutmeg.Z0uwMp\n178876\t/Users/alexy/src/sail-extensions-gates/mac-target-de8e67098/nutmeg/maturin\n1703904\t/Users/alexy/src/sail-extensions-gates/mac-target-de8e67098/nutmeg/debug\n1882788\t/Users/alexy/src/sail-extensions-gates/mac-target-de8e67098/nutmeg\n38604\t/Users/alexy/src/sail-extensions-gates/mac-target-de8e67098/wheels\n9484\t/Users/alexy/src/sail-extensions-gates/mac-target-de8e67098/raw-wheel-sedona.yQWD12/repaired\n17396\t/Users/alexy/src/sail-extensions-gates/mac-target-de8e67098/raw-wheel-sedona.yQWD12\n9785784\t/Users/alexy/src/sail-extensions-gates/mac-target-de8e67098\n",
+        "stderr": "",
+        "ended_utc": "2026-10-01T05:37:30.713789+00:00"
+      },
+      {
+        "command": [
+          "du",
+          "-k",
+          "-d",
+          "2",
+          "/Users/alexy/src/sail-extensions-gates/mac-development"
+        ],
+        "started_utc": "2026-10-01T05:37:30.713888+00:00",
+        "exit_code": 0,
+        "stdout": "29120\t/Users/alexy/src/sail-extensions-gates/mac-development/raw-wheel-nutmeg.mG373E/repaired\n58192\t/Users/alexy/src/sail-extensions-gates/mac-development/raw-wheel-nutmeg.mG373E\n6446272\t/Users/alexy/src/sail-extensions-gates/mac-development/host/debug\n6446280\t/Users/alexy/src/sail-extensions-gates/mac-development/host\n48692\t/Users/alexy/src/sail-extensions-gates/mac-development/sedona/maturin\n1290472\t/Users/alexy/src/sail-extensions-gates/mac-development/sedona/debug\n1339172\t/Users/alexy/src/sail-extensions-gates/mac-development/sedona\n9484\t/Users/alexy/src/sail-extensions-gates/mac-development/raw-wheel-sedona.EnIjRY/repaired\n17396\t/Users/alexy/src/sail-extensions-gates/mac-development/raw-wheel-sedona.EnIjRY\n178880\t/Users/alexy/src/sail-extensions-gates/mac-development/nutmeg/maturin\n1694124\t/Users/alexy/src/sail-extensions-gates/mac-development/nutmeg/debug\n1873012\t/Users/alexy/src/sail-extensions-gates/mac-development/nutmeg\n38604\t/Users/alexy/src/sail-extensions-gates/mac-development/wheels\n29116\t/Users/alexy/src/sail-extensions-gates/mac-development/raw-wheel-nutmeg.upHLxP/repaired\n58184\t/Users/alexy/src/sail-extensions-gates/mac-development/raw-wheel-nutmeg.upHLxP\n9484\t/Users/alexy/src/sail-extensions-gates/mac-development/raw-wheel-sedona.uaYy5G/repaired\n17396\t/Users/alexy/src/sail-extensions-gates/mac-development/raw-wheel-sedona.uaYy5G\n9848244\t/Users/alexy/src/sail-extensions-gates/mac-development\n",
+        "stderr": "",
+        "ended_utc": "2026-10-01T05:37:30.846122+00:00"
+      },
+      {
+        "command": [
+          "du",
+          "-k",
+          "-d",
+          "2",
+          "/Users/alexy/src/sail-extensions-gates/argentea"
+        ],
+        "started_utc": "2026-10-01T05:37:30.846224+00:00",
+        "exit_code": 0,
+        "stdout": "21160\t/Users/alexy/src/sail-extensions-gates/argentea/client-8d43c6f4868e/crates\n12\t/Users/alexy/src/sail-extensions-gates/argentea/client-8d43c6f4868e/docker\n11588\t/Users/alexy/src/sail-extensions-gates/argentea/client-8d43c6f4868e/python\n16\t/Users/alexy/src/sail-extensions-gates/argentea/client-8d43c6f4868e/k8s\n12704\t/Users/alexy/src/sail-extensions-gates/argentea/client-8d43c6f4868e/docs\n8\t/Users/alexy/src/sail-extensions-gates/argentea/client-8d43c6f4868e/.devcontainer\n2216\t/Users/alexy/src/sail-extensions-gates/argentea/client-8d43c6f4868e/examples\n164\t/Users/alexy/src/sail-extensions-gates/argentea/client-8d43c6f4868e/scripts\n216\t/Users/alexy/src/sail-extensions-gates/argentea/client-8d43c6f4868e/.github\n8\t/Users/alexy/src/sail-extensions-gates/argentea/client-8d43c6f4868e/.vscode\n20\t/Users/alexy/src/sail-extensions-gates/argentea/client-8d43c6f4868e/deployments\n48624\t/Users/alexy/src/sail-extensions-gates/argentea/client-8d43c6f4868e\n196\t/Users/alexy/src/sail-extensions-gates/argentea/venv-b3bfs/bin\n887156\t/Users/alexy/src/sail-extensions-gates/argentea/venv-b3bfs/lib\n124\t/Users/alexy/src/sail-extensions-gates/argentea/venv-b3bfs/share\n887488\t/Users/alexy/src/sail-extensions-gates/argentea/venv-b3bfs\n21160\t/Users/alexy/src/sail-extensions-gates/argentea/client-b3c543171c6c/crates\n12\t/Users/alexy/src/sail-extensions-gates/argentea/client-b3c543171c6c/docker\n11588\t/Users/alexy/src/sail-extensions-gates/argentea/client-b3c543171c6c/python\n16\t/Users/alexy/src/sail-extensions-gates/argentea/client-b3c543171c6c/k8s\n13116\t/Users/alexy/src/sail-extensions-gates/argentea/client-b3c543171c6c/docs\n8\t/Users/alexy/src/sail-extensions-gates/argentea/client-b3c543171c6c/.devcontainer\n2928\t/Users/alexy/src/sail-extensions-gates/argentea/client-b3c543171c6c/examples\n164\t/Users/alexy/src/sail-extensions-gates/argentea/client-b3c543171c6c/scripts\n216\t/Users/alexy/src/sail-extensions-gates/argentea/client-b3c543171c6c/.github\n596\t/Users/alexy/src/sail-extensions-gates/argentea/client-b3c543171c6c/.git\n8\t/Users/alexy/src/sail-extensions-gates/argentea/client-b3c543171c6c/.vscode\n20\t/Users/alexy/src/sail-extensions-gates/argentea/client-b3c543171c6c/deployments\n50340\t/Users/alexy/src/sail-extensions-gates/argentea/client-b3c543171c6c\n14152548\t/Users/alexy/src/sail-extensions-gates/argentea/target-macos-038c9b9597d3/debug\n14152556\t/Users/alexy/src/sail-extensions-gates/argentea/target-macos-038c9b9597d3\n21160\t/Users/alexy/src/sail-extensions-gates/argentea/client-277ae341c90c/crates\n12\t/Users/alexy/src/sail-extensions-gates/argentea/client-277ae341c90c/docker\n11588\t/Users/alexy/src/sail-extensions-gates/argentea/client-277ae341c90c/python\n16\t/Users/alexy/src/sail-extensions-gates/argentea/client-277ae341c90c/k8s\n13116\t/Users/alexy/src/sail-extensions-gates/argentea/client-277ae341c90c/docs\n8\t/Users/alexy/src/sail-extensions-gates/argentea/client-277ae341c90c/.devcontainer\n2632\t/Users/alexy/src/sail-extensions-gates/argentea/client-277ae341c90c/examples\n164\t/Users/alexy/src/sail-extensions-gates/argentea/client-277ae341c90c/scripts\n216\t/Users/alexy/src/sail-extensions-gates/argentea/client-277ae341c90c/.github\n8\t/Users/alexy/src/sail-extensions-gates/argentea/client-277ae341c90c/.vscode\n20\t/Users/alexy/src/sail-extensions-gates/argentea/client-277ae341c90c/deployments\n49452\t/Users/alexy/src/sail-extensions-gates/argentea/client-277ae341c90c\n30620\t/Users/alexy/src/sail-extensions-gates/argentea/wheels-b3c543171-x86\n30380\t/Users/alexy/src/sail-extensions-gates/argentea/wheels-50195d14a-x86\n21160\t/Users/alexy/src/sail-extensions-gates/argentea/client-010b9e065ad2/crates\n12\t/Users/alexy/src/sail-extensions-gates/argentea/client-010b9e065ad2/docker\n11588\t/Users/alexy/src/sail-extensions-gates/argentea/client-010b9e065ad2/python\n16\t/Users/alexy/src/sail-extensions-gates/argentea/client-010b9e065ad2/k8s\n12704\t/Users/alexy/src/sail-extensions-gates/argentea/client-010b9e065ad2/docs\n8\t/Users/alexy/src/sail-extensions-gates/argentea/client-010b9e065ad2/.devcontainer\n2512\t/Users/alexy/src/sail-extensions-gates/argentea/client-010b9e065ad2/examples\n164\t/Users/alexy/src/sail-extensions-gates/argentea/client-010b9e065ad2/scripts\n216\t/Users/alexy/src/sail-extensions-gates/argentea/client-010b9e065ad2/.github\n8\t/Users/alexy/src/sail-extensions-gates/argentea/client-010b9e065ad2/.vscode\n20\t/Users/alexy/src/sail-extensions-gates/argentea/client-010b9e065ad2/deployments\n48920\t/Users/alexy/src/sail-extensions-gates/argentea/client-010b9e065ad2\n21160\t/Users/alexy/src/sail-extensions-gates/argentea/client-f11fe6e8a091/crates\n12\t/Users/alexy/src/sail-extensions-gates/argentea/client-f11fe6e8a091/docker\n11588\t/Users/alexy/src/sail-extensions-gates/argentea/client-f11fe6e8a091/python\n16\t/Users/alexy/src/sail-extensions-gates/argentea/client-f11fe6e8a091/k8s\n12704\t/Users/alexy/src/sail-extensions-gates/argentea/client-f11fe6e8a091/docs\n8\t/Users/alexy/src/sail-extensions-gates/argentea/client-f11fe6e8a091/.devcontainer\n2540\t/Users/alexy/src/sail-extensions-gates/argentea/client-f11fe6e8a091/examples\n164\t/Users/alexy/src/sail-extensions-gates/argentea/client-f11fe6e8a091/scripts\n216\t/Users/alexy/src/sail-extensions-gates/argentea/client-f11fe6e8a091/.github\n8\t/Users/alexy/src/sail-extensions-gates/argentea/client-f11fe6e8a091/.vscode\n20\t/Users/alexy/src/sail-extensions-gates/argentea/client-f11fe6e8a091/deployments\n48948\t/Users/alexy/src/sail-extensions-gates/argentea/client-f11fe6e8a091\n196\t/Users/alexy/src/sail-extensions-gates/argentea/venv-501cap/bin\n886300\t/Users/alexy/src/sail-extensions-gates/argentea/venv-501cap/lib\n124\t/Users/alexy/src/sail-extensions-gates/argentea/venv-501cap/share\n886632\t/Users/alexy/src/sail-extensions-gates/argentea/venv-501cap\n21160\t/Users/alexy/src/sail-extensions-gates/argentea/client-941b5e50b90e/crates\n12\t/Users/alexy/src/sail-extensions-gates/argentea/client-941b5e50b90e/docker\n11588\t/Users/alexy/src/sail-extensions-gates/argentea/client-941b5e50b90e/python\n16\t/Users/alexy/src/sail-extensions-gates/argentea/client-941b5e50b90e/k8s\n12704\t/Users/alexy/src/sail-extensions-gates/argentea/client-941b5e50b90e/docs\n8\t/Users/alexy/src/sail-extensions-gates/argentea/client-941b5e50b90e/.devcontainer\n2492\t/Users/alexy/src/sail-extensions-gates/argentea/client-941b5e50b90e/examples\n164\t/Users/alexy/src/sail-extensions-gates/argentea/client-941b5e50b90e/scripts\n216\t/Users/alexy/src/sail-extensions-gates/argentea/client-941b5e50b90e/.github\n8\t/Users/alexy/src/sail-extensions-gates/argentea/client-941b5e50b90e/.vscode\n20\t/Users/alexy/src/sail-extensions-gates/argentea/client-941b5e50b90e/deployments\n48900\t/Users/alexy/src/sail-extensions-gates/argentea/client-941b5e50b90e\n37028\t/Users/alexy/src/sail-extensions-gates/argentea/venv-gate3/bin\n793820\t/Users/alexy/src/sail-extensions-gates/argentea/venv-gate3/lib\n124\t/Users/alexy/src/sail-extensions-gates/argentea/venv-gate3/share\n830984\t/Users/alexy/src/sail-extensions-gates/argentea/venv-gate3\n184\t/Users/alexy/src/sail-extensions-gates/argentea/venv-f11/bin\n879912\t/Users/alexy/src/sail-extensions-gates/argentea/venv-f11/lib\n124\t/Users/alexy/src/sail-extensions-gates/argentea/venv-f11/share\n880232\t/Users/alexy/src/sail-extensions-gates/argentea/venv-f11\n30376\t/Users/alexy/src/sail-extensions-gates/argentea/wheels-f11fe6e8a-x86\n21160\t/Users/alexy/src/sail-extensions-gates/argentea/client-a952564a4892/crates\n12\t/Users/alexy/src/sail-extensions-gates/argentea/client-a952564a4892/docker\n11588\t/Users/alexy/src/sail-extensions-gates/argentea/client-a952564a4892/python\n16\t/Users/alexy/src/sail-extensions-gates/argentea/client-a952564a4892/k8s\n12704\t/Users/alexy/src/sail-extensions-gates/argentea/client-a952564a4892/docs\n8\t/Users/alexy/src/sail-extensions-gates/argentea/client-a952564a4892/.devcontainer\n2272\t/Users/alexy/src/sail-extensions-gates/argentea/client-a952564a4892/examples\n164\t/Users/alexy/src/sail-extensions-gates/argentea/client-a952564a4892/scripts\n216\t/Users/alexy/src/sail-extensions-gates/argentea/client-a952564a4892/.github\n8\t/Users/alexy/src/sail-extensions-gates/argentea/client-a952564a4892/.vscode\n20\t/Users/alexy/src/sail-extensions-gates/argentea/client-a952564a4892/deployments\n48680\t/Users/alexy/src/sail-extensions-gates/argentea/client-a952564a4892\n21160\t/Users/alexy/src/sail-extensions-gates/argentea/host-038c9b9597d3/crates\n12\t/Users/alexy/src/sail-extensions-gates/argentea/host-038c9b9597d3/docker\n11588\t/Users/alexy/src/sail-extensions-gates/argentea/host-038c9b9597d3/python\n16\t/Users/alexy/src/sail-extensions-gates/argentea/host-038c9b9597d3/k8s\n12704\t/Users/alexy/src/sail-extensions-gates/argentea/host-038c9b9597d3/docs\n8\t/Users/alexy/src/sail-extensions-gates/argentea/host-038c9b9597d3/.devcontainer\n2164\t/Users/alexy/src/sail-extensions-gates/argentea/host-038c9b9597d3/examples\n164\t/Users/alexy/src/sail-extensions-gates/argentea/host-038c9b9597d3/scripts\n216\t/Users/alexy/src/sail-extensions-gates/argentea/host-038c9b9597d3/.github\n8\t/Users/alexy/src/sail-extensions-gates/argentea/host-038c9b9597d3/.vscode\n20\t/Users/alexy/src/sail-extensions-gates/argentea/host-038c9b9597d3/deployments\n48572\t/Users/alexy/src/sail-extensions-gates/argentea/host-038c9b9597d3\n21176\t/Users/alexy/src/sail-extensions-gates/argentea/host-ffcfbd569/crates\n12\t/Users/alexy/src/sail-extensions-gates/argentea/host-ffcfbd569/docker\n11588\t/Users/alexy/src/sail-extensions-gates/argentea/host-ffcfbd569/python\n16\t/Users/alexy/src/sail-extensions-gates/argentea/host-ffcfbd569/k8s\n41996\t/Users/alexy/src/sail-extensions-gates/argentea/host-ffcfbd569/docs\n8\t/Users/alexy/src/sail-extensions-gates/argentea/host-ffcfbd569/.devcontainer\n3768\t/Users/alexy/src/sail-extensions-gates/argentea/host-ffcfbd569/examples\n164\t/Users/alexy/src/sail-extensions-gates/argentea/host-ffcfbd569/scripts\n216\t/Users/alexy/src/sail-extensions-gates/argentea/host-ffcfbd569/.github\n8\t/Users/alexy/src/sail-extensions-gates/argentea/host-ffcfbd569/.vscode\n20\t/Users/alexy/src/sail-extensions-gates/argentea/host-ffcfbd569/deployments\n79484\t/Users/alexy/src/sail-extensions-gates/argentea/host-ffcfbd569\n184\t/Users/alexy/src/sail-extensions-gates/argentea/venv-e420/bin\n878440\t/Users/alexy/src/sail-extensions-gates/argentea/venv-e420/lib\n124\t/Users/alexy/src/sail-extensions-gates/argentea/venv-e420/share\n878760\t/Users/alexy/src/sail-extensions-gates/argentea/venv-e420\n20678708\t/Users/alexy/src/sail-extensions-gates/argentea\n",
+        "stderr": "",
+        "ended_utc": "2026-10-01T05:37:31.356329+00:00"
+      },
+      {
+        "command": [
+          "du",
+          "-k",
+          "-d",
+          "2",
+          "/Users/alexy/src/sail-extensions-gates/graph-algorithms"
+        ],
+        "started_utc": "2026-10-01T05:37:31.356426+00:00",
+        "exit_code": 0,
+        "stdout": "21032\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/pecan-two-host-4e6100f0/crates\n12\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/pecan-two-host-4e6100f0/docker\n11588\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/pecan-two-host-4e6100f0/python\n16\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/pecan-two-host-4e6100f0/k8s\n2448\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/pecan-two-host-4e6100f0/docs\n8\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/pecan-two-host-4e6100f0/.devcontainer\n1420\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/pecan-two-host-4e6100f0/examples\n164\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/pecan-two-host-4e6100f0/scripts\n216\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/pecan-two-host-4e6100f0/.github\n8\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/pecan-two-host-4e6100f0/.vscode\n20\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/pecan-two-host-4e6100f0/deployments\n37444\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/pecan-two-host-4e6100f0\n20996\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/candidate-bd0e64a8aabf6bc2c9e8ff08969b2c0b6fba00d4/crates\n12\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/candidate-bd0e64a8aabf6bc2c9e8ff08969b2c0b6fba00d4/docker\n11588\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/candidate-bd0e64a8aabf6bc2c9e8ff08969b2c0b6fba00d4/python\n16\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/candidate-bd0e64a8aabf6bc2c9e8ff08969b2c0b6fba00d4/k8s\n2360\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/candidate-bd0e64a8aabf6bc2c9e8ff08969b2c0b6fba00d4/docs\n8\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/candidate-bd0e64a8aabf6bc2c9e8ff08969b2c0b6fba00d4/.devcontainer\n1124\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/candidate-bd0e64a8aabf6bc2c9e8ff08969b2c0b6fba00d4/examples\n164\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/candidate-bd0e64a8aabf6bc2c9e8ff08969b2c0b6fba00d4/scripts\n216\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/candidate-bd0e64a8aabf6bc2c9e8ff08969b2c0b6fba00d4/.github\n8\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/candidate-bd0e64a8aabf6bc2c9e8ff08969b2c0b6fba00d4/.vscode\n20\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/candidate-bd0e64a8aabf6bc2c9e8ff08969b2c0b6fba00d4/deployments\n37024\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/candidate-bd0e64a8aabf6bc2c9e8ff08969b2c0b6fba00d4\n153316\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/bin\n4\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/evidence-bd0e64a8aabf6bc2c9e8ff08969b2c0b6fba00d4\n4\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/evidence-146510dbcd60e273a77cce6a5436d8f68891831a\n4\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/evidence-70b0d1cab2cab945d4dbaf6842ee0e38c8aa1822\n21032\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/candidate-146510dbcd60e273a77cce6a5436d8f68891831a/crates\n12\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/candidate-146510dbcd60e273a77cce6a5436d8f68891831a/docker\n11588\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/candidate-146510dbcd60e273a77cce6a5436d8f68891831a/python\n16\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/candidate-146510dbcd60e273a77cce6a5436d8f68891831a/k8s\n2360\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/candidate-146510dbcd60e273a77cce6a5436d8f68891831a/docs\n8\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/candidate-146510dbcd60e273a77cce6a5436d8f68891831a/.devcontainer\n1148\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/candidate-146510dbcd60e273a77cce6a5436d8f68891831a/examples\n164\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/candidate-146510dbcd60e273a77cce6a5436d8f68891831a/scripts\n216\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/candidate-146510dbcd60e273a77cce6a5436d8f68891831a/.github\n8\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/candidate-146510dbcd60e273a77cce6a5436d8f68891831a/.vscode\n20\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/candidate-146510dbcd60e273a77cce6a5436d8f68891831a/deployments\n37084\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/candidate-146510dbcd60e273a77cce6a5436d8f68891831a\n21032\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/pecan-two-host-3fd69787/crates\n12\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/pecan-two-host-3fd69787/docker\n11588\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/pecan-two-host-3fd69787/python\n16\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/pecan-two-host-3fd69787/k8s\n2448\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/pecan-two-host-3fd69787/docs\n8\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/pecan-two-host-3fd69787/.devcontainer\n1540\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/pecan-two-host-3fd69787/examples\n164\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/pecan-two-host-3fd69787/scripts\n216\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/pecan-two-host-3fd69787/.github\n8\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/pecan-two-host-3fd69787/.vscode\n20\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/pecan-two-host-3fd69787/deployments\n37564\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/pecan-two-host-3fd69787\n21032\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/pecan-two-host-9d7155aa/crates\n12\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/pecan-two-host-9d7155aa/docker\n11588\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/pecan-two-host-9d7155aa/python\n16\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/pecan-two-host-9d7155aa/k8s\n2448\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/pecan-two-host-9d7155aa/docs\n8\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/pecan-two-host-9d7155aa/.devcontainer\n1532\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/pecan-two-host-9d7155aa/examples\n164\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/pecan-two-host-9d7155aa/scripts\n216\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/pecan-two-host-9d7155aa/.github\n8\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/pecan-two-host-9d7155aa/.vscode\n20\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/pecan-two-host-9d7155aa/deployments\n37556\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/pecan-two-host-9d7155aa\n64\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/linux-70b0d1ca-evidence\n13360908\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/target-70b0d1cab2cab945d4dbaf6842ee0e38c8aa1822/debug\n13360916\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/target-70b0d1cab2cab945d4dbaf6842ee0e38c8aa1822\n56\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/minio-data/.minio.sys\n4520716\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/minio-data/sail-graph-review\n4520772\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/minio-data\n21032\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/candidate-5e040e1dfb034daa8eca744dba9e4453c90180f7/crates\n12\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/candidate-5e040e1dfb034daa8eca744dba9e4453c90180f7/docker\n11588\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/candidate-5e040e1dfb034daa8eca744dba9e4453c90180f7/python\n16\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/candidate-5e040e1dfb034daa8eca744dba9e4453c90180f7/k8s\n2360\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/candidate-5e040e1dfb034daa8eca744dba9e4453c90180f7/docs\n8\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/candidate-5e040e1dfb034daa8eca744dba9e4453c90180f7/.devcontainer\n1152\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/candidate-5e040e1dfb034daa8eca744dba9e4453c90180f7/examples\n164\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/candidate-5e040e1dfb034daa8eca744dba9e4453c90180f7/scripts\n216\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/candidate-5e040e1dfb034daa8eca744dba9e4453c90180f7/.github\n8\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/candidate-5e040e1dfb034daa8eca744dba9e4453c90180f7/.vscode\n20\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/candidate-5e040e1dfb034daa8eca744dba9e4453c90180f7/deployments\n37088\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/candidate-5e040e1dfb034daa8eca744dba9e4453c90180f7\n4\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/evidence-5e040e1dfb034daa8eca744dba9e4453c90180f7\n21032\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/pecan-two-host-713ffaeb/crates\n12\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/pecan-two-host-713ffaeb/docker\n11588\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/pecan-two-host-713ffaeb/python\n16\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/pecan-two-host-713ffaeb/k8s\n2448\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/pecan-two-host-713ffaeb/docs\n8\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/pecan-two-host-713ffaeb/.devcontainer\n1400\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/pecan-two-host-713ffaeb/examples\n164\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/pecan-two-host-713ffaeb/scripts\n216\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/pecan-two-host-713ffaeb/.github\n8\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/pecan-two-host-713ffaeb/.vscode\n20\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/pecan-two-host-713ffaeb/deployments\n37424\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/pecan-two-host-713ffaeb\n20\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/linux-v6-partial-evidence\n18431556\t/Users/alexy/src/sail-extensions-gates/graph-algorithms\n",
+        "stderr": "",
+        "ended_utc": "2026-10-01T05:37:31.752259+00:00"
+      },
+      {
+        "command": [
+          "du",
+          "-k",
+          "-d",
+          "2",
+          "/Users/alexy/src/sail-extensions-gates/pecan-benchmark"
+        ],
+        "started_utc": "2026-10-01T05:37:31.752358+00:00",
+        "exit_code": 0,
+        "stdout": "5932\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/small-pilots-8c198095/datasets\n8\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/small-pilots-8c198095/preflight-1790548163568327000\n5964\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/small-pilots-8c198095\n192\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/matrix-3c1fd28c-summary\n63420\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/pecan-matrix-a6567b51/cells\n51060\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/pecan-matrix-a6567b51/datasets\n8\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/pecan-matrix-a6567b51/preflight-1790537154705346000\n114608\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/pecan-matrix-a6567b51\n20\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/tutorial-3fd69787/persistent-api\n32\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/tutorial-3fd69787/evidence\n1424\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/tutorial-3fd69787/process-cluster\n1308\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/tutorial-3fd69787/local\n2784\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/tutorial-3fd69787\n16\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/tutorial-a0dd29d5/persistent-api\n28\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/tutorial-a0dd29d5/evidence\n1248\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/tutorial-a0dd29d5/process-cluster\n1132\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/tutorial-a0dd29d5/local\n2424\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/tutorial-a0dd29d5\n336\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/large-harness-8c198095/__pycache__\n564\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/large-harness-8c198095\n40\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/configuration\n84\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/large-pilots-aa4b5fa6/cells\n550076\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/large-pilots-aa4b5fa6/datasets\n8\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/large-pilots-aa4b5fa6/preflight-1790548570499617000\n8\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/large-pilots-aa4b5fa6/preflight-1790548711157618000\n550208\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/large-pilots-aa4b5fa6\n37772\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/raw-audit-main-3c1fd28c/cells\n50556\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/raw-audit-main-3c1fd28c/datasets\n88352\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/raw-audit-main-3c1fd28c\n8276\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/large-timeout-control-aa4b5fa6/cells\n8\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/large-timeout-control-aa4b5fa6/preflight-1790565054235975000\n8300\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/large-timeout-control-aa4b5fa6\n1568\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/native-713ffaeb-evidence\n6352\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/export-fusion-matrix-3fd69787/cells\n8\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/export-fusion-matrix-3fd69787/preflight-1790542642515222000\n48\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/export-fusion-matrix-3fd69787/datasets\n80\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/export-fusion-matrix-3fd69787/collection-context\n6816\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/export-fusion-matrix-3fd69787\n368\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/large-harness-aa4b5fa6/__pycache__\n596\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/large-harness-aa4b5fa6\n12\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/two-host-fusion-9d7155aa/__pycache__\n36\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/two-host-fusion-9d7155aa\n84\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/export-large-pilots-aa4b5fa6/cells\n24\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/export-large-pilots-aa4b5fa6/datasets\n8\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/export-large-pilots-aa4b5fa6/preflight-1790548570499617000\n8\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/export-large-pilots-aa4b5fa6/preflight-1790548711157618000\n164\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/export-large-pilots-aa4b5fa6\n44\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/harness-3c1fd28c/__pycache__\n92\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/harness-3c1fd28c\n17724\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/small-pilots-aa4b5fa6/cells\n8\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/small-pilots-aa4b5fa6/preflight-1790548327108902000\n5932\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/small-pilots-aa4b5fa6/datasets\n8\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/small-pilots-aa4b5fa6/preflight-1790548335103038000\n23736\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/small-pilots-aa4b5fa6\n36\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/large-capacity-aa4b5fa6-summary\n79780\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/export-large-qualified-full-aa4b5fa6/cells\n8\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/export-large-qualified-full-aa4b5fa6/preflight-1790551065125100000\n48\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/export-large-qualified-full-aa4b5fa6/datasets\n8\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/export-large-qualified-full-aa4b5fa6/preflight-1790551287616401000\n80996\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/export-large-qualified-full-aa4b5fa6\n36\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/python-4e6100f0-evidence\n2516\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/raw-audit-fusion-3fd69787/cells\n4600\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/raw-audit-fusion-3fd69787/datasets\n7128\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/raw-audit-fusion-3fd69787\n1588\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/native-9d7155aa-evidence\n60\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/pilots-3c1fd28c-summary\n80\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/small-pilots-aa4b5fa6-summary\n104\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/constrained-a6567b51-summary\n782060\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/large-qualified-pilots-aa4b5fa6/cells\n8\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/large-qualified-pilots-aa4b5fa6/preflight-1790548766245006000\n8\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/large-qualified-pilots-aa4b5fa6/preflight-1790548910648196000\n550076\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/large-qualified-pilots-aa4b5fa6/datasets\n1332220\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/large-qualified-pilots-aa4b5fa6\n11100\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/pecan-fusion-pilots-3fd69787/cells\n50572\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/pecan-fusion-pilots-3fd69787/datasets\n12\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/pecan-fusion-pilots-3fd69787/collection-context\n8\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/pecan-fusion-pilots-3fd69787/preflight-1790542451113565000\n61716\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/pecan-fusion-pilots-3fd69787\n19772\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/export-matrix-3c1fd28c/cells\n48\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/export-matrix-3c1fd28c/datasets\n124\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/export-matrix-3c1fd28c/collection-context\n8\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/export-matrix-3c1fd28c/preflight-1790539085032610000\n20568\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/export-matrix-3c1fd28c\n3589344\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/large-qualified-full-aa4b5fa6/cells\n8\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/large-qualified-full-aa4b5fa6/preflight-1790551065125100000\n826872\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/large-qualified-full-aa4b5fa6/datasets\n8\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/large-qualified-full-aa4b5fa6/preflight-1790551287616401000\n4416836\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/large-qualified-full-aa4b5fa6\n46092\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/pecan-pilots-3c1fd28c/cells\n50596\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/pecan-pilots-3c1fd28c/datasets\n8\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/pecan-pilots-3c1fd28c/preflight-1790538112251988000\n96736\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/pecan-pilots-3c1fd28c\n28\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/__pycache__\n1600\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/seed-release-evidence\n36\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/python-a6567b51-evidence\n48\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/harness-9d7155aa\n77200\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/pecan-fusion-matrix-3fd69787/cells\n8\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/pecan-fusion-matrix-3fd69787/preflight-1790542642515222000\n51060\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/pecan-fusion-matrix-3fd69787/datasets\n80\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/pecan-fusion-matrix-3fd69787/collection-context\n128456\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/pecan-fusion-matrix-3fd69787\n108\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/fusion-matrix-3fd69787-summary\n64\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/sail-large-post\n2280\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/export-pilots-3c1fd28c/cells\n36\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/export-pilots-3c1fd28c/datasets\n8\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/export-pilots-3c1fd28c/preflight-1790538112251988000\n2428\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/export-pilots-3c1fd28c\n28\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/harness-a6567b51/__pycache__\n68\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/harness-a6567b51\n12\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/python-3c1fd28c-evidence\n24\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/sail-large-configs\n2700\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/protobuf-include/protobuf\n2700\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/protobuf-include\n366944\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/pecan-matrix-3c1fd28c/cells\n51060\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/pecan-matrix-3c1fd28c/datasets\n124\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/pecan-matrix-3c1fd28c/collection-context\n8\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/pecan-matrix-3c1fd28c/preflight-1790539085032610000\n418328\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/pecan-matrix-3c1fd28c\n12\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/sail-large-inputs\n80\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/large-qualified-pilots-aa4b5fa6-summary\n244\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/export-large-timeout-control-aa4b5fa6/cells\n8\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/export-large-timeout-control-aa4b5fa6/preflight-1790565054235975000\n276\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/export-large-timeout-control-aa4b5fa6\n44\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/harness-3fd69787/__pycache__\n92\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/harness-3fd69787\n20\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/export-tutorial-3fd69787/persistent-api\n32\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/export-tutorial-3fd69787/evidence\n1352\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/export-tutorial-3fd69787/process-cluster\n1116\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/export-tutorial-3fd69787/local\n2572\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/export-tutorial-3fd69787\n16\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/export-tutorial-a0dd29d5/persistent-api\n28\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/export-tutorial-a0dd29d5/evidence\n1188\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/export-tutorial-a0dd29d5/process-cluster\n976\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/export-tutorial-a0dd29d5/local\n2252\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/export-tutorial-a0dd29d5\n24\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/fusion-pilots-3fd69787-summary\n84\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/python-3fd69787-evidence\n960\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/pecan-pilots-a6567b51/cells\n48\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/pecan-pilots-a6567b51/datasets\n8\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/pecan-pilots-a6567b51/preflight-1790536973694879000\n1048\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/pecan-pilots-a6567b51\n8\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/runner-control-20260927t184315z/timeout\n8\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/runner-control-20260927t184315z/nonzero\n20\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/runner-control-20260927t184315z\n228\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/large-qualified-full-aa4b5fa6-summary\n3280\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/export-constrained-a6567b51/cells\n48\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/export-constrained-a6567b51/datasets\n8\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/export-constrained-a6567b51/preflight-1790537154705346000\n3516\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/export-constrained-a6567b51\n24\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/harness-4e6100f0\n40\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/pilots-a6567b51-summary\n572\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/export-fusion-pilots-3fd69787/cells\n24\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/export-fusion-pilots-3fd69787/datasets\n12\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/export-fusion-pilots-3fd69787/collection-context\n8\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/export-fusion-pilots-3fd69787/preflight-1790542451113565000\n664\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/export-fusion-pilots-3fd69787\n1572\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/native-4e6100f0-evidence\n13152\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/export-large-qualified-pilots-aa4b5fa6/cells\n8\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/export-large-qualified-pilots-aa4b5fa6/preflight-1790548766245006000\n8\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/export-large-qualified-pilots-aa4b5fa6/preflight-1790548910648196000\n24\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/export-large-qualified-pilots-aa4b5fa6/datasets\n13356\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark/export-large-qualified-pilots-aa4b5fa6\n7413368\t/Users/alexy/src/sail-extensions-gates/pecan-benchmark\n",
+        "stderr": "",
+        "ended_utc": "2026-10-01T05:37:32.401517+00:00"
+      },
+      {
+        "command": [
+          "du",
+          "-k",
+          "-d",
+          "2",
+          "/Users/alexy/src/sail-extensions-gates/graph-nuts-b87fb27ac"
+        ],
+        "started_utc": "2026-10-01T05:37:32.401620+00:00",
+        "exit_code": 0,
+        "stdout": "488\t/Users/alexy/src/sail-extensions-gates/graph-nuts-b87fb27ac/s0-harness/examples\n492\t/Users/alexy/src/sail-extensions-gates/graph-nuts-b87fb27ac/s0-harness\n8\t/Users/alexy/src/sail-extensions-gates/graph-nuts-b87fb27ac/ranking/preflight-1790655632427332000\n96976\t/Users/alexy/src/sail-extensions-gates/graph-nuts-b87fb27ac/ranking/datasets\n97008\t/Users/alexy/src/sail-extensions-gates/graph-nuts-b87fb27ac/ranking\n1839616\t/Users/alexy/src/sail-extensions-gates/graph-nuts-b87fb27ac/capacity-hub/cells\n8\t/Users/alexy/src/sail-extensions-gates/graph-nuts-b87fb27ac/capacity-hub/preflight-1790659650772015000\n8625352\t/Users/alexy/src/sail-extensions-gates/graph-nuts-b87fb27ac/capacity-hub/datasets\n8\t/Users/alexy/src/sail-extensions-gates/graph-nuts-b87fb27ac/capacity-hub/preflight-1790658781503903000\n10465056\t/Users/alexy/src/sail-extensions-gates/graph-nuts-b87fb27ac/capacity-hub\n536732\t/Users/alexy/src/sail-extensions-gates/graph-nuts-b87fb27ac/ranking-hub/cells\n96976\t/Users/alexy/src/sail-extensions-gates/graph-nuts-b87fb27ac/ranking-hub/datasets\n8\t/Users/alexy/src/sail-extensions-gates/graph-nuts-b87fb27ac/ranking-hub/preflight-1790659610544371000\n8\t/Users/alexy/src/sail-extensions-gates/graph-nuts-b87fb27ac/ranking-hub/preflight-1790695938315077000\n633788\t/Users/alexy/src/sail-extensions-gates/graph-nuts-b87fb27ac/ranking-hub\n168604\t/Users/alexy/src/sail-extensions-gates/graph-nuts-b87fb27ac/capacity/cells\n8\t/Users/alexy/src/sail-extensions-gates/graph-nuts-b87fb27ac/capacity/preflight-1790655632427384000\n9587860\t/Users/alexy/src/sail-extensions-gates/graph-nuts-b87fb27ac/capacity/datasets\n8\t/Users/alexy/src/sail-extensions-gates/graph-nuts-b87fb27ac/capacity/preflight-1790656570173242000\n9756536\t/Users/alexy/src/sail-extensions-gates/graph-nuts-b87fb27ac/capacity\n28\t/Users/alexy/src/sail-extensions-gates/graph-nuts-b87fb27ac/reference\n357116\t/Users/alexy/src/sail-extensions-gates/graph-nuts-b87fb27ac/inputs\n21335272\t/Users/alexy/src/sail-extensions-gates/graph-nuts-b87fb27ac\n",
+        "stderr": "",
+        "ended_utc": "2026-10-01T05:37:32.484188+00:00"
+      },
+      {
+        "command": [
+          "du",
+          "-k",
+          "-d",
+          "2",
+          "/Users/alexy/src/sail-extensions-gates/graph-nuts-gate-next"
+        ],
+        "started_utc": "2026-10-01T05:37:32.484285+00:00",
+        "exit_code": 0,
+        "stdout": "123872\t/Users/alexy/src/sail-extensions-gates/graph-nuts-gate-next/argentea-gate3/cells\n8\t/Users/alexy/src/sail-extensions-gates/graph-nuts-gate-next/argentea-gate3/preflight-1790725665368703000\n123912\t/Users/alexy/src/sail-extensions-gates/graph-nuts-gate-next/argentea-gate3\n417440\t/Users/alexy/src/sail-extensions-gates/graph-nuts-gate-next/capacity-attempt1-5400s/cells\n8\t/Users/alexy/src/sail-extensions-gates/graph-nuts-gate-next/capacity-attempt1-5400s/preflight-1790707472489606000\n417492\t/Users/alexy/src/sail-extensions-gates/graph-nuts-gate-next/capacity-attempt1-5400s\n20\t/Users/alexy/src/sail-extensions-gates/graph-nuts-gate-next/__pycache__\n2521264\t/Users/alexy/src/sail-extensions-gates/graph-nuts-gate-next/decide2-gate3/cells\n8\t/Users/alexy/src/sail-extensions-gates/graph-nuts-gate-next/decide2-gate3/preflight-1790756871595182000\n2521288\t/Users/alexy/src/sail-extensions-gates/graph-nuts-gate-next/decide2-gate3\n520\t/Users/alexy/src/sail-extensions-gates/graph-nuts-gate-next/harness/examples\n520\t/Users/alexy/src/sail-extensions-gates/graph-nuts-gate-next/harness\n80108\t/Users/alexy/src/sail-extensions-gates/graph-nuts-gate-next/argentea-first2-gate3/cells\n8\t/Users/alexy/src/sail-extensions-gates/graph-nuts-gate-next/argentea-first2-gate3/preflight-1790741900940014000\n80144\t/Users/alexy/src/sail-extensions-gates/graph-nuts-gate-next/argentea-first2-gate3\n520\t/Users/alexy/src/sail-extensions-gates/graph-nuts-gate-next/harness-gate3/examples\n520\t/Users/alexy/src/sail-extensions-gates/graph-nuts-gate-next/harness-gate3\n3396\t/Users/alexy/src/sail-extensions-gates/graph-nuts-gate-next/decide3-gate3/cells\n8\t/Users/alexy/src/sail-extensions-gates/graph-nuts-gate-next/decide3-gate3/preflight-1790765107091479000\n3420\t/Users/alexy/src/sail-extensions-gates/graph-nuts-gate-next/decide3-gate3\n84136\t/Users/alexy/src/sail-extensions-gates/graph-nuts-gate-next/argentea-first2-gate3.collided/cells\n8\t/Users/alexy/src/sail-extensions-gates/graph-nuts-gate-next/argentea-first2-gate3.collided/preflight-1790741782521461000\n84168\t/Users/alexy/src/sail-extensions-gates/graph-nuts-gate-next/argentea-first2-gate3.collided\n84120\t/Users/alexy/src/sail-extensions-gates/graph-nuts-gate-next/argentea-first-gate3/cells\n8\t/Users/alexy/src/sail-extensions-gates/graph-nuts-gate-next/argentea-first-gate3/preflight-1790735195780734000\n84152\t/Users/alexy/src/sail-extensions-gates/graph-nuts-gate-next/argentea-first-gate3\n1848816\t/Users/alexy/src/sail-extensions-gates/graph-nuts-gate-next/decide-gate3/cells\n8\t/Users/alexy/src/sail-extensions-gates/graph-nuts-gate-next/decide-gate3/preflight-1790745569924617000\n1848848\t/Users/alexy/src/sail-extensions-gates/graph-nuts-gate-next/decide-gate3\n20\t/Users/alexy/src/sail-extensions-gates/graph-nuts-gate-next/failed-666c619a6\n5165136\t/Users/alexy/src/sail-extensions-gates/graph-nuts-gate-next\n",
+        "stderr": "",
+        "ended_utc": "2026-10-01T05:37:32.502118+00:00"
+      },
+      {
+        "command": [
+          "du",
+          "-k",
+          "-d",
+          "2",
+          "/Users/alexy/src/sail-extensions-gates/graph-kernels-traversal-1f18"
+        ],
+        "started_utc": "2026-10-01T05:37:32.502224+00:00",
+        "exit_code": 0,
+        "stdout": "44\t/Users/alexy/src/sail-extensions-gates/graph-kernels-traversal-1f18/tip-audit/docs\n44\t/Users/alexy/src/sail-extensions-gates/graph-kernels-traversal-1f18/tip-audit\n132\t/Users/alexy/src/sail-extensions-gates/graph-kernels-traversal-1f18/audit\n4635420\t/Users/alexy/src/sail-extensions-gates/graph-kernels-traversal-1f18/campaign/cells\n8\t/Users/alexy/src/sail-extensions-gates/graph-kernels-traversal-1f18/campaign/preflight-1790573878901494000\n4635708\t/Users/alexy/src/sail-extensions-gates/graph-kernels-traversal-1f18/campaign\n340\t/Users/alexy/src/sail-extensions-gates/graph-kernels-traversal-1f18/summary-pagerank-verifier-not-applicable\n108\t/Users/alexy/src/sail-extensions-gates/graph-kernels-traversal-1f18/host-harness/__pycache__\n52\t/Users/alexy/src/sail-extensions-gates/graph-kernels-traversal-1f18/host-harness/traversal-controls\n568\t/Users/alexy/src/sail-extensions-gates/graph-kernels-traversal-1f18/host-harness\n1100\t/Users/alexy/src/sail-extensions-gates/graph-kernels-traversal-1f18/preparation\n60\t/Users/alexy/src/sail-extensions-gates/graph-kernels-traversal-1f18/qualification/local-pecan-bfs-frontier\n112\t/Users/alexy/src/sail-extensions-gates/graph-kernels-traversal-1f18/qualification/graph500-pecan-sssp-delta_star\n16\t/Users/alexy/src/sail-extensions-gates/graph-kernels-traversal-1f18/qualification/bounded-dataset\n40\t/Users/alexy/src/sail-extensions-gates/graph-kernels-traversal-1f18/qualification/local-nutmeg-native-sssp-frontier\n812\t/Users/alexy/src/sail-extensions-gates/graph-kernels-traversal-1f18/qualification/imported-certificate-nutmeg-datafusion-sssp-delta_star\n64\t/Users/alexy/src/sail-extensions-gates/graph-kernels-traversal-1f18/qualification/local-nutmeg-datafusion-sssp-frontier\n80\t/Users/alexy/src/sail-extensions-gates/graph-kernels-traversal-1f18/qualification/graph500-pecan-bfs-push_pull\n340\t/Users/alexy/src/sail-extensions-gates/graph-kernels-traversal-1f18/qualification/imported-certificate-nutmeg-native-sssp-delta_star\n552\t/Users/alexy/src/sail-extensions-gates/graph-kernels-traversal-1f18/qualification/imported-certificate-nutmeg-datafusion-bfs-push_pull\n564\t/Users/alexy/src/sail-extensions-gates/graph-kernels-traversal-1f18/qualification/imported-certificate-pecan-bfs-push_pull\n64\t/Users/alexy/src/sail-extensions-gates/graph-kernels-traversal-1f18/qualification/process-cluster-pecan-bfs-frontier\n60\t/Users/alexy/src/sail-extensions-gates/graph-kernels-traversal-1f18/qualification/local-nutmeg-datafusion-bfs-frontier\n40\t/Users/alexy/src/sail-extensions-gates/graph-kernels-traversal-1f18/qualification/local-nutmeg-native-sssp-delta_star\n112\t/Users/alexy/src/sail-extensions-gates/graph-kernels-traversal-1f18/qualification/graph500-nutmeg-datafusion-sssp-delta_star\n520\t/Users/alexy/src/sail-extensions-gates/graph-kernels-traversal-1f18/qualification/imported-reference-nutmeg-native-bfs-push_pull\n52\t/Users/alexy/src/sail-extensions-gates/graph-kernels-traversal-1f18/qualification/process-cluster-nutmeg-native-sssp-delta_star\n40\t/Users/alexy/src/sail-extensions-gates/graph-kernels-traversal-1f18/qualification/local-nutmeg-native-bfs-push_pull\n2264\t/Users/alexy/src/sail-extensions-gates/graph-kernels-traversal-1f18/qualification/imported-dataset\n60\t/Users/alexy/src/sail-extensions-gates/graph-kernels-traversal-1f18/qualification/local-nutmeg-datafusion-bfs-push_pull\n68\t/Users/alexy/src/sail-extensions-gates/graph-kernels-traversal-1f18/qualification/process-cluster-nutmeg-datafusion-sssp-reference\n536\t/Users/alexy/src/sail-extensions-gates/graph-kernels-traversal-1f18/qualification/imported-certificate-nutmeg-native-bfs-push_pull\n64\t/Users/alexy/src/sail-extensions-gates/graph-kernels-traversal-1f18/qualification/local-nutmeg-datafusion-sssp-reference\n64\t/Users/alexy/src/sail-extensions-gates/graph-kernels-traversal-1f18/qualification/local-nutmeg-datafusion-bfs-reference\n40\t/Users/alexy/src/sail-extensions-gates/graph-kernels-traversal-1f18/qualification/local-nutmeg-native-bfs-reference\n40\t/Users/alexy/src/sail-extensions-gates/graph-kernels-traversal-1f18/qualification/local-nutmeg-native-bfs-frontier\n80\t/Users/alexy/src/sail-extensions-gates/graph-kernels-traversal-1f18/qualification/graph500-nutmeg-datafusion-bfs-push_pull\n64\t/Users/alexy/src/sail-extensions-gates/graph-kernels-traversal-1f18/qualification/local-pecan-sssp-reference\n76\t/Users/alexy/src/sail-extensions-gates/graph-kernels-traversal-1f18/qualification/local-nutmeg-datafusion-sssp-delta_star\n780\t/Users/alexy/src/sail-extensions-gates/graph-kernels-traversal-1f18/qualification/imported-reference-pecan-sssp-delta_star\n20\t/Users/alexy/src/sail-extensions-gates/graph-kernels-traversal-1f18/qualification/certificate-dataset\n64\t/Users/alexy/src/sail-extensions-gates/graph-kernels-traversal-1f18/qualification/process-cluster-pecan-bfs-reference\n88\t/Users/alexy/src/sail-extensions-gates/graph-kernels-traversal-1f18/qualification/process-cluster-pecan-sssp-delta_star\n72\t/Users/alexy/src/sail-extensions-gates/graph-kernels-traversal-1f18/qualification/graph500-nutmeg-native-bfs-push_pull\n68\t/Users/alexy/src/sail-extensions-gates/graph-kernels-traversal-1f18/qualification/process-cluster-nutmeg-datafusion-sssp-frontier\n796\t/Users/alexy/src/sail-extensions-gates/graph-kernels-traversal-1f18/qualification/imported-certificate-pecan-sssp-delta_star\n540\t/Users/alexy/src/sail-extensions-gates/graph-kernels-traversal-1f18/qualification/imported-reference-nutmeg-datafusion-bfs-push_pull\n64\t/Users/alexy/src/sail-extensions-gates/graph-kernels-traversal-1f18/qualification/local-pecan-sssp-frontier\n48\t/Users/alexy/src/sail-extensions-gates/graph-kernels-traversal-1f18/qualification/process-cluster-nutmeg-native-sssp-reference\n68\t/Users/alexy/src/sail-extensions-gates/graph-kernels-traversal-1f18/qualification/process-cluster-pecan-sssp-reference\n544\t/Users/alexy/src/sail-extensions-gates/graph-kernels-traversal-1f18/qualification/imported-reference-pecan-bfs-push_pull\n48\t/Users/alexy/src/sail-extensions-gates/graph-kernels-traversal-1f18/qualification/process-cluster-nutmeg-native-sssp-frontier\n316\t/Users/alexy/src/sail-extensions-gates/graph-kernels-traversal-1f18/qualification/imported-reference-nutmeg-native-sssp-delta_star\n64\t/Users/alexy/src/sail-extensions-gates/graph-kernels-traversal-1f18/qualification/process-cluster-pecan-bfs-push_pull\n776\t/Users/alexy/src/sail-extensions-gates/graph-kernels-traversal-1f18/qualification/imported-reference-nutmeg-datafusion-sssp-delta_star\n64\t/Users/alexy/src/sail-extensions-gates/graph-kernels-traversal-1f18/qualification/process-cluster-nutmeg-datafusion-bfs-reference\n40\t/Users/alexy/src/sail-extensions-gates/graph-kernels-traversal-1f18/qualification/local-nutmeg-native-sssp-reference\n76\t/Users/alexy/src/sail-extensions-gates/graph-kernels-traversal-1f18/qualification/local-pecan-sssp-delta_star\n48\t/Users/alexy/src/sail-extensions-gates/graph-kernels-traversal-1f18/qualification/process-cluster-nutmeg-native-bfs-push_pull\n68\t/Users/alexy/src/sail-extensions-gates/graph-kernels-traversal-1f18/qualification/process-cluster-pecan-sssp-frontier\n48\t/Users/alexy/src/sail-extensions-gates/graph-kernels-traversal-1f18/qualification/process-cluster-nutmeg-native-bfs-frontier\n60\t/Users/alexy/src/sail-extensions-gates/graph-kernels-traversal-1f18/qualification/local-pecan-bfs-reference\n4\t/Users/alexy/src/sail-extensions-gates/graph-kernels-traversal-1f18/qualification/sedona-process-cluster\n4\t/Users/alexy/src/sail-extensions-gates/graph-kernels-traversal-1f18/qualification/sedona-local\n64\t/Users/alexy/src/sail-extensions-gates/graph-kernels-traversal-1f18/qualification/process-cluster-nutmeg-datafusion-bfs-frontier\n68\t/Users/alexy/src/sail-extensions-gates/graph-kernels-traversal-1f18/qualification/graph500-nutmeg-native-sssp-delta_star\n60\t/Users/alexy/src/sail-extensions-gates/graph-kernels-traversal-1f18/qualification/local-pecan-bfs-push_pull\n88\t/Users/alexy/src/sail-extensions-gates/graph-kernels-traversal-1f18/qualification/process-cluster-nutmeg-datafusion-sssp-delta_star\n48\t/Users/alexy/src/sail-extensions-gates/graph-kernels-traversal-1f18/qualification/process-cluster-nutmeg-native-bfs-reference\n64\t/Users/alexy/src/sail-extensions-gates/graph-kernels-traversal-1f18/qualification/process-cluster-nutmeg-datafusion-bfs-push_pull\n12412\t/Users/alexy/src/sail-extensions-gates/graph-kernels-traversal-1f18/qualification\n460\t/Users/alexy/src/sail-extensions-gates/graph-kernels-traversal-1f18/tip-harness/examples\n464\t/Users/alexy/src/sail-extensions-gates/graph-kernels-traversal-1f18/tip-harness\n4651528\t/Users/alexy/src/sail-extensions-gates/graph-kernels-traversal-1f18\n",
+        "stderr": "",
+        "ended_utc": "2026-10-01T05:37:33.007132+00:00"
+      },
+      {
+        "command": [
+          "du",
+          "-k",
+          "-d",
+          "2",
+          "/Users/alexy/src/sail-extensions-gates/qemu-migration"
+        ],
+        "started_utc": "2026-10-01T05:37:33.007235+00:00",
+        "exit_code": 0,
+        "stdout": "7243272\t/Users/alexy/src/sail-extensions-gates/qemu-migration\n",
+        "stderr": "",
+        "ended_utc": "2026-10-01T05:37:33.012836+00:00"
+      },
+      {
+        "command": [
+          "du",
+          "-k",
+          "-d",
+          "1",
+          "/Users/alexy/src/sail-extensions-gates/argentea/target-macos-038c9b9597d3/debug"
+        ],
+        "started_utc": "2026-10-01T05:37:33.012963+00:00",
+        "exit_code": 0,
+        "stdout": "30524\t/Users/alexy/src/sail-extensions-gates/argentea/target-macos-038c9b9597d3/debug/.fingerprint\n0\t/Users/alexy/src/sail-extensions-gates/argentea/target-macos-038c9b9597d3/debug/incremental\n0\t/Users/alexy/src/sail-extensions-gates/argentea/target-macos-038c9b9597d3/debug/examples\n12210064\t/Users/alexy/src/sail-extensions-gates/argentea/target-macos-038c9b9597d3/debug/deps\n1095444\t/Users/alexy/src/sail-extensions-gates/argentea/target-macos-038c9b9597d3/debug/build\n14152548\t/Users/alexy/src/sail-extensions-gates/argentea/target-macos-038c9b9597d3/debug\n",
+        "stderr": "",
+        "ended_utc": "2026-10-01T05:37:33.133606+00:00"
+      },
+      {
+        "command": [
+          "du",
+          "-k",
+          "-d",
+          "1",
+          "/Users/alexy/src/sail-extensions-gates/graph-algorithms/target-70b0d1cab2cab945d4dbaf6842ee0e38c8aa1822/debug"
+        ],
+        "started_utc": "2026-10-01T05:37:33.267780+00:00",
+        "exit_code": 0,
+        "stdout": "30456\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/target-70b0d1cab2cab945d4dbaf6842ee0e38c8aa1822/debug/.fingerprint\n0\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/target-70b0d1cab2cab945d4dbaf6842ee0e38c8aa1822/debug/incremental\n0\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/target-70b0d1cab2cab945d4dbaf6842ee0e38c8aa1822/debug/examples\n11419476\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/target-70b0d1cab2cab945d4dbaf6842ee0e38c8aa1822/debug/deps\n1095452\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/target-70b0d1cab2cab945d4dbaf6842ee0e38c8aa1822/debug/build\n13360908\t/Users/alexy/src/sail-extensions-gates/graph-algorithms/target-70b0d1cab2cab945d4dbaf6842ee0e38c8aa1822/debug\n",
+        "stderr": "",
+        "ended_utc": "2026-10-01T05:37:33.388757+00:00"
+      },
+      {
+        "command": [
+          "du",
+          "-k",
+          "-d",
+          "1",
+          "/Users/alexy/src/sail-extensions-gates/mac-development/host/debug"
+        ],
+        "started_utc": "2026-10-01T05:37:33.511991+00:00",
+        "exit_code": 0,
+        "stdout": "17308\t/Users/alexy/src/sail-extensions-gates/mac-development/host/debug/.fingerprint\n0\t/Users/alexy/src/sail-extensions-gates/mac-development/host/debug/incremental\n0\t/Users/alexy/src/sail-extensions-gates/mac-development/host/debug/examples\n5138928\t/Users/alexy/src/sail-extensions-gates/mac-development/host/debug/deps\n476576\t/Users/alexy/src/sail-extensions-gates/mac-development/host/debug/build\n6446272\t/Users/alexy/src/sail-extensions-gates/mac-development/host/debug\n",
+        "stderr": "",
+        "ended_utc": "2026-10-01T05:37:33.601864+00:00"
+      },
+      {
+        "command": [
+          "du",
+          "-k",
+          "-d",
+          "1",
+          "/Users/alexy/src/sail-extensions-gates/mac-development/nutmeg/debug"
+        ],
+        "started_utc": "2026-10-01T05:37:33.660379+00:00",
+        "exit_code": 0,
+        "stdout": "5056\t/Users/alexy/src/sail-extensions-gates/mac-development/nutmeg/debug/.fingerprint\n0\t/Users/alexy/src/sail-extensions-gates/mac-development/nutmeg/debug/incremental\n0\t/Users/alexy/src/sail-extensions-gates/mac-development/nutmeg/debug/examples\n1450276\t/Users/alexy/src/sail-extensions-gates/mac-development/nutmeg/debug/deps\n59908\t/Users/alexy/src/sail-extensions-gates/mac-development/nutmeg/debug/build\n1694124\t/Users/alexy/src/sail-extensions-gates/mac-development/nutmeg/debug\n",
+        "stderr": "",
+        "ended_utc": "2026-10-01T05:37:33.687373+00:00"
+      },
+      {
+        "command": [
+          "du",
+          "-k",
+          "-d",
+          "1",
+          "/Users/alexy/src/sail-extensions-gates/mac-development/sedona/debug"
+        ],
+        "started_utc": "2026-10-01T05:37:33.704673+00:00",
+        "exit_code": 0,
+        "stdout": "5024\t/Users/alexy/src/sail-extensions-gates/mac-development/sedona/debug/.fingerprint\n0\t/Users/alexy/src/sail-extensions-gates/mac-development/sedona/debug/incremental\n0\t/Users/alexy/src/sail-extensions-gates/mac-development/sedona/debug/examples\n1188104\t/Users/alexy/src/sail-extensions-gates/mac-development/sedona/debug/deps\n48632\t/Users/alexy/src/sail-extensions-gates/mac-development/sedona/debug/build\n1290472\t/Users/alexy/src/sail-extensions-gates/mac-development/sedona/debug\n",
+        "stderr": "",
+        "ended_utc": "2026-10-01T05:37:33.731446+00:00"
+      },
+      {
+        "command": [
+          "du",
+          "-k",
+          "-d",
+          "1",
+          "/Users/alexy/src/sail-extensions-gates/mac-target-d7143e0/host/debug"
+        ],
+        "started_utc": "2026-10-01T05:37:33.748605+00:00",
+        "exit_code": 0,
+        "stdout": "17308\t/Users/alexy/src/sail-extensions-gates/mac-target-d7143e0/host/debug/.fingerprint\n0\t/Users/alexy/src/sail-extensions-gates/mac-target-d7143e0/host/debug/incremental\n0\t/Users/alexy/src/sail-extensions-gates/mac-target-d7143e0/host/debug/examples\n5140836\t/Users/alexy/src/sail-extensions-gates/mac-target-d7143e0/host/debug/deps\n476576\t/Users/alexy/src/sail-extensions-gates/mac-target-d7143e0/host/debug/build\n6449532\t/Users/alexy/src/sail-extensions-gates/mac-target-d7143e0/host/debug\n",
+        "stderr": "",
+        "ended_utc": "2026-10-01T05:37:33.823905+00:00"
+      },
+      {
+        "command": [
+          "du",
+          "-k",
+          "-d",
+          "1",
+          "/Users/alexy/src/sail-extensions-gates/mac-target-d7143e0/nutmeg/debug"
+        ],
+        "started_utc": "2026-10-01T05:37:33.888796+00:00",
+        "exit_code": 0,
+        "stdout": "5088\t/Users/alexy/src/sail-extensions-gates/mac-target-d7143e0/nutmeg/debug/.fingerprint\n0\t/Users/alexy/src/sail-extensions-gates/mac-target-d7143e0/nutmeg/debug/incremental\n0\t/Users/alexy/src/sail-extensions-gates/mac-target-d7143e0/nutmeg/debug/examples\n1455144\t/Users/alexy/src/sail-extensions-gates/mac-target-d7143e0/nutmeg/debug/deps\n59908\t/Users/alexy/src/sail-extensions-gates/mac-target-d7143e0/nutmeg/debug/build\n1699024\t/Users/alexy/src/sail-extensions-gates/mac-target-d7143e0/nutmeg/debug\n",
+        "stderr": "",
+        "ended_utc": "2026-10-01T05:37:33.913846+00:00"
+      },
+      {
+        "command": [
+          "du",
+          "-k",
+          "-d",
+          "1",
+          "/Users/alexy/src/sail-extensions-gates/mac-target-d7143e0/sedona/debug"
+        ],
+        "started_utc": "2026-10-01T05:37:33.932378+00:00",
+        "exit_code": 0,
+        "stdout": "5024\t/Users/alexy/src/sail-extensions-gates/mac-target-d7143e0/sedona/debug/.fingerprint\n0\t/Users/alexy/src/sail-extensions-gates/mac-target-d7143e0/sedona/debug/incremental\n0\t/Users/alexy/src/sail-extensions-gates/mac-target-d7143e0/sedona/debug/examples\n1188112\t/Users/alexy/src/sail-extensions-gates/mac-target-d7143e0/sedona/debug/deps\n48632\t/Users/alexy/src/sail-extensions-gates/mac-target-d7143e0/sedona/debug/build\n1290484\t/Users/alexy/src/sail-extensions-gates/mac-target-d7143e0/sedona/debug\n",
+        "stderr": "",
+        "ended_utc": "2026-10-01T05:37:33.957366+00:00"
+      },
+      {
+        "command": [
+          "du",
+          "-k",
+          "-d",
+          "1",
+          "/Users/alexy/src/sail-extensions-gates/mac-target-de8e67098/host/debug"
+        ],
+        "started_utc": "2026-10-01T05:37:33.975754+00:00",
+        "exit_code": 0,
+        "stdout": "17308\t/Users/alexy/src/sail-extensions-gates/mac-target-de8e67098/host/debug/.fingerprint\n0\t/Users/alexy/src/sail-extensions-gates/mac-target-de8e67098/host/debug/incremental\n0\t/Users/alexy/src/sail-extensions-gates/mac-target-de8e67098/host/debug/examples\n5140888\t/Users/alexy/src/sail-extensions-gates/mac-target-de8e67098/host/debug/deps\n476576\t/Users/alexy/src/sail-extensions-gates/mac-target-de8e67098/host/debug/build\n6449596\t/Users/alexy/src/sail-extensions-gates/mac-target-de8e67098/host/debug\n",
+        "stderr": "",
+        "ended_utc": "2026-10-01T05:37:34.051298+00:00"
+      },
+      {
+        "command": [
+          "du",
+          "-k",
+          "-d",
+          "1",
+          "/Users/alexy/src/sail-extensions-gates/mac-target-de8e67098/nutmeg/debug"
+        ],
+        "started_utc": "2026-10-01T05:37:34.114267+00:00",
+        "exit_code": 0,
+        "stdout": "5120\t/Users/alexy/src/sail-extensions-gates/mac-target-de8e67098/nutmeg/debug/.fingerprint\n0\t/Users/alexy/src/sail-extensions-gates/mac-target-de8e67098/nutmeg/debug/incremental\n0\t/Users/alexy/src/sail-extensions-gates/mac-target-de8e67098/nutmeg/debug/examples\n1459996\t/Users/alexy/src/sail-extensions-gates/mac-target-de8e67098/nutmeg/debug/deps\n59908\t/Users/alexy/src/sail-extensions-gates/mac-target-de8e67098/nutmeg/debug/build\n1703904\t/Users/alexy/src/sail-extensions-gates/mac-target-de8e67098/nutmeg/debug\n",
+        "stderr": "",
+        "ended_utc": "2026-10-01T05:37:34.139292+00:00"
+      },
+      {
+        "command": [
+          "du",
+          "-k",
+          "-d",
+          "1",
+          "/Users/alexy/src/sail-extensions-gates/mac-target-de8e67098/sedona/debug"
+        ],
+        "started_utc": "2026-10-01T05:37:34.157554+00:00",
+        "exit_code": 0,
+        "stdout": "5024\t/Users/alexy/src/sail-extensions-gates/mac-target-de8e67098/sedona/debug/.fingerprint\n0\t/Users/alexy/src/sail-extensions-gates/mac-target-de8e67098/sedona/debug/incremental\n0\t/Users/alexy/src/sail-extensions-gates/mac-target-de8e67098/sedona/debug/examples\n1188112\t/Users/alexy/src/sail-extensions-gates/mac-target-de8e67098/sedona/debug/deps\n48632\t/Users/alexy/src/sail-extensions-gates/mac-target-de8e67098/sedona/debug/build\n1290484\t/Users/alexy/src/sail-extensions-gates/mac-target-de8e67098/sedona/debug\n",
+        "stderr": "",
+        "ended_utc": "2026-10-01T05:37:34.181147+00:00"
+      },
+      {
+        "command": [
+          "ps",
+          "-axo",
+          "pid=,ppid=,pgid=,lstart=,comm="
+        ],
+        "started_utc": "2026-10-01T05:37:34.199644+00:00",
+        "exit_code": 0,
+        "stderr": "",
+        "ended_utc": "2026-10-01T05:37:34.280803+00:00",
+        "stdout_selected_records": [
+          {
+            "pid": 42890,
+            "ppid": 42889,
+            "pgid": 42890,
+            "lstart": "Wed Sep 30 22:37:21 2026",
+            "comm": "/usr/local/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/Resources/Python.app/Contents/MacOS/Python"
+          },
+          {
+            "pid": 68198,
+            "ppid": 1,
+            "pgid": 68198,
+            "lstart": "Tue Sep 29 22:20:04 2026",
+            "comm": "/bin/bash"
+          },
+          {
+            "pid": 68201,
+            "ppid": 68198,
+            "pgid": 68198,
+            "lstart": "Tue Sep 29 22:20:04 2026",
+            "comm": "/usr/local/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/Resources/Python.app/Contents/MacOS/Python"
+          }
+        ],
+        "selection": "process executable names for build/gate candidates only; argv/env not read; unrelated process rows omitted"
+      },
+      {
+        "command": [
+          "/usr/sbin/lsof",
+          "-a",
+          "-p",
+          "42890,68198,68201",
+          "-d",
+          "cwd",
+          "-Fn"
+        ],
+        "started_utc": "2026-10-01T05:37:34.284135+00:00",
+        "exit_code": 0,
+        "stdout": "p42890\nfcwd\nn/Users/alexy\np68198\nfcwd\nn/Users/alexy/src/eigentimes\np68201\nfcwd\nn/Users/alexy/src/eigentimes\n",
+        "stderr": "",
+        "ended_utc": "2026-10-01T05:37:34.300460+00:00"
+      }
+    ],
+    "intermediate_classes": [
+      {
+        "root": "/Users/alexy/src/sail-extensions-gates/argentea/target-macos-038c9b9597d3/debug/deps",
+        "suffix_totals": {
+          ".rlib": {
+            "files": 933,
+            "logical_bytes": 5444965104,
+            "allocated_bytes": 5446926336,
+            "executable_mode_files": 0
+          },
+          ".rmeta": {
+            "files": 1573,
+            "logical_bytes": 2287307184,
+            "allocated_bytes": 2290569216,
+            "executable_mode_files": 0
+          },
+          ".o": {
+            "files": 0,
+            "logical_bytes": 0,
+            "allocated_bytes": 0,
+            "executable_mode_files": 0
+          },
+          ".d": {
+            "files": 1649,
+            "logical_bytes": 18906359,
+            "allocated_bytes": 22663168,
+            "executable_mode_files": 0
+          }
+        },
+        "measurement": "lstat sums of regular files only, no symlink traversal; hard links/APFS shared extents not deduplicated"
+      },
+      {
+        "root": "/Users/alexy/src/sail-extensions-gates/argentea/target-macos-038c9b9597d3/debug/incremental",
+        "suffix_totals": {
+          ".rlib": {
+            "files": 0,
+            "logical_bytes": 0,
+            "allocated_bytes": 0,
+            "executable_mode_files": 0
+          },
+          ".rmeta": {
+            "files": 0,
+            "logical_bytes": 0,
+            "allocated_bytes": 0,
+            "executable_mode_files": 0
+          },
+          ".o": {
+            "files": 0,
+            "logical_bytes": 0,
+            "allocated_bytes": 0,
+            "executable_mode_files": 0
+          },
+          ".d": {
+            "files": 0,
+            "logical_bytes": 0,
+            "allocated_bytes": 0,
+            "executable_mode_files": 0
+          }
+        },
+        "measurement": "lstat sums of regular files only, no symlink traversal; hard links/APFS shared extents not deduplicated"
+      },
+      {
+        "root": "/Users/alexy/src/sail-extensions-gates/graph-algorithms/target-70b0d1cab2cab945d4dbaf6842ee0e38c8aa1822/debug/deps",
+        "suffix_totals": {
+          ".rlib": {
+            "files": 933,
+            "logical_bytes": 5441744600,
+            "allocated_bytes": 5443723264,
+            "executable_mode_files": 0
+          },
+          ".rmeta": {
+            "files": 1571,
+            "logical_bytes": 2286991567,
+            "allocated_bytes": 2290249728,
+            "executable_mode_files": 0
+          },
+          ".o": {
+            "files": 0,
+            "logical_bytes": 0,
+            "allocated_bytes": 0,
+            "executable_mode_files": 0
+          },
+          ".d": {
+            "files": 1645,
+            "logical_bytes": 19063127,
+            "allocated_bytes": 22822912,
+            "executable_mode_files": 0
+          }
+        },
+        "measurement": "lstat sums of regular files only, no symlink traversal; hard links/APFS shared extents not deduplicated"
+      },
+      {
+        "root": "/Users/alexy/src/sail-extensions-gates/graph-algorithms/target-70b0d1cab2cab945d4dbaf6842ee0e38c8aa1822/debug/incremental",
+        "suffix_totals": {
+          ".rlib": {
+            "files": 0,
+            "logical_bytes": 0,
+            "allocated_bytes": 0,
+            "executable_mode_files": 0
+          },
+          ".rmeta": {
+            "files": 0,
+            "logical_bytes": 0,
+            "allocated_bytes": 0,
+            "executable_mode_files": 0
+          },
+          ".o": {
+            "files": 0,
+            "logical_bytes": 0,
+            "allocated_bytes": 0,
+            "executable_mode_files": 0
+          },
+          ".d": {
+            "files": 0,
+            "logical_bytes": 0,
+            "allocated_bytes": 0,
+            "executable_mode_files": 0
+          }
+        },
+        "measurement": "lstat sums of regular files only, no symlink traversal; hard links/APFS shared extents not deduplicated"
+      },
+      {
+        "root": "/Users/alexy/src/sail-extensions-gates/mac-development/host/debug/deps",
+        "suffix_totals": {
+          ".rlib": {
+            "files": 811,
+            "logical_bytes": 3129411888,
+            "allocated_bytes": 3131109376,
+            "executable_mode_files": 0
+          },
+          ".rmeta": {
+            "files": 809,
+            "logical_bytes": 1102607661,
+            "allocated_bytes": 1104297984,
+            "executable_mode_files": 0
+          },
+          ".o": {
+            "files": 0,
+            "logical_bytes": 0,
+            "allocated_bytes": 0,
+            "executable_mode_files": 0
+          },
+          ".d": {
+            "files": 877,
+            "logical_bytes": 9213058,
+            "allocated_bytes": 11214848,
+            "executable_mode_files": 0
+          }
+        },
+        "measurement": "lstat sums of regular files only, no symlink traversal; hard links/APFS shared extents not deduplicated"
+      },
+      {
+        "root": "/Users/alexy/src/sail-extensions-gates/mac-development/host/debug/incremental",
+        "suffix_totals": {
+          ".rlib": {
+            "files": 0,
+            "logical_bytes": 0,
+            "allocated_bytes": 0,
+            "executable_mode_files": 0
+          },
+          ".rmeta": {
+            "files": 0,
+            "logical_bytes": 0,
+            "allocated_bytes": 0,
+            "executable_mode_files": 0
+          },
+          ".o": {
+            "files": 0,
+            "logical_bytes": 0,
+            "allocated_bytes": 0,
+            "executable_mode_files": 0
+          },
+          ".d": {
+            "files": 0,
+            "logical_bytes": 0,
+            "allocated_bytes": 0,
+            "executable_mode_files": 0
+          }
+        },
+        "measurement": "lstat sums of regular files only, no symlink traversal; hard links/APFS shared extents not deduplicated"
+      },
+      {
+        "root": "/Users/alexy/src/sail-extensions-gates/mac-development/nutmeg/debug/deps",
+        "suffix_totals": {
+          ".rlib": {
+            "files": 238,
+            "logical_bytes": 960561128,
+            "allocated_bytes": 961036288,
+            "executable_mode_files": 0
+          },
+          ".rmeta": {
+            "files": 237,
+            "logical_bytes": 273114274,
+            "allocated_bytes": 273600512,
+            "executable_mode_files": 0
+          },
+          ".o": {
+            "files": 0,
+            "logical_bytes": 0,
+            "allocated_bytes": 0,
+            "executable_mode_files": 0
+          },
+          ".d": {
+            "files": 258,
+            "logical_bytes": 2101135,
+            "allocated_bytes": 2662400,
+            "executable_mode_files": 0
+          }
+        },
+        "measurement": "lstat sums of regular files only, no symlink traversal; hard links/APFS shared extents not deduplicated"
+      },
+      {
+        "root": "/Users/alexy/src/sail-extensions-gates/mac-development/nutmeg/debug/incremental",
+        "suffix_totals": {
+          ".rlib": {
+            "files": 0,
+            "logical_bytes": 0,
+            "allocated_bytes": 0,
+            "executable_mode_files": 0
+          },
+          ".rmeta": {
+            "files": 0,
+            "logical_bytes": 0,
+            "allocated_bytes": 0,
+            "executable_mode_files": 0
+          },
+          ".o": {
+            "files": 0,
+            "logical_bytes": 0,
+            "allocated_bytes": 0,
+            "executable_mode_files": 0
+          },
+          ".d": {
+            "files": 0,
+            "logical_bytes": 0,
+            "allocated_bytes": 0,
+            "executable_mode_files": 0
+          }
+        },
+        "measurement": "lstat sums of regular files only, no symlink traversal; hard links/APFS shared extents not deduplicated"
+      },
+      {
+        "root": "/Users/alexy/src/sail-extensions-gates/mac-development/sedona/debug/deps",
+        "suffix_totals": {
+          ".rlib": {
+            "files": 239,
+            "logical_bytes": 808996096,
+            "allocated_bytes": 809472000,
+            "executable_mode_files": 0
+          },
+          ".rmeta": {
+            "files": 238,
+            "logical_bytes": 276249767,
+            "allocated_bytes": 276742144,
+            "executable_mode_files": 0
+          },
+          ".o": {
+            "files": 0,
+            "logical_bytes": 0,
+            "allocated_bytes": 0,
+            "executable_mode_files": 0
+          },
+          ".d": {
+            "files": 262,
+            "logical_bytes": 2061549,
+            "allocated_bytes": 2629632,
+            "executable_mode_files": 0
+          }
+        },
+        "measurement": "lstat sums of regular files only, no symlink traversal; hard links/APFS shared extents not deduplicated"
+      },
+      {
+        "root": "/Users/alexy/src/sail-extensions-gates/mac-development/sedona/debug/incremental",
+        "suffix_totals": {
+          ".rlib": {
+            "files": 0,
+            "logical_bytes": 0,
+            "allocated_bytes": 0,
+            "executable_mode_files": 0
+          },
+          ".rmeta": {
+            "files": 0,
+            "logical_bytes": 0,
+            "allocated_bytes": 0,
+            "executable_mode_files": 0
+          },
+          ".o": {
+            "files": 0,
+            "logical_bytes": 0,
+            "allocated_bytes": 0,
+            "executable_mode_files": 0
+          },
+          ".d": {
+            "files": 0,
+            "logical_bytes": 0,
+            "allocated_bytes": 0,
+            "executable_mode_files": 0
+          }
+        },
+        "measurement": "lstat sums of regular files only, no symlink traversal; hard links/APFS shared extents not deduplicated"
+      },
+      {
+        "root": "/Users/alexy/src/sail-extensions-gates/mac-target-d7143e0/host/debug/deps",
+        "suffix_totals": {
+          ".rlib": {
+            "files": 811,
+            "logical_bytes": 3130693416,
+            "allocated_bytes": 3132399616,
+            "executable_mode_files": 0
+          },
+          ".rmeta": {
+            "files": 809,
+            "logical_bytes": 1102733732,
+            "allocated_bytes": 1104433152,
+            "executable_mode_files": 0
+          },
+          ".o": {
+            "files": 0,
+            "logical_bytes": 0,
+            "allocated_bytes": 0,
+            "executable_mode_files": 0
+          },
+          ".d": {
+            "files": 877,
+            "logical_bytes": 9225701,
+            "allocated_bytes": 11223040,
+            "executable_mode_files": 0
+          }
+        },
+        "measurement": "lstat sums of regular files only, no symlink traversal; hard links/APFS shared extents not deduplicated"
+      },
+      {
+        "root": "/Users/alexy/src/sail-extensions-gates/mac-target-d7143e0/host/debug/incremental",
+        "suffix_totals": {
+          ".rlib": {
+            "files": 0,
+            "logical_bytes": 0,
+            "allocated_bytes": 0,
+            "executable_mode_files": 0
+          },
+          ".rmeta": {
+            "files": 0,
+            "logical_bytes": 0,
+            "allocated_bytes": 0,
+            "executable_mode_files": 0
+          },
+          ".o": {
+            "files": 0,
+            "logical_bytes": 0,
+            "allocated_bytes": 0,
+            "executable_mode_files": 0
+          },
+          ".d": {
+            "files": 0,
+            "logical_bytes": 0,
+            "allocated_bytes": 0,
+            "executable_mode_files": 0
+          }
+        },
+        "measurement": "lstat sums of regular files only, no symlink traversal; hard links/APFS shared extents not deduplicated"
+      },
+      {
+        "root": "/Users/alexy/src/sail-extensions-gates/mac-target-d7143e0/nutmeg/debug/deps",
+        "suffix_totals": {
+          ".rlib": {
+            "files": 240,
+            "logical_bytes": 965053968,
+            "allocated_bytes": 965533696,
+            "executable_mode_files": 0
+          },
+          ".rmeta": {
+            "files": 239,
+            "logical_bytes": 273588666,
+            "allocated_bytes": 274079744,
+            "executable_mode_files": 0
+          },
+          ".o": {
+            "files": 0,
+            "logical_bytes": 0,
+            "allocated_bytes": 0,
+            "executable_mode_files": 0
+          },
+          ".d": {
+            "files": 260,
+            "logical_bytes": 2104667,
+            "allocated_bytes": 2670592,
+            "executable_mode_files": 0
+          }
+        },
+        "measurement": "lstat sums of regular files only, no symlink traversal; hard links/APFS shared extents not deduplicated"
+      },
+      {
+        "root": "/Users/alexy/src/sail-extensions-gates/mac-target-d7143e0/nutmeg/debug/incremental",
+        "suffix_totals": {
+          ".rlib": {
+            "files": 0,
+            "logical_bytes": 0,
+            "allocated_bytes": 0,
+            "executable_mode_files": 0
+          },
+          ".rmeta": {
+            "files": 0,
+            "logical_bytes": 0,
+            "allocated_bytes": 0,
+            "executable_mode_files": 0
+          },
+          ".o": {
+            "files": 0,
+            "logical_bytes": 0,
+            "allocated_bytes": 0,
+            "executable_mode_files": 0
+          },
+          ".d": {
+            "files": 0,
+            "logical_bytes": 0,
+            "allocated_bytes": 0,
+            "executable_mode_files": 0
+          }
+        },
+        "measurement": "lstat sums of regular files only, no symlink traversal; hard links/APFS shared extents not deduplicated"
+      },
+      {
+        "root": "/Users/alexy/src/sail-extensions-gates/mac-target-d7143e0/sedona/debug/deps",
+        "suffix_totals": {
+          ".rlib": {
+            "files": 239,
+            "logical_bytes": 808999320,
+            "allocated_bytes": 809476096,
+            "executable_mode_files": 0
+          },
+          ".rmeta": {
+            "files": 238,
+            "logical_bytes": 276253011,
+            "allocated_bytes": 276746240,
+            "executable_mode_files": 0
+          },
+          ".o": {
+            "files": 0,
+            "logical_bytes": 0,
+            "allocated_bytes": 0,
+            "executable_mode_files": 0
+          },
+          ".d": {
+            "files": 262,
+            "logical_bytes": 2061636,
+            "allocated_bytes": 2629632,
+            "executable_mode_files": 0
+          }
+        },
+        "measurement": "lstat sums of regular files only, no symlink traversal; hard links/APFS shared extents not deduplicated"
+      },
+      {
+        "root": "/Users/alexy/src/sail-extensions-gates/mac-target-d7143e0/sedona/debug/incremental",
+        "suffix_totals": {
+          ".rlib": {
+            "files": 0,
+            "logical_bytes": 0,
+            "allocated_bytes": 0,
+            "executable_mode_files": 0
+          },
+          ".rmeta": {
+            "files": 0,
+            "logical_bytes": 0,
+            "allocated_bytes": 0,
+            "executable_mode_files": 0
+          },
+          ".o": {
+            "files": 0,
+            "logical_bytes": 0,
+            "allocated_bytes": 0,
+            "executable_mode_files": 0
+          },
+          ".d": {
+            "files": 0,
+            "logical_bytes": 0,
+            "allocated_bytes": 0,
+            "executable_mode_files": 0
+          }
+        },
+        "measurement": "lstat sums of regular files only, no symlink traversal; hard links/APFS shared extents not deduplicated"
+      },
+      {
+        "root": "/Users/alexy/src/sail-extensions-gates/mac-target-de8e67098/host/debug/deps",
+        "suffix_totals": {
+          ".rlib": {
+            "files": 811,
+            "logical_bytes": 3130728528,
+            "allocated_bytes": 3132432384,
+            "executable_mode_files": 0
+          },
+          ".rmeta": {
+            "files": 809,
+            "logical_bytes": 1102745283,
+            "allocated_bytes": 1104441344,
+            "executable_mode_files": 0
+          },
+          ".o": {
+            "files": 0,
+            "logical_bytes": 0,
+            "allocated_bytes": 0,
+            "executable_mode_files": 0
+          },
+          ".d": {
+            "files": 877,
+            "logical_bytes": 9233709,
+            "allocated_bytes": 11231232,
+            "executable_mode_files": 0
+          }
+        },
+        "measurement": "lstat sums of regular files only, no symlink traversal; hard links/APFS shared extents not deduplicated"
+      },
+      {
+        "root": "/Users/alexy/src/sail-extensions-gates/mac-target-de8e67098/host/debug/incremental",
+        "suffix_totals": {
+          ".rlib": {
+            "files": 0,
+            "logical_bytes": 0,
+            "allocated_bytes": 0,
+            "executable_mode_files": 0
+          },
+          ".rmeta": {
+            "files": 0,
+            "logical_bytes": 0,
+            "allocated_bytes": 0,
+            "executable_mode_files": 0
+          },
+          ".o": {
+            "files": 0,
+            "logical_bytes": 0,
+            "allocated_bytes": 0,
+            "executable_mode_files": 0
+          },
+          ".d": {
+            "files": 0,
+            "logical_bytes": 0,
+            "allocated_bytes": 0,
+            "executable_mode_files": 0
+          }
+        },
+        "measurement": "lstat sums of regular files only, no symlink traversal; hard links/APFS shared extents not deduplicated"
+      },
+      {
+        "root": "/Users/alexy/src/sail-extensions-gates/mac-target-de8e67098/nutmeg/debug/deps",
+        "suffix_totals": {
+          ".rlib": {
+            "files": 242,
+            "logical_bytes": 969534568,
+            "allocated_bytes": 970018816,
+            "executable_mode_files": 0
+          },
+          ".rmeta": {
+            "files": 241,
+            "logical_bytes": 274063094,
+            "allocated_bytes": 274558976,
+            "executable_mode_files": 0
+          },
+          ".o": {
+            "files": 0,
+            "logical_bytes": 0,
+            "allocated_bytes": 0,
+            "executable_mode_files": 0
+          },
+          ".d": {
+            "files": 262,
+            "logical_bytes": 2108251,
+            "allocated_bytes": 2678784,
+            "executable_mode_files": 0
+          }
+        },
+        "measurement": "lstat sums of regular files only, no symlink traversal; hard links/APFS shared extents not deduplicated"
+      },
+      {
+        "root": "/Users/alexy/src/sail-extensions-gates/mac-target-de8e67098/nutmeg/debug/incremental",
+        "suffix_totals": {
+          ".rlib": {
+            "files": 0,
+            "logical_bytes": 0,
+            "allocated_bytes": 0,
+            "executable_mode_files": 0
+          },
+          ".rmeta": {
+            "files": 0,
+            "logical_bytes": 0,
+            "allocated_bytes": 0,
+            "executable_mode_files": 0
+          },
+          ".o": {
+            "files": 0,
+            "logical_bytes": 0,
+            "allocated_bytes": 0,
+            "executable_mode_files": 0
+          },
+          ".d": {
+            "files": 0,
+            "logical_bytes": 0,
+            "allocated_bytes": 0,
+            "executable_mode_files": 0
+          }
+        },
+        "measurement": "lstat sums of regular files only, no symlink traversal; hard links/APFS shared extents not deduplicated"
+      },
+      {
+        "root": "/Users/alexy/src/sail-extensions-gates/mac-target-de8e67098/sedona/debug/deps",
+        "suffix_totals": {
+          ".rlib": {
+            "files": 239,
+            "logical_bytes": 808999912,
+            "allocated_bytes": 809476096,
+            "executable_mode_files": 0
+          },
+          ".rmeta": {
+            "files": 238,
+            "logical_bytes": 276253591,
+            "allocated_bytes": 276746240,
+            "executable_mode_files": 0
+          },
+          ".o": {
+            "files": 0,
+            "logical_bytes": 0,
+            "allocated_bytes": 0,
+            "executable_mode_files": 0
+          },
+          ".d": {
+            "files": 262,
+            "logical_bytes": 2061694,
+            "allocated_bytes": 2629632,
+            "executable_mode_files": 0
+          }
+        },
+        "measurement": "lstat sums of regular files only, no symlink traversal; hard links/APFS shared extents not deduplicated"
+      },
+      {
+        "root": "/Users/alexy/src/sail-extensions-gates/mac-target-de8e67098/sedona/debug/incremental",
+        "suffix_totals": {
+          ".rlib": {
+            "files": 0,
+            "logical_bytes": 0,
+            "allocated_bytes": 0,
+            "executable_mode_files": 0
+          },
+          ".rmeta": {
+            "files": 0,
+            "logical_bytes": 0,
+            "allocated_bytes": 0,
+            "executable_mode_files": 0
+          },
+          ".o": {
+            "files": 0,
+            "logical_bytes": 0,
+            "allocated_bytes": 0,
+            "executable_mode_files": 0
+          },
+          ".d": {
+            "files": 0,
+            "logical_bytes": 0,
+            "allocated_bytes": 0,
+            "executable_mode_files": 0
+          }
+        },
+        "measurement": "lstat sums of regular files only, no symlink traversal; hard links/APFS shared extents not deduplicated"
+      }
+    ],
+    "host_process_check": {
+      "matching_processes": [
+        {
+          "pid": 42890,
+          "ppid": 42889,
+          "pgid": 42890,
+          "lstart": "Wed Sep 30 22:37:21 2026",
+          "comm": "/usr/local/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/Resources/Python.app/Contents/MacOS/Python"
+        },
+        {
+          "pid": 68198,
+          "ppid": 1,
+          "pgid": 68198,
+          "lstart": "Tue Sep 29 22:20:04 2026",
+          "comm": "/bin/bash"
+        },
+        {
+          "pid": 68201,
+          "ppid": 68198,
+          "pgid": 68198,
+          "lstart": "Tue Sep 29 22:20:04 2026",
+          "comm": "/usr/local/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/Resources/Python.app/Contents/MacOS/Python"
+        }
+      ],
+      "limits": "Generic Python/shell names alone cannot establish absence of a gate; cwd capture below is additional context. No process is signalled."
+    },
+    "ended_utc": "2026-10-01T05:37:34.300486+00:00"
+  }
+}

@@ -1,0 +1,23 @@
+[package]
+name = "sail-transport-log-control"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[workspace]
+
+[features]
+hyper-tracing = ["hyper/tracing"]
+
+[dependencies]
+bytes = "=1.12.1"
+h2 = "=0.4.15"
+http = "=1.5.0"
+http-body = "1"
+http-body-util = "=0.1.4"
+hyper = { version = "=1.11.0", features = ["client", "server", "http2"] }
+hyper-util = { version = "=0.1.20", features = ["tokio"] }
+tokio = { version = "=1.53.1", features = ["macros", "rt-multi-thread", "io-util", "time", "sync"] }
+tonic = { version = "=0.14.6", default-features = false, features = ["server"] }
+tracing = "0.1"
+tracing-subscriber = { version = "=0.3.23", features = ["env-filter"] }

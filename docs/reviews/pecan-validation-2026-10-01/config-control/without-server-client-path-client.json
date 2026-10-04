@@ -1,0 +1,39 @@
+{
+  "outcome": "PASS",
+  "written_utc": "2026-10-01T16:22:44.692944+00:00",
+  "configs": {
+    "spark.sql.timestampType": {
+      "value": "TIMESTAMP_LTZ"
+    },
+    "spark.sql.session.timeZone": {
+      "value": "America/Los_Angeles"
+    },
+    "spark.sql.session.localRelationCacheThreshold": {
+      "value": "2147483647"
+    },
+    "spark.sql.execution.pandas.convertToArrowArraySafely": {
+      "value": "false"
+    },
+    "spark.sql.execution.pandas.inferPandasDictAsMap": {
+      "error": "IllegalArgumentException('invalid argument: configuration not found: spark.sql.execution.pandas.inferPandasDictAsMap')"
+    },
+    "spark.sql.pyspark.inferNestedDictAsStruct.enabled": {
+      "value": "false"
+    },
+    "spark.sql.pyspark.legacy.inferArrayTypeFromFirstElement.enabled": {
+      "value": "false"
+    },
+    "spark.sql.pyspark.legacy.inferMapTypeFromFirstPair.enabled": {
+      "error": "IllegalArgumentException('invalid argument: configuration not found: spark.sql.pyspark.legacy.inferMapTypeFromFirstPair.enabled')"
+    },
+    "spark.sql.execution.arrow.useLargeVarTypes": {
+      "value": "false"
+    }
+  },
+  "explicit_conf_sets": [],
+  "spark_version_error": "IllegalArgumentException(\"invalid argument: failed to get PySpark version: ModuleNotFoundError: No module named 'pyspark'\")",
+  "fixture_error": "IllegalArgumentException('invalid argument: configuration not found: spark.sql.execution.pandas.inferPandasDictAsMap')",
+  "fixture_traceback": "Traceback (most recent call last):\n  File \"/private/tmp/grust-pecan-explicit-validation/docs/reviews/pecan-validation-2026-10-01/config-control/run_control.py\", line 51, in client\n    vertices, edges = fixture['frames'](spark)\n                      ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/sail-certificate-parent-witness-gate/examples/extensions/graph-algorithms/tests/test_algorithms.py\", line 14, in frames\n    return (spark.createDataFrame([(i,) for i in ids], \"id long\"),\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/session.py\", line 501, in createDataFrame\n    configs = self._client.get_config_dict(\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 1624, in get_config_dict\n    return dict(self.config(op).pairs)\n                ^^^^^^^^^^^^^^^\n  File \"/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 1662, in config\n    self._handle_error(error)\n  File \"/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 1811, in _handle_error\n    self._handle_rpc_error(error)\n  File \"/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py\", line 1882, in _handle_rpc_error\n    raise convert_exception(\npyspark.errors.exceptions.connect.IllegalArgumentException: invalid argument: configuration not found: spark.sql.execution.pandas.inferPandasDictAsMap\n",
+  "baseline_failure_reproduced": true,
+  "session_closed": true
+}

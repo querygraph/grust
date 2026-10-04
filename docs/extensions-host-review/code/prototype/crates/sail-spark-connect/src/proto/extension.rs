@@ -1,0 +1,173 @@
+//! Wire decoding for the experimental local Sail relation extension envelope.
+
+use std::cell::Cell;
+
+use pbjson_types::Any;
+use prost::Message;
+use sail_common::spec;
+
+use crate::error::{SparkError, SparkResult};
+use crate::spark::connect::Plan;
+
+mod wire;
+
+pub(crate) const ENVELOPE_TYPE_URL: &str =
+    "type.googleapis.com/sail.extension.v1.SailExtensionRequest";
+const MAX_ENVELOPE_BYTES: usize = 8 * 1024 * 1024;
+const MAX_PAYLOAD_BYTES: usize = 1024 * 1024;
+const MAX_INPUTS: usize = 16;
+const MAX_INPUT_DEPTH: usize = 64;
+const MAX_TYPE_URL_BYTES: usize = 512;
+const CONVERSION_STACK_BYTES: usize = 2 * 1024 * 1024;
+
+pub(crate) fn with_conversion_stack<T>(f: impl FnOnce() -> T) -> T {
+    // RelationNode conversion has a large enum-dispatch frame. Grow before
+    // entering it, including for an accepted nested extension on a small stack.
+    stacker::maybe_grow(64 * 1024, CONVERSION_STACK_BYTES, f)
+}
+
+// Embedded protobuf messages and bytes share their length-delimited wire format.
+// Keeping input Plans as bytes lets us validate arity and unsupported expression
+// fields before recursively decoding any input. The canonical .proto is checked
+// in under proto/sail/extension/v1/extension.proto.
+#[derive(Clone, PartialEq, Message)]
+struct SailExtensionRequest {
+    #[prost(string, tag = "1")]
+    payload_type_url: String,
+    #[prost(bytes = "vec", tag = "2")]
+    payload: Vec<u8>,
+    #[prost(bytes = "vec", repeated, tag = "3")]
+    inputs: Vec<Vec<u8>>,
+    #[prost(bytes = "vec", repeated, tag = "4")]
+    input_expressions: Vec<Vec<u8>>,
+    #[prost(uint32, tag = "5")]
+    envelope_version: u32,
+}
+
+thread_local! {
+    // Conversion is synchronous. This budget remains live while converting
+    // nested Any payloads, whose byte fields otherwise reset prost's recursion
+    // budget on every separate decode. Ordinary non-extension plans are unchanged.
+    static EXTENSION_INPUT_DEPTH: Cell<usize> = const { Cell::new(0) };
+}
+
+pub(crate) struct RelationConversionGuard {
+    active: bool,
+}
+
+impl RelationConversionGuard {
+    pub(crate) fn enter() -> SparkResult<Self> {
+        Self::enter_scope(false)
+    }
+
+    fn enter_scope(extension: bool) -> SparkResult<Self> {
+        EXTENSION_INPUT_DEPTH.with(|depth| {
+            let current = depth.get();
+            let active = extension || current != 0;
+            if active {
+                if current >= MAX_INPUT_DEPTH {
+                    return Err(SparkError::invalid(format!(
+                        "Sail extension input nesting exceeds {MAX_INPUT_DEPTH} levels"
+                    )));
+                }
+                depth.set(current + 1);
+            }
+            Ok(Self { active })
+        })
+    }
+}
+
+impl Drop for RelationConversionGuard {
+    fn drop(&mut self) {
+        if self.active {
+            EXTENSION_INPUT_DEPTH.with(|depth| depth.set(depth.get() - 1));
+        }
+    }
+}
+
+fn validate_type_url(type_url: &str) -> SparkResult<()> {
+    if type_url.is_empty() || type_url.len() > MAX_TYPE_URL_BYTES {
+        return Err(SparkError::invalid(format!(
+            "extension type URL must contain between 1 and {MAX_TYPE_URL_BYTES} bytes"
+        )));
+    }
+    Ok(())
+}
+
+/// Inspect tags without allocating input vectors or decoding nested messages.
+fn preflight_envelope(mut bytes: &[u8]) -> SparkResult<()> {
+    let mut input_count = 0;
+    while !bytes.is_empty() {
+        let (tag, _, _) = wire::next_field(&mut bytes)?;
+        if tag == 3 {
+            input_count += 1;
+            if input_count > MAX_INPUTS {
+                return Err(SparkError::invalid(format!(
+                    "Sail extension accepts at most {MAX_INPUTS} input plans"
+                )));
+            }
+        }
+        if tag == 4 {
+            return Err(SparkError::unsupported("Sail extension input expressions"));
+        }
+    }
+    Ok(())
+}
+
+pub(crate) fn convert_relation_extension(extension: Any) -> SparkResult<spec::QueryNode> {
+    validate_type_url(&extension.type_url)?;
+    if extension.type_url != ENVELOPE_TYPE_URL {
+        if extension.value.len() > MAX_PAYLOAD_BYTES {
+            return Err(SparkError::invalid(
+                "Connect extension payload exceeds 1 MiB",
+            ));
+        }
+        return Ok(spec::QueryNode::Extension {
+            payload_type_url: extension.type_url,
+            payload: extension.value.to_vec(),
+            inputs: vec![],
+            is_envelope: false,
+        });
+    }
+    if extension.value.len() > MAX_ENVELOPE_BYTES {
+        return Err(SparkError::invalid("Sail extension envelope exceeds 8 MiB"));
+    }
+    preflight_envelope(&extension.value)?;
+    let envelope = SailExtensionRequest::decode(extension.value.as_ref())?;
+    if envelope.envelope_version != 1 {
+        return Err(SparkError::invalid(format!(
+            "unsupported Sail extension envelope version {}; expected 1",
+            envelope.envelope_version
+        )));
+    }
+    validate_type_url(&envelope.payload_type_url)?;
+    if envelope.payload.len() > MAX_PAYLOAD_BYTES {
+        return Err(SparkError::invalid(
+            "Connect extension payload exceeds 1 MiB",
+        ));
+    }
+    let _depth = RelationConversionGuard::enter_scope(true)?;
+    let inputs = envelope
+        .inputs
+        .into_iter()
+        .map(|input| {
+            let remaining = EXTENSION_INPUT_DEPTH.with(|depth| MAX_INPUT_DEPTH - depth.get());
+            wire::validate_plan(&input, remaining)?;
+            // The generated decoder has no recursive call-site hook. Its raw
+            // message depth is already bounded above, so give this bounded
+            // decode a known stack even when called from a small initial one.
+            stacker::grow(CONVERSION_STACK_BYTES, || {
+                Plan::decode(input.as_slice())?.try_into()
+            })
+        })
+        .collect::<SparkResult<Vec<spec::QueryPlan>>>()?;
+    Ok(spec::QueryNode::Extension {
+        payload_type_url: envelope.payload_type_url,
+        payload: envelope.payload,
+        inputs,
+        is_envelope: true,
+    })
+}
+
+#[cfg(test)]
+mod tests;

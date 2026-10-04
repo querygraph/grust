@@ -1,0 +1,227 @@
+[2026-10-03T20:31:41Z DEBUG sail_execution::worker::server] RunTaskBatchRequest { job_id: 1, stage: 0, tasks: [TaskAttempt { partition: 1, attempt: 0 }, TaskAttempt { partition: 3, attempt: 0 }, TaskAttempt { partition: 5, attempt: 0 }, TaskAttempt { partition: 7, attempt: 0 }, TaskAttempt { partition: 9, attempt: 0 }, TaskAttempt { partition: 11, attempt: 0 }, TaskAttempt { partition: 13, attempt: 0 }, TaskAttempt { partition: 15, attempt: 0 }], definition: [10, 30, 146, 1, 27, 10, 25, 10, 23, 16, 128, 128, 64, 24, 1, 32, 16, 42, 10, 10, 8, 10, 2, 35, 48, 18, 2, 82, 0, 50, 1, 0, 26, 20, 10, 12, 10, 10, 10, 6, 10, 4, 10, 2, 35, 48, 16, 16, 18, 4, 10, 2, 8, 1 (54 bytes)], peers: [WorkerLocation { worker_id: 1, host: "127.0.0.1", port: 55383 }, WorkerLocation { worker_id: 2, host: "127.0.0.1", port: 55382 }] }
+[2026-10-03T20:31:41Z DEBUG sail_execution::worker::server] RunTaskBatchRequest { job_id: 1, stage: 1, tasks: [TaskAttempt { partition: 1, attempt: 0 }, TaskAttempt { partition: 3, attempt: 0 }, TaskAttempt { partition: 5, attempt: 0 }, TaskAttempt { partition: 7, attempt: 0 }, TaskAttempt { partition: 9, attempt: 0 }, TaskAttempt { partition: 11, attempt: 0 }, TaskAttempt { partition: 13, attempt: 0 }, TaskAttempt { partition: 15, attempt: 0 }], definition: [10, 202, 1, 34, 199, 1, 10, 154, 1, 66, 151, 1, 10, 6, 10, 4, 10, 2, 35, 48, 18, 25, 34, 23, 18, 4, 18, 2, 56, 1, 34, 5, 99, 111, 117, 110, 116, 66, 8, 99, 111, 117, 110, 116, 40, 49, 41, 24, 4, 34, 39, 146, 1, 36, 10, 34, 26, 32, 18, 14, 10, 0, 42, 10, 10, 8, 10, 2, 35, 48, 18, 2, 82, 0, 26, 12, 18, 10, 10, 6, 10, 4, 10, 2, 35, 48, 16, 16, 32, 1, 42, 2, 35, 48, 50, 15, 99, 111, 117, 110, 116, 40, 73, 110, 116, 54, 52, 40, 49, 41, 41, 58, 10, 10, 8, 10, 2, 35, 48, 18, 2, 82, 0, 74, 1, 0, 82, 0, ... (2244 bytes)], peers: [WorkerLocation { worker_id: 1, host: "127.0.0.1", port: 55383 }, WorkerLocation { worker_id: 2, host: "127.0.0.1", port: 55382 }] }
+[2026-10-03T20:31:41Z DEBUG sail_execution::worker::server] RunTaskBatchResponse
+[2026-10-03T20:31:41Z DEBUG sail_execution::task_runner::actor::handler] worker_task_status worker_id=2 job_id=1 stage=0 partition=1 attempt=0 status=RUNNING
+[2026-10-03T20:31:41Z DEBUG sail_execution::task_runner::actor::handler] worker_task_status worker_id=2 job_id=1 stage=0 partition=9 attempt=0 status=RUNNING
+[2026-10-03T20:31:41Z DEBUG sail_execution::task_runner::actor::handler] worker_task_status worker_id=2 job_id=1 stage=0 partition=11 attempt=0 status=RUNNING
+[2026-10-03T20:31:41Z DEBUG sail_execution::task_runner::actor::handler] worker_task_status worker_id=2 job_id=1 stage=1 partition=7 attempt=0 status=RUNNING
+[2026-10-03T20:31:41Z DEBUG sail_execution::task_runner::actor::handler] worker_task_status worker_id=2 job_id=1 stage=0 partition=7 attempt=0 status=RUNNING
+[2026-10-03T20:31:41Z DEBUG sail_execution::worker::server] RunTaskBatchResponse
+[2026-10-03T20:31:41Z DEBUG sail_execution::task_runner::actor::handler] worker_task_status worker_id=2 job_id=1 stage=1 partition=1 attempt=0 status=RUNNING
+[2026-10-03T20:31:41Z DEBUG sail_execution::task_runner::actor::handler] worker_task_status worker_id=2 job_id=1 stage=1 partition=3 attempt=0 status=RUNNING
+[2026-10-03T20:31:41Z DEBUG sail_execution::task_runner::actor::handler] worker_task_status worker_id=2 job_id=1 stage=1 partition=13 attempt=0 status=RUNNING
+[2026-10-03T20:31:41Z DEBUG sail_execution::task_runner::preparation] job 1 stage 0 partition 11 attempt 0 execution plan
+ShuffleWriteExec: partitioning=Hash([#0@0], 16)
+  RangeExec: start=0, end=1048576, step=1, num_partitions=16, projection=[0]
+
+[2026-10-03T20:31:41Z DEBUG sail_execution::task_runner::preparation] job 1 stage 0 partition 1 attempt 0 execution plan
+ShuffleWriteExec: partitioning=Hash([#0@0], 16)
+  RangeExec: start=0, end=1048576, step=1, num_partitions=16, projection=[0]
+
+[2026-10-03T20:31:41Z DEBUG sail_execution::task_runner::preparation] job 1 stage 0 partition 9 attempt 0 execution plan
+ShuffleWriteExec: partitioning=Hash([#0@0], 16)
+  RangeExec: start=0, end=1048576, step=1, num_partitions=16, projection=[0]
+
+[2026-10-03T20:31:41Z DEBUG sail_execution::task_runner::preparation] job 1 stage 0 partition 11 attempt 0 preparation wait=1.32723ms duration=277.4µs
+[2026-10-03T20:31:41Z DEBUG sail_execution::task_runner::preparation] job 1 stage 0 partition 1 attempt 0 preparation wait=1.323841ms duration=463.613µs
+[2026-10-03T20:31:41Z DEBUG sail_execution::task_runner::actor::handler] worker_task_status worker_id=2 job_id=1 stage=1 partition=11 attempt=0 status=RUNNING
+[2026-10-03T20:31:41Z DEBUG sail_execution::task_runner::preparation] job 1 stage 0 partition 9 attempt 0 preparation wait=1.320986ms duration=361.304µs
+[2026-10-03T20:31:41Z DEBUG sail_execution::task_runner::actor::handler] worker_task_status worker_id=2 job_id=1 stage=0 partition=3 attempt=0 status=RUNNING
+[2026-10-03T20:31:41Z DEBUG sail_execution::task_runner::actor::handler] worker_task_status worker_id=2 job_id=1 stage=0 partition=13 attempt=0 status=RUNNING
+[2026-10-03T20:31:41Z DEBUG sail_execution::task_runner::preparation] job 1 stage 0 partition 7 attempt 0 execution plan
+ShuffleWriteExec: partitioning=Hash([#0@0], 16)
+  RangeExec: start=0, end=1048576, step=1, num_partitions=16, projection=[0]
+
+[2026-10-03T20:31:41Z DEBUG sail_execution::task_runner::preparation] job 1 stage 0 partition 7 attempt 0 preparation wait=1.56312ms duration=39.85µs
+[2026-10-03T20:31:41Z DEBUG sail_execution::task_runner::actor::handler] worker_task_status worker_id=2 job_id=1 stage=0 partition=15 attempt=0 status=RUNNING
+[2026-10-03T20:31:41Z DEBUG sail_execution::task_runner::actor::handler] worker_task_status worker_id=2 job_id=1 stage=1 partition=9 attempt=0 status=RUNNING
+[2026-10-03T20:31:41Z DEBUG sail_execution::task_runner::actor::handler] worker_task_status worker_id=2 job_id=1 stage=0 partition=5 attempt=0 status=RUNNING
+[2026-10-03T20:31:41Z DEBUG sail_execution::task_runner::actor::handler] worker_task_status worker_id=2 job_id=1 stage=1 partition=5 attempt=0 status=RUNNING
+[2026-10-03T20:31:41Z DEBUG sail_execution::task_runner::actor::handler] worker_task_status worker_id=2 job_id=1 stage=1 partition=15 attempt=0 status=RUNNING
+[2026-10-03T20:31:41Z DEBUG sail_execution::task_runner::preparation] job 1 stage 0 partition 13 attempt 0 execution plan
+ShuffleWriteExec: partitioning=Hash([#0@0], 16)
+  RangeExec: start=0, end=1048576, step=1, num_partitions=16, projection=[0]
+
+[2026-10-03T20:31:41Z DEBUG sail_execution::task_runner::preparation] job 1 stage 0 partition 15 attempt 0 execution plan
+ShuffleWriteExec: partitioning=Hash([#0@0], 16)
+  RangeExec: start=0, end=1048576, step=1, num_partitions=16, projection=[0]
+
+[2026-10-03T20:31:41Z DEBUG sail_execution::task_runner::preparation] job 1 stage 0 partition 15 attempt 0 preparation wait=1.308512ms duration=458.592µs
+[2026-10-03T20:31:41Z DEBUG sail_execution::task_runner::preparation] job 1 stage 0 partition 13 attempt 0 preparation wait=1.406768ms duration=635.885µs
+[2026-10-03T20:31:41Z DEBUG sail_execution::task_runner::preparation] job 1 stage 0 partition 3 attempt 0 execution plan
+ShuffleWriteExec: partitioning=Hash([#0@0], 16)
+  RangeExec: start=0, end=1048576, step=1, num_partitions=16, projection=[0]
+
+[2026-10-03T20:31:41Z DEBUG sail_execution::task_runner::preparation] job 1 stage 0 partition 3 attempt 0 preparation wait=1.403173ms duration=805.342µs
+[2026-10-03T20:31:41Z DEBUG sail_execution::task_runner::preparation] job 1 stage 1 partition 9 attempt 0 execution plan
+ShuffleWriteExec: partitioning=RoundRobinBatch(1)
+  ProjectionExec: expr=[#0@0 as id, count(Int64(1))@1 as count]
+    AggregateExec: mode=SinglePartitioned, gby=[#0@0 as #0], aggr=[count(Int64(1))]
+      ShuffleReadExec: partitioning=Hash([#0@0], 16)
+
+[2026-10-03T20:31:41Z DEBUG sail_execution::task_runner::preparation] job 1 stage 1 partition 7 attempt 0 execution plan
+ShuffleWriteExec: partitioning=RoundRobinBatch(1)
+  ProjectionExec: expr=[#0@0 as id, count(Int64(1))@1 as count]
+    AggregateExec: mode=SinglePartitioned, gby=[#0@0 as #0], aggr=[count(Int64(1))]
+      ShuffleReadExec: partitioning=Hash([#0@0], 16)
+
+[2026-10-03T20:31:41Z DEBUG sail_execution::task_runner::preparation] job 1 stage 1 partition 3 attempt 0 execution plan
+ShuffleWriteExec: partitioning=RoundRobinBatch(1)
+  ProjectionExec: expr=[#0@0 as id, count(Int64(1))@1 as count]
+    AggregateExec: mode=SinglePartitioned, gby=[#0@0 as #0], aggr=[count(Int64(1))]
+      ShuffleReadExec: partitioning=Hash([#0@0], 16)
+
+[2026-10-03T20:31:41Z DEBUG sail_execution::task_runner::preparation] job 1 stage 1 partition 13 attempt 0 execution plan
+ShuffleWriteExec: partitioning=RoundRobinBatch(1)
+  ProjectionExec: expr=[#0@0 as id, count(Int64(1))@1 as count]
+    AggregateExec: mode=SinglePartitioned, gby=[#0@0 as #0], aggr=[count(Int64(1))]
+      ShuffleReadExec: partitioning=Hash([#0@0], 16)
+
+[2026-10-03T20:31:41Z DEBUG sail_execution::task_runner::preparation] job 1 stage 1 partition 1 attempt 0 execution plan
+ShuffleWriteExec: partitioning=RoundRobinBatch(1)
+  ProjectionExec: expr=[#0@0 as id, count(Int64(1))@1 as count]
+    AggregateExec: mode=SinglePartitioned, gby=[#0@0 as #0], aggr=[count(Int64(1))]
+      ShuffleReadExec: partitioning=Hash([#0@0], 16)
+
+[2026-10-03T20:31:41Z DEBUG sail_execution::task_runner::preparation] job 1 stage 1 partition 3 attempt 0 preparation wait=1.724597ms duration=2.436348ms
+[2026-10-03T20:31:41Z DEBUG sail_execution::task_runner::preparation] job 1 stage 1 partition 7 attempt 0 preparation wait=1.843637ms duration=2.579567ms
+[2026-10-03T20:31:41Z DEBUG sail_execution::task_runner::preparation] job 1 stage 1 partition 13 attempt 0 preparation wait=2.000831ms duration=1.60823ms
+[2026-10-03T20:31:41Z DEBUG sail_execution::task_runner::preparation] job 1 stage 1 partition 15 attempt 0 execution plan
+ShuffleWriteExec: partitioning=RoundRobinBatch(1)
+  ProjectionExec: expr=[#0@0 as id, count(Int64(1))@1 as count]
+    AggregateExec: mode=SinglePartitioned, gby=[#0@0 as #0], aggr=[count(Int64(1))]
+      ShuffleReadExec: partitioning=Hash([#0@0], 16)
+
+[2026-10-03T20:31:41Z DEBUG sail_execution::task_runner::preparation] job 1 stage 1 partition 11 attempt 0 execution plan
+ShuffleWriteExec: partitioning=RoundRobinBatch(1)
+  ProjectionExec: expr=[#0@0 as id, count(Int64(1))@1 as count]
+    AggregateExec: mode=SinglePartitioned, gby=[#0@0 as #0], aggr=[count(Int64(1))]
+      ShuffleReadExec: partitioning=Hash([#0@0], 16)
+
+[2026-10-03T20:31:41Z DEBUG sail_execution::task_runner::preparation] job 1 stage 1 partition 15 attempt 0 preparation wait=2.998978ms duration=419.798µs
+[2026-10-03T20:31:41Z DEBUG sail_execution::task_runner::preparation] job 1 stage 1 partition 11 attempt 0 preparation wait=1.459931ms duration=2.489711ms
+[2026-10-03T20:31:41Z DEBUG sail_execution::task_runner::preparation] job 1 stage 0 partition 5 attempt 0 execution plan
+ShuffleWriteExec: partitioning=Hash([#0@0], 16)
+  RangeExec: start=0, end=1048576, step=1, num_partitions=16, projection=[0]
+
+[2026-10-03T20:31:41Z DEBUG sail_execution::task_runner::preparation] job 1 stage 1 partition 9 attempt 0 preparation wait=1.443569ms duration=2.430731ms
+[2026-10-03T20:31:41Z DEBUG sail_execution::task_runner::preparation] job 1 stage 0 partition 5 attempt 0 preparation wait=3.445375ms duration=446.146µs
+[2026-10-03T20:31:41Z DEBUG sail_execution::task_runner::preparation] job 1 stage 1 partition 5 attempt 0 execution plan
+ShuffleWriteExec: partitioning=RoundRobinBatch(1)
+  ProjectionExec: expr=[#0@0 as id, count(Int64(1))@1 as count]
+    AggregateExec: mode=SinglePartitioned, gby=[#0@0 as #0], aggr=[count(Int64(1))]
+      ShuffleReadExec: partitioning=Hash([#0@0], 16)
+
+[2026-10-03T20:31:41Z DEBUG sail_execution::task_runner::preparation] job 1 stage 1 partition 1 attempt 0 preparation wait=2.301881ms duration=2.410021ms
+[2026-10-03T20:31:41Z DEBUG sail_execution::task_runner::preparation] job 1 stage 1 partition 5 attempt 0 preparation wait=3.243695ms duration=1.248747ms
+[2026-10-03T20:31:41Z DEBUG sail_execution::stream::service::server] TaskStreamKey { job_id: JobId(1), stage: 0, partition: 9, attempt: 0, channel: 4 }
+[2026-10-03T20:31:41Z DEBUG sail_execution::stream::service::server] TaskStreamKey { job_id: JobId(1), stage: 0, partition: 5, attempt: 0, channel: 2 }
+[2026-10-03T20:31:41Z DEBUG sail_execution::stream::service::server] TaskStreamKey { job_id: JobId(1), stage: 0, partition: 3, attempt: 0, channel: 6 }
+[2026-10-03T20:31:41Z DEBUG sail_execution::stream::service::server] TaskStreamKey { job_id: JobId(1), stage: 0, partition: 1, attempt: 0, channel: 12 }
+[2026-10-03T20:31:41Z DEBUG sail_execution::stream::service::server] TaskStreamKey { job_id: JobId(1), stage: 0, partition: 3, attempt: 0, channel: 12 }
+[2026-10-03T20:31:41Z DEBUG sail_execution::stream::service::server] TaskStreamKey { job_id: JobId(1), stage: 0, partition: 5, attempt: 0, channel: 4 }
+[2026-10-03T20:31:41Z DEBUG sail_execution::stream::service::server] TaskStreamKey { job_id: JobId(1), stage: 0, partition: 5, attempt: 0, channel: 12 }
+[2026-10-03T20:31:41Z DEBUG sail_execution::stream::service::server] TaskStreamKey { job_id: JobId(1), stage: 0, partition: 1, attempt: 0, channel: 2 }
+[2026-10-03T20:31:41Z DEBUG sail_execution::stream::service::server] TaskStreamKey { job_id: JobId(1), stage: 0, partition: 3, attempt: 0, channel: 2 }
+[2026-10-03T20:31:41Z DEBUG sail_execution::stream::service::server] TaskStreamKey { job_id: JobId(1), stage: 0, partition: 7, attempt: 0, channel: 12 }
+[2026-10-03T20:31:41Z DEBUG sail_execution::stream::service::server] TaskStreamKey { job_id: JobId(1), stage: 0, partition: 11, attempt: 0, channel: 2 }
+[2026-10-03T20:31:41Z DEBUG sail_execution::stream::service::server] TaskStreamKey { job_id: JobId(1), stage: 0, partition: 13, attempt: 0, channel: 0 }
+[2026-10-03T20:31:41Z DEBUG sail_execution::stream::service::server] TaskStreamKey { job_id: JobId(1), stage: 0, partition: 15, attempt: 0, channel: 2 }
+[2026-10-03T20:31:41Z DEBUG sail_execution::stream::service::server] TaskStreamKey { job_id: JobId(1), stage: 0, partition: 9, attempt: 0, channel: 2 }
+[2026-10-03T20:31:41Z DEBUG sail_execution::stream::service::server] TaskStreamKey { job_id: JobId(1), stage: 0, partition: 13, attempt: 0, channel: 2 }
+[2026-10-03T20:31:41Z DEBUG sail_execution::stream::service::server] TaskStreamKey { job_id: JobId(1), stage: 0, partition: 13, attempt: 0, channel: 6 }
+[2026-10-03T20:31:41Z DEBUG sail_execution::stream::service::server] TaskStreamKey { job_id: JobId(1), stage: 0, partition: 15, attempt: 0, channel: 0 }
+[2026-10-03T20:31:41Z DEBUG sail_execution::stream::service::server] TaskStreamKey { job_id: JobId(1), stage: 0, partition: 1, attempt: 0, channel: 4 }
+[2026-10-03T20:31:41Z DEBUG sail_execution::stream::service::server] TaskStreamKey { job_id: JobId(1), stage: 0, partition: 9, attempt: 0, channel: 6 }
+[2026-10-03T20:31:41Z DEBUG sail_execution::stream::service::server] TaskStreamKey { job_id: JobId(1), stage: 0, partition: 3, attempt: 0, channel: 4 }
+[2026-10-03T20:31:41Z DEBUG sail_execution::stream::service::server] TaskStreamKey { job_id: JobId(1), stage: 0, partition: 11, attempt: 0, channel: 6 }
+[2026-10-03T20:31:41Z DEBUG sail_execution::stream::service::server] TaskStreamKey { job_id: JobId(1), stage: 0, partition: 15, attempt: 0, channel: 6 }
+[2026-10-03T20:31:41Z DEBUG sail_execution::stream::service::server] TaskStreamKey { job_id: JobId(1), stage: 0, partition: 7, attempt: 0, channel: 4 }
+[2026-10-03T20:31:41Z DEBUG sail_execution::stream::service::server] TaskStreamKey { job_id: JobId(1), stage: 0, partition: 11, attempt: 0, channel: 12 }
+[2026-10-03T20:31:41Z DEBUG sail_execution::stream::service::server] TaskStreamKey { job_id: JobId(1), stage: 0, partition: 9, attempt: 0, channel: 12 }
+[2026-10-03T20:31:41Z DEBUG sail_execution::stream::service::server] TaskStreamKey { job_id: JobId(1), stage: 0, partition: 1, attempt: 0, channel: 0 }
+[2026-10-03T20:31:41Z DEBUG sail_execution::stream::service::server] TaskStreamKey { job_id: JobId(1), stage: 0, partition: 1, attempt: 0, channel: 14 }
+[2026-10-03T20:31:41Z DEBUG sail_execution::stream::service::server] TaskStreamKey { job_id: JobId(1), stage: 0, partition: 7, attempt: 0, channel: 2 }
+[2026-10-03T20:31:41Z DEBUG sail_execution::stream::service::server] TaskStreamKey { job_id: JobId(1), stage: 0, partition: 13, attempt: 0, channel: 12 }
+[2026-10-03T20:31:41Z DEBUG sail_execution::stream::service::server] TaskStreamKey { job_id: JobId(1), stage: 0, partition: 11, attempt: 0, channel: 4 }
+[2026-10-03T20:31:41Z DEBUG sail_execution::stream::service::server] TaskStreamKey { job_id: JobId(1), stage: 0, partition: 13, attempt: 0, channel: 4 }
+[2026-10-03T20:31:41Z DEBUG sail_execution::stream::service::server] TaskStreamKey { job_id: JobId(1), stage: 0, partition: 15, attempt: 0, channel: 12 }
+[2026-10-03T20:31:41Z DEBUG sail_execution::stream::service::server] TaskStreamKey { job_id: JobId(1), stage: 0, partition: 9, attempt: 0, channel: 0 }
+[2026-10-03T20:31:41Z DEBUG sail_execution::stream::service::server] TaskStreamKey { job_id: JobId(1), stage: 0, partition: 5, attempt: 0, channel: 6 }
+[2026-10-03T20:31:41Z DEBUG sail_execution::stream::service::server] TaskStreamKey { job_id: JobId(1), stage: 0, partition: 7, attempt: 0, channel: 6 }
+[2026-10-03T20:31:41Z DEBUG sail_execution::stream::service::server] TaskStreamKey { job_id: JobId(1), stage: 0, partition: 7, attempt: 0, channel: 0 }
+[2026-10-03T20:31:41Z DEBUG sail_execution::stream::service::server] TaskStreamKey { job_id: JobId(1), stage: 0, partition: 1, attempt: 0, channel: 6 }
+[2026-10-03T20:31:41Z DEBUG sail_execution::stream::service::server] TaskStreamKey { job_id: JobId(1), stage: 1, partition: 1, attempt: 0, channel: 0 }
+[2026-10-03T20:31:41Z DEBUG sail_execution::stream::service::server] TaskStreamKey { job_id: JobId(1), stage: 0, partition: 3, attempt: 0, channel: 0 }
+[2026-10-03T20:31:41Z DEBUG sail_execution::stream::service::server] TaskStreamKey { job_id: JobId(1), stage: 1, partition: 3, attempt: 0, channel: 0 }
+[2026-10-03T20:31:41Z DEBUG sail_execution::stream::service::server] TaskStreamKey { job_id: JobId(1), stage: 1, partition: 15, attempt: 0, channel: 0 }
+[2026-10-03T20:31:41Z DEBUG sail_execution::stream::service::server] TaskStreamKey { job_id: JobId(1), stage: 0, partition: 3, attempt: 0, channel: 14 }
+[2026-10-03T20:31:41Z DEBUG sail_execution::stream::service::server] TaskStreamKey { job_id: JobId(1), stage: 0, partition: 15, attempt: 0, channel: 4 }
+[2026-10-03T20:31:41Z DEBUG sail_execution::stream::service::server] TaskStreamKey { job_id: JobId(1), stage: 1, partition: 13, attempt: 0, channel: 0 }
+[2026-10-03T20:31:41Z DEBUG sail_execution::stream::service::server] TaskStreamKey { job_id: JobId(1), stage: 1, partition: 11, attempt: 0, channel: 0 }
+[2026-10-03T20:31:41Z DEBUG sail_execution::stream::service::server] TaskStreamKey { job_id: JobId(1), stage: 1, partition: 9, attempt: 0, channel: 0 }
+[2026-10-03T20:31:41Z DEBUG sail_execution::stream::service::server] TaskStreamKey { job_id: JobId(1), stage: 0, partition: 5, attempt: 0, channel: 14 }
+[2026-10-03T20:31:41Z DEBUG sail_execution::stream::service::server] TaskStreamKey { job_id: JobId(1), stage: 0, partition: 1, attempt: 0, channel: 8 }
+[2026-10-03T20:31:41Z DEBUG sail_execution::stream::service::server] TaskStreamKey { job_id: JobId(1), stage: 0, partition: 11, attempt: 0, channel: 14 }
+[2026-10-03T20:31:41Z DEBUG sail_execution::stream::service::server] TaskStreamKey { job_id: JobId(1), stage: 0, partition: 9, attempt: 0, channel: 8 }
+[2026-10-03T20:31:41Z DEBUG sail_execution::stream::service::server] TaskStreamKey { job_id: JobId(1), stage: 1, partition: 7, attempt: 0, channel: 0 }
+[2026-10-03T20:31:41Z DEBUG sail_execution::stream::service::server] TaskStreamKey { job_id: JobId(1), stage: 0, partition: 11, attempt: 0, channel: 0 }
+[2026-10-03T20:31:41Z DEBUG sail_execution::stream::service::server] TaskStreamKey { job_id: JobId(1), stage: 0, partition: 15, attempt: 0, channel: 8 }
+[2026-10-03T20:31:41Z DEBUG sail_execution::stream::service::server] TaskStreamKey { job_id: JobId(1), stage: 0, partition: 5, attempt: 0, channel: 0 }
+[2026-10-03T20:31:41Z DEBUG sail_execution::stream::service::server] TaskStreamKey { job_id: JobId(1), stage: 1, partition: 5, attempt: 0, channel: 0 }
+[2026-10-03T20:31:41Z DEBUG sail_execution::stream::service::server] TaskStreamKey { job_id: JobId(1), stage: 0, partition: 3, attempt: 0, channel: 10 }
+[2026-10-03T20:31:41Z DEBUG sail_execution::stream::service::server] TaskStreamKey { job_id: JobId(1), stage: 0, partition: 13, attempt: 0, channel: 14 }
+[2026-10-03T20:31:41Z DEBUG sail_execution::stream::service::server] TaskStreamKey { job_id: JobId(1), stage: 0, partition: 3, attempt: 0, channel: 8 }
+[2026-10-03T20:31:41Z DEBUG sail_execution::stream::service::server] TaskStreamKey { job_id: JobId(1), stage: 0, partition: 7, attempt: 0, channel: 14 }
+[2026-10-03T20:31:41Z DEBUG sail_execution::stream::service::server] TaskStreamKey { job_id: JobId(1), stage: 0, partition: 5, attempt: 0, channel: 8 }
+[2026-10-03T20:31:41Z DEBUG sail_execution::stream::service::server] TaskStreamKey { job_id: JobId(1), stage: 0, partition: 7, attempt: 0, channel: 8 }
+[2026-10-03T20:31:41Z DEBUG sail_execution::stream::service::server] TaskStreamKey { job_id: JobId(1), stage: 0, partition: 15, attempt: 0, channel: 10 }
+[2026-10-03T20:31:41Z DEBUG sail_execution::stream::service::server] TaskStreamKey { job_id: JobId(1), stage: 0, partition: 7, attempt: 0, channel: 10 }
+[2026-10-03T20:31:41Z DEBUG sail_execution::stream::service::server] TaskStreamKey { job_id: JobId(1), stage: 0, partition: 9, attempt: 0, channel: 14 }
+[2026-10-03T20:31:41Z DEBUG sail_execution::stream::service::server] TaskStreamKey { job_id: JobId(1), stage: 0, partition: 13, attempt: 0, channel: 8 }
+[2026-10-03T20:31:41Z DEBUG sail_execution::stream::service::server] TaskStreamKey { job_id: JobId(1), stage: 0, partition: 9, attempt: 0, channel: 10 }
+[2026-10-03T20:31:41Z DEBUG sail_execution::stream::service::server] TaskStreamKey { job_id: JobId(1), stage: 0, partition: 5, attempt: 0, channel: 10 }
+[2026-10-03T20:31:41Z DEBUG sail_execution::stream::service::server] TaskStreamKey { job_id: JobId(1), stage: 0, partition: 11, attempt: 0, channel: 10 }
+[2026-10-03T20:31:41Z DEBUG sail_execution::stream::service::server] TaskStreamKey { job_id: JobId(1), stage: 0, partition: 13, attempt: 0, channel: 10 }
+[2026-10-03T20:31:41Z DEBUG sail_execution::stream::service::server] TaskStreamKey { job_id: JobId(1), stage: 0, partition: 15, attempt: 0, channel: 14 }
+[2026-10-03T20:31:41Z DEBUG sail_execution::stream::service::server] TaskStreamKey { job_id: JobId(1), stage: 0, partition: 11, attempt: 0, channel: 8 }
+[2026-10-03T20:31:41Z DEBUG sail_execution::stream::service::server] TaskStreamKey { job_id: JobId(1), stage: 0, partition: 1, attempt: 0, channel: 10 }
+[2026-10-03T20:31:41Z DEBUG sail_execution::task_runner::actor::handler] worker_task_status worker_id=2 job_id=1 stage=0 partition=1 attempt=0 status=SUCCEEDED
+[2026-10-03T20:31:41Z DEBUG sail_execution::task_runner::actor::handler] worker_task_status worker_id=2 job_id=1 stage=0 partition=9 attempt=0 status=SUCCEEDED
+[2026-10-03T20:31:41Z DEBUG sail_execution::task_runner::actor::handler] worker_task_status worker_id=2 job_id=1 stage=0 partition=11 attempt=0 status=SUCCEEDED
+[2026-10-03T20:31:41Z DEBUG sail_execution::task_runner::actor::handler] worker_task_status worker_id=2 job_id=1 stage=0 partition=5 attempt=0 status=SUCCEEDED
+[2026-10-03T20:31:41Z DEBUG sail_execution::task_runner::actor::handler] worker_task_status worker_id=2 job_id=1 stage=0 partition=7 attempt=0 status=SUCCEEDED
+[2026-10-03T20:31:41Z DEBUG sail_execution::task_runner::actor::handler] worker_task_status worker_id=2 job_id=1 stage=0 partition=3 attempt=0 status=SUCCEEDED
+[2026-10-03T20:31:41Z DEBUG sail_execution::task_runner::actor::handler] worker_task_status worker_id=2 job_id=1 stage=0 partition=15 attempt=0 status=SUCCEEDED
+[2026-10-03T20:31:41Z DEBUG sail_execution::task_runner::actor::handler] worker_task_status worker_id=2 job_id=1 stage=0 partition=13 attempt=0 status=SUCCEEDED
+[2026-10-03T20:31:41Z WARN sail_execution::diagnostics] execution_failure pid=55515 event=task_execution_error key=TaskKey { job_id: JobId(1), stage: 1, partition: 13, attempt: 0 } error_chain=Resources exhausted: Failed to allocate additional 256.0 KB for SingleHashAggregateStream[13] with 0.0 B already allocated for this reservation - 64.0 KB remain available for the total memory pool: greedy(used: 960.0 KB, pool_size: 1024.0 KB)
+[2026-10-03T20:31:41Z WARN sail_execution::diagnostics] execution_failure pid=55515 event=task_execution_error key=TaskKey { job_id: JobId(1), stage: 1, partition: 5, attempt: 0 } error_chain=Resources exhausted: Failed to allocate additional 256.0 KB for SingleHashAggregateStream[5] with 0.0 B already allocated for this reservation - 0.0 B remain available for the total memory pool: greedy(used: 1024.0 KB, pool_size: 1024.0 KB)
+[2026-10-03T20:31:41Z WARN sail_execution::task_runner::actor::handler] task_failure pid=55515 session_id=b9d09997-cc57-4e6d-9a61-48b29d64d912 worker_id=Some(WorkerId(2)) key=TaskKey { job_id: JobId(1), stage: 1, partition: 5, attempt: 0 } message=task error: Resources exhausted: Failed to allocate additional 256.0 KB for SingleHashAggregateStream[5] with 0.0 B already allocated for this reservation - 0.0 B remain available for the total memory pool: greedy(used: 1024.0 KB, pool_size: 1024.0 KB) cause=Failed to allocate additional 256.0 KB for SingleHashAggregateStream[5] with 0.0 B already allocated for this reservation - 0.0 B remain available for the total memory pool: greedy(used: 1024.0 KB, pool_size: 1024.0 KB)
+[2026-10-03T20:31:41Z DEBUG sail_execution::task_runner::actor::handler] worker_task_status worker_id=2 job_id=1 stage=1 partition=5 attempt=0 status=FAILED
+[2026-10-03T20:31:41Z WARN sail_execution::task_runner::actor::handler] task_failure pid=55515 session_id=b9d09997-cc57-4e6d-9a61-48b29d64d912 worker_id=Some(WorkerId(2)) key=TaskKey { job_id: JobId(1), stage: 1, partition: 13, attempt: 0 } message=task error: Resources exhausted: Failed to allocate additional 256.0 KB for SingleHashAggregateStream[13] with 0.0 B already allocated for this reservation - 64.0 KB remain available for the total memory pool: greedy(used: 960.0 KB, pool_size: 1024.0 KB) cause=Failed to allocate additional 256.0 KB for SingleHashAggregateStream[13] with 0.0 B already allocated for this reservation - 64.0 KB remain available for the total memory pool: greedy(used: 960.0 KB, pool_size: 1024.0 KB)
+[2026-10-03T20:31:41Z DEBUG sail_execution::task_runner::actor::handler] worker_task_status worker_id=2 job_id=1 stage=1 partition=13 attempt=0 status=FAILED
+[2026-10-03T20:31:41Z DEBUG sail_execution::worker::server] StopTaskRequest { job_id: 1, stage: 1, partition: 1, attempt: 0 }
+[2026-10-03T20:31:41Z DEBUG sail_execution::worker::server] StopTaskResponse
+[2026-10-03T20:31:41Z DEBUG sail_execution::worker::server] StopTaskRequest { job_id: 1, stage: 1, partition: 3, attempt: 0 }
+[2026-10-03T20:31:41Z DEBUG sail_execution::worker::server] StopTaskResponse
+[2026-10-03T20:31:41Z DEBUG sail_execution::worker::server] StopTaskRequest { job_id: 1, stage: 1, partition: 9, attempt: 0 }
+[2026-10-03T20:31:41Z DEBUG sail_execution::worker::server] StopTaskResponse
+[2026-10-03T20:31:41Z DEBUG sail_execution::worker::server] StopTaskRequest { job_id: 1, stage: 1, partition: 13, attempt: 0 }
+[2026-10-03T20:31:41Z DEBUG sail_execution::worker::server] StopTaskResponse
+[2026-10-03T20:31:41Z DEBUG sail_execution::worker::server] StopTaskRequest { job_id: 1, stage: 1, partition: 7, attempt: 0 }
+[2026-10-03T20:31:41Z DEBUG sail_execution::worker::server] StopTaskResponse
+[2026-10-03T20:31:41Z DEBUG sail_execution::worker::server] StopTaskRequest { job_id: 1, stage: 1, partition: 15, attempt: 0 }
+[2026-10-03T20:31:41Z DEBUG sail_execution::worker::server] StopTaskResponse
+[2026-10-03T20:31:41Z DEBUG sail_execution::worker::server] StopTaskRequest { job_id: 1, stage: 1, partition: 11, attempt: 0 }
+[2026-10-03T20:31:41Z DEBUG sail_execution::worker::server] StopTaskResponse
+[2026-10-03T20:31:41Z DEBUG sail_execution::worker::server] CleanUpJobRequest { job_id: 1, stage: None }
+[2026-10-03T20:31:41Z DEBUG sail_execution::worker::server] CleanUpJobResponse
+[2026-10-03T20:31:41Z WARN sail_execution::diagnostics] execution_failure pid=55515 event=task_execution_error key=TaskKey { job_id: JobId(1), stage: 1, partition: 11, attempt: 0 } error_chain=Resources exhausted: Failed to allocate additional 256.0 KB for SingleHashAggregateStream[11] with 0.0 B already allocated for this reservation - 0.0 B remain available for the total memory pool: greedy(used: 1024.0 KB, pool_size: 1024.0 KB)
+[2026-10-03T20:31:41Z WARN sail_execution::task_runner::actor::handler] task_failure pid=55515 session_id=b9d09997-cc57-4e6d-9a61-48b29d64d912 worker_id=Some(WorkerId(2)) key=TaskKey { job_id: JobId(1), stage: 1, partition: 11, attempt: 0 } message=task error: Resources exhausted: Failed to allocate additional 256.0 KB for SingleHashAggregateStream[11] with 0.0 B already allocated for this reservation - 0.0 B remain available for the total memory pool: greedy(used: 1024.0 KB, pool_size: 1024.0 KB) cause=Failed to allocate additional 256.0 KB for SingleHashAggregateStream[11] with 0.0 B already allocated for this reservation - 0.0 B remain available for the total memory pool: greedy(used: 1024.0 KB, pool_size: 1024.0 KB)
+[2026-10-03T20:31:41Z DEBUG sail_execution::task_runner::actor::handler] worker_task_status worker_id=2 job_id=1 stage=1 partition=11 attempt=0 status=FAILED
+[2026-10-03T20:31:41Z WARN sail_execution::diagnostics] execution_failure pid=55515 event=task_execution_error key=TaskKey { job_id: JobId(1), stage: 1, partition: 9, attempt: 0 } error_chain=Resources exhausted: Failed to allocate additional 256.0 KB for SingleHashAggregateStream[9] with 0.0 B already allocated for this reservation - 0.0 B remain available for the total memory pool: greedy(used: 1024.0 KB, pool_size: 1024.0 KB)
+[2026-10-03T20:31:41Z WARN sail_execution::task_runner::actor::handler] task_failure pid=55515 session_id=b9d09997-cc57-4e6d-9a61-48b29d64d912 worker_id=Some(WorkerId(2)) key=TaskKey { job_id: JobId(1), stage: 1, partition: 9, attempt: 0 } message=task error: Resources exhausted: Failed to allocate additional 256.0 KB for SingleHashAggregateStream[9] with 0.0 B already allocated for this reservation - 0.0 B remain available for the total memory pool: greedy(used: 1024.0 KB, pool_size: 1024.0 KB) cause=Failed to allocate additional 256.0 KB for SingleHashAggregateStream[9] with 0.0 B already allocated for this reservation - 0.0 B remain available for the total memory pool: greedy(used: 1024.0 KB, pool_size: 1024.0 KB)
+[2026-10-03T20:31:41Z DEBUG sail_execution::task_runner::actor::handler] worker_task_status worker_id=2 job_id=1 stage=1 partition=9 attempt=0 status=FAILED
+[2026-10-03T20:31:41Z WARN sail_execution::diagnostics] execution_failure pid=55515 event=task_execution_error key=TaskKey { job_id: JobId(1), stage: 1, partition: 3, attempt: 0 } error_chain=Resources exhausted: Failed to allocate additional 256.0 KB for SingleHashAggregateStream[3] with 0.0 B already allocated for this reservation - 0.0 B remain available for the total memory pool: greedy(used: 1024.0 KB, pool_size: 1024.0 KB)
+[2026-10-03T20:31:41Z WARN sail_execution::task_runner::actor::handler] task_failure pid=55515 session_id=b9d09997-cc57-4e6d-9a61-48b29d64d912 worker_id=Some(WorkerId(2)) key=TaskKey { job_id: JobId(1), stage: 1, partition: 3, attempt: 0 } message=task error: Resources exhausted: Failed to allocate additional 256.0 KB for SingleHashAggregateStream[3] with 0.0 B already allocated for this reservation - 0.0 B remain available for the total memory pool: greedy(used: 1024.0 KB, pool_size: 1024.0 KB) cause=Failed to allocate additional 256.0 KB for SingleHashAggregateStream[3] with 0.0 B already allocated for this reservation - 0.0 B remain available for the total memory pool: greedy(used: 1024.0 KB, pool_size: 1024.0 KB)
+[2026-10-03T20:31:41Z DEBUG sail_execution::task_runner::actor::handler] worker_task_status worker_id=2 job_id=1 stage=1 partition=3 attempt=0 status=FAILED

@@ -1,0 +1,267 @@
+{
+  "schema": 1,
+  "prepared_utc": "2026-09-30T20:13:56.195360+00:00",
+  "namespace": "pair16k-20260930201356",
+  "remote_root": "/Users/alexy/src/sail-extensions-gates/stream-experiments-20260930",
+  "scope": "preparation only; execution requires a separate operator scheduling authorization",
+  "order": "warmup A, warmup B, measured A B B A",
+  "hosts": {
+    "A": {
+      "name": "host289",
+      "source": "2894a962076d3cc404dd72ec736ebeb9239901f6",
+      "binary": "/targets/sail-stream-2894a962076d/sail-linux-x86_64-2894a962076d-release",
+      "sha256": "40a78182a420152e8e3651f9cdb38a4196eaf8bc7aead092d10e258a17ac3497"
+    },
+    "B": {
+      "name": "host561",
+      "source": "56194b170155301ba91077f0ba3df31fe2c78b6b",
+      "binary": "/targets/sail-compact-host-56194b170155/sail-linux-x86_64-56194b170155-release",
+      "sha256": "5b7f506c19afd76a28b84c1459397b4ab30ff4cfc761f4195789425b963facec"
+    }
+  },
+  "runtime_boundary": "Only host binary/source and unique output/run/suite names differ. Controller and its Pecan Python, installed original ffcf native/Python, dataset bytes, resource caps and protocol remain pinned.",
+  "cache_policy": "No OS/filesystem cache flush; one unmeasured fresh-process warmup per host, then four fresh-process measurements. Retained staging is not reused as an input.",
+  "exclusions": "Previous smokes excluded; warmups never used as measured samples. Failures, invalid identities, missing metrics and concurrent containers prevent ratio publication, with raw cells retained.",
+  "scheduling": "Serial cells, idle Docker admission at each start; sampled concurrent containers invalidate ratio. No host-wide lock; no proof of dedicated hardware. All ratios labeled shared-host.",
+  "minimum_free_bytes": 12884901888,
+  "disk_scope": "12 GiB free admission per cell; an observation, not a proven peak bound. No deletion or dataset generation.",
+  "runner_wall_timeout_seconds": 2400,
+  "deadline_scope": "Per runner wall deadline 2400s, up to 240s graceful diagnostic cleanup, then own process-group/container cleanup. Unknown leftover containers stop later admission; no retry.",
+  "common_configuration_sha256": "a1823f2e36a83b4043156cb72a06d9890ef4c2c706b0da6e14c8aa2d82b79a11",
+  "resource_fingerprint": "2756b53ada1b10d0c4eedf9d20a54e38b611db7607fd7c9a8fa4eca1e52eb399",
+  "resources": {
+    "limits": {
+      "cpus": 8,
+      "cpuset_cpus": "16-23",
+      "memory_gib": 12,
+      "outer_timeout_seconds": 1350
+    },
+    "defaults": {
+      "partitions": 4,
+      "threads": 4,
+      "worker_task_slots": 16,
+      "sail_pool_bytes": 3221225472,
+      "native_quota": 268435456,
+      "tolerance": 1e-08,
+      "damping": 0.85,
+      "timeout": 600,
+      "seed": 42,
+      "delta": 1.0,
+      "max_iterations": 1000
+    },
+    "environment": {
+      "SAIL_CLUSTER__TASK_STREAM_CREATION_TIMEOUT_SECS": "900",
+      "SAIL_CLUSTER__WORKER_MAX_IDLE_TIME_SECS": "86400",
+      "SAIL_BENCHMARK_RUST_LOG": "info,h2::proto::connection=debug,h2::proto::streams=warn,h2::frame::go_away=trace,h2::frame::reset=trace,h2::frame::ping=trace,h2::proto::ping_pong=trace,sail_execution::task_runner=debug,tonic::transport::server=debug"
+    },
+    "extra_cell_args": [
+      "--http2-keepalive-timeout",
+      "120",
+      "--record-plans"
+    ],
+    "mode": "process-cluster",
+    "worker_initial_count": 2,
+    "worker_max_count": 2,
+    "worker_count_source": "pinned runtime.py server() environment",
+    "pool_scope": "greedy 3 GiB configured per Sail process; container hard cap 12 GiB",
+    "pid_limit": 1024,
+    "image": "sha256:f3518d652fbea8b9b9f9ebf9849277ca3bd39d0c21bb2c6e36fbaeaa2dc2678e",
+    "cpuset_scope": "same VM logical CPUs 16-23"
+  },
+  "scripts": {
+    "run_focused_safe.py": "53589784544a1414b29b1a42e061bada15a0a868801cd356addf4e35f29abdd1",
+    "preflight_cell.py": "454afd5bdf4ef9f1d714d01bbcf76f17714600bac67dfd0b5956c381a8485e3d",
+    "run_host_pair.py": "dfc1d266ff5ebeb016f2c224a477eae10a92e1e1ec8a60b37acb669fdf5529ac"
+  },
+  "harness_files_sha256": {
+    "graph500_fixture.py": "be2665ce18994aeb6f0b3e833164329612fb3423d19e2743efe08130260345f3",
+    "graph_cell.py": "8666741b91887dfbc40eb831d6fa54149b6a5f4437e683d79c7ffc8f731eaa55",
+    "graph_fixtures.py": "5fdfd1432439e3d03dea941e27a1e5f54b30bab13e45cbe3696f8f050556c850",
+    "imported_fixture.py": "e77640045ac4ff374074e992fdb26b35cb65c9c6089ecfdbcdda6fcdbc22decf",
+    "imported_snap_fixture.py": "4e0a18b1695fd720491ac83719cc70d5e7ecd3a0a2299c64a1e4cfa8778b9ab0",
+    "imported_traversal_fixture.py": "3d4ce90c0bfe518f6418f7f6338780d3288cc28ee81fb90abe4aeb73cd2a2fa8",
+    "measurement.py": "e9945063c793890a47d9e4da0b0cae4eae7b96f44d7672549932cc61df9c7127",
+    "render_large.py": "518edb73b647ebc9bee948a16ee99ceadd53da0643611a97aee108b728f3dc77",
+    "run_matrix.py": "21d12c888caabb59acece11a2ee27837974c1f34b08cc499600e305d6341e1a0",
+    "runtime.py": "27a76460792bac9668e18c8e32961f34a936060dc15cd3fe06f115124757b6e4",
+    "summarize.py": "c2f76469eb13058c7673416d6fb4d9cd995568149dc571d63a41de576c97fb24",
+    "test_graph500_fixture.py": "8c11b6796dfa2421bab79c1134741229fdc702d7537fd702a5ae43f5debad2ec",
+    "test_graph500_matrix.py": "a94e3b3d2ac167218185b04f3ed52dd75c0e3b6d78d453a26c3a71132b36c080",
+    "test_graph_fixtures.py": "1f20e1f2a604afedf3a56b3a825b774a8396dd5da1e0953e9dc178efc2eae7e4",
+    "test_imported_fixture.py": "30a2d10956fe59f6ef5b015036024087cbb011c4d50951c9c82ed97e99d3bed2",
+    "test_imported_snap.py": "de48007719edcb96866c393381a1a5983f06a20ec55fc5049bec6d1b1d994e00",
+    "test_imported_traversal.py": "1c7d6f7177bea981254454af3787289fc6b656baf6143458a4a550f166439bb7",
+    "test_measurement.py": "66432ea572d83c5d755893986fb9bac6e8a642f615dc6be5f4a3cca03e3d1091",
+    "test_run_matrix.py": "c8d3209c9ea838c77ee1a48c215293fa3fcc4616d1f07a24065ef4667fa53fb1",
+    "test_runtime.py": "b5ea2f1b67fc47c085bc38e669326706b5fea1664899e0bf9f3af1d0dc74210e",
+    "test_summarize.py": "914c70a7bfacf73e2b7e6ab293e8f9c4fefc7279660c9c38f04e5f5f0ebc85bb",
+    "test_traversal_benchmark.py": "be5134e3d0305365795f5556517bf7de316af99f80a5de2e31e654df197cf95e",
+    "test_traversal_certificate.py": "56ed4a9b3609f46243e9792e8ecff35a69087434e887908cb520928701a3ceb0",
+    "test_traversal_controls.py": "8d168154617ef58931642929e8eda6eb41d51af6f6151ffe9b3f4692c0739cb1",
+    "test_tutorial_methods.py": "686009eb1201a1dcf5757155d885e00974e5d5935fcac25fbc496b9a18043ab0",
+    "traversal_cell.py": "8b02d35cc72e86cfdf2b476d9682ed9e3563515a5f2e8af2c8d20e7ef517616a",
+    "traversal_certificate.py": "4014bbc54897fa02bb8181294a611bf78eef88938f1e28953de49dee51ec71f3",
+    "traversal_fixture.py": "99e21995192fc0239f3043f14d1a6e7086d563bc4f7115a5015752cf24621c53",
+    "traversal_methods.py": "8190dc03bce98646b7d124b62a805505303036eeecde21fe780fff36798d1c20",
+    "traversal_reference.py": "9f761d7ac5321e6c1c260f162ad273bfe2b1ac7e14669aedb4fcdfc6db15a74b",
+    "traversal_source.py": "92e8a80ddbb4ce78f9c9bc98097ff52f60dcc225046142f54c02370d52f7f70a",
+    "tutorial_methods.py": "9aae97ce4bcc6f6e1bbaf4a8ca421d7cdc41010c32ff7c4582a4c5cc70896142",
+    "tutorial_traversals.py": "94bdcb3ef902b4cd46a4870e0c31898643201bc03b472a1f3a4675ec49383bf4"
+  },
+  "baseline_configuration_sha256": "e849c52a477d66220240a4c4294fb03fe6ba70b3629860d9d71c75e1b8d4db8b",
+  "baseline_receipt_sha256": "f7b34a5aac5d0b47bba1d049f8833e6401b1ad5a58387156b8d140be9ddc44f1",
+  "expected_arguments": {
+    "sail_binary": "/targets/sail-stream-2894a962076d/sail-linux-x86_64-2894a962076d-release",
+    "runtime_source_sha": "2894a962076d3cc404dd72ec736ebeb9239901f6",
+    "native_source_sha": "ffcfbd5690e3f3681ef9ac18ba959bc231cf9f73",
+    "dataset": "/targets/sail-stream-experiments-20260930/pecan-gate3/datasets/weighted16k",
+    "expected_dataset_family": "traversal",
+    "expected_vertices": 16384,
+    "expected_graph500_sha256": null,
+    "expected_input_sha256": null,
+    "expected_edge_sha256": null,
+    "expected_weight_policy": null,
+    "expected_weight_seed": null,
+    "output": "/targets/sail-stream-experiments-20260930/pecan-gate3/cells/worker-smoke-instrumented289-cpu16-23-r1-weighted16k-pecan-sssp-frontier",
+    "engine": "pecan",
+    "algorithm": "sssp",
+    "variant": "frontier",
+    "source": 0,
+    "directed": true,
+    "delta": 1.0,
+    "traversal_validation": "reference",
+    "http2_keepalive_timeout": 120,
+    "record_plans": true,
+    "argentea_max_rounds": 62,
+    "stage_order": "canonical",
+    "ranking_validation": "reference",
+    "certificate_max_rounds": 10000,
+    "seed": 42,
+    "mode": "process-cluster",
+    "partitions": 4,
+    "threads": 4,
+    "worker_task_slots": 16,
+    "sail_pool_bytes": 3221225472,
+    "native_quota": 268435456,
+    "tolerance": 1e-08,
+    "damping": 0.85,
+    "max_iterations": 1000,
+    "timeout": 600,
+    "repeat": 1,
+    "allow_unisolated": false,
+    "allow_dirty": false
+  },
+  "expected_dataset": {
+    "family": "traversal",
+    "seed": 42,
+    "parameters": {
+      "degree": 32,
+      "source": 0,
+      "directed": true
+    },
+    "counts": {
+      "vertices": 16384,
+      "edges": 529723
+    },
+    "traversal": {
+      "source": 0,
+      "directed": true,
+      "seed": 42,
+      "weight_policy": "seeded integers 0..15 stored as float64"
+    },
+    "purpose": "bounded correctness fixture; not a Graph500 input",
+    "files": {
+      "vertices.parquet": {
+        "sha256": "65fbeb27779f3eade77cb9a74528952628893137b92ae88017f3fe93a96a91a7",
+        "bytes": 94785
+      },
+      "edges.parquet": {
+        "sha256": "d350d66a97f352916e3944657a0d2ae2ddff5718f651e335b33d7c5d7cdfc013",
+        "bytes": 1375846
+      },
+      "reference.parquet": {
+        "sha256": "243f396cd5900402acfea18875a423c9dd40f37f0dc343ba4fa42c90bb2497ef",
+        "bytes": 104754
+      }
+    }
+  },
+  "expected_native_package_identity": {
+    "root": "/targets/graph-nuts-ffcfbd569/venv/lib/python3.12/site-packages/sail_nutmeg",
+    "files_sha256": {
+      "__init__.py": "8ab1469a2f7411203604d2faaae29b30a35689599eb62d0bb397ab672cdb53ab",
+      "_native.cpython-312-x86_64-linux-gnu.so": "eb0be839de652e059799dea3bba22cc0908998bd97cfa2f4cf04c67817e2ee50",
+      "argentea_factory.py": "b79bb66e6dab06a8d3b405fcad3633614f394e89a35012ed2d1fb2095e43271a",
+      "client.py": "0e184de1daf55d1ea483c7153ea9df6951445b6e1206bd29027e3283a2ed803e",
+      "graph.py": "6ec3cb51c88dcbf677bde93bc2320dead5703e3f586d1b0a59b34919dc20cb57"
+    }
+  },
+  "dataset_manifest_sha256": "6d71d459df71e2a0de23d34c80c5faff6d40829cfa59c85c5f6cef16ae203134",
+  "runs": [
+    {
+      "order": 1,
+      "phase": "warmup",
+      "host": "A",
+      "configuration": "pair16k-20260930201356-01-a.json",
+      "configuration_sha256": "ea46b643191ed3028be5944956755020fd6d915cf689025a8adf6d28b386d2c5",
+      "configuration_fingerprint": "546828f50b2ae19aa760d4f5baba6c281a1085fad54a95ac5f6fbfc05d5de350",
+      "binary_sha256": "40a78182a420152e8e3651f9cdb38a4196eaf8bc7aead092d10e258a17ac3497",
+      "cell_id": "pair16k-20260930201356-01-a-r1-weighted16k-pecan-sssp-frontier",
+      "cell_output": "/targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-01-a-r1-weighted16k-pecan-sssp-frontier"
+    },
+    {
+      "order": 2,
+      "phase": "warmup",
+      "host": "B",
+      "configuration": "pair16k-20260930201356-02-b.json",
+      "configuration_sha256": "d0db66f24036f1644293fec129b90f4f7a5c13d39b19f8c778276de8f82caf83",
+      "configuration_fingerprint": "a06817652aa6874216c15a6ec60cac1fe35fd9889268840b930159dd0fb33b69",
+      "binary_sha256": "5b7f506c19afd76a28b84c1459397b4ab30ff4cfc761f4195789425b963facec",
+      "cell_id": "pair16k-20260930201356-02-b-r1-weighted16k-pecan-sssp-frontier",
+      "cell_output": "/targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-02-b-r1-weighted16k-pecan-sssp-frontier"
+    },
+    {
+      "order": 3,
+      "phase": "measurement",
+      "host": "A",
+      "configuration": "pair16k-20260930201356-03-a.json",
+      "configuration_sha256": "ecb63e3c0cada304822fcfaff2327d682708139501fe1e8f5091ac29ebce7a1e",
+      "configuration_fingerprint": "5e171ecc165669f4e756a76d007bf9780b946607e2106ea6f9c43200619ac319",
+      "binary_sha256": "40a78182a420152e8e3651f9cdb38a4196eaf8bc7aead092d10e258a17ac3497",
+      "cell_id": "pair16k-20260930201356-03-a-r1-weighted16k-pecan-sssp-frontier",
+      "cell_output": "/targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-03-a-r1-weighted16k-pecan-sssp-frontier"
+    },
+    {
+      "order": 4,
+      "phase": "measurement",
+      "host": "B",
+      "configuration": "pair16k-20260930201356-04-b.json",
+      "configuration_sha256": "a37c3ae7bbc94be07898060e5b8bed8bcd20a47f6754a34bbdf99be2752b5b7f",
+      "configuration_fingerprint": "6d8635b8b700cacbf49f0c48946dfb0af0b4a5040b1ca42e7abdec395aac2ad4",
+      "binary_sha256": "5b7f506c19afd76a28b84c1459397b4ab30ff4cfc761f4195789425b963facec",
+      "cell_id": "pair16k-20260930201356-04-b-r1-weighted16k-pecan-sssp-frontier",
+      "cell_output": "/targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-04-b-r1-weighted16k-pecan-sssp-frontier"
+    },
+    {
+      "order": 5,
+      "phase": "measurement",
+      "host": "B",
+      "configuration": "pair16k-20260930201356-05-b.json",
+      "configuration_sha256": "337e776244720b06aaac73cab7f8ea048ede7d38675332f6cb462ed4ba5f0083",
+      "configuration_fingerprint": "9226611a8ab2e9330dcd843d2f05dc875005c054fc7160af83350f5edca6c912",
+      "binary_sha256": "5b7f506c19afd76a28b84c1459397b4ab30ff4cfc761f4195789425b963facec",
+      "cell_id": "pair16k-20260930201356-05-b-r1-weighted16k-pecan-sssp-frontier",
+      "cell_output": "/targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-05-b-r1-weighted16k-pecan-sssp-frontier"
+    },
+    {
+      "order": 6,
+      "phase": "measurement",
+      "host": "A",
+      "configuration": "pair16k-20260930201356-06-a.json",
+      "configuration_sha256": "54c1e7bfe2b9c9a8eb442a4075a86761c03aaa1a2f13fec5f9ced4440d9227b9",
+      "configuration_fingerprint": "69b6982c5278073c6a20ef48f96513be43b3877706491de02e4dfbf4c341dea5",
+      "binary_sha256": "40a78182a420152e8e3651f9cdb38a4196eaf8bc7aead092d10e258a17ac3497",
+      "cell_id": "pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier",
+      "cell_output": "/targets/sail-stream-experiments-20260930/pecan-gate3/cells/pair16k-20260930201356-06-a-r1-weighted16k-pecan-sssp-frontier"
+    }
+  ]
+}

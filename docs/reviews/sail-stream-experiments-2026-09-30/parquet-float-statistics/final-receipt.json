@@ -1,0 +1,55 @@
+{
+  "recorded_utc": "2026-09-30T23:31:32.537919+00:00",
+  "outcome": "PASS_EXACT_COMMIT",
+  "repository": "querygraph/sail",
+  "branch": "work/parquet-float-statistics",
+  "commit": "837e8e82acc5e971fce4533a7c4ecf08355cafe8",
+  "parent": "200d1cf8eb1db5e9057e09e071ebd57391f4b376",
+  "tree": "7063e31260100901bd43d8820c4e1e733aa99605",
+  "delivery": "NOT_PUSHED",
+  "verdict": "PARQUET_FLOAT_STATISTICS_GATE PASS 837e8e82acc5e971fce4533a7c4ecf08355cafe8 exact commit",
+  "scope": "Local Rust data-source library; no Spark Connect/server/worker, Linux, production performance or full Parquet correctness qualification.",
+  "tests": {
+    "full_library_passed": 77,
+    "new_tests": 5,
+    "real_sail_metadata_and_scan_cases": 29,
+    "scalar_float_types": [
+      "Float16",
+      "Float32",
+      "Float64"
+    ],
+    "dictionary_value_types": [
+      "Float32",
+      "Float64"
+    ],
+    "dictionary_key": "Int32",
+    "unsupported": "Dictionary(Int32, Float16) reader rejects before Sail scan; writer and metadata helper support do not imply readback support",
+    "baseline": "Unchanged production parent plus identical final readback test module: 2 expected failures NaN became 0.5; 2 controls pass. Loops stop on first failing case (scalar Float16 and dictionary Float32); baseline does not independently enumerate all types."
+  },
+  "semantics": "Clear floating and dictionary-floating min/max only before listing statistics caching/aggregation. Preserve row/byte/null counts, footer-supplied NDV, integer and other nonfloating metadata; all-null inference remains possible.",
+  "tradeoff": "Floating file-level metadata MIN/MAX, constant-column substitution and range/equivalence simplifications lose bounds, including finite-only files. No timing or optimization cost measured.",
+  "exclusions": [
+    "Raw footer row-group/page pruning",
+    "Footer-derived ordering",
+    "Nested leaf statistics",
+    "Other reader paths",
+    "Cache entries injected outside this normalized path; no retroactive cache migration"
+  ],
+  "failures_retained": [
+    "initial-tests.log: fixture imports/Constraints API compile failure",
+    "initial-tests02.log: unsupported Dictionary(Float16) assumption",
+    "candidate-gate/clippy.log: denied unwrap calls in tests, replaced by Result propagation without weakening assertions",
+    "baseline.log and baseline02/baseline.log: intentional regression failures"
+  ],
+  "target_seed": "APFS copy of idle /private/tmp/sail-compact-struct-min-target (exact56194 gate); private candidate target, then private baseline copy after exploratory candidate stopped. See preflight and baseline receipt.",
+  "receipts": {
+    "candidate.patch": "b9c69a62b9f13fdcbb6106ff1ed0bf8f14fd2863904c83cc1bacc9a274c3f5b8",
+    "baseline02/baseline-receipt.json": "7b8b2b9b95b512d77c310f9b529bb46dfb46c940b0fd9d153e4522a478cf870d",
+    "candidate-gate02/receipt.json": "d687f3a2d2b04b2489569e7d38e8870fca1c41fe993d1d768463fb6dd9688ad4",
+    "precommit-guard.json": "ac5fde7d31098e2928f63b0a2a88c4e3e8b087dee5f046d01cdb87fe3822f7ce",
+    "exact-gate/receipt.json": "1f97c17c97146fc7a3d61e2b604de1c22d16f53dd847fc092a933143296771bc",
+    "independent-source-audit-v2.json": "103373029f02951351cd992283b2183e2fe6c7089ce36e2989791b20f19e8500"
+  },
+  "compiler": "rustc 1.97.1 (8bab26f4f 2026-07-14)",
+  "cargo": "cargo 1.97.1 (c980f4866 2026-06-30)"
+}

@@ -1,0 +1,42 @@
+{
+  "generated_utc": "2026-10-01T00:13:07.500262+00:00",
+  "outcome": "PASS_BOUNDED_GUARD02_SOURCE_REVIEW",
+  "scope": "Read-only source review of corrected registry proof and conditional commit chain. No builds, tests, new SQL requests, remote calls or exact union verdict.",
+  "files": {
+    "run_gate.py": {
+      "bytes": 24305,
+      "sha256": "ac1b12fbe08ac290b862c4453431fe31f95ef3d61b9ba27506b1f1c0ee6c1bdd"
+    },
+    "candidate-attempt02-guard.py": {
+      "bytes": 5526,
+      "sha256": "0322a95543effcb6eb6ba276ddd8c55d8cdbb41e3cf03330d585e5d51d32b481"
+    },
+    "candidate-attempt02-chain.sh": {
+      "bytes": 1166,
+      "sha256": "c0165b7ec01fd9627863d091e830a645048abfb5a2ece5239495929ad539d692"
+    },
+    "sql-helper-controls/attempt-failed02/sql_gate.py": {
+      "bytes": 16800,
+      "sha256": "0aca81a5819f29095d2592804aea836250d7640de917ce7d959a264ec80f124e"
+    },
+    "candidate-gate02/receipt.json": {
+      "bytes": 56074,
+      "sha256": "33557f1696710e458be628acf746a4d3cb82969ee127a8b3593ee4f206af61f2"
+    }
+  },
+  "checks": [
+    "15 expected steps and actual registry proof bound to native executable and full 51-test summaries",
+    "source, helper, log/stderr, interpreter, artifact and process cleanup guards remain required",
+    "shell && chain makes commit conditional on passing gate and guard"
+  ],
+  "candidate02_observed_outcome": "FAIL",
+  "candidate02_failure_preserved": true,
+  "exact_verdict": "not yet available; two failed candidates cannot authorize commit",
+  "receipt_preparation_note": "Initial hash-write attempt stopped when SQL helper correction was already present; no partial receipt was written. This review binds retained original helper and guard/chain copies.",
+  "auditor_prepared_only": {
+    "path": "independent_source_audit.py",
+    "sha256": "b3d26c0866f01af6e9c308f28b382fe4e91fb15ee7aa9b07b69e92a150707065",
+    "ast_parse": "PASS",
+    "pending": "final successful candidate directory and SQL/guard/chain pins after authorized correction"
+  }
+}

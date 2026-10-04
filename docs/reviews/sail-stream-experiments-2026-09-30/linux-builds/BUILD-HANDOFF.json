@@ -1,0 +1,89 @@
+{
+  "recorded_utc": "2026-09-30T20:01:47.159540+00:00",
+  "outcome": "passed",
+  "scope": "two exact-source Linux host builds; 235 native tests at source289; no graph benchmark launched by this build workflow",
+  "host289": {
+    "source_sha": "2894a962076d3cc404dd72ec736ebeb9239901f6",
+    "path": "/targets/sail-stream-2894a962076d/sail-linux-x86_64-2894a962076d-release",
+    "sha256": "40a78182a420152e8e3651f9cdb38a4196eaf8bc7aead092d10e258a17ac3497",
+    "bytes": 160163792,
+    "version": "sail 0.7.1"
+  },
+  "host561": {
+    "source_sha": "56194b170155301ba91077f0ba3df31fe2c78b6b",
+    "path": "/targets/sail-compact-host-56194b170155/sail-linux-x86_64-56194b170155-release",
+    "sha256": "5b7f506c19afd76a28b84c1459397b4ab30ff4cfc761f4195789425b963facec",
+    "bytes": 160192912,
+    "version": "sail 0.7.1"
+  },
+  "native_build": {
+    "source_sha": "2894a962076d3cc404dd72ec736ebeb9239901f6",
+    "wheel": {
+      "path": "/targets/sail-stream-2894a962076d/wheels/sail_nutmeg-0.1.0-cp312-cp312-manylinux_2_34_x86_64.whl",
+      "sha256": "eb9e6a46cfc52d4e1ae4ec2b81205cf5b83d8f45d1e7268e44fa1c204bcb4681",
+      "bytes": 23001518
+    },
+    "installed_libraries_sha256": {
+      "/targets/sail-stream-2894a962076d/venv/lib/python3.12/site-packages/sail_nutmeg/_native.cpython-312-x86_64-linux-gnu.so": "67c2d43f1b2280e58a7ea3566759cf680f584db89f5994c105467be4f3b5e887"
+    },
+    "native_tests": {
+      "nutmeg-core-tests": 86,
+      "argentea-core-tests": 101,
+      "native-adapter-tests": 48
+    },
+    "clippy_exception": "native adapter only: inherited gate3 clippy::large_enum_variant flag; no other lint exceptions",
+    "reuse_identity": {
+      "git_objects": {
+        "examples/extensions": "b3ea021e5b34177bc93e20d9953705b0367f6520",
+        "crates/sail-native-resource-ffi": "64692eef94bf5ace4c0ee62e38ec5690c8003ff3",
+        "Cargo.lock": "ac1dda4f2e631c6b6c21f5eb408e6ef9b7680ab7",
+        "Cargo.toml": "bc6e5aff18d50475eaa55ae64597da8f11a69efa"
+      },
+      "exact_tree_and_blob_match": true
+    }
+  },
+  "seed_guards_before_authorized_cleanup": {
+    "build289": true,
+    "build561": true
+  },
+  "cleanup": {
+    "removed_paths": [
+      "/targets/sail-stream-2894a962076d/target-host",
+      "/targets/sail-compact-host-56194b170155/target-host"
+    ],
+    "free_bytes_after": 37851164672,
+    "free_gib_after": 35.251644134521484,
+    "desired_free_gib": 40,
+    "desired_headroom_met": false,
+    "retained_artifact_hashes_unchanged": true,
+    "retained_venv_metadata_unchanged": true,
+    "receipt": "/Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/linux-builds/host-cache-cleanup/host-cache-cleanup-apply-20260930T195927323495Z/host-cache-cleanup.json"
+  },
+  "durable_evidence": {
+    "integration289": {
+      "path": "/Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/linux-builds/integration289/final",
+      "collection_sha256": "3bdad961c7ab1689fb951d5a7330f5148cb8f26234c9e9828ecc829b62a1fff4",
+      "files_verified": 23
+    },
+    "compact561-host": {
+      "path": "/Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/linux-builds/compact561-host/final",
+      "collection_sha256": "e22c95e399848d8bdd1c8018442f1c84015e5da4767579660e2264e11003a4c3",
+      "files_verified": 10
+    },
+    "host_cache_cleanup": {
+      "path": "/Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/linux-builds/host-cache-cleanup/host-cache-cleanup-apply-20260930T195927323495Z",
+      "files_verified": 5
+    },
+    "native_cache_cleanup": {
+      "path": "/Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/linux-builds/integration289/final/native-cache-cleanup.json",
+      "files_verified": 4
+    },
+    "host_cache_inspection": {
+      "path": "/Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/linux-builds/host-cache-cleanup/host-cache-cleanup-inspect-20260930T195839879378Z",
+      "files_verified": 5
+    }
+  },
+  "runtime_boundary": "Root replay configurations independently select the original ffcf native/Python environment with these exported host binaries.",
+  "next_owner": "/root",
+  "next_step": "compact host preflight and actual process-worker smoke before any large replay"
+}

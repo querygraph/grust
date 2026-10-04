@@ -1,0 +1,20 @@
+{
+  "recorded_utc": "2026-09-30T18:51:50.218462+00:00",
+  "scope": "Read-only existing manifest hash; graph_cell will verify every input file hash at execution",
+  "command": [
+    "/usr/local/bin/docker",
+    "--context",
+    "colima-sail-gate",
+    "exec",
+    "sail-stream-build289",
+    "/targets/graph-nuts-ffcfbd569/venv/bin/python",
+    "-I",
+    "-c",
+    "from pathlib import Path; import hashlib,json; p=Path(\"/targets/sail-stream-experiments-20260930/pecan-gate3/datasets/weighted16k/manifest.json\"); print(json.dumps({\"path\":str(p),\"sha256\":hashlib.sha256(p.read_bytes()).hexdigest()}))"
+  ],
+  "remote_manifest": {
+    "path": "/targets/sail-stream-experiments-20260930/pecan-gate3/datasets/weighted16k/manifest.json",
+    "sha256": "6d71d459df71e2a0de23d34c80c5faff6d40829cfa59c85c5f6cef16ae203134"
+  },
+  "matched_retained_manifest": true
+}

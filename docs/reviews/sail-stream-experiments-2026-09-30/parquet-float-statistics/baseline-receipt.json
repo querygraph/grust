@@ -1,0 +1,35 @@
+{
+  "started_utc": "2026-09-30T23:23:41.030661+00:00",
+  "outcome": "EXPECTED_REGRESSION_FAILURE",
+  "before": {
+    "head": "200d1cf8eb1db5e9057e09e071ebd57391f4b376",
+    "diff": "diff --git a/crates/sail-data-source/src/formats/parquet/mod.rs b/crates/sail-data-source/src/formats/parquet/mod.rs\nindex aa2136fa2..7610d3231 100644\n--- a/crates/sail-data-source/src/formats/parquet/mod.rs\n+++ b/crates/sail-data-source/src/formats/parquet/mod.rs\n@@ -39,3 +39,6 @@ impl FormatFactory for ParquetFormatFactory {\n         Ok(ParquetWriteFormat { options })\n     }\n }\n+\n+#[cfg(test)]\n+mod read_statistics_tests;\n",
+    "test_module_sha256": "b7e41375d25f8c43207d8ba96d9d7e257ad8f81148bddbc287ad177846d3db5a",
+    "untracked": "crates/sail-data-source/src/formats/parquet/read_statistics_tests.rs\n",
+    "detached": true
+  },
+  "command": [
+    "cargo",
+    "test",
+    "--locked",
+    "-p",
+    "sail-data-source",
+    "--lib",
+    "formats::parquet::read_statistics_tests",
+    "--",
+    "--nocapture"
+  ],
+  "free_bytes_before": 454266077184,
+  "target": "/private/tmp/sail-parquet-float-statistics-baseline-target",
+  "target_seed": "APFS clone of idle private candidate target after exploratory test03 completed; never shared",
+  "scope": "Unchanged production 200d1cf8 plus identical candidate readback test module and cfg(test) declaration only",
+  "returncode": 101,
+  "finished_utc": "2026-09-30T23:24:47.177214+00:00",
+  "after": {
+    "head": "200d1cf8eb1db5e9057e09e071ebd57391f4b376",
+    "diff": "diff --git a/crates/sail-data-source/src/formats/parquet/mod.rs b/crates/sail-data-source/src/formats/parquet/mod.rs\nindex aa2136fa2..7610d3231 100644\n--- a/crates/sail-data-source/src/formats/parquet/mod.rs\n+++ b/crates/sail-data-source/src/formats/parquet/mod.rs\n@@ -39,3 +39,6 @@ impl FormatFactory for ParquetFormatFactory {\n         Ok(ParquetWriteFormat { options })\n     }\n }\n+\n+#[cfg(test)]\n+mod read_statistics_tests;\n",
+    "test_module_sha256": "b7e41375d25f8c43207d8ba96d9d7e257ad8f81148bddbc287ad177846d3db5a",
+    "untracked": "crates/sail-data-source/src/formats/parquet/read_statistics_tests.rs\n",
+    "detached": true
+  }
+}

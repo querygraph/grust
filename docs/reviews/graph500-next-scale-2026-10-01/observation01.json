@@ -1,0 +1,7 @@
+{
+  "recorded_utc": "2026-10-01T06:00:08.128302+00:00",
+  "script": "from pathlib import Path\nimport subprocess,json,datetime\nroot=Path('/Users/alexy/src/sail-extensions-gates/stream-experiments-20260930');e=root/'next-graph500-20261001-supervisor'\nreport={'recorded_utc':datetime.datetime.now(datetime.timezone.utc).isoformat(),'running':subprocess.check_output(['/usr/local/bin/docker','--context','colima-sail-gate','ps','--format','{{.Names}}'],text=True),'files':{}}\nfor f in sorted(e.rglob('*.json')):\n if f.name in ('receipt.json','launch.json','qualification.json','exit.json') or f.name.startswith('observation'):\n  report['files'][str(f.relative_to(root))]=json.loads(f.read_text())\nfor f in (root/'next-graph500-20261001-launcher.stderr',root/'next-graph500-20261001-launcher.stdout'):\n report['files'][f.name]=f.read_text()[-3000:] if f.exists() else None\nprint(json.dumps(report))\n",
+  "returncode": 0,
+  "stdout": "{\"recorded_utc\": \"2026-10-01T06:00:07.923043+00:00\", \"running\": \"sail-next-capacity-pecan-s25-1\\n\", \"files\": {\"next-graph500-20261001-supervisor/next-capacity-pecan-s25/launch.json\": {\"recorded_utc\": \"2026-10-01T05:57:52.739117+00:00\", \"pid\": 46993, \"config_sha256\": \"17c6ffdc7926af44886ad592aa8d6c328b967ecbd4ffccab7c8a1724021af183\", \"config\": \"/Users/alexy/src/sail-extensions-gates/stream-experiments-20260930/next-capacity-pecan-s25.json\"}, \"next-graph500-20261001-launcher.stderr\": \"\", \"next-graph500-20261001-launcher.stdout\": \"\"}}\n",
+  "stderr": ""
+}

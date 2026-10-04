@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="6" skipped="0" tests="6" time="2.349" timestamp="2026-09-30T19:12:53.361316-07:00" hostname="Capitola.local"><testcase classname="test_preconditions" name="test_original_run_preconditions_remain_enforced[partitions0]" time="0.694"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">spark = &lt;pyspark.sql.connect.session.SparkSession object at 0x1017e7b30&gt;
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/certificate-witness-fixtures-vuif9mte/sql/test_original_run_precondition0')
+case = 'partitions0'
+
+    @pytest.mark.parametrize('case',['partitions0','partitions_bool','partitions_float',
+                                      'vertices_int32','edges_int32','duplicate_names'])
+    def test_original_run_preconditions_remain_enforced(spark,tmp_path,case):
+        from pyspark.sql.connect import functions as F
+        from traversal_certificate import certify
+        v,e,a=frames(spark,tmp_path,[0.,1.,2.],[0,0,1],[0,1,2],[(0,1,1.),(1,2,1.)])
+        partitions=2;message='partitions'
+        if case=='partitions0':partitions=0
+        if case=='partitions_bool':partitions=True
+        if case=='partitions_float':partitions=1.5
+        if case=='vertices_int32':v=v.select(F.col('id').cast('int').alias('id'));message='BIGINT'
+        if case=='edges_int32':e=e.select(F.col('src').cast('int').alias('src'),'dst','weight');message='BIGINT'
+        if case=='duplicate_names':v=v.select('id',F.lit(1).alias('extra'),F.lit(2).alias('extra'));message='unique column'
+&gt;       with pytest.raises(ValueError,match=message):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+/Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/certificate-parent-witness/test_preconditions.py:19: Failed</failure></testcase><testcase classname="test_preconditions" name="test_original_run_preconditions_remain_enforced[partitions_bool]" time="0.299"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">spark = &lt;pyspark.sql.connect.session.SparkSession object at 0x1017e7b30&gt;
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/certificate-witness-fixtures-vuif9mte/sql/test_original_run_precondition1')
+case = 'partitions_bool'
+
+    @pytest.mark.parametrize('case',['partitions0','partitions_bool','partitions_float',
+                                      'vertices_int32','edges_int32','duplicate_names'])
+    def test_original_run_preconditions_remain_enforced(spark,tmp_path,case):
+        from pyspark.sql.connect import functions as F
+        from traversal_certificate import certify
+        v,e,a=frames(spark,tmp_path,[0.,1.,2.],[0,0,1],[0,1,2],[(0,1,1.),(1,2,1.)])
+        partitions=2;message='partitions'
+        if case=='partitions0':partitions=0
+        if case=='partitions_bool':partitions=True
+        if case=='partitions_float':partitions=1.5
+        if case=='vertices_int32':v=v.select(F.col('id').cast('int').alias('id'));message='BIGINT'
+        if case=='edges_int32':e=e.select(F.col('src').cast('int').alias('src'),'dst','weight');message='BIGINT'
+        if case=='duplicate_names':v=v.select('id',F.lit(1).alias('extra'),F.lit(2).alias('extra'));message='unique column'
+&gt;       with pytest.raises(ValueError,match=message):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+/Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/certificate-parent-witness/test_preconditions.py:19: Failed</failure></testcase><testcase classname="test_preconditions" name="test_original_run_preconditions_remain_enforced[partitions_float]" time="0.298"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">spark = &lt;pyspark.sql.connect.session.SparkSession object at 0x1017e7b30&gt;
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/certificate-witness-fixtures-vuif9mte/sql/test_original_run_precondition2')
+case = 'partitions_float'
+
+    @pytest.mark.parametrize('case',['partitions0','partitions_bool','partitions_float',
+                                      'vertices_int32','edges_int32','duplicate_names'])
+    def test_original_run_preconditions_remain_enforced(spark,tmp_path,case):
+        from pyspark.sql.connect import functions as F
+        from traversal_certificate import certify
+        v,e,a=frames(spark,tmp_path,[0.,1.,2.],[0,0,1],[0,1,2],[(0,1,1.),(1,2,1.)])
+        partitions=2;message='partitions'
+        if case=='partitions0':partitions=0
+        if case=='partitions_bool':partitions=True
+        if case=='partitions_float':partitions=1.5
+        if case=='vertices_int32':v=v.select(F.col('id').cast('int').alias('id'));message='BIGINT'
+        if case=='edges_int32':e=e.select(F.col('src').cast('int').alias('src'),'dst','weight');message='BIGINT'
+        if case=='duplicate_names':v=v.select('id',F.lit(1).alias('extra'),F.lit(2).alias('extra'));message='unique column'
+&gt;       with pytest.raises(ValueError,match=message):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+/Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/certificate-parent-witness/test_preconditions.py:19: Failed</failure></testcase><testcase classname="test_preconditions" name="test_original_run_preconditions_remain_enforced[vertices_int32]" time="0.307"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">spark = &lt;pyspark.sql.connect.session.SparkSession object at 0x1017e7b30&gt;
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/certificate-witness-fixtures-vuif9mte/sql/test_original_run_precondition3')
+case = 'vertices_int32'
+
+    @pytest.mark.parametrize('case',['partitions0','partitions_bool','partitions_float',
+                                      'vertices_int32','edges_int32','duplicate_names'])
+    def test_original_run_preconditions_remain_enforced(spark,tmp_path,case):
+        from pyspark.sql.connect import functions as F
+        from traversal_certificate import certify
+        v,e,a=frames(spark,tmp_path,[0.,1.,2.],[0,0,1],[0,1,2],[(0,1,1.),(1,2,1.)])
+        partitions=2;message='partitions'
+        if case=='partitions0':partitions=0
+        if case=='partitions_bool':partitions=True
+        if case=='partitions_float':partitions=1.5
+        if case=='vertices_int32':v=v.select(F.col('id').cast('int').alias('id'));message='BIGINT'
+        if case=='edges_int32':e=e.select(F.col('src').cast('int').alias('src'),'dst','weight');message='BIGINT'
+        if case=='duplicate_names':v=v.select('id',F.lit(1).alias('extra'),F.lit(2).alias('extra'));message='unique column'
+&gt;       with pytest.raises(ValueError,match=message):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+/Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/certificate-parent-witness/test_preconditions.py:19: Failed</failure></testcase><testcase classname="test_preconditions" name="test_original_run_preconditions_remain_enforced[edges_int32]" time="0.389"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">spark = &lt;pyspark.sql.connect.session.SparkSession object at 0x1017e7b30&gt;
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/certificate-witness-fixtures-vuif9mte/sql/test_original_run_precondition4')
+case = 'edges_int32'
+
+    @pytest.mark.parametrize('case',['partitions0','partitions_bool','partitions_float',
+                                      'vertices_int32','edges_int32','duplicate_names'])
+    def test_original_run_preconditions_remain_enforced(spark,tmp_path,case):
+        from pyspark.sql.connect import functions as F
+        from traversal_certificate import certify
+        v,e,a=frames(spark,tmp_path,[0.,1.,2.],[0,0,1],[0,1,2],[(0,1,1.),(1,2,1.)])
+        partitions=2;message='partitions'
+        if case=='partitions0':partitions=0
+        if case=='partitions_bool':partitions=True
+        if case=='partitions_float':partitions=1.5
+        if case=='vertices_int32':v=v.select(F.col('id').cast('int').alias('id'));message='BIGINT'
+        if case=='edges_int32':e=e.select(F.col('src').cast('int').alias('src'),'dst','weight');message='BIGINT'
+        if case=='duplicate_names':v=v.select('id',F.lit(1).alias('extra'),F.lit(2).alias('extra'));message='unique column'
+&gt;       with pytest.raises(ValueError,match=message):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+/Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/certificate-parent-witness/test_preconditions.py:19: Failed</failure></testcase><testcase classname="test_preconditions" name="test_original_run_preconditions_remain_enforced[duplicate_names]" time="0.301"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">spark = &lt;pyspark.sql.connect.session.SparkSession object at 0x1017e7b30&gt;
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/certificate-witness-fixtures-vuif9mte/sql/test_original_run_precondition5')
+case = 'duplicate_names'
+
+    @pytest.mark.parametrize('case',['partitions0','partitions_bool','partitions_float',
+                                      'vertices_int32','edges_int32','duplicate_names'])
+    def test_original_run_preconditions_remain_enforced(spark,tmp_path,case):
+        from pyspark.sql.connect import functions as F
+        from traversal_certificate import certify
+        v,e,a=frames(spark,tmp_path,[0.,1.,2.],[0,0,1],[0,1,2],[(0,1,1.),(1,2,1.)])
+        partitions=2;message='partitions'
+        if case=='partitions0':partitions=0
+        if case=='partitions_bool':partitions=True
+        if case=='partitions_float':partitions=1.5
+        if case=='vertices_int32':v=v.select(F.col('id').cast('int').alias('id'));message='BIGINT'
+        if case=='edges_int32':e=e.select(F.col('src').cast('int').alias('src'),'dst','weight');message='BIGINT'
+        if case=='duplicate_names':v=v.select('id',F.lit(1).alias('extra'),F.lit(2).alias('extra'));message='unique column'
+&gt;       with pytest.raises(ValueError,match=message):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE &lt;class 'ValueError'&gt;
+
+/Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/certificate-parent-witness/test_preconditions.py:19: Failed</failure></testcase></testsuite></testsuites>

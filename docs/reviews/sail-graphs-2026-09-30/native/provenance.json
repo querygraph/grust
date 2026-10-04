@@ -1,0 +1,17 @@
+{
+  "captured_utc": "2026-09-30T15:13:11.819183+00:00",
+  "repository": "querygraph/sail",
+  "commit": "ffcfbd5690e3f3681ef9ac18ba959bc231cf9f73",
+  "source_worktree": "/tmp/sail-native-review-ffcfbd569",
+  "build_target": "/tmp/sail-native-review-target",
+  "source_status": "clean before and after test execution",
+  "build_command": "CARGO_INCREMENTAL=0 CARGO_TARGET_DIR=/tmp/sail-native-review-target cargo test --manifest-path examples/extensions/argentea/Cargo.toml --locked --release",
+  "release_test_result": {
+    "passed": 92,
+    "failed": 0,
+    "exit_code": 0
+  },
+  "qualification_limit": "Core functional tests only: no distributed or saturated concurrency gate, no full Sail or Banda build.",
+  "reproduction": "Run the retained Rust source against the release .rlib files from this exact build, using rustc --edition=2024 -O SOURCE -L dependency=/tmp/sail-native-review-target/release/deps --extern sail_argentea_core=PATH_TO_RLIB --extern grust_procedures=PATH_TO_RLIB --extern sail_native_resource_ffi=PATH_TO_RLIB -o /tmp/argentea-bfs-completion-review; then execute the binary. The source includes the clean worktree test support by the retained absolute path.",
+  "reproduction_scope": "Fault injection discards one candidate and changes its completion sequence to zero. It demonstrates missing consistency validation for Push/Reference BFS; it does not reproduce h2 failure or ordinary transport truncation."
+}

@@ -1,0 +1,141 @@
+I001 [*] Import block is un-sorted or un-formatted
+  --> /Volumes/Apo/graph-tests/results/sem-completion-20261003/F2-fourphase01/f2a_campaign.py:3:1
+   |
+ 1 |   """Serial four-phase Arrow bridge owner; full output qualification remains external."""
+ 2 |
+ 3 | / from __future__ import annotations
+ 4 | |
+ 5 | | import argparse
+ 6 | | import datetime as dt
+ 7 | | import hashlib
+ 8 | | import json
+ 9 | | import os
+10 | | import shutil
+11 | | import signal
+12 | | import subprocess
+13 | | import threading
+14 | | import time
+15 | | from itertools import pairwise
+16 | | from pathlib import Path
+17 | | from typing import Literal, Self
+18 | |
+19 | | from pydantic import Field, model_validator
+20 | |
+21 | | import f2a_models as models
+   | |___________________________^
+22 |
+23 |   BASE = Path("/Volumes/Apo/graph-tests/results/sem-completion-20261003")
+   |
+help: Organize imports
+   |
+18 |
+   - from pydantic import Field, model_validator
+   -
+19 | import f2a_models as models
+20 + from pydantic import Field, model_validator
+21 |
+   |
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> /Volumes/Apo/graph-tests/results/sem-completion-20261003/F2-fourphase01/f2a_campaign_launch.py:3:1
+   |
+ 1 |   """Durable waited campaign launcher; root detaches this process with Popen/nohup."""
+ 2 |
+ 3 | / from __future__ import annotations
+ 4 | |
+ 5 | | import argparse
+ 6 | | import os
+ 7 | | import signal
+ 8 | | import subprocess
+ 9 | | import sys
+10 | | from pathlib import Path
+11 | | from typing import Literal
+12 | |
+13 | | from pydantic import Field
+14 | |
+15 | | import f2a_campaign as campaign
+16 | | import f2a_models as worker
+   | |___________________________^
+help: Organize imports
+   |
+12 |
+   - from pydantic import Field
+   -
+13 | import f2a_campaign as campaign
+14 | import f2a_models as worker
+15 + from pydantic import Field
+16 |
+   |
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> /Volumes/Apo/graph-tests/results/sem-completion-20261003/F2-fourphase01/f2a_worker.py:3:1
+   |
+ 1 |   """Sequential materialized Arrow-client profile; algorithm includes result transport."""
+ 2 |
+ 3 | / import argparse
+ 4 | | import hashlib
+ 5 | | import os
+ 6 | | import signal
+ 7 | | import socket
+ 8 | | import subprocess
+ 9 | | import sys
+10 | | import tempfile
+11 | | import time
+12 | | import traceback
+13 | | from collections.abc import Callable
+14 | | from datetime import UTC, datetime
+15 | | from functools import partial
+16 | | from pathlib import Path
+17 | | from types import FrameType
+18 | | from typing import Literal, TypeVar
+19 | |
+20 | | import pyarrow as pa
+21 | | import pyarrow.parquet as pq
+22 | | import pyspark
+23 | | from pydantic import JsonValue, TypeAdapter
+24 | | from pyspark.sql import DataFrame
+25 | | from pyspark.sql.connect import functions as F
+26 | | from pyspark.sql.connect.plan import CachedLocalRelation, LocalRelation
+27 | | from pyspark.sql.connect.session import SparkSession
+28 | | from sail_nutmeg.client import Nutmeg
+29 | |
+30 | | from f2a_models import (
+31 | |     ArrowHandoff,
+32 | |     Error,
+33 | |     FilePin,
+34 | |     NativeStatus,
+35 | |     OutputAttempt,
+36 | |     Phase,
+37 | |     Plan,
+38 | |     Receipt,
+39 | |     ServerExit,
+40 | |     Span,
+41 | | )
+   | |_^
+42 |
+43 |   T = TypeVar("T")
+   |
+help: Organize imports
+   |
+22 | import pyspark
+   - from pydantic import JsonValue, TypeAdapter
+   - from pyspark.sql import DataFrame
+   - from pyspark.sql.connect import functions as F
+   - from pyspark.sql.connect.plan import CachedLocalRelation, LocalRelation
+   - from pyspark.sql.connect.session import SparkSession
+   - from sail_nutmeg.client import Nutmeg
+   -
+23 | from f2a_models import (
+--------------------------------------------------------------------------------
+34 | )
+35 + from pydantic import JsonValue, TypeAdapter
+36 + from pyspark.sql import DataFrame
+37 + from pyspark.sql.connect import functions as F
+38 + from pyspark.sql.connect.plan import CachedLocalRelation, LocalRelation
+39 + from pyspark.sql.connect.session import SparkSession
+40 + from sail_nutmeg.client import Nutmeg
+41 |
+   |
+
+Found 3 errors.
+[*] 3 fixable with the `--fix` option.

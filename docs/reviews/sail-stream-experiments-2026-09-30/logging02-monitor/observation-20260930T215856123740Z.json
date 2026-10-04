@@ -1,0 +1,29 @@
+{
+  "local_started_utc": "2026-09-30T21:58:56.123740+00:00",
+  "observer_sha256": "2cf8e948cac30b4cb5d1f959e41997636f8abb4098303ff6d2aa41305a55f251",
+  "vm_observer_source_sha256": "2656356eb82abc4290eb3d8eefa3286feccbdf5f6dec01fde309f26ec50b485c",
+  "scope": "One bounded read-only VM call; boot/init/cgroup guards. No Docker call, new container, target process mutation, argv or environment read.",
+  "returncode": 0,
+  "stderr": "",
+  "started_utc": "2026-09-30T21:58:56.436261+00:00",
+  "container_id": "277559b777e04a8bdda5f0cb8931480269de472f0fbf2e2125375496118fab16",
+  "capture": {
+    "command": [
+      "/usr/local/bin/colima",
+      "--profile",
+      "sail-gate",
+      "ssh",
+      "--",
+      "sudo",
+      "/usr/bin/python3",
+      "-c",
+      "<retained observer VM prefix, pinned identity reader, retained VM observer>",
+      "{\"reader_sha256\": \"0b7746b9a89202723ded4c1816b76a89d4ad0f2190c800cb4dcb84b3d34bc460\", \"vm_observer\": \"\\nimport os,re\\noptions=json.loads(sys.argv[2])\\nroot=Path(options['root'])/'sail-stream-experiments-20260930/logging02/cells/stream-log02-r1-scale24-pecan-sssp-delta_star'\\nresult={'boot_id':Path('/proc/sys/kernel/random/boot_id').read_text().strip(),'uptime':Path('/proc/uptime').read_text().strip(),'monotonic':time.monotonic(),'cpu_stat':Path('/proc/stat').read_text().splitlines()[0]}\\ninit=options['identity']['init_host_pid'];cgtext=(Path('/proc')/str(init)/'cgroup').read_text();assert options['identity']['container_id'] in cgtext\\ncgpath=cgtext.split('::',1)[1].strip();cg=Path('/sys/fs/cgroup')/cgpath.lstrip('/')\\nresult['cgroup_path']=cgpath;result['cgroup']={}\\nfor name in ['memory.current','memory.peak','memory.max','memory.events','memory.stat','cpu.stat','cpuset.cpus.effective','io.stat']:\\n p=cg/name\\n try:result['cgroup'][name]=p.read_text()\\n except OSError as e:result['cgroup'][name]={'error':repr(e)}\\nresult['files']={}\\nfor name,limit in [('memory-samples.jsonl',16384),('server.log',32768),('receipt.json',65536),('server-settings.json',16384)]:\\n p=root/name\\n if not p.exists():result['files'][name]={'exists':False};continue\\n st=p.stat();offset=max(0,st.st_size-limit)\\n with p.open('rb') as f:f.seek(offset);data=f.read(limit)\\n result['files'][name]={'exists':True,'bytes_at_start':st.st_size,'mtime_ns':st.st_mtime_ns,'offset':offset,'tail_utf8':data.decode(errors='replace')}\\n if name=='server.log':\\n  previous=min(options['previous_offset'],st.st_size);end=st.st_size;windows=[(previous,min(end,previous+2*1024**2))]\\n  if end-windows[0][1]>0:windows.append((max(windows[0][1],end-2*1024**2),end))\\n  errors=[]\\n  with p.open('rb') as f:\\n   for start,stop in windows:\\n    f.seek(start);chunk=f.read(stop-start)\\n    pos=start\\n    for line in chunk.splitlines(keepends=True):\\n     if line.startswith(b'[') and re.search(rb'(?i)(?<![a-z])(?:ERROR|panic|panicked|OutOfMemory|failed|stream_error)(?![a-z])',line):\\n      if len(errors)<20:errors.append({'offset':pos,'line_utf8':line[:4096].decode(errors='replace'),'truncated':len(line)>4096})\\n     pos+=len(line)\\n  result['error_scan']={'windows':windows,'gap_bytes':max(0,end-previous-sum(b-a for a,b in windows)),'matches':errors,'next_offset':end,'scope':'First matches within bounded scanned windows only; full server log remains authoritative.'}\\nresult['volume_free_bytes']=__import__('shutil').disk_usage(options['root']).free\\nprint(json.dumps(result))\\n\", \"identity\": {\"container_id\": \"277559b777e04a8bdda5f0cb8931480269de472f0fbf2e2125375496118fab16\", \"init_host_pid\": 183578, \"host_pids\": [183578, 183609]}, \"boot_id\": \"f5443bfc-c939-491a-a984-b73cc6d1cb20\", \"init_start_ticks\": 14368213, \"root\": \"/var/lib/docker/volumes/sail-extension-targets/_data\", \"previous_offset\": 12363482, \"last_pids\": [183578, 183609, 183665, 183782, 183784], \"capture_mapping\": true}"
+    ],
+    "returncode": 1,
+    "stdout": "",
+    "stderr": "Traceback (most recent call last):\n  File \"<string>\", line 6, in <module>\n  File \"/usr/lib/python3.12/pathlib.py\", line 1029, in read_text\n    with self.open(mode='r', encoding=encoding, errors=errors) as f:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/pathlib.py\", line 1015, in open\n    return io.open(self, mode, buffering, encoding, errors, newline)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nFileNotFoundError: [Errno 2] No such file or directory: '/proc/183578/stat'\ntime=\"2026-09-30T14:58:57-07:00\" level=fatal msg=\"exit status 1\"\n"
+  },
+  "finished_utc": "2026-09-30T21:58:57.099021+00:00",
+  "local_finished_utc": "2026-09-30T21:58:57.233360+00:00"
+}

@@ -1,0 +1,35 @@
+................................FF........................               [100%]
+=================================== FAILURES ===================================
+____________ test_invalid_scores_remain_rejected[scores1-reference] ____________
+
+spark = <pyspark.sql.connect.session.SparkSession object at 0x10c77c0b0>
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pagerank-metadata-gate-0tiohwhh/sql/test_invalid_scores_remain_rej2')
+policy = 'reference', scores = [nan, 0.5]
+
+    @pytest.mark.parametrize('policy', ['reference', 'certificate'])
+    @pytest.mark.parametrize('scores', [[None, .5], [float('nan'), .5], [float('inf'), .5], [-.5, 1.5]])
+    def test_invalid_scores_remain_rejected(spark, tmp_path, policy, scores):
+>       with pytest.raises(AssertionError, match='invalid PageRank scores'):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE <class 'AssertionError'>
+
+examples/extensions/benchmarks/test_pagerank_metadata.py:74: Failed
+___________ test_invalid_scores_remain_rejected[scores1-certificate] ___________
+
+spark = <pyspark.sql.connect.session.SparkSession object at 0x10c77c0b0>
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pagerank-metadata-gate-0tiohwhh/sql/test_invalid_scores_remain_rej3')
+policy = 'certificate', scores = [nan, 0.5]
+
+    @pytest.mark.parametrize('policy', ['reference', 'certificate'])
+    @pytest.mark.parametrize('scores', [[None, .5], [float('nan'), .5], [float('inf'), .5], [-.5, 1.5]])
+    def test_invalid_scores_remain_rejected(spark, tmp_path, policy, scores):
+>       with pytest.raises(AssertionError, match='invalid PageRank scores'):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE <class 'AssertionError'>
+
+examples/extensions/benchmarks/test_pagerank_metadata.py:74: Failed
+- generated xml file: /Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/pagerank-certificate-metadata/candidate-gate/sql.xml -
+=========================== short test summary info ============================
+FAILED examples/extensions/benchmarks/test_pagerank_metadata.py::test_invalid_scores_remain_rejected[scores1-reference]
+FAILED examples/extensions/benchmarks/test_pagerank_metadata.py::test_invalid_scores_remain_rejected[scores1-certificate]
+2 failed, 56 passed in 5.16s

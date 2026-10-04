@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en-US" xml:lang="en-US">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <meta name="author" content="Querygraph" />
+  <meta name="dcterms.date" content="2026-10-01" />
+  <meta name="description" content="Version 1.0. Review target: querygraph/sail bd8ce9ae8839477e2c08a0475ab7900b115c5366." />
+  <title>3. Relations</title>
+  <style>
+    div.sitenav { display: flex; flex-direction: row; flex-wrap: wrap; }
+    span.navlink { flex: 1; }
+    span.navlink-label { display: inline-block; min-width: 4em; }
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: 1.5em;}
+    div.column{flex: auto;}
+    @media screen {
+    div.columns{gap: min(4vw, 1.5em);}
+    div.column{overflow-x: auto;}
+    }
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <link rel="stylesheet" href="book.css" />
+</head>
+<body>
+<nav id="sitenav">
+<div class="sitenav">
+<span class="navlink">
+<span class="navlink-label">Up:</span> <a href="index.html" accesskey="u" rel="up">Sail Extensions: A Design Review</a>
+</span>
+<span class="navlink">
+<span class="navlink-label">Top:</span> <a href="index.html" accesskey="t" rel="top">Sail Extensions: A Design Review</a>
+</span>
+</div>
+<div class="sitenav">
+<span class="navlink">
+<span class="navlink-label">Next:</span> <a href="chapter-006.html" accesskey="n" rel="next">4. Commands and receipts</a>
+</span>
+<span class="navlink">
+<span class="navlink-label">Previous:</span> <a href="chapter-004.html" accesskey="p" rel="previous">2. Functions</a>
+</span>
+</div>
+</nav>
+<h1 data-number="5" id="module-03-relations"><span
+class="header-section-number">5</span> 3. Relations</h1>
+<p><a href="chapter-004.html#module-02-functions">Scalar functions</a>
+fit ordinary expressions. A graph algorithm or another table-producing
+operation instead needs a request, zero or more DataFrame inputs, and a
+result schema. The proposal has two boundaries: Spark Connect carries
+that request from the client; DataFusion FFI connects Sail to the
+installed implementation. Choosing the Connect envelope does not replace
+or compete with choosing the native FFI.</p>
+<p>The <strong>public behavior</strong> is a lazy relation.
+<code>Relation.extension</code> contains a registered type URL and
+either an allowed bare payload or version 1 of
+<code>SailExtensionRequest</code>, with payload bytes and input plans.
+The host validates the request before dispatch, resolves the inputs and
+preserves their column names. The bound package receives execution-plan
+capsules and returns a <code>datafusion_table_provider</code> capsule
+describing its output. Planning, schema inspection and EXPLAIN must not
+consume inputs or perform mutations. That is an obligation of the
+trusted handler, not something a capsule can enforce.</p>
+<p>The pinned <strong>implementation</strong> limits the envelope to 8
+MiB, payload to 1 MiB, inputs to 16, input nesting depth to 64 and type
+URLs to 512 bytes. Input expressions are rejected. These bounds are
+reviewable policy, not incidental parser behavior. <a
+href="https://github.com/querygraph/sail/blob/bd8ce9ae8839477e2c08a0475ab7900b115c5366/crates/sail-spark-connect/src/proto/extension.rs#L14">Wire
+limits</a>. The handler receives planned physical inputs, not an FFI
+logical-plan API or permission to replace Sail's optimizer. A host
+adapter retains Sail's task context and runtime and coalesces every
+input partition into one host input partition. Distributed native
+relations are driver-resident in this contract; input gathering is not
+distributed execution of the native algorithm. <a
+href="https://github.com/querygraph/sail/blob/bd8ce9ae8839477e2c08a0475ab7900b115c5366/crates/sail-common-datafusion/src/connect_extension.rs#L125">Input
+adapter</a>.</p>
+<p>A registered table function is a legitimate alternative for a table
+produced from ordinary arguments. Arguments can carry string or binary
+payloads; lack of an opaque payload is not a reason to reject it. The
+missing convenience in the current function path is direct passage of
+arbitrary DataFrame plans. Named tables or another handle protocol would
+need their own ownership and consistency rules. A new RPC offers greater
+protocol freedom at the cost of another routing and compatibility
+surface. A session-factory hook can install a registry, but is
+complementary to the per-request relation contract.</p>
+<p>Acceptance should include malformed envelopes rejected before child
+callbacks, empty and uneven input partitions, schema preservation, and
+planning without execution. Source fixtures exercise these boundaries;
+they do not establish sorted or co-partitioned inputs, arbitrary
+host-service propagation, or indexed spatial-join planning. Those
+require separate contracts and evidence.</p>
+<p>The decision is whether this bounded physical-input interface is
+sufficient for the first table-producing extensions. Once a relation may
+change native state, laziness alone is insufficient: <a
+href="chapter-006.html#module-04-commands">commands and receipts</a>
+make execution and acknowledgement explicit.</p>
+</body>
+</html>

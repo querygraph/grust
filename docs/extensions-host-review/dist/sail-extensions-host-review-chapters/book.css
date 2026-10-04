@@ -1,0 +1,42 @@
+/* Reflowable EPUB: preserve code bytes while allowing long tokens to wrap. */
+body { font-family: sans-serif; line-height: 1.5; color: #172b3a; margin: 5%; }
+h1, h2, h3 { line-height: 1.2; color: #163e59; break-after: avoid; overflow-wrap: anywhere; }
+h1 { margin-top: 1.8em; border-bottom: 2px solid #b8cedb; padding-bottom: .35em; }
+h2 { margin-top: 1.6em; }
+p { margin: .7em 0; }
+a { color: #185b80; text-decoration: underline; overflow-wrap: anywhere; }
+code, pre { font-family: "DejaVu Sans Mono", "Menlo", monospace; }
+code { font-size: .9em; }
+pre, pre code, div.sourceCode, pre.sourceCode {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-wrap: break-word;
+  word-break: break-word;
+  overflow: visible;
+  max-width: 100%;
+  break-inside: auto;
+}
+pre { line-height: 1.4; font-size: .83em; padding: .8em; background: #f1f5f8; }
+pre code { font-size: 1em; }
+/* Pandoc's inline highlighting stylesheet uses these more-specific selectors. */
+pre > code.sourceCode, pre > code.sourceCode > span {
+  white-space: pre-wrap !important;
+  overflow-wrap: anywhere !important;
+  word-wrap: break-word !important;
+  word-break: break-word !important;
+}
+pre > code.sourceCode > span { display: inline !important; }
+/* Pandoc emits these classes on the highlighted, byte-preserved code spans. */
+code span.kw, code span.cf, code span.im { color: #00664d; font-weight: bold; }
+code span.dt, code span.fu { color: #7042a0; }
+code span.st, code span.ch { color: #1c597b; }
+code span.co { color: #526575; font-style: italic; }
+code span.dv, code span.fl { color: #9a4e00; }
+code span.op { color: #4e5962; }
+table { border-collapse: collapse; width: 100%; font-size: .84em; margin: 1em 0; }
+thead { display: table-header-group; }
+th { background: #e7eff4; text-align: left; }
+td, th { border: 1px solid #bccbd5; padding: .5em; vertical-align: top; overflow-wrap: anywhere; }
+tr { break-inside: avoid; }
+blockquote { margin-left: 0; border-left: 3px solid #b8cedb; padding-left: 1em; }
+nav#toc ol { list-style-type: none; padding-left: 1em; }

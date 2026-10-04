@@ -1,0 +1,253 @@
+{
+  "recorded_utc": "2026-09-30T20:44:34.771600+00:00",
+  "outcome": "PASS_CONFIG_PARITY_WITH_DISCLOSED_BOUNDARIES",
+  "scope": "Local read-only source/configuration audit after repository fetches; no remote workload, admission run, source/config edit or launch authorization.",
+  "grust_head": "b478e57cb34220c1f671dca7ce92b2b061867855",
+  "controller_head": "3a9028057c6c6c5034492845926fc4bc18f9626f",
+  "files_sha256": {
+    "logging02.json": "520b244165096bd2bb17a45d22effe50210d8bcf4bca5e546364f273cba36ff0",
+    "logging03-compact.json": "b28132996612b11edb77bb02019288e4a562db5e4d22c4430a6a8815a220aea0",
+    "run_focused_safe.py": "53589784544a1414b29b1a42e061bada15a0a868801cd356addf4e35f29abdd1",
+    "preflight_cell.py": "454afd5bdf4ef9f1d714d01bbcf76f17714600bac67dfd0b5956c381a8485e3d"
+  },
+  "controller_files_sha256": {
+    "run_matrix.py": "21d12c888caabb59acece11a2ee27837974c1f34b08cc499600e305d6341e1a0",
+    "runtime.py": "27a76460792bac9668e18c8e32961f34a936060dc15cd3fe06f115124757b6e4",
+    "graph_cell.py": "8666741b91887dfbc40eb831d6fa54149b6a5f4437e683d79c7ffc8f731eaa55",
+    "traversal_cell.py": "8b02d35cc72e86cfdf2b476d9682ed9e3563515a5f2e8af2c8d20e7ef517616a",
+    "traversal_certificate.py": "4014bbc54897fa02bb8181294a611bf78eef88938f1e28953de49dee51ec71f3",
+    "measurement.py": "e9945063c793890a47d9e4da0b0cae4eae7b96f44d7672549932cc61df9c7127",
+    "traversal_methods.py": "8190dc03bce98646b7d124b62a805505303036eeecde21fe780fff36798d1c20"
+  },
+  "exactly_seven_configuration_differences": [
+    {
+      "path": "/container_root",
+      "logging02": "/targets/sail-stream-experiments-20260930/logging02",
+      "logging03": "/targets/sail-stream-experiments-20260930/logging03-compact"
+    },
+    {
+      "path": "/container_sail_binary",
+      "logging02": "/targets/sail-stream-2894a962076d/sail-linux-x86_64-2894a962076d-release",
+      "logging03": "/targets/sail-compact-host-56194b170155/sail-linux-x86_64-56194b170155-release"
+    },
+    {
+      "path": "/host_output",
+      "logging02": "/Users/alexy/src/sail-extensions-gates/stream-experiments-20260930/logging02",
+      "logging03": "/Users/alexy/src/sail-extensions-gates/stream-experiments-20260930/logging03-compact"
+    },
+    {
+      "path": "/note",
+      "logging02": "Focused diagnostic repeat of gate3 Pecan scale24 SSSP delta_star (earlier no-OOM failure). Same ffcf controller/native code via logging-only3a harness; runtime289 adds diagnostics, with native/controller optimizations in its tree not used by this cell. Existing dataset, limits, source and explicit keepalive unchanged. Tonic server debug enabled. Does not use pending compact min implementation. Shared host diagnostic, not performance measurement.",
+      "logging03": "Prepared compact grouped-MIN control paired with logging02: same original ffcf controller/native wheel via3a harness, same data/source/limits/timeouts/logging. Only host changes289 to561, adding compact tupleMIN. Not launched; require passing immutable host artifact and disk/resource admission first. Shared-host diagnostic/control, not an absolute performance result."
+    },
+    {
+      "path": "/run_id",
+      "logging02": "stream-log02",
+      "logging03": "stream-log03-compact"
+    },
+    {
+      "path": "/runtime_source_sha",
+      "logging02": "2894a962076d3cc404dd72ec736ebeb9239901f6",
+      "logging03": "56194b170155301ba91077f0ba3df31fe2c78b6b"
+    },
+    {
+      "path": "/suites/0/name",
+      "logging02": "stream-log02",
+      "logging03": "stream-log03-compact"
+    }
+  ],
+  "cell_command_differences": [
+    {
+      "flag": "--sail-binary",
+      "logging02": "/targets/sail-stream-2894a962076d/sail-linux-x86_64-2894a962076d-release",
+      "logging03": "/targets/sail-compact-host-56194b170155/sail-linux-x86_64-56194b170155-release"
+    },
+    {
+      "flag": "--runtime-source-sha",
+      "logging02": "2894a962076d3cc404dd72ec736ebeb9239901f6",
+      "logging03": "56194b170155301ba91077f0ba3df31fe2c78b6b"
+    },
+    {
+      "flag": "--dataset",
+      "logging02": "/targets/sail-stream-experiments-20260930/logging02/datasets/scale24",
+      "logging03": "/targets/sail-stream-experiments-20260930/logging03-compact/datasets/scale24"
+    },
+    {
+      "flag": "--output",
+      "logging02": "/targets/sail-stream-experiments-20260930/logging02/cells/stream-log02-r1-scale24-pecan-sssp-delta_star",
+      "logging03": "/targets/sail-stream-experiments-20260930/logging03-compact/cells/stream-log03-compact-r1-scale24-pecan-sssp-delta_star"
+    }
+  ],
+  "common_configuration_sha256": "b053a7b590e94d09d93992d660e856688894d41c3f73927be08c188cd3fe8e1e",
+  "unchanged": {
+    "image": "sha256:f3518d652fbea8b9b9f9ebf9849277ca3bd39d0c21bb2c6e36fbaeaa2dc2678e",
+    "python": "/targets/graph-nuts-ffcfbd569/venv/bin/python",
+    "controller": "/targets/sail-stream-experiments-20260930/source-3a9028057",
+    "native_source_sha": "ffcfbd5690e3f3681ef9ac18ba959bc231cf9f73",
+    "limits": {
+      "cpus": 32,
+      "cpuset_cpus": "0-31",
+      "memory_gib": 100,
+      "outer_timeout_seconds": 15300
+    },
+    "defaults": {
+      "partitions": 32,
+      "threads": 32,
+      "worker_task_slots": 64,
+      "sail_pool_bytes": 103079215104,
+      "native_quota": 85899345920,
+      "tolerance": 1e-08,
+      "damping": 0.85,
+      "max_iterations": 1000,
+      "timeout": 14400,
+      "seed": 42,
+      "delta": 0.1
+    },
+    "datasets": {
+      "scale24": {
+        "family": "graph500",
+        "vertices": 16777216,
+        "scale": 24,
+        "edge_factor": 16,
+        "seed1": 42,
+        "seed2": 54,
+        "source": 13507776,
+        "directed": false,
+        "generator": "/targets/traversal-linux-038c9b9597d3/functional/graph500-stream",
+        "validation": "certificate",
+        "certificate_max_rounds": 10000,
+        "expected_edge_sha256": "cacd401faca8b8da8cd81fcbedfadce5b355c7029c6c53fc9bec947b60d6649e"
+      }
+    },
+    "environment": {
+      "SAIL_CLUSTER__TASK_STREAM_CREATION_TIMEOUT_SECS": "900",
+      "SAIL_CLUSTER__WORKER_MAX_IDLE_TIME_SECS": "86400",
+      "SAIL_BENCHMARK_RUST_LOG": "info,h2::proto::connection=debug,h2::proto::streams=warn,h2::frame::go_away=trace,h2::frame::reset=trace,h2::frame::ping=trace,h2::proto::ping_pong=trace,sail_execution::task_runner=debug,tonic::transport::server=debug"
+    },
+    "extra_cell_args": [
+      "--record-plans",
+      "--http2-keepalive-timeout",
+      "120"
+    ],
+    "worker_count": 2,
+    "worker_task_slots_total": 128
+  },
+  "host_artifacts": {
+    "host289": {
+      "source_sha": "2894a962076d3cc404dd72ec736ebeb9239901f6",
+      "path": "/targets/sail-stream-2894a962076d/sail-linux-x86_64-2894a962076d-release",
+      "sha256": "40a78182a420152e8e3651f9cdb38a4196eaf8bc7aead092d10e258a17ac3497",
+      "bytes": 160163792,
+      "version": "sail 0.7.1"
+    },
+    "host561": {
+      "source_sha": "56194b170155301ba91077f0ba3df31fe2c78b6b",
+      "path": "/targets/sail-compact-host-56194b170155/sail-linux-x86_64-56194b170155-release",
+      "sha256": "5b7f506c19afd76a28b84c1459397b4ab30ff4cfc761f4195789425b963facec",
+      "bytes": 160192912,
+      "version": "sail 0.7.1"
+    }
+  },
+  "host_source_diff_files": [
+    "crates/sail-execution/src/proto/codec.rs",
+    "crates/sail-execution/src/proto/mod.rs",
+    "crates/sail-execution/src/proto/struct_min_tests.rs",
+    "crates/sail-function/src/aggregate/compact_struct_min.rs",
+    "crates/sail-function/src/aggregate/compact_struct_min_tests.rs",
+    "crates/sail-function/src/aggregate/mod.rs",
+    "crates/sail-function/src/aggregate/struct_min.rs",
+    "crates/sail-function/src/aggregate/struct_min_tests.rs",
+    "crates/sail-plan/src/function/aggregate.rs",
+    "crates/sail-plan/src/function/aggregate_struct_min_tests.rs",
+    "crates/sail-plan/src/resolver/query/aggregate.rs"
+  ],
+  "dataset": {
+    "bootstrap_returncodes": {
+      "logging02.json": 0,
+      "logging03-compact.json": 0
+    },
+    "bootstrap_shared_target": "/targets/gn-capacity-b87fb27a-hub/datasets/scale24",
+    "logging02_observed": {
+      "path": "/targets/gn-capacity-b87fb27a-hub/datasets/scale24/manifest.json",
+      "sha256": "8bad1a94c5a37715ce9320f27b3f13097ef50c2a9bfdfa15c25ed0665007c75c",
+      "counts": {
+        "edges": 268435456,
+        "vertices": 16777216
+      },
+      "canonical": {
+        "edges": {
+          "bytes": 6442450944,
+          "duplicate_policy": "preserved; not counted or deduplicated",
+          "format": "little-endian int64 src, int64 dst, float64 weight; 24 bytes per record",
+          "maximum_weight": 1.0,
+          "minimum_weight": 9.313225746154785e-10,
+          "ordering": "generator edge index; preserved in increasing partition filename and row order",
+          "self_loops": 2798,
+          "sha256": "cacd401faca8b8da8cd81fcbedfadce5b355c7029c6c53fc9bec947b60d6649e"
+        },
+        "vertices": {
+          "bytes": 134217728,
+          "format": "little-endian int64 id; ascending 0..2^scale-1",
+          "sha256": "a083dc749ad3f1f731613fac95eea8fb5331cacfd29ca490caa24d937d87cc3b"
+        }
+      },
+      "files": 1088
+    },
+    "requirement": "Before logging03, compare its fresh preflight manifest SHA/path with logging02; preflight records these but does not assert the expected manifest SHA. The cell checks expected canonical edge digest and checksums every listed Parquet file before timing."
+  },
+  "boundaries": [
+    {
+      "id": "outer_timeout_can_interrupt_certificate",
+      "refs": [
+        "graph_cell.py:492-497",
+        "run_matrix.py:314-319"
+      ],
+      "finding": "Execution alarm14400s is reset to14400s for verification, but the identical15300s outer timeout covers the entire container including pre-timer checksums, startup, execution, verification and cleanup. A completed execution may therefore have certification interrupted.",
+      "interpretation": "Preserve outer_timeout and last observed phase; certification incomplete is not passed, mismatch, or proof of an algorithm failure. Keep the same pinned timeout in both cells."
+    },
+    {
+      "id": "matched_timer_and_validation",
+      "refs": [
+        "traversal_cell.py:19-27",
+        "traversal_cell.py:96-97",
+        "graph_cell.py:465-497",
+        "traversal_cell.py:110-119",
+        "traversal_certificate.py:85-94"
+      ],
+      "finding": "Timed boundary is traversal execution through final Parquet write after lazy input handles; excludes input checksum reads, server startup, distributed certificate and cleanup. Certificate checks all-edge inequalities plus rooted tight-edge reachability, cardinality and parent/hop witnesses at1e-12 edge tolerance, with an accumulated absolute error bound.",
+      "interpretation": "Require final passed receipt and certificate/parent fields for success; retain bound/witness rounds. This is not the16k precomputed Dijkstra oracle or a claim of bitwise identical full vectors."
+    },
+    {
+      "id": "memory_and_shared_host_scope",
+      "refs": [
+        "runtime.py:157-179",
+        "graph_cell.py:457-466",
+        "graph_cell.py:557-559",
+        "measurement.py:130-182"
+      ],
+      "finding": "Both use100GiB container cap, swap disabled,32CPU0-31,32partitions/threads,2workers with64slots each,96GiB Sail pool per driver/worker and80GiB native quota setting. The96GiB is not an aggregate cluster/RSS cap. Execution PSS/RSS are sampled; full-cgroup memory includes cache/kernel and verification can set the final peak. Steal spans the whole trial and whole VM.",
+      "interpretation": "Compare execution-phase PSS separately from total cgroup peak; retain memory.events/cpu.stat, observed host pressure, clock evidence and steal scope. One sequential trial each on a shared host is a diagnostic outcome control, not a reliable isolated speedup estimate."
+    },
+    {
+      "id": "separate_admission_and_identity",
+      "refs": [
+        "preflight_cell.py:78-100",
+        "run_focused_safe.py:74-95",
+        "run_matrix.py:376-390"
+      ],
+      "finding": "The explicit preflight pins config/binary/native and clean controller plus minimum free bytes/idle Docker, but is a separate point-in-time tool, not automatically called by run_focused_safe. Its dataset manifest is observed, not pinned by an argument; standard matrix preflight only checks source and binary existence.",
+      "interpretation": "Use fresh logging03 admission with host561 hash5b7f506c19afd76a28b84c1459397b4ab30ff4cfc761f4195789425b963facec, same manifest8bad1a94c5a37715ce9320f27b3f13097ef50c2a9bfdfa15c25ed0665007c75c, no overlapping build/graph, actual free disk and recorded process image identities. Retained logging02 staging can reduce later disk headroom; prior staging peak is not an upper bound."
+    },
+    {
+      "id": "missing_receipt_or_collection_is_not_algorithm_outcome",
+      "refs": [
+        "run_focused_safe.py:107-134",
+        "run_matrix.py:351-373"
+      ],
+      "finding": "The safe runner unconditionally reads diagnostics/receipt.json before classifying and returns0 even for a completed non-pass classification. A missing/invalid receipt or collection timeout can prevent result.json; raw orchestration and VM artifacts remain. Classifier distinguishes OOM, outer timeout, interrupted, orchestration error and missing receipt when invoked with available data.",
+      "interpretation": "Do not use wrapper exit0 as passed. Audit orchestration plus receipt when present and retained last-phase evidence; preserve collection/missing-receipt failures separately. No receipt/final cgroup evidence means no final no-OOM inference merely from Docker driver state."
+    }
+  ],
+  "launch_readiness": "Not evaluated here: logging03 fresh admission and actual runtime receipt remain pending. No configuration asymmetry or source-scope blocker found.",
+  "audit_script_sha256": "39ed9520b1df16e7fbf0759d66a0011014fb27f36f6c15a62498afd7e65399de"
+}

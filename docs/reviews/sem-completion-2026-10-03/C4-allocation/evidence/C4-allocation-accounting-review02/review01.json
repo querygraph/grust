@@ -1,0 +1,44 @@
+{
+  "observed_utc": "2026-10-03T23:46:48.093936+00:00",
+  "outcome": "additional_source_scope_qualification_only",
+  "owner02_frozen": {
+    "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/C4-allocation-owner02/freeze01.json",
+    "bytes": 10550,
+    "sha256": "9201418dd3ef543601f35fb89462a4c4c156c27588ceae4f01d686b1ebc55b27"
+  },
+  "probe_source": [
+    {
+      "path": "/Volumes/Apo/graph-tests/workspaces/sem-completion-20261003/c4-allocation-source01/probe/src/main.rs",
+      "bytes": 7629,
+      "sha256": "9e354c95c026b886eabcaec496d79e2dbe147beee4c27270d514cd87ab81ccc9"
+    },
+    {
+      "path": "/Volumes/Apo/graph-tests/workspaces/sem-completion-20261003/c4-allocation-source01/probe/src/meter.rs",
+      "bytes": 3694,
+      "sha256": "e4e6fb9a94cd954ea5e93f082382a5b94cd285e669d26ca1868306ae3bc476bd"
+    }
+  ],
+  "df_group_size_sources": [
+    {
+      "path": "/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last.rs",
+      "bytes": 85836,
+      "sha256": "8bf9a75a79bb451f2dcbe9794933e670f72a114e55153169710a911336cea2ed"
+    },
+    {
+      "path": "/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last/state.rs",
+      "bytes": 34622,
+      "sha256": "0ada34481f46ebbf711a021f75353079bcdbc66d20f434a9a29cb951bb9542fb"
+    }
+  ],
+  "raw_clock_boundary": "Phase::start precedes the operation. phase.finish arguments evaluate acc.size() and any output-array reported-byte sampling before Phase::finish reads its elapsed timer and allocation counters. Raw clocks/counts therefore include the operation plus that sampling.",
+  "final_group_accumulator_size_source": "first_last.rs739-745 and state.rs360-363 sum cached value/order sizes and capacities. This grouped size() does not rescan every group or decode backing buffers.",
+  "final_size_sampling_temporary_allocations": "No allocation is apparent in these exact grouped size() bodies; no separate observed allocation witness for that sampling exists. Counters nevertheless include sampling if it allocates.",
+  "cost_attribution": "No attribution of the 43.892628717s repeat_improving duration to final size sampling or a buffer scan is established. It remains the raw scoped partial-control observation.",
+  "physical_240GB_claim": false,
+  "pure_update_phase_claim": false,
+  "whole_graph_runtime_claim": false,
+  "complete_100000_ordered_control_qualified": false,
+  "cargo_or_probe_run_by_this_review": false,
+  "frozen_owner_or_rust_source_changed": false,
+  "root_ongoing_run02_untouched": true
+}

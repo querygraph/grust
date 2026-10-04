@@ -1,0 +1,99 @@
+Diff in /private/tmp/sail-bfs-completion-check/examples/extensions/nutmeg/src/mutation.rs:334:
+                     Arc::new(Int64Array::from(vec![report.info.staged_nodes as i64])) as ArrayRef,
+                     Arc::new(Int64Array::from(vec![report.info.staged_edges as i64])) as ArrayRef,
+                     Arc::new(Int64Array::from(vec![report.info.revision as i64])) as ArrayRef,
+-                    Arc::new(Int64Array::from(vec![report.nodes.sort_permutation_bytes as i64])) as ArrayRef,
+-                    Arc::new(Int64Array::from(vec![report.nodes.sort_keys_bytes as i64])) as ArrayRef,
+-                    Arc::new(Int64Array::from(vec![report.nodes.sorted_copy_bytes as i64])) as ArrayRef,
++                    Arc::new(Int64Array::from(vec![
++                        report.nodes.sort_permutation_bytes as i64,
++                    ])) as ArrayRef,
++                    Arc::new(Int64Array::from(vec![report.nodes.sort_keys_bytes as i64]))
++                        as ArrayRef,
++                    Arc::new(Int64Array::from(vec![
++                        report.nodes.sorted_copy_bytes as i64,
++                    ])) as ArrayRef,
+                     Arc::new(Int64Array::from(vec![report.nodes.fill_bytes as i64])) as ArrayRef,
+-                    Arc::new(Int64Array::from(vec![report.nodes.normalized_bytes as i64])) as ArrayRef,
+-                    Arc::new(Int64Array::from(vec![report.nodes.retained_bytes as i64])) as ArrayRef,
++                    Arc::new(Int64Array::from(vec![report.nodes.normalized_bytes as i64]))
++                        as ArrayRef,
++                    Arc::new(Int64Array::from(vec![report.nodes.retained_bytes as i64]))
++                        as ArrayRef,
+                     Arc::new(Float64Array::from(vec![report.nodes.sort_seconds])) as ArrayRef,
+                     Arc::new(BooleanArray::from(vec![report.nodes.sorted])) as ArrayRef,
+-                    Arc::new(Int64Array::from(vec![report.edges.sort_permutation_bytes as i64])) as ArrayRef,
+-                    Arc::new(Int64Array::from(vec![report.edges.sort_keys_bytes as i64])) as ArrayRef,
+-                    Arc::new(Int64Array::from(vec![report.edges.sorted_copy_bytes as i64])) as ArrayRef,
++                    Arc::new(Int64Array::from(vec![
++                        report.edges.sort_permutation_bytes as i64,
++                    ])) as ArrayRef,
++                    Arc::new(Int64Array::from(vec![report.edges.sort_keys_bytes as i64]))
++                        as ArrayRef,
++                    Arc::new(Int64Array::from(vec![
++                        report.edges.sorted_copy_bytes as i64,
++                    ])) as ArrayRef,
+                     Arc::new(Int64Array::from(vec![report.edges.fill_bytes as i64])) as ArrayRef,
+-                    Arc::new(Int64Array::from(vec![report.edges.normalized_bytes as i64])) as ArrayRef,
+-                    Arc::new(Int64Array::from(vec![report.edges.retained_bytes as i64])) as ArrayRef,
++                    Arc::new(Int64Array::from(vec![report.edges.normalized_bytes as i64]))
++                        as ArrayRef,
++                    Arc::new(Int64Array::from(vec![report.edges.retained_bytes as i64]))
++                        as ArrayRef,
+                     Arc::new(Float64Array::from(vec![report.edges.sort_seconds])) as ArrayRef,
+                     Arc::new(BooleanArray::from(vec![report.edges.sorted])) as ArrayRef,
+                 ]
+Diff in /private/tmp/sail-bfs-completion-check/examples/extensions/nutmeg/src/tests.rs:80:
+             .iter()
+             .map(|f| f.name().as_str())
+             .collect::<Vec<_>>(),
+-        ["graph", "nodeCount", "edgeCount", "revision", "nodeSortPermutationBytes", "nodeSortKeysBytes", "nodeSortedCopyBytes", "nodeFillBytes", "nodeNormalizedBytes", "nodeRetainedBytes", "nodeSortSeconds", "nodeSorted", "edgeSortPermutationBytes", "edgeSortKeysBytes", "edgeSortedCopyBytes", "edgeFillBytes", "edgeNormalizedBytes", "edgeRetainedBytes", "edgeSortSeconds", "edgeSorted"]
++        [
++            "graph",
++            "nodeCount",
++            "edgeCount",
++            "revision",
++            "nodeSortPermutationBytes",
++            "nodeSortKeysBytes",
++            "nodeSortedCopyBytes",
++            "nodeFillBytes",
++            "nodeNormalizedBytes",
++            "nodeRetainedBytes",
++            "nodeSortSeconds",
++            "nodeSorted",
++            "edgeSortPermutationBytes",
++            "edgeSortKeysBytes",
++            "edgeSortedCopyBytes",
++            "edgeFillBytes",
++            "edgeNormalizedBytes",
++            "edgeRetainedBytes",
++            "edgeSortSeconds",
++            "edgeSorted"
++        ]
+     );
+     let physical = provider.scan(&ctx.state(), None, &[], None).await.unwrap();
+     assert!(registry.list().unwrap().is_empty(), "scan must not stage");
+Diff in /private/tmp/sail-bfs-completion-check/examples/extensions/nutmeg/src/tests.rs:447:
+         .err()
+         .unwrap()
+         .to_string();
+-    assert!(error.contains("order") && error.contains("asStaged"), "{error}");
++    assert!(
++        error.contains("order") && error.contains("asStaged"),
++        "{error}"
++    );
+     for request in [
+         serde_json::json!({"version":1,"verb":"run","graph":"g","algorithm":"degree","order":"asStaged"}),
+         serde_json::json!({"version":1,"verb":"nodes","graph":"g","order":"asStaged"}),
+Diff in /private/tmp/sail-bfs-completion-check/examples/extensions/nutmeg/src/tests.rs:464:
+             "{request}"
+         );
+     }
+-    assert_eq!(registry.list().unwrap()[0].revision, 2, "rejections do not mutate");
++    assert_eq!(
++        registry.list().unwrap()[0].revision,
++        2,
++        "rejections do not mutate"
++    );
+ }
+ 

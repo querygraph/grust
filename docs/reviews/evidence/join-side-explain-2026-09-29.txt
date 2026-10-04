@@ -1,0 +1,12 @@
+# Local join-side explain, Capitola 2026-09-29, arm64 Sail host from work/declared-layout (17f8461f1), single-process mode.
+# Script: scratchpad join-side/explain.py (1.6M-edge adjacency, 1-row frontier Parquet checkpoints). Physical plan lines with Join/DataSource only.
+
+### pecan: adjacency.join(active)
+    HashJoinExec: mode=CollectLeft, join_type=Inner, on=[(#3@0, #0@0)], projection=[#1@3, #4@1, #2@4]
+      DataSourceExec: file_groups={1 group: [[var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/join-side-co0mjgfx/frontier/0xGfrQyuiFQcVS2r_0.zst.parquet]]}, projection=[id@0 as #3, distance@1 as #4], file_type=parquet
+      DataSourceExec: file_groups={10 groups: [[var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/join-side-co0mjgfx/adjacency/Jh42q91VpRcjC8Fq_0.zst.parquet:0..755646], [var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/join-side-co0mjgfx/adjacency/Jh42q91VpRcjC8Fq_0.zst.parquet:755646..1511292], [var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/join-side-co0mjgfx/adjacency/Jh42q91VpRcjC8Fq_0.zst.parq
+
+### swapped: active.join(adjacency)
+    HashJoinExec: mode=CollectLeft, join_type=Inner, on=[(#0@0, #4@0)], projection=[#5@3, #1@1, #6@4]
+      DataSourceExec: file_groups={1 group: [[var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/join-side-co0mjgfx/frontier/0xGfrQyuiFQcVS2r_0.zst.parquet]]}, projection=[id@0 as #0, distance@1 as #1], file_type=parquet
+      DataSourceExec: file_groups={10 groups: [[var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/join-side-co0mjgfx/adjacency/Jh42q91VpRcjC8Fq_0.zst.parquet:0..755646], [var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/join-side-co0mjgfx/adjacency/Jh42q91VpRcjC8Fq_0.zst.parquet:755646..1511292], [var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/join-side-co0mjgfx/adjacency/Jh42q91VpRcjC8Fq_0.zst.parq

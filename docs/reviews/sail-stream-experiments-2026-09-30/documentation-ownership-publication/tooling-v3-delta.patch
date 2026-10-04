@@ -1,0 +1,204 @@
+--- predecessor/common.py
++++ common.py
+@@ -7,8 +7,8 @@
+ import subprocess
+ 
+ SRC = Path('/Users/alexy/src/grust')
+-DST = Path('/private/tmp/grust-sail-review-ownership-docs')
+-OUT = Path('/private/tmp/grust-sail-review-ownership-publication')
++DST = Path('/private/tmp/grust-sail-review-ownership-docs-v2')
++OUT = Path('/private/tmp/grust-sail-review-ownership-publication-v2')
+ REL = Path('docs/reviews/sail-stream-experiments-2026-09-30')
+ BASE = '980da04151cd5860017a06580a658bdf7e133c40'
+ ORIGIN = 'git@github.com:querygraph/grust.git'
+@@ -17,14 +17,15 @@
+ MANIFEST = REL/'DOCUMENTATION-SNAPSHOT.json'
+ COORD = Path('codex-to-codex.md')
+ MUTABLE_PROSE = {REL/'RESULTS.md'}
++MUTABLE_FILES = MUTABLE_PROSE | {REL/'verify_documentation_snapshot.py'}
+ REVIEW_INPUTS = {Path('docs/SEM-REVIEW-2.md'), Path('docs/STREAM-LOSS-STATUS.md')}
+ ALLOWED_DIRS = {
+     'argentea-rank-wcc-input-lifetime', 'argentea-cursor-lease-control',
+     'documentation-validation-publication',
+-    'physical-output-execution-preparation',
++    'physical-output-execution-preparation', 'documentation-archive-context',
+ }
+ ALLOWED_FILES = {
+-    'RESULTS.md', 'documentation-validation-activation.json',
++    'RESULTS.md', 'verify_documentation_snapshot.py', 'documentation-validation-activation.json',
+     'argentea-rank-wcc-input-lifetime-delivery.json',
+ }
+ REQUIRED_CLOSURES = {
+@@ -51,6 +52,7 @@
+     COMPONENT_DELIVERY: {'outcome': 'PUSHED_AND_REMOTELY_VERIFIED',
+                          'commit': COMPONENT_COMMIT, 'tree': COMPONENT_TREE},
+ }
++ARCHIVE_CONTEXTS = {'docs/reviews/sail-stream-experiments-2026-09-30/documentation-validation-publication/preparation-attempt01/RESULTS.md': {'original_path': 'docs/reviews/sail-stream-experiments-2026-09-30/RESULTS.md', 'source_manifest': 'docs/reviews/sail-stream-experiments-2026-09-30/documentation-validation-publication/preparation-attempt01/DOCUMENTATION-SNAPSHOT.json'}}
+ ENV = dict(os.environ, GIT_OPTIONAL_LOCKS='0', PYTHONDONTWRITEBYTECODE='1')
+ 
+ 
+@@ -133,6 +135,8 @@
+ 
+ def validate_authorization(auth):
+     check(isinstance(auth, dict), 'authorization must be an object')
++    check(auth.get('archived_markdown_link_contexts') == ARCHIVE_CONTEXTS,
++          'reviewed archive link context differs')
+     check(auth.get('status') == 'AUTHORIZED_FROZEN_INPUTS' and auth.get('base') == BASE,
+           'inputs not authorized')
+     for key in ('scope', 'coordination_title', 'coordination_body', 'commit_message',
+@@ -227,7 +231,7 @@
+     original = load(OUT/'base-manifest.json')
+     for row in original['files']:
+         path = Path(row['path'])
+-        if path not in MUTABLE_PROSE | {COORD}:
++        if path not in MUTABLE_FILES | {COORD}:
+             check(sha(DST/path) == row['sha256'], 'prior evidence changed: '+str(path))
+     changed = git(DST, 'diff', '--name-only', BASE).splitlines()
+     check(set(changed) == set(pin['changed_paths']), 'candidate changed path inventory differs')
+--- predecessor/prepare_snapshot.py
++++ prepare_snapshot.py
+@@ -44,7 +44,7 @@
+ base_files = set(git(DST, 'ls-files').splitlines())
+ for name, expected in selected.items():
+     target = safe_path(DST, name)
+-    if name in base_files and Path(name) not in MUTABLE_PROSE:
++    if name in base_files and Path(name) not in MUTABLE_FILES:
+         check(info(target) == expected, 'attempt to change immutable prior file: '+name)
+     target.parent.mkdir(parents=True, exist_ok=True)
+     shutil.copy2(safe_path(SRC, name), target)
+@@ -55,7 +55,7 @@
+ (DST/COORD).write_bytes(base_coord+appendix)
+ for row in original['files']:
+     path = Path(row['path'])
+-    if path not in MUTABLE_PROSE | {COORD}:
++    if path not in MUTABLE_FILES | {COORD}:
+         check(sha(DST/path) == row['sha256'], 'prior evidence changed: '+str(path))
+ paths = {Path(row['path']) for row in original['files']} | {Path(x) for x in selected} | {COORD}
+ manifest = dict(original)
+@@ -63,8 +63,9 @@
+     publication_branches=[ref.removeprefix('refs/heads/') for ref in REFS],
+     files=[dict(path=str(p), sha256=sha(DST/p), bytes=(DST/p).stat().st_size) for p in sorted(paths)],
+     pending_excluded_subtrees=auth['excluded_scopes'],
+-    source_copy_guard='Only authorized exact source bytes/sizes/modes copied; shared coordination never copied. All prior evidence immutable except current root RESULTS and a candidate-only coordination append.',
+-    current_snapshot_cutoff=auth['cutoff'])
++    source_copy_guard='Only authorized exact source bytes/sizes/modes copied; shared coordination never copied. All prior evidence immutable except current root RESULTS, the reviewed archive-link verifier, and a candidate-only coordination append.',
++    current_snapshot_cutoff=auth['cutoff'],
++    archived_markdown_link_contexts=ARCHIVE_CONTEXTS)
+ # Historical cutoff fields remain evidence but cannot label this publication.
+ for key in ('frozen_observation_cutoff', 'observation_history_note'):
+     manifest.pop(key, None)
+--- predecessor/commit_and_gate.sh
++++ commit_and_gate.sh
+@@ -2,13 +2,13 @@
+ # Root executes only after frozen-input authorization and independent review.
+ # No command may follow a failed gate; candidate/exact outputs are kept separate.
+ set -C
+-cd /private/tmp/grust-sail-review-ownership-docs &&
++cd /private/tmp/grust-sail-review-ownership-docs-v2 &&
+ export GIT_OPTIONAL_LOCKS=0 PYTHONDONTWRITEBYTECODE=1 &&
+-python3 /private/tmp/grust-sail-review-ownership-publication/guard.py candidate-before &&
+-python3 docs/reviews/sail-stream-experiments-2026-09-30/verify_documentation_snapshot.py --expected-head 980da04151cd5860017a06580a658bdf7e133c40 > /private/tmp/grust-sail-review-ownership-publication/candidate-gate.log 2>&1 &&
+-python3 /private/tmp/grust-sail-review-ownership-publication/guard.py candidate-after &&
+-git commit -F /private/tmp/grust-sail-review-ownership-publication/commit-message.txt &&
++python3 /private/tmp/grust-sail-review-ownership-publication-v2/guard.py candidate-before &&
++python3 docs/reviews/sail-stream-experiments-2026-09-30/verify_documentation_snapshot.py --expected-head 980da04151cd5860017a06580a658bdf7e133c40 > /private/tmp/grust-sail-review-ownership-publication-v2/candidate-gate.log 2>&1 &&
++python3 /private/tmp/grust-sail-review-ownership-publication-v2/guard.py candidate-after &&
++git commit -F /private/tmp/grust-sail-review-ownership-publication-v2/commit-message.txt &&
+ snapshot_commit=$(git rev-parse HEAD) &&
+-python3 /private/tmp/grust-sail-review-ownership-publication/guard.py exact-before "$snapshot_commit" &&
+-python3 docs/reviews/sail-stream-experiments-2026-09-30/verify_documentation_snapshot.py --expected-head "$snapshot_commit" > /private/tmp/grust-sail-review-ownership-publication/exact-gate.log 2>&1 &&
+-python3 /private/tmp/grust-sail-review-ownership-publication/guard.py exact-after "$snapshot_commit"
++python3 /private/tmp/grust-sail-review-ownership-publication-v2/guard.py exact-before "$snapshot_commit" &&
++python3 docs/reviews/sail-stream-experiments-2026-09-30/verify_documentation_snapshot.py --expected-head "$snapshot_commit" > /private/tmp/grust-sail-review-ownership-publication-v2/exact-gate.log 2>&1 &&
++python3 /private/tmp/grust-sail-review-ownership-publication-v2/guard.py exact-after "$snapshot_commit"
+--- predecessor/run_offline_controls.py
++++ run_offline_controls.py
+@@ -5,7 +5,7 @@
+ from pathlib import Path
+ import common as c
+ 
+-output = c.OUT/'offline-controls-v2'
++output = c.OUT/'offline-controls-v3'
+ output.mkdir(exist_ok=False)
+ real_src = c.SRC
+ results = []
+@@ -92,7 +92,7 @@
+         test('selected_ancestor_symlink_rejected', ancestor_symlink)
+         for name in ('logging03/cell.json', 'followup02/receipt.json', 'host-pair-16k/new-cell.json', 'resource-validation-union/receipt.json'):
+             test('active_scope_rejected:'+name, lambda name=name:rejected(lambda:c.selected_path(str(c.REL/name)), 'outside fixed preparation scope'))
+-        auth = dict(status='AUTHORIZED_FROZEN_INPUTS', base=c.BASE, scope='Offline synthetic test only',
++        auth = dict(archived_markdown_link_contexts=copy.deepcopy(c.ARCHIVE_CONTEXTS), status='AUTHORIZED_FROZEN_INPUTS', base=c.BASE, scope='Offline synthetic test only',
+                     coordination_title='ACK synthetic', coordination_body='Synthetic fixture',
+                     commit_message='Synthetic fixture', activation_done_body='Synthetic {commit}',
+                     cutoff='Synthetic closed boundary', excluded_scopes=['all active runs'],
+@@ -103,6 +103,11 @@
+         for path, digest in c.CLOSED_PINS.items():
+             auth['selected_sources'][path]['sha256'] = digest
+         test('well_formed_authorization_accepted', lambda:c.validate_authorization(auth))
++        test('reviewed_verifier_path_allowed', lambda:c.selected_path(str(c.REL/'verify_documentation_snapshot.py')))
++        test('archive_context_evidence_allowed', lambda:c.selected_path(str(c.REL/'documentation-archive-context/receipt.json')))
++        for context in ({}, None, {'unknown':{}}):
++            changed=copy.deepcopy(auth);changed['archived_markdown_link_contexts']=context
++            test('wrong_archive_context_rejected:'+str(context),lambda changed=changed:rejected(lambda:c.validate_authorization(changed),'reviewed archive link context differs'))
+         test('closed_cursor_scope_accepted', lambda:c.selected_path(str(c.REL/'argentea-cursor-lease-control/final-receipt.json')))
+         for path in (selected, final, delivery):
+             changed=copy.deepcopy(auth)
+--- predecessor/README.md
++++ README.md
+@@ -1,14 +1,14 @@
+ # Ownership documentation publication tooling — preparation only
+ 
+ These private helpers derive from the independently reviewed validation workflow.
+-The detached destination is `/private/tmp/grust-sail-review-ownership-docs` at
+-Grust `980da04151cd5860017a06580a658bdf7e133c40`. No new evidence snapshot has
+-been copied or staged. No documentation gate, commit, push or activation has run.
++The detached destination is `/private/tmp/grust-sail-review-ownership-docs-v2` at
++Grust `980da04151cd5860017a06580a658bdf7e133c40`. The earlier failed snapshot and its private output are unchanged; all prior output
++files are retained under `predecessor/`. No new evidence snapshot has been copied or staged. No documentation gate, commit, push or activation has run.
+ 
+ The fixed allowlist admits only `argentea-rank-wcc-input-lifetime/`,
+ `argentea-cursor-lease-control/`, `documentation-validation-publication/`,
+-`physical-output-execution-preparation/`,
+-current `RESULTS.md`, `documentation-validation-activation.json`, and the
++`physical-output-execution-preparation/`, `documentation-archive-context/`,
++current `RESULTS.md`, the reviewed `verify_documentation_snapshot.py`, `documentation-validation-activation.json`, and the
+ prospective `argentea-rank-wcc-input-lifetime-delivery.json`. Active logging03,
+ followup02, paired execution/results, private data and caches remain excluded.
+ The final component and cursor receipts are closed; root still must authorize
+@@ -52,3 +52,12 @@
+ Final helper hashes, the actual authorized source map, frozen candidate,
+ privacy/neutrality/link review and exact gates all remain separate prerequisites.
+ This preparation makes no runtime, Linux, worker, performance or replay claim.
++
++The archive-link correction is the only additional prior-file mutation allowed.
++The fresh root authorization must include exactly `ARCHIVE_CONTEXTS` from
++`common.py`; preparation inserts that mapping into the manifest. The verifier
++proves the archived Markdown SHA/bytes using the retained source manifest row,
++then checks every link from the original directory. It skips no links and
++rewrites no historical prose. Canonical paths, inventory membership, hashes and
++symlink checks fail closed. Final preparation, operational gates and publication
++remain unauthorized until root freezes the expanded input map and reviews it.
+--- predecessor/authorization-template.json
++++ authorization-template.json
+@@ -1,7 +1,7 @@
+ {
+   "status": "DRAFT_NOT_AUTHORIZED",
+   "base": "980da04151cd5860017a06580a658bdf7e133c40",
+-  "scope": "Root must provide the reviewed documentation-only scope after final 33adfce expanded ownership component and outer delivery receipts close; closed cursor evidence is allowed.",
++  "scope": "Root must provide the reviewed documentation-only scope after final 33adfce expanded ownership component and outer delivery receipts close; closed cursor evidence is allowed. Preserve all selected historical bytes and resolve the one archived RESULTS document using its pinned original-source manifest.",
+   "cutoff": "Root must supply the exact closed evidence boundary; active run observations remain excluded.",
+   "excluded_scopes": [
+     "All active logging03 and followup02 data",
+@@ -14,5 +14,11 @@
+   "commit_message": "Root must supply the reviewed publication message",
+   "activation_done_body": "Root must supply a time-independent DONE statement naming {commit} and only the frozen scope.",
+   "selected_sources": {},
+-  "required_json": []
++  "required_json": [],
++  "archived_markdown_link_contexts": {
++    "docs/reviews/sail-stream-experiments-2026-09-30/documentation-validation-publication/preparation-attempt01/RESULTS.md": {
++      "original_path": "docs/reviews/sail-stream-experiments-2026-09-30/RESULTS.md",
++      "source_manifest": "docs/reviews/sail-stream-experiments-2026-09-30/documentation-validation-publication/preparation-attempt01/DOCUMENTATION-SNAPSHOT.json"
++    }
++  }
+ }

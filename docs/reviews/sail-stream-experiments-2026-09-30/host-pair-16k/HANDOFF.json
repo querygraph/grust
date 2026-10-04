@@ -1,0 +1,109 @@
+{
+  "recorded_utc": "2026-09-30T20:25:22.720380+00:00",
+  "status": "PREPARED_AND_STAGED_NOT_LAUNCHED",
+  "namespace": "pair16k-20260930201356",
+  "plan_sha256": "d51e9f4d5a1d16fb18c36e93fcb3d641c017610a7319ee56a203676800dbe1ab",
+  "runner_sha256": "8220b9951c51420bd34ca5e32ba20c2304a1b863aa5f2fa1fa9467e74d60a7f1",
+  "staging_script_sha256": "dc7add0f298af05101f66f88b7f9a3800c755c3fee425aac627bdd5f241ee71b",
+  "resource_fingerprint": "2756b53ada1b10d0c4eedf9d20a54e38b611db7607fd7c9a8fa4eca1e52eb399",
+  "remote_root": "/Users/alexy/src/sail-extensions-gates/stream-experiments-20260930",
+  "remote_runner": "/Users/alexy/src/sail-extensions-gates/stream-experiments-20260930/pair16k-20260930201356-runner.py",
+  "remote_plan": "/Users/alexy/src/sail-extensions-gates/stream-experiments-20260930/pair16k-20260930201356-plan.json",
+  "order": "warmup A, warmup B, measurements A B B A",
+  "hosts": {
+    "A": {
+      "name": "host289",
+      "source": "2894a962076d3cc404dd72ec736ebeb9239901f6",
+      "binary": "/targets/sail-stream-2894a962076d/sail-linux-x86_64-2894a962076d-release",
+      "sha256": "40a78182a420152e8e3651f9cdb38a4196eaf8bc7aead092d10e258a17ac3497"
+    },
+    "B": {
+      "name": "host561",
+      "source": "56194b170155301ba91077f0ba3df31fe2c78b6b",
+      "binary": "/targets/sail-compact-host-56194b170155/sail-linux-x86_64-56194b170155-release",
+      "sha256": "5b7f506c19afd76a28b84c1459397b4ab30ff4cfc761f4195789425b963facec"
+    }
+  },
+  "resources": {
+    "limits": {
+      "cpus": 8,
+      "cpuset_cpus": "16-23",
+      "memory_gib": 12,
+      "outer_timeout_seconds": 1350
+    },
+    "defaults": {
+      "partitions": 4,
+      "threads": 4,
+      "worker_task_slots": 16,
+      "sail_pool_bytes": 3221225472,
+      "native_quota": 268435456,
+      "tolerance": 1e-08,
+      "damping": 0.85,
+      "timeout": 600,
+      "seed": 42,
+      "delta": 1.0,
+      "max_iterations": 1000
+    },
+    "environment": {
+      "SAIL_CLUSTER__TASK_STREAM_CREATION_TIMEOUT_SECS": "900",
+      "SAIL_CLUSTER__WORKER_MAX_IDLE_TIME_SECS": "86400",
+      "SAIL_BENCHMARK_RUST_LOG": "info,h2::proto::connection=debug,h2::proto::streams=warn,h2::frame::go_away=trace,h2::frame::reset=trace,h2::frame::ping=trace,h2::proto::ping_pong=trace,sail_execution::task_runner=debug,tonic::transport::server=debug"
+    },
+    "extra_cell_args": [
+      "--http2-keepalive-timeout",
+      "120",
+      "--record-plans"
+    ],
+    "mode": "process-cluster",
+    "worker_initial_count": 2,
+    "worker_max_count": 2,
+    "worker_count_source": "pinned runtime.py server() environment",
+    "pool_scope": "greedy 3 GiB configured per Sail process; container hard cap 12 GiB",
+    "pid_limit": 1024,
+    "image": "sha256:f3518d652fbea8b9b9f9ebf9849277ca3bd39d0c21bb2c6e36fbaeaa2dc2678e",
+    "cpuset_scope": "same VM logical CPUs 16-23"
+  },
+  "measurement_scopes": {
+    "timer": "receipt.end_to_end_seconds: traversal execution through final Parquet write, after lazy input DataFrames are constructed; excludes server startup, independent correctness validation and cleanup (pinned traversal_cell.py:27-97)",
+    "memory": "sampled container-process PSS/RSS phase execute; distinct from cgroup total memory counters",
+    "steal": "full-trial, whole Linux VM /proc/stat delta; not the execution timer interval, container or assigned cpuset (pinned graph_cell.py:558-559)",
+    "ratios": "shared-host descriptive ratios only; original smoke times excluded; no absolute performance claim"
+  },
+  "controller_sha": "3a9028057c6c6c5034492845926fc4bc18f9626f",
+  "native_sha": "ffcfbd5690e3f3681ef9ac18ba959bc231cf9f73",
+  "dataset_manifest_sha256": "6d71d459df71e2a0de23d34c80c5faff6d40829cfa59c85c5f6cef16ae203134",
+  "configuration_parity": "All six normalize to the same digest after removing only run_id, host_output, runtime_source_sha, container_sail_binary and suite.name; dry plans retain commands.",
+  "gate": {
+    "receipt": "candidate-gate02/receipt.json",
+    "sha256": "5d011a06f0f11ecc74f159fc55dfc2c84844df108527b390ddb39f65c71cd4c3",
+    "tests": 6,
+    "scope": "detached content candidate gate; no commit/Sail binary verdict"
+  },
+  "independent_review": {
+    "receipt": "independent-preparation-audit.json",
+    "sha256": "af179421188463927edfc5b270135dea5aaf91829a5e27705d7f0fc5200e6301"
+  },
+  "staging": {
+    "receipt": "staging-20260930T202416540635Z.json",
+    "sha256": "b7fbeff5d68d2ece01423139dfdcc1b06fc242c97425599ec4f1bce8afaae19b",
+    "remote_dry_passed": true,
+    "files": 8,
+    "matched_support_files": 35
+  },
+  "future_execution_command": [
+    "python3",
+    "-B",
+    "/Users/alexy/src/sail-extensions-gates/stream-experiments-20260930/pair16k-20260930201356-runner.py",
+    "/Users/alexy/src/sail-extensions-gates/stream-experiments-20260930/pair16k-20260930201356-plan.json",
+    "--execute",
+    "--expected-plan-sha256",
+    "d51e9f4d5a1d16fb18c36e93fcb3d641c017610a7319ee56a203676800dbe1ab",
+    "--through",
+    "6"
+  ],
+  "launch_policy": "Command is prepared, not executed. Parent must separately authorize scheduling after logging02. Use a detached process with redirected log for long supervision; runner writes per-cell progress, raw diagnostics and sequence/summary durably. --through permits an explicitly authorized prefix; no automatic retries.",
+  "evidence_directory": "/Users/alexy/src/sail-extensions-gates/stream-experiments-20260930/pair16k-20260930201356",
+  "admission": "No running Docker containers and >=12GiB free before every cell. Point-in-time admission plus sampled concurrency, not a host-wide lock or dedicated-host proof.",
+  "stopping": "Runner wall deadline2400s; bounded cleanup. Timeout halts later cells. Admission/source/disk failures preserve error receipt and halt; completed benchmark failure outcomes remain separate and may continue within authorized prefix.",
+  "retention": "No deletion, bootstrap, source/native/controller changes, cache flush or previous smoke overwrite. Previous smoke times are not comparison samples. Full artifacts remain in VM; top-level diagnostics copied by pinned safe runner."
+}

@@ -1,0 +1,91 @@
+{
+  "recorded_utc": "2026-09-30T21:43:27.548436+00:00",
+  "outcome": "PASS_BOUNDED_INDEPENDENT_REVIEW",
+  "candidate_worktree": "/private/tmp/grust-closed-cell-audit",
+  "candidate_index_tree": "045744062a0e52a9dc2215993137cc2fb94fbce4",
+  "files": {
+    "audit_cell.py": {
+      "sha256": "c8d59db362136879bbd3a6efe8f527311849e3e0be18ddb64e6da996bdfcd318",
+      "bytes": 19648
+    },
+    "profiles.json": {
+      "sha256": "dfe38f1cb23f8b689ec7cf839e6016fa037e013396d80fbdc6dce4f65d89eb76",
+      "bytes": 5617
+    },
+    "README.md": {
+      "sha256": "3407f58ecbbe0d2b7b53792ead478795c46ab85fd6e42ec9458bf7bf3451df40",
+      "bytes": 3436
+    },
+    "test_audit_cell.py": {
+      "sha256": "af5a7fc6c36d047d58456a4d100b928d01277b77e4eb722b226816c896269dab",
+      "bytes": 6607
+    },
+    "prepare_profiles.py": {
+      "sha256": "3c6f1fdf9e3ed32e96142eeb9b8e8b7bbaf4f9368189070e7769c68dd5dca0fb",
+      "bytes": 2877
+    }
+  },
+  "additional_controls": [
+    {
+      "name": "duplicate_json_key",
+      "expected": "integrity_error",
+      "observed": "integrity_error",
+      "errors": [
+        "invalid input: /var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/closed-cell-fixture-j_f5nrn3/cell/diagnostics/receipt.json: duplicate JSON key: outcome"
+      ],
+      "inconclusive_reasons": []
+    },
+    {
+      "name": "null_arguments",
+      "expected": "integrity_error",
+      "observed": "integrity_error",
+      "errors": [
+        "identity: TypeError: 'NoneType' object is not subscriptable",
+        "collection namespace: TypeError: 'NoneType' object is not subscriptable"
+      ],
+      "inconclusive_reasons": []
+    },
+    {
+      "name": "bad_finish_marker",
+      "expected": "integrity_error",
+      "observed": "integrity_error",
+      "errors": [
+        "orchestration closure: ValueError: Invalid isoformat string: 'not-a-time'"
+      ],
+      "inconclusive_reasons": []
+    },
+    {
+      "name": "missing_cgroup",
+      "expected": "inconclusive",
+      "observed": "inconclusive",
+      "errors": [],
+      "inconclusive_reasons": [
+        "missing cgroup evidence: cgroup_after"
+      ]
+    },
+    {
+      "name": "archive_symlink",
+      "expected": "integrity_error",
+      "observed": "integrity_error",
+      "errors": [
+        "symlink archive",
+        "input changed during audit: /var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/closed-cell-fixture-t07a6c5m/cell/diagnostics.tar"
+      ],
+      "inconclusive_reasons": []
+    }
+  ],
+  "review_findings": [],
+  "checked_boundaries": [
+    "Profiles bind exact config, prior data/native inventories and build receipts, while clearly distinguishing recorded agreement from live binary/Parquet rehash.",
+    "Archive members are hashed without extracting, flat relative regular files only; duplicate/unsafe/symlink artifacts reject.",
+    "Missing required artifacts return inconclusive; detected inconsistency or malformed nested data returns integrity_error in inspected/control cases.",
+    "Runner, producer, Docker and correctness outcomes remain separate. integrity_verified is not a correctness pass.",
+    "logging01 host redaction remains explicit, separate from exact archive/extracted-member agreement; OOM/error outcomes retained.",
+    "CLI report pins full profile-file bytes and selected canonical profile; output creation is exclusive and outside collected cell."
+  ],
+  "limits": [
+    "Source review and five small deterministic local mutation controls only. Existing 16-test detached gate observed by receipt, not independently rerun in full.",
+    "No remote commands, graph execution, result-certificate verification, source rebuild, Parquet recomputation or performance/causal verdict.",
+    "Trusted campaign profile and locally collected artifacts are assumed; not an adversarial untrusted-input parser/security certification."
+  ]
+}

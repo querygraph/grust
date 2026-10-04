@@ -1,0 +1,12 @@
+truth: 4,000,000 rows, 1,000,003 distinct k
+repartition(10, k).checkpoint()
+    rows 4,000,000; GROUP BY k: 1,000,003 groups; DISTINCT k: 1,000,003  -> correct
+repartition(10, k).sortWithinPartitions(k).checkpoint()
+    rows 4,000,000; GROUP BY k: 4,000,000 groups; DISTINCT k: 4,000,000  -> WRONG
+    plan: AggregateExec: mode=SinglePartitioned, gby=[#0@0 as #0], aggr=[count(Int64(1))], ordering_mode=Sorted
+orderBy(k).checkpoint()
+    rows 4,000,000; GROUP BY k: 3,960,618 groups; DISTINCT k: 3,960,618  -> WRONG
+    plan: AggregateExec: mode=FinalPartitioned, gby=[#0@0 as #0], aggr=[count(Int64(1))], ordering_mode=Sorted
+    plan: AggregateExec: mode=Partial, gby=[#0@0 as #0], aggr=[count(Int64(1))], ordering_mode=Sorted
+prefer_hash_join=false, repartition(10, k).checkpoint() JOIN keys ON k: 4,000,000 rows (truth 4,000,000); SortExec in plan: 1
+prefer_hash_join=false, repartition(10, k).sortWithinPartitions(k).checkpoint() JOIN keys ON k: 139 rows (truth 4,000,000); SortExec in plan: 0

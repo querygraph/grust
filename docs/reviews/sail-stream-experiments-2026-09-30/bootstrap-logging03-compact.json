@@ -1,0 +1,26 @@
+{
+  "utc": "2026-09-30T18:40:54.736412+00:00",
+  "command": [
+    "/usr/local/bin/docker",
+    "--context",
+    "colima-sail-gate",
+    "run",
+    "--rm",
+    "--mount",
+    "type=volume,source=sail-extension-targets,target=/targets",
+    "--mount",
+    "type=bind,source=/Users/alexy/src/sail-extensions-gates/stream-experiments-20260930,target=/work,readonly",
+    "--workdir",
+    "/targets",
+    "--entrypoint",
+    "/targets/graph-nuts-ffcfbd569/venv/bin/python",
+    "sha256:f3518d652fbea8b9b9f9ebf9849277ca3bd39d0c21bb2c6e36fbaeaa2dc2678e",
+    "-I",
+    "-c",
+    "\nimport json,os,subprocess,sys,shutil\nfrom pathlib import Path\nc=json.loads(Path(sys.argv[1]).read_text())\nsource=Path(c['container_repo'])\nbase='/targets/graph-nuts-ffcfbd569/source'\nif not source.exists():\n subprocess.run(['git','clone','--shared','--no-checkout',base,str(source)],check=True)\n subprocess.run(['git','-C',str(source),'fetch','/work/harness.bundle','refs/heads/work/stream-diagnostic-harness'],check=True)\n subprocess.run(['git','-C',str(source),'checkout','--detach',c['harness_source_sha']],check=True)\nassert subprocess.check_output(['git','-C',str(source),'rev-parse','HEAD'],text=True).strip()==c['harness_source_sha']\nassert not subprocess.check_output(['git','-C',str(source),'status','--porcelain'],text=True).strip()\ndatasets=Path(c['container_root'])/'datasets'\ndatasets.mkdir(parents=True,exist_ok=True)\nfor name in c['datasets']:\n target=datasets/name\n original=Path('/targets/gn-capacity-b87fb27a-hub/datasets')/name\n assert (original/'manifest.json').exists()\n if not target.exists(): target.symlink_to(original,target_is_directory=True)\n assert target.is_symlink() and target.resolve()==original.resolve()\nprint(json.dumps({'source':str(source),'sha':c['harness_source_sha'],'free_bytes':shutil.disk_usage('/targets').free}))\n",
+    "/work/logging03-compact.json"
+  ],
+  "returncode": 0,
+  "stdout": "{\"source\": \"/targets/sail-stream-experiments-20260930/source-3a9028057\", \"sha\": \"3a9028057c6c6c5034492845926fc4bc18f9626f\", \"free_bytes\": 26471649280}\n",
+  "stderr": ""
+}

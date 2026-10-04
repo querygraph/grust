@@ -1,0 +1,70 @@
+   Compiling proc-macro2 v1.0.107
+   Compiling quote v1.0.47
+   Compiling unicode-ident v1.0.26
+   Compiling serde_core v1.0.229
+   Compiling serde v1.0.229
+   Compiling zmij v1.0.23
+   Compiling itoa v1.0.18
+   Compiling hashbrown v0.17.1
+   Compiling memchr v2.8.3
+   Compiling syn v3.0.6
+   Compiling serde_json v1.0.151
+   Compiling equivalent v1.0.2
+   Compiling thiserror v2.0.21
+   Compiling indexmap v2.14.2
+   Compiling unsafe-libyaml v0.2.11
+   Compiling ryu v1.0.23
+   Compiling sail-argentea-core v0.1.0 (/tmp/sail-bfs-completion-baseline/examples/extensions/argentea)
+   Compiling sail-native-resource-ffi v0.1.0 (/tmp/sail-bfs-completion-baseline/crates/sail-native-resource-ffi)
+   Compiling log v0.4.34
+   Compiling serde_derive v1.0.229
+   Compiling thiserror-impl v2.0.21
+   Compiling async-trait v0.1.92
+   Compiling readonly v0.2.14
+   Compiling serde_yaml v0.9.34+deprecated
+   Compiling quick-xml v0.40.1
+   Compiling grust-core v0.23.0
+   Compiling grust-procedures v0.23.0
+    Finished `release` profile [optimized] target(s) in 15.94s
+     Running tests/bfs_completion.rs (/tmp/sail-bfs-completion-baseline-target/release/deps/bfs_completion-60c0e14b6c110c8d)
+
+running 2 tests
+BFS_TRUNCATED_COMPLETION algorithm=Reference partitions=1 scalar_wire=false discarded=1 rejected=0
+BFS_FALSE_CERTIFICATE BfsConvergence { levels: 1, reached: 1 }
+BFS_TRUNCATED_COMPLETION algorithm=Reference partitions=1 scalar_wire=true discarded=1 rejected=0
+BFS_FALSE_CERTIFICATE BfsConvergence { levels: 1, reached: 1 }
+BFS_TRUNCATED_COMPLETION algorithm=Reference partitions=3 scalar_wire=false discarded=1 rejected=0
+BFS_FALSE_CERTIFICATE BfsConvergence { levels: 1, reached: 1 }
+BFS_TRUNCATED_COMPLETION algorithm=Reference partitions=3 scalar_wire=true discarded=1 rejected=0
+BFS_FALSE_CERTIFICATE BfsConvergence { levels: 1, reached: 1 }
+BFS_TRUNCATED_COMPLETION algorithm=Frontier partitions=1 scalar_wire=false discarded=1 rejected=0
+BFS_FALSE_CERTIFICATE BfsConvergence { levels: 1, reached: 1 }
+BFS_TRUNCATED_COMPLETION algorithm=Frontier partitions=1 scalar_wire=true discarded=1 rejected=0
+BFS_FALSE_CERTIFICATE BfsConvergence { levels: 1, reached: 1 }
+BFS_TRUNCATED_COMPLETION algorithm=Frontier partitions=3 scalar_wire=false discarded=1 rejected=0
+BFS_FALSE_CERTIFICATE BfsConvergence { levels: 1, reached: 1 }
+BFS_TRUNCATED_COMPLETION algorithm=Frontier partitions=3 scalar_wire=true discarded=1 rejected=0
+BFS_FALSE_CERTIFICATE BfsConvergence { levels: 1, reached: 1 }
+BFS_TRUNCATED_COMPLETION algorithm=DirectionOptimizing partitions=1 scalar_wire=false discarded=1 rejected=0
+BFS_FALSE_CERTIFICATE BfsConvergence { levels: 1, reached: 1 }
+BFS_TRUNCATED_COMPLETION algorithm=DirectionOptimizing partitions=1 scalar_wire=true discarded=1 rejected=0
+BFS_FALSE_CERTIFICATE BfsConvergence { levels: 1, reached: 1 }
+BFS_TRUNCATED_COMPLETION algorithm=DirectionOptimizing partitions=3 scalar_wire=false discarded=1 rejected=0
+BFS_FALSE_CERTIFICATE BfsConvergence { levels: 1, reached: 1 }
+BFS_TRUNCATED_COMPLETION algorithm=DirectionOptimizing partitions=3 scalar_wire=true discarded=1 rejected=0
+BFS_FALSE_CERTIFICATE BfsConvergence { levels: 1, reached: 1 }
+
+thread 'suppressed_candidates_and_rewritten_completion_cannot_certify_false_convergence' (54717174) panicked at tests/bfs_completion.rs:103:5:
+accepted truncated candidate streams: [(Reference, 1, false), (Reference, 1, true), (Reference, 3, false), (Reference, 3, true), (Frontier, 1, false), (Frontier, 1, true), (Frontier, 3, false), (Frontier, 3, true), (DirectionOptimizing, 1, false), (DirectionOptimizing, 1, true), (DirectionOptimizing, 3, false), (DirectionOptimizing, 3, true)]
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test candidate_completion_totals_count_parallel_and_already_reached_targets ... ok
+test suppressed_candidates_and_rewritten_completion_cannot_certify_false_convergence ... FAILED
+
+failures:
+
+failures:
+    suppressed_candidates_and_rewritten_completion_cannot_certify_false_convergence
+
+test result: FAILED. 1 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--test bfs_completion`

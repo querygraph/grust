@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en-US" xml:lang="en-US">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <meta name="author" content="Querygraph" />
+  <meta name="dcterms.date" content="2026-10-01" />
+  <meta name="description" content="Version 1.0. Review target: querygraph/sail bd8ce9ae8839477e2c08a0475ab7900b115c5366. Historical patches are not a qualified rebase." />
+  <title>Host implementation: plain Sail and the extension
+prototype</title>
+  <style>
+    div.sitenav { display: flex; flex-direction: row; flex-wrap: wrap; }
+    span.navlink { flex: 1; }
+    span.navlink-label { display: inline-block; min-width: 4em; }
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: 1.5em;}
+    div.column{flex: auto;}
+    @media screen {
+    div.columns{gap: min(4vw, 1.5em);}
+    div.column{overflow-x: auto;}
+    }
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <link rel="stylesheet" href="book.css" />
+</head>
+<body>
+<nav id="sitenav">
+<div class="sitenav">
+<span class="navlink">
+<span class="navlink-label">Up:</span> <a href="index.html" accesskey="u" rel="up">Sail Extensions: The Host Implementation</a>
+</span>
+<span class="navlink">
+<span class="navlink-label">Top:</span> <a href="index.html" accesskey="t" rel="top">Sail Extensions: The Host Implementation</a>
+</span>
+</div>
+<div class="sitenav">
+<span class="navlink">
+<span class="navlink-label">Next:</span> <a href="chapter-002.html" accesskey="n" rel="next">Complete host integration patch</a>
+</span>
+<span class="navlink">
+<span class="navlink-label">Previous:</span> <a href="index.html" accesskey="p" rel="previous">Sail Extensions: The Host Implementation</a>
+</span>
+</div>
+</nav>
+<h1 data-number="1" id="host-overview"><span
+class="header-section-number">1</span> Host implementation: plain Sail
+and the extension prototype</h1>
+<p>The <a
+href="https://github.com/querygraph/grust/blob/work/extensions-review-guide/docs/EXTENSIONS-ONE-PAGER.md">extension
+review guide</a> describes the boundary an extension author would use.
+This companion explains the changes inside Sail that support the
+prototype, which responsibilities belong in the host, and which
+implementation decisions remain open. Its comparison is deliberately
+between named source revisions, not between an old fork and an assumed
+version of upstream.</p>
+<p><strong>PLAIN</strong> means upstream <code>lakehq/sail</code> at
+<code>4d31e15b350c975aed95c23e6cc7e7c51c59fe52</code>.
+<strong>PROTOTYPE</strong> means <code>querygraph/sail</code> at
+<code>bd8ce9ae8839477e2c08a0475ab7900b115c5366</code>, the reviewed
+<code>sail-extensions</code> revision. Their common ancestor is
+<code>a85d912d72ae03a6d97b6a3fd151f5752da636c6</code>. The historical
+host patch runs from that ancestor to PROTOTYPE. It records what the
+fork introduced; it is not a patch prepared against PLAIN.</p>
+<p>The current-source comparison below was made by reading both
+revisions. No merge, build or runtime experiment was performed for this
+document. Source structure can establish that a mechanism exists and
+where it lives; it cannot qualify a rebased combination or prove a
+deployment's behavior.</p>
+<h2 data-number="1.1" id="host-overview--host-comparison"><span
+class="header-section-number">1.1</span> What the comparison actually
+says</h2>
+<p>PLAIN already has Spark Connect, DataFusion execution, catalogs,
+session factories, distributed scheduling and extension mechanisms used
+internally by Sail. It is not an engine without extensibility. The
+prototype adds a particular route for independently packaged native
+extensions, including a constrained stateful relation path.</p>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr>
+<th>Concern</th>
+<th>PLAIN at <code>4d31e15b</code></th>
+<th>PROTOTYPE at <code>bd8ce9ae</code></th>
+<th>Proposed decision destination</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Embedding</td>
+<td>Custom session factory is already public</td>
+<td>Uses session construction to install extensions</td>
+<td>Existing embedding seam; not a new prerequisite</td>
+</tr>
+<tr>
+<td>Discovery</td>
+<td>No <code>pysail.extensions</code> loader</td>
+<td>Flag-gated wheel discovery and per-session binding</td>
+<td>Session-layer integration</td>
+</tr>
+<tr>
+<td>Native scalar codec</td>
+<td>Existing explicit UDF codec and expression converter</td>
+<td>Package identity and metadata-bearing field preservation</td>
+<td>Generic codec invariants, then loader integration</td>
+</tr>
+<tr>
+<td>Connect relations</td>
+<td>Extension relation returns unsupported</td>
+<td>Bounded envelope, registry and handler dispatch</td>
+<td>Protocol and planner contract</td>
+</tr>
+<tr>
+<td>Foreign inputs</td>
+<td>No prototype-specific adapter</td>
+<td>Original host context retained; partitions gathered</td>
+<td>Host execution invariant; gathering remains a policy</td>
+</tr>
+<tr>
+<td>Native placement</td>
+<td>No driver-extension ownership node</td>
+<td>Driver-owned references and one-attempt native regions</td>
+<td>Scheduler implementation with explicit effect policy</td>
+</tr>
+<tr>
+<td>Admission</td>
+<td>Default runtime creation constructs a pool</td>
+<td>Explicit shared domain plus prepaid native leases</td>
+<td>Resource policy and small ownership ABI</td>
+</tr>
+<tr>
+<td>Teardown</td>
+<td>Existing driver/session shutdown</td>
+<td>Terminal interruption, draining hooks and lease wait</td>
+<td>Generic lifecycle fixes plus native policy</td>
+</tr>
+<tr>
+<td>GraphUtils</td>
+<td>No compiled-in graph utility adapter</td>
+<td>Owned graph staging and helper functions</td>
+<td>Separately scoped domain support</td>
+</tr>
+</tbody>
+</table>
+<p>These destinations are review proposals, not claims of upstream
+acceptance. The <a
+href="https://github.com/querygraph/grust/blob/work/extensions-review-guide/docs/extensions-review/modules/01-discovery.md">eight
+modules</a> separate the public invariants from the particular types
+used to implement them.</p>
+<h2 data-number="1.2" id="host-overview--host-current-upstream"><span
+class="header-section-number">1.2</span> Preserve what current upstream
+already changed</h2>
+<p>The session-factory hook from #2630 is already in PLAIN.
+<code>create_spark_session_manager_with_factory</code> accepts an
+embedder's factory, and the normal constructor delegates to it. An
+embedder can wrap Sail's normal configuration rather than replace its
+semantics. It should not be presented as work still needed to enable the
+prototype. <a
+href="https://github.com/lakehq/sail/blob/4d31e15b350c975aed95c23e6cc7e7c51c59fe52/crates/sail-spark-connect/src/session_manager.rs#L96">PLAIN
+session manager</a>.</p>
+<p>Upstream has also advanced since the common ancestor. Its Spark
+session initialization now seeds DataFusion's execution timezone from
+the resolved Spark session timezone. Its planner prepares asynchronous
+functions; its UDF codec includes the Jev async wrapper. Its job-graph
+planner materializes shared file-scan build sides so a single-partition
+build can be scanned once and broadcast. These are concrete changes in
+paths the prototype also touches, not hypothetical future conflicts. <a
+href="https://github.com/lakehq/sail/blob/4d31e15b350c975aed95c23e6cc7e7c51c59fe52/crates/sail-spark-connect/src/session_manager.rs#L61">PLAIN
+timezone initialization</a>, <a
+href="https://github.com/lakehq/sail/blob/4d31e15b350c975aed95c23e6cc7e7c51c59fe52/crates/sail-session/src/planner.rs">query
+planner</a>, <a
+href="https://github.com/lakehq/sail/blob/4d31e15b350c975aed95c23e6cc7e7c51c59fe52/crates/sail-execution/src/job_graph/planner.rs">job-graph
+planner</a>.</p>
+<p>A future upstream change must retain those behaviors while adding the
+narrowly chosen extension mechanism. Replacing a current file with its
+fork version would not be such an integration. The historical patch is
+useful review material precisely because its baseline remains explicit;
+applicability and combined regression coverage are separate work.</p>
+<h2 data-number="1.3" id="host-overview--host-discovery"><span
+class="header-section-number">1.3</span> Discovery stays above
+execution</h2>
+<p>PROTOTYPE discovers <code>pysail.extensions</code> entry points when
+the flag is enabled, reads manifests, validates exact
+API/DataFusion/Arrow declarations, checks collisions, and binds fresh
+session state. Native objects cross named DataFusion capsules. The
+loader retains package code for process lifetime and retains session
+owners where native objects require them. Execution crates do not need
+to discover Python packages themselves. <a
+href="https://github.com/querygraph/sail/blob/bd8ce9ae8839477e2c08a0475ab7900b115c5366/crates/sail-session/src/extensions/mod.rs">PROTOTYPE
+loader</a>.</p>
+<p>PLAIN has a session-factory seam but not this package protocol. The
+proposed addition is therefore a loader and registration policy, not the
+invention of session customization. Name precedence, collision errors,
+partial-load failure and worker installation requirements belong in the
+user-visible contract; Python ownership wrappers and registry storage
+are implementation details.</p>
+<p>This direction matches the upstream maintainer's preference for
+Python distribution and DataFusion FFI, with independently scheduled
+releases and no public Sail Rust trait. Exact version declarations and
+package fingerprints currently define a narrow qualification boundary.
+They do not prove arbitrary capsule layouts safe or establish a stable
+ABI range. Neither wheel installation nor content identity replaces
+testing the supported artifact pair. <a
+href="https://github.com/lakehq/sail/discussions/2001">Maintainer
+discussion</a>; <a
+href="https://github.com/querygraph/grust/blob/work/extensions-review-guide/docs/extensions-review/modules/08-compatibility.md">compatibility
+module</a>.</p>
+<h2 data-number="1.4" id="host-overview--host-codec"><span
+class="header-section-number">1.4</span> Registry and codec changes have
+different jobs</h2>
+<p>PLAIN already resolves functions and serializes many built-in and
+Python UDF variants. Its current decoder remains an explicit codec, not
+the prototype's package-identity registry. PROTOTYPE adds
+<code>OwnedScalar</code>, retaining the native owner and identifying the
+package/configuration and function. Workers resolve that identity from
+installed code; pointers never travel in the plan. <a
+href="https://github.com/lakehq/sail/blob/4d31e15b350c975aed95c23e6cc7e7c51c59fe52/crates/sail-execution/src/proto/codec.rs#L3003">PLAIN
+codec</a>, <a
+href="https://github.com/querygraph/sail/blob/bd8ce9ae8839477e2c08a0475ab7900b115c5366/crates/sail-common-datafusion/src/native_scalar.rs#L70">PROTOTYPE
+native registry</a>.</p>
+<p>There is a second concern: preserving complete return fields,
+including their metadata, while expressions cross the distributed codec.
+PROTOTYPE's converter handles native scalars and metadata-bearing
+scalar, literal and cast expressions. That invariant matters even when
+an ordinary builtin sits between native calls; a package loader alone
+cannot preserve information the host codec discards. <a
+href="https://github.com/querygraph/sail/blob/bd8ce9ae8839477e2c08a0475ab7900b115c5366/crates/sail-execution/src/proto/native_expr.rs">PROTOTYPE
+expression handling</a>.</p>
+<p>Review these changes separately: generic field-preservation tests can
+stand without a loader, while package registration needs collision and
+identity tests. Any port must preserve PLAIN's newer UDF behavior,
+including async wrappers. Source inspection here does not establish that
+the historical wrapper composes with every current function kind.</p>
+<h2 data-number="1.5" id="host-overview--host-inputs"><span
+class="header-section-number">1.5</span> Envelopes and foreign inputs
+need host boundaries</h2>
+<p>PLAIN explicitly rejects <code>Relation.extension</code>. PROTOTYPE
+decodes either an allowed bare payload or a Sail envelope containing a
+typed payload and input plans. It enforces envelope and payload sizes,
+input arity, type-URL length and nesting limits before dispatching
+through a relation registry. The handler returns a provider, not eagerly
+computed result rows. <a
+href="https://github.com/lakehq/sail/blob/4d31e15b350c975aed95c23e6cc7e7c51c59fe52/crates/sail-spark-connect/src/proto/plan.rs#L1339">PLAIN
+dispatch</a>, <a
+href="https://github.com/querygraph/sail/blob/bd8ce9ae8839477e2c08a0475ab7900b115c5366/crates/sail-spark-connect/src/proto/extension.rs">PROTOTYPE
+decoder</a>.</p>
+<p>The input adapter addresses a narrower runtime problem. DataFusion's
+foreign context reconstruction does not retain all Sail services, so
+<code>HostInputExec</code> executes and polls its child under the
+original host context and runtime. It also installs
+<code>CoalescePartitionsExec</code>, exposing one gathered partition.
+That gathering is the prototype's initial input policy, not an inherent
+requirement of native interoperability. <a
+href="https://github.com/querygraph/sail/blob/bd8ce9ae8839477e2c08a0475ab7900b115c5366/crates/sail-common-datafusion/src/connect_extension.rs#L125">PROTOTYPE
+adapter</a>.</p>
+<p>The upstream contract should preserve execution context, schemas,
+ownership and truthful distribution properties. A later
+partition-preserving adapter must satisfy those invariants explicitly.
+It should not be prevented by declaring single-partition gathering
+permanent. Nor should the current adapter be read as propagation of
+every host service into arbitrary foreign operators.</p>
+<h2 data-number="1.6" id="host-overview--host-placement"><span
+class="header-section-number">1.6</span> Placement and retry must remain
+distinguishable</h2>
+<p>PLAIN's scheduler uses the configured attempt limit for its task
+regions. PROTOTYPE identifies regions containing
+<code>DriverExtensionExec</code> and limits them to one attempt. A bound
+plan is referenced by owner and plan identifiers; decoding validates
+liveness, ownership, input arity and schemas. This prevents a worker
+from treating a driver-local reference as its own native state. <a
+href="https://github.com/lakehq/sail/blob/4d31e15b350c975aed95c23e6cc7e7c51c59fe52/crates/sail-execution/src/driver/job_scheduler/core.rs#L249">PLAIN
+attempt policy</a>, <a
+href="https://github.com/querygraph/sail/blob/bd8ce9ae8839477e2c08a0475ab7900b115c5366/crates/sail-execution/src/driver/job_scheduler/core.rs#L264">PROTOTYPE
+attempt policy</a>.</p>
+<p>The conservative rule protects opaque operations whose mutation may
+have committed before an acknowledgement was lost. It includes reads
+because the host lacks a general effect classification. It is not
+cross-request exactly-once execution. Its cost is giving up otherwise
+useful retry opportunities.</p>
+<p>Stateless foreign worker operators are a possible next design, before
+replicated or recoverable native state. Replay-safe reads are another
+separate choice. Neither requires exposing scheduler internals as a
+public SDK. The review decision is whether this initial driver policy is
+acceptable, and what evidence would justify an additional placement or
+replay class. <a
+href="https://github.com/querygraph/grust/blob/work/extensions-review-guide/docs/extensions-review/modules/05-placement.md">Placement
+module</a>.</p>
+<h2 data-number="1.7" id="host-overview--host-memory"><span
+class="header-section-number">1.7</span> Memory ownership changes
+admission semantics</h2>
+<p>In PLAIN's default runtime factory, creating a runtime constructs a
+memory pool from configuration; its mutator can subsequently customize
+the builder. PROTOTYPE adds an explicitly owned admission domain. With
+extensions enabled, the standard manager supplies its domain to sessions
+and in-process workers. A separately started worker factory owns another
+domain. <a
+href="https://github.com/lakehq/sail/blob/4d31e15b350c975aed95c23e6cc7e7c51c59fe52/crates/sail-session/src/runtime.rs#L42">PLAIN
+runtime factory</a>, <a
+href="https://github.com/querygraph/sail/blob/bd8ce9ae8839477e2c08a0475ab7900b115c5366/crates/sail-session/src/runtime/memory.rs">PROTOTYPE
+domain</a>.</p>
+<p>The resource bridge prepays a non-spillable quota from that host pool
+and passes an opaque lease to the extension. Participating state and
+exported buffers must retain it until final storage release. The
+manifest currently restricts this bridge to driver placement; it does
+not automatically admit worker scalar allocations. Idle prepaid capacity
+stays reserved.</p>
+<p>These are process-local admission domains, not a cgroup or machine
+limit. Independent worker pools do not jointly enforce one
+physical-memory budget. Pool configuration, process count and headroom
+for unaccounted runtime, Python and transport allocations all matter.
+Even a correct reservation ledger is not an RSS measurement.</p>
+<p>The ownership invariant merits a small ABI review; prepayment and
+manager-wide sharing merit a separate policy review. Hierarchical
+admission is a legitimate alternative to prepayment. The unsafe case is
+independent promises against the same capacity, not the mere existence
+of multiple pools. <a
+href="https://github.com/querygraph/grust/blob/work/extensions-review-guide/docs/extensions-review/modules/06-memory.md">Memory
+module</a>.</p>
+<h2 data-number="1.8" id="host-overview--host-lifecycle"><span
+class="header-section-number">1.8</span> Lifecycle corrections extend
+beyond plugin loading</h2>
+<p>PLAIN shuts down drivers and the gateway through the session manager.
+PROTOTYPE adds protocol-resource draining, rejection of late session
+work, native-release tracking and cleanup tasks for sessions already
+removed from the live map. Its executor gains a terminal interrupted
+state so reattachment can observe interruption without retaining
+execution buffers. Python-owner destruction acquires the GIL to avoid
+indefinitely deferred decrefs. <a
+href="https://github.com/lakehq/sail/blob/4d31e15b350c975aed95c23e6cc7e7c51c59fe52/crates/sail-session/src/session_manager/actor/core.rs#L120">PLAIN
+shutdown</a>, <a
+href="https://github.com/querygraph/sail/blob/bd8ce9ae8839477e2c08a0475ab7900b115c5366/crates/sail-session/src/session_manager/actor/core.rs#L125">PROTOTYPE
+shutdown</a>.</p>
+<p>Several corrections alter ordinary Sail paths without requiring the
+extension flag. They should be proposed and tested as such, rather than
+described as entirely isolated experimental code. The source includes
+focused regression fixtures, but this document does not report a fresh
+run against PLAIN.</p>
+<p>The native-release wait is unbounded. Cooperative cancellation and
+retaining quota for surviving owners are the safety requirements; a
+timeout cannot pretend those owners have stopped. Upstream must choose
+between continued charged ownership after a reported shutdown failure, a
+stronger isolation model, or termination of the owning process. That
+operational decision remains open and must accompany any promise about
+bounded shutdown. <a
+href="https://github.com/querygraph/grust/blob/work/extensions-review-guide/docs/extensions-review/modules/07-lifecycle.md">Lifecycle
+module</a>.</p>
+<h2 data-number="1.9" id="host-overview--host-domain-helpers"><span
+class="header-section-number">1.9</span> Keep graph helpers distinct
+from a generic SDK</h2>
+<p>PROTOTYPE also compiles GraphUtils into <code>sail-session</code>:
+graph-client staging, owned run cleanup and helper functions. It
+deliberately uses the host's object store and credentials rather than
+passing them into a wheel. Its configured root and request type are
+domain-facing facilities, not necessities for every extension. <a
+href="https://github.com/querygraph/sail/blob/bd8ce9ae8839477e2c08a0475ab7900b115c5366/crates/sail-session/src/extensions/graph_utils/mod.rs">PROTOTYPE
+GraphUtils</a>.</p>
+<p>This distinction prevents the physical location of code from deciding
+its architectural status. A helper can use generic host hooks while
+remaining a separate integration. Sedona's metadata handling similarly
+demonstrates useful requirements without making every geometry-specific
+decision part of the core contract. Review generic invariants with small
+fixtures first, then review the domain adapters that exercise them.</p>
+<h2 data-number="1.10" id="host-overview--host-upstream-plan"><span
+class="header-section-number">1.10</span> A phased route to upstream
+review</h2>
+<ol type="1">
+<li><strong>Rebase the reasoning before the code.</strong> Compare each
+proposed change with PLAIN, preserve newer upstream behavior, and
+identify the smallest current reproduction or missing interface. The
+historical patch is an inventory, not a merge verdict.</li>
+<li><strong>Separate general corrections.</strong> Propose lifecycle and
+field-preservation changes with regressions that do not require the full
+loader. State which ordinary execution paths change and test them on the
+proposed current tree.</li>
+<li><strong>Review bounded host interfaces.</strong> Settle envelope
+validation, handler dispatch, ownership and host-context guarantees.
+Review the resource ABI separately from admission-domain policy and
+shutdown deadlines.</li>
+<li><strong>Integrate package loading and worker identity.</strong>
+Define collision rules, qualified versions, failure before partial
+registration, and package installation expectations. Exercise real
+driver/worker codec round trips.</li>
+<li><strong>Add policy and domain integrations deliberately.</strong>
+Qualify the initial driver-only relation policy, then assess stateless
+worker execution and replay-safe classes independently. Keep GraphUtils
+and recoverable graph state outside the minimum SDK proposal.</li>
+</ol>
+<p>Every proposed commit needs its own current-source tests;
+combinations need a combined gate. Nothing here claims that the
+historical patch applies cleanly, that all prototype choices should be
+upstreamed, or that source inspection qualifies a cluster deployment.
+The goal is a reviewable host contract whose implementation can evolve
+without forcing extensions to depend on Sail's private session,
+scheduler or pool machinery.</p>
+</body>
+</html>

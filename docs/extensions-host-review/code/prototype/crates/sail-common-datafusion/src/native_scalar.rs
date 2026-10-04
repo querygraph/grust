@@ -1,0 +1,155 @@
+use std::any::Any;
+use std::collections::HashMap;
+use std::hash::{Hash, Hasher};
+use std::sync::{Arc, Mutex, OnceLock};
+
+use arrow_schema::{DataType, FieldRef};
+use datafusion_common::{Result, plan_datafusion_err};
+use datafusion_expr::{
+    ColumnarValue, ReturnFieldArgs, ScalarFunctionArgs, ScalarUDF, ScalarUDFImpl, Signature,
+};
+
+/// Retains the Python owner and gives each catalog alias its own name. The
+/// underlying kernel still receives the original argument/return field metadata.
+pub struct OwnedScalar {
+    pub name: String,
+    pub identity: String,
+    pub udf: ScalarUDF,
+    pub owner: Arc<dyn Any + Send + Sync>,
+}
+
+impl PartialEq for OwnedScalar {
+    fn eq(&self, other: &Self) -> bool {
+        self.name == other.name && self.identity == other.identity && self.udf == other.udf
+    }
+}
+impl Eq for OwnedScalar {}
+impl Hash for OwnedScalar {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.name.hash(state);
+        self.identity.hash(state);
+        self.udf.hash(state);
+    }
+}
+
+impl ScalarUDFImpl for OwnedScalar {
+    fn name(&self) -> &str {
+        &self.name
+    }
+    fn signature(&self) -> &Signature {
+        self.udf.signature()
+    }
+    fn return_type(&self, types: &[DataType]) -> Result<DataType> {
+        self.udf.return_type(types)
+    }
+    fn return_field_from_args(&self, args: ReturnFieldArgs) -> Result<FieldRef> {
+        self.udf.return_field_from_args(args)
+    }
+    fn invoke_with_args(&self, args: ScalarFunctionArgs) -> Result<ColumnarValue> {
+        // The owner is held for every call and for as long as this UDF is planned.
+        let _owner = &self.owner;
+        self.udf.invoke_with_args(args)
+    }
+    fn coerce_types(&self, types: &[DataType]) -> Result<Vec<DataType>> {
+        self.udf.coerce_types(types)
+    }
+    fn short_circuits(&self) -> bool {
+        self.udf.short_circuits()
+    }
+}
+
+impl std::fmt::Debug for OwnedScalar {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("OwnedScalar")
+            .field("name", &self.name)
+            .field("identity", &self.identity)
+            .finish()
+    }
+}
+
+pub const SCALAR_CODEC_PREFIX: &[u8] = b"SAIL_NATIVE_SCALAR_V1\0";
+type Functions = HashMap<(String, String), Arc<ScalarUDF>>;
+fn functions() -> &'static Mutex<Functions> {
+    static FUNCTIONS: OnceLock<Mutex<Functions>> = OnceLock::new();
+    FUNCTIONS.get_or_init(Mutex::default)
+}
+
+/// Only immutable, placement=any scalar implementations enter this process registry.
+/// Keys include a content digest of package code and canonical configuration.
+pub fn retain_scalar(udf: ScalarUDF) -> Result<()> {
+    let native = udf
+        .inner()
+        .downcast_ref::<OwnedScalar>()
+        .ok_or_else(|| plan_datafusion_err!("expected native scalar"))?;
+    let key = (native.identity.clone(), native.name.clone());
+    functions()
+        .lock()
+        .map_err(|_| plan_datafusion_err!("native scalar registry poisoned"))?
+        .entry(key)
+        .or_insert_with(|| Arc::new(udf));
+    Ok(())
+}
+
+pub fn encode_scalar(udf: &ScalarUDF, output: &mut Vec<u8>) -> Result<bool> {
+    let Some(native) = udf.inner().downcast_ref::<OwnedScalar>() else {
+        return Ok(false);
+    };
+    output.extend_from_slice(SCALAR_CODEC_PREFIX);
+    let descriptor = serde_json::to_vec(&(&native.identity, &native.name))
+        .map_err(|e| plan_datafusion_err!("native scalar descriptor: {e}"))?;
+    output.extend_from_slice(&descriptor);
+    Ok(true)
+}
+
+pub fn decode_scalar(name: &str, bytes: &[u8]) -> Result<Arc<ScalarUDF>> {
+    if bytes.len() > 8192 {
+        return Err(plan_datafusion_err!("native scalar descriptor too large"));
+    }
+    let payload = bytes
+        .strip_prefix(SCALAR_CODEC_PREFIX)
+        .ok_or_else(|| plan_datafusion_err!("invalid native scalar codec owner/version"))?;
+    let (identity, encoded_name): (String, String) = serde_json::from_slice(payload)
+        .map_err(|e| plan_datafusion_err!("native scalar descriptor: {e}"))?;
+    if name != encoded_name {
+        return Err(plan_datafusion_err!("native scalar name mismatch"));
+    }
+    functions().lock().map_err(|_| plan_datafusion_err!("native scalar registry poisoned"))?
+        .get(&(identity.clone(), encoded_name)).cloned()
+        .ok_or_else(|| plan_datafusion_err!("native extension unavailable or package/configuration mismatch on worker: {identity}, function {name}"))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn native_scalar_extension_codec_requires_the_exact_loaded_identity() -> Result<()> {
+        let native = |identity: &str| {
+            ScalarUDF::new_from_impl(OwnedScalar {
+                name: "fixture_native_abs".into(),
+                identity: identity.into(),
+                udf: (*datafusion::functions::math::abs()).clone(),
+                owner: Arc::new(()),
+            })
+        };
+        let original = native("fixture@1:code-and-configuration-A");
+        retain_scalar(original.clone())?;
+        let mut bytes = vec![];
+        assert!(encode_scalar(&original, &mut bytes)?);
+        assert_eq!(
+            decode_scalar("fixture_native_abs", &bytes)?.name(),
+            original.name()
+        );
+        assert!(decode_scalar("renamed", &bytes).is_err());
+        let mut incompatible = vec![];
+        assert!(encode_scalar(
+            &native("fixture@1:code-and-configuration-B"),
+            &mut incompatible
+        )?);
+        assert!(decode_scalar("fixture_native_abs", &incompatible).is_err());
+        assert!(decode_scalar("fixture_native_abs", &vec![0; 8193]).is_err());
+        assert!(decode_scalar("fixture_native_abs", b"SAIL_NATIVE_SCALAR_V2\0[]").is_err());
+        assert!(decode_scalar("fixture_native_abs", SCALAR_CODEC_PREFIX).is_err());
+        Ok(())
+    }
+}

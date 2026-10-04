@@ -1,0 +1,34 @@
+   Compiling sail-argentea-core v0.1.0 (/private/tmp/sail-rank-wcc-lifetime-gate/examples/extensions/argentea)
+   Compiling sail-native-resource-ffi v0.1.0 (/private/tmp/sail-rank-wcc-lifetime-gate/crates/sail-native-resource-ffi)
+warning: unused imports: `operation` and `resources`
+ --> tests/wcc_support/mod.rs:5:18
+  |
+5 | pub use shared::{operation, resources};
+  |                  ^^^^^^^^^  ^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+error[E0382]: use of moved value
+   --> tests/rank_wcc_initialization_protocol.rs:183:29
+    |
+183 |                 if let Some(old) = old_trace {
+    |                             ^^^ value moved here, in previous iteration of loop
+    |
+note: these 2 reinitializations might get skipped
+   --> tests/rank_wcc_initialization_protocol.rs:142:33
+    |
+142 |             let mut old_trace = None;
+    |                                 ^^^^
+...
+186 |                     old_trace = Some(trace);
+    |                     ^^^^^^^^^
+    = note: move occurs because value has type `Vec<(sail_argentea_core::WccMode, u64, u64)>`, which does not implement the `Copy` trait
+help: borrow this binding in the pattern to avoid moving the value
+    |
+183 |                 if let Some(ref old) = old_trace {
+    |                             +++
+
+For more information about this error, try `rustc --explain E0382`.
+warning: `sail-argentea-core` (test "rank_wcc_initialization_protocol") generated 1 warning
+error: could not compile `sail-argentea-core` (test "rank_wcc_initialization_protocol") due to 1 previous error; 1 warning emitted
+warning: build failed, waiting for other jobs to finish...

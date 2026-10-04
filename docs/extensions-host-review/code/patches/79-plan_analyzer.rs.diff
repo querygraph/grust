@@ -1,0 +1,12 @@
+diff --git a/crates/sail-spark-connect/src/service/plan_analyzer.rs b/crates/sail-spark-connect/src/service/plan_analyzer.rs
+index a15ac9c01405e131e11407e412ba5651fcf951bb..5a25fd0232b86031aa4c21e031b01ac5e47e5415 100644
+--- a/crates/sail-spark-connect/src/service/plan_analyzer.rs
++++ b/crates/sail-spark-connect/src/service/plan_analyzer.rs
+@@ -251,6 +251,7 @@ fn is_streaming_query_plan(plan: &spec::QueryPlan) -> bool {
+ fn is_streaming_query_node(node: &spec::QueryNode) -> bool {
+     match node {
+         spec::QueryNode::Read { is_streaming, .. } => *is_streaming,
++        spec::QueryNode::Extension { inputs, .. } => inputs.iter().any(is_streaming_query_plan),
+         // leaf nodes with no query plan inputs
+         spec::QueryNode::LocalRelation { .. }
+         | spec::QueryNode::CachedLocalRelation { .. }

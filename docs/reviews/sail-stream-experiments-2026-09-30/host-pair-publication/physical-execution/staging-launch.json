@@ -1,0 +1,113 @@
+{
+  "started_utc": "2026-10-01T01:56:42.369847+00:00",
+  "request_sha256": "55941c6758529696dc088eec37077cbddd3d1fbf8f4868d182435c04c062c5e4",
+  "commands": [
+    {
+      "label": "remote-new-directory",
+      "command": [
+        "ssh",
+        "morrobay",
+        "/usr/local/bin/python3 -I -B -c 'from pathlib import Path; b=Path('\"'\"'/Users/alexy/src/sail-extensions-gates/stream-experiments-20260930/physical-pair-v4-55941c675852-bundle'\"'\"'); o=Path('\"'\"'/Users/alexy/src/sail-extensions-gates/stream-experiments-20260930/physical-pair-v4-55941c675852-evidence'\"'\"'); assert not b.exists() and not o.exists(); b.mkdir(mode=0o755); b.chmod(0o755)'"
+      ],
+      "started_utc": "2026-10-01T01:56:42.370402+00:00",
+      "finished_utc": "2026-10-01T01:56:42.734022+00:00",
+      "returncode": 0,
+      "stdout": {
+        "path": "remote-new-directory.stdout",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "path": "remote-new-directory.stderr",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "label": "stage",
+      "command": [
+        "scp",
+        "-rp",
+        "/private/tmp/physical-pair-closed-v4-bundle/01-closed-cell.json",
+        "/private/tmp/physical-pair-closed-v4-bundle/02-closed-cell.json",
+        "/private/tmp/physical-pair-closed-v4-bundle/03-closed-cell.json",
+        "/private/tmp/physical-pair-closed-v4-bundle/04-closed-cell.json",
+        "/private/tmp/physical-pair-closed-v4-bundle/05-closed-cell.json",
+        "/private/tmp/physical-pair-closed-v4-bundle/06-closed-cell.json",
+        "/private/tmp/physical-pair-closed-v4-bundle/all-six-closures.json",
+        "/private/tmp/physical-pair-closed-v4-bundle/bundles",
+        "/private/tmp/physical-pair-closed-v4-bundle/pair-collected-evidence.json",
+        "/private/tmp/physical-pair-closed-v4-bundle/pair-requests.json",
+        "/private/tmp/physical-pair-closed-v4-bundle/preparation-receipt.json",
+        "/private/tmp/physical-pair-closed-v4-bundle/run_pair.py",
+        "morrobay:/Users/alexy/src/sail-extensions-gates/stream-experiments-20260930/physical-pair-v4-55941c675852-bundle/"
+      ],
+      "started_utc": "2026-10-01T01:56:42.734859+00:00",
+      "finished_utc": "2026-10-01T01:56:46.983672+00:00",
+      "returncode": 0,
+      "stdout": {
+        "path": "stage.stdout",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "path": "stage.stderr",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "label": "dry",
+      "command": [
+        "ssh",
+        "morrobay",
+        "/usr/local/bin/python3 -I -B /Users/alexy/src/sail-extensions-gates/stream-experiments-20260930/physical-pair-v4-55941c675852-bundle/run_pair.py --request /Users/alexy/src/sail-extensions-gates/stream-experiments-20260930/physical-pair-v4-55941c675852-bundle/pair-requests.json --request-sha256 55941c6758529696dc088eec37077cbddd3d1fbf8f4868d182435c04c062c5e4 --output /Users/alexy/src/sail-extensions-gates/stream-experiments-20260930/physical-pair-v4-55941c675852-evidence"
+      ],
+      "started_utc": "2026-10-01T01:56:46.985133+00:00",
+      "finished_utc": "2026-10-01T01:56:48.986616+00:00",
+      "returncode": 0,
+      "stdout": {
+        "path": "dry.stdout",
+        "bytes": 2242,
+        "sha256": "858051c37a5270b579befb81cdc45625001a899375e4c2540ea69ea3e4088278"
+      },
+      "stderr": {
+        "path": "dry.stderr",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "label": "launch",
+      "command": [
+        "ssh",
+        "morrobay",
+        "/usr/local/bin/python3 -I -B /Users/alexy/src/sail-extensions-gates/stream-experiments-20260930/physical-pair-v4-55941c675852-bundle/run_pair.py --request /Users/alexy/src/sail-extensions-gates/stream-experiments-20260930/physical-pair-v4-55941c675852-bundle/pair-requests.json --request-sha256 55941c6758529696dc088eec37077cbddd3d1fbf8f4868d182435c04c062c5e4 --output /Users/alexy/src/sail-extensions-gates/stream-experiments-20260930/physical-pair-v4-55941c675852-evidence --execute-after-closure"
+      ],
+      "started_utc": "2026-10-01T01:56:48.987421+00:00",
+      "finished_utc": "2026-10-01T01:56:51.090541+00:00",
+      "returncode": 0,
+      "stdout": {
+        "path": "launch.stdout",
+        "bytes": 134,
+        "sha256": "7187f85b4b32acecc9f446289dd3f2b479b4475790e6c73ab292808f412bc02d"
+      },
+      "stderr": {
+        "path": "launch.stderr",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    }
+  ],
+  "launched": true,
+  "driver_source": "import hashlib\nimport json\nfrom pathlib import Path\nimport shlex\nimport subprocess\nfrom datetime import datetime, timezone\n\nEXP=Path('/Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30')\nPACKAGE=Path('/private/tmp/physical-pair-closed-v4-bundle')\nOUT=EXP/'host-pair-physical-execution'\nDIGEST='55941c6758529696dc088eec37077cbddd3d1fbf8f4868d182435c04c062c5e4'\nROOT='/Users/alexy/src/sail-extensions-gates/stream-experiments-20260930'\nREMOTE_PACKAGE=ROOT+'/physical-pair-v4-55941c675852-bundle'\nREMOTE_OUTPUT=ROOT+'/physical-pair-v4-55941c675852-evidence'\n\ndef utc(): return datetime.now(timezone.utc).isoformat()\ndef sha(p):\n    with p.open('rb') as f: return hashlib.file_digest(f,'sha256').hexdigest()\ndef save(p,x):\n    with p.open('x') as f: json.dump(x,f,indent=2); f.write('\\n')\n\nassert sha(PACKAGE/'pair-requests.json')==DIGEST\nmanifest=json.loads((PACKAGE/'pair-requests.json').read_text())\nassert manifest['run_pair_sha256']=='e0dcd737124d0b4e87f33c25871580be892af54d92b0b441f50c4a6562b79e9a'\nassert manifest['original_ratio_eligible'] is True and len(manifest['cells'])==6\nfor cell in manifest['cells']:\n    p=PACKAGE/cell['request']; assert sha(p)==cell['request_sha256']\n    request=json.loads(p.read_text())\n    for name,pin in request['files'].items():\n        assert sha(p.parent/name)==pin['sha256'] and (p.parent/name).stat().st_size==pin['bytes']\nassert not any(p.is_symlink() for p in PACKAGE.rglob('*'))\nOUT.mkdir(exist_ok=False)\nreport=dict(started_utc=utc(),request_sha256=DIGEST,commands=[],launched=False,\n            driver_source=Path(__file__).read_text(),driver_sha256=sha(Path(__file__)),\n            remote_package=REMOTE_PACKAGE,remote_output=REMOTE_OUTPUT,\n            scope='Supplemental serial physical checks only after all six original trials closed and collection passed. No benchmark rerun or altered outcome.')\nsave(OUT/'intent.json',report)\ndef run(label,args,timeout=120):\n    row=dict(label=label,command=args,started_utc=utc());report['commands'].append(row)\n    with (OUT/(label+'.stdout')).open('xb') as out,(OUT/(label+'.stderr')).open('xb') as err:\n        p=subprocess.run(args,stdout=out,stderr=err,timeout=timeout)\n    row.update(finished_utc=utc(),returncode=p.returncode)\n    for suffix in ('stdout','stderr'):\n        f=OUT/(label+'.'+suffix);row[suffix]=dict(path=f.name,bytes=f.stat().st_size,sha256=sha(f))\n    p.check_returncode()\n    return (OUT/(label+'.stdout')).read_text()\ntry:\n    code='from pathlib import Path; b=Path('+repr(REMOTE_PACKAGE)+'); o=Path('+repr(REMOTE_OUTPUT)+'); assert not b.exists() and not o.exists(); b.mkdir(mode=0o755); b.chmod(0o755)'\n    run('remote-new-directory',['ssh','morrobay','/usr/local/bin/python3 -I -B -c '+shlex.quote(code)])\n    run('stage',['scp','-rp',*[str(p) for p in sorted(PACKAGE.iterdir())],'morrobay:'+REMOTE_PACKAGE+'/'])\n    command=['/usr/local/bin/python3','-I','-B',REMOTE_PACKAGE+'/run_pair.py','--request',REMOTE_PACKAGE+'/pair-requests.json','--request-sha256',DIGEST,'--output',REMOTE_OUTPUT]\n    dry=json.loads(run('dry',['ssh','morrobay',shlex.join(command)]));assert dry['prepared_only'] is True\n    save(OUT/'dry.json',dry)\n    launch=json.loads(run('launch',['ssh','morrobay',shlex.join(command+['--execute-after-closure'])]))\n    assert type(launch['pid']) is int and launch['output']==REMOTE_OUTPUT\n    report.update(launched=True,launch=launch)\nexcept BaseException as error:\n    report['error']=repr(error);raise\nfinally:\n    report['finished_utc']=utc();save(OUT/'staging-launch.json',report)\nprint(json.dumps(dict(launched=report['launched'],launch=report.get('launch'))))\n",
+  "driver_sha256": "7238012b1dd31ead29726e980eee56eabde277bfb001373b83124df22fe20d7a",
+  "remote_package": "/Users/alexy/src/sail-extensions-gates/stream-experiments-20260930/physical-pair-v4-55941c675852-bundle",
+  "remote_output": "/Users/alexy/src/sail-extensions-gates/stream-experiments-20260930/physical-pair-v4-55941c675852-evidence",
+  "scope": "Supplemental serial physical checks only after all six original trials closed and collection passed. No benchmark rerun or altered outcome.",
+  "launch": {
+    "pid": 99082,
+    "output": "/Users/alexy/src/sail-extensions-gates/stream-experiments-20260930/physical-pair-v4-55941c675852-evidence"
+  },
+  "finished_utc": "2026-10-01T01:56:51.091047+00:00"
+}

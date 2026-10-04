@@ -1,0 +1,205 @@
+{
+  "observed_utc": "2026-10-03T23:39:46.938338+00:00",
+  "outcome": "source_and_closed_log_review_only",
+  "original_owner_freeze": {
+    "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/C4-allocation-owner01/freeze01.json",
+    "bytes": 4025,
+    "sha256": "df21c967c4ce73b18f26935d43acf170cdd543a3e9837b7becf7d41e408f265b"
+  },
+  "original_run_receipt": {
+    "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/C4-allocation-run01/receipt.json",
+    "bytes": 8517,
+    "sha256": "cd95a07d2ff5a4231ed1339899c2065f70be66a36c76a1eaa6a1a84f17262eae"
+  },
+  "actual_probe_budget_seconds": 120,
+  "actual_campaign_budget_seconds": 14400,
+  "timed_out_step": {
+    "name": "probe-04-100000-min-by",
+    "argv": [
+      "/Users/alexy/src/grust-benchmark-builds/sem-completion-20261003/c4-allocation-candidate01/target/release/current-struct-aggregate-allocation-probe",
+      "100000",
+      "min-by"
+    ],
+    "pid": 26502,
+    "pgid": 26502,
+    "started_utc": "2026-10-03T23:23:54.197534+00:00",
+    "finished_utc": "2026-10-03T23:25:54.937235+00:00",
+    "returncode": null,
+    "waited": false,
+    "group_absent": false,
+    "forced_cleanup": true,
+    "log": {
+      "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/C4-allocation-run01/probe-04-100000-min-by.log",
+      "bytes": 3681,
+      "sha256": "adebeeef2c3303368a6f6a154027a9426980bd11fb04d846098280e1a64ec2e7"
+    }
+  },
+  "partial_first_update_observation": {
+    "accumulator_reported_size": 240122269952,
+    "allocated_requested_bytes": 622458304,
+    "allocations": 6500283,
+    "deallocations": 4800278,
+    "live_requested_after": 164733758,
+    "live_requested_before": 8918078,
+    "live_requested_change": 155815680,
+    "metadata": {
+      "batches": 13,
+      "groups": 100000,
+      "rows": 100000
+    },
+    "output_array_reported_bytes": 0,
+    "peak_requested_above_before": 155850832,
+    "phase": "first_update",
+    "process_lifetime_peak_rss_bytes": 199094272,
+    "seconds_exploratory_shared_host": 24.534321318
+  },
+  "reported_size_semantics": "Per-group ScalarValue estimates count shared full backing input buffers repeatedly through ordering key slices. This is not unique physical memory. Generic value state compacts payloads, but ordering ScalarValues are not compacted in update_state.",
+  "cleanup_source_semantics": "Frozen gate_owner.cleanup TERM/waits known child and checks group absence. Old allocator step does not journal those actual observations after cleanup. Forced cleanup and error retain unqualified status and locks.",
+  "required_old_attempt_closure": "Root independent actual outer waits, all recorded owned PGIDs absence, config/source/helper closure and matching lock token before releasing only owned old locks. This audit performs none.",
+  "recommended_new_probe_seconds": 900,
+  "new_default_probe_seconds": 600,
+  "new_allowed_probe_seconds": [
+    10,
+    1800
+  ],
+  "campaign_cap_seconds_retained": 14400,
+  "new_timeout_is_prospective_not_completion_guarantee": true,
+  "source_witnesses": [
+    {
+      "origin": {
+        "path": "/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last.rs",
+        "bytes": 85836,
+        "sha256": "8bf9a75a79bb451f2dcbe9794933e670f72a114e55153169710a911336cea2ed"
+      },
+      "line_ranges": [
+        [
+          170,
+          190
+        ],
+        [
+          379,
+          394
+        ],
+        [
+          505,
+          518
+        ],
+        [
+          637,
+          658
+        ],
+        [
+          739,
+          745
+        ]
+      ],
+      "excerpt": {
+        "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/C4-allocation-owner02/review/accounting-source-witnesses/df-factory.txt",
+        "bytes": 13600,
+        "sha256": "39690f1b3f894fefd85f7f266ddae57612ca37ff620147f5d76abaedff4f0843"
+      }
+    },
+    {
+      "origin": {
+        "path": "/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-functions-aggregate-55.1.0/src/first_last/state.rs",
+        "bytes": 34622,
+        "sha256": "0ada34481f46ebbf711a021f75353079bcdbc66d20f434a9a29cb951bb9542fb"
+      },
+      "line_ranges": [
+        [
+          329,
+          342
+        ],
+        [
+          360,
+          363
+        ]
+      ],
+      "excerpt": {
+        "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/C4-allocation-owner02/review/accounting-source-witnesses/df-value-state.txt",
+        "bytes": 3203,
+        "sha256": "e3c2a2dc4192329909d58ce7c3aedc22eb3ca40d41f0870aacf2c67cf478f0c7"
+      }
+    },
+    {
+      "origin": {
+        "path": "/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-common-55.1.0/src/scalar/mod.rs",
+        "bytes": 462308,
+        "sha256": "0efdc887a722ec3dfa9ed0d19acc2c57dd04b8f31bc824e05161119acdeef32e"
+      },
+      "line_ranges": [
+        [
+          4225,
+          4229
+        ],
+        [
+          4782,
+          4787
+        ],
+        [
+          4835,
+          4842
+        ],
+        [
+          4861,
+          4869
+        ],
+        [
+          5290,
+          5318
+        ]
+      ],
+      "excerpt": {
+        "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/C4-allocation-owner02/review/accounting-source-witnesses/df-scalar.txt",
+        "bytes": 9274,
+        "sha256": "d8da3466ad5602c84e7c9f11096cf858b124a43cb1a5a5e4d4cdfed1eac7e36b"
+      }
+    },
+    {
+      "origin": {
+        "path": "/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/datafusion-common-55.1.0/src/utils/mod.rs",
+        "bytes": 68250,
+        "sha256": "f4b7408ec32bc48f53fb5c30210349b8b1f1e4b1bb1b3699b67663009c90f66c"
+      },
+      "line_ranges": [
+        [
+          94,
+          113
+        ]
+      ],
+      "excerpt": {
+        "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/C4-allocation-owner02/review/accounting-source-witnesses/df-row-extract.txt",
+        "bytes": 2818,
+        "sha256": "50132ecd8c2c71985a6276b607c907b6f0d57e08194b5dff094a81577efc974d"
+      }
+    },
+    {
+      "origin": {
+        "path": "/Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/arrow-array-59.3.0/src/array/struct_array.rs",
+        "bytes": 42594,
+        "sha256": "024ac1674ad6b948a9a5491c243fa0570664aede14d65607654b4fac7c7a9098"
+      },
+      "line_ranges": [
+        [
+          344,
+          359
+        ],
+        [
+          540,
+          549
+        ]
+      ],
+      "excerpt": {
+        "path": "/Volumes/Apo/graph-tests/results/sem-completion-20261003/C4-allocation-owner02/review/accounting-source-witnesses/arrow59-struct.txt",
+        "bytes": 3845,
+        "sha256": "1a154eef7ef1300624b5bf54be5a13df03b732ee5e327296b8443a34ec6fffde"
+      }
+    }
+  ],
+  "rust_source_changes": false,
+  "cargo_probe_or_live_cleanup_executed": false,
+  "original_failed_attempt_preserved": true,
+  "complete_100000_min_by_control_qualified": false,
+  "physical_240GB_claim": false,
+  "whole_graph_or_OS32_claim": false
+}

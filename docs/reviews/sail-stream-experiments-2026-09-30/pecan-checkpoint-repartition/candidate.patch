@@ -1,0 +1,328 @@
+diff --git a/examples/extensions/graph-algorithms/src/pyspark_pecan/algorithms.py b/examples/extensions/graph-algorithms/src/pyspark_pecan/algorithms.py
+index d426f1c87..a86718033 100644
+--- a/examples/extensions/graph-algorithms/src/pyspark_pecan/algorithms.py
++++ b/examples/extensions/graph-algorithms/src/pyspark_pecan/algorithms.py
+@@ -64,12 +64,20 @@ class GraphAlgorithms:
+     Input tables are separately materialized once before validation. This is
+     stable during an algorithm, but is not an atomic snapshot across mutable
+     sources. Results contain structural columns, not input properties.
++
++    repartition_checkpoints=True keeps the keyless repartition before every
++    staging write, including input snapshots and final results. Set it to False
++    to omit that repartition as an explicit experiment. This does not declare
++    keyed partitioning on later reads or fix the number of output files.
+     """
+ 
+-    def __init__(self, spark, *, observer=None, record_plans=False):
++    def __init__(self, spark, *, observer=None, record_plans=False, repartition_checkpoints=True):
++        if not isinstance(repartition_checkpoints, bool):
++            raise ValueError("repartition_checkpoints must be a boolean")
+         self.spark = spark
+         self.utils = GraphUtils(spark)
+         self.observer = observer
++        self.repartition_checkpoints = repartition_checkpoints
+         # With record_plans, an iteration's observer event carries the physical
+         # plan of the frame the iteration materializes (one extra planning round
+         # trip per iteration; the plan is text, not executed twice).
+@@ -90,7 +98,8 @@ class GraphAlgorithms:
+         cancellation.attach(self.spark)
+         run = None
+         try:
+-            run = StagingRun(self.spark, self.utils, cancellation, partitions)
++            run = StagingRun(self.spark, self.utils, cancellation, partitions,
++                             repartition_checkpoints=self.repartition_checkpoints)
+             vertices, edges, size = _snapshot(run, vertices, edges, edge_columns)
+             return body(run, vertices, edges, size)
+         except BaseException as error:
+diff --git a/examples/extensions/graph-algorithms/src/pyspark_pecan/staging.py b/examples/extensions/graph-algorithms/src/pyspark_pecan/staging.py
+index e8d475e86..9dcf8d926 100644
+--- a/examples/extensions/graph-algorithms/src/pyspark_pecan/staging.py
++++ b/examples/extensions/graph-algorithms/src/pyspark_pecan/staging.py
+@@ -4,11 +4,12 @@ from .lifecycle import GraphResult
+ 
+ 
+ class StagingRun:
+-    def __init__(self, spark, utils, cancellation, partitions):
++    def __init__(self, spark, utils, cancellation, partitions, *, repartition_checkpoints=True):
+         self.spark = spark
+         self.utils = utils
+         self.cancellation = cancellation
+         self.partitions = partitions
++        self.repartition_checkpoints = repartition_checkpoints
+         self.path, self.token = utils.allocate()
+         self.closed = False
+         self.write_uncertain = False
+@@ -33,7 +34,8 @@ class StagingRun:
+         # A failed/interrupted write RPC is not a distributed writer-drain
+         # barrier. Keep ownership for session teardown if its outcome is unknown.
+         self.write_uncertain = True
+-        frame.repartition(self.partitions).write.mode("error").parquet(path)
++        writing = frame.repartition(self.partitions) if self.repartition_checkpoints else frame
++        writing.write.mode("error").parquet(path)
+         self.write_uncertain = False
+         self.cancellation.check()
+         stored = self.spark.read.parquet(path)
+diff --git a/examples/extensions/graph-algorithms/tests/test_checkpoint_repartition.py b/examples/extensions/graph-algorithms/tests/test_checkpoint_repartition.py
+new file mode 100644
+index 000000000..184956548
+--- /dev/null
++++ b/examples/extensions/graph-algorithms/tests/test_checkpoint_repartition.py
+@@ -0,0 +1,150 @@
++"""The opt-in writer path preserves the checkpoint publication contract."""
++from types import SimpleNamespace
++
++import pytest
++from pyspark.sql.types import LongType, StringType, StructField, StructType
++
++from pyspark_pecan import CancellationToken, GraphAlgorithms
++from pyspark_pecan import algorithms
++from pyspark_pecan.staging import StagingRun
++
++
++SCHEMA = StructType([StructField("id", LongType(), False)])
++
++
++class Frame:
++    def __init__(self, calls, *, label="input", schema=SCHEMA, rows=3, failure=None):
++        self.calls, self.label, self.schema = calls, label, schema
++        self.rows, self.failure = rows, failure
++
++    def repartition(self, partitions):
++        self.calls.append(("repartition", partitions))
++        return Frame(self.calls, label="repartitioned", schema=self.schema,
++                     rows=self.rows, failure=self.failure)
++
++    @property
++    def write(self):
++        self.calls.append(("writer", self.label))
++        return self
++
++    def mode(self, mode):
++        assert mode == "error"
++        return self
++
++    def parquet(self, path):
++        self.calls.append(("write", path))
++        if self.failure:
++            raise self.failure
++
++    def count(self):
++        self.calls.append(("count", self.rows))
++        return self.rows
++
++
++class Reader:
++    def __init__(self, stored):
++        self.stored = stored
++        self.explicit_schema = None
++
++    def schema(self, schema):
++        self.explicit_schema = schema
++        return self
++
++    def parquet(self, path):
++        self.stored.calls.append(("read", path))
++        if self.explicit_schema is not None:
++            self.stored.schema = self.explicit_schema
++        return self.stored
++
++
++def staging(stored, **options):
++    utils = SimpleNamespace(allocate=lambda: ("file:///owned/run", "token"),
++                            exists=lambda *_: True)
++    session = SimpleNamespace(read=Reader(stored))
++    return StagingRun(session, utils, CancellationToken(), 7, **options)
++
++
++@pytest.mark.parametrize("value", [None, 0, 1, "false", [], {}])
++def test_invalid_setting_is_rejected_before_graph_utils_ping(monkeypatch, value):
++    def unexpected_ping(_):
++        pytest.fail("invalid configuration must not issue a server request")
++
++    monkeypatch.setattr(algorithms, "GraphUtils", unexpected_ping)
++    with pytest.raises(ValueError, match="repartition_checkpoints must be a boolean"):
++        GraphAlgorithms(object(), repartition_checkpoints=value)
++
++
++@pytest.mark.parametrize("options,expected", [({}, True), ({"repartition_checkpoints": True}, True),
++                                              ({"repartition_checkpoints": False}, False)])
++def test_constructor_default_and_explicit_settings(monkeypatch, options, expected):
++    monkeypatch.setattr(algorithms, "GraphUtils", lambda _: object())
++    assert GraphAlgorithms(object(), **options).repartition_checkpoints is expected
++
++
++@pytest.mark.parametrize("options,writer", [({}, "repartitioned"),
++    ({"repartition_checkpoints": True}, "repartitioned"),
++    ({"repartition_checkpoints": False}, "input")])
++def test_only_selected_frame_is_written_and_committed(options, writer):
++    calls = []
++    source, stored = Frame(calls), Frame(calls, label="stored")
++    run = staging(stored, **options)
++    path, result = run.materialize(source, expected_rows=3)
++    assert result is stored and run._stages[path] is stored
++    assert run.write_uncertain is False
++    assert calls == ([('repartition', 7)] if writer == "repartitioned" else []) + [
++        ("writer", writer), ("write", path), ("read", path), ("count", 3)]
++
++
++@pytest.mark.parametrize("repartition", [True, False])
++def test_empty_checkpoint_restores_schema_and_checks_zero_rows(repartition):
++    calls = []
++    source = Frame(calls, rows=0)
++    stored = Frame(calls, schema=StructType([]), rows=0)
++    run = staging(stored, repartition_checkpoints=repartition)
++    path, result = run.materialize(source, expected_rows=0)
++    assert result.schema == SCHEMA and run._stages[path] is stored
++    assert calls.count(("read", path)) == 2
++    assert ("count", 0) in calls
++
++
++@pytest.mark.parametrize("repartition", [True, False])
++def test_nullability_widening_is_allowed_without_changing_columns(repartition):
++    calls = []
++    widened = StructType([StructField("id", LongType(), True)])
++    stored = Frame(calls, schema=widened)
++    run = staging(stored, repartition_checkpoints=repartition)
++    assert run.materialize(Frame(calls))[1] is stored
++    assert not any(kind == "count" for kind, _ in calls)
++
++
++@pytest.mark.parametrize("repartition", [True, False])
++@pytest.mark.parametrize("schema", [StructType([StructField("other", LongType())]),
++                                   StructType([StructField("id", StringType())])])
++def test_changed_column_name_or_type_is_not_committed(repartition, schema):
++    run = staging(Frame([], schema=schema), repartition_checkpoints=repartition)
++    with pytest.raises(RuntimeError, match="changed its schema"):
++        run.materialize(Frame([]))
++    assert list(run._stages.values()) == [None]
++    assert run.write_uncertain is False
++
++
++@pytest.mark.parametrize("repartition", [True, False])
++def test_wrong_row_count_is_not_committed(repartition):
++    run = staging(Frame([], rows=2), repartition_checkpoints=repartition)
++    with pytest.raises(RuntimeError, match="changed its vertex count"):
++        run.materialize(Frame([]), expected_rows=3)
++    assert list(run._stages.values()) == [None]
++    assert run.write_uncertain is False
++
++
++@pytest.mark.parametrize("repartition", [True, False])
++def test_failed_writer_retains_uncommitted_stage_ownership(repartition):
++    failure = RuntimeError("writer outcome unknown")
++    calls = []
++    run = staging(Frame(calls), repartition_checkpoints=repartition)
++    with pytest.raises(RuntimeError) as raised:
++        run.materialize(Frame(calls, failure=failure))
++    assert raised.value is failure
++    assert run._stages == {"file:///owned/run/stage-00000": None}
++    assert run.write_uncertain is True
++    assert not any(kind == "read" for kind, _ in calls)
+diff --git a/examples/extensions/graph-algorithms/tests/test_checkpoint_sql.py b/examples/extensions/graph-algorithms/tests/test_checkpoint_sql.py
+new file mode 100644
+index 000000000..7257dcfb7
+--- /dev/null
++++ b/examples/extensions/graph-algorithms/tests/test_checkpoint_sql.py
+@@ -0,0 +1,26 @@
++"""Real SQL/Parquet controls; the temporary ownership fixture is not GraphUtils."""
++from types import SimpleNamespace
++
++import pytest
++from pyspark.sql.types import LongType, StringType, StructField, StructType
++
++from pyspark_pecan import CancellationToken
++from pyspark_pecan.staging import StagingRun
++
++
++@pytest.mark.integration
++@pytest.mark.parametrize("repartition", [True, False])
++@pytest.mark.parametrize("rows", [[], [(-7, None), (0, "a"), (0, "a"), (8, "b")]])
++def test_checkpoint_roundtrip_preserves_rows_schema_and_duplicates(spark, tmp_path, repartition, rows):
++    # These controls exercise the actual engine writer/readback, independently
++    # of a GraphUtils capability. They do not qualify distributed ownership.
++    root = tmp_path / "owned"
++    root.mkdir()
++    utils = SimpleNamespace(allocate=lambda: (root.as_uri(), "test-token"), exists=lambda *_: True)
++    schema = StructType([StructField("id", LongType(), False), StructField("value", StringType(), True)])
++    frame = spark.createDataFrame(rows, schema)
++    run = StagingRun(spark, utils, CancellationToken(), 3, repartition_checkpoints=repartition)
++    path, stored = run.materialize(frame, expected_rows=len(rows))
++    assert [(f.name, f.dataType) for f in stored.schema] == [(f.name, f.dataType) for f in schema]
++    assert sorted(tuple(row) for row in stored.collect()) == sorted(rows)
++    assert run._stages[path] is stored and run.write_uncertain is False
+diff --git a/examples/extensions/graph-algorithms/tests/test_cleanup.py b/examples/extensions/graph-algorithms/tests/test_cleanup.py
+index 8c5f3357c..4b09bad2e 100644
+--- a/examples/extensions/graph-algorithms/tests/test_cleanup.py
++++ b/examples/extensions/graph-algorithms/tests/test_cleanup.py
+@@ -64,10 +64,10 @@ class Session:
+         return self.stored
+ 
+ 
+-def controller(monkeypatch, frame):
+-    graph = GraphAlgorithms.__new__(GraphAlgorithms)
+-    graph.spark = Session(frame)
+-    graph.utils = ReceiptStore()
++def controller(monkeypatch, frame, repartition_checkpoints):
++    store = ReceiptStore()
++    monkeypatch.setattr(algorithms, "GraphUtils", lambda _: store)
++    graph = GraphAlgorithms(Session(frame), repartition_checkpoints=repartition_checkpoints)
+     monkeypatch.setattr(algorithms, "_check_input_schema", lambda *_: None)
+ 
+     def snapshot(run, *_):
+@@ -79,7 +79,8 @@ def controller(monkeypatch, frame):
+ 
+ 
+ @pytest.mark.parametrize("cancelled", [False, True])
+-def test_failed_write_retains_owned_run_and_preserves_cause(monkeypatch, cancelled):
++@pytest.mark.parametrize("repartition_checkpoints", [True, False])
++def test_failed_write_retains_owned_run_and_preserves_cause(monkeypatch, cancelled, repartition_checkpoints):
+     token = CancellationToken()
+     failure = RuntimeError("write RPC did not complete")
+ 
+@@ -88,7 +89,7 @@ def test_failed_write_retains_owned_run_and_preserves_cause(monkeypatch, cancell
+             token.cancel()
+         raise failure
+ 
+-    graph = controller(monkeypatch, Frame(write))
++    graph = controller(monkeypatch, Frame(write), repartition_checkpoints)
+     with pytest.raises(GraphCancelledError if cancelled else RuntimeError) as raised:
+         graph._run(None, None, 1, token, lambda *_: None)
+     assert graph.utils.removed == []
+@@ -101,8 +102,9 @@ def test_failed_write_retains_owned_run_and_preserves_cause(monkeypatch, cancell
+         assert raised.value is failure
+ 
+ 
+-def test_validation_after_completed_write_can_remove_run(monkeypatch):
+-    graph = controller(monkeypatch, Frame(lambda _: None))
++@pytest.mark.parametrize("repartition_checkpoints", [True, False])
++def test_validation_after_completed_write_can_remove_run(monkeypatch, repartition_checkpoints):
++    graph = controller(monkeypatch, Frame(lambda _: None), repartition_checkpoints)
+     failure = ValueError("invalid graph after snapshot")
+ 
+     def validate(*_):
+@@ -115,19 +117,21 @@ def test_validation_after_completed_write_can_remove_run(monkeypatch):
+     assert graph.utils.removed == [("file:///staging/owned-run", "run-token")]
+ 
+ 
+-def test_cancellation_after_successful_write_can_remove_run(monkeypatch):
++@pytest.mark.parametrize("repartition_checkpoints", [True, False])
++def test_cancellation_after_successful_write_can_remove_run(monkeypatch, repartition_checkpoints):
+     token = CancellationToken()
+-    graph = controller(monkeypatch, Frame(lambda _: token.cancel()))
++    graph = controller(monkeypatch, Frame(lambda _: token.cancel()), repartition_checkpoints)
+     with pytest.raises(GraphCancelledError) as raised:
+         graph._run(None, None, 1, token, lambda *_: None)
+     assert raised.value.cleanup_deferred is False
+     assert graph.utils.removed == [("file:///staging/owned-run", "run-token")]
+ 
+ 
+-def test_cancellation_during_heartbeat_prevents_following_write(monkeypatch):
++@pytest.mark.parametrize("repartition_checkpoints", [True, False])
++def test_cancellation_during_heartbeat_prevents_following_write(monkeypatch, repartition_checkpoints):
+     token = CancellationToken()
+     submitted = []
+-    graph = controller(monkeypatch, Frame(submitted.append))
++    graph = controller(monkeypatch, Frame(submitted.append), repartition_checkpoints)
+ 
+     def heartbeat(*_):
+         token.cancel()

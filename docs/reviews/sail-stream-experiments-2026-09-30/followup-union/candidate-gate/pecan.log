@@ -1,0 +1,89 @@
+{
+  "started_utc": "2026-09-30T19:40:11.587377+00:00",
+  "source_head": "b4babe87cb50d16b4d439a0841a6291991c433d2",
+  "detached": true,
+  "source": "/private/tmp/sail-stream-review-followup-gate",
+  "source_receipt_sha256": "d26cae0072964b951f19acf92989387c7950b8748acc6b742d6adeca86a3111f",
+  "runner_sha256": "a9bef7f71a52c179c359b824ac19a05368b2d01dbf8f4309e165ebc6113386bc",
+  "commands": [
+    {
+      "label": "diff-check",
+      "argv": [
+        "git",
+        "diff",
+        "--check",
+        "HEAD"
+      ],
+      "returncode": 0
+    },
+    {
+      "label": "unit",
+      "argv": [
+        "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "/private/tmp/sail-stream-review-followup-gate/examples/extensions/graph-algorithms/tests",
+        "-m",
+        "not integration",
+        "--junitxml=/Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/followup-union/candidate-gate/pecan/unit.xml",
+        "--basetemp=/Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/followup-union/candidate-gate/pecan/unit-temp"
+      ],
+      "returncode": 0
+    },
+    {
+      "label": "local-sql",
+      "argv": [
+        "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "/private/tmp/sail-stream-review-followup-gate/examples/extensions/graph-algorithms/tests/test_checkpoint_sql.py",
+        "--junitxml=/Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/followup-union/candidate-gate/pecan/sql.xml",
+        "--basetemp=/Users/alexy/src/grust/docs/reviews/sail-stream-experiments-2026-09-30/followup-union/candidate-gate/pecan/sql-temp"
+      ],
+      "returncode": 0
+    }
+  ],
+  "binary": "/Users/alexy/src/sail/.venvs/default/bin/sail",
+  "binary_sha256": "27c01027afe78f6403d8c02c34199e30ef9103d11adb24403a6575b4bca40a09",
+  "installed_native": "/Users/alexy/src/sail/python/pysail/_native.abi3.so",
+  "installed_native_sha256": "b99f1717cf49706f17eefd44d78c3751e6fd2b46a34ce3fd2cc360087b7f9685",
+  "installed_version": "sail 0.7.0",
+  "scope": "Frozen Pecan Python source only. Tiny local SQL/Parquet control uses installed Sail identity, not a runtime built from candidate; test-only temporary ownership fixture, not GraphUtils/distributed qualification. No timing claim.",
+  "server_command": [
+    "/Users/alexy/src/sail/.venvs/default/bin/sail",
+    "spark",
+    "server",
+    "--ip",
+    "127.0.0.1",
+    "--port",
+    "60577"
+  ],
+  "outcome": "passed",
+  "server_reaped": true,
+  "source_and_runtime_hashes_unchanged": true,
+  "finished_utc": "2026-09-30T19:40:14.409823+00:00",
+  "logs_sha256": {
+    "diff-check.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "local-sql.log": "2f1519f9965b50d14909fe44cd949a0bb758344092eddb202a54fb5e1733a447",
+    "unit.log": "e406eb9c19325ed5e7e34642dd20fb9523176c7b10beeba9aa2f7e362ea28cf0",
+    "server.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "unit_tests": {
+    "tests": 78,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "sql_tests": {
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  }
+}

@@ -1,0 +1,65 @@
+{
+  "recorded_utc": "2026-09-30T23:06:57.303670+00:00",
+  "outcome": "PASS_BOUNDED_INDEPENDENT_CANDIDATE_SOURCE_AND_GATE_REVIEW",
+  "candidate_commit": "b17f4c5325cd53ce50a5589ecc07a399fa8c0c9c",
+  "candidate_tree": "95b3da7b0548fafa0da76dc465c5b193b0ce30fb",
+  "base": "200d1cf8eb1db5e9057e09e071ebd57391f4b376",
+  "source_hashes": {
+    "examples/extensions/benchmarks/graph_cell.py": "bee64cba85e7d4d47d3bc05c4ace076954aa727b35ad17146530dcf4da7b5630",
+    "examples/extensions/benchmarks/ranking_validation.py": "f2da6ac6e75af27d5355567ef4269b7c2c06b2292dae761eee4f18a747ad53d6",
+    "examples/extensions/benchmarks/test_pagerank_metadata.py": "ef54f8e45f4be794ce9b6d4a7bd14d10fd22e353ca099267770f8561f0114dd8"
+  },
+  "production_files_byte_identical_to_reviewed_candidate": "08d2995a367bff4590759bac552a71a434b9c98c",
+  "source_findings": [],
+  "source_review": [
+    "Shared aggregate preserves the former reference row predicates and now applies them to certificate verification before nullable min/max can hide malformed metadata. Explicit null predicates remain on scores/iterations/converged and required residuals.",
+    "Post-convergence uniform iteration/residual and residual-bound checks follow NonConvergedError; nonconvergence stays distinct from answer mismatch. Optional all-null baseline residuals and optimized zero iterations remain supported.",
+    "Vertex-domain, nonnegative finite score, reference-vector score and fixed-point residual proof paths remain in place; this change is metadata validation, not a new PageRank algorithm.",
+    "Only candidate02 source delta is fixture-side statistics disabling plus explicit NaN readback. Existing rejection assertions are unchanged; the readback guard has a distinct message so it cannot satisfy the score-rejection assertion.",
+    "Default-statistics NaN substitution and initial failing gate/receipt-finalization outcomes remain separately recorded. The successful no-statistics baseline directly observes NaN and rejects it under both previous policies; metadata certificate gaps remain reproducible."
+  ],
+  "gate_review": {
+    "outcome": "passed",
+    "independently_parsed_xml": {
+      "unit": {
+        "tests": 430,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 97
+      },
+      "sql": {
+        "tests": 58,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    },
+    "sql_cases_by_class": {
+      "examples.extensions.benchmarks.test_pagerank_metadata": 52,
+      "examples.extensions.benchmarks.test_wcc_certificate": 6
+    },
+    "all_recorded_log_hashes_match": true,
+    "all_source_hashes_match": true,
+    "detached_head_tree_clean_and_unchanged": true,
+    "base_to_candidate_diff_check_passed": true,
+    "driver_python": {
+      "executable": "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/bin/python",
+      "version": "3.12.8 (main, Jan  5 2025, 06:55:30) [Clang 19.1.6 ]"
+    },
+    "scope": "Python benchmark suite plus actual local SQL/Parquet on pinned installed Sail 0.7.0. No candidate runtime build, distributed or performance verdict."
+  },
+  "evidence_sha256": {
+    "candidate.json": "cd15af383b7b47bbd9d3d8cb6dfc7ca89e64058230c2d56ba62bc1e81096f095",
+    "candidate02.json": "787c87db2417ba87b38e1b20c718afd4dd5214cbfd31f4b13a0b48f212ec982f",
+    "candidate02-gate/receipt.json": "7ff8a3d0e38621cd5e80c28ecbd14953ad7c35f31a191c2ca192d23ded01bc26",
+    "candidate-gate/failure-recovery.json": "1f297fb23d25e4a34c9a350d7195c579326a07f7a92078da5b783364ee9b3d5b",
+    "baseline-nan/receipt.json": "d76038480a78ba7512bf5a4c311ac4d888bb5b4e3437b6e281ecb75b545c9908",
+    "baseline-nan-no-statistics/receipt.json": "4fdb7b741c2900ac7b7e9d4c36d93b155bb8c54ef3545d45c82f45c3da4443af",
+    "run_gate.py": "89717f31866975ff3f5c1c6a6d4de8726211ebc581fb4a37e8a7f4bd10e304cb"
+  },
+  "limits": [
+    "Read-only review; no suite rerun, workload, remote-host call or source edit by reviewer.",
+    "Gate validates Python benchmark validators using the pinned installed Sail0.7.0 local SQL/Parquet runtime. It does not build candidate Rust runtime or qualify cluster/performance behavior.",
+    "Verdict binds candidate b17f4c5 only. Final branch commit and exact-SHA gate remain the parent responsibility."
+  ]
+}

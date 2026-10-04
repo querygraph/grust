@@ -1,0 +1,354 @@
+diff --git a/crates/sail-data-source/src/formats/parquet/mod.rs b/crates/sail-data-source/src/formats/parquet/mod.rs
+index aa2136fa2..ab6f9365c 100644
+--- a/crates/sail-data-source/src/formats/parquet/mod.rs
++++ b/crates/sail-data-source/src/formats/parquet/mod.rs
+@@ -11,6 +11,12 @@ use crate::options::r#gen::{ParquetReadOptions, ParquetWriteOptions};
+ 
+ mod options;
+ mod read;
++mod statistics;
++
++#[cfg(test)]
++mod read_statistics_tests;
++#[cfg(test)]
++mod statistics_tests;
+ mod write;
+ 
+ pub use read::ParquetReadFormat;
+diff --git a/crates/sail-data-source/src/formats/parquet/read.rs b/crates/sail-data-source/src/formats/parquet/read.rs
+index 9ab157da5..6a71cf774 100644
+--- a/crates/sail-data-source/src/formats/parquet/read.rs
++++ b/crates/sail-data-source/src/formats/parquet/read.rs
+@@ -125,8 +125,9 @@ impl ReadFormat for ParquetReadFormat {
+             .with_file_metadata_cache(Some(metadata_cache))
+             .fetch_metadata()
+             .await?;
+-        let statistics =
++        let mut statistics =
+             DFParquetMetadata::statistics_from_parquet_metadata(&metadata, &file_schema)?;
++        super::statistics::clear_floating_bounds(&mut statistics, &file_schema);
+         let ordering = ordering_from_parquet_metadata(&metadata, &file_schema)?;
+         Ok(ListingFileMeta {
+             statistics,
+diff --git a/crates/sail-data-source/src/formats/parquet/read_statistics_tests.rs b/crates/sail-data-source/src/formats/parquet/read_statistics_tests.rs
+new file mode 100644
+index 000000000..56636d07c
+--- /dev/null
++++ b/crates/sail-data-source/src/formats/parquet/read_statistics_tests.rs
+@@ -0,0 +1,224 @@
++//! Real Parquet bytes through Sail's metadata and scan boundary. This module
++//! deliberately does not call the mitigation helper, so it also runs unchanged
++//! against the parent revision as a regression reproduction.
++use std::sync::Arc;
++
++use bytes::Bytes;
++use datafusion::arrow::array::{Array, ArrayRef, Float64Array, Int64Array, as_primitive_array};
++use datafusion::arrow::compute::{cast, concat};
++use datafusion::arrow::datatypes::{DataType, Field, Float64Type, Schema};
++use datafusion::arrow::record_batch::RecordBatch;
++use datafusion::execution::context::SessionContext;
++use datafusion::execution::object_store::ObjectStoreUrl;
++use datafusion::parquet::arrow::ArrowWriter;
++use datafusion::parquet::arrow::arrow_reader::ParquetRecordBatchReaderBuilder;
++use datafusion::physical_plan::collect;
++use datafusion_common::parsers::CompressionTypeVariant;
++use datafusion_common::stats::Precision;
++use datafusion_common::{Constraints, ScalarValue};
++use datafusion_datasource::file_groups::FileGroup;
++use datafusion_datasource::source::DataSourceExec;
++use datafusion_datasource::{PartitionedFile, TableSchema};
++use object_store::memory::InMemory;
++use object_store::path::Path;
++use object_store::{ObjectStore, ObjectStoreExt};
++
++use super::ParquetFormatFactory;
++use crate::listing::source::{FormatFactory, ListingScanInput, ReadFormat};
++
++type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
++
++async fn roundtrip(input: ArrayRef) -> TestResult<(ArrayRef, datafusion_common::Statistics)> {
++    let schema = Arc::new(Schema::new(vec![Field::new(
++        "value",
++        input.data_type().clone(),
++        true,
++    )]));
++    let batch = RecordBatch::try_new(Arc::clone(&schema), vec![Arc::clone(&input)])?;
++    let mut bytes = Vec::new();
++    let mut writer = ArrowWriter::try_new(&mut bytes, Arc::clone(&schema), None)?;
++    writer.write(&batch)?;
++    writer.close()?;
++    let bytes = Bytes::from(bytes);
++    // Independent decoder proves the writer retained the input values.
++    let decoded = ParquetRecordBatchReaderBuilder::try_new(bytes.clone())?
++        .build()?
++        .collect::<Result<Vec<_>, _>>()?;
++    let decoded = concat(
++        &decoded
++            .iter()
++            .map(|b| b.column(0).as_ref())
++            .collect::<Vec<_>>(),
++    )?;
++    assert_values(&input, &decoded)?;
++
++    let ctx = SessionContext::new();
++    let state = ctx.state();
++    let store: Arc<dyn ObjectStore> = Arc::new(InMemory::new());
++    let path = Path::from("values.parquet");
++    store.put(&path, bytes.into()).await?;
++    let object = store.head(&path).await?;
++    let url = ObjectStoreUrl::parse("memory://float-statistics")?;
++    ctx.runtime_env()
++        .register_object_store(url.as_ref(), Arc::clone(&store));
++    let format = ParquetFormatFactory::read(&state, vec![])?;
++    let meta = format
++        .infer_file_meta(
++            &state,
++            &store,
++            &object,
++            Arc::clone(&schema),
++            CompressionTypeVariant::UNCOMPRESSED,
++        )
++        .await?;
++    let statistics = meta.statistics;
++    let file = PartitionedFile::from(object).with_statistics(Arc::new(statistics.clone()));
++    let config = format
++        .scan(
++            &state,
++            ListingScanInput {
++                object_store_url: url,
++                file_groups: vec![FileGroup::new(vec![file])],
++                constraints: Constraints::default(),
++                projection: Some(vec![0]),
++                limit: None,
++                preserve_order: false,
++                output_ordering: vec![],
++                statistics: statistics.clone(),
++                output_partitioning: None,
++                schema: TableSchema::builder(schema).build(),
++                compression: CompressionTypeVariant::UNCOMPRESSED,
++            },
++        )
++        .await?;
++    let output = collect(DataSourceExec::from_data_source(config), ctx.task_ctx()).await?;
++    let output = concat(
++        &output
++            .iter()
++            .map(|b| b.column(0).as_ref())
++            .collect::<Vec<_>>(),
++    )?;
++    Ok((output, statistics))
++}
++
++fn assert_values(expected: &ArrayRef, actual: &ArrayRef) -> TestResult {
++    assert_eq!(expected.len(), actual.len());
++    assert_eq!(expected.data_type(), actual.data_type());
++    // Widen floats (and dictionary floats) to compare NaNs and signed zero.
++    let expected = cast(expected, &DataType::Float64)?;
++    let actual = cast(actual, &DataType::Float64)?;
++    let expected = as_primitive_array::<Float64Type>(expected.as_ref());
++    let actual = as_primitive_array::<Float64Type>(actual.as_ref());
++    for i in 0..expected.len() {
++        assert_eq!(expected.is_null(i), actual.is_null(i), "row {i}");
++        if expected.is_valid(i) {
++            if expected.value(i).is_nan() {
++                assert!(
++                    actual.value(i).is_nan(),
++                    "row {i}: NaN became {}",
++                    actual.value(i)
++                );
++            } else {
++                assert_eq!(
++                    expected.value(i).to_bits(),
++                    actual.value(i).to_bits(),
++                    "row {i}"
++                );
++            }
++        }
++    }
++    Ok(())
++}
++
++#[tokio::test]
++async fn parquet_float_values_survive_statistics() -> TestResult {
++    for data_type in [DataType::Float16, DataType::Float32, DataType::Float64] {
++        for values in [
++            vec![Some(f64::NAN), Some(0.5)],
++            vec![Some(0.5), Some(f64::NAN)],
++            vec![Some(0.5), Some(0.5)],
++            vec![Some(f64::NAN), Some(f64::NAN)],
++            vec![Some(-0.0), Some(0.0)],
++            vec![Some(0.5), None],
++            vec![None, None],
++        ] {
++            let input = cast(&Float64Array::from(values), &data_type)?;
++            let (actual, statistics) = roundtrip(Arc::clone(&input)).await?;
++            assert_values(&input, &actual)?;
++            assert_eq!(statistics.column_statistics[0].min_value, Precision::Absent);
++            assert_eq!(statistics.column_statistics[0].max_value, Precision::Absent);
++            assert_eq!(statistics.num_rows, Precision::Exact(2));
++            assert_eq!(
++                statistics.column_statistics[0].null_count,
++                Precision::Exact(input.null_count())
++            );
++        }
++    }
++    Ok(())
++}
++
++#[tokio::test]
++async fn parquet_dictionary_float_values_survive_statistics() -> TestResult {
++    // Dictionary(Float16) is not readable by this pinned Parquet version;
++    // the separate control below pins that existing unsupported case.
++    for value_type in [DataType::Float32, DataType::Float64] {
++        let data_type = DataType::Dictionary(Box::new(DataType::Int32), Box::new(value_type));
++        for values in [
++            vec![Some(f64::NAN), Some(0.5)],
++            vec![Some(0.5), Some(f64::NAN), None],
++            vec![Some(-0.0), Some(0.0)],
++        ] {
++            let input = cast(&Float64Array::from(values), &data_type)?;
++            let (actual, _) = roundtrip(Arc::clone(&input)).await?;
++            assert_values(&input, &actual)?;
++        }
++    }
++    Ok(())
++}
++
++#[test]
++fn parquet_dictionary_float16_reader_is_unsupported() -> TestResult {
++    let data_type = DataType::Dictionary(Box::new(DataType::Int32), Box::new(DataType::Float16));
++    let input = cast(&Float64Array::from(vec![f64::NAN, 0.5]), &data_type)?;
++    let schema = Arc::new(Schema::new(vec![Field::new("value", data_type, false)]));
++    let batch = RecordBatch::try_new(Arc::clone(&schema), vec![input])?;
++    let mut bytes = Vec::new();
++    let mut writer = ArrowWriter::try_new(&mut bytes, schema, None)?;
++    writer.write(&batch)?;
++    writer.close()?;
++    let error = match ParquetRecordBatchReaderBuilder::try_new(Bytes::from(bytes))?.build() {
++        Ok(_) => return Err("Dictionary(Float16) unexpectedly supported".into()),
++        Err(error) => error,
++    };
++    assert!(
++        error.to_string().contains(
++            "unsupported data type for byte array dictionary reader - Dictionary(Int32, Float16)"
++        ),
++        "{error}"
++    );
++    Ok(())
++}
++
++#[tokio::test]
++async fn parquet_integer_bounds_and_all_null_counts_survive() -> TestResult {
++    let input: ArrayRef = Arc::new(Int64Array::from(vec![7, 7]));
++    let (actual, statistics) = roundtrip(Arc::clone(&input)).await?;
++    assert_eq!(actual.as_ref(), input.as_ref());
++    assert_eq!(
++        statistics.column_statistics[0].min_value,
++        Precision::Exact(ScalarValue::Int64(Some(7)))
++    );
++    assert_eq!(
++        statistics.column_statistics[0].max_value,
++        Precision::Exact(ScalarValue::Int64(Some(7)))
++    );
++    let input: ArrayRef = Arc::new(Float64Array::from(vec![None, None]));
++    let (actual, statistics) = roundtrip(input).await?;
++    assert_eq!(actual.null_count(), 2);
++    assert_eq!(statistics.num_rows, Precision::Exact(2));
++    assert_eq!(
++        statistics.column_statistics[0].null_count,
++        Precision::Exact(2)
++    );
++    Ok(())
++}
+diff --git a/crates/sail-data-source/src/formats/parquet/statistics.rs b/crates/sail-data-source/src/formats/parquet/statistics.rs
+new file mode 100644
+index 000000000..ca3a1034e
+--- /dev/null
++++ b/crates/sail-data-source/src/formats/parquet/statistics.rs
+@@ -0,0 +1,25 @@
++use datafusion::arrow::datatypes::{DataType, Schema};
++use datafusion_common::Statistics;
++use datafusion_common::stats::Precision;
++
++/// Parquet bounds can exclude NaNs and therefore cannot prove that a floating
++/// column is constant. DataFusion can otherwise replace the whole column with
++/// an exact singleton bound, losing NaNs (and possibly the sign of zero).
++/// Clear the bounds before file statistics are cached or aggregated. Keep row
++/// and null counts, including the independent proof that a column is all null.
++pub(super) fn clear_floating_bounds(statistics: &mut Statistics, schema: &Schema) {
++    for (column, field) in statistics.column_statistics.iter_mut().zip(schema.fields()) {
++        if is_floating(field.data_type()) {
++            column.min_value = Precision::Absent;
++            column.max_value = Precision::Absent;
++        }
++    }
++}
++
++fn is_floating(data_type: &DataType) -> bool {
++    match data_type {
++        DataType::Float16 | DataType::Float32 | DataType::Float64 => true,
++        DataType::Dictionary(_, value) => is_floating(value),
++        _ => false,
++    }
++}
+diff --git a/crates/sail-data-source/src/formats/parquet/statistics_tests.rs b/crates/sail-data-source/src/formats/parquet/statistics_tests.rs
+new file mode 100644
+index 000000000..09de2e5b2
+--- /dev/null
++++ b/crates/sail-data-source/src/formats/parquet/statistics_tests.rs
+@@ -0,0 +1,55 @@
++use datafusion::arrow::datatypes::{DataType, Field, Schema};
++use datafusion_common::stats::Precision;
++use datafusion_common::{ColumnStatistics, ScalarValue, Statistics};
++
++use super::statistics::clear_floating_bounds;
++
++#[test]
++fn only_floating_bounds_are_removed() {
++    let types = [
++        DataType::Float16,
++        DataType::Float32,
++        DataType::Float64,
++        DataType::Dictionary(Box::new(DataType::Int8), Box::new(DataType::Float16)),
++        DataType::Dictionary(Box::new(DataType::Int8), Box::new(DataType::Float32)),
++        DataType::Dictionary(Box::new(DataType::Int8), Box::new(DataType::Float64)),
++        DataType::Int64,
++        DataType::Utf8,
++        DataType::Dictionary(Box::new(DataType::Int8), Box::new(DataType::Utf8)),
++    ];
++    let schema = Schema::new(
++        types
++            .iter()
++            .enumerate()
++            .map(|(i, t)| Field::new(i.to_string(), t.clone(), true))
++            .collect::<Vec<_>>(),
++    );
++    let column = ColumnStatistics {
++        null_count: Precision::Exact(2),
++        min_value: Precision::Exact(ScalarValue::Float64(Some(0.5))),
++        max_value: Precision::Inexact(ScalarValue::Float64(Some(0.5))),
++        sum_value: Precision::Absent,
++        distinct_count: Precision::Exact(3),
++        byte_size: Precision::Inexact(100),
++    };
++    let mut statistics = Statistics {
++        num_rows: Precision::Exact(5),
++        total_byte_size: Precision::Exact(700),
++        column_statistics: vec![column.clone(); types.len()],
++    };
++    let original = statistics.clone();
++    clear_floating_bounds(&mut statistics, &schema);
++    assert_eq!(statistics.num_rows, original.num_rows);
++    assert_eq!(statistics.total_byte_size, original.total_byte_size);
++    for (index, actual) in statistics.column_statistics.iter().enumerate() {
++        let mut expected = column.clone();
++        if index < 6 {
++            expected.min_value = Precision::Absent;
++            expected.max_value = Precision::Absent;
++        }
++        assert_eq!(actual, &expected);
++    }
++    let once = statistics.clone();
++    clear_floating_bounds(&mut statistics, &schema);
++    assert_eq!(statistics, once);
++}

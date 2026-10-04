@@ -1,0 +1,83 @@
+{
+  "started_utc": "2026-09-30T19:59:27.325611+00:00",
+  "command": [
+    "/usr/local/bin/docker",
+    "--context",
+    "colima-sail-gate",
+    "run",
+    "--name",
+    "sail-host-cache-apply-20260930t195927323495z",
+    "--init",
+    "--pid=host",
+    "--cpus",
+    "2",
+    "--memory",
+    "2g",
+    "--memory-swap",
+    "2g",
+    "--mount",
+    "type=volume,source=sail-extension-targets,target=/targets",
+    "--mount",
+    "type=bind,source=/Users/alexy/src/sail-extensions-gates/stream-experiments-20260930,target=/work,readonly",
+    "--workdir",
+    "/targets",
+    "--entrypoint",
+    "/targets/sail-stream-2894a962076d/venv/bin/python",
+    "sha256:f3518d652fbea8b9b9f9ebf9849277ca3bd39d0c21bb2c6e36fbaeaa2dc2678e",
+    "-I",
+    "-B",
+    "/work/cleanup_host_caches.py",
+    "--evidence289",
+    "/work/integration289-build-evidence-20260930T190826022985Z",
+    "--evidence561",
+    "/work/compact561-host-build-evidence-20260930T195737926392Z",
+    "--apply",
+    "--inspection",
+    "/work/host-cache-cleanup-inspect-20260930T195839879378Z/inspection.json",
+    "--inspection-sha256",
+    "e0f6219d7010c0002e371bb9fe45cb6d712b5a61e584ff96998efee0d4b086a8"
+  ],
+  "mode": "apply",
+  "script_sha256": "afce29ac5e36dfa4c71d9f561b09d33d63e268e1234fbdc05d056ee5d4b5b521",
+  "inspection_sha256": "e0f6219d7010c0002e371bb9fe45cb6d712b5a61e584ff96998efee0d4b086a8",
+  "no_running_containers_before": true,
+  "prior_containers": {
+    "sail-stream-build289": {
+      "Id": "7184973e6bd05056a92ea1a96803b5ebc5c5e2bfa38fab76e0278e9560d32c8a",
+      "Image": "sha256:f3518d652fbea8b9b9f9ebf9849277ca3bd39d0c21bb2c6e36fbaeaa2dc2678e",
+      "State": {
+        "Status": "exited",
+        "Running": false,
+        "Paused": false,
+        "Restarting": false,
+        "OOMKilled": false,
+        "Dead": false,
+        "Pid": 0,
+        "ExitCode": 0,
+        "Error": "",
+        "StartedAt": "2026-09-30T17:17:08.797751212Z",
+        "FinishedAt": "2026-09-30T19:08:11.661798033Z"
+      }
+    },
+    "sail-stream-build561-host": {
+      "Id": "93f5d799da4b6e5a97aa9a8e7b06bef2d9e59cfd3c9ba58f45e77015e8df11ff",
+      "Image": "sha256:f3518d652fbea8b9b9f9ebf9849277ca3bd39d0c21bb2c6e36fbaeaa2dc2678e",
+      "State": {
+        "Status": "exited",
+        "Running": false,
+        "Paused": false,
+        "Restarting": false,
+        "OOMKilled": false,
+        "Dead": false,
+        "Pid": 0,
+        "ExitCode": 0,
+        "Error": "",
+        "StartedAt": "2026-09-30T19:09:35.826037538Z",
+        "FinishedAt": "2026-09-30T19:57:09.35362393Z"
+      }
+    }
+  },
+  "scope": "only completed task-owned289/561 host caches; original ffcf seeds retained",
+  "finished_utc": "2026-09-30T19:59:43.531382+00:00",
+  "returncode": 0
+}

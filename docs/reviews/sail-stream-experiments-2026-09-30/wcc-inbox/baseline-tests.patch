@@ -1,0 +1,315 @@
+diff --git a/examples/extensions/argentea/tests/wcc_inbox.rs b/examples/extensions/argentea/tests/wcc_inbox.rs
+new file mode 100644
+index 000000000..5acca81f3
+--- /dev/null
++++ b/examples/extensions/argentea/tests/wcc_inbox.rs
+@@ -0,0 +1,309 @@
++//! Measure inbox construction with retained topology and sparse cross-owner arcs.
++#[path = "../src/adjacency_tests/allocations.rs"]
++mod allocations;
++mod wcc_support;
++use grust_procedures::ExecutionContext;
++use sail_argentea_core::*;
++use wcc_support::*;
++
++const LIMIT: usize = 256 << 20;
++const PARTITIONS: usize = 3;
++
++struct Fixture {
++    op: Operation,
++    parts: Vec<WccPartition>,
++    resources: Resources,
++    usage: ExecutionContext,
++    ids: Vec<i64>,
++    arcs: Vec<(i64, i64)>,
++}
++
++fn fixture(n: usize, algorithm: WccAlgorithm, mode: WccMode) -> Fixture {
++    let op = operation(PARTITIONS, n as u64);
++    let (resources, usage, _) = resources(LIMIT);
++    let ids = (0..n as i64).collect::<Vec<_>>();
++    // Fixed sparse edges keep the independent oracle cheap while retained CSR
++    // offsets and vertex state still grow with n. Normalization controls use
++    // isolates so their target mode follows the first Neighbors phase.
++    let arcs = if n == 1 || matches!(mode, WccMode::NormalizeRoute | WccMode::NormalizeReturn) {
++        vec![]
++    } else {
++        vec![(0, 1), (2, 3), (3, n as i64 - 1)]
++    };
++    assert!(arcs.is_empty() || arcs.iter().any(|&(a, b)| op.owner(a) != op.owner(b)));
++    let parts = parts(&op, &ids, &arcs, options(algorithm, 42), &resources).unwrap();
++    Fixture {
++        op,
++        parts,
++        resources,
++        usage,
++        ids,
++        arcs,
++    }
++}
++
++fn prepare(f: &mut Fixture, mode: WccMode) {
++    if mode == WccMode::Topology {
++        return;
++    }
++    let previous = match mode {
++        WccMode::Reference | WccMode::Neighbors => WccMode::Topology,
++        WccMode::HookRoute | WccMode::NormalizeRoute => WccMode::Neighbors,
++        WccMode::HookReturn => WccMode::HookRoute,
++        WccMode::NormalizeReturn => WccMode::NormalizeRoute,
++        WccMode::Done => WccMode::Done,
++        WccMode::Topology => unreachable!(),
++    };
++    loop {
++        stats(&f.op, &mut f.parts).unwrap();
++        let completed = exchange(&f.op, &mut f.parts).unwrap();
++        assert!(f.parts[0].next_phase() < 64);
++        if completed == previous {
++            break;
++        }
++    }
++    assert!(
++        f.parts
++            .iter()
++            .all(|part| part.incoming_identity().is_some())
++    );
++}
++
++fn complete(f: &mut Fixture, mut cursors: Vec<WccEmissionCursor>) {
++    let phase = phase(&f.op, &f.parts);
++    loop {
++        let mut any = false;
++        for cursor in &mut cursors {
++            if let Some(message) = cursor.next_update().unwrap() {
++                any = true;
++                f.parts[message.recipient].receive(&message).unwrap();
++            }
++        }
++        if !any {
++            break;
++        }
++    }
++    for cursor in cursors {
++        let completion = cursor.finish().unwrap();
++        for part in &mut f.parts {
++            part.finish_producer(&completion).unwrap();
++        }
++    }
++    for part in &mut f.parts {
++        part.finish(&phase).unwrap();
++    }
++}
++
++#[derive(Clone, Copy, Debug, PartialEq, Eq)]
++struct Cost {
++    allocation_calls: usize,
++    allocated_bytes: usize,
++    peak_admitted: usize,
++}
++
++fn measure(n: usize, algorithm: WccAlgorithm, mode: WccMode, headroom: usize) -> Cost {
++    let mut f = fixture(n, algorithm, mode);
++    prepare(&mut f, mode);
++    stats(&f.op, &mut f.parts).unwrap();
++    let phase = phase(&f.op, &f.parts);
++    let before_rows = f
++        .parts
++        .iter()
++        .map(|p| p.state_rows().collect::<Vec<_>>())
++        .collect::<Vec<_>>();
++    let origins = f.parts.iter().map(WccPartition::origin).collect::<Vec<_>>();
++    let incoming = f
++        .parts
++        .iter()
++        .map(WccPartition::incoming_identity)
++        .collect::<Vec<_>>();
++    let rounds = f.parts[0].rounds();
++    let floor = LIMIT - headroom;
++    let before = f.usage.usage().unwrap();
++    assert!(floor > before.peak_bytes);
++    let blocker = f.usage.reserve(floor - before.live_bytes).unwrap();
++    let before = f.usage.usage().unwrap();
++    let mut cursors = Vec::with_capacity(PARTITIONS);
++    let (_, allocations) = allocations::measure(|| {
++        for part in &mut f.parts {
++            cursors.push(part.start_emission(&phase).unwrap());
++        }
++    });
++    assert!(cursors.iter().all(|c| c.mode() == mode));
++    let cost = Cost {
++        allocation_calls: allocations.calls,
++        allocated_bytes: allocations.bytes,
++        peak_admitted: f.usage.usage().unwrap().peak_bytes - before.peak_bytes,
++    };
++    println!(
++        "WCC_INBOX_COUNTER algorithm={algorithm:?} mode={mode:?} vertices={n} arcs={} partitions={PARTITIONS} allocation_calls={} allocated_bytes={} peak_admitted_bytes={}",
++        f.arcs.len(),
++        cost.allocation_calls,
++        cost.allocated_bytes,
++        cost.peak_admitted
++    );
++    if mode == WccMode::Done {
++        // Hold protocol-sized headroom through publication as well as start.
++        complete(&mut f, cursors);
++        drop(blocker);
++        assert_eq!(f.parts[0].rounds(), rounds);
++        assert!(f.parts.iter().all(|p| p.last_work() == WccWork::default()));
++        assert_eq!(
++            f.parts
++                .iter()
++                .map(|p| p.state_rows().collect::<Vec<_>>())
++                .collect::<Vec<_>>(),
++            before_rows
++        );
++    } else {
++        drop(blocker);
++        complete(&mut f, cursors);
++    }
++    if mode != WccMode::Topology {
++        assert_eq!(
++            f.parts
++                .iter()
++                .map(WccPartition::incoming_identity)
++                .collect::<Vec<_>>(),
++            incoming
++        );
++    }
++    assert_eq!(
++        f.parts.iter().map(WccPartition::origin).collect::<Vec<_>>(),
++        origins
++    );
++    assert!(f.parts.iter().all(|p| p.next_phase() == phase.number + 1));
++    run(&f.op, &mut f.parts).unwrap();
++    assert_eq!(collected(&f.parts), oracle(&f.ids, &f.arcs));
++    let usage = f.usage.clone();
++    drop(f.parts);
++    drop(f.resources);
++    assert_eq!(usage.usage().unwrap().live_bytes, 0);
++    cost
++}
++
++#[test]
++fn done_inboxes_are_independent_of_vertices_and_retained_topology() {
++    let costs = [WccAlgorithm::Reference, WccAlgorithm::StarContraction].map(|algorithm| {
++        // Include the old one-vertex idle shape, then retain full CSR offsets
++        // plus cross-owner arcs at larger sizes. A WccWork-only check misses it.
++        [1, 1_024, 65_536].map(|n| measure(n, algorithm, WccMode::Done, LIMIT / 2))
++    });
++    for costs in costs {
++        assert_eq!(costs[0], costs[1]);
++        assert_eq!(costs[0], costs[2]);
++    }
++}
++
++#[test]
++fn topology_has_no_label_storage() {
++    let costs = [WccAlgorithm::Reference, WccAlgorithm::StarContraction].map(|algorithm| {
++        [1, 1_024, 65_536].map(|n| measure(n, algorithm, WccMode::Topology, LIMIT / 2))
++    });
++    for costs in costs {
++        assert_eq!(costs[0], costs[1]);
++        assert_eq!(costs[0], costs[2]);
++    }
++}
++
++#[test]
++fn all_active_modes_keep_required_label_buffers() {
++    for mode in [
++        WccMode::Reference,
++        WccMode::Neighbors,
++        WccMode::HookRoute,
++        WccMode::HookReturn,
++        WccMode::NormalizeRoute,
++        WccMode::NormalizeReturn,
++    ] {
++        let algorithm = if mode == WccMode::Reference {
++            WccAlgorithm::Reference
++        } else {
++            WccAlgorithm::StarContraction
++        };
++        let small = measure(1_024, algorithm, mode, LIMIT / 2);
++        let large = measure(65_536, algorithm, mode, LIMIT / 2);
++        let labels = (65_536 - 1_024) * size_of::<Option<i64>>();
++        assert_eq!(large.allocated_bytes - small.allocated_bytes, labels);
++        assert_eq!(large.peak_admitted - small.peak_admitted, labels);
++        assert_eq!(large.allocation_calls, small.allocation_calls);
++    }
++}
++
++#[test]
++fn done_inboxes_fit_protocol_sized_headroom() {
++    for algorithm in [WccAlgorithm::Reference, WccAlgorithm::StarContraction] {
++        measure(65_536, algorithm, WccMode::Done, 32 * 1_024);
++    }
++}
++
++#[test]
++fn omitted_labels_still_reject_payloads_before_indexing() {
++    for algorithm in [WccAlgorithm::Reference, WccAlgorithm::StarContraction] {
++        for mode in [WccMode::Topology, WccMode::Done] {
++            for (payload, expected) in [
++                (
++                    WccPayload::Label {
++                        source: 0,
++                        target: 0,
++                        root: 0,
++                    },
++                    "invalid WCC label source or mode",
++                ),
++                (
++                    WccPayload::Member {
++                        vertex: 0,
++                        root: 0,
++                        candidate: None,
++                    },
++                    "invalid WCC member source or mode",
++                ),
++                (
++                    WccPayload::Assignment {
++                        vertex: 0,
++                        old_root: 0,
++                        new_root: 0,
++                    },
++                    "invalid WCC assignment origin or mode",
++                ),
++                (
++                    WccPayload::Topology {
++                        source: 0,
++                        target: 0,
++                    },
++                    "invalid WCC topology source or mode",
++                ),
++            ] {
++                if mode == WccMode::Topology && matches!(payload, WccPayload::Topology { .. }) {
++                    continue;
++                }
++                let mut f = fixture(1_024, algorithm, mode);
++                prepare(&mut f, mode);
++                stats(&f.op, &mut f.parts).unwrap();
++                let phase = phase(&f.op, &f.parts);
++                let before = f.parts[0].state_rows().collect::<Vec<_>>();
++                let cursor = f.parts[0].start_emission(&phase).unwrap();
++                assert_eq!(cursor.mode(), mode);
++                let origin = f.parts[0].origin();
++                let error = f.parts[0]
++                    .receive_values(
++                        &phase,
++                        WccMessageValues {
++                            origin,
++                            producer: 0,
++                            recipient: 0,
++                            sequence: 0,
++                            mode,
++                            payload,
++                        },
++                    )
++                    .unwrap_err();
++                assert_eq!(error, expected);
++                assert!(f.parts[0].finish(&phase).is_err());
++                assert!(f.parts[0].row_cursor().is_err());
++                assert_eq!(f.parts[0].state_rows().collect::<Vec<_>>(), before);
++                assert_eq!(f.parts[0].next_phase(), phase.number);
++            }
++        }
++    }
++}

@@ -1,0 +1,35 @@
+--- physical-output-execution-preparation-v4/supervise.py
++++ physical-output-pair-execution-preparation-v4/supervise.py
+@@ -15,7 +15,7 @@
+ 
+ DOCKER = ['/usr/local/bin/docker', '--context', 'colima-sail-gate']
+ IMAGE = 'sha256:f3518d652fbea8b9b9f9ebf9849277ca3bd39d0c21bb2c6e36fbaeaa2dc2678e'
+-CONFIG_SHA = 'b28132996612b11edb77bb02019288e4a562db5e4d22c4430a6a8815a220aea0'
++PLAN_SHA = 'd51e9f4d5a1d16fb18c36e93fcb3d641c017610a7319ee56a203676800dbe1ab'
+ HELPER_SHA = '4c5fe87d0eb0b3f4aec3e70841bc7db968017f952dda6978840d101d2f2f7872'
+ VOLUME = 'sail-extension-targets'
+ INSPECT = '{"Id":{{json .Id}},"State":{{json .State}},"Labels":{{json .Config.Labels}},"User":{{json .Config.User}},"Mounts":{{json .Mounts}},"Memory":{{.HostConfig.Memory}},"MemorySwap":{{.HostConfig.MemorySwap}},"NanoCpus":{{.HostConfig.NanoCpus}},"ReadonlyRootfs":{{.HostConfig.ReadonlyRootfs}},"NetworkMode":{{json .HostConfig.NetworkMode}}}'
+@@ -92,15 +92,20 @@
+     need(not output.is_relative_to(root) and not root.is_relative_to(output), 'output overlaps immutable bundle')
+     need(not output.is_relative_to(Path('/targets')), 'host output must not be retained volume')
+     need(all(',' not in str(p) and '\n' not in str(p) for p in (root, output)), 'unsafe Docker mount path')
+-    names = {'configuration.json', 'producer-receipt.json', 'closed-audit.json', 'audit_output.py', 'container_check.py', 'supervise.py'}
++    names = {'configuration.json', 'producer-receipt.json', 'closed-audit.json', 'audit_output.py', 'container_check.py', 'supervise.py', 'pair-plan.json', 'all-six-closures.json', 'pair_policy.py'}
+     need(set(request['files']) == names, 'bundle inventory differs')
+     validate_bundle_permissions(root, request)
+     for name, pin in request['files'].items():
+         path = root / name
+         need(path.is_file() and not path.is_symlink() and path.stat().st_size == pin['bytes'] and sha(path) == pin['sha256'], 'bundle changed: ' + name)
+-    need(request['files']['configuration.json']['sha256'] == CONFIG_SHA and request['files']['audit_output.py']['sha256'] == HELPER_SHA, 'frozen input/helper differs')
++    need(request['files']['pair-plan.json']['sha256'] == PLAN_SHA and request['files']['audit_output.py']['sha256'] == HELPER_SHA, 'frozen plan/helper differs')
++    import importlib.util
++    spec = importlib.util.spec_from_file_location('sealed_pair_policy', root / 'pair_policy.py')
++    policy = importlib.util.module_from_spec(spec)
++    spec.loader.exec_module(policy)
++    policy.validate_context(request, root)
+     need(sha(Path(__file__).resolve()) == request['files']['supervise.py']['sha256'], 'supervisor differs')
+-    need(re.fullmatch(r'physical-output-log03-[0-9a-f]{16}', request['container_name']), 'unsafe container name')
++    need(re.fullmatch(r'physical-output-pair-[0-9a-f]{16}', request['container_name']), 'unsafe container name')
+     need(request['limits'] == dict(cpus=1, memory_bytes=2147483648, memory_swap_bytes=2147483648, pids=64), 'limits differ')
+     need(request['disk_admission'] == dict(host_evidence_minimum_free_bytes=268435456, target_volume_minimum_free_bytes=1073741824), 'disk admission differs')
+     need(type(request['timeout_seconds']) is int and 1 <= request['timeout_seconds'] <= 1800, 'timeout exceeds prepared bound')

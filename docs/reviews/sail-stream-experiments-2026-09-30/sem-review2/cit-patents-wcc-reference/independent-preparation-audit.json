@@ -1,0 +1,96 @@
+{
+  "recorded_utc": "2026-09-30T22:07:31.586123+00:00",
+  "outcome": "PASS_BOUNDED_INDEPENDENT_SOURCE_AND_BOUNDARY_REVIEW",
+  "candidate_worktree": "/private/tmp/grust-cit-patents-wcc-gate",
+  "candidate_index_tree": "622d39af0b578329d1989deae216dd6afcc29dae",
+  "source_files": {
+    "wcc_reference.cpp": "cf8d1dce9a02a733fd5d250d5a3afc74b8c2c92850c838f49bfd86fe23d97806",
+    "run_reference.py": "2545b0b2d86782816d394f7096abb7491b25c490798cea26d7640cc93d32c78f",
+    "test_reference.py": "9b8930c5ef2f7195ae6f3a5e21ce17aaed6fab3a5bd690783379a0ba360f2250",
+    "build_reference.py": "2ef09b8e87fdb96d9eed90d0b7799ee43bf0a7230ce2511f8d8655615f15698f",
+    "README.md": "13d3c7fe365fc2bcef1259a3798743d10855e6a542a7efb4cf3d49de4ac7ce93"
+  },
+  "build_receipt_sha256": "d0b72936419218a6b594566263168778af7af9e297be5e0d1940535694a25175",
+  "binary_sha256": "41abe245cf6a2273bc236f22f9c7fddb04bd7ea3abe2071ae99b490f85ab02ee",
+  "additional_controls": [
+    {
+      "name": "maximum_sparse_ids_with_isolate",
+      "outcome": "PASS",
+      "exact_expected_and_observed_rows": [
+        [
+          1,
+          1
+        ],
+        [
+          6009553,
+          6009553
+        ],
+        [
+          6009554,
+          6009553
+        ]
+      ],
+      "stats": {
+        "vertex_rows": 3,
+        "edge_rows": 3,
+        "output_rows": 3,
+        "component_count": 2,
+        "largest_component_vertices": 2,
+        "largest_component_minimum_id": 6009553,
+        "isolated_vertices_without_incident_edges": 1,
+        "singleton_components": 1,
+        "self_loop_edge_rows": 1,
+        "successful_unions": 1,
+        "fixed_state_bytes": 78124215,
+        "peak_process_rss_bytes": 79593472
+      }
+    },
+    {
+      "name": "maximum_root_is_not_minimum",
+      "outcome": "PASS",
+      "exact_expected_and_observed_rows": [
+        [
+          1,
+          1
+        ],
+        [
+          6009553,
+          1
+        ],
+        [
+          6009554,
+          1
+        ]
+      ],
+      "stats": {
+        "vertex_rows": 3,
+        "edge_rows": 2,
+        "output_rows": 3,
+        "component_count": 1,
+        "largest_component_vertices": 3,
+        "largest_component_minimum_id": 1,
+        "isolated_vertices_without_incident_edges": 0,
+        "singleton_components": 0,
+        "self_loop_edge_rows": 0,
+        "successful_unions": 2,
+        "fixed_state_bytes": 78124215,
+        "peak_process_rss_bytes": 79593472
+      }
+    }
+  ],
+  "findings": [],
+  "checked": [
+    "Union-by-size, path halving and minimum tracking preserve weak connectivity and exact minimum original-ID representative. Declared vertices only, including isolates; unlisted ID gaps never emitted.",
+    "Positive ID cap 6009554 makes uint32 indices, sizes and minimum IDs lossless; vertex count bound prevents overflow. Negative/out-of-range IDs rejected, not truncated.",
+    "Row-byte admissions, endpoint membership and vertex uniqueness precede graph processing; duplicate/reverse edges and self-loops do not alter unions incorrectly.",
+    "Signed-i64 little-endian staging/output preserves the pinned positive input IDs, with original Parquet rehashed before/after. No dedup or symmetrization file is created.",
+    "Full readback verifies domain/order/min-label/count/edge consistency; README correctly states it is not an independent second full-graph no-false-merge algorithm.",
+    "Sequential single-thread kernel and bounded batch staging/readback have observed RSS guards, not a hard OS cap or performance claim. Build01 failure retained separately."
+  ],
+  "limits": [
+    "Two additional hand-checked tiny fixtures exercise the exact executable at the actual maximum admitted ID/state allocation; no full official graph/reference computation performed in this independent review.",
+    "206 BFS controls and six rejection outcomes inspected in build02 evidence, not all independently rerun.",
+    "Build/run preflight occurs partly before internal try/finally; retain outer launch stdout/stderr on any preflight failure as well. No blocker for the pinned successful preflight identities; failures must not be silently discarded.",
+    "No network, Morrobay, engine workload, historical byte-parity or completed Stage A claim."
+  ]
+}

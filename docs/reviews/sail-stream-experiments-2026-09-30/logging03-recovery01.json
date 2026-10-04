@@ -1,0 +1,45 @@
+{
+  "started_utc": "2026-09-30T23:13:04.887255+00:00",
+  "reason": "Daemon restart lost local tool session85206; this read does not restart or signal any workload.",
+  "remote_source": "\nfrom pathlib import Path\nfrom datetime import datetime,timezone\nimport hashlib,json,subprocess\nroot=Path('/Users/alexy/src/sail-extensions-gates/stream-experiments-20260930')\nconfig=root/'logging03-compact.json'\nassert hashlib.sha256(config.read_bytes()).hexdigest()=='b28132996612b11edb77bb02019288e4a562db5e4d22c4430a6a8815a220aea0'\nr={'started_utc':datetime.now(timezone.utc).isoformat(),'files':{},'commands':{}}\nfor name in ['result.json','collection.json','cell/orchestration.json','diagnostics/receipt.json']:\n p=root/'logging03-compact'/name\n r['files'][name]={'exists':p.exists()}\n if p.is_file():\n  data=p.read_bytes();r['files'][name].update(bytes=len(data),sha256=hashlib.sha256(data).hexdigest(),value=json.loads(data))\ncommands=[('container',['/usr/local/bin/docker','--context','colima-sail-gate','inspect','--format','{{json .State}}','sail-stream-log03-compact-1']),('supervisor_pids',['/usr/bin/pgrep','-f',r'run_focused_safe[.]py /Users/alexy/src/sail-extensions-gates/stream-experiments-20260930/logging03-compact[.]json$'])]\nfor label,cmd in commands:\n p=subprocess.run(cmd,text=True,capture_output=True,timeout=8);r['commands'][label]={'returncode':p.returncode,'stdout':p.stdout,'stderr':p.stderr}\npids=r['commands']['supervisor_pids']['stdout'].split()\nif pids and all(p.isdigit()for p in pids):\n p=subprocess.run(['/bin/ps','-p',','.join(pids),'-o','pid=,ppid=,comm='],text=True,capture_output=True,timeout=5);r['commands']['supervisor_identity']={'returncode':p.returncode,'stdout':p.stdout,'stderr':p.stderr}\nr['finished_utc']=datetime.now(timezone.utc).isoformat();print(json.dumps(r))\n",
+  "privacy": "pgrep matches the exact task command path but prints PID only; ps output contains only selected PID/PPID/executable name, no arguments/environment.",
+  "returncode": 0,
+  "stdout": "{\"started_utc\": \"2026-09-30T23:13:05.293748+00:00\", \"files\": {\"result.json\": {\"exists\": false}, \"collection.json\": {\"exists\": false}, \"cell/orchestration.json\": {\"exists\": false}, \"diagnostics/receipt.json\": {\"exists\": false}}, \"commands\": {\"container\": {\"returncode\": 0, \"stdout\": \"{\\\"Status\\\":\\\"running\\\",\\\"Running\\\":true,\\\"Paused\\\":false,\\\"Restarting\\\":false,\\\"OOMKilled\\\":false,\\\"Dead\\\":false,\\\"Pid\\\":185523,\\\"ExitCode\\\":0,\\\"Error\\\":\\\"\\\",\\\"StartedAt\\\":\\\"2026-09-30T22:01:57.384672011Z\\\",\\\"FinishedAt\\\":\\\"0001-01-01T00:00:00Z\\\"}\\n\", \"stderr\": \"\"}, \"supervisor_pids\": {\"returncode\": 0, \"stdout\": \"46914\\n\", \"stderr\": \"\"}, \"supervisor_identity\": {\"returncode\": 0, \"stdout\": \"46914 46912 /Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/Resources/Python.app/Contents/MacOS/Python\\n\", \"stderr\": \"\"}}, \"finished_utc\": \"2026-09-30T23:13:05.470594+00:00\"}\n",
+  "stderr": "",
+  "capture": {
+    "started_utc": "2026-09-30T23:13:05.293748+00:00",
+    "files": {
+      "result.json": {
+        "exists": false
+      },
+      "collection.json": {
+        "exists": false
+      },
+      "cell/orchestration.json": {
+        "exists": false
+      },
+      "diagnostics/receipt.json": {
+        "exists": false
+      }
+    },
+    "commands": {
+      "container": {
+        "returncode": 0,
+        "stdout": "{\"Status\":\"running\",\"Running\":true,\"Paused\":false,\"Restarting\":false,\"OOMKilled\":false,\"Dead\":false,\"Pid\":185523,\"ExitCode\":0,\"Error\":\"\",\"StartedAt\":\"2026-09-30T22:01:57.384672011Z\",\"FinishedAt\":\"0001-01-01T00:00:00Z\"}\n",
+        "stderr": ""
+      },
+      "supervisor_pids": {
+        "returncode": 0,
+        "stdout": "46914\n",
+        "stderr": ""
+      },
+      "supervisor_identity": {
+        "returncode": 0,
+        "stdout": "46914 46912 /Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/Resources/Python.app/Contents/MacOS/Python\n",
+        "stderr": ""
+      }
+    },
+    "finished_utc": "2026-09-30T23:13:05.470594+00:00"
+  },
+  "finished_utc": "2026-09-30T23:13:05.528531+00:00"
+}

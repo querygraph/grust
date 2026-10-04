@@ -1,0 +1,113 @@
+{
+  "started_utc": "2026-09-30T17:34:32.994838+00:00",
+  "outcome": "passed",
+  "identity": "detached staged candidate based on 56194b170155301ba91077f0ba3df31fe2c78b6b",
+  "source": "/private/tmp/sail-stream-review-integrated-gate",
+  "target": "/private/tmp/sail-stream-review-integrated-host-target",
+  "before": {
+    "head": "56194b170155301ba91077f0ba3df31fe2c78b6b",
+    "detached": true,
+    "branch_head": "56194b170155301ba91077f0ba3df31fe2c78b6b",
+    "tracked_source_sha256": "6ee23ca4f7b85834fd08d974a5e10bbaa3a0e3ac489c6de1e2f25421cf7ac5ef",
+    "index_sha256": "6eabfeb10781069a2462ad921b5e68c601d3f025e0c19d569b8f00338bb876b5",
+    "diff_sha256": "14327aa75f1b383172de37265fa75d3a8d6ba4721d88234537f526f52ba8102c",
+    "status": "M  examples/extensions/argentea/src/bfs/protocol.rs\nA  examples/extensions/argentea/tests/bfs_completion.rs\nM  examples/extensions/nutmeg/src/argentea/bfs/tests/controls.rs\n"
+  },
+  "steps": [
+    {
+      "name": "fmt",
+      "command": [
+        "cargo",
+        "fmt",
+        "--all",
+        "--check"
+      ],
+      "started_utc": "2026-09-30T17:34:33.020980+00:00",
+      "returncode": 0,
+      "finished_utc": "2026-09-30T17:34:36.123208+00:00",
+      "elapsed_seconds": 3.1020849170163274
+    },
+    {
+      "name": "clippy",
+      "command": [
+        "cargo",
+        "clippy",
+        "--locked",
+        "-p",
+        "sail-function",
+        "-p",
+        "sail-plan",
+        "-p",
+        "sail-execution",
+        "--all-targets",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "started_utc": "2026-09-30T17:34:36.123832+00:00",
+      "returncode": 0,
+      "finished_utc": "2026-09-30T17:35:38.225458+00:00",
+      "elapsed_seconds": 62.10115941707045
+    },
+    {
+      "name": "tests",
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "sail-function",
+        "-p",
+        "sail-plan",
+        "-p",
+        "sail-execution",
+        "--lib"
+      ],
+      "started_utc": "2026-09-30T17:35:38.226021+00:00",
+      "returncode": 0,
+      "finished_utc": "2026-09-30T17:37:20.325690+00:00",
+      "elapsed_seconds": 102.09899395820685
+    },
+    {
+      "name": "pecan-nonintegration",
+      "command": [
+        "/Users/alexy/src/sail-extensions-poc/.venvs/extensions-datafusion/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "-m",
+        "not integration",
+        "examples/extensions/graph-algorithms/tests"
+      ],
+      "started_utc": "2026-09-30T17:37:20.435104+00:00",
+      "returncode": 0,
+      "finished_utc": "2026-09-30T17:37:21.868914+00:00",
+      "elapsed_seconds": 1.4334264169447124
+    }
+  ],
+  "environment": {
+    "CARGO_TARGET_DIR": "/private/tmp/sail-stream-review-integrated-host-target",
+    "CARGO_INCREMENTAL": "0",
+    "CARGO_PROFILE_DEV_DEBUG": "0",
+    "CARGO_PROFILE_TEST_DEBUG": "0",
+    "CARGO_BUILD_JOBS": "6"
+  },
+  "free_bytes_before": 466992893952,
+  "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)",
+  "target_seed": "APFS clone of idle /private/tmp/sail-compact-struct-min-target; independently owned target",
+  "python_versions": "{\"pyspark\": \"4.0.1\", \"protobuf\": \"7.36.2\", \"pytest\": \"8.4.2\"}",
+  "after": {
+    "head": "56194b170155301ba91077f0ba3df31fe2c78b6b",
+    "detached": true,
+    "branch_head": "56194b170155301ba91077f0ba3df31fe2c78b6b",
+    "tracked_source_sha256": "6ee23ca4f7b85834fd08d974a5e10bbaa3a0e3ac489c6de1e2f25421cf7ac5ef",
+    "index_sha256": "6eabfeb10781069a2462ad921b5e68c601d3f025e0c19d569b8f00338bb876b5",
+    "diff_sha256": "14327aa75f1b383172de37265fa75d3a8d6ba4721d88234537f526f52ba8102c",
+    "status": "M  examples/extensions/argentea/src/bfs/protocol.rs\nA  examples/extensions/argentea/tests/bfs_completion.rs\nM  examples/extensions/nutmeg/src/argentea/bfs/tests/controls.rs\n"
+  },
+  "source_unchanged": true,
+  "finished_utc": "2026-09-30T17:37:22.423224+00:00",
+  "free_bytes_after": 465090420736
+}

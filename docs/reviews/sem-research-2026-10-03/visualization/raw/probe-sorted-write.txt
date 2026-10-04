@@ -1,0 +1,13 @@
+{'cpu': 'Apple M1 Max', 'cores': 10, 'memory_gib': 64, 'sail_binary': '/Users/alexy/src/sail-pecan-integrated/target/host/release/sail', 'sail_binary_mtime': '2026-10-02T00:19:14', 'sail_worktree_head': '4b88c8fb4', 'pyspark': '4.0.1', 'pyarrow': '25.0.1', 'python': '3.12.8', 'load_average': (12.99462890625, 14.4443359375, 15.46435546875), 'at': '2026-10-03T12:05:34-0700'}
+orderBy(k) write overwrite: 4 files: 0.500 nondecreasing, 0.500 nondecreasing, 0.501 nondecreasing, 0.500 nondecreasing
+orderBy(k) write default mode: 4 files: sorted, sorted, sorted, sorted
+repartition(10,k).sortWithinPartitions(k) write: 4 files: 0.501 nondecreasing, 0.500 nondecreasing, 0.500 nondecreasing, 0.500 nondecreasing
+orderBy(k) from a parquet scan: 4 files: 0.500 nondecreasing, 0.500 nondecreasing, 0.500 nondecreasing, 0.500 nondecreasing
+orderBy(k) from a parquet scan, coalesce(1): 4 files: 0.500 nondecreasing, 0.500 nondecreasing, 0.500 nondecreasing, 0.500 nondecreasing
+plan of the orderBy(k) frame (not the write):
+== Physical Plan ==
+ProjectionExec: expr=[#0@0 as id, #1@1 as k]
+  SortPreservingMergeExec: [#1@1 ASC]
+    ProjectionExec: expr=[id@0 as #0, k@1 as #1]
+      SortExec: expr=[k@1 ASC], preserve_partitioning=[true]
+        DataSourceExec: file_groups={10 groups: [[private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/viz/probe-sorted-write/src/WqgGfB6gUWKGoiou_0.zst.parquet:0..3615864], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/viz/probe-sorted-write/src/WqgGfB6gUWKGoiou_0.zst.parquet:3615864..7231728], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/viz/probe-sorted-write/src/WqgGfB6gUWKGoiou_1.zst.parquet:0..1809812, private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/viz/probe-sorted-write/src/WqgGfB6gUWKGoiou_0.zst.parquet:7231728..9037780], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/viz/probe-sorted-write/src/WqgGfB6gUWKGoiou_1.zst.parquet:1809812..5425676], [private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/viz/probe-sorted-write/src/WqgGfB6gUWKGoiou_2.zst.parquet:0..8229, private/tmp/claude-501/-Users-alexy-src-grust/508c82ce-25d0-4e06-bb41-a1907715a911/scratchpad/viz/probe-sorted-write/src/WqgGfB6gUWKGoiou_1.zst.parquet:5425676..9033311], ...]}, projection=[id, k], file_type=parquet, sort_order_for_reorder=[k@1 ASC]

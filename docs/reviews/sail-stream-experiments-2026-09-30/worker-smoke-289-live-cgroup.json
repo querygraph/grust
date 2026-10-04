@@ -1,0 +1,11 @@
+{
+  "recorded_utc": "2026-09-30T19:22:27.032672+00:00",
+  "command": [
+    "ssh",
+    "morrobay",
+    "/usr/local/bin/docker --context colima-sail-gate exec sail-worker-smoke-instrumented289-cpu16-23-1 /targets/graph-nuts-ffcfbd569/venv/bin/python -I -B -c 'from pathlib import Path; import json; print(json.dumps({k:(Path('\"'\"'/sys/fs/cgroup'\"'\"')/k).read_text().strip() for k in ('\"'\"'cpu.max'\"'\"','\"'\"'cpu.stat'\"'\"','\"'\"'cpuset.cpus.effective'\"'\"','\"'\"'memory.max'\"'\"','\"'\"'memory.current'\"'\"','\"'\"'memory.events'\"'\"')}))'"
+  ],
+  "returncode": 1,
+  "stdout": "",
+  "stderr": "Error response from daemon: No such container: sail-worker-smoke-instrumented289-cpu16-23-1\n"
+}
