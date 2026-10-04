@@ -181,6 +181,9 @@ fn parse_field_type(value: &str) -> Result<FieldType> {
 }
 
 fn parse_label(value: &str, context: &str) -> Result<Label> {
+    if value.trim_start().starts_with('`') {
+        return Ok(Label::new(unquote_cypher_name(value)?));
+    }
     if !is_cypher_identifier(value) {
         return Err(cypher_syntax(format!("{context} must be an identifier")));
     }

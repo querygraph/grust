@@ -323,6 +323,30 @@ pub fn tokenize(source: &str) -> Result<Vec<SpannedToken>, LexError> {
     Lexer::new(source).run()
 }
 
+/// Tokenize as far as the source is well formed: the tokens before the first
+/// lexical error (without a trailing [`Token::Eof`] in that case), and the
+/// error, if any.
+pub(crate) fn tokenize_prefix(source: &str) -> (Vec<SpannedToken>, Option<LexError>) {
+    let mut lexer = Lexer::new(source);
+    let mut out = Vec::new();
+    loop {
+        if let Err(error) = lexer.skip_trivia() {
+            return (out, Some(error));
+        }
+        if lexer.pos >= lexer.bytes.len() {
+            out.push(SpannedToken {
+                token: Token::Eof,
+                span: Span::new(lexer.pos, lexer.pos),
+            });
+            return (out, None);
+        }
+        match lexer.next_token() {
+            Ok(token) => out.push(token),
+            Err(error) => return (out, Some(error)),
+        }
+    }
+}
+
 /// Tokenize and split into per-statement token slices on top-level `;`.
 ///
 /// Each returned statement includes its own trailing [`Token::Eof`]. Empty

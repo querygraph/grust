@@ -324,15 +324,14 @@ pub(crate) fn parse_constraint_pattern(pattern: &str) -> Result<(bool, String, L
 
 /// Parses the `variable:Label` body inside a constraint pattern.
 pub(crate) fn parse_constraint_var_label(body: &str) -> Result<(String, Label)> {
-    let (variable, label) = body
-        .split_once(':')
+    let (variable, label) = split_name_colon(body)
         .ok_or_else(|| cypher_syntax("constraint pattern requires variable:Label"))?;
     let variable = parse_required_cypher_variable(variable.trim(), "constraint pattern variable")?;
     let label = label.trim();
     if label.is_empty() {
         return Err(cypher_syntax("constraint pattern requires a label or type"));
     }
-    Ok((variable, Label::new(label.to_string())))
+    Ok((variable, Label::new(unquote_cypher_name(label)?)))
 }
 
 /// Parses a `variable.key IS [NOT NULL|UNIQUE]` constraint predicate, returning
@@ -417,7 +416,7 @@ pub(crate) fn split_cypher_statements(cypher: &str) -> Result<Vec<&str>> {
         if let Some(active) = quote {
             if escaped {
                 escaped = false;
-            } else if ch == '\\' {
+            } else if ch == '\\' && active != '`' {
                 escaped = true;
             } else if ch == active {
                 quote = None;
@@ -426,7 +425,7 @@ pub(crate) fn split_cypher_statements(cypher: &str) -> Result<Vec<&str>> {
         }
 
         match ch {
-            '\'' | '"' => quote = Some(ch),
+            '\'' | '"' | '`' => quote = Some(ch),
             ';' => {
                 let statement = cypher[start..index].trim();
                 if !statement.is_empty() {
@@ -480,7 +479,7 @@ pub(crate) fn strip_cypher_comments(cypher: &str) -> Result<String> {
             output.push(ch);
             if escaped {
                 escaped = false;
-            } else if ch == '\\' {
+            } else if ch == '\\' && active != '`' {
                 escaped = true;
             } else if ch == active {
                 quote = None;
@@ -489,7 +488,7 @@ pub(crate) fn strip_cypher_comments(cypher: &str) -> Result<String> {
         }
 
         match ch {
-            '\'' | '"' => {
+            '\'' | '"' | '`' => {
                 quote = Some(ch);
                 output.push(ch);
             }
@@ -519,13 +518,6 @@ pub(crate) struct ParsedCypherNode {
     pub(crate) label: Option<Label>,
     pub(crate) props: Props,
     pub(crate) predicates: Vec<GraphPropertyPredicate>,
-}
-
-#[derive(Debug)]
-pub(crate) struct ParsedCypherEdge {
-    pub(crate) from_id: NodeId,
-    pub(crate) to_id: NodeId,
-    pub(crate) edge: Edge,
 }
 
 #[derive(Clone, Debug)]
@@ -576,57 +568,22 @@ pub(crate) struct ParsedWherePredicate {
     pub(crate) predicate: GraphPropertyPredicate,
 }
 
+/// One leaf comparison of a writable `MATCH ... WHERE` boolean tree.
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) enum CypherWhereLeaf<'a> {
+    /// A leaf expression of the typed AST.
+    Expr(&'a crate::ast::Expr),
+    /// The last leaf of a `WHERE` that unsupported text follows; the string
+    /// planner read that text as part of this comparison, so it fails.
+    FollowedByText(&'a crate::ast::Expr),
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) enum CypherWhereBoolean<'a> {
-    Predicate(&'a str),
+    Predicate(CypherWhereLeaf<'a>),
     Not(Box<CypherWhereBoolean<'a>>),
     And(Vec<CypherWhereBoolean<'a>>),
     Or(Vec<CypherWhereBoolean<'a>>),
-}
-
-pub(crate) fn parse_cypher_node_pattern<'a>(
-    input: &'a str,
-    parameters: &CypherParameters,
-) -> Result<(ParsedCypherNode, &'a str)> {
-    let input = input.trim_start();
-    let input = input.strip_prefix('(').ok_or_else(|| {
-        GrustError::Unsupported("writable Cypher node pattern must start with '('".to_string())
-    })?;
-    let close = find_matching(input, '(', ')')?;
-    let body = input[..close].trim();
-    let rest = &input[close + 1..];
-    let (variable, label, props) = parse_cypher_node_body(body, parameters)?;
-    Ok((
-        ParsedCypherNode {
-            variable,
-            label,
-            props,
-            predicates: Vec::new(),
-        },
-        rest,
-    ))
-}
-
-pub(crate) fn parse_cypher_node_body(
-    body: &str,
-    parameters: &CypherParameters,
-) -> Result<(Option<String>, Option<Label>, Props)> {
-    let (head, props) = split_cypher_body_props(body, parameters)?;
-    let head = head.trim();
-    let (variable, label) = if let Some((variable, label)) = head.split_once(':') {
-        let label = label.trim();
-        (
-            parse_optional_cypher_variable(variable.trim())?,
-            if label.is_empty() {
-                None
-            } else {
-                Some(Label::new(label.to_string()))
-            },
-        )
-    } else {
-        (parse_optional_cypher_variable(head)?, None)
-    };
-    Ok((variable, label, props))
 }
 
 pub(crate) fn parse_optional_cypher_variable(value: &str) -> Result<Option<String>> {
@@ -656,28 +613,38 @@ pub(crate) fn is_cypher_identifier(value: &str) -> bool {
         && chars.all(|ch| ch == '_' || ch.is_ascii_alphanumeric())
 }
 
-pub(crate) fn parse_cypher_relationship(
-    body: &str,
-    parameters: &CypherParameters,
-) -> Result<ParsedCypherRelationship> {
-    let (head, props) = split_cypher_body_props(body.trim(), parameters)?;
-    let Some((variable, label)) = head.trim().split_once(':') else {
-        return Err(GrustError::Unsupported(
-            "edge CREATE/MERGE/DELETE requires a relationship type".into(),
-        ));
+/// The name a label, relationship type or property key spells. A
+/// backtick-quoted name loses its quotes and has each doubled backtick
+/// collapsed, as in Cypher (`` `A;B` `` is `A;B`, `` `a``b` `` is ``a`b``).
+/// Anything else is returned as written, trimmed, so that unquoted names keep
+/// the behaviour they had. A malformed quoted name is a syntax error.
+pub(crate) fn unquote_cypher_name(raw: &str) -> Result<String> {
+    let raw = raw.trim();
+    let Some(inner) = raw.strip_prefix('`') else {
+        return Ok(raw.to_string());
     };
-    let label = label.trim();
-    if label.is_empty() {
-        return Err(GrustError::Unsupported(
-            "edge CREATE/MERGE/DELETE requires a relationship type".into(),
-        ));
+    let Some(inner) = inner.strip_suffix('`') else {
+        return Err(cypher_syntax(format!("unterminated quoted name: {raw}")));
+    };
+    let mut name = String::with_capacity(inner.len());
+    let mut chars = inner.chars();
+    while let Some(ch) = chars.next() {
+        if ch == '`' && chars.next() != Some('`') {
+            return Err(cypher_syntax(format!(
+                "a backtick inside a quoted name must be doubled: {raw}"
+            )));
+        }
+        name.push(ch);
     }
-    Ok(ParsedCypherRelationship {
-        variable: parse_optional_cypher_variable(variable.trim())?,
-        label: Label::new(label.to_string()),
-        props,
-        predicates: Vec::new(),
-    })
+    if name.is_empty() {
+        return Err(cypher_syntax("a quoted name cannot be empty"));
+    }
+    Ok(name)
+}
+
+/// The byte offset of the first `:` outside quotes and backticks.
+fn split_name_colon(head: &str) -> Option<(&str, &str)> {
+    find_unquoted(head, ':').map(|index| (&head[..index], &head[index + 1..]))
 }
 
 pub(crate) fn validate_optional_edge_id_property(props: &Props) -> Result<()> {

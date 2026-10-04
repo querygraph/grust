@@ -6,6 +6,71 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ## Unreleased
 
+### Cypher
+
+- **Backtick-quoted names in write statements are read as names.** The
+  string-scanning write planner treated a backtick like any other character.
+  A `;` inside a quoted label split the statement
+  (``CREATE (n:`A;B` {id: 'x'})`` failed); a keyword inside a quoted property
+  name chose the wrong planner (``SET n.`x CREATE y` = 1`` failed); and a
+  quoted label that did plan kept its backticks, so ``CREATE (n:`Person`)``
+  stored the label `` `Person` `` instead of `Person`. The scanners now skip
+  backtick spans (with backslashes literal inside them), and labels,
+  relationship types and property keys lose their quotes, with doubled
+  backticks collapsed. A malformed quoted name is a syntax error. Unquoted
+  names behave as before. The typed parser already accepted these statements;
+  only the write planner was wrong.
+- **Write plans are built from the typed AST.** `cypher_mutation_plan`,
+  `cypher_mutation_plan_with_options`, `cypher_mutation_plan_with_return_options`
+  and their `sail_` forms no longer find keywords, split commas or cut
+  parentheses in statement text: each `;`-separated statement is parsed by the
+  typed parser, and its clauses, patterns, `WHERE` expression, `SET`/`REMOVE`
+  items and `DELETE` targets are read from the AST. The lowering (id-resolved
+  single-identity operations versus row-producing matches, and the binding of
+  node, relationship and path variables across statements) is unchanged, and
+  the string-scanning planner is removed. Before the switch, both planners
+  ran on 1,638 statements (every write-like string literal in the workspace's
+  Rust sources, the crate's JSON corpora, and a list of edge cases), under
+  five option sets and, where a statement has parameters, three parameter
+  bindings: 18,930 comparisons gave identical plans and bindings, or the same
+  `GrustError` variant, apart from the differences below. The golden write
+  plans are unchanged. Behaviour that changes:
+  - A node pattern with several labels (`(n:A:B)`), or a relationship with
+    type alternatives (`[:R|S]`) or a variable length (`[:R*2]`), is rejected
+    as unsupported. The string planner stored or matched `A:B`, `R|S` or
+    `R*2` as a single label or type.
+  - A value that is an operator expression is rejected as unsupported:
+    `{v: 'x' + 'y'}` stored the string `x' + 'y`.
+  - Literals and escapes are read as the parser reads them: `- 5`, `1e3`,
+    `True` and `Null` are accepted (they were unsupported), and `A`,
+    `\u{41}` and `\0` in a string are decoded (the string planner kept `u0041`,
+    `u{41}` and `0`).
+  - Keywords need no surrounding spaces: `CREATE(n ...)`, `MERGE(`, `MATCH(`,
+    `DELETE(n)`, `...)RETURN n`, `AND(` and `STARTS  WITH` plan as their
+    spaced forms; they were syntax errors or unsupported.
+  - A backtick-quoted variable that is an identifier (`` (`n`:X) ``) is that
+    variable; it was rejected. A quoted name that is not an identifier is
+    still rejected as a variable name.
+  - Text such as `delete-a` parses as `DELETE -a` and fails as an unsupported
+    target, not as a syntax error.
+  - Every other rejected statement keeps its error variant, with one
+    exception found in generated statements: a `MATCH ... WHERE` whose last
+    term is a parenthesised group or not a comparison, followed by a clause
+    no write form supports (`WITH`, `UNION`), is still rejected, but the
+    variant can differ, because the string planner read that clause as part
+    of the term's text.
+
+  Error messages change for rejected statements only, and keep their
+  variant: a message that quoted the rest of a statement after an
+  unsupported clause now quotes all of it (`unsupported Cypher literal value:
+  37 RETURN n.age, n.name`), and a message that named a fragment the string
+  planner had cut (`unsupported Cypher variable name: (a), p`, `unsupported
+  Cypher property key: a.b`) now names the construct (`MATCH DELETE path
+  variable must be the first pattern's`, `MATCH SET target requires property
+  syntax target.key, found n.a.b`). Splitting a script at `;`, stripping
+  comments, and the `RETURN` projection parser are unchanged and remain
+  text-based.
+
 ## 0.24.0 — Tanaid — 2026-10-02
 
 Nothing in this release changes an answer. What changed is what a projection

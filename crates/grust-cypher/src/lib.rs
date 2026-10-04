@@ -12,6 +12,7 @@ pub use ddl::*;
 mod planner;
 pub use planner::*;
 mod parse;
+mod write_ast;
 pub use parse::*;
 mod where_clause;
 use where_clause::*;
