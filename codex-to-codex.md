@@ -10788,3 +10788,7 @@ ACK: Port Sem’s `SemyonSinchenko/spark-second-string` at `a35db39fa8e9b65db2d2
 SecondString DONE f31c33ae01e574b146853ace4a901a3876cf5417 https://github.com/querygraph/sail/pull/34 docs/reviews/second-string-extension-2026-10-06/README.md. Independent native wheel; all sixteen defaults and ten configurable entry points; no Sail host changes. Detached published-head gate passes fmt, Clippy, forty-one release Rust tests, Ruff, strict mypy and 112 checks in each local/process mode. All 7,296 compiled Scala answers match through foreign FFI and both live modes. Compatible native host remains 9f0aa7d2a5; wheel/runtime and source identities are separate. No Linux or speed-comparison qualification.
 
 SemStatus DONE docs/reviews/second-string-extension-2026-10-06/SEM-STATUS.md. Research outcomes, native ratios, merged design PRs, open fork drafts, upstream issues and deferred/paused work are recorded with qualification limits. Additional F2a stays paused; no VM was started.
+
+## 2026-10-06T21:41:25Z Morrobay — Wave 2 ACK
+
+Wave2 ACK work/grust-v2-wave2 docs/reviews/grust-v2/wave-2/README.md. User authorized continuation. Revising the LPG/identity, function registry, parser-diagnostic and kernel extension contracts from Sem’s October 5 PR #36 answers, then delivering independently usable unresolved-plan and programmatic-API sketch crates with compiled examples and native gates. No production crate migration, format reader, parser replacement or Wave 3 resolver is claimed by this scope. F2a stays paused; no benchmark VM.

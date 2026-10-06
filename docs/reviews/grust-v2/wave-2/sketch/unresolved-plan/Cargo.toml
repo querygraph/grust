@@ -1,0 +1,18 @@
+[package]
+name = "grust-unresolved-plan"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[features]
+default = []
+serde = ["dep:serde", "grust-lpg/serde", "grust-functions/serde"]
+
+[dependencies]
+grust-lpg = { path = "../lpg" }
+grust-functions = { path = "../functions" }
+serde = { workspace = true, optional = true }
+
+[dev-dependencies]
+serde_json.workspace = true
