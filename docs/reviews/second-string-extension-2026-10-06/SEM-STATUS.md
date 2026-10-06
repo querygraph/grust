@@ -17,7 +17,28 @@ Observed 2026-10-06T18:49:54+00:00. Repository evidence inspected at Grust
 | Sem research designs                    | Delivered                                        | Five October 2 studies and two October 3 design responses. [Research](../sem-research-2026-10-02/README.md), [October 3 designs](../sem-research-2026-10-03/README.md). Cosmograph remains an architecture proposal.                                                                                                                              |
 | Grust v2                                | Wave 1 complete; Wave 2/3 implementation pending | LPG and kernel-ABI sketch crates, parsing and Substrait studies live outside the released workspace. [Wave 1](../grust-v2/wave-1/README.md). Contract revisions from Sem's October 5 replies precede the next wave.                                                                                                                               |
 | Additional experiments                  | Intentionally paused or parked                   | Additional F2a paused following Fable’s October 3 handoff. B2/B3/B5/B6, partition union-find and attraction-only ForceAtlas2 implementations remain parked. CDLP, K-Core and additional Pregel programs are deferred.                                                                                                                             |
-| Second String                           | In progress at this observation                  | Native Sail extension on `work/second-string-extension`, from `sail-extensions` `a20d660d9f`; original Scala source `a35db39fa8e9b65db2d201a45b86d11a6ca34b98`. Progress and qualification are recorded in this directory's README.                                                                                                               |
+| Second String                           | Implemented and qualified in the fork            | [Draft PR #34](https://github.com/querygraph/sail/pull/34) at `f31c33ae`; all sixteen defaults and configurable variants. Forty-one release Rust tests and 112 checks in each native Sail mode pass; all 7,296 compiled Scala answers match through FFI, local mode and process workers.                                                          |
+
+## Native comparison findings
+
+The exact Fable-script protocol has four calls per engine and algorithm in two
+G/P/P/G blocks. The primary statistic is Pecan median elapsed time divided by
+graphframes-rs median elapsed time; values below one favor Pecan on this workload.
+
+| Algorithm | cit-Patents | graph500-24 |
+| --------- | ----------: | ----------: |
+| WCC       |       1.415 |       0.795 |
+| PageRank  |       1.159 |       0.861 |
+| BFS       |       0.713 |       0.862 |
+
+These are shared-host native macOS x86-64 results with snapshot inputs disabled,
+sixteen configured software workers and 30-GiB engine pools. They are not a
+32-GiB operating-system cap or a universal engine ranking. BFS/PageRank use the
+stored directed arcs; that comparison does not qualify Graph500's official
+undirected ground truth. The [full native report](../sem-review-morrobay-2026-10-01/A5/FableExact/README.md)
+records timing boundaries, all forty-eight calls, physical output audits and
+source identities. Benchmarking moved to native optimized binaries; VMs are
+reserved for Linux build testing.
 
 ## Pull requests and upstream issues
 
@@ -26,12 +47,13 @@ Observed 2026-10-06T18:49:54+00:00. Repository evidence inspected at Grust
 | [Grust #35](https://github.com/querygraph/grust/pull/35), [#36](https://github.com/querygraph/grust/pull/36) | Merged into `work/proposal-v5` | Design drafts and work sequence; Grust v2 implementation is separate.                                                                 |
 | [Sail fork #32](https://github.com/querygraph/sail/pull/32)                                                  | Open draft, head `f2b297fc`    | Weighted SSSP and landmark Pregel programs; source gate and eleven full native controls.                                              |
 | [Sail fork #33](https://github.com/querygraph/sail/pull/33)                                                  | Open draft, head `98de82ab`    | Default-off C2 observations; forty-three scopes and bounded native/fault controls.                                                    |
+| [Sail fork #34](https://github.com/querygraph/sail/pull/34)                                                  | Open draft, head `f31c33ae`    | Native Second String extension; source and local/process-worker qualification completed.                                              |
 | Upstream Sail #2722–2732, #2741 and #2742                                                                    | Thirteen open issues           | Bug reports, not PRs; no published fix qualification in our reports.                                                                  |
 | [Upstream Sail #2643](https://github.com/lakehq/sail/pull/2643)                                              | Open draft, head `7cca4095`    | A commenter proposes it fixes [CASE panic #2742](https://github.com/lakehq/sail/issues/2742#issuecomment-6003165699); it is unmerged. |
 
 ## Next work
 
-1. Finish and qualify the native Second String port.
+1. Review and merge the qualified Second String fork PR #34.
 2. Review fork PRs #32 and #33 before merging into the Pecan branch.
 3. Revise the v2 core contracts: logical identity and storage boundaries,
    extensible feature inputs, recoverable parsing, function/aggregation registry,

@@ -10782,3 +10782,9 @@ Added docs/reviews/sem-research-2026-10-03/visualization/COSMOGRAPH-ARCHITECTURE
 ## 2026-10-06T18:42:19+00:00 — Morrobay — Spark Second String extension
 
 ACK: Port Sem’s `SemyonSinchenko/spark-second-string` at `a35db39fa8e9b65db2d201a45b86d11a6ca34b98` into an independent native scalar wheel on `querygraph/sail` branch `work/second-string-extension`, based on `sail-extensions` at `a20d660d9f`. All sixteen default functions and configurable helpers are in scope. Verification includes source-oracle parity, Arrow/FFI behavior, and native local/process-worker Sail execution. Expected evidence: `docs/reviews/second-string-extension-2026-10-06/`. All build/runtime artifacts stay on Apo; no VM benchmark job.
+
+## 2026-10-06T19:26:24Z Morrobay — Second String DONE; Sem status snapshot
+
+SecondString DONE f31c33ae01e574b146853ace4a901a3876cf5417 https://github.com/querygraph/sail/pull/34 docs/reviews/second-string-extension-2026-10-06/README.md. Independent native wheel; all sixteen defaults and ten configurable entry points; no Sail host changes. Detached published-head gate passes fmt, Clippy, forty-one release Rust tests, Ruff, strict mypy and 112 checks in each local/process mode. All 7,296 compiled Scala answers match through foreign FFI and both live modes. Compatible native host remains 9f0aa7d2a5; wheel/runtime and source identities are separate. No Linux or speed-comparison qualification.
+
+SemStatus DONE docs/reviews/second-string-extension-2026-10-06/SEM-STATUS.md. Research outcomes, native ratios, merged design PRs, open fork drafts, upstream issues and deferred/paused work are recorded with qualification limits. Additional F2a stays paused; no VM was started.

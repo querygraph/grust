@@ -1,0 +1,11 @@
+cargo fmt --all --manifest-path examples/extensions/second-string/Cargo.toml -- --check
+cargo clippy --release --all-targets --manifest-path examples/extensions/second-string/Cargo.toml --locked -- -D warnings
+cargo test --release --all-targets --manifest-path examples/extensions/second-string/Cargo.toml --locked
+/Volumes/Apo/graph-tests/workspaces/second-string-20261006/venv/bin/python -m ruff check examples/extensions/second-string/python examples/extensions/second-string/scripts examples/extensions/second-string/tests
+/Volumes/Apo/graph-tests/workspaces/second-string-20261006/venv/bin/python -m ruff format --check examples/extensions/second-string/python examples/extensions/second-string/scripts examples/extensions/second-string/tests
+/Volumes/Apo/graph-tests/workspaces/second-string-20261006/venv/bin/python -m mypy --strict examples/extensions/second-string/python examples/extensions/second-string/scripts examples/extensions/second-string/tests
+/Volumes/Apo/graph-tests/workspaces/second-string-20261006/venv/bin/python -m pytest examples/extensions/second-string/tests --sail-binary /Volumes/Apo/graph-tests/results/sem-review-20261001/native-optimized-build01/sail-target/release/sail --execution-mode local --evidence-dir /Volumes/Apo/graph-tests/workspaces/second-string-20261006/validation/gate-local --junitxml /Volumes/Apo/graph-tests/workspaces/second-string-20261006/validation/gate-local.xml -q --tb=short
+/Volumes/Apo/graph-tests/workspaces/second-string-20261006/venv/bin/python -m pytest examples/extensions/second-string/tests --sail-binary /Volumes/Apo/graph-tests/results/sem-review-20261001/native-optimized-build01/sail-target/release/sail --execution-mode process-cluster --evidence-dir /Volumes/Apo/graph-tests/workspaces/second-string-20261006/validation/gate-process --junitxml /Volumes/Apo/graph-tests/workspaces/second-string-20261006/validation/gate-process.xml -q --tb=short
+git diff --check
+git add examples/extensions/second-string examples/extensions/README.md
+git commit -m 'feat(extensions): port Spark Second String to native Arrow scalars'
