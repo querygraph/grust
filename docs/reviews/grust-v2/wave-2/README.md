@@ -1,5 +1,7 @@
 # Grust v2 — Wave 2
 
+Review: [draft PR #40](https://github.com/querygraph/grust/pull/40).
+
 Wave 2 delivers the unresolved logical plan and a Gremlin-like programmatic
 Rust API, with revised prerequisite contracts from Sem’s October 5 review.
 These are independently usable **design sketch crates**, outside the released
