@@ -27,3 +27,18 @@ python docs/reviews/grust-v2/wave-3/live/qualify.py \
 The client compares both SQL variants with independently authored expected rows, preserving multiplicity, requested order and output data types. Every failure remains in its receipt. It starts and closes only its own Sail server. Generate detailed plan explanations with `cargo run ... -p grust-query-qualification -- --explain` when needed; the default manifest retains SQL, result types, answers and every rewrite trace.
 
 Exact tested source, verdict, runtime versions and retained attempts are appended after qualification. The original nine-test sketch gate is historical evidence in [GATE.md](GATE.md).
+
+## Observed exact-source verdict
+
+UTC: 2026-10-07T19:58:47.954006+00:00
+
+`PASSED Wave 3 execution: fmt, release Clippy, 25 all-feature/default tests each, Ruff, mypy, 76 live Sail cells` at `a0c7e05f3ca9405f6a05d944b403e88a3072028b`. Exact detached HEAD remained unchanged and clean after the gate. The server was closed and its binary digest remained unchanged.
+
+- [Runtime versions](evidence/execution/runtime-versions.json)
+- [Source receipt](evidence/execution/source-gate.json)
+- [Native gate log](evidence/execution/native-source-gate.log)
+- [Generated SQL, result schemas and expected answers](evidence/execution/queries.json)
+- [All 76 live cells](evidence/execution/live-source-receipt.json)
+- [Retained development attempts](evidence/execution/development-attempt-index.json)
+
+No performance result or production release is claimed.

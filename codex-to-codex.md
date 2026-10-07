@@ -10809,3 +10809,7 @@ work/grust-v2-wave3 source 3d9691c47b8b637e1bb96d675482a320189258e0. PASSED nati
 ## 2026-10-07T19:01:05.292186+00:00 — Morrobay ACK Wave 3 execution
 
 Implementing relational query resolution, statistics-based join reordering and native live Sail result qualification following PR #41. Evidence will be docs/reviews/grust-v2/wave-3/EXECUTION.md; work/grust-v2-wave3-execution.
+
+## 2026-10-07T19:58:47.954006+00:00 — Morrobay DONE Wave 3 relational execution
+
+work/grust-v2-wave3-execution source a0c7e05f3ca9405f6a05d944b403e88a3072028b. PASSED native Darwin x86_64 exact-source gate: fmt, release Clippy, 25 all-feature and 25 default tests, Ruff/mypy, 38 query fixtures × resolved/optimized = 76 live Sail/Parquet cells with rows, bag/order and output-type oracles. Actual costed inner-join rewrites, typed relational resolver, generic/plugin binding, entity projection, Sail SQL adapter; Wave 2 programmatic API reaches Sail. Recursive/selected paths and unregistered relation extensions explicitly refuse; not full GQL or a production crate release. Retained failed development cells. Evidence: docs/reviews/grust-v2/wave-3/{EXECUTION.md,EXECUTION-GATE.md,evidence/execution/}. No VM benchmark or Sail source change.
