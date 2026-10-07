@@ -57,3 +57,19 @@ zero-hop typed identity lists, OPTIONAL shortest paths, TRAIL edge reuse and a
 registered relation plugin with a bound parameter. Rust controls cover unknown
 providers, provider cycles, unresolved references, invalid hop ranges, the cap
 and incompatible path bindings.
+
+## Source verdict
+
+`PASSED graph-provider native source gate b193d2382ea1840dfe4434ac993694650a352d37`
+
+The detached checkout remained clean and its HEAD unchanged. Rust formatting and
+release Clippy passed; all 28 Rust tests passed with default features and again
+with all features. All 92 native Sail cells passed (46 cases, resolved and
+optimized), including output data types.
+
+Evidence: [source gate](evidence/graph-providers/source-gate.json),
+[native gate log](evidence/graph-providers/native-gate.log),
+[query manifest](evidence/graph-providers/queries.json), and
+[Sail receipt](evidence/graph-providers/native-sail-receipt.json).
+The two earlier development receipts are retained separately; they cover earlier
+fixture sets and do not substitute for the exact-source verdict.

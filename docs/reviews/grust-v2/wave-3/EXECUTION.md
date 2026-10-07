@@ -62,3 +62,11 @@ See [execution gate](EXECUTION-GATE.md) for commands and the exact tested source
 This is full relational resolution for the admitted IR, not a complete GQL/Cypher language implementation. Recursive/variable-length paths, selected shortest/ANY paths, materialized path objects and relation extensions require graph-operator/provider implementations and currently return typed refusal. Timestamp/duration/unknown extension type casts, unqualified struct names, zero-column result roots and dynamic/negative caps also refuse. Diagnostics currently stop at the first semantic error; parser recovery is outside this compiler. No unsupported query silently becomes a different query.
 
 The compiler is usable through the Rust modules and generated SQL now. Release integration, parser migration, additional graph operator providers and empirical calibration of the cost model remain separately reviewable work. The existing newspaper, Grust production release and Sail engine source are untouched.
+
+## Graph operator follow-up
+
+The `work/grust-v2-graph-providers` follow-up adds finite-range traversal,
+shortest-path selection and checked relation-provider lowering. Its admitted
+surface, limitations and exact-source gates are recorded in
+[GRAPH-PROVIDERS.md](GRAPH-PROVIDERS.md). Unbounded traversal still requires an
+iterative execution adapter.
