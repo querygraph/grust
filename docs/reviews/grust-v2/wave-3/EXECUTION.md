@@ -70,3 +70,10 @@ shortest-path selection and checked relation-provider lowering. Its admitted
 surface, limitations and exact-source gates are recorded in
 [GRAPH-PROVIDERS.md](GRAPH-PROVIDERS.md). Unbounded traversal still requires an
 iterative execution adapter.
+
+## Iterative execution follow-up
+
+[ITERATIVE-SAIL.md](ITERATIVE-SAIL.md) records the explicit Sail program adapter
+for unbounded single-segment traversal and unweighted shortest paths, its resource
+and cancellation contract, and the exact-source native gate. It extends the
+finite SQL provider without silently changing its admission policy.

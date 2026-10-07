@@ -73,3 +73,9 @@ Evidence: [source gate](evidence/graph-providers/source-gate.json),
 [Sail receipt](evidence/graph-providers/native-sail-receipt.json).
 The two earlier development receipts are retained separately; they cover earlier
 fixture sets and do not substitute for the exact-source verdict.
+
+## Iterative follow-up
+
+The separate iterative adapter is now implemented and qualified on this branch;
+see [ITERATIVE-SAIL.md](ITERATIVE-SAIL.md). The finite SQL implementation and its
+source verdict above remain the record of PR #43.

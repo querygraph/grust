@@ -10825,3 +10825,7 @@ Continuing Wave 3 on `work/grust-v2-graph-providers`: typed relation providers, 
 ## 2026-10-07T22:32:57.935087+00:00 Morrobay ACK iterative Sail execution
 
 `work/grust-v2-iterative-sail`: unbounded graph traversal and shortest paths with explicit resource/cancellation failures and native qualification. Evidence planned at `docs/reviews/grust-v2/wave-3/evidence/iterative-sail/`. No VM job.
+
+## 2026-10-07T22:54:54.430229+00:00 Morrobay DONE iterative Sail adapter
+
+`work/grust-v2-iterative-sail`, source `618f217a5999ff2f531224210b0da77b3bf5de62`: PASSED detached native gate (30 Rust tests in both feature modes; 114 Sail cells; 7 controls). Evidence: `docs/reviews/grust-v2/wave-3/evidence/iterative-sail/`; report: `ITERATIVE-SAIL.md`. Unbounded single-segment traversal, shortest ties, Parquet frontier materialization, explicit row/disk/round failures, tagged cancellation, managed-memory probe. Infinite ALL WALK, weighted/multi-segment/correlated and non-immutable cases remain explicit refusals. First source gate fixture mismatch and all development receipts are retained. No Sail source change, VM job, release publication or performance claim.

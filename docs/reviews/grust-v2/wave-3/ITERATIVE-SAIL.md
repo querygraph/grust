@@ -95,3 +95,44 @@ including the first memory-error classifier mismatch, are retained separately.
 This is functional qualification, not a scaling or speed result. Next work is
 parser integration, broader correlated/multi-segment operators, and LDBC cost and
 physical-plan qualification before migration into production crates.
+
+## Exact-source verdict
+
+`PASSED iterative Sail native source gate 618f217a5999ff2f531224210b0da77b3bf5de62`
+
+The detached checkout remained clean and its HEAD unchanged. Formatting, release
+Clippy, Ruff and strict Mypy passed. All 30 Rust tests passed under default
+features and again under all features. All 114 native Sail cells passed: 92
+existing relational cells and 22 iterative cells. Seven controls passed,
+including the managed-memory allocation refusal. The client was Python 3.12.6
+with PySpark 4.0.1; the existing native release Sail host and its hash are recorded
+in each receipt. No performance claim is made.
+
+Evidence: [source gate](evidence/iterative-sail/source-gate.json),
+[gate log](evidence/iterative-sail/native-gate.log),
+[relational receipt](evidence/iterative-sail/relational-receipt.json),
+[iterative receipt](evidence/iterative-sail/iterative-receipt.json),
+[memory probe](evidence/iterative-sail/memory-receipt.json), and
+[development index](evidence/iterative-sail/development-index.json).
+
+The first detached source gate caught a fixture error: adding chain vertices to
+the original catalog changed an existing ANY-label result. The chain now lives
+in a separate named graph. Its failed source receipt is retained, and the original
+query expectations were not loosened.
+
+## Reproduce the native qualification
+
+From the repository root, with Rust and the qualified Spark Connect dependencies:
+
+```sh
+CARGO_INCREMENTAL=0 CARGO_TARGET_DIR=/absolute/scratch/target \
+  cargo run --release --manifest-path docs/reviews/grust-v2/wave-3/sketch/Cargo.toml \
+  -p grust-query-qualification -- --iterative > /absolute/scratch/queries.json
+python docs/reviews/grust-v2/wave-3/live/qualify.py \
+  --sail /absolute/path/to/release/sail \
+  --manifest /absolute/scratch/queries.json \
+  --output /absolute/scratch/qualification
+```
+
+Omit `--iterative` to generate the relational regression manifest. The live runner
+launches its own local Sail server and terminates only that server when finished.

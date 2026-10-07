@@ -1,0 +1,4885 @@
+{
+  "observed_utc": "2026-10-07T22:49:40.861313+00:00",
+  "finished_utc": "2026-10-07T22:49:44.437177+00:00",
+  "platform": "macOS-15.7.9-x86_64-i386-64bit",
+  "sail_binary": "/Volumes/Apo/graph-tests/results/sem-review-20261001/native-optimized-build01/sail-target/release/sail",
+  "sail_sha256": "ee80ac3cf9d028639561f3cf32435985192719d629807fcf6a368324fa84946e",
+  "command": [
+    "/Volumes/Apo/graph-tests/results/sem-review-20261001/native-optimized-build01/sail-target/release/sail",
+    "spark",
+    "server",
+    "--ip",
+    "127.0.0.1",
+    "--port",
+    "52336"
+  ],
+  "settings": {
+    "SAIL_MODE": "local",
+    "SAIL_EXECUTION__DEFAULT_PARALLELISM": "2",
+    "TOKIO_WORKER_THREADS": "2",
+    "SAIL_RUNTIME__MEMORY_POOL__TYPE": "fair",
+    "SAIL_RUNTIME__MEMORY_POOL__FAIR__MAX_SIZE": "268435456"
+  },
+  "manifest_sha256": "38bc9b8a1a39677b29b163888f6dfe345f82bb1997f902db3464c93e3aed4e35",
+  "cases": 46,
+  "controls": [],
+  "results": [
+    {
+      "name": "property_filter_parameter",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          "Alice"
+        ],
+        [
+          "Dave"
+        ],
+        [
+          "Eve"
+        ]
+      ],
+      "actual": [
+        [
+          "Eve"
+        ],
+        [
+          "Alice"
+        ],
+        [
+          "Dave"
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "property_filter_parameter",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          "Alice"
+        ],
+        [
+          "Dave"
+        ],
+        [
+          "Eve"
+        ]
+      ],
+      "actual": [
+        [
+          "Eve"
+        ],
+        [
+          "Alice"
+        ],
+        [
+          "Dave"
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "outgoing_parallel_edges",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          "Alice",
+          "Bob"
+        ],
+        [
+          "Alice",
+          "Bob"
+        ],
+        [
+          "Bob",
+          "Cara"
+        ],
+        [
+          "Cara",
+          "Cara"
+        ],
+        [
+          "Cara",
+          "Alice"
+        ]
+      ],
+      "actual": [
+        [
+          "Alice",
+          "Bob"
+        ],
+        [
+          "Alice",
+          "Bob"
+        ],
+        [
+          "Bob",
+          "Cara"
+        ],
+        [
+          "Cara",
+          "Cara"
+        ],
+        [
+          "Cara",
+          "Alice"
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "outgoing_parallel_edges",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          "Alice",
+          "Bob"
+        ],
+        [
+          "Alice",
+          "Bob"
+        ],
+        [
+          "Bob",
+          "Cara"
+        ],
+        [
+          "Cara",
+          "Cara"
+        ],
+        [
+          "Cara",
+          "Alice"
+        ]
+      ],
+      "actual": [
+        [
+          "Alice",
+          "Bob"
+        ],
+        [
+          "Alice",
+          "Bob"
+        ],
+        [
+          "Bob",
+          "Cara"
+        ],
+        [
+          "Cara",
+          "Cara"
+        ],
+        [
+          "Cara",
+          "Alice"
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "either_direction_selfloop_once",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          "Alice",
+          "Bob"
+        ],
+        [
+          "Alice",
+          "Bob"
+        ],
+        [
+          "Bob",
+          "Alice"
+        ],
+        [
+          "Bob",
+          "Alice"
+        ],
+        [
+          "Bob",
+          "Cara"
+        ],
+        [
+          "Cara",
+          "Bob"
+        ],
+        [
+          "Cara",
+          "Cara"
+        ],
+        [
+          "Cara",
+          "Alice"
+        ],
+        [
+          "Alice",
+          "Cara"
+        ]
+      ],
+      "actual": [
+        [
+          "Alice",
+          "Bob"
+        ],
+        [
+          "Alice",
+          "Bob"
+        ],
+        [
+          "Bob",
+          "Cara"
+        ],
+        [
+          "Cara",
+          "Cara"
+        ],
+        [
+          "Cara",
+          "Alice"
+        ],
+        [
+          "Bob",
+          "Alice"
+        ],
+        [
+          "Bob",
+          "Alice"
+        ],
+        [
+          "Cara",
+          "Bob"
+        ],
+        [
+          "Alice",
+          "Cara"
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "either_direction_selfloop_once",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          "Alice",
+          "Bob"
+        ],
+        [
+          "Alice",
+          "Bob"
+        ],
+        [
+          "Bob",
+          "Alice"
+        ],
+        [
+          "Bob",
+          "Alice"
+        ],
+        [
+          "Bob",
+          "Cara"
+        ],
+        [
+          "Cara",
+          "Bob"
+        ],
+        [
+          "Cara",
+          "Cara"
+        ],
+        [
+          "Cara",
+          "Alice"
+        ],
+        [
+          "Alice",
+          "Cara"
+        ]
+      ],
+      "actual": [
+        [
+          "Alice",
+          "Bob"
+        ],
+        [
+          "Alice",
+          "Bob"
+        ],
+        [
+          "Bob",
+          "Cara"
+        ],
+        [
+          "Cara",
+          "Cara"
+        ],
+        [
+          "Cara",
+          "Alice"
+        ],
+        [
+          "Alice",
+          "Cara"
+        ],
+        [
+          "Bob",
+          "Alice"
+        ],
+        [
+          "Bob",
+          "Alice"
+        ],
+        [
+          "Cara",
+          "Bob"
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "repeated_binding",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          "Cara"
+        ]
+      ],
+      "actual": [
+        [
+          "Cara"
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "repeated_binding",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          "Cara"
+        ]
+      ],
+      "actual": [
+        [
+          "Cara"
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "optional_match",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          "Alice",
+          "Bob"
+        ],
+        [
+          "Alice",
+          "Bob"
+        ],
+        [
+          "Bob",
+          "Cara"
+        ],
+        [
+          "Cara",
+          "Cara"
+        ],
+        [
+          "Cara",
+          "Alice"
+        ],
+        [
+          "Dave",
+          null
+        ],
+        [
+          "Eve",
+          null
+        ]
+      ],
+      "actual": [
+        [
+          "Alice",
+          "Bob"
+        ],
+        [
+          "Alice",
+          "Bob"
+        ],
+        [
+          "Bob",
+          "Cara"
+        ],
+        [
+          "Cara",
+          "Cara"
+        ],
+        [
+          "Cara",
+          "Alice"
+        ],
+        [
+          "Dave",
+          null
+        ],
+        [
+          "Eve",
+          null
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "optional_match",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          "Alice",
+          "Bob"
+        ],
+        [
+          "Alice",
+          "Bob"
+        ],
+        [
+          "Bob",
+          "Cara"
+        ],
+        [
+          "Cara",
+          "Cara"
+        ],
+        [
+          "Cara",
+          "Alice"
+        ],
+        [
+          "Dave",
+          null
+        ],
+        [
+          "Eve",
+          null
+        ]
+      ],
+      "actual": [
+        [
+          "Alice",
+          "Bob"
+        ],
+        [
+          "Alice",
+          "Bob"
+        ],
+        [
+          "Bob",
+          "Cara"
+        ],
+        [
+          "Cara",
+          "Cara"
+        ],
+        [
+          "Cara",
+          "Alice"
+        ],
+        [
+          "Dave",
+          null
+        ],
+        [
+          "Eve",
+          null
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "optional_predicate_in_on",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          "Alice",
+          null
+        ],
+        [
+          "Bob",
+          null
+        ],
+        [
+          "Cara",
+          "Alice"
+        ],
+        [
+          "Dave",
+          null
+        ],
+        [
+          "Eve",
+          null
+        ]
+      ],
+      "actual": [
+        [
+          "Cara",
+          "Alice"
+        ],
+        [
+          "Alice",
+          null
+        ],
+        [
+          "Bob",
+          null
+        ],
+        [
+          "Dave",
+          null
+        ],
+        [
+          "Eve",
+          null
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "optional_predicate_in_on",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          "Alice",
+          null
+        ],
+        [
+          "Bob",
+          null
+        ],
+        [
+          "Cara",
+          "Alice"
+        ],
+        [
+          "Dave",
+          null
+        ],
+        [
+          "Eve",
+          null
+        ]
+      ],
+      "actual": [
+        [
+          "Cara",
+          "Alice"
+        ],
+        [
+          "Alice",
+          null
+        ],
+        [
+          "Bob",
+          null
+        ],
+        [
+          "Dave",
+          null
+        ],
+        [
+          "Eve",
+          null
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "polymorphic_missing_property",
+      "variant": "resolved",
+      "outcome": "mismatch",
+      "expected": [
+        [
+          "Alice",
+          30
+        ],
+        [
+          "Bob",
+          20
+        ],
+        [
+          "Cara",
+          null
+        ],
+        [
+          "Dave",
+          40
+        ],
+        [
+          "Eve",
+          35
+        ],
+        [
+          "Acme",
+          null
+        ]
+      ],
+      "actual": [
+        [
+          "Eve",
+          35
+        ],
+        [
+          "Acme",
+          null
+        ],
+        [
+          null,
+          null
+        ],
+        [
+          null,
+          null
+        ],
+        [
+          null,
+          null
+        ],
+        [
+          null,
+          null
+        ],
+        [
+          null,
+          null
+        ],
+        [
+          null,
+          null
+        ],
+        [
+          null,
+          null
+        ],
+        [
+          null,
+          null
+        ],
+        [
+          null,
+          null
+        ],
+        [
+          null,
+          null
+        ],
+        [
+          null,
+          null
+        ],
+        [
+          null,
+          null
+        ],
+        [
+          "Alice",
+          30
+        ],
+        [
+          "Bob",
+          20
+        ],
+        [
+          "Cara",
+          null
+        ],
+        [
+          "Dave",
+          40
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "polymorphic_missing_property",
+      "variant": "optimized",
+      "outcome": "mismatch",
+      "expected": [
+        [
+          "Alice",
+          30
+        ],
+        [
+          "Bob",
+          20
+        ],
+        [
+          "Cara",
+          null
+        ],
+        [
+          "Dave",
+          40
+        ],
+        [
+          "Eve",
+          35
+        ],
+        [
+          "Acme",
+          null
+        ]
+      ],
+      "actual": [
+        [
+          "Acme",
+          null
+        ],
+        [
+          "Eve",
+          35
+        ],
+        [
+          null,
+          null
+        ],
+        [
+          null,
+          null
+        ],
+        [
+          null,
+          null
+        ],
+        [
+          null,
+          null
+        ],
+        [
+          null,
+          null
+        ],
+        [
+          null,
+          null
+        ],
+        [
+          null,
+          null
+        ],
+        [
+          null,
+          null
+        ],
+        [
+          null,
+          null
+        ],
+        [
+          null,
+          null
+        ],
+        [
+          null,
+          null
+        ],
+        [
+          null,
+          null
+        ],
+        [
+          "Alice",
+          30
+        ],
+        [
+          "Bob",
+          20
+        ],
+        [
+          "Cara",
+          null
+        ],
+        [
+          "Dave",
+          40
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "aggregate_distinct_filter",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          4,
+          75
+        ]
+      ],
+      "actual": [
+        [
+          4,
+          75
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "aggregate_distinct_filter",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          4,
+          75
+        ]
+      ],
+      "actual": [
+        [
+          4,
+          75
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "union_all",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          "Alice"
+        ],
+        [
+          "Dave"
+        ],
+        [
+          "Eve"
+        ],
+        [
+          "Alice"
+        ],
+        [
+          "Dave"
+        ],
+        [
+          "Eve"
+        ]
+      ],
+      "actual": [
+        [
+          "Eve"
+        ],
+        [
+          "Eve"
+        ],
+        [
+          "Alice"
+        ],
+        [
+          "Dave"
+        ],
+        [
+          "Alice"
+        ],
+        [
+          "Dave"
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "union_all",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          "Alice"
+        ],
+        [
+          "Dave"
+        ],
+        [
+          "Eve"
+        ],
+        [
+          "Alice"
+        ],
+        [
+          "Dave"
+        ],
+        [
+          "Eve"
+        ]
+      ],
+      "actual": [
+        [
+          "Eve"
+        ],
+        [
+          "Eve"
+        ],
+        [
+          "Alice"
+        ],
+        [
+          "Dave"
+        ],
+        [
+          "Alice"
+        ],
+        [
+          "Dave"
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "union_distinct",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          "Alice"
+        ],
+        [
+          "Dave"
+        ],
+        [
+          "Eve"
+        ]
+      ],
+      "actual": [
+        [
+          "Eve"
+        ],
+        [
+          "Alice"
+        ],
+        [
+          "Dave"
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "union_distinct",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          "Alice"
+        ],
+        [
+          "Dave"
+        ],
+        [
+          "Eve"
+        ]
+      ],
+      "actual": [
+        [
+          "Eve"
+        ],
+        [
+          "Alice"
+        ],
+        [
+          "Dave"
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "unwind_null_element",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          1
+        ],
+        [
+          null
+        ],
+        [
+          2
+        ]
+      ],
+      "actual": [
+        [
+          1
+        ],
+        [
+          null
+        ],
+        [
+          2
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "unwind_null_element",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          1
+        ],
+        [
+          null
+        ],
+        [
+          2
+        ]
+      ],
+      "actual": [
+        [
+          1
+        ],
+        [
+          null
+        ],
+        [
+          2
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "sort_offset_limit",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          "Dave"
+        ],
+        [
+          "Cara"
+        ]
+      ],
+      "actual": [
+        [
+          "Dave"
+        ],
+        [
+          "Cara"
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "sort_offset_limit",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          "Dave"
+        ],
+        [
+          "Cara"
+        ]
+      ],
+      "actual": [
+        [
+          "Dave"
+        ],
+        [
+          "Cara"
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "plugin_scalar_case",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          "ALICE"
+        ],
+        [
+          "young or unknown"
+        ],
+        [
+          "young or unknown"
+        ],
+        [
+          "DAVE"
+        ],
+        [
+          "EVE"
+        ]
+      ],
+      "actual": [
+        [
+          "EVE"
+        ],
+        [
+          "ALICE"
+        ],
+        [
+          "young or unknown"
+        ],
+        [
+          "young or unknown"
+        ],
+        [
+          "DAVE"
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "plugin_scalar_case",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          "ALICE"
+        ],
+        [
+          "young or unknown"
+        ],
+        [
+          "young or unknown"
+        ],
+        [
+          "DAVE"
+        ],
+        [
+          "EVE"
+        ]
+      ],
+      "actual": [
+        [
+          "EVE"
+        ],
+        [
+          "ALICE"
+        ],
+        [
+          "young or unknown"
+        ],
+        [
+          "young or unknown"
+        ],
+        [
+          "DAVE"
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "in_list",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          "Alice"
+        ],
+        [
+          "Dave"
+        ]
+      ],
+      "actual": [
+        [
+          "Alice"
+        ],
+        [
+          "Dave"
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "in_list",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          "Alice"
+        ],
+        [
+          "Dave"
+        ]
+      ],
+      "actual": [
+        [
+          "Alice"
+        ],
+        [
+          "Dave"
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "struct_literal_escaping",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          "a'b\\c; SELECT ☃"
+        ]
+      ],
+      "actual": [
+        [
+          "a'b\\c; SELECT ☃"
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "struct_literal_escaping",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          "a'b\\c; SELECT ☃"
+        ]
+      ],
+      "actual": [
+        [
+          "a'b\\c; SELECT ☃"
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "known_infeasible_pattern",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [],
+      "actual": [],
+      "error": null
+    },
+    {
+      "name": "known_infeasible_pattern",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [],
+      "actual": [],
+      "error": null
+    },
+    {
+      "name": "explicit_inner_join",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          2,
+          2
+        ]
+      ],
+      "actual": [
+        [
+          2,
+          2
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "explicit_inner_join",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          2,
+          2
+        ]
+      ],
+      "actual": [
+        [
+          2,
+          2
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "explicit_left_join",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          2,
+          2
+        ],
+        [
+          3,
+          null
+        ],
+        [
+          4,
+          null
+        ],
+        [
+          5,
+          null
+        ]
+      ],
+      "actual": [
+        [
+          5,
+          null
+        ],
+        [
+          2,
+          2
+        ],
+        [
+          3,
+          null
+        ],
+        [
+          4,
+          null
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "explicit_left_join",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          2,
+          2
+        ],
+        [
+          3,
+          null
+        ],
+        [
+          4,
+          null
+        ],
+        [
+          5,
+          null
+        ]
+      ],
+      "actual": [
+        [
+          5,
+          null
+        ],
+        [
+          2,
+          2
+        ],
+        [
+          3,
+          null
+        ],
+        [
+          4,
+          null
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "explicit_right_join",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          null,
+          1
+        ],
+        [
+          2,
+          2
+        ]
+      ],
+      "actual": [
+        [
+          2,
+          2
+        ],
+        [
+          null,
+          1
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "explicit_right_join",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          null,
+          1
+        ],
+        [
+          2,
+          2
+        ]
+      ],
+      "actual": [
+        [
+          2,
+          2
+        ],
+        [
+          null,
+          1
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "explicit_full_join",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          null,
+          1
+        ],
+        [
+          2,
+          2
+        ],
+        [
+          3,
+          null
+        ],
+        [
+          4,
+          null
+        ],
+        [
+          5,
+          null
+        ]
+      ],
+      "actual": [
+        [
+          5,
+          null
+        ],
+        [
+          2,
+          2
+        ],
+        [
+          3,
+          null
+        ],
+        [
+          4,
+          null
+        ],
+        [
+          null,
+          1
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "explicit_full_join",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          null,
+          1
+        ],
+        [
+          2,
+          2
+        ],
+        [
+          3,
+          null
+        ],
+        [
+          4,
+          null
+        ],
+        [
+          5,
+          null
+        ]
+      ],
+      "actual": [
+        [
+          5,
+          null
+        ],
+        [
+          2,
+          2
+        ],
+        [
+          3,
+          null
+        ],
+        [
+          4,
+          null
+        ],
+        [
+          null,
+          1
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "semi_join",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          1
+        ],
+        [
+          2
+        ]
+      ],
+      "actual": [
+        [
+          1
+        ],
+        [
+          2
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "semi_join",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          1
+        ],
+        [
+          2
+        ]
+      ],
+      "actual": [
+        [
+          1
+        ],
+        [
+          2
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "anti_join",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          3
+        ],
+        [
+          4
+        ],
+        [
+          5
+        ]
+      ],
+      "actual": [
+        [
+          5
+        ],
+        [
+          3
+        ],
+        [
+          4
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "anti_join",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          3
+        ],
+        [
+          4
+        ],
+        [
+          5
+        ]
+      ],
+      "actual": [
+        [
+          5
+        ],
+        [
+          3
+        ],
+        [
+          4
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "cross_join",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          1,
+          10
+        ],
+        [
+          1,
+          20
+        ],
+        [
+          2,
+          10
+        ],
+        [
+          2,
+          20
+        ]
+      ],
+      "actual": [
+        [
+          1,
+          10
+        ],
+        [
+          1,
+          20
+        ],
+        [
+          2,
+          10
+        ],
+        [
+          2,
+          20
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "cross_join",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          1,
+          10
+        ],
+        [
+          1,
+          20
+        ],
+        [
+          2,
+          10
+        ],
+        [
+          2,
+          20
+        ]
+      ],
+      "actual": [
+        [
+          1,
+          10
+        ],
+        [
+          1,
+          20
+        ],
+        [
+          2,
+          10
+        ],
+        [
+          2,
+          20
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "grouped_aggregate",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          1,
+          2
+        ],
+        [
+          2,
+          1
+        ]
+      ],
+      "actual": [
+        [
+          2,
+          1
+        ],
+        [
+          1,
+          2
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "grouped_aggregate",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          1,
+          2
+        ],
+        [
+          2,
+          1
+        ]
+      ],
+      "actual": [
+        [
+          1,
+          2
+        ],
+        [
+          2,
+          1
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "fixed_two_hop_walk",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          "Alice",
+          "Cara"
+        ],
+        [
+          "Alice",
+          "Cara"
+        ],
+        [
+          "Bob",
+          "Cara"
+        ],
+        [
+          "Bob",
+          "Alice"
+        ],
+        [
+          "Cara",
+          "Cara"
+        ],
+        [
+          "Cara",
+          "Alice"
+        ],
+        [
+          "Cara",
+          "Bob"
+        ],
+        [
+          "Cara",
+          "Bob"
+        ]
+      ],
+      "actual": [
+        [
+          "Cara",
+          "Bob"
+        ],
+        [
+          "Cara",
+          "Bob"
+        ],
+        [
+          "Alice",
+          "Cara"
+        ],
+        [
+          "Alice",
+          "Cara"
+        ],
+        [
+          "Bob",
+          "Cara"
+        ],
+        [
+          "Cara",
+          "Cara"
+        ],
+        [
+          "Bob",
+          "Alice"
+        ],
+        [
+          "Cara",
+          "Alice"
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "fixed_two_hop_walk",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          "Alice",
+          "Cara"
+        ],
+        [
+          "Alice",
+          "Cara"
+        ],
+        [
+          "Bob",
+          "Cara"
+        ],
+        [
+          "Bob",
+          "Alice"
+        ],
+        [
+          "Cara",
+          "Cara"
+        ],
+        [
+          "Cara",
+          "Alice"
+        ],
+        [
+          "Cara",
+          "Bob"
+        ],
+        [
+          "Cara",
+          "Bob"
+        ]
+      ],
+      "actual": [
+        [
+          "Alice",
+          "Cara"
+        ],
+        [
+          "Alice",
+          "Cara"
+        ],
+        [
+          "Bob",
+          "Cara"
+        ],
+        [
+          "Bob",
+          "Alice"
+        ],
+        [
+          "Cara",
+          "Cara"
+        ],
+        [
+          "Cara",
+          "Alice"
+        ],
+        [
+          "Cara",
+          "Bob"
+        ],
+        [
+          "Cara",
+          "Bob"
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "fixed_two_hop_trail",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          "Alice",
+          "Cara"
+        ],
+        [
+          "Alice",
+          "Cara"
+        ],
+        [
+          "Bob",
+          "Cara"
+        ],
+        [
+          "Bob",
+          "Alice"
+        ],
+        [
+          "Cara",
+          "Alice"
+        ],
+        [
+          "Cara",
+          "Bob"
+        ],
+        [
+          "Cara",
+          "Bob"
+        ]
+      ],
+      "actual": [
+        [
+          "Cara",
+          "Bob"
+        ],
+        [
+          "Cara",
+          "Bob"
+        ],
+        [
+          "Alice",
+          "Cara"
+        ],
+        [
+          "Alice",
+          "Cara"
+        ],
+        [
+          "Bob",
+          "Cara"
+        ],
+        [
+          "Bob",
+          "Alice"
+        ],
+        [
+          "Cara",
+          "Alice"
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "fixed_two_hop_trail",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          "Alice",
+          "Cara"
+        ],
+        [
+          "Alice",
+          "Cara"
+        ],
+        [
+          "Bob",
+          "Cara"
+        ],
+        [
+          "Bob",
+          "Alice"
+        ],
+        [
+          "Cara",
+          "Alice"
+        ],
+        [
+          "Cara",
+          "Bob"
+        ],
+        [
+          "Cara",
+          "Bob"
+        ]
+      ],
+      "actual": [
+        [
+          "Alice",
+          "Cara"
+        ],
+        [
+          "Alice",
+          "Cara"
+        ],
+        [
+          "Bob",
+          "Cara"
+        ],
+        [
+          "Bob",
+          "Alice"
+        ],
+        [
+          "Cara",
+          "Alice"
+        ],
+        [
+          "Cara",
+          "Bob"
+        ],
+        [
+          "Cara",
+          "Bob"
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "fixed_two_hop_acyclic",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          "Alice",
+          "Cara"
+        ],
+        [
+          "Alice",
+          "Cara"
+        ],
+        [
+          "Bob",
+          "Alice"
+        ],
+        [
+          "Cara",
+          "Bob"
+        ],
+        [
+          "Cara",
+          "Bob"
+        ]
+      ],
+      "actual": [
+        [
+          "Cara",
+          "Bob"
+        ],
+        [
+          "Cara",
+          "Bob"
+        ],
+        [
+          "Alice",
+          "Cara"
+        ],
+        [
+          "Alice",
+          "Cara"
+        ],
+        [
+          "Bob",
+          "Alice"
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "fixed_two_hop_acyclic",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          "Alice",
+          "Cara"
+        ],
+        [
+          "Alice",
+          "Cara"
+        ],
+        [
+          "Bob",
+          "Alice"
+        ],
+        [
+          "Cara",
+          "Bob"
+        ],
+        [
+          "Cara",
+          "Bob"
+        ]
+      ],
+      "actual": [
+        [
+          "Alice",
+          "Cara"
+        ],
+        [
+          "Alice",
+          "Cara"
+        ],
+        [
+          "Bob",
+          "Alice"
+        ],
+        [
+          "Cara",
+          "Bob"
+        ],
+        [
+          "Cara",
+          "Bob"
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "incoming_label_boolean",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          "Bob",
+          "Alice"
+        ],
+        [
+          "Bob",
+          "Alice"
+        ],
+        [
+          "Cara",
+          "Bob"
+        ],
+        [
+          "Cara",
+          "Cara"
+        ],
+        [
+          "Alice",
+          "Cara"
+        ]
+      ],
+      "actual": [
+        [
+          "Bob",
+          "Alice"
+        ],
+        [
+          "Bob",
+          "Alice"
+        ],
+        [
+          "Cara",
+          "Bob"
+        ],
+        [
+          "Cara",
+          "Cara"
+        ],
+        [
+          "Alice",
+          "Cara"
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "incoming_label_boolean",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          "Bob",
+          "Alice"
+        ],
+        [
+          "Bob",
+          "Alice"
+        ],
+        [
+          "Cara",
+          "Bob"
+        ],
+        [
+          "Cara",
+          "Cara"
+        ],
+        [
+          "Alice",
+          "Cara"
+        ]
+      ],
+      "actual": [
+        [
+          "Bob",
+          "Alice"
+        ],
+        [
+          "Bob",
+          "Alice"
+        ],
+        [
+          "Cara",
+          "Bob"
+        ],
+        [
+          "Cara",
+          "Cara"
+        ],
+        [
+          "Alice",
+          "Cara"
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "untyped_null_comparison",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          null
+        ]
+      ],
+      "actual": [
+        [
+          null
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "untyped_null_comparison",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          null
+        ]
+      ],
+      "actual": [
+        [
+          null
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "arithmetic_unary",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          -6,
+          1.5
+        ]
+      ],
+      "actual": [
+        [
+          -6,
+          1.5
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "arithmetic_unary",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          -6,
+          1.5
+        ]
+      ],
+      "actual": [
+        [
+          -6,
+          1.5
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "entity_projection_property_scope",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          "Alice"
+        ],
+        [
+          "Bob"
+        ],
+        [
+          "Cara"
+        ],
+        [
+          "Dave"
+        ],
+        [
+          "Eve"
+        ]
+      ],
+      "actual": [
+        [
+          "Eve"
+        ],
+        [
+          "Alice"
+        ],
+        [
+          "Bob"
+        ],
+        [
+          "Cara"
+        ],
+        [
+          "Dave"
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "entity_projection_property_scope",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          "Alice"
+        ],
+        [
+          "Bob"
+        ],
+        [
+          "Cara"
+        ],
+        [
+          "Dave"
+        ],
+        [
+          "Eve"
+        ]
+      ],
+      "actual": [
+        [
+          "Eve"
+        ],
+        [
+          "Alice"
+        ],
+        [
+          "Bob"
+        ],
+        [
+          "Cara"
+        ],
+        [
+          "Dave"
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "nullable_entity_projection",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          "Alice",
+          "Bob"
+        ],
+        [
+          "Alice",
+          "Bob"
+        ],
+        [
+          "Bob",
+          "Cara"
+        ],
+        [
+          "Cara",
+          "Cara"
+        ],
+        [
+          "Cara",
+          "Alice"
+        ],
+        [
+          "Dave",
+          null
+        ],
+        [
+          "Eve",
+          null
+        ]
+      ],
+      "actual": [
+        [
+          "Alice",
+          "Bob"
+        ],
+        [
+          "Alice",
+          "Bob"
+        ],
+        [
+          "Bob",
+          "Cara"
+        ],
+        [
+          "Cara",
+          "Cara"
+        ],
+        [
+          "Cara",
+          "Alice"
+        ],
+        [
+          "Dave",
+          null
+        ],
+        [
+          "Eve",
+          null
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "nullable_entity_projection",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          "Alice",
+          "Bob"
+        ],
+        [
+          "Alice",
+          "Bob"
+        ],
+        [
+          "Bob",
+          "Cara"
+        ],
+        [
+          "Cara",
+          "Cara"
+        ],
+        [
+          "Cara",
+          "Alice"
+        ],
+        [
+          "Dave",
+          null
+        ],
+        [
+          "Eve",
+          null
+        ]
+      ],
+      "actual": [
+        [
+          "Alice",
+          "Bob"
+        ],
+        [
+          "Alice",
+          "Bob"
+        ],
+        [
+          "Bob",
+          "Cara"
+        ],
+        [
+          "Cara",
+          "Cara"
+        ],
+        [
+          "Cara",
+          "Alice"
+        ],
+        [
+          "Dave",
+          null
+        ],
+        [
+          "Eve",
+          null
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "null_only_projection",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          null
+        ]
+      ],
+      "actual": [
+        [
+          null
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "null_only_projection",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          null
+        ]
+      ],
+      "actual": [
+        [
+          null
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "null_union_type_promotion",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          null
+        ],
+        [
+          1
+        ]
+      ],
+      "actual": [
+        [
+          null
+        ],
+        [
+          1
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "null_union_type_promotion",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          null
+        ],
+        [
+          1
+        ]
+      ],
+      "actual": [
+        [
+          1
+        ],
+        [
+          null
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "empty_unwind",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [],
+      "actual": [],
+      "error": null
+    },
+    {
+      "name": "empty_unwind",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [],
+      "actual": [],
+      "error": null
+    },
+    {
+      "name": "simple_closed_path_no_edge_reuse",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          "Alice",
+          "Cara"
+        ],
+        [
+          "Alice",
+          "Cara"
+        ],
+        [
+          "Alice",
+          "Bob"
+        ],
+        [
+          "Bob",
+          "Cara"
+        ],
+        [
+          "Bob",
+          "Cara"
+        ],
+        [
+          "Bob",
+          "Alice"
+        ],
+        [
+          "Cara",
+          "Bob"
+        ],
+        [
+          "Cara",
+          "Bob"
+        ],
+        [
+          "Cara",
+          "Alice"
+        ],
+        [
+          "Cara",
+          "Alice"
+        ],
+        [
+          "Alice",
+          "Alice"
+        ],
+        [
+          "Alice",
+          "Alice"
+        ],
+        [
+          "Bob",
+          "Bob"
+        ],
+        [
+          "Bob",
+          "Bob"
+        ]
+      ],
+      "actual": [
+        [
+          "Cara",
+          "Bob"
+        ],
+        [
+          "Cara",
+          "Bob"
+        ],
+        [
+          "Alice",
+          "Cara"
+        ],
+        [
+          "Alice",
+          "Cara"
+        ],
+        [
+          "Bob",
+          "Alice"
+        ],
+        [
+          "Cara",
+          "Alice"
+        ],
+        [
+          "Cara",
+          "Alice"
+        ],
+        [
+          "Alice",
+          "Bob"
+        ],
+        [
+          "Bob",
+          "Cara"
+        ],
+        [
+          "Bob",
+          "Cara"
+        ],
+        [
+          "Bob",
+          "Bob"
+        ],
+        [
+          "Bob",
+          "Bob"
+        ],
+        [
+          "Alice",
+          "Alice"
+        ],
+        [
+          "Alice",
+          "Alice"
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "simple_closed_path_no_edge_reuse",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          "Alice",
+          "Cara"
+        ],
+        [
+          "Alice",
+          "Cara"
+        ],
+        [
+          "Alice",
+          "Bob"
+        ],
+        [
+          "Bob",
+          "Cara"
+        ],
+        [
+          "Bob",
+          "Cara"
+        ],
+        [
+          "Bob",
+          "Alice"
+        ],
+        [
+          "Cara",
+          "Bob"
+        ],
+        [
+          "Cara",
+          "Bob"
+        ],
+        [
+          "Cara",
+          "Alice"
+        ],
+        [
+          "Cara",
+          "Alice"
+        ],
+        [
+          "Alice",
+          "Alice"
+        ],
+        [
+          "Alice",
+          "Alice"
+        ],
+        [
+          "Bob",
+          "Bob"
+        ],
+        [
+          "Bob",
+          "Bob"
+        ]
+      ],
+      "actual": [
+        [
+          "Bob",
+          "Bob"
+        ],
+        [
+          "Bob",
+          "Bob"
+        ],
+        [
+          "Alice",
+          "Cara"
+        ],
+        [
+          "Alice",
+          "Cara"
+        ],
+        [
+          "Bob",
+          "Alice"
+        ],
+        [
+          "Cara",
+          "Bob"
+        ],
+        [
+          "Cara",
+          "Bob"
+        ],
+        [
+          "Alice",
+          "Bob"
+        ],
+        [
+          "Bob",
+          "Cara"
+        ],
+        [
+          "Bob",
+          "Cara"
+        ],
+        [
+          "Cara",
+          "Alice"
+        ],
+        [
+          "Cara",
+          "Alice"
+        ],
+        [
+          "Alice",
+          "Alice"
+        ],
+        [
+          "Alice",
+          "Alice"
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "entity_materialization",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          {
+            "graph": "fixture",
+            "group": 1,
+            "identity": 1,
+            "kind": "vertex",
+            "properties": {
+              "age": 30,
+              "id": 1,
+              "name": "Alice",
+              "salary": null
+            }
+          }
+        ]
+      ],
+      "actual": [
+        [
+          {
+            "identity": 1,
+            "group": 1,
+            "graph": "fixture",
+            "kind": "vertex",
+            "properties": {
+              "age": 30,
+              "id": 1,
+              "name": "Alice",
+              "salary": null
+            }
+          }
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "entity_materialization",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          {
+            "graph": "fixture",
+            "group": 1,
+            "identity": 1,
+            "kind": "vertex",
+            "properties": {
+              "age": 30,
+              "id": 1,
+              "name": "Alice",
+              "salary": null
+            }
+          }
+        ]
+      ],
+      "actual": [
+        [
+          {
+            "identity": 1,
+            "group": 1,
+            "graph": "fixture",
+            "kind": "vertex",
+            "properties": {
+              "age": 30,
+              "id": 1,
+              "name": "Alice",
+              "salary": null
+            }
+          }
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "programmatic_api_to_sail",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          "Alice",
+          "Bob"
+        ],
+        [
+          "Alice",
+          "Bob"
+        ],
+        [
+          "Bob",
+          "Cara"
+        ],
+        [
+          "Cara",
+          "Cara"
+        ],
+        [
+          "Cara",
+          "Alice"
+        ]
+      ],
+      "actual": [
+        [
+          "Alice",
+          "Bob"
+        ],
+        [
+          "Alice",
+          "Bob"
+        ],
+        [
+          "Bob",
+          "Cara"
+        ],
+        [
+          "Cara",
+          "Cara"
+        ],
+        [
+          "Cara",
+          "Alice"
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "programmatic_api_to_sail",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          "Alice",
+          "Bob"
+        ],
+        [
+          "Alice",
+          "Bob"
+        ],
+        [
+          "Bob",
+          "Cara"
+        ],
+        [
+          "Cara",
+          "Cara"
+        ],
+        [
+          "Cara",
+          "Alice"
+        ]
+      ],
+      "actual": [
+        [
+          "Alice",
+          "Bob"
+        ],
+        [
+          "Alice",
+          "Bob"
+        ],
+        [
+          "Bob",
+          "Cara"
+        ],
+        [
+          "Cara",
+          "Cara"
+        ],
+        [
+          "Cara",
+          "Alice"
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "bounded_walk_bag",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          1,
+          2,
+          1
+        ],
+        [
+          1,
+          2,
+          1
+        ],
+        [
+          1,
+          3,
+          2
+        ],
+        [
+          1,
+          3,
+          2
+        ],
+        [
+          2,
+          3,
+          1
+        ],
+        [
+          2,
+          3,
+          2
+        ],
+        [
+          2,
+          1,
+          2
+        ],
+        [
+          3,
+          3,
+          1
+        ],
+        [
+          3,
+          1,
+          1
+        ],
+        [
+          3,
+          3,
+          2
+        ],
+        [
+          3,
+          1,
+          2
+        ],
+        [
+          3,
+          2,
+          2
+        ],
+        [
+          3,
+          2,
+          2
+        ]
+      ],
+      "actual": [
+        [
+          1,
+          2,
+          1
+        ],
+        [
+          1,
+          2,
+          1
+        ],
+        [
+          2,
+          3,
+          1
+        ],
+        [
+          3,
+          3,
+          1
+        ],
+        [
+          3,
+          1,
+          1
+        ],
+        [
+          1,
+          3,
+          2
+        ],
+        [
+          1,
+          3,
+          2
+        ],
+        [
+          2,
+          3,
+          2
+        ],
+        [
+          2,
+          1,
+          2
+        ],
+        [
+          3,
+          3,
+          2
+        ],
+        [
+          3,
+          1,
+          2
+        ],
+        [
+          3,
+          2,
+          2
+        ],
+        [
+          3,
+          2,
+          2
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "bounded_walk_bag",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          1,
+          2,
+          1
+        ],
+        [
+          1,
+          2,
+          1
+        ],
+        [
+          1,
+          3,
+          2
+        ],
+        [
+          1,
+          3,
+          2
+        ],
+        [
+          2,
+          3,
+          1
+        ],
+        [
+          2,
+          3,
+          2
+        ],
+        [
+          2,
+          1,
+          2
+        ],
+        [
+          3,
+          3,
+          1
+        ],
+        [
+          3,
+          1,
+          1
+        ],
+        [
+          3,
+          3,
+          2
+        ],
+        [
+          3,
+          1,
+          2
+        ],
+        [
+          3,
+          2,
+          2
+        ],
+        [
+          3,
+          2,
+          2
+        ]
+      ],
+      "actual": [
+        [
+          1,
+          2,
+          1
+        ],
+        [
+          1,
+          2,
+          1
+        ],
+        [
+          2,
+          3,
+          1
+        ],
+        [
+          3,
+          3,
+          1
+        ],
+        [
+          3,
+          1,
+          1
+        ],
+        [
+          3,
+          2,
+          2
+        ],
+        [
+          3,
+          2,
+          2
+        ],
+        [
+          1,
+          3,
+          2
+        ],
+        [
+          1,
+          3,
+          2
+        ],
+        [
+          2,
+          3,
+          2
+        ],
+        [
+          3,
+          3,
+          2
+        ],
+        [
+          2,
+          1,
+          2
+        ],
+        [
+          3,
+          1,
+          2
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "bounded_all_shortest_ties",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          1,
+          2,
+          1
+        ],
+        [
+          1,
+          2,
+          1
+        ],
+        [
+          1,
+          3,
+          2
+        ],
+        [
+          1,
+          3,
+          2
+        ],
+        [
+          2,
+          3,
+          1
+        ],
+        [
+          2,
+          1,
+          2
+        ],
+        [
+          3,
+          3,
+          1
+        ],
+        [
+          3,
+          1,
+          1
+        ],
+        [
+          3,
+          2,
+          2
+        ],
+        [
+          3,
+          2,
+          2
+        ]
+      ],
+      "actual": [
+        [
+          1,
+          2,
+          1
+        ],
+        [
+          1,
+          2,
+          1
+        ],
+        [
+          2,
+          1,
+          2
+        ],
+        [
+          3,
+          1,
+          1
+        ],
+        [
+          3,
+          3,
+          1
+        ],
+        [
+          1,
+          3,
+          2
+        ],
+        [
+          1,
+          3,
+          2
+        ],
+        [
+          2,
+          3,
+          1
+        ],
+        [
+          3,
+          2,
+          2
+        ],
+        [
+          3,
+          2,
+          2
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "bounded_all_shortest_ties",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          1,
+          2,
+          1
+        ],
+        [
+          1,
+          2,
+          1
+        ],
+        [
+          1,
+          3,
+          2
+        ],
+        [
+          1,
+          3,
+          2
+        ],
+        [
+          2,
+          3,
+          1
+        ],
+        [
+          2,
+          1,
+          2
+        ],
+        [
+          3,
+          3,
+          1
+        ],
+        [
+          3,
+          1,
+          1
+        ],
+        [
+          3,
+          2,
+          2
+        ],
+        [
+          3,
+          2,
+          2
+        ]
+      ],
+      "actual": [
+        [
+          1,
+          3,
+          2
+        ],
+        [
+          1,
+          3,
+          2
+        ],
+        [
+          2,
+          3,
+          1
+        ],
+        [
+          3,
+          2,
+          2
+        ],
+        [
+          3,
+          2,
+          2
+        ],
+        [
+          1,
+          2,
+          1
+        ],
+        [
+          1,
+          2,
+          1
+        ],
+        [
+          2,
+          1,
+          2
+        ],
+        [
+          3,
+          1,
+          1
+        ],
+        [
+          3,
+          3,
+          1
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "bounded_shortest_one",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          1,
+          2,
+          1
+        ],
+        [
+          1,
+          3,
+          2
+        ],
+        [
+          2,
+          3,
+          1
+        ],
+        [
+          2,
+          1,
+          2
+        ],
+        [
+          3,
+          3,
+          1
+        ],
+        [
+          3,
+          1,
+          1
+        ],
+        [
+          3,
+          2,
+          2
+        ]
+      ],
+      "actual": [
+        [
+          1,
+          2,
+          1
+        ],
+        [
+          2,
+          1,
+          2
+        ],
+        [
+          3,
+          1,
+          1
+        ],
+        [
+          3,
+          3,
+          1
+        ],
+        [
+          1,
+          3,
+          2
+        ],
+        [
+          2,
+          3,
+          1
+        ],
+        [
+          3,
+          2,
+          2
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "bounded_shortest_one",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          1,
+          2,
+          1
+        ],
+        [
+          1,
+          3,
+          2
+        ],
+        [
+          2,
+          3,
+          1
+        ],
+        [
+          2,
+          1,
+          2
+        ],
+        [
+          3,
+          3,
+          1
+        ],
+        [
+          3,
+          1,
+          1
+        ],
+        [
+          3,
+          2,
+          2
+        ]
+      ],
+      "actual": [
+        [
+          1,
+          3,
+          2
+        ],
+        [
+          2,
+          3,
+          1
+        ],
+        [
+          3,
+          2,
+          2
+        ],
+        [
+          1,
+          2,
+          1
+        ],
+        [
+          2,
+          1,
+          2
+        ],
+        [
+          3,
+          1,
+          1
+        ],
+        [
+          3,
+          3,
+          1
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "bounded_any_one",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          1,
+          2,
+          1
+        ],
+        [
+          1,
+          3,
+          2
+        ],
+        [
+          2,
+          3,
+          1
+        ],
+        [
+          2,
+          1,
+          2
+        ],
+        [
+          3,
+          3,
+          1
+        ],
+        [
+          3,
+          1,
+          1
+        ],
+        [
+          3,
+          2,
+          2
+        ]
+      ],
+      "actual": [
+        [
+          1,
+          2,
+          1
+        ],
+        [
+          2,
+          1,
+          2
+        ],
+        [
+          3,
+          1,
+          1
+        ],
+        [
+          3,
+          3,
+          1
+        ],
+        [
+          1,
+          3,
+          2
+        ],
+        [
+          2,
+          3,
+          1
+        ],
+        [
+          3,
+          2,
+          2
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "bounded_any_one",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          1,
+          2,
+          1
+        ],
+        [
+          1,
+          3,
+          2
+        ],
+        [
+          2,
+          3,
+          1
+        ],
+        [
+          2,
+          1,
+          2
+        ],
+        [
+          3,
+          3,
+          1
+        ],
+        [
+          3,
+          1,
+          1
+        ],
+        [
+          3,
+          2,
+          2
+        ]
+      ],
+      "actual": [
+        [
+          1,
+          2,
+          1
+        ],
+        [
+          2,
+          1,
+          2
+        ],
+        [
+          3,
+          1,
+          1
+        ],
+        [
+          3,
+          3,
+          1
+        ],
+        [
+          1,
+          3,
+          2
+        ],
+        [
+          2,
+          3,
+          1
+        ],
+        [
+          3,
+          2,
+          2
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "zero_hop_vertices_and_empty_edges",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          1,
+          1,
+          [],
+          [
+            {
+              "group": 1,
+              "identity": 1
+            }
+          ]
+        ],
+        [
+          2,
+          2,
+          [],
+          [
+            {
+              "group": 1,
+              "identity": 2
+            }
+          ]
+        ],
+        [
+          3,
+          3,
+          [],
+          [
+            {
+              "group": 1,
+              "identity": 3
+            }
+          ]
+        ],
+        [
+          4,
+          4,
+          [],
+          [
+            {
+              "group": 1,
+              "identity": 4
+            }
+          ]
+        ],
+        [
+          5,
+          5,
+          [],
+          [
+            {
+              "group": 2,
+              "identity": 5
+            }
+          ]
+        ]
+      ],
+      "actual": [
+        [
+          5,
+          5,
+          [],
+          [
+            {
+              "group": 2,
+              "identity": 5
+            }
+          ]
+        ],
+        [
+          1,
+          1,
+          [],
+          [
+            {
+              "group": 1,
+              "identity": 1
+            }
+          ]
+        ],
+        [
+          2,
+          2,
+          [],
+          [
+            {
+              "group": 1,
+              "identity": 2
+            }
+          ]
+        ],
+        [
+          3,
+          3,
+          [],
+          [
+            {
+              "group": 1,
+              "identity": 3
+            }
+          ]
+        ],
+        [
+          4,
+          4,
+          [],
+          [
+            {
+              "group": 1,
+              "identity": 4
+            }
+          ]
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "zero_hop_vertices_and_empty_edges",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          1,
+          1,
+          [],
+          [
+            {
+              "group": 1,
+              "identity": 1
+            }
+          ]
+        ],
+        [
+          2,
+          2,
+          [],
+          [
+            {
+              "group": 1,
+              "identity": 2
+            }
+          ]
+        ],
+        [
+          3,
+          3,
+          [],
+          [
+            {
+              "group": 1,
+              "identity": 3
+            }
+          ]
+        ],
+        [
+          4,
+          4,
+          [],
+          [
+            {
+              "group": 1,
+              "identity": 4
+            }
+          ]
+        ],
+        [
+          5,
+          5,
+          [],
+          [
+            {
+              "group": 2,
+              "identity": 5
+            }
+          ]
+        ]
+      ],
+      "actual": [
+        [
+          5,
+          5,
+          [],
+          [
+            {
+              "group": 2,
+              "identity": 5
+            }
+          ]
+        ],
+        [
+          1,
+          1,
+          [],
+          [
+            {
+              "group": 1,
+              "identity": 1
+            }
+          ]
+        ],
+        [
+          2,
+          2,
+          [],
+          [
+            {
+              "group": 1,
+              "identity": 2
+            }
+          ]
+        ],
+        [
+          3,
+          3,
+          [],
+          [
+            {
+              "group": 1,
+              "identity": 3
+            }
+          ]
+        ],
+        [
+          4,
+          4,
+          [],
+          [
+            {
+              "group": 1,
+              "identity": 4
+            }
+          ]
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "optional_shortest_path_null",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          1,
+          2,
+          1
+        ],
+        [
+          1,
+          2,
+          1
+        ],
+        [
+          1,
+          3,
+          2
+        ],
+        [
+          1,
+          3,
+          2
+        ],
+        [
+          2,
+          3,
+          1
+        ],
+        [
+          2,
+          1,
+          2
+        ],
+        [
+          3,
+          3,
+          1
+        ],
+        [
+          3,
+          1,
+          1
+        ],
+        [
+          3,
+          2,
+          2
+        ],
+        [
+          3,
+          2,
+          2
+        ],
+        [
+          4,
+          null,
+          null
+        ],
+        [
+          5,
+          null,
+          null
+        ]
+      ],
+      "actual": [
+        [
+          1,
+          3,
+          2
+        ],
+        [
+          1,
+          3,
+          2
+        ],
+        [
+          2,
+          3,
+          1
+        ],
+        [
+          3,
+          2,
+          2
+        ],
+        [
+          3,
+          2,
+          2
+        ],
+        [
+          1,
+          2,
+          1
+        ],
+        [
+          1,
+          2,
+          1
+        ],
+        [
+          2,
+          1,
+          2
+        ],
+        [
+          3,
+          1,
+          1
+        ],
+        [
+          3,
+          3,
+          1
+        ],
+        [
+          4,
+          null,
+          null
+        ],
+        [
+          5,
+          null,
+          null
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "optional_shortest_path_null",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          1,
+          2,
+          1
+        ],
+        [
+          1,
+          2,
+          1
+        ],
+        [
+          1,
+          3,
+          2
+        ],
+        [
+          1,
+          3,
+          2
+        ],
+        [
+          2,
+          3,
+          1
+        ],
+        [
+          2,
+          1,
+          2
+        ],
+        [
+          3,
+          3,
+          1
+        ],
+        [
+          3,
+          1,
+          1
+        ],
+        [
+          3,
+          2,
+          2
+        ],
+        [
+          3,
+          2,
+          2
+        ],
+        [
+          4,
+          null,
+          null
+        ],
+        [
+          5,
+          null,
+          null
+        ]
+      ],
+      "actual": [
+        [
+          1,
+          3,
+          2
+        ],
+        [
+          1,
+          3,
+          2
+        ],
+        [
+          2,
+          3,
+          1
+        ],
+        [
+          3,
+          2,
+          2
+        ],
+        [
+          3,
+          2,
+          2
+        ],
+        [
+          1,
+          2,
+          1
+        ],
+        [
+          1,
+          2,
+          1
+        ],
+        [
+          2,
+          1,
+          2
+        ],
+        [
+          3,
+          1,
+          1
+        ],
+        [
+          3,
+          3,
+          1
+        ],
+        [
+          4,
+          null,
+          null
+        ],
+        [
+          5,
+          null,
+          null
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "relation_provider_filtered_input",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          40
+        ],
+        [
+          35
+        ]
+      ],
+      "actual": [
+        [
+          35
+        ],
+        [
+          40
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "relation_provider_filtered_input",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          40
+        ],
+        [
+          35
+        ]
+      ],
+      "actual": [
+        [
+          35
+        ],
+        [
+          40
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "bounded_trail_excludes_reused_selfloop",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          1,
+          2,
+          1
+        ],
+        [
+          1,
+          2,
+          1
+        ],
+        [
+          2,
+          3,
+          1
+        ],
+        [
+          3,
+          3,
+          1
+        ],
+        [
+          3,
+          1,
+          1
+        ],
+        [
+          1,
+          3,
+          2
+        ],
+        [
+          1,
+          3,
+          2
+        ],
+        [
+          2,
+          3,
+          2
+        ],
+        [
+          2,
+          1,
+          2
+        ],
+        [
+          3,
+          1,
+          2
+        ],
+        [
+          3,
+          2,
+          2
+        ],
+        [
+          3,
+          2,
+          2
+        ]
+      ],
+      "actual": [
+        [
+          1,
+          2,
+          1
+        ],
+        [
+          1,
+          2,
+          1
+        ],
+        [
+          2,
+          3,
+          1
+        ],
+        [
+          3,
+          3,
+          1
+        ],
+        [
+          3,
+          1,
+          1
+        ],
+        [
+          1,
+          3,
+          2
+        ],
+        [
+          1,
+          3,
+          2
+        ],
+        [
+          2,
+          3,
+          2
+        ],
+        [
+          2,
+          1,
+          2
+        ],
+        [
+          3,
+          1,
+          2
+        ],
+        [
+          3,
+          2,
+          2
+        ],
+        [
+          3,
+          2,
+          2
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "bounded_trail_excludes_reused_selfloop",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          1,
+          2,
+          1
+        ],
+        [
+          1,
+          2,
+          1
+        ],
+        [
+          2,
+          3,
+          1
+        ],
+        [
+          3,
+          3,
+          1
+        ],
+        [
+          3,
+          1,
+          1
+        ],
+        [
+          1,
+          3,
+          2
+        ],
+        [
+          1,
+          3,
+          2
+        ],
+        [
+          2,
+          3,
+          2
+        ],
+        [
+          2,
+          1,
+          2
+        ],
+        [
+          3,
+          1,
+          2
+        ],
+        [
+          3,
+          2,
+          2
+        ],
+        [
+          3,
+          2,
+          2
+        ]
+      ],
+      "actual": [
+        [
+          1,
+          2,
+          1
+        ],
+        [
+          1,
+          2,
+          1
+        ],
+        [
+          2,
+          3,
+          1
+        ],
+        [
+          3,
+          3,
+          1
+        ],
+        [
+          3,
+          1,
+          1
+        ],
+        [
+          3,
+          2,
+          2
+        ],
+        [
+          3,
+          2,
+          2
+        ],
+        [
+          1,
+          3,
+          2
+        ],
+        [
+          1,
+          3,
+          2
+        ],
+        [
+          2,
+          3,
+          2
+        ],
+        [
+          2,
+          1,
+          2
+        ],
+        [
+          3,
+          1,
+          2
+        ]
+      ],
+      "error": null
+    }
+  ],
+  "rewrites": {
+    "property_filter_parameter": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression"
+    ],
+    "outgoing_parallel_edges": [
+      "costed inner region: 5 relations, before=Some(267.0), after=63, NDV equality estimates; absent selectivity uses 1"
+    ],
+    "either_direction_selfloop_once": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "costed inner region: 3 relations, before=Some(235.0), after=49, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 3 relations, before=Some(235.0), after=54, NDV equality estimates; absent selectivity uses 1"
+    ],
+    "repeated_binding": [
+      "costed inner region: 5 relations, before=Some(244.5), after=51.75, NDV equality estimates; absent selectivity uses 1"
+    ],
+    "optional_match": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "costed inner region: 4 relations, before=Some(251.0), after=59, NDV equality estimates; absent selectivity uses 1"
+    ],
+    "optional_predicate_in_on": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "costed inner region: 4 relations, before=Some(251.0), after=59, NDV equality estimates; absent selectivity uses 1"
+    ],
+    "polymorphic_missing_property": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression"
+    ],
+    "aggregate_distinct_filter": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression"
+    ],
+    "union_all": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression"
+    ],
+    "union_distinct": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression"
+    ],
+    "unwind_null_element": [],
+    "sort_offset_limit": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression"
+    ],
+    "plugin_scalar_case": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression"
+    ],
+    "in_list": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression"
+    ],
+    "struct_literal_escaping": [],
+    "known_infeasible_pattern": [],
+    "explicit_inner_join": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression"
+    ],
+    "explicit_left_join": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression"
+    ],
+    "explicit_right_join": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression"
+    ],
+    "explicit_full_join": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression"
+    ],
+    "semi_join": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression"
+    ],
+    "anti_join": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression"
+    ],
+    "cross_join": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression"
+    ],
+    "grouped_aggregate": [],
+    "fixed_two_hop_walk": [
+      "costed inner region: 7 relations, before=Some(4301.5), after=111.25, NDV equality estimates; absent selectivity uses 1"
+    ],
+    "fixed_two_hop_trail": [
+      "costed inner region: 7 relations, before=Some(4301.5), after=111.25, NDV equality estimates; absent selectivity uses 1"
+    ],
+    "fixed_two_hop_acyclic": [
+      "costed inner region: 7 relations, before=Some(4301.5), after=111.25, NDV equality estimates; absent selectivity uses 1"
+    ],
+    "incoming_label_boolean": [
+      "costed inner region: 5 relations, before=Some(267.0), after=63, NDV equality estimates; absent selectivity uses 1"
+    ],
+    "untyped_null_comparison": [],
+    "arithmetic_unary": [],
+    "entity_projection_property_scope": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression"
+    ],
+    "nullable_entity_projection": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "costed inner region: 4 relations, before=Some(251.0), after=59, NDV equality estimates; absent selectivity uses 1"
+    ],
+    "null_only_projection": [],
+    "null_union_type_promotion": [],
+    "empty_unwind": [],
+    "simple_closed_path_no_edge_reuse": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "costed inner region: 5 relations, before=Some(4262.0), after=97.25, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 5 relations, before=Some(4262.0), after=102.25, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 5 relations, before=Some(4262.0), after=102.25, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 5 relations, before=Some(4262.0), after=107.25, NDV equality estimates; absent selectivity uses 1"
+    ],
+    "entity_materialization": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression"
+    ],
+    "programmatic_api_to_sail": [
+      "costed inner region: 5 relations, before=Some(267.0), after=63, NDV equality estimates; absent selectivity uses 1"
+    ],
+    "bounded_walk_bag": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "costed inner region: 3 relations, before=Some(235.0), after=49, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 5 relations, before=Some(4262.0), after=97.25, NDV equality estimates; absent selectivity uses 1"
+    ],
+    "bounded_all_shortest_ties": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "costed inner region: 3 relations, before=Some(235.0), after=49, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 5 relations, before=Some(4262.0), after=97.25, NDV equality estimates; absent selectivity uses 1"
+    ],
+    "bounded_shortest_one": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "costed inner region: 3 relations, before=Some(235.0), after=49, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 5 relations, before=Some(4262.0), after=97.25, NDV equality estimates; absent selectivity uses 1"
+    ],
+    "bounded_any_one": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "costed inner region: 3 relations, before=Some(235.0), after=49, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 5 relations, before=Some(4262.0), after=97.25, NDV equality estimates; absent selectivity uses 1"
+    ],
+    "zero_hop_vertices_and_empty_edges": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression"
+    ],
+    "optional_shortest_path_null": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "costed inner region: 3 relations, before=Some(235.0), after=49, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 5 relations, before=Some(4262.0), after=97.25, NDV equality estimates; absent selectivity uses 1"
+    ],
+    "relation_provider_filtered_input": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression"
+    ],
+    "bounded_trail_excludes_reused_selfloop": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "costed inner region: 3 relations, before=Some(235.0), after=49, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 5 relations, before=Some(4262.0), after=97.25, NDV equality estimates; absent selectivity uses 1"
+    ]
+  },
+  "server_exit_code": -15,
+  "shutdown_error": null,
+  "sail_sha256_after": "ee80ac3cf9d028639561f3cf32435985192719d629807fcf6a368324fa84946e"
+}
