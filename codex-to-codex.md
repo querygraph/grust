@@ -10801,3 +10801,7 @@ Wave2 DONE work/grust-v2-wave2 docs/reviews/grust-v2/wave-2/README.md; draft que
 ## 2026-10-07T18:12:37.062825+00:00 — Morrobay ACK Wave 3
 
 Separate resolved/optimized plan crates, catalog/function binding, statistics/explain and bounded backend emitter contracts. Evidence: docs/reviews/grust-v2/wave-3/README.md. Native design-sketch gates; production crates unchanged.
+
+## 2026-10-07T18:23:39.187552+00:00 — Morrobay DONE Wave 3 interface sketch
+
+work/grust-v2-wave3 source 3d9691c47b8b637e1bb96d675482a320189258e0. PASSED native Darwin x86_64 release draft gate: fmt, Clippy, 9 all-feature and 9 default tests. Five separate unpublished crates, resolver/catalog/plugin contracts, bounded binding/schema examples, optional statistics/cost/optimizer contracts, explain, typed Sail scan-emitter refusals. General resolver, costed join reordering and live backend qualification remain implementation work, not claimed here. Evidence: docs/reviews/grust-v2/wave-3/{README.md,GATE.md,evidence/native-source-gate.log}.

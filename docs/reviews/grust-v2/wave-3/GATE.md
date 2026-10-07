@@ -13,3 +13,11 @@ cargo test --workspace --all-targets --release --locked --manifest-path "$manife
 ```
 
 The gate log and exact source tree/commit receipt are recorded during qualification. The intended controls cover metadata semantics, not runtime execution, concurrency or benchmark speed.
+
+## Observed verdict
+
+UTC: 2026-10-07T18:23:39.115979+00:00
+
+`PASSED Wave 3 draft gate at 3d9691c47b8b637e1bb96d675482a320189258e0 on Darwin x86_64`: fmt, release Clippy (all targets/features), nine release tests with all features and nine with default features. Exact detached HEAD unchanged and clean after the gate. No live Sail execution was tested.
+
+[Native log](evidence/native-source-gate.log). Toolchain: `rustc 1.98.1 (48a229cea 2026-09-01)`.

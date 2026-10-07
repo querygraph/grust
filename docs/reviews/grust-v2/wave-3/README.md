@@ -18,13 +18,13 @@ flowchart LR
     M[Storage mapping and dialect plugins] --> B
 ```
 
-| Crate | Contract | Compiled example |
-| --- | --- | --- |
-| `grust-resolved-plan` | Typed output slots, entity bindings, feasible schema paths, explicit graph operators; no engine/catalog pointers | Owned resolved IR |
-| `grust-resolution` | Replaceable catalog, parameter types and resolver, multiple typed diagnostics | Exact scalar/aggregate plugin binding; one-hop schema feasibility with inherited labels and direction |
-| `grust-optimized-plan` | Owns resolved semantics, access choices, estimates, provenance and rewrite trace | Independently consumable plan |
-| `grust-optimizer` | Optional statistics, replaceable cost/optimizer traits, explain API | Identity optimizer, stable candidate scan ranking, schema-path explain |
-| `grust-backend` | Associated output type, physical mapping outside logical catalog, typed unsupported result | Sail-dialect SQL for a resolved nonempty scan only |
+| Crate                  | Contract                                                                                                         | Compiled example                                                                                      |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `grust-resolved-plan`  | Typed output slots, entity bindings, feasible schema paths, explicit graph operators; no engine/catalog pointers | Owned resolved IR                                                                                     |
+| `grust-resolution`     | Replaceable catalog, parameter types and resolver, multiple typed diagnostics                                    | Exact scalar/aggregate plugin binding; one-hop schema feasibility with inherited labels and direction |
+| `grust-optimized-plan` | Owns resolved semantics, access choices, estimates, provenance and rewrite trace                                 | Independently consumable plan                                                                         |
+| `grust-optimizer`      | Optional statistics, replaceable cost/optimizer traits, explain API                                              | Identity optimizer, stable candidate scan ranking, schema-path explain                                |
+| `grust-backend`        | Associated output type, physical mapping outside logical catalog, typed unsupported result                       | Sail-dialect SQL for a resolved nonempty scan only                                                    |
 
 The resolver trait consumes Wave 2's `UnresolvedPlan`; a caller can replace it without linking a parser. The optimized IR does not depend on the optimizer crate. Backend emitters do not depend on either the resolver or the optimizer implementation. Existing Wave 2 crates are path dependencies and remain unchanged.
 
