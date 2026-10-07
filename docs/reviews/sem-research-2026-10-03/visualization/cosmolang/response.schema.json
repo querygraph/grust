@@ -1,0 +1,320 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:querygraph:cosmolang:0.1:response",
+  "type": "object",
+  "properties": {
+    "cosmolang": {
+      "const": "0.1"
+    },
+    "request_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512
+    },
+    "session_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "revision": {
+      "anyOf": [
+        {
+          "$ref": "urn:querygraph:cosmolang:0.1:common#/$defs/uint"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "context": {
+      "anyOf": [
+        {
+          "$ref": "urn:querygraph:cosmolang:0.1:common#/$defs/context"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "status": {
+      "enum": [
+        "ready",
+        "accepted",
+        "refused",
+        "error"
+      ]
+    },
+    "job": {
+      "type": "object",
+      "properties": {
+        "job_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "state": {
+          "enum": [
+            "queued",
+            "running",
+            "cancelling",
+            "ready",
+            "cancelled",
+            "refused",
+            "failed",
+            "expired"
+          ]
+        },
+        "cancellation": {
+          "enum": [
+            "none",
+            "cooperative",
+            "terminate_worker"
+          ]
+        }
+      },
+      "required": [
+        "job_id",
+        "state",
+        "cancellation"
+      ],
+      "additionalProperties": false
+    },
+    "resources": {
+      "type": "array",
+      "items": {
+        "$ref": "urn:querygraph:cosmolang:0.1:common#/$defs/resource"
+      },
+      "maxItems": 16
+    },
+    "selection_handle": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512
+    },
+    "view_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512
+    },
+    "applied_budget": {
+      "$ref": "urn:querygraph:cosmolang:0.1:budget"
+    },
+    "capabilities": {
+      "type": "object",
+      "properties": {
+        "operations": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          },
+          "maxItems": 128
+        },
+        "dimensions": {
+          "type": "array",
+          "items": {
+            "enum": [
+              2,
+              3
+            ]
+          },
+          "maxItems": 2
+        },
+        "camera_pose3d": {
+          "type": "boolean"
+        },
+        "providers": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          },
+          "maxItems": 64
+        },
+        "resident_point_cap": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000000
+        }
+      },
+      "required": [
+        "operations",
+        "dimensions",
+        "camera_pose3d",
+        "providers",
+        "resident_point_cap"
+      ],
+      "additionalProperties": false
+    },
+    "error": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "enum": [
+            "UNSUPPORTED_VERSION",
+            "UNSUPPORTED_CAPABILITY",
+            "INVALID_ARGUMENT",
+            "CONTEXT_MISMATCH",
+            "REVISION_CONFLICT",
+            "IDEMPOTENCY_CONFLICT",
+            "BROWSER_NOT_ATTACHED",
+            "BUDGET_EXCEEDED",
+            "RESOURCE_EXPIRED",
+            "NOT_FOUND",
+            "PROVIDER_FAILED",
+            "DEADLINE_EXCEEDED",
+            "UNAUTHORIZED"
+          ]
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "retryable": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "code",
+        "message",
+        "retryable"
+      ],
+      "additionalProperties": false
+    },
+    "result_contract": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "enum": [
+            "membership",
+            "neighbors",
+            "wcc",
+            "layout"
+          ]
+        },
+        "domain": {
+          "$ref": "urn:querygraph:cosmolang:0.1:common#/$defs/domain"
+        },
+        "scope_handle": {
+          "type": "string",
+          "minLength": 1
+        },
+        "contract_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "quality": {
+          "enum": [
+            "exact",
+            "ann",
+            "sample",
+            "partial"
+          ]
+        },
+        "sampling_seed": {
+          "anyOf": [
+            {
+              "$ref": "urn:querygraph:cosmolang:0.1:common#/$defs/uint"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "kind",
+        "domain",
+        "scope_handle",
+        "contract_version",
+        "quality",
+        "sampling_seed"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "cosmolang",
+    "request_id",
+    "session_id",
+    "revision",
+    "context",
+    "status"
+  ],
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "accepted"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "job"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "enum": [
+              "error",
+              "refused"
+            ]
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "error"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "enum": [
+              "ready",
+              "accepted"
+            ]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "context": {
+            "$ref": "urn:querygraph:cosmolang:0.1:common#/$defs/context"
+          },
+          "session_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          },
+          "revision": {
+            "$ref": "urn:querygraph:cosmolang:0.1:common#/$defs/uint"
+          }
+        },
+        "not": {
+          "required": [
+            "error"
+          ]
+        }
+      }
+    }
+  ]
+}

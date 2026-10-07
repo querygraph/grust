@@ -1,0 +1,166 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:querygraph:cosmolang:0.1:work",
+  "oneOf": [
+    {
+      "$ref": "urn:querygraph:cosmolang:0.1:work#/$defs/layout"
+    },
+    {
+      "$ref": "urn:querygraph:cosmolang:0.1:work#/$defs/job"
+    },
+    {
+      "$ref": "urn:querygraph:cosmolang:0.1:work#/$defs/hint"
+    }
+  ],
+  "$defs": {
+    "layout": {
+      "type": "object",
+      "properties": {
+        "op": {
+          "const": "layout.prepare"
+        },
+        "params": {
+          "type": "object",
+          "properties": {
+            "domain": {
+              "$ref": "urn:querygraph:cosmolang:0.1:common#/$defs/domain"
+            },
+            "dimensions": {
+              "enum": [
+                2,
+                3
+              ]
+            },
+            "provider": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512
+            },
+            "algorithm": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512
+            },
+            "algorithm_version": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512
+            },
+            "seed": {
+              "$ref": "urn:querygraph:cosmolang:0.1:common#/$defs/uint"
+            },
+            "anchors": {
+              "enum": [
+                "global_stable",
+                "parent_anchored",
+                "local_ephemeral"
+              ]
+            }
+          },
+          "required": [
+            "domain",
+            "dimensions",
+            "provider",
+            "algorithm",
+            "algorithm_version",
+            "seed",
+            "anchors"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "op",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    "job": {
+      "type": "object",
+      "properties": {
+        "op": {
+          "enum": [
+            "job.get",
+            "job.cancel"
+          ]
+        },
+        "params": {
+          "type": "object",
+          "properties": {
+            "job_id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512
+            }
+          },
+          "required": [
+            "job_id"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "op",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    "hint": {
+      "type": "object",
+      "properties": {
+        "op": {
+          "const": "prefetch.hint"
+        },
+        "params": {
+          "type": "object",
+          "properties": {
+            "trigger": {
+              "enum": [
+                "hover",
+                "focus",
+                "navigation"
+              ]
+            },
+            "subject": {
+              "anyOf": [
+                {
+                  "$ref": "urn:querygraph:cosmolang:0.1:common#/$defs/entity"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "camera": {
+              "anyOf": [
+                {
+                  "$ref": "urn:querygraph:cosmolang:0.1:camera"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "ttl_ms": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 5000
+            }
+          },
+          "required": [
+            "trigger",
+            "subject",
+            "camera",
+            "ttl_ms"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "op",
+        "params"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

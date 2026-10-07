@@ -1,0 +1,162 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:querygraph:cosmolang:0.1:manifest",
+  "type": "object",
+  "properties": {
+    "cosmolang": {
+      "const": "0.1"
+    },
+    "view_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512
+    },
+    "generation": {
+      "$ref": "urn:querygraph:cosmolang:0.1:common#/$defs/uint"
+    },
+    "context": {
+      "$ref": "urn:querygraph:cosmolang:0.1:common#/$defs/context"
+    },
+    "frontier_handle": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512
+    },
+    "coordinate_frame": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512
+    },
+    "dimensions": {
+      "enum": [
+        2,
+        3
+      ]
+    },
+    "representation": {
+      "enum": [
+        "vertices",
+        "quotient"
+      ]
+    },
+    "membership_status": {
+      "enum": [
+        "complete",
+        "partial",
+        "sample"
+      ]
+    },
+    "edge_status": {
+      "enum": [
+        "complete",
+        "top_k",
+        "sample"
+      ]
+    },
+    "counts": {
+      "type": "object",
+      "properties": {
+        "points": {
+          "$ref": "urn:querygraph:cosmolang:0.1:common#/$defs/uint"
+        },
+        "links": {
+          "$ref": "urn:querygraph:cosmolang:0.1:common#/$defs/uint"
+        },
+        "represented_vertices": {
+          "anyOf": [
+            {
+              "$ref": "urn:querygraph:cosmolang:0.1:common#/$defs/uint"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "omitted_edges": {
+          "anyOf": [
+            {
+              "$ref": "urn:querygraph:cosmolang:0.1:common#/$defs/uint"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "points",
+        "links",
+        "represented_vertices",
+        "omitted_edges"
+      ],
+      "additionalProperties": false
+    },
+    "points": {
+      "$ref": "urn:querygraph:cosmolang:0.1:common#/$defs/resource"
+    },
+    "links": {
+      "$ref": "urn:querygraph:cosmolang:0.1:common#/$defs/resource"
+    },
+    "decoded_bytes": {
+      "$ref": "urn:querygraph:cosmolang:0.1:common#/$defs/uint"
+    },
+    "applied_budget": {
+      "$ref": "urn:querygraph:cosmolang:0.1:budget"
+    },
+    "edge_policy": {
+      "type": "object",
+      "properties": {
+        "direction": {
+          "enum": [
+            "directed",
+            "undirected"
+          ]
+        },
+        "parallel": {
+          "enum": [
+            "preserve",
+            "aggregate"
+          ]
+        },
+        "self_loops": {
+          "enum": [
+            "show",
+            "summarize",
+            "exclude"
+          ]
+        }
+      },
+      "required": [
+        "direction",
+        "parallel",
+        "self_loops"
+      ],
+      "additionalProperties": false
+    },
+    "quality_provenance": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512
+    }
+  },
+  "required": [
+    "cosmolang",
+    "view_id",
+    "generation",
+    "context",
+    "frontier_handle",
+    "coordinate_frame",
+    "dimensions",
+    "representation",
+    "membership_status",
+    "edge_status",
+    "counts",
+    "points",
+    "links",
+    "decoded_bytes",
+    "applied_budget",
+    "edge_policy",
+    "quality_provenance"
+  ],
+  "additionalProperties": false
+}

@@ -315,3 +315,23 @@ Evaluate Cosmograph first for its exploration interface. Keep the view contract
 independent of it. The architecture's scaling comes from Sail's indexed reads,
 materialized selections and explicit view admission; larger GPU capacity can
 increase a qualified view budget without changing the canonical graph store.
+
+## 9. Cosmolang exploration protocol
+
+The [Cosmolang 0.1 proposal](COSMOLANG.md) extends this architecture with one
+typed control protocol for browser gestures, a proposed Cosmograph MCP adapter
+and Sail/Nutmeg requests. It supplies JSON Schema and illustrative wire exchanges
+for camera rotation/zoom/pan, hierarchy expansion, topology traversal, spatial
+and embedding nearest neighbors, degree filtering, WCC and layout jobs.
+
+[Hierarchy and anticipation](COSMOLANG-HIERARCHY.md) defines disjoint semantic
+and spatial cuts, exact quotient provenance, a negotiated resident-point ceiling
+of one million and bounded prediction of likely next views. The earlier 10,000/
+50,000-point policies remain initial targets; one million is an application cap,
+not a measured device capacity. Genuine 3D serving requires new spatial indexing
+and a qualified SDK camera binding. Prefetch can warm admitted Nutmeg projections
+and layout providers but cannot stage the entire billion-node source locally.
+
+These are proposal/contracts, not new live integration or benchmark results.
+The new versioned endpoint and installation semantics supersede the earlier
+unversioned HTTP sketch when implemented.

@@ -1,0 +1,149 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:querygraph:cosmolang:0.1:camera",
+  "oneOf": [
+    {
+      "$ref": "urn:querygraph:cosmolang:0.1:camera#/$defs/pose2d"
+    },
+    {
+      "$ref": "urn:querygraph:cosmolang:0.1:camera#/$defs/pose3d"
+    }
+  ],
+  "$defs": {
+    "pose2d": {
+      "type": "object",
+      "properties": {
+        "mode": {
+          "const": "2d"
+        },
+        "coordinate_frame": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "center": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "world_units_per_pixel": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "viewport": {
+          "type": "object",
+          "properties": {
+            "width_px": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 16384
+            },
+            "height_px": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 16384
+            }
+          },
+          "required": [
+            "width_px",
+            "height_px"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "mode",
+        "coordinate_frame",
+        "center",
+        "world_units_per_pixel",
+        "viewport"
+      ],
+      "additionalProperties": false
+    },
+    "pose3d": {
+      "type": "object",
+      "properties": {
+        "mode": {
+          "const": "3d"
+        },
+        "coordinate_frame": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "eye": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "target": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "up": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "fov_y_degrees": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "exclusiveMaximum": 180
+        },
+        "near": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "far": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "viewport": {
+          "type": "object",
+          "properties": {
+            "width_px": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 16384
+            },
+            "height_px": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 16384
+            }
+          },
+          "required": [
+            "width_px",
+            "height_px"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "mode",
+        "coordinate_frame",
+        "eye",
+        "target",
+        "up",
+        "fov_y_degrees",
+        "near",
+        "far",
+        "viewport"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

@@ -690,6 +690,12 @@ indices, fixed-coordinate configuration, query and cache paths, admission polici
 and staged acceptance work. The current backend observations remain separate from the proposed
 service/browser targets.
 
+The [Cosmolang protocol proposal](COSMOLANG.md) adds browser/MCP/Nutmeg command
+semantics and portable wire schemas. Its [hierarchy and prefetch design](COSMOLANG-HIERARCHY.md)
+covers multibillion-source graphs through disjoint bounded cuts, a one-million
+resident-point ceiling and speculative next-view/layout preparation. This is
+contract and implementation planning; no new service/browser timing is claimed.
+
 ## Files
 
 All in this directory. Tables were written to the session scratch directory and are not kept.
@@ -697,6 +703,9 @@ All in this directory. Tables were written to the session scratch directory and 
 | File | Contents |
 |---|---|
 | `README.md` | this report |
+| [`COSMOLANG.md`](COSMOLANG.md) | typed exploration protocol for browser, MCP and Sail/Nutmeg |
+| [`COSMOLANG-HIERARCHY.md`](COSMOLANG-HIERARCHY.md) | hierarchical cuts, resident budgets, anticipation and implementation gates |
+| [`cosmolang/`](cosmolang/README.md) | portable JSON schemas, illustrative exchanges and conformance checks |
 | [`COSMOGRAPH-ARCHITECTURE.md`](COSMOGRAPH-ARCHITECTURE.md) | requested Cosmograph integration proposal and review; current official SDK contracts, backend projection/subset paths and qualification plan |
 | [`vizserver.py`](vizserver.py) | starts and stops one Sail server (Spark Connect or Flight) on an ephemeral port, records settings and host facts |
 | [`quadsql.py`](quadsql.py) | the key, cell and aggregate expressions (section 2) |
