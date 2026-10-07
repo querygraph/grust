@@ -60,11 +60,18 @@ impl Default for FixtureCatalog {
                         Property::required("name", LogicalType::String),
                     ],
                 ),
+                ty(12, "CHAIN", vec![], vec![]),
+                ty(
+                    4,
+                    "ChainNode",
+                    vec![],
+                    vec![Property::required("id", LogicalType::Int64)],
+                ),
                 ty(10, "KNOWS", vec![], vec![]),
                 ty(11, "WORKS", vec![], vec![]),
             ],
-            vec![vertex(1, 1), vertex(2, 2), vertex(3, 3)],
-            vec![edge(10, 10, 1, 1), edge(11, 11, 1, 3)],
+            vec![vertex(1, 1), vertex(2, 2), vertex(3, 3), vertex(4, 4)],
+            vec![edge(10, 10, 1, 1), edge(11, 11, 1, 3), edge(12, 12, 4, 4)],
         )
         .unwrap();
         Self { schema }
@@ -91,6 +98,8 @@ impl QueryStorage for Storage {
             1 => "people",
             2 => "employees",
             3 => "companies",
+            4 => "chain_nodes",
+            12 => "chain_edges",
             10 => "knows",
             11 => "works",
             _ => return None,
@@ -117,6 +126,8 @@ impl Statistics for Stats {
     fn rows(&self, _: &str, g: GroupId) -> Estimate<u64> {
         Estimate::Known(match g.0 {
             1 => 4,
+            4 => 12,
+            12 => 11,
             2 | 3 => 1,
             10 => 5,
             11 => 2,

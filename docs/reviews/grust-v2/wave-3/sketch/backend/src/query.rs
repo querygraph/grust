@@ -1,11 +1,13 @@
 //! Sail SQL generation for the executable resolved IR.
 mod expressions;
+pub mod program;
 use crate::EmitError;
 use grust_functions::{BackendSupport, FunctionDescriptor};
 use grust_lpg::{GroupId, LogicalType};
 use grust_resolved_plan::query::{Column, Expr, Node, Op, Plan, Value};
 use grust_resolved_plan::{Field, Slot};
 use grust_unresolved_plan::JoinKind;
+use program::{SailProgram, TraversalStep};
 use std::collections::{BTreeMap, HashMap};
 pub trait QueryStorage {
     fn table(&self, graph: &str, group: GroupId) -> Option<Vec<String>>;
@@ -18,6 +20,13 @@ pub struct SailSql<'a> {
 }
 impl SailSql<'_> {
     pub fn emit(&self, plan: &Plan) -> Result<String, EmitError> {
+        let program = self.emit_program(plan)?;
+        if !program.traversals.is_empty() {
+            return Err(refusal("iterative plan requires the Sail program adapter"));
+        }
+        Ok(program.sql)
+    }
+    pub fn emit_program(&self, plan: &Plan) -> Result<SailProgram, EmitError> {
         if plan.root.fields.is_empty() {
             return Err(refusal(
                 "zero-column root requires an explicit row-envelope adapter",
@@ -27,6 +36,7 @@ impl SailSql<'_> {
             adapter: self,
             ctes: Vec::new(),
             next: 0,
+            traversals: Vec::new(),
         };
         let root = emitter.node(&plan.root)?;
         let columns = if plan.root.fields.is_empty() {
@@ -74,17 +84,28 @@ impl SailSql<'_> {
                 );
             }
         }
-        Ok(sql)
+        Ok(SailProgram {
+            sql,
+            traversals: emitter.traversals,
+        })
     }
 }
 struct Emitter<'a, 'b> {
     adapter: &'a SailSql<'b>,
     ctes: Vec<String>,
     next: usize,
+    traversals: Vec<TraversalStep>,
 }
 impl Emitter<'_, '_> {
     fn node(&mut self, node: &Node) -> Result<String, EmitError> {
         let sql = match &node.op {
+            Op::Traverse {
+                seed,
+                adjacency,
+                hops,
+                mode,
+                shortest_walk,
+            } => self.traversal(node, seed, adjacency, *hops, *mode, *shortest_walk)?,
             Op::Unit => "SELECT 1 AS `@unit`".into(),
             Op::Empty => format!(
                 "SELECT {} WHERE FALSE",

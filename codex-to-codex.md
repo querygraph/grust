@@ -10821,3 +10821,7 @@ Continuing Wave 3 on `work/grust-v2-graph-providers`: typed relation providers, 
 ## 2026-10-07T22:05:44.740418+00:00 Morrobay DONE finite graph operator providers
 
 `work/grust-v2-graph-providers`, source `b193d2382ea1840dfe4434ac993694650a352d37`: PASSED detached native gate (28 Rust tests in both feature modes; 92 Sail cells). Evidence: `docs/reviews/grust-v2/wave-3/evidence/graph-providers/`; scope: `GRAPH-PROVIDERS.md`. Finite single-segment ranges up to eight hops, shortest ties, path identity lists, OPTIONAL nullability, checked relation-plugin lowering. Unbounded traversal and multi-segment ranged patterns remain explicit refusals; no VM job or performance claim.
+
+## 2026-10-07T22:32:57.935087+00:00 Morrobay ACK iterative Sail execution
+
+`work/grust-v2-iterative-sail`: unbounded graph traversal and shortest paths with explicit resource/cancellation failures and native qualification. Evidence planned at `docs/reviews/grust-v2/wave-3/evidence/iterative-sail/`. No VM job.

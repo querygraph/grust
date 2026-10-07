@@ -13,6 +13,9 @@ impl State<'_, '_> {
         pattern: &PathPattern,
     ) -> Result<Scope, ResolveError> {
         if path_capability(pattern) != PathCapability::BoundedSql {
+            if self.iterative {
+                return self.iterative_pattern(graph, schema, pattern);
+            }
             return Err(unsupported("path", "finite single-segment SQL provider admits at most 8 hops; unbounded traversal requires a separate iterative execution adapter"));
         }
         let edge = &pattern.edges[0];
@@ -173,20 +176,31 @@ impl State<'_, '_> {
                 },
             });
         }
-        let mut node = Node {
+        let node = Node {
             fields: fields.clone(),
             op: Op::Union {
                 inputs: branches,
                 all: true,
             },
         };
+        self.finish_path_scope(pattern, endpoints, node, edge_list, vertex_list, length)
+    }
+    pub(super) fn finish_path_scope(
+        &mut self,
+        pattern: &PathPattern,
+        endpoints: Vec<Template>,
+        mut node: Node,
+        edge_list: Field,
+        vertex_list: Field,
+        length: Field,
+    ) -> Result<Scope, ResolveError> {
         if pattern.selector != PathSelector::All {
             let partitions = endpoints
                 .iter()
                 .flat_map(|t| [t.entity.group.clone(), t.entity.identity.clone()])
                 .collect();
             node = Node {
-                fields,
+                fields: node.fields.clone(),
                 op: Op::PathSelect {
                     input: Box::new(node),
                     partitions,
@@ -213,7 +227,10 @@ impl State<'_, '_> {
                 bindings.insert(v.binding.clone(), Bound::Entity(endpoint.entity));
             }
         }
-        bindings.insert(edge.binding.clone(), Bound::Value(Expr::slot(&edge_list)));
+        bindings.insert(
+            pattern.edges[0].binding.clone(),
+            Bound::Value(Expr::slot(&edge_list)),
+        );
         if let Some(binding) = &pattern.binding {
             let values = vec![
                 ("length".into(), Expr::slot(&length)),
@@ -243,7 +260,7 @@ impl State<'_, '_> {
         Ok(Scope { node, bindings })
     }
 }
-fn identity_type() -> LogicalType {
+pub(super) fn identity_type() -> LogicalType {
     LogicalType::Struct(vec![
         grust_lpg::Property::required("group", LogicalType::Int64),
         grust_lpg::Property::required("identity", LogicalType::Int64),
@@ -282,7 +299,7 @@ fn list(values: Vec<Expr>) -> Expr {
         nullable: false,
     }
 }
-fn project_entity(template: &Template, actual: &Entity, items: &mut Vec<(Slot, Expr)>) {
+pub(super) fn project_entity(template: &Template, actual: &Entity, items: &mut Vec<(Slot, Expr)>) {
     items.push((template.fields[0].slot, actual.identity.clone()));
     items.push((template.fields[1].slot, actual.group.clone()));
     for f in template.fields.iter().skip(2) {

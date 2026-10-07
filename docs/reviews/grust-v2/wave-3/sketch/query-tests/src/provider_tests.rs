@@ -136,3 +136,92 @@ fn bound_and_binding_admission_controls() {
     };
     assert!(QueryResolver.resolve(&plan, &context).is_err());
 }
+#[test]
+fn iterative_plans_require_the_program_adapter() {
+    let catalog = FixtureCatalog::default();
+    let functions = registry();
+    let context = Context {
+        catalog: &catalog,
+        functions: &functions,
+        parameters: &Parameters,
+    };
+    for case in crate::iterative_cases::cases() {
+        let plan = QueryResolver
+            .resolve_iterative(&case.plan, &context, &NoProviders)
+            .unwrap();
+        let values = values();
+        let adapter = grust_backend::query::SailSql {
+            storage: &Storage,
+            parameters: &values,
+        };
+        assert!(adapter.emit(&plan).is_err());
+        assert_eq!(
+            adapter.emit_program(&plan).unwrap().traversals.len(),
+            if case.name == "multiple_iterative_steps" {
+                2
+            } else {
+                1
+            }
+        );
+    }
+    let mut p = path("a", "b", u::PatternDirection::Outgoing);
+    p.edges[0].hops = u::Hops { min: 0, max: None };
+    let plan = u::Plan {
+        root: Relation::Match {
+            input: Box::new(Relation::Unit),
+            graph: u::GraphRef::Default,
+            patterns: vec![p],
+            optional: false,
+        },
+    };
+    assert!(QueryResolver
+        .resolve_iterative(&plan, &context, &NoProviders)
+        .is_err());
+}
+#[test]
+fn iterative_correlations_and_volatile_predicates_refuse() {
+    use grust_functions::*;
+    let catalog = FixtureCatalog::default();
+    let mut functions = registry();
+    functions
+        .register(FunctionDescriptor {
+            name: FunctionName::new("coin"),
+            kind: FunctionKind::Scalar,
+            signature: Signature {
+                arguments: vec![],
+                variadic: None,
+                result: ReturnType::Exact(grust_lpg::LogicalType::Boolean),
+            },
+            nulls: NullSemantics::NonNull,
+            backends: BackendSupport::Any,
+            volatility: Volatility::Volatile,
+            provider: "control".into(),
+        })
+        .unwrap();
+    let context = Context {
+        catalog: &catalog,
+        functions: &functions,
+        parameters: &Parameters,
+    };
+    let mut p = path("a", "b", u::PatternDirection::Outgoing);
+    p.edges[0].hops = u::Hops { min: 1, max: None };
+    p.selector = u::PathSelector::Shortest;
+    p.vertices[0].predicates = vec![Expr::scalar(FunctionName::new("coin"), vec![])];
+    let plan = |p| u::Plan {
+        root: Relation::Match {
+            input: Box::new(Relation::Unit),
+            graph: u::GraphRef::Default,
+            patterns: vec![p],
+            optional: false,
+        },
+    };
+    assert!(QueryResolver
+        .resolve_iterative(&plan(p.clone()), &context, &NoProviders)
+        .is_err());
+    p.vertices[0].predicates.clear();
+    p.edges[0].predicates =
+        vec![crate::fixtures::p("a", "id").binary(u::BinaryOp::Eq, Expr::from(1i64))];
+    assert!(QueryResolver
+        .resolve_iterative(&plan(p), &context, &NoProviders)
+        .is_err());
+}

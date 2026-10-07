@@ -1,6 +1,7 @@
 //! Full relational resolver entry point; unsupported path/extension semantics refuse.
 mod catalog;
 mod expressions;
+mod iterative;
 mod paths;
 mod patterns;
 pub mod providers;
@@ -44,11 +45,29 @@ impl QueryResolver {
         context: &Context<'_>,
         providers: &dyn providers::RelationProviders,
     ) -> Result<Plan, Vec<ResolveError>> {
+        self.resolve_mode(plan, context, providers, false)
+    }
+    pub fn resolve_iterative(
+        &self,
+        plan: &dyn UnresolvedPlan,
+        context: &Context<'_>,
+        providers: &dyn providers::RelationProviders,
+    ) -> Result<Plan, Vec<ResolveError>> {
+        self.resolve_mode(plan, context, providers, true)
+    }
+    fn resolve_mode(
+        &self,
+        plan: &dyn UnresolvedPlan,
+        context: &Context<'_>,
+        providers: &dyn providers::RelationProviders,
+        iterative: bool,
+    ) -> Result<Plan, Vec<ResolveError>> {
         let mut state = State {
             context,
             next: 0,
             providers,
             extension_depth: 0,
+            iterative,
         };
         state
             .relation(plan.relation())
@@ -61,6 +80,7 @@ struct State<'a, 'b> {
     next: u32,
     providers: &'a dyn providers::RelationProviders,
     extension_depth: usize,
+    iterative: bool,
 }
 impl State<'_, '_> {
     fn field(

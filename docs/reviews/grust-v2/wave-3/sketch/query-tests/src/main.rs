@@ -13,32 +13,41 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
     let mut records = Vec::new();
     let detailed_explain = std::env::args().any(|arg| arg == "--explain");
-    for case in cases() {
-        let plan = QueryResolver
-            .resolve_with_providers(&case.plan, &context, &RelationPlugins)
-            .map_err(|e| format!("{}: {e:?}", case.name))?;
+    let iterative = std::env::args().any(|arg| arg == "--iterative");
+    let cases = if iterative {
+        grust_query_qualification::iterative_cases::cases()
+    } else {
+        cases()
+    };
+    for case in cases {
+        let plan = if iterative {
+            QueryResolver.resolve_iterative(&case.plan, &context, &RelationPlugins)
+        } else {
+            QueryResolver.resolve_with_providers(&case.plan, &context, &RelationPlugins)
+        }
+        .map_err(|e| format!("{}: {e:?}", case.name))?;
         let output_types = plan
             .output()
             .iter()
             .map(|f| spark_type(&f.ty))
             .collect::<Vec<_>>();
-        let sql = SailSql {
+        let program = SailSql {
             storage: &Storage,
             parameters: &params,
         }
-        .emit(&plan)?;
+        .emit_program(&plan)?;
         let optimized = JoinOptimizer {
             statistics: Some(&Stats),
             cost: &HashJoinCost,
             max_relations: 8,
         }
         .optimize(plan);
-        let optimized_sql = SailSql {
+        let optimized_program = SailSql {
             storage: &Storage,
             parameters: &params,
         }
-        .emit(&optimized.logical)?;
-        records.push(serde_json::json!({"name":case.name,"sql":sql,"optimized_sql":optimized_sql,"expected":case.expected,"ordered":case.ordered,"output_types":output_types,"trace":optimized.trace,"explain":if detailed_explain {Some(explain(&optimized))} else {None}}));
+        .emit_program(&optimized.logical)?;
+        records.push(serde_json::json!({"name":case.name,"sql":program.sql,"optimized_sql":optimized_program.sql,"traversals":traversals(&program.traversals),"optimized_traversals":traversals(&optimized_program.traversals),"expected":case.expected,"ordered":case.ordered,"output_types":output_types,"trace":optimized.trace,"explain":if detailed_explain {Some(explain(&optimized))} else {None}}));
     }
     println!("{}", serde_json::to_string_pretty(&records)?);
     Ok(())
@@ -68,4 +77,8 @@ fn spark_type(ty: &grust_lpg::LogicalType) -> String {
         ),
         _ => format!("{ty:?}"),
     }
+}
+
+fn traversals(steps: &[grust_backend::query::program::TraversalStep]) -> serde_json::Value {
+    serde_json::Value::Array(steps.iter().map(|s| serde_json::json!({"view":s.view,"seed_sql":s.seed_sql,"adjacency_sql":s.adjacency_sql,"min_hops":s.min_hops,"max_hops":s.max_hops,"mode":format!("{:?}",s.mode),"shortest_walk":s.shortest_walk})).collect())
 }

@@ -72,6 +72,12 @@ impl JoinOptimizer<'_> {
                 **left = self.rewrite(*left.clone(), stats, trace);
                 **right = self.rewrite(*right.clone(), stats, trace);
             }
+            Op::Traverse {
+                seed, adjacency, ..
+            } => {
+                **seed = self.rewrite(*seed.clone(), stats, trace);
+                **adjacency = self.rewrite(*adjacency.clone(), stats, trace);
+            }
             Op::Union { inputs, .. } => {
                 for input in inputs {
                     *input = self.rewrite(input.clone(), stats, trace);

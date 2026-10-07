@@ -123,6 +123,15 @@ pub enum Op {
         length: Expr,
         all_ties: bool,
     },
+    /// Positional inputs: seed=(group,id), adjacency=(src_group,src_id,dst_group,dst_id,edge_group,edge_id).
+    /// Output=(src_group,src_id,dst_group,dst_id,edges,vertices,length).
+    Traverse {
+        seed: Box<Node>,
+        adjacency: Box<Node>,
+        hops: grust_unresolved_plan::Hops,
+        mode: grust_unresolved_plan::PathMode,
+        shortest_walk: bool,
+    },
     Slice {
         input: Box<Node>,
         offset: Option<Expr>,
