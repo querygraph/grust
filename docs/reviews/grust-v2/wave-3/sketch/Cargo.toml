@@ -1,0 +1,20 @@
+[workspace]
+resolver = "2"
+members = ["resolved-plan", "resolution", "optimized-plan", "optimizer", "backend"]
+[workspace.package]
+version = "0.3.0-draft"
+edition = "2021"
+publish = false
+license = "Apache-2.0"
+[workspace.dependencies]
+grust-lpg = { path = "../../wave-2/sketch/lpg" }
+grust-functions = { path = "../../wave-2/sketch/functions" }
+grust-unresolved-plan = { path = "../../wave-2/sketch/unresolved-plan" }
+grust-resolved-plan = { path = "resolved-plan" }
+grust-optimized-plan = { path = "optimized-plan" }
+[profile.dev]
+debug = 0
+incremental = false
+[profile.release]
+debug = 0
+incremental = false
