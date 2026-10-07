@@ -128,6 +128,13 @@ impl Emitter<'_, '_> {
                 }
                 Ok(sql)
             }
+            Value::List(values) if values.is_empty() => {
+                let ty = expr
+                    .ty
+                    .as_ref()
+                    .ok_or_else(|| refusal("empty list without type"))?;
+                Ok(format!("CAST(array() AS {})", data_type(ty)?))
+            }
             Value::List(values) => Ok(format!(
                 "array({})",
                 values

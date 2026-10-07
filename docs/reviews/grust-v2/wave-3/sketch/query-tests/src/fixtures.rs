@@ -247,7 +247,9 @@ pub struct Case {
     pub ordered: bool,
 }
 pub fn cases() -> Vec<Case> {
-    crate::basic_cases::cases()
+    let mut cases = crate::basic_cases::cases();
+    cases.extend(crate::path_cases::cases());
+    cases
 }
 pub fn values() -> HashMap<String, Expr> {
     HashMap::from([(
@@ -258,4 +260,29 @@ pub fn values() -> HashMap<String, Expr> {
             nullable: false,
         },
     )])
+}
+
+/// Qualification plugin, lowered without introducing storage or engine pointers.
+pub struct RelationPlugins;
+impl grust_resolution::query::providers::RelationProviders for RelationPlugins {
+    fn lower(
+        &self,
+        name: &FunctionName,
+        inputs: &[R],
+        arguments: &[E],
+    ) -> Result<Option<R>, ResolveError> {
+        if name.name != "keep_above" {
+            return Ok(None);
+        }
+        if inputs.len() != 1 || arguments.len() != 1 {
+            return Err(ResolveError::Unsupported {
+                operator: "keep_above".into(),
+                reason: "one relation and threshold required".into(),
+            });
+        }
+        Ok(Some(R::Filter {
+            input: Box::new(inputs[0].clone()),
+            predicate: E::variable("value").binary(u::BinaryOp::Gt, arguments[0].clone()),
+        }))
+    }
 }

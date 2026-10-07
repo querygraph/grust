@@ -15,7 +15,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let detailed_explain = std::env::args().any(|arg| arg == "--explain");
     for case in cases() {
         let plan = QueryResolver
-            .resolve(&case.plan, &context)
+            .resolve_with_providers(&case.plan, &context, &RelationPlugins)
             .map_err(|e| format!("{}: {e:?}", case.name))?;
         let output_types = plan
             .output()

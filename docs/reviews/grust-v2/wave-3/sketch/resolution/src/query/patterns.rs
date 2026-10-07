@@ -8,9 +8,9 @@ use grust_unresolved_plan::{
 };
 use std::collections::{BTreeMap, BTreeSet};
 #[derive(Clone)]
-struct Template {
-    entity: Entity,
-    fields: Vec<Field>,
+pub(super) struct Template {
+    pub(super) entity: Entity,
+    pub(super) fields: Vec<Field>,
     source: Option<Field>,
     target: Option<Field>,
 }
@@ -54,6 +54,12 @@ impl State<'_, '_> {
             bindings: bindings.clone(),
         };
         for pattern in patterns {
+            if pattern.binding.is_some()
+                || pattern.selector != PathSelector::All
+                || pattern.edges.iter().any(|e| e.hops != Hops::ONE)
+            {
+                continue;
+            }
             for vertex in &pattern.vertices {
                 for predicate in &vertex.predicates {
                     let e = self.expression(predicate, &combined, Some(&vertex.binding), false)?;
@@ -83,6 +89,9 @@ impl State<'_, '_> {
         if optional {
             for (key, bound) in &mut bindings {
                 if pattern_scope.bindings.contains_key(key) && !input.bindings.contains_key(key) {
+                    if let Bound::Value(value) = bound {
+                        value.nullable = true;
+                    }
                     if let Bound::Entity(e) = bound {
                         e.identity.nullable = true;
                         e.group.nullable = true;
@@ -95,7 +104,7 @@ impl State<'_, '_> {
         }
         Ok(Scope { node, bindings })
     }
-    fn pattern(
+    pub(super) fn pattern(
         &mut self,
         graph: &str,
         schema: &Schema,
@@ -108,7 +117,7 @@ impl State<'_, '_> {
             || pattern.selector != PathSelector::All
             || pattern.edges.iter().any(|e| e.hops != Hops::ONE)
         {
-            return Err(unsupported("path","variable length, selected paths or materialized paths require an explicit graph operator provider"));
+            return self.ranged_pattern(graph, schema, pattern);
         }
         let paths = enumerate(schema, pattern)?;
         let mut templates = Vec::new();
@@ -305,7 +314,7 @@ impl State<'_, '_> {
         };
         Ok(Scope { node, bindings })
     }
-    fn template(
+    pub(super) fn template(
         &mut self,
         graph: &str,
         schema: &Schema,

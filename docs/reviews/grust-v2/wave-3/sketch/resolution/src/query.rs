@@ -1,7 +1,9 @@
 //! Full relational resolver entry point; unsupported path/extension semantics refuse.
 mod catalog;
 mod expressions;
+mod paths;
 mod patterns;
+pub mod providers;
 mod relations;
 use crate::{Context, ResolveError};
 use grust_lpg::LogicalType;
@@ -34,7 +36,20 @@ impl QueryResolver {
         plan: &dyn UnresolvedPlan,
         context: &Context<'_>,
     ) -> Result<Plan, Vec<ResolveError>> {
-        let mut state = State { context, next: 0 };
+        self.resolve_with_providers(plan, context, &providers::NoProviders)
+    }
+    pub fn resolve_with_providers(
+        &self,
+        plan: &dyn UnresolvedPlan,
+        context: &Context<'_>,
+        providers: &dyn providers::RelationProviders,
+    ) -> Result<Plan, Vec<ResolveError>> {
+        let mut state = State {
+            context,
+            next: 0,
+            providers,
+            extension_depth: 0,
+        };
         state
             .relation(plan.relation())
             .map(|scope| Plan { root: scope.node })
@@ -44,6 +59,8 @@ impl QueryResolver {
 struct State<'a, 'b> {
     context: &'a Context<'b>,
     next: u32,
+    providers: &'a dyn providers::RelationProviders,
+    extension_depth: usize,
 }
 impl State<'_, '_> {
     fn field(

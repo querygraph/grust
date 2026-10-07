@@ -323,6 +323,29 @@ impl Emitter<'_, '_> {
                     }
                 )
             }
+            Op::PathSelect {
+                input,
+                partitions,
+                length,
+                all_ties,
+            } => {
+                let child = self.node(input)?;
+                let env = environment(&input.fields, "");
+                let partition = partitions
+                    .iter()
+                    .map(|e| self.expression(e, &env))
+                    .collect::<Result<Vec<_>, _>>()?
+                    .join(", ");
+                let order = self.expression(length, &env)?;
+                let columns = node
+                    .fields
+                    .iter()
+                    .map(|f| slot(f.slot))
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                let function = if *all_ties { "rank" } else { "row_number" };
+                format!("SELECT {columns} FROM (SELECT *, {function}() OVER (PARTITION BY {partition} ORDER BY {order}) AS `@path_rank` FROM {child}) ranked WHERE `@path_rank` = 1")
+            }
             Op::Slice {
                 input,
                 offset,

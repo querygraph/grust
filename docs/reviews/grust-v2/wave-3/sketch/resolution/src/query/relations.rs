@@ -300,10 +300,28 @@ impl State<'_, '_> {
                     bindings: input.bindings,
                 })
             }
-            U::Extension { name, .. } => Err(unsupported(
-                "extension",
-                &format!("no relation provider registered for {name:?}"),
-            )),
+            U::Extension {
+                name,
+                inputs,
+                arguments,
+            } => {
+                if self.extension_depth >= 32 {
+                    return Err(unsupported("extension", "provider lowering depth exceeded"));
+                }
+                let lowered = self
+                    .providers
+                    .lower(name, inputs, arguments)?
+                    .ok_or_else(|| {
+                        unsupported(
+                            "extension",
+                            &format!("no relation provider registered for {name:?}"),
+                        )
+                    })?;
+                self.extension_depth += 1;
+                let result = self.relation(&lowered);
+                self.extension_depth -= 1;
+                result
+            }
         }
     }
 }

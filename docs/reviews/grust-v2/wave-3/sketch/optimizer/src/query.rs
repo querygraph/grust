@@ -66,6 +66,7 @@ impl JoinOptimizer<'_> {
             | Op::Aggregate { input, .. }
             | Op::Unwind { input, .. }
             | Op::Sort { input, .. }
+            | Op::PathSelect { input, .. }
             | Op::Slice { input, .. } => **input = self.rewrite(*input.clone(), stats, trace),
             Op::Join { left, right, .. } => {
                 **left = self.rewrite(*left.clone(), stats, trace);

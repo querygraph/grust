@@ -7,13 +7,14 @@ use grust_unresolved_plan::{self as u, Expr as E, Relation as R};
 fn resolve(plan: u::Plan) -> Result<grust_resolved_plan::query::Plan, Vec<ResolveError>> {
     let catalog = FixtureCatalog::default();
     let registry = registry();
-    QueryResolver.resolve(
+    QueryResolver.resolve_with_providers(
         &plan,
         &Context {
             catalog: &catalog,
             functions: &registry,
             parameters: &Parameters,
         },
+        &RelationPlugins,
     )
 }
 #[test]

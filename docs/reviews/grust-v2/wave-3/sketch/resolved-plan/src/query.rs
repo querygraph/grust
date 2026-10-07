@@ -116,6 +116,13 @@ pub enum Op {
         input: Box<Node>,
         keys: Vec<SortKey>,
     },
+    /// Path selection is partitioned by endpoint identity and group.
+    PathSelect {
+        input: Box<Node>,
+        partitions: Vec<Expr>,
+        length: Expr,
+        all_ties: bool,
+    },
     Slice {
         input: Box<Node>,
         offset: Option<Expr>,
