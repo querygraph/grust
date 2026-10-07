@@ -60,18 +60,11 @@ impl Default for FixtureCatalog {
                         Property::required("name", LogicalType::String),
                     ],
                 ),
-                ty(12, "CHAIN", vec![], vec![]),
-                ty(
-                    4,
-                    "ChainNode",
-                    vec![],
-                    vec![Property::required("id", LogicalType::Int64)],
-                ),
                 ty(10, "KNOWS", vec![], vec![]),
                 ty(11, "WORKS", vec![], vec![]),
             ],
-            vec![vertex(1, 1), vertex(2, 2), vertex(3, 3), vertex(4, 4)],
-            vec![edge(10, 10, 1, 1), edge(11, 11, 1, 3), edge(12, 12, 4, 4)],
+            vec![vertex(1, 1), vertex(2, 2), vertex(3, 3)],
+            vec![edge(10, 10, 1, 1), edge(11, 11, 1, 3)],
         )
         .unwrap();
         Self { schema }
@@ -81,6 +74,9 @@ impl Catalog for FixtureCatalog {
     fn graph(&self, graph: &u::GraphRef) -> Result<(&str, &Schema), ResolveError> {
         match graph {
             u::GraphRef::Default => Ok(("fixture", &self.schema)),
+            u::GraphRef::Named { namespace, name } if namespace.is_empty() && name == "chain" => {
+                Ok(("chain", chain_schema()))
+            }
             _ => Err(ResolveError::UnknownGraph(graph.clone())),
         }
     }
@@ -296,4 +292,43 @@ impl grust_resolution::query::providers::RelationProviders for RelationPlugins {
             predicate: E::variable("value").binary(u::BinaryOp::Gt, arguments[0].clone()),
         }))
     }
+}
+
+fn chain_schema() -> &'static Schema {
+    static SCHEMA: std::sync::OnceLock<Schema> = std::sync::OnceLock::new();
+    SCHEMA.get_or_init(|| {
+        Schema::new(
+            vec![
+                ElementType {
+                    id: TypeId(4),
+                    name: "ChainNode".into(),
+                    labels: vec!["ChainNode".into()],
+                    supertypes: vec![],
+                    properties: vec![Property::required("id", LogicalType::Int64)],
+                },
+                ElementType {
+                    id: TypeId(12),
+                    name: "CHAIN".into(),
+                    labels: vec!["CHAIN".into()],
+                    supertypes: vec![],
+                    properties: vec![],
+                },
+            ],
+            vec![Vertex {
+                id: GroupId(4),
+                element_type: TypeId(4),
+                identity: Identity::Opaque,
+                constraints: vec![],
+            }],
+            vec![Edge {
+                id: GroupId(12),
+                element_type: TypeId(12),
+                source: GroupId(4),
+                target: GroupId(4),
+                direction: Direction::Directed,
+                identity: Identity::Opaque,
+            }],
+        )
+        .unwrap()
+    })
 }

@@ -307,7 +307,14 @@ fn make(name: &'static str, p: u::PathPattern, expected: serde_json::Value) -> C
             root: project(
                 R::Match {
                     input: Box::new(R::Unit),
-                    graph: u::GraphRef::Default,
+                    graph: if name == "unbounded_eleven_hops" {
+                        u::GraphRef::Named {
+                            namespace: vec![],
+                            name: "chain".into(),
+                        }
+                    } else {
+                        u::GraphRef::Default
+                    },
                     patterns: vec![p],
                     optional: false,
                 },
