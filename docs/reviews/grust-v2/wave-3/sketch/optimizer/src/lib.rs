@@ -8,6 +8,10 @@ pub trait Statistics {
     fn rows(&self, graph: &str, group: GroupId) -> Estimate<u64>;
     fn distinct(&self, graph: &str, group: GroupId, property: &str) -> Estimate<u64>;
     fn degree(&self, graph: &str, group: GroupId) -> Estimate<DegreeSummary>;
+    /// Distinct endpoint identities from supplied metadata, never a planning scan.
+    fn endpoint_distinct(&self, _graph: &str, _group: GroupId, _source: bool) -> Estimate<u64> {
+        Estimate::Unknown
+    }
 }
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct DegreeSummary {
@@ -130,3 +134,5 @@ fn show(relation: &Relation, depth: usize, lines: &mut Vec<String>) {
 }
 #[cfg(test)]
 mod tests;
+
+pub mod query;

@@ -80,3 +80,5 @@ fn quote(value: &str) -> String {
 }
 #[cfg(test)]
 mod tests;
+
+pub mod query;

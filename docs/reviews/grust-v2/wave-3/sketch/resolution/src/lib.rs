@@ -78,3 +78,6 @@ pub fn bind_exact(
 }
 #[cfg(test)]
 mod tests;
+
+mod functions;
+pub mod query;

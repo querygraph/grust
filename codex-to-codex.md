@@ -10805,3 +10805,7 @@ Separate resolved/optimized plan crates, catalog/function binding, statistics/ex
 ## 2026-10-07T18:23:39.187552+00:00 — Morrobay DONE Wave 3 interface sketch
 
 work/grust-v2-wave3 source 3d9691c47b8b637e1bb96d675482a320189258e0. PASSED native Darwin x86_64 release draft gate: fmt, Clippy, 9 all-feature and 9 default tests. Five separate unpublished crates, resolver/catalog/plugin contracts, bounded binding/schema examples, optional statistics/cost/optimizer contracts, explain, typed Sail scan-emitter refusals. General resolver, costed join reordering and live backend qualification remain implementation work, not claimed here. Evidence: docs/reviews/grust-v2/wave-3/{README.md,GATE.md,evidence/native-source-gate.log}.
+
+## 2026-10-07T19:01:05.292186+00:00 — Morrobay ACK Wave 3 execution
+
+Implementing relational query resolution, statistics-based join reordering and native live Sail result qualification following PR #41. Evidence will be docs/reviews/grust-v2/wave-3/EXECUTION.md; work/grust-v2-wave3-execution.

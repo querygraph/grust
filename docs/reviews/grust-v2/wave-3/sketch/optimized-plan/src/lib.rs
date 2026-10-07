@@ -38,3 +38,5 @@ impl OptimizedPlan for Plan {
         self
     }
 }
+
+pub mod query;

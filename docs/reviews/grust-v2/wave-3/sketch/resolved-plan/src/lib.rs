@@ -3,7 +3,7 @@ use grust_functions::FunctionDescriptor;
 use grust_lpg::{GroupId, LogicalType};
 use grust_unresolved_plan::{BinaryOp, Binding, Literal};
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Slot(pub u32);
 #[derive(Clone, Debug, PartialEq)]
 pub struct Field {
@@ -95,3 +95,5 @@ impl ResolvedPlan for Plan {
         &self.output
     }
 }
+
+pub mod query;
