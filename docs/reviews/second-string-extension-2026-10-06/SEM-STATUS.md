@@ -93,3 +93,12 @@ reserved for Linux build testing.
    [#2722](https://github.com/lakehq/sail/issues/2722) and sorted overwrite
    [#2741](https://github.com/lakehq/sail/issues/2741), qualifying each proposed fix.
    Keep additional F2a paused as requested.
+
+## Email delivery
+
+The consolidated report and Cypher/SNB report were sent as attachments from
+`dick@hurz.net` to `ssinchenko@apache.org`. The configured SMTP service accepted
+the submission at 2026-10-08T05:05:11.115165+00:00.
+[Submission receipt](../grust-v2/wave-3/evidence/cypher-semantics/email-submission.json)
+retains the Message-ID and report edition. Inbox delivery was not independently
+confirmed.

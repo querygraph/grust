@@ -4,14 +4,14 @@ Branch: `work/grust-v2-cypher-semantics`, based on PR #45.
 
 [Draft PR #46](https://github.com/querygraph/grust/pull/46), stacked on #45.
 
-| Required item                                       | State                                                         | Evidence                                                                                                                               |
-| --------------------------------------------------- | ------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| MATCH-wide relationship uniqueness                  | Implemented and source-qualified                              | Fixed/ranged comma patterns, repeated variables, optional matches, self loops, parallel arcs and zero-hop cases                        |
-| Correlated CALL/subqueries through providers        | Implemented and source-qualified                              | Duplicate outer rows, nested bodies, empty aggregates, UNION, per-row LIMIT/order and qualified provider refusal                       |
-| Full paths/entity lists: length/nodes/relationships | Implemented and source-qualified                              | Ordered columnar hydration, complete admitted properties, stored edge endpoints, mixed segments, zero hops and null optional paths     |
-| Ordering propagation and numeric semantics          | Implemented and source-qualified                              | Hidden sort slots, WITH scope/filter/slicing, exact mixed comparisons and eight expected arithmetic errors                             |
-| Representative LDBC queries and cost qualification  | Source-qualified in the disclosed subset                      | Five unchanged SNB v1 short queries, thirteen bindings, independent CSV oracle, 130 cells including warmups and ABBA twice             |
-| Consolidated report and email to Sem                | Report prepared; delivery receipt will be recorded separately | [Sem status](../../second-string-extension-2026-10-06/SEM-STATUS.md); authorized sender dick@hurz.net, recipient ssinchenko@apache.org |
+| Required item                                       | State                                          | Evidence                                                                                                                               |
+| --------------------------------------------------- | ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| MATCH-wide relationship uniqueness                  | Implemented and source-qualified               | Fixed/ranged comma patterns, repeated variables, optional matches, self loops, parallel arcs and zero-hop cases                        |
+| Correlated CALL/subqueries through providers        | Implemented and source-qualified               | Duplicate outer rows, nested bodies, empty aggregates, UNION, per-row LIMIT/order and qualified provider refusal                       |
+| Full paths/entity lists: length/nodes/relationships | Implemented and source-qualified               | Ordered columnar hydration, complete admitted properties, stored edge endpoints, mixed segments, zero hops and null optional paths     |
+| Ordering propagation and numeric semantics          | Implemented and source-qualified               | Hidden sort slots, WITH scope/filter/slicing, exact mixed comparisons and eight expected arithmetic errors                             |
+| Representative LDBC queries and cost qualification  | Source-qualified in the disclosed subset       | Five unchanged SNB v1 short queries, thirteen bindings, independent CSV oracle, 130 cells including warmups and ABBA twice             |
+| Consolidated report and email to Sem                | Report pushed; SMTP service accepted the email | [Sem status](../../second-string-extension-2026-10-06/SEM-STATUS.md); authorized sender dick@hurz.net, recipient ssinchenko@apache.org |
 
 All runs use native release execution. Gates run in detached clean checkouts.
 Failures and capability refusals remain distinct from passed result checks.
@@ -142,5 +142,8 @@ were implemented; these limits are not substitutes for those implementations.
 [Sem's consolidated progress report](../../second-string-extension-2026-10-06/SEM-STATUS.md)
 covers the earlier research, native algorithm contrasts, fork PRs, Grust
 release, all Wave 3 drafts, Cosmolang and this query qualification. Email
-uses Debian's existing Resend SMTP configuration. Its delivery receipt is
-recorded separately after sending, without credentials.
+uses Debian's existing Resend SMTP configuration. The [submission receipt](evidence/cypher-semantics/email-submission.json) records
+SMTP acceptance at 2026-10-08T05:05:11.115165+00:00, with both reports
+attached. Recipient inbox delivery was not independently confirmed. The
+[cleanup receipt](evidence/cypher-semantics/cleanup.json) records removal of
+the two owned temporary targets and detached gate checkout.
