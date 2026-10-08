@@ -50,7 +50,7 @@ bindings need a full Cypher entity-path/list materialization contract; internal
 identity arrays are not exposed as those values. Materialized/ranged path WHERE
 needs correlated predicate lowering. WITH ordering needs propagation across
 later clauses. Hidden ORDER BY keys, complex unaliased expressions, unsupported
-operators, comprehensions, quantifiers and indexing are refused. Multipart USE
+operators (including division pending integer/float semantics), comprehensions, quantifiers and indexing are refused. Multipart USE
 is refused because the current AST flattens quoted selector components.
 
 The native runtime remains local-mode with a shared local filesystem, explicit
@@ -65,11 +65,11 @@ bags or sequences; both resolved and optimized programs execute. They cover
 optional filtering, parallel edges, relationship reuse, count on an unmatched
 optional row, projection order after grouping, CASE, UNION multiplicity, quoting,
 parameter values, bounded traversal and eleven-hop unbounded traversal.
-Twenty-four refusal fixtures stop before engine execution.
+Twenty-six refusal fixtures stop before engine execution.
 
 Run `live/gate-cypher.sh` from a clean detached checkout with external
 `CARGO_TARGET_DIR`, `GATE_OUTPUT`, `SAIL_BINARY` and `GATE_PYTHON`. It checks Rust
-formatting, Clippy, tests in default/serde/release modes, all existing relational
+formatting, Clippy, tests in default/all-features/release modes, all existing relational
 and iterative native fixtures, the source-text fixtures, refusal diagnostics and
 runtime controls. The final verdict is only printed if HEAD and the checkout
 remain unchanged. Source-specific receipts will be linked after the gate.

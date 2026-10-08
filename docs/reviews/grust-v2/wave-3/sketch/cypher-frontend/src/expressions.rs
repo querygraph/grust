@@ -41,27 +41,31 @@ impl CypherLowering<'_> {
                 argument: Box::new(self.expression(operand, at)?),
             },
             a::Expr::Binary { op, lhs, rhs } => {
-                let op = match op {
-                    a::BinaryOp::Add => B::Add,
-                    a::BinaryOp::Subtract => B::Subtract,
-                    a::BinaryOp::Multiply => B::Multiply,
-                    a::BinaryOp::Divide => B::Divide,
-                    a::BinaryOp::Eq => B::Eq,
-                    a::BinaryOp::Ne => B::NotEq,
-                    a::BinaryOp::Lt => B::Lt,
-                    a::BinaryOp::Le => B::Le,
-                    a::BinaryOp::Gt => B::Gt,
-                    a::BinaryOp::Ge => B::Ge,
-                    a::BinaryOp::And => B::And,
-                    a::BinaryOp::Or => B::Or,
-                    a::BinaryOp::In => B::In,
-                    _ => {
-                        return Err(refusal(
+                let op =
+                    match op {
+                        a::BinaryOp::Add => B::Add,
+                        a::BinaryOp::Subtract => B::Subtract,
+                        a::BinaryOp::Multiply => B::Multiply,
+                        a::BinaryOp::Divide => return Err(refusal(
                             at,
-                            "operator has no faithful unresolved-plan representation",
-                        ))
-                    }
-                };
+                            "division needs Cypher integer/float dispatch after type resolution",
+                        )),
+                        a::BinaryOp::Eq => B::Eq,
+                        a::BinaryOp::Ne => B::NotEq,
+                        a::BinaryOp::Lt => B::Lt,
+                        a::BinaryOp::Le => B::Le,
+                        a::BinaryOp::Gt => B::Gt,
+                        a::BinaryOp::Ge => B::Ge,
+                        a::BinaryOp::And => B::And,
+                        a::BinaryOp::Or => B::Or,
+                        a::BinaryOp::In => B::In,
+                        _ => {
+                            return Err(refusal(
+                                at,
+                                "operator has no faithful unresolved-plan representation",
+                            ))
+                        }
+                    };
                 self.expression(lhs, at)?
                     .binary(op, self.expression(rhs, at)?)
             }

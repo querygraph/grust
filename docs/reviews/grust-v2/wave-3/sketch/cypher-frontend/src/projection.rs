@@ -21,6 +21,9 @@ impl CypherLowering<'_> {
         } else {
             vec![]
         };
+        if p.star && scope.is_empty() {
+            return Err(refusal(at, "star projection requires a visible binding"));
+        }
         for item in &p.items {
             let name = match &item.alias {
                 Some(alias) => alias.clone(),

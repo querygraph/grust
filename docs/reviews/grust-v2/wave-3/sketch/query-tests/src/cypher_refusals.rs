@@ -13,6 +13,8 @@ pub fn records() -> Result<Vec<Value>, String> {
         parameters: &Parameters,
     };
     [
+        ("empty_star", "RETURN *"),
+        ("integer_division", "RETURN 5 / 2 AS x"),
         ("syntax","RETURN 'é' AS x; !"),
         ("multiple_statements","RETURN 1 AS x; RETURN 2 AS y"),
         ("missing_return","MATCH (n)"),
@@ -51,6 +53,6 @@ pub fn records() -> Result<Vec<Value>, String> {
 mod tests {
     #[test]
     fn all_refusals_stop_before_engine_execution() {
-        assert_eq!(super::records().unwrap().len(), 24);
+        assert_eq!(super::records().unwrap().len(), 26);
     }
 }

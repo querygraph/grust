@@ -17,8 +17,8 @@ manifest=docs/reviews/grust-v2/wave-3/sketch/Cargo.toml
 cargo fmt --manifest-path "$manifest" --all -- --check
 cargo clippy --locked --manifest-path "$manifest" --workspace --all-targets -- -D warnings
 cargo test --locked --manifest-path "$manifest" --workspace --all-targets
-cargo clippy --locked --manifest-path "$manifest" --workspace --all-targets --features grust-resolved-plan/serde,grust-optimized-plan/serde -- -D warnings
-cargo test --locked --manifest-path "$manifest" --workspace --all-targets --features grust-resolved-plan/serde,grust-optimized-plan/serde
+cargo clippy --locked --manifest-path "$manifest" --workspace --all-targets --all-features -- -D warnings
+cargo test --locked --manifest-path "$manifest" --workspace --all-targets --all-features
 cargo test --locked --release --manifest-path "$manifest" --workspace --all-targets
 for mode in relational iterative cypher; do
   mkdir -p "$GATE_OUTPUT/$mode"
@@ -33,4 +33,4 @@ printf '[]\n' > "$GATE_OUTPUT/memory/queries.json"
 "$GATE_PYTHON" docs/reviews/grust-v2/wave-3/live/qualify.py --sail "$SAIL_BINARY" --manifest "$GATE_OUTPUT/memory/queries.json" --output "$GATE_OUTPUT/memory" --memory-probe
 test "$(git rev-parse HEAD)" = "$source_commit"
 test -z "$(git status --porcelain)"
-printf 'PASSED Cypher frontend source %s: Rust default/serde/release, native result bags and refusal controls\n' "$source_commit"
+printf 'PASSED Cypher frontend source %s: Rust default/all-features/release, native result bags and refusal controls\n' "$source_commit"

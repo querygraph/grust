@@ -88,7 +88,8 @@ impl CypherLowering<'_> {
                     }
                     let mut pattern = self.pattern(&c.patterns[0], &mut scope, &mut next)?;
                     if let Some(predicate) = c.where_clause {
-                        if pattern.binding.is_some()
+                        if pattern.selector != grust_unresolved_plan::PathSelector::All
+                            || pattern.binding.is_some()
                             || pattern
                                 .edges
                                 .iter()
