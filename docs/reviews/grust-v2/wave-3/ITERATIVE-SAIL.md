@@ -136,3 +136,8 @@ python docs/reviews/grust-v2/wave-3/live/qualify.py \
 
 Omit `--iterative` to generate the relational regression manifest. The live runner
 launches its own local Sail server and terminates only that server when finished.
+
+## Cypher source integration
+
+The [Cypher frontend follow-up](CYPHER-FRONTEND.md) now supplies source text to this
+program adapter through the existing typed AST parser.

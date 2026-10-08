@@ -3,6 +3,13 @@ use grust_optimizer::query::{explain, HashJoinCost, JoinOptimizer};
 use grust_query_qualification::fixtures::*;
 use grust_resolution::{query::QueryResolver, Context};
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    if std::env::args().any(|arg| arg == "--cypher-refusals") {
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&grust_query_qualification::cypher_refusals::records()?)?
+        );
+        return Ok(());
+    }
     let catalog = FixtureCatalog::default();
     let registry = registry();
     let params = values();
@@ -14,13 +21,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut records = Vec::new();
     let detailed_explain = std::env::args().any(|arg| arg == "--explain");
     let iterative = std::env::args().any(|arg| arg == "--iterative");
-    let cases = if iterative {
+    let cypher = std::env::args().any(|arg| arg == "--cypher");
+    let cases = if cypher {
+        grust_query_qualification::cypher_cases::cases(&registry)?
+    } else if iterative {
         grust_query_qualification::iterative_cases::cases()
     } else {
         cases()
     };
     for case in cases {
-        let plan = if iterative {
+        let plan = if iterative || cypher {
             QueryResolver.resolve_iterative(&case.plan, &context, &RelationPlugins)
         } else {
             QueryResolver.resolve_with_providers(&case.plan, &context, &RelationPlugins)
@@ -47,7 +57,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             parameters: &params,
         }
         .emit_program(&optimized.logical)?;
-        records.push(serde_json::json!({"name":case.name,"sql":program.sql,"optimized_sql":optimized_program.sql,"traversals":traversals(&program.traversals),"optimized_traversals":traversals(&optimized_program.traversals),"expected":case.expected,"ordered":case.ordered,"output_types":output_types,"trace":optimized.trace,"explain":if detailed_explain {Some(explain(&optimized))} else {None}}));
+        records.push(serde_json::json!({"name":case.name,"query_text":if cypher {grust_query_qualification::cypher_cases::source(case.name)} else {None},"sql":program.sql,"optimized_sql":optimized_program.sql,"traversals":traversals(&program.traversals),"optimized_traversals":traversals(&optimized_program.traversals),"expected":case.expected,"ordered":case.ordered,"output_types":output_types,"trace":optimized.trace,"explain":if detailed_explain {Some(explain(&optimized))} else {None}}));
     }
     println!("{}", serde_json::to_string_pretty(&records)?);
     Ok(())

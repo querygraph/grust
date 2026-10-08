@@ -61,3 +61,9 @@ The bounded `SailScanSql` example only emits named nonempty column scans, using 
 Run the standalone workspace gates in [GATE.md](GATE.md). Tests pin exact overload ambiguity/no implicit casts, aggregate separation, inherited-label/direction feasibility, unknown versus zero estimates, stable ordering, unchanged baseline semantics, explain paths, identifier escaping and unsupported/storage refusals.
 
 Next implementation is a bounded full resolver plus a relational Sail SQL emitter, qualified against query-result fixtures before any migration. Generic overload selection, complete expression typing, multi-hop/path semantics, physical column mapping and costed join reordering are not implemented here. A standalone compiler example is not evidence of performance or full GQL/Cypher support.
+
+## Cypher frontend follow-up
+
+[Cypher source text to native Sail](CYPHER-FRONTEND.md) connects the existing typed
+AST parser to the resolver, optimizer and execution program, with explicit read
+subset admission and refusal diagnostics.

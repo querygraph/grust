@@ -10829,3 +10829,7 @@ Continuing Wave 3 on `work/grust-v2-graph-providers`: typed relation providers, 
 ## 2026-10-07T22:54:54.430229+00:00 Morrobay DONE iterative Sail adapter
 
 `work/grust-v2-iterative-sail`, source `618f217a5999ff2f531224210b0da77b3bf5de62`: PASSED detached native gate (30 Rust tests in both feature modes; 114 Sail cells; 7 controls). Evidence: `docs/reviews/grust-v2/wave-3/evidence/iterative-sail/`; report: `ITERATIVE-SAIL.md`. Unbounded single-segment traversal, shortest ties, Parquet frontier materialization, explicit row/disk/round failures, tagged cancellation, managed-memory probe. Infinite ALL WALK, weighted/multi-segment/correlated and non-immutable cases remain explicit refusals. First source gate fixture mismatch and all development receipts are retained. No Sail source change, VM job, release publication or performance claim.
+
+## 2026-10-08T02:18:30.182067+00:00 Morrobay ACK Cypher frontend integration
+
+`work/grust-v2-cypher-frontend`: connect the existing typed AST parser to draft unresolved plans, resolution, optimization and native Sail programs. Qualification will cover source text results and typed refusal diagnostics. Evidence planned at `docs/reviews/grust-v2/wave-3/evidence/cypher-frontend/`. No production parser changes or VM benchmark.

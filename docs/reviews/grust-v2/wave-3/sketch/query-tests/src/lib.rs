@@ -11,3 +11,7 @@ mod path_cases;
 mod provider_tests;
 
 pub mod iterative_cases;
+
+pub mod cypher_cases;
+
+pub mod cypher_refusals;
