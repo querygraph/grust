@@ -1,0 +1,191 @@
+[
+  {
+    "diagnostics": [
+      {
+        "code": "UnsupportedFeature",
+        "message": "star projection requires a visible binding",
+        "span": {
+          "end": 8,
+          "start": 0
+        }
+      }
+    ],
+    "name": "empty_star",
+    "outcome": "refused",
+    "query_text": "RETURN *",
+    "stage": "frontend"
+  },
+  {
+    "diagnostics": [
+      {
+        "code": "Syntax",
+        "message": "unexpected character: '!'",
+        "span": {
+          "end": 19,
+          "start": 18
+        }
+      }
+    ],
+    "name": "syntax",
+    "outcome": "refused",
+    "query_text": "RETURN 'é' AS x; !",
+    "stage": "frontend"
+  },
+  {
+    "diagnostics": [
+      {
+        "code": "Syntax",
+        "message": "unexpected trailing input: Keyword(Return)",
+        "span": {
+          "end": 21,
+          "start": 15
+        }
+      }
+    ],
+    "name": "multiple_statements",
+    "outcome": "refused",
+    "query_text": "RETURN 1 AS x; RETURN 2 AS y",
+    "stage": "frontend"
+  },
+  {
+    "diagnostics": [
+      {
+        "code": "UnsupportedFeature",
+        "message": "a read query must terminate with RETURN",
+        "span": {
+          "end": 9,
+          "start": 0
+        }
+      }
+    ],
+    "name": "missing_return",
+    "outcome": "refused",
+    "query_text": "MATCH (n)",
+    "stage": "frontend"
+  },
+  {
+    "diagnostics": [
+      {
+        "code": "UnsupportedFeature",
+        "message": "this read frontend does not lower procedures, subqueries or updates",
+        "span": {
+          "end": 10,
+          "start": 0
+        }
+      }
+    ],
+    "name": "write",
+    "outcome": "refused",
+    "query_text": "CREATE (n) RETURN n",
+    "stage": "frontend"
+  },
+  {
+    "error": "[Unsupported { operator: \"extension\", reason: \"no relation provider registered for FunctionName { namespace: [\\\"unknown\\\"], name: \\\"rows\\\" }\" }]",
+    "name": "call",
+    "outcome": "refused",
+    "query_text": "CALL unknown.rows([1]) YIELD value RETURN value",
+    "stage": "resolution"
+  },
+  {
+    "diagnostics": [
+      {
+        "code": "UnsupportedFeature",
+        "message": "WHERE on a materialized or ranged path needs correlated path predicate lowering",
+        "span": {
+          "end": 37,
+          "start": 0
+        }
+      }
+    ],
+    "name": "path_where",
+    "outcome": "refused",
+    "query_text": "MATCH (a)-[:KNOWS*]->(b) WHERE b.id=1 RETURN b.id AS id",
+    "stage": "frontend"
+  },
+  {
+    "diagnostics": [
+      {
+        "code": "UnsupportedFeature",
+        "message": "complex result expressions require AS",
+        "span": {
+          "end": 8,
+          "start": 0
+        }
+      }
+    ],
+    "name": "missing_alias",
+    "outcome": "refused",
+    "query_text": "RETURN 1",
+    "stage": "frontend"
+  },
+  {
+    "error": "[NoOverload(FunctionName { namespace: [], name: \"mystery\" })]",
+    "name": "unknown_function",
+    "outcome": "refused",
+    "query_text": "RETURN mystery(1) AS x",
+    "stage": "resolution"
+  },
+  {
+    "error": "[NoOverload(FunctionName { namespace: [], name: \"upper\" })]",
+    "name": "wrong_function_type",
+    "outcome": "refused",
+    "query_text": "RETURN upper(1) AS x",
+    "stage": "resolution"
+  },
+  {
+    "error": "[UnknownGraph(Named { namespace: [], name: \"nowhere\" })]",
+    "name": "unknown_graph",
+    "outcome": "refused",
+    "query_text": "USE nowhere MATCH (n) RETURN n.id AS id",
+    "stage": "resolution"
+  },
+  {
+    "error": "[UnknownLabel(\"Unknown\")]",
+    "name": "unknown_label",
+    "outcome": "refused",
+    "query_text": "MATCH (n:Unknown) RETURN n.id AS id",
+    "stage": "resolution"
+  },
+  {
+    "error": "[UnknownProperty(\"missing\")]",
+    "name": "unknown_property",
+    "outcome": "refused",
+    "query_text": "MATCH (n:Person) RETURN n.missing AS value",
+    "stage": "resolution"
+  },
+  {
+    "error": "[UnknownBinding(\"Named(\\\"n\\\")\")]",
+    "name": "lost_scope",
+    "outcome": "refused",
+    "query_text": "MATCH (n:Person) WITH n.name AS name RETURN n.id AS id",
+    "stage": "resolution"
+  },
+  {
+    "error": "[TypeMismatch { expected: Int64, actual: Boolean }]",
+    "name": "predicate_type",
+    "outcome": "refused",
+    "query_text": "MATCH (n:Person) WHERE 1 RETURN n.id AS id",
+    "stage": "resolution"
+  },
+  {
+    "error": "[Unsupported { operator: \"aggregate\", reason: \"outside aggregation or nested aggregate\" }]",
+    "name": "nested_aggregate",
+    "outcome": "refused",
+    "query_text": "RETURN sum(count(*)) AS x",
+    "stage": "resolution"
+  },
+  {
+    "error": "[Unsupported { operator: \"parameter\", reason: \"missing declared type for missing\" }]",
+    "name": "unknown_parameter",
+    "outcome": "refused",
+    "query_text": "RETURN $missing AS x",
+    "stage": "resolution"
+  },
+  {
+    "error": "[Unsupported { operator: \"slice\", reason: \"nonnegative integer literal required; bind dynamic caps before planning\" }]",
+    "name": "negative_limit",
+    "outcome": "refused",
+    "query_text": "RETURN 1 AS x LIMIT -1",
+    "stage": "resolution"
+  }
+]

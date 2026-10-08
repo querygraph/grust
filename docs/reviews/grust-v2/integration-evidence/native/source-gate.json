@@ -1,0 +1,314 @@
+{
+  "observed_utc": "2026-10-08T14:16:30.655319+00:00",
+  "source_commit": "7d1f3f6f122ea3fe6c6becbe937637ff8fe11ff9",
+  "source_tree": "41378cf6aa348071f6bbe4fbb38fa5fbf4608687",
+  "verdict": "PASSED integrated Wave 2/3 source 7d1f3f6f122ea3fe6c6becbe937637ff8fe11ff9 on main base f568c534378676e48b37f7c9ac868a44e40d22b7: production parser, both draft workspaces and native semantics/SNB oracle; HEAD unchanged and clean",
+  "checkout": "detached",
+  "head_unchanged": true,
+  "checkout_clean_at_exit": true,
+  "command": "bash docs/reviews/grust-v2/gate-integrated.sh",
+  "rust_version": "rustc 1.98.1 (48a229cea 2026-09-01)",
+  "host": "Morrobay, shared native macOS x86_64",
+  "environment": {
+    "CARGO_INCREMENTAL": "0",
+    "CARGO_TARGET_DIR": "/Volumes/Apo/graph-tests/workspaces/grust-v2-integration-20261008/gate-target01",
+    "GATE_OUTPUT": "/Volumes/Apo/graph-tests/workspaces/grust-v2-integration-20261008/gate-output02",
+    "SAIL_BINARY": "/Volumes/Apo/graph-tests/results/sem-review-20261001/native-optimized-build01/sail-target/release/sail",
+    "GATE_PYTHON": "/Volumes/Apo/graph-tests/workspaces/second-string-20261006/venv/bin/python",
+    "GATE_SNB_CHECKOUT": "/Volumes/Apo/graph-tests/workspaces/grust-v2-wave3-20261007/ldbc-snb-v1"
+  },
+  "sail_source": "9f0aa7d2a50f1258544d37c05dd19b3ff3d915b3",
+  "sail_sha256": "ee80ac3cf9d028639561f3cf32435985192719d629807fcf6a368324fa84946e",
+  "sail_cargo_command": "cargo build --locked --release -p sail-cli",
+  "counts": {
+    "relational": {
+      "cases": 46,
+      "results": {
+        "passed": 92
+      },
+      "controls": 0
+    },
+    "iterative": {
+      "cases": 11,
+      "results": {
+        "passed": 22
+      },
+      "controls": 6
+    },
+    "cypher": {
+      "cases": 20,
+      "results": {
+        "passed": 40
+      },
+      "controls": 6
+    },
+    "semantics": {
+      "cases": 56,
+      "results": {
+        "passed": 104,
+        "expected_error": 8
+      },
+      "controls": 0
+    },
+    "memory": {
+      "cases": 0,
+      "results": {},
+      "controls": 1
+    },
+    "snb": {
+      "cases": 13,
+      "results": {
+        "passed": 130
+      },
+      "controls": 6
+    }
+  },
+  "raw_external_artifacts": {
+    "relational/receipt.json": {
+      "sha256": "ae02d2634a11d43ff1ec3f956241b65c6c8f989220d7d62337a68fe38fa65477",
+      "bytes": 86188
+    },
+    "relational/queries.json": {
+      "sha256": "5ad616382f7819c3f3c222ac8a41349f24d9e21e2a365066a6d48d0e99475dd8",
+      "bytes": 291176
+    },
+    "iterative/receipt.json": {
+      "sha256": "9f8e8ac669f9a3072aff8a3b0f45ba5ca409eb97f261fd4a211de980b0aa73e2",
+      "bytes": 48494
+    },
+    "iterative/queries.json": {
+      "sha256": "20c37edc9428a6bc047cbaa43d42759c9507ec7841751c6422f8ca2b30fbb9ff",
+      "bytes": 377431
+    },
+    "cypher/receipt.json": {
+      "sha256": "5c153a4533b16c7a8669bd7ea8e449e6f61d454998c60571f26ed9855d6e1b3f",
+      "bytes": 27808
+    },
+    "cypher/queries.json": {
+      "sha256": "0a11e717c5367d53dfd609a75a762682d70bfc5cf96d393c3ed3c4f2ba32cd00",
+      "bytes": 116966
+    },
+    "semantics/receipt.json": {
+      "sha256": "9f77f8917f6bc3aa7d8453d02f9481a704fccaeb7c53ea22d236d9ac64589779",
+      "bytes": 78144
+    },
+    "semantics/queries.json": {
+      "sha256": "b30e89f4c82e5f88d2e4be9cf0c3f9b3edad8ffe23eddfdc9692ee36e33917bf",
+      "bytes": 625919
+    },
+    "memory/receipt.json": {
+      "sha256": "c66cbdc5300fc826c7c7e0937d4869830ed782c823f3c80c50b33ff9a0782515",
+      "bytes": 1500
+    },
+    "memory/queries.json": {
+      "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+      "bytes": 3
+    },
+    "snb/receipt.json": {
+      "sha256": "3bc210ea668220a44c6749cb92cfd6b4c5227cb20cc50669638e9ff525c4b69e",
+      "bytes": 69943
+    },
+    "snb-queries.json": {
+      "sha256": "13d5af72e4345856500647579908ec81567b7eb1a1d928a5bd519b883a8f3e8c",
+      "bytes": 7215937
+    },
+    "refusals.json": {
+      "sha256": "020e8e8df262dd7f152ba7ce208b09f8074f9443b16969dc3ce0cf6adb2b1a1d",
+      "bytes": 5020
+    },
+    "snb-request.json": {
+      "sha256": "930643935ed3d13a7b9aadb6d886db9b0fa6fea0b9ccb03d3fc9cb4c643964b4",
+      "bytes": 20847
+    }
+  },
+  "publication_transform": "Receipts omit absolute elapsed seconds; SNB retains all cells normalized by each binding’s resolved measured median. Manifests omit compile_seconds and verbose explain dumps, retaining explain hashes, SQL/programs, types, estimates and traces. Full raw manifests/receipts remain at GATE_OUTPUT.",
+  "main_base": "f568c534378676e48b37f7c9ac868a44e40d22b7",
+  "source_parents": [
+    "f568c534378676e48b37f7c9ac868a44e40d22b7",
+    "36eaf1edcfd80e1d968256522c3b46d6b6df5e5c"
+  ],
+  "library_source_matches_main": true,
+  "root_crate_delta": "crates/grust-cypher/benches/cypher_pipeline.rs only: disjoint KNOWS/FOLLOWS fixture; production planner and assertion unchanged.",
+  "parser_and_wave2_test_results": [
+    {
+      "passed": 839,
+      "failed": 0,
+      "ignored": 1
+    },
+    {
+      "passed": 9,
+      "failed": 0,
+      "ignored": 0
+    },
+    {
+      "passed": 7,
+      "failed": 0,
+      "ignored": 0
+    },
+    {
+      "passed": 3,
+      "failed": 0,
+      "ignored": 0
+    },
+    {
+      "passed": 2,
+      "failed": 0,
+      "ignored": 0
+    },
+    {
+      "passed": 3,
+      "failed": 0,
+      "ignored": 0
+    },
+    {
+      "passed": 1,
+      "failed": 0,
+      "ignored": 0
+    },
+    {
+      "passed": 1,
+      "failed": 0,
+      "ignored": 0
+    },
+    {
+      "passed": 38,
+      "failed": 0,
+      "ignored": 0
+    },
+    {
+      "passed": 1,
+      "failed": 0,
+      "ignored": 1
+    },
+    {
+      "passed": 0,
+      "failed": 0,
+      "ignored": 0
+    },
+    {
+      "passed": 0,
+      "failed": 0,
+      "ignored": 0
+    },
+    {
+      "passed": 5,
+      "failed": 0,
+      "ignored": 0
+    },
+    {
+      "passed": 4,
+      "failed": 0,
+      "ignored": 0
+    },
+    {
+      "passed": 9,
+      "failed": 0,
+      "ignored": 0
+    },
+    {
+      "passed": 6,
+      "failed": 0,
+      "ignored": 0
+    },
+    {
+      "passed": 4,
+      "failed": 0,
+      "ignored": 0
+    },
+    {
+      "passed": 7,
+      "failed": 0,
+      "ignored": 0
+    },
+    {
+      "passed": 0,
+      "failed": 0,
+      "ignored": 0
+    },
+    {
+      "passed": 0,
+      "failed": 0,
+      "ignored": 0
+    },
+    {
+      "passed": 0,
+      "failed": 0,
+      "ignored": 0
+    },
+    {
+      "passed": 0,
+      "failed": 0,
+      "ignored": 0
+    },
+    {
+      "passed": 0,
+      "failed": 0,
+      "ignored": 0
+    },
+    {
+      "passed": 0,
+      "failed": 0,
+      "ignored": 0
+    },
+    {
+      "passed": 5,
+      "failed": 0,
+      "ignored": 0
+    },
+    {
+      "passed": 4,
+      "failed": 0,
+      "ignored": 0
+    },
+    {
+      "passed": 7,
+      "failed": 0,
+      "ignored": 0
+    },
+    {
+      "passed": 6,
+      "failed": 0,
+      "ignored": 0
+    },
+    {
+      "passed": 4,
+      "failed": 0,
+      "ignored": 0
+    },
+    {
+      "passed": 5,
+      "failed": 0,
+      "ignored": 0
+    },
+    {
+      "passed": 0,
+      "failed": 0,
+      "ignored": 0
+    },
+    {
+      "passed": 0,
+      "failed": 0,
+      "ignored": 0
+    },
+    {
+      "passed": 0,
+      "failed": 0,
+      "ignored": 0
+    },
+    {
+      "passed": 0,
+      "failed": 0,
+      "ignored": 0
+    },
+    {
+      "passed": 0,
+      "failed": 0,
+      "ignored": 0
+    },
+    {
+      "passed": 0,
+      "failed": 0,
+      "ignored": 0
+    }
+  ]
+}

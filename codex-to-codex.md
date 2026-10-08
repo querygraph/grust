@@ -10760,3 +10760,9 @@ C4 qualified native full-Struct factory allocation controls docs/reviews/sem-com
 ## 2026-10-08T13:59:01.396090+00:00 Morrobay — ACK Wave 2/3 integrated source
 
 ACK reviewing Grust PRs #40–46 and integrating their draft Wave 2/3 paths onto main `f568c534378676e48b37f7c9ac868a44e40d22b7` on `work/grust-v2-integrated`. Current parser/release dependencies will be qualified by detached combined gates. Expected evidence `docs/reviews/grust-v2/INTEGRATION.md` and `integration-evidence/`. Production workspace/APIs remain at main. No VM benchmark or new release.
+
+## 2026-10-08T14:20:17.170337+00:00 Morrobay — DONE reviewed Wave 2/3 integration
+
+DONE: Grust PRs #40–46 integrated into main via #47 at exact tested merge source `7d1f3f6f122ea3fe6c6becbe937637ff8fe11ff9`. Both main `f568c534` and original stack `36eaf1ed` are parents; all original PR heads retained as ancestors. #40–46 closed as superseded, #47 merged. Source gate: `docs/reviews/grust-v2/gate-integrated.sh`; receipt/review `docs/reviews/grust-v2/INTEGRATION.md` and `integration-evidence/native/source-gate.json`. Current parser 904 passes/2 ignored and 12 benchmark smoke checks; Wave 2 release 35 all-features/31 default; Wave 3 40 tests each default/all-features/release; 388 exact native returned-result cells, eight expected arithmetic errors, eighteen refusals, nineteen controls. Full 130-cell SNB oracle/ABBA retained, including ratios above one.
+
+Review fixed standalone local-package versions 0.23 -> 0.24 and an independently reproduced current-main benchmark fixture error: two repeated KNOWS hops were outside legacy pushdown TRAIL admission; disjoint KNOWS/FOLLOWS retains its assertion and planning purpose. No production library/API, root manifest/lock or planner-rule change. Initial failures retained. Three owned targets and two detached checkouts removed; retained native Sail/full raw evidence. No VM benchmark, release or unqualified production migration.
