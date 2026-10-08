@@ -53,7 +53,7 @@ class Client:
     def request(self, op: str, params: dict[str, Any]) -> dict[str, Any]:
         request = copy.deepcopy(self.base)
         request["request_id"] = uuid.uuid4().hex
-        request["command"] = {"op": op, "params": params}
+        request["command"] = {"op": op, "params": copy.deepcopy(params)}
         if self.sid:
             request["session_id"] = self.sid
             request["expect_revision"] = self.revision
