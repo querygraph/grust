@@ -102,6 +102,7 @@ def run(endpoint: str, output: Path) -> None:
         "command"
     ]["params"]
     params["columns"] = []
+    params["camera"]["coordinate_frame"] = "xy-v1"
     request = client.request("view.request", params)
     reply = client.post(request)
     assert reply["status"] == "ready", reply
@@ -159,6 +160,29 @@ def run(endpoint: str, output: Path) -> None:
         points=expanded_points,
         links=expanded_links,
     )
+    collapsed = client.call(
+        "hierarchy.collapse",
+        {
+            "group": {"kind": "aggregate", "id": "h/a"},
+            "view_id": expanded["view_id"],
+            "quality": {"membership": "complete", "edges": "complete"},
+        },
+    )
+    _, restored_points, restored_links = client.view(collapsed)
+    assert restored_points == points and restored_links == links
+    client.passed("collapse_restores_complete_quotient")
+    bad_collapse = client.post(
+        client.request(
+            "hierarchy.collapse",
+            {
+                "group": {"kind": "aggregate", "id": "h/unknown"},
+                "view_id": expanded["view_id"],
+                "quality": {"membership": "complete", "edges": "complete"},
+            },
+        )
+    )
+    assert bad_collapse["error"]["code"] == "NOT_FOUND"
+    client.passed("collapse_unknown_group_refused")
     follow = json.loads((ROOT / "examples/14-graph-follow.request.json").read_text())[
         "command"
     ]["params"]
@@ -185,6 +209,28 @@ def run(endpoint: str, output: Path) -> None:
     assert len({r["component"] for r in rows}) == 1
     client.passed("native_nutmeg_wcc_exact_partition", rows=rows)
     for name, mutate, expected in (
+        (
+            "camera_frame_pin",
+            lambda r: r["command"]["params"]["camera"].update(coordinate_frame="stale"),
+            "CONTEXT_MISMATCH",
+        ),
+        (
+            "3d_camera_refused",
+            lambda r: r["command"]["params"].update(
+                camera={
+                    "mode": "3d",
+                    "coordinate_frame": "xy-v1",
+                    "eye": [0, 0, 10],
+                    "target": [0, 0, 0],
+                    "up": [0, 1, 0],
+                    "fov_y_degrees": 60,
+                    "near": 0.1,
+                    "far": 100,
+                    "viewport": {"width_px": 1000, "height_px": 800},
+                }
+            ),
+            "UNSUPPORTED_CAPABILITY",
+        ),
         ("point_cap", lambda r: r["budget"].update(max_points=1), "BUDGET_EXCEEDED"),
         (
             "scan_cap",

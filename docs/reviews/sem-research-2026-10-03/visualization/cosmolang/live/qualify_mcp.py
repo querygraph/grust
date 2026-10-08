@@ -59,6 +59,7 @@ async def qualify(fixture: Path, output: Path, endpoint: str) -> None:
             (source.parent / "examples/09-view-request.request.json").read_text()
         )["command"]["params"]
         view_params["columns"] = []
+        view_params["camera"]["coordinate_frame"] = "xy-v1"
         request["budget"]["deadline_ms"] = 60000
         request.update(
             request_id="mcp-view",

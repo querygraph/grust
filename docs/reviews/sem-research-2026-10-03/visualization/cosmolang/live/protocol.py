@@ -323,12 +323,20 @@ class Gateway:
                 point.id for point in previous.points
             }:
                 raise Refusal("NOT_FOUND", "aggregate is not in the current frontier")
+            if op == "hierarchy.collapse" and group[2:] not in previous.expanded:
+                raise Refusal("NOT_FOUND", "aggregate is not expanded in the base view")
             expanded = (
                 previous.expanded | {group[2:]}
                 if op == "hierarchy.expand"
                 else previous.expanded - {group[2:]}
             )
             members = previous.members
+        elif params["camera"]["mode"] != "2d":
+            raise Refusal("UNSUPPORTED_CAPABILITY", "C1 accepts only 2D view cameras")
+        elif params["camera"]["coordinate_frame"] != catalog.layout:
+            raise Refusal(
+                "CONTEXT_MISMATCH", "camera coordinate frame differs from pinned layout"
+            )
         elif params["frontier_handle"] is not None or params["columns"]:
             raise Refusal(
                 "UNSUPPORTED_CAPABILITY",
@@ -372,7 +380,7 @@ class Gateway:
             "generation": str(session.revision + 1),
             "context": dict(request["context"]),
             "frontier_handle": view_id,
-            "coordinate_frame": "catalog-xy-v1",
+            "coordinate_frame": catalog.layout,
             "dimensions": 2,
             "representation": "quotient",
             "membership_status": "complete",
