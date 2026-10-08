@@ -6,6 +6,19 @@ The source gate runs the actual Cosmograph SDK, Sail host and Nutmeg extension;
 it does not replace any of them with a mock. The final receipt belongs to the
 exact detached source commit it names.
 
+## Qualification
+
+`cosmolang: PASSED native gateway, MCP and Cosmograph gate at b850258fb0e8a14b2dbe9abf0f34d1aab7d563d8`
+
+The [exact-source receipt](evidence/receipt.json) records a clean unchanged
+detached checkout and the native binary hash. [Twelve semantic controls](evidence/semantics.json),
+[the MCP client](evidence/mcp.json), and [four browser controls](evidence/browser.json)
+passed. The [expanded graph screenshot](evidence/expanded.png) was visually
+reviewed. Artifact/source identities are in [artifacts.json](evidence/artifacts.json).
+The earlier detached lint failure is preserved separately. Development failures
+(memory admission, numeric-only WCC IDs, startup/port errors) remain in the raw
+owned archive on Apo; no development failure is counted as a passing gate.
+
 ## Implemented boundary
 
 - Browser: `@cosmograph/cosmograph` **2.5.1**, pinned in `package-lock.json`.

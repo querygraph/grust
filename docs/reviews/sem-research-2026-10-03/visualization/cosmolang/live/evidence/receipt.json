@@ -1,0 +1,120 @@
+{
+  "observed_utc": "2026-10-08T16:07:00.304835+00:00",
+  "outcome": "passed",
+  "source_commit": "b850258fb0e8a14b2dbe9abf0f34d1aab7d563d8",
+  "head_after": "b850258fb0e8a14b2dbe9abf0f34d1aab7d563d8",
+  "source_clean_after": true,
+  "sail_sha256": "ee80ac3cf9d028639561f3cf32435985192719d629807fcf6a368324fa84946e",
+  "sail_path": "/Volumes/Apo/graph-tests/results/sem-review-20261001/native-optimized-build01/sail-target/release/sail",
+  "detached_required": true,
+  "execution": "native macOS; local Sail; 2 workers; 512 MiB managed pool; 128 MiB Nutmeg reservation",
+  "cells": [
+    {
+      "name": "ruff",
+      "argv": [
+        "/Volumes/Apo/graph-tests/workspaces/cosmolang-live-20261008/venv/bin/python",
+        "-m",
+        "ruff",
+        "check",
+        "/Volumes/Apo/graph-tests/workspaces/cosmolang-live-20261008/gate01/docs/reviews/sem-research-2026-10-03/visualization/cosmolang/live"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "ruff-format",
+      "argv": [
+        "/Volumes/Apo/graph-tests/workspaces/cosmolang-live-20261008/venv/bin/python",
+        "-m",
+        "ruff",
+        "format",
+        "--check",
+        "/Volumes/Apo/graph-tests/workspaces/cosmolang-live-20261008/gate01/docs/reviews/sem-research-2026-10-03/visualization/cosmolang/live"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "mypy",
+      "argv": [
+        "/Volumes/Apo/graph-tests/workspaces/cosmolang-live-20261008/venv/bin/python",
+        "-m",
+        "mypy",
+        "--ignore-missing-imports",
+        "/Volumes/Apo/graph-tests/workspaces/cosmolang-live-20261008/gate01/docs/reviews/sem-research-2026-10-03/visualization/cosmolang/live"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "schemas",
+      "argv": [
+        "/Volumes/Apo/graph-tests/workspaces/cosmolang-live-20261008/venv/bin/python",
+        "/Volumes/Apo/graph-tests/workspaces/cosmolang-live-20261008/gate01/docs/reviews/sem-research-2026-10-03/visualization/cosmolang/validate_examples.py"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "browser-install",
+      "argv": [
+        "npm",
+        "ci",
+        "--no-audit",
+        "--no-fund"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "browser-build",
+      "argv": [
+        "npm",
+        "run",
+        "build"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "prepare",
+      "argv": [
+        "/Volumes/Apo/graph-tests/workspaces/cosmolang-live-20261008/venv/bin/python",
+        "/Volumes/Apo/graph-tests/workspaces/cosmolang-live-20261008/gate01/docs/reviews/sem-research-2026-10-03/visualization/cosmolang/live/prepare_fixture.py",
+        "--output",
+        "/Volumes/Apo/graph-tests/workspaces/cosmolang-live-20261008/gate-output02/fixture"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "semantics",
+      "argv": [
+        "/Volumes/Apo/graph-tests/workspaces/cosmolang-live-20261008/venv/bin/python",
+        "/Volumes/Apo/graph-tests/workspaces/cosmolang-live-20261008/gate01/docs/reviews/sem-research-2026-10-03/visualization/cosmolang/live/qualify.py",
+        "--output",
+        "/Volumes/Apo/graph-tests/workspaces/cosmolang-live-20261008/gate-output02/semantics.json"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "mcp",
+      "argv": [
+        "/Volumes/Apo/graph-tests/workspaces/cosmolang-live-20261008/venv/bin/python",
+        "/Volumes/Apo/graph-tests/workspaces/cosmolang-live-20261008/gate01/docs/reviews/sem-research-2026-10-03/visualization/cosmolang/live/qualify_mcp.py",
+        "--fixture",
+        "/Volumes/Apo/graph-tests/workspaces/cosmolang-live-20261008/gate-output02/fixture",
+        "--output",
+        "/Volumes/Apo/graph-tests/workspaces/cosmolang-live-20261008/gate-output02/mcp.json"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "browser",
+      "argv": [
+        "node",
+        "/Volumes/Apo/graph-tests/workspaces/cosmolang-live-20261008/gate01/docs/reviews/sem-research-2026-10-03/visualization/cosmolang/live/browser/qualify.mjs",
+        "/Volumes/Apo/graph-tests/workspaces/cosmolang-live-20261008/gate-output02/browser"
+      ],
+      "exit_code": 0
+    }
+  ],
+  "owned_process_exit_codes": [
+    -15,
+    -15,
+    -15
+  ]
+}

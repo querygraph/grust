@@ -1,0 +1,98 @@
+I001 [*] Import block is un-sorted or un-formatted
+  --> prepare_fixture.py:3:1
+   |
+ 1 |   """Small semantic control: large signed IDs, parallel edges, isolate, crossing groups."""
+ 2 |
+ 3 | / from __future__ import annotations
+ 4 | |
+ 5 | | import argparse
+ 6 | | import json
+ 7 | | from dataclasses import asdict
+ 8 | | from pathlib import Path
+ 9 | |
+10 | | import pyarrow as pa  # type: ignore[import-untyped]
+11 | | import pyarrow.parquet as pq  # type: ignore[import-untyped]
+12 | | from provider import Catalog
+   | |____________________________^
+help: Organize imports
+   |
+11 | import pyarrow.parquet as pq  # type: ignore[import-untyped]
+12 +
+13 | from provider import Catalog
+   |
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> protocol.py:3:1
+   |
+ 1 |   """Schema-checked local exploration gateway; immutable Arrow view artifacts."""
+ 2 |
+ 3 | / from __future__ import annotations
+ 4 | |
+ 5 | | import hashlib
+ 6 | | import json
+ 7 | | import time
+ 8 | | import uuid
+ 9 | | from dataclasses import asdict, dataclass, field
+10 | | from pathlib import Path
+11 | | from typing import Any
+12 | |
+13 | | import pyarrow as pa  # type: ignore[import-untyped]
+14 | | from jsonschema import Draft202012Validator
+15 | | from jsonschema.exceptions import ValidationError
+16 | | from provider import Provider, Refusal, View
+17 | | from referencing import Registry, Resource
+   | |__________________________________________^
+18 |
+19 |   ROOT = Path(__file__).resolve().parent.parent
+   |
+help: Organize imports
+   |
+15 | from jsonschema.exceptions import ValidationError
+   - from provider import Provider, Refusal, View
+16 | from referencing import Registry, Resource
+17 |
+18 + from provider import Provider, Refusal, View
+19 +
+20 | ROOT = Path(__file__).resolve().parent.parent
+   |
+
+I001 [*] Import block is un-sorted or un-formatted
+  --> server.py:3:1
+   |
+ 1 |   """Loopback-only HTTP and MCP JSON-RPC facade over the same Cosmolang gateway."""
+ 2 |
+ 3 | / from __future__ import annotations
+ 4 | |
+ 5 | | import argparse
+ 6 | | import base64
+ 7 | | import json
+ 8 | | import logging
+ 9 | | import sys
+10 | | import threading
+11 | | from pathlib import Path
+12 | | from typing import Any
+13 | | from urllib.parse import urlparse
+14 | |
+15 | | import uvicorn
+16 | | from fastapi import FastAPI, Request
+17 | | from fastapi.responses import JSONResponse, Response
+18 | | from protocol import Gateway
+19 | | from provider import Catalog, Provider
+20 | | from pyspark.sql.connect.session import SparkSession
+   | |____________________________________________________^
+21 |
+22 |   LOGGER = logging.getLogger(__name__)
+   |
+help: Organize imports
+   |
+17 | from fastapi.responses import JSONResponse, Response
+18 + from pyspark.sql.connect.session import SparkSession
+19 +
+20 | from protocol import Gateway
+21 | from provider import Catalog, Provider
+   - from pyspark.sql.connect.session import SparkSession
+22 |
+   |
+
+Found 3 errors.
+[*] 3 fixable with the `--fix` option.

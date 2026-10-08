@@ -1,0 +1,240 @@
+{
+  "observed_utc": "2026-10-08T16:07:57.139140+00:00",
+  "results": [
+    {
+      "control": "idempotent_retry_before_stale_revision_check",
+      "outcome": "passed"
+    },
+    {
+      "control": "idempotency_payload_conflict",
+      "outcome": "passed"
+    },
+    {
+      "control": "stale_revision_refused",
+      "outcome": "passed"
+    },
+    {
+      "control": "exact_quotient_parallel_edges_and_self_loops",
+      "outcome": "passed",
+      "points": [
+        {
+          "id": "h/a",
+          "kind": "aggregate",
+          "x": 0.5,
+          "y": 0.5,
+          "represented_vertices": "2"
+        },
+        {
+          "id": "h/b",
+          "kind": "aggregate",
+          "x": 4.5,
+          "y": 0.5,
+          "represented_vertices": "2"
+        },
+        {
+          "id": "h/c",
+          "kind": "aggregate",
+          "x": 8.5,
+          "y": 0.5,
+          "represented_vertices": "2"
+        }
+      ],
+      "links": [
+        {
+          "source": "h/a",
+          "target": "h/a",
+          "multiplicity": "2"
+        },
+        {
+          "source": "h/a",
+          "target": "h/b",
+          "multiplicity": "1"
+        },
+        {
+          "source": "h/b",
+          "target": "h/b",
+          "multiplicity": "1"
+        },
+        {
+          "source": "h/b",
+          "target": "h/c",
+          "multiplicity": "1"
+        }
+      ]
+    },
+    {
+      "control": "expanded_incident_edges_and_lossless_signed_ids",
+      "outcome": "passed",
+      "points": [
+        {
+          "id": "h/b",
+          "kind": "aggregate",
+          "x": 4.5,
+          "y": 0.5,
+          "represented_vertices": "2"
+        },
+        {
+          "id": "h/c",
+          "kind": "aggregate",
+          "x": 8.5,
+          "y": 0.5,
+          "represented_vertices": "2"
+        },
+        {
+          "id": "v/research/-9007199254740993",
+          "kind": "vertex",
+          "x": 0.0,
+          "y": 0.0,
+          "represented_vertices": "1"
+        },
+        {
+          "id": "v/research/9007199254740993",
+          "kind": "vertex",
+          "x": 1.0,
+          "y": 1.0,
+          "represented_vertices": "1"
+        }
+      ],
+      "links": [
+        {
+          "source": "h/b",
+          "target": "h/b",
+          "multiplicity": "1"
+        },
+        {
+          "source": "h/b",
+          "target": "h/c",
+          "multiplicity": "1"
+        },
+        {
+          "source": "v/research/-9007199254740993",
+          "target": "v/research/9007199254740993",
+          "multiplicity": "2"
+        },
+        {
+          "source": "v/research/9007199254740993",
+          "target": "h/b",
+          "multiplicity": "1"
+        }
+      ]
+    },
+    {
+      "control": "exact_two_hop_set_reachability",
+      "outcome": "passed",
+      "points": [
+        {
+          "id": "h/a",
+          "kind": "aggregate",
+          "x": 0.5,
+          "y": 0.5,
+          "represented_vertices": "2"
+        },
+        {
+          "id": "h/b",
+          "kind": "aggregate",
+          "x": 4.0,
+          "y": 0.0,
+          "represented_vertices": "1"
+        }
+      ]
+    },
+    {
+      "control": "native_nutmeg_wcc_exact_partition",
+      "outcome": "passed",
+      "rows": [
+        {
+          "id": "v/research/-9007199254740993",
+          "component": "0"
+        },
+        {
+          "id": "v/research/5",
+          "component": "0"
+        },
+        {
+          "id": "v/research/9007199254740993",
+          "component": "0"
+        }
+      ]
+    },
+    {
+      "control": "point_cap",
+      "outcome": "passed",
+      "response": {
+        "cosmolang": "0.1",
+        "request_id": "8ba5390261e446828c6ef63604154d3f",
+        "session_id": "4585c2bf21ae436587271e647bb17b6f",
+        "revision": "5",
+        "context": {
+          "graph": "research-graph",
+          "snapshot": "fixture-1",
+          "projection": "all-v1",
+          "hierarchy": "groups-v1",
+          "layout": "xy-v1",
+          "selection": null
+        },
+        "status": "refused",
+        "error": {
+          "code": "BUDGET_EXCEEDED",
+          "message": "complete frontier exceeds the point cap",
+          "retryable": false
+        }
+      }
+    },
+    {
+      "control": "scan_cap",
+      "outcome": "passed",
+      "response": {
+        "cosmolang": "0.1",
+        "request_id": "3323669198164fcb9288b33d0d27651a",
+        "session_id": "4585c2bf21ae436587271e647bb17b6f",
+        "revision": "5",
+        "context": {
+          "graph": "research-graph",
+          "snapshot": "fixture-1",
+          "projection": "all-v1",
+          "hierarchy": "groups-v1",
+          "layout": "xy-v1",
+          "selection": null
+        },
+        "status": "refused",
+        "error": {
+          "code": "BUDGET_EXCEEDED",
+          "message": "catalog scan envelope exceeds request budget",
+          "retryable": false
+        }
+      }
+    },
+    {
+      "control": "context_pin",
+      "outcome": "passed",
+      "response": {
+        "cosmolang": "0.1",
+        "request_id": "c41e6f81634f4c2da9280a1d4b0d3fe2",
+        "session_id": "4585c2bf21ae436587271e647bb17b6f",
+        "revision": "5",
+        "context": {
+          "graph": "research-graph",
+          "snapshot": "fixture-1",
+          "projection": "all-v1",
+          "hierarchy": "groups-v1",
+          "layout": "xy-v1",
+          "selection": null
+        },
+        "status": "refused",
+        "error": {
+          "code": "CONTEXT_MISMATCH",
+          "message": "catalog snapshot differs",
+          "retryable": false
+        }
+      }
+    },
+    {
+      "control": "mcp_tool_uses_same_gateway",
+      "outcome": "passed"
+    },
+    {
+      "control": "idempotent_close",
+      "outcome": "passed"
+    }
+  ]
+}
