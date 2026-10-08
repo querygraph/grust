@@ -22,9 +22,11 @@ cargo test --locked --manifest-path "$manifest" --workspace --all-targets --all-
 cargo test --locked --release --manifest-path "$manifest" --workspace --all-targets
 for mode in relational iterative cypher; do
   mkdir -p "$GATE_OUTPUT/$mode"
-  flags=()
-  if test "$mode" != relational; then flags=("--$mode"); fi
-  cargo run --locked --release --manifest-path "$manifest" -p grust-query-qualification -- "${flags[@]}" > "$GATE_OUTPUT/$mode/queries.json"
+  if test "$mode" = relational; then
+    cargo run --locked --release --manifest-path "$manifest" -p grust-query-qualification > "$GATE_OUTPUT/$mode/queries.json"
+  else
+    cargo run --locked --release --manifest-path "$manifest" -p grust-query-qualification -- "--$mode" > "$GATE_OUTPUT/$mode/queries.json"
+  fi
   "$GATE_PYTHON" docs/reviews/grust-v2/wave-3/live/qualify.py --sail "$SAIL_BINARY" --manifest "$GATE_OUTPUT/$mode/queries.json" --output "$GATE_OUTPUT/$mode"
 done
 cargo run --locked --release --manifest-path "$manifest" -p grust-query-qualification -- --cypher-refusals > "$GATE_OUTPUT/refusals.json"
