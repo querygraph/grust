@@ -204,9 +204,10 @@ fn remap_bound(bound: &mut Bound, slots: &HashMap<Slot, Field>) {
         }
     }
     match bound {
-        Bound::Value(e) | Bound::Path { raw: e, .. } | Bound::Edges { raw: e, .. } => {
-            expression(e, slots)
-        }
+        Bound::Value(e)
+        | Bound::Path { raw: e, .. }
+        | Bound::Edges { raw: e, .. }
+        | Bound::EntityList { raw: e, .. } => expression(e, slots),
         Bound::Entity(e) => {
             expression(&mut e.identity, slots);
             expression(&mut e.group, slots);

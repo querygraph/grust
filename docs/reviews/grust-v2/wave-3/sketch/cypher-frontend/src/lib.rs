@@ -127,6 +127,7 @@ impl CypherLowering<'_> {
                     if patterns.is_empty() {
                         return Err(refusal(at, "MATCH needs a pattern"));
                     }
+                    let mut post_filter = None;
                     if let Some(predicate) = c.where_clause {
                         if patterns.iter().any(|pattern| {
                             pattern.selector != grust_unresolved_plan::PathSelector::All
@@ -136,11 +137,20 @@ impl CypherLowering<'_> {
                                     .iter()
                                     .any(|e| e.hops != grust_unresolved_plan::Hops::ONE)
                         }) {
-                            return Err(refusal(at, "WHERE on a materialized or ranged path needs correlated path predicate lowering"));
+                            if c.optional
+                                || patterns
+                                    .iter()
+                                    .any(|p| p.selector != grust_unresolved_plan::PathSelector::All)
+                            {
+                                return Err(refusal(at, "WHERE on an optional or selected ranged path needs correlated path predicate lowering"));
+                            }
+                            post_filter = Some(self.expression(&predicate, at)?);
                         }
-                        patterns[0].vertices[0]
-                            .predicates
-                            .push(self.expression(&predicate, at)?);
+                        if post_filter.is_none() {
+                            patterns[0].vertices[0]
+                                .predicates
+                                .push(self.expression(&predicate, at)?);
+                        }
                     }
                     root = Relation::Match {
                         input: Box::new(root),
@@ -148,6 +158,12 @@ impl CypherLowering<'_> {
                         patterns,
                         optional: c.optional,
                     };
+                    if let Some(predicate) = post_filter {
+                        root = Relation::Filter {
+                            input: Box::new(root),
+                            predicate,
+                        };
+                    }
                 }
                 a::Clause::Unwind(c) => {
                     if scope.contains(&c.alias) {

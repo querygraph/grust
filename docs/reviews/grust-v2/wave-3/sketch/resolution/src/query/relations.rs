@@ -1,4 +1,5 @@
 use super::expressions::{boolean, compatible, grouped};
+use super::value_bindings::{entity_bound, projected_bound};
 use super::*;
 use grust_unresolved_plan::{JoinKind, Relation as U};
 impl State<'_, '_> {
@@ -28,8 +29,9 @@ impl State<'_, '_> {
                 self.matches(input, graph, patterns, *optional)
             }
             U::Filter { input, predicate } => {
-                let scope = self.relation(input)?;
-                let predicate = self.expression(predicate, &scope, None, false)?;
+                let mut scope = self.relation(input)?;
+                let mut predicate = self.expression(predicate, &scope, None, false)?;
+                self.lift_entities(&mut scope, &mut predicate)?;
                 boolean(&predicate)?;
                 Ok(Scope {
                     order: scope.order,
@@ -60,7 +62,7 @@ impl State<'_, '_> {
                     if bindings
                         .insert(
                             Binding::Named(item.name.clone()),
-                            projected_bound(&item.expression, &input, &f),
+                            projected_bound(&item.expression, &input, &f, &expr),
                         )
                         .is_some()
                     {
@@ -120,7 +122,7 @@ impl State<'_, '_> {
                     if bindings
                         .insert(
                             Binding::Named(item.name.clone()),
-                            Bound::Value(Expr::slot(&f)),
+                            projected_bound(&item.expression, &input, &f, &expr),
                         )
                         .is_some()
                     {
@@ -271,6 +273,16 @@ impl State<'_, '_> {
                 binding,
             } => {
                 let mut input = self.relation(input)?;
+                let entity_element = match list {
+                    grust_unresolved_plan::Expr::Binding(binding)
+                    | grust_unresolved_plan::Expr::GraphValue(binding) => {
+                        match input.bindings.get(binding) {
+                            Some(Bound::EntityList { element, .. }) => Some(element.clone()),
+                            _ => None,
+                        }
+                    }
+                    _ => None,
+                };
                 let mut list = self.expression(list, &input, None, false)?;
                 self.lift_entities(&mut input, &mut list)?;
                 let Some(LogicalType::List(element)) = &list.ty else {
@@ -281,7 +293,10 @@ impl State<'_, '_> {
                     .bindings
                     .insert(
                         Binding::Named(binding.clone()),
-                        Bound::Value(Expr::slot(&f)),
+                        entity_element
+                            .as_ref()
+                            .map(|entity| entity_bound(entity, &f))
+                            .unwrap_or_else(|| Bound::Value(Expr::slot(&f))),
                     )
                     .is_some()
                 {
@@ -411,9 +426,10 @@ fn null_scope(bindings: &mut HashMap<Binding, Bound>, fields: &[Field]) {
     }
     for bound in bindings.values_mut() {
         match bound {
-            Bound::Value(e) | Bound::Path { raw: e, .. } | Bound::Edges { raw: e, .. } => {
-                update(e, fields)
-            }
+            Bound::Value(e)
+            | Bound::Path { raw: e, .. }
+            | Bound::Edges { raw: e, .. }
+            | Bound::EntityList { raw: e, .. } => update(e, fields),
             Bound::Entity(e) => {
                 update(&mut e.identity, fields);
                 update(&mut e.group, fields);
@@ -423,62 +439,4 @@ fn null_scope(bindings: &mut HashMap<Binding, Bound>, fields: &[Field]) {
             }
         }
     }
-}
-
-fn projected_bound(original: &grust_unresolved_plan::Expr, input: &Scope, field: &Field) -> Bound {
-    if let grust_unresolved_plan::Expr::Binding(binding)
-    | grust_unresolved_plan::Expr::GraphValue(binding) = original
-    {
-        if let Some(Bound::Entity(entity)) = input.bindings.get(binding) {
-            let object = Expr::slot(field);
-            let access = |object: Expr, name: &str, ty: LogicalType, nullable: bool| Expr {
-                kind: Value::Property {
-                    object: Box::new(object),
-                    name: name.into(),
-                },
-                ty: Some(ty),
-                nullable,
-            };
-            let identity = access(
-                object.clone(),
-                "identity",
-                LogicalType::Int64,
-                field.nullable,
-            );
-            let group = access(object.clone(), "group", LogicalType::Int64, field.nullable);
-            let LogicalType::Struct(shape) = &field.ty else {
-                unreachable!()
-            };
-            let props_ty = shape
-                .iter()
-                .find(|f| f.name == "properties")
-                .unwrap()
-                .ty
-                .clone();
-            let properties_object = access(object, "properties", props_ty, field.nullable);
-            let properties = entity
-                .properties
-                .iter()
-                .map(|(name, value)| {
-                    (
-                        name.clone(),
-                        access(
-                            properties_object.clone(),
-                            name,
-                            value.ty.clone().unwrap(),
-                            field.nullable || value.nullable,
-                        ),
-                    )
-                })
-                .collect();
-            return Bound::Entity(Entity {
-                graph: entity.graph.clone(),
-                identity,
-                group,
-                properties,
-                edge: entity.edge,
-            });
-        }
-    }
-    Bound::Value(Expr::slot(field))
 }

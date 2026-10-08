@@ -19,7 +19,7 @@ pub fn records() -> Result<Vec<Value>, String> {
         ("missing_return","MATCH (n)"),
         ("write","CREATE (n) RETURN n"),
         ("call","CALL unknown.rows([1]) YIELD value RETURN value"),
-        ("path_where","MATCH (a)-[:KNOWS*]->(b) WHERE b.id=1 RETURN b.id AS id"),
+        ("optional_path_where","MATCH (a:Person) OPTIONAL MATCH (a)-[:KNOWS*]->(b) WHERE b.id=1 RETURN b.id AS id"),
         ("missing_alias","RETURN 1"),
         ("unknown_function","RETURN mystery(1) AS x"),
         ("wrong_function_type","RETURN upper(1) AS x"),

@@ -99,8 +99,28 @@ impl State<'_, '_> {
                 })
             }
             U::Binary { op, left, right } => {
-                let mut left = self.expression(left, scope, current, aggregate)?;
-                let mut right = self.expression(right, scope, current, aggregate)?;
+                let entity = |value: &U| match value {
+                    U::Binding(binding) | U::GraphValue(binding) => match scope
+                        .bindings
+                        .get(binding)
+                    {
+                        Some(Bound::Entity(entity)) => Some(super::entity_equality::key(entity)),
+                        _ => None,
+                    },
+                    _ => None,
+                };
+                let pair = if matches!(op, BinaryOp::Eq | BinaryOp::NotEq) {
+                    entity(left).zip(entity(right))
+                } else {
+                    None
+                };
+                let (mut left, mut right) = match pair {
+                    Some(pair) => pair,
+                    None => (
+                        self.expression(left, scope, current, aggregate)?,
+                        self.expression(right, scope, current, aggregate)?,
+                    ),
+                };
                 if !matches!(
                     op,
                     BinaryOp::And
@@ -329,7 +349,8 @@ impl State<'_, '_> {
         match scope.bindings.get(binding) {
             Some(Bound::Value(value))
             | Some(Bound::Path { raw: value, .. })
-            | Some(Bound::Edges { raw: value, .. }) => Ok(value.clone()),
+            | Some(Bound::Edges { raw: value, .. })
+            | Some(Bound::EntityList { raw: value, .. }) => Ok(value.clone()),
             Some(Bound::Entity(e)) => {
                 use grust_lpg::Property;
                 let properties = Expr {

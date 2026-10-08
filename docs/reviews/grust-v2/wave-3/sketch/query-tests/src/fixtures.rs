@@ -119,7 +119,13 @@ impl QueryStorage for Storage {
         })
     }
     fn function(&self, function: &FunctionDescriptor) -> Option<Vec<String>> {
-        (function.provider == "fixture-builtins").then(|| vec![function.name.name.clone()])
+        (function.provider == "fixture-builtins").then(|| {
+            vec![if function.name.name == "collect" {
+                "collect_list".into()
+            } else {
+                function.name.name.clone()
+            }]
+        })
     }
 }
 pub struct Stats;
@@ -165,6 +171,13 @@ pub fn registry() -> Registry {
             FunctionKind::Aggregate,
             vec![ArgumentType::Any],
             ReturnType::Exact(LogicalType::Int64),
+            NullSemantics::NonNull,
+        ),
+        (
+            "collect",
+            FunctionKind::Aggregate,
+            vec![ArgumentType::Any],
+            ReturnType::ListArgument(0),
             NullSemantics::NonNull,
         ),
         (

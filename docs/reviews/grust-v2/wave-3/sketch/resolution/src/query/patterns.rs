@@ -112,7 +112,8 @@ impl State<'_, '_> {
                 if pattern_scope.bindings.contains_key(key) && !input.bindings.contains_key(key) {
                     if let Bound::Value(value)
                     | Bound::Path { raw: value, .. }
-                    | Bound::Edges { raw: value, .. } = bound
+                    | Bound::Edges { raw: value, .. }
+                    | Bound::EntityList { raw: value, .. } = bound
                     {
                         value.nullable = true;
                     }

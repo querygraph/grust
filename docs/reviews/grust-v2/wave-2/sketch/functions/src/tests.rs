@@ -86,3 +86,20 @@ fn provider_null_and_backend_contracts_survive_lookup() {
     r.register(d.clone()).unwrap();
     assert_eq!(r.lookup(&d.name, d.kind)[0], &d);
 }
+
+#[test]
+fn list_return_argument_must_exist_and_retains_its_contract() {
+    let mut registry = Registry::default();
+    let mut function = descriptor(FunctionKind::Aggregate);
+    function.signature.result = ReturnType::ListArgument(1);
+    assert_eq!(
+        registry.register(function.clone()),
+        Err(RegistryError::InvalidReturnArgument(1))
+    );
+    function.signature.result = ReturnType::ListArgument(0);
+    registry.register(function.clone()).unwrap();
+    assert_eq!(
+        registry.lookup(&function.name, function.kind),
+        vec![&function]
+    );
+}

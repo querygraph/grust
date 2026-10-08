@@ -22,9 +22,12 @@ from oracle import rows as oracle_rows
 from prepare_snb import verify_checkout
 from pyspark.sql.connect.session import SparkSession
 from pyspark.sql.types import Row
+from resource_profile import Sampler
+from snb_complex import request as complex_request
 from snb_dataset import PIN, write_parquet
 from snb_dataset import load as load_snb
 from snb_dataset import request as snb_request
+from snb_scale import replicate
 
 
 @dataclass(frozen=True, slots=True)
@@ -99,7 +102,11 @@ def run(
     probe: bool = False,
     dataset_root: Path | None = None,
     paired: bool = False,
+    replicas: int = 1,
+    profile_memory: bool = False,
 ) -> int:
+    if paired and profile_memory:
+        raise ValueError("memory profiling must be separate from paired timing cells")
     output.mkdir(parents=True, exist_ok=True)
     raw: list[dict[str, Any]] = json.loads(manifest.read_text())
     if probe and raw:
@@ -115,7 +122,9 @@ def run(
     if dataset_root and dataset:
         verify_checkout(dataset_root)
         oracle_records = {
-            r["name"]: r for r in snb_request(dataset, dataset_root)["queries"]
+            r["name"]: r
+            for r in snb_request(dataset, dataset_root)["queries"]
+            + complex_request(dataset, dataset_root)["queries"]
         }
         for record in raw:
             oracle_record = oracle_records[record["name"]]
@@ -123,10 +132,20 @@ def run(
                 record["query_sha256"] != oracle_record["text_sha256"]
                 or record["query_text"] != oracle_record["text"]
                 or record["expected"] != oracle_record["expected"]
+                or record["parameters"] != oracle_record["parameters"]
+                or record["ordered"] != oracle_record["ordered"]
             ):
                 raise ValueError(
                     "SNB text, hash or expected result differs from independent CSV oracle"
                 )
+    if dataset:
+        dataset = replicate(dataset, replicas)
+        if any(record["statistics_revision"] != dataset.sha256 for record in raw):
+            raise ValueError(
+                "manifest statistics do not describe the admitted dataset/replication"
+            )
+    elif replicas != 1:
+        raise ValueError("replication requires the pinned SNB dataset")
     cases = [
         Case(
             name=c["name"],
@@ -168,6 +187,7 @@ def run(
     command = [str(sail), "spark", "server", "--ip", "127.0.0.1", "--port", str(port)]
     with (output / "server.log").open("w") as log:
         server = subprocess.Popen(command, env=environment, stdout=log, stderr=log)
+        sampler = Sampler(server.pid) if profile_memory else None
     try:
         deadline = time.monotonic() + 30
         while True:
@@ -283,7 +303,9 @@ def run(
             except subprocess.TimeoutExpired:
                 server.kill()
                 server.wait(timeout=5)
+        memory = sampler.finish() if sampler else None
         receipt = {
+            "memory_profile": asdict(memory) if memory else None,
             "observed_utc": observed,
             "finished_utc": datetime.now(timezone.utc).isoformat(),
             "platform": platform.platform(),
@@ -304,6 +326,10 @@ def run(
                 "pin": PIN,
                 "csv_sha256": dataset.files,
                 "metadata_sha256": dataset.sha256,
+                "synthetic_replicas": replicas,
+                "scale_contract": "official development fixture"
+                if replicas == 1
+                else "disjoint-int64-v1 synthetic replicas; not an official LDBC scale factor",
             }
             if dataset
             else None,
@@ -341,6 +367,8 @@ def main() -> int:
     parser.add_argument("--memory-probe", action="store_true")
     parser.add_argument("--dataset-checkout", type=Path)
     parser.add_argument("--paired", action="store_true")
+    parser.add_argument("--replicas", type=int, default=1)
+    parser.add_argument("--profile-memory", action="store_true")
     args = parser.parse_args()
     return run(
         args.sail.resolve(),
@@ -349,6 +377,8 @@ def main() -> int:
         args.memory_probe,
         args.dataset_checkout.resolve() if args.dataset_checkout else None,
         args.paired,
+        args.replicas,
+        args.profile_memory,
     )
 
 

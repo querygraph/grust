@@ -41,6 +41,8 @@ pub enum ArgumentType {
 pub enum ReturnType {
     Exact(LogicalType),
     Argument(usize),
+    /// A list whose elements retain the argument type, including graph-value provenance.
+    ListArgument(usize),
     Variable(u16),
 }
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -99,7 +101,9 @@ pub struct Registry {
 impl Registry {
     pub fn register(&mut self, entry: FunctionDescriptor) -> Result<(), RegistryError> {
         match &entry.signature.result {
-            ReturnType::Argument(index) if *index >= entry.signature.arguments.len() => {
+            ReturnType::Argument(index) | ReturnType::ListArgument(index)
+                if *index >= entry.signature.arguments.len() =>
+            {
                 return Err(RegistryError::InvalidReturnArgument(*index))
             }
             ReturnType::Variable(variable)

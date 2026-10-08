@@ -72,6 +72,10 @@ pub fn bind(
         let result = match &f.signature.result {
             ReturnType::Exact(ty) => Some(ty.clone()),
             ReturnType::Argument(i) => args.get(*i).and_then(|a| a.ty.clone()),
+            ReturnType::ListArgument(i) => args
+                .get(*i)
+                .and_then(|a| a.ty.clone())
+                .map(|ty| LogicalType::List(Box::new(ty))),
             ReturnType::Variable(id) => variables.get(id).cloned(),
         };
         if let Some(ty) = result {

@@ -1,6 +1,7 @@
 //! Full relational resolver entry point; unsupported path/extension semantics refuse.
 mod catalog;
 mod correlation;
+mod entity_equality;
 mod expressions;
 mod extensions;
 mod hydrate;
@@ -12,6 +13,7 @@ pub mod providers;
 mod relations;
 mod segments;
 mod uniqueness;
+mod value_bindings;
 use crate::{Context, ResolveError};
 use grust_lpg::LogicalType;
 use grust_resolved_plan::query::{Expr, Node, Op, Plan, Value};
@@ -22,6 +24,7 @@ use std::collections::HashMap;
 enum Bound {
     Path { graph: String, raw: Expr },
     Edges { graph: String, raw: Expr },
+    EntityList { raw: Expr, element: Entity },
     Value(Expr),
     Entity(Entity),
 }

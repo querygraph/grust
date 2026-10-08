@@ -12,6 +12,17 @@ fn edge(id: i64, src: i64, dst: i64) -> Value {
 }
 fn specifications() -> Vec<(&'static str, &'static str, Value, bool)> {
     vec![
+        ("ranged_where_endpoint", "MATCH (a:Person {id:1})-[:KNOWS*1..2]->(b:Person) WHERE b.id=3 RETURN b.id AS id", json!([[3],[3]]), false),
+        ("ranged_where_path_length", "MATCH p=(a:Person {id:1})-[:KNOWS*1..2]->(b) WHERE length(p)=2 RETURN b.id AS id", json!([[3],[3]]), false),
+        ("entity_equality_inherited_shape", "MATCH (a:Person {id:5}),(b:Employee {id:5}) RETURN a=b AS same", json!([[true]]), false),
+        ("entity_equality_different_kind_shape", "MATCH (a:Person {id:1}),(b:Company {id:7}) RETURN a=b AS same", json!([[false]]), false),
+        ("entity_equality_nullable", "MATCH (a:Person {id:4}) OPTIONAL MATCH (a)-[:KNOWS]->(b) RETURN a=b AS same, a<>b AS different", json!([[null,null]]), false),
+        ("entity_collect_rematch", "MATCH (a:Person {id:1})-[:KNOWS]->(b) WITH collect(distinct b) AS friends UNWIND friends AS friend MATCH (friend)-[:KNOWS]->(c) RETURN friend.id AS id,c.id AS next", json!([[2,3]]), false),
+        ("entity_collect_alias_rematch", "MATCH (a:Person {id:1})-[:KNOWS]->(b) WITH collect(b) AS friends WITH friends AS copied UNWIND copied AS friend MATCH (friend)-[:KNOWS]->(c) RETURN friend.id AS id,c.id AS next", json!([[2,3],[2,3]]), false),
+        ("entity_collect_empty_value", "MATCH (a:Person {id:-1}) RETURN collect(a) AS nodes", json!([[[]]]), false),
+        ("entity_collect_null_value", "MATCH (a:Person {id:4}) OPTIONAL MATCH (a)-[:KNOWS]->(b) RETURN collect(b) AS nodes", json!([[[]]]), false),
+        ("entity_collect_empty", "MATCH (a:Person {id:-1}) WITH collect(a) AS nodes UNWIND nodes AS n RETURN n.id AS id", json!([]), false),
+        ("entity_collect_nullable", "MATCH (a:Person {id:4}) OPTIONAL MATCH (a)-[:KNOWS]->(b) WITH collect(b) AS nodes UNWIND nodes AS n RETURN n.id AS id", json!([]), false),
         ("full_path_value","MATCH p=(a:Person {id:1})-[:KNOWS*1..1]->(b) RETURN p",json!([[{"length":1,"nodes":[vertex(1,"Alice",json!(30)),vertex(2,"Bob",json!(20))],"relationships":[edge(100,1,2)]}],[{"length":1,"nodes":[vertex(1,"Alice",json!(30)),vertex(2,"Bob",json!(20))],"relationships":[edge(101,1,2)]}]]),false),
         ("full_path_zero","MATCH p=(a:Person {id:4})-[:KNOWS*0..0]->(b) RETURN p",json!([[{"length":0,"nodes":[vertex(4,"Dave",json!(40))],"relationships":[]}]]),false),
         ("full_path_optional","MATCH (a:Person {id:4}) OPTIONAL MATCH p=(a)-[:KNOWS*1..1]->(b) RETURN p",json!([[null]]),false),

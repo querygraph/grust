@@ -81,6 +81,7 @@ impl QueryStorage for Dataset<'_> {
         match f.name.name.as_str() {
             "coalesce" => Some(vec!["coalesce".into()]),
             "toInteger" => Some(vec!["bigint".into()]),
+            "collect" => Some(vec!["collect_list".into()]),
             _ => None,
         }
     }
@@ -152,6 +153,21 @@ fn registry() -> Registry {
             })
             .unwrap();
     }
+    registry
+        .register(FunctionDescriptor {
+            name: FunctionName::new("collect"),
+            kind: FunctionKind::Aggregate,
+            signature: Signature {
+                arguments: vec![ArgumentType::Any],
+                variadic: None,
+                result: ReturnType::ListArgument(0),
+            },
+            nulls: NullSemantics::NonNull,
+            backends: BackendSupport::Named(vec!["sail".into()]),
+            volatility: Volatility::Immutable,
+            provider: "snb-sail".into(),
+        })
+        .unwrap();
     registry
 }
 fn main() -> Result<(), Box<dyn std::error::Error>> {
