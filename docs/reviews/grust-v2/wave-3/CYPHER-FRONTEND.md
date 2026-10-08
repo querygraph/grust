@@ -72,4 +72,62 @@ Run `live/gate-cypher.sh` from a clean detached checkout with external
 formatting, Clippy, tests in default/all-features/release modes, all existing relational
 and iterative native fixtures, the source-text fixtures, refusal diagnostics and
 runtime controls. The final verdict is only printed if HEAD and the checkout
-remain unchanged. Source-specific receipts will be linked after the gate.
+remain unchanged. Source-specific receipts are linked below.
+
+## Observed verdict and evidence
+
+Source `0e85df70dd2f7f6a37dd1aee1fc2fd36d7f9f3f0` passed from a clean detached
+checkout on Morrobay, native macOS x86-64, Rust 1.98.1. The [source receipt](evidence/cypher-frontend/source-gate.json)
+records the UTC observation, source tree, command, environment and artifact hashes.
+The [full gate log](evidence/cypher-frontend/native-gate.log) retains the verdict.
+
+| Check                                               | Result                 |
+| --------------------------------------------------- | ---------------------- |
+| Formatting and Clippy, default and all-features     | Passed                 |
+| Rust tests, default / all-features / release        | 39 each                |
+| Existing relational results, resolved / optimized   | 92 passed              |
+| Existing iterative results, resolved / optimized    | 22 passed              |
+| Cypher source results, resolved / optimized         | 40 passed              |
+| Frontend and resolver refusals before execution     | 26 refused as expected |
+| Runtime resource, cancellation and quoting controls | 13 passed              |
+
+The [source-text manifest](evidence/cypher-frontend/cypher/queries.json) carries
+query text, expected rows, emitted programs, output types and optimizer traces.
+Its [native receipt](evidence/cypher-frontend/cypher/receipt.json) preserves actual
+rows. The [refusal manifest](evidence/cypher-frontend/refusals.json) preserves
+frontend diagnostic codes/spans and typed resolver errors. Earlier fixture
+receipts are in the `relational/` and `iterative/` evidence directories; the
+managed memory allocation refusal is in `memory/`.
+
+The first gate [failed](evidence/cypher-frontend/attempts/gate01.json) on a
+nonexistent feature flag. The second [failed](evidence/cypher-frontend/attempts/gate02.json)
+on macOS Bash 3's handling of empty arrays under `nounset`, after passing Rust.
+Both failed logs are retained beside their summaries; neither started native
+cells. The third gate passed on the source named above.
+
+The Sail release executable was reused without modification; its digest before
+and after every run was
+`ee80ac3cf9d028639561f3cf32435985192719d629807fcf6a368324fa84946e`.
+Each owned Sail server was terminated and reaped. The final report commit changes
+only documentation and evidence; executable source remains the gated source.
+
+## Using the frontend
+
+Call `grust_syntax::parse_and_lower` with `CypherParser` and
+`CypherLowering { functions: registry }`, then supply the resulting plan to
+`QueryResolver.resolve_iterative` with the caller's catalog, parameter types and
+relation providers. Optimize that resolved plan and call `SailSql.emit_program`;
+execute the resulting program inside the existing `Execution` context. Capability
+refusals remain errors at their original layer.
+
+For the fixture catalog, emit the reproducible source-text program manifest with:
+
+```sh
+cargo run --locked --release \
+  --manifest-path docs/reviews/grust-v2/wave-3/sketch/Cargo.toml \
+  -p grust-query-qualification -- --cypher
+```
+
+Replace the final flag with `--cypher-refusals` to inspect the refusal manifest.
+Invoke the complete gate with `bash docs/reviews/grust-v2/wave-3/live/gate-cypher.sh`
+and the four external paths described above.

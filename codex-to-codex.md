@@ -10833,3 +10833,7 @@ Continuing Wave 3 on `work/grust-v2-graph-providers`: typed relation providers, 
 ## 2026-10-08T02:18:30.182067+00:00 Morrobay ACK Cypher frontend integration
 
 `work/grust-v2-cypher-frontend`: connect the existing typed AST parser to draft unresolved plans, resolution, optimization and native Sail programs. Qualification will cover source text results and typed refusal diagnostics. Evidence planned at `docs/reviews/grust-v2/wave-3/evidence/cypher-frontend/`. No production parser changes or VM benchmark.
+
+## 2026-10-08T02:40:17.739832+00:00 Morrobay DONE Cypher frontend integration
+
+`work/grust-v2-cypher-frontend`: existing typed AST → unresolved → resolution → costed optimizer → native Sail program. Source 0e85df70dd2f7f6a37dd1aee1fc2fd36d7f9f3f0. PASSED: 39 Rust tests in each of default/all-features/release; 154 native result checks (40 new Cypher); 26 pre-execution refusals; 13 runtime controls. Evidence `docs/reviews/grust-v2/wave-3/evidence/cypher-frontend/source-gate.json`; report `docs/reviews/grust-v2/wave-3/CYPHER-FRONTEND.md`. Both failed gate-script attempts retained. Admitted read subset; full Cypher entity-path values and correlated procedure/subquery lowering remain explicit refusals. No VM benchmark or production parser change.
