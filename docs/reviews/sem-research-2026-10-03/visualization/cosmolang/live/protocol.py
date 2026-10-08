@@ -316,6 +316,10 @@ class Gateway:
             previous = session.views.get(params["view_id"])
             if previous is None:
                 raise Refusal("NOT_FOUND", "unknown base view")
+            if previous.members != members:
+                raise Refusal(
+                    "CONTEXT_MISMATCH", "base view belongs to a different selection"
+                )
             group = params["group"]["id"]
             if params["group"]["kind"] != "aggregate" or not group.startswith("h/"):
                 raise Refusal("INVALID_ARGUMENT", "expansion requires aggregate ID")

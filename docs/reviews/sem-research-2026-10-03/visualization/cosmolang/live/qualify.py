@@ -188,6 +188,18 @@ def run(endpoint: str, output: Path) -> None:
     ]["params"]
     selection = client.call("graph.follow", follow)["selection_handle"]
     client.base["context"]["selection"] = selection
+    stale_view = client.post(
+        client.request(
+            "hierarchy.expand",
+            {
+                "group": {"kind": "aggregate", "id": "h/a"},
+                "view_id": manifest["view_id"],
+                "quality": {"membership": "complete", "edges": "complete"},
+            },
+        )
+    )
+    assert stale_view["error"]["code"] == "CONTEXT_MISMATCH"
+    client.passed("view_selection_affinity")
     _, selected_points, _ = client.view(client.call("view.request", params))
     assert [(p["id"], p["represented_vertices"]) for p in selected_points] == [
         ("h/a", "2"),
