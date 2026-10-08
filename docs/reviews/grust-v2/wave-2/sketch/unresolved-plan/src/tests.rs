@@ -16,6 +16,7 @@ fn path() -> PathPattern {
             },
         ],
         edges: vec![EdgePattern {
+            binding_list: false,
             binding: Binding::Anonymous(1),
             labels: LabelExpr::Any,
             direction: PatternDirection::Incoming,

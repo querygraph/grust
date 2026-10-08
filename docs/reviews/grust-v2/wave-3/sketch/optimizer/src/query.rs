@@ -61,13 +61,25 @@ impl JoinOptimizer<'_> {
             }
         }
         match &mut node.op {
-            Op::Filter { input, .. }
+            Op::Result { input, .. }
+            | Op::Filter { input, .. }
             | Op::Project { input, .. }
             | Op::Aggregate { input, .. }
             | Op::Unwind { input, .. }
             | Op::Sort { input, .. }
             | Op::PathSelect { input, .. }
-            | Op::Slice { input, .. } => **input = self.rewrite(*input.clone(), stats, trace),
+            | Op::Slice { input, .. }
+            | Op::RowId { input, .. }
+            | Op::Materialize { input, .. }
+            | Op::PartitionSlice { input, .. } => {
+                **input = self.rewrite(*input.clone(), stats, trace)
+            }
+            Op::Hydrate {
+                input, entities, ..
+            } => {
+                **input = self.rewrite(*input.clone(), stats, trace);
+                **entities = self.rewrite(*entities.clone(), stats, trace);
+            }
             Op::Join { left, right, .. } => {
                 **left = self.rewrite(*left.clone(), stats, trace);
                 **right = self.rewrite(*right.clone(), stats, trace);

@@ -11,6 +11,25 @@ pub struct Expr {
 }
 #[derive(Clone, Debug, PartialEq)]
 pub enum Value {
+    Labels(Vec<String>),
+    ListConcat(Vec<Expr>),
+    ListDropFirst(Box<Expr>),
+    /// Deferred columnar identity lookup; lifted into Hydrate before execution.
+    EntityList {
+        graph: String,
+        identities: Box<Expr>,
+        edge: bool,
+    },
+    ListLength(Box<Expr>),
+    Cast {
+        argument: Box<Expr>,
+        ty: LogicalType,
+    },
+    /// No shared non-null identity in these two typed lists.
+    ListDisjoint {
+        left: Box<Expr>,
+        right: Box<Expr>,
+    },
     Slot(Slot),
     Literal(Literal),
     Parameter(String),
@@ -76,7 +95,38 @@ pub struct Node {
 }
 #[derive(Clone, Debug, PartialEq)]
 pub enum Op {
+    /// Ordered entity lookup preserving duplicates, empty lists and null lists.
+    Hydrate {
+        input: Box<Node>,
+        entities: Box<Node>,
+        identities: Expr,
+        identity: Expr,
+        group: Expr,
+        value: Box<Expr>,
+        row: Slot,
+        output: Slot,
+    },
+    /// Final visible columns and presentation ordering over retained hidden slots.
+    Result {
+        input: Box<Node>,
+        keys: Vec<SortKey>,
+    },
     Unit,
+    RowId {
+        input: Box<Node>,
+        slot: Slot,
+    },
+    Materialize {
+        input: Box<Node>,
+        id: u32,
+    },
+    PartitionSlice {
+        input: Box<Node>,
+        partitions: Vec<Expr>,
+        keys: Vec<SortKey>,
+        offset: Option<Expr>,
+        limit: Option<Expr>,
+    },
     Empty,
     Scan {
         graph: String,

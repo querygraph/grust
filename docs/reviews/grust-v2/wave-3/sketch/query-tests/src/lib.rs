@@ -15,3 +15,10 @@ pub mod iterative_cases;
 pub mod cypher_cases;
 
 pub mod cypher_refusals;
+
+pub mod semantics_cases;
+
+pub mod wire;
+
+#[cfg(test)]
+mod semantics_tests;

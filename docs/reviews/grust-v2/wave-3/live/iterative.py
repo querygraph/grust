@@ -56,9 +56,19 @@ class Traversal:
 
 
 @dataclass(frozen=True, slots=True)
+class Materialization:
+    view: str
+    sql: str
+
+
+ExecutionStep = Traversal | Materialization
+
+
+@dataclass(frozen=True, slots=True)
 class Program:
     sql: str
     traversals: tuple[Traversal, ...]
+    steps: tuple[ExecutionStep, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -181,10 +191,17 @@ class Execution:
     def run(self, program: Program) -> DataFrame:
         replacements: dict[str, str] = {}
         try:
-            for step in program.traversals:
-                seed = replace_views(step.seed_sql, replacements)
-                adjacency = replace_views(step.adjacency_sql, replacements)
-                replacements[step.view] = self.traverse(step, seed, adjacency)
+            steps: tuple[ExecutionStep, ...] = program.steps or program.traversals
+            for step in steps:
+                if isinstance(step, Materialization):
+                    query = replace_views(step.sql, replacements)
+                    replacements[step.view], _ = self.materialize(
+                        query, "materialize", 0
+                    )
+                else:
+                    seed = replace_views(step.seed_sql, replacements)
+                    adjacency = replace_views(step.adjacency_sql, replacements)
+                    replacements[step.view] = self.traverse(step, seed, adjacency)
             self.cancellation.check()
             return self.spark.sql(replace_views(program.sql, replacements))
         except Exception as exc:

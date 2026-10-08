@@ -4,7 +4,14 @@ use grust_unresolved_plan::{JoinKind, Relation as U};
 impl State<'_, '_> {
     pub(super) fn relation(&mut self, relation: &U) -> Result<Scope, ResolveError> {
         match relation {
+            U::Argument => self
+                .argument
+                .clone()
+                .ok_or_else(|| unsupported("argument", "outside correlated apply")),
+            U::Apply { input, body } => self.apply(input, body),
             U::Unit => Ok(Scope {
+                order: Vec::new(),
+                visible: None,
                 node: Node {
                     op: Op::Unit,
                     fields: vec![],
@@ -25,6 +32,8 @@ impl State<'_, '_> {
                 let predicate = self.expression(predicate, &scope, None, false)?;
                 boolean(&predicate)?;
                 Ok(Scope {
+                    order: scope.order,
+                    visible: scope.visible,
                     node: Node {
                         fields: scope.node.fields.clone(),
                         op: Op::Filter {
@@ -40,12 +49,13 @@ impl State<'_, '_> {
                 items,
                 distinct,
             } => {
-                let input = self.relation(input)?;
+                let mut input = self.relation(input)?;
                 let mut fields = Vec::new();
                 let mut values = Vec::new();
                 let mut bindings = HashMap::new();
                 for item in items {
-                    let expr = self.expression(&item.expression, &input, None, false)?;
+                    let mut expr = self.expression(&item.expression, &input, None, false)?;
+                    self.lift_entities(&mut input, &mut expr)?;
                     let f = self.output_field(item.name.clone(), &expr)?;
                     if bindings
                         .insert(
@@ -59,7 +69,16 @@ impl State<'_, '_> {
                     values.push((f.slot, expr));
                     fields.push(f);
                 }
+                let visible = fields.iter().map(|f| f.slot).collect();
+                let order = if *distinct {
+                    Vec::new()
+                } else {
+                    self.carry_order(&input, &mut fields, &mut values)
+                };
+                self.carry_keys(&input.node, &mut fields, &mut values);
                 Ok(Scope {
+                    order,
+                    visible: Some(visible),
                     node: Node {
                         fields,
                         op: Op::Project {
@@ -114,15 +133,24 @@ impl State<'_, '_> {
                     }
                     fields.push(f);
                 }
-                Ok(Scope {
-                    node: Node {
-                        fields,
-                        op: Op::Aggregate {
-                            input: Box::new(input.node),
-                            groups: group_items,
-                            aggregates: agg_items,
-                        },
+                self.carry_keys(&input.node, &mut fields, &mut group_items);
+                let empty_shape = input.node.fields.clone();
+                let empty_items = agg_items.clone();
+                let mut node = Node {
+                    fields,
+                    op: Op::Aggregate {
+                        input: Box::new(input.node),
+                        groups: group_items,
+                        aggregates: agg_items,
                     },
+                };
+                if groups.is_empty() && !self.correlation_keys.is_empty() {
+                    node = self.fill_empty_aggregate(node, empty_shape, empty_items)?;
+                }
+                Ok(Scope {
+                    order: Vec::new(),
+                    visible: None,
+                    node,
                     bindings,
                 })
             }
@@ -147,6 +175,8 @@ impl State<'_, '_> {
                     return Err(unsupported("cross join", "condition is not allowed"));
                 }
                 let combined = Scope {
+                    order: Vec::new(),
+                    visible: None,
                     node: Node {
                         op: Op::Unit,
                         fields: vec![],
@@ -167,7 +197,12 @@ impl State<'_, '_> {
                     bindings = left.bindings;
                 }
                 null_scope(&mut bindings, &node.fields);
-                Ok(Scope { node, bindings })
+                Ok(Scope {
+                    order: Vec::new(),
+                    visible: None,
+                    node,
+                    bindings,
+                })
             }
             U::Union { inputs, all } => {
                 if inputs.is_empty() {
@@ -175,16 +210,26 @@ impl State<'_, '_> {
                 }
                 let mut scopes = inputs
                     .iter()
-                    .map(|i| self.relation(i))
+                    .map(|i| {
+                        self.relation(i).map(|scope| {
+                            super::ordering::union_input(scope, &self.correlation_keys)
+                        })
+                    })
                     .collect::<Result<Vec<_>, _>>()?;
                 let first = scopes.remove(0);
                 let mut fields = Vec::new();
                 for field in &first.node.fields {
-                    fields.push(self.field(
-                        field.name.clone(),
-                        field.ty.clone(),
-                        field.nullable,
-                    )?);
+                    fields.push(
+                        if self
+                            .correlation_keys
+                            .iter()
+                            .any(|key| key.slot == field.slot)
+                        {
+                            field.clone()
+                        } else {
+                            self.field(field.name.clone(), field.ty.clone(), field.nullable)?
+                        },
+                    );
                 }
                 for input in &scopes {
                     if input.node.fields.len() != fields.len() {
@@ -200,11 +245,19 @@ impl State<'_, '_> {
                 }
                 let bindings = fields
                     .iter()
+                    .filter(|field| {
+                        !self
+                            .correlation_keys
+                            .iter()
+                            .any(|key| key.slot == field.slot)
+                    })
                     .map(|f| (Binding::Named(f.name.clone()), Bound::Value(Expr::slot(f))))
                     .collect();
                 let mut inputs = vec![first.node];
                 inputs.extend(scopes.into_iter().map(|s| s.node));
                 Ok(Scope {
+                    order: Vec::new(),
+                    visible: None,
                     node: Node {
                         fields,
                         op: Op::Union { inputs, all: *all },
@@ -218,7 +271,8 @@ impl State<'_, '_> {
                 binding,
             } => {
                 let mut input = self.relation(input)?;
-                let list = self.expression(list, &input, None, false)?;
+                let mut list = self.expression(list, &input, None, false)?;
+                self.lift_entities(&mut input, &mut list)?;
                 let Some(LogicalType::List(element)) = &list.ty else {
                     return Err(unsupported("unwind", "typed list required"));
                 };
@@ -236,6 +290,8 @@ impl State<'_, '_> {
                 let mut fields = input.node.fields.clone();
                 fields.push(f.clone());
                 Ok(Scope {
+                    order: input.order,
+                    visible: None,
                     node: Node {
                         fields,
                         op: Op::Unwind {
@@ -260,6 +316,8 @@ impl State<'_, '_> {
                     })
                     .collect::<Result<Vec<_>, ResolveError>>()?;
                 Ok(Scope {
+                    order: keys.clone(),
+                    visible: input.visible,
                     node: Node {
                         fields: input.node.fields.clone(),
                         op: Op::Sort {
@@ -276,7 +334,7 @@ impl State<'_, '_> {
                 limit,
             } => {
                 let input = self.relation(input)?;
-                let parse = |e: &grust_unresolved_plan::Expr| -> Result<Expr, ResolveError> {
+                let mut parse = |e: &grust_unresolved_plan::Expr| -> Result<Expr, ResolveError> {
                     let expr = self.expression(e, &input, None, false)?;
                     if expr.ty != Some(LogicalType::Int64)
                         || expr.nullable
@@ -286,13 +344,47 @@ impl State<'_, '_> {
                     }
                     Ok(expr)
                 };
-                let offset = offset.as_ref().map(parse).transpose()?;
-                let limit = limit.as_ref().map(parse).transpose()?;
-                Ok(Scope {
-                    node: Node {
+                let offset = offset.as_ref().map(&mut parse).transpose()?;
+                let limit = limit.as_ref().map(&mut parse).transpose()?;
+                if !self.correlation_keys.is_empty() {
+                    let (base, keys) = match input.node.op.clone() {
+                        Op::Sort { input, keys } => (*input, keys),
+                        _ => (input.node.clone(), Vec::new()),
+                    };
+                    return Ok(Scope {
+                        order: input.order.clone(),
+                        visible: input.visible.clone(),
+                        node: Node {
+                            fields: base.fields.clone(),
+                            op: Op::PartitionSlice {
+                                input: Box::new(base),
+                                partitions: self.correlation_keys.iter().map(Expr::slot).collect(),
+                                keys,
+                                offset,
+                                limit,
+                            },
+                        },
+                        bindings: input.bindings,
+                    });
+                }
+                let base = if input.order.is_empty() {
+                    input.node
+                } else {
+                    Node {
                         fields: input.node.fields.clone(),
-                        op: Op::Slice {
+                        op: Op::Sort {
                             input: Box::new(input.node),
+                            keys: input.order.clone(),
+                        },
+                    }
+                };
+                Ok(Scope {
+                    order: input.order.clone(),
+                    visible: input.visible.clone(),
+                    node: Node {
+                        fields: base.fields.clone(),
+                        op: Op::Slice {
+                            input: Box::new(base),
                             offset,
                             limit,
                         },
@@ -300,28 +392,7 @@ impl State<'_, '_> {
                     bindings: input.bindings,
                 })
             }
-            U::Extension {
-                name,
-                inputs,
-                arguments,
-            } => {
-                if self.extension_depth >= 32 {
-                    return Err(unsupported("extension", "provider lowering depth exceeded"));
-                }
-                let lowered = self
-                    .providers
-                    .lower(name, inputs, arguments)?
-                    .ok_or_else(|| {
-                        unsupported(
-                            "extension",
-                            &format!("no relation provider registered for {name:?}"),
-                        )
-                    })?;
-                self.extension_depth += 1;
-                let result = self.relation(&lowered);
-                self.extension_depth -= 1;
-                result
-            }
+            U::Extension { .. } => self.extension_relation(relation),
         }
     }
 }
@@ -340,7 +411,9 @@ fn null_scope(bindings: &mut HashMap<Binding, Bound>, fields: &[Field]) {
     }
     for bound in bindings.values_mut() {
         match bound {
-            Bound::Value(e) => update(e, fields),
+            Bound::Value(e) | Bound::Path { raw: e, .. } | Bound::Edges { raw: e, .. } => {
+                update(e, fields)
+            }
             Bound::Entity(e) => {
                 update(&mut e.identity, fields);
                 update(&mut e.group, fields);
@@ -353,7 +426,9 @@ fn null_scope(bindings: &mut HashMap<Binding, Bound>, fields: &[Field]) {
 }
 
 fn projected_bound(original: &grust_unresolved_plan::Expr, input: &Scope, field: &Field) -> Bound {
-    if let grust_unresolved_plan::Expr::Binding(binding) = original {
+    if let grust_unresolved_plan::Expr::Binding(binding)
+    | grust_unresolved_plan::Expr::GraphValue(binding) = original
+    {
         if let Some(Bound::Entity(entity)) = input.bindings.get(binding) {
             let object = Expr::slot(field);
             let access = |object: Expr, name: &str, ty: LogicalType, nullable: bool| Expr {

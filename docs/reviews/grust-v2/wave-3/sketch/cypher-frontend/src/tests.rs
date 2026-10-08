@@ -43,9 +43,7 @@ fn refuse_incomplete_and_unfaithful_queries() {
         "MATCH (n)",
         "CREATE (n) RETURN n",
         "RETURN 1 AS x; RETURN 2 AS y",
-        "MATCH (a)-->(b), (c)-->(d) RETURN a",
-        "RETURN 2 % 1 AS x",
-        "MATCH (n) RETURN n.id AS id ORDER BY n.age",
+        "MATCH (n) RETURN DISTINCT n.id AS id ORDER BY n.age",
     ] {
         assert!(lower(source).is_err(), "{source}");
     }

@@ -5,7 +5,7 @@ use grust_lpg::Property;
 use grust_unresolved_plan::{BinaryOp, Expr as U, Literal, UnaryOp};
 impl State<'_, '_> {
     pub(super) fn expression(
-        &self,
+        &mut self,
         expr: &U,
         scope: &Scope,
         current: Option<&Binding>,
@@ -18,6 +18,20 @@ impl State<'_, '_> {
                     .ok_or_else(|| unsupported("CurrentElement", "outside pattern predicate"))?,
             ),
             U::Binding(binding) => self.bound(scope, binding),
+            U::GraphValue(binding) => self.graph_value(scope, binding),
+            U::GraphIntrinsic { name, argument } => {
+                let value = self.expression(argument, scope, current, aggregate)?;
+                match name.as_str() {
+                    "nodes" | "relationships" => super::hydrate::property(value, name),
+                    "length" if matches!(value.ty, Some(LogicalType::List(_))) => Ok(Expr {
+                        nullable: value.nullable,
+                        ty: Some(LogicalType::Int64),
+                        kind: Value::ListLength(Box::new(value)),
+                    }),
+                    "length" => super::hydrate::property(value, "length"),
+                    _ => Err(unsupported("graph intrinsic", "unknown operation")),
+                }
+            }
             U::Literal(literal) => Ok(Expr {
                 kind: Value::Literal(literal.clone()),
                 nullable: matches!(literal, Literal::Null),
@@ -42,7 +56,7 @@ impl State<'_, '_> {
             }
             U::Property { object, name } => {
                 let binding = match object.as_ref() {
-                    U::Binding(b) => Some(b),
+                    U::Binding(b) | U::GraphValue(b) => Some(b),
                     U::CurrentElement => current,
                     _ => None,
                 };
@@ -61,6 +75,14 @@ impl State<'_, '_> {
                         "subject is not an entity or struct",
                     ));
                 };
+                if fields.iter().any(|f| f.name=="properties" && matches!(&f.ty,LogicalType::Struct(properties) if properties.iter().any(|p|&p.name==name)))
+                    || !fields.iter().any(|f| &f.name == name) && fields.iter().any(|f| f.name == "properties")
+                {
+                    return super::hydrate::property(
+                        super::hydrate::property(object, "properties")?,
+                        name,
+                    );
+                }
                 let f = fields
                     .iter()
                     .find(|f| &f.name == name)
@@ -77,8 +99,24 @@ impl State<'_, '_> {
                 })
             }
             U::Binary { op, left, right } => {
-                let left = self.expression(left, scope, current, aggregate)?;
-                let right = self.expression(right, scope, current, aggregate)?;
+                let mut left = self.expression(left, scope, current, aggregate)?;
+                let mut right = self.expression(right, scope, current, aggregate)?;
+                if !matches!(
+                    op,
+                    BinaryOp::And
+                        | BinaryOp::Or
+                        | BinaryOp::In
+                        | BinaryOp::TruncatingDivide
+                        | BinaryOp::Modulo
+                        | BinaryOp::Eq
+                        | BinaryOp::NotEq
+                        | BinaryOp::Lt
+                        | BinaryOp::Le
+                        | BinaryOp::Gt
+                        | BinaryOp::Ge
+                ) {
+                    promote_numeric(&mut left, &mut right);
+                }
                 let ty = match op {
                     BinaryOp::And | BinaryOp::Or => {
                         boolean(&left)?;
@@ -99,23 +137,40 @@ impl State<'_, '_> {
                     | BinaryOp::Le
                     | BinaryOp::Gt
                     | BinaryOp::Ge => {
-                        compatible(left.ty.as_ref(), right.ty.as_ref())?;
+                        if !(left.ty.as_ref().is_some_and(numeric)
+                            && right.ty.as_ref().is_some_and(numeric))
+                        {
+                            compatible(left.ty.as_ref(), right.ty.as_ref())?;
+                        }
                         LogicalType::Boolean
                     }
                     _ => {
-                        compatible(left.ty.as_ref(), right.ty.as_ref())?;
+                        if !(left.ty.as_ref().is_some_and(numeric)
+                            && right.ty.as_ref().is_some_and(numeric))
+                        {
+                            compatible(left.ty.as_ref(), right.ty.as_ref())?;
+                        }
                         let ty = left
                             .ty
                             .as_ref()
-                            .or(right.ty.as_ref())
+                            .filter(|ty| !grust_resolved_plan::query::is_null_type(ty))
+                            .or_else(|| {
+                                right
+                                    .ty
+                                    .as_ref()
+                                    .filter(|ty| !grust_resolved_plan::query::is_null_type(ty))
+                            })
                             .ok_or_else(|| unsupported("arithmetic", "untyped operands"))?;
                         if !numeric(ty) {
                             return Err(unsupported("arithmetic", "non-numeric operands"));
                         }
-                        if *op == BinaryOp::Divide {
+                        if *op == BinaryOp::Divide
+                            || matches!(left.ty, Some(LogicalType::Float32 | LogicalType::Float64))
+                            || matches!(right.ty, Some(LogicalType::Float32 | LogicalType::Float64))
+                        {
                             LogicalType::Float64
                         } else {
-                            ty.clone()
+                            LogicalType::Int64
                         }
                     }
                 };
@@ -270,9 +325,11 @@ impl State<'_, '_> {
             }
         }
     }
-    fn bound(&self, scope: &Scope, binding: &Binding) -> Result<Expr, ResolveError> {
+    pub(super) fn bound(&self, scope: &Scope, binding: &Binding) -> Result<Expr, ResolveError> {
         match scope.bindings.get(binding) {
-            Some(Bound::Value(value)) => Ok(value.clone()),
+            Some(Bound::Value(value))
+            | Some(Bound::Path { raw: value, .. })
+            | Some(Bound::Edges { raw: value, .. }) => Ok(value.clone()),
             Some(Bound::Entity(e)) => {
                 use grust_lpg::Property;
                 let properties = Expr {
@@ -378,9 +435,20 @@ pub(super) fn grouped(expr: &Expr, groups: &[Expr]) -> bool {
             arguments.iter().all(|e| grouped(e, groups))
                 && filter.as_ref().is_none_or(|e| grouped(e, groups))
         }
-        Value::Binary { left, right, .. } => grouped(left, groups) && grouped(right, groups),
-        Value::Unary { argument, .. } => grouped(argument, groups),
-        Value::List(values) => values.iter().all(|e| grouped(e, groups)),
+        Value::Binary { left, right, .. } | Value::ListDisjoint { left, right } => {
+            grouped(left, groups) && grouped(right, groups)
+        }
+        Value::Unary { argument, .. }
+        | Value::ListDropFirst(argument)
+        | Value::ListLength(argument)
+        | Value::EntityList {
+            identities: argument,
+            ..
+        }
+        | Value::Cast { argument, .. } => grouped(argument, groups),
+        Value::ListConcat(values) | Value::List(values) => {
+            values.iter().all(|e| grouped(e, groups))
+        }
         Value::Struct(values) => values.iter().all(|(_, e)| grouped(e, groups)),
         Value::Property { object, .. } => grouped(object, groups),
         Value::Case {
@@ -392,6 +460,31 @@ pub(super) fn grouped(expr: &Expr, groups: &[Expr]) -> bool {
                 .all(|(a, b)| grouped(a, groups) && grouped(b, groups))
                 && grouped(otherwise, groups)
         }
-        Value::Literal(_) | Value::Parameter(_) => true,
+        Value::Labels(_) | Value::Literal(_) | Value::Parameter(_) => true,
+    }
+}
+
+fn promote_numeric(left: &mut Expr, right: &mut Expr) {
+    let numeric = |e: &Expr| e.ty.as_ref().is_some_and(crate::functions::numeric);
+    if !numeric(left) || !numeric(right) || left.ty == right.ty {
+        return;
+    }
+    let floating = |e: &Expr| matches!(e.ty, Some(LogicalType::Float32 | LogicalType::Float64));
+    let ty = if floating(left) || floating(right) {
+        LogicalType::Float64
+    } else {
+        LogicalType::Int64
+    };
+    for value in [left, right] {
+        if value.ty.as_ref() != Some(&ty) {
+            *value = Expr {
+                kind: Value::Cast {
+                    argument: Box::new(value.clone()),
+                    ty: ty.clone(),
+                },
+                ty: Some(ty.clone()),
+                nullable: value.nullable,
+            };
+        }
     }
 }

@@ -14,21 +14,13 @@ pub fn records() -> Result<Vec<Value>, String> {
     };
     [
         ("empty_star", "RETURN *"),
-        ("integer_division", "RETURN 5 / 2 AS x"),
         ("syntax","RETURN 'é' AS x; !"),
         ("multiple_statements","RETURN 1 AS x; RETURN 2 AS y"),
         ("missing_return","MATCH (n)"),
         ("write","CREATE (n) RETURN n"),
-        ("call","CALL rows([1]) YIELD value RETURN value"),
-        ("subquery","CALL { RETURN 1 AS x } RETURN x"),
-        ("comma_paths","MATCH (a)-->(b), (c)-->(d) RETURN a"),
-        ("path_value","MATCH p=(a)-[:KNOWS*]->(b) RETURN p"),
-        ("edge_list","MATCH (a)-[r:KNOWS*1]->(b) RETURN r"),
+        ("call","CALL unknown.rows([1]) YIELD value RETURN value"),
         ("path_where","MATCH (a)-[:KNOWS*]->(b) WHERE b.id=1 RETURN b.id AS id"),
-        ("with_order","UNWIND [2,1] AS x WITH x ORDER BY x RETURN x"),
-        ("hidden_sort","MATCH (n:Person) RETURN n.id AS id ORDER BY n.age"),
         ("missing_alias","RETURN 1"),
-        ("modulo","RETURN 5 % 2 AS x"),
         ("unknown_function","RETURN mystery(1) AS x"),
         ("wrong_function_type","RETURN upper(1) AS x"),
         ("unknown_graph","USE nowhere MATCH (n) RETURN n.id AS id"),
@@ -53,6 +45,6 @@ pub fn records() -> Result<Vec<Value>, String> {
 mod tests {
     #[test]
     fn all_refusals_stop_before_engine_execution() {
-        assert_eq!(super::records().unwrap().len(), 26);
+        assert_eq!(super::records().unwrap().len(), 18);
     }
 }

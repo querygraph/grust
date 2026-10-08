@@ -1,11 +1,17 @@
 //! Full relational resolver entry point; unsupported path/extension semantics refuse.
 mod catalog;
+mod correlation;
 mod expressions;
+mod extensions;
+mod hydrate;
 mod iterative;
+mod ordering;
 mod paths;
 mod patterns;
 pub mod providers;
 mod relations;
+mod segments;
+mod uniqueness;
 use crate::{Context, ResolveError};
 use grust_lpg::LogicalType;
 use grust_resolved_plan::query::{Expr, Node, Op, Plan, Value};
@@ -14,6 +20,8 @@ use grust_unresolved_plan::{Binding, UnresolvedPlan};
 use std::collections::HashMap;
 #[derive(Clone)]
 enum Bound {
+    Path { graph: String, raw: Expr },
+    Edges { graph: String, raw: Expr },
     Value(Expr),
     Entity(Entity),
 }
@@ -27,6 +35,8 @@ struct Entity {
 }
 #[derive(Clone)]
 struct Scope {
+    order: Vec<grust_resolved_plan::query::SortKey>,
+    visible: Option<Vec<Slot>>,
     node: Node,
     bindings: HashMap<Binding, Bound>,
 }
@@ -68,10 +78,14 @@ impl QueryResolver {
             providers,
             extension_depth: 0,
             iterative,
+            argument: None,
+            correlation_keys: Vec::new(),
         };
         state
             .relation(plan.relation())
-            .map(|scope| Plan { root: scope.node })
+            .map(|scope| Plan {
+                root: ordering::result(scope),
+            })
             .map_err(|e| vec![e])
     }
 }
@@ -81,6 +95,8 @@ struct State<'a, 'b> {
     providers: &'a dyn providers::RelationProviders,
     extension_depth: usize,
     iterative: bool,
+    argument: Option<Scope>,
+    correlation_keys: Vec<Field>,
 }
 impl State<'_, '_> {
     fn field(

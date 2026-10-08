@@ -98,6 +98,7 @@ impl Traversal {
     pub fn step(mut self, label: impl Into<String>, direction: PatternDirection) -> Self {
         let index = self.path.edges.len() as u64;
         self.path.edges.push(EdgePattern {
+            binding_list: false,
             binding: Binding::Anonymous(2 * index + 1),
             labels: LabelExpr::label(label),
             direction,

@@ -1,5 +1,7 @@
 //! Sail SQL generation for the executable resolved IR.
 mod expressions;
+mod hydrate;
+mod numeric;
 pub mod program;
 use crate::EmitError;
 use grust_functions::{BackendSupport, FunctionDescriptor};
@@ -7,7 +9,7 @@ use grust_lpg::{GroupId, LogicalType};
 use grust_resolved_plan::query::{Column, Expr, Node, Op, Plan, Value};
 use grust_resolved_plan::{Field, Slot};
 use grust_unresolved_plan::JoinKind;
-use program::{SailProgram, TraversalStep};
+use program::{ExecutionStep, SailProgram, TraversalStep};
 use std::collections::{BTreeMap, HashMap};
 pub trait QueryStorage {
     fn table(&self, graph: &str, group: GroupId) -> Option<Vec<String>>;
@@ -21,7 +23,7 @@ pub struct SailSql<'a> {
 impl SailSql<'_> {
     pub fn emit(&self, plan: &Plan) -> Result<String, EmitError> {
         let program = self.emit_program(plan)?;
-        if !program.traversals.is_empty() {
+        if !program.steps.is_empty() {
             return Err(refusal("iterative plan requires the Sail program adapter"));
         }
         Ok(program.sql)
@@ -37,8 +39,14 @@ impl SailSql<'_> {
             ctes: Vec::new(),
             next: 0,
             traversals: Vec::new(),
+            steps: Vec::new(),
+            materialized: HashMap::new(),
         };
-        let root = emitter.node(&plan.root)?;
+        let root_input = match &plan.root.op {
+            Op::Result { input, .. } => input.as_ref(),
+            _ => &plan.root,
+        };
+        let root = emitter.node(root_input)?;
         let columns = if plan.root.fields.is_empty() {
             "1 AS `@unit`".into()
         } else {
@@ -50,7 +58,7 @@ impl SailSql<'_> {
                 .join(", ")
         };
         let keys = match &plan.root.op {
-            Op::Sort { keys, .. } => Some(keys),
+            Op::Result { keys, .. } | Op::Sort { keys, .. } => Some(keys),
             Op::Slice { input, .. } => {
                 if let Op::Sort { keys, .. } = &input.op {
                     Some(keys)
@@ -66,7 +74,7 @@ impl SailSql<'_> {
         );
         if let Some(keys) = keys {
             if !keys.is_empty() {
-                let env = environment(&plan.root.fields, "");
+                let env = environment(&root_input.fields, "");
                 sql.push_str(" ORDER BY ");
                 sql.push_str(
                     &keys
@@ -87,6 +95,7 @@ impl SailSql<'_> {
         Ok(SailProgram {
             sql,
             traversals: emitter.traversals,
+            steps: emitter.steps,
         })
     }
 }
@@ -95,10 +104,86 @@ struct Emitter<'a, 'b> {
     ctes: Vec<String>,
     next: usize,
     traversals: Vec<TraversalStep>,
+    steps: Vec<ExecutionStep>,
+    materialized: HashMap<u32, (Node, String)>,
 }
 impl Emitter<'_, '_> {
     fn node(&mut self, node: &Node) -> Result<String, EmitError> {
         let sql = match &node.op {
+            Op::Hydrate {
+                input,
+                entities,
+                identities,
+                identity,
+                group,
+                value,
+                row,
+                output,
+            } => self.hydrate(
+                input, entities, identities, identity, group, value, *row, *output,
+            )?,
+            Op::Result { input, keys } => {
+                let child = self.node(input)?;
+                let env = environment(&input.fields, "");
+                let cols = node
+                    .fields
+                    .iter()
+                    .map(|f| slot(f.slot))
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                let order = keys
+                    .iter()
+                    .map(|k| {
+                        Ok(format!(
+                            "{} {} NULLS {}",
+                            self.expression(&k.expression, &env)?,
+                            if k.descending { "DESC" } else { "ASC" },
+                            if k.nulls_first { "FIRST" } else { "LAST" }
+                        ))
+                    })
+                    .collect::<Result<Vec<_>, EmitError>>()?
+                    .join(", ");
+                Ok::<_, EmitError>(format!(
+                    "SELECT {cols} FROM {child}{}",
+                    if order.is_empty() {
+                        String::new()
+                    } else {
+                        format!(" ORDER BY {order}")
+                    }
+                ))?
+            }
+            Op::RowId { input, slot: id } => {
+                let child = self.node(input)?;
+                let cols = input
+                    .fields
+                    .iter()
+                    .map(|f| slot(f.slot))
+                    .collect::<Vec<_>>();
+                format!(
+                    "SELECT {}CAST(row_number() OVER () AS BIGINT) AS {} FROM {child}",
+                    if cols.is_empty() {
+                        String::new()
+                    } else {
+                        format!("{}, ", cols.join(", "))
+                    },
+                    slot(*id)
+                )
+            }
+            Op::Materialize { input, id } => self.materialization(input, *id)?,
+            Op::PartitionSlice {
+                input,
+                partitions,
+                keys,
+                offset,
+                limit,
+            } => self.partition_slice(
+                node,
+                input,
+                partitions,
+                keys,
+                offset.as_ref(),
+                limit.as_ref(),
+            )?,
             Op::Traverse {
                 seed,
                 adjacency,

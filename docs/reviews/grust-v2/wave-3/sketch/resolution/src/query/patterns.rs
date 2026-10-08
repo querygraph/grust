@@ -11,8 +11,8 @@ use std::collections::{BTreeMap, BTreeSet};
 pub(super) struct Template {
     pub(super) entity: Entity,
     pub(super) fields: Vec<Field>,
-    source: Option<Field>,
-    target: Option<Field>,
+    pub(super) source: Option<Field>,
+    pub(super) target: Option<Field>,
 }
 impl State<'_, '_> {
     pub(super) fn matches(
@@ -26,6 +26,8 @@ impl State<'_, '_> {
         let graph = graph.to_owned();
         let schema = schema.clone();
         let mut pattern_scope = Scope {
+            order: Vec::new(),
+            visible: None,
             node: Node {
                 op: Op::Unit,
                 fields: vec![],
@@ -33,8 +35,25 @@ impl State<'_, '_> {
             bindings: HashMap::new(),
         };
         let mut predicates = Vec::new();
+        let mut previous_trails = Vec::<Expr>::new();
         for pattern in patterns {
             let part = self.pattern(&graph, &schema, pattern)?;
+            if pattern.mode == PathMode::Trail {
+                let current = super::uniqueness::edge_sets(pattern, &part.bindings)?;
+                for old in &previous_trails {
+                    for new in &current {
+                        predicates.push(Expr {
+                            kind: Value::ListDisjoint {
+                                left: Box::new(old.clone()),
+                                right: Box::new(new.clone()),
+                            },
+                            ty: Some(LogicalType::Boolean),
+                            nullable: false,
+                        });
+                    }
+                }
+                previous_trails.extend(current);
+            }
             let mut joins = Vec::new();
             merge(&mut pattern_scope.bindings, &part.bindings, &mut joins)?;
             pattern_scope.node = join(
@@ -47,6 +66,8 @@ impl State<'_, '_> {
         let mut bindings = input.bindings.clone();
         merge(&mut bindings, &pattern_scope.bindings, &mut predicates)?;
         let combined = Scope {
+            order: Vec::new(),
+            visible: None,
             node: Node {
                 op: Op::Unit,
                 fields: vec![],
@@ -89,7 +110,10 @@ impl State<'_, '_> {
         if optional {
             for (key, bound) in &mut bindings {
                 if pattern_scope.bindings.contains_key(key) && !input.bindings.contains_key(key) {
-                    if let Bound::Value(value) = bound {
+                    if let Bound::Value(value)
+                    | Bound::Path { raw: value, .. }
+                    | Bound::Edges { raw: value, .. } = bound
+                    {
                         value.nullable = true;
                     }
                     if let Bound::Entity(e) = bound {
@@ -102,7 +126,12 @@ impl State<'_, '_> {
                 }
             }
         }
-        Ok(Scope { node, bindings })
+        Ok(Scope {
+            order: input.order,
+            visible: None,
+            node,
+            bindings,
+        })
     }
     pub(super) fn pattern(
         &mut self,
@@ -113,9 +142,26 @@ impl State<'_, '_> {
         if !pattern.is_well_formed() {
             return Err(unsupported("pattern", "malformed path"));
         }
+        if pattern.edges.len() != 1
+            && (pattern.binding.is_some()
+                || pattern.selector != PathSelector::All
+                || pattern
+                    .edges
+                    .iter()
+                    .any(|e| e.binding_list || e.hops != Hops::ONE))
+            || pattern.edges.len() == 1
+                && pattern.binding.is_some()
+                && !pattern.edges[0].binding_list
+                && pattern.edges[0].hops == Hops::ONE
+        {
+            return self.segmented_pattern(graph, schema, pattern);
+        }
         if pattern.binding.is_some()
             || pattern.selector != PathSelector::All
-            || pattern.edges.iter().any(|e| e.hops != Hops::ONE)
+            || pattern
+                .edges
+                .iter()
+                .any(|e| e.binding_list || e.hops != Hops::ONE)
         {
             return self.ranged_pattern(graph, schema, pattern);
         }
@@ -312,7 +358,12 @@ impl State<'_, '_> {
                 fields,
             },
         };
-        Ok(Scope { node, bindings })
+        Ok(Scope {
+            order: Vec::new(),
+            visible: None,
+            node,
+            bindings,
+        })
     }
     pub(super) fn template(
         &mut self,
@@ -369,7 +420,7 @@ impl State<'_, '_> {
         })
     }
 }
-fn scan(
+pub(super) fn scan(
     schema: &Schema,
     graph: &str,
     group: GroupId,
@@ -429,7 +480,7 @@ fn scan(
         fields: template.fields.clone(),
     })
 }
-fn merge(
+pub(super) fn merge(
     bindings: &mut HashMap<Binding, Bound>,
     other: &HashMap<Binding, Bound>,
     conditions: &mut Vec<Expr>,
@@ -443,6 +494,16 @@ fn merge(
                     conditions.push(eq(a.identity.clone(), b.identity.clone()));
                     conditions.push(eq(a.group.clone(), b.group.clone()));
                 }
+                (
+                    Bound::Edges {
+                        graph: a,
+                        raw: left,
+                    },
+                    Bound::Edges {
+                        graph: b,
+                        raw: right,
+                    },
+                ) if a == b => conditions.push(eq(left.clone(), right.clone())),
                 _ => return Err(unsupported("binding", "incompatible repeated binding")),
             }
         } else {

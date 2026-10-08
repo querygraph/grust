@@ -12,31 +12,6 @@ impl CypherLowering<'_> {
         scope: &mut Vec<String>,
         next: &mut u64,
     ) -> Result<PathPattern, Diagnostic> {
-        if p.variable.is_some() {
-            return Err(refusal(
-                p.span,
-                "named path values require a Cypher entity-path materialization contract",
-            ));
-        }
-        if p.segments.iter().any(|s| {
-            s.relationship.variable.is_some()
-                && (s.relationship.length.is_some() || p.shortest.is_some())
-        }) {
-            return Err(refusal(
-                p.span,
-                "ranged or selected relationship bindings require entity-list materialization",
-            ));
-        }
-        if (p.variable.is_some()
-            || p.shortest.is_some()
-            || p.segments.iter().any(|s| s.relationship.length.is_some()))
-            && p.segments.len() != 1
-        {
-            return Err(refusal(
-                p.span,
-                "materialized, selected and ranged paths require one relationship segment",
-            ));
-        }
         let mut vertices = vec![self.vertex(&p.start, scope, next)?];
         let mut edges = Vec::new();
         for s in &p.segments {
@@ -53,6 +28,7 @@ impl CypherLowering<'_> {
                 return Err(refusal(r.span, "invalid relationship range"));
             }
             edges.push(EdgePattern {
+                binding_list: r.length.is_some(),
                 binding: binding(&r.variable, scope, next, r.span)?,
                 labels: labels(&r.types, false),
                 direction: match r.direction {

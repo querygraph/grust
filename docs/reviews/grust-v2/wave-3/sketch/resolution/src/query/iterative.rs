@@ -82,6 +82,7 @@ impl State<'_, '_> {
         adjacent.selector = PathSelector::All;
         adjacent.mode = PathMode::Walk;
         adjacent.edges[0].hops = Hops::ONE;
+        adjacent.edges[0].binding_list = false;
         // Capture internal entities before introducing the caller edge alias.
         adjacent.vertices[0].binding = Binding::Anonymous(0);
         adjacent.vertices[1].binding = Binding::Anonymous(1);
@@ -159,6 +160,8 @@ impl State<'_, '_> {
         };
         let mut items = Vec::new();
         let mut scope = Scope {
+            order: Vec::new(),
+            visible: None,
             node: node.clone(),
             bindings: HashMap::new(),
         };
@@ -277,9 +280,18 @@ fn immutable(e: &Expr) -> bool {
                 && arguments.iter().all(immutable)
                 && filter.as_ref().is_none_or(|e| immutable(e))
         }
-        Value::Binary { left, right, .. } => immutable(left) && immutable(right),
-        Value::Unary { argument, .. } => immutable(argument),
-        Value::List(items) => items.iter().all(immutable),
+        Value::Binary { left, right, .. } | Value::ListDisjoint { left, right } => {
+            immutable(left) && immutable(right)
+        }
+        Value::Unary { argument, .. }
+        | Value::ListLength(argument)
+        | Value::ListDropFirst(argument)
+        | Value::EntityList {
+            identities: argument,
+            ..
+        }
+        | Value::Cast { argument, .. } => immutable(argument),
+        Value::ListConcat(items) | Value::List(items) => items.iter().all(immutable),
         Value::Struct(items) => items.iter().all(|(_, e)| immutable(e)),
         Value::Property { object, .. } => immutable(object),
         Value::Case {

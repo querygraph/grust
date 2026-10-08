@@ -1,6 +1,7 @@
 use grust_backend::query::SailSql;
 use grust_optimizer::query::{explain, HashJoinCost, JoinOptimizer};
 use grust_query_qualification::fixtures::*;
+use grust_query_qualification::wire::{execution_steps, spark_type, traversals};
 use grust_resolution::{query::QueryResolver, Context};
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     if std::env::args().any(|arg| arg == "--cypher-refusals") {
@@ -22,7 +23,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let detailed_explain = std::env::args().any(|arg| arg == "--explain");
     let iterative = std::env::args().any(|arg| arg == "--iterative");
     let cypher = std::env::args().any(|arg| arg == "--cypher");
-    let cases = if cypher {
+    let semantics = std::env::args().any(|arg| arg == "--semantics");
+    let cases = if semantics {
+        grust_query_qualification::semantics_cases::cases(&registry)?
+    } else if cypher {
         grust_query_qualification::cypher_cases::cases(&registry)?
     } else if iterative {
         grust_query_qualification::iterative_cases::cases()
@@ -30,7 +34,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         cases()
     };
     for case in cases {
-        let plan = if iterative || cypher {
+        let plan = if iterative || cypher || semantics {
             QueryResolver.resolve_iterative(&case.plan, &context, &RelationPlugins)
         } else {
             QueryResolver.resolve_with_providers(&case.plan, &context, &RelationPlugins)
@@ -57,38 +61,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             parameters: &params,
         }
         .emit_program(&optimized.logical)?;
-        records.push(serde_json::json!({"name":case.name,"query_text":if cypher {grust_query_qualification::cypher_cases::source(case.name)} else {None},"sql":program.sql,"optimized_sql":optimized_program.sql,"traversals":traversals(&program.traversals),"optimized_traversals":traversals(&optimized_program.traversals),"expected":case.expected,"ordered":case.ordered,"output_types":output_types,"trace":optimized.trace,"explain":if detailed_explain {Some(explain(&optimized))} else {None}}));
+        records.push(serde_json::json!({"name":case.name,"expected_error":grust_query_qualification::semantics_cases::expected_error(case.name),"query_text":if semantics {grust_query_qualification::semantics_cases::source(case.name)} else if cypher {grust_query_qualification::cypher_cases::source(case.name)} else {None},"sql":program.sql,"optimized_sql":optimized_program.sql,"traversals":traversals(&program.traversals),"steps":execution_steps(&program.steps),"optimized_traversals":traversals(&optimized_program.traversals),"optimized_steps":execution_steps(&optimized_program.steps),"expected":case.expected,"ordered":case.ordered,"output_types":output_types,"trace":optimized.trace,"explain":if detailed_explain {Some(explain(&optimized))} else {None}}));
     }
     println!("{}", serde_json::to_string_pretty(&records)?);
     Ok(())
-}
-
-fn spark_type(ty: &grust_lpg::LogicalType) -> String {
-    use grust_lpg::LogicalType as T;
-    if grust_resolved_plan::query::is_null_type(ty) {
-        return "void".into();
-    }
-    match ty {
-        T::Boolean => "boolean".into(),
-        T::Int64 => "bigint".into(),
-        T::Int32 => "int".into(),
-        T::Float64 => "double".into(),
-        T::Float32 => "float".into(),
-        T::String => "string".into(),
-        T::Binary => "binary".into(),
-        T::List(t) => format!("array<{}>", spark_type(t)),
-        T::Struct(fields) => format!(
-            "struct<{}>",
-            fields
-                .iter()
-                .map(|f| format!("{}:{}", f.name, spark_type(&f.ty)))
-                .collect::<Vec<_>>()
-                .join(",")
-        ),
-        _ => format!("{ty:?}"),
-    }
-}
-
-fn traversals(steps: &[grust_backend::query::program::TraversalStep]) -> serde_json::Value {
-    serde_json::Value::Array(steps.iter().map(|s| serde_json::json!({"view":s.view,"seed_sql":s.seed_sql,"adjacency_sql":s.adjacency_sql,"min_hops":s.min_hops,"max_hops":s.max_hops,"mode":format!("{:?}",s.mode),"shortest_walk":s.shortest_walk})).collect())
 }

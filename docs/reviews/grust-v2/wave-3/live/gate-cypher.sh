@@ -20,7 +20,7 @@ cargo test --locked --manifest-path "$manifest" --workspace --all-targets
 cargo clippy --locked --manifest-path "$manifest" --workspace --all-targets --all-features -- -D warnings
 cargo test --locked --manifest-path "$manifest" --workspace --all-targets --all-features
 cargo test --locked --release --manifest-path "$manifest" --workspace --all-targets
-for mode in relational iterative cypher; do
+for mode in relational iterative cypher semantics; do
   mkdir -p "$GATE_OUTPUT/$mode"
   if test "$mode" = relational; then
     cargo run --locked --release --manifest-path "$manifest" -p grust-query-qualification > "$GATE_OUTPUT/$mode/queries.json"

@@ -7,6 +7,64 @@ impl Emitter<'_, '_> {
         env: &BTreeMap<Slot, String>,
     ) -> Result<String, EmitError> {
         match &expr.kind {
+            Value::Labels(names) => {
+                let mut values = vec!["CAST(NULL AS STRING)".to_string()];
+                for name in names {
+                    values.push(self.expression(
+                        &Expr {
+                            kind: Value::Literal(Literal::String(name.clone())),
+                            ty: Some(LogicalType::String),
+                            nullable: false,
+                        },
+                        env,
+                    )?);
+                }
+                Ok(format!(
+                    "filter(array({}),x -> x IS NOT NULL)",
+                    values.join(", ")
+                ))
+            }
+            Value::ListConcat(values) => {
+                if values.is_empty() {
+                    Ok(format!(
+                        "CAST(array() AS {})",
+                        data_type(
+                            expr.ty
+                                .as_ref()
+                                .ok_or_else(|| refusal("untyped list concat"))?
+                        )?
+                    ))
+                } else {
+                    Ok(format!(
+                        "concat({})",
+                        values
+                            .iter()
+                            .map(|e| self.expression(e, env))
+                            .collect::<Result<Vec<_>, _>>()?
+                            .join(", ")
+                    ))
+                }
+            }
+            Value::ListDropFirst(argument) => {
+                let value = self.expression(argument, env)?;
+                Ok(format!("slice({value},2,greatest(size({value})-1,0))"))
+            }
+            Value::ListLength(argument) => Ok(format!(
+                "CAST(size({}) AS BIGINT)",
+                self.expression(argument, env)?
+            )),
+            Value::EntityList { .. } => Err(refusal("unlifted graph entity list")),
+
+            Value::Cast { argument, ty } => Ok(format!(
+                "CAST({} AS {})",
+                self.expression(argument, env)?,
+                data_type(ty)?
+            )),
+            Value::ListDisjoint { left, right } => Ok(format!(
+                "(NOT arrays_overlap({}, {}))",
+                self.expression(left, env)?,
+                self.expression(right, env)?
+            )),
             Value::Slot(slot) => env
                 .get(slot)
                 .cloned()
@@ -56,6 +114,12 @@ impl Emitter<'_, '_> {
             Value::Binary { op, left, right } => {
                 let l = self.expression(left, env)?;
                 let r = self.expression(right, env)?;
+                if let Some(value) = super::numeric::compare(*op, &l, &r, &left.ty, &right.ty) {
+                    return Ok(value);
+                }
+                if let Some(value) = super::numeric::arithmetic(*op, &l, &r, &expr.ty, &right.ty) {
+                    return Ok(value);
+                }
                 if *op == BinaryOp::In {
                     return Ok(format!("array_contains({r}, {l})"));
                 }
@@ -72,6 +136,11 @@ impl Emitter<'_, '_> {
                         BinaryOp::Subtract => "-",
                         BinaryOp::Multiply => "*",
                         BinaryOp::Divide => "/",
+                        BinaryOp::TruncatingDivide
+                            if matches!(expr.ty, Some(LogicalType::Int32 | LogicalType::Int64)) =>
+                            "DIV",
+                        BinaryOp::TruncatingDivide => "/",
+                        BinaryOp::Modulo => "%",
                         BinaryOp::And => "AND",
                         BinaryOp::Or => "OR",
                         BinaryOp::In => unreachable!(),
@@ -144,6 +213,9 @@ impl Emitter<'_, '_> {
                     .join(", ")
             )),
             Value::Struct(values) => {
+                if values.is_empty() {
+                    return Ok("struct()".into());
+                }
                 let mut parts = Vec::new();
                 for (name, value) in values {
                     if name.is_empty()

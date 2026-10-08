@@ -25,6 +25,9 @@ pub enum BinaryOp {
     Subtract,
     Multiply,
     Divide,
+    /// Integer operands truncate toward zero; floating operands use floating division.
+    TruncatingDivide,
+    Modulo,
     And,
     Or,
     In,
@@ -51,6 +54,12 @@ pub struct FunctionCall {
 pub enum Expr {
     /// Relative subject of a predicate inside a vertex or edge pattern.
     CurrentElement,
+    /// Graph values use the complete entity/path contract; ordinary Binding keeps legacy IR values.
+    GraphValue(Binding),
+    GraphIntrinsic {
+        name: String,
+        argument: Box<Expr>,
+    },
     Literal(Literal),
     Parameter(String),
     Binding(Binding),

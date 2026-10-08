@@ -68,6 +68,9 @@ pub struct VertexPattern {
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct EdgePattern {
+    /// Explicit ranged syntax binds a list even when its range is exactly one hop.
+    #[cfg_attr(feature = "serde", serde(default))]
+    pub binding_list: bool,
     pub binding: Binding,
     pub labels: LabelExpr,
     pub direction: PatternDirection,

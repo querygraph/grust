@@ -10837,3 +10837,7 @@ Continuing Wave 3 on `work/grust-v2-graph-providers`: typed relation providers, 
 ## 2026-10-08T02:40:17.739832+00:00 Morrobay DONE Cypher frontend integration
 
 `work/grust-v2-cypher-frontend`: existing typed AST → unresolved → resolution → costed optimizer → native Sail program. Source 0e85df70dd2f7f6a37dd1aee1fc2fd36d7f9f3f0. PASSED: 39 Rust tests in each of default/all-features/release; 154 native result checks (40 new Cypher); 26 pre-execution refusals; 13 runtime controls. Evidence `docs/reviews/grust-v2/wave-3/evidence/cypher-frontend/source-gate.json`; report `docs/reviews/grust-v2/wave-3/CYPHER-FRONTEND.md`. Both failed gate-script attempts retained. Admitted read subset; full Cypher entity-path values and correlated procedure/subquery lowering remain explicit refusals. No VM benchmark or production parser change.
+
+## 2026-10-08T03:39:03.009302+00:00 Morrobay ACK Cypher semantics and LDBC goal
+
+`work/grust-v2-cypher-semantics`, on PR45: complete MATCH-wide uniqueness, correlated CALL/subqueries, entity paths/lists, ordering and numeric semantics; then native LDBC exact-result and cost qualification. Evidence planned `docs/reviews/grust-v2/wave-3/evidence/cypher-semantics/` and `evidence/ldbc-query/`. One heavy native job at a time; no VM benchmark.

@@ -39,6 +39,12 @@ pub enum JoinKind {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum Relation {
     Unit,
+    /// One logical input row inside an Apply body; populated by the resolver.
+    Argument,
+    Apply {
+        input: Box<Relation>,
+        body: Box<Relation>,
+    },
     Match {
         input: Box<Relation>,
         graph: GraphRef,

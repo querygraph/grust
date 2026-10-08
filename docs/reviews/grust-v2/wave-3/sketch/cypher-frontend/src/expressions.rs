@@ -11,7 +11,7 @@ impl CypherLowering<'_> {
             a::Expr::Integer(v) => (*v).into(),
             a::Expr::Float(v) => E::float(*v),
             a::Expr::String(v) => E::from(v.as_str()),
-            a::Expr::Variable(v) => E::variable(v),
+            a::Expr::Variable(v) => E::GraphValue(grust_unresolved_plan::Binding::Named(v.clone())),
             a::Expr::Parameter(v) => E::Parameter(v.clone()),
             a::Expr::Property { base, key } => self.expression(base, at)?.property(key),
             a::Expr::List(values) => E::List(
@@ -41,31 +41,28 @@ impl CypherLowering<'_> {
                 argument: Box::new(self.expression(operand, at)?),
             },
             a::Expr::Binary { op, lhs, rhs } => {
-                let op =
-                    match op {
-                        a::BinaryOp::Add => B::Add,
-                        a::BinaryOp::Subtract => B::Subtract,
-                        a::BinaryOp::Multiply => B::Multiply,
-                        a::BinaryOp::Divide => return Err(refusal(
+                let op = match op {
+                    a::BinaryOp::Add => B::Add,
+                    a::BinaryOp::Subtract => B::Subtract,
+                    a::BinaryOp::Multiply => B::Multiply,
+                    a::BinaryOp::Divide => B::TruncatingDivide,
+                    a::BinaryOp::Modulo => B::Modulo,
+                    a::BinaryOp::Eq => B::Eq,
+                    a::BinaryOp::Ne => B::NotEq,
+                    a::BinaryOp::Lt => B::Lt,
+                    a::BinaryOp::Le => B::Le,
+                    a::BinaryOp::Gt => B::Gt,
+                    a::BinaryOp::Ge => B::Ge,
+                    a::BinaryOp::And => B::And,
+                    a::BinaryOp::Or => B::Or,
+                    a::BinaryOp::In => B::In,
+                    _ => {
+                        return Err(refusal(
                             at,
-                            "division needs Cypher integer/float dispatch after type resolution",
-                        )),
-                        a::BinaryOp::Eq => B::Eq,
-                        a::BinaryOp::Ne => B::NotEq,
-                        a::BinaryOp::Lt => B::Lt,
-                        a::BinaryOp::Le => B::Le,
-                        a::BinaryOp::Gt => B::Gt,
-                        a::BinaryOp::Ge => B::Ge,
-                        a::BinaryOp::And => B::And,
-                        a::BinaryOp::Or => B::Or,
-                        a::BinaryOp::In => B::In,
-                        _ => {
-                            return Err(refusal(
-                                at,
-                                "operator has no faithful unresolved-plan representation",
-                            ))
-                        }
-                    };
+                            "operator has no faithful unresolved-plan representation",
+                        ))
+                    }
+                };
                 self.expression(lhs, at)?
                     .binary(op, self.expression(rhs, at)?)
             }
@@ -75,6 +72,15 @@ impl CypherLowering<'_> {
                 star,
                 args,
             } => {
+                if ["length", "nodes", "relationships"].contains(&name.to_lowercase().as_str()) {
+                    if *distinct || *star || args.len() != 1 {
+                        return Err(refusal(at, "graph intrinsic requires one argument"));
+                    }
+                    return Ok(E::GraphIntrinsic {
+                        name: name.to_lowercase(),
+                        argument: Box::new(self.expression(&args[0], at)?),
+                    });
+                }
                 let mut function = FunctionName::new(name);
                 let mut scalar = !self
                     .functions
@@ -167,6 +173,7 @@ pub(crate) fn has_aggregate(e: &E) -> bool {
         E::Binary { left, right, .. } => has_aggregate(left) || has_aggregate(right),
         E::Unary { argument, .. } => has_aggregate(argument),
         E::Property { object, .. } => has_aggregate(object),
+        E::GraphIntrinsic { argument, .. } => has_aggregate(argument),
         E::List(v) => v.iter().any(has_aggregate),
         E::Map(v) => v.iter().any(|(_, e)| has_aggregate(e)),
         E::Case {

@@ -38,9 +38,10 @@ pub(super) fn estimate(
                 cost: e.cost + e.rows,
             }
         }
-        Op::Project { input, .. } | Op::Sort { input, .. } | Op::Slice { input, .. } => {
-            estimate(input, stats, cost)?
-        }
+        Op::Result { input, .. }
+        | Op::Project { input, .. }
+        | Op::Sort { input, .. }
+        | Op::Slice { input, .. } => estimate(input, stats, cost)?,
         Op::Join {
             left,
             right,
@@ -100,9 +101,10 @@ pub(super) fn origins(node: &Node) -> Origins {
                 })
                 .collect()
         }
-        Op::Filter { input, .. } | Op::Sort { input, .. } | Op::Slice { input, .. } => {
-            origins(input)
-        }
+        Op::Result { input, .. }
+        | Op::Filter { input, .. }
+        | Op::Sort { input, .. }
+        | Op::Slice { input, .. } => origins(input),
         Op::Join { left, right, .. } => {
             let mut m = origins(left);
             m.extend(origins(right));
@@ -159,11 +161,18 @@ pub fn references(e: &Expr) -> BTreeSet<Slot> {
 fn walk(e: &Expr, visit: &mut impl FnMut(&Expr)) {
     visit(e);
     match &e.kind {
-        Value::Binary { left, right, .. } => {
+        Value::Binary { left, right, .. } | Value::ListDisjoint { left, right } => {
             walk(left, visit);
             walk(right, visit);
         }
-        Value::Unary { argument, .. } => walk(argument, visit),
+        Value::Unary { argument, .. }
+        | Value::ListDropFirst(argument)
+        | Value::ListLength(argument)
+        | Value::EntityList {
+            identities: argument,
+            ..
+        }
+        | Value::Cast { argument, .. } => walk(argument, visit),
         Value::Call {
             arguments, filter, ..
         } => {
@@ -174,7 +183,7 @@ fn walk(e: &Expr, visit: &mut impl FnMut(&Expr)) {
                 walk(f, visit);
             }
         }
-        Value::List(items) => {
+        Value::ListConcat(items) | Value::List(items) => {
             for a in items {
                 walk(a, visit);
             }

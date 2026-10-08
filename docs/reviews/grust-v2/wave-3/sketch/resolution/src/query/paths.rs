@@ -90,6 +90,7 @@ impl State<'_, '_> {
                 for i in 0..hops {
                     let mut e = edge.clone();
                     e.hops = Hops::ONE;
+                    e.binding_list = false;
                     e.binding = fresh();
                     fixed.edges.push(e);
                     let mut v = pattern.vertices[1].clone();
@@ -229,7 +230,10 @@ impl State<'_, '_> {
         }
         bindings.insert(
             pattern.edges[0].binding.clone(),
-            Bound::Value(Expr::slot(&edge_list)),
+            Bound::Edges {
+                graph: endpoints_graph(&bindings)?,
+                raw: Expr::slot(&edge_list),
+            },
         );
         if let Some(binding) = &pattern.binding {
             let values = vec![
@@ -255,9 +259,20 @@ impl State<'_, '_> {
                     distinct: false,
                 },
             };
-            bindings.insert(binding.clone(), Bound::Value(Expr::slot(&field)));
+            bindings.insert(
+                binding.clone(),
+                Bound::Path {
+                    graph: endpoints_graph(&bindings)?,
+                    raw: Expr::slot(&field),
+                },
+            );
         }
-        Ok(Scope { node, bindings })
+        Ok(Scope {
+            order: Vec::new(),
+            visible: None,
+            node,
+            bindings,
+        })
     }
 }
 pub(super) fn identity_type() -> LogicalType {
@@ -315,4 +330,17 @@ pub(super) fn project_entity(template: &Template, actual: &Entity, items: &mut V
             });
         items.push((f.slot, value));
     }
+}
+
+fn endpoints_graph(bindings: &HashMap<Binding, Bound>) -> Result<String, ResolveError> {
+    bindings
+        .values()
+        .find_map(|b| {
+            if let Bound::Entity(e) = b {
+                Some(e.graph.clone())
+            } else {
+                None
+            }
+        })
+        .ok_or_else(|| unsupported("path", "missing graph identity"))
 }

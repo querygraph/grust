@@ -60,7 +60,15 @@ impl Default for FixtureCatalog {
                         Property::required("name", LogicalType::String),
                     ],
                 ),
-                ty(10, "KNOWS", vec![], vec![]),
+                ty(
+                    10,
+                    "KNOWS",
+                    vec![],
+                    vec![
+                        Property::required("creationDate", LogicalType::Int64),
+                        Property::required("source", LogicalType::Int64),
+                    ],
+                ),
                 ty(11, "WORKS", vec![], vec![]),
             ],
             vec![vertex(1, 1), vertex(2, 2), vertex(3, 3)],
@@ -216,6 +224,7 @@ pub fn path(source: &str, target: &str, direction: u::PatternDirection) -> u::Pa
             vertex(target, u::LabelExpr::label("Person")),
         ],
         edges: vec![u::EdgePattern {
+            binding_list: false,
             binding: u::Binding::Named("e".into()),
             labels: u::LabelExpr::label("KNOWS"),
             direction,
@@ -278,7 +287,20 @@ impl grust_resolution::query::providers::RelationProviders for RelationPlugins {
         inputs: &[R],
         arguments: &[E],
     ) -> Result<Option<R>, ResolveError> {
-        if name.name != "keep_above" {
+        if name.namespace.is_empty() && name.name == "rows" {
+            if inputs.len() != 1 || arguments.len() != 1 {
+                return Err(ResolveError::Unsupported {
+                    operator: "rows".into(),
+                    reason: "one input and one list argument required".into(),
+                });
+            }
+            return Ok(Some(R::Unwind {
+                input: Box::new(inputs[0].clone()),
+                list: arguments[0].clone(),
+                binding: "value".into(),
+            }));
+        }
+        if !name.namespace.is_empty() || name.name != "keep_above" {
             return Ok(None);
         }
         if inputs.len() != 1 || arguments.len() != 1 {
