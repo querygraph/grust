@@ -146,8 +146,8 @@ def run(endpoint: str, output: Path) -> None:
         "h/b",
         "h/c",
     }
-    assert {l["source"] for l in expanded_links} | {
-        l["target"] for l in expanded_links
+    assert {link["source"] for link in expanded_links} | {
+        link["target"] for link in expanded_links
     } <= {p["id"] for p in expanded_points}
     assert {
         "source": "v/research/9007199254740993",

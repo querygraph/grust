@@ -9,6 +9,7 @@ from pathlib import Path
 
 import pyarrow as pa  # type: ignore[import-untyped]
 import pyarrow.parquet as pq  # type: ignore[import-untyped]
+
 from provider import Catalog
 
 

@@ -15,9 +15,10 @@ from urllib.parse import urlparse
 import uvicorn
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, Response
+from pyspark.sql.connect.session import SparkSession
+
 from protocol import Gateway
 from provider import Catalog, Provider
-from pyspark.sql.connect.session import SparkSession
 
 LOGGER = logging.getLogger(__name__)
 

@@ -139,7 +139,7 @@ def run(sail: Path, output: Path, detached: bool) -> None:
                     break
             except OSError:
                 if host.poll() is not None:
-                    raise RuntimeError("Sail exited before readiness")
+                    raise RuntimeError("Sail exited before readiness") from None
                 time.sleep(0.1)
         gateway = launch(
             "gateway",

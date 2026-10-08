@@ -13,8 +13,9 @@ from typing import Any
 import pyarrow as pa  # type: ignore[import-untyped]
 from jsonschema import Draft202012Validator
 from jsonschema.exceptions import ValidationError
-from provider import Provider, Refusal, View
 from referencing import Registry, Resource
+
+from provider import Provider, Refusal, View
 
 ROOT = Path(__file__).resolve().parent.parent
 OPERATIONS = (
