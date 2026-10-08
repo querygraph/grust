@@ -1,0 +1,125 @@
+{
+  "observed_utc": "2026-10-08T05:00:15.716258+00:00",
+  "source_commit": "6638d9b4b4094f28593439e26f94a75e70264c79",
+  "source_tree": "f24d1b6dca068f5e2c2b0c3182e49bf6fd1748e5",
+  "verdict": "PASSED Cypher semantics and LDBC source 6638d9b4b4094f28593439e26f94a75e70264c79: Rust default/all-features/release; native relational/iterative/frontend/semantics; exact SNB oracle and ABBA twice",
+  "checkout": "detached",
+  "head_unchanged": true,
+  "checkout_clean_at_exit": true,
+  "command": "bash docs/reviews/grust-v2/wave-3/live/gate-semantics.sh",
+  "rust_version": "rustc 1.98.1 (48a229cea 2026-09-01)",
+  "host": "Morrobay, shared native macOS x86_64",
+  "environment": {
+    "CARGO_INCREMENTAL": "0",
+    "CARGO_TARGET_DIR": "/Volumes/Apo/graph-tests/workspaces/grust-v2-wave3-20261007/semantics-gate-target01",
+    "GATE_OUTPUT": "/Volumes/Apo/graph-tests/workspaces/grust-v2-wave3-20261007/semantics-gate-output02",
+    "SAIL_BINARY": "/Volumes/Apo/graph-tests/results/sem-review-20261001/native-optimized-build01/sail-target/release/sail",
+    "GATE_PYTHON": "/Volumes/Apo/graph-tests/workspaces/second-string-20261006/venv/bin/python",
+    "GATE_SNB_CHECKOUT": "/Volumes/Apo/graph-tests/workspaces/grust-v2-wave3-20261007/ldbc-snb-v1"
+  },
+  "sail_source": "9f0aa7d2a50f1258544d37c05dd19b3ff3d915b3",
+  "sail_sha256": "ee80ac3cf9d028639561f3cf32435985192719d629807fcf6a368324fa84946e",
+  "sail_cargo_command": "cargo build --locked --release -p sail-cli",
+  "counts": {
+    "relational": {
+      "cases": 46,
+      "results": {
+        "passed": 92
+      },
+      "controls": 0
+    },
+    "iterative": {
+      "cases": 11,
+      "results": {
+        "passed": 22
+      },
+      "controls": 6
+    },
+    "cypher": {
+      "cases": 20,
+      "results": {
+        "passed": 40
+      },
+      "controls": 6
+    },
+    "semantics": {
+      "cases": 56,
+      "results": {
+        "passed": 104,
+        "expected_error": 8
+      },
+      "controls": 0
+    },
+    "memory": {
+      "cases": 0,
+      "results": {},
+      "controls": 1
+    },
+    "snb": {
+      "cases": 13,
+      "results": {
+        "passed": 130
+      },
+      "controls": 6
+    }
+  },
+  "raw_external_artifacts": {
+    "relational/receipt.json": {
+      "sha256": "30afbc3486a1c7d4f3977b5c7fd7a6f0ed83c9031bc4a93053444f33d902b77d",
+      "bytes": 86188
+    },
+    "relational/queries.json": {
+      "sha256": "5ad616382f7819c3f3c222ac8a41349f24d9e21e2a365066a6d48d0e99475dd8",
+      "bytes": 291176
+    },
+    "iterative/receipt.json": {
+      "sha256": "3d24bbc41410dfbb29c6a09f0e82fc52b13c9e7329464967773c5c6f39874470",
+      "bytes": 48494
+    },
+    "iterative/queries.json": {
+      "sha256": "20c37edc9428a6bc047cbaa43d42759c9507ec7841751c6422f8ca2b30fbb9ff",
+      "bytes": 377431
+    },
+    "cypher/receipt.json": {
+      "sha256": "3203824edc1f64d7dc9880ed6ccdb943f3536fd82ac47c2fd33e0986c8f6a2fc",
+      "bytes": 27813
+    },
+    "cypher/queries.json": {
+      "sha256": "0a11e717c5367d53dfd609a75a762682d70bfc5cf96d393c3ed3c4f2ba32cd00",
+      "bytes": 116966
+    },
+    "semantics/receipt.json": {
+      "sha256": "2dfc69e3ee4e8208733260b65099705680eaa1699303c85097798c7f91a2e9d8",
+      "bytes": 78149
+    },
+    "semantics/queries.json": {
+      "sha256": "b30e89f4c82e5f88d2e4be9cf0c3f9b3edad8ffe23eddfdc9692ee36e33917bf",
+      "bytes": 625919
+    },
+    "memory/receipt.json": {
+      "sha256": "294730cbc8b5b910d3184624b9d9523978153053e140103730a7246a08a23f25",
+      "bytes": 1500
+    },
+    "memory/queries.json": {
+      "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+      "bytes": 3
+    },
+    "snb/receipt.json": {
+      "sha256": "8df77854a6e97c949b6c9c593be53a328bb1b06ded60e446c6a6b57e096e1167",
+      "bytes": 69949
+    },
+    "snb-queries.json": {
+      "sha256": "f3a17b5a364fe3f2a918818aa41f60f44a12645d95147ee0c9542b7ed9b8f120",
+      "bytes": 7215938
+    },
+    "refusals.json": {
+      "sha256": "020e8e8df262dd7f152ba7ce208b09f8074f9443b16969dc3ce0cf6adb2b1a1d",
+      "bytes": 5020
+    },
+    "snb-request.json": {
+      "sha256": "930643935ed3d13a7b9aadb6d886db9b0fa6fea0b9ccb03d3fc9cb4c643964b4",
+      "bytes": 20847
+    }
+  },
+  "publication_transform": "Receipts omit absolute elapsed seconds; SNB retains all cells normalized by each binding’s resolved measured median. Manifests omit compile_seconds and verbose explain dumps, retaining explain hashes, SQL/programs, types, estimates and traces. Full raw manifests/receipts remain at GATE_OUTPUT."
+}

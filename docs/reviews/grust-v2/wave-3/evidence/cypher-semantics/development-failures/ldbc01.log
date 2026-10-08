@@ -1,0 +1,23 @@
+Traceback (most recent call last):
+  File "/Volumes/Apo/graph-tests/workspaces/grust-v2-wave3-20261007/grust/docs/reviews/grust-v2/wave-3/live/qualify.py", line 300, in <module>
+    raise SystemExit(main())
+                     ^^^^^^
+  File "/Volumes/Apo/graph-tests/workspaces/grust-v2-wave3-20261007/grust/docs/reviews/grust-v2/wave-3/live/qualify.py", line 290, in main
+    return run(
+           ^^^^
+  File "/Volumes/Apo/graph-tests/workspaces/grust-v2-wave3-20261007/grust/docs/reviews/grust-v2/wave-3/live/qualify.py", line 172, in run
+    spark.createDataFrame(table.records,schema=table.ddl()).write.mode("overwrite").parquet(parquet.as_uri())
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Volumes/Apo/graph-tests/workspaces/second-string-20261006/venv/lib/python3.12/site-packages/pyspark/sql/connect/session.py", line 501, in createDataFrame
+    configs = self._client.get_config_dict(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Volumes/Apo/graph-tests/workspaces/second-string-20261006/venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py", line 1624, in get_config_dict
+    return dict(self.config(op).pairs)
+                ^^^^^^^^^^^^^^^
+  File "/Volumes/Apo/graph-tests/workspaces/second-string-20261006/venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py", line 1662, in config
+    self._handle_error(error)
+  File "/Volumes/Apo/graph-tests/workspaces/second-string-20261006/venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py", line 1811, in _handle_error
+    self._handle_rpc_error(error)
+  File "/Volumes/Apo/graph-tests/workspaces/second-string-20261006/venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py", line 1882, in _handle_rpc_error
+    raise convert_exception(
+pyspark.errors.exceptions.connect.IllegalArgumentException: invalid argument: configuration not found: spark.sql.execution.pandas.inferPandasDictAsMap

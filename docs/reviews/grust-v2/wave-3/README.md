@@ -1,5 +1,7 @@
 # Grust v2 Wave 3: resolution, optimization and backend boundaries
 
+**Later semantics follow-up:** [MATCH uniqueness, correlation, full paths, ordering/numeric semantics and native SNB qualification](CYPHER-SEMANTICS.md). The earlier scope and source verdict below are historical.
+
 **Implementation follow-up:** [Executable resolver, costed joins and live Sail qualification](EXECUTION.md). The original sketch below is retained as the design record.
 
 Review branch: `work/grust-v2-wave3`. This completes the **interface-sketch deliverable** agreed on [PR #36](https://github.com/querygraph/grust/pull/36), continuing [Wave 2](../wave-2/README.md). These five unpublished crates are separate from the released Grust workspace. They are not a production query engine.

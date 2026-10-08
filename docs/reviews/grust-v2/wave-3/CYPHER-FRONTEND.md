@@ -1,5 +1,7 @@
 # Wave 3: Cypher source text to native Sail
 
+**Later semantics follow-up:** [MATCH uniqueness, correlation, full paths, ordering/numeric semantics and native SNB qualification](CYPHER-SEMANTICS.md). The earlier scope and source verdict below are historical.
+
 This follow-up to [iterative execution](ITERATIVE-SAIL.md) connects the existing
 `grust-cypher` typed AST parser to the standalone, unpublished draft workspace.
 It does not change the production parser, production crate APIs or Sail source.

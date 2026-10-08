@@ -1,0 +1,142 @@
+{
+  "attempt": "numeric-edge",
+  "observed_utc": "2026-10-08T04:30:49.517663+00:00",
+  "provenance": "Development probe, unfrozen source; not a source verdict.",
+  "raw_receipt_sha256": "1aeed178a7f7992d6c38ce4930546b458775168ff9d532552298bbb401daa3e8",
+  "failed_results": [
+    {
+      "name": "divide_zero",
+      "variant": "resolved",
+      "outcome": "error",
+      "expected": [
+        [
+          null
+        ]
+      ],
+      "actual": null,
+      "error": "output type mismatch: ['void'] != ['bigint']"
+    },
+    {
+      "name": "divide_zero",
+      "variant": "optimized",
+      "outcome": "error",
+      "expected": [
+        [
+          null
+        ]
+      ],
+      "actual": null,
+      "error": "output type mismatch: ['void'] != ['bigint']"
+    },
+    {
+      "name": "raise_error",
+      "variant": "resolved",
+      "outcome": "error",
+      "expected": [
+        [
+          null
+        ]
+      ],
+      "actual": null,
+      "error": "numeric division by zero"
+    },
+    {
+      "name": "raise_error",
+      "variant": "optimized",
+      "outcome": "error",
+      "expected": [
+        [
+          null
+        ]
+      ],
+      "actual": null,
+      "error": "numeric division by zero"
+    },
+    {
+      "name": "checked_add",
+      "variant": "resolved",
+      "outcome": "mismatch",
+      "expected": [
+        [
+          null
+        ]
+      ],
+      "actual": [
+        [
+          -9223372036854775808
+        ]
+      ],
+      "error": null
+    },
+    {
+      "name": "checked_add",
+      "variant": "optimized",
+      "outcome": "mismatch",
+      "expected": [
+        [
+          null
+        ]
+      ],
+      "actual": [
+        [
+          -9223372036854775808
+        ]
+      ],
+      "error": null
+    }
+  ],
+  "queries": [
+    {
+      "name": "divide_zero",
+      "sql": "SELECT CAST(1 AS BIGINT) DIV CAST(0 AS BIGINT) AS x",
+      "optimized_sql": "SELECT CAST(1 AS BIGINT) DIV CAST(0 AS BIGINT) AS x",
+      "expected": [
+        [
+          null
+        ]
+      ],
+      "ordered": false,
+      "output_types": [
+        "bigint"
+      ],
+      "traversals": [],
+      "optimized_traversals": [],
+      "trace": []
+    },
+    {
+      "name": "raise_error",
+      "sql": "SELECT raise_error('numeric division by zero') AS x",
+      "optimized_sql": "SELECT raise_error('numeric division by zero') AS x",
+      "expected": [
+        [
+          null
+        ]
+      ],
+      "ordered": false,
+      "output_types": [
+        "void"
+      ],
+      "traversals": [],
+      "optimized_traversals": [],
+      "trace": []
+    },
+    {
+      "name": "checked_add",
+      "sql": "SELECT CAST(9223372036854775807 AS BIGINT)+CAST(1 AS BIGINT) AS x",
+      "optimized_sql": "SELECT CAST(9223372036854775807 AS BIGINT)+CAST(1 AS BIGINT) AS x",
+      "expected": [
+        [
+          null
+        ]
+      ],
+      "ordered": false,
+      "output_types": [
+        "bigint"
+      ],
+      "traversals": [],
+      "optimized_traversals": [],
+      "trace": []
+    }
+  ],
+  "raw_manifest_sha256": "542ffc6c24d22586dfa25beab2914a86ba1950ec9d49ef75bc6551977e962f2e"
+}

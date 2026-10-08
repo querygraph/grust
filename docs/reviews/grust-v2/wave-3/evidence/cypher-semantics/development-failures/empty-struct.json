@@ -1,0 +1,93 @@
+{
+  "attempt": "empty-struct",
+  "observed_utc": "2026-10-08T04:20:24.572961+00:00",
+  "provenance": "Development probe, unfrozen source; not a source verdict.",
+  "raw_receipt_sha256": "4bab923d05c1321780eb48cf179b80b2ab7c139ee3621c9fd61157d3f48a0279",
+  "failed_results": [
+    {
+      "name": "empty_named_struct",
+      "variant": "resolved",
+      "outcome": "error",
+      "expected": [
+        [
+          {}
+        ]
+      ],
+      "actual": null,
+      "error": "'named_struct' does not support zero arguments. No function matches the given name and argument types 'named_struct()'. You might need to add explicit type casts.\n\tCandidate functions:\n\tnamed_struct(Any, .., Any)"
+    },
+    {
+      "name": "empty_named_struct",
+      "variant": "optimized",
+      "outcome": "error",
+      "expected": [
+        [
+          {}
+        ]
+      ],
+      "actual": null,
+      "error": "'named_struct' does not support zero arguments. No function matches the given name and argument types 'named_struct()'. You might need to add explicit type casts.\n\tCandidate functions:\n\tnamed_struct(Any, .., Any)"
+    },
+    {
+      "name": "empty_struct_json",
+      "variant": "resolved",
+      "outcome": "error",
+      "expected": [
+        [
+          {}
+        ]
+      ],
+      "actual": null,
+      "error": "<_MultiThreadedRendezvous of RPC that terminated with:\n\tstatus = StatusCode.CANCELLED\n\tdetails = \"Stream removed (RST_STREAM (Received RST_STREAM with error code 8))\"\n\tdebug_error_string = \"CANCELLED:Stream removed (RST_STREAM (Received RST_STREAM with error code 8))\"\n>"
+    },
+    {
+      "name": "empty_struct_json",
+      "variant": "optimized",
+      "outcome": "error",
+      "expected": [
+        [
+          {}
+        ]
+      ],
+      "actual": null,
+      "error": "<_MultiThreadedRendezvous of RPC that terminated with:\n\tstatus = StatusCode.CANCELLED\n\tdetails = \"Stream removed (RST_STREAM (Received RST_STREAM with error code 8))\"\n\tdebug_error_string = \"CANCELLED:Stream removed (RST_STREAM (Received RST_STREAM with error code 8))\"\n>"
+    }
+  ],
+  "queries": [
+    {
+      "name": "empty_named_struct",
+      "sql": "SELECT named_struct() AS x",
+      "optimized_sql": "SELECT named_struct() AS x",
+      "expected": [
+        [
+          {}
+        ]
+      ],
+      "ordered": false,
+      "output_types": [
+        "struct<>"
+      ],
+      "traversals": [],
+      "optimized_traversals": [],
+      "trace": []
+    },
+    {
+      "name": "empty_struct_json",
+      "sql": "SELECT from_json('{}','STRUCT<>') AS x",
+      "optimized_sql": "SELECT from_json('{}','STRUCT<>') AS x",
+      "expected": [
+        [
+          {}
+        ]
+      ],
+      "ordered": false,
+      "output_types": [
+        "struct<>"
+      ],
+      "traversals": [],
+      "optimized_traversals": [],
+      "trace": []
+    }
+  ],
+  "raw_manifest_sha256": "b24dfa1e4d7c49526bc54a7f276962cc81661d18f9146788fc13089be06c444a"
+}

@@ -1,0 +1,826 @@
+{
+  "schema": {
+    "types": [
+      {
+        "id": 100,
+        "name": "Message",
+        "labels": [
+          "Message"
+        ],
+        "supertypes": [],
+        "properties": [
+          {
+            "name": "id",
+            "ty": "Int64",
+            "nullable": false
+          },
+          {
+            "name": "creationDate",
+            "ty": "Int64",
+            "nullable": true
+          },
+          {
+            "name": "locationIP",
+            "ty": "String",
+            "nullable": true
+          },
+          {
+            "name": "browserUsed",
+            "ty": "String",
+            "nullable": true
+          },
+          {
+            "name": "content",
+            "ty": "String",
+            "nullable": true
+          },
+          {
+            "name": "length",
+            "ty": "Int32",
+            "nullable": true
+          }
+        ]
+      },
+      {
+        "id": 101,
+        "name": "Place",
+        "labels": [
+          "Place"
+        ],
+        "supertypes": [],
+        "properties": [
+          {
+            "name": "id",
+            "ty": "Int64",
+            "nullable": false
+          },
+          {
+            "name": "name",
+            "ty": "String",
+            "nullable": true
+          },
+          {
+            "name": "url",
+            "ty": "String",
+            "nullable": true
+          }
+        ]
+      },
+      {
+        "id": 1,
+        "name": "Person",
+        "labels": [
+          "Person"
+        ],
+        "supertypes": [],
+        "properties": [
+          {
+            "name": "id",
+            "ty": "Int64",
+            "nullable": false
+          },
+          {
+            "name": "firstName",
+            "ty": "String",
+            "nullable": true
+          },
+          {
+            "name": "lastName",
+            "ty": "String",
+            "nullable": true
+          },
+          {
+            "name": "gender",
+            "ty": "String",
+            "nullable": true
+          },
+          {
+            "name": "birthday",
+            "ty": "Int64",
+            "nullable": true
+          },
+          {
+            "name": "creationDate",
+            "ty": "Int64",
+            "nullable": true
+          },
+          {
+            "name": "locationIP",
+            "ty": "String",
+            "nullable": true
+          },
+          {
+            "name": "browserUsed",
+            "ty": "String",
+            "nullable": true
+          },
+          {
+            "name": "speaks",
+            "ty": {
+              "List": "String"
+            },
+            "nullable": true
+          },
+          {
+            "name": "email",
+            "ty": {
+              "List": "String"
+            },
+            "nullable": true
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "name": "Post",
+        "labels": [
+          "Post"
+        ],
+        "supertypes": [
+          100
+        ],
+        "properties": [
+          {
+            "name": "imageFile",
+            "ty": "String",
+            "nullable": true
+          },
+          {
+            "name": "language",
+            "ty": "String",
+            "nullable": true
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "name": "Comment",
+        "labels": [
+          "Comment"
+        ],
+        "supertypes": [
+          100
+        ],
+        "properties": []
+      },
+      {
+        "id": 4,
+        "name": "Forum",
+        "labels": [
+          "Forum"
+        ],
+        "supertypes": [],
+        "properties": [
+          {
+            "name": "id",
+            "ty": "Int64",
+            "nullable": false
+          },
+          {
+            "name": "title",
+            "ty": "String",
+            "nullable": true
+          },
+          {
+            "name": "creationDate",
+            "ty": "Int64",
+            "nullable": true
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "name": "City",
+        "labels": [
+          "City"
+        ],
+        "supertypes": [
+          101
+        ],
+        "properties": []
+      },
+      {
+        "id": 6,
+        "name": "Country",
+        "labels": [
+          "Country"
+        ],
+        "supertypes": [
+          101
+        ],
+        "properties": []
+      },
+      {
+        "id": 7,
+        "name": "Continent",
+        "labels": [
+          "Continent"
+        ],
+        "supertypes": [
+          101
+        ],
+        "properties": []
+      },
+      {
+        "id": 1010,
+        "name": "KNOWS_10",
+        "labels": [
+          "KNOWS"
+        ],
+        "supertypes": [],
+        "properties": [
+          {
+            "name": "creationDate",
+            "ty": "Int64",
+            "nullable": true
+          }
+        ]
+      },
+      {
+        "id": 1011,
+        "name": "REPLY_OF_11",
+        "labels": [
+          "REPLY_OF"
+        ],
+        "supertypes": [],
+        "properties": []
+      },
+      {
+        "id": 1012,
+        "name": "REPLY_OF_12",
+        "labels": [
+          "REPLY_OF"
+        ],
+        "supertypes": [],
+        "properties": []
+      },
+      {
+        "id": 1013,
+        "name": "CONTAINER_OF_13",
+        "labels": [
+          "CONTAINER_OF"
+        ],
+        "supertypes": [],
+        "properties": []
+      },
+      {
+        "id": 1014,
+        "name": "HAS_MODERATOR_14",
+        "labels": [
+          "HAS_MODERATOR"
+        ],
+        "supertypes": [],
+        "properties": []
+      },
+      {
+        "id": 1015,
+        "name": "HAS_CREATOR_15",
+        "labels": [
+          "HAS_CREATOR"
+        ],
+        "supertypes": [],
+        "properties": []
+      },
+      {
+        "id": 1016,
+        "name": "HAS_CREATOR_16",
+        "labels": [
+          "HAS_CREATOR"
+        ],
+        "supertypes": [],
+        "properties": []
+      },
+      {
+        "id": 1017,
+        "name": "IS_LOCATED_IN_17",
+        "labels": [
+          "IS_LOCATED_IN"
+        ],
+        "supertypes": [],
+        "properties": []
+      }
+    ],
+    "vertices": [
+      {
+        "id": 1,
+        "element_type": 1,
+        "identity": "Opaque",
+        "constraints": []
+      },
+      {
+        "id": 2,
+        "element_type": 2,
+        "identity": "Opaque",
+        "constraints": []
+      },
+      {
+        "id": 3,
+        "element_type": 3,
+        "identity": "Opaque",
+        "constraints": []
+      },
+      {
+        "id": 4,
+        "element_type": 4,
+        "identity": "Opaque",
+        "constraints": []
+      },
+      {
+        "id": 5,
+        "element_type": 5,
+        "identity": "Opaque",
+        "constraints": []
+      },
+      {
+        "id": 6,
+        "element_type": 6,
+        "identity": "Opaque",
+        "constraints": []
+      },
+      {
+        "id": 7,
+        "element_type": 7,
+        "identity": "Opaque",
+        "constraints": []
+      }
+    ],
+    "edges": [
+      {
+        "id": 10,
+        "element_type": 1010,
+        "source": 1,
+        "target": 1,
+        "direction": "Directed",
+        "identity": "Opaque"
+      },
+      {
+        "id": 11,
+        "element_type": 1011,
+        "source": 3,
+        "target": 3,
+        "direction": "Directed",
+        "identity": "Opaque"
+      },
+      {
+        "id": 12,
+        "element_type": 1012,
+        "source": 3,
+        "target": 2,
+        "direction": "Directed",
+        "identity": "Opaque"
+      },
+      {
+        "id": 13,
+        "element_type": 1013,
+        "source": 4,
+        "target": 2,
+        "direction": "Directed",
+        "identity": "Opaque"
+      },
+      {
+        "id": 14,
+        "element_type": 1014,
+        "source": 4,
+        "target": 1,
+        "direction": "Directed",
+        "identity": "Opaque"
+      },
+      {
+        "id": 15,
+        "element_type": 1015,
+        "source": 2,
+        "target": 1,
+        "direction": "Directed",
+        "identity": "Opaque"
+      },
+      {
+        "id": 16,
+        "element_type": 1016,
+        "source": 3,
+        "target": 1,
+        "direction": "Directed",
+        "identity": "Opaque"
+      },
+      {
+        "id": 17,
+        "element_type": 1017,
+        "source": 1,
+        "target": 5,
+        "direction": "Directed",
+        "identity": "Opaque"
+      }
+    ]
+  },
+  "tables": [
+    {
+      "group": 1,
+      "name": "person",
+      "rows": 222,
+      "distinct": {
+        "_identity": 222,
+        "id": 222,
+        "firstName": 165,
+        "lastName": 149,
+        "gender": 2,
+        "birthday": 215,
+        "creationDate": 222,
+        "locationIP": 222,
+        "browserUsed": 5,
+        "speaks": 95,
+        "email": 222
+      },
+      "source_ndv": null,
+      "target_ndv": null
+    },
+    {
+      "group": 2,
+      "name": "post",
+      "rows": 5924,
+      "distinct": {
+        "_identity": 5924,
+        "id": 5924,
+        "creationDate": 5924,
+        "locationIP": 320,
+        "browserUsed": 5,
+        "content": 232,
+        "length": 77,
+        "imageFile": 5692,
+        "language": 3
+      },
+      "source_ndv": null,
+      "target_ndv": null
+    },
+    {
+      "group": 3,
+      "name": "comment",
+      "rows": 2218,
+      "distinct": {
+        "_identity": 2218,
+        "id": 2218,
+        "creationDate": 2218,
+        "locationIP": 253,
+        "browserUsed": 5,
+        "content": 770,
+        "length": 96
+      },
+      "source_ndv": null,
+      "target_ndv": null
+    },
+    {
+      "group": 4,
+      "name": "forum",
+      "rows": 805,
+      "distinct": {
+        "_identity": 805,
+        "id": 805,
+        "title": 790,
+        "creationDate": 805
+      },
+      "source_ndv": null,
+      "target_ndv": null
+    },
+    {
+      "group": 5,
+      "name": "city",
+      "rows": 1343,
+      "distinct": {
+        "_identity": 1343,
+        "id": 1343,
+        "name": 1343,
+        "url": 1343
+      },
+      "source_ndv": null,
+      "target_ndv": null
+    },
+    {
+      "group": 6,
+      "name": "country",
+      "rows": 111,
+      "distinct": {
+        "_identity": 111,
+        "id": 111,
+        "name": 111,
+        "url": 111
+      },
+      "source_ndv": null,
+      "target_ndv": null
+    },
+    {
+      "group": 7,
+      "name": "continent",
+      "rows": 6,
+      "distinct": {
+        "_identity": 6,
+        "id": 6,
+        "name": 6,
+        "url": 6
+      },
+      "source_ndv": null,
+      "target_ndv": null
+    },
+    {
+      "group": 10,
+      "name": "person_knows_person",
+      "rows": 825,
+      "distinct": {
+        "_identity": 825,
+        "src": 148,
+        "dst": 154,
+        "creationDate": 823
+      },
+      "source_ndv": 148,
+      "target_ndv": 154
+    },
+    {
+      "group": 11,
+      "name": "comment_replyof_comment",
+      "rows": 1109,
+      "distinct": {
+        "_identity": 1109,
+        "src": 1109,
+        "dst": 481
+      },
+      "source_ndv": 1109,
+      "target_ndv": 481
+    },
+    {
+      "group": 12,
+      "name": "comment_replyof_post",
+      "rows": 1109,
+      "distinct": {
+        "_identity": 1109,
+        "src": 1109,
+        "dst": 217
+      },
+      "source_ndv": 1109,
+      "target_ndv": 217
+    },
+    {
+      "group": 13,
+      "name": "forum_containerof_post",
+      "rows": 5924,
+      "distinct": {
+        "_identity": 5924,
+        "src": 605,
+        "dst": 5924
+      },
+      "source_ndv": 605,
+      "target_ndv": 5924
+    },
+    {
+      "group": 14,
+      "name": "forum_hasmoderator_person",
+      "rows": 805,
+      "distinct": {
+        "_identity": 805,
+        "src": 805,
+        "dst": 222
+      },
+      "source_ndv": 805,
+      "target_ndv": 222
+    },
+    {
+      "group": 15,
+      "name": "post_hascreator_person",
+      "rows": 5924,
+      "distinct": {
+        "_identity": 5924,
+        "src": 5924,
+        "dst": 144
+      },
+      "source_ndv": 5924,
+      "target_ndv": 144
+    },
+    {
+      "group": 16,
+      "name": "comment_hascreator_person",
+      "rows": 2218,
+      "distinct": {
+        "_identity": 2218,
+        "src": 2218,
+        "dst": 183
+      },
+      "source_ndv": 2218,
+      "target_ndv": 183
+    },
+    {
+      "group": 17,
+      "name": "person_islocatedin_place",
+      "rows": 222,
+      "distinct": {
+        "_identity": 222,
+        "src": 222,
+        "dst": 199
+      },
+      "source_ndv": 222,
+      "target_ndv": 199
+    }
+  ],
+  "queries": [
+    {
+      "name": "ldbc_is1_8796093022220",
+      "text": "// IS1. Profile of a person\n/*\n:param personId: 10995116277794\n */\nMATCH (n:Person {id: $personId })-[:IS_LOCATED_IN]->(p:City)\nRETURN\n    n.firstName AS firstName,\n    n.lastName AS lastName,\n    n.birthday AS birthday,\n    n.locationIP AS locationIP,\n    n.browserUsed AS browserUsed,\n    p.id AS cityId,\n    n.gender AS gender,\n    n.creationDate AS creationDate\n",
+      "text_sha256": "313fccbebf9ff29880d15514984ddf48d77f921908d1bd42b7b9626bd96479dc",
+      "parameters": {
+        "personId": 8796093022220
+      },
+      "expected": [
+        [
+          "Jose",
+          "Alonso",
+          558921600000,
+          "196.1.135.241",
+          "Internet Explorer",
+          1073,
+          "female",
+          1284620040602
+        ]
+      ],
+      "ordered": false
+    },
+    {
+      "name": "ldbc_is1_-1",
+      "text": "// IS1. Profile of a person\n/*\n:param personId: 10995116277794\n */\nMATCH (n:Person {id: $personId })-[:IS_LOCATED_IN]->(p:City)\nRETURN\n    n.firstName AS firstName,\n    n.lastName AS lastName,\n    n.birthday AS birthday,\n    n.locationIP AS locationIP,\n    n.browserUsed AS browserUsed,\n    p.id AS cityId,\n    n.gender AS gender,\n    n.creationDate AS creationDate\n",
+      "text_sha256": "313fccbebf9ff29880d15514984ddf48d77f921908d1bd42b7b9626bd96479dc",
+      "parameters": {
+        "personId": -1
+      },
+      "expected": [],
+      "ordered": false
+    },
+    {
+      "name": "ldbc_is3_8796093022220",
+      "text": "// IS3. Friends of a person\n/*\n:param personId: 10995116277794\n */\nMATCH (n:Person {id: $personId })-[r:KNOWS]-(friend)\nRETURN\n    friend.id AS personId,\n    friend.firstName AS firstName,\n    friend.lastName AS lastName,\n    r.creationDate AS friendshipCreationDate\nORDER BY\n    friendshipCreationDate DESC,\n    toInteger(personId) ASC\n",
+      "text_sha256": "424bda25c79699433d5cf6a18893b6431980155a573a97220867c00be547d323",
+      "parameters": {
+        "personId": 8796093022220
+      },
+      "expected": [
+        [
+          6597069766786,
+          "Miguel",
+          "Rodriguez",
+          1286845494693
+        ],
+        [
+          2199023255629,
+          "Karl",
+          "Fischer",
+          1286115870405
+        ],
+        [
+          6597069766660,
+          "Bryn",
+          "Davies",
+          1285058316513
+        ],
+        [
+          150,
+          "Alfonso",
+          "Alvarez",
+          1284873937521
+        ]
+      ],
+      "ordered": true
+    },
+    {
+      "name": "ldbc_is3_-1",
+      "text": "// IS3. Friends of a person\n/*\n:param personId: 10995116277794\n */\nMATCH (n:Person {id: $personId })-[r:KNOWS]-(friend)\nRETURN\n    friend.id AS personId,\n    friend.firstName AS firstName,\n    friend.lastName AS lastName,\n    r.creationDate AS friendshipCreationDate\nORDER BY\n    friendshipCreationDate DESC,\n    toInteger(personId) ASC\n",
+      "text_sha256": "424bda25c79699433d5cf6a18893b6431980155a573a97220867c00be547d323",
+      "parameters": {
+        "personId": -1
+      },
+      "expected": [],
+      "ordered": true
+    },
+    {
+      "name": "ldbc_is4_343597383680",
+      "text": "// IS4. Content of a message\n/*\n:param messageId: 206158431836\n */\nMATCH (m:Message {id:  $messageId })\nRETURN\n    m.creationDate as messageCreationDate,\n    coalesce(m.content, m.imageFile) as messageContent\n",
+      "text_sha256": "b579231518cf36352fe0237f4a36bbce5a9a96a0763565b8e17e07d9b0704642",
+      "parameters": {
+        "messageId": 343597383680
+      },
+      "expected": [
+        [
+          1290664733756,
+          "photo343597383680.jpg"
+        ]
+      ],
+      "ordered": false
+    },
+    {
+      "name": "ldbc_is4_206158430246",
+      "text": "// IS4. Content of a message\n/*\n:param messageId: 206158431836\n */\nMATCH (m:Message {id:  $messageId })\nRETURN\n    m.creationDate as messageCreationDate,\n    coalesce(m.content, m.imageFile) as messageContent\n",
+      "text_sha256": "b579231518cf36352fe0237f4a36bbce5a9a96a0763565b8e17e07d9b0704642",
+      "parameters": {
+        "messageId": 206158430246
+      },
+      "expected": [
+        [
+          1277681817962,
+          "yes"
+        ]
+      ],
+      "ordered": false
+    },
+    {
+      "name": "ldbc_is4_-1",
+      "text": "// IS4. Content of a message\n/*\n:param messageId: 206158431836\n */\nMATCH (m:Message {id:  $messageId })\nRETURN\n    m.creationDate as messageCreationDate,\n    coalesce(m.content, m.imageFile) as messageContent\n",
+      "text_sha256": "b579231518cf36352fe0237f4a36bbce5a9a96a0763565b8e17e07d9b0704642",
+      "parameters": {
+        "messageId": -1
+      },
+      "expected": [],
+      "ordered": false
+    },
+    {
+      "name": "ldbc_is5_343597383680",
+      "text": "// IS5. Creator of a message\n/*\n:param messageId: 206158431836\n */\nMATCH (m:Message {id:  $messageId })-[:HAS_CREATOR]->(p:Person)\nRETURN\n    p.id AS personId,\n    p.firstName AS firstName,\n    p.lastName AS lastName\n",
+      "text_sha256": "28d461db14b3817cfe00140fbabc7f7af796a2661b8c2492d8cf950ffce40fcd",
+      "parameters": {
+        "messageId": 343597383680
+      },
+      "expected": [
+        [
+          8796093022220,
+          "Jose",
+          "Alonso"
+        ]
+      ],
+      "ordered": false
+    },
+    {
+      "name": "ldbc_is5_206158430246",
+      "text": "// IS5. Creator of a message\n/*\n:param messageId: 206158431836\n */\nMATCH (m:Message {id:  $messageId })-[:HAS_CREATOR]->(p:Person)\nRETURN\n    p.id AS personId,\n    p.firstName AS firstName,\n    p.lastName AS lastName\n",
+      "text_sha256": "28d461db14b3817cfe00140fbabc7f7af796a2661b8c2492d8cf950ffce40fcd",
+      "parameters": {
+        "messageId": 206158430246
+      },
+      "expected": [
+        [
+          4398046511146,
+          "Ali",
+          "Achiou"
+        ]
+      ],
+      "ordered": false
+    },
+    {
+      "name": "ldbc_is5_-1",
+      "text": "// IS5. Creator of a message\n/*\n:param messageId: 206158431836\n */\nMATCH (m:Message {id:  $messageId })-[:HAS_CREATOR]->(p:Person)\nRETURN\n    p.id AS personId,\n    p.firstName AS firstName,\n    p.lastName AS lastName\n",
+      "text_sha256": "28d461db14b3817cfe00140fbabc7f7af796a2661b8c2492d8cf950ffce40fcd",
+      "parameters": {
+        "messageId": -1
+      },
+      "expected": [],
+      "ordered": false
+    },
+    {
+      "name": "ldbc_is6_343597383680",
+      "text": "// IS6. Forum of a message\n/*\n:param messageId: 206158431836\n */\nMATCH (m:Message {id: $messageId })-[:REPLY_OF*0..]->(p:Post)<-[:CONTAINER_OF]-(f:Forum)-[:HAS_MODERATOR]->(mod:Person)\nRETURN\n    f.id AS forumId,\n    f.title AS forumTitle,\n    mod.id AS moderatorId,\n    mod.firstName AS moderatorFirstName,\n    mod.lastName AS moderatorLastName\n",
+      "text_sha256": "1ac9125f6817402cd5df456b5201fc44187b646ffe6bf8497070db2abae84bce",
+      "parameters": {
+        "messageId": 343597383680
+      },
+      "expected": [
+        [
+          343597383682,
+          "Album 1 of Jose Alonso",
+          8796093022220,
+          "Jose",
+          "Alonso"
+        ]
+      ],
+      "ordered": false
+    },
+    {
+      "name": "ldbc_is6_206158430246",
+      "text": "// IS6. Forum of a message\n/*\n:param messageId: 206158431836\n */\nMATCH (m:Message {id: $messageId })-[:REPLY_OF*0..]->(p:Post)<-[:CONTAINER_OF]-(f:Forum)-[:HAS_MODERATOR]->(mod:Person)\nRETURN\n    f.id AS forumId,\n    f.title AS forumTitle,\n    mod.id AS moderatorId,\n    mod.firstName AS moderatorFirstName,\n    mod.lastName AS moderatorLastName\n",
+      "text_sha256": "1ac9125f6817402cd5df456b5201fc44187b646ffe6bf8497070db2abae84bce",
+      "parameters": {
+        "messageId": 206158430246
+      },
+      "expected": [
+        [
+          68719476743,
+          "Wall of David Alonso",
+          2199023255711,
+          "David",
+          "Alonso"
+        ]
+      ],
+      "ordered": false
+    },
+    {
+      "name": "ldbc_is6_-1",
+      "text": "// IS6. Forum of a message\n/*\n:param messageId: 206158431836\n */\nMATCH (m:Message {id: $messageId })-[:REPLY_OF*0..]->(p:Post)<-[:CONTAINER_OF]-(f:Forum)-[:HAS_MODERATOR]->(mod:Person)\nRETURN\n    f.id AS forumId,\n    f.title AS forumTitle,\n    mod.id AS moderatorId,\n    mod.firstName AS moderatorFirstName,\n    mod.lastName AS moderatorLastName\n",
+      "text_sha256": "1ac9125f6817402cd5df456b5201fc44187b646ffe6bf8497070db2abae84bce",
+      "parameters": {
+        "messageId": -1
+      },
+      "expected": [],
+      "ordered": false
+    }
+  ],
+  "dataset_sha256": "138a47e3795b9340685d7a62d8eedc23de28d2b0723a619c9470f8e6feea616a"
+}
