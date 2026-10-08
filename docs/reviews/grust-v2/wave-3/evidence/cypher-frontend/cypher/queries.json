@@ -1,0 +1,651 @@
+[
+  {
+    "expected": [
+      [
+        1
+      ]
+    ],
+    "explain": null,
+    "name": "cypher_anonymous_scopes",
+    "optimized_sql": "WITH q0 AS (SELECT 1 AS `@unit`),\nq1 AS (SELECT 1 AS `@unit`),\nq2 AS (SELECT `id` AS `s0`, `age` AS `s2`, `id` AS `s3`, `name` AS `s4` FROM `people`),\nq3 AS (SELECT `s0` AS `s0`, CAST('1' AS BIGINT) AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4`, CAST(NULL AS BIGINT) AS `s5` FROM q2),\nq4 AS (SELECT `id` AS `s0`, `age` AS `s2`, `id` AS `s3`, `name` AS `s4`, `salary` AS `s5` FROM `employees`),\nq5 AS (SELECT `s0` AS `s0`, CAST('2' AS BIGINT) AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4`, `s5` AS `s5` FROM q4),\nq6 AS (SELECT `s0` AS `s0`, `s1` AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4`, `s5` AS `s5` FROM q3 UNION ALL SELECT `s0` AS `s0`, `s1` AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4`, `s5` AS `s5` FROM q5),\nq7 AS (SELECT r.`s0` AS `s0`, r.`s1` AS `s1`, r.`s2` AS `s2`, r.`s3` AS `s3`, r.`s4` AS `s4`, r.`s5` AS `s5` FROM q1 l INNER JOIN q6 r ON TRUE),\nq8 AS (SELECT r.`s0` AS `s0`, r.`s1` AS `s1`, r.`s2` AS `s2`, r.`s3` AS `s3`, r.`s4` AS `s4`, r.`s5` AS `s5` FROM q0 l INNER JOIN q7 r ON (r.`s3` = CAST('1' AS BIGINT))),\nq9 AS (SELECT 1 AS `@unit`),\nq10 AS (SELECT `id` AS `s6`, `age` AS `s8`, `id` AS `s9`, `name` AS `s10` FROM `people`),\nq11 AS (SELECT `s6` AS `s6`, CAST('1' AS BIGINT) AS `s7`, `s8` AS `s8`, `s9` AS `s9`, `s10` AS `s10`, CAST(NULL AS BIGINT) AS `s11` FROM q10),\nq12 AS (SELECT `id` AS `s6`, `age` AS `s8`, `id` AS `s9`, `name` AS `s10`, `salary` AS `s11` FROM `employees`),\nq13 AS (SELECT `s6` AS `s6`, CAST('2' AS BIGINT) AS `s7`, `s8` AS `s8`, `s9` AS `s9`, `s10` AS `s10`, `s11` AS `s11` FROM q12),\nq14 AS (SELECT `s6` AS `s6`, `s7` AS `s7`, `s8` AS `s8`, `s9` AS `s9`, `s10` AS `s10`, `s11` AS `s11` FROM q11 UNION ALL SELECT `s6` AS `s6`, `s7` AS `s7`, `s8` AS `s8`, `s9` AS `s9`, `s10` AS `s10`, `s11` AS `s11` FROM q13),\nq15 AS (SELECT r.`s6` AS `s6`, r.`s7` AS `s7`, r.`s8` AS `s8`, r.`s9` AS `s9`, r.`s10` AS `s10`, r.`s11` AS `s11` FROM q9 l INNER JOIN q14 r ON TRUE),\nq16 AS (SELECT l.`s0` AS `s0`, l.`s1` AS `s1`, l.`s2` AS `s2`, l.`s3` AS `s3`, l.`s4` AS `s4`, l.`s5` AS `s5`, r.`s6` AS `s6`, r.`s7` AS `s7`, r.`s8` AS `s8`, r.`s9` AS `s9`, r.`s10` AS `s10`, r.`s11` AS `s11` FROM q8 l INNER JOIN q15 r ON (r.`s9` = CAST('2' AS BIGINT))),\nq17 AS (SELECT CAST('1' AS BIGINT) AS `s12` FROM q16) SELECT `s12` AS `x` FROM q17",
+    "optimized_traversals": [],
+    "ordered": false,
+    "output_types": [
+      "bigint"
+    ],
+    "query_text": "MATCH (:Person {id:1}) MATCH (:Person {id:2}) RETURN 1 AS x",
+    "sql": "WITH q0 AS (SELECT 1 AS `@unit`),\nq1 AS (SELECT 1 AS `@unit`),\nq2 AS (SELECT `id` AS `s0`, `age` AS `s2`, `id` AS `s3`, `name` AS `s4` FROM `people`),\nq3 AS (SELECT `s0` AS `s0`, CAST('1' AS BIGINT) AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4`, CAST(NULL AS BIGINT) AS `s5` FROM q2),\nq4 AS (SELECT `id` AS `s0`, `age` AS `s2`, `id` AS `s3`, `name` AS `s4`, `salary` AS `s5` FROM `employees`),\nq5 AS (SELECT `s0` AS `s0`, CAST('2' AS BIGINT) AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4`, `s5` AS `s5` FROM q4),\nq6 AS (SELECT `s0` AS `s0`, `s1` AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4`, `s5` AS `s5` FROM q3 UNION ALL SELECT `s0` AS `s0`, `s1` AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4`, `s5` AS `s5` FROM q5),\nq7 AS (SELECT r.`s0` AS `s0`, r.`s1` AS `s1`, r.`s2` AS `s2`, r.`s3` AS `s3`, r.`s4` AS `s4`, r.`s5` AS `s5` FROM q1 l INNER JOIN q6 r ON TRUE),\nq8 AS (SELECT r.`s0` AS `s0`, r.`s1` AS `s1`, r.`s2` AS `s2`, r.`s3` AS `s3`, r.`s4` AS `s4`, r.`s5` AS `s5` FROM q0 l INNER JOIN q7 r ON (r.`s3` = CAST('1' AS BIGINT))),\nq9 AS (SELECT 1 AS `@unit`),\nq10 AS (SELECT `id` AS `s6`, `age` AS `s8`, `id` AS `s9`, `name` AS `s10` FROM `people`),\nq11 AS (SELECT `s6` AS `s6`, CAST('1' AS BIGINT) AS `s7`, `s8` AS `s8`, `s9` AS `s9`, `s10` AS `s10`, CAST(NULL AS BIGINT) AS `s11` FROM q10),\nq12 AS (SELECT `id` AS `s6`, `age` AS `s8`, `id` AS `s9`, `name` AS `s10`, `salary` AS `s11` FROM `employees`),\nq13 AS (SELECT `s6` AS `s6`, CAST('2' AS BIGINT) AS `s7`, `s8` AS `s8`, `s9` AS `s9`, `s10` AS `s10`, `s11` AS `s11` FROM q12),\nq14 AS (SELECT `s6` AS `s6`, `s7` AS `s7`, `s8` AS `s8`, `s9` AS `s9`, `s10` AS `s10`, `s11` AS `s11` FROM q11 UNION ALL SELECT `s6` AS `s6`, `s7` AS `s7`, `s8` AS `s8`, `s9` AS `s9`, `s10` AS `s10`, `s11` AS `s11` FROM q13),\nq15 AS (SELECT r.`s6` AS `s6`, r.`s7` AS `s7`, r.`s8` AS `s8`, r.`s9` AS `s9`, r.`s10` AS `s10`, r.`s11` AS `s11` FROM q9 l INNER JOIN q14 r ON TRUE),\nq16 AS (SELECT l.`s0` AS `s0`, l.`s1` AS `s1`, l.`s2` AS `s2`, l.`s3` AS `s3`, l.`s4` AS `s4`, l.`s5` AS `s5`, r.`s6` AS `s6`, r.`s7` AS `s7`, r.`s8` AS `s8`, r.`s9` AS `s9`, r.`s10` AS `s10`, r.`s11` AS `s11` FROM q8 l INNER JOIN q15 r ON (r.`s9` = CAST('2' AS BIGINT))),\nq17 AS (SELECT CAST('1' AS BIGINT) AS `s12` FROM q16) SELECT `s12` AS `x` FROM q17",
+    "trace": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression"
+    ],
+    "traversals": []
+  },
+  {
+    "expected": [
+      [
+        1,
+        2
+      ],
+      [
+        1,
+        3
+      ],
+      [
+        1,
+        1
+      ],
+      [
+        2,
+        3
+      ],
+      [
+        2,
+        1
+      ],
+      [
+        2,
+        2
+      ],
+      [
+        3,
+        3
+      ],
+      [
+        3,
+        1
+      ],
+      [
+        3,
+        2
+      ]
+    ],
+    "explain": null,
+    "name": "cypher_shortest",
+    "optimized_sql": "WITH q0 AS (SELECT 1 AS `@unit`),\nq1 AS (SELECT 1 AS `@unit`),\nq2 AS (SELECT `id` AS `s12`, `age` AS `s14`, `id` AS `s15`, `name` AS `s16` FROM `people`),\nq3 AS (SELECT `s12` AS `s12`, CAST('1' AS BIGINT) AS `s13`, `s14` AS `s14`, `s15` AS `s15`, `s16` AS `s16`, CAST(NULL AS BIGINT) AS `s17` FROM q2),\nq4 AS (SELECT `id` AS `s12`, `age` AS `s14`, `id` AS `s15`, `name` AS `s16`, `salary` AS `s17` FROM `employees`),\nq5 AS (SELECT `s12` AS `s12`, CAST('2' AS BIGINT) AS `s13`, `s14` AS `s14`, `s15` AS `s15`, `s16` AS `s16`, `s17` AS `s17` FROM q4),\nq6 AS (SELECT `s12` AS `s12`, `s13` AS `s13`, `s14` AS `s14`, `s15` AS `s15`, `s16` AS `s16`, `s17` AS `s17` FROM q3 UNION ALL SELECT `s12` AS `s12`, `s13` AS `s13`, `s14` AS `s14`, `s15` AS `s15`, `s16` AS `s16`, `s17` AS `s17` FROM q5),\nq7 AS (SELECT `s13` AS `s18`, `s12` AS `s19` FROM q6),\nq8 AS (SELECT `id` AS `s25`, `src` AS `s27`, `dst` AS `s28` FROM `knows`),\nq9 AS (SELECT `s25` AS `s25`, CAST('10' AS BIGINT) AS `s26`, `s27` AS `s27`, `s28` AS `s28` FROM q8),\nq10 AS (SELECT `id` AS `s29`, `age` AS `s31`, `id` AS `s32`, `name` AS `s33` FROM `people`),\nq11 AS (SELECT `s29` AS `s29`, CAST('1' AS BIGINT) AS `s30`, `s31` AS `s31`, `s32` AS `s32`, `s33` AS `s33` FROM q10),\nq12 AS (SELECT l.`s25` AS `s25`, l.`s26` AS `s26`, l.`s27` AS `s27`, l.`s28` AS `s28`, r.`s29` AS `s29`, r.`s30` AS `s30`, r.`s31` AS `s31`, r.`s32` AS `s32`, r.`s33` AS `s33` FROM q9 l INNER JOIN q11 r ON (l.`s28` = r.`s29`)),\nq13 AS (SELECT `id` AS `s20`, `age` AS `s22`, `id` AS `s23`, `name` AS `s24` FROM `people`),\nq14 AS (SELECT `s20` AS `s20`, CAST('1' AS BIGINT) AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24` FROM q13),\nq15 AS (SELECT l.`s25` AS `s25`, l.`s26` AS `s26`, l.`s27` AS `s27`, l.`s28` AS `s28`, l.`s29` AS `s29`, l.`s30` AS `s30`, l.`s31` AS `s31`, l.`s32` AS `s32`, l.`s33` AS `s33`, r.`s20` AS `s20`, r.`s21` AS `s21`, r.`s22` AS `s22`, r.`s23` AS `s23`, r.`s24` AS `s24` FROM q12 l INNER JOIN q14 r ON (l.`s27` = r.`s20`)),\nq16 AS (SELECT `s21` AS `s34`, `s20` AS `s35`, `s30` AS `s36`, `s29` AS `s37`, `s26` AS `s38`, `s25` AS `s39` FROM q15),\nq17 AS (SELECT `sg` AS `s40`, `si` AS `s41`, `dg` AS `s42`, `di` AS `s43`, `edges` AS `s44`, `vertices` AS `s45`, `length` AS `s46` FROM __grust_traverse_0),\nq18 AS (SELECT `id` AS `s47`, `age` AS `s49`, `id` AS `s50`, `name` AS `s51` FROM `people`),\nq19 AS (SELECT `s47` AS `s47`, CAST('1' AS BIGINT) AS `s48`, `s49` AS `s49`, `s50` AS `s50`, `s51` AS `s51`, CAST(NULL AS BIGINT) AS `s52` FROM q18),\nq20 AS (SELECT `id` AS `s47`, `age` AS `s49`, `id` AS `s50`, `name` AS `s51`, `salary` AS `s52` FROM `employees`),\nq21 AS (SELECT `s47` AS `s47`, CAST('2' AS BIGINT) AS `s48`, `s49` AS `s49`, `s50` AS `s50`, `s51` AS `s51`, `s52` AS `s52` FROM q20),\nq22 AS (SELECT `s47` AS `s47`, `s48` AS `s48`, `s49` AS `s49`, `s50` AS `s50`, `s51` AS `s51`, `s52` AS `s52` FROM q19 UNION ALL SELECT `s47` AS `s47`, `s48` AS `s48`, `s49` AS `s49`, `s50` AS `s50`, `s51` AS `s51`, `s52` AS `s52` FROM q21),\nq23 AS (SELECT l.`s40` AS `s40`, l.`s41` AS `s41`, l.`s42` AS `s42`, l.`s43` AS `s43`, l.`s44` AS `s44`, l.`s45` AS `s45`, l.`s46` AS `s46`, r.`s47` AS `s47`, r.`s48` AS `s48`, r.`s49` AS `s49`, r.`s50` AS `s50`, r.`s51` AS `s51`, r.`s52` AS `s52` FROM q17 l INNER JOIN q22 r ON ((l.`s40` = r.`s48`) AND (l.`s41` = r.`s47`))),\nq24 AS (SELECT `id` AS `s53`, `age` AS `s55`, `id` AS `s56`, `name` AS `s57` FROM `people`),\nq25 AS (SELECT `s53` AS `s53`, CAST('1' AS BIGINT) AS `s54`, `s55` AS `s55`, `s56` AS `s56`, `s57` AS `s57`, CAST(NULL AS BIGINT) AS `s58` FROM q24),\nq26 AS (SELECT `id` AS `s53`, `age` AS `s55`, `id` AS `s56`, `name` AS `s57`, `salary` AS `s58` FROM `employees`),\nq27 AS (SELECT `s53` AS `s53`, CAST('2' AS BIGINT) AS `s54`, `s55` AS `s55`, `s56` AS `s56`, `s57` AS `s57`, `s58` AS `s58` FROM q26),\nq28 AS (SELECT `s53` AS `s53`, `s54` AS `s54`, `s55` AS `s55`, `s56` AS `s56`, `s57` AS `s57`, `s58` AS `s58` FROM q25 UNION ALL SELECT `s53` AS `s53`, `s54` AS `s54`, `s55` AS `s55`, `s56` AS `s56`, `s57` AS `s57`, `s58` AS `s58` FROM q27),\nq29 AS (SELECT l.`s40` AS `s40`, l.`s41` AS `s41`, l.`s42` AS `s42`, l.`s43` AS `s43`, l.`s44` AS `s44`, l.`s45` AS `s45`, l.`s46` AS `s46`, l.`s47` AS `s47`, l.`s48` AS `s48`, l.`s49` AS `s49`, l.`s50` AS `s50`, l.`s51` AS `s51`, l.`s52` AS `s52`, r.`s53` AS `s53`, r.`s54` AS `s54`, r.`s55` AS `s55`, r.`s56` AS `s56`, r.`s57` AS `s57`, r.`s58` AS `s58` FROM q23 l INNER JOIN q28 r ON ((l.`s42` = r.`s54`) AND (l.`s43` = r.`s53`))),\nq30 AS (SELECT `s47` AS `s0`, `s48` AS `s1`, `s49` AS `s2`, `s50` AS `s3`, `s51` AS `s4`, `s52` AS `s5`, `s53` AS `s6`, `s54` AS `s7`, `s55` AS `s8`, `s56` AS `s9`, `s57` AS `s10`, `s58` AS `s11`, `s44` AS `s44`, `s45` AS `s45`, `s46` AS `s46` FROM q29),\nq31 AS (SELECT `s0`, `s1`, `s2`, `s3`, `s4`, `s5`, `s6`, `s7`, `s8`, `s9`, `s10`, `s11`, `s44`, `s45`, `s46` FROM (SELECT *, row_number() OVER (PARTITION BY `s1`, `s0`, `s7`, `s6` ORDER BY `s46`) AS `@path_rank` FROM q30) ranked WHERE `@path_rank` = 1),\nq32 AS (SELECT `s0` AS `s0`, `s1` AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4`, `s5` AS `s5`, `s6` AS `s6`, `s7` AS `s7`, `s8` AS `s8`, `s9` AS `s9`, `s10` AS `s10`, `s11` AS `s11`, `s44` AS `s44`, `s45` AS `s45`, `s46` AS `s46`, named_struct('length', `s46`, 'vertices', `s45`, 'edges', `s44`) AS `s59` FROM q31),\nq33 AS (SELECT r.`s0` AS `s0`, r.`s1` AS `s1`, r.`s2` AS `s2`, r.`s3` AS `s3`, r.`s4` AS `s4`, r.`s5` AS `s5`, r.`s6` AS `s6`, r.`s7` AS `s7`, r.`s8` AS `s8`, r.`s9` AS `s9`, r.`s10` AS `s10`, r.`s11` AS `s11`, r.`s44` AS `s44`, r.`s45` AS `s45`, r.`s46` AS `s46`, r.`s59` AS `s59` FROM q1 l INNER JOIN q32 r ON TRUE),\nq34 AS (SELECT r.`s0` AS `s0`, r.`s1` AS `s1`, r.`s2` AS `s2`, r.`s3` AS `s3`, r.`s4` AS `s4`, r.`s5` AS `s5`, r.`s6` AS `s6`, r.`s7` AS `s7`, r.`s8` AS `s8`, r.`s9` AS `s9`, r.`s10` AS `s10`, r.`s11` AS `s11`, r.`s44` AS `s44`, r.`s45` AS `s45`, r.`s46` AS `s46`, r.`s59` AS `s59` FROM q0 l INNER JOIN q33 r ON TRUE),\nq35 AS (SELECT `s3` AS `s60`, `s9` AS `s61` FROM q34) SELECT `s60` AS `src`, `s61` AS `dst` FROM q35",
+    "optimized_traversals": [
+      {
+        "adjacency_sql": "WITH q0 AS (SELECT 1 AS `@unit`),\nq1 AS (SELECT 1 AS `@unit`),\nq2 AS (SELECT `id` AS `s12`, `age` AS `s14`, `id` AS `s15`, `name` AS `s16` FROM `people`),\nq3 AS (SELECT `s12` AS `s12`, CAST('1' AS BIGINT) AS `s13`, `s14` AS `s14`, `s15` AS `s15`, `s16` AS `s16`, CAST(NULL AS BIGINT) AS `s17` FROM q2),\nq4 AS (SELECT `id` AS `s12`, `age` AS `s14`, `id` AS `s15`, `name` AS `s16`, `salary` AS `s17` FROM `employees`),\nq5 AS (SELECT `s12` AS `s12`, CAST('2' AS BIGINT) AS `s13`, `s14` AS `s14`, `s15` AS `s15`, `s16` AS `s16`, `s17` AS `s17` FROM q4),\nq6 AS (SELECT `s12` AS `s12`, `s13` AS `s13`, `s14` AS `s14`, `s15` AS `s15`, `s16` AS `s16`, `s17` AS `s17` FROM q3 UNION ALL SELECT `s12` AS `s12`, `s13` AS `s13`, `s14` AS `s14`, `s15` AS `s15`, `s16` AS `s16`, `s17` AS `s17` FROM q5),\nq7 AS (SELECT `s13` AS `s18`, `s12` AS `s19` FROM q6),\nq8 AS (SELECT `id` AS `s25`, `src` AS `s27`, `dst` AS `s28` FROM `knows`),\nq9 AS (SELECT `s25` AS `s25`, CAST('10' AS BIGINT) AS `s26`, `s27` AS `s27`, `s28` AS `s28` FROM q8),\nq10 AS (SELECT `id` AS `s29`, `age` AS `s31`, `id` AS `s32`, `name` AS `s33` FROM `people`),\nq11 AS (SELECT `s29` AS `s29`, CAST('1' AS BIGINT) AS `s30`, `s31` AS `s31`, `s32` AS `s32`, `s33` AS `s33` FROM q10),\nq12 AS (SELECT l.`s25` AS `s25`, l.`s26` AS `s26`, l.`s27` AS `s27`, l.`s28` AS `s28`, r.`s29` AS `s29`, r.`s30` AS `s30`, r.`s31` AS `s31`, r.`s32` AS `s32`, r.`s33` AS `s33` FROM q9 l INNER JOIN q11 r ON (l.`s28` = r.`s29`)),\nq13 AS (SELECT `id` AS `s20`, `age` AS `s22`, `id` AS `s23`, `name` AS `s24` FROM `people`),\nq14 AS (SELECT `s20` AS `s20`, CAST('1' AS BIGINT) AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24` FROM q13),\nq15 AS (SELECT l.`s25` AS `s25`, l.`s26` AS `s26`, l.`s27` AS `s27`, l.`s28` AS `s28`, l.`s29` AS `s29`, l.`s30` AS `s30`, l.`s31` AS `s31`, l.`s32` AS `s32`, l.`s33` AS `s33`, r.`s20` AS `s20`, r.`s21` AS `s21`, r.`s22` AS `s22`, r.`s23` AS `s23`, r.`s24` AS `s24` FROM q12 l INNER JOIN q14 r ON (l.`s27` = r.`s20`)),\nq16 AS (SELECT `s21` AS `s34`, `s20` AS `s35`, `s30` AS `s36`, `s29` AS `s37`, `s26` AS `s38`, `s25` AS `s39` FROM q15) SELECT `s34` AS `sg`, `s35` AS `si`, `s36` AS `dg`, `s37` AS `di`, `s38` AS `eg`, `s39` AS `ei` FROM q16",
+        "max_hops": null,
+        "min_hops": 1,
+        "mode": "Trail",
+        "seed_sql": "WITH q0 AS (SELECT 1 AS `@unit`),\nq1 AS (SELECT 1 AS `@unit`),\nq2 AS (SELECT `id` AS `s12`, `age` AS `s14`, `id` AS `s15`, `name` AS `s16` FROM `people`),\nq3 AS (SELECT `s12` AS `s12`, CAST('1' AS BIGINT) AS `s13`, `s14` AS `s14`, `s15` AS `s15`, `s16` AS `s16`, CAST(NULL AS BIGINT) AS `s17` FROM q2),\nq4 AS (SELECT `id` AS `s12`, `age` AS `s14`, `id` AS `s15`, `name` AS `s16`, `salary` AS `s17` FROM `employees`),\nq5 AS (SELECT `s12` AS `s12`, CAST('2' AS BIGINT) AS `s13`, `s14` AS `s14`, `s15` AS `s15`, `s16` AS `s16`, `s17` AS `s17` FROM q4),\nq6 AS (SELECT `s12` AS `s12`, `s13` AS `s13`, `s14` AS `s14`, `s15` AS `s15`, `s16` AS `s16`, `s17` AS `s17` FROM q3 UNION ALL SELECT `s12` AS `s12`, `s13` AS `s13`, `s14` AS `s14`, `s15` AS `s15`, `s16` AS `s16`, `s17` AS `s17` FROM q5),\nq7 AS (SELECT `s13` AS `s18`, `s12` AS `s19` FROM q6) SELECT `s18` AS `sg`, `s19` AS `si` FROM q7",
+        "shortest_walk": false,
+        "view": "__grust_traverse_0"
+      }
+    ],
+    "ordered": false,
+    "output_types": [
+      "bigint",
+      "bigint"
+    ],
+    "query_text": "MATCH shortestPath((a:Person)-[:KNOWS*]->(b:Person)) RETURN a.id AS src,b.id AS dst",
+    "sql": "WITH q0 AS (SELECT 1 AS `@unit`),\nq1 AS (SELECT 1 AS `@unit`),\nq2 AS (SELECT `id` AS `s12`, `age` AS `s14`, `id` AS `s15`, `name` AS `s16` FROM `people`),\nq3 AS (SELECT `s12` AS `s12`, CAST('1' AS BIGINT) AS `s13`, `s14` AS `s14`, `s15` AS `s15`, `s16` AS `s16`, CAST(NULL AS BIGINT) AS `s17` FROM q2),\nq4 AS (SELECT `id` AS `s12`, `age` AS `s14`, `id` AS `s15`, `name` AS `s16`, `salary` AS `s17` FROM `employees`),\nq5 AS (SELECT `s12` AS `s12`, CAST('2' AS BIGINT) AS `s13`, `s14` AS `s14`, `s15` AS `s15`, `s16` AS `s16`, `s17` AS `s17` FROM q4),\nq6 AS (SELECT `s12` AS `s12`, `s13` AS `s13`, `s14` AS `s14`, `s15` AS `s15`, `s16` AS `s16`, `s17` AS `s17` FROM q3 UNION ALL SELECT `s12` AS `s12`, `s13` AS `s13`, `s14` AS `s14`, `s15` AS `s15`, `s16` AS `s16`, `s17` AS `s17` FROM q5),\nq7 AS (SELECT `s13` AS `s18`, `s12` AS `s19` FROM q6),\nq8 AS (SELECT `id` AS `s20`, `age` AS `s22`, `id` AS `s23`, `name` AS `s24` FROM `people`),\nq9 AS (SELECT `s20` AS `s20`, CAST('1' AS BIGINT) AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24` FROM q8),\nq10 AS (SELECT `id` AS `s25`, `src` AS `s27`, `dst` AS `s28` FROM `knows`),\nq11 AS (SELECT `s25` AS `s25`, CAST('10' AS BIGINT) AS `s26`, `s27` AS `s27`, `s28` AS `s28` FROM q10),\nq12 AS (SELECT l.`s20` AS `s20`, l.`s21` AS `s21`, l.`s22` AS `s22`, l.`s23` AS `s23`, l.`s24` AS `s24`, r.`s25` AS `s25`, r.`s26` AS `s26`, r.`s27` AS `s27`, r.`s28` AS `s28` FROM q9 l INNER JOIN q11 r ON TRUE),\nq13 AS (SELECT `id` AS `s29`, `age` AS `s31`, `id` AS `s32`, `name` AS `s33` FROM `people`),\nq14 AS (SELECT `s29` AS `s29`, CAST('1' AS BIGINT) AS `s30`, `s31` AS `s31`, `s32` AS `s32`, `s33` AS `s33` FROM q13),\nq15 AS (SELECT l.`s20` AS `s20`, l.`s21` AS `s21`, l.`s22` AS `s22`, l.`s23` AS `s23`, l.`s24` AS `s24`, l.`s25` AS `s25`, l.`s26` AS `s26`, l.`s27` AS `s27`, l.`s28` AS `s28`, r.`s29` AS `s29`, r.`s30` AS `s30`, r.`s31` AS `s31`, r.`s32` AS `s32`, r.`s33` AS `s33` FROM q12 l INNER JOIN q14 r ON TRUE),\nq16 AS (SELECT * FROM q15 WHERE ((`s27` = `s20`) AND (`s28` = `s29`))),\nq17 AS (SELECT `s21` AS `s34`, `s20` AS `s35`, `s30` AS `s36`, `s29` AS `s37`, `s26` AS `s38`, `s25` AS `s39` FROM q16),\nq18 AS (SELECT `sg` AS `s40`, `si` AS `s41`, `dg` AS `s42`, `di` AS `s43`, `edges` AS `s44`, `vertices` AS `s45`, `length` AS `s46` FROM __grust_traverse_0),\nq19 AS (SELECT `id` AS `s47`, `age` AS `s49`, `id` AS `s50`, `name` AS `s51` FROM `people`),\nq20 AS (SELECT `s47` AS `s47`, CAST('1' AS BIGINT) AS `s48`, `s49` AS `s49`, `s50` AS `s50`, `s51` AS `s51`, CAST(NULL AS BIGINT) AS `s52` FROM q19),\nq21 AS (SELECT `id` AS `s47`, `age` AS `s49`, `id` AS `s50`, `name` AS `s51`, `salary` AS `s52` FROM `employees`),\nq22 AS (SELECT `s47` AS `s47`, CAST('2' AS BIGINT) AS `s48`, `s49` AS `s49`, `s50` AS `s50`, `s51` AS `s51`, `s52` AS `s52` FROM q21),\nq23 AS (SELECT `s47` AS `s47`, `s48` AS `s48`, `s49` AS `s49`, `s50` AS `s50`, `s51` AS `s51`, `s52` AS `s52` FROM q20 UNION ALL SELECT `s47` AS `s47`, `s48` AS `s48`, `s49` AS `s49`, `s50` AS `s50`, `s51` AS `s51`, `s52` AS `s52` FROM q22),\nq24 AS (SELECT l.`s40` AS `s40`, l.`s41` AS `s41`, l.`s42` AS `s42`, l.`s43` AS `s43`, l.`s44` AS `s44`, l.`s45` AS `s45`, l.`s46` AS `s46`, r.`s47` AS `s47`, r.`s48` AS `s48`, r.`s49` AS `s49`, r.`s50` AS `s50`, r.`s51` AS `s51`, r.`s52` AS `s52` FROM q18 l INNER JOIN q23 r ON ((l.`s40` = r.`s48`) AND (l.`s41` = r.`s47`))),\nq25 AS (SELECT `id` AS `s53`, `age` AS `s55`, `id` AS `s56`, `name` AS `s57` FROM `people`),\nq26 AS (SELECT `s53` AS `s53`, CAST('1' AS BIGINT) AS `s54`, `s55` AS `s55`, `s56` AS `s56`, `s57` AS `s57`, CAST(NULL AS BIGINT) AS `s58` FROM q25),\nq27 AS (SELECT `id` AS `s53`, `age` AS `s55`, `id` AS `s56`, `name` AS `s57`, `salary` AS `s58` FROM `employees`),\nq28 AS (SELECT `s53` AS `s53`, CAST('2' AS BIGINT) AS `s54`, `s55` AS `s55`, `s56` AS `s56`, `s57` AS `s57`, `s58` AS `s58` FROM q27),\nq29 AS (SELECT `s53` AS `s53`, `s54` AS `s54`, `s55` AS `s55`, `s56` AS `s56`, `s57` AS `s57`, `s58` AS `s58` FROM q26 UNION ALL SELECT `s53` AS `s53`, `s54` AS `s54`, `s55` AS `s55`, `s56` AS `s56`, `s57` AS `s57`, `s58` AS `s58` FROM q28),\nq30 AS (SELECT l.`s40` AS `s40`, l.`s41` AS `s41`, l.`s42` AS `s42`, l.`s43` AS `s43`, l.`s44` AS `s44`, l.`s45` AS `s45`, l.`s46` AS `s46`, l.`s47` AS `s47`, l.`s48` AS `s48`, l.`s49` AS `s49`, l.`s50` AS `s50`, l.`s51` AS `s51`, l.`s52` AS `s52`, r.`s53` AS `s53`, r.`s54` AS `s54`, r.`s55` AS `s55`, r.`s56` AS `s56`, r.`s57` AS `s57`, r.`s58` AS `s58` FROM q24 l INNER JOIN q29 r ON ((l.`s42` = r.`s54`) AND (l.`s43` = r.`s53`))),\nq31 AS (SELECT `s47` AS `s0`, `s48` AS `s1`, `s49` AS `s2`, `s50` AS `s3`, `s51` AS `s4`, `s52` AS `s5`, `s53` AS `s6`, `s54` AS `s7`, `s55` AS `s8`, `s56` AS `s9`, `s57` AS `s10`, `s58` AS `s11`, `s44` AS `s44`, `s45` AS `s45`, `s46` AS `s46` FROM q30),\nq32 AS (SELECT `s0`, `s1`, `s2`, `s3`, `s4`, `s5`, `s6`, `s7`, `s8`, `s9`, `s10`, `s11`, `s44`, `s45`, `s46` FROM (SELECT *, row_number() OVER (PARTITION BY `s1`, `s0`, `s7`, `s6` ORDER BY `s46`) AS `@path_rank` FROM q31) ranked WHERE `@path_rank` = 1),\nq33 AS (SELECT `s0` AS `s0`, `s1` AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4`, `s5` AS `s5`, `s6` AS `s6`, `s7` AS `s7`, `s8` AS `s8`, `s9` AS `s9`, `s10` AS `s10`, `s11` AS `s11`, `s44` AS `s44`, `s45` AS `s45`, `s46` AS `s46`, named_struct('length', `s46`, 'vertices', `s45`, 'edges', `s44`) AS `s59` FROM q32),\nq34 AS (SELECT r.`s0` AS `s0`, r.`s1` AS `s1`, r.`s2` AS `s2`, r.`s3` AS `s3`, r.`s4` AS `s4`, r.`s5` AS `s5`, r.`s6` AS `s6`, r.`s7` AS `s7`, r.`s8` AS `s8`, r.`s9` AS `s9`, r.`s10` AS `s10`, r.`s11` AS `s11`, r.`s44` AS `s44`, r.`s45` AS `s45`, r.`s46` AS `s46`, r.`s59` AS `s59` FROM q1 l INNER JOIN q33 r ON TRUE),\nq35 AS (SELECT r.`s0` AS `s0`, r.`s1` AS `s1`, r.`s2` AS `s2`, r.`s3` AS `s3`, r.`s4` AS `s4`, r.`s5` AS `s5`, r.`s6` AS `s6`, r.`s7` AS `s7`, r.`s8` AS `s8`, r.`s9` AS `s9`, r.`s10` AS `s10`, r.`s11` AS `s11`, r.`s44` AS `s44`, r.`s45` AS `s45`, r.`s46` AS `s46`, r.`s59` AS `s59` FROM q0 l INNER JOIN q34 r ON TRUE),\nq36 AS (SELECT `s3` AS `s60`, `s9` AS `s61` FROM q35) SELECT `s60` AS `src`, `s61` AS `dst` FROM q36",
+    "trace": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "costed inner region: 3 relations, before=Some(235.0), after=49, NDV equality estimates; absent selectivity uses 1"
+    ],
+    "traversals": [
+      {
+        "adjacency_sql": "WITH q0 AS (SELECT 1 AS `@unit`),\nq1 AS (SELECT 1 AS `@unit`),\nq2 AS (SELECT `id` AS `s12`, `age` AS `s14`, `id` AS `s15`, `name` AS `s16` FROM `people`),\nq3 AS (SELECT `s12` AS `s12`, CAST('1' AS BIGINT) AS `s13`, `s14` AS `s14`, `s15` AS `s15`, `s16` AS `s16`, CAST(NULL AS BIGINT) AS `s17` FROM q2),\nq4 AS (SELECT `id` AS `s12`, `age` AS `s14`, `id` AS `s15`, `name` AS `s16`, `salary` AS `s17` FROM `employees`),\nq5 AS (SELECT `s12` AS `s12`, CAST('2' AS BIGINT) AS `s13`, `s14` AS `s14`, `s15` AS `s15`, `s16` AS `s16`, `s17` AS `s17` FROM q4),\nq6 AS (SELECT `s12` AS `s12`, `s13` AS `s13`, `s14` AS `s14`, `s15` AS `s15`, `s16` AS `s16`, `s17` AS `s17` FROM q3 UNION ALL SELECT `s12` AS `s12`, `s13` AS `s13`, `s14` AS `s14`, `s15` AS `s15`, `s16` AS `s16`, `s17` AS `s17` FROM q5),\nq7 AS (SELECT `s13` AS `s18`, `s12` AS `s19` FROM q6),\nq8 AS (SELECT `id` AS `s20`, `age` AS `s22`, `id` AS `s23`, `name` AS `s24` FROM `people`),\nq9 AS (SELECT `s20` AS `s20`, CAST('1' AS BIGINT) AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24` FROM q8),\nq10 AS (SELECT `id` AS `s25`, `src` AS `s27`, `dst` AS `s28` FROM `knows`),\nq11 AS (SELECT `s25` AS `s25`, CAST('10' AS BIGINT) AS `s26`, `s27` AS `s27`, `s28` AS `s28` FROM q10),\nq12 AS (SELECT l.`s20` AS `s20`, l.`s21` AS `s21`, l.`s22` AS `s22`, l.`s23` AS `s23`, l.`s24` AS `s24`, r.`s25` AS `s25`, r.`s26` AS `s26`, r.`s27` AS `s27`, r.`s28` AS `s28` FROM q9 l INNER JOIN q11 r ON TRUE),\nq13 AS (SELECT `id` AS `s29`, `age` AS `s31`, `id` AS `s32`, `name` AS `s33` FROM `people`),\nq14 AS (SELECT `s29` AS `s29`, CAST('1' AS BIGINT) AS `s30`, `s31` AS `s31`, `s32` AS `s32`, `s33` AS `s33` FROM q13),\nq15 AS (SELECT l.`s20` AS `s20`, l.`s21` AS `s21`, l.`s22` AS `s22`, l.`s23` AS `s23`, l.`s24` AS `s24`, l.`s25` AS `s25`, l.`s26` AS `s26`, l.`s27` AS `s27`, l.`s28` AS `s28`, r.`s29` AS `s29`, r.`s30` AS `s30`, r.`s31` AS `s31`, r.`s32` AS `s32`, r.`s33` AS `s33` FROM q12 l INNER JOIN q14 r ON TRUE),\nq16 AS (SELECT * FROM q15 WHERE ((`s27` = `s20`) AND (`s28` = `s29`))),\nq17 AS (SELECT `s21` AS `s34`, `s20` AS `s35`, `s30` AS `s36`, `s29` AS `s37`, `s26` AS `s38`, `s25` AS `s39` FROM q16) SELECT `s34` AS `sg`, `s35` AS `si`, `s36` AS `dg`, `s37` AS `di`, `s38` AS `eg`, `s39` AS `ei` FROM q17",
+        "max_hops": null,
+        "min_hops": 1,
+        "mode": "Trail",
+        "seed_sql": "WITH q0 AS (SELECT 1 AS `@unit`),\nq1 AS (SELECT 1 AS `@unit`),\nq2 AS (SELECT `id` AS `s12`, `age` AS `s14`, `id` AS `s15`, `name` AS `s16` FROM `people`),\nq3 AS (SELECT `s12` AS `s12`, CAST('1' AS BIGINT) AS `s13`, `s14` AS `s14`, `s15` AS `s15`, `s16` AS `s16`, CAST(NULL AS BIGINT) AS `s17` FROM q2),\nq4 AS (SELECT `id` AS `s12`, `age` AS `s14`, `id` AS `s15`, `name` AS `s16`, `salary` AS `s17` FROM `employees`),\nq5 AS (SELECT `s12` AS `s12`, CAST('2' AS BIGINT) AS `s13`, `s14` AS `s14`, `s15` AS `s15`, `s16` AS `s16`, `s17` AS `s17` FROM q4),\nq6 AS (SELECT `s12` AS `s12`, `s13` AS `s13`, `s14` AS `s14`, `s15` AS `s15`, `s16` AS `s16`, `s17` AS `s17` FROM q3 UNION ALL SELECT `s12` AS `s12`, `s13` AS `s13`, `s14` AS `s14`, `s15` AS `s15`, `s16` AS `s16`, `s17` AS `s17` FROM q5),\nq7 AS (SELECT `s13` AS `s18`, `s12` AS `s19` FROM q6) SELECT `s18` AS `sg`, `s19` AS `si` FROM q7",
+        "shortest_walk": false,
+        "view": "__grust_traverse_0"
+      }
+    ]
+  },
+  {
+    "expected": [
+      [
+        "Alice"
+      ],
+      [
+        "Dave"
+      ],
+      [
+        "Eve"
+      ]
+    ],
+    "explain": null,
+    "name": "cypher_parameter",
+    "optimized_sql": "WITH q0 AS (SELECT 1 AS `@unit`),\nq1 AS (SELECT 1 AS `@unit`),\nq2 AS (SELECT `id` AS `s0`, `age` AS `s2`, `id` AS `s3`, `name` AS `s4` FROM `people`),\nq3 AS (SELECT `s0` AS `s0`, CAST('1' AS BIGINT) AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4`, CAST(NULL AS BIGINT) AS `s5` FROM q2),\nq4 AS (SELECT `id` AS `s0`, `age` AS `s2`, `id` AS `s3`, `name` AS `s4`, `salary` AS `s5` FROM `employees`),\nq5 AS (SELECT `s0` AS `s0`, CAST('2' AS BIGINT) AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4`, `s5` AS `s5` FROM q4),\nq6 AS (SELECT `s0` AS `s0`, `s1` AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4`, `s5` AS `s5` FROM q3 UNION ALL SELECT `s0` AS `s0`, `s1` AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4`, `s5` AS `s5` FROM q5),\nq7 AS (SELECT r.`s0` AS `s0`, r.`s1` AS `s1`, r.`s2` AS `s2`, r.`s3` AS `s3`, r.`s4` AS `s4`, r.`s5` AS `s5` FROM q1 l INNER JOIN q6 r ON TRUE),\nq8 AS (SELECT r.`s0` AS `s0`, r.`s1` AS `s1`, r.`s2` AS `s2`, r.`s3` AS `s3`, r.`s4` AS `s4`, r.`s5` AS `s5` FROM q0 l INNER JOIN q7 r ON (r.`s2` >= CAST(CAST('30' AS BIGINT) AS BIGINT))),\nq9 AS (SELECT `s4` AS `s6` FROM q8),\nq10 AS (SELECT * FROM q9 ORDER BY `s6` ASC NULLS LAST) SELECT `s6` AS `name` FROM q10 ORDER BY `s6` ASC NULLS LAST",
+    "optimized_traversals": [],
+    "ordered": true,
+    "output_types": [
+      "string"
+    ],
+    "query_text": "MATCH (n:Person) WHERE n.age >= $minimum RETURN n.name AS name ORDER BY name",
+    "sql": "WITH q0 AS (SELECT 1 AS `@unit`),\nq1 AS (SELECT 1 AS `@unit`),\nq2 AS (SELECT `id` AS `s0`, `age` AS `s2`, `id` AS `s3`, `name` AS `s4` FROM `people`),\nq3 AS (SELECT `s0` AS `s0`, CAST('1' AS BIGINT) AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4`, CAST(NULL AS BIGINT) AS `s5` FROM q2),\nq4 AS (SELECT `id` AS `s0`, `age` AS `s2`, `id` AS `s3`, `name` AS `s4`, `salary` AS `s5` FROM `employees`),\nq5 AS (SELECT `s0` AS `s0`, CAST('2' AS BIGINT) AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4`, `s5` AS `s5` FROM q4),\nq6 AS (SELECT `s0` AS `s0`, `s1` AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4`, `s5` AS `s5` FROM q3 UNION ALL SELECT `s0` AS `s0`, `s1` AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4`, `s5` AS `s5` FROM q5),\nq7 AS (SELECT r.`s0` AS `s0`, r.`s1` AS `s1`, r.`s2` AS `s2`, r.`s3` AS `s3`, r.`s4` AS `s4`, r.`s5` AS `s5` FROM q1 l INNER JOIN q6 r ON TRUE),\nq8 AS (SELECT r.`s0` AS `s0`, r.`s1` AS `s1`, r.`s2` AS `s2`, r.`s3` AS `s3`, r.`s4` AS `s4`, r.`s5` AS `s5` FROM q0 l INNER JOIN q7 r ON (r.`s2` >= CAST(CAST('30' AS BIGINT) AS BIGINT))),\nq9 AS (SELECT `s4` AS `s6` FROM q8),\nq10 AS (SELECT * FROM q9 ORDER BY `s6` ASC NULLS LAST) SELECT `s6` AS `name` FROM q10 ORDER BY `s6` ASC NULLS LAST",
+    "trace": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression"
+    ],
+    "traversals": []
+  },
+  {
+    "expected": [
+      [
+        1,
+        null
+      ],
+      [
+        2,
+        null
+      ],
+      [
+        3,
+        1
+      ],
+      [
+        4,
+        null
+      ],
+      [
+        5,
+        null
+      ]
+    ],
+    "explain": null,
+    "name": "cypher_optional_on",
+    "optimized_sql": "WITH q0 AS (SELECT 1 AS `@unit`),\nq1 AS (SELECT 1 AS `@unit`),\nq2 AS (SELECT `id` AS `s0`, `age` AS `s2`, `id` AS `s3`, `name` AS `s4` FROM `people`),\nq3 AS (SELECT `s0` AS `s0`, CAST('1' AS BIGINT) AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4`, CAST(NULL AS BIGINT) AS `s5` FROM q2),\nq4 AS (SELECT `id` AS `s0`, `age` AS `s2`, `id` AS `s3`, `name` AS `s4`, `salary` AS `s5` FROM `employees`),\nq5 AS (SELECT `s0` AS `s0`, CAST('2' AS BIGINT) AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4`, `s5` AS `s5` FROM q4),\nq6 AS (SELECT `s0` AS `s0`, `s1` AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4`, `s5` AS `s5` FROM q3 UNION ALL SELECT `s0` AS `s0`, `s1` AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4`, `s5` AS `s5` FROM q5),\nq7 AS (SELECT r.`s0` AS `s0`, r.`s1` AS `s1`, r.`s2` AS `s2`, r.`s3` AS `s3`, r.`s4` AS `s4`, r.`s5` AS `s5` FROM q1 l INNER JOIN q6 r ON TRUE),\nq8 AS (SELECT r.`s0` AS `s0`, r.`s1` AS `s1`, r.`s2` AS `s2`, r.`s3` AS `s3`, r.`s4` AS `s4`, r.`s5` AS `s5` FROM q0 l INNER JOIN q7 r ON TRUE),\nq9 AS (SELECT `id` AS `s11`, `src` AS `s13`, `dst` AS `s14` FROM `knows`),\nq10 AS (SELECT `s11` AS `s11`, CAST('10' AS BIGINT) AS `s12`, `s13` AS `s13`, `s14` AS `s14` FROM q9),\nq11 AS (SELECT `id` AS `s15`, `age` AS `s17`, `id` AS `s18`, `name` AS `s19` FROM `people`),\nq12 AS (SELECT `s15` AS `s15`, CAST('1' AS BIGINT) AS `s16`, `s17` AS `s17`, `s18` AS `s18`, `s19` AS `s19` FROM q11),\nq13 AS (SELECT 1 AS `@unit`),\nq14 AS (SELECT l.`s15` AS `s15`, l.`s16` AS `s16`, l.`s17` AS `s17`, l.`s18` AS `s18`, l.`s19` AS `s19` FROM q12 l INNER JOIN q13 r ON TRUE),\nq15 AS (SELECT l.`s11` AS `s11`, l.`s12` AS `s12`, l.`s13` AS `s13`, l.`s14` AS `s14`, r.`s15` AS `s15`, r.`s16` AS `s16`, r.`s17` AS `s17`, r.`s18` AS `s18`, r.`s19` AS `s19` FROM q10 l INNER JOIN q14 r ON (l.`s14` = r.`s15`)),\nq16 AS (SELECT `id` AS `s6`, `age` AS `s8`, `id` AS `s9`, `name` AS `s10` FROM `people`),\nq17 AS (SELECT `s6` AS `s6`, CAST('1' AS BIGINT) AS `s7`, `s8` AS `s8`, `s9` AS `s9`, `s10` AS `s10` FROM q16),\nq18 AS (SELECT l.`s11` AS `s11`, l.`s12` AS `s12`, l.`s13` AS `s13`, l.`s14` AS `s14`, l.`s15` AS `s15`, l.`s16` AS `s16`, l.`s17` AS `s17`, l.`s18` AS `s18`, l.`s19` AS `s19`, r.`s6` AS `s6`, r.`s7` AS `s7`, r.`s8` AS `s8`, r.`s9` AS `s9`, r.`s10` AS `s10` FROM q15 l INNER JOIN q17 r ON (l.`s13` = r.`s6`)),\nq19 AS (SELECT l.`s0` AS `s0`, l.`s1` AS `s1`, l.`s2` AS `s2`, l.`s3` AS `s3`, l.`s4` AS `s4`, l.`s5` AS `s5`, r.`s6` AS `s6`, r.`s7` AS `s7`, r.`s8` AS `s8`, r.`s9` AS `s9`, r.`s10` AS `s10`, r.`s11` AS `s11`, r.`s12` AS `s12`, r.`s13` AS `s13`, r.`s14` AS `s14`, r.`s15` AS `s15`, r.`s16` AS `s16`, r.`s17` AS `s17`, r.`s18` AS `s18`, r.`s19` AS `s19` FROM q8 l LEFT JOIN q18 r ON (((l.`s0` = r.`s6`) AND (l.`s1` = r.`s7`)) AND (r.`s17` > CAST('25' AS BIGINT)))),\nq20 AS (SELECT `s3` AS `s20`, `s18` AS `s21` FROM q19),\nq21 AS (SELECT * FROM q20 ORDER BY `s20` ASC NULLS LAST, `s21` ASC NULLS LAST) SELECT `s20` AS `id`, `s21` AS `target` FROM q21 ORDER BY `s20` ASC NULLS LAST, `s21` ASC NULLS LAST",
+    "optimized_traversals": [],
+    "ordered": true,
+    "output_types": [
+      "bigint",
+      "bigint"
+    ],
+    "query_text": "MATCH (n:Person) OPTIONAL MATCH (n)-[:KNOWS]->(m:Person) WHERE m.age > 25 RETURN n.id AS id, m.id AS target ORDER BY id, target",
+    "sql": "WITH q0 AS (SELECT 1 AS `@unit`),\nq1 AS (SELECT 1 AS `@unit`),\nq2 AS (SELECT `id` AS `s0`, `age` AS `s2`, `id` AS `s3`, `name` AS `s4` FROM `people`),\nq3 AS (SELECT `s0` AS `s0`, CAST('1' AS BIGINT) AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4`, CAST(NULL AS BIGINT) AS `s5` FROM q2),\nq4 AS (SELECT `id` AS `s0`, `age` AS `s2`, `id` AS `s3`, `name` AS `s4`, `salary` AS `s5` FROM `employees`),\nq5 AS (SELECT `s0` AS `s0`, CAST('2' AS BIGINT) AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4`, `s5` AS `s5` FROM q4),\nq6 AS (SELECT `s0` AS `s0`, `s1` AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4`, `s5` AS `s5` FROM q3 UNION ALL SELECT `s0` AS `s0`, `s1` AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4`, `s5` AS `s5` FROM q5),\nq7 AS (SELECT r.`s0` AS `s0`, r.`s1` AS `s1`, r.`s2` AS `s2`, r.`s3` AS `s3`, r.`s4` AS `s4`, r.`s5` AS `s5` FROM q1 l INNER JOIN q6 r ON TRUE),\nq8 AS (SELECT r.`s0` AS `s0`, r.`s1` AS `s1`, r.`s2` AS `s2`, r.`s3` AS `s3`, r.`s4` AS `s4`, r.`s5` AS `s5` FROM q0 l INNER JOIN q7 r ON TRUE),\nq9 AS (SELECT 1 AS `@unit`),\nq10 AS (SELECT `id` AS `s6`, `age` AS `s8`, `id` AS `s9`, `name` AS `s10` FROM `people`),\nq11 AS (SELECT `s6` AS `s6`, CAST('1' AS BIGINT) AS `s7`, `s8` AS `s8`, `s9` AS `s9`, `s10` AS `s10` FROM q10),\nq12 AS (SELECT `id` AS `s11`, `src` AS `s13`, `dst` AS `s14` FROM `knows`),\nq13 AS (SELECT `s11` AS `s11`, CAST('10' AS BIGINT) AS `s12`, `s13` AS `s13`, `s14` AS `s14` FROM q12),\nq14 AS (SELECT l.`s6` AS `s6`, l.`s7` AS `s7`, l.`s8` AS `s8`, l.`s9` AS `s9`, l.`s10` AS `s10`, r.`s11` AS `s11`, r.`s12` AS `s12`, r.`s13` AS `s13`, r.`s14` AS `s14` FROM q11 l INNER JOIN q13 r ON TRUE),\nq15 AS (SELECT `id` AS `s15`, `age` AS `s17`, `id` AS `s18`, `name` AS `s19` FROM `people`),\nq16 AS (SELECT `s15` AS `s15`, CAST('1' AS BIGINT) AS `s16`, `s17` AS `s17`, `s18` AS `s18`, `s19` AS `s19` FROM q15),\nq17 AS (SELECT l.`s6` AS `s6`, l.`s7` AS `s7`, l.`s8` AS `s8`, l.`s9` AS `s9`, l.`s10` AS `s10`, l.`s11` AS `s11`, l.`s12` AS `s12`, l.`s13` AS `s13`, l.`s14` AS `s14`, r.`s15` AS `s15`, r.`s16` AS `s16`, r.`s17` AS `s17`, r.`s18` AS `s18`, r.`s19` AS `s19` FROM q14 l INNER JOIN q16 r ON TRUE),\nq18 AS (SELECT * FROM q17 WHERE ((`s13` = `s6`) AND (`s14` = `s15`))),\nq19 AS (SELECT r.`s6` AS `s6`, r.`s7` AS `s7`, r.`s8` AS `s8`, r.`s9` AS `s9`, r.`s10` AS `s10`, r.`s11` AS `s11`, r.`s12` AS `s12`, r.`s13` AS `s13`, r.`s14` AS `s14`, r.`s15` AS `s15`, r.`s16` AS `s16`, r.`s17` AS `s17`, r.`s18` AS `s18`, r.`s19` AS `s19` FROM q9 l INNER JOIN q18 r ON TRUE),\nq20 AS (SELECT l.`s0` AS `s0`, l.`s1` AS `s1`, l.`s2` AS `s2`, l.`s3` AS `s3`, l.`s4` AS `s4`, l.`s5` AS `s5`, r.`s6` AS `s6`, r.`s7` AS `s7`, r.`s8` AS `s8`, r.`s9` AS `s9`, r.`s10` AS `s10`, r.`s11` AS `s11`, r.`s12` AS `s12`, r.`s13` AS `s13`, r.`s14` AS `s14`, r.`s15` AS `s15`, r.`s16` AS `s16`, r.`s17` AS `s17`, r.`s18` AS `s18`, r.`s19` AS `s19` FROM q8 l LEFT JOIN q19 r ON (((l.`s0` = r.`s6`) AND (l.`s1` = r.`s7`)) AND (r.`s17` > CAST('25' AS BIGINT)))),\nq21 AS (SELECT `s3` AS `s20`, `s18` AS `s21` FROM q20),\nq22 AS (SELECT * FROM q21 ORDER BY `s20` ASC NULLS LAST, `s21` ASC NULLS LAST) SELECT `s20` AS `id`, `s21` AS `target` FROM q22 ORDER BY `s20` ASC NULLS LAST, `s21` ASC NULLS LAST",
+    "trace": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "costed inner region: 4 relations, before=Some(251.0), after=59, NDV equality estimates; absent selectivity uses 1"
+    ],
+    "traversals": []
+  },
+  {
+    "expected": [
+      [
+        1,
+        2
+      ],
+      [
+        1,
+        2
+      ],
+      [
+        2,
+        3
+      ],
+      [
+        3,
+        3
+      ],
+      [
+        3,
+        1
+      ]
+    ],
+    "explain": null,
+    "name": "cypher_multiset",
+    "optimized_sql": "WITH q0 AS (SELECT `id` AS `s5`, `src` AS `s7`, `dst` AS `s8` FROM `knows`),\nq1 AS (SELECT `s5` AS `s5`, CAST('10' AS BIGINT) AS `s6`, `s7` AS `s7`, `s8` AS `s8` FROM q0),\nq2 AS (SELECT `id` AS `s9`, `age` AS `s11`, `id` AS `s12`, `name` AS `s13` FROM `people`),\nq3 AS (SELECT `s9` AS `s9`, CAST('1' AS BIGINT) AS `s10`, `s11` AS `s11`, `s12` AS `s12`, `s13` AS `s13` FROM q2),\nq4 AS (SELECT 1 AS `@unit`),\nq5 AS (SELECT 1 AS `@unit`),\nq6 AS (SELECT 1 AS `@unit` FROM q4 l INNER JOIN q5 r ON TRUE),\nq7 AS (SELECT l.`s9` AS `s9`, l.`s10` AS `s10`, l.`s11` AS `s11`, l.`s12` AS `s12`, l.`s13` AS `s13` FROM q3 l INNER JOIN q6 r ON TRUE),\nq8 AS (SELECT l.`s5` AS `s5`, l.`s6` AS `s6`, l.`s7` AS `s7`, l.`s8` AS `s8`, r.`s9` AS `s9`, r.`s10` AS `s10`, r.`s11` AS `s11`, r.`s12` AS `s12`, r.`s13` AS `s13` FROM q1 l INNER JOIN q7 r ON (l.`s8` = r.`s9`)),\nq9 AS (SELECT `id` AS `s0`, `age` AS `s2`, `id` AS `s3`, `name` AS `s4` FROM `people`),\nq10 AS (SELECT `s0` AS `s0`, CAST('1' AS BIGINT) AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4` FROM q9),\nq11 AS (SELECT l.`s5` AS `s5`, l.`s6` AS `s6`, l.`s7` AS `s7`, l.`s8` AS `s8`, l.`s9` AS `s9`, l.`s10` AS `s10`, l.`s11` AS `s11`, l.`s12` AS `s12`, l.`s13` AS `s13`, r.`s0` AS `s0`, r.`s1` AS `s1`, r.`s2` AS `s2`, r.`s3` AS `s3`, r.`s4` AS `s4` FROM q8 l INNER JOIN q10 r ON (l.`s7` = r.`s0`)),\nq12 AS (SELECT `s3` AS `s14`, `s12` AS `s15` FROM q11) SELECT `s14` AS `src`, `s15` AS `dst` FROM q12",
+    "optimized_traversals": [],
+    "ordered": false,
+    "output_types": [
+      "bigint",
+      "bigint"
+    ],
+    "query_text": "MATCH (a:Person)-[:KNOWS]->(b:Person) RETURN a.id AS src, b.id AS dst",
+    "sql": "WITH q0 AS (SELECT 1 AS `@unit`),\nq1 AS (SELECT 1 AS `@unit`),\nq2 AS (SELECT `id` AS `s0`, `age` AS `s2`, `id` AS `s3`, `name` AS `s4` FROM `people`),\nq3 AS (SELECT `s0` AS `s0`, CAST('1' AS BIGINT) AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4` FROM q2),\nq4 AS (SELECT `id` AS `s5`, `src` AS `s7`, `dst` AS `s8` FROM `knows`),\nq5 AS (SELECT `s5` AS `s5`, CAST('10' AS BIGINT) AS `s6`, `s7` AS `s7`, `s8` AS `s8` FROM q4),\nq6 AS (SELECT l.`s0` AS `s0`, l.`s1` AS `s1`, l.`s2` AS `s2`, l.`s3` AS `s3`, l.`s4` AS `s4`, r.`s5` AS `s5`, r.`s6` AS `s6`, r.`s7` AS `s7`, r.`s8` AS `s8` FROM q3 l INNER JOIN q5 r ON TRUE),\nq7 AS (SELECT `id` AS `s9`, `age` AS `s11`, `id` AS `s12`, `name` AS `s13` FROM `people`),\nq8 AS (SELECT `s9` AS `s9`, CAST('1' AS BIGINT) AS `s10`, `s11` AS `s11`, `s12` AS `s12`, `s13` AS `s13` FROM q7),\nq9 AS (SELECT l.`s0` AS `s0`, l.`s1` AS `s1`, l.`s2` AS `s2`, l.`s3` AS `s3`, l.`s4` AS `s4`, l.`s5` AS `s5`, l.`s6` AS `s6`, l.`s7` AS `s7`, l.`s8` AS `s8`, r.`s9` AS `s9`, r.`s10` AS `s10`, r.`s11` AS `s11`, r.`s12` AS `s12`, r.`s13` AS `s13` FROM q6 l INNER JOIN q8 r ON TRUE),\nq10 AS (SELECT * FROM q9 WHERE ((`s7` = `s0`) AND (`s8` = `s9`))),\nq11 AS (SELECT r.`s0` AS `s0`, r.`s1` AS `s1`, r.`s2` AS `s2`, r.`s3` AS `s3`, r.`s4` AS `s4`, r.`s5` AS `s5`, r.`s6` AS `s6`, r.`s7` AS `s7`, r.`s8` AS `s8`, r.`s9` AS `s9`, r.`s10` AS `s10`, r.`s11` AS `s11`, r.`s12` AS `s12`, r.`s13` AS `s13` FROM q1 l INNER JOIN q10 r ON TRUE),\nq12 AS (SELECT r.`s0` AS `s0`, r.`s1` AS `s1`, r.`s2` AS `s2`, r.`s3` AS `s3`, r.`s4` AS `s4`, r.`s5` AS `s5`, r.`s6` AS `s6`, r.`s7` AS `s7`, r.`s8` AS `s8`, r.`s9` AS `s9`, r.`s10` AS `s10`, r.`s11` AS `s11`, r.`s12` AS `s12`, r.`s13` AS `s13` FROM q0 l INNER JOIN q11 r ON TRUE),\nq13 AS (SELECT `s3` AS `s14`, `s12` AS `s15` FROM q12) SELECT `s14` AS `src`, `s15` AS `dst` FROM q13",
+    "trace": [
+      "costed inner region: 5 relations, before=Some(267.0), after=63, NDV equality estimates; absent selectivity uses 1"
+    ],
+    "traversals": []
+  },
+  {
+    "expected": [
+      [
+        1,
+        2
+      ],
+      [
+        2,
+        3
+      ],
+      [
+        3,
+        3
+      ],
+      [
+        3,
+        1
+      ]
+    ],
+    "explain": null,
+    "name": "cypher_distinct",
+    "optimized_sql": "WITH q0 AS (SELECT `id` AS `s5`, `src` AS `s7`, `dst` AS `s8` FROM `knows`),\nq1 AS (SELECT `s5` AS `s5`, CAST('10' AS BIGINT) AS `s6`, `s7` AS `s7`, `s8` AS `s8` FROM q0),\nq2 AS (SELECT `id` AS `s9`, `age` AS `s11`, `id` AS `s12`, `name` AS `s13` FROM `people`),\nq3 AS (SELECT `s9` AS `s9`, CAST('1' AS BIGINT) AS `s10`, `s11` AS `s11`, `s12` AS `s12`, `s13` AS `s13` FROM q2),\nq4 AS (SELECT 1 AS `@unit`),\nq5 AS (SELECT 1 AS `@unit`),\nq6 AS (SELECT 1 AS `@unit` FROM q4 l INNER JOIN q5 r ON TRUE),\nq7 AS (SELECT l.`s9` AS `s9`, l.`s10` AS `s10`, l.`s11` AS `s11`, l.`s12` AS `s12`, l.`s13` AS `s13` FROM q3 l INNER JOIN q6 r ON TRUE),\nq8 AS (SELECT l.`s5` AS `s5`, l.`s6` AS `s6`, l.`s7` AS `s7`, l.`s8` AS `s8`, r.`s9` AS `s9`, r.`s10` AS `s10`, r.`s11` AS `s11`, r.`s12` AS `s12`, r.`s13` AS `s13` FROM q1 l INNER JOIN q7 r ON (l.`s8` = r.`s9`)),\nq9 AS (SELECT `id` AS `s0`, `age` AS `s2`, `id` AS `s3`, `name` AS `s4` FROM `people`),\nq10 AS (SELECT `s0` AS `s0`, CAST('1' AS BIGINT) AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4` FROM q9),\nq11 AS (SELECT l.`s5` AS `s5`, l.`s6` AS `s6`, l.`s7` AS `s7`, l.`s8` AS `s8`, l.`s9` AS `s9`, l.`s10` AS `s10`, l.`s11` AS `s11`, l.`s12` AS `s12`, l.`s13` AS `s13`, r.`s0` AS `s0`, r.`s1` AS `s1`, r.`s2` AS `s2`, r.`s3` AS `s3`, r.`s4` AS `s4` FROM q8 l INNER JOIN q10 r ON (l.`s7` = r.`s0`)),\nq12 AS (SELECT DISTINCT `s3` AS `s14`, `s12` AS `s15` FROM q11) SELECT `s14` AS `src`, `s15` AS `dst` FROM q12",
+    "optimized_traversals": [],
+    "ordered": false,
+    "output_types": [
+      "bigint",
+      "bigint"
+    ],
+    "query_text": "MATCH (a:Person)-[:KNOWS]->(b:Person) RETURN DISTINCT a.id AS src, b.id AS dst",
+    "sql": "WITH q0 AS (SELECT 1 AS `@unit`),\nq1 AS (SELECT 1 AS `@unit`),\nq2 AS (SELECT `id` AS `s0`, `age` AS `s2`, `id` AS `s3`, `name` AS `s4` FROM `people`),\nq3 AS (SELECT `s0` AS `s0`, CAST('1' AS BIGINT) AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4` FROM q2),\nq4 AS (SELECT `id` AS `s5`, `src` AS `s7`, `dst` AS `s8` FROM `knows`),\nq5 AS (SELECT `s5` AS `s5`, CAST('10' AS BIGINT) AS `s6`, `s7` AS `s7`, `s8` AS `s8` FROM q4),\nq6 AS (SELECT l.`s0` AS `s0`, l.`s1` AS `s1`, l.`s2` AS `s2`, l.`s3` AS `s3`, l.`s4` AS `s4`, r.`s5` AS `s5`, r.`s6` AS `s6`, r.`s7` AS `s7`, r.`s8` AS `s8` FROM q3 l INNER JOIN q5 r ON TRUE),\nq7 AS (SELECT `id` AS `s9`, `age` AS `s11`, `id` AS `s12`, `name` AS `s13` FROM `people`),\nq8 AS (SELECT `s9` AS `s9`, CAST('1' AS BIGINT) AS `s10`, `s11` AS `s11`, `s12` AS `s12`, `s13` AS `s13` FROM q7),\nq9 AS (SELECT l.`s0` AS `s0`, l.`s1` AS `s1`, l.`s2` AS `s2`, l.`s3` AS `s3`, l.`s4` AS `s4`, l.`s5` AS `s5`, l.`s6` AS `s6`, l.`s7` AS `s7`, l.`s8` AS `s8`, r.`s9` AS `s9`, r.`s10` AS `s10`, r.`s11` AS `s11`, r.`s12` AS `s12`, r.`s13` AS `s13` FROM q6 l INNER JOIN q8 r ON TRUE),\nq10 AS (SELECT * FROM q9 WHERE ((`s7` = `s0`) AND (`s8` = `s9`))),\nq11 AS (SELECT r.`s0` AS `s0`, r.`s1` AS `s1`, r.`s2` AS `s2`, r.`s3` AS `s3`, r.`s4` AS `s4`, r.`s5` AS `s5`, r.`s6` AS `s6`, r.`s7` AS `s7`, r.`s8` AS `s8`, r.`s9` AS `s9`, r.`s10` AS `s10`, r.`s11` AS `s11`, r.`s12` AS `s12`, r.`s13` AS `s13` FROM q1 l INNER JOIN q10 r ON TRUE),\nq12 AS (SELECT r.`s0` AS `s0`, r.`s1` AS `s1`, r.`s2` AS `s2`, r.`s3` AS `s3`, r.`s4` AS `s4`, r.`s5` AS `s5`, r.`s6` AS `s6`, r.`s7` AS `s7`, r.`s8` AS `s8`, r.`s9` AS `s9`, r.`s10` AS `s10`, r.`s11` AS `s11`, r.`s12` AS `s12`, r.`s13` AS `s13` FROM q0 l INNER JOIN q11 r ON TRUE),\nq13 AS (SELECT DISTINCT `s3` AS `s14`, `s12` AS `s15` FROM q12) SELECT `s14` AS `src`, `s15` AS `dst` FROM q13",
+    "trace": [
+      "costed inner region: 5 relations, before=Some(267.0), after=63, NDV equality estimates; absent selectivity uses 1"
+    ],
+    "traversals": []
+  },
+  {
+    "expected": [
+      [
+        "Dave"
+      ]
+    ],
+    "explain": null,
+    "name": "cypher_with",
+    "optimized_sql": "WITH q0 AS (SELECT 1 AS `@unit`),\nq1 AS (SELECT 1 AS `@unit`),\nq2 AS (SELECT `id` AS `s0`, `age` AS `s2`, `id` AS `s3`, `name` AS `s4` FROM `people`),\nq3 AS (SELECT `s0` AS `s0`, CAST('1' AS BIGINT) AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4`, CAST(NULL AS BIGINT) AS `s5` FROM q2),\nq4 AS (SELECT `id` AS `s0`, `age` AS `s2`, `id` AS `s3`, `name` AS `s4`, `salary` AS `s5` FROM `employees`),\nq5 AS (SELECT `s0` AS `s0`, CAST('2' AS BIGINT) AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4`, `s5` AS `s5` FROM q4),\nq6 AS (SELECT `s0` AS `s0`, `s1` AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4`, `s5` AS `s5` FROM q3 UNION ALL SELECT `s0` AS `s0`, `s1` AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4`, `s5` AS `s5` FROM q5),\nq7 AS (SELECT r.`s0` AS `s0`, r.`s1` AS `s1`, r.`s2` AS `s2`, r.`s3` AS `s3`, r.`s4` AS `s4`, r.`s5` AS `s5` FROM q1 l INNER JOIN q6 r ON TRUE),\nq8 AS (SELECT r.`s0` AS `s0`, r.`s1` AS `s1`, r.`s2` AS `s2`, r.`s3` AS `s3`, r.`s4` AS `s4`, r.`s5` AS `s5` FROM q0 l INNER JOIN q7 r ON TRUE),\nq9 AS (SELECT `s4` AS `s6`, `s2` AS `s7` FROM q8),\nq10 AS (SELECT * FROM q9 WHERE (`s7` >= CAST('30' AS BIGINT))),\nq11 AS (SELECT `s6` AS `s8` FROM q10),\nq12 AS (SELECT * FROM q11 ORDER BY `s8` ASC NULLS LAST LIMIT CAST('1' AS BIGINT) OFFSET CAST('1' AS BIGINT)) SELECT `s8` AS `name` FROM q12 ORDER BY `s8` ASC NULLS LAST",
+    "optimized_traversals": [],
+    "ordered": true,
+    "output_types": [
+      "string"
+    ],
+    "query_text": "MATCH (n:Person) WITH n.name AS name, n.age AS age WHERE age >= 30 RETURN name ORDER BY name SKIP 1 LIMIT 1",
+    "sql": "WITH q0 AS (SELECT 1 AS `@unit`),\nq1 AS (SELECT 1 AS `@unit`),\nq2 AS (SELECT `id` AS `s0`, `age` AS `s2`, `id` AS `s3`, `name` AS `s4` FROM `people`),\nq3 AS (SELECT `s0` AS `s0`, CAST('1' AS BIGINT) AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4`, CAST(NULL AS BIGINT) AS `s5` FROM q2),\nq4 AS (SELECT `id` AS `s0`, `age` AS `s2`, `id` AS `s3`, `name` AS `s4`, `salary` AS `s5` FROM `employees`),\nq5 AS (SELECT `s0` AS `s0`, CAST('2' AS BIGINT) AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4`, `s5` AS `s5` FROM q4),\nq6 AS (SELECT `s0` AS `s0`, `s1` AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4`, `s5` AS `s5` FROM q3 UNION ALL SELECT `s0` AS `s0`, `s1` AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4`, `s5` AS `s5` FROM q5),\nq7 AS (SELECT r.`s0` AS `s0`, r.`s1` AS `s1`, r.`s2` AS `s2`, r.`s3` AS `s3`, r.`s4` AS `s4`, r.`s5` AS `s5` FROM q1 l INNER JOIN q6 r ON TRUE),\nq8 AS (SELECT r.`s0` AS `s0`, r.`s1` AS `s1`, r.`s2` AS `s2`, r.`s3` AS `s3`, r.`s4` AS `s4`, r.`s5` AS `s5` FROM q0 l INNER JOIN q7 r ON TRUE),\nq9 AS (SELECT `s4` AS `s6`, `s2` AS `s7` FROM q8),\nq10 AS (SELECT * FROM q9 WHERE (`s7` >= CAST('30' AS BIGINT))),\nq11 AS (SELECT `s6` AS `s8` FROM q10),\nq12 AS (SELECT * FROM q11 ORDER BY `s8` ASC NULLS LAST LIMIT CAST('1' AS BIGINT) OFFSET CAST('1' AS BIGINT)) SELECT `s8` AS `name` FROM q12 ORDER BY `s8` ASC NULLS LAST",
+    "trace": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression"
+    ],
+    "traversals": []
+  },
+  {
+    "expected": [
+      [
+        1,
+        20
+      ],
+      [
+        1,
+        30
+      ],
+      [
+        1,
+        35
+      ],
+      [
+        1,
+        40
+      ],
+      [
+        1,
+        null
+      ]
+    ],
+    "explain": null,
+    "name": "cypher_aggregate_order",
+    "optimized_sql": "WITH q0 AS (SELECT 1 AS `@unit`),\nq1 AS (SELECT 1 AS `@unit`),\nq2 AS (SELECT `id` AS `s0`, `age` AS `s2`, `id` AS `s3`, `name` AS `s4` FROM `people`),\nq3 AS (SELECT `s0` AS `s0`, CAST('1' AS BIGINT) AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4`, CAST(NULL AS BIGINT) AS `s5` FROM q2),\nq4 AS (SELECT `id` AS `s0`, `age` AS `s2`, `id` AS `s3`, `name` AS `s4`, `salary` AS `s5` FROM `employees`),\nq5 AS (SELECT `s0` AS `s0`, CAST('2' AS BIGINT) AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4`, `s5` AS `s5` FROM q4),\nq6 AS (SELECT `s0` AS `s0`, `s1` AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4`, `s5` AS `s5` FROM q3 UNION ALL SELECT `s0` AS `s0`, `s1` AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4`, `s5` AS `s5` FROM q5),\nq7 AS (SELECT r.`s0` AS `s0`, r.`s1` AS `s1`, r.`s2` AS `s2`, r.`s3` AS `s3`, r.`s4` AS `s4`, r.`s5` AS `s5` FROM q1 l INNER JOIN q6 r ON TRUE),\nq8 AS (SELECT r.`s0` AS `s0`, r.`s1` AS `s1`, r.`s2` AS `s2`, r.`s3` AS `s3`, r.`s4` AS `s4`, r.`s5` AS `s5` FROM q0 l INNER JOIN q7 r ON TRUE),\nq9 AS (SELECT `s2` AS `s6`, `count`(CAST('1' AS BIGINT)) AS `s7` FROM q8 GROUP BY `s2`),\nq10 AS (SELECT `s7` AS `s8`, `s6` AS `s9` FROM q9),\nq11 AS (SELECT * FROM q10 ORDER BY `s9` ASC NULLS LAST) SELECT `s8` AS `total`, `s9` AS `age` FROM q11 ORDER BY `s9` ASC NULLS LAST",
+    "optimized_traversals": [],
+    "ordered": true,
+    "output_types": [
+      "bigint",
+      "bigint"
+    ],
+    "query_text": "MATCH (n:Person) RETURN count(*) AS total, n.age AS age ORDER BY age",
+    "sql": "WITH q0 AS (SELECT 1 AS `@unit`),\nq1 AS (SELECT 1 AS `@unit`),\nq2 AS (SELECT `id` AS `s0`, `age` AS `s2`, `id` AS `s3`, `name` AS `s4` FROM `people`),\nq3 AS (SELECT `s0` AS `s0`, CAST('1' AS BIGINT) AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4`, CAST(NULL AS BIGINT) AS `s5` FROM q2),\nq4 AS (SELECT `id` AS `s0`, `age` AS `s2`, `id` AS `s3`, `name` AS `s4`, `salary` AS `s5` FROM `employees`),\nq5 AS (SELECT `s0` AS `s0`, CAST('2' AS BIGINT) AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4`, `s5` AS `s5` FROM q4),\nq6 AS (SELECT `s0` AS `s0`, `s1` AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4`, `s5` AS `s5` FROM q3 UNION ALL SELECT `s0` AS `s0`, `s1` AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4`, `s5` AS `s5` FROM q5),\nq7 AS (SELECT r.`s0` AS `s0`, r.`s1` AS `s1`, r.`s2` AS `s2`, r.`s3` AS `s3`, r.`s4` AS `s4`, r.`s5` AS `s5` FROM q1 l INNER JOIN q6 r ON TRUE),\nq8 AS (SELECT r.`s0` AS `s0`, r.`s1` AS `s1`, r.`s2` AS `s2`, r.`s3` AS `s3`, r.`s4` AS `s4`, r.`s5` AS `s5` FROM q0 l INNER JOIN q7 r ON TRUE),\nq9 AS (SELECT `s2` AS `s6`, `count`(CAST('1' AS BIGINT)) AS `s7` FROM q8 GROUP BY `s2`),\nq10 AS (SELECT `s7` AS `s8`, `s6` AS `s9` FROM q9),\nq11 AS (SELECT * FROM q10 ORDER BY `s9` ASC NULLS LAST) SELECT `s8` AS `total`, `s9` AS `age` FROM q11 ORDER BY `s9` ASC NULLS LAST",
+    "trace": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression"
+    ],
+    "traversals": []
+  },
+  {
+    "expected": [
+      [
+        1,
+        0
+      ]
+    ],
+    "explain": null,
+    "name": "cypher_count_optional",
+    "optimized_sql": "WITH q0 AS (SELECT 1 AS `@unit`),\nq1 AS (SELECT 1 AS `@unit`),\nq2 AS (SELECT `id` AS `s0`, `age` AS `s2`, `id` AS `s3`, `name` AS `s4` FROM `people`),\nq3 AS (SELECT `s0` AS `s0`, CAST('1' AS BIGINT) AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4`, CAST(NULL AS BIGINT) AS `s5` FROM q2),\nq4 AS (SELECT `id` AS `s0`, `age` AS `s2`, `id` AS `s3`, `name` AS `s4`, `salary` AS `s5` FROM `employees`),\nq5 AS (SELECT `s0` AS `s0`, CAST('2' AS BIGINT) AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4`, `s5` AS `s5` FROM q4),\nq6 AS (SELECT `s0` AS `s0`, `s1` AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4`, `s5` AS `s5` FROM q3 UNION ALL SELECT `s0` AS `s0`, `s1` AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4`, `s5` AS `s5` FROM q5),\nq7 AS (SELECT r.`s0` AS `s0`, r.`s1` AS `s1`, r.`s2` AS `s2`, r.`s3` AS `s3`, r.`s4` AS `s4`, r.`s5` AS `s5` FROM q1 l INNER JOIN q6 r ON TRUE),\nq8 AS (SELECT r.`s0` AS `s0`, r.`s1` AS `s1`, r.`s2` AS `s2`, r.`s3` AS `s3`, r.`s4` AS `s4`, r.`s5` AS `s5` FROM q0 l LEFT JOIN q7 r ON (r.`s3` = CAST('99' AS BIGINT))),\nq9 AS (SELECT `count`(CAST('1' AS BIGINT)) AS `s6`, `count`(`s3`) AS `s7` FROM q8),\nq10 AS (SELECT `s6` AS `s8`, `s7` AS `s9` FROM q9) SELECT `s8` AS `rows`, `s9` AS `present` FROM q10",
+    "optimized_traversals": [],
+    "ordered": false,
+    "output_types": [
+      "bigint",
+      "bigint"
+    ],
+    "query_text": "OPTIONAL MATCH (n:Person {id: 99}) RETURN count(*) AS rows, count(n.id) AS present",
+    "sql": "WITH q0 AS (SELECT 1 AS `@unit`),\nq1 AS (SELECT 1 AS `@unit`),\nq2 AS (SELECT `id` AS `s0`, `age` AS `s2`, `id` AS `s3`, `name` AS `s4` FROM `people`),\nq3 AS (SELECT `s0` AS `s0`, CAST('1' AS BIGINT) AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4`, CAST(NULL AS BIGINT) AS `s5` FROM q2),\nq4 AS (SELECT `id` AS `s0`, `age` AS `s2`, `id` AS `s3`, `name` AS `s4`, `salary` AS `s5` FROM `employees`),\nq5 AS (SELECT `s0` AS `s0`, CAST('2' AS BIGINT) AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4`, `s5` AS `s5` FROM q4),\nq6 AS (SELECT `s0` AS `s0`, `s1` AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4`, `s5` AS `s5` FROM q3 UNION ALL SELECT `s0` AS `s0`, `s1` AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4`, `s5` AS `s5` FROM q5),\nq7 AS (SELECT r.`s0` AS `s0`, r.`s1` AS `s1`, r.`s2` AS `s2`, r.`s3` AS `s3`, r.`s4` AS `s4`, r.`s5` AS `s5` FROM q1 l INNER JOIN q6 r ON TRUE),\nq8 AS (SELECT r.`s0` AS `s0`, r.`s1` AS `s1`, r.`s2` AS `s2`, r.`s3` AS `s3`, r.`s4` AS `s4`, r.`s5` AS `s5` FROM q0 l LEFT JOIN q7 r ON (r.`s3` = CAST('99' AS BIGINT))),\nq9 AS (SELECT `count`(CAST('1' AS BIGINT)) AS `s6`, `count`(`s3`) AS `s7` FROM q8),\nq10 AS (SELECT `s6` AS `s8`, `s7` AS `s9` FROM q9) SELECT `s8` AS `rows`, `s9` AS `present` FROM q10",
+    "trace": [
+      "unchanged inner region: relation cap or non-immutable expression"
+    ],
+    "traversals": []
+  },
+  {
+    "expected": [
+      [
+        null
+      ],
+      [
+        2
+      ],
+      [
+        2
+      ],
+      [
+        1
+      ]
+    ],
+    "explain": null,
+    "name": "cypher_unwind",
+    "optimized_sql": "WITH q0 AS (SELECT 1 AS `@unit`),\nq1 AS (SELECT explode(array(CAST('1' AS BIGINT), CAST('2' AS BIGINT), CAST('2' AS BIGINT), NULL)) AS `s0` FROM q0),\nq2 AS (SELECT `s0` AS `s1` FROM q1),\nq3 AS (SELECT * FROM q2 ORDER BY `s1` DESC NULLS FIRST) SELECT `s1` AS `x` FROM q3 ORDER BY `s1` DESC NULLS FIRST",
+    "optimized_traversals": [],
+    "ordered": true,
+    "output_types": [
+      "bigint"
+    ],
+    "query_text": "UNWIND [1,2,2,null] AS x RETURN x ORDER BY x DESC",
+    "sql": "WITH q0 AS (SELECT 1 AS `@unit`),\nq1 AS (SELECT explode(array(CAST('1' AS BIGINT), CAST('2' AS BIGINT), CAST('2' AS BIGINT), NULL)) AS `s0` FROM q0),\nq2 AS (SELECT `s0` AS `s1` FROM q1),\nq3 AS (SELECT * FROM q2 ORDER BY `s1` DESC NULLS FIRST) SELECT `s1` AS `x` FROM q3 ORDER BY `s1` DESC NULLS FIRST",
+    "trace": [],
+    "traversals": []
+  },
+  {
+    "expected": [
+      [
+        1
+      ],
+      [
+        1
+      ]
+    ],
+    "explain": null,
+    "name": "cypher_union",
+    "optimized_sql": "WITH q0 AS (SELECT 1 AS `@unit`),\nq1 AS (SELECT CAST('1' AS BIGINT) AS `s0` FROM q0),\nq2 AS (SELECT 1 AS `@unit`),\nq3 AS (SELECT CAST('1' AS BIGINT) AS `s1` FROM q2),\nq4 AS (SELECT `s0` AS `s2` FROM q1 UNION SELECT `s1` AS `s2` FROM q3),\nq5 AS (SELECT 1 AS `@unit`),\nq6 AS (SELECT CAST('1' AS BIGINT) AS `s3` FROM q5),\nq7 AS (SELECT `s2` AS `s4` FROM q4 UNION ALL SELECT `s3` AS `s4` FROM q6) SELECT `s4` AS `x` FROM q7",
+    "optimized_traversals": [],
+    "ordered": false,
+    "output_types": [
+      "bigint"
+    ],
+    "query_text": "RETURN 1 AS x UNION RETURN 1 AS x UNION ALL RETURN 1 AS x",
+    "sql": "WITH q0 AS (SELECT 1 AS `@unit`),\nq1 AS (SELECT CAST('1' AS BIGINT) AS `s0` FROM q0),\nq2 AS (SELECT 1 AS `@unit`),\nq3 AS (SELECT CAST('1' AS BIGINT) AS `s1` FROM q2),\nq4 AS (SELECT `s0` AS `s2` FROM q1 UNION SELECT `s1` AS `s2` FROM q3),\nq5 AS (SELECT 1 AS `@unit`),\nq6 AS (SELECT CAST('1' AS BIGINT) AS `s3` FROM q5),\nq7 AS (SELECT `s2` AS `s4` FROM q4 UNION ALL SELECT `s3` AS `s4` FROM q6) SELECT `s4` AS `x` FROM q7",
+    "trace": [],
+    "traversals": []
+  },
+  {
+    "expected": [
+      [
+        "Alice"
+      ],
+      [
+        "Bob"
+      ],
+      [
+        "unknown"
+      ],
+      [
+        "Dave"
+      ],
+      [
+        "Eve"
+      ]
+    ],
+    "explain": null,
+    "name": "cypher_case",
+    "optimized_sql": "WITH q0 AS (SELECT 1 AS `@unit`),\nq1 AS (SELECT 1 AS `@unit`),\nq2 AS (SELECT `id` AS `s0`, `age` AS `s2`, `id` AS `s3`, `name` AS `s4` FROM `people`),\nq3 AS (SELECT `s0` AS `s0`, CAST('1' AS BIGINT) AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4`, CAST(NULL AS BIGINT) AS `s5` FROM q2),\nq4 AS (SELECT `id` AS `s0`, `age` AS `s2`, `id` AS `s3`, `name` AS `s4`, `salary` AS `s5` FROM `employees`),\nq5 AS (SELECT `s0` AS `s0`, CAST('2' AS BIGINT) AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4`, `s5` AS `s5` FROM q4),\nq6 AS (SELECT `s0` AS `s0`, `s1` AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4`, `s5` AS `s5` FROM q3 UNION ALL SELECT `s0` AS `s0`, `s1` AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4`, `s5` AS `s5` FROM q5),\nq7 AS (SELECT r.`s0` AS `s0`, r.`s1` AS `s1`, r.`s2` AS `s2`, r.`s3` AS `s3`, r.`s4` AS `s4`, r.`s5` AS `s5` FROM q1 l INNER JOIN q6 r ON TRUE),\nq8 AS (SELECT r.`s0` AS `s0`, r.`s1` AS `s1`, r.`s2` AS `s2`, r.`s3` AS `s3`, r.`s4` AS `s4`, r.`s5` AS `s5` FROM q0 l INNER JOIN q7 r ON TRUE),\nq9 AS (SELECT CASE WHEN (`s2` IS NULL) THEN decode(X'756e6b6e6f776e', 'UTF-8') ELSE `s4` END AS `s6` FROM q8) SELECT `s6` AS `name` FROM q9",
+    "optimized_traversals": [],
+    "ordered": false,
+    "output_types": [
+      "string"
+    ],
+    "query_text": "MATCH (n:Person) RETURN CASE WHEN n.age IS NULL THEN 'unknown' ELSE n.name END AS name",
+    "sql": "WITH q0 AS (SELECT 1 AS `@unit`),\nq1 AS (SELECT 1 AS `@unit`),\nq2 AS (SELECT `id` AS `s0`, `age` AS `s2`, `id` AS `s3`, `name` AS `s4` FROM `people`),\nq3 AS (SELECT `s0` AS `s0`, CAST('1' AS BIGINT) AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4`, CAST(NULL AS BIGINT) AS `s5` FROM q2),\nq4 AS (SELECT `id` AS `s0`, `age` AS `s2`, `id` AS `s3`, `name` AS `s4`, `salary` AS `s5` FROM `employees`),\nq5 AS (SELECT `s0` AS `s0`, CAST('2' AS BIGINT) AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4`, `s5` AS `s5` FROM q4),\nq6 AS (SELECT `s0` AS `s0`, `s1` AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4`, `s5` AS `s5` FROM q3 UNION ALL SELECT `s0` AS `s0`, `s1` AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4`, `s5` AS `s5` FROM q5),\nq7 AS (SELECT r.`s0` AS `s0`, r.`s1` AS `s1`, r.`s2` AS `s2`, r.`s3` AS `s3`, r.`s4` AS `s4`, r.`s5` AS `s5` FROM q1 l INNER JOIN q6 r ON TRUE),\nq8 AS (SELECT r.`s0` AS `s0`, r.`s1` AS `s1`, r.`s2` AS `s2`, r.`s3` AS `s3`, r.`s4` AS `s4`, r.`s5` AS `s5` FROM q0 l INNER JOIN q7 r ON TRUE),\nq9 AS (SELECT CASE WHEN (`s2` IS NULL) THEN decode(X'756e6b6e6f776e', 'UTF-8') ELSE `s4` END AS `s6` FROM q8) SELECT `s6` AS `name` FROM q9",
+    "trace": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression"
+    ],
+    "traversals": []
+  },
+  {
+    "expected": [
+      [
+        "one"
+      ],
+      [
+        "other"
+      ]
+    ],
+    "explain": null,
+    "name": "cypher_simple_case",
+    "optimized_sql": "WITH q0 AS (SELECT 1 AS `@unit`),\nq1 AS (SELECT explode(array(CAST('1' AS BIGINT), CAST('2' AS BIGINT))) AS `s0` FROM q0),\nq2 AS (SELECT CASE WHEN (`s0` = CAST('1' AS BIGINT)) THEN decode(X'6f6e65', 'UTF-8') ELSE decode(X'6f74686572', 'UTF-8') END AS `s1` FROM q1) SELECT `s1` AS `name` FROM q2",
+    "optimized_traversals": [],
+    "ordered": false,
+    "output_types": [
+      "string"
+    ],
+    "query_text": "UNWIND [1,2] AS x RETURN CASE x WHEN 1 THEN 'one' ELSE 'other' END AS name",
+    "sql": "WITH q0 AS (SELECT 1 AS `@unit`),\nq1 AS (SELECT explode(array(CAST('1' AS BIGINT), CAST('2' AS BIGINT))) AS `s0` FROM q0),\nq2 AS (SELECT CASE WHEN (`s0` = CAST('1' AS BIGINT)) THEN decode(X'6f6e65', 'UTF-8') ELSE decode(X'6f74686572', 'UTF-8') END AS `s1` FROM q1) SELECT `s1` AS `name` FROM q2",
+    "trace": [],
+    "traversals": []
+  },
+  {
+    "expected": [
+      [
+        1
+      ]
+    ],
+    "explain": null,
+    "name": "cypher_quoted",
+    "optimized_sql": "WITH q0 AS (SELECT 1 AS `@unit`),\nq1 AS (SELECT explode(array(CAST('1' AS BIGINT))) AS `s0` FROM q0),\nq2 AS (SELECT `s0` AS `s1` FROM q1) SELECT `s1` AS `result; --` FROM q2",
+    "optimized_traversals": [],
+    "ordered": false,
+    "output_types": [
+      "bigint"
+    ],
+    "query_text": "UNWIND [1] AS `odd name` RETURN `odd name` AS `result; --`",
+    "sql": "WITH q0 AS (SELECT 1 AS `@unit`),\nq1 AS (SELECT explode(array(CAST('1' AS BIGINT))) AS `s0` FROM q0),\nq2 AS (SELECT `s0` AS `s1` FROM q1) SELECT `s1` AS `result; --` FROM q2",
+    "trace": [],
+    "traversals": []
+  },
+  {
+    "expected": [
+      [
+        2,
+        1
+      ],
+      [
+        2,
+        1
+      ],
+      [
+        3,
+        2
+      ],
+      [
+        3,
+        3
+      ],
+      [
+        1,
+        3
+      ]
+    ],
+    "explain": null,
+    "name": "cypher_incoming",
+    "optimized_sql": "WITH q0 AS (SELECT `id` AS `s5`, `src` AS `s7`, `dst` AS `s8` FROM `knows`),\nq1 AS (SELECT `s5` AS `s5`, CAST('10' AS BIGINT) AS `s6`, `s7` AS `s7`, `s8` AS `s8` FROM q0),\nq2 AS (SELECT `id` AS `s9`, `age` AS `s11`, `id` AS `s12`, `name` AS `s13` FROM `people`),\nq3 AS (SELECT `s9` AS `s9`, CAST('1' AS BIGINT) AS `s10`, `s11` AS `s11`, `s12` AS `s12`, `s13` AS `s13` FROM q2),\nq4 AS (SELECT 1 AS `@unit`),\nq5 AS (SELECT 1 AS `@unit`),\nq6 AS (SELECT 1 AS `@unit` FROM q4 l INNER JOIN q5 r ON TRUE),\nq7 AS (SELECT l.`s9` AS `s9`, l.`s10` AS `s10`, l.`s11` AS `s11`, l.`s12` AS `s12`, l.`s13` AS `s13` FROM q3 l INNER JOIN q6 r ON TRUE),\nq8 AS (SELECT l.`s5` AS `s5`, l.`s6` AS `s6`, l.`s7` AS `s7`, l.`s8` AS `s8`, r.`s9` AS `s9`, r.`s10` AS `s10`, r.`s11` AS `s11`, r.`s12` AS `s12`, r.`s13` AS `s13` FROM q1 l INNER JOIN q7 r ON (l.`s7` = r.`s9`)),\nq9 AS (SELECT `id` AS `s0`, `age` AS `s2`, `id` AS `s3`, `name` AS `s4` FROM `people`),\nq10 AS (SELECT `s0` AS `s0`, CAST('1' AS BIGINT) AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4` FROM q9),\nq11 AS (SELECT l.`s5` AS `s5`, l.`s6` AS `s6`, l.`s7` AS `s7`, l.`s8` AS `s8`, l.`s9` AS `s9`, l.`s10` AS `s10`, l.`s11` AS `s11`, l.`s12` AS `s12`, l.`s13` AS `s13`, r.`s0` AS `s0`, r.`s1` AS `s1`, r.`s2` AS `s2`, r.`s3` AS `s3`, r.`s4` AS `s4` FROM q8 l INNER JOIN q10 r ON (l.`s8` = r.`s0`)),\nq12 AS (SELECT `s3` AS `s14`, `s12` AS `s15` FROM q11) SELECT `s14` AS `dst`, `s15` AS `src` FROM q12",
+    "optimized_traversals": [],
+    "ordered": false,
+    "output_types": [
+      "bigint",
+      "bigint"
+    ],
+    "query_text": "MATCH (a:Person)<-[:KNOWS]-(b:Person) RETURN a.id AS dst,b.id AS src",
+    "sql": "WITH q0 AS (SELECT 1 AS `@unit`),\nq1 AS (SELECT 1 AS `@unit`),\nq2 AS (SELECT `id` AS `s0`, `age` AS `s2`, `id` AS `s3`, `name` AS `s4` FROM `people`),\nq3 AS (SELECT `s0` AS `s0`, CAST('1' AS BIGINT) AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4` FROM q2),\nq4 AS (SELECT `id` AS `s5`, `src` AS `s7`, `dst` AS `s8` FROM `knows`),\nq5 AS (SELECT `s5` AS `s5`, CAST('10' AS BIGINT) AS `s6`, `s7` AS `s7`, `s8` AS `s8` FROM q4),\nq6 AS (SELECT l.`s0` AS `s0`, l.`s1` AS `s1`, l.`s2` AS `s2`, l.`s3` AS `s3`, l.`s4` AS `s4`, r.`s5` AS `s5`, r.`s6` AS `s6`, r.`s7` AS `s7`, r.`s8` AS `s8` FROM q3 l INNER JOIN q5 r ON TRUE),\nq7 AS (SELECT `id` AS `s9`, `age` AS `s11`, `id` AS `s12`, `name` AS `s13` FROM `people`),\nq8 AS (SELECT `s9` AS `s9`, CAST('1' AS BIGINT) AS `s10`, `s11` AS `s11`, `s12` AS `s12`, `s13` AS `s13` FROM q7),\nq9 AS (SELECT l.`s0` AS `s0`, l.`s1` AS `s1`, l.`s2` AS `s2`, l.`s3` AS `s3`, l.`s4` AS `s4`, l.`s5` AS `s5`, l.`s6` AS `s6`, l.`s7` AS `s7`, l.`s8` AS `s8`, r.`s9` AS `s9`, r.`s10` AS `s10`, r.`s11` AS `s11`, r.`s12` AS `s12`, r.`s13` AS `s13` FROM q6 l INNER JOIN q8 r ON TRUE),\nq10 AS (SELECT * FROM q9 WHERE ((`s8` = `s0`) AND (`s7` = `s9`))),\nq11 AS (SELECT r.`s0` AS `s0`, r.`s1` AS `s1`, r.`s2` AS `s2`, r.`s3` AS `s3`, r.`s4` AS `s4`, r.`s5` AS `s5`, r.`s6` AS `s6`, r.`s7` AS `s7`, r.`s8` AS `s8`, r.`s9` AS `s9`, r.`s10` AS `s10`, r.`s11` AS `s11`, r.`s12` AS `s12`, r.`s13` AS `s13` FROM q1 l INNER JOIN q10 r ON TRUE),\nq12 AS (SELECT r.`s0` AS `s0`, r.`s1` AS `s1`, r.`s2` AS `s2`, r.`s3` AS `s3`, r.`s4` AS `s4`, r.`s5` AS `s5`, r.`s6` AS `s6`, r.`s7` AS `s7`, r.`s8` AS `s8`, r.`s9` AS `s9`, r.`s10` AS `s10`, r.`s11` AS `s11`, r.`s12` AS `s12`, r.`s13` AS `s13` FROM q0 l INNER JOIN q11 r ON TRUE),\nq13 AS (SELECT `s3` AS `s14`, `s12` AS `s15` FROM q12) SELECT `s14` AS `dst`, `s15` AS `src` FROM q13",
+    "trace": [
+      "costed inner region: 5 relations, before=Some(267.0), after=63, NDV equality estimates; absent selectivity uses 1"
+    ],
+    "traversals": []
+  },
+  {
+    "expected": [
+      [
+        3,
+        1
+      ],
+      [
+        1,
+        2
+      ],
+      [
+        1,
+        2
+      ]
+    ],
+    "explain": null,
+    "name": "cypher_trail",
+    "optimized_sql": "WITH q0 AS (SELECT `id` AS `s18`, `age` AS `s20`, `id` AS `s21`, `name` AS `s22` FROM `people`),\nq1 AS (SELECT `s18` AS `s18`, CAST('1' AS BIGINT) AS `s19`, `s20` AS `s20`, `s21` AS `s21`, `s22` AS `s22` FROM q0),\nq2 AS (SELECT `id` AS `s14`, `src` AS `s16`, `dst` AS `s17` FROM `knows`),\nq3 AS (SELECT `s14` AS `s14`, CAST('10' AS BIGINT) AS `s15`, `s16` AS `s16`, `s17` AS `s17` FROM q2),\nq4 AS (SELECT `id` AS `s9`, `age` AS `s11`, `id` AS `s12`, `name` AS `s13` FROM `people`),\nq5 AS (SELECT `s9` AS `s9`, CAST('1' AS BIGINT) AS `s10`, `s11` AS `s11`, `s12` AS `s12`, `s13` AS `s13` FROM q4),\nq6 AS (SELECT `id` AS `s5`, `src` AS `s7`, `dst` AS `s8` FROM `knows`),\nq7 AS (SELECT `s5` AS `s5`, CAST('10' AS BIGINT) AS `s6`, `s7` AS `s7`, `s8` AS `s8` FROM q6),\nq8 AS (SELECT `id` AS `s0`, `age` AS `s2`, `id` AS `s3`, `name` AS `s4` FROM `people`),\nq9 AS (SELECT `s0` AS `s0`, CAST('1' AS BIGINT) AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4` FROM q8),\nq10 AS (SELECT * FROM q9 WHERE (`s3` = CAST('3' AS BIGINT))),\nq11 AS (SELECT 1 AS `@unit`),\nq12 AS (SELECT l.`s0` AS `s0`, l.`s1` AS `s1`, l.`s2` AS `s2`, l.`s3` AS `s3`, l.`s4` AS `s4` FROM q10 l INNER JOIN q11 r ON TRUE),\nq13 AS (SELECT 1 AS `@unit`),\nq14 AS (SELECT l.`s0` AS `s0`, l.`s1` AS `s1`, l.`s2` AS `s2`, l.`s3` AS `s3`, l.`s4` AS `s4` FROM q12 l INNER JOIN q13 r ON TRUE),\nq15 AS (SELECT l.`s5` AS `s5`, l.`s6` AS `s6`, l.`s7` AS `s7`, l.`s8` AS `s8`, r.`s0` AS `s0`, r.`s1` AS `s1`, r.`s2` AS `s2`, r.`s3` AS `s3`, r.`s4` AS `s4` FROM q7 l INNER JOIN q14 r ON (l.`s7` = r.`s0`)),\nq16 AS (SELECT l.`s9` AS `s9`, l.`s10` AS `s10`, l.`s11` AS `s11`, l.`s12` AS `s12`, l.`s13` AS `s13`, r.`s5` AS `s5`, r.`s6` AS `s6`, r.`s7` AS `s7`, r.`s8` AS `s8`, r.`s0` AS `s0`, r.`s1` AS `s1`, r.`s2` AS `s2`, r.`s3` AS `s3`, r.`s4` AS `s4` FROM q5 l INNER JOIN q15 r ON (r.`s8` = l.`s9`)),\nq17 AS (SELECT l.`s14` AS `s14`, l.`s15` AS `s15`, l.`s16` AS `s16`, l.`s17` AS `s17`, r.`s9` AS `s9`, r.`s10` AS `s10`, r.`s11` AS `s11`, r.`s12` AS `s12`, r.`s13` AS `s13`, r.`s5` AS `s5`, r.`s6` AS `s6`, r.`s7` AS `s7`, r.`s8` AS `s8`, r.`s0` AS `s0`, r.`s1` AS `s1`, r.`s2` AS `s2`, r.`s3` AS `s3`, r.`s4` AS `s4` FROM q3 l INNER JOIN q16 r ON ((l.`s16` = r.`s9`) AND ((r.`s6` <> l.`s15`) OR (r.`s5` <> l.`s14`)))),\nq18 AS (SELECT l.`s18` AS `s18`, l.`s19` AS `s19`, l.`s20` AS `s20`, l.`s21` AS `s21`, l.`s22` AS `s22`, r.`s14` AS `s14`, r.`s15` AS `s15`, r.`s16` AS `s16`, r.`s17` AS `s17`, r.`s9` AS `s9`, r.`s10` AS `s10`, r.`s11` AS `s11`, r.`s12` AS `s12`, r.`s13` AS `s13`, r.`s5` AS `s5`, r.`s6` AS `s6`, r.`s7` AS `s7`, r.`s8` AS `s8`, r.`s0` AS `s0`, r.`s1` AS `s1`, r.`s2` AS `s2`, r.`s3` AS `s3`, r.`s4` AS `s4` FROM q1 l INNER JOIN q17 r ON (r.`s17` = l.`s18`)),\nq19 AS (SELECT `s12` AS `s23`, `s21` AS `s24` FROM q18) SELECT `s23` AS `mid`, `s24` AS `dst` FROM q19",
+    "optimized_traversals": [],
+    "ordered": false,
+    "output_types": [
+      "bigint",
+      "bigint"
+    ],
+    "query_text": "MATCH (a:Person {id:3})-[:KNOWS]->(b)-[:KNOWS]->(c) RETURN b.id AS mid,c.id AS dst",
+    "sql": "WITH q0 AS (SELECT 1 AS `@unit`),\nq1 AS (SELECT 1 AS `@unit`),\nq2 AS (SELECT `id` AS `s0`, `age` AS `s2`, `id` AS `s3`, `name` AS `s4` FROM `people`),\nq3 AS (SELECT `s0` AS `s0`, CAST('1' AS BIGINT) AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4` FROM q2),\nq4 AS (SELECT `id` AS `s5`, `src` AS `s7`, `dst` AS `s8` FROM `knows`),\nq5 AS (SELECT `s5` AS `s5`, CAST('10' AS BIGINT) AS `s6`, `s7` AS `s7`, `s8` AS `s8` FROM q4),\nq6 AS (SELECT l.`s0` AS `s0`, l.`s1` AS `s1`, l.`s2` AS `s2`, l.`s3` AS `s3`, l.`s4` AS `s4`, r.`s5` AS `s5`, r.`s6` AS `s6`, r.`s7` AS `s7`, r.`s8` AS `s8` FROM q3 l INNER JOIN q5 r ON TRUE),\nq7 AS (SELECT `id` AS `s9`, `age` AS `s11`, `id` AS `s12`, `name` AS `s13` FROM `people`),\nq8 AS (SELECT `s9` AS `s9`, CAST('1' AS BIGINT) AS `s10`, `s11` AS `s11`, `s12` AS `s12`, `s13` AS `s13` FROM q7),\nq9 AS (SELECT l.`s0` AS `s0`, l.`s1` AS `s1`, l.`s2` AS `s2`, l.`s3` AS `s3`, l.`s4` AS `s4`, l.`s5` AS `s5`, l.`s6` AS `s6`, l.`s7` AS `s7`, l.`s8` AS `s8`, r.`s9` AS `s9`, r.`s10` AS `s10`, r.`s11` AS `s11`, r.`s12` AS `s12`, r.`s13` AS `s13` FROM q6 l INNER JOIN q8 r ON TRUE),\nq10 AS (SELECT `id` AS `s14`, `src` AS `s16`, `dst` AS `s17` FROM `knows`),\nq11 AS (SELECT `s14` AS `s14`, CAST('10' AS BIGINT) AS `s15`, `s16` AS `s16`, `s17` AS `s17` FROM q10),\nq12 AS (SELECT l.`s0` AS `s0`, l.`s1` AS `s1`, l.`s2` AS `s2`, l.`s3` AS `s3`, l.`s4` AS `s4`, l.`s5` AS `s5`, l.`s6` AS `s6`, l.`s7` AS `s7`, l.`s8` AS `s8`, l.`s9` AS `s9`, l.`s10` AS `s10`, l.`s11` AS `s11`, l.`s12` AS `s12`, l.`s13` AS `s13`, r.`s14` AS `s14`, r.`s15` AS `s15`, r.`s16` AS `s16`, r.`s17` AS `s17` FROM q9 l INNER JOIN q11 r ON TRUE),\nq13 AS (SELECT `id` AS `s18`, `age` AS `s20`, `id` AS `s21`, `name` AS `s22` FROM `people`),\nq14 AS (SELECT `s18` AS `s18`, CAST('1' AS BIGINT) AS `s19`, `s20` AS `s20`, `s21` AS `s21`, `s22` AS `s22` FROM q13),\nq15 AS (SELECT l.`s0` AS `s0`, l.`s1` AS `s1`, l.`s2` AS `s2`, l.`s3` AS `s3`, l.`s4` AS `s4`, l.`s5` AS `s5`, l.`s6` AS `s6`, l.`s7` AS `s7`, l.`s8` AS `s8`, l.`s9` AS `s9`, l.`s10` AS `s10`, l.`s11` AS `s11`, l.`s12` AS `s12`, l.`s13` AS `s13`, l.`s14` AS `s14`, l.`s15` AS `s15`, l.`s16` AS `s16`, l.`s17` AS `s17`, r.`s18` AS `s18`, r.`s19` AS `s19`, r.`s20` AS `s20`, r.`s21` AS `s21`, r.`s22` AS `s22` FROM q12 l INNER JOIN q14 r ON TRUE),\nq16 AS (SELECT * FROM q15 WHERE (((((`s7` = `s0`) AND (`s8` = `s9`)) AND (`s16` = `s9`)) AND (`s17` = `s18`)) AND ((`s6` <> `s15`) OR (`s5` <> `s14`)))),\nq17 AS (SELECT r.`s0` AS `s0`, r.`s1` AS `s1`, r.`s2` AS `s2`, r.`s3` AS `s3`, r.`s4` AS `s4`, r.`s5` AS `s5`, r.`s6` AS `s6`, r.`s7` AS `s7`, r.`s8` AS `s8`, r.`s9` AS `s9`, r.`s10` AS `s10`, r.`s11` AS `s11`, r.`s12` AS `s12`, r.`s13` AS `s13`, r.`s14` AS `s14`, r.`s15` AS `s15`, r.`s16` AS `s16`, r.`s17` AS `s17`, r.`s18` AS `s18`, r.`s19` AS `s19`, r.`s20` AS `s20`, r.`s21` AS `s21`, r.`s22` AS `s22` FROM q1 l INNER JOIN q16 r ON TRUE),\nq18 AS (SELECT r.`s0` AS `s0`, r.`s1` AS `s1`, r.`s2` AS `s2`, r.`s3` AS `s3`, r.`s4` AS `s4`, r.`s5` AS `s5`, r.`s6` AS `s6`, r.`s7` AS `s7`, r.`s8` AS `s8`, r.`s9` AS `s9`, r.`s10` AS `s10`, r.`s11` AS `s11`, r.`s12` AS `s12`, r.`s13` AS `s13`, r.`s14` AS `s14`, r.`s15` AS `s15`, r.`s16` AS `s16`, r.`s17` AS `s17`, r.`s18` AS `s18`, r.`s19` AS `s19`, r.`s20` AS `s20`, r.`s21` AS `s21`, r.`s22` AS `s22` FROM q0 l INNER JOIN q17 r ON (r.`s3` = CAST('3' AS BIGINT))),\nq19 AS (SELECT `s12` AS `s23`, `s21` AS `s24` FROM q18) SELECT `s23` AS `mid`, `s24` AS `dst` FROM q19",
+    "trace": [
+      "costed inner region: 7 relations, before=Some(4296.8125), after=67.75, NDV equality estimates; absent selectivity uses 1"
+    ],
+    "traversals": []
+  },
+  {
+    "expected": [
+      [
+        1
+      ],
+      [
+        2
+      ]
+    ],
+    "explain": null,
+    "name": "cypher_star",
+    "optimized_sql": "WITH q0 AS (SELECT 1 AS `@unit`),\nq1 AS (SELECT explode(array(CAST('1' AS BIGINT), CAST('2' AS BIGINT))) AS `s0` FROM q0),\nq2 AS (SELECT `s0` AS `s1` FROM q1),\nq3 AS (SELECT `s1` AS `s2` FROM q2) SELECT `s2` AS `x` FROM q3",
+    "optimized_traversals": [],
+    "ordered": false,
+    "output_types": [
+      "bigint"
+    ],
+    "query_text": "UNWIND [1,2] AS x WITH * RETURN *",
+    "sql": "WITH q0 AS (SELECT 1 AS `@unit`),\nq1 AS (SELECT explode(array(CAST('1' AS BIGINT), CAST('2' AS BIGINT))) AS `s0` FROM q0),\nq2 AS (SELECT `s0` AS `s1` FROM q1),\nq3 AS (SELECT `s1` AS `s2` FROM q2) SELECT `s2` AS `x` FROM q3",
+    "trace": [],
+    "traversals": []
+  },
+  {
+    "expected": [
+      [
+        "ALICE"
+      ]
+    ],
+    "explain": null,
+    "name": "cypher_scalar",
+    "optimized_sql": "WITH q0 AS (SELECT 1 AS `@unit`),\nq1 AS (SELECT 1 AS `@unit`),\nq2 AS (SELECT `id` AS `s0`, `age` AS `s2`, `id` AS `s3`, `name` AS `s4` FROM `people`),\nq3 AS (SELECT `s0` AS `s0`, CAST('1' AS BIGINT) AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4`, CAST(NULL AS BIGINT) AS `s5` FROM q2),\nq4 AS (SELECT `id` AS `s0`, `age` AS `s2`, `id` AS `s3`, `name` AS `s4`, `salary` AS `s5` FROM `employees`),\nq5 AS (SELECT `s0` AS `s0`, CAST('2' AS BIGINT) AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4`, `s5` AS `s5` FROM q4),\nq6 AS (SELECT `s0` AS `s0`, `s1` AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4`, `s5` AS `s5` FROM q3 UNION ALL SELECT `s0` AS `s0`, `s1` AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4`, `s5` AS `s5` FROM q5),\nq7 AS (SELECT r.`s0` AS `s0`, r.`s1` AS `s1`, r.`s2` AS `s2`, r.`s3` AS `s3`, r.`s4` AS `s4`, r.`s5` AS `s5` FROM q1 l INNER JOIN q6 r ON TRUE),\nq8 AS (SELECT r.`s0` AS `s0`, r.`s1` AS `s1`, r.`s2` AS `s2`, r.`s3` AS `s3`, r.`s4` AS `s4`, r.`s5` AS `s5` FROM q0 l INNER JOIN q7 r ON (r.`s3` = CAST('1' AS BIGINT))),\nq9 AS (SELECT `upper`(`s4`) AS `s6` FROM q8) SELECT `s6` AS `name` FROM q9",
+    "optimized_traversals": [],
+    "ordered": false,
+    "output_types": [
+      "string"
+    ],
+    "query_text": "MATCH (n:Person {id:1}) RETURN UPPER(n.name) AS name",
+    "sql": "WITH q0 AS (SELECT 1 AS `@unit`),\nq1 AS (SELECT 1 AS `@unit`),\nq2 AS (SELECT `id` AS `s0`, `age` AS `s2`, `id` AS `s3`, `name` AS `s4` FROM `people`),\nq3 AS (SELECT `s0` AS `s0`, CAST('1' AS BIGINT) AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4`, CAST(NULL AS BIGINT) AS `s5` FROM q2),\nq4 AS (SELECT `id` AS `s0`, `age` AS `s2`, `id` AS `s3`, `name` AS `s4`, `salary` AS `s5` FROM `employees`),\nq5 AS (SELECT `s0` AS `s0`, CAST('2' AS BIGINT) AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4`, `s5` AS `s5` FROM q4),\nq6 AS (SELECT `s0` AS `s0`, `s1` AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4`, `s5` AS `s5` FROM q3 UNION ALL SELECT `s0` AS `s0`, `s1` AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4`, `s5` AS `s5` FROM q5),\nq7 AS (SELECT r.`s0` AS `s0`, r.`s1` AS `s1`, r.`s2` AS `s2`, r.`s3` AS `s3`, r.`s4` AS `s4`, r.`s5` AS `s5` FROM q1 l INNER JOIN q6 r ON TRUE),\nq8 AS (SELECT r.`s0` AS `s0`, r.`s1` AS `s1`, r.`s2` AS `s2`, r.`s3` AS `s3`, r.`s4` AS `s4`, r.`s5` AS `s5` FROM q0 l INNER JOIN q7 r ON (r.`s3` = CAST('1' AS BIGINT))),\nq9 AS (SELECT `upper`(`s4`) AS `s6` FROM q8) SELECT `s6` AS `name` FROM q9",
+    "trace": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression"
+    ],
+    "traversals": []
+  },
+  {
+    "expected": [
+      [
+        2
+      ],
+      [
+        2
+      ],
+      [
+        3
+      ],
+      [
+        3
+      ]
+    ],
+    "explain": null,
+    "name": "cypher_bounded",
+    "optimized_sql": "WITH q0 AS (SELECT 1 AS `@unit`),\nq1 AS (SELECT 1 AS `@unit`),\nq2 AS (SELECT `id` AS `s24`, `age` AS `s26`, `id` AS `s27`, `name` AS `s28` FROM `people`),\nq3 AS (SELECT `s24` AS `s24`, CAST('1' AS BIGINT) AS `s25`, `s26` AS `s26`, `s27` AS `s27`, `s28` AS `s28` FROM q2),\nq4 AS (SELECT `id` AS `s20`, `src` AS `s22`, `dst` AS `s23` FROM `knows`),\nq5 AS (SELECT `s20` AS `s20`, CAST('10' AS BIGINT) AS `s21`, `s22` AS `s22`, `s23` AS `s23` FROM q4),\nq6 AS (SELECT `id` AS `s15`, `age` AS `s17`, `id` AS `s18`, `name` AS `s19` FROM `people`),\nq7 AS (SELECT `s15` AS `s15`, CAST('1' AS BIGINT) AS `s16`, `s17` AS `s17`, `s18` AS `s18`, `s19` AS `s19` FROM q6),\nq8 AS (SELECT * FROM q7 WHERE (`s18` = CAST('1' AS BIGINT))),\nq9 AS (SELECT l.`s20` AS `s20`, l.`s21` AS `s21`, l.`s22` AS `s22`, l.`s23` AS `s23`, r.`s15` AS `s15`, r.`s16` AS `s16`, r.`s17` AS `s17`, r.`s18` AS `s18`, r.`s19` AS `s19` FROM q5 l INNER JOIN q8 r ON (l.`s22` = r.`s15`)),\nq10 AS (SELECT l.`s24` AS `s24`, l.`s25` AS `s25`, l.`s26` AS `s26`, l.`s27` AS `s27`, l.`s28` AS `s28`, r.`s20` AS `s20`, r.`s21` AS `s21`, r.`s22` AS `s22`, r.`s23` AS `s23`, r.`s15` AS `s15`, r.`s16` AS `s16`, r.`s17` AS `s17`, r.`s18` AS `s18`, r.`s19` AS `s19` FROM q3 l INNER JOIN q9 r ON (r.`s23` = l.`s24`)),\nq11 AS (SELECT `s15` AS `s0`, `s16` AS `s1`, `s17` AS `s2`, `s18` AS `s3`, `s19` AS `s4`, CAST(NULL AS BIGINT) AS `s5`, `s24` AS `s6`, `s25` AS `s7`, `s26` AS `s8`, `s27` AS `s9`, `s28` AS `s10`, CAST(NULL AS BIGINT) AS `s11`, array(named_struct('group', `s21`, 'identity', `s20`)) AS `s12`, array(named_struct('group', `s16`, 'identity', `s15`), named_struct('group', `s25`, 'identity', `s24`)) AS `s13`, CAST('1' AS BIGINT) AS `s14` FROM q10),\nq12 AS (SELECT `id` AS `s47`, `age` AS `s49`, `id` AS `s50`, `name` AS `s51` FROM `people`),\nq13 AS (SELECT `s47` AS `s47`, CAST('1' AS BIGINT) AS `s48`, `s49` AS `s49`, `s50` AS `s50`, `s51` AS `s51` FROM q12),\nq14 AS (SELECT `id` AS `s43`, `src` AS `s45`, `dst` AS `s46` FROM `knows`),\nq15 AS (SELECT `s43` AS `s43`, CAST('10' AS BIGINT) AS `s44`, `s45` AS `s45`, `s46` AS `s46` FROM q14),\nq16 AS (SELECT `id` AS `s38`, `age` AS `s40`, `id` AS `s41`, `name` AS `s42` FROM `people`),\nq17 AS (SELECT `s38` AS `s38`, CAST('1' AS BIGINT) AS `s39`, `s40` AS `s40`, `s41` AS `s41`, `s42` AS `s42` FROM q16),\nq18 AS (SELECT `id` AS `s34`, `src` AS `s36`, `dst` AS `s37` FROM `knows`),\nq19 AS (SELECT `s34` AS `s34`, CAST('10' AS BIGINT) AS `s35`, `s36` AS `s36`, `s37` AS `s37` FROM q18),\nq20 AS (SELECT `id` AS `s29`, `age` AS `s31`, `id` AS `s32`, `name` AS `s33` FROM `people`),\nq21 AS (SELECT `s29` AS `s29`, CAST('1' AS BIGINT) AS `s30`, `s31` AS `s31`, `s32` AS `s32`, `s33` AS `s33` FROM q20),\nq22 AS (SELECT * FROM q21 WHERE (`s32` = CAST('1' AS BIGINT))),\nq23 AS (SELECT l.`s34` AS `s34`, l.`s35` AS `s35`, l.`s36` AS `s36`, l.`s37` AS `s37`, r.`s29` AS `s29`, r.`s30` AS `s30`, r.`s31` AS `s31`, r.`s32` AS `s32`, r.`s33` AS `s33` FROM q19 l INNER JOIN q22 r ON (l.`s36` = r.`s29`)),\nq24 AS (SELECT l.`s38` AS `s38`, l.`s39` AS `s39`, l.`s40` AS `s40`, l.`s41` AS `s41`, l.`s42` AS `s42`, r.`s34` AS `s34`, r.`s35` AS `s35`, r.`s36` AS `s36`, r.`s37` AS `s37`, r.`s29` AS `s29`, r.`s30` AS `s30`, r.`s31` AS `s31`, r.`s32` AS `s32`, r.`s33` AS `s33` FROM q17 l INNER JOIN q23 r ON (r.`s37` = l.`s38`)),\nq25 AS (SELECT l.`s43` AS `s43`, l.`s44` AS `s44`, l.`s45` AS `s45`, l.`s46` AS `s46`, r.`s38` AS `s38`, r.`s39` AS `s39`, r.`s40` AS `s40`, r.`s41` AS `s41`, r.`s42` AS `s42`, r.`s34` AS `s34`, r.`s35` AS `s35`, r.`s36` AS `s36`, r.`s37` AS `s37`, r.`s29` AS `s29`, r.`s30` AS `s30`, r.`s31` AS `s31`, r.`s32` AS `s32`, r.`s33` AS `s33` FROM q15 l INNER JOIN q24 r ON ((l.`s45` = r.`s38`) AND ((r.`s35` <> l.`s44`) OR (r.`s34` <> l.`s43`)))),\nq26 AS (SELECT l.`s47` AS `s47`, l.`s48` AS `s48`, l.`s49` AS `s49`, l.`s50` AS `s50`, l.`s51` AS `s51`, r.`s43` AS `s43`, r.`s44` AS `s44`, r.`s45` AS `s45`, r.`s46` AS `s46`, r.`s38` AS `s38`, r.`s39` AS `s39`, r.`s40` AS `s40`, r.`s41` AS `s41`, r.`s42` AS `s42`, r.`s34` AS `s34`, r.`s35` AS `s35`, r.`s36` AS `s36`, r.`s37` AS `s37`, r.`s29` AS `s29`, r.`s30` AS `s30`, r.`s31` AS `s31`, r.`s32` AS `s32`, r.`s33` AS `s33` FROM q13 l INNER JOIN q25 r ON (r.`s46` = l.`s47`)),\nq27 AS (SELECT `s29` AS `s0`, `s30` AS `s1`, `s31` AS `s2`, `s32` AS `s3`, `s33` AS `s4`, CAST(NULL AS BIGINT) AS `s5`, `s47` AS `s6`, `s48` AS `s7`, `s49` AS `s8`, `s50` AS `s9`, `s51` AS `s10`, CAST(NULL AS BIGINT) AS `s11`, array(named_struct('group', `s35`, 'identity', `s34`), named_struct('group', `s44`, 'identity', `s43`)) AS `s12`, array(named_struct('group', `s30`, 'identity', `s29`), named_struct('group', `s39`, 'identity', `s38`), named_struct('group', `s48`, 'identity', `s47`)) AS `s13`, CAST('2' AS BIGINT) AS `s14` FROM q26),\nq28 AS (SELECT `s0` AS `s0`, `s1` AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4`, `s5` AS `s5`, `s6` AS `s6`, `s7` AS `s7`, `s8` AS `s8`, `s9` AS `s9`, `s10` AS `s10`, `s11` AS `s11`, `s12` AS `s12`, `s13` AS `s13`, `s14` AS `s14` FROM q11 UNION ALL SELECT `s0` AS `s0`, `s1` AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4`, `s5` AS `s5`, `s6` AS `s6`, `s7` AS `s7`, `s8` AS `s8`, `s9` AS `s9`, `s10` AS `s10`, `s11` AS `s11`, `s12` AS `s12`, `s13` AS `s13`, `s14` AS `s14` FROM q27),\nq29 AS (SELECT `s0` AS `s0`, `s1` AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4`, `s5` AS `s5`, `s6` AS `s6`, `s7` AS `s7`, `s8` AS `s8`, `s9` AS `s9`, `s10` AS `s10`, `s11` AS `s11`, `s12` AS `s12`, `s13` AS `s13`, `s14` AS `s14`, named_struct('length', `s14`, 'vertices', `s13`, 'edges', `s12`) AS `s52` FROM q28),\nq30 AS (SELECT r.`s0` AS `s0`, r.`s1` AS `s1`, r.`s2` AS `s2`, r.`s3` AS `s3`, r.`s4` AS `s4`, r.`s5` AS `s5`, r.`s6` AS `s6`, r.`s7` AS `s7`, r.`s8` AS `s8`, r.`s9` AS `s9`, r.`s10` AS `s10`, r.`s11` AS `s11`, r.`s12` AS `s12`, r.`s13` AS `s13`, r.`s14` AS `s14`, r.`s52` AS `s52` FROM q1 l INNER JOIN q29 r ON TRUE),\nq31 AS (SELECT r.`s0` AS `s0`, r.`s1` AS `s1`, r.`s2` AS `s2`, r.`s3` AS `s3`, r.`s4` AS `s4`, r.`s5` AS `s5`, r.`s6` AS `s6`, r.`s7` AS `s7`, r.`s8` AS `s8`, r.`s9` AS `s9`, r.`s10` AS `s10`, r.`s11` AS `s11`, r.`s12` AS `s12`, r.`s13` AS `s13`, r.`s14` AS `s14`, r.`s52` AS `s52` FROM q0 l INNER JOIN q30 r ON TRUE),\nq32 AS (SELECT `s9` AS `s53` FROM q31) SELECT `s53` AS `target` FROM q32",
+    "optimized_traversals": [],
+    "ordered": false,
+    "output_types": [
+      "bigint"
+    ],
+    "query_text": "MATCH (a:Person {id:1})-[:KNOWS*1..2]->(b:Person) RETURN b.id AS target",
+    "sql": "WITH q0 AS (SELECT 1 AS `@unit`),\nq1 AS (SELECT 1 AS `@unit`),\nq2 AS (SELECT `id` AS `s15`, `age` AS `s17`, `id` AS `s18`, `name` AS `s19` FROM `people`),\nq3 AS (SELECT `s15` AS `s15`, CAST('1' AS BIGINT) AS `s16`, `s17` AS `s17`, `s18` AS `s18`, `s19` AS `s19` FROM q2),\nq4 AS (SELECT `id` AS `s20`, `src` AS `s22`, `dst` AS `s23` FROM `knows`),\nq5 AS (SELECT `s20` AS `s20`, CAST('10' AS BIGINT) AS `s21`, `s22` AS `s22`, `s23` AS `s23` FROM q4),\nq6 AS (SELECT l.`s15` AS `s15`, l.`s16` AS `s16`, l.`s17` AS `s17`, l.`s18` AS `s18`, l.`s19` AS `s19`, r.`s20` AS `s20`, r.`s21` AS `s21`, r.`s22` AS `s22`, r.`s23` AS `s23` FROM q3 l INNER JOIN q5 r ON TRUE),\nq7 AS (SELECT `id` AS `s24`, `age` AS `s26`, `id` AS `s27`, `name` AS `s28` FROM `people`),\nq8 AS (SELECT `s24` AS `s24`, CAST('1' AS BIGINT) AS `s25`, `s26` AS `s26`, `s27` AS `s27`, `s28` AS `s28` FROM q7),\nq9 AS (SELECT l.`s15` AS `s15`, l.`s16` AS `s16`, l.`s17` AS `s17`, l.`s18` AS `s18`, l.`s19` AS `s19`, l.`s20` AS `s20`, l.`s21` AS `s21`, l.`s22` AS `s22`, l.`s23` AS `s23`, r.`s24` AS `s24`, r.`s25` AS `s25`, r.`s26` AS `s26`, r.`s27` AS `s27`, r.`s28` AS `s28` FROM q6 l INNER JOIN q8 r ON TRUE),\nq10 AS (SELECT * FROM q9 WHERE ((`s22` = `s15`) AND (`s23` = `s24`))),\nq11 AS (SELECT * FROM q10 WHERE (`s18` = CAST('1' AS BIGINT))),\nq12 AS (SELECT `s15` AS `s0`, `s16` AS `s1`, `s17` AS `s2`, `s18` AS `s3`, `s19` AS `s4`, CAST(NULL AS BIGINT) AS `s5`, `s24` AS `s6`, `s25` AS `s7`, `s26` AS `s8`, `s27` AS `s9`, `s28` AS `s10`, CAST(NULL AS BIGINT) AS `s11`, array(named_struct('group', `s21`, 'identity', `s20`)) AS `s12`, array(named_struct('group', `s16`, 'identity', `s15`), named_struct('group', `s25`, 'identity', `s24`)) AS `s13`, CAST('1' AS BIGINT) AS `s14` FROM q11),\nq13 AS (SELECT `id` AS `s29`, `age` AS `s31`, `id` AS `s32`, `name` AS `s33` FROM `people`),\nq14 AS (SELECT `s29` AS `s29`, CAST('1' AS BIGINT) AS `s30`, `s31` AS `s31`, `s32` AS `s32`, `s33` AS `s33` FROM q13),\nq15 AS (SELECT `id` AS `s34`, `src` AS `s36`, `dst` AS `s37` FROM `knows`),\nq16 AS (SELECT `s34` AS `s34`, CAST('10' AS BIGINT) AS `s35`, `s36` AS `s36`, `s37` AS `s37` FROM q15),\nq17 AS (SELECT l.`s29` AS `s29`, l.`s30` AS `s30`, l.`s31` AS `s31`, l.`s32` AS `s32`, l.`s33` AS `s33`, r.`s34` AS `s34`, r.`s35` AS `s35`, r.`s36` AS `s36`, r.`s37` AS `s37` FROM q14 l INNER JOIN q16 r ON TRUE),\nq18 AS (SELECT `id` AS `s38`, `age` AS `s40`, `id` AS `s41`, `name` AS `s42` FROM `people`),\nq19 AS (SELECT `s38` AS `s38`, CAST('1' AS BIGINT) AS `s39`, `s40` AS `s40`, `s41` AS `s41`, `s42` AS `s42` FROM q18),\nq20 AS (SELECT l.`s29` AS `s29`, l.`s30` AS `s30`, l.`s31` AS `s31`, l.`s32` AS `s32`, l.`s33` AS `s33`, l.`s34` AS `s34`, l.`s35` AS `s35`, l.`s36` AS `s36`, l.`s37` AS `s37`, r.`s38` AS `s38`, r.`s39` AS `s39`, r.`s40` AS `s40`, r.`s41` AS `s41`, r.`s42` AS `s42` FROM q17 l INNER JOIN q19 r ON TRUE),\nq21 AS (SELECT `id` AS `s43`, `src` AS `s45`, `dst` AS `s46` FROM `knows`),\nq22 AS (SELECT `s43` AS `s43`, CAST('10' AS BIGINT) AS `s44`, `s45` AS `s45`, `s46` AS `s46` FROM q21),\nq23 AS (SELECT l.`s29` AS `s29`, l.`s30` AS `s30`, l.`s31` AS `s31`, l.`s32` AS `s32`, l.`s33` AS `s33`, l.`s34` AS `s34`, l.`s35` AS `s35`, l.`s36` AS `s36`, l.`s37` AS `s37`, l.`s38` AS `s38`, l.`s39` AS `s39`, l.`s40` AS `s40`, l.`s41` AS `s41`, l.`s42` AS `s42`, r.`s43` AS `s43`, r.`s44` AS `s44`, r.`s45` AS `s45`, r.`s46` AS `s46` FROM q20 l INNER JOIN q22 r ON TRUE),\nq24 AS (SELECT `id` AS `s47`, `age` AS `s49`, `id` AS `s50`, `name` AS `s51` FROM `people`),\nq25 AS (SELECT `s47` AS `s47`, CAST('1' AS BIGINT) AS `s48`, `s49` AS `s49`, `s50` AS `s50`, `s51` AS `s51` FROM q24),\nq26 AS (SELECT l.`s29` AS `s29`, l.`s30` AS `s30`, l.`s31` AS `s31`, l.`s32` AS `s32`, l.`s33` AS `s33`, l.`s34` AS `s34`, l.`s35` AS `s35`, l.`s36` AS `s36`, l.`s37` AS `s37`, l.`s38` AS `s38`, l.`s39` AS `s39`, l.`s40` AS `s40`, l.`s41` AS `s41`, l.`s42` AS `s42`, l.`s43` AS `s43`, l.`s44` AS `s44`, l.`s45` AS `s45`, l.`s46` AS `s46`, r.`s47` AS `s47`, r.`s48` AS `s48`, r.`s49` AS `s49`, r.`s50` AS `s50`, r.`s51` AS `s51` FROM q23 l INNER JOIN q25 r ON TRUE),\nq27 AS (SELECT * FROM q26 WHERE (((((`s36` = `s29`) AND (`s37` = `s38`)) AND (`s45` = `s38`)) AND (`s46` = `s47`)) AND ((`s35` <> `s44`) OR (`s34` <> `s43`)))),\nq28 AS (SELECT * FROM q27 WHERE (`s32` = CAST('1' AS BIGINT))),\nq29 AS (SELECT `s29` AS `s0`, `s30` AS `s1`, `s31` AS `s2`, `s32` AS `s3`, `s33` AS `s4`, CAST(NULL AS BIGINT) AS `s5`, `s47` AS `s6`, `s48` AS `s7`, `s49` AS `s8`, `s50` AS `s9`, `s51` AS `s10`, CAST(NULL AS BIGINT) AS `s11`, array(named_struct('group', `s35`, 'identity', `s34`), named_struct('group', `s44`, 'identity', `s43`)) AS `s12`, array(named_struct('group', `s30`, 'identity', `s29`), named_struct('group', `s39`, 'identity', `s38`), named_struct('group', `s48`, 'identity', `s47`)) AS `s13`, CAST('2' AS BIGINT) AS `s14` FROM q28),\nq30 AS (SELECT `s0` AS `s0`, `s1` AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4`, `s5` AS `s5`, `s6` AS `s6`, `s7` AS `s7`, `s8` AS `s8`, `s9` AS `s9`, `s10` AS `s10`, `s11` AS `s11`, `s12` AS `s12`, `s13` AS `s13`, `s14` AS `s14` FROM q12 UNION ALL SELECT `s0` AS `s0`, `s1` AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4`, `s5` AS `s5`, `s6` AS `s6`, `s7` AS `s7`, `s8` AS `s8`, `s9` AS `s9`, `s10` AS `s10`, `s11` AS `s11`, `s12` AS `s12`, `s13` AS `s13`, `s14` AS `s14` FROM q29),\nq31 AS (SELECT `s0` AS `s0`, `s1` AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4`, `s5` AS `s5`, `s6` AS `s6`, `s7` AS `s7`, `s8` AS `s8`, `s9` AS `s9`, `s10` AS `s10`, `s11` AS `s11`, `s12` AS `s12`, `s13` AS `s13`, `s14` AS `s14`, named_struct('length', `s14`, 'vertices', `s13`, 'edges', `s12`) AS `s52` FROM q30),\nq32 AS (SELECT r.`s0` AS `s0`, r.`s1` AS `s1`, r.`s2` AS `s2`, r.`s3` AS `s3`, r.`s4` AS `s4`, r.`s5` AS `s5`, r.`s6` AS `s6`, r.`s7` AS `s7`, r.`s8` AS `s8`, r.`s9` AS `s9`, r.`s10` AS `s10`, r.`s11` AS `s11`, r.`s12` AS `s12`, r.`s13` AS `s13`, r.`s14` AS `s14`, r.`s52` AS `s52` FROM q1 l INNER JOIN q31 r ON TRUE),\nq33 AS (SELECT r.`s0` AS `s0`, r.`s1` AS `s1`, r.`s2` AS `s2`, r.`s3` AS `s3`, r.`s4` AS `s4`, r.`s5` AS `s5`, r.`s6` AS `s6`, r.`s7` AS `s7`, r.`s8` AS `s8`, r.`s9` AS `s9`, r.`s10` AS `s10`, r.`s11` AS `s11`, r.`s12` AS `s12`, r.`s13` AS `s13`, r.`s14` AS `s14`, r.`s52` AS `s52` FROM q0 l INNER JOIN q32 r ON TRUE),\nq34 AS (SELECT `s9` AS `s53` FROM q33) SELECT `s53` AS `target` FROM q34",
+    "trace": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "costed inner region: 3 relations, before=Some(240.0), after=33, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 5 relations, before=Some(4268.25), after=59.75, NDV equality estimates; absent selectivity uses 1"
+    ],
+    "traversals": []
+  },
+  {
+    "expected": [
+      [
+        12
+      ]
+    ],
+    "explain": null,
+    "name": "cypher_unbounded_chain",
+    "optimized_sql": "WITH q0 AS (SELECT 1 AS `@unit`),\nq1 AS (SELECT 1 AS `@unit`),\nq2 AS (SELECT `id` AS `s6`, `id` AS `s8` FROM `chain_nodes`),\nq3 AS (SELECT `s6` AS `s6`, CAST('4' AS BIGINT) AS `s7`, `s8` AS `s8` FROM q2),\nq4 AS (SELECT `s7` AS `s9`, `s6` AS `s10` FROM q3),\nq5 AS (SELECT `id` AS `s18`, `id` AS `s20` FROM `chain_nodes`),\nq6 AS (SELECT `s18` AS `s18`, CAST('4' AS BIGINT) AS `s19`, `s20` AS `s20` FROM q5),\nq7 AS (SELECT `id` AS `s14`, `src` AS `s16`, `dst` AS `s17` FROM `chain_edges`),\nq8 AS (SELECT `s14` AS `s14`, CAST('12' AS BIGINT) AS `s15`, `s16` AS `s16`, `s17` AS `s17` FROM q7),\nq9 AS (SELECT l.`s18` AS `s18`, l.`s19` AS `s19`, l.`s20` AS `s20`, r.`s14` AS `s14`, r.`s15` AS `s15`, r.`s16` AS `s16`, r.`s17` AS `s17` FROM q6 l INNER JOIN q8 r ON (r.`s17` = l.`s18`)),\nq10 AS (SELECT `id` AS `s11`, `id` AS `s13` FROM `chain_nodes`),\nq11 AS (SELECT `s11` AS `s11`, CAST('4' AS BIGINT) AS `s12`, `s13` AS `s13` FROM q10),\nq12 AS (SELECT l.`s18` AS `s18`, l.`s19` AS `s19`, l.`s20` AS `s20`, l.`s14` AS `s14`, l.`s15` AS `s15`, l.`s16` AS `s16`, l.`s17` AS `s17`, r.`s11` AS `s11`, r.`s12` AS `s12`, r.`s13` AS `s13` FROM q9 l INNER JOIN q11 r ON (l.`s16` = r.`s11`)),\nq13 AS (SELECT `s12` AS `s21`, `s11` AS `s22`, `s19` AS `s23`, `s18` AS `s24`, `s15` AS `s25`, `s14` AS `s26` FROM q12),\nq14 AS (SELECT `sg` AS `s27`, `si` AS `s28`, `dg` AS `s29`, `di` AS `s30`, `edges` AS `s31`, `vertices` AS `s32`, `length` AS `s33` FROM __grust_traverse_0),\nq15 AS (SELECT `id` AS `s34`, `id` AS `s36` FROM `chain_nodes`),\nq16 AS (SELECT `s34` AS `s34`, CAST('4' AS BIGINT) AS `s35`, `s36` AS `s36` FROM q15),\nq17 AS (SELECT l.`s27` AS `s27`, l.`s28` AS `s28`, l.`s29` AS `s29`, l.`s30` AS `s30`, l.`s31` AS `s31`, l.`s32` AS `s32`, l.`s33` AS `s33`, r.`s34` AS `s34`, r.`s35` AS `s35`, r.`s36` AS `s36` FROM q14 l INNER JOIN q16 r ON ((l.`s27` = r.`s35`) AND (l.`s28` = r.`s34`))),\nq18 AS (SELECT `id` AS `s37`, `id` AS `s39` FROM `chain_nodes`),\nq19 AS (SELECT `s37` AS `s37`, CAST('4' AS BIGINT) AS `s38`, `s39` AS `s39` FROM q18),\nq20 AS (SELECT l.`s27` AS `s27`, l.`s28` AS `s28`, l.`s29` AS `s29`, l.`s30` AS `s30`, l.`s31` AS `s31`, l.`s32` AS `s32`, l.`s33` AS `s33`, l.`s34` AS `s34`, l.`s35` AS `s35`, l.`s36` AS `s36`, r.`s37` AS `s37`, r.`s38` AS `s38`, r.`s39` AS `s39` FROM q17 l INNER JOIN q19 r ON ((l.`s29` = r.`s38`) AND (l.`s30` = r.`s37`))),\nq21 AS (SELECT * FROM q20 WHERE ((`s36` = CAST('1' AS BIGINT)) AND (`s39` = CAST('12' AS BIGINT)))),\nq22 AS (SELECT `s34` AS `s0`, `s35` AS `s1`, `s36` AS `s2`, `s37` AS `s3`, `s38` AS `s4`, `s39` AS `s5`, `s31` AS `s31`, `s32` AS `s32`, `s33` AS `s33` FROM q21),\nq23 AS (SELECT `s0` AS `s0`, `s1` AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4`, `s5` AS `s5`, `s31` AS `s31`, `s32` AS `s32`, `s33` AS `s33`, named_struct('length', `s33`, 'vertices', `s32`, 'edges', `s31`) AS `s40` FROM q22),\nq24 AS (SELECT r.`s0` AS `s0`, r.`s1` AS `s1`, r.`s2` AS `s2`, r.`s3` AS `s3`, r.`s4` AS `s4`, r.`s5` AS `s5`, r.`s31` AS `s31`, r.`s32` AS `s32`, r.`s33` AS `s33`, r.`s40` AS `s40` FROM q1 l INNER JOIN q23 r ON TRUE),\nq25 AS (SELECT r.`s0` AS `s0`, r.`s1` AS `s1`, r.`s2` AS `s2`, r.`s3` AS `s3`, r.`s4` AS `s4`, r.`s5` AS `s5`, r.`s31` AS `s31`, r.`s32` AS `s32`, r.`s33` AS `s33`, r.`s40` AS `s40` FROM q0 l INNER JOIN q24 r ON TRUE),\nq26 AS (SELECT `s5` AS `s41` FROM q25) SELECT `s41` AS `target` FROM q26",
+    "optimized_traversals": [
+      {
+        "adjacency_sql": "WITH q0 AS (SELECT 1 AS `@unit`),\nq1 AS (SELECT 1 AS `@unit`),\nq2 AS (SELECT `id` AS `s6`, `id` AS `s8` FROM `chain_nodes`),\nq3 AS (SELECT `s6` AS `s6`, CAST('4' AS BIGINT) AS `s7`, `s8` AS `s8` FROM q2),\nq4 AS (SELECT `s7` AS `s9`, `s6` AS `s10` FROM q3),\nq5 AS (SELECT `id` AS `s18`, `id` AS `s20` FROM `chain_nodes`),\nq6 AS (SELECT `s18` AS `s18`, CAST('4' AS BIGINT) AS `s19`, `s20` AS `s20` FROM q5),\nq7 AS (SELECT `id` AS `s14`, `src` AS `s16`, `dst` AS `s17` FROM `chain_edges`),\nq8 AS (SELECT `s14` AS `s14`, CAST('12' AS BIGINT) AS `s15`, `s16` AS `s16`, `s17` AS `s17` FROM q7),\nq9 AS (SELECT l.`s18` AS `s18`, l.`s19` AS `s19`, l.`s20` AS `s20`, r.`s14` AS `s14`, r.`s15` AS `s15`, r.`s16` AS `s16`, r.`s17` AS `s17` FROM q6 l INNER JOIN q8 r ON (r.`s17` = l.`s18`)),\nq10 AS (SELECT `id` AS `s11`, `id` AS `s13` FROM `chain_nodes`),\nq11 AS (SELECT `s11` AS `s11`, CAST('4' AS BIGINT) AS `s12`, `s13` AS `s13` FROM q10),\nq12 AS (SELECT l.`s18` AS `s18`, l.`s19` AS `s19`, l.`s20` AS `s20`, l.`s14` AS `s14`, l.`s15` AS `s15`, l.`s16` AS `s16`, l.`s17` AS `s17`, r.`s11` AS `s11`, r.`s12` AS `s12`, r.`s13` AS `s13` FROM q9 l INNER JOIN q11 r ON (l.`s16` = r.`s11`)),\nq13 AS (SELECT `s12` AS `s21`, `s11` AS `s22`, `s19` AS `s23`, `s18` AS `s24`, `s15` AS `s25`, `s14` AS `s26` FROM q12) SELECT `s21` AS `sg`, `s22` AS `si`, `s23` AS `dg`, `s24` AS `di`, `s25` AS `eg`, `s26` AS `ei` FROM q13",
+        "max_hops": null,
+        "min_hops": 1,
+        "mode": "Trail",
+        "seed_sql": "WITH q0 AS (SELECT 1 AS `@unit`),\nq1 AS (SELECT 1 AS `@unit`),\nq2 AS (SELECT `id` AS `s6`, `id` AS `s8` FROM `chain_nodes`),\nq3 AS (SELECT `s6` AS `s6`, CAST('4' AS BIGINT) AS `s7`, `s8` AS `s8` FROM q2),\nq4 AS (SELECT `s7` AS `s9`, `s6` AS `s10` FROM q3) SELECT `s9` AS `sg`, `s10` AS `si` FROM q4",
+        "shortest_walk": false,
+        "view": "__grust_traverse_0"
+      }
+    ],
+    "ordered": false,
+    "output_types": [
+      "bigint"
+    ],
+    "query_text": "USE chain MATCH (a:ChainNode {id:1})-[:CHAIN*]->(b:ChainNode {id:12}) RETURN b.id AS target",
+    "sql": "WITH q0 AS (SELECT 1 AS `@unit`),\nq1 AS (SELECT 1 AS `@unit`),\nq2 AS (SELECT `id` AS `s6`, `id` AS `s8` FROM `chain_nodes`),\nq3 AS (SELECT `s6` AS `s6`, CAST('4' AS BIGINT) AS `s7`, `s8` AS `s8` FROM q2),\nq4 AS (SELECT `s7` AS `s9`, `s6` AS `s10` FROM q3),\nq5 AS (SELECT `id` AS `s11`, `id` AS `s13` FROM `chain_nodes`),\nq6 AS (SELECT `s11` AS `s11`, CAST('4' AS BIGINT) AS `s12`, `s13` AS `s13` FROM q5),\nq7 AS (SELECT `id` AS `s14`, `src` AS `s16`, `dst` AS `s17` FROM `chain_edges`),\nq8 AS (SELECT `s14` AS `s14`, CAST('12' AS BIGINT) AS `s15`, `s16` AS `s16`, `s17` AS `s17` FROM q7),\nq9 AS (SELECT l.`s11` AS `s11`, l.`s12` AS `s12`, l.`s13` AS `s13`, r.`s14` AS `s14`, r.`s15` AS `s15`, r.`s16` AS `s16`, r.`s17` AS `s17` FROM q6 l INNER JOIN q8 r ON TRUE),\nq10 AS (SELECT `id` AS `s18`, `id` AS `s20` FROM `chain_nodes`),\nq11 AS (SELECT `s18` AS `s18`, CAST('4' AS BIGINT) AS `s19`, `s20` AS `s20` FROM q10),\nq12 AS (SELECT l.`s11` AS `s11`, l.`s12` AS `s12`, l.`s13` AS `s13`, l.`s14` AS `s14`, l.`s15` AS `s15`, l.`s16` AS `s16`, l.`s17` AS `s17`, r.`s18` AS `s18`, r.`s19` AS `s19`, r.`s20` AS `s20` FROM q9 l INNER JOIN q11 r ON TRUE),\nq13 AS (SELECT * FROM q12 WHERE ((`s16` = `s11`) AND (`s17` = `s18`))),\nq14 AS (SELECT `s12` AS `s21`, `s11` AS `s22`, `s19` AS `s23`, `s18` AS `s24`, `s15` AS `s25`, `s14` AS `s26` FROM q13),\nq15 AS (SELECT `sg` AS `s27`, `si` AS `s28`, `dg` AS `s29`, `di` AS `s30`, `edges` AS `s31`, `vertices` AS `s32`, `length` AS `s33` FROM __grust_traverse_0),\nq16 AS (SELECT `id` AS `s34`, `id` AS `s36` FROM `chain_nodes`),\nq17 AS (SELECT `s34` AS `s34`, CAST('4' AS BIGINT) AS `s35`, `s36` AS `s36` FROM q16),\nq18 AS (SELECT l.`s27` AS `s27`, l.`s28` AS `s28`, l.`s29` AS `s29`, l.`s30` AS `s30`, l.`s31` AS `s31`, l.`s32` AS `s32`, l.`s33` AS `s33`, r.`s34` AS `s34`, r.`s35` AS `s35`, r.`s36` AS `s36` FROM q15 l INNER JOIN q17 r ON ((l.`s27` = r.`s35`) AND (l.`s28` = r.`s34`))),\nq19 AS (SELECT `id` AS `s37`, `id` AS `s39` FROM `chain_nodes`),\nq20 AS (SELECT `s37` AS `s37`, CAST('4' AS BIGINT) AS `s38`, `s39` AS `s39` FROM q19),\nq21 AS (SELECT l.`s27` AS `s27`, l.`s28` AS `s28`, l.`s29` AS `s29`, l.`s30` AS `s30`, l.`s31` AS `s31`, l.`s32` AS `s32`, l.`s33` AS `s33`, l.`s34` AS `s34`, l.`s35` AS `s35`, l.`s36` AS `s36`, r.`s37` AS `s37`, r.`s38` AS `s38`, r.`s39` AS `s39` FROM q18 l INNER JOIN q20 r ON ((l.`s29` = r.`s38`) AND (l.`s30` = r.`s37`))),\nq22 AS (SELECT * FROM q21 WHERE ((`s36` = CAST('1' AS BIGINT)) AND (`s39` = CAST('12' AS BIGINT)))),\nq23 AS (SELECT `s34` AS `s0`, `s35` AS `s1`, `s36` AS `s2`, `s37` AS `s3`, `s38` AS `s4`, `s39` AS `s5`, `s31` AS `s31`, `s32` AS `s32`, `s33` AS `s33` FROM q22),\nq24 AS (SELECT `s0` AS `s0`, `s1` AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4`, `s5` AS `s5`, `s31` AS `s31`, `s32` AS `s32`, `s33` AS `s33`, named_struct('length', `s33`, 'vertices', `s32`, 'edges', `s31`) AS `s40` FROM q23),\nq25 AS (SELECT r.`s0` AS `s0`, r.`s1` AS `s1`, r.`s2` AS `s2`, r.`s3` AS `s3`, r.`s4` AS `s4`, r.`s5` AS `s5`, r.`s31` AS `s31`, r.`s32` AS `s32`, r.`s33` AS `s33`, r.`s40` AS `s40` FROM q1 l INNER JOIN q24 r ON TRUE),\nq26 AS (SELECT r.`s0` AS `s0`, r.`s1` AS `s1`, r.`s2` AS `s2`, r.`s3` AS `s3`, r.`s4` AS `s4`, r.`s5` AS `s5`, r.`s31` AS `s31`, r.`s32` AS `s32`, r.`s33` AS `s33`, r.`s40` AS `s40` FROM q0 l INNER JOIN q25 r ON TRUE),\nq27 AS (SELECT `s5` AS `s41` FROM q26) SELECT `s41` AS `target` FROM q27",
+    "trace": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "costed inner region: 3 relations, before=Some(3525.0), after=1941, NDV equality estimates; absent selectivity uses 1"
+    ],
+    "traversals": [
+      {
+        "adjacency_sql": "WITH q0 AS (SELECT 1 AS `@unit`),\nq1 AS (SELECT 1 AS `@unit`),\nq2 AS (SELECT `id` AS `s6`, `id` AS `s8` FROM `chain_nodes`),\nq3 AS (SELECT `s6` AS `s6`, CAST('4' AS BIGINT) AS `s7`, `s8` AS `s8` FROM q2),\nq4 AS (SELECT `s7` AS `s9`, `s6` AS `s10` FROM q3),\nq5 AS (SELECT `id` AS `s11`, `id` AS `s13` FROM `chain_nodes`),\nq6 AS (SELECT `s11` AS `s11`, CAST('4' AS BIGINT) AS `s12`, `s13` AS `s13` FROM q5),\nq7 AS (SELECT `id` AS `s14`, `src` AS `s16`, `dst` AS `s17` FROM `chain_edges`),\nq8 AS (SELECT `s14` AS `s14`, CAST('12' AS BIGINT) AS `s15`, `s16` AS `s16`, `s17` AS `s17` FROM q7),\nq9 AS (SELECT l.`s11` AS `s11`, l.`s12` AS `s12`, l.`s13` AS `s13`, r.`s14` AS `s14`, r.`s15` AS `s15`, r.`s16` AS `s16`, r.`s17` AS `s17` FROM q6 l INNER JOIN q8 r ON TRUE),\nq10 AS (SELECT `id` AS `s18`, `id` AS `s20` FROM `chain_nodes`),\nq11 AS (SELECT `s18` AS `s18`, CAST('4' AS BIGINT) AS `s19`, `s20` AS `s20` FROM q10),\nq12 AS (SELECT l.`s11` AS `s11`, l.`s12` AS `s12`, l.`s13` AS `s13`, l.`s14` AS `s14`, l.`s15` AS `s15`, l.`s16` AS `s16`, l.`s17` AS `s17`, r.`s18` AS `s18`, r.`s19` AS `s19`, r.`s20` AS `s20` FROM q9 l INNER JOIN q11 r ON TRUE),\nq13 AS (SELECT * FROM q12 WHERE ((`s16` = `s11`) AND (`s17` = `s18`))),\nq14 AS (SELECT `s12` AS `s21`, `s11` AS `s22`, `s19` AS `s23`, `s18` AS `s24`, `s15` AS `s25`, `s14` AS `s26` FROM q13) SELECT `s21` AS `sg`, `s22` AS `si`, `s23` AS `dg`, `s24` AS `di`, `s25` AS `eg`, `s26` AS `ei` FROM q14",
+        "max_hops": null,
+        "min_hops": 1,
+        "mode": "Trail",
+        "seed_sql": "WITH q0 AS (SELECT 1 AS `@unit`),\nq1 AS (SELECT 1 AS `@unit`),\nq2 AS (SELECT `id` AS `s6`, `id` AS `s8` FROM `chain_nodes`),\nq3 AS (SELECT `s6` AS `s6`, CAST('4' AS BIGINT) AS `s7`, `s8` AS `s8` FROM q2),\nq4 AS (SELECT `s7` AS `s9`, `s6` AS `s10` FROM q3) SELECT `s9` AS `sg`, `s10` AS `si` FROM q4",
+        "shortest_walk": false,
+        "view": "__grust_traverse_0"
+      }
+    ]
+  }
+]

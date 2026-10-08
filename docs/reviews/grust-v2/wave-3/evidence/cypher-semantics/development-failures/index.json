@@ -1,0 +1,83 @@
+{
+  "observed_utc": "2026-10-08T05:00:15.814844+00:00",
+  "attempts": [
+    {
+      "attempt": "empty-struct",
+      "artifact": "development-failures/empty-struct.json",
+      "outcomes": {
+        "error": 4
+      }
+    },
+    {
+      "attempt": "lateral",
+      "artifact": "development-failures/lateral.json",
+      "outcomes": {
+        "error": 4
+      }
+    },
+    {
+      "attempt": "numeric-edge",
+      "artifact": "development-failures/numeric-edge.json",
+      "outcomes": {
+        "error": 4,
+        "mismatch": 2
+      }
+    },
+    {
+      "attempt": "semantics06",
+      "artifact": "development-failures/semantics06.json",
+      "outcomes": {
+        "error": 10
+      }
+    },
+    {
+      "attempt": "semantics07",
+      "artifact": "development-failures/semantics07.json",
+      "outcomes": {
+        "error": 10
+      }
+    },
+    {
+      "attempt": "semantics11",
+      "artifact": "development-failures/semantics11.json",
+      "outcomes": {
+        "error": 2
+      }
+    },
+    {
+      "attempt": "rust-development02.log",
+      "artifact": "development-failures/rust-development02.log",
+      "raw_sha256": "4767fefaaf268ec1fbcb89df129bb60b61876aaca086f72bdc759d2c68aeac7b",
+      "provenance": "Unfrozen development failure, preserved unchanged."
+    },
+    {
+      "attempt": "rust-development03.log",
+      "artifact": "development-failures/rust-development03.log",
+      "raw_sha256": "e14e70b2135dd8fad72f2953c0c39e75f8e4da519dc6b965697a7dfe354b71c7",
+      "provenance": "Unfrozen development failure, preserved unchanged."
+    },
+    {
+      "attempt": "rust-development04.log",
+      "artifact": "development-failures/rust-development04.log",
+      "raw_sha256": "0c7edb0558a799ffd2266054a19d42349d92f9ac2fb92516b0be5142c8174f0e",
+      "provenance": "Unfrozen development failure, preserved unchanged."
+    },
+    {
+      "attempt": "ldbc01.log",
+      "artifact": "development-failures/ldbc01.log",
+      "raw_sha256": "c63c139b5083562f86944cc61c27f8f46d063d1dfaeef488f9e3cd15a9878cd9",
+      "provenance": "Unfrozen development failure, preserved unchanged."
+    }
+  ],
+  "additional_compile_refusals": [
+    {
+      "attempt": "semantics02",
+      "reason": "UnknownBinding x after subquery WITH; imported global scope preservation added."
+    },
+    {
+      "attempt": "semantics09",
+      "reason": "Fixture expected identity on a fixed relationship property lookup; fixed scalar relationship fixture aligned with the disclosed entity envelope."
+    }
+  ],
+  "limitations": "Two compile refusals have no retained stdout log; their empty output manifests and notes are identified rather than invented as raw evidence. SQL probes include unsupported LATERAL aggregate/LIMIT and empty JSON struct cancellation; those paths are not used by the implemented lowering."
+}

@@ -1,0 +1,133 @@
+{
+  "attempt": "lateral",
+  "observed_utc": "2026-10-08T03:41:20.159664+00:00",
+  "provenance": "Development probe, unfrozen source; not a source verdict.",
+  "raw_receipt_sha256": "51784ac1749f8207c4cee60a4559190446a06fec0ac34af9a02ec410582bf60f",
+  "failed_results": [
+    {
+      "name": "lateral_aggregate",
+      "variant": "resolved",
+      "outcome": "error",
+      "expected": [
+        [
+          1,
+          2
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          2,
+          0
+        ]
+      ],
+      "actual": null,
+      "error": "No field named __always_true.\nValid fields are t.\"#2\", q.\"#5\", t.\"#2\", q.\"#5\"."
+    },
+    {
+      "name": "lateral_aggregate",
+      "variant": "optimized",
+      "outcome": "error",
+      "expected": [
+        [
+          1,
+          2
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          2,
+          0
+        ]
+      ],
+      "actual": null,
+      "error": "No field named __always_true.\nValid fields are t.\"#2\", q.\"#5\", t.\"#2\", q.\"#5\"."
+    },
+    {
+      "name": "lateral_limit",
+      "variant": "resolved",
+      "outcome": "error",
+      "expected": [
+        [
+          1,
+          3
+        ],
+        [
+          2,
+          3
+        ]
+      ],
+      "actual": null,
+      "error": "Physical plan does not support logical expression OuterReferenceColumn(Field { name: \"#2\", data_type: Int64 }, Column { relation: Some(Bare { table: \"t\" }), name: \"#2\" })"
+    },
+    {
+      "name": "lateral_limit",
+      "variant": "optimized",
+      "outcome": "error",
+      "expected": [
+        [
+          1,
+          3
+        ],
+        [
+          2,
+          3
+        ]
+      ],
+      "actual": null,
+      "error": "Physical plan does not support logical expression OuterReferenceColumn(Field { name: \"#2\", data_type: Int64 }, Column { relation: Some(Bare { table: \"t\" }), name: \"#2\" })"
+    }
+  ],
+  "queries": [
+    {
+      "name": "lateral_aggregate",
+      "sql": "SELECT t.x,q.n FROM (SELECT CAST(x AS BIGINT) x FROM VALUES (1),(1),(2) AS t(x)) t JOIN LATERAL (SELECT count(*) n FROM VALUES (1),(1) AS z(y) WHERE z.y=t.x) q ON TRUE",
+      "optimized_sql": "SELECT t.x,q.n FROM (SELECT CAST(x AS BIGINT) x FROM VALUES (1),(1),(2) AS t(x)) t JOIN LATERAL (SELECT count(*) n FROM VALUES (1),(1) AS z(y) WHERE z.y=t.x) q ON TRUE",
+      "expected": [
+        [
+          1,
+          2
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          2,
+          0
+        ]
+      ],
+      "ordered": false,
+      "trace": [],
+      "output_types": [
+        "bigint",
+        "bigint"
+      ]
+    },
+    {
+      "name": "lateral_limit",
+      "sql": "SELECT t.x,q.y FROM (SELECT CAST(x AS BIGINT) x FROM VALUES (1),(2) AS t(x)) t JOIN LATERAL (SELECT CAST(y AS BIGINT) y FROM VALUES (1),(2),(3) AS z(y) WHERE z.y>=t.x ORDER BY y DESC LIMIT 1) q ON TRUE",
+      "optimized_sql": "SELECT t.x,q.y FROM (SELECT CAST(x AS BIGINT) x FROM VALUES (1),(2) AS t(x)) t JOIN LATERAL (SELECT CAST(y AS BIGINT) y FROM VALUES (1),(2),(3) AS z(y) WHERE z.y>=t.x ORDER BY y DESC LIMIT 1) q ON TRUE",
+      "expected": [
+        [
+          1,
+          3
+        ],
+        [
+          2,
+          3
+        ]
+      ],
+      "ordered": false,
+      "trace": [],
+      "output_types": [
+        "bigint",
+        "bigint"
+      ]
+    }
+  ],
+  "raw_manifest_sha256": "bc181333528f171d7010c42e65085c05c050c6acb3ab718866a1b6205742f92c"
+}

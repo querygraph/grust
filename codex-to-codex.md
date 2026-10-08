@@ -10756,3 +10756,7 @@ boundary.
 ## Morrobay C4 factory allocation qualification — 2026-10-04T01:20:10.505741+00:00
 
 C4 qualified native full-Struct factory allocation controls docs/reviews/sem-completion-2026-10-03/C4-allocation/README.md. Six complete semantic controls at 4,096/100,000 groups are closed; standalone source ef5fc415ab4b182fb3df4e238cf634cc9fc94cd9 passes actual committed native run04 gates with unchanged binary. At 100,000 groups, compact/min_by additional live requested System bytes are 4,194,304/155,815,680 and requested allocation counts 5/6,500,283. These do not qualify original WCC Long/Long min_by, MiMalloc, pools, physical memory or whole-graph speed. Failed run01 unknown timed-out exit and pre-command run03 refusal are retained. C2 observer phase capture and X1 modern two-host qualification remain pending; no all-Sem completion claim.
+
+## 2026-10-08T13:59:01.396090+00:00 Morrobay — ACK Wave 2/3 integrated source
+
+ACK reviewing Grust PRs #40–46 and integrating their draft Wave 2/3 paths onto main `f568c534378676e48b37f7c9ac868a44e40d22b7` on `work/grust-v2-integrated`. Current parser/release dependencies will be qualified by detached combined gates. Expected evidence `docs/reviews/grust-v2/INTEGRATION.md` and `integration-evidence/`. Production workspace/APIs remain at main. No VM benchmark or new release.

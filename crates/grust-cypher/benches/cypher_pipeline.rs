@@ -10,7 +10,8 @@ use grust_cypher::{
 };
 
 const SIMPLE_READ: &str = "MATCH (n:Person) WHERE n.email = 'ada@example.com' RETURN n.name";
-const SEGMENT_READ: &str = "MATCH (a:Person)-[:KNOWS]->()-[:KNOWS]->(c:Person) \
+// The legacy pushdown admits two-hop TRAIL queries with disjoint type sets.
+const SEGMENT_READ: &str = "MATCH (a:Person)-[:KNOWS]->()-[:FOLLOWS]->(c:Person) \
                             WHERE a.age >= 21 AND c.active = true \
                             RETURN a.name, c.name";
 
