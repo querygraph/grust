@@ -8,12 +8,12 @@ exact detached source commit it names.
 
 ## Qualification
 
-`cosmolang: PASSED native gateway, MCP and Cosmograph gate at b850258fb0e8a14b2dbe9abf0f34d1aab7d563d8`
+`cosmolang: PASSED native gateway, MCP and Cosmograph gate at 4d222349b452ddc75e76cf3267acec2f78c73ba3`
 
-The [exact-source receipt](evidence/receipt.json) records a clean unchanged
-detached checkout and the native binary hash. [Twelve semantic controls](evidence/semantics.json),
-[the MCP client](evidence/mcp.json), and [four browser controls](evidence/browser.json)
-passed. The [expanded graph screenshot](evidence/expanded.png) was visually
+The [exact-source receipt](evidence/gate04/receipt.json) records a clean unchanged
+detached checkout and the native binary hash. [Seventeen semantic controls](evidence/gate04/semantics.json),
+[the MCP client](evidence/gate04/mcp.json), and [four browser controls](evidence/gate04/browser.json)
+passed. The [expanded graph screenshot](evidence/gate04/expanded.png) was visually
 reviewed. Artifact/source identities are in [artifacts.json](evidence/artifacts.json).
 The earlier detached lint failure is preserved separately. Development failures
 (memory admission, numeric-only WCC IDs, startup/port errors) remain in the raw
@@ -101,3 +101,9 @@ To inspect interactively, prepare the fixture, start the native Sail host with
 extensions enabled and the gate's recorded environment, run `server.py`, and
 run `npm run dev -- --port 18766` in `browser/`. Open `http://127.0.0.1:18766`.
 Select a group to expand it, or follow the source vertex named in the input.
+
+The final gate also covers collapse round trips, refusal of unknown collapses,
+layout-frame and 2D camera pins, and selection affinity for hierarchy changes.
+[The failed preceding gate](evidence/failed-gate03/semantics.log) is preserved:
+its refusal tests shared mutable parameters; each request now copies them.
+Earlier passing evidence remains in `evidence/`.
