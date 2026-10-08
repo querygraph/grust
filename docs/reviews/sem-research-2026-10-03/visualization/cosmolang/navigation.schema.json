@@ -1,0 +1,385 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:querygraph:cosmolang:0.1:navigation",
+  "oneOf": [
+    {
+      "$ref": "urn:querygraph:cosmolang:0.1:navigation#/$defs/open"
+    },
+    {
+      "$ref": "urn:querygraph:cosmolang:0.1:navigation#/$defs/sync"
+    },
+    {
+      "$ref": "urn:querygraph:cosmolang:0.1:navigation#/$defs/close"
+    },
+    {
+      "$ref": "urn:querygraph:cosmolang:0.1:navigation#/$defs/camera_pose"
+    },
+    {
+      "$ref": "urn:querygraph:cosmolang:0.1:navigation#/$defs/camera_fit"
+    },
+    {
+      "$ref": "urn:querygraph:cosmolang:0.1:navigation#/$defs/view"
+    },
+    {
+      "$ref": "urn:querygraph:cosmolang:0.1:navigation#/$defs/install"
+    },
+    {
+      "$ref": "urn:querygraph:cosmolang:0.1:navigation#/$defs/refine"
+    },
+    {
+      "$ref": "urn:querygraph:cosmolang:0.1:navigation#/$defs/release"
+    }
+  ],
+  "$defs": {
+    "open": {
+      "type": "object",
+      "properties": {
+        "op": {
+          "const": "session.open"
+        },
+        "params": {
+          "type": "object",
+          "properties": {
+            "renderer": {
+              "enum": [
+                "cosmograph",
+                "headless"
+              ]
+            },
+            "dimensions": {
+              "enum": [
+                2,
+                3
+              ]
+            }
+          },
+          "required": [
+            "renderer",
+            "dimensions"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "op",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    "sync": {
+      "type": "object",
+      "properties": {
+        "op": {
+          "const": "session.sync"
+        },
+        "params": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "op",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    "close": {
+      "type": "object",
+      "properties": {
+        "op": {
+          "const": "session.close"
+        },
+        "params": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "op",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    "camera_pose": {
+      "type": "object",
+      "properties": {
+        "op": {
+          "enum": [
+            "camera.set",
+            "camera.rotate",
+            "camera.zoom",
+            "camera.pan"
+          ]
+        },
+        "params": {
+          "type": "object",
+          "properties": {
+            "pose": {
+              "$ref": "urn:querygraph:cosmolang:0.1:camera"
+            },
+            "intent_epoch": {
+              "$ref": "urn:querygraph:cosmolang:0.1:common#/$defs/uint"
+            }
+          },
+          "required": [
+            "pose",
+            "intent_epoch"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "op",
+        "params"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "op": {
+                "const": "camera.rotate"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "params": {
+                "properties": {
+                  "pose": {
+                    "$ref": "urn:querygraph:cosmolang:0.1:camera#/$defs/pose3d"
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "camera_fit": {
+      "type": "object",
+      "properties": {
+        "op": {
+          "const": "camera.fit"
+        },
+        "params": {
+          "type": "object",
+          "properties": {
+            "target_handle": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512
+            },
+            "padding": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 0.49
+            }
+          },
+          "required": [
+            "target_handle",
+            "padding"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "op",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    "view": {
+      "type": "object",
+      "properties": {
+        "op": {
+          "const": "view.request"
+        },
+        "params": {
+          "type": "object",
+          "properties": {
+            "camera": {
+              "$ref": "urn:querygraph:cosmolang:0.1:camera"
+            },
+            "frontier_handle": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 512
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "columns": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 512
+              },
+              "maxItems": 32
+            },
+            "quality": {
+              "type": "object",
+              "properties": {
+                "membership": {
+                  "enum": [
+                    "complete",
+                    "allow_sample"
+                  ]
+                },
+                "edges": {
+                  "enum": [
+                    "complete",
+                    "allow_top_k",
+                    "allow_sample"
+                  ]
+                }
+              },
+              "required": [
+                "membership",
+                "edges"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "camera",
+            "frontier_handle",
+            "columns",
+            "quality"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "op",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    "install": {
+      "type": "object",
+      "properties": {
+        "op": {
+          "const": "view.install"
+        },
+        "params": {
+          "type": "object",
+          "properties": {
+            "view_id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512
+            },
+            "generation": {
+              "$ref": "urn:querygraph:cosmolang:0.1:common#/$defs/uint"
+            }
+          },
+          "required": [
+            "view_id",
+            "generation"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "op",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    "refine": {
+      "type": "object",
+      "properties": {
+        "op": {
+          "enum": [
+            "hierarchy.expand",
+            "hierarchy.collapse"
+          ]
+        },
+        "params": {
+          "type": "object",
+          "properties": {
+            "group": {
+              "$ref": "urn:querygraph:cosmolang:0.1:common#/$defs/aggregate"
+            },
+            "view_id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512
+            },
+            "quality": {
+              "type": "object",
+              "properties": {
+                "membership": {
+                  "enum": [
+                    "complete",
+                    "allow_sample"
+                  ]
+                },
+                "edges": {
+                  "enum": [
+                    "complete",
+                    "allow_top_k",
+                    "allow_sample"
+                  ]
+                }
+              },
+              "required": [
+                "membership",
+                "edges"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "group",
+            "view_id",
+            "quality"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "op",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    "release": {
+      "type": "object",
+      "properties": {
+        "op": {
+          "const": "view.release"
+        },
+        "params": {
+          "type": "object",
+          "properties": {
+            "view_id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512
+            }
+          },
+          "required": [
+            "view_id"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "op",
+        "params"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

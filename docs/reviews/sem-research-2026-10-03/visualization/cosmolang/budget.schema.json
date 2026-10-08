@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:querygraph:cosmolang:0.1:budget",
+  "type": "object",
+  "properties": {
+    "max_points": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1000000
+    },
+    "max_links": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 10000000
+    },
+    "max_wire_bytes": {
+      "$ref": "urn:querygraph:cosmolang:0.1:common#/$defs/uint"
+    },
+    "max_decoded_bytes": {
+      "$ref": "urn:querygraph:cosmolang:0.1:common#/$defs/uint"
+    },
+    "max_scan_edges": {
+      "$ref": "urn:querygraph:cosmolang:0.1:common#/$defs/uint"
+    },
+    "max_scan_bytes": {
+      "$ref": "urn:querygraph:cosmolang:0.1:common#/$defs/uint"
+    },
+    "max_working_bytes": {
+      "$ref": "urn:querygraph:cosmolang:0.1:common#/$defs/uint"
+    },
+    "deadline_ms": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 3600000
+    }
+  },
+  "required": [
+    "max_points",
+    "max_links",
+    "max_wire_bytes",
+    "max_decoded_bytes",
+    "max_scan_edges",
+    "max_scan_bytes",
+    "max_working_bytes",
+    "deadline_ms"
+  ],
+  "additionalProperties": false
+}

@@ -1,0 +1,400 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:querygraph:cosmolang:0.1:graph",
+  "oneOf": [
+    {
+      "$ref": "urn:querygraph:cosmolang:0.1:graph#/$defs/follow"
+    },
+    {
+      "$ref": "urn:querygraph:cosmolang:0.1:graph#/$defs/nearest"
+    },
+    {
+      "$ref": "urn:querygraph:cosmolang:0.1:graph#/$defs/filter"
+    },
+    {
+      "$ref": "urn:querygraph:cosmolang:0.1:graph#/$defs/degree"
+    },
+    {
+      "$ref": "urn:querygraph:cosmolang:0.1:graph#/$defs/wcc"
+    }
+  ],
+  "$defs": {
+    "follow": {
+      "type": "object",
+      "properties": {
+        "op": {
+          "const": "graph.follow"
+        },
+        "params": {
+          "type": "object",
+          "properties": {
+            "domain": {
+              "$ref": "urn:querygraph:cosmolang:0.1:common#/$defs/domain"
+            },
+            "seeds": {
+              "$ref": "urn:querygraph:cosmolang:0.1:common#/$defs/seeds"
+            },
+            "direction": {
+              "enum": [
+                "out",
+                "in",
+                "both"
+              ]
+            },
+            "max_hops": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 64
+            },
+            "vertex_predicate": {
+              "anyOf": [
+                {
+                  "$ref": "urn:querygraph:cosmolang:0.1:predicate"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "edge_predicate": {
+              "anyOf": [
+                {
+                  "$ref": "urn:querygraph:cosmolang:0.1:predicate"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "quality": {
+              "type": "object",
+              "properties": {
+                "membership": {
+                  "enum": [
+                    "complete",
+                    "allow_sample"
+                  ]
+                },
+                "edges": {
+                  "enum": [
+                    "complete",
+                    "allow_top_k",
+                    "allow_sample"
+                  ]
+                }
+              },
+              "required": [
+                "membership",
+                "edges"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "domain",
+            "seeds",
+            "direction",
+            "max_hops",
+            "vertex_predicate",
+            "edge_predicate",
+            "quality"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "op",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    "nearest": {
+      "type": "object",
+      "properties": {
+        "op": {
+          "const": "graph.nearest"
+        },
+        "params": {
+          "oneOf": [
+            {
+              "$ref": "urn:querygraph:cosmolang:0.1:graph#/$defs/spatial"
+            },
+            {
+              "$ref": "urn:querygraph:cosmolang:0.1:graph#/$defs/embedding"
+            }
+          ]
+        }
+      },
+      "required": [
+        "op",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    "spatial": {
+      "type": "object",
+      "properties": {
+        "space": {
+          "const": "spatial"
+        },
+        "domain": {
+          "$ref": "urn:querygraph:cosmolang:0.1:common#/$defs/domain"
+        },
+        "seed": {
+          "$ref": "urn:querygraph:cosmolang:0.1:common#/$defs/vertex"
+        },
+        "k": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000
+        },
+        "metric": {
+          "const": "l2"
+        },
+        "method": {
+          "const": "exact"
+        },
+        "index_version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        }
+      },
+      "required": [
+        "space",
+        "domain",
+        "seed",
+        "k",
+        "metric",
+        "method",
+        "index_version"
+      ],
+      "additionalProperties": false
+    },
+    "embedding": {
+      "type": "object",
+      "properties": {
+        "space": {
+          "const": "embedding"
+        },
+        "domain": {
+          "$ref": "urn:querygraph:cosmolang:0.1:common#/$defs/domain"
+        },
+        "seed": {
+          "oneOf": [
+            {
+              "$ref": "urn:querygraph:cosmolang:0.1:common#/$defs/vertex"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "vector": {
+                  "type": "array",
+                  "items": {
+                    "type": "number"
+                  },
+                  "minItems": 1,
+                  "maxItems": 16384
+                }
+              },
+              "required": [
+                "vector"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "k": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000
+        },
+        "metric": {
+          "enum": [
+            "cosine",
+            "l2",
+            "dot"
+          ]
+        },
+        "method": {
+          "enum": [
+            "exact",
+            "ann"
+          ]
+        },
+        "index_version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "model_version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "normalization": {
+          "enum": [
+            "none",
+            "unit_l2"
+          ]
+        },
+        "search_effort": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000000
+        }
+      },
+      "required": [
+        "space",
+        "domain",
+        "seed",
+        "k",
+        "metric",
+        "method",
+        "index_version",
+        "model_version",
+        "normalization",
+        "search_effort"
+      ],
+      "additionalProperties": false
+    },
+    "filter": {
+      "type": "object",
+      "properties": {
+        "op": {
+          "const": "graph.filter"
+        },
+        "params": {
+          "type": "object",
+          "properties": {
+            "domain": {
+              "$ref": "urn:querygraph:cosmolang:0.1:common#/$defs/domain"
+            },
+            "predicate": {
+              "$ref": "urn:querygraph:cosmolang:0.1:predicate"
+            }
+          },
+          "required": [
+            "domain",
+            "predicate"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "op",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    "degree": {
+      "type": "object",
+      "properties": {
+        "op": {
+          "const": "graph.degree_filter"
+        },
+        "params": {
+          "type": "object",
+          "properties": {
+            "domain": {
+              "$ref": "urn:querygraph:cosmolang:0.1:common#/$defs/domain"
+            },
+            "direction": {
+              "enum": [
+                "out",
+                "in",
+                "total"
+              ]
+            },
+            "count": {
+              "enum": [
+                "edges",
+                "distinct_neighbors"
+              ]
+            },
+            "minimum": {
+              "$ref": "urn:querygraph:cosmolang:0.1:common#/$defs/uint"
+            },
+            "maximum": {
+              "anyOf": [
+                {
+                  "$ref": "urn:querygraph:cosmolang:0.1:common#/$defs/uint"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "domain",
+            "direction",
+            "count",
+            "minimum",
+            "maximum"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "op",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    "wcc": {
+      "type": "object",
+      "properties": {
+        "op": {
+          "const": "graph.wcc"
+        },
+        "params": {
+          "type": "object",
+          "properties": {
+            "domain": {
+              "$ref": "urn:querygraph:cosmolang:0.1:common#/$defs/domain"
+            },
+            "provider": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512
+            },
+            "method": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512
+            },
+            "contract_version": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512
+            },
+            "label_convention": {
+              "enum": [
+                "opaque",
+                "min_original_id"
+              ]
+            },
+            "exact": {
+              "const": true
+            }
+          },
+          "required": [
+            "domain",
+            "provider",
+            "method",
+            "contract_version",
+            "label_convention",
+            "exact"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "op",
+        "params"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

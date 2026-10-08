@@ -1,0 +1,117 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:querygraph:cosmolang:0.1:event",
+  "type": "object",
+  "properties": {
+    "cosmolang": {
+      "const": "0.1"
+    },
+    "event_sequence": {
+      "$ref": "urn:querygraph:cosmolang:0.1:common#/$defs/uint"
+    },
+    "session_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512
+    },
+    "request_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512
+    },
+    "revision": {
+      "$ref": "urn:querygraph:cosmolang:0.1:common#/$defs/uint"
+    },
+    "context": {
+      "$ref": "urn:querygraph:cosmolang:0.1:common#/$defs/context"
+    },
+    "kind": {
+      "enum": [
+        "job.progress",
+        "session.changed",
+        "view.installed",
+        "context.invalidated"
+      ]
+    },
+    "job": {
+      "type": "object",
+      "properties": {
+        "job_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "state": {
+          "enum": [
+            "queued",
+            "running",
+            "cancelling",
+            "ready",
+            "cancelled",
+            "refused",
+            "failed",
+            "expired"
+          ]
+        },
+        "cancellation": {
+          "enum": [
+            "none",
+            "cooperative",
+            "terminate_worker"
+          ]
+        }
+      },
+      "required": [
+        "job_id",
+        "state",
+        "cancellation"
+      ],
+      "additionalProperties": false
+    },
+    "view_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512
+    }
+  },
+  "required": [
+    "cosmolang",
+    "event_sequence",
+    "session_id",
+    "request_id",
+    "revision",
+    "context",
+    "kind"
+  ],
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "job.progress"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "job"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "view.installed"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "view_id"
+        ]
+      }
+    }
+  ]
+}

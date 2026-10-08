@@ -1,0 +1,128 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:querygraph:cosmolang:0.1:predicate",
+  "oneOf": [
+    {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "compare"
+        },
+        "column": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "operator": {
+          "enum": [
+            "eq",
+            "ne",
+            "lt",
+            "le",
+            "gt",
+            "ge",
+            "in"
+          ]
+        },
+        "value": {
+          "oneOf": [
+            {
+              "type": [
+                "string",
+                "number",
+                "boolean",
+                "null"
+              ]
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": [
+                  "string",
+                  "number",
+                  "boolean",
+                  "null"
+                ]
+              },
+              "maxItems": 256
+            }
+          ]
+        }
+      },
+      "required": [
+        "kind",
+        "column",
+        "operator",
+        "value"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "operator": {
+                "const": "in"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "value": {
+                "type": "array"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "value": {
+                "not": {
+                  "type": "array"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "enum": [
+            "and",
+            "or"
+          ]
+        },
+        "terms": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:querygraph:cosmolang:0.1:predicate"
+          },
+          "minItems": 1,
+          "maxItems": 32
+        }
+      },
+      "required": [
+        "kind",
+        "terms"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "not"
+        },
+        "term": {
+          "$ref": "urn:querygraph:cosmolang:0.1:predicate"
+        }
+      },
+      "required": [
+        "kind",
+        "term"
+      ],
+      "additionalProperties": false
+    }
+  ]
+}

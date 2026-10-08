@@ -15,9 +15,10 @@ It does not redo them.
    cit-Patents (3.8M vertices, 33M edge rows) and graph500-24 (8.9M vertices, 521M edge rows), it takes
    3 to 43 ms on both graphs when the tables are sorted by key. Unsorted, it takes up to 0.54 s on
    graph500-24, 40 times more.
-2. **The tree "head" is small enough to hold in RAM at any scale.** That head is the set of cells whose
-   parent holds more than T vertices. Its size is at most (16/3)|V|/T: 530k cells (34 MiB) at |V| = 1e9 with
-   T = 1e4. The service can hold it, so a level never has to be computed on demand.
+2. **The tree "head" has a small uniform-layout estimate.** That head is the set of cells whose
+   parent holds more than T vertices. For a uniform layout, (16/3)|V|/T gives about 533k cells
+   (33 MiB) at |V| = 1e9 with T = 1e4. Deeply skewed layouts can exceed that estimate (section 10);
+   a service needs an explicit head memory cap and an indexed fallback.
 3. **Pseudo-edges are the expensive part, and only coarse levels need precomputing.** An on-demand expand
    scans every edge of the cell: about 32|V|/4^l rows at level l. At 1e9 vertices that is 3.1e7 rows
    (432 MiB) at level 5. A precomputed block of the next level has at most 4 x 4^(l+1) rows. So
@@ -34,6 +35,11 @@ It does not redo them.
    the level table does not already give. Cornac (Perrot and Auber, IEEE TBD) is the closest prior
    system: Spark plus HBase map-style tiles at 174M nodes. It stored about 20 times the raw data because
    it precomputed every level. This design avoids that with the head plus on-demand rule.
+6. **Use Cosmograph as the browser client, with a bounded view service in front.** The
+   [Cosmograph architecture addition](COSMOGRAPH-ARCHITECTURE.md) specifies Sail projections and
+   materialized selections, spatial and adjacency indexes, prepared Arrow point/link tables, exact
+   Int64 identity, fixed coordinates, scan/edge/byte admission and a browser qualification plan.
+   It is a proposal; no Cosmograph integration or new benchmark was run.
 
 Tags: **[run]** measured here, raw record named; **[code]** read from code at the cited file and line;
 **[lit]** from the cited literature; **[calc]** arithmetic shown or in [`estimates.py`](estimates.py)
@@ -365,6 +371,7 @@ much.
 | Graphistry (vendor). [Release 2.53.0 blog](https://www.graphistry.com/blog/graphistry-2-53-0-large-graph-visualization-at-10-million-edges), 2026-09-03 | GPU server layout and analytics, WebGL client, rendering split between server and client GPUs. "a 10-million-edge graph ... now needs 537 MB" in the browser | The opposite design: ship the whole graph. It shows where that ends (about 1e7 edges) | Blog, README |
 | Neo4j Bloom. [Settings drawer](https://neo4j.com/docs/bloom-user-guide/current/bloom-visual-tour/settings-drawer/) | "Node query limit - can be adjusted within a range of 100-10000"; expansion obeys the same limit | Commercial explorers cap the working set near 1e4 nodes. That supports T near 1e4 | Docs pages. No per-scene maximum found |
 | cosmos.gl (formerly Cosmograph's cosmos), N. Rokotyan and O. Stukova. [Repository](https://github.com/cosmosgl/graph), [OpenJS announcement](https://openjsf.org/blog/introducing-cosmos-gl), 2025 | Force simulation and rendering in WebGL shaders, positions kept in GPU textures. "over one million nodes and links" (OpenJS) | A renderer for the leaf level, and a client-side layout for subgraphs under about 1e6 | Docs, README |
+| Cosmograph SDK, official [data contract](https://cosmograph.app/docs-lib/data-requirements/advanced-data-usage/), checked 2026-10-04 | Prepared point/link tables with both stable IDs and ordinal indices | Browser client for bounded Sail-generated projections; distinct from the MIT cosmos.gl renderer. See [the integration proposal](COSMOGRAPH-ARCHITECTURE.md) | Official SDK docs; no integration run |
 | deck.gl `TileLayer` and `MVTLayer`, [docs](https://deck.gl/docs/api-reference/geo-layers/tile-layer); kepler.gl [release notes](https://docs.kepler.gl/release-notes) | Tiles indexed by (x, y, z) are fetched for the viewport and cached (`maxCacheSize` defaults to 5 times the visible tiles). Works in a non-geographic `OrthographicView`. Custom indexing via `Tileset2D` | Directly usable for a map-style client: `getTileData(x, y, z)` maps to a key range | Docs |
 | Schwartz. "Bing Maps Tile System". Microsoft Learn, [article](https://learn.microsoft.com/en-us/bingmaps/articles/bing-maps-tile-system) | Quadkeys interleave the tile's x and y bits; key length = level; a child's quadkey extends its parent's; nearby tiles have nearby quadkeys | This is the key of section 2.1 | Full page |
 | Mapbox. "Vector Tile Specification" 2.1, [spec](https://github.com/mapbox/vector-tile-spec/blob/master/2.1/README.md) | Per-tile protobuf with integer coordinates in a per-tile extent (often 4096); the z/x/y scheme is a convention outside the tile | A possible wire format for a map client. Arrow IPC is simpler here | Spec text |
@@ -589,7 +596,10 @@ sort (section 3.4). All ids i64.
 
 ### 8.2 Service API (C3 and C5)
 
-Requests are small JSON or protobuf. Responses are one Arrow IPC stream with named record batches.
+Requests are small JSON or protobuf. The proposed responses below contain different schemas;
+they need separate Arrow IPC streams or an explicit envelope. The
+[Cosmograph addition](COSMOGRAPH-ARCHITECTURE.md#5-cosmograph-view-contract) uses a manifest
+and separate point/link objects; named batches alone do not permit multiple schemas in one stream.
 
 | Request | Response batches | Computed | Bound |
 |---|---|---|---|
@@ -668,6 +678,24 @@ Requests are small JSON or protobuf. Responses are one Arrow IPC stream with nam
   Semantic Scholar), and Frishman and Tal's page range. Those are not cited as facts.
 - **The binary** predates its tree's HEAD (built 00:19, HEAD committed 05:43 on 2026-10-02).
 
+## 11. Cosmograph architecture addition
+
+The [proposed integration](COSMOGRAPH-ARCHITECTURE.md) keeps Sail's large tables and layout/index
+jobs, adds a remote view service, and feeds prepared bounded Arrow tables to Cosmograph. It reviews
+the original design's remaining contracts: a uniform-layout head estimate, unbounded hub edges,
+mixed-level pseudo-edges, spatial versus topology selections, and the response's Arrow schemas.
+
+It includes the verified SDK interface, separate graph/layout versions, lossless IDs with local draw
+indices, fixed-coordinate configuration, query and cache paths, admission policies, licensing options
+and staged acceptance work. The current backend observations remain separate from the proposed
+service/browser targets.
+
+The [Cosmolang protocol proposal](COSMOLANG.md) adds browser/MCP/Nutmeg command
+semantics and portable wire schemas. Its [hierarchy and prefetch design](COSMOLANG-HIERARCHY.md)
+covers multibillion-source graphs through disjoint bounded cuts, a one-million
+resident-point ceiling and speculative next-view/layout preparation. This is
+contract and implementation planning; no new service/browser timing is claimed.
+
 ## Files
 
 All in this directory. Tables were written to the session scratch directory and are not kept.
@@ -675,6 +703,10 @@ All in this directory. Tables were written to the session scratch directory and 
 | File | Contents |
 |---|---|
 | `README.md` | this report |
+| [`COSMOLANG.md`](COSMOLANG.md) | typed exploration protocol for browser, MCP and Sail/Nutmeg |
+| [`COSMOLANG-HIERARCHY.md`](COSMOLANG-HIERARCHY.md) | hierarchical cuts, resident budgets, anticipation and implementation gates |
+| [`cosmolang/`](cosmolang/README.md) | portable JSON schemas, illustrative exchanges and conformance checks |
+| [`COSMOGRAPH-ARCHITECTURE.md`](COSMOGRAPH-ARCHITECTURE.md) | requested Cosmograph integration proposal and review; current official SDK contracts, backend projection/subset paths and qualification plan |
 | [`vizserver.py`](vizserver.py) | starts and stops one Sail server (Spark Connect or Flight) on an ephemeral port, records settings and host facts |
 | [`quadsql.py`](quadsql.py) | the key, cell and aggregate expressions (section 2) |
 | [`layout.py`](layout.py) | the two placeholder layouts |

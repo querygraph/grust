@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:querygraph:cosmolang:0.1:request",
+  "type": "object",
+  "properties": {
+    "cosmolang": {
+      "const": "0.1"
+    },
+    "request_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512
+    },
+    "session_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512
+    },
+    "expect_revision": {
+      "$ref": "urn:querygraph:cosmolang:0.1:common#/$defs/uint"
+    },
+    "context": {
+      "$ref": "urn:querygraph:cosmolang:0.1:common#/$defs/context"
+    },
+    "budget": {
+      "$ref": "urn:querygraph:cosmolang:0.1:budget"
+    },
+    "command": {
+      "oneOf": [
+        {
+          "$ref": "urn:querygraph:cosmolang:0.1:navigation"
+        },
+        {
+          "$ref": "urn:querygraph:cosmolang:0.1:graph"
+        },
+        {
+          "$ref": "urn:querygraph:cosmolang:0.1:work"
+        }
+      ]
+    }
+  },
+  "required": [
+    "cosmolang",
+    "request_id",
+    "context",
+    "budget",
+    "command"
+  ],
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "properties": {
+              "op": {
+                "const": "session.open"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "session_id"
+              ]
+            },
+            {
+              "required": [
+                "expect_revision"
+              ]
+            }
+          ]
+        }
+      },
+      "else": {
+        "required": [
+          "session_id",
+          "expect_revision"
+        ]
+      }
+    }
+  ]
+}
