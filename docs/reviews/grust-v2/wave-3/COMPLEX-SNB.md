@@ -62,5 +62,62 @@ from sampled native-process resident memory.
 The full detached integration gate includes production parser controls, Wave 2
 and Wave 3 checks, all existing native relational/frontend/semantics tests,
 short and complex official-query oracles, and requested synthetic scales.
-Final verdict, all cells, ratios, memory profile and preserved failures will be
-added after the exact source gate finishes.
+The detached full gate **PASSED** at source
+`b2d5d8b1f3866272bc637fb76e544f35c2c3321c`, with unchanged HEAD and clean
+working tree. [Preserved gate log](complex-evidence/source-gate.log) records
+the complete command sequence and verdict. Native Sail is the optimized macOS
+binary at `9f0aa7d2a50f1258544d37c05dd19b3ff3d915b3` (SHA-256
+`ee80ac3cf9d028639561f3cf32435985192719d629807fcf6a368324fa84946e`).
+
+The native gate exercised 868 query cells: 860 returned passes and eight
+expected arithmetic errors. This includes 130 short-query cells and 150 complex
+cells at each of base, 10× and 100×. All requested exact ordered oracles passed.
+The 18 explicit capability refusals remain recorded separately.
+
+| Input | Vertices | Edges | Optimized / resolved median ratio range |
+|---|---:|---:|---:|
+| Base | 10,629 | 18,136 | 0.912–0.985 |
+| 10× | 106,290 | 181,360 | 0.920–1.012 |
+| 100× | 1,062,900 | 1,813,600 | 0.927–1.554 |
+
+Ratios above one mean the optimized plan was slower. The largest three 100×
+ratios were IC8/person 8796093022220 (1.554), IC8/person 2199023255711
+(1.373), and IC2/person 8796093022220 with the maximum date (1.305).
+These shared-host results establish neither a universal speedup nor a cause
+for the slower cells. Per-binding ratios, all outcomes and content-addressed
+SQL programs are in [the evidence directory](complex-evidence/).
+The short-query ratio range was 0.854–1.016.
+
+IC2 and IC8 have known metadata estimates; IC9 retains an unknown total cost.
+Unknown is not converted to zero. Cost estimates are abstract optimizer inputs,
+not calibrated elapsed-time predictions. Rewrite traces retain the decision
+made for each binding.
+
+A separate 100× memory run passed six productive IC2/IC8/IC9 cells, covering
+both variants. Its 200 ms sampler observed 464,691,200 bytes (443.16 MiB)
+maximum Sail-server RSS over 14 samples. This is a sampled maximum, not a
+continuous peak or an OS memory limit. It includes native allocations outside
+the 256 MiB managed pool and excludes preparation, the Python harness and
+browser. [Memory receipt](complex-evidence/memory-100/receipt.json).
+
+Receipts remove absolute elapsed and compilation times for shared-host
+publication; measured cells retain ratios to their binding's resolved median.
+Raw receipts, full plans and development failures are retained on Apo under
+`/Volumes/Apo/graph-tests/workspaces/grust-v2-complex-20261008/`.
+Development compilation failures around collected graph-value UNWIND were
+fixed before the detached source gate; they are not represented as passing runs.
+
+## Consolidated progress
+
+1. [Combined PR integration](../INTEGRATION.md): production parser and both
+   draft workspaces passed together; PRs #40–46 are integrated.
+2. Complex query resolution now qualifies unchanged IC2, IC8 and IC9 with
+   independent CSV answers and typed collection/entity semantics above.
+3. Paired execution, cost traces, synthetic larger inputs and a separate RSS
+   control are preserved here, including slower and unknown-cost cases.
+4. [Cosmolang live slice](https://github.com/querygraph/grust/blob/work/cosmolang-live/docs/reviews/sem-research-2026-10-03/visualization/cosmolang/live/README.md)
+   connects the actual Cosmograph SDK to a native Sail/Nutmeg gateway and MCP.
+   It remains a bounded two-level prototype, not a billion-node deployment.
+
+These results qualify the implemented subset. They do not claim full Cypher,
+all SNB queries, distributed qualification, or an audited LDBC benchmark.

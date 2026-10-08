@@ -1,0 +1,1979 @@
+[
+  {
+    "estimated_cost": 56767007.40540541,
+    "expected": [
+      [
+        6597069766786,
+        "Miguel",
+        "Rodriguez",
+        343597394653,
+        "photo343597394653.jpg",
+        1290599740562
+      ],
+      [
+        150,
+        "Alfonso",
+        "Alvarez",
+        343597393214,
+        "About Akkadian Empire, Under Sargon and his successors, Akkadian language was brief",
+        1290529459855
+      ],
+      [
+        6597069766660,
+        "Bryn",
+        "Davies",
+        343597391917,
+        "maybe",
+        1290423998323
+      ],
+      [
+        6597069766660,
+        "Bryn",
+        "Davies",
+        343597391915,
+        "About Laurence Olivier, ier was 'the greatest actor in the English-speaking world'. Olivier played a wide variety of r",
+        1290347090166
+      ],
+      [
+        6597069766660,
+        "Bryn",
+        "Davies",
+        343597391742,
+        "photo343597391742.jpg",
+        1290217249843
+      ],
+      [
+        6597069766660,
+        "Bryn",
+        "Davies",
+        343597391741,
+        "photo343597391741.jpg",
+        1290217248843
+      ],
+      [
+        6597069766660,
+        "Bryn",
+        "Davies",
+        343597391740,
+        "photo343597391740.jpg",
+        1290217247843
+      ],
+      [
+        6597069766660,
+        "Bryn",
+        "Davies",
+        343597391739,
+        "photo343597391739.jpg",
+        1290217246843
+      ],
+      [
+        6597069766660,
+        "Bryn",
+        "Davies",
+        343597391738,
+        "photo343597391738.jpg",
+        1290217245843
+      ],
+      [
+        6597069766660,
+        "Bryn",
+        "Davies",
+        343597391737,
+        "photo343597391737.jpg",
+        1290217244843
+      ],
+      [
+        6597069766660,
+        "Bryn",
+        "Davies",
+        343597391736,
+        "photo343597391736.jpg",
+        1290217243843
+      ],
+      [
+        6597069766660,
+        "Bryn",
+        "Davies",
+        343597391735,
+        "photo343597391735.jpg",
+        1290217242843
+      ],
+      [
+        6597069766660,
+        "Bryn",
+        "Davies",
+        343597391734,
+        "photo343597391734.jpg",
+        1290217241843
+      ],
+      [
+        6597069766660,
+        "Bryn",
+        "Davies",
+        343597391733,
+        "photo343597391733.jpg",
+        1290217240843
+      ],
+      [
+        6597069766660,
+        "Bryn",
+        "Davies",
+        343597391732,
+        "photo343597391732.jpg",
+        1290217239843
+      ],
+      [
+        6597069766660,
+        "Bryn",
+        "Davies",
+        343597391731,
+        "photo343597391731.jpg",
+        1290217238843
+      ],
+      [
+        6597069766660,
+        "Bryn",
+        "Davies",
+        343597390010,
+        "fine",
+        1290157200924
+      ],
+      [
+        6597069766660,
+        "Bryn",
+        "Davies",
+        343597390778,
+        "duh",
+        1289810593034
+      ],
+      [
+        6597069766660,
+        "Bryn",
+        "Davies",
+        343597390518,
+        "LOL",
+        1289544204373
+      ],
+      [
+        2199023255629,
+        "Karl",
+        "Fischer",
+        343597392960,
+        "cool",
+        1289295841252
+      ]
+    ],
+    "name": "ldbc_ic2_8796093022220_9223372036854775807",
+    "optimized_steps": [],
+    "optimized_traversals": [],
+    "ordered": true,
+    "output_types": [
+      "bigint",
+      "string",
+      "string",
+      "bigint",
+      "string",
+      "bigint"
+    ],
+    "parameters": {
+      "maxDate": 9223372036854775807,
+      "personId": 8796093022220
+    },
+    "query_sha256": "434d4215e299eb00fa4d0bfc9a5111b00f1a806c7b8220044df7963da3f06de2",
+    "query_text": "// Q2. Recent messages by your friends\n/*\n:param [{ personId, maxDate }] => { RETURN\n  10995116278009 AS personId,\n  1287230400000 AS maxDate\n}\n*/\nMATCH (:Person {id: $personId })-[:KNOWS]-(friend:Person)<-[:HAS_CREATOR]-(message:Message)\n    WHERE message.creationDate <= $maxDate\n    RETURN\n        friend.id AS personId,\n        friend.firstName AS personFirstName,\n        friend.lastName AS personLastName,\n        message.id AS postOrCommentId,\n        coalesce(message.content,message.imageFile) AS postOrCommentContent,\n        message.creationDate AS postOrCommentCreationDate\n    ORDER BY\n        postOrCommentCreationDate DESC,\n        toInteger(postOrCommentId) ASC\n    LIMIT 20\n",
+    "statistics_revision": "98fe6d82e28ff8ee550834a6d91ca2d86c9274e69db913d2a5edad14ef06b2ae",
+    "steps": [],
+    "trace": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "costed inner region: 5 relations, before=Some(2.853781550355596e25), after=7058986.486486487, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 5 relations, before=Some(4.0005060800108024e24), after=3087556.756756757, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 5 relations, before=Some(2.853781550355596e25), after=7141486.486486487, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 5 relations, before=Some(4.0005060800108024e24), after=3170056.756756757, NDV equality estimates; absent selectivity uses 1"
+    ],
+    "traversals": []
+  },
+  {
+    "estimated_cost": 56767007.40540541,
+    "expected": [],
+    "name": "ldbc_ic2_-1_9223372036854775807",
+    "optimized_steps": [],
+    "optimized_traversals": [],
+    "ordered": true,
+    "output_types": [
+      "bigint",
+      "string",
+      "string",
+      "bigint",
+      "string",
+      "bigint"
+    ],
+    "parameters": {
+      "maxDate": 9223372036854775807,
+      "personId": -1
+    },
+    "query_sha256": "434d4215e299eb00fa4d0bfc9a5111b00f1a806c7b8220044df7963da3f06de2",
+    "query_text": "// Q2. Recent messages by your friends\n/*\n:param [{ personId, maxDate }] => { RETURN\n  10995116278009 AS personId,\n  1287230400000 AS maxDate\n}\n*/\nMATCH (:Person {id: $personId })-[:KNOWS]-(friend:Person)<-[:HAS_CREATOR]-(message:Message)\n    WHERE message.creationDate <= $maxDate\n    RETURN\n        friend.id AS personId,\n        friend.firstName AS personFirstName,\n        friend.lastName AS personLastName,\n        message.id AS postOrCommentId,\n        coalesce(message.content,message.imageFile) AS postOrCommentContent,\n        message.creationDate AS postOrCommentCreationDate\n    ORDER BY\n        postOrCommentCreationDate DESC,\n        toInteger(postOrCommentId) ASC\n    LIMIT 20\n",
+    "statistics_revision": "98fe6d82e28ff8ee550834a6d91ca2d86c9274e69db913d2a5edad14ef06b2ae",
+    "steps": [],
+    "trace": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "costed inner region: 5 relations, before=Some(2.853781550355596e25), after=7058986.486486487, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 5 relations, before=Some(4.0005060800108024e24), after=3087556.756756757, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 5 relations, before=Some(2.853781550355596e25), after=7141486.486486487, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 5 relations, before=Some(4.0005060800108024e24), after=3170056.756756757, NDV equality estimates; absent selectivity uses 1"
+    ],
+    "traversals": []
+  },
+  {
+    "estimated_cost": 56767007.40540541,
+    "expected": [],
+    "name": "ldbc_ic2_8796093022220_0",
+    "optimized_steps": [],
+    "optimized_traversals": [],
+    "ordered": true,
+    "output_types": [
+      "bigint",
+      "string",
+      "string",
+      "bigint",
+      "string",
+      "bigint"
+    ],
+    "parameters": {
+      "maxDate": 0,
+      "personId": 8796093022220
+    },
+    "query_sha256": "434d4215e299eb00fa4d0bfc9a5111b00f1a806c7b8220044df7963da3f06de2",
+    "query_text": "// Q2. Recent messages by your friends\n/*\n:param [{ personId, maxDate }] => { RETURN\n  10995116278009 AS personId,\n  1287230400000 AS maxDate\n}\n*/\nMATCH (:Person {id: $personId })-[:KNOWS]-(friend:Person)<-[:HAS_CREATOR]-(message:Message)\n    WHERE message.creationDate <= $maxDate\n    RETURN\n        friend.id AS personId,\n        friend.firstName AS personFirstName,\n        friend.lastName AS personLastName,\n        message.id AS postOrCommentId,\n        coalesce(message.content,message.imageFile) AS postOrCommentContent,\n        message.creationDate AS postOrCommentCreationDate\n    ORDER BY\n        postOrCommentCreationDate DESC,\n        toInteger(postOrCommentId) ASC\n    LIMIT 20\n",
+    "statistics_revision": "98fe6d82e28ff8ee550834a6d91ca2d86c9274e69db913d2a5edad14ef06b2ae",
+    "steps": [],
+    "trace": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "costed inner region: 5 relations, before=Some(2.853781550355596e25), after=7058986.486486487, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 5 relations, before=Some(4.0005060800108024e24), after=3087556.756756757, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 5 relations, before=Some(2.853781550355596e25), after=7141486.486486487, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 5 relations, before=Some(4.0005060800108024e24), after=3170056.756756757, NDV equality estimates; absent selectivity uses 1"
+    ],
+    "traversals": []
+  },
+  {
+    "estimated_cost": 56767007.40540541,
+    "expected": [
+      [
+        150,
+        "Alfonso",
+        "Alvarez",
+        343597393214,
+        "About Akkadian Empire, Under Sargon and his successors, Akkadian language was brief",
+        1290529459855
+      ],
+      [
+        6597069766660,
+        "Bryn",
+        "Davies",
+        343597391917,
+        "maybe",
+        1290423998323
+      ],
+      [
+        6597069766660,
+        "Bryn",
+        "Davies",
+        343597391915,
+        "About Laurence Olivier, ier was 'the greatest actor in the English-speaking world'. Olivier played a wide variety of r",
+        1290347090166
+      ],
+      [
+        6597069766660,
+        "Bryn",
+        "Davies",
+        343597391742,
+        "photo343597391742.jpg",
+        1290217249843
+      ],
+      [
+        6597069766660,
+        "Bryn",
+        "Davies",
+        343597391741,
+        "photo343597391741.jpg",
+        1290217248843
+      ],
+      [
+        6597069766660,
+        "Bryn",
+        "Davies",
+        343597391740,
+        "photo343597391740.jpg",
+        1290217247843
+      ],
+      [
+        6597069766660,
+        "Bryn",
+        "Davies",
+        343597391739,
+        "photo343597391739.jpg",
+        1290217246843
+      ],
+      [
+        6597069766660,
+        "Bryn",
+        "Davies",
+        343597391738,
+        "photo343597391738.jpg",
+        1290217245843
+      ],
+      [
+        6597069766660,
+        "Bryn",
+        "Davies",
+        343597391737,
+        "photo343597391737.jpg",
+        1290217244843
+      ],
+      [
+        6597069766660,
+        "Bryn",
+        "Davies",
+        343597391736,
+        "photo343597391736.jpg",
+        1290217243843
+      ],
+      [
+        6597069766660,
+        "Bryn",
+        "Davies",
+        343597391735,
+        "photo343597391735.jpg",
+        1290217242843
+      ],
+      [
+        6597069766660,
+        "Bryn",
+        "Davies",
+        343597391734,
+        "photo343597391734.jpg",
+        1290217241843
+      ],
+      [
+        6597069766660,
+        "Bryn",
+        "Davies",
+        343597391733,
+        "photo343597391733.jpg",
+        1290217240843
+      ],
+      [
+        6597069766660,
+        "Bryn",
+        "Davies",
+        343597391732,
+        "photo343597391732.jpg",
+        1290217239843
+      ],
+      [
+        6597069766660,
+        "Bryn",
+        "Davies",
+        343597391731,
+        "photo343597391731.jpg",
+        1290217238843
+      ],
+      [
+        6597069766660,
+        "Bryn",
+        "Davies",
+        343597390010,
+        "fine",
+        1290157200924
+      ],
+      [
+        6597069766660,
+        "Bryn",
+        "Davies",
+        343597390778,
+        "duh",
+        1289810593034
+      ],
+      [
+        6597069766660,
+        "Bryn",
+        "Davies",
+        343597390518,
+        "LOL",
+        1289544204373
+      ],
+      [
+        2199023255629,
+        "Karl",
+        "Fischer",
+        343597392960,
+        "cool",
+        1289295841252
+      ],
+      [
+        2199023255629,
+        "Karl",
+        "Fischer",
+        343597392961,
+        "yes",
+        1289280503964
+      ]
+    ],
+    "name": "ldbc_ic2_8796093022220_1290599740561",
+    "optimized_steps": [],
+    "optimized_traversals": [],
+    "ordered": true,
+    "output_types": [
+      "bigint",
+      "string",
+      "string",
+      "bigint",
+      "string",
+      "bigint"
+    ],
+    "parameters": {
+      "maxDate": 1290599740561,
+      "personId": 8796093022220
+    },
+    "query_sha256": "434d4215e299eb00fa4d0bfc9a5111b00f1a806c7b8220044df7963da3f06de2",
+    "query_text": "// Q2. Recent messages by your friends\n/*\n:param [{ personId, maxDate }] => { RETURN\n  10995116278009 AS personId,\n  1287230400000 AS maxDate\n}\n*/\nMATCH (:Person {id: $personId })-[:KNOWS]-(friend:Person)<-[:HAS_CREATOR]-(message:Message)\n    WHERE message.creationDate <= $maxDate\n    RETURN\n        friend.id AS personId,\n        friend.firstName AS personFirstName,\n        friend.lastName AS personLastName,\n        message.id AS postOrCommentId,\n        coalesce(message.content,message.imageFile) AS postOrCommentContent,\n        message.creationDate AS postOrCommentCreationDate\n    ORDER BY\n        postOrCommentCreationDate DESC,\n        toInteger(postOrCommentId) ASC\n    LIMIT 20\n",
+    "statistics_revision": "98fe6d82e28ff8ee550834a6d91ca2d86c9274e69db913d2a5edad14ef06b2ae",
+    "steps": [],
+    "trace": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "costed inner region: 5 relations, before=Some(2.853781550355596e25), after=7058986.486486487, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 5 relations, before=Some(4.0005060800108024e24), after=3087556.756756757, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 5 relations, before=Some(2.853781550355596e25), after=7141486.486486487, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 5 relations, before=Some(4.0005060800108024e24), after=3170056.756756757, NDV equality estimates; absent selectivity uses 1"
+    ],
+    "traversals": []
+  },
+  {
+    "estimated_cost": 56767007.40540541,
+    "expected": [
+      [
+        6597069766786,
+        "Miguel",
+        "Rodriguez",
+        343597394653,
+        "photo343597394653.jpg",
+        1290599740562
+      ],
+      [
+        150,
+        "Alfonso",
+        "Alvarez",
+        343597393214,
+        "About Akkadian Empire, Under Sargon and his successors, Akkadian language was brief",
+        1290529459855
+      ],
+      [
+        6597069766660,
+        "Bryn",
+        "Davies",
+        343597391917,
+        "maybe",
+        1290423998323
+      ],
+      [
+        6597069766660,
+        "Bryn",
+        "Davies",
+        343597391915,
+        "About Laurence Olivier, ier was 'the greatest actor in the English-speaking world'. Olivier played a wide variety of r",
+        1290347090166
+      ],
+      [
+        6597069766660,
+        "Bryn",
+        "Davies",
+        343597391742,
+        "photo343597391742.jpg",
+        1290217249843
+      ],
+      [
+        6597069766660,
+        "Bryn",
+        "Davies",
+        343597391741,
+        "photo343597391741.jpg",
+        1290217248843
+      ],
+      [
+        6597069766660,
+        "Bryn",
+        "Davies",
+        343597391740,
+        "photo343597391740.jpg",
+        1290217247843
+      ],
+      [
+        6597069766660,
+        "Bryn",
+        "Davies",
+        343597391739,
+        "photo343597391739.jpg",
+        1290217246843
+      ],
+      [
+        6597069766660,
+        "Bryn",
+        "Davies",
+        343597391738,
+        "photo343597391738.jpg",
+        1290217245843
+      ],
+      [
+        6597069766660,
+        "Bryn",
+        "Davies",
+        343597391737,
+        "photo343597391737.jpg",
+        1290217244843
+      ],
+      [
+        6597069766660,
+        "Bryn",
+        "Davies",
+        343597391736,
+        "photo343597391736.jpg",
+        1290217243843
+      ],
+      [
+        6597069766660,
+        "Bryn",
+        "Davies",
+        343597391735,
+        "photo343597391735.jpg",
+        1290217242843
+      ],
+      [
+        6597069766660,
+        "Bryn",
+        "Davies",
+        343597391734,
+        "photo343597391734.jpg",
+        1290217241843
+      ],
+      [
+        6597069766660,
+        "Bryn",
+        "Davies",
+        343597391733,
+        "photo343597391733.jpg",
+        1290217240843
+      ],
+      [
+        6597069766660,
+        "Bryn",
+        "Davies",
+        343597391732,
+        "photo343597391732.jpg",
+        1290217239843
+      ],
+      [
+        6597069766660,
+        "Bryn",
+        "Davies",
+        343597391731,
+        "photo343597391731.jpg",
+        1290217238843
+      ],
+      [
+        6597069766660,
+        "Bryn",
+        "Davies",
+        343597390010,
+        "fine",
+        1290157200924
+      ],
+      [
+        6597069766660,
+        "Bryn",
+        "Davies",
+        343597390778,
+        "duh",
+        1289810593034
+      ],
+      [
+        6597069766660,
+        "Bryn",
+        "Davies",
+        343597390518,
+        "LOL",
+        1289544204373
+      ],
+      [
+        2199023255629,
+        "Karl",
+        "Fischer",
+        343597392960,
+        "cool",
+        1289295841252
+      ]
+    ],
+    "name": "ldbc_ic2_8796093022220_1290599740562",
+    "optimized_steps": [],
+    "optimized_traversals": [],
+    "ordered": true,
+    "output_types": [
+      "bigint",
+      "string",
+      "string",
+      "bigint",
+      "string",
+      "bigint"
+    ],
+    "parameters": {
+      "maxDate": 1290599740562,
+      "personId": 8796093022220
+    },
+    "query_sha256": "434d4215e299eb00fa4d0bfc9a5111b00f1a806c7b8220044df7963da3f06de2",
+    "query_text": "// Q2. Recent messages by your friends\n/*\n:param [{ personId, maxDate }] => { RETURN\n  10995116278009 AS personId,\n  1287230400000 AS maxDate\n}\n*/\nMATCH (:Person {id: $personId })-[:KNOWS]-(friend:Person)<-[:HAS_CREATOR]-(message:Message)\n    WHERE message.creationDate <= $maxDate\n    RETURN\n        friend.id AS personId,\n        friend.firstName AS personFirstName,\n        friend.lastName AS personLastName,\n        message.id AS postOrCommentId,\n        coalesce(message.content,message.imageFile) AS postOrCommentContent,\n        message.creationDate AS postOrCommentCreationDate\n    ORDER BY\n        postOrCommentCreationDate DESC,\n        toInteger(postOrCommentId) ASC\n    LIMIT 20\n",
+    "statistics_revision": "98fe6d82e28ff8ee550834a6d91ca2d86c9274e69db913d2a5edad14ef06b2ae",
+    "steps": [],
+    "trace": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "costed inner region: 5 relations, before=Some(2.853781550355596e25), after=7058986.486486487, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 5 relations, before=Some(4.0005060800108024e24), after=3087556.756756757, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 5 relations, before=Some(2.853781550355596e25), after=7141486.486486487, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 5 relations, before=Some(4.0005060800108024e24), after=3170056.756756757, NDV equality estimates; absent selectivity uses 1"
+    ],
+    "traversals": []
+  },
+  {
+    "estimated_cost": 56767007.40540541,
+    "expected": [
+      [
+        6597069766786,
+        "Miguel",
+        "Rodriguez",
+        343597394653,
+        "photo343597394653.jpg",
+        1290599740562
+      ],
+      [
+        150,
+        "Alfonso",
+        "Alvarez",
+        343597393214,
+        "About Akkadian Empire, Under Sargon and his successors, Akkadian language was brief",
+        1290529459855
+      ],
+      [
+        6597069766660,
+        "Bryn",
+        "Davies",
+        343597391917,
+        "maybe",
+        1290423998323
+      ],
+      [
+        6597069766660,
+        "Bryn",
+        "Davies",
+        343597391915,
+        "About Laurence Olivier, ier was 'the greatest actor in the English-speaking world'. Olivier played a wide variety of r",
+        1290347090166
+      ],
+      [
+        6597069766660,
+        "Bryn",
+        "Davies",
+        343597391742,
+        "photo343597391742.jpg",
+        1290217249843
+      ],
+      [
+        6597069766660,
+        "Bryn",
+        "Davies",
+        343597391741,
+        "photo343597391741.jpg",
+        1290217248843
+      ],
+      [
+        6597069766660,
+        "Bryn",
+        "Davies",
+        343597391740,
+        "photo343597391740.jpg",
+        1290217247843
+      ],
+      [
+        6597069766660,
+        "Bryn",
+        "Davies",
+        343597391739,
+        "photo343597391739.jpg",
+        1290217246843
+      ],
+      [
+        6597069766660,
+        "Bryn",
+        "Davies",
+        343597391738,
+        "photo343597391738.jpg",
+        1290217245843
+      ],
+      [
+        6597069766660,
+        "Bryn",
+        "Davies",
+        343597391737,
+        "photo343597391737.jpg",
+        1290217244843
+      ],
+      [
+        6597069766660,
+        "Bryn",
+        "Davies",
+        343597391736,
+        "photo343597391736.jpg",
+        1290217243843
+      ],
+      [
+        6597069766660,
+        "Bryn",
+        "Davies",
+        343597391735,
+        "photo343597391735.jpg",
+        1290217242843
+      ],
+      [
+        6597069766660,
+        "Bryn",
+        "Davies",
+        343597391734,
+        "photo343597391734.jpg",
+        1290217241843
+      ],
+      [
+        6597069766660,
+        "Bryn",
+        "Davies",
+        343597391733,
+        "photo343597391733.jpg",
+        1290217240843
+      ],
+      [
+        6597069766660,
+        "Bryn",
+        "Davies",
+        343597391732,
+        "photo343597391732.jpg",
+        1290217239843
+      ],
+      [
+        6597069766660,
+        "Bryn",
+        "Davies",
+        343597391731,
+        "photo343597391731.jpg",
+        1290217238843
+      ],
+      [
+        6597069766660,
+        "Bryn",
+        "Davies",
+        343597390010,
+        "fine",
+        1290157200924
+      ],
+      [
+        6597069766660,
+        "Bryn",
+        "Davies",
+        343597390778,
+        "duh",
+        1289810593034
+      ],
+      [
+        6597069766660,
+        "Bryn",
+        "Davies",
+        343597390518,
+        "LOL",
+        1289544204373
+      ],
+      [
+        2199023255629,
+        "Karl",
+        "Fischer",
+        343597392960,
+        "cool",
+        1289295841252
+      ]
+    ],
+    "name": "ldbc_ic2_8796093022220_1290599740563",
+    "optimized_steps": [],
+    "optimized_traversals": [],
+    "ordered": true,
+    "output_types": [
+      "bigint",
+      "string",
+      "string",
+      "bigint",
+      "string",
+      "bigint"
+    ],
+    "parameters": {
+      "maxDate": 1290599740563,
+      "personId": 8796093022220
+    },
+    "query_sha256": "434d4215e299eb00fa4d0bfc9a5111b00f1a806c7b8220044df7963da3f06de2",
+    "query_text": "// Q2. Recent messages by your friends\n/*\n:param [{ personId, maxDate }] => { RETURN\n  10995116278009 AS personId,\n  1287230400000 AS maxDate\n}\n*/\nMATCH (:Person {id: $personId })-[:KNOWS]-(friend:Person)<-[:HAS_CREATOR]-(message:Message)\n    WHERE message.creationDate <= $maxDate\n    RETURN\n        friend.id AS personId,\n        friend.firstName AS personFirstName,\n        friend.lastName AS personLastName,\n        message.id AS postOrCommentId,\n        coalesce(message.content,message.imageFile) AS postOrCommentContent,\n        message.creationDate AS postOrCommentCreationDate\n    ORDER BY\n        postOrCommentCreationDate DESC,\n        toInteger(postOrCommentId) ASC\n    LIMIT 20\n",
+    "statistics_revision": "98fe6d82e28ff8ee550834a6d91ca2d86c9274e69db913d2a5edad14ef06b2ae",
+    "steps": [],
+    "trace": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "costed inner region: 5 relations, before=Some(2.853781550355596e25), after=7058986.486486487, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 5 relations, before=Some(4.0005060800108024e24), after=3087556.756756757, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 5 relations, before=Some(2.853781550355596e25), after=7141486.486486487, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 5 relations, before=Some(4.0005060800108024e24), after=3170056.756756757, NDV equality estimates; absent selectivity uses 1"
+    ],
+    "traversals": []
+  },
+  {
+    "estimated_cost": 10399002.0,
+    "expected": [],
+    "name": "ldbc_ic8_8796093022220",
+    "optimized_steps": [],
+    "optimized_traversals": [],
+    "ordered": true,
+    "output_types": [
+      "bigint",
+      "string",
+      "string",
+      "bigint",
+      "bigint",
+      "string"
+    ],
+    "parameters": {
+      "personId": 8796093022220
+    },
+    "query_sha256": "d393a6d23e5162a4894a4629f9cc18aed69f61c1e6f683b04a2630a26135c357",
+    "query_text": "// Q8. Recent replies\n/*\n:param personId: 143\n*/\nMATCH (start:Person {id: $personId})<-[:HAS_CREATOR]-(:Message)<-[:REPLY_OF]-(comment:Comment)-[:HAS_CREATOR]->(person:Person)\nRETURN\n    person.id AS personId,\n    person.firstName AS personFirstName,\n    person.lastName AS personLastName,\n    comment.creationDate AS commentCreationDate,\n    comment.id AS commentId,\n    comment.content AS commentContent\nORDER BY\n    commentCreationDate DESC,\n    commentId ASC\nLIMIT 20\n",
+    "statistics_revision": "98fe6d82e28ff8ee550834a6d91ca2d86c9274e69db913d2a5edad14ef06b2ae",
+    "steps": [],
+    "trace": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "costed inner region: 7 relations, before=Some(1.8872969432437133e36), after=5275300, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 7 relations, before=Some(2.645655060719053e35), after=3792900, NDV equality estimates; absent selectivity uses 1"
+    ],
+    "traversals": []
+  },
+  {
+    "estimated_cost": 10399002.0,
+    "expected": [
+      [
+        4398046511123,
+        "Jimmy",
+        "Burak",
+        1279202389901,
+        206158440669,
+        "great"
+      ],
+      [
+        2199023255689,
+        "Eduardo",
+        "Gonzalez",
+        1277704168417,
+        206158430249,
+        "I see"
+      ],
+      [
+        2199023255689,
+        "Eduardo",
+        "Gonzalez",
+        1277702653870,
+        206158430261,
+        "good"
+      ],
+      [
+        4398046511146,
+        "Ali",
+        "Achiou",
+        1277684183685,
+        206158430248,
+        "LOL"
+      ],
+      [
+        4398046511146,
+        "Ali",
+        "Achiou",
+        1277681817962,
+        206158430246,
+        "yes"
+      ],
+      [
+        73,
+        "Cheng",
+        "Chen",
+        1277676375655,
+        206158430255,
+        "About Michelangelo, f correspondence, About Joan Crawford, e until her death About Croa"
+      ],
+      [
+        73,
+        "Cheng",
+        "Chen",
+        1277670831430,
+        206158430264,
+        "fine"
+      ],
+      [
+        73,
+        "Cheng",
+        "Chen",
+        1277657398831,
+        206158430260,
+        "About Marilyn Monroe, for unreliability and being difficult to workAbout Joan Crawford, ie Dearest, in which she alleged a lifelong pAbout Commonwealth of England, ever, loosely"
+      ],
+      [
+        153,
+        "Abdala",
+        "Ndiaye",
+        1277648952227,
+        206158430251,
+        "right"
+      ],
+      [
+        73,
+        "Cheng",
+        "Chen",
+        1277646492520,
+        206158430259,
+        "thx"
+      ],
+      [
+        4398046511146,
+        "Ali",
+        "Achiou",
+        1277644370439,
+        206158430250,
+        "fine"
+      ],
+      [
+        4398046511146,
+        "Ali",
+        "Achiou",
+        1277643671135,
+        206158430252,
+        "About Michelangelo,  of the Sistine Chapel in RomAbout Aristophanes, e of comic drama "
+      ],
+      [
+        2199023255689,
+        "Eduardo",
+        "Gonzalez",
+        1277641955843,
+        206158430258,
+        "good"
+      ],
+      [
+        153,
+        "Abdala",
+        "Ndiaye",
+        1277637330089,
+        206158430247,
+        "thanks"
+      ],
+      [
+        2199023255693,
+        "Yang",
+        "Li",
+        1277553412406,
+        206158433762,
+        "maybe"
+      ],
+      [
+        228,
+        "Asher",
+        "Mamo",
+        1277531142886,
+        206158433764,
+        "maybe"
+      ],
+      [
+        2199023255746,
+        "Claude",
+        "Aly",
+        1277528042595,
+        206158433757,
+        "thx"
+      ],
+      [
+        150,
+        "Alfonso",
+        "Alvarez",
+        1277519453531,
+        206158433755,
+        "maybe"
+      ],
+      [
+        2199023255711,
+        "David",
+        "Alonso",
+        1277482495529,
+        206158433763,
+        "About Barack Obama, arty's nomination. In About Egypt, rces. The Central SecuAbout The"
+      ],
+      [
+        228,
+        "Asher",
+        "Mamo",
+        1277476827042,
+        206158433756,
+        "About Isaac Newton,  to the study of power series. Newton'sAbout Barack Obama,  of the American Recovery and ReinvestmAbout Gimme More,  uptempo dance-pop"
+      ]
+    ],
+    "name": "ldbc_ic8_2199023255711",
+    "optimized_steps": [],
+    "optimized_traversals": [],
+    "ordered": true,
+    "output_types": [
+      "bigint",
+      "string",
+      "string",
+      "bigint",
+      "bigint",
+      "string"
+    ],
+    "parameters": {
+      "personId": 2199023255711
+    },
+    "query_sha256": "d393a6d23e5162a4894a4629f9cc18aed69f61c1e6f683b04a2630a26135c357",
+    "query_text": "// Q8. Recent replies\n/*\n:param personId: 143\n*/\nMATCH (start:Person {id: $personId})<-[:HAS_CREATOR]-(:Message)<-[:REPLY_OF]-(comment:Comment)-[:HAS_CREATOR]->(person:Person)\nRETURN\n    person.id AS personId,\n    person.firstName AS personFirstName,\n    person.lastName AS personLastName,\n    comment.creationDate AS commentCreationDate,\n    comment.id AS commentId,\n    comment.content AS commentContent\nORDER BY\n    commentCreationDate DESC,\n    commentId ASC\nLIMIT 20\n",
+    "statistics_revision": "98fe6d82e28ff8ee550834a6d91ca2d86c9274e69db913d2a5edad14ef06b2ae",
+    "steps": [],
+    "trace": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "costed inner region: 7 relations, before=Some(1.8872969432437133e36), after=5275300, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 7 relations, before=Some(2.645655060719053e35), after=3792900, NDV equality estimates; absent selectivity uses 1"
+    ],
+    "traversals": []
+  },
+  {
+    "estimated_cost": 10399002.0,
+    "expected": [],
+    "name": "ldbc_ic8_-1",
+    "optimized_steps": [],
+    "optimized_traversals": [],
+    "ordered": true,
+    "output_types": [
+      "bigint",
+      "string",
+      "string",
+      "bigint",
+      "bigint",
+      "string"
+    ],
+    "parameters": {
+      "personId": -1
+    },
+    "query_sha256": "d393a6d23e5162a4894a4629f9cc18aed69f61c1e6f683b04a2630a26135c357",
+    "query_text": "// Q8. Recent replies\n/*\n:param personId: 143\n*/\nMATCH (start:Person {id: $personId})<-[:HAS_CREATOR]-(:Message)<-[:REPLY_OF]-(comment:Comment)-[:HAS_CREATOR]->(person:Person)\nRETURN\n    person.id AS personId,\n    person.firstName AS personFirstName,\n    person.lastName AS personLastName,\n    comment.creationDate AS commentCreationDate,\n    comment.id AS commentId,\n    comment.content AS commentContent\nORDER BY\n    commentCreationDate DESC,\n    commentId ASC\nLIMIT 20\n",
+    "statistics_revision": "98fe6d82e28ff8ee550834a6d91ca2d86c9274e69db913d2a5edad14ef06b2ae",
+    "steps": [],
+    "trace": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "costed inner region: 7 relations, before=Some(1.8872969432437133e36), after=5275300, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 7 relations, before=Some(2.645655060719053e35), after=3792900, NDV equality estimates; absent selectivity uses 1"
+    ],
+    "traversals": []
+  },
+  {
+    "estimated_cost": null,
+    "expected": [
+      [
+        4398046511224,
+        "Adriaen",
+        "Jong",
+        343597393172,
+        "great",
+        1290673245079
+      ],
+      [
+        2199023255693,
+        "Yang",
+        "Li",
+        343597392744,
+        "ok",
+        1290672790308
+      ],
+      [
+        2199023255742,
+        "Abdul Wahid",
+        "Jahani",
+        343597392748,
+        "About John Steinbeck, , Jr. (February 27, 1902\u00a0\u2013 December 20About Bloodflow",
+        1290667621611
+      ],
+      [
+        6597069766887,
+        "Amjad Islam",
+        "Ahsan",
+        343597392660,
+        "I see",
+        1290660339652
+      ],
+      [
+        8796093022390,
+        "Abdullah",
+        "Koksal",
+        343597393170,
+        "About Singapore, , opposition critics and international observers as being",
+        1290649616815
+      ],
+      [
+        8796093022235,
+        "Wojciech",
+        "Ciesla",
+        343597389195,
+        "LOL",
+        1290647941688
+      ],
+      [
+        4398046511124,
+        "Yahya Ould Ahmed El",
+        "Abdallahi",
+        343597387671,
+        "About Woodrow Wilson, n Flag Day speech thatAbout Johnny Cash, ingles on several recoAbout Mark Twain,  brou",
+        1290645550750
+      ],
+      [
+        2199023255633,
+        "Adrian",
+        "Bravo",
+        343597389197,
+        "ok",
+        1290632240845
+      ],
+      [
+        153,
+        "Abdala",
+        "Ndiaye",
+        343597387660,
+        "no way!",
+        1290620467076
+      ],
+      [
+        6597069766753,
+        "Naresh",
+        "Singh",
+        343597393166,
+        "About Bahrain, in's Ministry of Defence but now an inAbout Cardinal Richeli",
+        1290618247363
+      ],
+      [
+        2199023255711,
+        "David",
+        "Alonso",
+        343597392661,
+        "thanks",
+        1290612579315
+      ],
+      [
+        6597069766707,
+        "Oleg",
+        "Bazayev",
+        343597387665,
+        "fine",
+        1290609110803
+      ],
+      [
+        2199023255711,
+        "David",
+        "Alonso",
+        343597392659,
+        "About Napoleon, f wars declared against Napoleon's FrenAbout Burundi, the na",
+        1290604164365
+      ],
+      [
+        4398046511220,
+        "John",
+        "Khan",
+        343597393167,
+        "I see",
+        1290599759721
+      ],
+      [
+        6597069766786,
+        "Miguel",
+        "Rodriguez",
+        343597394653,
+        "photo343597394653.jpg",
+        1290599740562
+      ],
+      [
+        8796093022363,
+        "Bacary",
+        "Diop",
+        343597387662,
+        "fine",
+        1290597895802
+      ],
+      [
+        6597069766746,
+        "Cam",
+        "Loan",
+        343597393163,
+        "About John Major, y William Hague. He has since retired from active politics, leaving the House of Commons at the 2001 general",
+        1290597095630
+      ],
+      [
+        4398046511285,
+        "Zdenek",
+        "Herzigov\u00e1",
+        343597389193,
+        "thanks",
+        1290594607493
+      ],
+      [
+        228,
+        "Asher",
+        "Mamo",
+        343597393779,
+        "photo343597393779.jpg",
+        1290590906265
+      ],
+      [
+        228,
+        "Asher",
+        "Mamo",
+        343597393778,
+        "photo343597393778.jpg",
+        1290590905265
+      ]
+    ],
+    "name": "ldbc_ic9_8796093022220_9223372036854775807",
+    "optimized_steps": [],
+    "optimized_traversals": [],
+    "ordered": true,
+    "output_types": [
+      "bigint",
+      "string",
+      "string",
+      "bigint",
+      "string",
+      "bigint"
+    ],
+    "parameters": {
+      "maxDate": 9223372036854775807,
+      "personId": 8796093022220
+    },
+    "query_sha256": "84d05a4cc87a0680b490fc98aa303ff211f363204cc81d936cd5d442bf85cfe7",
+    "query_text": "// Q9. Recent messages by friends or friends of friends\n/*\n:param [{ personId, maxDate }] => { RETURN\n  4398046511268 AS personId,\n  1289908800000 AS maxDate\n}\n*/\nMATCH (root:Person {id: $personId })-[:KNOWS*1..2]-(friend:Person)\nWHERE NOT friend = root\nWITH collect(distinct friend) as friends\nUNWIND friends as friend\n    MATCH (friend)<-[:HAS_CREATOR]-(message:Message)\n    WHERE message.creationDate < $maxDate\nRETURN\n    friend.id AS personId,\n    friend.firstName AS personFirstName,\n    friend.lastName AS personLastName,\n    message.id AS commentOrPostId,\n    coalesce(message.content,message.imageFile) AS commentOrPostContent,\n    message.creationDate AS commentOrPostCreationDate\nORDER BY\n    commentOrPostCreationDate DESC,\n    message.id ASC\nLIMIT 20\n",
+    "statistics_revision": "98fe6d82e28ff8ee550834a6d91ca2d86c9274e69db913d2a5edad14ef06b2ae",
+    "steps": [],
+    "trace": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "costed inner region: 3 relations, before=Some(81322263358500.0), after=545700, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 3 relations, before=Some(81322263358500.0), after=628200, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 5 relations, before=Some(1.4894172476582226e23), after=1413887.8378378379, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 5 relations, before=Some(1.4894172476582226e23), after=1496387.8378378379, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 5 relations, before=Some(1.4894172476582226e23), after=1496387.8378378379, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 5 relations, before=Some(1.4894172476582226e23), after=1578887.8378378379, NDV equality estimates; absent selectivity uses 1",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "costed inner region: 3 relations, before=Some(1.55816628501588e16), after=4805800, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 3 relations, before=Some(2184278505295200.0), after=1841000, NDV equality estimates; absent selectivity uses 1"
+    ],
+    "traversals": []
+  },
+  {
+    "estimated_cost": null,
+    "expected": [],
+    "name": "ldbc_ic9_-1_9223372036854775807",
+    "optimized_steps": [],
+    "optimized_traversals": [],
+    "ordered": true,
+    "output_types": [
+      "bigint",
+      "string",
+      "string",
+      "bigint",
+      "string",
+      "bigint"
+    ],
+    "parameters": {
+      "maxDate": 9223372036854775807,
+      "personId": -1
+    },
+    "query_sha256": "84d05a4cc87a0680b490fc98aa303ff211f363204cc81d936cd5d442bf85cfe7",
+    "query_text": "// Q9. Recent messages by friends or friends of friends\n/*\n:param [{ personId, maxDate }] => { RETURN\n  4398046511268 AS personId,\n  1289908800000 AS maxDate\n}\n*/\nMATCH (root:Person {id: $personId })-[:KNOWS*1..2]-(friend:Person)\nWHERE NOT friend = root\nWITH collect(distinct friend) as friends\nUNWIND friends as friend\n    MATCH (friend)<-[:HAS_CREATOR]-(message:Message)\n    WHERE message.creationDate < $maxDate\nRETURN\n    friend.id AS personId,\n    friend.firstName AS personFirstName,\n    friend.lastName AS personLastName,\n    message.id AS commentOrPostId,\n    coalesce(message.content,message.imageFile) AS commentOrPostContent,\n    message.creationDate AS commentOrPostCreationDate\nORDER BY\n    commentOrPostCreationDate DESC,\n    message.id ASC\nLIMIT 20\n",
+    "statistics_revision": "98fe6d82e28ff8ee550834a6d91ca2d86c9274e69db913d2a5edad14ef06b2ae",
+    "steps": [],
+    "trace": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "costed inner region: 3 relations, before=Some(81322263358500.0), after=545700, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 3 relations, before=Some(81322263358500.0), after=628200, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 5 relations, before=Some(1.4894172476582226e23), after=1413887.8378378379, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 5 relations, before=Some(1.4894172476582226e23), after=1496387.8378378379, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 5 relations, before=Some(1.4894172476582226e23), after=1496387.8378378379, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 5 relations, before=Some(1.4894172476582226e23), after=1578887.8378378379, NDV equality estimates; absent selectivity uses 1",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "costed inner region: 3 relations, before=Some(1.55816628501588e16), after=4805800, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 3 relations, before=Some(2184278505295200.0), after=1841000, NDV equality estimates; absent selectivity uses 1"
+    ],
+    "traversals": []
+  },
+  {
+    "estimated_cost": null,
+    "expected": [],
+    "name": "ldbc_ic9_8796093022220_0",
+    "optimized_steps": [],
+    "optimized_traversals": [],
+    "ordered": true,
+    "output_types": [
+      "bigint",
+      "string",
+      "string",
+      "bigint",
+      "string",
+      "bigint"
+    ],
+    "parameters": {
+      "maxDate": 0,
+      "personId": 8796093022220
+    },
+    "query_sha256": "84d05a4cc87a0680b490fc98aa303ff211f363204cc81d936cd5d442bf85cfe7",
+    "query_text": "// Q9. Recent messages by friends or friends of friends\n/*\n:param [{ personId, maxDate }] => { RETURN\n  4398046511268 AS personId,\n  1289908800000 AS maxDate\n}\n*/\nMATCH (root:Person {id: $personId })-[:KNOWS*1..2]-(friend:Person)\nWHERE NOT friend = root\nWITH collect(distinct friend) as friends\nUNWIND friends as friend\n    MATCH (friend)<-[:HAS_CREATOR]-(message:Message)\n    WHERE message.creationDate < $maxDate\nRETURN\n    friend.id AS personId,\n    friend.firstName AS personFirstName,\n    friend.lastName AS personLastName,\n    message.id AS commentOrPostId,\n    coalesce(message.content,message.imageFile) AS commentOrPostContent,\n    message.creationDate AS commentOrPostCreationDate\nORDER BY\n    commentOrPostCreationDate DESC,\n    message.id ASC\nLIMIT 20\n",
+    "statistics_revision": "98fe6d82e28ff8ee550834a6d91ca2d86c9274e69db913d2a5edad14ef06b2ae",
+    "steps": [],
+    "trace": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "costed inner region: 3 relations, before=Some(81322263358500.0), after=545700, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 3 relations, before=Some(81322263358500.0), after=628200, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 5 relations, before=Some(1.4894172476582226e23), after=1413887.8378378379, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 5 relations, before=Some(1.4894172476582226e23), after=1496387.8378378379, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 5 relations, before=Some(1.4894172476582226e23), after=1496387.8378378379, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 5 relations, before=Some(1.4894172476582226e23), after=1578887.8378378379, NDV equality estimates; absent selectivity uses 1",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "costed inner region: 3 relations, before=Some(1.55816628501588e16), after=4805800, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 3 relations, before=Some(2184278505295200.0), after=1841000, NDV equality estimates; absent selectivity uses 1"
+    ],
+    "traversals": []
+  },
+  {
+    "estimated_cost": null,
+    "expected": [
+      [
+        2199023255693,
+        "Yang",
+        "Li",
+        343597392744,
+        "ok",
+        1290672790308
+      ],
+      [
+        2199023255742,
+        "Abdul Wahid",
+        "Jahani",
+        343597392748,
+        "About John Steinbeck, , Jr. (February 27, 1902\u00a0\u2013 December 20About Bloodflow",
+        1290667621611
+      ],
+      [
+        6597069766887,
+        "Amjad Islam",
+        "Ahsan",
+        343597392660,
+        "I see",
+        1290660339652
+      ],
+      [
+        8796093022390,
+        "Abdullah",
+        "Koksal",
+        343597393170,
+        "About Singapore, , opposition critics and international observers as being",
+        1290649616815
+      ],
+      [
+        8796093022235,
+        "Wojciech",
+        "Ciesla",
+        343597389195,
+        "LOL",
+        1290647941688
+      ],
+      [
+        4398046511124,
+        "Yahya Ould Ahmed El",
+        "Abdallahi",
+        343597387671,
+        "About Woodrow Wilson, n Flag Day speech thatAbout Johnny Cash, ingles on several recoAbout Mark Twain,  brou",
+        1290645550750
+      ],
+      [
+        2199023255633,
+        "Adrian",
+        "Bravo",
+        343597389197,
+        "ok",
+        1290632240845
+      ],
+      [
+        153,
+        "Abdala",
+        "Ndiaye",
+        343597387660,
+        "no way!",
+        1290620467076
+      ],
+      [
+        6597069766753,
+        "Naresh",
+        "Singh",
+        343597393166,
+        "About Bahrain, in's Ministry of Defence but now an inAbout Cardinal Richeli",
+        1290618247363
+      ],
+      [
+        2199023255711,
+        "David",
+        "Alonso",
+        343597392661,
+        "thanks",
+        1290612579315
+      ],
+      [
+        6597069766707,
+        "Oleg",
+        "Bazayev",
+        343597387665,
+        "fine",
+        1290609110803
+      ],
+      [
+        2199023255711,
+        "David",
+        "Alonso",
+        343597392659,
+        "About Napoleon, f wars declared against Napoleon's FrenAbout Burundi, the na",
+        1290604164365
+      ],
+      [
+        4398046511220,
+        "John",
+        "Khan",
+        343597393167,
+        "I see",
+        1290599759721
+      ],
+      [
+        6597069766786,
+        "Miguel",
+        "Rodriguez",
+        343597394653,
+        "photo343597394653.jpg",
+        1290599740562
+      ],
+      [
+        8796093022363,
+        "Bacary",
+        "Diop",
+        343597387662,
+        "fine",
+        1290597895802
+      ],
+      [
+        6597069766746,
+        "Cam",
+        "Loan",
+        343597393163,
+        "About John Major, y William Hague. He has since retired from active politics, leaving the House of Commons at the 2001 general",
+        1290597095630
+      ],
+      [
+        4398046511285,
+        "Zdenek",
+        "Herzigov\u00e1",
+        343597389193,
+        "thanks",
+        1290594607493
+      ],
+      [
+        228,
+        "Asher",
+        "Mamo",
+        343597393779,
+        "photo343597393779.jpg",
+        1290590906265
+      ],
+      [
+        228,
+        "Asher",
+        "Mamo",
+        343597393778,
+        "photo343597393778.jpg",
+        1290590905265
+      ],
+      [
+        228,
+        "Asher",
+        "Mamo",
+        343597393777,
+        "photo343597393777.jpg",
+        1290590904265
+      ]
+    ],
+    "name": "ldbc_ic9_8796093022220_1290673245078",
+    "optimized_steps": [],
+    "optimized_traversals": [],
+    "ordered": true,
+    "output_types": [
+      "bigint",
+      "string",
+      "string",
+      "bigint",
+      "string",
+      "bigint"
+    ],
+    "parameters": {
+      "maxDate": 1290673245078,
+      "personId": 8796093022220
+    },
+    "query_sha256": "84d05a4cc87a0680b490fc98aa303ff211f363204cc81d936cd5d442bf85cfe7",
+    "query_text": "// Q9. Recent messages by friends or friends of friends\n/*\n:param [{ personId, maxDate }] => { RETURN\n  4398046511268 AS personId,\n  1289908800000 AS maxDate\n}\n*/\nMATCH (root:Person {id: $personId })-[:KNOWS*1..2]-(friend:Person)\nWHERE NOT friend = root\nWITH collect(distinct friend) as friends\nUNWIND friends as friend\n    MATCH (friend)<-[:HAS_CREATOR]-(message:Message)\n    WHERE message.creationDate < $maxDate\nRETURN\n    friend.id AS personId,\n    friend.firstName AS personFirstName,\n    friend.lastName AS personLastName,\n    message.id AS commentOrPostId,\n    coalesce(message.content,message.imageFile) AS commentOrPostContent,\n    message.creationDate AS commentOrPostCreationDate\nORDER BY\n    commentOrPostCreationDate DESC,\n    message.id ASC\nLIMIT 20\n",
+    "statistics_revision": "98fe6d82e28ff8ee550834a6d91ca2d86c9274e69db913d2a5edad14ef06b2ae",
+    "steps": [],
+    "trace": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "costed inner region: 3 relations, before=Some(81322263358500.0), after=545700, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 3 relations, before=Some(81322263358500.0), after=628200, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 5 relations, before=Some(1.4894172476582226e23), after=1413887.8378378379, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 5 relations, before=Some(1.4894172476582226e23), after=1496387.8378378379, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 5 relations, before=Some(1.4894172476582226e23), after=1496387.8378378379, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 5 relations, before=Some(1.4894172476582226e23), after=1578887.8378378379, NDV equality estimates; absent selectivity uses 1",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "costed inner region: 3 relations, before=Some(1.55816628501588e16), after=4805800, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 3 relations, before=Some(2184278505295200.0), after=1841000, NDV equality estimates; absent selectivity uses 1"
+    ],
+    "traversals": []
+  },
+  {
+    "estimated_cost": null,
+    "expected": [
+      [
+        2199023255693,
+        "Yang",
+        "Li",
+        343597392744,
+        "ok",
+        1290672790308
+      ],
+      [
+        2199023255742,
+        "Abdul Wahid",
+        "Jahani",
+        343597392748,
+        "About John Steinbeck, , Jr. (February 27, 1902\u00a0\u2013 December 20About Bloodflow",
+        1290667621611
+      ],
+      [
+        6597069766887,
+        "Amjad Islam",
+        "Ahsan",
+        343597392660,
+        "I see",
+        1290660339652
+      ],
+      [
+        8796093022390,
+        "Abdullah",
+        "Koksal",
+        343597393170,
+        "About Singapore, , opposition critics and international observers as being",
+        1290649616815
+      ],
+      [
+        8796093022235,
+        "Wojciech",
+        "Ciesla",
+        343597389195,
+        "LOL",
+        1290647941688
+      ],
+      [
+        4398046511124,
+        "Yahya Ould Ahmed El",
+        "Abdallahi",
+        343597387671,
+        "About Woodrow Wilson, n Flag Day speech thatAbout Johnny Cash, ingles on several recoAbout Mark Twain,  brou",
+        1290645550750
+      ],
+      [
+        2199023255633,
+        "Adrian",
+        "Bravo",
+        343597389197,
+        "ok",
+        1290632240845
+      ],
+      [
+        153,
+        "Abdala",
+        "Ndiaye",
+        343597387660,
+        "no way!",
+        1290620467076
+      ],
+      [
+        6597069766753,
+        "Naresh",
+        "Singh",
+        343597393166,
+        "About Bahrain, in's Ministry of Defence but now an inAbout Cardinal Richeli",
+        1290618247363
+      ],
+      [
+        2199023255711,
+        "David",
+        "Alonso",
+        343597392661,
+        "thanks",
+        1290612579315
+      ],
+      [
+        6597069766707,
+        "Oleg",
+        "Bazayev",
+        343597387665,
+        "fine",
+        1290609110803
+      ],
+      [
+        2199023255711,
+        "David",
+        "Alonso",
+        343597392659,
+        "About Napoleon, f wars declared against Napoleon's FrenAbout Burundi, the na",
+        1290604164365
+      ],
+      [
+        4398046511220,
+        "John",
+        "Khan",
+        343597393167,
+        "I see",
+        1290599759721
+      ],
+      [
+        6597069766786,
+        "Miguel",
+        "Rodriguez",
+        343597394653,
+        "photo343597394653.jpg",
+        1290599740562
+      ],
+      [
+        8796093022363,
+        "Bacary",
+        "Diop",
+        343597387662,
+        "fine",
+        1290597895802
+      ],
+      [
+        6597069766746,
+        "Cam",
+        "Loan",
+        343597393163,
+        "About John Major, y William Hague. He has since retired from active politics, leaving the House of Commons at the 2001 general",
+        1290597095630
+      ],
+      [
+        4398046511285,
+        "Zdenek",
+        "Herzigov\u00e1",
+        343597389193,
+        "thanks",
+        1290594607493
+      ],
+      [
+        228,
+        "Asher",
+        "Mamo",
+        343597393779,
+        "photo343597393779.jpg",
+        1290590906265
+      ],
+      [
+        228,
+        "Asher",
+        "Mamo",
+        343597393778,
+        "photo343597393778.jpg",
+        1290590905265
+      ],
+      [
+        228,
+        "Asher",
+        "Mamo",
+        343597393777,
+        "photo343597393777.jpg",
+        1290590904265
+      ]
+    ],
+    "name": "ldbc_ic9_8796093022220_1290673245079",
+    "optimized_steps": [],
+    "optimized_traversals": [],
+    "ordered": true,
+    "output_types": [
+      "bigint",
+      "string",
+      "string",
+      "bigint",
+      "string",
+      "bigint"
+    ],
+    "parameters": {
+      "maxDate": 1290673245079,
+      "personId": 8796093022220
+    },
+    "query_sha256": "84d05a4cc87a0680b490fc98aa303ff211f363204cc81d936cd5d442bf85cfe7",
+    "query_text": "// Q9. Recent messages by friends or friends of friends\n/*\n:param [{ personId, maxDate }] => { RETURN\n  4398046511268 AS personId,\n  1289908800000 AS maxDate\n}\n*/\nMATCH (root:Person {id: $personId })-[:KNOWS*1..2]-(friend:Person)\nWHERE NOT friend = root\nWITH collect(distinct friend) as friends\nUNWIND friends as friend\n    MATCH (friend)<-[:HAS_CREATOR]-(message:Message)\n    WHERE message.creationDate < $maxDate\nRETURN\n    friend.id AS personId,\n    friend.firstName AS personFirstName,\n    friend.lastName AS personLastName,\n    message.id AS commentOrPostId,\n    coalesce(message.content,message.imageFile) AS commentOrPostContent,\n    message.creationDate AS commentOrPostCreationDate\nORDER BY\n    commentOrPostCreationDate DESC,\n    message.id ASC\nLIMIT 20\n",
+    "statistics_revision": "98fe6d82e28ff8ee550834a6d91ca2d86c9274e69db913d2a5edad14ef06b2ae",
+    "steps": [],
+    "trace": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "costed inner region: 3 relations, before=Some(81322263358500.0), after=545700, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 3 relations, before=Some(81322263358500.0), after=628200, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 5 relations, before=Some(1.4894172476582226e23), after=1413887.8378378379, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 5 relations, before=Some(1.4894172476582226e23), after=1496387.8378378379, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 5 relations, before=Some(1.4894172476582226e23), after=1496387.8378378379, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 5 relations, before=Some(1.4894172476582226e23), after=1578887.8378378379, NDV equality estimates; absent selectivity uses 1",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "costed inner region: 3 relations, before=Some(1.55816628501588e16), after=4805800, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 3 relations, before=Some(2184278505295200.0), after=1841000, NDV equality estimates; absent selectivity uses 1"
+    ],
+    "traversals": []
+  },
+  {
+    "estimated_cost": null,
+    "expected": [
+      [
+        4398046511224,
+        "Adriaen",
+        "Jong",
+        343597393172,
+        "great",
+        1290673245079
+      ],
+      [
+        2199023255693,
+        "Yang",
+        "Li",
+        343597392744,
+        "ok",
+        1290672790308
+      ],
+      [
+        2199023255742,
+        "Abdul Wahid",
+        "Jahani",
+        343597392748,
+        "About John Steinbeck, , Jr. (February 27, 1902\u00a0\u2013 December 20About Bloodflow",
+        1290667621611
+      ],
+      [
+        6597069766887,
+        "Amjad Islam",
+        "Ahsan",
+        343597392660,
+        "I see",
+        1290660339652
+      ],
+      [
+        8796093022390,
+        "Abdullah",
+        "Koksal",
+        343597393170,
+        "About Singapore, , opposition critics and international observers as being",
+        1290649616815
+      ],
+      [
+        8796093022235,
+        "Wojciech",
+        "Ciesla",
+        343597389195,
+        "LOL",
+        1290647941688
+      ],
+      [
+        4398046511124,
+        "Yahya Ould Ahmed El",
+        "Abdallahi",
+        343597387671,
+        "About Woodrow Wilson, n Flag Day speech thatAbout Johnny Cash, ingles on several recoAbout Mark Twain,  brou",
+        1290645550750
+      ],
+      [
+        2199023255633,
+        "Adrian",
+        "Bravo",
+        343597389197,
+        "ok",
+        1290632240845
+      ],
+      [
+        153,
+        "Abdala",
+        "Ndiaye",
+        343597387660,
+        "no way!",
+        1290620467076
+      ],
+      [
+        6597069766753,
+        "Naresh",
+        "Singh",
+        343597393166,
+        "About Bahrain, in's Ministry of Defence but now an inAbout Cardinal Richeli",
+        1290618247363
+      ],
+      [
+        2199023255711,
+        "David",
+        "Alonso",
+        343597392661,
+        "thanks",
+        1290612579315
+      ],
+      [
+        6597069766707,
+        "Oleg",
+        "Bazayev",
+        343597387665,
+        "fine",
+        1290609110803
+      ],
+      [
+        2199023255711,
+        "David",
+        "Alonso",
+        343597392659,
+        "About Napoleon, f wars declared against Napoleon's FrenAbout Burundi, the na",
+        1290604164365
+      ],
+      [
+        4398046511220,
+        "John",
+        "Khan",
+        343597393167,
+        "I see",
+        1290599759721
+      ],
+      [
+        6597069766786,
+        "Miguel",
+        "Rodriguez",
+        343597394653,
+        "photo343597394653.jpg",
+        1290599740562
+      ],
+      [
+        8796093022363,
+        "Bacary",
+        "Diop",
+        343597387662,
+        "fine",
+        1290597895802
+      ],
+      [
+        6597069766746,
+        "Cam",
+        "Loan",
+        343597393163,
+        "About John Major, y William Hague. He has since retired from active politics, leaving the House of Commons at the 2001 general",
+        1290597095630
+      ],
+      [
+        4398046511285,
+        "Zdenek",
+        "Herzigov\u00e1",
+        343597389193,
+        "thanks",
+        1290594607493
+      ],
+      [
+        228,
+        "Asher",
+        "Mamo",
+        343597393779,
+        "photo343597393779.jpg",
+        1290590906265
+      ],
+      [
+        228,
+        "Asher",
+        "Mamo",
+        343597393778,
+        "photo343597393778.jpg",
+        1290590905265
+      ]
+    ],
+    "name": "ldbc_ic9_8796093022220_1290673245080",
+    "optimized_steps": [],
+    "optimized_traversals": [],
+    "ordered": true,
+    "output_types": [
+      "bigint",
+      "string",
+      "string",
+      "bigint",
+      "string",
+      "bigint"
+    ],
+    "parameters": {
+      "maxDate": 1290673245080,
+      "personId": 8796093022220
+    },
+    "query_sha256": "84d05a4cc87a0680b490fc98aa303ff211f363204cc81d936cd5d442bf85cfe7",
+    "query_text": "// Q9. Recent messages by friends or friends of friends\n/*\n:param [{ personId, maxDate }] => { RETURN\n  4398046511268 AS personId,\n  1289908800000 AS maxDate\n}\n*/\nMATCH (root:Person {id: $personId })-[:KNOWS*1..2]-(friend:Person)\nWHERE NOT friend = root\nWITH collect(distinct friend) as friends\nUNWIND friends as friend\n    MATCH (friend)<-[:HAS_CREATOR]-(message:Message)\n    WHERE message.creationDate < $maxDate\nRETURN\n    friend.id AS personId,\n    friend.firstName AS personFirstName,\n    friend.lastName AS personLastName,\n    message.id AS commentOrPostId,\n    coalesce(message.content,message.imageFile) AS commentOrPostContent,\n    message.creationDate AS commentOrPostCreationDate\nORDER BY\n    commentOrPostCreationDate DESC,\n    message.id ASC\nLIMIT 20\n",
+    "statistics_revision": "98fe6d82e28ff8ee550834a6d91ca2d86c9274e69db913d2a5edad14ef06b2ae",
+    "steps": [],
+    "trace": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "costed inner region: 3 relations, before=Some(81322263358500.0), after=545700, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 3 relations, before=Some(81322263358500.0), after=628200, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 5 relations, before=Some(1.4894172476582226e23), after=1413887.8378378379, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 5 relations, before=Some(1.4894172476582226e23), after=1496387.8378378379, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 5 relations, before=Some(1.4894172476582226e23), after=1496387.8378378379, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 5 relations, before=Some(1.4894172476582226e23), after=1578887.8378378379, NDV equality estimates; absent selectivity uses 1",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "costed inner region: 3 relations, before=Some(1.55816628501588e16), after=4805800, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 3 relations, before=Some(2184278505295200.0), after=1841000, NDV equality estimates; absent selectivity uses 1"
+    ],
+    "traversals": []
+  }
+]

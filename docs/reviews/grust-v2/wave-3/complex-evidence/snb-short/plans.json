@@ -1,0 +1,592 @@
+[
+  {
+    "estimated_cost": 5356.0,
+    "expected": [
+      [
+        "Jose",
+        "Alonso",
+        558921600000,
+        "196.1.135.241",
+        "Internet Explorer",
+        1073,
+        "female",
+        1284620040602
+      ]
+    ],
+    "name": "ldbc_is1_8796093022220",
+    "optimized_steps": [],
+    "optimized_traversals": [],
+    "ordered": false,
+    "output_types": [
+      "string",
+      "string",
+      "bigint",
+      "string",
+      "string",
+      "bigint",
+      "string",
+      "bigint"
+    ],
+    "parameters": {
+      "personId": 8796093022220
+    },
+    "query_sha256": "313fccbebf9ff29880d15514984ddf48d77f921908d1bd42b7b9626bd96479dc",
+    "query_text": "// IS1. Profile of a person\n/*\n:param personId: 10995116277794\n */\nMATCH (n:Person {id: $personId })-[:IS_LOCATED_IN]->(p:City)\nRETURN\n    n.firstName AS firstName,\n    n.lastName AS lastName,\n    n.birthday AS birthday,\n    n.locationIP AS locationIP,\n    n.browserUsed AS browserUsed,\n    p.id AS cityId,\n    n.gender AS gender,\n    n.creationDate AS creationDate\n",
+    "statistics_revision": "138a47e3795b9340685d7a62d8eedc23de28d2b0723a619c9470f8e6feea616a",
+    "steps": [],
+    "trace": [
+      "costed inner region: 5 relations, before=Some(132481865.0), after=5356, NDV equality estimates; absent selectivity uses 1"
+    ],
+    "traversals": []
+  },
+  {
+    "estimated_cost": 5356.0,
+    "expected": [],
+    "name": "ldbc_is1_-1",
+    "optimized_steps": [],
+    "optimized_traversals": [],
+    "ordered": false,
+    "output_types": [
+      "string",
+      "string",
+      "bigint",
+      "string",
+      "string",
+      "bigint",
+      "string",
+      "bigint"
+    ],
+    "parameters": {
+      "personId": -1
+    },
+    "query_sha256": "313fccbebf9ff29880d15514984ddf48d77f921908d1bd42b7b9626bd96479dc",
+    "query_text": "// IS1. Profile of a person\n/*\n:param personId: 10995116277794\n */\nMATCH (n:Person {id: $personId })-[:IS_LOCATED_IN]->(p:City)\nRETURN\n    n.firstName AS firstName,\n    n.lastName AS lastName,\n    n.birthday AS birthday,\n    n.locationIP AS locationIP,\n    n.browserUsed AS browserUsed,\n    p.id AS cityId,\n    n.gender AS gender,\n    n.creationDate AS creationDate\n",
+    "statistics_revision": "138a47e3795b9340685d7a62d8eedc23de28d2b0723a619c9470f8e6feea616a",
+    "steps": [],
+    "trace": [
+      "costed inner region: 5 relations, before=Some(132481865.0), after=5356, NDV equality estimates; absent selectivity uses 1"
+    ],
+    "traversals": []
+  },
+  {
+    "estimated_cost": 21641.0,
+    "expected": [
+      [
+        6597069766786,
+        "Miguel",
+        "Rodriguez",
+        1286845494693
+      ],
+      [
+        2199023255629,
+        "Karl",
+        "Fischer",
+        1286115870405
+      ],
+      [
+        6597069766660,
+        "Bryn",
+        "Davies",
+        1285058316513
+      ],
+      [
+        150,
+        "Alfonso",
+        "Alvarez",
+        1284873937521
+      ]
+    ],
+    "name": "ldbc_is3_8796093022220",
+    "optimized_steps": [],
+    "optimized_traversals": [],
+    "ordered": true,
+    "output_types": [
+      "bigint",
+      "string",
+      "string",
+      "bigint"
+    ],
+    "parameters": {
+      "personId": 8796093022220
+    },
+    "query_sha256": "424bda25c79699433d5cf6a18893b6431980155a573a97220867c00be547d323",
+    "query_text": "// IS3. Friends of a person\n/*\n:param personId: 10995116277794\n */\nMATCH (n:Person {id: $personId })-[r:KNOWS]-(friend)\nRETURN\n    friend.id AS personId,\n    friend.firstName AS firstName,\n    friend.lastName AS lastName,\n    r.creationDate AS friendshipCreationDate\nORDER BY\n    friendshipCreationDate DESC,\n    toInteger(personId) ASC\n",
+    "statistics_revision": "138a47e3795b9340685d7a62d8eedc23de28d2b0723a619c9470f8e6feea616a",
+    "steps": [],
+    "trace": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "costed inner region: 3 relations, before=Some(81688485.0), after=5457, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 3 relations, before=Some(81688485.0), after=6282, NDV equality estimates; absent selectivity uses 1"
+    ],
+    "traversals": []
+  },
+  {
+    "estimated_cost": 21641.0,
+    "expected": [],
+    "name": "ldbc_is3_-1",
+    "optimized_steps": [],
+    "optimized_traversals": [],
+    "ordered": true,
+    "output_types": [
+      "bigint",
+      "string",
+      "string",
+      "bigint"
+    ],
+    "parameters": {
+      "personId": -1
+    },
+    "query_sha256": "424bda25c79699433d5cf6a18893b6431980155a573a97220867c00be547d323",
+    "query_text": "// IS3. Friends of a person\n/*\n:param personId: 10995116277794\n */\nMATCH (n:Person {id: $personId })-[r:KNOWS]-(friend)\nRETURN\n    friend.id AS personId,\n    friend.firstName AS firstName,\n    friend.lastName AS lastName,\n    r.creationDate AS friendshipCreationDate\nORDER BY\n    friendshipCreationDate DESC,\n    toInteger(personId) ASC\n",
+    "statistics_revision": "138a47e3795b9340685d7a62d8eedc23de28d2b0723a619c9470f8e6feea616a",
+    "steps": [],
+    "trace": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "costed inner region: 3 relations, before=Some(81688485.0), after=5457, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 3 relations, before=Some(81688485.0), after=6282, NDV equality estimates; absent selectivity uses 1"
+    ],
+    "traversals": []
+  },
+  {
+    "estimated_cost": 56996.0,
+    "expected": [
+      [
+        1290664733756,
+        "photo343597383680.jpg"
+      ]
+    ],
+    "name": "ldbc_is4_343597383680",
+    "optimized_steps": [],
+    "optimized_traversals": [],
+    "ordered": false,
+    "output_types": [
+      "bigint",
+      "string"
+    ],
+    "parameters": {
+      "messageId": 343597383680
+    },
+    "query_sha256": "b579231518cf36352fe0237f4a36bbce5a9a96a0763565b8e17e07d9b0704642",
+    "query_text": "// IS4. Content of a message\n/*\n:param messageId: 206158431836\n */\nMATCH (m:Message {id:  $messageId })\nRETURN\n    m.creationDate as messageCreationDate,\n    coalesce(m.content, m.imageFile) as messageContent\n",
+    "statistics_revision": "138a47e3795b9340685d7a62d8eedc23de28d2b0723a619c9470f8e6feea616a",
+    "steps": [],
+    "trace": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression"
+    ],
+    "traversals": []
+  },
+  {
+    "estimated_cost": 56996.0,
+    "expected": [
+      [
+        1277681817962,
+        "yes"
+      ]
+    ],
+    "name": "ldbc_is4_206158430246",
+    "optimized_steps": [],
+    "optimized_traversals": [],
+    "ordered": false,
+    "output_types": [
+      "bigint",
+      "string"
+    ],
+    "parameters": {
+      "messageId": 206158430246
+    },
+    "query_sha256": "b579231518cf36352fe0237f4a36bbce5a9a96a0763565b8e17e07d9b0704642",
+    "query_text": "// IS4. Content of a message\n/*\n:param messageId: 206158431836\n */\nMATCH (m:Message {id:  $messageId })\nRETURN\n    m.creationDate as messageCreationDate,\n    coalesce(m.content, m.imageFile) as messageContent\n",
+    "statistics_revision": "138a47e3795b9340685d7a62d8eedc23de28d2b0723a619c9470f8e6feea616a",
+    "steps": [],
+    "trace": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression"
+    ],
+    "traversals": []
+  },
+  {
+    "estimated_cost": 56996.0,
+    "expected": [],
+    "name": "ldbc_is4_-1",
+    "optimized_steps": [],
+    "optimized_traversals": [],
+    "ordered": false,
+    "output_types": [
+      "bigint",
+      "string"
+    ],
+    "parameters": {
+      "messageId": -1
+    },
+    "query_sha256": "b579231518cf36352fe0237f4a36bbce5a9a96a0763565b8e17e07d9b0704642",
+    "query_text": "// IS4. Content of a message\n/*\n:param messageId: 206158431836\n */\nMATCH (m:Message {id:  $messageId })\nRETURN\n    m.creationDate as messageCreationDate,\n    coalesce(m.content, m.imageFile) as messageContent\n",
+    "statistics_revision": "138a47e3795b9340685d7a62d8eedc23de28d2b0723a619c9470f8e6feea616a",
+    "steps": [],
+    "trace": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression"
+    ],
+    "traversals": []
+  },
+  {
+    "estimated_cost": 115322.0,
+    "expected": [
+      [
+        8796093022220,
+        "Jose",
+        "Alonso"
+      ]
+    ],
+    "name": "ldbc_is5_343597383680",
+    "optimized_steps": [],
+    "optimized_traversals": [],
+    "ordered": false,
+    "output_types": [
+      "bigint",
+      "string",
+      "string"
+    ],
+    "parameters": {
+      "messageId": 343597383680
+    },
+    "query_sha256": "28d461db14b3817cfe00140fbabc7f7af796a2661b8c2492d8cf950ffce40fcd",
+    "query_text": "// IS5. Creator of a message\n/*\n:param messageId: 206158431836\n */\nMATCH (m:Message {id:  $messageId })-[:HAS_CREATOR]->(p:Person)\nRETURN\n    p.id AS personId,\n    p.firstName AS firstName,\n    p.lastName AS lastName\n",
+    "statistics_revision": "138a47e3795b9340685d7a62d8eedc23de28d2b0723a619c9470f8e6feea616a",
+    "steps": [],
+    "trace": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "costed inner region: 3 relations, before=Some(15651854382.0), after=48058, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 3 relations, before=Some(2194119460.0), after=18410, NDV equality estimates; absent selectivity uses 1"
+    ],
+    "traversals": []
+  },
+  {
+    "estimated_cost": 115322.0,
+    "expected": [
+      [
+        4398046511146,
+        "Ali",
+        "Achiou"
+      ]
+    ],
+    "name": "ldbc_is5_206158430246",
+    "optimized_steps": [],
+    "optimized_traversals": [],
+    "ordered": false,
+    "output_types": [
+      "bigint",
+      "string",
+      "string"
+    ],
+    "parameters": {
+      "messageId": 206158430246
+    },
+    "query_sha256": "28d461db14b3817cfe00140fbabc7f7af796a2661b8c2492d8cf950ffce40fcd",
+    "query_text": "// IS5. Creator of a message\n/*\n:param messageId: 206158431836\n */\nMATCH (m:Message {id:  $messageId })-[:HAS_CREATOR]->(p:Person)\nRETURN\n    p.id AS personId,\n    p.firstName AS firstName,\n    p.lastName AS lastName\n",
+    "statistics_revision": "138a47e3795b9340685d7a62d8eedc23de28d2b0723a619c9470f8e6feea616a",
+    "steps": [],
+    "trace": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "costed inner region: 3 relations, before=Some(15651854382.0), after=48058, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 3 relations, before=Some(2194119460.0), after=18410, NDV equality estimates; absent selectivity uses 1"
+    ],
+    "traversals": []
+  },
+  {
+    "estimated_cost": 115322.0,
+    "expected": [],
+    "name": "ldbc_is5_-1",
+    "optimized_steps": [],
+    "optimized_traversals": [],
+    "ordered": false,
+    "output_types": [
+      "bigint",
+      "string",
+      "string"
+    ],
+    "parameters": {
+      "messageId": -1
+    },
+    "query_sha256": "28d461db14b3817cfe00140fbabc7f7af796a2661b8c2492d8cf950ffce40fcd",
+    "query_text": "// IS5. Creator of a message\n/*\n:param messageId: 206158431836\n */\nMATCH (m:Message {id:  $messageId })-[:HAS_CREATOR]->(p:Person)\nRETURN\n    p.id AS personId,\n    p.firstName AS firstName,\n    p.lastName AS lastName\n",
+    "statistics_revision": "138a47e3795b9340685d7a62d8eedc23de28d2b0723a619c9470f8e6feea616a",
+    "steps": [],
+    "trace": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "costed inner region: 3 relations, before=Some(15651854382.0), after=48058, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 3 relations, before=Some(2194119460.0), after=18410, NDV equality estimates; absent selectivity uses 1"
+    ],
+    "traversals": []
+  },
+  {
+    "estimated_cost": null,
+    "expected": [
+      [
+        343597383682,
+        "Album 1 of Jose Alonso",
+        8796093022220,
+        "Jose",
+        "Alonso"
+      ]
+    ],
+    "name": "ldbc_is6_343597383680",
+    "optimized_steps": [
+      {
+        "kind": "traverse",
+        "traversal": {
+          "adjacency_sql": "WITH q0 AS (SELECT 1 AS `@unit`),\nq1 AS (SELECT 1 AS `@unit`),\nq2 AS (SELECT 1 AS `@unit`),\nq3 AS (SELECT `_identity` AS `s20`, `browserUsed` AS `s22`, `content` AS `s23`, `creationDate` AS `s24`, `id` AS `s25`, `imageFile` AS `s26`, `language` AS `s27`, `length` AS `s28`, `locationIP` AS `s29` FROM `post`),\nq4 AS (SELECT `s20` AS `s20`, CAST('2' AS BIGINT) AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, `s26` AS `s26`, `s27` AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q3),\nq5 AS (SELECT `_identity` AS `s20`, `browserUsed` AS `s22`, `content` AS `s23`, `creationDate` AS `s24`, `id` AS `s25`, `length` AS `s28`, `locationIP` AS `s29` FROM `comment`),\nq6 AS (SELECT `s20` AS `s20`, CAST('3' AS BIGINT) AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, CAST(NULL AS STRING) AS `s26`, CAST(NULL AS STRING) AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q5),\nq7 AS (SELECT `s20` AS `s20`, `s21` AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, `s26` AS `s26`, `s27` AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q4 UNION ALL SELECT `s20` AS `s20`, `s21` AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, `s26` AS `s26`, `s27` AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q6),\nq8 AS (SELECT `s21` AS `s30`, `s20` AS `s31` FROM q7),\nq9 AS (SELECT `_identity` AS `s44`, `browserUsed` AS `s46`, `content` AS `s47`, `creationDate` AS `s48`, `id` AS `s49`, `length` AS `s52`, `locationIP` AS `s53` FROM `comment`),\nq10 AS (SELECT `s44` AS `s44`, CAST('3' AS BIGINT) AS `s45`, `s46` AS `s46`, `s47` AS `s47`, `s48` AS `s48`, `s49` AS `s49`, CAST(NULL AS STRING) AS `s50`, CAST(NULL AS STRING) AS `s51`, `s52` AS `s52`, `s53` AS `s53` FROM q9),\nq11 AS (SELECT `_identity` AS `s32`, `browserUsed` AS `s34`, `content` AS `s35`, `creationDate` AS `s36`, `id` AS `s37`, `length` AS `s38`, `locationIP` AS `s39` FROM `comment`),\nq12 AS (SELECT `s32` AS `s32`, CAST('3' AS BIGINT) AS `s33`, `s34` AS `s34`, `s35` AS `s35`, `s36` AS `s36`, `s37` AS `s37`, `s38` AS `s38`, `s39` AS `s39` FROM q11),\nq13 AS (SELECT `_identity` AS `s40`, `src` AS `s42`, `dst` AS `s43` FROM `comment_replyof_comment`),\nq14 AS (SELECT `s40` AS `s40`, CAST('11' AS BIGINT) AS `s41`, `s42` AS `s42`, `s43` AS `s43` FROM q13),\nq15 AS (SELECT l.`s32` AS `s32`, l.`s33` AS `s33`, l.`s34` AS `s34`, l.`s35` AS `s35`, l.`s36` AS `s36`, l.`s37` AS `s37`, l.`s38` AS `s38`, l.`s39` AS `s39`, r.`s40` AS `s40`, r.`s41` AS `s41`, r.`s42` AS `s42`, r.`s43` AS `s43` FROM q12 l INNER JOIN q14 r ON (r.`s42` = l.`s32`)),\nq16 AS (SELECT l.`s44` AS `s44`, l.`s45` AS `s45`, l.`s46` AS `s46`, l.`s47` AS `s47`, l.`s48` AS `s48`, l.`s49` AS `s49`, l.`s50` AS `s50`, l.`s51` AS `s51`, l.`s52` AS `s52`, l.`s53` AS `s53`, r.`s32` AS `s32`, r.`s33` AS `s33`, r.`s34` AS `s34`, r.`s35` AS `s35`, r.`s36` AS `s36`, r.`s37` AS `s37`, r.`s38` AS `s38`, r.`s39` AS `s39`, r.`s40` AS `s40`, r.`s41` AS `s41`, r.`s42` AS `s42`, r.`s43` AS `s43` FROM q10 l INNER JOIN q15 r ON (r.`s43` = l.`s44`)),\nq17 AS (SELECT `_identity` AS `s44`, `browserUsed` AS `s46`, `content` AS `s47`, `creationDate` AS `s48`, `id` AS `s49`, `imageFile` AS `s50`, `language` AS `s51`, `length` AS `s52`, `locationIP` AS `s53` FROM `post`),\nq18 AS (SELECT `s44` AS `s44`, CAST('2' AS BIGINT) AS `s45`, `s46` AS `s46`, `s47` AS `s47`, `s48` AS `s48`, `s49` AS `s49`, `s50` AS `s50`, `s51` AS `s51`, `s52` AS `s52`, `s53` AS `s53` FROM q17),\nq19 AS (SELECT `_identity` AS `s32`, `browserUsed` AS `s34`, `content` AS `s35`, `creationDate` AS `s36`, `id` AS `s37`, `length` AS `s38`, `locationIP` AS `s39` FROM `comment`),\nq20 AS (SELECT `s32` AS `s32`, CAST('3' AS BIGINT) AS `s33`, `s34` AS `s34`, `s35` AS `s35`, `s36` AS `s36`, `s37` AS `s37`, `s38` AS `s38`, `s39` AS `s39` FROM q19),\nq21 AS (SELECT `_identity` AS `s40`, `src` AS `s42`, `dst` AS `s43` FROM `comment_replyof_post`),\nq22 AS (SELECT `s40` AS `s40`, CAST('12' AS BIGINT) AS `s41`, `s42` AS `s42`, `s43` AS `s43` FROM q21),\nq23 AS (SELECT l.`s32` AS `s32`, l.`s33` AS `s33`, l.`s34` AS `s34`, l.`s35` AS `s35`, l.`s36` AS `s36`, l.`s37` AS `s37`, l.`s38` AS `s38`, l.`s39` AS `s39`, r.`s40` AS `s40`, r.`s41` AS `s41`, r.`s42` AS `s42`, r.`s43` AS `s43` FROM q20 l INNER JOIN q22 r ON (r.`s42` = l.`s32`)),\nq24 AS (SELECT l.`s44` AS `s44`, l.`s45` AS `s45`, l.`s46` AS `s46`, l.`s47` AS `s47`, l.`s48` AS `s48`, l.`s49` AS `s49`, l.`s50` AS `s50`, l.`s51` AS `s51`, l.`s52` AS `s52`, l.`s53` AS `s53`, r.`s32` AS `s32`, r.`s33` AS `s33`, r.`s34` AS `s34`, r.`s35` AS `s35`, r.`s36` AS `s36`, r.`s37` AS `s37`, r.`s38` AS `s38`, r.`s39` AS `s39`, r.`s40` AS `s40`, r.`s41` AS `s41`, r.`s42` AS `s42`, r.`s43` AS `s43` FROM q18 l INNER JOIN q23 r ON (r.`s43` = l.`s44`)),\nq25 AS (SELECT `s32` AS `s32`, `s33` AS `s33`, `s34` AS `s34`, `s35` AS `s35`, `s36` AS `s36`, `s37` AS `s37`, `s38` AS `s38`, `s39` AS `s39`, `s40` AS `s40`, `s41` AS `s41`, `s42` AS `s42`, `s43` AS `s43`, `s44` AS `s44`, `s45` AS `s45`, `s46` AS `s46`, `s47` AS `s47`, `s48` AS `s48`, `s49` AS `s49`, `s50` AS `s50`, `s51` AS `s51`, `s52` AS `s52`, `s53` AS `s53` FROM q16 UNION ALL SELECT `s32` AS `s32`, `s33` AS `s33`, `s34` AS `s34`, `s35` AS `s35`, `s36` AS `s36`, `s37` AS `s37`, `s38` AS `s38`, `s39` AS `s39`, `s40` AS `s40`, `s41` AS `s41`, `s42` AS `s42`, `s43` AS `s43`, `s44` AS `s44`, `s45` AS `s45`, `s46` AS `s46`, `s47` AS `s47`, `s48` AS `s48`, `s49` AS `s49`, `s50` AS `s50`, `s51` AS `s51`, `s52` AS `s52`, `s53` AS `s53` FROM q24),\nq26 AS (SELECT `s33` AS `s54`, `s32` AS `s55`, `s45` AS `s56`, `s44` AS `s57`, `s41` AS `s58`, `s40` AS `s59` FROM q25) SELECT `s54` AS `sg`, `s55` AS `si`, `s56` AS `dg`, `s57` AS `di`, `s58` AS `eg`, `s59` AS `ei` FROM q26",
+          "max_hops": null,
+          "min_hops": 0,
+          "mode": "Trail",
+          "seed_sql": "WITH q0 AS (SELECT 1 AS `@unit`),\nq1 AS (SELECT 1 AS `@unit`),\nq2 AS (SELECT 1 AS `@unit`),\nq3 AS (SELECT `_identity` AS `s20`, `browserUsed` AS `s22`, `content` AS `s23`, `creationDate` AS `s24`, `id` AS `s25`, `imageFile` AS `s26`, `language` AS `s27`, `length` AS `s28`, `locationIP` AS `s29` FROM `post`),\nq4 AS (SELECT `s20` AS `s20`, CAST('2' AS BIGINT) AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, `s26` AS `s26`, `s27` AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q3),\nq5 AS (SELECT `_identity` AS `s20`, `browserUsed` AS `s22`, `content` AS `s23`, `creationDate` AS `s24`, `id` AS `s25`, `length` AS `s28`, `locationIP` AS `s29` FROM `comment`),\nq6 AS (SELECT `s20` AS `s20`, CAST('3' AS BIGINT) AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, CAST(NULL AS STRING) AS `s26`, CAST(NULL AS STRING) AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q5),\nq7 AS (SELECT `s20` AS `s20`, `s21` AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, `s26` AS `s26`, `s27` AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q4 UNION ALL SELECT `s20` AS `s20`, `s21` AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, `s26` AS `s26`, `s27` AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q6),\nq8 AS (SELECT `s21` AS `s30`, `s20` AS `s31` FROM q7) SELECT `s30` AS `sg`, `s31` AS `si` FROM q8",
+          "shortest_walk": false,
+          "view": "__grust_traverse_0"
+        }
+      }
+    ],
+    "optimized_traversals": [
+      {
+        "adjacency_sql": "WITH q0 AS (SELECT 1 AS `@unit`),\nq1 AS (SELECT 1 AS `@unit`),\nq2 AS (SELECT 1 AS `@unit`),\nq3 AS (SELECT `_identity` AS `s20`, `browserUsed` AS `s22`, `content` AS `s23`, `creationDate` AS `s24`, `id` AS `s25`, `imageFile` AS `s26`, `language` AS `s27`, `length` AS `s28`, `locationIP` AS `s29` FROM `post`),\nq4 AS (SELECT `s20` AS `s20`, CAST('2' AS BIGINT) AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, `s26` AS `s26`, `s27` AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q3),\nq5 AS (SELECT `_identity` AS `s20`, `browserUsed` AS `s22`, `content` AS `s23`, `creationDate` AS `s24`, `id` AS `s25`, `length` AS `s28`, `locationIP` AS `s29` FROM `comment`),\nq6 AS (SELECT `s20` AS `s20`, CAST('3' AS BIGINT) AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, CAST(NULL AS STRING) AS `s26`, CAST(NULL AS STRING) AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q5),\nq7 AS (SELECT `s20` AS `s20`, `s21` AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, `s26` AS `s26`, `s27` AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q4 UNION ALL SELECT `s20` AS `s20`, `s21` AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, `s26` AS `s26`, `s27` AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q6),\nq8 AS (SELECT `s21` AS `s30`, `s20` AS `s31` FROM q7),\nq9 AS (SELECT `_identity` AS `s44`, `browserUsed` AS `s46`, `content` AS `s47`, `creationDate` AS `s48`, `id` AS `s49`, `length` AS `s52`, `locationIP` AS `s53` FROM `comment`),\nq10 AS (SELECT `s44` AS `s44`, CAST('3' AS BIGINT) AS `s45`, `s46` AS `s46`, `s47` AS `s47`, `s48` AS `s48`, `s49` AS `s49`, CAST(NULL AS STRING) AS `s50`, CAST(NULL AS STRING) AS `s51`, `s52` AS `s52`, `s53` AS `s53` FROM q9),\nq11 AS (SELECT `_identity` AS `s32`, `browserUsed` AS `s34`, `content` AS `s35`, `creationDate` AS `s36`, `id` AS `s37`, `length` AS `s38`, `locationIP` AS `s39` FROM `comment`),\nq12 AS (SELECT `s32` AS `s32`, CAST('3' AS BIGINT) AS `s33`, `s34` AS `s34`, `s35` AS `s35`, `s36` AS `s36`, `s37` AS `s37`, `s38` AS `s38`, `s39` AS `s39` FROM q11),\nq13 AS (SELECT `_identity` AS `s40`, `src` AS `s42`, `dst` AS `s43` FROM `comment_replyof_comment`),\nq14 AS (SELECT `s40` AS `s40`, CAST('11' AS BIGINT) AS `s41`, `s42` AS `s42`, `s43` AS `s43` FROM q13),\nq15 AS (SELECT l.`s32` AS `s32`, l.`s33` AS `s33`, l.`s34` AS `s34`, l.`s35` AS `s35`, l.`s36` AS `s36`, l.`s37` AS `s37`, l.`s38` AS `s38`, l.`s39` AS `s39`, r.`s40` AS `s40`, r.`s41` AS `s41`, r.`s42` AS `s42`, r.`s43` AS `s43` FROM q12 l INNER JOIN q14 r ON (r.`s42` = l.`s32`)),\nq16 AS (SELECT l.`s44` AS `s44`, l.`s45` AS `s45`, l.`s46` AS `s46`, l.`s47` AS `s47`, l.`s48` AS `s48`, l.`s49` AS `s49`, l.`s50` AS `s50`, l.`s51` AS `s51`, l.`s52` AS `s52`, l.`s53` AS `s53`, r.`s32` AS `s32`, r.`s33` AS `s33`, r.`s34` AS `s34`, r.`s35` AS `s35`, r.`s36` AS `s36`, r.`s37` AS `s37`, r.`s38` AS `s38`, r.`s39` AS `s39`, r.`s40` AS `s40`, r.`s41` AS `s41`, r.`s42` AS `s42`, r.`s43` AS `s43` FROM q10 l INNER JOIN q15 r ON (r.`s43` = l.`s44`)),\nq17 AS (SELECT `_identity` AS `s44`, `browserUsed` AS `s46`, `content` AS `s47`, `creationDate` AS `s48`, `id` AS `s49`, `imageFile` AS `s50`, `language` AS `s51`, `length` AS `s52`, `locationIP` AS `s53` FROM `post`),\nq18 AS (SELECT `s44` AS `s44`, CAST('2' AS BIGINT) AS `s45`, `s46` AS `s46`, `s47` AS `s47`, `s48` AS `s48`, `s49` AS `s49`, `s50` AS `s50`, `s51` AS `s51`, `s52` AS `s52`, `s53` AS `s53` FROM q17),\nq19 AS (SELECT `_identity` AS `s32`, `browserUsed` AS `s34`, `content` AS `s35`, `creationDate` AS `s36`, `id` AS `s37`, `length` AS `s38`, `locationIP` AS `s39` FROM `comment`),\nq20 AS (SELECT `s32` AS `s32`, CAST('3' AS BIGINT) AS `s33`, `s34` AS `s34`, `s35` AS `s35`, `s36` AS `s36`, `s37` AS `s37`, `s38` AS `s38`, `s39` AS `s39` FROM q19),\nq21 AS (SELECT `_identity` AS `s40`, `src` AS `s42`, `dst` AS `s43` FROM `comment_replyof_post`),\nq22 AS (SELECT `s40` AS `s40`, CAST('12' AS BIGINT) AS `s41`, `s42` AS `s42`, `s43` AS `s43` FROM q21),\nq23 AS (SELECT l.`s32` AS `s32`, l.`s33` AS `s33`, l.`s34` AS `s34`, l.`s35` AS `s35`, l.`s36` AS `s36`, l.`s37` AS `s37`, l.`s38` AS `s38`, l.`s39` AS `s39`, r.`s40` AS `s40`, r.`s41` AS `s41`, r.`s42` AS `s42`, r.`s43` AS `s43` FROM q20 l INNER JOIN q22 r ON (r.`s42` = l.`s32`)),\nq24 AS (SELECT l.`s44` AS `s44`, l.`s45` AS `s45`, l.`s46` AS `s46`, l.`s47` AS `s47`, l.`s48` AS `s48`, l.`s49` AS `s49`, l.`s50` AS `s50`, l.`s51` AS `s51`, l.`s52` AS `s52`, l.`s53` AS `s53`, r.`s32` AS `s32`, r.`s33` AS `s33`, r.`s34` AS `s34`, r.`s35` AS `s35`, r.`s36` AS `s36`, r.`s37` AS `s37`, r.`s38` AS `s38`, r.`s39` AS `s39`, r.`s40` AS `s40`, r.`s41` AS `s41`, r.`s42` AS `s42`, r.`s43` AS `s43` FROM q18 l INNER JOIN q23 r ON (r.`s43` = l.`s44`)),\nq25 AS (SELECT `s32` AS `s32`, `s33` AS `s33`, `s34` AS `s34`, `s35` AS `s35`, `s36` AS `s36`, `s37` AS `s37`, `s38` AS `s38`, `s39` AS `s39`, `s40` AS `s40`, `s41` AS `s41`, `s42` AS `s42`, `s43` AS `s43`, `s44` AS `s44`, `s45` AS `s45`, `s46` AS `s46`, `s47` AS `s47`, `s48` AS `s48`, `s49` AS `s49`, `s50` AS `s50`, `s51` AS `s51`, `s52` AS `s52`, `s53` AS `s53` FROM q16 UNION ALL SELECT `s32` AS `s32`, `s33` AS `s33`, `s34` AS `s34`, `s35` AS `s35`, `s36` AS `s36`, `s37` AS `s37`, `s38` AS `s38`, `s39` AS `s39`, `s40` AS `s40`, `s41` AS `s41`, `s42` AS `s42`, `s43` AS `s43`, `s44` AS `s44`, `s45` AS `s45`, `s46` AS `s46`, `s47` AS `s47`, `s48` AS `s48`, `s49` AS `s49`, `s50` AS `s50`, `s51` AS `s51`, `s52` AS `s52`, `s53` AS `s53` FROM q24),\nq26 AS (SELECT `s33` AS `s54`, `s32` AS `s55`, `s45` AS `s56`, `s44` AS `s57`, `s41` AS `s58`, `s40` AS `s59` FROM q25) SELECT `s54` AS `sg`, `s55` AS `si`, `s56` AS `dg`, `s57` AS `di`, `s58` AS `eg`, `s59` AS `ei` FROM q26",
+        "max_hops": null,
+        "min_hops": 0,
+        "mode": "Trail",
+        "seed_sql": "WITH q0 AS (SELECT 1 AS `@unit`),\nq1 AS (SELECT 1 AS `@unit`),\nq2 AS (SELECT 1 AS `@unit`),\nq3 AS (SELECT `_identity` AS `s20`, `browserUsed` AS `s22`, `content` AS `s23`, `creationDate` AS `s24`, `id` AS `s25`, `imageFile` AS `s26`, `language` AS `s27`, `length` AS `s28`, `locationIP` AS `s29` FROM `post`),\nq4 AS (SELECT `s20` AS `s20`, CAST('2' AS BIGINT) AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, `s26` AS `s26`, `s27` AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q3),\nq5 AS (SELECT `_identity` AS `s20`, `browserUsed` AS `s22`, `content` AS `s23`, `creationDate` AS `s24`, `id` AS `s25`, `length` AS `s28`, `locationIP` AS `s29` FROM `comment`),\nq6 AS (SELECT `s20` AS `s20`, CAST('3' AS BIGINT) AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, CAST(NULL AS STRING) AS `s26`, CAST(NULL AS STRING) AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q5),\nq7 AS (SELECT `s20` AS `s20`, `s21` AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, `s26` AS `s26`, `s27` AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q4 UNION ALL SELECT `s20` AS `s20`, `s21` AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, `s26` AS `s26`, `s27` AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q6),\nq8 AS (SELECT `s21` AS `s30`, `s20` AS `s31` FROM q7) SELECT `s30` AS `sg`, `s31` AS `si` FROM q8",
+        "shortest_walk": false,
+        "view": "__grust_traverse_0"
+      }
+    ],
+    "ordered": false,
+    "output_types": [
+      "bigint",
+      "string",
+      "bigint",
+      "string",
+      "string"
+    ],
+    "parameters": {
+      "messageId": 343597383680
+    },
+    "query_sha256": "1ac9125f6817402cd5df456b5201fc44187b646ffe6bf8497070db2abae84bce",
+    "query_text": "// IS6. Forum of a message\n/*\n:param messageId: 206158431836\n */\nMATCH (m:Message {id: $messageId })-[:REPLY_OF*0..]->(p:Post)<-[:CONTAINER_OF]-(f:Forum)-[:HAS_MODERATOR]->(mod:Person)\nRETURN\n    f.id AS forumId,\n    f.title AS forumTitle,\n    mod.id AS moderatorId,\n    mod.firstName AS moderatorFirstName,\n    mod.lastName AS moderatorLastName\n",
+    "statistics_revision": "138a47e3795b9340685d7a62d8eedc23de28d2b0723a619c9470f8e6feea616a",
+    "steps": [
+      {
+        "kind": "traverse",
+        "traversal": {
+          "adjacency_sql": "WITH q0 AS (SELECT 1 AS `@unit`),\nq1 AS (SELECT 1 AS `@unit`),\nq2 AS (SELECT 1 AS `@unit`),\nq3 AS (SELECT `_identity` AS `s20`, `browserUsed` AS `s22`, `content` AS `s23`, `creationDate` AS `s24`, `id` AS `s25`, `imageFile` AS `s26`, `language` AS `s27`, `length` AS `s28`, `locationIP` AS `s29` FROM `post`),\nq4 AS (SELECT `s20` AS `s20`, CAST('2' AS BIGINT) AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, `s26` AS `s26`, `s27` AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q3),\nq5 AS (SELECT `_identity` AS `s20`, `browserUsed` AS `s22`, `content` AS `s23`, `creationDate` AS `s24`, `id` AS `s25`, `length` AS `s28`, `locationIP` AS `s29` FROM `comment`),\nq6 AS (SELECT `s20` AS `s20`, CAST('3' AS BIGINT) AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, CAST(NULL AS STRING) AS `s26`, CAST(NULL AS STRING) AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q5),\nq7 AS (SELECT `s20` AS `s20`, `s21` AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, `s26` AS `s26`, `s27` AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q4 UNION ALL SELECT `s20` AS `s20`, `s21` AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, `s26` AS `s26`, `s27` AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q6),\nq8 AS (SELECT `s21` AS `s30`, `s20` AS `s31` FROM q7),\nq9 AS (SELECT `_identity` AS `s32`, `browserUsed` AS `s34`, `content` AS `s35`, `creationDate` AS `s36`, `id` AS `s37`, `length` AS `s38`, `locationIP` AS `s39` FROM `comment`),\nq10 AS (SELECT `s32` AS `s32`, CAST('3' AS BIGINT) AS `s33`, `s34` AS `s34`, `s35` AS `s35`, `s36` AS `s36`, `s37` AS `s37`, `s38` AS `s38`, `s39` AS `s39` FROM q9),\nq11 AS (SELECT `_identity` AS `s40`, `src` AS `s42`, `dst` AS `s43` FROM `comment_replyof_comment`),\nq12 AS (SELECT `s40` AS `s40`, CAST('11' AS BIGINT) AS `s41`, `s42` AS `s42`, `s43` AS `s43` FROM q11),\nq13 AS (SELECT l.`s32` AS `s32`, l.`s33` AS `s33`, l.`s34` AS `s34`, l.`s35` AS `s35`, l.`s36` AS `s36`, l.`s37` AS `s37`, l.`s38` AS `s38`, l.`s39` AS `s39`, r.`s40` AS `s40`, r.`s41` AS `s41`, r.`s42` AS `s42`, r.`s43` AS `s43` FROM q10 l INNER JOIN q12 r ON TRUE),\nq14 AS (SELECT `_identity` AS `s44`, `browserUsed` AS `s46`, `content` AS `s47`, `creationDate` AS `s48`, `id` AS `s49`, `length` AS `s52`, `locationIP` AS `s53` FROM `comment`),\nq15 AS (SELECT `s44` AS `s44`, CAST('3' AS BIGINT) AS `s45`, `s46` AS `s46`, `s47` AS `s47`, `s48` AS `s48`, `s49` AS `s49`, CAST(NULL AS STRING) AS `s50`, CAST(NULL AS STRING) AS `s51`, `s52` AS `s52`, `s53` AS `s53` FROM q14),\nq16 AS (SELECT l.`s32` AS `s32`, l.`s33` AS `s33`, l.`s34` AS `s34`, l.`s35` AS `s35`, l.`s36` AS `s36`, l.`s37` AS `s37`, l.`s38` AS `s38`, l.`s39` AS `s39`, l.`s40` AS `s40`, l.`s41` AS `s41`, l.`s42` AS `s42`, l.`s43` AS `s43`, r.`s44` AS `s44`, r.`s45` AS `s45`, r.`s46` AS `s46`, r.`s47` AS `s47`, r.`s48` AS `s48`, r.`s49` AS `s49`, r.`s50` AS `s50`, r.`s51` AS `s51`, r.`s52` AS `s52`, r.`s53` AS `s53` FROM q13 l INNER JOIN q15 r ON TRUE),\nq17 AS (SELECT * FROM q16 WHERE ((`s42` = `s32`) AND (`s43` = `s44`))),\nq18 AS (SELECT `_identity` AS `s32`, `browserUsed` AS `s34`, `content` AS `s35`, `creationDate` AS `s36`, `id` AS `s37`, `length` AS `s38`, `locationIP` AS `s39` FROM `comment`),\nq19 AS (SELECT `s32` AS `s32`, CAST('3' AS BIGINT) AS `s33`, `s34` AS `s34`, `s35` AS `s35`, `s36` AS `s36`, `s37` AS `s37`, `s38` AS `s38`, `s39` AS `s39` FROM q18),\nq20 AS (SELECT `_identity` AS `s40`, `src` AS `s42`, `dst` AS `s43` FROM `comment_replyof_post`),\nq21 AS (SELECT `s40` AS `s40`, CAST('12' AS BIGINT) AS `s41`, `s42` AS `s42`, `s43` AS `s43` FROM q20),\nq22 AS (SELECT l.`s32` AS `s32`, l.`s33` AS `s33`, l.`s34` AS `s34`, l.`s35` AS `s35`, l.`s36` AS `s36`, l.`s37` AS `s37`, l.`s38` AS `s38`, l.`s39` AS `s39`, r.`s40` AS `s40`, r.`s41` AS `s41`, r.`s42` AS `s42`, r.`s43` AS `s43` FROM q19 l INNER JOIN q21 r ON TRUE),\nq23 AS (SELECT `_identity` AS `s44`, `browserUsed` AS `s46`, `content` AS `s47`, `creationDate` AS `s48`, `id` AS `s49`, `imageFile` AS `s50`, `language` AS `s51`, `length` AS `s52`, `locationIP` AS `s53` FROM `post`),\nq24 AS (SELECT `s44` AS `s44`, CAST('2' AS BIGINT) AS `s45`, `s46` AS `s46`, `s47` AS `s47`, `s48` AS `s48`, `s49` AS `s49`, `s50` AS `s50`, `s51` AS `s51`, `s52` AS `s52`, `s53` AS `s53` FROM q23),\nq25 AS (SELECT l.`s32` AS `s32`, l.`s33` AS `s33`, l.`s34` AS `s34`, l.`s35` AS `s35`, l.`s36` AS `s36`, l.`s37` AS `s37`, l.`s38` AS `s38`, l.`s39` AS `s39`, l.`s40` AS `s40`, l.`s41` AS `s41`, l.`s42` AS `s42`, l.`s43` AS `s43`, r.`s44` AS `s44`, r.`s45` AS `s45`, r.`s46` AS `s46`, r.`s47` AS `s47`, r.`s48` AS `s48`, r.`s49` AS `s49`, r.`s50` AS `s50`, r.`s51` AS `s51`, r.`s52` AS `s52`, r.`s53` AS `s53` FROM q22 l INNER JOIN q24 r ON TRUE),\nq26 AS (SELECT * FROM q25 WHERE ((`s42` = `s32`) AND (`s43` = `s44`))),\nq27 AS (SELECT `s32` AS `s32`, `s33` AS `s33`, `s34` AS `s34`, `s35` AS `s35`, `s36` AS `s36`, `s37` AS `s37`, `s38` AS `s38`, `s39` AS `s39`, `s40` AS `s40`, `s41` AS `s41`, `s42` AS `s42`, `s43` AS `s43`, `s44` AS `s44`, `s45` AS `s45`, `s46` AS `s46`, `s47` AS `s47`, `s48` AS `s48`, `s49` AS `s49`, `s50` AS `s50`, `s51` AS `s51`, `s52` AS `s52`, `s53` AS `s53` FROM q17 UNION ALL SELECT `s32` AS `s32`, `s33` AS `s33`, `s34` AS `s34`, `s35` AS `s35`, `s36` AS `s36`, `s37` AS `s37`, `s38` AS `s38`, `s39` AS `s39`, `s40` AS `s40`, `s41` AS `s41`, `s42` AS `s42`, `s43` AS `s43`, `s44` AS `s44`, `s45` AS `s45`, `s46` AS `s46`, `s47` AS `s47`, `s48` AS `s48`, `s49` AS `s49`, `s50` AS `s50`, `s51` AS `s51`, `s52` AS `s52`, `s53` AS `s53` FROM q26),\nq28 AS (SELECT `s33` AS `s54`, `s32` AS `s55`, `s45` AS `s56`, `s44` AS `s57`, `s41` AS `s58`, `s40` AS `s59` FROM q27) SELECT `s54` AS `sg`, `s55` AS `si`, `s56` AS `dg`, `s57` AS `di`, `s58` AS `eg`, `s59` AS `ei` FROM q28",
+          "max_hops": null,
+          "min_hops": 0,
+          "mode": "Trail",
+          "seed_sql": "WITH q0 AS (SELECT 1 AS `@unit`),\nq1 AS (SELECT 1 AS `@unit`),\nq2 AS (SELECT 1 AS `@unit`),\nq3 AS (SELECT `_identity` AS `s20`, `browserUsed` AS `s22`, `content` AS `s23`, `creationDate` AS `s24`, `id` AS `s25`, `imageFile` AS `s26`, `language` AS `s27`, `length` AS `s28`, `locationIP` AS `s29` FROM `post`),\nq4 AS (SELECT `s20` AS `s20`, CAST('2' AS BIGINT) AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, `s26` AS `s26`, `s27` AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q3),\nq5 AS (SELECT `_identity` AS `s20`, `browserUsed` AS `s22`, `content` AS `s23`, `creationDate` AS `s24`, `id` AS `s25`, `length` AS `s28`, `locationIP` AS `s29` FROM `comment`),\nq6 AS (SELECT `s20` AS `s20`, CAST('3' AS BIGINT) AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, CAST(NULL AS STRING) AS `s26`, CAST(NULL AS STRING) AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q5),\nq7 AS (SELECT `s20` AS `s20`, `s21` AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, `s26` AS `s26`, `s27` AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q4 UNION ALL SELECT `s20` AS `s20`, `s21` AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, `s26` AS `s26`, `s27` AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q6),\nq8 AS (SELECT `s21` AS `s30`, `s20` AS `s31` FROM q7) SELECT `s30` AS `sg`, `s31` AS `si` FROM q8",
+          "shortest_walk": false,
+          "view": "__grust_traverse_0"
+        }
+      }
+    ],
+    "trace": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "costed inner region: 3 relations, before=Some(10916438173.0), after=16635, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 3 relations, before=Some(29148205235.0), after=24047, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 3 relations, before=Some(56571198947.0), after=49807, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 3 relations, before=Some(289023841.0), after=7106, NDV equality estimates; absent selectivity uses 1"
+    ],
+    "traversals": [
+      {
+        "adjacency_sql": "WITH q0 AS (SELECT 1 AS `@unit`),\nq1 AS (SELECT 1 AS `@unit`),\nq2 AS (SELECT 1 AS `@unit`),\nq3 AS (SELECT `_identity` AS `s20`, `browserUsed` AS `s22`, `content` AS `s23`, `creationDate` AS `s24`, `id` AS `s25`, `imageFile` AS `s26`, `language` AS `s27`, `length` AS `s28`, `locationIP` AS `s29` FROM `post`),\nq4 AS (SELECT `s20` AS `s20`, CAST('2' AS BIGINT) AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, `s26` AS `s26`, `s27` AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q3),\nq5 AS (SELECT `_identity` AS `s20`, `browserUsed` AS `s22`, `content` AS `s23`, `creationDate` AS `s24`, `id` AS `s25`, `length` AS `s28`, `locationIP` AS `s29` FROM `comment`),\nq6 AS (SELECT `s20` AS `s20`, CAST('3' AS BIGINT) AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, CAST(NULL AS STRING) AS `s26`, CAST(NULL AS STRING) AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q5),\nq7 AS (SELECT `s20` AS `s20`, `s21` AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, `s26` AS `s26`, `s27` AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q4 UNION ALL SELECT `s20` AS `s20`, `s21` AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, `s26` AS `s26`, `s27` AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q6),\nq8 AS (SELECT `s21` AS `s30`, `s20` AS `s31` FROM q7),\nq9 AS (SELECT `_identity` AS `s32`, `browserUsed` AS `s34`, `content` AS `s35`, `creationDate` AS `s36`, `id` AS `s37`, `length` AS `s38`, `locationIP` AS `s39` FROM `comment`),\nq10 AS (SELECT `s32` AS `s32`, CAST('3' AS BIGINT) AS `s33`, `s34` AS `s34`, `s35` AS `s35`, `s36` AS `s36`, `s37` AS `s37`, `s38` AS `s38`, `s39` AS `s39` FROM q9),\nq11 AS (SELECT `_identity` AS `s40`, `src` AS `s42`, `dst` AS `s43` FROM `comment_replyof_comment`),\nq12 AS (SELECT `s40` AS `s40`, CAST('11' AS BIGINT) AS `s41`, `s42` AS `s42`, `s43` AS `s43` FROM q11),\nq13 AS (SELECT l.`s32` AS `s32`, l.`s33` AS `s33`, l.`s34` AS `s34`, l.`s35` AS `s35`, l.`s36` AS `s36`, l.`s37` AS `s37`, l.`s38` AS `s38`, l.`s39` AS `s39`, r.`s40` AS `s40`, r.`s41` AS `s41`, r.`s42` AS `s42`, r.`s43` AS `s43` FROM q10 l INNER JOIN q12 r ON TRUE),\nq14 AS (SELECT `_identity` AS `s44`, `browserUsed` AS `s46`, `content` AS `s47`, `creationDate` AS `s48`, `id` AS `s49`, `length` AS `s52`, `locationIP` AS `s53` FROM `comment`),\nq15 AS (SELECT `s44` AS `s44`, CAST('3' AS BIGINT) AS `s45`, `s46` AS `s46`, `s47` AS `s47`, `s48` AS `s48`, `s49` AS `s49`, CAST(NULL AS STRING) AS `s50`, CAST(NULL AS STRING) AS `s51`, `s52` AS `s52`, `s53` AS `s53` FROM q14),\nq16 AS (SELECT l.`s32` AS `s32`, l.`s33` AS `s33`, l.`s34` AS `s34`, l.`s35` AS `s35`, l.`s36` AS `s36`, l.`s37` AS `s37`, l.`s38` AS `s38`, l.`s39` AS `s39`, l.`s40` AS `s40`, l.`s41` AS `s41`, l.`s42` AS `s42`, l.`s43` AS `s43`, r.`s44` AS `s44`, r.`s45` AS `s45`, r.`s46` AS `s46`, r.`s47` AS `s47`, r.`s48` AS `s48`, r.`s49` AS `s49`, r.`s50` AS `s50`, r.`s51` AS `s51`, r.`s52` AS `s52`, r.`s53` AS `s53` FROM q13 l INNER JOIN q15 r ON TRUE),\nq17 AS (SELECT * FROM q16 WHERE ((`s42` = `s32`) AND (`s43` = `s44`))),\nq18 AS (SELECT `_identity` AS `s32`, `browserUsed` AS `s34`, `content` AS `s35`, `creationDate` AS `s36`, `id` AS `s37`, `length` AS `s38`, `locationIP` AS `s39` FROM `comment`),\nq19 AS (SELECT `s32` AS `s32`, CAST('3' AS BIGINT) AS `s33`, `s34` AS `s34`, `s35` AS `s35`, `s36` AS `s36`, `s37` AS `s37`, `s38` AS `s38`, `s39` AS `s39` FROM q18),\nq20 AS (SELECT `_identity` AS `s40`, `src` AS `s42`, `dst` AS `s43` FROM `comment_replyof_post`),\nq21 AS (SELECT `s40` AS `s40`, CAST('12' AS BIGINT) AS `s41`, `s42` AS `s42`, `s43` AS `s43` FROM q20),\nq22 AS (SELECT l.`s32` AS `s32`, l.`s33` AS `s33`, l.`s34` AS `s34`, l.`s35` AS `s35`, l.`s36` AS `s36`, l.`s37` AS `s37`, l.`s38` AS `s38`, l.`s39` AS `s39`, r.`s40` AS `s40`, r.`s41` AS `s41`, r.`s42` AS `s42`, r.`s43` AS `s43` FROM q19 l INNER JOIN q21 r ON TRUE),\nq23 AS (SELECT `_identity` AS `s44`, `browserUsed` AS `s46`, `content` AS `s47`, `creationDate` AS `s48`, `id` AS `s49`, `imageFile` AS `s50`, `language` AS `s51`, `length` AS `s52`, `locationIP` AS `s53` FROM `post`),\nq24 AS (SELECT `s44` AS `s44`, CAST('2' AS BIGINT) AS `s45`, `s46` AS `s46`, `s47` AS `s47`, `s48` AS `s48`, `s49` AS `s49`, `s50` AS `s50`, `s51` AS `s51`, `s52` AS `s52`, `s53` AS `s53` FROM q23),\nq25 AS (SELECT l.`s32` AS `s32`, l.`s33` AS `s33`, l.`s34` AS `s34`, l.`s35` AS `s35`, l.`s36` AS `s36`, l.`s37` AS `s37`, l.`s38` AS `s38`, l.`s39` AS `s39`, l.`s40` AS `s40`, l.`s41` AS `s41`, l.`s42` AS `s42`, l.`s43` AS `s43`, r.`s44` AS `s44`, r.`s45` AS `s45`, r.`s46` AS `s46`, r.`s47` AS `s47`, r.`s48` AS `s48`, r.`s49` AS `s49`, r.`s50` AS `s50`, r.`s51` AS `s51`, r.`s52` AS `s52`, r.`s53` AS `s53` FROM q22 l INNER JOIN q24 r ON TRUE),\nq26 AS (SELECT * FROM q25 WHERE ((`s42` = `s32`) AND (`s43` = `s44`))),\nq27 AS (SELECT `s32` AS `s32`, `s33` AS `s33`, `s34` AS `s34`, `s35` AS `s35`, `s36` AS `s36`, `s37` AS `s37`, `s38` AS `s38`, `s39` AS `s39`, `s40` AS `s40`, `s41` AS `s41`, `s42` AS `s42`, `s43` AS `s43`, `s44` AS `s44`, `s45` AS `s45`, `s46` AS `s46`, `s47` AS `s47`, `s48` AS `s48`, `s49` AS `s49`, `s50` AS `s50`, `s51` AS `s51`, `s52` AS `s52`, `s53` AS `s53` FROM q17 UNION ALL SELECT `s32` AS `s32`, `s33` AS `s33`, `s34` AS `s34`, `s35` AS `s35`, `s36` AS `s36`, `s37` AS `s37`, `s38` AS `s38`, `s39` AS `s39`, `s40` AS `s40`, `s41` AS `s41`, `s42` AS `s42`, `s43` AS `s43`, `s44` AS `s44`, `s45` AS `s45`, `s46` AS `s46`, `s47` AS `s47`, `s48` AS `s48`, `s49` AS `s49`, `s50` AS `s50`, `s51` AS `s51`, `s52` AS `s52`, `s53` AS `s53` FROM q26),\nq28 AS (SELECT `s33` AS `s54`, `s32` AS `s55`, `s45` AS `s56`, `s44` AS `s57`, `s41` AS `s58`, `s40` AS `s59` FROM q27) SELECT `s54` AS `sg`, `s55` AS `si`, `s56` AS `dg`, `s57` AS `di`, `s58` AS `eg`, `s59` AS `ei` FROM q28",
+        "max_hops": null,
+        "min_hops": 0,
+        "mode": "Trail",
+        "seed_sql": "WITH q0 AS (SELECT 1 AS `@unit`),\nq1 AS (SELECT 1 AS `@unit`),\nq2 AS (SELECT 1 AS `@unit`),\nq3 AS (SELECT `_identity` AS `s20`, `browserUsed` AS `s22`, `content` AS `s23`, `creationDate` AS `s24`, `id` AS `s25`, `imageFile` AS `s26`, `language` AS `s27`, `length` AS `s28`, `locationIP` AS `s29` FROM `post`),\nq4 AS (SELECT `s20` AS `s20`, CAST('2' AS BIGINT) AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, `s26` AS `s26`, `s27` AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q3),\nq5 AS (SELECT `_identity` AS `s20`, `browserUsed` AS `s22`, `content` AS `s23`, `creationDate` AS `s24`, `id` AS `s25`, `length` AS `s28`, `locationIP` AS `s29` FROM `comment`),\nq6 AS (SELECT `s20` AS `s20`, CAST('3' AS BIGINT) AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, CAST(NULL AS STRING) AS `s26`, CAST(NULL AS STRING) AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q5),\nq7 AS (SELECT `s20` AS `s20`, `s21` AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, `s26` AS `s26`, `s27` AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q4 UNION ALL SELECT `s20` AS `s20`, `s21` AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, `s26` AS `s26`, `s27` AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q6),\nq8 AS (SELECT `s21` AS `s30`, `s20` AS `s31` FROM q7) SELECT `s30` AS `sg`, `s31` AS `si` FROM q8",
+        "shortest_walk": false,
+        "view": "__grust_traverse_0"
+      }
+    ]
+  },
+  {
+    "estimated_cost": null,
+    "expected": [
+      [
+        68719476743,
+        "Wall of David Alonso",
+        2199023255711,
+        "David",
+        "Alonso"
+      ]
+    ],
+    "name": "ldbc_is6_206158430246",
+    "optimized_steps": [
+      {
+        "kind": "traverse",
+        "traversal": {
+          "adjacency_sql": "WITH q0 AS (SELECT 1 AS `@unit`),\nq1 AS (SELECT 1 AS `@unit`),\nq2 AS (SELECT 1 AS `@unit`),\nq3 AS (SELECT `_identity` AS `s20`, `browserUsed` AS `s22`, `content` AS `s23`, `creationDate` AS `s24`, `id` AS `s25`, `imageFile` AS `s26`, `language` AS `s27`, `length` AS `s28`, `locationIP` AS `s29` FROM `post`),\nq4 AS (SELECT `s20` AS `s20`, CAST('2' AS BIGINT) AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, `s26` AS `s26`, `s27` AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q3),\nq5 AS (SELECT `_identity` AS `s20`, `browserUsed` AS `s22`, `content` AS `s23`, `creationDate` AS `s24`, `id` AS `s25`, `length` AS `s28`, `locationIP` AS `s29` FROM `comment`),\nq6 AS (SELECT `s20` AS `s20`, CAST('3' AS BIGINT) AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, CAST(NULL AS STRING) AS `s26`, CAST(NULL AS STRING) AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q5),\nq7 AS (SELECT `s20` AS `s20`, `s21` AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, `s26` AS `s26`, `s27` AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q4 UNION ALL SELECT `s20` AS `s20`, `s21` AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, `s26` AS `s26`, `s27` AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q6),\nq8 AS (SELECT `s21` AS `s30`, `s20` AS `s31` FROM q7),\nq9 AS (SELECT `_identity` AS `s44`, `browserUsed` AS `s46`, `content` AS `s47`, `creationDate` AS `s48`, `id` AS `s49`, `length` AS `s52`, `locationIP` AS `s53` FROM `comment`),\nq10 AS (SELECT `s44` AS `s44`, CAST('3' AS BIGINT) AS `s45`, `s46` AS `s46`, `s47` AS `s47`, `s48` AS `s48`, `s49` AS `s49`, CAST(NULL AS STRING) AS `s50`, CAST(NULL AS STRING) AS `s51`, `s52` AS `s52`, `s53` AS `s53` FROM q9),\nq11 AS (SELECT `_identity` AS `s32`, `browserUsed` AS `s34`, `content` AS `s35`, `creationDate` AS `s36`, `id` AS `s37`, `length` AS `s38`, `locationIP` AS `s39` FROM `comment`),\nq12 AS (SELECT `s32` AS `s32`, CAST('3' AS BIGINT) AS `s33`, `s34` AS `s34`, `s35` AS `s35`, `s36` AS `s36`, `s37` AS `s37`, `s38` AS `s38`, `s39` AS `s39` FROM q11),\nq13 AS (SELECT `_identity` AS `s40`, `src` AS `s42`, `dst` AS `s43` FROM `comment_replyof_comment`),\nq14 AS (SELECT `s40` AS `s40`, CAST('11' AS BIGINT) AS `s41`, `s42` AS `s42`, `s43` AS `s43` FROM q13),\nq15 AS (SELECT l.`s32` AS `s32`, l.`s33` AS `s33`, l.`s34` AS `s34`, l.`s35` AS `s35`, l.`s36` AS `s36`, l.`s37` AS `s37`, l.`s38` AS `s38`, l.`s39` AS `s39`, r.`s40` AS `s40`, r.`s41` AS `s41`, r.`s42` AS `s42`, r.`s43` AS `s43` FROM q12 l INNER JOIN q14 r ON (r.`s42` = l.`s32`)),\nq16 AS (SELECT l.`s44` AS `s44`, l.`s45` AS `s45`, l.`s46` AS `s46`, l.`s47` AS `s47`, l.`s48` AS `s48`, l.`s49` AS `s49`, l.`s50` AS `s50`, l.`s51` AS `s51`, l.`s52` AS `s52`, l.`s53` AS `s53`, r.`s32` AS `s32`, r.`s33` AS `s33`, r.`s34` AS `s34`, r.`s35` AS `s35`, r.`s36` AS `s36`, r.`s37` AS `s37`, r.`s38` AS `s38`, r.`s39` AS `s39`, r.`s40` AS `s40`, r.`s41` AS `s41`, r.`s42` AS `s42`, r.`s43` AS `s43` FROM q10 l INNER JOIN q15 r ON (r.`s43` = l.`s44`)),\nq17 AS (SELECT `_identity` AS `s44`, `browserUsed` AS `s46`, `content` AS `s47`, `creationDate` AS `s48`, `id` AS `s49`, `imageFile` AS `s50`, `language` AS `s51`, `length` AS `s52`, `locationIP` AS `s53` FROM `post`),\nq18 AS (SELECT `s44` AS `s44`, CAST('2' AS BIGINT) AS `s45`, `s46` AS `s46`, `s47` AS `s47`, `s48` AS `s48`, `s49` AS `s49`, `s50` AS `s50`, `s51` AS `s51`, `s52` AS `s52`, `s53` AS `s53` FROM q17),\nq19 AS (SELECT `_identity` AS `s32`, `browserUsed` AS `s34`, `content` AS `s35`, `creationDate` AS `s36`, `id` AS `s37`, `length` AS `s38`, `locationIP` AS `s39` FROM `comment`),\nq20 AS (SELECT `s32` AS `s32`, CAST('3' AS BIGINT) AS `s33`, `s34` AS `s34`, `s35` AS `s35`, `s36` AS `s36`, `s37` AS `s37`, `s38` AS `s38`, `s39` AS `s39` FROM q19),\nq21 AS (SELECT `_identity` AS `s40`, `src` AS `s42`, `dst` AS `s43` FROM `comment_replyof_post`),\nq22 AS (SELECT `s40` AS `s40`, CAST('12' AS BIGINT) AS `s41`, `s42` AS `s42`, `s43` AS `s43` FROM q21),\nq23 AS (SELECT l.`s32` AS `s32`, l.`s33` AS `s33`, l.`s34` AS `s34`, l.`s35` AS `s35`, l.`s36` AS `s36`, l.`s37` AS `s37`, l.`s38` AS `s38`, l.`s39` AS `s39`, r.`s40` AS `s40`, r.`s41` AS `s41`, r.`s42` AS `s42`, r.`s43` AS `s43` FROM q20 l INNER JOIN q22 r ON (r.`s42` = l.`s32`)),\nq24 AS (SELECT l.`s44` AS `s44`, l.`s45` AS `s45`, l.`s46` AS `s46`, l.`s47` AS `s47`, l.`s48` AS `s48`, l.`s49` AS `s49`, l.`s50` AS `s50`, l.`s51` AS `s51`, l.`s52` AS `s52`, l.`s53` AS `s53`, r.`s32` AS `s32`, r.`s33` AS `s33`, r.`s34` AS `s34`, r.`s35` AS `s35`, r.`s36` AS `s36`, r.`s37` AS `s37`, r.`s38` AS `s38`, r.`s39` AS `s39`, r.`s40` AS `s40`, r.`s41` AS `s41`, r.`s42` AS `s42`, r.`s43` AS `s43` FROM q18 l INNER JOIN q23 r ON (r.`s43` = l.`s44`)),\nq25 AS (SELECT `s32` AS `s32`, `s33` AS `s33`, `s34` AS `s34`, `s35` AS `s35`, `s36` AS `s36`, `s37` AS `s37`, `s38` AS `s38`, `s39` AS `s39`, `s40` AS `s40`, `s41` AS `s41`, `s42` AS `s42`, `s43` AS `s43`, `s44` AS `s44`, `s45` AS `s45`, `s46` AS `s46`, `s47` AS `s47`, `s48` AS `s48`, `s49` AS `s49`, `s50` AS `s50`, `s51` AS `s51`, `s52` AS `s52`, `s53` AS `s53` FROM q16 UNION ALL SELECT `s32` AS `s32`, `s33` AS `s33`, `s34` AS `s34`, `s35` AS `s35`, `s36` AS `s36`, `s37` AS `s37`, `s38` AS `s38`, `s39` AS `s39`, `s40` AS `s40`, `s41` AS `s41`, `s42` AS `s42`, `s43` AS `s43`, `s44` AS `s44`, `s45` AS `s45`, `s46` AS `s46`, `s47` AS `s47`, `s48` AS `s48`, `s49` AS `s49`, `s50` AS `s50`, `s51` AS `s51`, `s52` AS `s52`, `s53` AS `s53` FROM q24),\nq26 AS (SELECT `s33` AS `s54`, `s32` AS `s55`, `s45` AS `s56`, `s44` AS `s57`, `s41` AS `s58`, `s40` AS `s59` FROM q25) SELECT `s54` AS `sg`, `s55` AS `si`, `s56` AS `dg`, `s57` AS `di`, `s58` AS `eg`, `s59` AS `ei` FROM q26",
+          "max_hops": null,
+          "min_hops": 0,
+          "mode": "Trail",
+          "seed_sql": "WITH q0 AS (SELECT 1 AS `@unit`),\nq1 AS (SELECT 1 AS `@unit`),\nq2 AS (SELECT 1 AS `@unit`),\nq3 AS (SELECT `_identity` AS `s20`, `browserUsed` AS `s22`, `content` AS `s23`, `creationDate` AS `s24`, `id` AS `s25`, `imageFile` AS `s26`, `language` AS `s27`, `length` AS `s28`, `locationIP` AS `s29` FROM `post`),\nq4 AS (SELECT `s20` AS `s20`, CAST('2' AS BIGINT) AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, `s26` AS `s26`, `s27` AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q3),\nq5 AS (SELECT `_identity` AS `s20`, `browserUsed` AS `s22`, `content` AS `s23`, `creationDate` AS `s24`, `id` AS `s25`, `length` AS `s28`, `locationIP` AS `s29` FROM `comment`),\nq6 AS (SELECT `s20` AS `s20`, CAST('3' AS BIGINT) AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, CAST(NULL AS STRING) AS `s26`, CAST(NULL AS STRING) AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q5),\nq7 AS (SELECT `s20` AS `s20`, `s21` AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, `s26` AS `s26`, `s27` AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q4 UNION ALL SELECT `s20` AS `s20`, `s21` AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, `s26` AS `s26`, `s27` AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q6),\nq8 AS (SELECT `s21` AS `s30`, `s20` AS `s31` FROM q7) SELECT `s30` AS `sg`, `s31` AS `si` FROM q8",
+          "shortest_walk": false,
+          "view": "__grust_traverse_0"
+        }
+      }
+    ],
+    "optimized_traversals": [
+      {
+        "adjacency_sql": "WITH q0 AS (SELECT 1 AS `@unit`),\nq1 AS (SELECT 1 AS `@unit`),\nq2 AS (SELECT 1 AS `@unit`),\nq3 AS (SELECT `_identity` AS `s20`, `browserUsed` AS `s22`, `content` AS `s23`, `creationDate` AS `s24`, `id` AS `s25`, `imageFile` AS `s26`, `language` AS `s27`, `length` AS `s28`, `locationIP` AS `s29` FROM `post`),\nq4 AS (SELECT `s20` AS `s20`, CAST('2' AS BIGINT) AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, `s26` AS `s26`, `s27` AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q3),\nq5 AS (SELECT `_identity` AS `s20`, `browserUsed` AS `s22`, `content` AS `s23`, `creationDate` AS `s24`, `id` AS `s25`, `length` AS `s28`, `locationIP` AS `s29` FROM `comment`),\nq6 AS (SELECT `s20` AS `s20`, CAST('3' AS BIGINT) AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, CAST(NULL AS STRING) AS `s26`, CAST(NULL AS STRING) AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q5),\nq7 AS (SELECT `s20` AS `s20`, `s21` AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, `s26` AS `s26`, `s27` AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q4 UNION ALL SELECT `s20` AS `s20`, `s21` AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, `s26` AS `s26`, `s27` AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q6),\nq8 AS (SELECT `s21` AS `s30`, `s20` AS `s31` FROM q7),\nq9 AS (SELECT `_identity` AS `s44`, `browserUsed` AS `s46`, `content` AS `s47`, `creationDate` AS `s48`, `id` AS `s49`, `length` AS `s52`, `locationIP` AS `s53` FROM `comment`),\nq10 AS (SELECT `s44` AS `s44`, CAST('3' AS BIGINT) AS `s45`, `s46` AS `s46`, `s47` AS `s47`, `s48` AS `s48`, `s49` AS `s49`, CAST(NULL AS STRING) AS `s50`, CAST(NULL AS STRING) AS `s51`, `s52` AS `s52`, `s53` AS `s53` FROM q9),\nq11 AS (SELECT `_identity` AS `s32`, `browserUsed` AS `s34`, `content` AS `s35`, `creationDate` AS `s36`, `id` AS `s37`, `length` AS `s38`, `locationIP` AS `s39` FROM `comment`),\nq12 AS (SELECT `s32` AS `s32`, CAST('3' AS BIGINT) AS `s33`, `s34` AS `s34`, `s35` AS `s35`, `s36` AS `s36`, `s37` AS `s37`, `s38` AS `s38`, `s39` AS `s39` FROM q11),\nq13 AS (SELECT `_identity` AS `s40`, `src` AS `s42`, `dst` AS `s43` FROM `comment_replyof_comment`),\nq14 AS (SELECT `s40` AS `s40`, CAST('11' AS BIGINT) AS `s41`, `s42` AS `s42`, `s43` AS `s43` FROM q13),\nq15 AS (SELECT l.`s32` AS `s32`, l.`s33` AS `s33`, l.`s34` AS `s34`, l.`s35` AS `s35`, l.`s36` AS `s36`, l.`s37` AS `s37`, l.`s38` AS `s38`, l.`s39` AS `s39`, r.`s40` AS `s40`, r.`s41` AS `s41`, r.`s42` AS `s42`, r.`s43` AS `s43` FROM q12 l INNER JOIN q14 r ON (r.`s42` = l.`s32`)),\nq16 AS (SELECT l.`s44` AS `s44`, l.`s45` AS `s45`, l.`s46` AS `s46`, l.`s47` AS `s47`, l.`s48` AS `s48`, l.`s49` AS `s49`, l.`s50` AS `s50`, l.`s51` AS `s51`, l.`s52` AS `s52`, l.`s53` AS `s53`, r.`s32` AS `s32`, r.`s33` AS `s33`, r.`s34` AS `s34`, r.`s35` AS `s35`, r.`s36` AS `s36`, r.`s37` AS `s37`, r.`s38` AS `s38`, r.`s39` AS `s39`, r.`s40` AS `s40`, r.`s41` AS `s41`, r.`s42` AS `s42`, r.`s43` AS `s43` FROM q10 l INNER JOIN q15 r ON (r.`s43` = l.`s44`)),\nq17 AS (SELECT `_identity` AS `s44`, `browserUsed` AS `s46`, `content` AS `s47`, `creationDate` AS `s48`, `id` AS `s49`, `imageFile` AS `s50`, `language` AS `s51`, `length` AS `s52`, `locationIP` AS `s53` FROM `post`),\nq18 AS (SELECT `s44` AS `s44`, CAST('2' AS BIGINT) AS `s45`, `s46` AS `s46`, `s47` AS `s47`, `s48` AS `s48`, `s49` AS `s49`, `s50` AS `s50`, `s51` AS `s51`, `s52` AS `s52`, `s53` AS `s53` FROM q17),\nq19 AS (SELECT `_identity` AS `s32`, `browserUsed` AS `s34`, `content` AS `s35`, `creationDate` AS `s36`, `id` AS `s37`, `length` AS `s38`, `locationIP` AS `s39` FROM `comment`),\nq20 AS (SELECT `s32` AS `s32`, CAST('3' AS BIGINT) AS `s33`, `s34` AS `s34`, `s35` AS `s35`, `s36` AS `s36`, `s37` AS `s37`, `s38` AS `s38`, `s39` AS `s39` FROM q19),\nq21 AS (SELECT `_identity` AS `s40`, `src` AS `s42`, `dst` AS `s43` FROM `comment_replyof_post`),\nq22 AS (SELECT `s40` AS `s40`, CAST('12' AS BIGINT) AS `s41`, `s42` AS `s42`, `s43` AS `s43` FROM q21),\nq23 AS (SELECT l.`s32` AS `s32`, l.`s33` AS `s33`, l.`s34` AS `s34`, l.`s35` AS `s35`, l.`s36` AS `s36`, l.`s37` AS `s37`, l.`s38` AS `s38`, l.`s39` AS `s39`, r.`s40` AS `s40`, r.`s41` AS `s41`, r.`s42` AS `s42`, r.`s43` AS `s43` FROM q20 l INNER JOIN q22 r ON (r.`s42` = l.`s32`)),\nq24 AS (SELECT l.`s44` AS `s44`, l.`s45` AS `s45`, l.`s46` AS `s46`, l.`s47` AS `s47`, l.`s48` AS `s48`, l.`s49` AS `s49`, l.`s50` AS `s50`, l.`s51` AS `s51`, l.`s52` AS `s52`, l.`s53` AS `s53`, r.`s32` AS `s32`, r.`s33` AS `s33`, r.`s34` AS `s34`, r.`s35` AS `s35`, r.`s36` AS `s36`, r.`s37` AS `s37`, r.`s38` AS `s38`, r.`s39` AS `s39`, r.`s40` AS `s40`, r.`s41` AS `s41`, r.`s42` AS `s42`, r.`s43` AS `s43` FROM q18 l INNER JOIN q23 r ON (r.`s43` = l.`s44`)),\nq25 AS (SELECT `s32` AS `s32`, `s33` AS `s33`, `s34` AS `s34`, `s35` AS `s35`, `s36` AS `s36`, `s37` AS `s37`, `s38` AS `s38`, `s39` AS `s39`, `s40` AS `s40`, `s41` AS `s41`, `s42` AS `s42`, `s43` AS `s43`, `s44` AS `s44`, `s45` AS `s45`, `s46` AS `s46`, `s47` AS `s47`, `s48` AS `s48`, `s49` AS `s49`, `s50` AS `s50`, `s51` AS `s51`, `s52` AS `s52`, `s53` AS `s53` FROM q16 UNION ALL SELECT `s32` AS `s32`, `s33` AS `s33`, `s34` AS `s34`, `s35` AS `s35`, `s36` AS `s36`, `s37` AS `s37`, `s38` AS `s38`, `s39` AS `s39`, `s40` AS `s40`, `s41` AS `s41`, `s42` AS `s42`, `s43` AS `s43`, `s44` AS `s44`, `s45` AS `s45`, `s46` AS `s46`, `s47` AS `s47`, `s48` AS `s48`, `s49` AS `s49`, `s50` AS `s50`, `s51` AS `s51`, `s52` AS `s52`, `s53` AS `s53` FROM q24),\nq26 AS (SELECT `s33` AS `s54`, `s32` AS `s55`, `s45` AS `s56`, `s44` AS `s57`, `s41` AS `s58`, `s40` AS `s59` FROM q25) SELECT `s54` AS `sg`, `s55` AS `si`, `s56` AS `dg`, `s57` AS `di`, `s58` AS `eg`, `s59` AS `ei` FROM q26",
+        "max_hops": null,
+        "min_hops": 0,
+        "mode": "Trail",
+        "seed_sql": "WITH q0 AS (SELECT 1 AS `@unit`),\nq1 AS (SELECT 1 AS `@unit`),\nq2 AS (SELECT 1 AS `@unit`),\nq3 AS (SELECT `_identity` AS `s20`, `browserUsed` AS `s22`, `content` AS `s23`, `creationDate` AS `s24`, `id` AS `s25`, `imageFile` AS `s26`, `language` AS `s27`, `length` AS `s28`, `locationIP` AS `s29` FROM `post`),\nq4 AS (SELECT `s20` AS `s20`, CAST('2' AS BIGINT) AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, `s26` AS `s26`, `s27` AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q3),\nq5 AS (SELECT `_identity` AS `s20`, `browserUsed` AS `s22`, `content` AS `s23`, `creationDate` AS `s24`, `id` AS `s25`, `length` AS `s28`, `locationIP` AS `s29` FROM `comment`),\nq6 AS (SELECT `s20` AS `s20`, CAST('3' AS BIGINT) AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, CAST(NULL AS STRING) AS `s26`, CAST(NULL AS STRING) AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q5),\nq7 AS (SELECT `s20` AS `s20`, `s21` AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, `s26` AS `s26`, `s27` AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q4 UNION ALL SELECT `s20` AS `s20`, `s21` AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, `s26` AS `s26`, `s27` AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q6),\nq8 AS (SELECT `s21` AS `s30`, `s20` AS `s31` FROM q7) SELECT `s30` AS `sg`, `s31` AS `si` FROM q8",
+        "shortest_walk": false,
+        "view": "__grust_traverse_0"
+      }
+    ],
+    "ordered": false,
+    "output_types": [
+      "bigint",
+      "string",
+      "bigint",
+      "string",
+      "string"
+    ],
+    "parameters": {
+      "messageId": 206158430246
+    },
+    "query_sha256": "1ac9125f6817402cd5df456b5201fc44187b646ffe6bf8497070db2abae84bce",
+    "query_text": "// IS6. Forum of a message\n/*\n:param messageId: 206158431836\n */\nMATCH (m:Message {id: $messageId })-[:REPLY_OF*0..]->(p:Post)<-[:CONTAINER_OF]-(f:Forum)-[:HAS_MODERATOR]->(mod:Person)\nRETURN\n    f.id AS forumId,\n    f.title AS forumTitle,\n    mod.id AS moderatorId,\n    mod.firstName AS moderatorFirstName,\n    mod.lastName AS moderatorLastName\n",
+    "statistics_revision": "138a47e3795b9340685d7a62d8eedc23de28d2b0723a619c9470f8e6feea616a",
+    "steps": [
+      {
+        "kind": "traverse",
+        "traversal": {
+          "adjacency_sql": "WITH q0 AS (SELECT 1 AS `@unit`),\nq1 AS (SELECT 1 AS `@unit`),\nq2 AS (SELECT 1 AS `@unit`),\nq3 AS (SELECT `_identity` AS `s20`, `browserUsed` AS `s22`, `content` AS `s23`, `creationDate` AS `s24`, `id` AS `s25`, `imageFile` AS `s26`, `language` AS `s27`, `length` AS `s28`, `locationIP` AS `s29` FROM `post`),\nq4 AS (SELECT `s20` AS `s20`, CAST('2' AS BIGINT) AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, `s26` AS `s26`, `s27` AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q3),\nq5 AS (SELECT `_identity` AS `s20`, `browserUsed` AS `s22`, `content` AS `s23`, `creationDate` AS `s24`, `id` AS `s25`, `length` AS `s28`, `locationIP` AS `s29` FROM `comment`),\nq6 AS (SELECT `s20` AS `s20`, CAST('3' AS BIGINT) AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, CAST(NULL AS STRING) AS `s26`, CAST(NULL AS STRING) AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q5),\nq7 AS (SELECT `s20` AS `s20`, `s21` AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, `s26` AS `s26`, `s27` AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q4 UNION ALL SELECT `s20` AS `s20`, `s21` AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, `s26` AS `s26`, `s27` AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q6),\nq8 AS (SELECT `s21` AS `s30`, `s20` AS `s31` FROM q7),\nq9 AS (SELECT `_identity` AS `s32`, `browserUsed` AS `s34`, `content` AS `s35`, `creationDate` AS `s36`, `id` AS `s37`, `length` AS `s38`, `locationIP` AS `s39` FROM `comment`),\nq10 AS (SELECT `s32` AS `s32`, CAST('3' AS BIGINT) AS `s33`, `s34` AS `s34`, `s35` AS `s35`, `s36` AS `s36`, `s37` AS `s37`, `s38` AS `s38`, `s39` AS `s39` FROM q9),\nq11 AS (SELECT `_identity` AS `s40`, `src` AS `s42`, `dst` AS `s43` FROM `comment_replyof_comment`),\nq12 AS (SELECT `s40` AS `s40`, CAST('11' AS BIGINT) AS `s41`, `s42` AS `s42`, `s43` AS `s43` FROM q11),\nq13 AS (SELECT l.`s32` AS `s32`, l.`s33` AS `s33`, l.`s34` AS `s34`, l.`s35` AS `s35`, l.`s36` AS `s36`, l.`s37` AS `s37`, l.`s38` AS `s38`, l.`s39` AS `s39`, r.`s40` AS `s40`, r.`s41` AS `s41`, r.`s42` AS `s42`, r.`s43` AS `s43` FROM q10 l INNER JOIN q12 r ON TRUE),\nq14 AS (SELECT `_identity` AS `s44`, `browserUsed` AS `s46`, `content` AS `s47`, `creationDate` AS `s48`, `id` AS `s49`, `length` AS `s52`, `locationIP` AS `s53` FROM `comment`),\nq15 AS (SELECT `s44` AS `s44`, CAST('3' AS BIGINT) AS `s45`, `s46` AS `s46`, `s47` AS `s47`, `s48` AS `s48`, `s49` AS `s49`, CAST(NULL AS STRING) AS `s50`, CAST(NULL AS STRING) AS `s51`, `s52` AS `s52`, `s53` AS `s53` FROM q14),\nq16 AS (SELECT l.`s32` AS `s32`, l.`s33` AS `s33`, l.`s34` AS `s34`, l.`s35` AS `s35`, l.`s36` AS `s36`, l.`s37` AS `s37`, l.`s38` AS `s38`, l.`s39` AS `s39`, l.`s40` AS `s40`, l.`s41` AS `s41`, l.`s42` AS `s42`, l.`s43` AS `s43`, r.`s44` AS `s44`, r.`s45` AS `s45`, r.`s46` AS `s46`, r.`s47` AS `s47`, r.`s48` AS `s48`, r.`s49` AS `s49`, r.`s50` AS `s50`, r.`s51` AS `s51`, r.`s52` AS `s52`, r.`s53` AS `s53` FROM q13 l INNER JOIN q15 r ON TRUE),\nq17 AS (SELECT * FROM q16 WHERE ((`s42` = `s32`) AND (`s43` = `s44`))),\nq18 AS (SELECT `_identity` AS `s32`, `browserUsed` AS `s34`, `content` AS `s35`, `creationDate` AS `s36`, `id` AS `s37`, `length` AS `s38`, `locationIP` AS `s39` FROM `comment`),\nq19 AS (SELECT `s32` AS `s32`, CAST('3' AS BIGINT) AS `s33`, `s34` AS `s34`, `s35` AS `s35`, `s36` AS `s36`, `s37` AS `s37`, `s38` AS `s38`, `s39` AS `s39` FROM q18),\nq20 AS (SELECT `_identity` AS `s40`, `src` AS `s42`, `dst` AS `s43` FROM `comment_replyof_post`),\nq21 AS (SELECT `s40` AS `s40`, CAST('12' AS BIGINT) AS `s41`, `s42` AS `s42`, `s43` AS `s43` FROM q20),\nq22 AS (SELECT l.`s32` AS `s32`, l.`s33` AS `s33`, l.`s34` AS `s34`, l.`s35` AS `s35`, l.`s36` AS `s36`, l.`s37` AS `s37`, l.`s38` AS `s38`, l.`s39` AS `s39`, r.`s40` AS `s40`, r.`s41` AS `s41`, r.`s42` AS `s42`, r.`s43` AS `s43` FROM q19 l INNER JOIN q21 r ON TRUE),\nq23 AS (SELECT `_identity` AS `s44`, `browserUsed` AS `s46`, `content` AS `s47`, `creationDate` AS `s48`, `id` AS `s49`, `imageFile` AS `s50`, `language` AS `s51`, `length` AS `s52`, `locationIP` AS `s53` FROM `post`),\nq24 AS (SELECT `s44` AS `s44`, CAST('2' AS BIGINT) AS `s45`, `s46` AS `s46`, `s47` AS `s47`, `s48` AS `s48`, `s49` AS `s49`, `s50` AS `s50`, `s51` AS `s51`, `s52` AS `s52`, `s53` AS `s53` FROM q23),\nq25 AS (SELECT l.`s32` AS `s32`, l.`s33` AS `s33`, l.`s34` AS `s34`, l.`s35` AS `s35`, l.`s36` AS `s36`, l.`s37` AS `s37`, l.`s38` AS `s38`, l.`s39` AS `s39`, l.`s40` AS `s40`, l.`s41` AS `s41`, l.`s42` AS `s42`, l.`s43` AS `s43`, r.`s44` AS `s44`, r.`s45` AS `s45`, r.`s46` AS `s46`, r.`s47` AS `s47`, r.`s48` AS `s48`, r.`s49` AS `s49`, r.`s50` AS `s50`, r.`s51` AS `s51`, r.`s52` AS `s52`, r.`s53` AS `s53` FROM q22 l INNER JOIN q24 r ON TRUE),\nq26 AS (SELECT * FROM q25 WHERE ((`s42` = `s32`) AND (`s43` = `s44`))),\nq27 AS (SELECT `s32` AS `s32`, `s33` AS `s33`, `s34` AS `s34`, `s35` AS `s35`, `s36` AS `s36`, `s37` AS `s37`, `s38` AS `s38`, `s39` AS `s39`, `s40` AS `s40`, `s41` AS `s41`, `s42` AS `s42`, `s43` AS `s43`, `s44` AS `s44`, `s45` AS `s45`, `s46` AS `s46`, `s47` AS `s47`, `s48` AS `s48`, `s49` AS `s49`, `s50` AS `s50`, `s51` AS `s51`, `s52` AS `s52`, `s53` AS `s53` FROM q17 UNION ALL SELECT `s32` AS `s32`, `s33` AS `s33`, `s34` AS `s34`, `s35` AS `s35`, `s36` AS `s36`, `s37` AS `s37`, `s38` AS `s38`, `s39` AS `s39`, `s40` AS `s40`, `s41` AS `s41`, `s42` AS `s42`, `s43` AS `s43`, `s44` AS `s44`, `s45` AS `s45`, `s46` AS `s46`, `s47` AS `s47`, `s48` AS `s48`, `s49` AS `s49`, `s50` AS `s50`, `s51` AS `s51`, `s52` AS `s52`, `s53` AS `s53` FROM q26),\nq28 AS (SELECT `s33` AS `s54`, `s32` AS `s55`, `s45` AS `s56`, `s44` AS `s57`, `s41` AS `s58`, `s40` AS `s59` FROM q27) SELECT `s54` AS `sg`, `s55` AS `si`, `s56` AS `dg`, `s57` AS `di`, `s58` AS `eg`, `s59` AS `ei` FROM q28",
+          "max_hops": null,
+          "min_hops": 0,
+          "mode": "Trail",
+          "seed_sql": "WITH q0 AS (SELECT 1 AS `@unit`),\nq1 AS (SELECT 1 AS `@unit`),\nq2 AS (SELECT 1 AS `@unit`),\nq3 AS (SELECT `_identity` AS `s20`, `browserUsed` AS `s22`, `content` AS `s23`, `creationDate` AS `s24`, `id` AS `s25`, `imageFile` AS `s26`, `language` AS `s27`, `length` AS `s28`, `locationIP` AS `s29` FROM `post`),\nq4 AS (SELECT `s20` AS `s20`, CAST('2' AS BIGINT) AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, `s26` AS `s26`, `s27` AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q3),\nq5 AS (SELECT `_identity` AS `s20`, `browserUsed` AS `s22`, `content` AS `s23`, `creationDate` AS `s24`, `id` AS `s25`, `length` AS `s28`, `locationIP` AS `s29` FROM `comment`),\nq6 AS (SELECT `s20` AS `s20`, CAST('3' AS BIGINT) AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, CAST(NULL AS STRING) AS `s26`, CAST(NULL AS STRING) AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q5),\nq7 AS (SELECT `s20` AS `s20`, `s21` AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, `s26` AS `s26`, `s27` AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q4 UNION ALL SELECT `s20` AS `s20`, `s21` AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, `s26` AS `s26`, `s27` AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q6),\nq8 AS (SELECT `s21` AS `s30`, `s20` AS `s31` FROM q7) SELECT `s30` AS `sg`, `s31` AS `si` FROM q8",
+          "shortest_walk": false,
+          "view": "__grust_traverse_0"
+        }
+      }
+    ],
+    "trace": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "costed inner region: 3 relations, before=Some(10916438173.0), after=16635, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 3 relations, before=Some(29148205235.0), after=24047, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 3 relations, before=Some(56571198947.0), after=49807, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 3 relations, before=Some(289023841.0), after=7106, NDV equality estimates; absent selectivity uses 1"
+    ],
+    "traversals": [
+      {
+        "adjacency_sql": "WITH q0 AS (SELECT 1 AS `@unit`),\nq1 AS (SELECT 1 AS `@unit`),\nq2 AS (SELECT 1 AS `@unit`),\nq3 AS (SELECT `_identity` AS `s20`, `browserUsed` AS `s22`, `content` AS `s23`, `creationDate` AS `s24`, `id` AS `s25`, `imageFile` AS `s26`, `language` AS `s27`, `length` AS `s28`, `locationIP` AS `s29` FROM `post`),\nq4 AS (SELECT `s20` AS `s20`, CAST('2' AS BIGINT) AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, `s26` AS `s26`, `s27` AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q3),\nq5 AS (SELECT `_identity` AS `s20`, `browserUsed` AS `s22`, `content` AS `s23`, `creationDate` AS `s24`, `id` AS `s25`, `length` AS `s28`, `locationIP` AS `s29` FROM `comment`),\nq6 AS (SELECT `s20` AS `s20`, CAST('3' AS BIGINT) AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, CAST(NULL AS STRING) AS `s26`, CAST(NULL AS STRING) AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q5),\nq7 AS (SELECT `s20` AS `s20`, `s21` AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, `s26` AS `s26`, `s27` AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q4 UNION ALL SELECT `s20` AS `s20`, `s21` AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, `s26` AS `s26`, `s27` AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q6),\nq8 AS (SELECT `s21` AS `s30`, `s20` AS `s31` FROM q7),\nq9 AS (SELECT `_identity` AS `s32`, `browserUsed` AS `s34`, `content` AS `s35`, `creationDate` AS `s36`, `id` AS `s37`, `length` AS `s38`, `locationIP` AS `s39` FROM `comment`),\nq10 AS (SELECT `s32` AS `s32`, CAST('3' AS BIGINT) AS `s33`, `s34` AS `s34`, `s35` AS `s35`, `s36` AS `s36`, `s37` AS `s37`, `s38` AS `s38`, `s39` AS `s39` FROM q9),\nq11 AS (SELECT `_identity` AS `s40`, `src` AS `s42`, `dst` AS `s43` FROM `comment_replyof_comment`),\nq12 AS (SELECT `s40` AS `s40`, CAST('11' AS BIGINT) AS `s41`, `s42` AS `s42`, `s43` AS `s43` FROM q11),\nq13 AS (SELECT l.`s32` AS `s32`, l.`s33` AS `s33`, l.`s34` AS `s34`, l.`s35` AS `s35`, l.`s36` AS `s36`, l.`s37` AS `s37`, l.`s38` AS `s38`, l.`s39` AS `s39`, r.`s40` AS `s40`, r.`s41` AS `s41`, r.`s42` AS `s42`, r.`s43` AS `s43` FROM q10 l INNER JOIN q12 r ON TRUE),\nq14 AS (SELECT `_identity` AS `s44`, `browserUsed` AS `s46`, `content` AS `s47`, `creationDate` AS `s48`, `id` AS `s49`, `length` AS `s52`, `locationIP` AS `s53` FROM `comment`),\nq15 AS (SELECT `s44` AS `s44`, CAST('3' AS BIGINT) AS `s45`, `s46` AS `s46`, `s47` AS `s47`, `s48` AS `s48`, `s49` AS `s49`, CAST(NULL AS STRING) AS `s50`, CAST(NULL AS STRING) AS `s51`, `s52` AS `s52`, `s53` AS `s53` FROM q14),\nq16 AS (SELECT l.`s32` AS `s32`, l.`s33` AS `s33`, l.`s34` AS `s34`, l.`s35` AS `s35`, l.`s36` AS `s36`, l.`s37` AS `s37`, l.`s38` AS `s38`, l.`s39` AS `s39`, l.`s40` AS `s40`, l.`s41` AS `s41`, l.`s42` AS `s42`, l.`s43` AS `s43`, r.`s44` AS `s44`, r.`s45` AS `s45`, r.`s46` AS `s46`, r.`s47` AS `s47`, r.`s48` AS `s48`, r.`s49` AS `s49`, r.`s50` AS `s50`, r.`s51` AS `s51`, r.`s52` AS `s52`, r.`s53` AS `s53` FROM q13 l INNER JOIN q15 r ON TRUE),\nq17 AS (SELECT * FROM q16 WHERE ((`s42` = `s32`) AND (`s43` = `s44`))),\nq18 AS (SELECT `_identity` AS `s32`, `browserUsed` AS `s34`, `content` AS `s35`, `creationDate` AS `s36`, `id` AS `s37`, `length` AS `s38`, `locationIP` AS `s39` FROM `comment`),\nq19 AS (SELECT `s32` AS `s32`, CAST('3' AS BIGINT) AS `s33`, `s34` AS `s34`, `s35` AS `s35`, `s36` AS `s36`, `s37` AS `s37`, `s38` AS `s38`, `s39` AS `s39` FROM q18),\nq20 AS (SELECT `_identity` AS `s40`, `src` AS `s42`, `dst` AS `s43` FROM `comment_replyof_post`),\nq21 AS (SELECT `s40` AS `s40`, CAST('12' AS BIGINT) AS `s41`, `s42` AS `s42`, `s43` AS `s43` FROM q20),\nq22 AS (SELECT l.`s32` AS `s32`, l.`s33` AS `s33`, l.`s34` AS `s34`, l.`s35` AS `s35`, l.`s36` AS `s36`, l.`s37` AS `s37`, l.`s38` AS `s38`, l.`s39` AS `s39`, r.`s40` AS `s40`, r.`s41` AS `s41`, r.`s42` AS `s42`, r.`s43` AS `s43` FROM q19 l INNER JOIN q21 r ON TRUE),\nq23 AS (SELECT `_identity` AS `s44`, `browserUsed` AS `s46`, `content` AS `s47`, `creationDate` AS `s48`, `id` AS `s49`, `imageFile` AS `s50`, `language` AS `s51`, `length` AS `s52`, `locationIP` AS `s53` FROM `post`),\nq24 AS (SELECT `s44` AS `s44`, CAST('2' AS BIGINT) AS `s45`, `s46` AS `s46`, `s47` AS `s47`, `s48` AS `s48`, `s49` AS `s49`, `s50` AS `s50`, `s51` AS `s51`, `s52` AS `s52`, `s53` AS `s53` FROM q23),\nq25 AS (SELECT l.`s32` AS `s32`, l.`s33` AS `s33`, l.`s34` AS `s34`, l.`s35` AS `s35`, l.`s36` AS `s36`, l.`s37` AS `s37`, l.`s38` AS `s38`, l.`s39` AS `s39`, l.`s40` AS `s40`, l.`s41` AS `s41`, l.`s42` AS `s42`, l.`s43` AS `s43`, r.`s44` AS `s44`, r.`s45` AS `s45`, r.`s46` AS `s46`, r.`s47` AS `s47`, r.`s48` AS `s48`, r.`s49` AS `s49`, r.`s50` AS `s50`, r.`s51` AS `s51`, r.`s52` AS `s52`, r.`s53` AS `s53` FROM q22 l INNER JOIN q24 r ON TRUE),\nq26 AS (SELECT * FROM q25 WHERE ((`s42` = `s32`) AND (`s43` = `s44`))),\nq27 AS (SELECT `s32` AS `s32`, `s33` AS `s33`, `s34` AS `s34`, `s35` AS `s35`, `s36` AS `s36`, `s37` AS `s37`, `s38` AS `s38`, `s39` AS `s39`, `s40` AS `s40`, `s41` AS `s41`, `s42` AS `s42`, `s43` AS `s43`, `s44` AS `s44`, `s45` AS `s45`, `s46` AS `s46`, `s47` AS `s47`, `s48` AS `s48`, `s49` AS `s49`, `s50` AS `s50`, `s51` AS `s51`, `s52` AS `s52`, `s53` AS `s53` FROM q17 UNION ALL SELECT `s32` AS `s32`, `s33` AS `s33`, `s34` AS `s34`, `s35` AS `s35`, `s36` AS `s36`, `s37` AS `s37`, `s38` AS `s38`, `s39` AS `s39`, `s40` AS `s40`, `s41` AS `s41`, `s42` AS `s42`, `s43` AS `s43`, `s44` AS `s44`, `s45` AS `s45`, `s46` AS `s46`, `s47` AS `s47`, `s48` AS `s48`, `s49` AS `s49`, `s50` AS `s50`, `s51` AS `s51`, `s52` AS `s52`, `s53` AS `s53` FROM q26),\nq28 AS (SELECT `s33` AS `s54`, `s32` AS `s55`, `s45` AS `s56`, `s44` AS `s57`, `s41` AS `s58`, `s40` AS `s59` FROM q27) SELECT `s54` AS `sg`, `s55` AS `si`, `s56` AS `dg`, `s57` AS `di`, `s58` AS `eg`, `s59` AS `ei` FROM q28",
+        "max_hops": null,
+        "min_hops": 0,
+        "mode": "Trail",
+        "seed_sql": "WITH q0 AS (SELECT 1 AS `@unit`),\nq1 AS (SELECT 1 AS `@unit`),\nq2 AS (SELECT 1 AS `@unit`),\nq3 AS (SELECT `_identity` AS `s20`, `browserUsed` AS `s22`, `content` AS `s23`, `creationDate` AS `s24`, `id` AS `s25`, `imageFile` AS `s26`, `language` AS `s27`, `length` AS `s28`, `locationIP` AS `s29` FROM `post`),\nq4 AS (SELECT `s20` AS `s20`, CAST('2' AS BIGINT) AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, `s26` AS `s26`, `s27` AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q3),\nq5 AS (SELECT `_identity` AS `s20`, `browserUsed` AS `s22`, `content` AS `s23`, `creationDate` AS `s24`, `id` AS `s25`, `length` AS `s28`, `locationIP` AS `s29` FROM `comment`),\nq6 AS (SELECT `s20` AS `s20`, CAST('3' AS BIGINT) AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, CAST(NULL AS STRING) AS `s26`, CAST(NULL AS STRING) AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q5),\nq7 AS (SELECT `s20` AS `s20`, `s21` AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, `s26` AS `s26`, `s27` AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q4 UNION ALL SELECT `s20` AS `s20`, `s21` AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, `s26` AS `s26`, `s27` AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q6),\nq8 AS (SELECT `s21` AS `s30`, `s20` AS `s31` FROM q7) SELECT `s30` AS `sg`, `s31` AS `si` FROM q8",
+        "shortest_walk": false,
+        "view": "__grust_traverse_0"
+      }
+    ]
+  },
+  {
+    "estimated_cost": null,
+    "expected": [],
+    "name": "ldbc_is6_-1",
+    "optimized_steps": [
+      {
+        "kind": "traverse",
+        "traversal": {
+          "adjacency_sql": "WITH q0 AS (SELECT 1 AS `@unit`),\nq1 AS (SELECT 1 AS `@unit`),\nq2 AS (SELECT 1 AS `@unit`),\nq3 AS (SELECT `_identity` AS `s20`, `browserUsed` AS `s22`, `content` AS `s23`, `creationDate` AS `s24`, `id` AS `s25`, `imageFile` AS `s26`, `language` AS `s27`, `length` AS `s28`, `locationIP` AS `s29` FROM `post`),\nq4 AS (SELECT `s20` AS `s20`, CAST('2' AS BIGINT) AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, `s26` AS `s26`, `s27` AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q3),\nq5 AS (SELECT `_identity` AS `s20`, `browserUsed` AS `s22`, `content` AS `s23`, `creationDate` AS `s24`, `id` AS `s25`, `length` AS `s28`, `locationIP` AS `s29` FROM `comment`),\nq6 AS (SELECT `s20` AS `s20`, CAST('3' AS BIGINT) AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, CAST(NULL AS STRING) AS `s26`, CAST(NULL AS STRING) AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q5),\nq7 AS (SELECT `s20` AS `s20`, `s21` AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, `s26` AS `s26`, `s27` AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q4 UNION ALL SELECT `s20` AS `s20`, `s21` AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, `s26` AS `s26`, `s27` AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q6),\nq8 AS (SELECT `s21` AS `s30`, `s20` AS `s31` FROM q7),\nq9 AS (SELECT `_identity` AS `s44`, `browserUsed` AS `s46`, `content` AS `s47`, `creationDate` AS `s48`, `id` AS `s49`, `length` AS `s52`, `locationIP` AS `s53` FROM `comment`),\nq10 AS (SELECT `s44` AS `s44`, CAST('3' AS BIGINT) AS `s45`, `s46` AS `s46`, `s47` AS `s47`, `s48` AS `s48`, `s49` AS `s49`, CAST(NULL AS STRING) AS `s50`, CAST(NULL AS STRING) AS `s51`, `s52` AS `s52`, `s53` AS `s53` FROM q9),\nq11 AS (SELECT `_identity` AS `s32`, `browserUsed` AS `s34`, `content` AS `s35`, `creationDate` AS `s36`, `id` AS `s37`, `length` AS `s38`, `locationIP` AS `s39` FROM `comment`),\nq12 AS (SELECT `s32` AS `s32`, CAST('3' AS BIGINT) AS `s33`, `s34` AS `s34`, `s35` AS `s35`, `s36` AS `s36`, `s37` AS `s37`, `s38` AS `s38`, `s39` AS `s39` FROM q11),\nq13 AS (SELECT `_identity` AS `s40`, `src` AS `s42`, `dst` AS `s43` FROM `comment_replyof_comment`),\nq14 AS (SELECT `s40` AS `s40`, CAST('11' AS BIGINT) AS `s41`, `s42` AS `s42`, `s43` AS `s43` FROM q13),\nq15 AS (SELECT l.`s32` AS `s32`, l.`s33` AS `s33`, l.`s34` AS `s34`, l.`s35` AS `s35`, l.`s36` AS `s36`, l.`s37` AS `s37`, l.`s38` AS `s38`, l.`s39` AS `s39`, r.`s40` AS `s40`, r.`s41` AS `s41`, r.`s42` AS `s42`, r.`s43` AS `s43` FROM q12 l INNER JOIN q14 r ON (r.`s42` = l.`s32`)),\nq16 AS (SELECT l.`s44` AS `s44`, l.`s45` AS `s45`, l.`s46` AS `s46`, l.`s47` AS `s47`, l.`s48` AS `s48`, l.`s49` AS `s49`, l.`s50` AS `s50`, l.`s51` AS `s51`, l.`s52` AS `s52`, l.`s53` AS `s53`, r.`s32` AS `s32`, r.`s33` AS `s33`, r.`s34` AS `s34`, r.`s35` AS `s35`, r.`s36` AS `s36`, r.`s37` AS `s37`, r.`s38` AS `s38`, r.`s39` AS `s39`, r.`s40` AS `s40`, r.`s41` AS `s41`, r.`s42` AS `s42`, r.`s43` AS `s43` FROM q10 l INNER JOIN q15 r ON (r.`s43` = l.`s44`)),\nq17 AS (SELECT `_identity` AS `s44`, `browserUsed` AS `s46`, `content` AS `s47`, `creationDate` AS `s48`, `id` AS `s49`, `imageFile` AS `s50`, `language` AS `s51`, `length` AS `s52`, `locationIP` AS `s53` FROM `post`),\nq18 AS (SELECT `s44` AS `s44`, CAST('2' AS BIGINT) AS `s45`, `s46` AS `s46`, `s47` AS `s47`, `s48` AS `s48`, `s49` AS `s49`, `s50` AS `s50`, `s51` AS `s51`, `s52` AS `s52`, `s53` AS `s53` FROM q17),\nq19 AS (SELECT `_identity` AS `s32`, `browserUsed` AS `s34`, `content` AS `s35`, `creationDate` AS `s36`, `id` AS `s37`, `length` AS `s38`, `locationIP` AS `s39` FROM `comment`),\nq20 AS (SELECT `s32` AS `s32`, CAST('3' AS BIGINT) AS `s33`, `s34` AS `s34`, `s35` AS `s35`, `s36` AS `s36`, `s37` AS `s37`, `s38` AS `s38`, `s39` AS `s39` FROM q19),\nq21 AS (SELECT `_identity` AS `s40`, `src` AS `s42`, `dst` AS `s43` FROM `comment_replyof_post`),\nq22 AS (SELECT `s40` AS `s40`, CAST('12' AS BIGINT) AS `s41`, `s42` AS `s42`, `s43` AS `s43` FROM q21),\nq23 AS (SELECT l.`s32` AS `s32`, l.`s33` AS `s33`, l.`s34` AS `s34`, l.`s35` AS `s35`, l.`s36` AS `s36`, l.`s37` AS `s37`, l.`s38` AS `s38`, l.`s39` AS `s39`, r.`s40` AS `s40`, r.`s41` AS `s41`, r.`s42` AS `s42`, r.`s43` AS `s43` FROM q20 l INNER JOIN q22 r ON (r.`s42` = l.`s32`)),\nq24 AS (SELECT l.`s44` AS `s44`, l.`s45` AS `s45`, l.`s46` AS `s46`, l.`s47` AS `s47`, l.`s48` AS `s48`, l.`s49` AS `s49`, l.`s50` AS `s50`, l.`s51` AS `s51`, l.`s52` AS `s52`, l.`s53` AS `s53`, r.`s32` AS `s32`, r.`s33` AS `s33`, r.`s34` AS `s34`, r.`s35` AS `s35`, r.`s36` AS `s36`, r.`s37` AS `s37`, r.`s38` AS `s38`, r.`s39` AS `s39`, r.`s40` AS `s40`, r.`s41` AS `s41`, r.`s42` AS `s42`, r.`s43` AS `s43` FROM q18 l INNER JOIN q23 r ON (r.`s43` = l.`s44`)),\nq25 AS (SELECT `s32` AS `s32`, `s33` AS `s33`, `s34` AS `s34`, `s35` AS `s35`, `s36` AS `s36`, `s37` AS `s37`, `s38` AS `s38`, `s39` AS `s39`, `s40` AS `s40`, `s41` AS `s41`, `s42` AS `s42`, `s43` AS `s43`, `s44` AS `s44`, `s45` AS `s45`, `s46` AS `s46`, `s47` AS `s47`, `s48` AS `s48`, `s49` AS `s49`, `s50` AS `s50`, `s51` AS `s51`, `s52` AS `s52`, `s53` AS `s53` FROM q16 UNION ALL SELECT `s32` AS `s32`, `s33` AS `s33`, `s34` AS `s34`, `s35` AS `s35`, `s36` AS `s36`, `s37` AS `s37`, `s38` AS `s38`, `s39` AS `s39`, `s40` AS `s40`, `s41` AS `s41`, `s42` AS `s42`, `s43` AS `s43`, `s44` AS `s44`, `s45` AS `s45`, `s46` AS `s46`, `s47` AS `s47`, `s48` AS `s48`, `s49` AS `s49`, `s50` AS `s50`, `s51` AS `s51`, `s52` AS `s52`, `s53` AS `s53` FROM q24),\nq26 AS (SELECT `s33` AS `s54`, `s32` AS `s55`, `s45` AS `s56`, `s44` AS `s57`, `s41` AS `s58`, `s40` AS `s59` FROM q25) SELECT `s54` AS `sg`, `s55` AS `si`, `s56` AS `dg`, `s57` AS `di`, `s58` AS `eg`, `s59` AS `ei` FROM q26",
+          "max_hops": null,
+          "min_hops": 0,
+          "mode": "Trail",
+          "seed_sql": "WITH q0 AS (SELECT 1 AS `@unit`),\nq1 AS (SELECT 1 AS `@unit`),\nq2 AS (SELECT 1 AS `@unit`),\nq3 AS (SELECT `_identity` AS `s20`, `browserUsed` AS `s22`, `content` AS `s23`, `creationDate` AS `s24`, `id` AS `s25`, `imageFile` AS `s26`, `language` AS `s27`, `length` AS `s28`, `locationIP` AS `s29` FROM `post`),\nq4 AS (SELECT `s20` AS `s20`, CAST('2' AS BIGINT) AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, `s26` AS `s26`, `s27` AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q3),\nq5 AS (SELECT `_identity` AS `s20`, `browserUsed` AS `s22`, `content` AS `s23`, `creationDate` AS `s24`, `id` AS `s25`, `length` AS `s28`, `locationIP` AS `s29` FROM `comment`),\nq6 AS (SELECT `s20` AS `s20`, CAST('3' AS BIGINT) AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, CAST(NULL AS STRING) AS `s26`, CAST(NULL AS STRING) AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q5),\nq7 AS (SELECT `s20` AS `s20`, `s21` AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, `s26` AS `s26`, `s27` AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q4 UNION ALL SELECT `s20` AS `s20`, `s21` AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, `s26` AS `s26`, `s27` AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q6),\nq8 AS (SELECT `s21` AS `s30`, `s20` AS `s31` FROM q7) SELECT `s30` AS `sg`, `s31` AS `si` FROM q8",
+          "shortest_walk": false,
+          "view": "__grust_traverse_0"
+        }
+      }
+    ],
+    "optimized_traversals": [
+      {
+        "adjacency_sql": "WITH q0 AS (SELECT 1 AS `@unit`),\nq1 AS (SELECT 1 AS `@unit`),\nq2 AS (SELECT 1 AS `@unit`),\nq3 AS (SELECT `_identity` AS `s20`, `browserUsed` AS `s22`, `content` AS `s23`, `creationDate` AS `s24`, `id` AS `s25`, `imageFile` AS `s26`, `language` AS `s27`, `length` AS `s28`, `locationIP` AS `s29` FROM `post`),\nq4 AS (SELECT `s20` AS `s20`, CAST('2' AS BIGINT) AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, `s26` AS `s26`, `s27` AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q3),\nq5 AS (SELECT `_identity` AS `s20`, `browserUsed` AS `s22`, `content` AS `s23`, `creationDate` AS `s24`, `id` AS `s25`, `length` AS `s28`, `locationIP` AS `s29` FROM `comment`),\nq6 AS (SELECT `s20` AS `s20`, CAST('3' AS BIGINT) AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, CAST(NULL AS STRING) AS `s26`, CAST(NULL AS STRING) AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q5),\nq7 AS (SELECT `s20` AS `s20`, `s21` AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, `s26` AS `s26`, `s27` AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q4 UNION ALL SELECT `s20` AS `s20`, `s21` AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, `s26` AS `s26`, `s27` AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q6),\nq8 AS (SELECT `s21` AS `s30`, `s20` AS `s31` FROM q7),\nq9 AS (SELECT `_identity` AS `s44`, `browserUsed` AS `s46`, `content` AS `s47`, `creationDate` AS `s48`, `id` AS `s49`, `length` AS `s52`, `locationIP` AS `s53` FROM `comment`),\nq10 AS (SELECT `s44` AS `s44`, CAST('3' AS BIGINT) AS `s45`, `s46` AS `s46`, `s47` AS `s47`, `s48` AS `s48`, `s49` AS `s49`, CAST(NULL AS STRING) AS `s50`, CAST(NULL AS STRING) AS `s51`, `s52` AS `s52`, `s53` AS `s53` FROM q9),\nq11 AS (SELECT `_identity` AS `s32`, `browserUsed` AS `s34`, `content` AS `s35`, `creationDate` AS `s36`, `id` AS `s37`, `length` AS `s38`, `locationIP` AS `s39` FROM `comment`),\nq12 AS (SELECT `s32` AS `s32`, CAST('3' AS BIGINT) AS `s33`, `s34` AS `s34`, `s35` AS `s35`, `s36` AS `s36`, `s37` AS `s37`, `s38` AS `s38`, `s39` AS `s39` FROM q11),\nq13 AS (SELECT `_identity` AS `s40`, `src` AS `s42`, `dst` AS `s43` FROM `comment_replyof_comment`),\nq14 AS (SELECT `s40` AS `s40`, CAST('11' AS BIGINT) AS `s41`, `s42` AS `s42`, `s43` AS `s43` FROM q13),\nq15 AS (SELECT l.`s32` AS `s32`, l.`s33` AS `s33`, l.`s34` AS `s34`, l.`s35` AS `s35`, l.`s36` AS `s36`, l.`s37` AS `s37`, l.`s38` AS `s38`, l.`s39` AS `s39`, r.`s40` AS `s40`, r.`s41` AS `s41`, r.`s42` AS `s42`, r.`s43` AS `s43` FROM q12 l INNER JOIN q14 r ON (r.`s42` = l.`s32`)),\nq16 AS (SELECT l.`s44` AS `s44`, l.`s45` AS `s45`, l.`s46` AS `s46`, l.`s47` AS `s47`, l.`s48` AS `s48`, l.`s49` AS `s49`, l.`s50` AS `s50`, l.`s51` AS `s51`, l.`s52` AS `s52`, l.`s53` AS `s53`, r.`s32` AS `s32`, r.`s33` AS `s33`, r.`s34` AS `s34`, r.`s35` AS `s35`, r.`s36` AS `s36`, r.`s37` AS `s37`, r.`s38` AS `s38`, r.`s39` AS `s39`, r.`s40` AS `s40`, r.`s41` AS `s41`, r.`s42` AS `s42`, r.`s43` AS `s43` FROM q10 l INNER JOIN q15 r ON (r.`s43` = l.`s44`)),\nq17 AS (SELECT `_identity` AS `s44`, `browserUsed` AS `s46`, `content` AS `s47`, `creationDate` AS `s48`, `id` AS `s49`, `imageFile` AS `s50`, `language` AS `s51`, `length` AS `s52`, `locationIP` AS `s53` FROM `post`),\nq18 AS (SELECT `s44` AS `s44`, CAST('2' AS BIGINT) AS `s45`, `s46` AS `s46`, `s47` AS `s47`, `s48` AS `s48`, `s49` AS `s49`, `s50` AS `s50`, `s51` AS `s51`, `s52` AS `s52`, `s53` AS `s53` FROM q17),\nq19 AS (SELECT `_identity` AS `s32`, `browserUsed` AS `s34`, `content` AS `s35`, `creationDate` AS `s36`, `id` AS `s37`, `length` AS `s38`, `locationIP` AS `s39` FROM `comment`),\nq20 AS (SELECT `s32` AS `s32`, CAST('3' AS BIGINT) AS `s33`, `s34` AS `s34`, `s35` AS `s35`, `s36` AS `s36`, `s37` AS `s37`, `s38` AS `s38`, `s39` AS `s39` FROM q19),\nq21 AS (SELECT `_identity` AS `s40`, `src` AS `s42`, `dst` AS `s43` FROM `comment_replyof_post`),\nq22 AS (SELECT `s40` AS `s40`, CAST('12' AS BIGINT) AS `s41`, `s42` AS `s42`, `s43` AS `s43` FROM q21),\nq23 AS (SELECT l.`s32` AS `s32`, l.`s33` AS `s33`, l.`s34` AS `s34`, l.`s35` AS `s35`, l.`s36` AS `s36`, l.`s37` AS `s37`, l.`s38` AS `s38`, l.`s39` AS `s39`, r.`s40` AS `s40`, r.`s41` AS `s41`, r.`s42` AS `s42`, r.`s43` AS `s43` FROM q20 l INNER JOIN q22 r ON (r.`s42` = l.`s32`)),\nq24 AS (SELECT l.`s44` AS `s44`, l.`s45` AS `s45`, l.`s46` AS `s46`, l.`s47` AS `s47`, l.`s48` AS `s48`, l.`s49` AS `s49`, l.`s50` AS `s50`, l.`s51` AS `s51`, l.`s52` AS `s52`, l.`s53` AS `s53`, r.`s32` AS `s32`, r.`s33` AS `s33`, r.`s34` AS `s34`, r.`s35` AS `s35`, r.`s36` AS `s36`, r.`s37` AS `s37`, r.`s38` AS `s38`, r.`s39` AS `s39`, r.`s40` AS `s40`, r.`s41` AS `s41`, r.`s42` AS `s42`, r.`s43` AS `s43` FROM q18 l INNER JOIN q23 r ON (r.`s43` = l.`s44`)),\nq25 AS (SELECT `s32` AS `s32`, `s33` AS `s33`, `s34` AS `s34`, `s35` AS `s35`, `s36` AS `s36`, `s37` AS `s37`, `s38` AS `s38`, `s39` AS `s39`, `s40` AS `s40`, `s41` AS `s41`, `s42` AS `s42`, `s43` AS `s43`, `s44` AS `s44`, `s45` AS `s45`, `s46` AS `s46`, `s47` AS `s47`, `s48` AS `s48`, `s49` AS `s49`, `s50` AS `s50`, `s51` AS `s51`, `s52` AS `s52`, `s53` AS `s53` FROM q16 UNION ALL SELECT `s32` AS `s32`, `s33` AS `s33`, `s34` AS `s34`, `s35` AS `s35`, `s36` AS `s36`, `s37` AS `s37`, `s38` AS `s38`, `s39` AS `s39`, `s40` AS `s40`, `s41` AS `s41`, `s42` AS `s42`, `s43` AS `s43`, `s44` AS `s44`, `s45` AS `s45`, `s46` AS `s46`, `s47` AS `s47`, `s48` AS `s48`, `s49` AS `s49`, `s50` AS `s50`, `s51` AS `s51`, `s52` AS `s52`, `s53` AS `s53` FROM q24),\nq26 AS (SELECT `s33` AS `s54`, `s32` AS `s55`, `s45` AS `s56`, `s44` AS `s57`, `s41` AS `s58`, `s40` AS `s59` FROM q25) SELECT `s54` AS `sg`, `s55` AS `si`, `s56` AS `dg`, `s57` AS `di`, `s58` AS `eg`, `s59` AS `ei` FROM q26",
+        "max_hops": null,
+        "min_hops": 0,
+        "mode": "Trail",
+        "seed_sql": "WITH q0 AS (SELECT 1 AS `@unit`),\nq1 AS (SELECT 1 AS `@unit`),\nq2 AS (SELECT 1 AS `@unit`),\nq3 AS (SELECT `_identity` AS `s20`, `browserUsed` AS `s22`, `content` AS `s23`, `creationDate` AS `s24`, `id` AS `s25`, `imageFile` AS `s26`, `language` AS `s27`, `length` AS `s28`, `locationIP` AS `s29` FROM `post`),\nq4 AS (SELECT `s20` AS `s20`, CAST('2' AS BIGINT) AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, `s26` AS `s26`, `s27` AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q3),\nq5 AS (SELECT `_identity` AS `s20`, `browserUsed` AS `s22`, `content` AS `s23`, `creationDate` AS `s24`, `id` AS `s25`, `length` AS `s28`, `locationIP` AS `s29` FROM `comment`),\nq6 AS (SELECT `s20` AS `s20`, CAST('3' AS BIGINT) AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, CAST(NULL AS STRING) AS `s26`, CAST(NULL AS STRING) AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q5),\nq7 AS (SELECT `s20` AS `s20`, `s21` AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, `s26` AS `s26`, `s27` AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q4 UNION ALL SELECT `s20` AS `s20`, `s21` AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, `s26` AS `s26`, `s27` AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q6),\nq8 AS (SELECT `s21` AS `s30`, `s20` AS `s31` FROM q7) SELECT `s30` AS `sg`, `s31` AS `si` FROM q8",
+        "shortest_walk": false,
+        "view": "__grust_traverse_0"
+      }
+    ],
+    "ordered": false,
+    "output_types": [
+      "bigint",
+      "string",
+      "bigint",
+      "string",
+      "string"
+    ],
+    "parameters": {
+      "messageId": -1
+    },
+    "query_sha256": "1ac9125f6817402cd5df456b5201fc44187b646ffe6bf8497070db2abae84bce",
+    "query_text": "// IS6. Forum of a message\n/*\n:param messageId: 206158431836\n */\nMATCH (m:Message {id: $messageId })-[:REPLY_OF*0..]->(p:Post)<-[:CONTAINER_OF]-(f:Forum)-[:HAS_MODERATOR]->(mod:Person)\nRETURN\n    f.id AS forumId,\n    f.title AS forumTitle,\n    mod.id AS moderatorId,\n    mod.firstName AS moderatorFirstName,\n    mod.lastName AS moderatorLastName\n",
+    "statistics_revision": "138a47e3795b9340685d7a62d8eedc23de28d2b0723a619c9470f8e6feea616a",
+    "steps": [
+      {
+        "kind": "traverse",
+        "traversal": {
+          "adjacency_sql": "WITH q0 AS (SELECT 1 AS `@unit`),\nq1 AS (SELECT 1 AS `@unit`),\nq2 AS (SELECT 1 AS `@unit`),\nq3 AS (SELECT `_identity` AS `s20`, `browserUsed` AS `s22`, `content` AS `s23`, `creationDate` AS `s24`, `id` AS `s25`, `imageFile` AS `s26`, `language` AS `s27`, `length` AS `s28`, `locationIP` AS `s29` FROM `post`),\nq4 AS (SELECT `s20` AS `s20`, CAST('2' AS BIGINT) AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, `s26` AS `s26`, `s27` AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q3),\nq5 AS (SELECT `_identity` AS `s20`, `browserUsed` AS `s22`, `content` AS `s23`, `creationDate` AS `s24`, `id` AS `s25`, `length` AS `s28`, `locationIP` AS `s29` FROM `comment`),\nq6 AS (SELECT `s20` AS `s20`, CAST('3' AS BIGINT) AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, CAST(NULL AS STRING) AS `s26`, CAST(NULL AS STRING) AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q5),\nq7 AS (SELECT `s20` AS `s20`, `s21` AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, `s26` AS `s26`, `s27` AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q4 UNION ALL SELECT `s20` AS `s20`, `s21` AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, `s26` AS `s26`, `s27` AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q6),\nq8 AS (SELECT `s21` AS `s30`, `s20` AS `s31` FROM q7),\nq9 AS (SELECT `_identity` AS `s32`, `browserUsed` AS `s34`, `content` AS `s35`, `creationDate` AS `s36`, `id` AS `s37`, `length` AS `s38`, `locationIP` AS `s39` FROM `comment`),\nq10 AS (SELECT `s32` AS `s32`, CAST('3' AS BIGINT) AS `s33`, `s34` AS `s34`, `s35` AS `s35`, `s36` AS `s36`, `s37` AS `s37`, `s38` AS `s38`, `s39` AS `s39` FROM q9),\nq11 AS (SELECT `_identity` AS `s40`, `src` AS `s42`, `dst` AS `s43` FROM `comment_replyof_comment`),\nq12 AS (SELECT `s40` AS `s40`, CAST('11' AS BIGINT) AS `s41`, `s42` AS `s42`, `s43` AS `s43` FROM q11),\nq13 AS (SELECT l.`s32` AS `s32`, l.`s33` AS `s33`, l.`s34` AS `s34`, l.`s35` AS `s35`, l.`s36` AS `s36`, l.`s37` AS `s37`, l.`s38` AS `s38`, l.`s39` AS `s39`, r.`s40` AS `s40`, r.`s41` AS `s41`, r.`s42` AS `s42`, r.`s43` AS `s43` FROM q10 l INNER JOIN q12 r ON TRUE),\nq14 AS (SELECT `_identity` AS `s44`, `browserUsed` AS `s46`, `content` AS `s47`, `creationDate` AS `s48`, `id` AS `s49`, `length` AS `s52`, `locationIP` AS `s53` FROM `comment`),\nq15 AS (SELECT `s44` AS `s44`, CAST('3' AS BIGINT) AS `s45`, `s46` AS `s46`, `s47` AS `s47`, `s48` AS `s48`, `s49` AS `s49`, CAST(NULL AS STRING) AS `s50`, CAST(NULL AS STRING) AS `s51`, `s52` AS `s52`, `s53` AS `s53` FROM q14),\nq16 AS (SELECT l.`s32` AS `s32`, l.`s33` AS `s33`, l.`s34` AS `s34`, l.`s35` AS `s35`, l.`s36` AS `s36`, l.`s37` AS `s37`, l.`s38` AS `s38`, l.`s39` AS `s39`, l.`s40` AS `s40`, l.`s41` AS `s41`, l.`s42` AS `s42`, l.`s43` AS `s43`, r.`s44` AS `s44`, r.`s45` AS `s45`, r.`s46` AS `s46`, r.`s47` AS `s47`, r.`s48` AS `s48`, r.`s49` AS `s49`, r.`s50` AS `s50`, r.`s51` AS `s51`, r.`s52` AS `s52`, r.`s53` AS `s53` FROM q13 l INNER JOIN q15 r ON TRUE),\nq17 AS (SELECT * FROM q16 WHERE ((`s42` = `s32`) AND (`s43` = `s44`))),\nq18 AS (SELECT `_identity` AS `s32`, `browserUsed` AS `s34`, `content` AS `s35`, `creationDate` AS `s36`, `id` AS `s37`, `length` AS `s38`, `locationIP` AS `s39` FROM `comment`),\nq19 AS (SELECT `s32` AS `s32`, CAST('3' AS BIGINT) AS `s33`, `s34` AS `s34`, `s35` AS `s35`, `s36` AS `s36`, `s37` AS `s37`, `s38` AS `s38`, `s39` AS `s39` FROM q18),\nq20 AS (SELECT `_identity` AS `s40`, `src` AS `s42`, `dst` AS `s43` FROM `comment_replyof_post`),\nq21 AS (SELECT `s40` AS `s40`, CAST('12' AS BIGINT) AS `s41`, `s42` AS `s42`, `s43` AS `s43` FROM q20),\nq22 AS (SELECT l.`s32` AS `s32`, l.`s33` AS `s33`, l.`s34` AS `s34`, l.`s35` AS `s35`, l.`s36` AS `s36`, l.`s37` AS `s37`, l.`s38` AS `s38`, l.`s39` AS `s39`, r.`s40` AS `s40`, r.`s41` AS `s41`, r.`s42` AS `s42`, r.`s43` AS `s43` FROM q19 l INNER JOIN q21 r ON TRUE),\nq23 AS (SELECT `_identity` AS `s44`, `browserUsed` AS `s46`, `content` AS `s47`, `creationDate` AS `s48`, `id` AS `s49`, `imageFile` AS `s50`, `language` AS `s51`, `length` AS `s52`, `locationIP` AS `s53` FROM `post`),\nq24 AS (SELECT `s44` AS `s44`, CAST('2' AS BIGINT) AS `s45`, `s46` AS `s46`, `s47` AS `s47`, `s48` AS `s48`, `s49` AS `s49`, `s50` AS `s50`, `s51` AS `s51`, `s52` AS `s52`, `s53` AS `s53` FROM q23),\nq25 AS (SELECT l.`s32` AS `s32`, l.`s33` AS `s33`, l.`s34` AS `s34`, l.`s35` AS `s35`, l.`s36` AS `s36`, l.`s37` AS `s37`, l.`s38` AS `s38`, l.`s39` AS `s39`, l.`s40` AS `s40`, l.`s41` AS `s41`, l.`s42` AS `s42`, l.`s43` AS `s43`, r.`s44` AS `s44`, r.`s45` AS `s45`, r.`s46` AS `s46`, r.`s47` AS `s47`, r.`s48` AS `s48`, r.`s49` AS `s49`, r.`s50` AS `s50`, r.`s51` AS `s51`, r.`s52` AS `s52`, r.`s53` AS `s53` FROM q22 l INNER JOIN q24 r ON TRUE),\nq26 AS (SELECT * FROM q25 WHERE ((`s42` = `s32`) AND (`s43` = `s44`))),\nq27 AS (SELECT `s32` AS `s32`, `s33` AS `s33`, `s34` AS `s34`, `s35` AS `s35`, `s36` AS `s36`, `s37` AS `s37`, `s38` AS `s38`, `s39` AS `s39`, `s40` AS `s40`, `s41` AS `s41`, `s42` AS `s42`, `s43` AS `s43`, `s44` AS `s44`, `s45` AS `s45`, `s46` AS `s46`, `s47` AS `s47`, `s48` AS `s48`, `s49` AS `s49`, `s50` AS `s50`, `s51` AS `s51`, `s52` AS `s52`, `s53` AS `s53` FROM q17 UNION ALL SELECT `s32` AS `s32`, `s33` AS `s33`, `s34` AS `s34`, `s35` AS `s35`, `s36` AS `s36`, `s37` AS `s37`, `s38` AS `s38`, `s39` AS `s39`, `s40` AS `s40`, `s41` AS `s41`, `s42` AS `s42`, `s43` AS `s43`, `s44` AS `s44`, `s45` AS `s45`, `s46` AS `s46`, `s47` AS `s47`, `s48` AS `s48`, `s49` AS `s49`, `s50` AS `s50`, `s51` AS `s51`, `s52` AS `s52`, `s53` AS `s53` FROM q26),\nq28 AS (SELECT `s33` AS `s54`, `s32` AS `s55`, `s45` AS `s56`, `s44` AS `s57`, `s41` AS `s58`, `s40` AS `s59` FROM q27) SELECT `s54` AS `sg`, `s55` AS `si`, `s56` AS `dg`, `s57` AS `di`, `s58` AS `eg`, `s59` AS `ei` FROM q28",
+          "max_hops": null,
+          "min_hops": 0,
+          "mode": "Trail",
+          "seed_sql": "WITH q0 AS (SELECT 1 AS `@unit`),\nq1 AS (SELECT 1 AS `@unit`),\nq2 AS (SELECT 1 AS `@unit`),\nq3 AS (SELECT `_identity` AS `s20`, `browserUsed` AS `s22`, `content` AS `s23`, `creationDate` AS `s24`, `id` AS `s25`, `imageFile` AS `s26`, `language` AS `s27`, `length` AS `s28`, `locationIP` AS `s29` FROM `post`),\nq4 AS (SELECT `s20` AS `s20`, CAST('2' AS BIGINT) AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, `s26` AS `s26`, `s27` AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q3),\nq5 AS (SELECT `_identity` AS `s20`, `browserUsed` AS `s22`, `content` AS `s23`, `creationDate` AS `s24`, `id` AS `s25`, `length` AS `s28`, `locationIP` AS `s29` FROM `comment`),\nq6 AS (SELECT `s20` AS `s20`, CAST('3' AS BIGINT) AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, CAST(NULL AS STRING) AS `s26`, CAST(NULL AS STRING) AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q5),\nq7 AS (SELECT `s20` AS `s20`, `s21` AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, `s26` AS `s26`, `s27` AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q4 UNION ALL SELECT `s20` AS `s20`, `s21` AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, `s26` AS `s26`, `s27` AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q6),\nq8 AS (SELECT `s21` AS `s30`, `s20` AS `s31` FROM q7) SELECT `s30` AS `sg`, `s31` AS `si` FROM q8",
+          "shortest_walk": false,
+          "view": "__grust_traverse_0"
+        }
+      }
+    ],
+    "trace": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "costed inner region: 3 relations, before=Some(10916438173.0), after=16635, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 3 relations, before=Some(29148205235.0), after=24047, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 3 relations, before=Some(56571198947.0), after=49807, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 3 relations, before=Some(289023841.0), after=7106, NDV equality estimates; absent selectivity uses 1"
+    ],
+    "traversals": [
+      {
+        "adjacency_sql": "WITH q0 AS (SELECT 1 AS `@unit`),\nq1 AS (SELECT 1 AS `@unit`),\nq2 AS (SELECT 1 AS `@unit`),\nq3 AS (SELECT `_identity` AS `s20`, `browserUsed` AS `s22`, `content` AS `s23`, `creationDate` AS `s24`, `id` AS `s25`, `imageFile` AS `s26`, `language` AS `s27`, `length` AS `s28`, `locationIP` AS `s29` FROM `post`),\nq4 AS (SELECT `s20` AS `s20`, CAST('2' AS BIGINT) AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, `s26` AS `s26`, `s27` AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q3),\nq5 AS (SELECT `_identity` AS `s20`, `browserUsed` AS `s22`, `content` AS `s23`, `creationDate` AS `s24`, `id` AS `s25`, `length` AS `s28`, `locationIP` AS `s29` FROM `comment`),\nq6 AS (SELECT `s20` AS `s20`, CAST('3' AS BIGINT) AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, CAST(NULL AS STRING) AS `s26`, CAST(NULL AS STRING) AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q5),\nq7 AS (SELECT `s20` AS `s20`, `s21` AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, `s26` AS `s26`, `s27` AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q4 UNION ALL SELECT `s20` AS `s20`, `s21` AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, `s26` AS `s26`, `s27` AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q6),\nq8 AS (SELECT `s21` AS `s30`, `s20` AS `s31` FROM q7),\nq9 AS (SELECT `_identity` AS `s32`, `browserUsed` AS `s34`, `content` AS `s35`, `creationDate` AS `s36`, `id` AS `s37`, `length` AS `s38`, `locationIP` AS `s39` FROM `comment`),\nq10 AS (SELECT `s32` AS `s32`, CAST('3' AS BIGINT) AS `s33`, `s34` AS `s34`, `s35` AS `s35`, `s36` AS `s36`, `s37` AS `s37`, `s38` AS `s38`, `s39` AS `s39` FROM q9),\nq11 AS (SELECT `_identity` AS `s40`, `src` AS `s42`, `dst` AS `s43` FROM `comment_replyof_comment`),\nq12 AS (SELECT `s40` AS `s40`, CAST('11' AS BIGINT) AS `s41`, `s42` AS `s42`, `s43` AS `s43` FROM q11),\nq13 AS (SELECT l.`s32` AS `s32`, l.`s33` AS `s33`, l.`s34` AS `s34`, l.`s35` AS `s35`, l.`s36` AS `s36`, l.`s37` AS `s37`, l.`s38` AS `s38`, l.`s39` AS `s39`, r.`s40` AS `s40`, r.`s41` AS `s41`, r.`s42` AS `s42`, r.`s43` AS `s43` FROM q10 l INNER JOIN q12 r ON TRUE),\nq14 AS (SELECT `_identity` AS `s44`, `browserUsed` AS `s46`, `content` AS `s47`, `creationDate` AS `s48`, `id` AS `s49`, `length` AS `s52`, `locationIP` AS `s53` FROM `comment`),\nq15 AS (SELECT `s44` AS `s44`, CAST('3' AS BIGINT) AS `s45`, `s46` AS `s46`, `s47` AS `s47`, `s48` AS `s48`, `s49` AS `s49`, CAST(NULL AS STRING) AS `s50`, CAST(NULL AS STRING) AS `s51`, `s52` AS `s52`, `s53` AS `s53` FROM q14),\nq16 AS (SELECT l.`s32` AS `s32`, l.`s33` AS `s33`, l.`s34` AS `s34`, l.`s35` AS `s35`, l.`s36` AS `s36`, l.`s37` AS `s37`, l.`s38` AS `s38`, l.`s39` AS `s39`, l.`s40` AS `s40`, l.`s41` AS `s41`, l.`s42` AS `s42`, l.`s43` AS `s43`, r.`s44` AS `s44`, r.`s45` AS `s45`, r.`s46` AS `s46`, r.`s47` AS `s47`, r.`s48` AS `s48`, r.`s49` AS `s49`, r.`s50` AS `s50`, r.`s51` AS `s51`, r.`s52` AS `s52`, r.`s53` AS `s53` FROM q13 l INNER JOIN q15 r ON TRUE),\nq17 AS (SELECT * FROM q16 WHERE ((`s42` = `s32`) AND (`s43` = `s44`))),\nq18 AS (SELECT `_identity` AS `s32`, `browserUsed` AS `s34`, `content` AS `s35`, `creationDate` AS `s36`, `id` AS `s37`, `length` AS `s38`, `locationIP` AS `s39` FROM `comment`),\nq19 AS (SELECT `s32` AS `s32`, CAST('3' AS BIGINT) AS `s33`, `s34` AS `s34`, `s35` AS `s35`, `s36` AS `s36`, `s37` AS `s37`, `s38` AS `s38`, `s39` AS `s39` FROM q18),\nq20 AS (SELECT `_identity` AS `s40`, `src` AS `s42`, `dst` AS `s43` FROM `comment_replyof_post`),\nq21 AS (SELECT `s40` AS `s40`, CAST('12' AS BIGINT) AS `s41`, `s42` AS `s42`, `s43` AS `s43` FROM q20),\nq22 AS (SELECT l.`s32` AS `s32`, l.`s33` AS `s33`, l.`s34` AS `s34`, l.`s35` AS `s35`, l.`s36` AS `s36`, l.`s37` AS `s37`, l.`s38` AS `s38`, l.`s39` AS `s39`, r.`s40` AS `s40`, r.`s41` AS `s41`, r.`s42` AS `s42`, r.`s43` AS `s43` FROM q19 l INNER JOIN q21 r ON TRUE),\nq23 AS (SELECT `_identity` AS `s44`, `browserUsed` AS `s46`, `content` AS `s47`, `creationDate` AS `s48`, `id` AS `s49`, `imageFile` AS `s50`, `language` AS `s51`, `length` AS `s52`, `locationIP` AS `s53` FROM `post`),\nq24 AS (SELECT `s44` AS `s44`, CAST('2' AS BIGINT) AS `s45`, `s46` AS `s46`, `s47` AS `s47`, `s48` AS `s48`, `s49` AS `s49`, `s50` AS `s50`, `s51` AS `s51`, `s52` AS `s52`, `s53` AS `s53` FROM q23),\nq25 AS (SELECT l.`s32` AS `s32`, l.`s33` AS `s33`, l.`s34` AS `s34`, l.`s35` AS `s35`, l.`s36` AS `s36`, l.`s37` AS `s37`, l.`s38` AS `s38`, l.`s39` AS `s39`, l.`s40` AS `s40`, l.`s41` AS `s41`, l.`s42` AS `s42`, l.`s43` AS `s43`, r.`s44` AS `s44`, r.`s45` AS `s45`, r.`s46` AS `s46`, r.`s47` AS `s47`, r.`s48` AS `s48`, r.`s49` AS `s49`, r.`s50` AS `s50`, r.`s51` AS `s51`, r.`s52` AS `s52`, r.`s53` AS `s53` FROM q22 l INNER JOIN q24 r ON TRUE),\nq26 AS (SELECT * FROM q25 WHERE ((`s42` = `s32`) AND (`s43` = `s44`))),\nq27 AS (SELECT `s32` AS `s32`, `s33` AS `s33`, `s34` AS `s34`, `s35` AS `s35`, `s36` AS `s36`, `s37` AS `s37`, `s38` AS `s38`, `s39` AS `s39`, `s40` AS `s40`, `s41` AS `s41`, `s42` AS `s42`, `s43` AS `s43`, `s44` AS `s44`, `s45` AS `s45`, `s46` AS `s46`, `s47` AS `s47`, `s48` AS `s48`, `s49` AS `s49`, `s50` AS `s50`, `s51` AS `s51`, `s52` AS `s52`, `s53` AS `s53` FROM q17 UNION ALL SELECT `s32` AS `s32`, `s33` AS `s33`, `s34` AS `s34`, `s35` AS `s35`, `s36` AS `s36`, `s37` AS `s37`, `s38` AS `s38`, `s39` AS `s39`, `s40` AS `s40`, `s41` AS `s41`, `s42` AS `s42`, `s43` AS `s43`, `s44` AS `s44`, `s45` AS `s45`, `s46` AS `s46`, `s47` AS `s47`, `s48` AS `s48`, `s49` AS `s49`, `s50` AS `s50`, `s51` AS `s51`, `s52` AS `s52`, `s53` AS `s53` FROM q26),\nq28 AS (SELECT `s33` AS `s54`, `s32` AS `s55`, `s45` AS `s56`, `s44` AS `s57`, `s41` AS `s58`, `s40` AS `s59` FROM q27) SELECT `s54` AS `sg`, `s55` AS `si`, `s56` AS `dg`, `s57` AS `di`, `s58` AS `eg`, `s59` AS `ei` FROM q28",
+        "max_hops": null,
+        "min_hops": 0,
+        "mode": "Trail",
+        "seed_sql": "WITH q0 AS (SELECT 1 AS `@unit`),\nq1 AS (SELECT 1 AS `@unit`),\nq2 AS (SELECT 1 AS `@unit`),\nq3 AS (SELECT `_identity` AS `s20`, `browserUsed` AS `s22`, `content` AS `s23`, `creationDate` AS `s24`, `id` AS `s25`, `imageFile` AS `s26`, `language` AS `s27`, `length` AS `s28`, `locationIP` AS `s29` FROM `post`),\nq4 AS (SELECT `s20` AS `s20`, CAST('2' AS BIGINT) AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, `s26` AS `s26`, `s27` AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q3),\nq5 AS (SELECT `_identity` AS `s20`, `browserUsed` AS `s22`, `content` AS `s23`, `creationDate` AS `s24`, `id` AS `s25`, `length` AS `s28`, `locationIP` AS `s29` FROM `comment`),\nq6 AS (SELECT `s20` AS `s20`, CAST('3' AS BIGINT) AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, CAST(NULL AS STRING) AS `s26`, CAST(NULL AS STRING) AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q5),\nq7 AS (SELECT `s20` AS `s20`, `s21` AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, `s26` AS `s26`, `s27` AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q4 UNION ALL SELECT `s20` AS `s20`, `s21` AS `s21`, `s22` AS `s22`, `s23` AS `s23`, `s24` AS `s24`, `s25` AS `s25`, `s26` AS `s26`, `s27` AS `s27`, `s28` AS `s28`, `s29` AS `s29` FROM q6),\nq8 AS (SELECT `s21` AS `s30`, `s20` AS `s31` FROM q7) SELECT `s30` AS `sg`, `s31` AS `si` FROM q8",
+        "shortest_walk": false,
+        "view": "__grust_traverse_0"
+      }
+    ]
+  }
+]

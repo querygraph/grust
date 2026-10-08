@@ -1,0 +1,1541 @@
+{
+  "memory_profile": null,
+  "observed_utc": "2026-10-08T16:25:43.072931+00:00",
+  "finished_utc": "2026-10-08T16:25:45.348822+00:00",
+  "platform": "macOS-15.7.9-x86_64-i386-64bit",
+  "sail_binary": "/Volumes/Apo/graph-tests/results/sem-review-20261001/native-optimized-build01/sail-target/release/sail",
+  "sail_sha256": "ee80ac3cf9d028639561f3cf32435985192719d629807fcf6a368324fa84946e",
+  "command": [
+    "/Volumes/Apo/graph-tests/results/sem-review-20261001/native-optimized-build01/sail-target/release/sail",
+    "spark",
+    "server",
+    "--ip",
+    "127.0.0.1",
+    "--port",
+    "57253"
+  ],
+  "settings": {
+    "SAIL_MODE": "local",
+    "SAIL_EXECUTION__DEFAULT_PARALLELISM": "2",
+    "TOKIO_WORKER_THREADS": "2",
+    "SAIL_RUNTIME__MEMORY_POOL__TYPE": "fair",
+    "SAIL_RUNTIME__MEMORY_POOL__FAIR__MAX_SIZE": "268435456"
+  },
+  "dataset": null,
+  "manifest_sha256": "0a11e717c5367d53dfd609a75a762682d70bfc5cf96d393c3ed3c4f2ba32cd00",
+  "cases": 20,
+  "measurement_protocol": "qualification once each",
+  "controls": [
+    {
+      "name": "row_limit",
+      "outcome": "passed",
+      "error": "ResourceExceeded: adjacency: state row limit exceeded",
+      "scratch_clean": true
+    },
+    {
+      "name": "disk_limit",
+      "outcome": "passed",
+      "error": "ResourceExceeded: adjacency: scratch byte limit exceeded",
+      "scratch_clean": true
+    },
+    {
+      "name": "round_limit",
+      "outcome": "passed",
+      "error": "ResourceExceeded: round limit exceeded with a nonempty frontier",
+      "scratch_clean": true
+    },
+    {
+      "name": "cancel_before_run",
+      "outcome": "passed",
+      "error": "Cancelled: iterative graph execution cancelled",
+      "scratch_clean": true
+    },
+    {
+      "name": "cancel_after_frontier",
+      "outcome": "passed",
+      "error": "Cancelled: iterative graph execution cancelled",
+      "scratch_clean": true
+    },
+    {
+      "name": "quoted_identifier_preserved",
+      "outcome": "passed",
+      "error": null,
+      "scratch_clean": true
+    }
+  ],
+  "results": [
+    {
+      "name": "cypher_anonymous_scopes",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          1
+        ]
+      ],
+      "actual": [
+        [
+          1
+        ]
+      ],
+      "error": null,
+      "phase": "qualification",
+      "iteration": 0
+    },
+    {
+      "name": "cypher_anonymous_scopes",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          1
+        ]
+      ],
+      "actual": [
+        [
+          1
+        ]
+      ],
+      "error": null,
+      "phase": "qualification",
+      "iteration": 0
+    },
+    {
+      "name": "cypher_shortest",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          1,
+          2
+        ],
+        [
+          1,
+          3
+        ],
+        [
+          1,
+          1
+        ],
+        [
+          2,
+          3
+        ],
+        [
+          2,
+          1
+        ],
+        [
+          2,
+          2
+        ],
+        [
+          3,
+          3
+        ],
+        [
+          3,
+          1
+        ],
+        [
+          3,
+          2
+        ]
+      ],
+      "actual": [
+        [
+          1,
+          1
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          2,
+          1
+        ],
+        [
+          3,
+          1
+        ],
+        [
+          3,
+          3
+        ],
+        [
+          1,
+          3
+        ],
+        [
+          2,
+          2
+        ],
+        [
+          2,
+          3
+        ],
+        [
+          3,
+          2
+        ]
+      ],
+      "error": null,
+      "phase": "qualification",
+      "iteration": 0
+    },
+    {
+      "name": "cypher_shortest",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          1,
+          2
+        ],
+        [
+          1,
+          3
+        ],
+        [
+          1,
+          1
+        ],
+        [
+          2,
+          3
+        ],
+        [
+          2,
+          1
+        ],
+        [
+          2,
+          2
+        ],
+        [
+          3,
+          3
+        ],
+        [
+          3,
+          1
+        ],
+        [
+          3,
+          2
+        ]
+      ],
+      "actual": [
+        [
+          1,
+          3
+        ],
+        [
+          2,
+          2
+        ],
+        [
+          2,
+          3
+        ],
+        [
+          3,
+          2
+        ],
+        [
+          1,
+          1
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          2,
+          1
+        ],
+        [
+          3,
+          1
+        ],
+        [
+          3,
+          3
+        ]
+      ],
+      "error": null,
+      "phase": "qualification",
+      "iteration": 0
+    },
+    {
+      "name": "cypher_parameter",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          "Alice"
+        ],
+        [
+          "Dave"
+        ],
+        [
+          "Eve"
+        ]
+      ],
+      "actual": [
+        [
+          "Alice"
+        ],
+        [
+          "Dave"
+        ],
+        [
+          "Eve"
+        ]
+      ],
+      "error": null,
+      "phase": "qualification",
+      "iteration": 0
+    },
+    {
+      "name": "cypher_parameter",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          "Alice"
+        ],
+        [
+          "Dave"
+        ],
+        [
+          "Eve"
+        ]
+      ],
+      "actual": [
+        [
+          "Alice"
+        ],
+        [
+          "Dave"
+        ],
+        [
+          "Eve"
+        ]
+      ],
+      "error": null,
+      "phase": "qualification",
+      "iteration": 0
+    },
+    {
+      "name": "cypher_optional_on",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          1,
+          null
+        ],
+        [
+          2,
+          null
+        ],
+        [
+          3,
+          1
+        ],
+        [
+          4,
+          null
+        ],
+        [
+          5,
+          null
+        ]
+      ],
+      "actual": [
+        [
+          1,
+          null
+        ],
+        [
+          2,
+          null
+        ],
+        [
+          3,
+          1
+        ],
+        [
+          4,
+          null
+        ],
+        [
+          5,
+          null
+        ]
+      ],
+      "error": null,
+      "phase": "qualification",
+      "iteration": 0
+    },
+    {
+      "name": "cypher_optional_on",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          1,
+          null
+        ],
+        [
+          2,
+          null
+        ],
+        [
+          3,
+          1
+        ],
+        [
+          4,
+          null
+        ],
+        [
+          5,
+          null
+        ]
+      ],
+      "actual": [
+        [
+          1,
+          null
+        ],
+        [
+          2,
+          null
+        ],
+        [
+          3,
+          1
+        ],
+        [
+          4,
+          null
+        ],
+        [
+          5,
+          null
+        ]
+      ],
+      "error": null,
+      "phase": "qualification",
+      "iteration": 0
+    },
+    {
+      "name": "cypher_multiset",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          1,
+          2
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          2,
+          3
+        ],
+        [
+          3,
+          3
+        ],
+        [
+          3,
+          1
+        ]
+      ],
+      "actual": [
+        [
+          1,
+          2
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          2,
+          3
+        ],
+        [
+          3,
+          3
+        ],
+        [
+          3,
+          1
+        ]
+      ],
+      "error": null,
+      "phase": "qualification",
+      "iteration": 0
+    },
+    {
+      "name": "cypher_multiset",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          1,
+          2
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          2,
+          3
+        ],
+        [
+          3,
+          3
+        ],
+        [
+          3,
+          1
+        ]
+      ],
+      "actual": [
+        [
+          1,
+          2
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          2,
+          3
+        ],
+        [
+          3,
+          3
+        ],
+        [
+          3,
+          1
+        ]
+      ],
+      "error": null,
+      "phase": "qualification",
+      "iteration": 0
+    },
+    {
+      "name": "cypher_distinct",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          1,
+          2
+        ],
+        [
+          2,
+          3
+        ],
+        [
+          3,
+          3
+        ],
+        [
+          3,
+          1
+        ]
+      ],
+      "actual": [
+        [
+          3,
+          1
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          2,
+          3
+        ],
+        [
+          3,
+          3
+        ]
+      ],
+      "error": null,
+      "phase": "qualification",
+      "iteration": 0
+    },
+    {
+      "name": "cypher_distinct",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          1,
+          2
+        ],
+        [
+          2,
+          3
+        ],
+        [
+          3,
+          3
+        ],
+        [
+          3,
+          1
+        ]
+      ],
+      "actual": [
+        [
+          3,
+          1
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          2,
+          3
+        ],
+        [
+          3,
+          3
+        ]
+      ],
+      "error": null,
+      "phase": "qualification",
+      "iteration": 0
+    },
+    {
+      "name": "cypher_with",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          "Dave"
+        ]
+      ],
+      "actual": [
+        [
+          "Dave"
+        ]
+      ],
+      "error": null,
+      "phase": "qualification",
+      "iteration": 0
+    },
+    {
+      "name": "cypher_with",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          "Dave"
+        ]
+      ],
+      "actual": [
+        [
+          "Dave"
+        ]
+      ],
+      "error": null,
+      "phase": "qualification",
+      "iteration": 0
+    },
+    {
+      "name": "cypher_aggregate_order",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          1,
+          20
+        ],
+        [
+          1,
+          30
+        ],
+        [
+          1,
+          35
+        ],
+        [
+          1,
+          40
+        ],
+        [
+          1,
+          null
+        ]
+      ],
+      "actual": [
+        [
+          1,
+          20
+        ],
+        [
+          1,
+          30
+        ],
+        [
+          1,
+          35
+        ],
+        [
+          1,
+          40
+        ],
+        [
+          1,
+          null
+        ]
+      ],
+      "error": null,
+      "phase": "qualification",
+      "iteration": 0
+    },
+    {
+      "name": "cypher_aggregate_order",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          1,
+          20
+        ],
+        [
+          1,
+          30
+        ],
+        [
+          1,
+          35
+        ],
+        [
+          1,
+          40
+        ],
+        [
+          1,
+          null
+        ]
+      ],
+      "actual": [
+        [
+          1,
+          20
+        ],
+        [
+          1,
+          30
+        ],
+        [
+          1,
+          35
+        ],
+        [
+          1,
+          40
+        ],
+        [
+          1,
+          null
+        ]
+      ],
+      "error": null,
+      "phase": "qualification",
+      "iteration": 0
+    },
+    {
+      "name": "cypher_count_optional",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          1,
+          0
+        ]
+      ],
+      "actual": [
+        [
+          1,
+          0
+        ]
+      ],
+      "error": null,
+      "phase": "qualification",
+      "iteration": 0
+    },
+    {
+      "name": "cypher_count_optional",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          1,
+          0
+        ]
+      ],
+      "actual": [
+        [
+          1,
+          0
+        ]
+      ],
+      "error": null,
+      "phase": "qualification",
+      "iteration": 0
+    },
+    {
+      "name": "cypher_unwind",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          null
+        ],
+        [
+          2
+        ],
+        [
+          2
+        ],
+        [
+          1
+        ]
+      ],
+      "actual": [
+        [
+          null
+        ],
+        [
+          2
+        ],
+        [
+          2
+        ],
+        [
+          1
+        ]
+      ],
+      "error": null,
+      "phase": "qualification",
+      "iteration": 0
+    },
+    {
+      "name": "cypher_unwind",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          null
+        ],
+        [
+          2
+        ],
+        [
+          2
+        ],
+        [
+          1
+        ]
+      ],
+      "actual": [
+        [
+          null
+        ],
+        [
+          2
+        ],
+        [
+          2
+        ],
+        [
+          1
+        ]
+      ],
+      "error": null,
+      "phase": "qualification",
+      "iteration": 0
+    },
+    {
+      "name": "cypher_union",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          1
+        ],
+        [
+          1
+        ]
+      ],
+      "actual": [
+        [
+          1
+        ],
+        [
+          1
+        ]
+      ],
+      "error": null,
+      "phase": "qualification",
+      "iteration": 0
+    },
+    {
+      "name": "cypher_union",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          1
+        ],
+        [
+          1
+        ]
+      ],
+      "actual": [
+        [
+          1
+        ],
+        [
+          1
+        ]
+      ],
+      "error": null,
+      "phase": "qualification",
+      "iteration": 0
+    },
+    {
+      "name": "cypher_case",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          "Alice"
+        ],
+        [
+          "Bob"
+        ],
+        [
+          "unknown"
+        ],
+        [
+          "Dave"
+        ],
+        [
+          "Eve"
+        ]
+      ],
+      "actual": [
+        [
+          "Eve"
+        ],
+        [
+          "Alice"
+        ],
+        [
+          "Bob"
+        ],
+        [
+          "unknown"
+        ],
+        [
+          "Dave"
+        ]
+      ],
+      "error": null,
+      "phase": "qualification",
+      "iteration": 0
+    },
+    {
+      "name": "cypher_case",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          "Alice"
+        ],
+        [
+          "Bob"
+        ],
+        [
+          "unknown"
+        ],
+        [
+          "Dave"
+        ],
+        [
+          "Eve"
+        ]
+      ],
+      "actual": [
+        [
+          "Eve"
+        ],
+        [
+          "Alice"
+        ],
+        [
+          "Bob"
+        ],
+        [
+          "unknown"
+        ],
+        [
+          "Dave"
+        ]
+      ],
+      "error": null,
+      "phase": "qualification",
+      "iteration": 0
+    },
+    {
+      "name": "cypher_simple_case",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          "one"
+        ],
+        [
+          "other"
+        ]
+      ],
+      "actual": [
+        [
+          "one"
+        ],
+        [
+          "other"
+        ]
+      ],
+      "error": null,
+      "phase": "qualification",
+      "iteration": 0
+    },
+    {
+      "name": "cypher_simple_case",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          "one"
+        ],
+        [
+          "other"
+        ]
+      ],
+      "actual": [
+        [
+          "one"
+        ],
+        [
+          "other"
+        ]
+      ],
+      "error": null,
+      "phase": "qualification",
+      "iteration": 0
+    },
+    {
+      "name": "cypher_quoted",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          1
+        ]
+      ],
+      "actual": [
+        [
+          1
+        ]
+      ],
+      "error": null,
+      "phase": "qualification",
+      "iteration": 0
+    },
+    {
+      "name": "cypher_quoted",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          1
+        ]
+      ],
+      "actual": [
+        [
+          1
+        ]
+      ],
+      "error": null,
+      "phase": "qualification",
+      "iteration": 0
+    },
+    {
+      "name": "cypher_incoming",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          2,
+          1
+        ],
+        [
+          2,
+          1
+        ],
+        [
+          3,
+          2
+        ],
+        [
+          3,
+          3
+        ],
+        [
+          1,
+          3
+        ]
+      ],
+      "actual": [
+        [
+          2,
+          1
+        ],
+        [
+          2,
+          1
+        ],
+        [
+          3,
+          2
+        ],
+        [
+          3,
+          3
+        ],
+        [
+          1,
+          3
+        ]
+      ],
+      "error": null,
+      "phase": "qualification",
+      "iteration": 0
+    },
+    {
+      "name": "cypher_incoming",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          2,
+          1
+        ],
+        [
+          2,
+          1
+        ],
+        [
+          3,
+          2
+        ],
+        [
+          3,
+          3
+        ],
+        [
+          1,
+          3
+        ]
+      ],
+      "actual": [
+        [
+          2,
+          1
+        ],
+        [
+          2,
+          1
+        ],
+        [
+          3,
+          2
+        ],
+        [
+          3,
+          3
+        ],
+        [
+          1,
+          3
+        ]
+      ],
+      "error": null,
+      "phase": "qualification",
+      "iteration": 0
+    },
+    {
+      "name": "cypher_trail",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          3,
+          1
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          1,
+          2
+        ]
+      ],
+      "actual": [
+        [
+          3,
+          1
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          1,
+          2
+        ]
+      ],
+      "error": null,
+      "phase": "qualification",
+      "iteration": 0
+    },
+    {
+      "name": "cypher_trail",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          3,
+          1
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          1,
+          2
+        ]
+      ],
+      "actual": [
+        [
+          3,
+          1
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          1,
+          2
+        ]
+      ],
+      "error": null,
+      "phase": "qualification",
+      "iteration": 0
+    },
+    {
+      "name": "cypher_star",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          1
+        ],
+        [
+          2
+        ]
+      ],
+      "actual": [
+        [
+          1
+        ],
+        [
+          2
+        ]
+      ],
+      "error": null,
+      "phase": "qualification",
+      "iteration": 0
+    },
+    {
+      "name": "cypher_star",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          1
+        ],
+        [
+          2
+        ]
+      ],
+      "actual": [
+        [
+          1
+        ],
+        [
+          2
+        ]
+      ],
+      "error": null,
+      "phase": "qualification",
+      "iteration": 0
+    },
+    {
+      "name": "cypher_scalar",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          "ALICE"
+        ]
+      ],
+      "actual": [
+        [
+          "ALICE"
+        ]
+      ],
+      "error": null,
+      "phase": "qualification",
+      "iteration": 0
+    },
+    {
+      "name": "cypher_scalar",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          "ALICE"
+        ]
+      ],
+      "actual": [
+        [
+          "ALICE"
+        ]
+      ],
+      "error": null,
+      "phase": "qualification",
+      "iteration": 0
+    },
+    {
+      "name": "cypher_bounded",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          2
+        ],
+        [
+          2
+        ],
+        [
+          3
+        ],
+        [
+          3
+        ]
+      ],
+      "actual": [
+        [
+          2
+        ],
+        [
+          2
+        ],
+        [
+          3
+        ],
+        [
+          3
+        ]
+      ],
+      "error": null,
+      "phase": "qualification",
+      "iteration": 0
+    },
+    {
+      "name": "cypher_bounded",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          2
+        ],
+        [
+          2
+        ],
+        [
+          3
+        ],
+        [
+          3
+        ]
+      ],
+      "actual": [
+        [
+          2
+        ],
+        [
+          2
+        ],
+        [
+          3
+        ],
+        [
+          3
+        ]
+      ],
+      "error": null,
+      "phase": "qualification",
+      "iteration": 0
+    },
+    {
+      "name": "cypher_unbounded_chain",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          12
+        ]
+      ],
+      "actual": [
+        [
+          12
+        ]
+      ],
+      "error": null,
+      "phase": "qualification",
+      "iteration": 0
+    },
+    {
+      "name": "cypher_unbounded_chain",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          12
+        ]
+      ],
+      "actual": [
+        [
+          12
+        ]
+      ],
+      "error": null,
+      "phase": "qualification",
+      "iteration": 0
+    }
+  ],
+  "rewrites": {
+    "cypher_anonymous_scopes": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression"
+    ],
+    "cypher_shortest": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "costed inner region: 3 relations, before=Some(235.0), after=49, NDV equality estimates; absent selectivity uses 1"
+    ],
+    "cypher_parameter": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression"
+    ],
+    "cypher_optional_on": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "costed inner region: 4 relations, before=Some(251.0), after=59, NDV equality estimates; absent selectivity uses 1"
+    ],
+    "cypher_multiset": [
+      "costed inner region: 5 relations, before=Some(267.0), after=63, NDV equality estimates; absent selectivity uses 1"
+    ],
+    "cypher_distinct": [
+      "costed inner region: 5 relations, before=Some(267.0), after=63, NDV equality estimates; absent selectivity uses 1"
+    ],
+    "cypher_with": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression"
+    ],
+    "cypher_aggregate_order": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression"
+    ],
+    "cypher_count_optional": [
+      "unchanged inner region: relation cap or non-immutable expression"
+    ],
+    "cypher_unwind": [],
+    "cypher_union": [],
+    "cypher_case": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression"
+    ],
+    "cypher_simple_case": [],
+    "cypher_quoted": [],
+    "cypher_incoming": [
+      "costed inner region: 5 relations, before=Some(267.0), after=63, NDV equality estimates; absent selectivity uses 1"
+    ],
+    "cypher_trail": [
+      "costed inner region: 7 relations, before=Some(4296.8125), after=67.75, NDV equality estimates; absent selectivity uses 1"
+    ],
+    "cypher_star": [],
+    "cypher_scalar": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression"
+    ],
+    "cypher_bounded": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "costed inner region: 3 relations, before=Some(240.0), after=33, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 5 relations, before=Some(4268.25), after=59.75, NDV equality estimates; absent selectivity uses 1"
+    ],
+    "cypher_unbounded_chain": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "costed inner region: 3 relations, before=Some(3525.0), after=1941, NDV equality estimates; absent selectivity uses 1"
+    ]
+  },
+  "server_exit_code": -15,
+  "shutdown_error": null,
+  "sail_sha256_after": "ee80ac3cf9d028639561f3cf32435985192719d629807fcf6a368324fa84946e"
+}

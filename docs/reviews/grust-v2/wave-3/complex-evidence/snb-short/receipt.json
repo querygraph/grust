@@ -1,0 +1,3067 @@
+{
+  "memory_profile": null,
+  "observed_utc": "2026-10-08T16:26:08.185919+00:00",
+  "finished_utc": "2026-10-08T16:26:22.531456+00:00",
+  "platform": "macOS-15.7.9-x86_64-i386-64bit",
+  "sail_binary": "/Volumes/Apo/graph-tests/results/sem-review-20261001/native-optimized-build01/sail-target/release/sail",
+  "sail_sha256": "ee80ac3cf9d028639561f3cf32435985192719d629807fcf6a368324fa84946e",
+  "command": [
+    "/Volumes/Apo/graph-tests/results/sem-review-20261001/native-optimized-build01/sail-target/release/sail",
+    "spark",
+    "server",
+    "--ip",
+    "127.0.0.1",
+    "--port",
+    "57774"
+  ],
+  "settings": {
+    "SAIL_MODE": "local",
+    "SAIL_EXECUTION__DEFAULT_PARALLELISM": "2",
+    "TOKIO_WORKER_THREADS": "2",
+    "SAIL_RUNTIME__MEMORY_POOL__TYPE": "fair",
+    "SAIL_RUNTIME__MEMORY_POOL__FAIR__MAX_SIZE": "268435456"
+  },
+  "dataset": {
+    "pin": "f9c394a92cd55e535893f6c9907b141d6533c817",
+    "csv_sha256": {
+      "dynamic/person_0_0.csv": "131ce3c4fd1e0ccab3e204403f4cfdaca21e5351bc60b34d1673bbc2a6bfeb30",
+      "dynamic/post_0_0.csv": "fe9f1b35ed378bdbfd5f0abb94dcdf5f1effa7d814eede2a0df687c479d1c11c",
+      "dynamic/comment_0_0.csv": "0f3f7c7425fe8448baf5c2b25f0dee682404f9edeccc79805b46772e60e52b67",
+      "dynamic/forum_0_0.csv": "3239e8eb5db47fcfb0ba7307bba3f0ab9656b4b82315917e8aa7774d167e5012",
+      "static/place_0_0.csv": "f2ecc4db415c122d5de97931f4b0c3aea93c318c849390ed01006fe860c48236",
+      "dynamic/person_knows_person_0_0.csv": "703e6bed5869d90d1f8c49f0cc161640ec25e426840676a82ebed25bb13a58bf",
+      "dynamic/comment_replyOf_comment_0_0.csv": "a2a0a9435aa1174fc3a21069b30603ed030f4343ab3082781db06a43b8484c54",
+      "dynamic/comment_replyOf_post_0_0.csv": "b566d714810bbad92637514f87fd8afa4ba55a5e4167a260ed457a3a6483bc4c",
+      "dynamic/forum_containerOf_post_0_0.csv": "a30b30ebf95cf5f52a7854137750c4b34cf44fd820519fd0b3d5190fa5f5a794",
+      "dynamic/forum_hasModerator_person_0_0.csv": "419e45d18921d0d72dd28b5e0f80d13fdf8066ac5192b0b9c2ba41d9e116087a",
+      "dynamic/post_hasCreator_person_0_0.csv": "443a0f9b34bc44d9c37e9f1773e451ff06f780c85b80048c4da8ea37801ec92f",
+      "dynamic/comment_hasCreator_person_0_0.csv": "fdc9e66fd16e12c45c27c8aadc23e3529c148d93a6bf53e6d28b56711de7f7f4",
+      "dynamic/person_isLocatedIn_place_0_0.csv": "b5c244a24c5ddefa24d0f40ed87be06303ab3836d73704198df7a094a7f432ac"
+    },
+    "metadata_sha256": "138a47e3795b9340685d7a62d8eedc23de28d2b0723a619c9470f8e6feea616a",
+    "synthetic_replicas": 1,
+    "scale_contract": "official development fixture"
+  },
+  "manifest_sha256": "8688be9e84f64f10d03d8187002fb1723608ba691380366d796b5f16c470c13a",
+  "cases": 13,
+  "measurement_protocol": "warmup each; ABBA twice; fresh execution scope; compile/input Parquet preparation excluded; SQL, scans, materialization/traversal, final collect and cleanup included",
+  "controls": [
+    {
+      "name": "row_limit",
+      "outcome": "passed",
+      "error": "ResourceExceeded: adjacency: state row limit exceeded",
+      "scratch_clean": true
+    },
+    {
+      "name": "disk_limit",
+      "outcome": "passed",
+      "error": "ResourceExceeded: adjacency: scratch byte limit exceeded",
+      "scratch_clean": true
+    },
+    {
+      "name": "round_limit",
+      "outcome": "passed",
+      "error": "ResourceExceeded: round limit exceeded with a nonempty frontier",
+      "scratch_clean": true
+    },
+    {
+      "name": "cancel_before_run",
+      "outcome": "passed",
+      "error": "Cancelled: iterative graph execution cancelled",
+      "scratch_clean": true
+    },
+    {
+      "name": "cancel_after_frontier",
+      "outcome": "passed",
+      "error": "Cancelled: iterative graph execution cancelled",
+      "scratch_clean": true
+    },
+    {
+      "name": "quoted_identifier_preserved",
+      "outcome": "passed",
+      "error": null,
+      "scratch_clean": true
+    }
+  ],
+  "results": [
+    {
+      "name": "ldbc_is1_8796093022220",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          "Jose",
+          "Alonso",
+          558921600000,
+          "196.1.135.241",
+          "Internet Explorer",
+          1073,
+          "female",
+          1284620040602
+        ]
+      ],
+      "actual": [
+        [
+          "Jose",
+          "Alonso",
+          558921600000,
+          "196.1.135.241",
+          "Internet Explorer",
+          1073,
+          "female",
+          1284620040602
+        ]
+      ],
+      "error": null,
+      "phase": "warmup",
+      "iteration": 0
+    },
+    {
+      "name": "ldbc_is1_8796093022220",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          "Jose",
+          "Alonso",
+          558921600000,
+          "196.1.135.241",
+          "Internet Explorer",
+          1073,
+          "female",
+          1284620040602
+        ]
+      ],
+      "actual": [
+        [
+          "Jose",
+          "Alonso",
+          558921600000,
+          "196.1.135.241",
+          "Internet Explorer",
+          1073,
+          "female",
+          1284620040602
+        ]
+      ],
+      "error": null,
+      "phase": "warmup",
+      "iteration": 0
+    },
+    {
+      "name": "ldbc_is1_8796093022220",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          "Jose",
+          "Alonso",
+          558921600000,
+          "196.1.135.241",
+          "Internet Explorer",
+          1073,
+          "female",
+          1284620040602
+        ]
+      ],
+      "actual": [
+        [
+          "Jose",
+          "Alonso",
+          558921600000,
+          "196.1.135.241",
+          "Internet Explorer",
+          1073,
+          "female",
+          1284620040602
+        ]
+      ],
+      "error": null,
+      "phase": "measured",
+      "iteration": 0,
+      "elapsed_relative_to_resolved_median": 0.9573723705930548
+    },
+    {
+      "name": "ldbc_is1_8796093022220",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          "Jose",
+          "Alonso",
+          558921600000,
+          "196.1.135.241",
+          "Internet Explorer",
+          1073,
+          "female",
+          1284620040602
+        ]
+      ],
+      "actual": [
+        [
+          "Jose",
+          "Alonso",
+          558921600000,
+          "196.1.135.241",
+          "Internet Explorer",
+          1073,
+          "female",
+          1284620040602
+        ]
+      ],
+      "error": null,
+      "phase": "measured",
+      "iteration": 1,
+      "elapsed_relative_to_resolved_median": 0.8507438283245826
+    },
+    {
+      "name": "ldbc_is1_8796093022220",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          "Jose",
+          "Alonso",
+          558921600000,
+          "196.1.135.241",
+          "Internet Explorer",
+          1073,
+          "female",
+          1284620040602
+        ]
+      ],
+      "actual": [
+        [
+          "Jose",
+          "Alonso",
+          558921600000,
+          "196.1.135.241",
+          "Internet Explorer",
+          1073,
+          "female",
+          1284620040602
+        ]
+      ],
+      "error": null,
+      "phase": "measured",
+      "iteration": 2,
+      "elapsed_relative_to_resolved_median": 0.8444645480181225
+    },
+    {
+      "name": "ldbc_is1_8796093022220",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          "Jose",
+          "Alonso",
+          558921600000,
+          "196.1.135.241",
+          "Internet Explorer",
+          1073,
+          "female",
+          1284620040602
+        ]
+      ],
+      "actual": [
+        [
+          "Jose",
+          "Alonso",
+          558921600000,
+          "196.1.135.241",
+          "Internet Explorer",
+          1073,
+          "female",
+          1284620040602
+        ]
+      ],
+      "error": null,
+      "phase": "measured",
+      "iteration": 3,
+      "elapsed_relative_to_resolved_median": 0.9972229264438537
+    },
+    {
+      "name": "ldbc_is1_8796093022220",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          "Jose",
+          "Alonso",
+          558921600000,
+          "196.1.135.241",
+          "Internet Explorer",
+          1073,
+          "female",
+          1284620040602
+        ]
+      ],
+      "actual": [
+        [
+          "Jose",
+          "Alonso",
+          558921600000,
+          "196.1.135.241",
+          "Internet Explorer",
+          1073,
+          "female",
+          1284620040602
+        ]
+      ],
+      "error": null,
+      "phase": "measured",
+      "iteration": 4,
+      "elapsed_relative_to_resolved_median": 1.0027770735561463
+    },
+    {
+      "name": "ldbc_is1_8796093022220",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          "Jose",
+          "Alonso",
+          558921600000,
+          "196.1.135.241",
+          "Internet Explorer",
+          1073,
+          "female",
+          1284620040602
+        ]
+      ],
+      "actual": [
+        [
+          "Jose",
+          "Alonso",
+          558921600000,
+          "196.1.135.241",
+          "Internet Explorer",
+          1073,
+          "female",
+          1284620040602
+        ]
+      ],
+      "error": null,
+      "phase": "measured",
+      "iteration": 5,
+      "elapsed_relative_to_resolved_median": 0.8594659148411381
+    },
+    {
+      "name": "ldbc_is1_8796093022220",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          "Jose",
+          "Alonso",
+          558921600000,
+          "196.1.135.241",
+          "Internet Explorer",
+          1073,
+          "female",
+          1284620040602
+        ]
+      ],
+      "actual": [
+        [
+          "Jose",
+          "Alonso",
+          558921600000,
+          "196.1.135.241",
+          "Internet Explorer",
+          1073,
+          "female",
+          1284620040602
+        ]
+      ],
+      "error": null,
+      "phase": "measured",
+      "iteration": 6,
+      "elapsed_relative_to_resolved_median": 0.8582052887748048
+    },
+    {
+      "name": "ldbc_is1_8796093022220",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          "Jose",
+          "Alonso",
+          558921600000,
+          "196.1.135.241",
+          "Internet Explorer",
+          1073,
+          "female",
+          1284620040602
+        ]
+      ],
+      "actual": [
+        [
+          "Jose",
+          "Alonso",
+          558921600000,
+          "196.1.135.241",
+          "Internet Explorer",
+          1073,
+          "female",
+          1284620040602
+        ]
+      ],
+      "error": null,
+      "phase": "measured",
+      "iteration": 7,
+      "elapsed_relative_to_resolved_median": 1.0794884142408663
+    },
+    {
+      "name": "ldbc_is1_-1",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [],
+      "actual": [],
+      "error": null,
+      "phase": "warmup",
+      "iteration": 0
+    },
+    {
+      "name": "ldbc_is1_-1",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [],
+      "actual": [],
+      "error": null,
+      "phase": "warmup",
+      "iteration": 0
+    },
+    {
+      "name": "ldbc_is1_-1",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [],
+      "actual": [],
+      "error": null,
+      "phase": "measured",
+      "iteration": 0,
+      "elapsed_relative_to_resolved_median": 1.00631158875383
+    },
+    {
+      "name": "ldbc_is1_-1",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [],
+      "actual": [],
+      "error": null,
+      "phase": "measured",
+      "iteration": 1,
+      "elapsed_relative_to_resolved_median": 0.9524356814639817
+    },
+    {
+      "name": "ldbc_is1_-1",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [],
+      "actual": [],
+      "error": null,
+      "phase": "measured",
+      "iteration": 2,
+      "elapsed_relative_to_resolved_median": 0.8472435766263009
+    },
+    {
+      "name": "ldbc_is1_-1",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [],
+      "actual": [],
+      "error": null,
+      "phase": "measured",
+      "iteration": 3,
+      "elapsed_relative_to_resolved_median": 0.971337479264402
+    },
+    {
+      "name": "ldbc_is1_-1",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [],
+      "actual": [],
+      "error": null,
+      "phase": "measured",
+      "iteration": 4,
+      "elapsed_relative_to_resolved_median": 0.99368841124617
+    },
+    {
+      "name": "ldbc_is1_-1",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [],
+      "actual": [],
+      "error": null,
+      "phase": "measured",
+      "iteration": 5,
+      "elapsed_relative_to_resolved_median": 0.8813627302095431
+    },
+    {
+      "name": "ldbc_is1_-1",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [],
+      "actual": [],
+      "error": null,
+      "phase": "measured",
+      "iteration": 6,
+      "elapsed_relative_to_resolved_median": 0.9014159681934371
+    },
+    {
+      "name": "ldbc_is1_-1",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [],
+      "actual": [],
+      "error": null,
+      "phase": "measured",
+      "iteration": 7,
+      "elapsed_relative_to_resolved_median": 1.0693504473543813
+    },
+    {
+      "name": "ldbc_is3_8796093022220",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          6597069766786,
+          "Miguel",
+          "Rodriguez",
+          1286845494693
+        ],
+        [
+          2199023255629,
+          "Karl",
+          "Fischer",
+          1286115870405
+        ],
+        [
+          6597069766660,
+          "Bryn",
+          "Davies",
+          1285058316513
+        ],
+        [
+          150,
+          "Alfonso",
+          "Alvarez",
+          1284873937521
+        ]
+      ],
+      "actual": [
+        [
+          6597069766786,
+          "Miguel",
+          "Rodriguez",
+          1286845494693
+        ],
+        [
+          2199023255629,
+          "Karl",
+          "Fischer",
+          1286115870405
+        ],
+        [
+          6597069766660,
+          "Bryn",
+          "Davies",
+          1285058316513
+        ],
+        [
+          150,
+          "Alfonso",
+          "Alvarez",
+          1284873937521
+        ]
+      ],
+      "error": null,
+      "phase": "warmup",
+      "iteration": 0
+    },
+    {
+      "name": "ldbc_is3_8796093022220",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          6597069766786,
+          "Miguel",
+          "Rodriguez",
+          1286845494693
+        ],
+        [
+          2199023255629,
+          "Karl",
+          "Fischer",
+          1286115870405
+        ],
+        [
+          6597069766660,
+          "Bryn",
+          "Davies",
+          1285058316513
+        ],
+        [
+          150,
+          "Alfonso",
+          "Alvarez",
+          1284873937521
+        ]
+      ],
+      "actual": [
+        [
+          6597069766786,
+          "Miguel",
+          "Rodriguez",
+          1286845494693
+        ],
+        [
+          2199023255629,
+          "Karl",
+          "Fischer",
+          1286115870405
+        ],
+        [
+          6597069766660,
+          "Bryn",
+          "Davies",
+          1285058316513
+        ],
+        [
+          150,
+          "Alfonso",
+          "Alvarez",
+          1284873937521
+        ]
+      ],
+      "error": null,
+      "phase": "warmup",
+      "iteration": 0
+    },
+    {
+      "name": "ldbc_is3_8796093022220",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          6597069766786,
+          "Miguel",
+          "Rodriguez",
+          1286845494693
+        ],
+        [
+          2199023255629,
+          "Karl",
+          "Fischer",
+          1286115870405
+        ],
+        [
+          6597069766660,
+          "Bryn",
+          "Davies",
+          1285058316513
+        ],
+        [
+          150,
+          "Alfonso",
+          "Alvarez",
+          1284873937521
+        ]
+      ],
+      "actual": [
+        [
+          6597069766786,
+          "Miguel",
+          "Rodriguez",
+          1286845494693
+        ],
+        [
+          2199023255629,
+          "Karl",
+          "Fischer",
+          1286115870405
+        ],
+        [
+          6597069766660,
+          "Bryn",
+          "Davies",
+          1285058316513
+        ],
+        [
+          150,
+          "Alfonso",
+          "Alvarez",
+          1284873937521
+        ]
+      ],
+      "error": null,
+      "phase": "measured",
+      "iteration": 0,
+      "elapsed_relative_to_resolved_median": 1.024322683586144
+    },
+    {
+      "name": "ldbc_is3_8796093022220",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          6597069766786,
+          "Miguel",
+          "Rodriguez",
+          1286845494693
+        ],
+        [
+          2199023255629,
+          "Karl",
+          "Fischer",
+          1286115870405
+        ],
+        [
+          6597069766660,
+          "Bryn",
+          "Davies",
+          1285058316513
+        ],
+        [
+          150,
+          "Alfonso",
+          "Alvarez",
+          1284873937521
+        ]
+      ],
+      "actual": [
+        [
+          6597069766786,
+          "Miguel",
+          "Rodriguez",
+          1286845494693
+        ],
+        [
+          2199023255629,
+          "Karl",
+          "Fischer",
+          1286115870405
+        ],
+        [
+          6597069766660,
+          "Bryn",
+          "Davies",
+          1285058316513
+        ],
+        [
+          150,
+          "Alfonso",
+          "Alvarez",
+          1284873937521
+        ]
+      ],
+      "error": null,
+      "phase": "measured",
+      "iteration": 1,
+      "elapsed_relative_to_resolved_median": 0.978397346704451
+    },
+    {
+      "name": "ldbc_is3_8796093022220",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          6597069766786,
+          "Miguel",
+          "Rodriguez",
+          1286845494693
+        ],
+        [
+          2199023255629,
+          "Karl",
+          "Fischer",
+          1286115870405
+        ],
+        [
+          6597069766660,
+          "Bryn",
+          "Davies",
+          1285058316513
+        ],
+        [
+          150,
+          "Alfonso",
+          "Alvarez",
+          1284873937521
+        ]
+      ],
+      "actual": [
+        [
+          6597069766786,
+          "Miguel",
+          "Rodriguez",
+          1286845494693
+        ],
+        [
+          2199023255629,
+          "Karl",
+          "Fischer",
+          1286115870405
+        ],
+        [
+          6597069766660,
+          "Bryn",
+          "Davies",
+          1285058316513
+        ],
+        [
+          150,
+          "Alfonso",
+          "Alvarez",
+          1284873937521
+        ]
+      ],
+      "error": null,
+      "phase": "measured",
+      "iteration": 2,
+      "elapsed_relative_to_resolved_median": 1.0258627228902104
+    },
+    {
+      "name": "ldbc_is3_8796093022220",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          6597069766786,
+          "Miguel",
+          "Rodriguez",
+          1286845494693
+        ],
+        [
+          2199023255629,
+          "Karl",
+          "Fischer",
+          1286115870405
+        ],
+        [
+          6597069766660,
+          "Bryn",
+          "Davies",
+          1285058316513
+        ],
+        [
+          150,
+          "Alfonso",
+          "Alvarez",
+          1284873937521
+        ]
+      ],
+      "actual": [
+        [
+          6597069766786,
+          "Miguel",
+          "Rodriguez",
+          1286845494693
+        ],
+        [
+          2199023255629,
+          "Karl",
+          "Fischer",
+          1286115870405
+        ],
+        [
+          6597069766660,
+          "Bryn",
+          "Davies",
+          1285058316513
+        ],
+        [
+          150,
+          "Alfonso",
+          "Alvarez",
+          1284873937521
+        ]
+      ],
+      "error": null,
+      "phase": "measured",
+      "iteration": 3,
+      "elapsed_relative_to_resolved_median": 1.005310138841774
+    },
+    {
+      "name": "ldbc_is3_8796093022220",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          6597069766786,
+          "Miguel",
+          "Rodriguez",
+          1286845494693
+        ],
+        [
+          2199023255629,
+          "Karl",
+          "Fischer",
+          1286115870405
+        ],
+        [
+          6597069766660,
+          "Bryn",
+          "Davies",
+          1285058316513
+        ],
+        [
+          150,
+          "Alfonso",
+          "Alvarez",
+          1284873937521
+        ]
+      ],
+      "actual": [
+        [
+          6597069766786,
+          "Miguel",
+          "Rodriguez",
+          1286845494693
+        ],
+        [
+          2199023255629,
+          "Karl",
+          "Fischer",
+          1286115870405
+        ],
+        [
+          6597069766660,
+          "Bryn",
+          "Davies",
+          1285058316513
+        ],
+        [
+          150,
+          "Alfonso",
+          "Alvarez",
+          1284873937521
+        ]
+      ],
+      "error": null,
+      "phase": "measured",
+      "iteration": 4,
+      "elapsed_relative_to_resolved_median": 0.9929920657103883
+    },
+    {
+      "name": "ldbc_is3_8796093022220",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          6597069766786,
+          "Miguel",
+          "Rodriguez",
+          1286845494693
+        ],
+        [
+          2199023255629,
+          "Karl",
+          "Fischer",
+          1286115870405
+        ],
+        [
+          6597069766660,
+          "Bryn",
+          "Davies",
+          1285058316513
+        ],
+        [
+          150,
+          "Alfonso",
+          "Alvarez",
+          1284873937521
+        ]
+      ],
+      "actual": [
+        [
+          6597069766786,
+          "Miguel",
+          "Rodriguez",
+          1286845494693
+        ],
+        [
+          2199023255629,
+          "Karl",
+          "Fischer",
+          1286115870405
+        ],
+        [
+          6597069766660,
+          "Bryn",
+          "Davies",
+          1285058316513
+        ],
+        [
+          150,
+          "Alfonso",
+          "Alvarez",
+          1284873937521
+        ]
+      ],
+      "error": null,
+      "phase": "measured",
+      "iteration": 5,
+      "elapsed_relative_to_resolved_median": 1.0057993716286142
+    },
+    {
+      "name": "ldbc_is3_8796093022220",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          6597069766786,
+          "Miguel",
+          "Rodriguez",
+          1286845494693
+        ],
+        [
+          2199023255629,
+          "Karl",
+          "Fischer",
+          1286115870405
+        ],
+        [
+          6597069766660,
+          "Bryn",
+          "Davies",
+          1285058316513
+        ],
+        [
+          150,
+          "Alfonso",
+          "Alvarez",
+          1284873937521
+        ]
+      ],
+      "actual": [
+        [
+          6597069766786,
+          "Miguel",
+          "Rodriguez",
+          1286845494693
+        ],
+        [
+          2199023255629,
+          "Karl",
+          "Fischer",
+          1286115870405
+        ],
+        [
+          6597069766660,
+          "Bryn",
+          "Davies",
+          1285058316513
+        ],
+        [
+          150,
+          "Alfonso",
+          "Alvarez",
+          1284873937521
+        ]
+      ],
+      "error": null,
+      "phase": "measured",
+      "iteration": 6,
+      "elapsed_relative_to_resolved_median": 0.995004896677762
+    },
+    {
+      "name": "ldbc_is3_8796093022220",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          6597069766786,
+          "Miguel",
+          "Rodriguez",
+          1286845494693
+        ],
+        [
+          2199023255629,
+          "Karl",
+          "Fischer",
+          1286115870405
+        ],
+        [
+          6597069766660,
+          "Bryn",
+          "Davies",
+          1285058316513
+        ],
+        [
+          150,
+          "Alfonso",
+          "Alvarez",
+          1284873937521
+        ]
+      ],
+      "actual": [
+        [
+          6597069766786,
+          "Miguel",
+          "Rodriguez",
+          1286845494693
+        ],
+        [
+          2199023255629,
+          "Karl",
+          "Fischer",
+          1286115870405
+        ],
+        [
+          6597069766660,
+          "Bryn",
+          "Davies",
+          1285058316513
+        ],
+        [
+          150,
+          "Alfonso",
+          "Alvarez",
+          1284873937521
+        ]
+      ],
+      "error": null,
+      "phase": "measured",
+      "iteration": 7,
+      "elapsed_relative_to_resolved_median": 0.9946898611582261
+    },
+    {
+      "name": "ldbc_is3_-1",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [],
+      "actual": [],
+      "error": null,
+      "phase": "warmup",
+      "iteration": 0
+    },
+    {
+      "name": "ldbc_is3_-1",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [],
+      "actual": [],
+      "error": null,
+      "phase": "warmup",
+      "iteration": 0
+    },
+    {
+      "name": "ldbc_is3_-1",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [],
+      "actual": [],
+      "error": null,
+      "phase": "measured",
+      "iteration": 0,
+      "elapsed_relative_to_resolved_median": 1.0100173403457036
+    },
+    {
+      "name": "ldbc_is3_-1",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [],
+      "actual": [],
+      "error": null,
+      "phase": "measured",
+      "iteration": 1,
+      "elapsed_relative_to_resolved_median": 1.0136151778080924
+    },
+    {
+      "name": "ldbc_is3_-1",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [],
+      "actual": [],
+      "error": null,
+      "phase": "measured",
+      "iteration": 2,
+      "elapsed_relative_to_resolved_median": 0.9954190488041882
+    },
+    {
+      "name": "ldbc_is3_-1",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [],
+      "actual": [],
+      "error": null,
+      "phase": "measured",
+      "iteration": 3,
+      "elapsed_relative_to_resolved_median": 0.9844077022492361
+    },
+    {
+      "name": "ldbc_is3_-1",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [],
+      "actual": [],
+      "error": null,
+      "phase": "measured",
+      "iteration": 4,
+      "elapsed_relative_to_resolved_median": 1.0199935742578614
+    },
+    {
+      "name": "ldbc_is3_-1",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [],
+      "actual": [],
+      "error": null,
+      "phase": "measured",
+      "iteration": 5,
+      "elapsed_relative_to_resolved_median": 0.9834233529437549
+    },
+    {
+      "name": "ldbc_is3_-1",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [],
+      "actual": [],
+      "error": null,
+      "phase": "measured",
+      "iteration": 6,
+      "elapsed_relative_to_resolved_median": 0.9632242925643286
+    },
+    {
+      "name": "ldbc_is3_-1",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [],
+      "actual": [],
+      "error": null,
+      "phase": "measured",
+      "iteration": 7,
+      "elapsed_relative_to_resolved_median": 0.9899826596542964
+    },
+    {
+      "name": "ldbc_is4_343597383680",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          1290664733756,
+          "photo343597383680.jpg"
+        ]
+      ],
+      "actual": [
+        [
+          1290664733756,
+          "photo343597383680.jpg"
+        ]
+      ],
+      "error": null,
+      "phase": "warmup",
+      "iteration": 0
+    },
+    {
+      "name": "ldbc_is4_343597383680",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          1290664733756,
+          "photo343597383680.jpg"
+        ]
+      ],
+      "actual": [
+        [
+          1290664733756,
+          "photo343597383680.jpg"
+        ]
+      ],
+      "error": null,
+      "phase": "warmup",
+      "iteration": 0
+    },
+    {
+      "name": "ldbc_is4_343597383680",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          1290664733756,
+          "photo343597383680.jpg"
+        ]
+      ],
+      "actual": [
+        [
+          1290664733756,
+          "photo343597383680.jpg"
+        ]
+      ],
+      "error": null,
+      "phase": "measured",
+      "iteration": 0,
+      "elapsed_relative_to_resolved_median": 1.0088290080399005
+    },
+    {
+      "name": "ldbc_is4_343597383680",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          1290664733756,
+          "photo343597383680.jpg"
+        ]
+      ],
+      "actual": [
+        [
+          1290664733756,
+          "photo343597383680.jpg"
+        ]
+      ],
+      "error": null,
+      "phase": "measured",
+      "iteration": 1,
+      "elapsed_relative_to_resolved_median": 0.9755685618477595
+    },
+    {
+      "name": "ldbc_is4_343597383680",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          1290664733756,
+          "photo343597383680.jpg"
+        ]
+      ],
+      "actual": [
+        [
+          1290664733756,
+          "photo343597383680.jpg"
+        ]
+      ],
+      "error": null,
+      "phase": "measured",
+      "iteration": 2,
+      "elapsed_relative_to_resolved_median": 0.9743143951631674
+    },
+    {
+      "name": "ldbc_is4_343597383680",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          1290664733756,
+          "photo343597383680.jpg"
+        ]
+      ],
+      "actual": [
+        [
+          1290664733756,
+          "photo343597383680.jpg"
+        ]
+      ],
+      "error": null,
+      "phase": "measured",
+      "iteration": 3,
+      "elapsed_relative_to_resolved_median": 0.9824756563978656
+    },
+    {
+      "name": "ldbc_is4_343597383680",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          1290664733756,
+          "photo343597383680.jpg"
+        ]
+      ],
+      "actual": [
+        [
+          1290664733756,
+          "photo343597383680.jpg"
+        ]
+      ],
+      "error": null,
+      "phase": "measured",
+      "iteration": 4,
+      "elapsed_relative_to_resolved_median": 0.9911709919600996
+    },
+    {
+      "name": "ldbc_is4_343597383680",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          1290664733756,
+          "photo343597383680.jpg"
+        ]
+      ],
+      "actual": [
+        [
+          1290664733756,
+          "photo343597383680.jpg"
+        ]
+      ],
+      "error": null,
+      "phase": "measured",
+      "iteration": 5,
+      "elapsed_relative_to_resolved_median": 1.1069566804707687
+    },
+    {
+      "name": "ldbc_is4_343597383680",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          1290664733756,
+          "photo343597383680.jpg"
+        ]
+      ],
+      "actual": [
+        [
+          1290664733756,
+          "photo343597383680.jpg"
+        ]
+      ],
+      "error": null,
+      "phase": "measured",
+      "iteration": 6,
+      "elapsed_relative_to_resolved_median": 0.9990193271067799
+    },
+    {
+      "name": "ldbc_is4_343597383680",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          1290664733756,
+          "photo343597383680.jpg"
+        ]
+      ],
+      "actual": [
+        [
+          1290664733756,
+          "photo343597383680.jpg"
+        ]
+      ],
+      "error": null,
+      "phase": "measured",
+      "iteration": 7,
+      "elapsed_relative_to_resolved_median": 1.0271657744733556
+    },
+    {
+      "name": "ldbc_is4_206158430246",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          1277681817962,
+          "yes"
+        ]
+      ],
+      "actual": [
+        [
+          1277681817962,
+          "yes"
+        ]
+      ],
+      "error": null,
+      "phase": "warmup",
+      "iteration": 0
+    },
+    {
+      "name": "ldbc_is4_206158430246",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          1277681817962,
+          "yes"
+        ]
+      ],
+      "actual": [
+        [
+          1277681817962,
+          "yes"
+        ]
+      ],
+      "error": null,
+      "phase": "warmup",
+      "iteration": 0
+    },
+    {
+      "name": "ldbc_is4_206158430246",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          1277681817962,
+          "yes"
+        ]
+      ],
+      "actual": [
+        [
+          1277681817962,
+          "yes"
+        ]
+      ],
+      "error": null,
+      "phase": "measured",
+      "iteration": 0,
+      "elapsed_relative_to_resolved_median": 0.9945153439886153
+    },
+    {
+      "name": "ldbc_is4_206158430246",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          1277681817962,
+          "yes"
+        ]
+      ],
+      "actual": [
+        [
+          1277681817962,
+          "yes"
+        ]
+      ],
+      "error": null,
+      "phase": "measured",
+      "iteration": 1,
+      "elapsed_relative_to_resolved_median": 1.0415977962044194
+    },
+    {
+      "name": "ldbc_is4_206158430246",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          1277681817962,
+          "yes"
+        ]
+      ],
+      "actual": [
+        [
+          1277681817962,
+          "yes"
+        ]
+      ],
+      "error": null,
+      "phase": "measured",
+      "iteration": 2,
+      "elapsed_relative_to_resolved_median": 0.9723376590233045
+    },
+    {
+      "name": "ldbc_is4_206158430246",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          1277681817962,
+          "yes"
+        ]
+      ],
+      "actual": [
+        [
+          1277681817962,
+          "yes"
+        ]
+      ],
+      "error": null,
+      "phase": "measured",
+      "iteration": 3,
+      "elapsed_relative_to_resolved_median": 1.0042024970047727
+    },
+    {
+      "name": "ldbc_is4_206158430246",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          1277681817962,
+          "yes"
+        ]
+      ],
+      "actual": [
+        [
+          1277681817962,
+          "yes"
+        ]
+      ],
+      "error": null,
+      "phase": "measured",
+      "iteration": 4,
+      "elapsed_relative_to_resolved_median": 0.9957975029952272
+    },
+    {
+      "name": "ldbc_is4_206158430246",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          1277681817962,
+          "yes"
+        ]
+      ],
+      "actual": [
+        [
+          1277681817962,
+          "yes"
+        ]
+      ],
+      "error": null,
+      "phase": "measured",
+      "iteration": 5,
+      "elapsed_relative_to_resolved_median": 0.9907694163812842
+    },
+    {
+      "name": "ldbc_is4_206158430246",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          1277681817962,
+          "yes"
+        ]
+      ],
+      "actual": [
+        [
+          1277681817962,
+          "yes"
+        ]
+      ],
+      "error": null,
+      "phase": "measured",
+      "iteration": 6,
+      "elapsed_relative_to_resolved_median": 1.0660994346591735
+    },
+    {
+      "name": "ldbc_is4_206158430246",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          1277681817962,
+          "yes"
+        ]
+      ],
+      "actual": [
+        [
+          1277681817962,
+          "yes"
+        ]
+      ],
+      "error": null,
+      "phase": "measured",
+      "iteration": 7,
+      "elapsed_relative_to_resolved_median": 1.0173453036938571
+    },
+    {
+      "name": "ldbc_is4_-1",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [],
+      "actual": [],
+      "error": null,
+      "phase": "warmup",
+      "iteration": 0
+    },
+    {
+      "name": "ldbc_is4_-1",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [],
+      "actual": [],
+      "error": null,
+      "phase": "warmup",
+      "iteration": 0
+    },
+    {
+      "name": "ldbc_is4_-1",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [],
+      "actual": [],
+      "error": null,
+      "phase": "measured",
+      "iteration": 0,
+      "elapsed_relative_to_resolved_median": 1.0201028912527783
+    },
+    {
+      "name": "ldbc_is4_-1",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [],
+      "actual": [],
+      "error": null,
+      "phase": "measured",
+      "iteration": 1,
+      "elapsed_relative_to_resolved_median": 0.9528465208460856
+    },
+    {
+      "name": "ldbc_is4_-1",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [],
+      "actual": [],
+      "error": null,
+      "phase": "measured",
+      "iteration": 2,
+      "elapsed_relative_to_resolved_median": 1.0720677044989844
+    },
+    {
+      "name": "ldbc_is4_-1",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [],
+      "actual": [],
+      "error": null,
+      "phase": "measured",
+      "iteration": 3,
+      "elapsed_relative_to_resolved_median": 0.9798971087472217
+    },
+    {
+      "name": "ldbc_is4_-1",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [],
+      "actual": [],
+      "error": null,
+      "phase": "measured",
+      "iteration": 4,
+      "elapsed_relative_to_resolved_median": 0.9776983767563072
+    },
+    {
+      "name": "ldbc_is4_-1",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [],
+      "actual": [],
+      "error": null,
+      "phase": "measured",
+      "iteration": 5,
+      "elapsed_relative_to_resolved_median": 0.9751743951904008
+    },
+    {
+      "name": "ldbc_is4_-1",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [],
+      "actual": [],
+      "error": null,
+      "phase": "measured",
+      "iteration": 6,
+      "elapsed_relative_to_resolved_median": 0.9503643791901492
+    },
+    {
+      "name": "ldbc_is4_-1",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [],
+      "actual": [],
+      "error": null,
+      "phase": "measured",
+      "iteration": 7,
+      "elapsed_relative_to_resolved_median": 1.0485931014379157
+    },
+    {
+      "name": "ldbc_is5_343597383680",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          8796093022220,
+          "Jose",
+          "Alonso"
+        ]
+      ],
+      "actual": [
+        [
+          8796093022220,
+          "Jose",
+          "Alonso"
+        ]
+      ],
+      "error": null,
+      "phase": "warmup",
+      "iteration": 0
+    },
+    {
+      "name": "ldbc_is5_343597383680",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          8796093022220,
+          "Jose",
+          "Alonso"
+        ]
+      ],
+      "actual": [
+        [
+          8796093022220,
+          "Jose",
+          "Alonso"
+        ]
+      ],
+      "error": null,
+      "phase": "warmup",
+      "iteration": 0
+    },
+    {
+      "name": "ldbc_is5_343597383680",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          8796093022220,
+          "Jose",
+          "Alonso"
+        ]
+      ],
+      "actual": [
+        [
+          8796093022220,
+          "Jose",
+          "Alonso"
+        ]
+      ],
+      "error": null,
+      "phase": "measured",
+      "iteration": 0,
+      "elapsed_relative_to_resolved_median": 0.9839249254345434
+    },
+    {
+      "name": "ldbc_is5_343597383680",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          8796093022220,
+          "Jose",
+          "Alonso"
+        ]
+      ],
+      "actual": [
+        [
+          8796093022220,
+          "Jose",
+          "Alonso"
+        ]
+      ],
+      "error": null,
+      "phase": "measured",
+      "iteration": 1,
+      "elapsed_relative_to_resolved_median": 0.9916675716744237
+    },
+    {
+      "name": "ldbc_is5_343597383680",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          8796093022220,
+          "Jose",
+          "Alonso"
+        ]
+      ],
+      "actual": [
+        [
+          8796093022220,
+          "Jose",
+          "Alonso"
+        ]
+      ],
+      "error": null,
+      "phase": "measured",
+      "iteration": 2,
+      "elapsed_relative_to_resolved_median": 0.9951174031016577
+    },
+    {
+      "name": "ldbc_is5_343597383680",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          8796093022220,
+          "Jose",
+          "Alonso"
+        ]
+      ],
+      "actual": [
+        [
+          8796093022220,
+          "Jose",
+          "Alonso"
+        ]
+      ],
+      "error": null,
+      "phase": "measured",
+      "iteration": 3,
+      "elapsed_relative_to_resolved_median": 1.010910671423465
+    },
+    {
+      "name": "ldbc_is5_343597383680",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          8796093022220,
+          "Jose",
+          "Alonso"
+        ]
+      ],
+      "actual": [
+        [
+          8796093022220,
+          "Jose",
+          "Alonso"
+        ]
+      ],
+      "error": null,
+      "phase": "measured",
+      "iteration": 4,
+      "elapsed_relative_to_resolved_median": 1.0106343025517444
+    },
+    {
+      "name": "ldbc_is5_343597383680",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          8796093022220,
+          "Jose",
+          "Alonso"
+        ]
+      ],
+      "actual": [
+        [
+          8796093022220,
+          "Jose",
+          "Alonso"
+        ]
+      ],
+      "error": null,
+      "phase": "measured",
+      "iteration": 5,
+      "elapsed_relative_to_resolved_median": 0.962674293789255
+    },
+    {
+      "name": "ldbc_is5_343597383680",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          8796093022220,
+          "Jose",
+          "Alonso"
+        ]
+      ],
+      "actual": [
+        [
+          8796093022220,
+          "Jose",
+          "Alonso"
+        ]
+      ],
+      "error": null,
+      "phase": "measured",
+      "iteration": 6,
+      "elapsed_relative_to_resolved_median": 0.9648693887562175
+    },
+    {
+      "name": "ldbc_is5_343597383680",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          8796093022220,
+          "Jose",
+          "Alonso"
+        ]
+      ],
+      "actual": [
+        [
+          8796093022220,
+          "Jose",
+          "Alonso"
+        ]
+      ],
+      "error": null,
+      "phase": "measured",
+      "iteration": 7,
+      "elapsed_relative_to_resolved_median": 0.9893656974482558
+    },
+    {
+      "name": "ldbc_is5_206158430246",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          4398046511146,
+          "Ali",
+          "Achiou"
+        ]
+      ],
+      "actual": [
+        [
+          4398046511146,
+          "Ali",
+          "Achiou"
+        ]
+      ],
+      "error": null,
+      "phase": "warmup",
+      "iteration": 0
+    },
+    {
+      "name": "ldbc_is5_206158430246",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          4398046511146,
+          "Ali",
+          "Achiou"
+        ]
+      ],
+      "actual": [
+        [
+          4398046511146,
+          "Ali",
+          "Achiou"
+        ]
+      ],
+      "error": null,
+      "phase": "warmup",
+      "iteration": 0
+    },
+    {
+      "name": "ldbc_is5_206158430246",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          4398046511146,
+          "Ali",
+          "Achiou"
+        ]
+      ],
+      "actual": [
+        [
+          4398046511146,
+          "Ali",
+          "Achiou"
+        ]
+      ],
+      "error": null,
+      "phase": "measured",
+      "iteration": 0,
+      "elapsed_relative_to_resolved_median": 1.0479198733305832
+    },
+    {
+      "name": "ldbc_is5_206158430246",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          4398046511146,
+          "Ali",
+          "Achiou"
+        ]
+      ],
+      "actual": [
+        [
+          4398046511146,
+          "Ali",
+          "Achiou"
+        ]
+      ],
+      "error": null,
+      "phase": "measured",
+      "iteration": 1,
+      "elapsed_relative_to_resolved_median": 1.0436882019915172
+    },
+    {
+      "name": "ldbc_is5_206158430246",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          4398046511146,
+          "Ali",
+          "Achiou"
+        ]
+      ],
+      "actual": [
+        [
+          4398046511146,
+          "Ali",
+          "Achiou"
+        ]
+      ],
+      "error": null,
+      "phase": "measured",
+      "iteration": 2,
+      "elapsed_relative_to_resolved_median": 1.0043113255041594
+    },
+    {
+      "name": "ldbc_is5_206158430246",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          4398046511146,
+          "Ali",
+          "Achiou"
+        ]
+      ],
+      "actual": [
+        [
+          4398046511146,
+          "Ali",
+          "Achiou"
+        ]
+      ],
+      "error": null,
+      "phase": "measured",
+      "iteration": 3,
+      "elapsed_relative_to_resolved_median": 1.0154081262507202
+    },
+    {
+      "name": "ldbc_is5_206158430246",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          4398046511146,
+          "Ali",
+          "Achiou"
+        ]
+      ],
+      "actual": [
+        [
+          4398046511146,
+          "Ali",
+          "Achiou"
+        ]
+      ],
+      "error": null,
+      "phase": "measured",
+      "iteration": 4,
+      "elapsed_relative_to_resolved_median": 0.9845918737492798
+    },
+    {
+      "name": "ldbc_is5_206158430246",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          4398046511146,
+          "Ali",
+          "Achiou"
+        ]
+      ],
+      "actual": [
+        [
+          4398046511146,
+          "Ali",
+          "Achiou"
+        ]
+      ],
+      "error": null,
+      "phase": "measured",
+      "iteration": 5,
+      "elapsed_relative_to_resolved_median": 0.9694638580433446
+    },
+    {
+      "name": "ldbc_is5_206158430246",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          4398046511146,
+          "Ali",
+          "Achiou"
+        ]
+      ],
+      "actual": [
+        [
+          4398046511146,
+          "Ali",
+          "Achiou"
+        ]
+      ],
+      "error": null,
+      "phase": "measured",
+      "iteration": 6,
+      "elapsed_relative_to_resolved_median": 0.9645831715552556
+    },
+    {
+      "name": "ldbc_is5_206158430246",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          4398046511146,
+          "Ali",
+          "Achiou"
+        ]
+      ],
+      "actual": [
+        [
+          4398046511146,
+          "Ali",
+          "Achiou"
+        ]
+      ],
+      "error": null,
+      "phase": "measured",
+      "iteration": 7,
+      "elapsed_relative_to_resolved_median": 0.9763161853287744
+    },
+    {
+      "name": "ldbc_is5_-1",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [],
+      "actual": [],
+      "error": null,
+      "phase": "warmup",
+      "iteration": 0
+    },
+    {
+      "name": "ldbc_is5_-1",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [],
+      "actual": [],
+      "error": null,
+      "phase": "warmup",
+      "iteration": 0
+    },
+    {
+      "name": "ldbc_is5_-1",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [],
+      "actual": [],
+      "error": null,
+      "phase": "measured",
+      "iteration": 0,
+      "elapsed_relative_to_resolved_median": 1.0158786899480177
+    },
+    {
+      "name": "ldbc_is5_-1",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [],
+      "actual": [],
+      "error": null,
+      "phase": "measured",
+      "iteration": 1,
+      "elapsed_relative_to_resolved_median": 0.9545117453642751
+    },
+    {
+      "name": "ldbc_is5_-1",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [],
+      "actual": [],
+      "error": null,
+      "phase": "measured",
+      "iteration": 2,
+      "elapsed_relative_to_resolved_median": 0.968301498154015
+    },
+    {
+      "name": "ldbc_is5_-1",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [],
+      "actual": [],
+      "error": null,
+      "phase": "measured",
+      "iteration": 3,
+      "elapsed_relative_to_resolved_median": 0.9841213100519823
+    },
+    {
+      "name": "ldbc_is5_-1",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [],
+      "actual": [],
+      "error": null,
+      "phase": "measured",
+      "iteration": 4,
+      "elapsed_relative_to_resolved_median": 0.9778329588324662
+    },
+    {
+      "name": "ldbc_is5_-1",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [],
+      "actual": [],
+      "error": null,
+      "phase": "measured",
+      "iteration": 5,
+      "elapsed_relative_to_resolved_median": 0.967493057009539
+    },
+    {
+      "name": "ldbc_is5_-1",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [],
+      "actual": [],
+      "error": null,
+      "phase": "measured",
+      "iteration": 6,
+      "elapsed_relative_to_resolved_median": 0.9741020371622777
+    },
+    {
+      "name": "ldbc_is5_-1",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [],
+      "actual": [],
+      "error": null,
+      "phase": "measured",
+      "iteration": 7,
+      "elapsed_relative_to_resolved_median": 1.0241195854591931
+    },
+    {
+      "name": "ldbc_is6_343597383680",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          343597383682,
+          "Album 1 of Jose Alonso",
+          8796093022220,
+          "Jose",
+          "Alonso"
+        ]
+      ],
+      "actual": [
+        [
+          343597383682,
+          "Album 1 of Jose Alonso",
+          8796093022220,
+          "Jose",
+          "Alonso"
+        ]
+      ],
+      "error": null,
+      "phase": "warmup",
+      "iteration": 0
+    },
+    {
+      "name": "ldbc_is6_343597383680",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          343597383682,
+          "Album 1 of Jose Alonso",
+          8796093022220,
+          "Jose",
+          "Alonso"
+        ]
+      ],
+      "actual": [
+        [
+          343597383682,
+          "Album 1 of Jose Alonso",
+          8796093022220,
+          "Jose",
+          "Alonso"
+        ]
+      ],
+      "error": null,
+      "phase": "warmup",
+      "iteration": 0
+    },
+    {
+      "name": "ldbc_is6_343597383680",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          343597383682,
+          "Album 1 of Jose Alonso",
+          8796093022220,
+          "Jose",
+          "Alonso"
+        ]
+      ],
+      "actual": [
+        [
+          343597383682,
+          "Album 1 of Jose Alonso",
+          8796093022220,
+          "Jose",
+          "Alonso"
+        ]
+      ],
+      "error": null,
+      "phase": "measured",
+      "iteration": 0,
+      "elapsed_relative_to_resolved_median": 0.9975642147077244
+    },
+    {
+      "name": "ldbc_is6_343597383680",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          343597383682,
+          "Album 1 of Jose Alonso",
+          8796093022220,
+          "Jose",
+          "Alonso"
+        ]
+      ],
+      "actual": [
+        [
+          343597383682,
+          "Album 1 of Jose Alonso",
+          8796093022220,
+          "Jose",
+          "Alonso"
+        ]
+      ],
+      "error": null,
+      "phase": "measured",
+      "iteration": 1,
+      "elapsed_relative_to_resolved_median": 0.9704111039839284
+    },
+    {
+      "name": "ldbc_is6_343597383680",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          343597383682,
+          "Album 1 of Jose Alonso",
+          8796093022220,
+          "Jose",
+          "Alonso"
+        ]
+      ],
+      "actual": [
+        [
+          343597383682,
+          "Album 1 of Jose Alonso",
+          8796093022220,
+          "Jose",
+          "Alonso"
+        ]
+      ],
+      "error": null,
+      "phase": "measured",
+      "iteration": 2,
+      "elapsed_relative_to_resolved_median": 0.9496351049244163
+    },
+    {
+      "name": "ldbc_is6_343597383680",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          343597383682,
+          "Album 1 of Jose Alonso",
+          8796093022220,
+          "Jose",
+          "Alonso"
+        ]
+      ],
+      "actual": [
+        [
+          343597383682,
+          "Album 1 of Jose Alonso",
+          8796093022220,
+          "Jose",
+          "Alonso"
+        ]
+      ],
+      "error": null,
+      "phase": "measured",
+      "iteration": 3,
+      "elapsed_relative_to_resolved_median": 0.966295257769237
+    },
+    {
+      "name": "ldbc_is6_343597383680",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          343597383682,
+          "Album 1 of Jose Alonso",
+          8796093022220,
+          "Jose",
+          "Alonso"
+        ]
+      ],
+      "actual": [
+        [
+          343597383682,
+          "Album 1 of Jose Alonso",
+          8796093022220,
+          "Jose",
+          "Alonso"
+        ]
+      ],
+      "error": null,
+      "phase": "measured",
+      "iteration": 4,
+      "elapsed_relative_to_resolved_median": 1.0048393012359524
+    },
+    {
+      "name": "ldbc_is6_343597383680",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          343597383682,
+          "Album 1 of Jose Alonso",
+          8796093022220,
+          "Jose",
+          "Alonso"
+        ]
+      ],
+      "actual": [
+        [
+          343597383682,
+          "Album 1 of Jose Alonso",
+          8796093022220,
+          "Jose",
+          "Alonso"
+        ]
+      ],
+      "error": null,
+      "phase": "measured",
+      "iteration": 5,
+      "elapsed_relative_to_resolved_median": 0.9860748627090518
+    },
+    {
+      "name": "ldbc_is6_343597383680",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          343597383682,
+          "Album 1 of Jose Alonso",
+          8796093022220,
+          "Jose",
+          "Alonso"
+        ]
+      ],
+      "actual": [
+        [
+          343597383682,
+          "Album 1 of Jose Alonso",
+          8796093022220,
+          "Jose",
+          "Alonso"
+        ]
+      ],
+      "error": null,
+      "phase": "measured",
+      "iteration": 6,
+      "elapsed_relative_to_resolved_median": 0.9988863388625088
+    },
+    {
+      "name": "ldbc_is6_343597383680",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          343597383682,
+          "Album 1 of Jose Alonso",
+          8796093022220,
+          "Jose",
+          "Alonso"
+        ]
+      ],
+      "actual": [
+        [
+          343597383682,
+          "Album 1 of Jose Alonso",
+          8796093022220,
+          "Jose",
+          "Alonso"
+        ]
+      ],
+      "error": null,
+      "phase": "measured",
+      "iteration": 7,
+      "elapsed_relative_to_resolved_median": 1.0024357852922756
+    },
+    {
+      "name": "ldbc_is6_206158430246",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          68719476743,
+          "Wall of David Alonso",
+          2199023255711,
+          "David",
+          "Alonso"
+        ]
+      ],
+      "actual": [
+        [
+          68719476743,
+          "Wall of David Alonso",
+          2199023255711,
+          "David",
+          "Alonso"
+        ]
+      ],
+      "error": null,
+      "phase": "warmup",
+      "iteration": 0
+    },
+    {
+      "name": "ldbc_is6_206158430246",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          68719476743,
+          "Wall of David Alonso",
+          2199023255711,
+          "David",
+          "Alonso"
+        ]
+      ],
+      "actual": [
+        [
+          68719476743,
+          "Wall of David Alonso",
+          2199023255711,
+          "David",
+          "Alonso"
+        ]
+      ],
+      "error": null,
+      "phase": "warmup",
+      "iteration": 0
+    },
+    {
+      "name": "ldbc_is6_206158430246",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          68719476743,
+          "Wall of David Alonso",
+          2199023255711,
+          "David",
+          "Alonso"
+        ]
+      ],
+      "actual": [
+        [
+          68719476743,
+          "Wall of David Alonso",
+          2199023255711,
+          "David",
+          "Alonso"
+        ]
+      ],
+      "error": null,
+      "phase": "measured",
+      "iteration": 0,
+      "elapsed_relative_to_resolved_median": 0.9924515244915015
+    },
+    {
+      "name": "ldbc_is6_206158430246",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          68719476743,
+          "Wall of David Alonso",
+          2199023255711,
+          "David",
+          "Alonso"
+        ]
+      ],
+      "actual": [
+        [
+          68719476743,
+          "Wall of David Alonso",
+          2199023255711,
+          "David",
+          "Alonso"
+        ]
+      ],
+      "error": null,
+      "phase": "measured",
+      "iteration": 1,
+      "elapsed_relative_to_resolved_median": 1.0107435309012618
+    },
+    {
+      "name": "ldbc_is6_206158430246",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          68719476743,
+          "Wall of David Alonso",
+          2199023255711,
+          "David",
+          "Alonso"
+        ]
+      ],
+      "actual": [
+        [
+          68719476743,
+          "Wall of David Alonso",
+          2199023255711,
+          "David",
+          "Alonso"
+        ]
+      ],
+      "error": null,
+      "phase": "measured",
+      "iteration": 2,
+      "elapsed_relative_to_resolved_median": 1.0127225652316458
+    },
+    {
+      "name": "ldbc_is6_206158430246",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          68719476743,
+          "Wall of David Alonso",
+          2199023255711,
+          "David",
+          "Alonso"
+        ]
+      ],
+      "actual": [
+        [
+          68719476743,
+          "Wall of David Alonso",
+          2199023255711,
+          "David",
+          "Alonso"
+        ]
+      ],
+      "error": null,
+      "phase": "measured",
+      "iteration": 3,
+      "elapsed_relative_to_resolved_median": 1.0306829996268696
+    },
+    {
+      "name": "ldbc_is6_206158430246",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          68719476743,
+          "Wall of David Alonso",
+          2199023255711,
+          "David",
+          "Alonso"
+        ]
+      ],
+      "actual": [
+        [
+          68719476743,
+          "Wall of David Alonso",
+          2199023255711,
+          "David",
+          "Alonso"
+        ]
+      ],
+      "error": null,
+      "phase": "measured",
+      "iteration": 4,
+      "elapsed_relative_to_resolved_median": 0.9940396042423315
+    },
+    {
+      "name": "ldbc_is6_206158430246",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          68719476743,
+          "Wall of David Alonso",
+          2199023255711,
+          "David",
+          "Alonso"
+        ]
+      ],
+      "actual": [
+        [
+          68719476743,
+          "Wall of David Alonso",
+          2199023255711,
+          "David",
+          "Alonso"
+        ]
+      ],
+      "error": null,
+      "phase": "measured",
+      "iteration": 5,
+      "elapsed_relative_to_resolved_median": 0.984750025665022
+    },
+    {
+      "name": "ldbc_is6_206158430246",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [
+        [
+          68719476743,
+          "Wall of David Alonso",
+          2199023255711,
+          "David",
+          "Alonso"
+        ]
+      ],
+      "actual": [
+        [
+          68719476743,
+          "Wall of David Alonso",
+          2199023255711,
+          "David",
+          "Alonso"
+        ]
+      ],
+      "error": null,
+      "phase": "measured",
+      "iteration": 6,
+      "elapsed_relative_to_resolved_median": 0.9925944554333054
+    },
+    {
+      "name": "ldbc_is6_206158430246",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [
+        [
+          68719476743,
+          "Wall of David Alonso",
+          2199023255711,
+          "David",
+          "Alonso"
+        ]
+      ],
+      "actual": [
+        [
+          68719476743,
+          "Wall of David Alonso",
+          2199023255711,
+          "David",
+          "Alonso"
+        ]
+      ],
+      "error": null,
+      "phase": "measured",
+      "iteration": 7,
+      "elapsed_relative_to_resolved_median": 1.0059603957576684
+    },
+    {
+      "name": "ldbc_is6_-1",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [],
+      "actual": [],
+      "error": null,
+      "phase": "warmup",
+      "iteration": 0
+    },
+    {
+      "name": "ldbc_is6_-1",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [],
+      "actual": [],
+      "error": null,
+      "phase": "warmup",
+      "iteration": 0
+    },
+    {
+      "name": "ldbc_is6_-1",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [],
+      "actual": [],
+      "error": null,
+      "phase": "measured",
+      "iteration": 0,
+      "elapsed_relative_to_resolved_median": 0.9712331199993703
+    },
+    {
+      "name": "ldbc_is6_-1",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [],
+      "actual": [],
+      "error": null,
+      "phase": "measured",
+      "iteration": 1,
+      "elapsed_relative_to_resolved_median": 0.9946927554201263
+    },
+    {
+      "name": "ldbc_is6_-1",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [],
+      "actual": [],
+      "error": null,
+      "phase": "measured",
+      "iteration": 2,
+      "elapsed_relative_to_resolved_median": 0.990476424875132
+    },
+    {
+      "name": "ldbc_is6_-1",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [],
+      "actual": [],
+      "error": null,
+      "phase": "measured",
+      "iteration": 3,
+      "elapsed_relative_to_resolved_median": 1.0072142312752739
+    },
+    {
+      "name": "ldbc_is6_-1",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [],
+      "actual": [],
+      "error": null,
+      "phase": "measured",
+      "iteration": 4,
+      "elapsed_relative_to_resolved_median": 0.9927857687247262
+    },
+    {
+      "name": "ldbc_is6_-1",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [],
+      "actual": [],
+      "error": null,
+      "phase": "measured",
+      "iteration": 5,
+      "elapsed_relative_to_resolved_median": 0.9500986343885255
+    },
+    {
+      "name": "ldbc_is6_-1",
+      "variant": "optimized",
+      "outcome": "passed",
+      "expected": [],
+      "actual": [],
+      "error": null,
+      "phase": "measured",
+      "iteration": 6,
+      "elapsed_relative_to_resolved_median": 0.9800822484063945
+    },
+    {
+      "name": "ldbc_is6_-1",
+      "variant": "resolved",
+      "outcome": "passed",
+      "expected": [],
+      "actual": [],
+      "error": null,
+      "phase": "measured",
+      "iteration": 7,
+      "elapsed_relative_to_resolved_median": 1.0115913698774592
+    }
+  ],
+  "rewrites": {
+    "ldbc_is1_8796093022220": [
+      "costed inner region: 5 relations, before=Some(132481865.0), after=5356, NDV equality estimates; absent selectivity uses 1"
+    ],
+    "ldbc_is1_-1": [
+      "costed inner region: 5 relations, before=Some(132481865.0), after=5356, NDV equality estimates; absent selectivity uses 1"
+    ],
+    "ldbc_is3_8796093022220": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "costed inner region: 3 relations, before=Some(81688485.0), after=5457, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 3 relations, before=Some(81688485.0), after=6282, NDV equality estimates; absent selectivity uses 1"
+    ],
+    "ldbc_is3_-1": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "costed inner region: 3 relations, before=Some(81688485.0), after=5457, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 3 relations, before=Some(81688485.0), after=6282, NDV equality estimates; absent selectivity uses 1"
+    ],
+    "ldbc_is4_343597383680": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression"
+    ],
+    "ldbc_is4_206158430246": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression"
+    ],
+    "ldbc_is4_-1": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression"
+    ],
+    "ldbc_is5_343597383680": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "costed inner region: 3 relations, before=Some(15651854382.0), after=48058, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 3 relations, before=Some(2194119460.0), after=18410, NDV equality estimates; absent selectivity uses 1"
+    ],
+    "ldbc_is5_206158430246": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "costed inner region: 3 relations, before=Some(15651854382.0), after=48058, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 3 relations, before=Some(2194119460.0), after=18410, NDV equality estimates; absent selectivity uses 1"
+    ],
+    "ldbc_is5_-1": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "costed inner region: 3 relations, before=Some(15651854382.0), after=48058, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 3 relations, before=Some(2194119460.0), after=18410, NDV equality estimates; absent selectivity uses 1"
+    ],
+    "ldbc_is6_343597383680": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "costed inner region: 3 relations, before=Some(10916438173.0), after=16635, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 3 relations, before=Some(29148205235.0), after=24047, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 3 relations, before=Some(56571198947.0), after=49807, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 3 relations, before=Some(289023841.0), after=7106, NDV equality estimates; absent selectivity uses 1"
+    ],
+    "ldbc_is6_206158430246": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "costed inner region: 3 relations, before=Some(10916438173.0), after=16635, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 3 relations, before=Some(29148205235.0), after=24047, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 3 relations, before=Some(56571198947.0), after=49807, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 3 relations, before=Some(289023841.0), after=7106, NDV equality estimates; absent selectivity uses 1"
+    ],
+    "ldbc_is6_-1": [
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "unchanged inner region: relation cap or non-immutable expression",
+      "costed inner region: 3 relations, before=Some(10916438173.0), after=16635, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 3 relations, before=Some(29148205235.0), after=24047, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 3 relations, before=Some(56571198947.0), after=49807, NDV equality estimates; absent selectivity uses 1",
+      "costed inner region: 3 relations, before=Some(289023841.0), after=7106, NDV equality estimates; absent selectivity uses 1"
+    ]
+  },
+  "server_exit_code": -15,
+  "shutdown_error": null,
+  "sail_sha256_after": "ee80ac3cf9d028639561f3cf32435985192719d629807fcf6a368324fa84946e"
+}

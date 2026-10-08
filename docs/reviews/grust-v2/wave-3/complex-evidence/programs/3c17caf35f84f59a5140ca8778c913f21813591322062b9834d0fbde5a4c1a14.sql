@@ -1,0 +1,10 @@
+WITH q0 AS (SELECT 1 AS `@unit`),
+q1 AS (SELECT 1 AS `@unit`),
+q2 AS (SELECT `_identity` AS `s0`, `browserUsed` AS `s2`, `content` AS `s3`, `creationDate` AS `s4`, `id` AS `s5`, `imageFile` AS `s6`, `language` AS `s7`, `length` AS `s8`, `locationIP` AS `s9` FROM `post`),
+q3 AS (SELECT `s0` AS `s0`, CAST('2' AS BIGINT) AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4`, `s5` AS `s5`, `s6` AS `s6`, `s7` AS `s7`, `s8` AS `s8`, `s9` AS `s9` FROM q2),
+q4 AS (SELECT `_identity` AS `s0`, `browserUsed` AS `s2`, `content` AS `s3`, `creationDate` AS `s4`, `id` AS `s5`, `length` AS `s8`, `locationIP` AS `s9` FROM `comment`),
+q5 AS (SELECT `s0` AS `s0`, CAST('3' AS BIGINT) AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4`, `s5` AS `s5`, CAST(NULL AS STRING) AS `s6`, CAST(NULL AS STRING) AS `s7`, `s8` AS `s8`, `s9` AS `s9` FROM q4),
+q6 AS (SELECT `s0` AS `s0`, `s1` AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4`, `s5` AS `s5`, `s6` AS `s6`, `s7` AS `s7`, `s8` AS `s8`, `s9` AS `s9` FROM q3 UNION ALL SELECT `s0` AS `s0`, `s1` AS `s1`, `s2` AS `s2`, `s3` AS `s3`, `s4` AS `s4`, `s5` AS `s5`, `s6` AS `s6`, `s7` AS `s7`, `s8` AS `s8`, `s9` AS `s9` FROM q5),
+q7 AS (SELECT r.`s0` AS `s0`, r.`s1` AS `s1`, r.`s2` AS `s2`, r.`s3` AS `s3`, r.`s4` AS `s4`, r.`s5` AS `s5`, r.`s6` AS `s6`, r.`s7` AS `s7`, r.`s8` AS `s8`, r.`s9` AS `s9` FROM q1 l INNER JOIN q6 r ON TRUE),
+q8 AS (SELECT r.`s0` AS `s0`, r.`s1` AS `s1`, r.`s2` AS `s2`, r.`s3` AS `s3`, r.`s4` AS `s4`, r.`s5` AS `s5`, r.`s6` AS `s6`, r.`s7` AS `s7`, r.`s8` AS `s8`, r.`s9` AS `s9` FROM q0 l INNER JOIN q7 r ON (r.`s5` = CAST(CAST('343597383680' AS BIGINT) AS BIGINT))),
+q9 AS (SELECT `s4` AS `s10`, `coalesce`(`s3`, `s6`) AS `s11` FROM q8) SELECT `s10` AS `messageCreationDate`, `s11` AS `messageContent` FROM q9
