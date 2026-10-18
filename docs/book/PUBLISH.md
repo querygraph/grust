@@ -106,7 +106,7 @@ vertical whitespace.
 Homebrew and npm rendering tools. The checked-in `book.build.json` retains
 Grust's `build.mjs`, EPUB repair, PDF page-label repair, and metadata validator;
 the `docs/book/python` uv project supplies `pypdf` through the repository's
-asdf-pinned Python 3.14.5.
+uv-pinned Python (root `.python-version`, kept at the latest CPython, 3.15).
 
 The full pipeline expects:
 
@@ -115,10 +115,12 @@ The full pipeline expects:
 - `pandoc`
 - `typst`
 - `pdfunite`
-- asdf Python 3.14.5 with the uv-locked `docs/book/python` project
+- uv with the root `.python-version` (CPython 3.15) and the uv-locked
+  `docs/book/python` project
 - Calibre `ebook-convert`
 
-The repository pins Python through the root `.tool-versions`; FirstPair's
+The repository pins Python through the root `.python-version`, managed by uv
+alone (no asdf); FirstPair's
 `ensure-python-env.sh` runs `uv sync` and invokes the resulting project Python.
 
 On this Mac, Calibre's converter is available at:
@@ -328,8 +330,8 @@ Grust already implements this shape:
   `grust.epub`.
 - The layout fix and check run immediately after `build/dist/grust.epub` is
   created and before `ebook-convert` creates `build/dist/grust.mobi`.
-- The repository pins asdf Python `3.14.5` in `.tool-versions`, and the build
-  prefers `asdf exec python` for the checker.
+- The repository pins Python with uv's root `.python-version` (latest
+  CPython, 3.15); the checker runs through uv.
 
 The checker fails the build if the EPUB is missing or changes the expected
 versioned Kindle `dc:title`, title sort metadata, exact creator/publisher,
@@ -353,7 +355,7 @@ flatter and the script asserts exact TypeSec strings, reading-spine placement,
 image-cover geometry and bytes, and Kindle-layout constraints after
 `docs/book/fix_epub_layout.sh` runs. Grust uses
 `docs/book/check_epub_metadata.py` because Grust already pins a reliable Python
-with asdf and the checker benefits from treating the EPUB as a ZIP package:
+with uv and the checker benefits from treating the EPUB as a ZIP package:
 read the OPF/NCX/nav/cover members directly, inspect required metadata and
 layout fields, detect fallback metadata, and report all failures in one pass
 without shell temporary file plumbing. It uses only the Python standard library.

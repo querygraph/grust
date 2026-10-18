@@ -151,16 +151,15 @@ MOBI. That order matters because it prevents Kindle-facing formats from being
 generated from an EPUB with weak metadata, mismatched dist markers, synthetic
 fallback labels, or fragile cover layout.
 
-The repository is pinned to asdf Python `3.14.5` in the root `.tool-versions`
-file. `build.sh` prefers `asdf exec python` for the metadata check, with
-`python3` only as a fallback. This avoids accidentally using a broken or
+The repository pins Python with uv's root `.python-version` (latest CPython,
+3.15); uv alone manages it, without asdf. Run the metadata check through uv. This avoids accidentally using a broken or
 machine-specific Homebrew Python when the build is run from the Grust checkout.
 
 For Grust, the normal verification command is:
 
 ```sh
 cd docs/book
-asdf exec python check_epub_metadata.py build/dist/grust.epub
+uv run --project python python check_epub_metadata.py build/dist/grust.epub
 ```
 
 The full build runs the same check automatically:
@@ -171,7 +170,7 @@ cd docs/book
 ```
 
 Grust uses a Python checker rather than copying TypeSec's shell checker because
-the Grust repository now has an asdf-pinned Python, and the check is naturally a
+the Grust repository now has a uv-pinned Python, and the check is naturally a
 small ZIP/package inspection program: open the EPUB, read OPF/NCX/nav files,
 collect all failures, and report them together. Python's standard library keeps
 that logic explicit without a chain of temporary files, `unzip`, `grep`, and

@@ -28,8 +28,8 @@ Build:
 
 Checks:
 
-- The repository is pinned to Python `3.14.5` through the root
-  `.tool-versions` file.
+- The repository pins Python through uv's root `.python-version` file
+  (latest CPython, 3.15); uv alone manages it.
 - `build.sh` runs `check_epub_metadata.py` after EPUB generation and before
   MOBI conversion.
 - The metadata check inspects the generated EPUB package for real title,
