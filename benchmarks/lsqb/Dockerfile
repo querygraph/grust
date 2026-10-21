@@ -44,7 +44,7 @@ RUN --mount=type=cache,id=grust-lsqb-cargo-registry,target=/usr/local/cargo/regi
     --mount=type=cache,id=grust-lsqb-cargo-git,target=/usr/local/cargo/git,sharing=locked \
     --mount=type=cache,id=grust-lsqb-target,target=/src/benchmarks/lsqb/target,sharing=locked \
     case "${BENCHMARK_FEATURE}" in \
-        ""|falkor|helix|ladybug|lancedb|neo4j-native|pggraph|postgres-pgq|sail|surreal) ;; \
+        ""|arcadedb-native|falkor|helix|ladybug|lancedb|neo4j-native|pggraph|postgres-pgq|sail|surreal) ;; \
         *) echo "unsupported benchmark feature: ${BENCHMARK_FEATURE}" >&2; exit 2 ;; \
     esac \
     && if [ "${BENCHMARK_FEATURE}" = ladybug ]; then \
@@ -69,6 +69,11 @@ RUN --mount=type=cache,id=grust-lsqb-cargo-registry,target=/usr/local/cargo/regi
         cargo build --locked --release --manifest-path benchmarks/lsqb/Cargo.toml \
             --bin grust-lsqb-neo4j --features neo4j-native \
         && cp /src/benchmarks/lsqb/target/release/grust-lsqb-neo4j /opt/grust-bin/; \
+    fi \
+    && if [ "${BENCHMARK_FEATURE}" = arcadedb-native ]; then \
+        cargo build --locked --release --manifest-path benchmarks/lsqb/Cargo.toml \
+            --bin grust-lsqb-arcadedb --features arcadedb-native \
+        && cp /src/benchmarks/lsqb/target/release/grust-lsqb-arcadedb /opt/grust-bin/; \
     fi
 
 FROM ${RUNTIME_IMAGE}
