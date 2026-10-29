@@ -1,0 +1,1232 @@
+commit 4a258021af4d670bcd443870e8bca08dcd7fa9c8
+Author:     Alexy Khrabrov <deliverable@gmail.com>
+AuthorDate: Thu Oct 29 15:29:02 2026 -0700
+Commit:     Alexy Khrabrov <deliverable@gmail.com>
+CommitDate: Thu Oct 29 15:29:02 2026 -0700
+
+    feat: provide pinned Java timezone rules for ORC decoding
+
+diff --git a/Cargo.lock b/Cargo.lock
+index cf8285322..5a487095c 100644
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -7378,6 +7378,7 @@ dependencies = [
+  "sail-sql-parser",
+  "serde",
+  "serde_json",
++ "sha2",
+  "thiserror",
+  "tokio",
+  "tokio-stream",
+diff --git a/crates/sail-data-source/Cargo.toml b/crates/sail-data-source/Cargo.toml
+index 4da974ff4..9a501433d 100644
+--- a/crates/sail-data-source/Cargo.toml
++++ b/crates/sail-data-source/Cargo.toml
+@@ -54,3 +54,5 @@ sail-build-scripts = { path = "../sail-build-scripts" }
+ [dev-dependencies]
+ # ORC's public footer messages use the older protobuf runtime.
+ prost013 = { package = "prost", version = "0.13.5" }
++# Verify the retained Java oracle digests without a runtime hashing dependency.
++sha2 = "0.11.0"
+diff --git a/crates/sail-data-source/src/formats/orc/mod.rs b/crates/sail-data-source/src/formats/orc/mod.rs
+index ef98d51cb..d23c6c9b1 100644
+--- a/crates/sail-data-source/src/formats/orc/mod.rs
++++ b/crates/sail-data-source/src/formats/orc/mod.rs
+@@ -1,10 +1,12 @@
+ mod metadata;
+ mod reader;
+ mod schema;
++mod timezone;
+ 
+ pub use metadata::OrcSchemaBridge;
+ pub use reader::OrcObjectReader;
+ pub use schema::infer_schema as infer_orc_schema;
++pub use timezone::OrcJavaTimeZoneConfig;
+ 
+ #[cfg(test)]
+ mod fixture_tests;
+diff --git a/crates/sail-data-source/src/formats/orc/timezone/mod.rs b/crates/sail-data-source/src/formats/orc/timezone/mod.rs
+new file mode 100644
+index 000000000..cf852b3fb
+--- /dev/null
++++ b/crates/sail-data-source/src/formats/orc/timezone/mod.rs
+@@ -0,0 +1,4 @@
++mod profile;
++mod resolver;
++
++pub use resolver::OrcJavaTimeZoneConfig;
+diff --git a/crates/sail-data-source/src/formats/orc/timezone/profile.rs b/crates/sail-data-source/src/formats/orc/timezone/profile.rs
+new file mode 100644
+index 000000000..177e42df6
+--- /dev/null
++++ b/crates/sail-data-source/src/formats/orc/timezone/profile.rs
+@@ -0,0 +1,342 @@
++use std::collections::BTreeMap;
++use std::sync::{Arc, LazyLock};
++
++use datafusion_common::{DataFusionError, Result};
++use orc_rust::TimestampTimeZone;
++use orc_rust::error::{OutOfSpecSnafu, Result as OrcResult};
++use serde::Deserialize;
++
++pub(super) const PROFILE_BUNDLE_SHA256: &str =
++    "1f90695f80f862138bf1635b8727281eb7b0a76d838513eaf09675cb6ee7212b";
++pub(super) const OFFSET_DOMAIN_MILLIS: [i64; 2] = [-9_223_380_626_789_368, 9_223_380_626_789_367];
++const UTC_EPOCH_SECONDS: i64 = 1_420_070_400;
++const CYCLE_PERIOD_MILLIS: i64 = 12_622_780_800_000;
++const EMBEDDED_JSON: &str = include_str!(concat!(
++    env!("CARGO_MANIFEST_DIR"),
++    "/data/orc/timezone/java-timezone-profiles.json"
++));
++
++// This parser is private and accepts only the trusted compiled asset. Its exact
++// bytes, canonical object hashes and duplicate keys are checked by the asset
++// generation gate. Runtime validation is not arbitrary-file hash verification.
++static PROFILES: LazyLock<std::result::Result<Arc<ValidatedProfiles>, String>> =
++    LazyLock::new(|| parse_embedded(EMBEDDED_JSON).map(Arc::new));
++
++pub(super) fn embedded_profiles() -> Result<Arc<ValidatedProfiles>> {
++    PROFILES.as_ref().map(Arc::clone).map_err(|message| {
++        DataFusionError::Internal(format!(
++            "Invalid embedded ORC Java timezone bundle: {message}"
++        ))
++    })
++}
++
++#[derive(Debug)]
++pub(super) struct ValidatedProfiles {
++    zones: BTreeMap<String, NamedZone>,
++    gmt: Arc<Profile>,
++}
++
++#[derive(Debug)]
++struct NamedZone {
++    profile: Arc<Profile>,
++    resolved_id: String,
++}
++
++pub(super) struct ResolvedNamedZone<'a> {
++    pub(super) profile: Arc<dyn TimestampTimeZone>,
++    pub(super) resolved_id: &'a str,
++}
++
++impl ValidatedProfiles {
++    pub(super) fn exact_name(&self, name: &str) -> Option<ResolvedNamedZone<'_>> {
++        self.zones.get(name).map(|zone| ResolvedNamedZone {
++            profile: zone.profile.clone(),
++            resolved_id: &zone.resolved_id,
++        })
++    }
++
++    pub(super) fn gmt(&self) -> Arc<dyn TimestampTimeZone> {
++        self.gmt.clone()
++    }
++
++    pub(super) fn utc_epoch_seconds(&self) -> i64 {
++        UTC_EPOCH_SECONDS
++    }
++}
++
++#[derive(Debug)]
++struct Profile {
++    id: String,
++    raw_prefix_offset_millis: i32,
++    orc_epoch_seconds: i64,
++    transitions: Box<[(i64, i32)]>,
++    future: Future,
++}
++
++#[derive(Debug)]
++enum Future {
++    Fixed(i32),
++    Cycle(Arc<Cycle>),
++}
++
++#[derive(Debug)]
++struct Cycle {
++    anchor_millis: i64,
++    rows: Box<[(i64, i32)]>,
++}
++
++impl TimestampTimeZone for Profile {
++    fn orc_epoch_seconds(&self) -> i64 {
++        self.orc_epoch_seconds
++    }
++
++    fn offset_millis(&self, utc_millis: i64) -> OrcResult<i32> {
++        if !(OFFSET_DOMAIN_MILLIS[0]..=OFFSET_DOMAIN_MILLIS[1]).contains(&utc_millis) {
++            return Err(OutOfSpecSnafu {
++                msg: format!(
++                    "ORC Java timezone profile {}: instant {utc_millis} is outside qualified millisecond domain {:?}",
++                    self.id, OFFSET_DOMAIN_MILLIS
++                ),
++            }.build());
++        }
++        let index = self
++            .transitions
++            .partition_point(|(millis, _)| *millis <= utc_millis);
++        if index == 0 {
++            return Ok(self.raw_prefix_offset_millis);
++        }
++        let (last_millis, offset) = self.transitions[index - 1];
++        if index < self.transitions.len() || utc_millis == last_millis {
++            return Ok(offset);
++        }
++        Ok(match &self.future {
++            Future::Fixed(offset) => *offset,
++            Future::Cycle(cycle) => {
++                let position = (i128::from(utc_millis) - i128::from(cycle.anchor_millis))
++                    .rem_euclid(i128::from(CYCLE_PERIOD_MILLIS));
++                // Validated cycle rows start at zero, so this index is positive.
++                let index = cycle
++                    .rows
++                    .partition_point(|(millis, _)| i128::from(*millis) <= position);
++                cycle.rows[index - 1].1
++            }
++        })
++    }
++}
++
++#[derive(Deserialize)]
++#[serde(deny_unknown_fields)]
++struct BundleDto {
++    format_version: u32,
++    configuration: ConfigurationDto,
++    zones: BTreeMap<String, ZoneDto>,
++    profiles: BTreeMap<String, ProfileDto>,
++    cycles: BTreeMap<String, CycleDto>,
++    java_aliases: BTreeMap<String, String>,
++}
++
++#[derive(Deserialize)]
++#[serde(deny_unknown_fields)]
++struct ConfigurationDto {
++    java_runtime_version: String,
++    java_vendor: String,
++    tzdb_versions: Vec<String>,
++    legacy_id_mapping: bool,
++    format_locale: String,
++    epoch_calendar: String,
++    epoch_text: String,
++    utc_epoch_seconds: i64,
++    offset_domain_millis: [i64; 2],
++}
++
++#[derive(Deserialize)]
++#[serde(deny_unknown_fields)]
++struct ZoneDto {
++    profile: String,
++    resolved_id: String,
++    available: bool,
++}
++
++#[derive(Deserialize)]
++#[serde(deny_unknown_fields)]
++struct ProfileDto {
++    raw_prefix_offset_millis: i32,
++    orc_epoch_seconds: i64,
++    transitions: Vec<(i64, i32)>,
++    future: FutureDto,
++}
++
++#[derive(Deserialize)]
++#[serde(tag = "kind", rename_all = "lowercase", deny_unknown_fields)]
++enum FutureDto {
++    Fixed { offset_millis: i32 },
++    Cycle { id: String },
++}
++
++#[derive(Deserialize)]
++#[serde(deny_unknown_fields)]
++struct CycleDto {
++    anchor_millis: i64,
++    period_millis: i64,
++    rows: Vec<(i64, i32)>,
++}
++
++fn parse_embedded(json: &str) -> std::result::Result<ValidatedProfiles, String> {
++    let bundle: BundleDto = serde_json::from_str(json).map_err(|error| error.to_string())?;
++    validate_configuration(bundle.format_version, &bundle.configuration)?;
++    let mut cycles = BTreeMap::new();
++    for (id, cycle) in bundle.cycles {
++        validate_id(&id)?;
++        if cycle.period_millis != CYCLE_PERIOD_MILLIS
++            || !(OFFSET_DOMAIN_MILLIS[0]..=OFFSET_DOMAIN_MILLIS[1]).contains(&cycle.anchor_millis)
++            || cycle.rows.first().map(|row| row.0) != Some(0)
++        {
++            return Err(format!(
++                "cycle {id} has an invalid period, anchor or first row"
++            ));
++        }
++        validate_rows(&cycle.rows, 0, CYCLE_PERIOD_MILLIS - 1)
++            .map_err(|error| format!("cycle {id}: {error}"))?;
++        cycles.insert(
++            id,
++            Arc::new(Cycle {
++                anchor_millis: cycle.anchor_millis,
++                rows: cycle.rows.into_boxed_slice(),
++            }),
++        );
++    }
++    let mut profiles = BTreeMap::new();
++    for (id, profile) in bundle.profiles {
++        validate_id(&id)?;
++        validate_rows(
++            &profile.transitions,
++            OFFSET_DOMAIN_MILLIS[0],
++            OFFSET_DOMAIN_MILLIS[1],
++        )
++        .map_err(|error| format!("profile {id}: {error}"))?;
++        let epoch_millis = i128::from(profile.orc_epoch_seconds) * 1_000;
++        if !(i128::from(OFFSET_DOMAIN_MILLIS[0])..=i128::from(OFFSET_DOMAIN_MILLIS[1]))
++            .contains(&epoch_millis)
++        {
++            return Err(format!(
++                "profile {id} ORC epoch is outside the qualified domain"
++            ));
++        }
++        if profile.transitions.is_empty()
++            && !matches!(&profile.future, FutureDto::Fixed { offset_millis } if *offset_millis == profile.raw_prefix_offset_millis)
++        {
++            return Err(format!(
++                "profile {id} without history requires a fixed future equal to its raw prefix"
++            ));
++        }
++        let future = match profile.future {
++            FutureDto::Fixed { offset_millis } => Future::Fixed(offset_millis),
++            FutureDto::Cycle { id: cycle } => Future::Cycle(
++                cycles
++                    .get(&cycle)
++                    .ok_or_else(|| format!("profile {id} references missing cycle {cycle}"))?
++                    .clone(),
++            ),
++        };
++        profiles.insert(
++            id.clone(),
++            Arc::new(Profile {
++                id,
++                raw_prefix_offset_millis: profile.raw_prefix_offset_millis,
++                orc_epoch_seconds: profile.orc_epoch_seconds,
++                transitions: profile.transitions.into_boxed_slice(),
++                future,
++            }),
++        );
++    }
++    // Aliases are retained as provenance, never traversed to resolve a name.
++    for (alias, target) in bundle.java_aliases {
++        if !bundle.zones.contains_key(&alias) || !bundle.zones.contains_key(&target) {
++            return Err(format!(
++                "provenance alias {alias} references an absent exact name {target}"
++            ));
++        }
++    }
++    let mut zones = BTreeMap::new();
++    for (name, zone) in bundle.zones {
++        if name.is_empty() || zone.resolved_id.is_empty() || !zone.available {
++            return Err(format!(
++                "zone {name:?} is not an available named zone in the selected baseline"
++            ));
++        }
++        let profile = profiles
++            .get(&zone.profile)
++            .ok_or_else(|| format!("zone {name:?} references missing profile {}", zone.profile))?
++            .clone();
++        zones.insert(
++            name,
++            NamedZone {
++                profile,
++                resolved_id: zone.resolved_id,
++            },
++        );
++    }
++    let gmt = zones.get("GMT").ok_or("missing GMT profile")?;
++    if gmt.resolved_id != "GMT"
++        || gmt.profile.raw_prefix_offset_millis != 0
++        || gmt.profile.orc_epoch_seconds != UTC_EPOCH_SECONDS
++        || !gmt.profile.transitions.is_empty()
++        || !matches!(&gmt.profile.future, Future::Fixed(0))
++    {
++        return Err("invalid GMT fallback profile".to_string());
++    }
++    let gmt = gmt.profile.clone();
++    Ok(ValidatedProfiles { zones, gmt })
++}
++
++fn validate_configuration(
++    version: u32,
++    config: &ConfigurationDto,
++) -> std::result::Result<(), String> {
++    if version != 1
++        || config.java_runtime_version != "20.0.2+9-78"
++        || config.java_vendor != "Oracle Corporation"
++        || config.tzdb_versions != ["2023c"]
++        || config.legacy_id_mapping
++        || config.format_locale != "en-US"
++        || config.epoch_calendar != "java.util.GregorianCalendar"
++        || config.epoch_text != "2015-01-01 00:00:00"
++        || config.utc_epoch_seconds != UTC_EPOCH_SECONDS
++        || config.offset_domain_millis != OFFSET_DOMAIN_MILLIS
++    {
++        return Err("unsupported format or Java timezone configuration".to_string());
++    }
++    Ok(())
++}
++
++fn validate_id(id: &str) -> std::result::Result<(), String> {
++    if id.len() != 64
++        || !id
++            .bytes()
++            .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
++    {
++        return Err(format!("invalid profile/cycle identity {id:?}"));
++    }
++    Ok(())
++}
++
++fn validate_rows(rows: &[(i64, i32)], low: i64, high: i64) -> std::result::Result<(), String> {
++    if rows
++        .iter()
++        .any(|(millis, _)| !(low..=high).contains(millis))
++        || rows.windows(2).any(|pair| pair[0].0 >= pair[1].0)
++    {
++        return Err(
++            "transition positions must be strictly increasing and inside their domain".to_string(),
++        );
++    }
++    Ok(())
++}
++
++#[cfg(test)]
++#[path = "profile_tests.rs"]
++mod tests;
++
++#[cfg(test)]
++#[path = "profile_oracle_tests.rs"]
++mod oracle_tests;
+diff --git a/crates/sail-data-source/src/formats/orc/timezone/profile_oracle_tests.rs b/crates/sail-data-source/src/formats/orc/timezone/profile_oracle_tests.rs
+new file mode 100644
+index 000000000..af343d5bf
+--- /dev/null
++++ b/crates/sail-data-source/src/formats/orc/timezone/profile_oracle_tests.rs
+@@ -0,0 +1,115 @@
++#![expect(clippy::unwrap_used)]
++
++use std::collections::{BTreeMap, BTreeSet};
++use std::fmt::Write;
++
++use serde::Deserialize;
++use sha2::{Digest, Sha256};
++
++use super::*;
++
++const VERIFICATION: &str = include_str!(concat!(
++    env!("CARGO_MANIFEST_DIR"),
++    "/tests/fixtures/orc/timezone/java-timezone-profile-verification.json"
++));
++
++#[derive(Deserialize)]
++struct OraclePlan {
++    baseline_millis: Vec<i64>,
++    cycle_block_starts_millis: Vec<i64>,
++    per_zone: BTreeMap<String, ZonePlan>,
++    offset_checks: usize,
++    offset_oracle_sha256: String,
++}
++
++#[derive(Deserialize)]
++struct ZonePlan {
++    offset_checks: usize,
++    full_cycle_checked: bool,
++}
++
++fn queries(profile: &ProfileDto, cycle: Option<&CycleDto>, plan: &OraclePlan) -> BTreeSet<i64> {
++    let mut points = plan
++        .baseline_millis
++        .iter()
++        .copied()
++        .collect::<BTreeSet<_>>();
++    for (index, &(millis, _)) in profile.transitions.iter().enumerate() {
++        points.extend([millis - 1, millis, millis + 1]);
++        if index > 0 {
++            let previous = profile.transitions[index - 1].0;
++            points.insert(previous + (millis - previous) / 2);
++        }
++    }
++    if let Some(cycle) = cycle {
++        let history_end = profile.transitions.last().unwrap().0;
++        for &anchor in &plan.cycle_block_starts_millis {
++            for (index, &(position, _)) in cycle.rows.iter().enumerate() {
++                let end = cycle
++                    .rows
++                    .get(index + 1)
++                    .map_or(cycle.period_millis, |row| row.0);
++                for millis in [
++                    anchor + position - 1,
++                    anchor + position,
++                    anchor + position + 1,
++                    anchor + position + (end - position) / 2,
++                ] {
++                    if millis > history_end
++                        && (OFFSET_DOMAIN_MILLIS[0]..=OFFSET_DOMAIN_MILLIS[1]).contains(&millis)
++                    {
++                        points.insert(millis);
++                    }
++                }
++            }
++        }
++    }
++    points
++}
++
++#[test]
++fn all_exported_profiles_match_the_retained_java_offset_oracle() {
++    // Replay the exact exporter query sequence, also independently reproduced
++    // by verify_java_timezone_profiles.py. Expected offsets come only from the
++    // retained public-Java digest, never from a second Rust table evaluator.
++    let bundle: BundleDto = serde_json::from_str(EMBEDDED_JSON).unwrap();
++    let plan: OraclePlan = serde_json::from_str(VERIFICATION).unwrap();
++    let profiles = embedded_profiles().unwrap();
++    let mut seen_cycles = BTreeSet::new();
++    let mut digest = Sha256::new();
++    let mut checks = 0;
++    for (name, zone) in &bundle.zones {
++        let profile = &bundle.profiles[&zone.profile];
++        let cycle = match &profile.future {
++            FutureDto::Cycle { id } if seen_cycles.insert(id.clone()) => Some(&bundle.cycles[id]),
++            _ => None,
++        };
++        let points = queries(profile, cycle, &plan);
++        assert_eq!(points.len(), plan.per_zone[name].offset_checks, "{name}");
++        assert_eq!(
++            cycle.is_some(),
++            plan.per_zone[name].full_cycle_checked,
++            "{name}"
++        );
++        let runtime = profiles.exact_name(name).unwrap().profile;
++        for millis in points {
++            let offset = runtime.offset_millis(millis).unwrap();
++            // Tuple JSON is the canonical compact [name,millis,offset] array.
++            digest.update(serde_json::to_vec(&(name, millis, offset)).unwrap());
++            digest.update(b"\n");
++            checks += 1;
++        }
++    }
++    assert_eq!(checks, 830_644);
++    assert_eq!(checks, plan.offset_checks);
++    let mut observed = String::new();
++    for byte in digest.finalize() {
++        write!(observed, "{byte:02x}").unwrap();
++    }
++    assert_eq!(observed, plan.offset_oracle_sha256);
++    assert_eq!(
++        observed,
++        "0f2dcdcac7e66981ac47663cb4584ecd0e30a626ce1f7930087cc9023c4af4bd"
++    );
++    assert_eq!(seen_cycles.len(), 36);
++}
+diff --git a/crates/sail-data-source/src/formats/orc/timezone/profile_tests.rs b/crates/sail-data-source/src/formats/orc/timezone/profile_tests.rs
+new file mode 100644
+index 000000000..47cc3e218
+--- /dev/null
++++ b/crates/sail-data-source/src/formats/orc/timezone/profile_tests.rs
+@@ -0,0 +1,205 @@
++#![expect(clippy::unwrap_used)]
++
++use std::fmt::Write;
++
++use serde_json::{Value, json};
++use sha2::{Digest, Sha256};
++
++use super::*;
++
++#[test]
++fn embedded_identity_and_shared_profiles_match_selected_baseline() {
++    let mut observed = String::new();
++    for byte in Sha256::digest(EMBEDDED_JSON.as_bytes()) {
++        write!(observed, "{byte:02x}").unwrap();
++    }
++    assert_eq!(observed, PROFILE_BUNDLE_SHA256);
++    let first = embedded_profiles().unwrap();
++    let second = embedded_profiles().unwrap();
++    assert!(Arc::ptr_eq(&first, &second));
++    assert_eq!(first.zones.len(), 631);
++    let la = first.exact_name("America/Los_Angeles").unwrap();
++    let alias = first.exact_name("US/Pacific").unwrap();
++    assert!(Arc::ptr_eq(&la.profile, &alias.profile));
++    assert_eq!(la.resolved_id, "America/Los_Angeles");
++    assert_eq!(alias.resolved_id, "US/Pacific");
++    assert!(first.exact_name("america/los_angeles").is_none());
++    // The exported Java-parsed 2015 epoch differs from UTC minus the raw
++    // pre-history offset in Windhoek. Do not derive it from that prefix.
++    let windhoek = first.exact_name("Africa/Windhoek").unwrap();
++    assert_eq!(windhoek.profile.orc_epoch_seconds(), 1_420_063_200);
++    assert_eq!(first.utc_epoch_seconds(), 1_420_070_400);
++}
++
++#[test]
++fn qualified_domain_includes_endpoints_and_rejects_adjacent_instants() {
++    assert_eq!(
++        OFFSET_DOMAIN_MILLIS,
++        [
++            i64::MIN.div_euclid(1_000) - 4 * (1_i64 << 31),
++            i64::MAX.div_euclid(1_000) + 4 * (1_i64 << 31),
++        ]
++    );
++    let profiles = embedded_profiles().unwrap();
++    for name in [
++        "GMT",
++        "America/Los_Angeles",
++        "Africa/Windhoek",
++        "Asia/Kathmandu",
++    ] {
++        let zone = profiles.exact_name(name).unwrap().profile;
++        for millis in OFFSET_DOMAIN_MILLIS {
++            assert!(zone.offset_millis(millis).is_ok(), "{name}/{millis}");
++        }
++        for millis in [
++            OFFSET_DOMAIN_MILLIS[0] - 1,
++            OFFSET_DOMAIN_MILLIS[1] + 1,
++            i64::MIN,
++            i64::MAX,
++        ] {
++            let error = zone.offset_millis(millis).unwrap_err().to_string();
++            assert!(
++                error.contains("outside qualified millisecond domain"),
++                "{error}"
++            );
++        }
++    }
++    let gmt = profiles.gmt();
++    assert_eq!(gmt.orc_epoch_seconds(), 1_420_070_400);
++    for millis in [OFFSET_DOMAIN_MILLIS[0], 0, OFFSET_DOMAIN_MILLIS[1]] {
++        assert_eq!(gmt.offset_millis(millis).unwrap(), 0);
++    }
++}
++
++// These synthetic tables exercise validation only. Offset semantics are checked
++// against the retained Java oracle in profile_oracle_tests.rs.
++const GMT_ID: &str = "0000000000000000000000000000000000000000000000000000000000000000";
++const PROFILE_ID: &str = "1111111111111111111111111111111111111111111111111111111111111111";
++const CYCLE_ID: &str = "2222222222222222222222222222222222222222222222222222222222222222";
++
++fn validation_bundle() -> Value {
++    json!({
++        "format_version": 1,
++        "configuration": {
++            "java_runtime_version": "20.0.2+9-78", "java_vendor": "Oracle Corporation",
++            "tzdb_versions": ["2023c"], "legacy_id_mapping": false,
++            "format_locale": "en-US", "epoch_calendar": "java.util.GregorianCalendar",
++            "epoch_text": "2015-01-01 00:00:00", "utc_epoch_seconds": UTC_EPOCH_SECONDS,
++            "offset_domain_millis": OFFSET_DOMAIN_MILLIS,
++        },
++        "zones": {
++            "GMT": {"profile": GMT_ID, "resolved_id": "GMT", "available": true},
++            "Test": {"profile": PROFILE_ID, "resolved_id": "Test", "available": true},
++        },
++        "java_aliases": {},
++        "profiles": {
++            (GMT_ID): {"raw_prefix_offset_millis": 0, "orc_epoch_seconds": UTC_EPOCH_SECONDS,
++                "transitions": [], "future": {"kind": "fixed", "offset_millis": 0}},
++            (PROFILE_ID): {"raw_prefix_offset_millis": 0, "orc_epoch_seconds": UTC_EPOCH_SECONDS,
++                "transitions": [[0, 0], [1000, 1]], "future": {"kind": "cycle", "id": CYCLE_ID}},
++        },
++        "cycles": {(CYCLE_ID): {"anchor_millis": 0, "period_millis": CYCLE_PERIOD_MILLIS,
++            "rows": [[0, 0], [1000, 1]]}},
++    })
++}
++
++fn reject_at(path: &str, value: Value) {
++    let mut bundle = validation_bundle();
++    *bundle.pointer_mut(path).unwrap() = value;
++    assert!(
++        parse_embedded(&bundle.to_string()).is_err(),
++        "accepted {path}: {bundle}"
++    );
++}
++
++#[test]
++fn loader_rejects_wrong_configuration_and_shape() {
++    assert!(parse_embedded(&validation_bundle().to_string()).is_ok());
++    for (path, value) in [
++        ("/format_version", json!(2)),
++        ("/configuration/java_runtime_version", json!("other")),
++        ("/configuration/java_vendor", json!("other")),
++        ("/configuration/tzdb_versions", json!(["2024a"])),
++        ("/configuration/legacy_id_mapping", json!(true)),
++        ("/configuration/format_locale", json!("th-TH")),
++        ("/configuration/epoch_calendar", json!("BuddhistCalendar")),
++        ("/configuration/epoch_text", json!("2015-01-02 00:00:00")),
++        ("/configuration/utc_epoch_seconds", json!(0)),
++        ("/configuration/offset_domain_millis", json!([0, 1])),
++        ("/zones/GMT/resolved_id", json!("UTC")),
++        ("/zones/Test/available", json!(false)),
++        ("/zones/Test/resolved_id", json!("")),
++        ("/zones/Test/profile", json!("missing")),
++        ("/java_aliases", json!({"Test": "missing"})),
++    ] {
++        reject_at(path, value);
++    }
++    let mut bundle = validation_bundle();
++    bundle["unexpected"] = json!(true);
++    assert!(parse_embedded(&bundle.to_string()).is_err());
++    let mut bundle = validation_bundle();
++    bundle["zones"].as_object_mut().unwrap().remove("GMT");
++    assert!(parse_embedded(&bundle.to_string()).is_err());
++    let mut bundle = validation_bundle();
++    bundle["configuration"]
++        .as_object_mut()
++        .unwrap()
++        .remove("format_locale");
++    assert!(parse_embedded(&bundle.to_string()).is_err());
++    let mut bundle = validation_bundle();
++    let invalid_profile = bundle["profiles"][GMT_ID].clone();
++    bundle["profiles"]
++        .as_object_mut()
++        .unwrap()
++        .insert("bad-id".to_string(), invalid_profile);
++    assert!(parse_embedded(&bundle.to_string()).is_err());
++}
++
++#[test]
++fn loader_rejects_malformed_tables_and_integer_ranges() {
++    for rows in [
++        json!([[1, 0], [1, 1]]),
++        json!([[2, 0], [1, 1]]),
++        json!([[OFFSET_DOMAIN_MILLIS[0] - 1, 0]]),
++        json!([[OFFSET_DOMAIN_MILLIS[1] + 1, 0]]),
++        json!([[0, 2_147_483_648_i64]]),
++        json!([[9_223_372_036_854_775_808_u64, 0]]),
++    ] {
++        reject_at(&format!("/profiles/{PROFILE_ID}/transitions"), rows);
++    }
++    for rows in [
++        json!([]),
++        json!([[1, 0]]),
++        json!([[0, 0], [0, 1]]),
++        json!([[0, 0], [-1, 1]]),
++        json!([[0, 0], [CYCLE_PERIOD_MILLIS, 1]]),
++    ] {
++        reject_at(&format!("/cycles/{CYCLE_ID}/rows"), rows);
++    }
++    reject_at(&format!("/cycles/{CYCLE_ID}/period_millis"), json!(0));
++    reject_at(
++        &format!("/cycles/{CYCLE_ID}/anchor_millis"),
++        json!(i64::MIN),
++    );
++    reject_at(
++        &format!("/profiles/{PROFILE_ID}/orc_epoch_seconds"),
++        json!(i64::MAX),
++    );
++    reject_at(
++        &format!("/profiles/{PROFILE_ID}/raw_prefix_offset_millis"),
++        json!(-2_147_483_649_i64),
++    );
++    reject_at(
++        &format!("/profiles/{PROFILE_ID}/future/id"),
++        json!("missing"),
++    );
++    reject_at(
++        &format!("/profiles/{PROFILE_ID}/future/kind"),
++        json!("unknown"),
++    );
++    reject_at(&format!("/profiles/{PROFILE_ID}/transitions"), json!([]));
++    reject_at(
++        &format!("/profiles/{GMT_ID}/future/offset_millis"),
++        json!(1),
++    );
++}
+diff --git a/crates/sail-data-source/src/formats/orc/timezone/resolver.rs b/crates/sail-data-source/src/formats/orc/timezone/resolver.rs
+new file mode 100644
+index 000000000..4d57a9464
+--- /dev/null
++++ b/crates/sail-data-source/src/formats/orc/timezone/resolver.rs
+@@ -0,0 +1,199 @@
++use std::borrow::Cow;
++use std::sync::Arc;
++
++use datafusion_common::{DataFusionError, Result, plan_err};
++use orc_rust::error::{OutOfSpecSnafu, Result as OrcResult};
++use orc_rust::{TimestampTimeZone, TimestampTimeZoneOptions, TimestampTimeZoneResolver};
++use serde::{Deserialize, Serialize};
++
++use super::profile::{
++    OFFSET_DOMAIN_MILLIS, PROFILE_BUNDLE_SHA256, ValidatedProfiles, embedded_profiles,
++};
++
++const SEMANTICS_VERSION: u32 = 1;
++
++/// Captured reader rules for the bundled Java timezone compatibility profile.
++///
++/// The driver supplies its reader timezone once. Workers validate this descriptor
++/// against their compiled profile instead of consulting their local timezone.
++/// The SQL session's Arrow/display timezone is independent of these reader rules.
++/// Deserialization must be followed by `native_options` to validate the identity.
++#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
++#[serde(deny_unknown_fields)]
++pub struct OrcJavaTimeZoneConfig {
++    semantics_version: u32,
++    profile_bundle_sha256: String,
++    reader_timezone: String,
++}
++
++impl OrcJavaTimeZoneConfig {
++    pub fn for_reader_timezone(reader_timezone: String) -> Result<Self> {
++        let config = Self {
++            semantics_version: SEMANTICS_VERSION,
++            profile_bundle_sha256: PROFILE_BUNDLE_SHA256.to_string(),
++            reader_timezone,
++        };
++        config.native_options()?;
++        Ok(config)
++    }
++
++    pub fn reader_timezone(&self) -> &str {
++        &self.reader_timezone
++    }
++
++    pub fn profile_bundle_sha256(&self) -> &str {
++        &self.profile_bundle_sha256
++    }
++
++    pub fn native_options(&self) -> Result<TimestampTimeZoneOptions> {
++        if self.semantics_version != SEMANTICS_VERSION {
++            return plan_err!(
++                "Unsupported ORC Java timezone semantics version {}",
++                self.semantics_version
++            );
++        }
++        if self.profile_bundle_sha256 != PROFILE_BUNDLE_SHA256 {
++            return plan_err!(
++                "ORC Java timezone profile identity mismatch: requested {}, compiled {}",
++                self.profile_bundle_sha256,
++                PROFILE_BUNDLE_SHA256
++            );
++        }
++        let resolver = Arc::new(JavaTimeZoneResolver {
++            profiles: embedded_profiles()?,
++        });
++        let reader = resolver
++            .resolve(&self.reader_timezone)
++            .map_err(|error| DataFusionError::External(Box::new(error)))?;
++        Ok(TimestampTimeZoneOptions::new(reader, resolver))
++    }
++}
++
++#[derive(Debug)]
++struct JavaTimeZoneResolver {
++    profiles: Arc<ValidatedProfiles>,
++}
++
++impl JavaTimeZoneResolver {
++    // Java preserves named aliases but normalizes custom offsets. Return the
++    // resolved name separately from shared rules so the oracle checks both.
++    fn resolve_name(&self, name: &str) -> (Arc<dyn TimestampTimeZone>, Cow<'_, str>) {
++        if let Some(named) = self.profiles.exact_name(name) {
++            return (named.profile, Cow::Borrowed(named.resolved_id));
++        }
++        if let Some(custom) = parse_custom_gmt(name) {
++            let epoch = self.profiles.utc_epoch_seconds() - i64::from(custom.offset_millis / 1_000);
++            return (
++                Arc::new(FixedOffsetZone {
++                    offset_millis: custom.offset_millis,
++                    orc_epoch_seconds: epoch,
++                }),
++                Cow::Owned(custom.normalized_id),
++            );
++        }
++        // This is Java TimeZone.getTimeZone(String)'s deliberate fallback, not
++        // an error recovery policy for invalid profile data or numeric ranges.
++        (self.profiles.gmt(), Cow::Borrowed("GMT"))
++    }
++}
++
++impl TimestampTimeZoneResolver for JavaTimeZoneResolver {
++    fn resolve(&self, name: &str) -> OrcResult<Arc<dyn TimestampTimeZone>> {
++        Ok(self.resolve_name(name).0)
++    }
++}
++
++#[derive(Debug)]
++struct FixedOffsetZone {
++    offset_millis: i32,
++    orc_epoch_seconds: i64,
++}
++
++impl TimestampTimeZone for FixedOffsetZone {
++    fn orc_epoch_seconds(&self) -> i64 {
++        self.orc_epoch_seconds
++    }
++
++    fn offset_millis(&self, utc_millis: i64) -> OrcResult<i32> {
++        if !(OFFSET_DOMAIN_MILLIS[0]..=OFFSET_DOMAIN_MILLIS[1]).contains(&utc_millis) {
++            return OutOfSpecSnafu {
++                msg: format!(
++                    "ORC Java timezone query {utc_millis} is outside the qualified millisecond \
++                     domain {}..={}",
++                    OFFSET_DOMAIN_MILLIS[0], OFFSET_DOMAIN_MILLIS[1]
++                ),
++            }
++            .fail();
++        }
++        Ok(self.offset_millis)
++    }
++}
++
++struct CustomOffset {
++    offset_millis: i32,
++    normalized_id: String,
++}
++
++/// Java 20's string API accepts compact hours/HHMM and colon forms with seconds.
++/// In the three-part form the middle component may have one or two digits; the
++/// final component always needs two. All parsing is case-sensitive and ASCII.
++fn parse_custom_gmt(name: &str) -> Option<CustomOffset> {
++    let (sign, rest) = name.as_bytes().strip_prefix(b"GMT")?.split_first()?;
++    let negative = match sign {
++        b'+' => false,
++        b'-' => true,
++        _ => return None,
++    };
++    let mut components = rest.split(|byte| *byte == b':');
++    let first = components.next()?;
++    let second = components.next();
++    let third = components.next();
++    if components.next().is_some() {
++        return None;
++    }
++    let (hours, minutes, seconds) = match (second, third) {
++        (None, None) => {
++            let value = digits(first, 1, 4)?;
++            if first.len() <= 2 {
++                (value, 0, 0)
++            } else {
++                (value / 100, value % 100, 0)
++            }
++        }
++        (Some(minutes), None) => (digits(first, 1, 2)?, digits(minutes, 2, 2)?, 0),
++        (Some(minutes), Some(seconds)) => (
++            digits(first, 1, 2)?,
++            digits(minutes, 1, 2)?,
++            digits(seconds, 2, 2)?,
++        ),
++        (None, Some(_)) => return None,
++    };
++    if hours > 23 || minutes > 59 || seconds > 59 {
++        return None;
++    }
++    let magnitude = (hours * 3_600 + minutes * 60 + seconds) * 1_000;
++    let sign = if negative { '-' } else { '+' };
++    let mut normalized_id = format!("GMT{sign}{hours:02}:{minutes:02}");
++    if seconds != 0 {
++        normalized_id.push_str(&format!(":{seconds:02}"));
++    }
++    Some(CustomOffset {
++        offset_millis: if negative { -magnitude } else { magnitude },
++        normalized_id,
++    })
++}
++
++fn digits(value: &[u8], minimum: usize, maximum: usize) -> Option<i32> {
++    if !(minimum..=maximum).contains(&value.len()) || !value.iter().all(u8::is_ascii_digit) {
++        return None;
++    }
++    Some(
++        value
++            .iter()
++            .fold(0, |value, digit| value * 10 + i32::from(digit - b'0')),
++    )
++}
++
++#[cfg(test)]
++#[path = "resolver_tests.rs"]
++mod tests;
+diff --git a/crates/sail-data-source/src/formats/orc/timezone/resolver_tests.rs b/crates/sail-data-source/src/formats/orc/timezone/resolver_tests.rs
+new file mode 100644
+index 000000000..bf7ce7d31
+--- /dev/null
++++ b/crates/sail-data-source/src/formats/orc/timezone/resolver_tests.rs
+@@ -0,0 +1,284 @@
++#![expect(clippy::unwrap_used)]
++
++use std::collections::BTreeMap;
++use std::fmt::Write;
++
++use serde::Deserialize;
++use sha2::{Digest, Sha256};
++
++use super::*;
++
++const ORACLE: &str = include_str!(concat!(
++    env!("CARGO_MANIFEST_DIR"),
++    "/tests/fixtures/orc/timezone/java-timezone-resolver-oracle.json"
++));
++const PROFILES: &str = include_str!(concat!(
++    env!("CARGO_MANIFEST_DIR"),
++    "/data/orc/timezone/java-timezone-profiles.json"
++));
++
++#[derive(Deserialize)]
++struct Oracle {
++    case_count: usize,
++    oracle_sha256: String,
++    examples: BTreeMap<String, OracleCase>,
++}
++
++#[derive(Deserialize)]
++struct OracleCase {
++    resolved_id: String,
++    offset_at_unix_epoch_millis: i32,
++    orc_epoch_seconds: i64,
++}
++
++fn resolver() -> JavaTimeZoneResolver {
++    JavaTimeZoneResolver {
++        profiles: embedded_profiles().unwrap(),
++    }
++}
++
++#[test]
++fn retained_java_examples_report_exact_names_offsets_and_epochs() {
++    let resolver = resolver();
++    let oracle: Oracle = serde_json::from_str(ORACLE).unwrap();
++    assert_eq!(oracle.examples.len(), 31);
++    for (name, expected) in oracle.examples {
++        let (profile, resolved_id) = resolver.resolve_name(&name);
++        assert_eq!(resolved_id, expected.resolved_id, "{name:?}");
++        assert_eq!(
++            profile.offset_millis(0).unwrap(),
++            expected.offset_at_unix_epoch_millis,
++            "{name:?}"
++        );
++        assert_eq!(
++            profile.orc_epoch_seconds(),
++            expected.orc_epoch_seconds,
++            "{name:?}"
++        );
++    }
++}
++
++#[test]
++fn complete_resolver_sequence_matches_retained_public_java_digest() {
++    #[derive(Deserialize)]
++    struct Names {
++        zones: BTreeMap<String, serde_json::Value>,
++    }
++
++    let names: Names = serde_json::from_str(PROFILES).unwrap();
++    let oracle: Oracle = serde_json::from_str(ORACLE).unwrap();
++    let resolver = resolver();
++    let mut digest = Sha256::new();
++    let mut count = 0;
++    visit_oracle_cases(&names.zones.into_keys().collect::<Vec<_>>(), |name| {
++        let (profile, resolved_id) = resolver.resolve_name(name);
++        let row = (
++            name,
++            resolved_id.as_ref(),
++            profile.offset_millis(0).unwrap(),
++            profile.orc_epoch_seconds(),
++        );
++        digest.update(serde_json::to_vec(&row).unwrap());
++        digest.update(b"\n");
++        count += 1;
++    });
++    assert_eq!(count, 315_351);
++    assert_eq!(count, oracle.case_count);
++    let mut observed = String::with_capacity(64);
++    for byte in digest.finalize() {
++        write!(observed, "{byte:02x}").unwrap();
++    }
++    assert_eq!(observed, oracle.oracle_sha256);
++}
++
++// This enumerates the retained Java oracle's input sequence. Expected results
++// are the public Java digest, not values computed by the Rust custom-GMT parser.
++fn visit_oracle_cases(names: &[String], mut visit: impl FnMut(&str)) {
++    for sign in ['+', '-'] {
++        let mut limit = 10;
++        for width in 1..=4 {
++            for value in 0..limit {
++                visit(&format!("GMT{sign}{value:0width$}"));
++            }
++            limit *= 10;
++        }
++        for hour in 0..24 {
++            for h in variants(hour) {
++                for minute in 0..60 {
++                    visit(&format!("GMT{sign}{h}:{minute:02}"));
++                    for m in variants(minute) {
++                        for second in 0..60 {
++                            visit(&format!("GMT{sign}{h}:{m}:{second:02}"));
++                        }
++                    }
++                }
++            }
++        }
++        for h in ["", "24", "99", "000", "-1", "A", "１"] {
++            for m in ["", "0", "60", "99", "000", "-1", "B", "０"] {
++                for s in ["", "0", "60", "99", "000", "-1", "C", "０"] {
++                    visit(&format!("GMT{sign}{h}:{m}:{s}"));
++                }
++            }
++        }
++    }
++    for name in [
++        "",
++        "Z",
++        "UT",
++        "utc",
++        "gmt",
++        " UTC",
++        "UTC ",
++        "Not/AZone",
++        "America/los_angeles",
++        "UTC+05:30",
++        "+05:30",
++        "-0530",
++        "GMT",
++        "GMT+",
++        "GMT-",
++        "GMT+05:30:15",
++        "GMT-00:00:01",
++        "GMT+23:59:59",
++        "GMT+05:30:00",
++        "GMT+00530",
++        "GMT+24:00",
++        "GMT+05:60",
++        "GMT+05:30:60",
++        "GMT+1:2:03",
++        "GMT+01:2:03",
++        "GMT+1:2",
++        "GMT+1::03",
++        "GMT+01:02:03:04",
++        "GMT+01:02\n",
++        "GMT+\0",
++        "GMT+１２:00",
++    ] {
++        visit(name);
++    }
++    for name in names {
++        visit(name);
++        visit(&name.to_lowercase());
++        visit(&name.to_uppercase());
++        visit(&format!(" {name}"));
++    }
++}
++
++fn variants(value: i32) -> Vec<String> {
++    if value < 10 {
++        vec![value.to_string(), format!("{value:02}")]
++    } else {
++        vec![value.to_string()]
++    }
++}
++
++#[test]
++fn named_aliases_keep_java_ids_and_stored_2015_epochs() {
++    // Additional direct Java observations from JavaTimezoneNamesEpoch.java,
++    // retained with the ORC timezone mechanism evidence. Windhoek's 2015 epoch
++    // uses +02:00 even though its prehistory raw prefix is +01:00.
++    let resolver = resolver();
++    for (name, epoch) in [
++        ("PST", 1_420_099_200),
++        ("EST", 1_420_088_400),
++        ("IST", 1_420_050_600),
++        ("Asia/Katmandu", 1_420_049_700),
++        ("Australia/Lord_Howe", 1_420_030_800),
++        ("Pacific/Chatham", 1_420_020_900),
++        ("Africa/Windhoek", 1_420_063_200),
++    ] {
++        let (profile, resolved_id) = resolver.resolve_name(name);
++        assert_eq!(resolved_id, name);
++        assert_eq!(profile.orc_epoch_seconds(), epoch, "{name}");
++    }
++}
++
++#[test]
++fn fixed_offsets_cover_qualified_endpoints_and_reject_outside_queries() {
++    let resolver = resolver();
++    for (name, expected) in [("GMT+23:59:59", 86_399_000), ("GMT-00:00:01", -1_000)] {
++        let zone = resolver.resolve(name).unwrap();
++        for millis in [OFFSET_DOMAIN_MILLIS[0], 0, OFFSET_DOMAIN_MILLIS[1]] {
++            assert_eq!(zone.offset_millis(millis).unwrap(), expected);
++        }
++        for millis in [
++            i64::MIN,
++            OFFSET_DOMAIN_MILLIS[0] - 1,
++            OFFSET_DOMAIN_MILLIS[1] + 1,
++            i64::MAX,
++        ] {
++            assert!(zone.offset_millis(millis).is_err());
++        }
++    }
++}
++
++#[test]
++fn config_roundtrip_preserves_captured_name_and_pinned_identity() {
++    for name in ["PST", "GMT-0", "GMT+1:2:03", "Not/AZone", ""] {
++        let config = OrcJavaTimeZoneConfig::for_reader_timezone(name.to_string()).unwrap();
++        assert_eq!(config.reader_timezone(), name);
++        assert_eq!(config.profile_bundle_sha256(), PROFILE_BUNDLE_SHA256);
++        let value = serde_json::to_value(&config).unwrap();
++        assert_eq!(
++            value,
++            serde_json::json!({
++                "semantics_version": 1,
++                "profile_bundle_sha256": PROFILE_BUNDLE_SHA256,
++                "reader_timezone": name,
++            })
++        );
++        let decoded: OrcJavaTimeZoneConfig = serde_json::from_value(value).unwrap();
++        assert_eq!(decoded, config);
++        decoded.native_options().unwrap();
++    }
++}
++
++#[test]
++fn config_rejects_unknown_semantics_or_bundle_before_creating_native_options() {
++    for version in [0, SEMANTICS_VERSION + 1, u32::MAX] {
++        let config = OrcJavaTimeZoneConfig {
++            semantics_version: version,
++            profile_bundle_sha256: PROFILE_BUNDLE_SHA256.to_string(),
++            reader_timezone: "UTC".to_string(),
++        };
++        assert!(config.native_options().is_err());
++    }
++    for identity in [
++        String::new(),
++        "0".repeat(64),
++        PROFILE_BUNDLE_SHA256.to_uppercase(),
++        format!("{PROFILE_BUNDLE_SHA256} "),
++    ] {
++        let config = OrcJavaTimeZoneConfig {
++            semantics_version: SEMANTICS_VERSION,
++            profile_bundle_sha256: identity,
++            reader_timezone: "UTC".to_string(),
++        };
++        assert!(config.native_options().is_err());
++    }
++}
++
++#[test]
++fn config_json_rejects_missing_fields_unknown_fields_and_wrong_types() {
++    let valid = serde_json::json!({
++        "semantics_version": SEMANTICS_VERSION,
++        "profile_bundle_sha256": PROFILE_BUNDLE_SHA256,
++        "reader_timezone": "UTC",
++    });
++    for field in [
++        "semantics_version",
++        "profile_bundle_sha256",
++        "reader_timezone",
++    ] {
++        let mut missing = valid.clone();
++        missing.as_object_mut().unwrap().remove(field);
++        assert!(serde_json::from_value::<OrcJavaTimeZoneConfig>(missing).is_err());
++        let mut wrong_type = valid.clone();
++        wrong_type[field] = serde_json::Value::Null;
++        assert!(serde_json::from_value::<OrcJavaTimeZoneConfig>(wrong_type).is_err());
++    }
++    let mut unknown = valid;
++    unknown["session_timezone"] = serde_json::json!("UTC");
++    assert!(serde_json::from_value::<OrcJavaTimeZoneConfig>(unknown).is_err());
++}

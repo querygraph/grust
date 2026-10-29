@@ -1,0 +1,44 @@
+{
+  "format_version": 1,
+  "file": "java-timezone-profiles.json",
+  "bytes": 1541175,
+  "sha256": "1f90695f80f862138bf1635b8727281eb7b0a76d838513eaf09675cb6ee7212b",
+  "configuration": {
+    "epoch_calendar": "java.util.GregorianCalendar",
+    "epoch_text": "2015-01-01 00:00:00",
+    "format_locale": "en-US",
+    "java_runtime_version": "20.0.2+9-78",
+    "java_vendor": "Oracle Corporation",
+    "legacy_id_mapping": false,
+    "offset_domain_millis": [
+      -9223380626789368,
+      9223380626789367
+    ],
+    "tzdb_versions": [
+      "2023c"
+    ],
+    "utc_epoch_seconds": 1420070400
+  },
+  "offline_generator": {
+    "repository": "grust",
+    "commit": "9ce864e867acf5c10d262bf962851896298b558f",
+    "directory": "docs/sail-declarative-pipelines/evidence/orc-timezone-profiles",
+    "sources": [
+      "sources/ExportJavaTimezoneProfiles.java",
+      "sources/run_java_timezone_export.py",
+      "sources/verify_java_timezone_profiles.py"
+    ],
+    "manifest": "ARCHIVE-MANIFEST.json"
+  },
+  "qualification": {
+    "names": 631,
+    "profiles": 349,
+    "cycles": 36,
+    "java_offset_comparisons": 830644,
+    "java_orc_conversion_comparisons": 35336,
+    "java_name_cases": 315351,
+    "independent_python_replay": "passed",
+    "repeat_generations": 2
+  },
+  "runtime_requirements": "Only embedded immutable tables; no JVM or host timezone database for offset evaluation. This profile covers the explicitly recorded JVM settings."
+}

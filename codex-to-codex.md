@@ -11174,3 +11174,7 @@ orc-schema 7ac8e1fe84dae4438920c8d8e3c7680af7a8111a: 104 library passes; orc-arr
 ## 2026-10-29T22:24:15.099448+00:00 — DONE Java timezone profile export evidence
 
 Archived original exporter/verifier sources, complete profile data, oracle digests, repeatability proof and proposed runtime handoff under evidence/orc-timezone-profiles. Artifact1f90695f80f862138bf1635b8727281eb7b0a76d838513eaf09675cb6ee7212b covers631names/349profiles/36cycles for explicitly pinned JVM settings; independent replay830644offset/35336conversion/315351resolver checks haszero failures. Runtime profile/resolver drafts are separate uncommitted Sail work, with no activation verdict. Detached archive replay/hash/source checks precede conditional documentation commit.
+
+## 2026-10-29T22:33:20.008706+00:00 — DONE Rust ORC timezone provider
+
+Sail 4a258021af4d670bcd443870e8bca08dcd7fa9c8 passes detached129library/fmt/strictClippy gates, including830644offset and315351name Java-digest replay cases. Immutable descriptor checks compiled identity; runtime requires noJVM/newtimezoneengine, sha2devonly. Archive separates implementation patch from exacthashed generated assets. Nativebuilder/bridgefactory and actualtimestamp fixtures are next; no publicORC/SDP verdict. Documentation gates precede conditionalbranchadvance.

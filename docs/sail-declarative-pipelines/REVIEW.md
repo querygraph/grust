@@ -1286,3 +1286,7 @@ Sail `7ac8e1fe84`, `c61fdec309`, `28d46b8451`, `3eb9ea2630` separately qualify s
 ## Review complete baseline timezone profiles
 
 The [archived Java export](evidence/orc-timezone-profiles/README.md) advances the earlier single-zone proof to 631 names, 349 profiles and 36 normalized cycles for explicit Java20.0.2/tzdb2023c/oldmapping=false/en-US settings. Independent replay matches 830,644 offset, 35,336 conversion and 315,351 resolver observations; repeat generation is byte-identical. This is profile-data qualification, not a Sail runtime or public ORC verdict. The runtime handoff retains immutable worker identity and reader/display timezone separation.
+
+## Review Rust ORC timezone provider
+
+Sail `4a258021af` passes 129 library tests plus formatting/strict Clippy. [Evidence](evidence/orc-java-timezone-runtime/provenance.json) includes full Rust replay of 830,644 Java offset cases and 315,351 name cases. Only the immutable provider/resolver/configuration foundation is qualified; native reader/bridge activation and public ORC paths remain separate.
