@@ -982,3 +982,251 @@ is not evidence of streaming parity. Recheck stale-writer behavior across reset
 generations. The review's CDC parameter expansion is source analysis, not a new
 runtime test verdict; the canonical inventory and execution counts above are
 unchanged by preserving the review.
+
+
+## Astra Ultra response and design improvements
+
+Recorded: 2026-10-29T18:32:47.419473+00:00. This is the requested Astra Ultra review response to Fable's
+source review. Fable's text above is preserved unchanged. The implementation
+checked here is Sail `87a7c941d`, with Spark **4.2.1** source pinned at
+`617618396`. The [evidence manifest](evidence/fable-astra-response/provenance.json)
+records the exact pins, scripts, results and limitations.
+
+The direction is realistic: preserve Sail's planner, job execution, catalog
+abstractions and physical commit operators; add a small durable orchestration
+layer around them. Batch remains the first delivery. Streaming and CDC are
+substantial follow-on work, rather than a thin source adapter. Fable usefully
+identifies the delivery sequence and recovery questions, but four proposed
+shortcuts need correction before implementation: state-free microbatches,
+separate lease/progress CAS, generation-only reset protection, and independently
+leased CDC writers sharing a target. These are design amendments below, not
+claims that Sail already implements streaming or CDC.
+
+### 1. Bounded execution is a substrate, not stateful streaming semantics
+
+**Adopt with a narrower initial contract.** Reusing bounded Sail plans for
+stateless microbatches avoids building a second query engine. AvailableNow does
+not remove cross-batch state. On Spark 4.2.1, two AvailableNow query runs with a
+reused checkpoint and inputs `1`, then `2`, produce cumulative grouped sums
+`1`, then `3`; reading only the second range as a batch produces `2`.
+The [reference report](evidence/fable-astra-response/spark.json) retains this
+experiment. It restarts the query in one Spark process; it is not a process-crash
+or Sail state-store test.
+
+A stream-stream join has the analogous problem: a left row in one batch can
+match a right row in a later batch only if the required state survives. Ordinary
+batch support for joins, aggregates, windows or sorts does not establish which
+streaming forms and output modes are legal. Distinguish stream-static joins
+from stream-stream joins and windowed aggregation from analytic window functions.
+
+The initial runner should therefore admit only a documented stateless subset,
+with explicit unsupported errors for other plans. Add stateful operators through
+separate Spark-driven commits covering checkpointed operator identity, state
+schema, output mode, watermarks, late data and eviction. Keep unsupported upstream
+assertions visible as failures or unimplemented coverage, rather than removing
+them from the acceptance denominator.
+
+The execution envelope must already have a place for durable operator-state
+versions and their completion receipts. Pin each source range when its flow is
+ready, after required upstream commits; capturing every internal table's frontier
+before upstream work can exclude the newly produced data. Persist those choices
+for replay. Input row/byte budgets alone do not bound join expansion, skew or
+retained state; use Sail's resource, spilling and cancellation machinery.
+
+### 2. One atomic authority for ownership and progress
+
+**Revise the proposed storage protocol before coding it.** Creating an absent
+progress filename does not atomically check a lease in another object. A valid
+counter-schedule is: A checks epoch 1; B acquires epoch 2; A creates the still-absent
+next progress file. Both object operations can succeed while stale progress wins.
+The [finite models](evidence/fable-astra-response/models.json) execute this
+counterexample and an amended single-head version check. They model the proposed
+protocol; they do not exercise a production object store.
+
+Define one authoritative versioned head containing owner/epoch, generation,
+status, committed frontier, pending intent and relevant state references.
+Acquisition, renewal, reset and progress must all participate in the same CAS
+history, or an actually atomic backend transaction. An append-only journal can
+implement that history only if every transition competes for the same next slot,
+validates its parent, and rejects gaps and forks. A stale listing must cause a
+retry against authority, not permission to skip a conflicting slot.
+
+Require and test conditional-write semantics per backend. Local hard-link-based
+Create support is not proof of cloud behavior or power-loss durability; filesystem
+persistence and directory durability need their own evidence. Unsupported stores
+must fail explicitly. Lease expiry is a scheduling signal, not a guarantee that
+an old physical sink commit can no longer succeed.
+
+### 3. Separate replay identity, sink fencing and reset
+
+Use distinct identities for pipeline, flow, physical source/table incarnation,
+generation, batch and writer epoch. An application ID containing generation is
+useful for deduplication but cannot by itself fence a late old-generation write:
+a sink may legitimately accept both distinct application IDs after truncation.
+
+A reset needs a recoverable transition: fence or quiesce old attempts at the sink,
+resolve uncertain commits, coordinate target/auxiliary/schema changes, then
+activate the new generation. Process cancellation alone is insufficient. A sink
+must demonstrate conditional commit/fencing against the expected physical table
+identity and generation/epoch, or the runner must reject the unsupported recovery
+or concurrent-writer configuration. Do not promise safe automatic takeover from
+lease CAS alone.
+
+Store a stable pipeline identity at the control root. Canonical URI spelling
+alone does not handle aliases or collisions: encode qualified identities without
+ambiguous slash/dot concatenation, record physical table/source IDs, and exclude
+credentials from persisted fingerprints. Version a canonical semantic definition
+fingerprint; debug output from a resolved plan can contain unstable IDs.
+Pending replay must retain its original definition, evaluation context and source
+snapshots even when future batches are permitted to use an evolved definition.
+
+Offset arithmetic belongs to each source. Specify opaque cursors and
+`plan_range(start, frontier, budget)`, rather than generic numeric addition.
+Iceberg snapshot IDs are not ordered counters. Table branches, removals and
+rewrites need explicit policies; file sources need immutable manifests/object
+versions rather than a directory URI treated as an incarnation. These are adapter
+contracts, while durable intent and progress semantics belong in Sail.
+
+### 4. Confirm the original intent and every required effect
+
+**Strengthen the completion handshake.** A highest committed batch number can
+prove a prefix only under matching identity, preserved original intent and
+contiguous commits. Suppose sink batch 1 wrote range `[0,10)`, while a restored
+control store loses that intent. Reconstructing batch 1 as `[0,20)` and accepting
+the existing transaction would acknowledge ten unwritten records. Even exactly
+one batch ahead is unsafe without the original intent.
+
+A lookup should return a verifiable receipt containing physical sink identity,
+generation/batch, effect kind, intent digest and commit version, or an equivalent
+provable provider contract. Missing intent, expired transaction metadata, an
+unknown outcome or a mismatched identity requires reconciliation or an explicit
+failure; it is not permission to invent a replacement range.
+
+Progress advances only after **all** required durable effects are confirmed:
+data, operator state and, for CDC, both auxiliary and target updates. Preserve
+Sail's existing Delta/Iceberg physical commit operators. Orchestration supplies
+intent identity and confirms outcomes; it should not grow another data-commit
+engine alongside them.
+
+### 5. CDC needs target-wide coordination and multi-effect recovery
+
+**Keep the two-MERGE strategy, strengthen its preconditions.** Fable's reading of
+the SCD1 sequence/tombstone rules is useful. Idempotent replay can avoid a global
+two-table transaction under a properly serialized, fenced writer protocol, but
+per-flow leases do not establish that protocol for a shared target.
+
+Here is a counter-schedule under an explicitly frozen reconciled-source premise:
+A reconciles upsert sequence 10 against an empty auxiliary table; B completes
+delete sequence 20, leaving auxiliary sequence 20 and no target row; A's auxiliary
+MERGE cannot lower 20, but A's target MERGE can insert its previously reconciled
+10 into the absent target. The auxiliary and target now disagree. This is a
+counterexample to the draft's sufficient conditions, **not an observed Spark or
+Sail runtime defect**; the model records the frozen-source premise.
+
+Coordinate CDC writers by physical target identity plus its auxiliary state,
+across flows, pipelines and control roots. The protected interval includes
+reconciliation, both MERGEs and schema/reset transitions. Alternatively, prove an
+equivalent serializable revalidation protocol. If provider fencing cannot support
+that contract, reject overlapping writers explicitly while retaining sequential
+shared-target behavior. Catalog aliases must resolve to the same coordination
+identity. State assumptions about other writers that do not participate.
+
+The pinned Spark `AutoCdcScd1MultiPipelineSuite` same-target scenario executes one
+pipeline and checks it before running the next. It establishes sequential sharing,
+not arbitrary overlap safety. Add a controlled interleaving test independently.
+Record receipts separately for auxiliary and target effects: the same transaction
+identifier on two tables does not turn them into one transaction. Auxiliary-only
+success must recover the remaining target effect before checkpoint advancement.
+Pin the reconciliation input and evaluation context before either effect so
+retries cannot choose a different tied/nondeterministic winner midway through.
+
+### 6. Reuse existing Sail aggregates and Delta conflict tracking
+
+**Correct the `max_by` premise.** Sail already registers `MaxByFunction` in
+`crates/sail-plan/src/function/aggregate.rs`; its implementation lives in
+`crates/sail-function/src/aggregate/max_min_by.rs`. This was present at Fable's
+pinned Sail baseline as well as the current one. Whether DataFusion has an
+identically named native aggregate does not decide Sail's capability.
+Three unchanged SQL checks for struct values, mixed null ordering and all-null
+ordering pass on both [Spark](evidence/fable-astra-response/spark.json) and
+[Sail](evidence/fable-astra-response/sail.json). Reuse and extend that implementation
+before proposing another aggregate. These checks do not qualify composite CDC
+sequence ordering, distributed state merging or every tie/null case.
+
+Likewise, the pinned Delta dependency's `TransactionInfo::new/try_new` derives
+`read_app_ids` from `Txn` actions, and the conflict checker examines overlapping
+winning application IDs. Do not add a parallel read-set API on the assumption it
+is absent. Wire transaction annotations and lookup through the actual write and
+MERGE paths, then test duplicate submission, races, retries and reset fencing.
+Source inspection of conflict checking is not a successful concurrent-write test.
+
+### 7. Iggy remains a required integration with explicit replay guarantees
+
+Adopt the durable control cursor as the restart authority; disable pre-delivery
+or automatic source acknowledgements. Pinned Iggy source documents uncertain
+operations, replay-history loss, backup offset lag and ownership changes. Retain
+the source's received-message position/context for acknowledgements, including
+partition incarnation and consumer-group ownership. Fail closed on a missing or
+noncontiguous expected offset, changed incarnation, exhausted replay history or
+an unresolvable uncertain operation. An empty poll is not proof that a requested
+range is safely consumed.
+
+Acknowledgements are advisory for choosing the restart cursor, but can influence
+retention. Fence stale-generation acknowledgements too; otherwise an old owner
+can remove data the new owner still needs. Broker evidence must pin the server,
+client and message/consumer-offset durability settings. Request/session dedup is
+not proof of arbitrary replay-safe exactly-once sink writes. Keep Iggy output at
+its demonstrated delivery guarantee until a durable receipt protocol is proved.
+The test-source and table-source sequence helps isolate Spark behavior; it does
+not make the user's Iggy deliverable optional.
+
+### 8. Dependency boundaries and reviewable delivery
+
+Adopt a small pure control-model module without Arrow, DataFusion, Iggy or a
+catalog client dependency. Preserve Sail's session, resolver, catalog and job
+boundaries. General catalog support belongs in Sail, with LakeCat as one adapter.
+
+Do not decide either wholesale import or categorical no-reuse before checking
+contracts. Audit Grust graph and LakeCat CAS/replay/outbox primitives for small,
+independent reusable pieces. Extract and reimport a piece only when behavior and
+dependencies fit both existing users and Sail; leave table-specific records in
+LakeCat. A short handwritten model is not automatically a complete ownership and
+recovery protocol, and an extraction should not drag a service runtime into Sail.
+
+Use the following implementation sequence, with independently reviewable commits:
+
+1. Finish outstanding batch acceptance and faithful Spark fixture ports. The
+   combined catalog/CTE/`STREAM` fixture remains pending; passing individual
+   catalog assertions does not establish the whole fixture.
+2. Freeze source ranges, capability checks and the stateless/stateful boundary;
+   add pure transition rules and executable ownership/restore counterexamples.
+3. Implement the atomic authority store and provider fencing contract, with
+   takeover, reset and ambiguous-outcome fault tests before claiming recovery.
+4. Add Delta intent annotations and receipts through existing commits, then a
+   stateless AvailableNow vertical slice using a deterministic test source.
+5. Add stateful operators incrementally against exact Spark assertions; then
+   table-source range semantics and pinned broker-backed Iggy integration.
+6. Add CDC argument/schema/sequence parity using existing aggregates, then the
+   two-effect recovery journal and shared-target coordination, followed by the
+   remaining SCD1/SCD2 and reset/error cases.
+
+Announce the next design checkpoint before choosing stateful execution, provider
+fencing or CDC coordination mechanisms; these remain substantive design choices.
+Routine implementation can follow the accepted contracts in smaller commits.
+Fable's engineer-day estimate remains an estimate until the first fenced,
+crash-tested vertical slice establishes the actual effort.
+
+### Evidence and acceptance boundary
+
+The new package contains three paired aggregate checks, one Spark-only state
+experiment, and six finite protocol models. Raw scripts and logs are retained.
+It provides no new Sail streaming/CDC, Iggy broker or cloud durability verdict.
+The original review's 170 CDC parameter expansions are source inventory, not
+executed cases, and are already represented within the canonical 462 static
+registrations. Do not add them again. The 97 assertion-audited registrations and
+59 partial behavioral ports are unchanged by this response; the last broader Sail
+receipt remains 273 selected Python and 67 upstream Python executions.
+
+These amendments make the proposal implementable without weakening Spark's
+semantics or Sail's architectural boundaries. They leave the batch-first goal
+active and expose the remaining correctness obligations before runtime work.

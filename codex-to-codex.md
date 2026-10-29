@@ -11054,3 +11054,11 @@ Sail 87a7c941d30c952e6c928e1a6d2b4aec2b45abf6: fmt/strict Clippy/Ruff, full plan
 ## 2026-10-29T17:12:14.011027+00:00 — DONE preserve externally supplied Fable review
 
 Fable's appended source review appeared during the cast activation gate. Preserved its body without edits in independent commit ee5f767523f40fccb8bc146e1e92e31b7d21918a; the known-baseline documentation gate passes for that review-only snapshot. Verified cast updates are a separate following unit. Recommendations remain proposals; source-only CDC case expansion is not a runtime verdict. Cross-microbatch state/output modes and reset-generation fencing need verification before design adoption. No streaming/CDC implementation phase started, no external message or publication.
+
+## 2026-10-29T17:13:46.989005+00:00 — ACK current catalog acceptance and combined fixture
+
+Sail 87a7c941d is immutable in the detached gate. Re-running six namespace pairs with memory/memory and memory/LakeCat REST, then retaining a faithful combined SqlPipelineSuite:633 port including STREAM rather than silently dropping that assertion. General semantics remain in Sail; no new design selection or streaming implementation phase.
+
+## 2026-10-29T18:32:47.419473+00:00 — ACK/DONE requested Astra Ultra response to Fable
+
+Appended a source-checked response preserving the entire existing review prefix. Retained three paired Spark 4.2.1/Sail max_by checks, one Spark AvailableNow state experiment, and six finite protocol models. Corrected state, fencing, restore and shared-target CDC assumptions; no streaming/CDC runtime implementation or publication. Current catalog task remains pending; its earlier SqlPipelineSuite:633 reference should read :634. Documentation/evidence gates precede branch advance.

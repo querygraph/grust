@@ -1,0 +1,36 @@
+{
+  "recorded_at": "2026-10-29T18:27:38.538127+00:00",
+  "scope": "Executed finite protocol models; no production control store or CDC implementation exists here",
+  "cases": [
+    {
+      "name": "separate_lease_and_progress_keys",
+      "kind": "draft counterexample",
+      "observation": "A stale owner publishes progress after B acquired a newer lease; the progress filename was still absent."
+    },
+    {
+      "name": "unified_head_rejects_stale_parent",
+      "kind": "amended model invariant",
+      "observation": "Lease takeover changes the same head version; A cannot publish against its old expected head."
+    },
+    {
+      "name": "one_batch_ahead_without_original_intent",
+      "kind": "draft counterexample",
+      "observation": "Matching batch numbers hide a different input range after an intent-losing restore; adoption would acknowledge unwritten input."
+    },
+    {
+      "name": "generation_scoped_dedup_is_not_reset_fencing",
+      "kind": "capability counterexample",
+      "observation": "A sink that deduplicates only by (generation,batch) accepts both generations; separate reset fencing must be proved for each real sink."
+    },
+    {
+      "name": "independent_flow_leases_shared_cdc_target",
+      "kind": "draft counterexample under explicit frozen-source premise",
+      "observation": "A reconciles upsert 10; B completes delete 20; A inserts 10 after B. Per-flow leases and per-table atomic merges do not establish target-wide CDC isolation. Not an observed Spark/Sail runtime defect."
+    },
+    {
+      "name": "cdc_requires_all_effect_receipts",
+      "kind": "amended model invariant",
+      "observation": "An auxiliary-only receipt cannot advance the whole CDC batch; confirmation must cover every required durable effect."
+    }
+  ]
+}

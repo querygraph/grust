@@ -1,0 +1,57 @@
+{
+  "recorded_at": "2026-10-29T18:24:13.733934+00:00",
+  "engine": "spark",
+  "spark_version": "4.2.1",
+  "scope": "Targeted existing max_by execution; Spark-only AvailableNow aggregate counterexample, not Sail streaming or CDC qualification",
+  "cases": [
+    {
+      "name": "max_by_struct",
+      "outcome": "passed",
+      "sql": "SELECT max_by(named_struct('id', id, 'seq', seq), seq) AS winner FROM VALUES (1, 10), (2, 20) AS t(id, seq)",
+      "winner": {
+        "id": 2,
+        "seq": 20
+      }
+    },
+    {
+      "name": "max_by_null_order",
+      "outcome": "passed",
+      "sql": "SELECT max_by(named_struct('id', id, 'seq', seq), seq) AS winner FROM VALUES (1, CAST(NULL AS INT)), (2, 20) AS t(id, seq)",
+      "winner": {
+        "id": 2,
+        "seq": 20
+      }
+    },
+    {
+      "name": "max_by_all_null_order",
+      "outcome": "passed",
+      "sql": "SELECT max_by(named_struct('id', id, 'seq', seq), seq) AS winner FROM VALUES (1, CAST(NULL AS INT)), (2, CAST(NULL AS INT)) AS t(id, seq)",
+      "winner": null
+    },
+    {
+      "name": "available_now_preserves_state_across_runs",
+      "outcome": "passed",
+      "streaming_results": [
+        [
+          {
+            "k": "x",
+            "sum(v)": 1
+          }
+        ],
+        [
+          {
+            "k": "x",
+            "sum(v)": 3
+          }
+        ]
+      ],
+      "isolated_second_range_result": {
+        "k": "x",
+        "sum(v)": 2
+      },
+      "checkpoint_reused": true,
+      "output_mode": "complete",
+      "root": "/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/sdp-fable-response-spark-1dndlx4s"
+    }
+  ]
+}

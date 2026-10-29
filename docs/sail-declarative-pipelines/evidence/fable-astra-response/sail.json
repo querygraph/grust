@@ -1,0 +1,32 @@
+{
+  "recorded_at": "2026-10-29T18:24:33.004991+00:00",
+  "engine": "sail",
+  "spark_version": "4.2.1",
+  "scope": "Targeted existing max_by execution; Spark-only AvailableNow aggregate counterexample, not Sail streaming or CDC qualification",
+  "cases": [
+    {
+      "name": "max_by_struct",
+      "outcome": "passed",
+      "sql": "SELECT max_by(named_struct('id', id, 'seq', seq), seq) AS winner FROM VALUES (1, 10), (2, 20) AS t(id, seq)",
+      "winner": {
+        "id": 2,
+        "seq": 20
+      }
+    },
+    {
+      "name": "max_by_null_order",
+      "outcome": "passed",
+      "sql": "SELECT max_by(named_struct('id', id, 'seq', seq), seq) AS winner FROM VALUES (1, CAST(NULL AS INT)), (2, 20) AS t(id, seq)",
+      "winner": {
+        "id": 2,
+        "seq": 20
+      }
+    },
+    {
+      "name": "max_by_all_null_order",
+      "outcome": "passed",
+      "sql": "SELECT max_by(named_struct('id', id, 'seq', seq), seq) AS winner FROM VALUES (1, CAST(NULL AS INT)), (2, CAST(NULL AS INT)) AS t(id, seq)",
+      "winner": null
+    }
+  ]
+}
