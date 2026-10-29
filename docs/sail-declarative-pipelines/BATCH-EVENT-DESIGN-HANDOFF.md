@@ -70,3 +70,14 @@ input: Sail rejects existing REST view replacement, and LakeCat lacks standard
 POST view-create routes. Preserve the ownership clarification: shared catalog and
 Iceberg semantics belong in Sail, with LakeCat providing its protocol adapter,
 persistence/CAS and governance. No new view architecture is selected here.
+
+## Failure-handler assertion audit
+
+PipelinesHandlerSuite at the pinned Spark revision has two registration sites.
+The cause-present fixture requires exception object identity on rethrow. The
+cause-absent fixture uses both UnexpectedRunFailure and FailureStoppingFlow(t1,t2)
+messages and requires SparkException condition PIPELINE_RUN_FAILED with the
+verbatim message parameter. Both remain unmapped in Sail's assertion inventory.
+The eventual outcome/error design must retain these distinctions; no architecture
+is chosen here. The source hash and audit limits are recorded in the
+[handler audit](evidence/handler-crosswalk/validation.json).

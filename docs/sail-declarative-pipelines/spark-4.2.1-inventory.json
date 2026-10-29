@@ -209,7 +209,13 @@
       "method": "test",
       "name_expression": "\"throwRunFailure rethrows the underlying cause when present\"",
       "status": "unmapped",
-      "sail_tests": []
+      "sail_tests": [],
+      "coverage_review": {
+        "phase": "batch-failures-events",
+        "covered_assertions": "None mapped.",
+        "remaining_assertions": "Construct a failed-run event with a RuntimeException cause; throwRunFailure must rethrow that same cause object unchanged.",
+        "scala_suite_executed": false
+      }
     },
     {
       "id": "sql/connect/server/src/test/scala/org/apache/spark/sql/connect/pipelines/PipelinesHandlerSuite.scala:57",
@@ -218,7 +224,17 @@
       "method": "test",
       "name_expression": "\"throwRunFailure surfaces the message when the failure has no cause\"",
       "status": "unmapped",
-      "sail_tests": []
+      "sail_tests": [],
+      "coverage_review": {
+        "phase": "batch-failures-events",
+        "covered_assertions": "None mapped.",
+        "remaining_assertions": "For UnexpectedRunFailure and FailureStoppingFlow(t1,t2) termination reasons with no cause, throwRunFailure must throw SparkException condition PIPELINE_RUN_FAILED with the verbatim event message parameter.",
+        "scala_suite_executed": false,
+        "parameter_instances": [
+          "UnexpectedRunFailure().message",
+          "FailureStoppingFlow(db.t1, db.t2).message"
+        ]
+      }
     },
     {
       "id": "sql/connect/server/src/test/scala/org/apache/spark/sql/connect/pipelines/PythonPipelineSuite.scala:140",
@@ -740,12 +756,15 @@
       "line": 39,
       "method": "test",
       "name_expression": "\"create dataflow graph falls back to current database in session\"",
-      "status": "unmapped",
-      "sail_tests": [],
+      "status": "partial-behavioral-port",
+      "sail_tests": [
+        "python/pysail/tests/spark/pipelines/test_protocol_identifiers.py::test_graph_captures_database_default[False]"
+      ],
       "coverage_review": {
-        "phase": "batch-registration",
-        "covered_assertions": "None mapped in this audit.",
-        "remaining_assertions": "Create graph after USE DATABASE; inspect captured defaultDatabase equals test_db.",
+        "phase": "batch-protocol",
+        "covered_assertions": "Graph created without defaults captures the active database; subsequent output response still uses it after the session changes databases.",
+        "remaining_assertions": "Internal GraphDefinition.defaultDatabase is inferred from resolved output, not directly inspected.",
+        "sail_evidence": "evidence/9f96b534dde38228ab7e1eba7d4a383c93a6c8cb/pytest.xml",
         "scala_suite_executed": false
       }
     },
@@ -755,12 +774,15 @@
       "line": 54,
       "method": "test",
       "name_expression": "\"create dataflow graph set session catalog and database to pipeline \" +\n      \"default catalog and database\"",
-      "status": "unmapped",
-      "sail_tests": [],
+      "status": "partial-behavioral-port",
+      "sail_tests": [
+        "python/pysail/tests/spark/pipelines/test_protocol_identifiers.py::test_graph_captures_database_default[True]"
+      ],
       "coverage_review": {
-        "phase": "batch-registration",
-        "covered_assertions": "None mapped in this audit.",
-        "remaining_assertions": "Explicit graph catalog/database captured and applied to current session catalog/database.",
+        "phase": "batch-protocol",
+        "covered_assertions": "Explicit graph catalog/database update current session catalog/database and resolve an output with the captured values after session database changes.",
+        "remaining_assertions": "Uses the configured catalog, not a second catalog. Internal GraphDefinition fields are inferred through responses, not inspected.",
+        "sail_evidence": "evidence/9f96b534dde38228ab7e1eba7d4a383c93a6c8cb/pytest.xml",
         "scala_suite_executed": false
       }
     },
@@ -1043,12 +1065,15 @@
       "line": 854,
       "method": "test",
       "name_expression": "\"SPARK-54452: spark.sql() inside a pipeline flow function should return a sql_command_result\"",
-      "status": "unmapped",
-      "sail_tests": [],
+      "status": "partial-behavioral-port",
+      "sail_tests": [
+        "python/pysail/tests/spark/pipelines/test_analysis_context.py::test_analysis_context_sql_returns_original_relation[inside-flow]"
+      ],
       "coverage_review": {
         "phase": "batch-protocol",
-        "covered_assertions": "None mapped in this audit.",
-        "remaining_assertions": "PipelineAnalysisContext with flowName on ExecutePlan SQL command returns sql_command_result containing the exact input named-table Relation, without resolving absent table.",
+        "covered_assertions": "PipelineAnalysisContext with graph ID and flow1 packed into user-context extension; first ExecutePlan response is sql_command_result with the exact input unresolved named-table Relation.",
+        "remaining_assertions": "Original Scala suite unexecuted. Does not qualify server enforcement of other analysis-context restrictions.",
+        "sail_evidence": "evidence/9f96b534dde38228ab7e1eba7d4a383c93a6c8cb/pytest.xml",
         "scala_suite_executed": false
       }
     },
@@ -1058,12 +1083,15 @@
       "line": 903,
       "method": "test",
       "name_expression": "\"SPARK-54452: spark.sql() outside a pipeline flow function should return a \" +\n      \"sql_command_result\"",
-      "status": "unmapped",
-      "sail_tests": [],
+      "status": "partial-behavioral-port",
+      "sail_tests": [
+        "python/pysail/tests/spark/pipelines/test_analysis_context.py::test_analysis_context_sql_returns_original_relation[outside-flow]"
+      ],
       "coverage_review": {
         "phase": "batch-protocol",
-        "covered_assertions": "None mapped in this audit.",
-        "remaining_assertions": "PipelineAnalysisContext without flowName on ExecutePlan SQL command returns sql_command_result containing the exact input range SQL Relation.",
+        "covered_assertions": "PipelineAnalysisContext with graph ID and no flow name packed into user-context extension; first ExecutePlan response is sql_command_result with the exact input range SQL Relation.",
+        "remaining_assertions": "Original Scala suite unexecuted. Does not qualify server enforcement of other analysis-context restrictions.",
+        "sail_evidence": "evidence/9f96b534dde38228ab7e1eba7d4a383c93a6c8cb/pytest.xml",
         "scala_suite_executed": false
       }
     },

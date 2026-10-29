@@ -8,7 +8,7 @@ do not qualify this whole inventory.
 The first assertion-level audit covers all 11 `ViewSuite.scala` registrations at
 Spark `617618396087429b5627a86ce933bb0f5d6645cb`. Seven have partial behavioral
 ports in Sail; four remain unmapped. None is marked fully qualified. A further 27 materialization registrations have now been reviewed; the remaining
-405 call sites still need an assertion-level audit after the additional server-suite review below. These are inventory counts,
+403 call sites still need an assertion-level audit after the additional server-suite review below. These are inventory counts,
 not a completion percentage.
 
 Each audited record in [the inventory](spark-4.2.1-inventory.json) now identifies
@@ -61,17 +61,28 @@ checkpoint remains ready for Astra.
 
 ## Connect server audit
 
-All 19 SparkDeclarativePipelinesServerSuite registrations are reviewed. Ten
-have partial behavioral ports; nine remain unmapped. Across the three audited
-suites this is 57 reviewed registrations, with 405 still awaiting review. There
+All 19 SparkDeclarativePipelinesServerSuite registrations are reviewed. Fourteen
+have partial behavioral ports; five remain unmapped. Including the two failure-handler
+registrations reviewed below, there are 59 reviewed registrations across four
+suites, with 403 still awaiting review. There
 is no full Scala-suite verdict. The [validation record](evidence/server-crosswalk/validation.json)
 binds the pinned source hash and passing Sail test nodes to the updated inventory.
 
 The once-option grid covers both boolean values. Two output-identifier grids
 have three instances each; two flow-identifier grids have two each. All ten identifier-grid instances now have exact response/identifier assertion
 ports, including quoted table/flow names and the quoted custom database. Session isolation and multiple-graph execution now have protocol-level ports;
-internal registry contents/counts and session-close cleanup remain gaps. Mixed
-SQL/protocol dependencies and analysis-context response shapes also remain open. Two end-to-end registrations
+internal registry contents/counts and session-close cleanup remain gaps. Mixed SQL/protocol graph dependencies also remain open. Database-default capture
+and the two exact analysis-context SQL response shapes now have explicit ports;
+this does not qualify enforcement of pipeline side-effect restrictions. Two end-to-end registrations
 require streaming and remain in that later phase. The missing-graph test is
 named as a flow test in Spark but actually sends DefineOutput; its partial port
 is mapped to the command it exercises.
+
+## Failure-handler audit
+
+Both PipelinesHandlerSuite registrations are reviewed and remain unmapped. One
+requires rethrowing the exact existing cause; the other expands over two real
+termination messages and requires PIPELINE_RUN_FAILED with the message parameter
+when no cause exists. The [audit record](evidence/handler-crosswalk/validation.json)
+binds the pinned source hash. These assertions join the pending Astra failure/event
+design review; no error architecture is selected by this audit.

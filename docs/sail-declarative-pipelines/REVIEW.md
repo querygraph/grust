@@ -601,3 +601,27 @@ cleanup after close, and session-manager absence remain unqualified. A shared
 session ID across users is also outside these checks. The total reviewed call
 sites remain 57, with 405 awaiting assertion audit. Batch acceptance is incomplete;
 the Astra event/REST-view architecture checkpoint remains ready.
+
+## Review captured graph defaults and deferred SQL response shapes
+
+Commit `9f96b534dd` adds four assertion ports. A graph with inferred or explicit
+database defaults keeps them after a session database switch; the explicit case
+also checks current catalog/database. Two raw ExecutePlan cases pack the original
+PipelineAnalysisContext extension with/without a flow name and compare the first
+sql_command_result Relation byte-for-byte by protobuf equality with the input.
+The named-table query remains unresolved, as the Spark server fixture requires.
+
+The [receipt](evidence/9f96b534dde38228ab7e1eba7d4a383c93a6c8cb/gate.json)
+records 164 selected pytest cases, 67 upstream Python executions, Ruff and four
+matching Spark 4.2.1 reference checks. All four also passed on the prior Sail
+engine; runtime remains verified engine f064fb2709 with matching CLI hash. No
+Rust/native-extension rerun or new runtime fix is claimed. The graph checks
+observe public responses rather than internal fields. SQL response shapes do
+not qualify server-side side-effect restrictions under analysis context.
+
+The server crosswalk now has 14 partial ports and five unmapped registrations.
+The two failure-handler registrations are newly audited and both unmapped,
+bringing the reviewed inventory to 59 and the unaudited remainder to 403.
+The cause-present identity requirement and cause-absent PIPELINE_RUN_FAILED
+message requirement are added to the Astra handoff without choosing a design.
+Full batch acceptance, persisted REST views, streaming and CDC remain incomplete.

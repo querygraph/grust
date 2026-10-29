@@ -1,0 +1,49 @@
+{
+  "sail_commit": "9f96b534dde38228ab7e1eba7d4a383c93a6c8cb",
+  "engine_commit": "f064fb2709e14d3064c93a9c03b25dbcd8d40ec5",
+  "spark_commit": "617618396087429b5627a86ce933bb0f5d6645cb",
+  "recorded_at": "2026-10-29T11:31:10.905102+00:00",
+  "platform": "macOS arm64",
+  "gate_checkout": "detached and immutable test source; existing verified engine binary unchanged",
+  "cli_sha256": "14b430404601491193bf652c565c96e7de6b3a5b74710bc5ac10527709eb6cb2",
+  "checks": [
+    {
+      "command": "ruff check and format --check on changed Python files",
+      "outcome": "pass"
+    },
+    {
+      "command": "pytest replay of selected nodes listed in pytest.xml using remote engine f064fb2709e14d3064c93a9c03b25dbcd8d40ec5",
+      "outcome": "pass",
+      "passed": 164,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "command": "python scripts/spark-pipelines-tests/run.py --spark-source <pinned Spark checkout> --remote sc://localhost:50082 --report spark-python.json",
+      "outcome": "pass",
+      "tests_run": 67,
+      "server_spark_version": "4.2.1",
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "command": "python spark-reference.py",
+      "outcome": "pass",
+      "spark_version": "4.2.1",
+      "cases": 4,
+      "test_source_commit": "9f96b534dde38228ab7e1eba7d4a383c93a6c8cb"
+    },
+    {
+      "command": "Compare CLI SHA256 with engine receipt and verify test-only source diff",
+      "outcome": "pass"
+    }
+  ],
+  "limits": [
+    "Test-only commit; no new Rust build, Clippy or native-extension execution claimed.",
+    "Graph defaults observed through public responses and session catalog methods, not internal graph inspection.",
+    "Analysis-context tests cover deferred query response shape only; server enforcement of pipeline side-effect restrictions is unqualified.",
+    "No complete Scala-suite, distributed execution, streaming or CDC verdict.",
+    "Full batch acceptance and pending failure/event and REST-view architecture review remain outstanding."
+  ]
+}
