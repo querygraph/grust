@@ -576,3 +576,28 @@ All ten public identifier-grid instances now have explicit ports in the server
 crosswalk: seven of its 19 registrations have partial behavioral ports and 12
 remain unmapped. Original Scala-suite execution and the broader SDP goal remain
 outstanding. The Astra failure/event and REST-view design checkpoint is unchanged.
+
+## Review session ownership and coexisting graphs
+
+Commit `2075468608` adds protocol-level regression checks without changing runtime
+code. Raw ExecutePlan requests use fresh session IDs and both same-user and
+different-user pairs. Each graph accepts its owner's output, rejects the other
+session's graph ID and survives a foreign-session drop. A separate batch test
+registers two SQL materialized outputs in one session, verifies that starting
+one does not publish the other, then drops the first graph and executes the
+second while preserving the first table's rows.
+
+The [receipt](evidence/2075468608cccc0d8e3581b2f235154e557a56b8/gate.json)
+records 160 selected pytest cases, 67 upstream Python executions, Python lint
+and three matching Spark 4.2.1 reference checks. The same three checks already
+pass on parent engine f064fb2709; no production defect is claimed. The CLI hash
+matches that engine's verified receipt. This test-only unit claims no additional
+Rust compilation or native-extension gate.
+
+The server crosswalk now has ten partial ports and nine unmapped registrations.
+Nonempty graph IDs, session ownership and multiple-graph results are observable
+protocol assertions. Spark's internal registry sizes, retained-holder graph
+cleanup after close, and session-manager absence remain unqualified. A shared
+session ID across users is also outside these checks. The total reviewed call
+sites remain 57, with 405 awaiting assertion audit. Batch acceptance is incomplete;
+the Astra event/REST-view architecture checkpoint remains ready.

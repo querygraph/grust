@@ -61,17 +61,17 @@ checkpoint remains ready for Astra.
 
 ## Connect server audit
 
-All 19 SparkDeclarativePipelinesServerSuite registrations are reviewed. Seven
-have partial behavioral ports; 12 remain unmapped. Across the three audited
+All 19 SparkDeclarativePipelinesServerSuite registrations are reviewed. Ten
+have partial behavioral ports; nine remain unmapped. Across the three audited
 suites this is 57 reviewed registrations, with 405 still awaiting review. There
 is no full Scala-suite verdict. The [validation record](evidence/server-crosswalk/validation.json)
 binds the pinned source hash and passing Sail test nodes to the updated inventory.
 
 The once-option grid covers both boolean values. Two output-identifier grids
 have three instances each; two flow-identifier grids have two each. All ten identifier-grid instances now have exact response/identifier assertion
-ports, including quoted table/flow names and the quoted custom database. Session isolation, session-close
-cleanup, multiple-graph contents, mixed SQL/protocol dependencies and analysis
-context response shapes remain explicit gaps. Two end-to-end registrations
+ports, including quoted table/flow names and the quoted custom database. Session isolation and multiple-graph execution now have protocol-level ports;
+internal registry contents/counts and session-close cleanup remain gaps. Mixed
+SQL/protocol dependencies and analysis-context response shapes also remain open. Two end-to-end registrations
 require streaming and remain in that later phase. The missing-graph test is
 named as a flow test in Spark but actually sends DefineOutput; its partial port
 is mapped to the command it exercises.
