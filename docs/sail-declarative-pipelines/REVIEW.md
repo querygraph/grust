@@ -5,9 +5,9 @@ existing design. Work is on `work/spark-declarative-pipelines`, based on Sail
 `0ba425c0331aee4dd4e9a280c6a793926fd0876e`. These are local commits; no upstream
 pull requests have been opened or branches pushed.
 
-Current batch source `eb417941e8` publishes table and persisted-view metadata
+Current batch source `24533f1f0d` publishes table and persisted-view metadata
 before batch writes and refreshes existing tables through catalog operations.
-Its detached gate passed 122 selected Sail cases and 67 unchanged upstream Python
+Its detached gate passed 124 selected Sail cases and 67 unchanged upstream Python
 executions. These counts do not establish full SDP parity. Diagnostics, remaining catalog
 properties, publication failure events, and the remaining acceptance crosswalk
 are still open; streaming and CDC follow batch acceptance.
@@ -435,3 +435,39 @@ from partition validation for these fixtures. It does not establish general
 coverage of generated/default/identity or Delta-special write paths. LakeCat
 integration remains pending. The next catalog check should exercise the existing
 standard catalog protocol path as well as assessing the optional embedded adapter.
+
+## Review shared Iceberg comments and LakeCat REST integration
+
+Commit `24533f1f0d` exposes Iceberg field documentation through the existing common
+Arrow comment key while retaining the Iceberg doc key. This fixes the shared
+Iceberg read path for all catalogs and direct location reads; it adds no LakeCat
+dependency or special case. The conversion round-trip test now asserts both
+comment presence and absence, and two DataFrame API cases cover ordinary and
+quoted comments using the existing PyIceberg SQL-catalog fixture.
+
+The [receipt](evidence/24533f1f0d32621b54d3f0f78f353be673dc493c/gate.json) records
+124 selected Sail pytest cases, 67 upstream Python executions, one conversion
+unit test, formatting, strict Clippy, CLI build and Python lint, all passing.
+The new API cases both failed at the preceding source. Four additional live
+pipeline checks pass through LakeCat's standard Iceberg REST path: initial MV
+publication, refresh replacing rows, declared column-comment refresh, and column
+replacement. The initial integration passed the first two but failed its comment
+assertion; raw LakeCat metadata already contained the correct doc, locating the
+bug in Sail's read conversion.
+
+LakeCat was built unchanged at 27e18f390c450c187a34b1c3bb2037c26d107699 with its
+existing sail-local metadata engine pinned to Sail 9f6f8065. Client Sail and server
+LakeCat communicate over the standard REST boundary, so their different Rust
+Sail/Arrow dependency versions need no shared ABI. This does not qualify the
+optional embedded provider adapter. The isolated profile uses memory catalog
+state, allow-all test governance and local files; its build receipt is under
+[evidence](evidence/lakecat-27e18f390c450c187a34b1c3bb2037c26d107699/build.json).
+No LakeCat production code changed for these table behaviors.
+
+Persisted-view support remains open on both sides. Source inspection shows Sail's
+general Iceberg REST provider rejecting replacement of an existing view. LakeCat
+standard POST view-create probes return 404 on the unprefixed route and 405 on the
+warehouse-prefixed route. These are optional catalog capabilities needed for
+persisted pipeline views, not evidence of completed REST view support. Reuse the
+existing view storage, metadata and governance machinery during the focused
+Astra review rather than introduce a pipeline-only catalog interface.

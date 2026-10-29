@@ -1,0 +1,98 @@
+I1029 03:35:37.499315 83935262 ev_poll_posix.cc:588] FD from fork parent still in poll list: fd(7, generation: 1)
+I1029 03:35:37.521497 83935299 ev_poll_posix.cc:588] FD from fork parent still in poll list: fd(7, generation: 1)
+2026-10-29 10:35:37: Starting pipeline analysis
+2026-10-29 10:35:37: Pipeline run completed
+2026-10-29 10:35:37: Starting pipeline analysis
+2026-10-29 10:35:37: Pipeline run completed
+2026-10-29 10:35:37: Starting pipeline analysis
+2026-10-29 10:35:37: Pipeline run completed
+2026-10-29 10:35:37: Starting pipeline analysis
+2026-10-29 10:35:38: Pipeline run completed
+{
+  "sail_commit": "24533f1f0d32621b54d3f0f78f353be673dc493c",
+  "lakecat_commit": "27e18f390c450c187a34b1c3bb2037c26d107699",
+  "spark_version": "4.2.1",
+  "cases": [
+    {
+      "name": "initial",
+      "sql": "CREATE MATERIALIZED VIEW output USING iceberg AS SELECT id AS value FROM range(3);",
+      "outcome": "passed",
+      "rows": [
+        0,
+        1,
+        2
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "long",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "name": "refresh",
+      "sql": "CREATE MATERIALIZED VIEW output USING iceberg AS SELECT id AS value FROM range(2,4);",
+      "outcome": "passed",
+      "rows": [
+        2,
+        3
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "long",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "name": "column_comment",
+      "sql": "CREATE MATERIALIZED VIEW output(value BIGINT COMMENT 'refreshed') USING iceberg AS SELECT id AS value FROM range(4,5);",
+      "outcome": "passed",
+      "rows": [
+        4
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "long",
+            "nullable": true,
+            "metadata": {
+              "comment": "refreshed"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "replace_columns",
+      "sql": "CREATE MATERIALIZED VIEW output USING iceberg AS SELECT 'new' AS other;",
+      "outcome": "passed",
+      "rows": [
+        "new"
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "other",
+            "type": "string",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    }
+  ]
+}

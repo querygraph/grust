@@ -1,0 +1,77 @@
+{
+  "sail_commit": "24533f1f0d32621b54d3f0f78f353be673dc493c",
+  "spark_commit": "617618396087429b5627a86ce933bb0f5d6645cb",
+  "recorded_at": "2026-10-29T10:42:33.820664+00:00",
+  "platform": "macOS arm64",
+  "gate_checkout": "detached; private target directory; immutable HEAD for the gate",
+  "cli_sha256": "263cba130330b76a16981a628f40bb08e721b7553adf8db8f931ccf5609d04b2",
+  "checks": [
+    {
+      "command": "cargo +nightly fmt -p sail-iceberg -- --check",
+      "outcome": "pass"
+    },
+    {
+      "command": "cargo +1.98.1 clippy -p sail-iceberg --all-targets --all-features --locked -- -D warnings",
+      "outcome": "pass"
+    },
+    {
+      "command": "cargo +1.98.1 build -p sail-cli --locked",
+      "outcome": "pass",
+      "note": "CARGO_PROFILE_DEV_DEBUG=0; CARGO_PROFILE_DEV_INCREMENTAL=false; linker warned about __eh_frame size."
+    },
+    {
+      "command": "PYTHONPATH=<gate>/python SPARK_REMOTE=sc://localhost:50082 python -m pytest -q <cases listed in pytest.xml> --junitxml=pytest.xml",
+      "outcome": "pass",
+      "passed": 124,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "command": "python scripts/spark-pipelines-tests/run.py --spark-source <pinned Spark checkout> --remote sc://localhost:50082 --report spark-python.json",
+      "outcome": "pass",
+      "server_spark_version": "4.2.1",
+      "tests_run": 67,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "command": "ruff check and format --check on changed Python files",
+      "outcome": "pass"
+    },
+    {
+      "command": "cargo +1.98.1 test -p sail-iceberg --locked test_roundtrip_schema_conversion",
+      "outcome": "pass",
+      "passed": 1,
+      "filtered_out": 262
+    },
+    {
+      "command": "python lakecat-integration.py",
+      "outcome": "pass",
+      "cases": 4,
+      "lakecat_commit": "27e18f390c450c187a34b1c3bb2037c26d107699",
+      "client": "PySpark 4.2.1",
+      "transport": "Sail Iceberg REST catalog"
+    }
+  ],
+  "limits": [
+    "No distributed cluster execution claim.",
+    "Upstream Python includes inherited and client-only tests.",
+    "Full batch acceptance and the remaining Spark SDP crosswalk are outstanding.",
+    "LakeCat profile uses MemoryCatalogStore, AllowAllGovernanceEngine and local file storage; no durability, credential-vending, restart, authentication or distributed-cluster qualification.",
+    "The optional embedded LakeCatCatalogProvider is not exercised; REST interoperability does not require aligning its older Sail Rust dependency with this client.",
+    "LakeCat standard view-create routes remain unavailable; Sail Iceberg REST view replacement also remains unsupported. These table cases do not qualify persisted views.",
+    "The 124 pytest cases comprise 98 pipeline cases, 14 earlier shared regressions, 10 partition/write DDL cases and two new direct Iceberg schema API cases."
+  ],
+  "retained_failures": {
+    "api_baseline_source": "eb417941e86dfe18cbdc141d7a55a675ea0e26e6",
+    "api_failed": 2,
+    "file": "before.log",
+    "integration_before": [
+      "initial passed",
+      "refresh passed",
+      "column_comment failed: KeyError comment"
+    ],
+    "cause": "LakeCat stored the correct Iceberg doc; Sail did not expose that doc as common Arrow comment metadata."
+  }
+}

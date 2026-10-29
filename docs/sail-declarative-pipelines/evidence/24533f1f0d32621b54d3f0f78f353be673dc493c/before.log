@@ -1,0 +1,50 @@
+FF                                                                       [100%]
+=================================== FAILURES ===================================
+_ test_iceberg_field_documentation_is_exposed_in_dataframe_schema[identifier] __
+
+spark = <pyspark.sql.connect.session.SparkSession object at 0x1135ffad0>
+sql_catalog = test_catalog (<class 'pyiceberg.catalog.sql.SqlCatalog'>)
+comment = 'identifier'
+
+    @pytest.mark.parametrize("comment", ["identifier", 'a "quoted" comment'])
+    def test_iceberg_field_documentation_is_exposed_in_dataframe_schema(spark, sql_catalog, comment):
+        table = sql_catalog.create_table(
+            "default.documented",
+            schema=Schema(NestedField(field_id=1, name="id", field_type=LongType(), required=False, doc=comment)),
+        )
+        try:
+            schema = spark.read.format("iceberg").load(table.location()).schema
+>           assert schema["id"].metadata == {"comment": comment}
+E           AssertionError: assert {} == {'comment': 'identifier'}
+E             
+E             Right contains 1 more item:
+E             {'comment': 'identifier'}
+E             Use -v to get more diff
+
+python/pysail/tests/spark/iceberg/test_schema_comments.py:14: AssertionError
+_ test_iceberg_field_documentation_is_exposed_in_dataframe_schema[a "quoted" comment] _
+
+spark = <pyspark.sql.connect.session.SparkSession object at 0x1135ffad0>
+sql_catalog = test_catalog (<class 'pyiceberg.catalog.sql.SqlCatalog'>)
+comment = 'a "quoted" comment'
+
+    @pytest.mark.parametrize("comment", ["identifier", 'a "quoted" comment'])
+    def test_iceberg_field_documentation_is_exposed_in_dataframe_schema(spark, sql_catalog, comment):
+        table = sql_catalog.create_table(
+            "default.documented",
+            schema=Schema(NestedField(field_id=1, name="id", field_type=LongType(), required=False, doc=comment)),
+        )
+        try:
+            schema = spark.read.format("iceberg").load(table.location()).schema
+>           assert schema["id"].metadata == {"comment": comment}
+E           assert {} == {'comment': '...ted" comment'}
+E             
+E             Right contains 1 more item:
+E             {'comment': 'a "quoted" comment'}
+E             Use -v to get more diff
+
+python/pysail/tests/spark/iceberg/test_schema_comments.py:14: AssertionError
+=========================== short test summary info ============================
+FAILED python/pysail/tests/spark/iceberg/test_schema_comments.py::test_iceberg_field_documentation_is_exposed_in_dataframe_schema[identifier]
+FAILED python/pysail/tests/spark/iceberg/test_schema_comments.py::test_iceberg_field_documentation_is_exposed_in_dataframe_schema[a "quoted" comment]
+2 failed in 3.18s

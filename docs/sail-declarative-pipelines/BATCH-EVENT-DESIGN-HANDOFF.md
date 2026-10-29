@@ -59,3 +59,14 @@ Use the view crosswalk first, then GraphExecution, TriggeredGraphExecution,
 ConstructPipelineEvent, FlowProgressEventLogger, PipelineEventSender and stream
 suites to extend the acceptance scope. The full batch goal remains open; this
 checkpoint is not a request to begin streaming implementation.
+
+## Catalog follow-up evidence
+
+Sail 24533f1f0d passes four live table materialization/refresh cases against
+unchanged LakeCat 27e18f39 through the existing Iceberg REST provider. A shared
+Iceberg field-doc conversion fix was required in Sail; LakeCat stored the correct
+doc before the fix. Standard persisted-view support remains a separate review
+input: Sail rejects existing REST view replacement, and LakeCat lacks standard
+POST view-create routes. Preserve the ownership clarification: shared catalog and
+Iceberg semantics belong in Sail, with LakeCat providing its protocol adapter,
+persistence/CAS and governance. No new view architecture is selected here.

@@ -1,0 +1,82 @@
+I1029 03:20:38.021182 83878674 ev_poll_posix.cc:588] FD from fork parent still in poll list: fd(7, generation: 1)
+I1029 03:20:38.043421 83878709 ev_poll_posix.cc:588] FD from fork parent still in poll list: fd(7, generation: 1)
+2026-10-29 10:20:38: Starting pipeline analysis
+2026-10-29 10:20:38: Pipeline run completed
+2026-10-29 10:20:38: Starting pipeline analysis
+2026-10-29 10:20:38: Pipeline run completed
+2026-10-29 10:20:38: Starting pipeline analysis
+2026-10-29 10:20:38: Pipeline run completed
+{
+  "sail_commit": "eb417941e86dfe18cbdc141d7a55a675ea0e26e6",
+  "lakecat_commit": "27e18f390c450c187a34b1c3bb2037c26d107699",
+  "spark_version": "4.2.1",
+  "cases": [
+    {
+      "name": "initial",
+      "sql": "CREATE MATERIALIZED VIEW output USING iceberg AS SELECT id AS value FROM range(3);",
+      "outcome": "passed",
+      "rows": [
+        0,
+        1,
+        2
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "long",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "name": "refresh",
+      "sql": "CREATE MATERIALIZED VIEW output USING iceberg AS SELECT id AS value FROM range(2,4);",
+      "outcome": "passed",
+      "rows": [
+        2,
+        3
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "long",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    },
+    {
+      "name": "column_comment",
+      "sql": "CREATE MATERIALIZED VIEW output(value BIGINT COMMENT 'refreshed') USING iceberg AS SELECT id AS value FROM range(4,5);",
+      "outcome": "failed",
+      "rows": [
+        4
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "value",
+            "type": "long",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      },
+      "error_type": "KeyError",
+      "error": "'comment'"
+    }
+  ]
+}
+Traceback (most recent call last):
+  File "/tmp/sail-sdp-lakecat-integration.py", line 33, in <module>
+    assert len(r['cases'])==4 and all(x['outcome']=='passed' for x in r['cases'])
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError
