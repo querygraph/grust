@@ -1,0 +1,352 @@
+From 9cc3c855956cdc25ab2870689871cf2f1c44090d Mon Sep 17 00:00:00 2001
+From: Alexy Khrabrov <deliverable@gmail.com>
+Date: Thu, 29 Oct 2026 12:28:12 -0700
+Subject: [PATCH] feat: support a total ORC decoded output budget
+
+---
+ src/compression.rs              |  82 +++++++++++----
+ src/compression_bounds_tests.rs | 172 ++++++++++++++++++++++++++++++++
+ 2 files changed, 237 insertions(+), 17 deletions(-)
+
+diff --git a/src/compression.rs b/src/compression.rs
+index 85fb303..1a3a6b2 100644
+--- a/src/compression.rs
++++ b/src/compression.rs
+@@ -23,7 +23,7 @@ use std::{
+     io::{Read, Write},
+ };
+ 
+-use bytes::{Bytes, BytesMut};
++use bytes::Bytes;
+ use fallible_streaming_iterator::FallibleStreamingIterator;
+ use snafu::{ensure, ResultExt};
+ 
+@@ -183,7 +183,7 @@ fn read_bounded_block(reader: impl Read, scratch: &mut Vec<u8>, limit: usize) ->
+     ensure!(
+         scratch.len() <= limit,
+         error::OutOfSpecSnafu {
+-            msg: "Decoded compression block exceeds the declared block size"
++            msg: "Decoded compression block exceeds the allowed output size"
+         }
+     );
+     Ok(())
+@@ -211,7 +211,7 @@ impl DecompressorVariant for Snappy {
+         ensure!(
+             len <= limit,
+             error::OutOfSpecSnafu {
+-                msg: "Decoded compression block exceeds the declared block size"
++                msg: "Decoded compression block exceeds the allowed output size"
+             }
+         );
+         scratch.resize(len, 0);
+@@ -258,16 +258,22 @@ enum State {
+ }
+ 
+ struct DecompressorIter {
+-    stream: BytesMut,
++    stream: Bytes,
+     current: Option<State>, // when we have compression but the value is original
+     compression: Option<(Box<dyn DecompressorVariant>, u64)>,
+     scratch: Vec<u8>,
++    remaining_output_bytes: Option<usize>,
+ }
+ 
+ impl DecompressorIter {
+-    fn new(stream: Bytes, compression: Option<Compression>, scratch: Vec<u8>) -> Self {
++    fn new(
++        stream: Bytes,
++        compression: Option<Compression>,
++        scratch: Vec<u8>,
++        remaining_output_bytes: Option<usize>,
++    ) -> Self {
+         Self {
+-            stream: BytesMut::from(stream.as_ref()),
++            stream,
+             current: None,
+             compression: compression.map(|c| {
+                 (
+@@ -276,8 +282,22 @@ impl DecompressorIter {
+                 )
+             }),
+             scratch,
++            remaining_output_bytes,
+         }
+     }
++
++    fn charge_output(&mut self, length: usize) -> Result<()> {
++        if let Some(remaining) = &mut self.remaining_output_bytes {
++            ensure!(
++                length <= *remaining,
++                error::OutOfSpecSnafu {
++                    msg: "Decoded stream exceeds the configured output limit"
++                }
++            );
++            *remaining -= length;
++        }
++        Ok(())
++    }
+ }
+ 
+ impl FallibleStreamingIterator for DecompressorIter {
+@@ -328,23 +348,23 @@ impl FallibleStreamingIterator for DecompressorIter {
+                                 msg: "Original compression block exceeds the declared block size"
+                             }
+                         );
+-                        self.current = Some(State::Original(payload.into()));
++                        self.charge_output(length)?;
++                        self.current = Some(State::Original(payload));
+                     }
+                     CompressionHeader::Compressed(_) => {
+-                        compression.decompress_block(
+-                            &payload,
+-                            &mut self.scratch,
+-                            *limit as usize,
+-                        )?;
++                        let decode_limit = self
++                            .remaining_output_bytes
++                            .map_or(*limit as usize, |remaining| remaining.min(*limit as usize));
++                        compression.decompress_block(&payload, &mut self.scratch, decode_limit)?;
++                        self.charge_output(self.scratch.len())?;
+                         self.current = Some(State::Compressed(std::mem::take(&mut self.scratch)));
+                     }
+                 };
+                 Ok(())
+             }
+             None => {
+-                // TODO: take stratch from current State::Compressed for re-use
+-                self.current = Some(State::Original(self.stream.clone().into()));
+-                self.stream.clear();
++                self.charge_output(self.stream.len())?;
++                self.current = Some(State::Original(std::mem::take(&mut self.stream)));
+                 Ok(())
+             }
+         }
+@@ -370,7 +390,35 @@ impl Decompressor {
+     /// Creates a new [`Decompressor`] that will use `scratch` as a temporary region.
+     pub fn new(stream: Bytes, compression: Option<Compression>, scratch: Vec<u8>) -> Self {
+         Self {
+-            decompressor: DecompressorIter::new(stream, compression, scratch),
++            decompressor: DecompressorIter::new(stream, compression, scratch, None),
++            offset: 0,
++            is_first: true,
++        }
++    }
++
++    /// Creates a decompressor with a limit on total decoded output across all blocks.
++    ///
++    /// A block is charged before any of its bytes are returned. Codec output buffers
++    /// receive the smaller of the remaining budget and the declared block size.
++    /// Streaming codecs may decode one extra byte to detect overflow; that byte is
++    /// never returned. Empty blocks are allowed after the budget is exhausted.
++    ///
++    /// This is an output limit, not a total memory limit: encoded input, decoder
++    /// history, allocator capacity and any caller-provided scratch capacity are
++    /// outside this budget. Unlike [`Self::new`], uncompressed input is also limited.
++    pub fn new_with_limit(
++        stream: Bytes,
++        compression: Option<Compression>,
++        scratch: Vec<u8>,
++        max_output_bytes: usize,
++    ) -> Self {
++        Self {
++            decompressor: DecompressorIter::new(
++                stream,
++                compression,
++                scratch,
++                Some(max_output_bytes),
++            ),
+             offset: 0,
+             is_first: true,
+         }
+@@ -379,7 +427,7 @@ impl Decompressor {
+     // TODO: remove need for this upstream
+     pub fn empty() -> Self {
+         Self {
+-            decompressor: DecompressorIter::new(Bytes::new(), None, vec![]),
++            decompressor: DecompressorIter::new(Bytes::new(), None, vec![], None),
+             offset: 0,
+             is_first: true,
+         }
+diff --git a/src/compression_bounds_tests.rs b/src/compression_bounds_tests.rs
+index 80d0458..9e1b14c 100644
+--- a/src/compression_bounds_tests.rs
++++ b/src/compression_bounds_tests.rs
+@@ -188,3 +188,175 @@ fn malformed_lzo_back_reference_is_an_error() {
+     )
+     .is_err());
+ }
++
++fn compressed_block(kind: CompressionType, input: &[u8]) -> Bytes {
++    let mut encoded = Vec::new();
++    if matches!(kind, CompressionType::Lzo) {
++        assert!(input.len() <= 238);
++        if !input.is_empty() {
++            encoded.push(17 + input.len() as u8);
++            encoded.extend_from_slice(input);
++        }
++        encoded.extend_from_slice(&[17, 0, 0]);
++    } else {
++        get_compressor_variant(kind)
++            .unwrap()
++            .compress_block(input, &mut encoded)
++            .unwrap();
++    }
++    block(
++        CompressionHeader::Compressed(encoded.len() as u32),
++        &encoded,
++    )
++}
++
++#[test]
++fn total_budget_covers_multiple_original_blocks() {
++    let mut encoded = block(CompressionHeader::Original(2), b"ab").to_vec();
++    encoded.extend_from_slice(&block(CompressionHeader::Original(2), b"cd"));
++    encoded.extend_from_slice(&block(CompressionHeader::Original(0), b""));
++    for (budget, should_pass) in [(4, true), (5, true), (3, false), (0, false)] {
++        let mut reader = Decompressor::new_with_limit(
++            Bytes::from(encoded.clone()),
++            compression(CompressionType::Zstd, 64),
++            Vec::new(),
++            budget,
++        );
++        let mut decoded = Vec::new();
++        let outcome = reader.read_to_end(&mut decoded);
++        assert_eq!(outcome.is_ok(), should_pass, "budget={budget}");
++        if should_pass {
++            assert_eq!(decoded, b"abcd");
++        } else {
++            assert!(decoded.len() <= budget);
++            assert_eq!(outcome.unwrap_err().kind(), std::io::ErrorKind::InvalidData);
++        }
++    }
++    // The original constructor has no aggregate output cap.
++    assert_eq!(
++        decode(Bytes::from(encoded), CompressionType::Zstd, 2).unwrap(),
++        b"abcd"
++    );
++}
++
++#[test]
++fn total_budget_covers_compressed_and_original_blocks_for_every_codec() {
++    for kind in [
++        CompressionType::Zlib,
++        CompressionType::Zstd,
++        CompressionType::Snappy,
++        CompressionType::Lz4,
++        CompressionType::Lzo,
++    ] {
++        let mut encoded = compressed_block(kind, b"abc").to_vec();
++        encoded.extend_from_slice(&block(CompressionHeader::Original(2), b"de"));
++        encoded.extend_from_slice(&compressed_block(kind, b"fgh"));
++        encoded.extend_from_slice(&compressed_block(kind, b""));
++        encoded.extend_from_slice(&block(CompressionHeader::Original(0), b""));
++        let mut exact = Decompressor::new_with_limit(
++            Bytes::from(encoded.clone()),
++            compression(kind, 64),
++            Vec::new(),
++            8,
++        );
++        let mut decoded = Vec::new();
++        exact.read_to_end(&mut decoded).unwrap();
++        assert_eq!(decoded, b"abcdefgh", "{kind}");
++        assert_eq!(exact.read(&mut [0]).unwrap(), 0);
++
++        let mut short = Decompressor::new_with_limit(
++            Bytes::from(encoded),
++            compression(kind, 64),
++            Vec::new(),
++            7,
++        );
++        let mut decoded = Vec::new();
++        assert!(short.read_to_end(&mut decoded).is_err(), "{kind}");
++        assert_eq!(
++            decoded, b"abcde",
++            "{kind}: oversized final block was emitted"
++        );
++    }
++}
++
++#[test]
++fn zero_budget_accepts_only_empty_output() {
++    for kind in [
++        CompressionType::Zlib,
++        CompressionType::Zstd,
++        CompressionType::Snappy,
++        CompressionType::Lz4,
++        CompressionType::Lzo,
++    ] {
++        let mut empty = block(CompressionHeader::Original(0), b"").to_vec();
++        empty.extend_from_slice(&compressed_block(kind, b""));
++        empty.extend_from_slice(&block(CompressionHeader::Original(0), b""));
++        for next in [None, Some(false), Some(true)] {
++            let mut input = empty.clone();
++            if let Some(compressed) = next {
++                input.extend_from_slice(&if compressed {
++                    compressed_block(kind, b"x")
++                } else {
++                    block(CompressionHeader::Original(1), b"x")
++                });
++            }
++            let mut reader = Decompressor::new_with_limit(
++                Bytes::from(input),
++                compression(kind, 64),
++                Vec::new(),
++                0,
++            );
++            let mut decoded = Vec::new();
++            assert_eq!(
++                reader.read_to_end(&mut decoded).is_ok(),
++                next.is_none(),
++                "{kind}"
++            );
++            assert!(decoded.is_empty());
++        }
++    }
++}
++
++#[test]
++fn total_budget_applies_to_uncompressed_input_before_emitting() {
++    for (input, budget, should_pass) in [
++        (b"".as_slice(), 0, true),
++        (b"a".as_slice(), 0, false),
++        (b"abc".as_slice(), 3, true),
++        (b"abc".as_slice(), 2, false),
++    ] {
++        let mut reader =
++            Decompressor::new_with_limit(Bytes::copy_from_slice(input), None, Vec::new(), budget);
++        let mut decoded = Vec::new();
++        assert_eq!(reader.read_to_end(&mut decoded).is_ok(), should_pass);
++        assert_eq!(decoded, if should_pass { input } else { b"" });
++    }
++}
++
++#[test]
++fn small_remaining_budget_limits_codec_scratch_before_decoding() {
++    for kind in [
++        CompressionType::Zlib,
++        CompressionType::Zstd,
++        CompressionType::Snappy,
++        CompressionType::Lz4,
++        CompressionType::Lzo,
++    ] {
++        let mut input = block(CompressionHeader::Original(2), b"ab").to_vec();
++        input.extend_from_slice(&compressed_block(kind, &[b'x'; 64]));
++        let mut reader = Decompressor::new_with_limit(
++            Bytes::from(input),
++            compression(kind, MAX_COMPRESSION_BLOCK_SIZE - 1),
++            Vec::new(),
++            3,
++        );
++        let mut decoded = Vec::new();
++        assert!(reader.read_to_end(&mut decoded).is_err(), "{kind}");
++        assert_eq!(decoded, b"ab");
++        assert!(reader.decompressor.scratch.len() <= 2, "{kind}");
++        assert!(
++            reader.decompressor.scratch.capacity() < 1024,
++            "{kind} allocated the declared block size"
++        );
++    }
++}
+-- 
+2.50.1 (Apple Git-155)
+

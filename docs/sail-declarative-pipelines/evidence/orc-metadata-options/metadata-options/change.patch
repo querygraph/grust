@@ -1,0 +1,534 @@
+From 91910faa90e70587655e40788495a8a936fdf8fe Mon Sep 17 00:00:00 2001
+From: Alexy Khrabrov <deliverable@gmail.com>
+Date: Thu, 29 Oct 2026 12:29:56 -0700
+Subject: [PATCH] feat: expose bounded ORC metadata and reusable validated
+ types
+
+---
+ src/arrow_reader.rs          |  18 ++-
+ src/async_arrow_reader.rs    |  15 ++-
+ src/reader/metadata.rs       | 110 ++++++++++++++----
+ src/reader/metadata/tests.rs | 219 +++++++++++++++++++++++++++++++++++
+ 4 files changed, 337 insertions(+), 25 deletions(-)
+
+diff --git a/src/arrow_reader.rs b/src/arrow_reader.rs
+index 0d2a6e7..bc6092a 100644
+--- a/src/arrow_reader.rs
++++ b/src/arrow_reader.rs
+@@ -27,7 +27,9 @@ use crate::array_decoder::NaiveStripeDecoder;
+ use crate::error::Result;
+ use crate::predicate::Predicate;
+ use crate::projection::ProjectionMask;
+-use crate::reader::metadata::{read_metadata, FileMetadata};
++use crate::reader::metadata::{
++    read_metadata, read_metadata_with_options, FileMetadata, MetadataReadOptions,
++};
+ use crate::reader::ChunkReader;
+ use crate::row_group_filter::evaluate_predicate;
+ use crate::row_selection::RowSelection;
+@@ -49,7 +51,11 @@ pub struct ArrowReaderBuilder<R> {
+ }
+ 
+ impl<R> ArrowReaderBuilder<R> {
+-    pub(crate) fn new(reader: R, file_metadata: Arc<FileMetadata>) -> Self {
++    /// Reuse metadata already read and validated for this reader's file.
++    ///
++    /// The caller must ensure the reader addresses the same immutable file version
++    /// as the metadata. This constructor performs no I/O or identity verification.
++    pub fn new_with_metadata(reader: R, file_metadata: Arc<FileMetadata>) -> Self {
+         Self {
+             reader,
+             file_metadata,
+@@ -201,7 +207,13 @@ impl<R> ArrowReaderBuilder<R> {
+ impl<R: ChunkReader> ArrowReaderBuilder<R> {
+     pub fn try_new(mut reader: R) -> Result<Self> {
+         let file_metadata = Arc::new(read_metadata(&mut reader)?);
+-        Ok(Self::new(reader, file_metadata))
++        Ok(Self::new_with_metadata(reader, file_metadata))
++    }
++
++    /// Construct a reader after applying explicit metadata limits.
++    pub fn try_new_with_options(mut reader: R, options: MetadataReadOptions) -> Result<Self> {
++        let file_metadata = Arc::new(read_metadata_with_options(&mut reader, options)?);
++        Ok(Self::new_with_metadata(reader, file_metadata))
+     }
+ 
+     pub fn build(self) -> ArrowReader<R> {
+diff --git a/src/async_arrow_reader.rs b/src/async_arrow_reader.rs
+index a92b004..ff86719 100644
+--- a/src/async_arrow_reader.rs
++++ b/src/async_arrow_reader.rs
+@@ -31,7 +31,9 @@ use crate::array_decoder::NaiveStripeDecoder;
+ use crate::arrow_reader::Cursor;
+ use crate::error::Result;
+ use crate::predicate::Predicate;
+-use crate::reader::metadata::read_metadata_async;
++use crate::reader::metadata::{
++    read_metadata_async, read_metadata_async_with_options, MetadataReadOptions,
++};
+ use crate::reader::AsyncChunkReader;
+ use crate::row_group_filter::evaluate_predicate;
+ use crate::row_selection::RowSelection;
+@@ -292,7 +294,16 @@ impl<R: AsyncChunkReader + 'static> Stream for ArrowStreamReader<R> {
+ impl<R: AsyncChunkReader + 'static> ArrowReaderBuilder<R> {
+     pub async fn try_new_async(mut reader: R) -> Result<Self> {
+         let file_metadata = Arc::new(read_metadata_async(&mut reader).await?);
+-        Ok(Self::new(reader, file_metadata))
++        Ok(Self::new_with_metadata(reader, file_metadata))
++    }
++
++    /// Construct an asynchronous reader after applying explicit metadata limits.
++    pub async fn try_new_async_with_options(
++        mut reader: R,
++        options: MetadataReadOptions,
++    ) -> Result<Self> {
++        let file_metadata = Arc::new(read_metadata_async_with_options(&mut reader, options).await?);
++        Ok(Self::new_with_metadata(reader, file_metadata))
+     }
+ 
+     pub fn build_async(self) -> ArrowStreamReader<R> {
+diff --git a/src/reader/metadata.rs b/src/reader/metadata.rs
+index 0a94b07..9186bdc 100644
+--- a/src/reader/metadata.rs
++++ b/src/reader/metadata.rs
+@@ -43,6 +43,7 @@
+ 
+ use std::collections::HashMap;
+ use std::io::Read;
++use std::sync::Arc;
+ 
+ use bytes::{Bytes, BytesMut};
+ use prost::Message;
+@@ -59,11 +60,32 @@ use crate::reader::ChunkReader;
+ 
+ const DEFAULT_FOOTER_SIZE: u64 = 16 * 1024;
+ 
++/// Optional limits applied while reading the ORC file tail.
++///
++/// Defaults preserve the existing unrestricted metadata API. Applications reading
++/// untrusted files should set all three limits. These bound encoded/decoded byte
++/// counts and schema nesting, not total heap usage: protobuf objects, retained
++/// metadata, codec history, buffer capacity and scratch space also consume memory.
++#[derive(Debug, Clone, Copy, Default)]
++pub struct MetadataReadOptions {
++    /// Maximum combined encoded footer and metadata length. Checked before the
++    /// second range read; the initial tail read is at most 16 KiB regardless.
++    pub max_encoded_metadata_bytes: Option<usize>,
++    /// Maximum combined decoded footer and metadata length. The remaining budget
++    /// is passed into block decoding before allocating its output. Streaming
++    /// codecs may decode one extra byte to detect an exceeded limit.
++    pub max_decoded_metadata_bytes: Option<usize>,
++    /// Maximum schema depth, with the root STRUCT at depth zero. Checked before
++    /// recursively constructing the schema, including unprojected columns.
++    pub max_schema_depth: Option<usize>,
++}
++
+ /// The file's metadata.
+ #[derive(Debug, Clone)]
+ pub struct FileMetadata {
+     compression: Option<Compression>,
+     root_data_type: RootDataType,
++    column_types: Arc<[proto::Type]>,
+     number_of_rows: u64,
+     file_format_version: String,
+     /// Statistics of columns across entire file
+@@ -79,10 +101,14 @@ impl FileMetadata {
+         postscript: &proto::PostScript,
+         footer: &proto::Footer,
+         metadata: &proto::Metadata,
++        options: MetadataReadOptions,
+     ) -> Result<Self> {
+         let compression =
+             Compression::from_proto(postscript.compression(), postscript.compression_block_size);
+-        let root_data_type = RootDataType::from_proto(&footer.types)?;
++        let root_data_type = match options.max_schema_depth {
++            Some(depth) => RootDataType::from_proto_with_max_depth(&footer.types, Some(depth))?,
++            None => RootDataType::from_proto(&footer.types)?,
++        };
+         let number_of_rows = footer.number_of_rows();
+         let column_statistics = footer
+             .statistics
+@@ -129,6 +155,7 @@ impl FileMetadata {
+         Ok(Self {
+             compression,
+             root_data_type,
++            column_types: footer.types.clone().into(),
+             number_of_rows,
+             file_format_version,
+             column_statistics,
+@@ -150,6 +177,12 @@ impl FileMetadata {
+         &self.root_data_type
+     }
+ 
++    /// Validated ORC type records indexed by column ID, including their original
++    /// attributes. This preserves logical annotations without reparsing the tail.
++    pub fn column_types(&self) -> &[proto::Type] {
++        &self.column_types
++    }
++
+     pub fn column_file_statistics(&self) -> &[ColumnStatistics] {
+         &self.column_statistics
+     }
+@@ -253,7 +286,19 @@ impl EncodedTail {
+         self.length.saturating_sub(self.bytes.len())
+     }
+ 
+-    fn decode(self, prefix: Bytes) -> Result<FileMetadata> {
++    fn check_encoded_limit(&self, options: MetadataReadOptions) -> Result<()> {
++        if let Some(limit) = options.max_encoded_metadata_bytes {
++            ensure!(
++                self.length <= limit,
++                OutOfSpecSnafu {
++                    msg: "Encoded footer and metadata exceed the configured limit"
++                }
++            );
++        }
++        Ok(())
++    }
++
++    fn decode(self, prefix: Bytes, options: MetadataReadOptions) -> Result<FileMetadata> {
+         ensure!(
+             prefix.len() == self.missing_length(),
+             OutOfSpecSnafu {
+@@ -273,17 +318,28 @@ impl EncodedTail {
+             self.postscript.compression_block_size,
+         );
+         let footer_start = bytes.len() - self.footer_length;
+-        let footer = deserialize_footer(bytes.slice(footer_start..), compression)?;
++        let mut remaining = options.max_decoded_metadata_bytes;
++        let footer: Footer =
++            decode_section(bytes.slice(footer_start..), compression, &mut remaining)?;
+         bytes.truncate(footer_start);
+-        let metadata = deserialize_footer_metadata(
++        let metadata: Metadata = decode_section(
+             bytes.slice(bytes.len() - self.metadata_length..),
+             compression,
++            &mut remaining,
+         )?;
+-        FileMetadata::from_proto(&self.postscript, &footer, &metadata)
++        FileMetadata::from_proto(&self.postscript, &footer, &metadata, options)
+     }
+ }
+ 
+ pub fn read_metadata<R: ChunkReader>(reader: &mut R) -> Result<FileMetadata> {
++    read_metadata_with_options(reader, MetadataReadOptions::default())
++}
++
++/// Read metadata with explicit tail byte and schema-depth limits.
++pub fn read_metadata_with_options<R: ChunkReader>(
++    reader: &mut R,
++    options: MetadataReadOptions,
++) -> Result<FileMetadata> {
+     let file_len = reader.len();
+     if file_len == 0 {
+         return EmptyFileSnafu.fail();
+@@ -294,6 +350,7 @@ pub fn read_metadata<R: ChunkReader>(reader: &mut R) -> Result<FileMetadata> {
+         .get_bytes(file_len - tail_length, tail_length)
+         .context(error::IoSnafu)?;
+     let tail = EncodedTail::parse(file_len, bytes)?;
++    tail.check_encoded_limit(options)?;
+     let prefix = if tail.missing_length() == 0 {
+         Bytes::new()
+     } else {
+@@ -301,12 +358,21 @@ pub fn read_metadata<R: ChunkReader>(reader: &mut R) -> Result<FileMetadata> {
+             .get_bytes(tail.offset, tail.missing_length() as u64)
+             .context(error::IoSnafu)?
+     };
+-    tail.decode(prefix)
++    tail.decode(prefix, options)
+ }
+ 
+ #[cfg(feature = "async")]
+ pub async fn read_metadata_async<R: super::AsyncChunkReader>(
+     reader: &mut R,
++) -> Result<FileMetadata> {
++    read_metadata_async_with_options(reader, MetadataReadOptions::default()).await
++}
++
++/// Asynchronously read metadata with the same limits as the synchronous reader.
++#[cfg(feature = "async")]
++pub async fn read_metadata_async_with_options<R: super::AsyncChunkReader>(
++    reader: &mut R,
++    options: MetadataReadOptions,
+ ) -> Result<FileMetadata> {
+     let file_len = reader.len().await.context(error::IoSnafu)?;
+     if file_len == 0 {
+@@ -318,6 +384,7 @@ pub async fn read_metadata_async<R: super::AsyncChunkReader>(
+         .await
+         .context(error::IoSnafu)?;
+     let tail = EncodedTail::parse(file_len, bytes)?;
++    tail.check_encoded_limit(options)?;
+     let prefix = if tail.missing_length() == 0 {
+         Bytes::new()
+     } else {
+@@ -326,23 +393,26 @@ pub async fn read_metadata_async<R: super::AsyncChunkReader>(
+             .await
+             .context(error::IoSnafu)?
+     };
+-    tail.decode(prefix)
+-}
+-
+-fn deserialize_footer(bytes: Bytes, compression: Option<Compression>) -> Result<Footer> {
+-    let mut buffer = vec![];
+-    Decompressor::new(bytes, compression, vec![])
+-        .read_to_end(&mut buffer)
+-        .context(error::IoSnafu)?;
+-    Footer::decode(buffer.as_slice()).context(error::DecodeProtoSnafu)
++    tail.decode(prefix, options)
+ }
+ 
+-fn deserialize_footer_metadata(bytes: Bytes, compression: Option<Compression>) -> Result<Metadata> {
++fn decode_section<T: Message + Default>(
++    bytes: Bytes,
++    compression: Option<Compression>,
++    remaining: &mut Option<usize>,
++) -> Result<T> {
++    let mut decoder = match *remaining {
++        Some(limit) => Decompressor::new_with_limit(bytes, compression, vec![], limit),
++        None => Decompressor::new(bytes, compression, vec![]),
++    };
+     let mut buffer = vec![];
+-    Decompressor::new(bytes, compression, vec![])
+-        .read_to_end(&mut buffer)
+-        .context(error::IoSnafu)?;
+-    Metadata::decode(buffer.as_slice()).context(error::DecodeProtoSnafu)
++    decoder.read_to_end(&mut buffer).context(error::IoSnafu)?;
++    if let Some(limit) = remaining {
++        *limit = limit.checked_sub(buffer.len()).context(OutOfSpecSnafu {
++            msg: "Decoded footer and metadata exceed the configured limit",
++        })?;
++    }
++    T::decode(buffer.as_slice()).context(error::DecodeProtoSnafu)
+ }
+ 
+ #[cfg(test)]
+diff --git a/src/reader/metadata/tests.rs b/src/reader/metadata/tests.rs
+index d92e271..1055265 100644
+--- a/src/reader/metadata/tests.rs
++++ b/src/reader/metadata/tests.rs
+@@ -240,3 +240,222 @@ async fn async_tail_checks_match_sync_reader() {
+     ));
+     assert!(reader.requests.borrow().is_empty());
+ }
++
++struct BoundedFixture {
++    data: Bytes,
++    encoded: usize,
++    decoded: usize,
++    footer_decoded: usize,
++    types: Vec<proto::Type>,
++}
++
++fn bounded_fixture(compressed: bool, padding: usize) -> BoundedFixture {
++    let types = vec![
++        proto::Type {
++            kind: Some(proto::r#type::Kind::Struct.into()),
++            subtypes: vec![1],
++            field_names: vec!["items".into()],
++            ..Default::default()
++        },
++        proto::Type {
++            kind: Some(proto::r#type::Kind::List.into()),
++            subtypes: vec![2],
++            ..Default::default()
++        },
++        proto::Type {
++            kind: Some(proto::r#type::Kind::Long.into()),
++            attributes: vec![proto::StringPair {
++                key: Some("spark.sql.catalyst.type".into()),
++                value: Some("timestamp_ntz".into()),
++            }],
++            ..Default::default()
++        },
++    ];
++    let footer = Footer {
++        types: types.clone(),
++        stripes: vec![proto::StripeInformation {
++            offset: Some(3),
++            index_length: Some(0),
++            data_length: Some(0),
++            footer_length: Some(0),
++            number_of_rows: Some(0),
++            ..Default::default()
++        }],
++        metadata: vec![proto::UserMetadataItem {
++            name: Some("padding".into()),
++            value: Some(vec![7; padding]),
++        }],
++        ..Default::default()
++    }
++    .encode_to_vec();
++    let metadata = Metadata {
++        stripe_stats: vec![proto::StripeStatistics::default()],
++    }
++    .encode_to_vec();
++    let footer_decoded = footer.len();
++    let decoded = footer.len() + metadata.len();
++    assert!(decoded > footer_decoded);
++    let kind = compressed.then_some(crate::compression::CompressionType::Zstd);
++    let mut compressor = crate::compression::Compressor::new(kind, Some(64)).unwrap();
++    let footer = compressor.compress(&footer).unwrap().into_owned();
++    let metadata = compressor.compress(&metadata).unwrap().into_owned();
++    let encoded = footer.len() + metadata.len();
++    let postscript = PostScript {
++        footer_length: Some(footer.len() as u64),
++        metadata_length: Some(metadata.len() as u64),
++        compression: Some(
++            if compressed {
++                proto::CompressionKind::Zstd
++            } else {
++                proto::CompressionKind::None
++            }
++            .into(),
++        ),
++        compression_block_size: Some(64),
++        ..Default::default()
++    };
++    let mut bytes = b"ORC".to_vec();
++    bytes.extend(metadata);
++    bytes.extend(footer);
++    BoundedFixture {
++        data: with_postscript(bytes, postscript),
++        encoded,
++        decoded,
++        footer_decoded,
++        types,
++    }
++}
++
++fn exact_limits(fixture: &BoundedFixture) -> MetadataReadOptions {
++    MetadataReadOptions {
++        max_encoded_metadata_bytes: Some(fixture.encoded),
++        max_decoded_metadata_bytes: Some(fixture.decoded),
++        max_schema_depth: Some(2),
++    }
++}
++
++#[test]
++fn metadata_options_enforce_combined_decoded_and_encoded_limits() {
++    for compressed in [false, true] {
++        let fixture = bounded_fixture(compressed, 512);
++        let options = exact_limits(&fixture);
++        let mut reader = TestReader::new(fixture.data.clone(), None);
++        let metadata = read_metadata_with_options(&mut reader, options).unwrap();
++        assert_eq!(metadata.column_types(), fixture.types);
++        assert_eq!(reader.requests.borrow().len(), 1);
++        for decoded in [0, fixture.footer_decoded, fixture.decoded - 1] {
++            let options = MetadataReadOptions {
++                max_decoded_metadata_bytes: Some(decoded),
++                ..options
++            };
++            let mut reader = TestReader::new(fixture.data.clone(), None);
++            assert!(
++                read_metadata_with_options(&mut reader, options).is_err(),
++                "compressed={compressed}, decoded={decoded}"
++            );
++        }
++        let options = MetadataReadOptions {
++            max_encoded_metadata_bytes: Some(fixture.encoded - 1),
++            ..options
++        };
++        let mut reader = TestReader::new(fixture.data, None);
++        assert!(read_metadata_with_options(&mut reader, options)
++            .unwrap_err()
++            .to_string()
++            .contains("Encoded footer"));
++    }
++}
++
++#[test]
++fn encoded_limit_rejects_large_tail_before_second_read() {
++    let fixture = bounded_fixture(false, 2 * DEFAULT_FOOTER_SIZE as usize);
++    let options = MetadataReadOptions {
++        max_encoded_metadata_bytes: Some(fixture.encoded - 1),
++        ..exact_limits(&fixture)
++    };
++    let mut reader = TestReader::new(fixture.data.clone(), None);
++    assert!(read_metadata_with_options(&mut reader, options).is_err());
++    assert_eq!(reader.requests.borrow().len(), 1);
++    let mut reader = TestReader::new(fixture.data.clone(), None);
++    assert_eq!(
++        read_metadata_with_options(&mut reader, exact_limits(&fixture))
++            .unwrap()
++            .column_types(),
++        fixture.types
++    );
++    assert_eq!(reader.requests.borrow().len(), 2);
++}
++
++#[test]
++fn bounded_builder_validates_depth_before_schema_construction() {
++    let fixture = bounded_fixture(true, 128);
++    let options = exact_limits(&fixture);
++    let reader = TestReader::new(fixture.data.clone(), None);
++    let builder = crate::ArrowReaderBuilder::try_new_with_options(reader, options).unwrap();
++    assert_eq!(builder.file_metadata().column_types(), fixture.types);
++    let options = MetadataReadOptions {
++        max_schema_depth: Some(1),
++        ..options
++    };
++    let reader = TestReader::new(fixture.data, None);
++    assert!(crate::ArrowReaderBuilder::try_new_with_options(reader, options).is_err());
++}
++
++#[test]
++fn validated_metadata_can_be_reused_without_another_tail_read() {
++    let mut reader = TestReader::new(valid_file(0), None);
++    let metadata = Arc::new(read_metadata(&mut reader).unwrap());
++    let builder = crate::ArrowReaderBuilder::new_with_metadata(reader, metadata.clone());
++    assert!(Arc::ptr_eq(&metadata, &builder.file_metadata));
++    assert_eq!(builder.schema().fields().len(), 0);
++    assert_eq!(builder.reader.requests.borrow().len(), 1);
++}
++
++#[cfg(feature = "async")]
++#[tokio::test]
++async fn async_metadata_options_match_sync_limits_and_attributes() {
++    for compressed in [false, true] {
++        let fixture = bounded_fixture(compressed, 2 * DEFAULT_FOOTER_SIZE as usize);
++        let options = exact_limits(&fixture);
++        let mut reader = TestReader::new(fixture.data.clone(), None);
++        let metadata = read_metadata_async_with_options(&mut reader, options)
++            .await
++            .unwrap();
++        assert_eq!(metadata.column_types(), fixture.types);
++        for decoded in [0, fixture.footer_decoded, fixture.decoded - 1] {
++            let options = MetadataReadOptions {
++                max_decoded_metadata_bytes: Some(decoded),
++                ..options
++            };
++            let mut reader = TestReader::new(fixture.data.clone(), None);
++            assert!(read_metadata_async_with_options(&mut reader, options)
++                .await
++                .is_err());
++        }
++        let options = MetadataReadOptions {
++            max_encoded_metadata_bytes: Some(fixture.encoded - 1),
++            ..options
++        };
++        let mut reader = TestReader::new(fixture.data.clone(), None);
++        assert!(read_metadata_async_with_options(&mut reader, options)
++            .await
++            .is_err());
++        assert_eq!(reader.requests.borrow().len(), 1);
++        let reader = TestReader::new(fixture.data.clone(), None);
++        let builder =
++            crate::ArrowReaderBuilder::try_new_async_with_options(reader, exact_limits(&fixture))
++                .await
++                .unwrap();
++        assert_eq!(builder.file_metadata().column_types(), fixture.types);
++        let options = MetadataReadOptions {
++            max_schema_depth: Some(1),
++            ..exact_limits(&fixture)
++        };
++        let reader = TestReader::new(fixture.data, None);
++        assert!(
++            crate::ArrowReaderBuilder::try_new_async_with_options(reader, options)
++                .await
++                .is_err()
++        );
++    }
++}
+-- 
+2.50.1 (Apple Git-155)
+

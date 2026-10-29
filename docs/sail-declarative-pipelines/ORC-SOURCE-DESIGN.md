@@ -76,22 +76,25 @@ logical-type fixture demonstrates why: Spark's TIMESTAMP_NTZ becomes raw Int64,
 and TIMESTAMP becomes Timestamp(Nanosecond,None). Exposing either unchanged would
 lose Spark's logical type or interpret it incorrectly in Sail.
 
-Add an `OrcMetadata` helper containing native file metadata plus raw ORC type
-records/attributes. Recover the raw footer using public `PostScript`/`Footer` types and a checked
-compression boundary before invoking native metadata construction. The local
-prototype proves attribute access, but its native-reader-first ordering does not
-prove production bounds. The pinned parser performs unchecked length arithmetic
-and unbounded decompression; validate offsets, integer conversions, compression
-block framing, decoded-size budgets and type-tree references first, on cached
-bytes from the same immutable/version-pinned object. Budget the decoder's internal
-scratch allocation as well as output buffers: wrapping the outer reader in `take`
-does not bound a block decoder that allocates first. Reuse/harden the library's
-parser instead of adding a second ORC format implementation in Sail. The narrow
-dependency patch must cover both metadata and stripe decompression callers, with
-retained malformed-file regressions. No bounded remote reader is implemented yet.
-The prototype's4MiB cap is only a probe limit; do not silently turn it into a
-Spark compatibility limit. Production metadata allocations must participate in
-Sail's resource contract and report resource exhaustion explicitly.
+Use the patched native metadata API: read once with
+`read_metadata_async_with_options`, retain validated `FileMetadata::column_types()`
+and construct readers with `ArrowReaderBuilder::new_with_metadata`. Sail's
+`OrcMetadata` wrapper should retain the physical metadata, pinned object identity
+and validation policy; no second protobuf footer parser is needed. The
+[bounded-API receipt](evidence/orc-metadata-options/provenance.json) qualifies
+checked tail ranges, iterative type-tree validation, aggregate encoded/decoded
+metadata budgets and schema-depth limits in both reader modes.
+
+The initial tail read remains at most16KiB; the encoded limit is checked before
+any second read. Footer and metadata share one decoded budget, passed into
+internal block allocations. These are byte/depth bounds, not a total heap bound:
+protobuf objects, codec history, allocator capacity, retained metadata and stripes
+still need Sail resource accounting. Cache reuse must verify object-store and
+version/ETag identity plus the applicable validation policy; size/mtime alone is
+insufficient. Existing unrestricted constructors remain compatible, so Sail must
+choose the bounded entry points. The probe's4MiB/depth64 settings are evidence
+parameters, not adopted production limits. No bounded remote reader is implemented
+yet; production resource exhaustion must be reported explicitly.
 
 Derive the Spark-facing schema recursively from physical types and recognized
 Spark attributes. Preserve nullability, decimals, structs, lists and maps. Normalize
@@ -241,18 +244,39 @@ predecessor's expected-size argument was only a capacity hint. The change also
 changes the source type in the public BuildLzoDecoder error variant. No lower
 Rust-version/MSRV or cross-platform claim follows from the Rust 1.98.1 macOS gate.
 
-Before integration, complete the remaining metadata contract: iterative type-tree
-validation, explicit combined footer/metadata decoded-byte and schema-depth
-budgets, and raw type-attribute access on validated FileMetadata. The source audit
-found a root assertion, recursive cycles/shared children and defaulting of unknown
-protobuf kinds; these are source findings, not yet executed failure fixtures.
-Expose bounded sync/async entry points while preserving existing callers, and
-provide builders accepting validated metadata to avoid a second parse. Since a
-narrow dependency change is already required, a raw-type accessor can replace
-Sail-side footer reparsing. Budget checks must reach internal block allocations;
-outer Read::take alone is insufficient, and decoded bytes do not include every
-protobuf object overhead.
+The metadata contract listed at this checkpoint is implemented in the following
+three commits. Historical raw logs and the earlier source audit remain retained.
 
-The dependency changes are local reviewable commits with patches retained in the
-receipt. A portable dependency revision/package is still needed before the final
-Sail dependency wiring; no upstream PR, push or publication occurred.
+## Bounded metadata APIs and portable Sail dependency
+
+The [new receipt](evidence/orc-metadata-options/provenance.json) records:
+
+| Commit | Scope | Default / no-default library tests |
+| --- | --- | --- |
+| `9cc3c85595` | Total decoded budget across blocks, including empty and uncompressed input | 271 /168 passed |
+| `4e8e80c842` | Iterative kind/arity/ownership/reachability/depth validation before recursive schema construction | 281 /178 passed |
+| `91910faa90` | Encoded and combined decoded tail limits, raw attributes and metadata-reusing sync/async builders | 286 /182 passed |
+
+All three pass formatting and strict Clippy. Default runs still contain eight
+upstream ignored cases; no fresh external PyORC runs are claimed. New regressions
+cover exact/over/zero budgets, all five block codecs, a10000-level raw tree,
+malformed trees, combined footer/metadata accounting, depth limits, attribute
+preservation and avoiding a second metadata read. Eight bounded reads of the
+retained Spark files reproduce their exact native rows; both malformed-fixture
+reads return errors. This does not yet adapt native physical types to Spark types.
+
+Sail `4c5d5861d8` vendors the gated package with its license, source
+hashes and all six local dependency revisions. It excludes the vendor crate from
+workspace membership and declares an unused workspace dependency with defaults
+disabled and async support enabled. Cargo.lock and the linked runtime are unchanged.
+The vendor gate compares source bytes and package contents, verifies manifests and
+preserves upstream README whitespace verbatim; its initial formatting failure is
+retained. This resolves portability without claiming published upstream patches.
+
+Next: consume that dependency in a separate metadata/schema bridge, then add the
+object-store reader, FileSource/worker codec/registration and writer units. The
+four current Sail ORC baseline failures and all SDP acceptance counts remain open.
+TIME precision needs special care: Spark4.2.1 accepts0–6 and stores microseconds;
+Sail's existing TIME parser accepts0/3/6/9. Preserve precision semantics through a
+shared type improvement rather than silently reporting unsupported precisions as6.
+General catalog semantics remain in Sail, with LakeCat provider coverage separate.

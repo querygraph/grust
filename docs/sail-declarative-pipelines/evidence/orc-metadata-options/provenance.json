@@ -1,0 +1,119 @@
+{
+  "recorded_at": "2026-10-29T19:37:53.973895+00:00",
+  "repository": "https://github.com/datafusion-contrib/orc-rust",
+  "base_commit": "8338ce9062f6e2072475cb06c68fe9379f04bcc7",
+  "commits": {
+    "output-budget": "9cc3c855956cdc25ab2870689871cf2f1c44090d",
+    "schema-tree": "4e8e80c84228196f174af4cdf8405301437b794a",
+    "metadata-options": "91910faa90e70587655e40788495a8a936fdf8fe"
+  },
+  "runs": {
+    "output-budget": {
+      "default": {
+        "passed": 271,
+        "failed": 0,
+        "ignored": 8
+      },
+      "no_default_library": {
+        "passed": 168,
+        "failed": 0,
+        "ignored": 0
+      }
+    },
+    "schema-tree": {
+      "default": {
+        "passed": 281,
+        "failed": 0,
+        "ignored": 8
+      },
+      "no_default_library": {
+        "passed": 178,
+        "failed": 0,
+        "ignored": 0
+      }
+    },
+    "metadata-options": {
+      "default": {
+        "passed": 286,
+        "failed": 0,
+        "ignored": 8
+      },
+      "no_default_library": {
+        "passed": 182,
+        "failed": 0,
+        "ignored": 0
+      }
+    }
+  },
+  "sail_vendor_commit": "4c5d5861d8ba888563d4610d7ab7929fb21fed39",
+  "sail_runtime_baseline": "8d044db3860b4f55e49543c833246af31e986e2e",
+  "spark_source_commit": "617618396087429b5627a86ce933bb0f5d6645cb",
+  "checks": [
+    "Each ORC candidate: detached immutable source, own target, Rust1.98.1 fmt, strict all-target/all-feature Clippy, default tests and no-default library tests.",
+    "Bounded read/reuse API: exact historical rows in four Spark fixtures, sync and async; timestamp and timestamp_ntz raw attributes retained.",
+    "Retained malformed compressed-block fixture returns typed errors in both bounded modes.",
+    "Portable Sail snapshot: exact packaged source and license, file hashes, six dependency patch revisions, Cargo manifest validity and workspace exclusion; runtime Cargo.lock unchanged."
+  ],
+  "limitations": [
+    "Eight upstream default-ignored tests remain ignored here; the earlier three PyORC writer runs at8338ce9 were not repeated.",
+    "Byte counts and nesting are bounded; codec history, protobuf object overhead, allocator capacity, stripes and cache memory are not a total heap guarantee.",
+    "Existing unbounded APIs preserve unrestricted depth; Sail must call bounded interfaces and enforce its resource policy.",
+    "Probe4MiB and depth64 are test settings, not adopted production compatibility limits.",
+    "No Sail ORC source/sink/registry/codec or Spark logical schema adaptation yet; no new Sail runtime, MSRV, cloud, distributed or full SDP verdict.",
+    "Package verification first reported an inherited trailing blank line in upstream README. It is preserved exactly; authored and Rust whitespace checks remain enforced and package hashes verify the README.",
+    "Portable local vendor snapshot adds no linked dependency until a Sail crate consumes its workspace alias. No push, publication or upstream PR occurred."
+  ],
+  "files_sha256": {
+    "bounded-replay/empty-async.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bounded-replay/empty-async.stdout": "2235f9f2288245b542f7833a3df2e8fae347feaf3e7a5668d88edb9b69ca8ff6",
+    "bounded-replay/empty-sync.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bounded-replay/empty-sync.stdout": "2235f9f2288245b542f7833a3df2e8fae347feaf3e7a5668d88edb9b69ca8ff6",
+    "bounded-replay/logical_types-async.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bounded-replay/logical_types-async.stdout": "b5ffe53f93e1ef71add17d1d6241d0d691b7524e45543d419b1ade15c2275569",
+    "bounded-replay/logical_types-sync.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bounded-replay/logical_types-sync.stdout": "b5ffe53f93e1ef71add17d1d6241d0d691b7524e45543d419b1ade15c2275569",
+    "bounded-replay/malformed-async.stderr": "a3007de0cdc834dc6788abd964800690cb5060ce54da53511e27eea5d464261c",
+    "bounded-replay/malformed-async.stdout": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bounded-replay/malformed-sync.stderr": "a3007de0cdc834dc6788abd964800690cb5060ce54da53511e27eea5d464261c",
+    "bounded-replay/malformed-sync.stdout": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bounded-replay/primitive-async.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bounded-replay/primitive-async.stdout": "08b591e0fba237ed0f4fd1eb0942e311c6d9729f9b6405655674e27b64fa6736",
+    "bounded-replay/primitive-sync.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bounded-replay/primitive-sync.stdout": "08b591e0fba237ed0f4fd1eb0942e311c6d9729f9b6405655674e27b64fa6736",
+    "bounded-replay/range-async.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bounded-replay/range-async.stdout": "70a865530e4e20d69bc25cb9c8b46295c5a0f98a489879450f444b16402719cb",
+    "bounded-replay/range-sync.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bounded-replay/range-sync.stdout": "70a865530e4e20d69bc25cb9c8b46295c5a0f98a489879450f444b16402719cb",
+    "bounded-replay/report.json": "b01ec78b7a4f8de84cc73d56783966e9fa2c4dbac3572ed5242566b22f0f3f22",
+    "bounded.rs": "76d29fa3d3e0319bf337a38badeb154a38cacd9b55a50e17aa3b88b00e0ea896",
+    "gate-Cargo.lock": "29dd0ca91217b64ca2d56f25db1993a889ceb20961233fa2c60009339a06338e",
+    "metadata-options/candidate.json": "a24e545b1fed236dda5784f6a93ad5cac3a0873e1e04afdd13133f1079c97f2b",
+    "metadata-options/change.patch": "4e93be7c9cbe6b5c011afab80c750f3e5773864c45976e62cb5fd0f76be06a5d",
+    "metadata-options/orc-sdp-metadata-options-clippy.log": "e00860e4f89218d833937ffdac69c5d73b0d1373878b79338cbd99a684ea9aac",
+    "metadata-options/orc-sdp-metadata-options-fmt.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "metadata-options/orc-sdp-metadata-options-no-default.log": "5cb44176945530d06503e6f2267ed3e112cd843542670d04de4bd23422e03321",
+    "metadata-options/orc-sdp-metadata-options-package.log": "ab4c3d647704158218632f374d0a7643374a8426c74b71de433eda5d071725d1",
+    "metadata-options/orc-sdp-metadata-options-probe-build.log": "6c228e454db717cda69debf06494ae794f938d4e890e7bfb3092a6e202c950ab",
+    "metadata-options/orc-sdp-metadata-options-tests.log": "9cd19f71975e5fa1cf2849e28dd09e834cab23d6802fc999106d886df6db4acc",
+    "orc-rust-0.9.0.crate": "0075f821f2470f35b3ff04c738c36b1bbeac9ed6645b51e23868f310a5ac22ff",
+    "output-budget/candidate.json": "78c27c7195beb4b49aab7fb51a69366d51a3991c3cc8b26265aa73ad6186c9b9",
+    "output-budget/change.patch": "a337d1eeb7733d4732e36da23c07d117d71bfc630a9b2466c55e1851c42d70b0",
+    "output-budget/orc-sdp-output-budget-clippy.log": "a1a0f1554f4be7532e278a145987ce7d981863762006496e661736be2d33b5d1",
+    "output-budget/orc-sdp-output-budget-fmt.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "output-budget/orc-sdp-output-budget-no-default.log": "563b13050cc8a9f9d9b501280f848b19425602906d08dbfb92a528a86fa0c8b7",
+    "output-budget/orc-sdp-output-budget-tests.log": "292540f4c35f994c013d3338c0c5f986a03af91c31bd4bef0644215a3016656f",
+    "probe-Cargo.lock": "c875e5bf29d21bbfa9e08b312d17dd4ffd852574f6dfb1078dc34c4a591c0905",
+    "probe-Cargo.toml": "d7c12dddaf3974da8e7135ad4aac74d25504a3fc1c74b5f02bd67e0a3e6ffdba",
+    "sail-vendor/SOURCE.json": "36da3fc934fd701e028cda4108814b729608630a72576ca7a4bf7751f3cea5ee",
+    "sail-vendor/candidate.json": "08960db4fddb11fe685f5b25400c258256325a3cbf223867fba49f307187bd7b",
+    "sail-vendor/gate.log": "4e87a226d027dd960294f30744f593e4cfc94f80b92472e0aca6334c19d52f31",
+    "sail-vendor/initial-gate.log": "0605b1f1ae0e056ec89132c1f25cb4366908e38e7a32b767642e0eb1e4c8a140",
+    "sail-vendor/verify.py": "f0c7e660b020e3dab782e6f3cf0b8e34c42ee2d259961a171d07ad816e468e82",
+    "schema-tree/candidate.json": "beb3db1d2f423d9a69bfcee79829fd55b0764eae745f26416bc4ac6fee55070a",
+    "schema-tree/change.patch": "af31c2dfc6ad20f9fbc300325e4f279d92bb580259a4dd4d4f4ebd8a2bcd9ba0",
+    "schema-tree/orc-sdp-schema-tree-clippy.log": "dcb2a7fe8856a6e1921522e82f4a27a6502c9ac6b0b4bb7fcaef0e2eeebdf27f",
+    "schema-tree/orc-sdp-schema-tree-fmt.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "schema-tree/orc-sdp-schema-tree-no-default.log": "c36bca7eae5af36141fccac87fc3fb27bb2e050e4c15e8731a2fbb56ad9003e6",
+    "schema-tree/orc-sdp-schema-tree-tests.log": "cccdf34f07161309305e53070d4778833d378cdf75b94ea50e9bb2ac7913fb27"
+  }
+}

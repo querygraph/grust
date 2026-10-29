@@ -11098,3 +11098,11 @@ Operator requested Astra Ultra response at the end of SDP-FABLE-DESIGN-REVIEW.md
 ## 2026-10-29T19:23:29.160021+00:00 — DONE Fable response follow-through content review
 
 Appended 140 lines under Astra Ultra follow-through, preserving all 112039 prior review bytes. Corrected SCD2 scope and current batch status; added source-grounded no-op Delta receipts, committed Iggy frontier mapping, auxiliary recreation versus unfinished-intent identity, cancellation recovery, and Astra/Sol handoff gates. Eight pinned source records retained; independent streaming and CDC read-only reviews found no blockers. Documentation-only candidate must pass detached preservation/source/receipt/link checks before conditional branch advance. No runtime tests, Sail code changes, publication or streaming/CDC implementation claim.
+
+## 2026-10-29T19:25:04.206212+00:00 — ACK ORC bounded metadata interfaces
+
+Resuming batch ORC implementation after committed Fable response22563226. Separate dependency units: iterative raw schema validation, aggregate decompression budget, then sync/async encoded/decoded metadata budgets, raw type attributes and builder reuse. Sail stays8d044db38 until these gates pass; no streaming/CDC runtime phase or publication.
+
+## 2026-10-29T19:37:53.973895+00:00 — DONE bounded ORC metadata and portable dependency
+
+ORC commits {'output-budget': '9cc3c855956cdc25ab2870689871cf2f1c44090d', 'schema-tree': '4e8e80c84228196f174af4cdf8405301437b794a', 'metadata-options': '91910faa90e70587655e40788495a8a936fdf8fe'}; final detached fmt/strict Clippy/default286pass8ignored/no-default182pass. Eight bounded Spark-file reads retain exact native rows and logical attributes; two retained malformed reads return errors. Sail 4c5d5861d8ba888563d4610d7ab7929fb21fed39 vendors the qualified package with exact source/license/hash checks, workspace exclusion and unchanged runtime lock. Initial inherited README whitespace failure retained; exact upstream bytes deliberately preserved. No source/sink registration or new SDP/runtime qualification. Docs/evidence gate precedes branch advance; no publication.

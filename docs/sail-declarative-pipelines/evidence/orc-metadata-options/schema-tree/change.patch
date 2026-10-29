@@ -1,0 +1,452 @@
+From 4e8e80c84228196f174af4cdf8405301437b794a Mon Sep 17 00:00:00 2001
+From: Alexy Khrabrov <deliverable@gmail.com>
+Date: Thu, 29 Oct 2026 12:29:04 -0700
+Subject: [PATCH] fix: validate ORC schema trees before recursive construction
+
+---
+ src/schema.rs                  |  32 ++++-
+ src/schema/validation.rs       | 125 ++++++++++++++++++
+ src/schema/validation/tests.rs | 230 +++++++++++++++++++++++++++++++++
+ 3 files changed, 380 insertions(+), 7 deletions(-)
+ create mode 100644 src/schema/validation.rs
+ create mode 100644 src/schema/validation/tests.rs
+
+diff --git a/src/schema.rs b/src/schema.rs
+index c1960eb..36d6b9b 100644
+--- a/src/schema.rs
++++ b/src/schema.rs
+@@ -21,12 +21,14 @@ use std::sync::Arc;
+ 
+ use snafu::{ensure, OptionExt};
+ 
+-use crate::error::{NoTypesSnafu, Result, UnexpectedSnafu};
++use crate::error::{Result, UnexpectedSnafu};
+ use crate::projection::ProjectionMask;
+ use crate::proto;
+ 
+ use arrow::datatypes::{DataType as ArrowDataType, Field, Schema, TimeUnit, UnionMode};
+ 
++mod validation;
++
+ /// Configuration for timestamp precision when converting ORC timestamps to Arrow.
+ #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+ pub enum TimestampPrecision {
+@@ -152,7 +154,18 @@ impl RootDataType {
+ 
+     /// Construct from protobuf types.
+     pub(crate) fn from_proto(types: &[proto::Type]) -> Result<Self> {
+-        ensure!(!types.is_empty(), NoTypesSnafu {});
++        Self::from_proto_with_max_depth(types, None)
++    }
++
++    /// Validate the protobuf type tree before constructing its recursive representation.
++    ///
++    /// The root has depth 0. `None` preserves the existing absence of a depth limit;
++    /// callers handling untrusted input can bound recursive construction with `Some`.
++    pub(crate) fn from_proto_with_max_depth(
++        types: &[proto::Type],
++        max_depth: Option<usize>,
++    ) -> Result<Self> {
++        validation::validate(types, max_depth)?;
+         let children = parse_struct_children_from_proto(types, 0)?;
+         let all_children = get_all_children_indices_set(&children);
+         Ok(Self {
+@@ -207,10 +220,15 @@ fn parse_struct_children_from_proto(
+     types: &[proto::Type],
+     column_index: usize,
+ ) -> Result<Vec<NamedColumn>> {
+-    // These pre-conditions should always be upheld, especially as this is a private function
+-    assert!(column_index < types.len());
+-    let ty = &types[column_index];
+-    assert!(ty.kind() == proto::r#type::Kind::Struct);
++    let ty = types.get(column_index).context(UnexpectedSnafu {
++        msg: format!("Column index out of bounds: {column_index}"),
++    })?;
++    ensure!(
++        validation::kind(ty, column_index)? == proto::r#type::Kind::Struct,
++        UnexpectedSnafu {
++            msg: format!("Column index {column_index} must have Struct type")
++        }
++    );
+     ensure!(
+         ty.subtypes.len() == ty.field_names.len(),
+         UnexpectedSnafu {
+@@ -393,7 +411,7 @@ impl DataType {
+         let ty = types.get(column_index).context(UnexpectedSnafu {
+             msg: format!("Column index out of bounds: {column_index}"),
+         })?;
+-        let dt = match ty.kind() {
++        let dt = match validation::kind(ty, column_index)? {
+             Kind::Boolean => Self::Boolean { column_index },
+             Kind::Byte => Self::Byte { column_index },
+             Kind::Short => Self::Short { column_index },
+diff --git a/src/schema/validation.rs b/src/schema/validation.rs
+new file mode 100644
+index 0000000..1fa272f
+--- /dev/null
++++ b/src/schema/validation.rs
+@@ -0,0 +1,125 @@
++// Licensed to the Apache Software Foundation (ASF) under one
++// or more contributor license agreements.  See the NOTICE file
++// distributed with this work for additional information
++// regarding copyright ownership.  The ASF licenses this file
++// to you under the Apache License, Version 2.0 (the
++// "License"); you may not use this file except in compliance
++// with the License.  You may obtain a copy of the License at
++//
++//   http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing,
++// software distributed under the License is distributed on an
++// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
++// KIND, either express or implied.  See the License for the
++// specific language governing permissions and limitations
++// under the License.
++
++use snafu::{ensure, OptionExt};
++
++use crate::error::{NoTypesSnafu, Result, UnexpectedSnafu};
++use crate::proto::{self, r#type::Kind};
++
++/// Read the stored kind without protobuf's fallback to Boolean for missing or
++/// unknown enum values.
++pub(super) fn kind(ty: &proto::Type, column_index: usize) -> Result<Kind> {
++    let raw = ty.kind.context(UnexpectedSnafu {
++        msg: format!("Missing type kind for column index {column_index}"),
++    })?;
++    Kind::try_from(raw).map_err(|_| {
++        UnexpectedSnafu {
++            msg: format!("Unknown type kind {raw} for column index {column_index}"),
++        }
++        .build()
++    })
++}
++
++/// Validate the entire raw type tree without recursion. The root has depth 0.
++pub(super) fn validate(types: &[proto::Type], max_depth: Option<usize>) -> Result<()> {
++    ensure!(!types.is_empty(), NoTypesSnafu {});
++    ensure!(
++        kind(&types[0], 0)? == Kind::Struct,
++        UnexpectedSnafu {
++            msg: "Root column index 0 must have Struct type".to_string()
++        }
++    );
++
++    let mut seen = vec![false; types.len()];
++    seen[0] = true;
++    let mut pending = vec![(0, 0usize)];
++    while let Some((column_index, depth)) = pending.pop() {
++        if let Some(max_depth) = max_depth {
++            ensure!(
++                depth <= max_depth,
++                UnexpectedSnafu {
++                    msg: format!(
++                        "Column index {column_index} has depth {depth}, exceeding maximum schema depth {max_depth}"
++                    )
++                }
++            );
++        }
++        let ty = &types[column_index];
++        let kind = kind(ty, column_index)?;
++        let arity_valid = match kind {
++            Kind::List => ty.subtypes.len() == 1,
++            Kind::Map => ty.subtypes.len() == 2,
++            Kind::Struct => ty.subtypes.len() == ty.field_names.len(),
++            // Preserve the existing supported range, including empty unions.
++            Kind::Union => ty.subtypes.len() <= 127,
++            _ => ty.subtypes.is_empty(),
++        };
++        ensure!(
++            arity_valid,
++            UnexpectedSnafu {
++                msg: format!(
++                    "Invalid subtype count {} for {kind:?} column index {column_index} ({} field names)",
++                    ty.subtypes.len(),
++                    ty.field_names.len()
++                )
++            }
++        );
++
++        for &child in ty.subtypes.iter().rev() {
++            let child = child as usize;
++            ensure!(
++                child < types.len(),
++                UnexpectedSnafu {
++                    msg: format!(
++                        "Child column index {child} of column index {column_index} is out of bounds"
++                    )
++                }
++            );
++            ensure!(
++                child != 0,
++                UnexpectedSnafu {
++                    msg: format!("Column index {column_index} references the root column")
++                }
++            );
++            ensure!(
++                !seen[child],
++                UnexpectedSnafu {
++                    msg: format!(
++                        "Column index {child} is referenced more than once (cycle or multiple parents)"
++                    )
++                }
++            );
++            // Mark on discovery so siblings cannot schedule a shared child twice.
++            seen[child] = true;
++            let child_depth = depth.checked_add(1).context(UnexpectedSnafu {
++                msg: "Schema depth overflow".to_string(),
++            })?;
++            pending.push((child, child_depth));
++        }
++    }
++
++    if let Some(column_index) = seen.iter().position(|seen| !seen) {
++        return UnexpectedSnafu {
++            msg: format!("Column index {column_index} is unreachable from the root"),
++        }
++        .fail();
++    }
++    Ok(())
++}
++
++#[cfg(test)]
++mod tests;
+diff --git a/src/schema/validation/tests.rs b/src/schema/validation/tests.rs
+new file mode 100644
+index 0000000..b60c2ae
+--- /dev/null
++++ b/src/schema/validation/tests.rs
+@@ -0,0 +1,230 @@
++// Licensed to the Apache Software Foundation (ASF) under one
++// or more contributor license agreements.  See the NOTICE file
++// distributed with this work for additional information
++// regarding copyright ownership.  The ASF licenses this file
++// to you under the Apache License, Version 2.0 (the
++// "License"); you may not use this file except in compliance
++// with the License.  You may obtain a copy of the License at
++//
++//   http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing,
++// software distributed under the License is distributed on an
++// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
++// KIND, either express or implied.  See the License for the
++// specific language governing permissions and limitations
++// under the License.
++
++use crate::error::OrcError;
++use crate::proto::{self, r#type::Kind};
++use crate::schema::{DataType, RootDataType};
++
++fn node(kind: Kind, children: &[u32]) -> proto::Type {
++    proto::Type {
++        kind: Some(kind as i32),
++        subtypes: children.to_vec(),
++        field_names: if kind == Kind::Struct {
++            (0..children.len())
++                .map(|index| format!("field_{index}"))
++                .collect()
++        } else {
++            vec![]
++        },
++        ..Default::default()
++    }
++}
++
++fn assert_invalid(types: &[proto::Type], expected: &str) {
++    let error = RootDataType::from_proto(types).unwrap_err().to_string();
++    assert!(
++        error.contains(expected),
++        "expected {expected:?}, got {error}"
++    );
++}
++
++#[test]
++fn rejects_empty_and_non_struct_roots() {
++    assert!(matches!(
++        RootDataType::from_proto(&[]),
++        Err(OrcError::NoTypes { .. })
++    ));
++    assert_invalid(&[node(Kind::Int, &[])], "must have Struct type");
++}
++
++#[test]
++fn rejects_missing_and_unknown_kinds_at_root_and_in_children() {
++    for (raw, expected) in [
++        (None, "Missing type kind"),
++        (Some(-1), "Unknown type kind"),
++        (Some(i32::MAX), "Unknown type kind"),
++    ] {
++        let invalid = proto::Type {
++            kind: raw,
++            ..Default::default()
++        };
++        assert_invalid(std::slice::from_ref(&invalid), expected);
++        assert_invalid(&[node(Kind::Struct, &[1]), invalid], expected);
++    }
++}
++
++#[test]
++fn rejects_invalid_container_and_primitive_arities() {
++    for invalid in [
++        node(Kind::List, &[]),
++        node(Kind::List, &[2, 3]),
++        node(Kind::Map, &[]),
++        node(Kind::Map, &[2]),
++        node(Kind::Map, &[2, 3, 4]),
++        node(Kind::Int, &[2]),
++        proto::Type {
++            field_names: vec![],
++            ..node(Kind::Struct, &[2])
++        },
++    ] {
++        let types = [
++            node(Kind::Struct, &[1]),
++            invalid,
++            node(Kind::Int, &[]),
++            node(Kind::String, &[]),
++            node(Kind::Boolean, &[]),
++        ];
++        assert_invalid(&types, "Invalid subtype count");
++    }
++}
++
++#[test]
++fn preserves_union_arity_limits() {
++    for count in [0, 127, 128] {
++        let children: Vec<_> = (2..2 + count).collect();
++        let mut types = vec![node(Kind::Struct, &[1]), node(Kind::Union, &children)];
++        types.extend((0..count).map(|_| node(Kind::Int, &[])));
++        if count <= 127 {
++            RootDataType::from_proto(&types).unwrap();
++        } else {
++            assert_invalid(&types, "Invalid subtype count");
++        }
++    }
++}
++
++#[test]
++fn rejects_out_of_bounds_children_and_root_references() {
++    assert_invalid(&[node(Kind::Struct, &[1])], "out of bounds");
++    assert_invalid(&[node(Kind::Struct, &[u32::MAX])], "out of bounds");
++    assert_invalid(&[node(Kind::Struct, &[0])], "references the root");
++    assert_invalid(
++        &[node(Kind::Struct, &[1]), node(Kind::List, &[0])],
++        "references the root",
++    );
++}
++
++#[test]
++fn rejects_cycles_and_shared_children() {
++    for types in [
++        vec![node(Kind::Struct, &[1]), node(Kind::List, &[1])],
++        vec![
++            node(Kind::Struct, &[1]),
++            node(Kind::List, &[2]),
++            node(Kind::List, &[1]),
++        ],
++        vec![node(Kind::Struct, &[1, 1]), node(Kind::Int, &[])],
++        vec![
++            node(Kind::Struct, &[1, 2]),
++            node(Kind::List, &[3]),
++            node(Kind::List, &[3]),
++            node(Kind::Int, &[]),
++        ],
++    ] {
++        assert_invalid(&types, "referenced more than once");
++    }
++}
++
++#[test]
++fn rejects_orphan_types_including_disconnected_cycles() {
++    assert_invalid(
++        &[node(Kind::Struct, &[]), node(Kind::Int, &[])],
++        "unreachable from the root",
++    );
++    assert_invalid(
++        &[
++            node(Kind::Struct, &[]),
++            node(Kind::List, &[2]),
++            node(Kind::List, &[1]),
++        ],
++        "unreachable from the root",
++    );
++}
++
++#[test]
++fn depth_budget_counts_root_as_zero() {
++    RootDataType::from_proto_with_max_depth(&[node(Kind::Struct, &[])], Some(0)).unwrap();
++    let types = [
++        node(Kind::Struct, &[1]),
++        node(Kind::List, &[2]),
++        node(Kind::List, &[3]),
++        node(Kind::Int, &[]),
++    ];
++    RootDataType::from_proto_with_max_depth(&types, Some(3)).unwrap();
++    RootDataType::from_proto_with_max_depth(&types, None).unwrap();
++    for limit in [0, 2] {
++        let error = RootDataType::from_proto_with_max_depth(&types, Some(limit))
++            .unwrap_err()
++            .to_string();
++        assert!(error.contains("exceeding maximum schema depth"), "{error}");
++    }
++}
++
++#[test]
++fn validates_deep_raw_trees_iteratively_before_construction() {
++    let depth = 10_000;
++    let mut types = vec![node(Kind::Struct, &[1])];
++    types.extend((1..depth).map(|index| node(Kind::List, &[index + 1])));
++    types.push(node(Kind::Int, &[]));
++    // Validate without constructing or dropping a deeply recursive DataType.
++    super::validate(&types, None).unwrap();
++    let error = RootDataType::from_proto_with_max_depth(&types, Some(8))
++        .unwrap_err()
++        .to_string();
++    assert!(error.contains("exceeding maximum schema depth"), "{error}");
++}
++
++#[test]
++fn constructs_valid_nested_types_with_original_column_indices() {
++    let types = [
++        node(Kind::Struct, &[1, 3, 6]),
++        node(Kind::List, &[2]),
++        node(Kind::Int, &[]),
++        node(Kind::Map, &[4, 5]),
++        node(Kind::String, &[]),
++        node(Kind::Timestamp, &[]),
++        node(Kind::Union, &[7, 9]),
++        node(Kind::Struct, &[8]),
++        node(Kind::Long, &[]),
++        node(Kind::Boolean, &[]),
++    ];
++    let root = RootDataType::from_proto_with_max_depth(&types, Some(3)).unwrap();
++    assert_eq!(root.children().len(), 3);
++    assert_eq!(root.children()[1].name(), "field_1");
++    assert!(matches!(
++        root.children()[0].data_type(),
++        DataType::List {
++            column_index: 1,
++            ..
++        }
++    ));
++    assert!(matches!(
++        root.children()[1].data_type(),
++        DataType::Map {
++            column_index: 3,
++            ..
++        }
++    ));
++    assert!(matches!(
++        root.children()[2].data_type(),
++        DataType::Union {
++            column_index: 6,
++            ..
++        }
++    ));
++    assert!((0..types.len()).all(|index| root.contains_column_index(index)));
++    assert!(!root.contains_column_index(types.len()));
++}
+-- 
+2.50.1 (Apple Git-155)
+

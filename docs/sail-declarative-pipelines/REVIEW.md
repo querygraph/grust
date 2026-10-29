@@ -1240,3 +1240,17 @@ unexecuted after the separate writer checks. The reproduced panic now returns an
 error, valid Spark/Rust files still cross-read, and no Sail capability count is
 advanced. Aggregate metadata budgets, type-tree validation, source/sink codecs and
 Sail integration remain required next steps.
+
+
+## Review bounded ORC metadata and portable dependency snapshot
+
+The [bounded metadata receipt](evidence/orc-metadata-options/provenance.json)
+adds three separately gated native dependency commits and Sail `4c5d5861d8`,
+a mechanical vendor snapshot with recorded patch provenance and license. Review
+the raw tree validator, aggregate block budget and metadata APIs independently.
+Final native gates:286 default passes (eight ignored),182 no-default library
+passes, fmt/strict Clippy; eight bounded Spark-file reads plus two malformed
+errors. The Sail commit changes no linked runtime or lockfile and registers no
+ORC format; its gate verifies exact package/source bytes and Cargo boundaries.
+The next Sail commit is the logical schema bridge, followed by the remote source
+and worker codec. No new SDP case is counted as passing from dependency tests.
