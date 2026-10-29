@@ -3724,8 +3724,17 @@
       "line": 179,
       "method": "test",
       "name_expression": "\"Pipeline dataset can be referenced in subquery\"",
-      "status": "unmapped",
-      "sail_tests": []
+      "status": "partial-behavioral-port",
+      "sail_tests": [
+        "python/pysail/tests/spark/pipelines/test_sql_batch.py::test_pipeline_dataset_in_scalar_subquery"
+      ],
+      "coverage_review": {
+        "phase": "batch-query",
+        "covered_assertions": "Materialized producer read inside a scalar max subquery in another materialized query produces exactly Row(4). Dataset names are renamed subquery_a/subquery_b.",
+        "remaining_assertions": "Original internal Scala graph entry point is replaced by Connect registration/StartRun. Original Scala suite has not executed against Sail.",
+        "sail_evidence": "evidence/e856e584652dfcc9f444ce67fd71ef440cf9af8b/pytest.xml",
+        "scala_suite_executed": false
+      }
     },
     {
       "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/SqlPipelineSuite.scala:197",
@@ -3841,8 +3850,17 @@
       "line": 501,
       "method": "test",
       "name_expression": "\"Pipeline dataset can be referenced in CTE\"",
-      "status": "unmapped",
-      "sail_tests": []
+      "status": "partial-behavioral-port",
+      "sail_tests": [
+        "python/pysail/tests/spark/pipelines/test_sql_batch.py::test_pipeline_dataset_in_nested_cte"
+      ],
+      "coverage_review": {
+        "phase": "batch-query",
+        "covered_assertions": "Materialized producer referenced through two nested CTEs produces exactly Row(1). Output names are renamed cte_a/cte_d; nested alias structure is retained.",
+        "remaining_assertions": "Original internal Scala graph entry point is replaced by Connect registration/StartRun. Original Scala suite has not executed against Sail.",
+        "sail_evidence": "evidence/e856e584652dfcc9f444ce67fd71ef440cf9af8b/pytest.xml",
+        "scala_suite_executed": false
+      }
     },
     {
       "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/SqlPipelineSuite.scala:525",
@@ -3940,8 +3958,17 @@
       "line": 825,
       "method": "test",
       "name_expression": "\"groupby and rollup works with internal datasets\"",
-      "status": "unmapped",
-      "sail_tests": []
+      "status": "partial-behavioral-port",
+      "sail_tests": [
+        "python/pysail/tests/spark/pipelines/test_sql_batch.py::test_pipeline_groupby_and_rollup"
+      ],
+      "coverage_review": {
+        "phase": "batch-query",
+        "covered_assertions": "Group-by IDs are exactly {0,1,2}; rollup row count is group-by plus one; exactly one null-ID total row has sum=3 and count=3. Source name is renamed rollup_src.",
+        "remaining_assertions": "Original internal Scala graph entry point is replaced by Connect registration/StartRun. Original Scala suite has not executed against Sail.",
+        "sail_evidence": "evidence/e856e584652dfcc9f444ce67fd71ef440cf9af8b/pytest.xml",
+        "scala_suite_executed": false
+      }
     },
     {
       "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/SqlPipelineSuite.scala:860",
@@ -3949,8 +3976,18 @@
       "line": 860,
       "method": "test",
       "name_expression": "\"Empty streaming table definition is disallowed\"",
-      "status": "unmapped",
-      "sail_tests": []
+      "status": "partial-behavioral-port",
+      "sail_tests": [
+        "python/pysail/tests/spark/pipelines/test_registration_errors.py::test_sql_dataset_without_flow_has_structured_error[False]",
+        "python/pysail/tests/spark/pipelines/test_registration_errors.py::test_sql_dataset_without_flow_has_structured_error[True]"
+      ],
+      "coverage_review": {
+        "phase": "registration-validation",
+        "covered_assertions": "Original CREATE STREAMING TABLE st without a query fails with AnalysisException, PIPELINE_DATASET_WITHOUT_FLOW, SQL state 0A000 and exact quoted identifier. Both dry/real starts are tested; st remains unpublished.",
+        "remaining_assertions": "Original internal Scala graph entry point is replaced by Connect registration/StartRun. Original Scala suite has not executed against Sail.",
+        "sail_evidence": "evidence/39f070e62540eacdb260ee2c241027e53838899f/pytest.xml",
+        "scala_suite_executed": false
+      }
     },
     {
       "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/SqlPipelineSuite.scala:877",

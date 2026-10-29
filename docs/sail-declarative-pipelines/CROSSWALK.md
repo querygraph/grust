@@ -8,7 +8,7 @@ do not qualify this whole inventory.
 The first assertion-level audit covers all 11 `ViewSuite.scala` registrations at
 Spark `617618396087429b5627a86ce933bb0f5d6645cb`. Seven have partial behavioral
 ports in Sail; four remain unmapped. None is marked fully qualified. A further 27 materialization registrations have now been reviewed; the remaining
-399 call sites still need an assertion-level audit after the additional server-suite review below. These are inventory counts,
+395 call sites still need an assertion-level audit after the additional server-suite review below. These are inventory counts,
 not a completion percentage.
 
 Each audited record in [the inventory](spark-4.2.1-inventory.json) now identifies
@@ -64,7 +64,7 @@ checkpoint remains ready for Astra.
 All 19 SparkDeclarativePipelinesServerSuite registrations are reviewed. Fourteen
 have partial behavioral ports; five remain unmapped. Including the two failure-handler
 registrations reviewed below, there were 59 reviewed registrations across four
-suites. The four SQL registrations below bring the total to 63, with 399 still
+suites. The eight SQL registrations below bring the total to 67, with 395 still
 awaiting review. There
 is no full Scala-suite verdict. The [validation record](evidence/server-crosswalk/validation.json)
 binds the pinned source hash and passing Sail test nodes to the updated inventory.
@@ -108,3 +108,16 @@ pinned source and both mapped nodes. The extended 14-instance matrix also covers
 reversed order, materialized/streaming table classification, persisted and
 temporary views, and three duplicate definitions. Sink collisions remain
 unqualified. Four of this suite's 38 registrations have now been reviewed.
+
+## SQL missing-producer and batch-query assertions
+
+Four further SQL registrations are reviewed: missing producer, scalar subquery,
+nested CTE and group-by/rollup. Their [validation record](evidence/sql-producer-query-crosswalk/validation.json)
+binds the pinned source and passing test nodes. The missing-producer error has
+exact class/condition/state/identifier checks for dry/real starts; six additional
+protocol cases test table/materialized/temporary outputs and escaped identifiers.
+The query ports check the original result assertions through Connect. All eleven
+new assertions match Spark 4.2.1. These ports bring the SQL suite to eight reviewed
+registrations and leave 30 awaiting assertion audit. Original Scala-suite execution
+remains unqualified. Across the inventory, 67 registrations are reviewed and 395
+remain unaudited.

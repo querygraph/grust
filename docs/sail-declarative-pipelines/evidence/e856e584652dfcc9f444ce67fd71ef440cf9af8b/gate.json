@@ -1,0 +1,48 @@
+{
+  "sail_commit": "e856e584652dfcc9f444ce67fd71ef440cf9af8b",
+  "engine_commit": "39f070e62540eacdb260ee2c241027e53838899f",
+  "spark_commit": "617618396087429b5627a86ce933bb0f5d6645cb",
+  "recorded_at": "2026-10-29T11:45:22.963499+00:00",
+  "platform": "macOS arm64",
+  "gate_checkout": "detached immutable test source; existing verified engine binary unchanged",
+  "cli_sha256": "aa2023c28d29ae2f6bec6f0270a6c42d79cfa330f3f3f226934555e9bb21e58d",
+  "checks": [
+    {
+      "command": "ruff check and format --check python/pysail/tests/spark/pipelines/test_sql_batch.py",
+      "outcome": "pass"
+    },
+    {
+      "command": "pytest replay of selected nodes listed in pytest.xml using remote engine 39f070e62540eacdb260ee2c241027e53838899f",
+      "outcome": "pass",
+      "passed": 195,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "command": "python scripts/spark-pipelines-tests/run.py --spark-source <pinned Spark checkout> --remote sc://localhost:50082 --report spark-python.json",
+      "outcome": "pass",
+      "tests_run": 67,
+      "server_spark_version": "4.2.1",
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "command": "python spark-reference.py",
+      "outcome": "pass",
+      "spark_version": "4.2.1",
+      "cases": 3,
+      "test_source_commit": "e856e584652dfcc9f444ce67fd71ef440cf9af8b"
+    },
+    {
+      "command": "Compare CLI SHA256 with engine receipt and verify test-only source diff",
+      "outcome": "pass"
+    }
+  ],
+  "limits": [
+    "Test-only commit; no additional Rust build, Clippy or native-extension execution claimed.",
+    "Three assertion ports use Connect StartRun instead of original internal Scala graph entry points.",
+    "No complete Scala-suite or distributed execution verdict.",
+    "Full batch acceptance, failure/event and REST-view design, streaming and CDC remain outstanding."
+  ]
+}

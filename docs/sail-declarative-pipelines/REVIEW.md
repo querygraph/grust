@@ -679,3 +679,42 @@ One additional SQL registration is audited: total reviewed 63, remaining 399.
 Only four of SqlPipelineSuite's 38 registrations have been reviewed. Missing-
 producer structured errors, full batch acceptance, original Scala-suite execution,
 Astra failure/event and persisted-view design, streaming and CDC remain open.
+
+## Review missing-producer structured metadata
+
+Commit `39f070e625` uses existing StructuredSparkError transport for
+PIPELINE_DATASET_WITHOUT_FLOW, mapped to AnalysisException, SQL state 0A000 and
+the quoted identifier parameter. It preserves existing validation order and
+execution behavior. Two SQL cases retain the original empty streaming-table
+fixture; six protocol cases cover tables, materialized views and temporary
+views with an identifier containing both a dot and an escaped backtick. Each
+runs dry/real and checks that no output, including an independent valid producer,
+is published.
+
+The [receipt](evidence/39f070e62540eacdb260ee2c241027e53838899f/gate.json)
+records formatting, strict Clippy, CLI build, Ruff, 192 selected pytest cases and
+67 upstream Python executions, all passing. Eight focused assertions also pass
+on Spark 4.2.1. All eight failed on the preceding Sail engine's missing structured
+metadata; the baseline is retained. These are registration/validation checks,
+not streaming execution qualification.
+
+## Review scalar-subquery, nested-CTE and rollup assertion ports
+
+Commit `e856e58465` adds three batch query tests with the original SQL-suite
+assertions: scalar-subquery output Row(4), nested-CTE output Row(1), and group-by
+IDs plus rollup cardinality and total row. Dataset names are renamed to avoid
+collisions between reference cases; nested query structure and aggregate
+expressions are retained. The port also checks exactly one rollup total row.
+
+The [receipt](evidence/e856e584652dfcc9f444ce67fd71ef440cf9af8b/gate.json)
+records Ruff, 195 selected pytest cases, 67 upstream Python executions and three
+matching Spark 4.2.1 reference cases. All three already pass on parent engine
+39f070e625; this is regression coverage, with no new runtime defect claimed.
+The CLI hash matches the engine receipt. No additional Rust/native gate is
+claimed for the test-only commit.
+
+Four additional SQL registrations are audited in these units, bringing the
+reviewed inventory to 67 and the unaudited remainder to 395. Eight of the SQL
+suite's 38 registrations are reviewed. Full batch acceptance, original Scala
+suite execution, Astra failure/event and persisted-view design, streaming and
+CDC remain outstanding. No new architecture is selected by these units.

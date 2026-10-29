@@ -1,0 +1,248 @@
+FFFFFFFF                                                                 [100%]
+=================================== FAILURES ===================================
+__________ test_sql_dataset_without_flow_has_structured_error[False] ___________
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x117ca67e0>
+pipeline = ('6a31410d-3292-4795-a488-31a5471b681f', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x117ca6a50>, <function pipeline_factory.<locals>.create.<locals>.run at 0x117ce8c20>)
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-108/test_sql_dataset_without_flow_0')
+dry = False
+
+    @pytest.mark.parametrize("dry", [False, True])
+    def test_sql_dataset_without_flow_has_structured_error(pipeline_spark, pipeline, tmp_path, dry):
+        _, registry, run = pipeline
+        registry.register_sql("CREATE STREAMING TABLE st", tmp_path / "empty_table.sql")
+        with pytest.raises(AnalysisException) as error:
+            run(dry=dry)
+>       assert error.value.getCondition() == "PIPELINE_DATASET_WITHOUT_FLOW"
+E       AssertionError: assert None == 'PIPELINE_DATASET_WITHOUT_FLOW'
+E        +  where None = getCondition()
+E        +    where getCondition = AnalysisException('[PIPELINE_DATASET_WITHOUT_FLOW] `sail`.`default`.`st`').getCondition
+E        +      where AnalysisException('[PIPELINE_DATASET_WITHOUT_FLOW] `sail`.`default`.`st`') = <ExceptionInfo AnalysisException('[PIPELINE_DATASET_WITHOUT_FLOW] `sail`.`default`.`st`') tblen=7>.value
+
+python/pysail/tests/spark/pipelines/test_registration_errors.py:107: AssertionError
+----------------------------- Captured stdout call -----------------------------
+2026-10-29 11:40:39: Starting pipeline analysis
+___________ test_sql_dataset_without_flow_has_structured_error[True] ___________
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x117cd5be0>
+pipeline = ('9dd20fc5-ac5e-49ec-b418-e9256712c4da', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x117d3cf80>, <function pipeline_factory.<locals>.create.<locals>.run at 0x117d302c0>)
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-108/test_sql_dataset_without_flow_1')
+dry = True
+
+    @pytest.mark.parametrize("dry", [False, True])
+    def test_sql_dataset_without_flow_has_structured_error(pipeline_spark, pipeline, tmp_path, dry):
+        _, registry, run = pipeline
+        registry.register_sql("CREATE STREAMING TABLE st", tmp_path / "empty_table.sql")
+        with pytest.raises(AnalysisException) as error:
+            run(dry=dry)
+>       assert error.value.getCondition() == "PIPELINE_DATASET_WITHOUT_FLOW"
+E       AssertionError: assert None == 'PIPELINE_DATASET_WITHOUT_FLOW'
+E        +  where None = getCondition()
+E        +    where getCondition = AnalysisException('[PIPELINE_DATASET_WITHOUT_FLOW] `sail`.`default`.`st`').getCondition
+E        +      where AnalysisException('[PIPELINE_DATASET_WITHOUT_FLOW] `sail`.`default`.`st`') = <ExceptionInfo AnalysisException('[PIPELINE_DATASET_WITHOUT_FLOW] `sail`.`default`.`st`') tblen=7>.value
+
+python/pysail/tests/spark/pipelines/test_registration_errors.py:107: AssertionError
+----------------------------- Captured stdout call -----------------------------
+2026-10-29 11:40:39: Starting pipeline analysis
+_______ test_protocol_dataset_without_flow_preserves_identifier[2-False] _______
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x117d3cb30>
+pipeline = ('e66422cc-1cf0-4125-8d70-7f51e526464d', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x117d3f3e0>, <function pipeline_factory.<locals>.create.<locals>.run at 0x117d31f80>)
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-108/test_protocol_dataset_without_0')
+kind = 2, dry = False
+
+    @pytest.mark.parametrize("dry", [False, True])
+    @pytest.mark.parametrize("kind", [pb.TABLE, pb.MATERIALIZED_VIEW, pb.TEMPORARY_VIEW])
+    def test_protocol_dataset_without_flow_preserves_identifier(pipeline_spark, pipeline, tmp_path, kind, dry):
+        graph_id, registry, run = pipeline
+        registry.register_sql("CREATE MATERIALIZED VIEW independent AS SELECT 1 AS value", tmp_path / "independent.sql")
+        name = "`output``with.dot`"
+        command = pb.Command()
+        command.pipeline_command.define_output.CopyFrom(
+            pb.PipelineCommand.DefineOutput(dataflow_graph_id=graph_id, output_name=name, output_type=kind)
+        )
+        pipeline_spark.client.execute_command(command)
+        with pytest.raises(AnalysisException) as error:
+            run(dry=dry)
+        identifier = name
+        if kind != pb.TEMPORARY_VIEW:
+            identifier = f"`{pipeline_spark.catalog.currentCatalog()}`.`{pipeline_spark.catalog.currentDatabase()}`.{name}"
+>       assert error.value.getCondition() == "PIPELINE_DATASET_WITHOUT_FLOW"
+E       AssertionError: assert None == 'PIPELINE_DATASET_WITHOUT_FLOW'
+E        +  where None = getCondition()
+E        +    where getCondition = AnalysisException('[PIPELINE_DATASET_WITHOUT_FLOW] `sail`.`default`.`output``with.dot`').getCondition
+E        +      where AnalysisException('[PIPELINE_DATASET_WITHOUT_FLOW] `sail`.`default`.`output``with.dot`') = <ExceptionInfo AnalysisException('[PIPELINE_DATASET_WITHOUT_FLOW] `sail`.`default`.`output``with.dot`') tblen=7>.value
+
+python/pysail/tests/spark/pipelines/test_registration_errors.py:131: AssertionError
+----------------------------- Captured stdout call -----------------------------
+2026-10-29 11:40:39: Starting pipeline analysis
+_______ test_protocol_dataset_without_flow_preserves_identifier[2-True] ________
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x117d457f0>
+pipeline = ('b99c19fa-cb33-4b4d-8d7b-3310290566e8', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x117d46a80>, <function pipeline_factory.<locals>.create.<locals>.run at 0x117d796c0>)
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-108/test_protocol_dataset_without_1')
+kind = 2, dry = True
+
+    @pytest.mark.parametrize("dry", [False, True])
+    @pytest.mark.parametrize("kind", [pb.TABLE, pb.MATERIALIZED_VIEW, pb.TEMPORARY_VIEW])
+    def test_protocol_dataset_without_flow_preserves_identifier(pipeline_spark, pipeline, tmp_path, kind, dry):
+        graph_id, registry, run = pipeline
+        registry.register_sql("CREATE MATERIALIZED VIEW independent AS SELECT 1 AS value", tmp_path / "independent.sql")
+        name = "`output``with.dot`"
+        command = pb.Command()
+        command.pipeline_command.define_output.CopyFrom(
+            pb.PipelineCommand.DefineOutput(dataflow_graph_id=graph_id, output_name=name, output_type=kind)
+        )
+        pipeline_spark.client.execute_command(command)
+        with pytest.raises(AnalysisException) as error:
+            run(dry=dry)
+        identifier = name
+        if kind != pb.TEMPORARY_VIEW:
+            identifier = f"`{pipeline_spark.catalog.currentCatalog()}`.`{pipeline_spark.catalog.currentDatabase()}`.{name}"
+>       assert error.value.getCondition() == "PIPELINE_DATASET_WITHOUT_FLOW"
+E       AssertionError: assert None == 'PIPELINE_DATASET_WITHOUT_FLOW'
+E        +  where None = getCondition()
+E        +    where getCondition = AnalysisException('[PIPELINE_DATASET_WITHOUT_FLOW] `sail`.`default`.`output``with.dot`').getCondition
+E        +      where AnalysisException('[PIPELINE_DATASET_WITHOUT_FLOW] `sail`.`default`.`output``with.dot`') = <ExceptionInfo AnalysisException('[PIPELINE_DATASET_WITHOUT_FLOW] `sail`.`default`.`output``with.dot`') tblen=7>.value
+
+python/pysail/tests/spark/pipelines/test_registration_errors.py:131: AssertionError
+----------------------------- Captured stdout call -----------------------------
+2026-10-29 11:40:39: Starting pipeline analysis
+_______ test_protocol_dataset_without_flow_preserves_identifier[1-False] _______
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x117d471a0>
+pipeline = ('94680917-ccaa-4ab5-8407-7f43e094337e', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x117d91160>, <function pipeline_factory.<locals>.create.<locals>.run at 0x117d7b1a0>)
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-108/test_protocol_dataset_without_2')
+kind = 1, dry = False
+
+    @pytest.mark.parametrize("dry", [False, True])
+    @pytest.mark.parametrize("kind", [pb.TABLE, pb.MATERIALIZED_VIEW, pb.TEMPORARY_VIEW])
+    def test_protocol_dataset_without_flow_preserves_identifier(pipeline_spark, pipeline, tmp_path, kind, dry):
+        graph_id, registry, run = pipeline
+        registry.register_sql("CREATE MATERIALIZED VIEW independent AS SELECT 1 AS value", tmp_path / "independent.sql")
+        name = "`output``with.dot`"
+        command = pb.Command()
+        command.pipeline_command.define_output.CopyFrom(
+            pb.PipelineCommand.DefineOutput(dataflow_graph_id=graph_id, output_name=name, output_type=kind)
+        )
+        pipeline_spark.client.execute_command(command)
+        with pytest.raises(AnalysisException) as error:
+            run(dry=dry)
+        identifier = name
+        if kind != pb.TEMPORARY_VIEW:
+            identifier = f"`{pipeline_spark.catalog.currentCatalog()}`.`{pipeline_spark.catalog.currentDatabase()}`.{name}"
+>       assert error.value.getCondition() == "PIPELINE_DATASET_WITHOUT_FLOW"
+E       AssertionError: assert None == 'PIPELINE_DATASET_WITHOUT_FLOW'
+E        +  where None = getCondition()
+E        +    where getCondition = AnalysisException('[PIPELINE_DATASET_WITHOUT_FLOW] `sail`.`default`.`output``with.dot`').getCondition
+E        +      where AnalysisException('[PIPELINE_DATASET_WITHOUT_FLOW] `sail`.`default`.`output``with.dot`') = <ExceptionInfo AnalysisException('[PIPELINE_DATASET_WITHOUT_FLOW] `sail`.`default`.`output``with.dot`') tblen=7>.value
+
+python/pysail/tests/spark/pipelines/test_registration_errors.py:131: AssertionError
+----------------------------- Captured stdout call -----------------------------
+2026-10-29 11:40:39: Starting pipeline analysis
+_______ test_protocol_dataset_without_flow_preserves_identifier[1-True] ________
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x117d90d10>
+pipeline = ('11e4ad3a-dc62-4926-968f-d6d3585630d1', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x117d93dd0>, <function pipeline_factory.<locals>.create.<locals>.run at 0x117d9d080>)
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-108/test_protocol_dataset_without_3')
+kind = 1, dry = True
+
+    @pytest.mark.parametrize("dry", [False, True])
+    @pytest.mark.parametrize("kind", [pb.TABLE, pb.MATERIALIZED_VIEW, pb.TEMPORARY_VIEW])
+    def test_protocol_dataset_without_flow_preserves_identifier(pipeline_spark, pipeline, tmp_path, kind, dry):
+        graph_id, registry, run = pipeline
+        registry.register_sql("CREATE MATERIALIZED VIEW independent AS SELECT 1 AS value", tmp_path / "independent.sql")
+        name = "`output``with.dot`"
+        command = pb.Command()
+        command.pipeline_command.define_output.CopyFrom(
+            pb.PipelineCommand.DefineOutput(dataflow_graph_id=graph_id, output_name=name, output_type=kind)
+        )
+        pipeline_spark.client.execute_command(command)
+        with pytest.raises(AnalysisException) as error:
+            run(dry=dry)
+        identifier = name
+        if kind != pb.TEMPORARY_VIEW:
+            identifier = f"`{pipeline_spark.catalog.currentCatalog()}`.`{pipeline_spark.catalog.currentDatabase()}`.{name}"
+>       assert error.value.getCondition() == "PIPELINE_DATASET_WITHOUT_FLOW"
+E       AssertionError: assert None == 'PIPELINE_DATASET_WITHOUT_FLOW'
+E        +  where None = getCondition()
+E        +    where getCondition = AnalysisException('[PIPELINE_DATASET_WITHOUT_FLOW] `sail`.`default`.`output``with.dot`').getCondition
+E        +      where AnalysisException('[PIPELINE_DATASET_WITHOUT_FLOW] `sail`.`default`.`output``with.dot`') = <ExceptionInfo AnalysisException('[PIPELINE_DATASET_WITHOUT_FLOW] `sail`.`default`.`output``with.dot`') tblen=7>.value
+
+python/pysail/tests/spark/pipelines/test_registration_errors.py:131: AssertionError
+----------------------------- Captured stdout call -----------------------------
+2026-10-29 11:40:39: Starting pipeline analysis
+_______ test_protocol_dataset_without_flow_preserves_identifier[3-False] _______
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x117d93ce0>
+pipeline = ('c0a14e56-33d3-490b-96d3-3f60f4b65d44', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x117d445c0>, <function pipeline_factory.<locals>.create.<locals>.run at 0x117d31ee0>)
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-108/test_protocol_dataset_without_4')
+kind = 3, dry = False
+
+    @pytest.mark.parametrize("dry", [False, True])
+    @pytest.mark.parametrize("kind", [pb.TABLE, pb.MATERIALIZED_VIEW, pb.TEMPORARY_VIEW])
+    def test_protocol_dataset_without_flow_preserves_identifier(pipeline_spark, pipeline, tmp_path, kind, dry):
+        graph_id, registry, run = pipeline
+        registry.register_sql("CREATE MATERIALIZED VIEW independent AS SELECT 1 AS value", tmp_path / "independent.sql")
+        name = "`output``with.dot`"
+        command = pb.Command()
+        command.pipeline_command.define_output.CopyFrom(
+            pb.PipelineCommand.DefineOutput(dataflow_graph_id=graph_id, output_name=name, output_type=kind)
+        )
+        pipeline_spark.client.execute_command(command)
+        with pytest.raises(AnalysisException) as error:
+            run(dry=dry)
+        identifier = name
+        if kind != pb.TEMPORARY_VIEW:
+            identifier = f"`{pipeline_spark.catalog.currentCatalog()}`.`{pipeline_spark.catalog.currentDatabase()}`.{name}"
+>       assert error.value.getCondition() == "PIPELINE_DATASET_WITHOUT_FLOW"
+E       AssertionError: assert None == 'PIPELINE_DATASET_WITHOUT_FLOW'
+E        +  where None = getCondition()
+E        +    where getCondition = AnalysisException('[PIPELINE_DATASET_WITHOUT_FLOW] `output``with.dot`').getCondition
+E        +      where AnalysisException('[PIPELINE_DATASET_WITHOUT_FLOW] `output``with.dot`') = <ExceptionInfo AnalysisException('[PIPELINE_DATASET_WITHOUT_FLOW] `output``with.dot`') tblen=7>.value
+
+python/pysail/tests/spark/pipelines/test_registration_errors.py:131: AssertionError
+----------------------------- Captured stdout call -----------------------------
+2026-10-29 11:40:40: Starting pipeline analysis
+_______ test_protocol_dataset_without_flow_preserves_identifier[3-True] ________
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x117d3d100>
+pipeline = ('667584a9-76d2-4d8e-a301-a1fc470e2098', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x117d3de20>, <function pipeline_factory.<locals>.create.<locals>.run at 0x117d9e2a0>)
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-108/test_protocol_dataset_without_5')
+kind = 3, dry = True
+
+    @pytest.mark.parametrize("dry", [False, True])
+    @pytest.mark.parametrize("kind", [pb.TABLE, pb.MATERIALIZED_VIEW, pb.TEMPORARY_VIEW])
+    def test_protocol_dataset_without_flow_preserves_identifier(pipeline_spark, pipeline, tmp_path, kind, dry):
+        graph_id, registry, run = pipeline
+        registry.register_sql("CREATE MATERIALIZED VIEW independent AS SELECT 1 AS value", tmp_path / "independent.sql")
+        name = "`output``with.dot`"
+        command = pb.Command()
+        command.pipeline_command.define_output.CopyFrom(
+            pb.PipelineCommand.DefineOutput(dataflow_graph_id=graph_id, output_name=name, output_type=kind)
+        )
+        pipeline_spark.client.execute_command(command)
+        with pytest.raises(AnalysisException) as error:
+            run(dry=dry)
+        identifier = name
+        if kind != pb.TEMPORARY_VIEW:
+            identifier = f"`{pipeline_spark.catalog.currentCatalog()}`.`{pipeline_spark.catalog.currentDatabase()}`.{name}"
+>       assert error.value.getCondition() == "PIPELINE_DATASET_WITHOUT_FLOW"
+E       AssertionError: assert None == 'PIPELINE_DATASET_WITHOUT_FLOW'
+E        +  where None = getCondition()
+E        +    where getCondition = AnalysisException('[PIPELINE_DATASET_WITHOUT_FLOW] `output``with.dot`').getCondition
+E        +      where AnalysisException('[PIPELINE_DATASET_WITHOUT_FLOW] `output``with.dot`') = <ExceptionInfo AnalysisException('[PIPELINE_DATASET_WITHOUT_FLOW] `output``with.dot`') tblen=7>.value
+
+python/pysail/tests/spark/pipelines/test_registration_errors.py:131: AssertionError
+----------------------------- Captured stdout call -----------------------------
+2026-10-29 11:40:40: Starting pipeline analysis
+=========================== short test summary info ============================
+FAILED python/pysail/tests/spark/pipelines/test_registration_errors.py::test_sql_dataset_without_flow_has_structured_error[False]
+FAILED python/pysail/tests/spark/pipelines/test_registration_errors.py::test_sql_dataset_without_flow_has_structured_error[True]
+FAILED python/pysail/tests/spark/pipelines/test_registration_errors.py::test_protocol_dataset_without_flow_preserves_identifier[2-False]
+FAILED python/pysail/tests/spark/pipelines/test_registration_errors.py::test_protocol_dataset_without_flow_preserves_identifier[2-True]
+FAILED python/pysail/tests/spark/pipelines/test_registration_errors.py::test_protocol_dataset_without_flow_preserves_identifier[1-False]
+FAILED python/pysail/tests/spark/pipelines/test_registration_errors.py::test_protocol_dataset_without_flow_preserves_identifier[1-True]
+FAILED python/pysail/tests/spark/pipelines/test_registration_errors.py::test_protocol_dataset_without_flow_preserves_identifier[3-False]
+FAILED python/pysail/tests/spark/pipelines/test_registration_errors.py::test_protocol_dataset_without_flow_preserves_identifier[3-True]
+8 failed in 0.40s
