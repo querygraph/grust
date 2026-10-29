@@ -10933,3 +10933,19 @@ Earlier parent golden failure resolved and retained historically. Spark probe co
 Unicode unquoted-name difference; original Sail identifier rule preserved. Next design
 checkpoint announced: shared catalog expressions and pipeline namespaces. Full goal
 active, no publication.
+
+## 2026-10-29T13:50:23.105108+00:00 — ACK shared catalog-expression design evidence
+
+Recording the newly observed 22-expression Spark analyzer matrix and paired 11-case registration matrix. The latter passes all required assertions on Spark and fails nine on the unchanged Sail engine. Selecting shared typed expression lowering and prepare/commit registration after verifying session-config and error-class boundaries. No production edit in this design pass.
+
+## 2026-10-29T14:03:35.877682+00:00 — DONE catalog-expression architecture pass
+
+Selected CATALOG-EXPRESSION-DESIGN.md after 22 Spark analyzer observations and paired
+13-case registration probes. Required assertions pass Spark 13/13, Sail 2/13 with eleven
+retained failures; both original invalid grid instances fail on Sail. Session-versus-
+file/default ANSI policy, selective execution-error propagation, exact wrapper
+parameters/SQL states and lost foldability information are pinned. Plan uses shared
+typed resolver plus graph-independent preparation and locked current-state replay; no
+new mutex/revision framework. Five granular implementation units ready. Sail
+source/engine unchanged; inventory counts unchanged and original Scala suite unexecuted.
+Full goal active, no publication.

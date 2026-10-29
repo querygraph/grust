@@ -4207,6 +4207,15 @@
           "CONCAT(foo, '1')",
           "test.cat"
         ]
+      },
+      "failing_behavioral_reproduction": {
+        "source": "evidence/catalog-expression-design/required-assertions.py",
+        "provenance": "evidence/catalog-expression-design/provenance.json",
+        "source_instances": {
+          "CONCAT(foo, '1')": "unresolved",
+          "test.cat": "multipart"
+        },
+        "scope": "Registration assertions include both original expression instances plus broader design controls. Spark 13/13; Sail 2/13, with both original instances failing the required error assertions. Original Scala suite remains unexecuted."
       }
     },
     {

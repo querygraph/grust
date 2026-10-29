@@ -51,6 +51,11 @@ coverage; do not move shared SQL semantics into it. Validate shared behavior
 against the applicable memory and REST catalog configurations. Extract reusable
 LakeCat machinery only where a small dependency boundary is actually needed.
 
+The [catalog-expression design](CATALOG-EXPRESSION-DESIGN.md) defines shared
+typed SQL expression resolution and asynchronous preparation followed by locked,
+file-atomic pipeline registration. Its retained baseline passes 13 checks on
+Spark and fails eleven on the unchanged Sail engine; implementation is pending.
+
 | Existing component | Reuse and required change |
 | --- | --- |
 | `sail-spark-connect` protocol and service | Replace the pipeline-command rejection with graph lifecycle and run handlers. Return typed command results and pipeline events through the existing execution response stream. |

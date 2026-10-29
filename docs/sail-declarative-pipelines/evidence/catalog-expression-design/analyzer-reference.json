@@ -1,0 +1,153 @@
+{
+  "recorded_at": "2026-10-29T13:35:46.182296+00:00",
+  "spark_version": "4.2.1",
+  "spark_commit": "617618396087429b5627a86ce933bb0f5d6645cb",
+  "scope": "SQL parser plus Analyzer execute/checkAnalysis and SetCatalogCommand.getCatalogName; no command execution or catalog mutation",
+  "cases": [
+    {
+      "expression": "spark_catalog",
+      "outcome": "resolved",
+      "catalog": "spark_catalog",
+      "plan": "SetCatalogCommand `spark_catalog`\n"
+    },
+    {
+      "expression": "'spark_catalog'",
+      "outcome": "resolved",
+      "catalog": "spark_catalog",
+      "plan": "SetCatalogCommand spark_catalog\n"
+    },
+    {
+      "expression": "CONCAT('spark_', 'catalog')",
+      "outcome": "resolved",
+      "catalog": "spark_catalog",
+      "plan": "SetCatalogCommand concat(spark_, catalog)\n"
+    },
+    {
+      "expression": "CAST('spark_catalog' AS STRING)",
+      "outcome": "resolved",
+      "catalog": "spark_catalog",
+      "plan": "SetCatalogCommand cast(spark_catalog as string)\n"
+    },
+    {
+      "expression": "'test.cat'",
+      "outcome": "rejected",
+      "exception_type": "AnalysisException",
+      "message": "[INVALID_SQL_SYNTAX.MULTI_PART_NAME] Invalid SQL syntax: SET CATALOG with multiple part name(`test`.`cat`) is not allowed. SQLSTATE: 42000",
+      "condition": "INVALID_SQL_SYNTAX.MULTI_PART_NAME"
+    },
+    {
+      "expression": "'`test.cat`'",
+      "outcome": "resolved",
+      "catalog": "test.cat",
+      "plan": "SetCatalogCommand `test.cat`\n"
+    },
+    {
+      "expression": "`test.cat`",
+      "outcome": "resolved",
+      "catalog": "test.cat",
+      "plan": "SetCatalogCommand `test.cat`\n"
+    },
+    {
+      "expression": "test.cat",
+      "outcome": "rejected",
+      "exception_type": "AnalysisException",
+      "message": "[INVALID_SQL_SYNTAX.MULTI_PART_NAME] Invalid SQL syntax: SET CATALOG with multiple part name(`test`.`cat`) is not allowed. SQLSTATE: 42000",
+      "condition": "INVALID_SQL_SYNTAX.MULTI_PART_NAME"
+    },
+    {
+      "expression": "CONCAT(foo, '1')",
+      "outcome": "rejected",
+      "exception_type": "AnalysisException",
+      "message": "[UNRESOLVED_COLUMN.WITHOUT_SUGGESTION] A column, variable, or function parameter with name `foo` cannot be resolved.  SQLSTATE: 42703; line 1 pos 19;\n'SetCatalogCommand 'CONCAT('foo, 1)\n",
+      "condition": "UNRESOLVED_COLUMN.WITHOUT_SUGGESTION"
+    },
+    {
+      "expression": "1",
+      "outcome": "rejected",
+      "exception_type": "AnalysisException",
+      "message": "[NOT_A_CONSTANT_STRING.WRONG_TYPE] The expression 1 used for the routine or clause IDENTIFIER must be a constant STRING which is NOT NULL. The data type of the expression is int. SQLSTATE: 42601; line 1 pos 12",
+      "condition": "NOT_A_CONSTANT_STRING.WRONG_TYPE"
+    },
+    {
+      "expression": "NULL",
+      "outcome": "rejected",
+      "exception_type": "AnalysisException",
+      "message": "[NOT_A_CONSTANT_STRING.WRONG_TYPE] The expression NULL used for the routine or clause IDENTIFIER must be a constant STRING which is NOT NULL. The data type of the expression is void. SQLSTATE: 42601; line 1 pos 12",
+      "condition": "NOT_A_CONSTANT_STRING.WRONG_TYPE"
+    },
+    {
+      "expression": "CAST(NULL AS STRING)",
+      "outcome": "rejected",
+      "exception_type": "AnalysisException",
+      "message": "[NOT_A_CONSTANT_STRING.NULL] The expression CAST(NULL AS STRING) used for the routine or clause IDENTIFIER must be a constant STRING which is NOT NULL. The expression evaluates to NULL. SQLSTATE: 42601; line 1 pos 12",
+      "condition": "NOT_A_CONSTANT_STRING.NULL"
+    },
+    {
+      "expression": "''",
+      "outcome": "rejected",
+      "exception_type": "ParseException",
+      "message": "\n[PARSE_EMPTY_STATEMENT] Syntax error, unexpected empty statement. SQLSTATE: 42617 (line 1, pos 0)\n\n== SQL ==\n\n^^^\n",
+      "condition": "PARSE_EMPTY_STATEMENT"
+    },
+    {
+      "expression": "'``'",
+      "outcome": "resolved",
+      "catalog": "",
+      "plan": "SetCatalogCommand ``\n"
+    },
+    {
+      "expression": "CONCAT('a.', 'b')",
+      "outcome": "rejected",
+      "exception_type": "AnalysisException",
+      "message": "[INVALID_SQL_SYNTAX.MULTI_PART_NAME] Invalid SQL syntax: SET CATALOG with multiple part name(`a`.`b`) is not allowed. SQLSTATE: 42000",
+      "condition": "INVALID_SQL_SYNTAX.MULTI_PART_NAME"
+    },
+    {
+      "expression": "IDENTIFIER('spark_catalog')",
+      "outcome": "resolved",
+      "catalog": "spark_catalog",
+      "plan": "SetCatalogCommand `spark_catalog`\n"
+    },
+    {
+      "expression": "IDENTIFIER(CONCAT('spark_', 'catalog'))",
+      "outcome": "resolved",
+      "catalog": "spark_catalog",
+      "plan": "SetCatalogCommand `spark_catalog`\n"
+    },
+    {
+      "expression": "CAST(rand() AS STRING)",
+      "outcome": "rejected",
+      "exception_type": "AnalysisException",
+      "message": "[INVALID_NON_DETERMINISTIC_EXPRESSIONS] The operator expects a deterministic expression, but the actual expression is \"CAST(rand() AS STRING)\". SQLSTATE: 42K0E; line 1 pos 0;\nSetCatalogCommand cast(rand(-1650250039973027479) as string)\n",
+      "condition": "INVALID_NON_DETERMINISTIC_EXPRESSIONS"
+    },
+    {
+      "expression": "CAST(current_timestamp() AS STRING)",
+      "outcome": "rejected",
+      "exception_type": "ParseException",
+      "message": "\n[PARSE_SYNTAX_ERROR] Syntax error at or near '2026'. SQLSTATE: 42601 (line 1, pos 0)\n\n== SQL ==\n2026-10-29 06:35:47.119673\n^^^\n",
+      "condition": "PARSE_SYNTAX_ERROR"
+    },
+    {
+      "expression": "current_catalog()",
+      "outcome": "rejected",
+      "exception_type": "AnalysisException",
+      "message": "[NOT_A_CONSTANT_STRING.NOT_CONSTANT] The expression current_catalog() used for the routine or clause IDENTIFIER must be a constant STRING which is NOT NULL. To be considered constant the expression must not depend on any columns, contain a subquery, or invoke a non deterministic function such as rand(). SQLSTATE: 42601; line 1 pos 12",
+      "condition": "NOT_A_CONSTANT_STRING.NOT_CONSTANT"
+    },
+    {
+      "expression": "(SELECT 'spark_catalog')",
+      "outcome": "rejected",
+      "exception_type": "Py4JJavaError",
+      "message": "An error occurred while calling o198.checkAnalysis.\n: org.apache.spark.SparkException: [INTERNAL_ERROR] Found the unresolved operator: 'Project [unresolvedalias(spark_catalog)] SQLSTATE: XX000\n== SQL (line 1, position 14) ==\nSET CATALOG (SELECT 'spark_catalog')\n             ^^^^^^^^^^^^^^^^^^^^^^\n\n\tat org.apache.spark.SparkException$.internalError(SparkException.scala:104)\n\tat org.apache.spark.SparkException$.internalError(SparkException.scala:91)\n\tat org.apache.spark.sql.catalyst.analysis.CheckAnalysis.$anonfun$checkAnalysis0$59(CheckAnalysis.scala:1095)\n\tat org.apache.spark.sql.catalyst.analysis.CheckAnalysis.$anonfun$checkAnalysis0$59$adapted(CheckAnalysis.scala:1090)\n\tat org.apache.spark.sql.catalyst.trees.TreeNode.foreachUp(TreeNode.scala:277)\n\tat org.apache.spark.sql.catalyst.analysis.CheckAnalysis.checkAnalysis0(CheckAnalysis.scala:1090)\n\tat org.apache.spark.sql.catalyst.analysis.CheckAnalysis.checkAnalysis0$(CheckAnalysis.scala:330)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.checkAnalysis0(Analyzer.scala:336)\n\tat org.apache.spark.sql.catalyst.analysis.CheckAnalysis.checkSubqueryExpression(CheckAnalysis.scala:1117)\n\tat org.apache.spark.sql.catalyst.analysis.CheckAnalysis.checkSubqueryExpression$(CheckAnalysis.scala:1113)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.checkSubqueryExpression(Analyzer.scala:336)\n\tat org.apache.spark.sql.catalyst.analysis.CheckAnalysis.$anonfun$checkAnalysis0$8(CheckAnalysis.scala:585)\n\tat org.apache.spark.sql.catalyst.analysis.CheckAnalysis.$anonfun$checkAnalysis0$8$adapted(CheckAnalysis.scala:534)\n\tat org.apache.spark.sql.catalyst.trees.TreeNode.foreachUp(TreeNode.scala:277)\n\tat org.apache.spark.sql.catalyst.analysis.CheckAnalysis.$anonfun$checkAnalysis0$7(CheckAnalysis.scala:534)\n\tat org.apache.spark.sql.catalyst.analysis.CheckAnalysis.$anonfun$checkAnalysis0$7$adapted(CheckAnalysis.scala:534)\n\tat scala.collection.immutable.List.foreach(List.scala:323)\n\tat org.apache.spark.sql.catalyst.analysis.CheckAnalysis.$anonfun$checkAnalysis0$2(CheckAnalysis.scala:534)\n\tat org.apache.spark.sql.catalyst.analysis.CheckAnalysis.$anonfun$checkAnalysis0$2$adapted(CheckAnalysis.scala:363)\n\tat org.apache.spark.sql.catalyst.trees.TreeNode.foreachUp(TreeNode.scala:277)\n\tat org.apache.spark.sql.catalyst.analysis.CheckAnalysis.checkAnalysis0(CheckAnalysis.scala:363)\n\tat org.apache.spark.sql.catalyst.analysis.CheckAnalysis.checkAnalysis0$(CheckAnalysis.scala:330)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.checkAnalysis0(Analyzer.scala:336)\n\tat org.apache.spark.sql.catalyst.analysis.CheckAnalysis.checkAnalysis(CheckAnalysis.scala:319)\n\tat org.apache.spark.sql.catalyst.analysis.CheckAnalysis.checkAnalysis$(CheckAnalysis.scala:306)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.checkAnalysis(Analyzer.scala:336)\n\tat java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:104)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:578)\n\tat py4j.reflection.MethodInvoker.invoke(MethodInvoker.java:244)\n\tat py4j.reflection.ReflectionEngine.invoke(ReflectionEngine.java:374)\n\tat py4j.Gateway.invoke(Gateway.java:282)\n\tat py4j.commands.AbstractCommand.invokeMethod(AbstractCommand.java:132)\n\tat py4j.commands.CallCommand.execute(CallCommand.java:79)\n\tat py4j.ClientServerConnection.waitForCommands(ClientServerConnection.java:184)\n\tat py4j.ClientServerConnection.run(ClientServerConnection.java:108)\n\tat java.base/java.lang.Thread.run(Thread.java:1623)\n",
+      "condition": "INTERNAL_ERROR"
+    },
+    {
+      "expression": "CONCAT_WS('', TRANSFORM(ARRAY('spark_', 'catalog'), x -> x))",
+      "outcome": "rejected",
+      "exception_type": "AnalysisException",
+      "message": "[NOT_A_CONSTANT_STRING.NOT_CONSTANT] The expression concat_ws('', transform(array('spark_', 'catalog'), lambdafunction(namedlambdavariable(), namedlambdavariable()))) used for the routine or clause IDENTIFIER must be a constant STRING which is NOT NULL. To be considered constant the expression must not depend on any columns, contain a subquery, or invoke a non deterministic function such as rand(). SQLSTATE: 42601; line 1 pos 12",
+      "condition": "NOT_A_CONSTANT_STRING.NOT_CONSTANT"
+    }
+  ]
+}

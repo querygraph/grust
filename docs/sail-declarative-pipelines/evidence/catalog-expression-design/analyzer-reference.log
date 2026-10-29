@@ -1,0 +1,146 @@
+WARNING: Using incubator modules: jdk.incubator.vector
+Using Spark's default log4j profile: org/apache/spark/log4j2-defaults.properties
+Setting default log level to "WARN".
+To adjust logging level use sc.setLogLevel(newLevel). For SparkR, use setLogLevel(newLevel).
+26/10/29 06:35:43 WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+{"ts": "2026-10-29 06:35:46.994", "level": "ERROR", "logger": "SQLQueryContextLogger", "msg": "[UNRESOLVED_COLUMN.WITHOUT_SUGGESTION] A column, variable, or function parameter with name `foo` cannot be resolved.  SQLSTATE: 42703", "context": {"errorClass": "UNRESOLVED_COLUMN.WITHOUT_SUGGESTION"}, "exception": {"class": "Py4JJavaError", "msg": "An error occurred while calling o84.checkAnalysis.\n: org.apache.spark.sql.AnalysisException: [UNRESOLVED_COLUMN.WITHOUT_SUGGESTION] A column, variable, or function parameter with name `foo` cannot be resolved.  SQLSTATE: 42703; line 1 pos 19;\n'SetCatalogCommand 'CONCAT('foo, 1)\n\n\tat org.apache.spark.sql.errors.QueryCompilationErrors$.unresolvedAttributeError(QueryCompilationErrors.scala:432)\n\tat org.apache.spark.sql.catalyst.analysis.CheckAnalysis.org$apache$spark$sql$catalyst$analysis$CheckAnalysis$$failUnresolvedAttribute(CheckAnalysis.scala:244)\n\tat org.apache.spark.sql.catalyst.analysis.CheckAnalysis.$anonfun$checkAnalysis0$8(CheckAnalysis.scala:536)\n\tat org.apache.spark.sql.catalyst.analysis.CheckAnalysis.$anonfun$checkAnalysis0$8$adapted(CheckAnalysis.scala:534)\n\tat org.apache.spark.sql.catalyst.trees.TreeNode.foreachUp(TreeNode.scala:277)\n\tat org.apache.spark.sql.catalyst.trees.TreeNode.$anonfun$foreachUp$1(TreeNode.scala:276)\n\tat org.apache.spark.sql.catalyst.trees.TreeNode.$anonfun$foreachUp$1$adapted(TreeNode.scala:276)\n\tat scala.collection.immutable.List.foreach(List.scala:323)\n\tat org.apache.spark.sql.catalyst.trees.TreeNode.foreachUp(TreeNode.scala:276)\n\tat org.apache.spark.sql.catalyst.analysis.CheckAnalysis.$anonfun$checkAnalysis0$7(CheckAnalysis.scala:534)\n\tat org.apache.spark.sql.catalyst.analysis.CheckAnalysis.$anonfun$checkAnalysis0$7$adapted(CheckAnalysis.scala:534)\n\tat scala.collection.immutable.List.foreach(List.scala:323)\n\tat org.apache.spark.sql.catalyst.analysis.CheckAnalysis.$anonfun$checkAnalysis0$2(CheckAnalysis.scala:534)\n\tat org.apache.spark.sql.catalyst.analysis.CheckAnalysis.$anonfun$checkAnalysis0$2$adapted(CheckAnalysis.scala:363)\n\tat org.apache.spark.sql.catalyst.trees.TreeNode.foreachUp(TreeNode.scala:277)\n\tat org.apache.spark.sql.catalyst.analysis.CheckAnalysis.checkAnalysis0(CheckAnalysis.scala:363)\n\tat org.apache.spark.sql.catalyst.analysis.CheckAnalysis.checkAnalysis0$(CheckAnalysis.scala:330)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.checkAnalysis0(Analyzer.scala:336)\n\tat org.apache.spark.sql.catalyst.analysis.CheckAnalysis.checkAnalysis(CheckAnalysis.scala:319)\n\tat org.apache.spark.sql.catalyst.analysis.CheckAnalysis.checkAnalysis$(CheckAnalysis.scala:306)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.checkAnalysis(Analyzer.scala:336)\n\tat java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:104)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:578)\n\tat py4j.reflection.MethodInvoker.invoke(MethodInvoker.java:244)\n\tat py4j.reflection.ReflectionEngine.invoke(ReflectionEngine.java:374)\n\tat py4j.Gateway.invoke(Gateway.java:282)\n\tat py4j.commands.AbstractCommand.invokeMethod(AbstractCommand.java:132)\n\tat py4j.commands.CallCommand.execute(CallCommand.java:79)\n\tat py4j.ClientServerConnection.waitForCommands(ClientServerConnection.java:184)\n\tat py4j.ClientServerConnection.run(ClientServerConnection.java:108)\n\tat java.base/java.lang.Thread.run(Thread.java:1623)\n", "stacktrace": [{"class": null, "method": "deco", "file": "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/errors/exceptions/captured.py", "line": "251"}, {"class": null, "method": "get_return_value", "file": "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/py4j/protocol.py", "line": "327"}]}}
+{"ts": "2026-10-29 06:35:47.007", "level": "ERROR", "logger": "SQLQueryContextLogger", "msg": "[NOT_A_CONSTANT_STRING.WRONG_TYPE] The expression 1 used for the routine or clause IDENTIFIER must be a constant STRING which is NOT NULL. The data type of the expression is int. SQLSTATE: 42601", "context": {"errorClass": "NOT_A_CONSTANT_STRING.WRONG_TYPE"}, "exception": {"class": "Py4JJavaError", "msg": "An error occurred while calling o95.getCatalogName.\n: org.apache.spark.sql.AnalysisException: [NOT_A_CONSTANT_STRING.WRONG_TYPE] The expression 1 used for the routine or clause IDENTIFIER must be a constant STRING which is NOT NULL. The data type of the expression is int. SQLSTATE: 42601; line 1 pos 12\n\tat org.apache.spark.sql.catalyst.analysis.package$AnalysisErrorAt.failAnalysis(package.scala:52)\n\tat org.apache.spark.sql.catalyst.analysis.IdentifierResolution$.evalIdentifierExpr(IdentifierResolution.scala:36)\n\tat org.apache.spark.sql.execution.command.SetCatalogCommand.getCatalogName(SetCatalogCommand.scala:51)\n\tat java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:104)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:578)\n\tat py4j.reflection.MethodInvoker.invoke(MethodInvoker.java:244)\n\tat py4j.reflection.ReflectionEngine.invoke(ReflectionEngine.java:374)\n\tat py4j.Gateway.invoke(Gateway.java:282)\n\tat py4j.commands.AbstractCommand.invokeMethod(AbstractCommand.java:132)\n\tat py4j.commands.CallCommand.execute(CallCommand.java:79)\n\tat py4j.ClientServerConnection.waitForCommands(ClientServerConnection.java:184)\n\tat py4j.ClientServerConnection.run(ClientServerConnection.java:108)\n\tat java.base/java.lang.Thread.run(Thread.java:1623)\n", "stacktrace": [{"class": null, "method": "deco", "file": "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/errors/exceptions/captured.py", "line": "251"}, {"class": null, "method": "get_return_value", "file": "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/py4j/protocol.py", "line": "327"}]}}
+{"ts": "2026-10-29 06:35:47.021", "level": "ERROR", "logger": "SQLQueryContextLogger", "msg": "[NOT_A_CONSTANT_STRING.WRONG_TYPE] The expression NULL used for the routine or clause IDENTIFIER must be a constant STRING which is NOT NULL. The data type of the expression is void. SQLSTATE: 42601", "context": {"errorClass": "NOT_A_CONSTANT_STRING.WRONG_TYPE"}, "exception": {"class": "Py4JJavaError", "msg": "An error occurred while calling o107.getCatalogName.\n: org.apache.spark.sql.AnalysisException: [NOT_A_CONSTANT_STRING.WRONG_TYPE] The expression NULL used for the routine or clause IDENTIFIER must be a constant STRING which is NOT NULL. The data type of the expression is void. SQLSTATE: 42601; line 1 pos 12\n\tat org.apache.spark.sql.catalyst.analysis.package$AnalysisErrorAt.failAnalysis(package.scala:52)\n\tat org.apache.spark.sql.catalyst.analysis.IdentifierResolution$.evalIdentifierExpr(IdentifierResolution.scala:36)\n\tat org.apache.spark.sql.execution.command.SetCatalogCommand.getCatalogName(SetCatalogCommand.scala:51)\n\tat java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:104)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:578)\n\tat py4j.reflection.MethodInvoker.invoke(MethodInvoker.java:244)\n\tat py4j.reflection.ReflectionEngine.invoke(ReflectionEngine.java:374)\n\tat py4j.Gateway.invoke(Gateway.java:282)\n\tat py4j.commands.AbstractCommand.invokeMethod(AbstractCommand.java:132)\n\tat py4j.commands.CallCommand.execute(CallCommand.java:79)\n\tat py4j.ClientServerConnection.waitForCommands(ClientServerConnection.java:184)\n\tat py4j.ClientServerConnection.run(ClientServerConnection.java:108)\n\tat java.base/java.lang.Thread.run(Thread.java:1623)\n", "stacktrace": [{"class": null, "method": "deco", "file": "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/errors/exceptions/captured.py", "line": "251"}, {"class": null, "method": "get_return_value", "file": "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/py4j/protocol.py", "line": "327"}]}}
+{"ts": "2026-10-29 06:35:47.036", "level": "ERROR", "logger": "SQLQueryContextLogger", "msg": "[NOT_A_CONSTANT_STRING.NULL] The expression CAST(NULL AS STRING) used for the routine or clause IDENTIFIER must be a constant STRING which is NOT NULL. The expression evaluates to NULL. SQLSTATE: 42601", "context": {"errorClass": "NOT_A_CONSTANT_STRING.NULL"}, "exception": {"class": "Py4JJavaError", "msg": "An error occurred while calling o119.getCatalogName.\n: org.apache.spark.sql.AnalysisException: [NOT_A_CONSTANT_STRING.NULL] The expression CAST(NULL AS STRING) used for the routine or clause IDENTIFIER must be a constant STRING which is NOT NULL. The expression evaluates to NULL. SQLSTATE: 42601; line 1 pos 12\n\tat org.apache.spark.sql.catalyst.analysis.package$AnalysisErrorAt.failAnalysis(package.scala:52)\n\tat org.apache.spark.sql.catalyst.analysis.IdentifierResolution$.evalIdentifierExpr(IdentifierResolution.scala:43)\n\tat org.apache.spark.sql.execution.command.SetCatalogCommand.getCatalogName(SetCatalogCommand.scala:51)\n\tat java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:104)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:578)\n\tat py4j.reflection.MethodInvoker.invoke(MethodInvoker.java:244)\n\tat py4j.reflection.ReflectionEngine.invoke(ReflectionEngine.java:374)\n\tat py4j.Gateway.invoke(Gateway.java:282)\n\tat py4j.commands.AbstractCommand.invokeMethod(AbstractCommand.java:132)\n\tat py4j.commands.CallCommand.execute(CallCommand.java:79)\n\tat py4j.ClientServerConnection.waitForCommands(ClientServerConnection.java:184)\n\tat py4j.ClientServerConnection.run(ClientServerConnection.java:108)\n\tat java.base/java.lang.Thread.run(Thread.java:1623)\n", "stacktrace": [{"class": null, "method": "deco", "file": "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/errors/exceptions/captured.py", "line": "251"}, {"class": null, "method": "get_return_value", "file": "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/py4j/protocol.py", "line": "327"}]}}
+{"ts": "2026-10-29 06:35:47.106", "level": "ERROR", "logger": "SQLQueryContextLogger", "msg": "[INVALID_NON_DETERMINISTIC_EXPRESSIONS] The operator expects a deterministic expression, but the actual expression is \"CAST(rand() AS STRING)\". SQLSTATE: 42K0E", "context": {"errorClass": "INVALID_NON_DETERMINISTIC_EXPRESSIONS"}, "exception": {"class": "Py4JJavaError", "msg": "An error occurred while calling o165.checkAnalysis.\n: org.apache.spark.sql.AnalysisException: [INVALID_NON_DETERMINISTIC_EXPRESSIONS] The operator expects a deterministic expression, but the actual expression is \"CAST(rand() AS STRING)\". SQLSTATE: 42K0E; line 1 pos 0;\nSetCatalogCommand cast(rand(-1650250039973027479) as string)\n\n\tat org.apache.spark.sql.catalyst.analysis.package$AnalysisErrorAt.failAnalysis(package.scala:52)\n\tat org.apache.spark.sql.catalyst.analysis.CheckAnalysis.$anonfun$checkAnalysis0$2(CheckAnalysis.scala:1051)\n\tat org.apache.spark.sql.catalyst.analysis.CheckAnalysis.$anonfun$checkAnalysis0$2$adapted(CheckAnalysis.scala:363)\n\tat org.apache.spark.sql.catalyst.trees.TreeNode.foreachUp(TreeNode.scala:277)\n\tat org.apache.spark.sql.catalyst.analysis.CheckAnalysis.checkAnalysis0(CheckAnalysis.scala:363)\n\tat org.apache.spark.sql.catalyst.analysis.CheckAnalysis.checkAnalysis0$(CheckAnalysis.scala:330)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.checkAnalysis0(Analyzer.scala:336)\n\tat org.apache.spark.sql.catalyst.analysis.CheckAnalysis.checkAnalysis(CheckAnalysis.scala:319)\n\tat org.apache.spark.sql.catalyst.analysis.CheckAnalysis.checkAnalysis$(CheckAnalysis.scala:306)\n\tat org.apache.spark.sql.catalyst.analysis.Analyzer.checkAnalysis(Analyzer.scala:336)\n\tat java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:104)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:578)\n\tat py4j.reflection.MethodInvoker.invoke(MethodInvoker.java:244)\n\tat py4j.reflection.ReflectionEngine.invoke(ReflectionEngine.java:374)\n\tat py4j.Gateway.invoke(Gateway.java:282)\n\tat py4j.commands.AbstractCommand.invokeMethod(AbstractCommand.java:132)\n\tat py4j.commands.CallCommand.execute(CallCommand.java:79)\n\tat py4j.ClientServerConnection.waitForCommands(ClientServerConnection.java:184)\n\tat py4j.ClientServerConnection.run(ClientServerConnection.java:108)\n\tat java.base/java.lang.Thread.run(Thread.java:1623)\n", "stacktrace": [{"class": null, "method": "deco", "file": "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/errors/exceptions/captured.py", "line": "251"}, {"class": null, "method": "get_return_value", "file": "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/py4j/protocol.py", "line": "327"}]}}
+{"ts": "2026-10-29 06:35:47.139", "level": "ERROR", "logger": "SQLQueryContextLogger", "msg": "[NOT_A_CONSTANT_STRING.NOT_CONSTANT] The expression current_catalog() used for the routine or clause IDENTIFIER must be a constant STRING which is NOT NULL. To be considered constant the expression must not depend on any columns, contain a subquery, or invoke a non deterministic function such as rand(). SQLSTATE: 42601", "context": {"errorClass": "NOT_A_CONSTANT_STRING.NOT_CONSTANT"}, "exception": {"class": "Py4JJavaError", "msg": "An error occurred while calling o185.getCatalogName.\n: org.apache.spark.sql.AnalysisException: [NOT_A_CONSTANT_STRING.NOT_CONSTANT] The expression current_catalog() used for the routine or clause IDENTIFIER must be a constant STRING which is NOT NULL. To be considered constant the expression must not depend on any columns, contain a subquery, or invoke a non deterministic function such as rand(). SQLSTATE: 42601; line 1 pos 12\n\tat org.apache.spark.sql.catalyst.analysis.package$AnalysisErrorAt.failAnalysis(package.scala:52)\n\tat org.apache.spark.sql.catalyst.analysis.IdentifierResolution$.evalIdentifierExpr(IdentifierResolution.scala:30)\n\tat org.apache.spark.sql.execution.command.SetCatalogCommand.getCatalogName(SetCatalogCommand.scala:51)\n\tat java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:104)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:578)\n\tat py4j.reflection.MethodInvoker.invoke(MethodInvoker.java:244)\n\tat py4j.reflection.ReflectionEngine.invoke(ReflectionEngine.java:374)\n\tat py4j.Gateway.invoke(Gateway.java:282)\n\tat py4j.commands.AbstractCommand.invokeMethod(AbstractCommand.java:132)\n\tat py4j.commands.CallCommand.execute(CallCommand.java:79)\n\tat py4j.ClientServerConnection.waitForCommands(ClientServerConnection.java:184)\n\tat py4j.ClientServerConnection.run(ClientServerConnection.java:108)\n\tat java.base/java.lang.Thread.run(Thread.java:1623)\n", "stacktrace": [{"class": null, "method": "deco", "file": "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/errors/exceptions/captured.py", "line": "251"}, {"class": null, "method": "get_return_value", "file": "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/py4j/protocol.py", "line": "327"}]}}
+{"ts": "2026-10-29 06:35:47.216", "level": "ERROR", "logger": "SQLQueryContextLogger", "msg": "[NOT_A_CONSTANT_STRING.NOT_CONSTANT] The expression concat_ws('', transform(array('spark_', 'catalog'), lambdafunction(namedlambdavariable(), namedlambdavariable()))) used for the routine or clause IDENTIFIER must be a constant STRING which is NOT NULL. To be considered constant the expression must not depend on any columns, contain a subquery, or invoke a non deterministic function such as rand(). SQLSTATE: 42601", "context": {"errorClass": "NOT_A_CONSTANT_STRING.NOT_CONSTANT"}, "exception": {"class": "Py4JJavaError", "msg": "An error occurred while calling o204.getCatalogName.\n: org.apache.spark.sql.AnalysisException: [NOT_A_CONSTANT_STRING.NOT_CONSTANT] The expression concat_ws('', transform(array('spark_', 'catalog'), lambdafunction(namedlambdavariable(), namedlambdavariable()))) used for the routine or clause IDENTIFIER must be a constant STRING which is NOT NULL. To be considered constant the expression must not depend on any columns, contain a subquery, or invoke a non deterministic function such as rand(). SQLSTATE: 42601; line 1 pos 12\n\tat org.apache.spark.sql.catalyst.analysis.package$AnalysisErrorAt.failAnalysis(package.scala:52)\n\tat org.apache.spark.sql.catalyst.analysis.IdentifierResolution$.evalIdentifierExpr(IdentifierResolution.scala:30)\n\tat org.apache.spark.sql.execution.command.SetCatalogCommand.getCatalogName(SetCatalogCommand.scala:51)\n\tat java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:104)\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:578)\n\tat py4j.reflection.MethodInvoker.invoke(MethodInvoker.java:244)\n\tat py4j.reflection.ReflectionEngine.invoke(ReflectionEngine.java:374)\n\tat py4j.Gateway.invoke(Gateway.java:282)\n\tat py4j.commands.AbstractCommand.invokeMethod(AbstractCommand.java:132)\n\tat py4j.commands.CallCommand.execute(CallCommand.java:79)\n\tat py4j.ClientServerConnection.waitForCommands(ClientServerConnection.java:184)\n\tat py4j.ClientServerConnection.run(ClientServerConnection.java:108)\n\tat java.base/java.lang.Thread.run(Thread.java:1623)\n", "stacktrace": [{"class": null, "method": "deco", "file": "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/errors/exceptions/captured.py", "line": "251"}, {"class": null, "method": "get_return_value", "file": "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/py4j/protocol.py", "line": "327"}]}}
+[
+  {
+    "expression": "spark_catalog",
+    "outcome": "resolved",
+    "catalog": "spark_catalog",
+    "condition": null
+  },
+  {
+    "expression": "'spark_catalog'",
+    "outcome": "resolved",
+    "catalog": "spark_catalog",
+    "condition": null
+  },
+  {
+    "expression": "CONCAT('spark_', 'catalog')",
+    "outcome": "resolved",
+    "catalog": "spark_catalog",
+    "condition": null
+  },
+  {
+    "expression": "CAST('spark_catalog' AS STRING)",
+    "outcome": "resolved",
+    "catalog": "spark_catalog",
+    "condition": null
+  },
+  {
+    "expression": "'test.cat'",
+    "outcome": "rejected",
+    "catalog": null,
+    "condition": "INVALID_SQL_SYNTAX.MULTI_PART_NAME"
+  },
+  {
+    "expression": "'`test.cat`'",
+    "outcome": "resolved",
+    "catalog": "test.cat",
+    "condition": null
+  },
+  {
+    "expression": "`test.cat`",
+    "outcome": "resolved",
+    "catalog": "test.cat",
+    "condition": null
+  },
+  {
+    "expression": "test.cat",
+    "outcome": "rejected",
+    "catalog": null,
+    "condition": "INVALID_SQL_SYNTAX.MULTI_PART_NAME"
+  },
+  {
+    "expression": "CONCAT(foo, '1')",
+    "outcome": "rejected",
+    "catalog": null,
+    "condition": "UNRESOLVED_COLUMN.WITHOUT_SUGGESTION"
+  },
+  {
+    "expression": "1",
+    "outcome": "rejected",
+    "catalog": null,
+    "condition": "NOT_A_CONSTANT_STRING.WRONG_TYPE"
+  },
+  {
+    "expression": "NULL",
+    "outcome": "rejected",
+    "catalog": null,
+    "condition": "NOT_A_CONSTANT_STRING.WRONG_TYPE"
+  },
+  {
+    "expression": "CAST(NULL AS STRING)",
+    "outcome": "rejected",
+    "catalog": null,
+    "condition": "NOT_A_CONSTANT_STRING.NULL"
+  },
+  {
+    "expression": "''",
+    "outcome": "rejected",
+    "catalog": null,
+    "condition": "PARSE_EMPTY_STATEMENT"
+  },
+  {
+    "expression": "'``'",
+    "outcome": "resolved",
+    "catalog": "",
+    "condition": null
+  },
+  {
+    "expression": "CONCAT('a.', 'b')",
+    "outcome": "rejected",
+    "catalog": null,
+    "condition": "INVALID_SQL_SYNTAX.MULTI_PART_NAME"
+  },
+  {
+    "expression": "IDENTIFIER('spark_catalog')",
+    "outcome": "resolved",
+    "catalog": "spark_catalog",
+    "condition": null
+  },
+  {
+    "expression": "IDENTIFIER(CONCAT('spark_', 'catalog'))",
+    "outcome": "resolved",
+    "catalog": "spark_catalog",
+    "condition": null
+  },
+  {
+    "expression": "CAST(rand() AS STRING)",
+    "outcome": "rejected",
+    "catalog": null,
+    "condition": "INVALID_NON_DETERMINISTIC_EXPRESSIONS"
+  },
+  {
+    "expression": "CAST(current_timestamp() AS STRING)",
+    "outcome": "rejected",
+    "catalog": null,
+    "condition": "PARSE_SYNTAX_ERROR"
+  },
+  {
+    "expression": "current_catalog()",
+    "outcome": "rejected",
+    "catalog": null,
+    "condition": "NOT_A_CONSTANT_STRING.NOT_CONSTANT"
+  },
+  {
+    "expression": "(SELECT 'spark_catalog')",
+    "outcome": "rejected",
+    "catalog": null,
+    "condition": "INTERNAL_ERROR"
+  },
+  {
+    "expression": "CONCAT_WS('', TRANSFORM(ARRAY('spark_', 'catalog'), x -> x))",
+    "outcome": "rejected",
+    "catalog": null,
+    "condition": "NOT_A_CONSTANT_STRING.NOT_CONSTANT"
+  }
+]

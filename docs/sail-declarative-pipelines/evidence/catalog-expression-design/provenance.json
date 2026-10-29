@@ -1,0 +1,58 @@
+{
+  "recorded_at": "2026-10-29T14:00:11.061710+00:00",
+  "sail_source_commit": "2d54d5a568f8dbac68d2b9ac8519380a25782fd3",
+  "sail_cli_engine_commit": "ac7bff5007545859b6c972e2d9b9a17ffc38fa97",
+  "cli_sha256": "25738279b3a3913b0107b956ffcede3181538cf4e023b40f0605400bc9d9c833",
+  "spark_commit": "617618396087429b5627a86ce933bb0f5d6645cb",
+  "scopes": [
+    "SQL parser plus Analyzer execute/checkAnalysis and SetCatalogCommand.getCatalogName; no command execution or catalog mutation",
+    "DefineSqlGraphElements registration only: no graph run or publication; fresh graphs dropped after each case."
+  ],
+  "observations": {
+    "analyzer_expression_cases": 22,
+    "registration_cases_per_engine": 13,
+    "required_assertions_spark": {
+      "passed": 13,
+      "failed": 0
+    },
+    "required_assertions_sail": {
+      "passed": 2,
+      "failed": 11
+    }
+  },
+  "source_blobs": {
+    "sail": {
+      "crates/sail-common/src/spec/plan.rs": "4203afad27701f15fe633b16883415d8e0b84bcc",
+      "crates/sail-sql-parser/src/ast/statement.rs": "557171625f11a2b85b3506a6f10b2255a79fb3ca",
+      "crates/sail-sql-analyzer/src/statement.rs": "6951ab8273ea298997ee85312b590dd56cf1cb5a",
+      "crates/sail-common-datafusion/src/literal.rs": "52cc5a6841dae678abe252cff1b64f6530a48bb5",
+      "crates/sail-plan/src/function/common.rs": "5045947513e84725422bc90893661bd56ad0d892",
+      "crates/sail-plan/src/function/scalar/misc.rs": "98dfc2ad634e8e904baac07ef3b224c336aaeafd",
+      "crates/sail-plan/src/resolver/expression/function.rs": "34c7ee0b26a8bf921fba9f7bfa3377aafe8efbde",
+      "crates/sail-plan/src/resolver/expression/misc.rs": "1f8683df11bed6ff1d3fa274f24d4f4d9ed7c598",
+      "crates/sail-plan/src/resolver/expression/window.rs": "895fabe2bb8d805acbddad607d9c0ba56827d4b0",
+      "crates/sail-spark-connect/src/pipelines/graph.rs": "800e8d0ae1707384f43f6be485271a1dc7ca3a7c",
+      "crates/sail-spark-connect/src/pipelines/sql.rs": "2c02211b66e1ae7835527266d24a45b40ef28cb3",
+      "crates/sail-spark-connect/src/pipelines/mod.rs": "d2801288cc1e6bd25527964b6b5c4a3f2000dfa0",
+      "crates/sail-spark-connect/src/session.rs": "cd1bc815fec2e33bf38ef01cc77137fedec6a9a1",
+      "crates/sail-catalog/src/manager/catalog.rs": "7933779cd147a6f99d6dec4ca3ec51692db1dba5"
+    },
+    "spark": {
+      "sql/core/src/main/scala/org/apache/spark/sql/catalyst/analysis/ResolveSetCatalogCommand.scala": "1e9c0dcfb2a44159b9d95f4cf77fed8caf1f0646",
+      "sql/core/src/main/scala/org/apache/spark/sql/execution/command/SetCatalogCommand.scala": "5dbb793f765b766c660d3db66580cfd57848acea",
+      "sql/catalyst/src/main/scala/org/apache/spark/sql/catalyst/analysis/IdentifierResolution.scala": "e274c1e2162a5f0649f056603e2eaee447bd9637",
+      "sql/pipelines/src/main/scala/org/apache/spark/sql/pipelines/graph/SqlGraphRegistrationContext.scala": "eb2a8fa0ce13496c27be501fdacb0a789b5c8ce2",
+      "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/SqlPipelineSuite.scala": "90132c7ea7bbf136defbd15e2bd25618e1132c41"
+    }
+  },
+  "reproduction": [
+    "Run registration-probe.py sail and registration-probe.py spark with PySpark[connect,pipelines] 4.2.1; Sail remote is localhost:50082, Spark uses bundled local Connect. Scripts write /tmp/sail-sdp-catalog-registration-<engine>.json.",
+    "Run required-assertions.py spark (expected exit 0 at this baseline) and required-assertions.py sail (expected exit 1 at this baseline). Assertions are retained unchanged for implementation.",
+    "analyzer-reference.py uses a separate classic Spark 4.2.1 session and performs parse/analyze/check/getCatalogName without executing SET CATALOG."
+  ],
+  "limits": [
+    "No production edit or new CLI build in this design pass. Source differs from engine only in the preceding golden fixtures.",
+    "No original Scala suite, full batch, multi-catalog publication, LakeCat/REST provider, distributed, streaming or CDC verdict.",
+    "The unqualified-output probe records a Spark AssertionError. The proposed Sail implementation must reject without a Rust panic; matching that accidental JVM exception class is not selected."
+  ]
+}

@@ -952,3 +952,37 @@ No remote or original Scala suite was rerun for this fixture-only unit. The prec
 view-source commit retains its 226 selected pytest and 67 upstream Python verdicts.
 Inventory counts and full batch/streaming/CDC acceptance remain unchanged. The next
 announced design phase is shared catalog expressions and pipeline namespace handling.
+
+## Shared catalog-expression design and retained acceptance failures
+
+The [selected design](CATALOG-EXPRESSION-DESIGN.md) completes the announced architecture
+pass. All implementation is still pending. Typed SQL expression lowering and a shared
+PlanResolver helper keep general catalog behavior in Sail; direct Catalog API names
+retain their existing representation. LakeCat stays an adapter.
+
+A new Spark 4.2.1 analyzer matrix observes 22 expressions. The paired registration probe
+has 13 cases per engine, including both original invalid-expression instances, type/null
+handling, file/default ANSI contrasts and unset/private/explicit namespaces. The
+retained required assertions pass 13 on Spark and fail eleven on the unchanged Sail
+engine (two controls pass). This is a failing implementation baseline, not thirteen
+passing Sail ports. See the [provenance and scripts](evidence/catalog-expression-design/provenance.json).
+
+The evidence corrects two tempting designs: catalog folding uses session configuration
+rather than file/graph flow configuration, and execution errors such as
+CAST_INVALID_INPUT must bypass the analysis registration wrapper. It also proves that
+inspecting only resolved DataFusion expressions is insufficient because Sail lowers
+context functions to literals before evaluation. Request-local constant mode and
+function metadata preserve that distinction without changing ordinary SQL behavior.
+
+Preparation is independent of graph definitions: parse/lower/fold outside the blocking
+mutex, retain per-statement failures, then replay against a clone of the current
+definition under lock. This preserves earlier error priority, file atomicity and
+concurrent additions without a new graph revision system or holding a blocking guard
+across await. Recheck membership and idle state at commit.
+
+Five implementation units cover shared foldability/name resolution, typed ordinary SQL,
+statement origins/error parameters, asynchronous prepare/commit and namespace plus
+adapter acceptance. SQL inventory counts remain 29 partial/nine unmapped, overall 97
+reviewed/365 unaudited. The original two-instance error grid now links its failing
+reproduction; it remains unmapped. No new production, CLI, Scala-suite, publication,
+REST, streaming or CDC qualification is claimed.

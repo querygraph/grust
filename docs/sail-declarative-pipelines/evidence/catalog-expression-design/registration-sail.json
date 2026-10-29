@@ -1,0 +1,176 @@
+{
+  "recorded_at": "2026-10-29T13:52:48.881725+00:00",
+  "engine": "sail",
+  "spark_version": "4.2.1",
+  "catalog": "sail",
+  "database": "default",
+  "scope": "DefineSqlGraphElements registration only; fresh graph per case, no run/publication",
+  "cases": [
+    {
+      "name": "graph_default_false",
+      "session_ansi": "true",
+      "graph_sql_conf": {
+        "spark.sql.ansi.enabled": "false"
+      },
+      "sql": "SET CATALOG CAST(CAST('not-an-int' AS INT) AS STRING)",
+      "outcome": "rejected",
+      "exception_type": "IllegalArgumentException",
+      "message": "invalid argument: found ( at 16:17 expected ';', or end of input",
+      "condition": null,
+      "parameters": null,
+      "sql_state": null,
+      "session_catalog_after": "sail",
+      "session_database_after": "default"
+    },
+    {
+      "name": "graph_default_true",
+      "session_ansi": "false",
+      "graph_sql_conf": {
+        "spark.sql.ansi.enabled": "true"
+      },
+      "sql": "SET CATALOG CAST(CAST('not-an-int' AS INT) AS STRING)",
+      "outcome": "rejected",
+      "exception_type": "IllegalArgumentException",
+      "message": "invalid argument: found ( at 16:17 expected ';', or end of input",
+      "condition": null,
+      "parameters": null,
+      "sql_state": null,
+      "session_catalog_after": "sail",
+      "session_database_after": "default"
+    },
+    {
+      "name": "concat",
+      "session_ansi": "true",
+      "graph_sql_conf": null,
+      "sql": "SET CATALOG CONCAT('sail', '')",
+      "outcome": "rejected",
+      "exception_type": "IllegalArgumentException",
+      "message": "invalid argument: found ( at 18:19 expected ';', or end of input",
+      "condition": null,
+      "parameters": null,
+      "sql_state": null,
+      "session_catalog_after": "sail",
+      "session_database_after": "default"
+    },
+    {
+      "name": "cast",
+      "session_ansi": "true",
+      "graph_sql_conf": null,
+      "sql": "SET CATALOG CAST('sail' AS STRING)",
+      "outcome": "rejected",
+      "exception_type": "IllegalArgumentException",
+      "message": "invalid argument: found ( at 16:17 expected ';', or end of input",
+      "condition": null,
+      "parameters": null,
+      "sql_state": null,
+      "session_catalog_after": "sail",
+      "session_database_after": "default"
+    },
+    {
+      "name": "unresolved",
+      "session_ansi": "true",
+      "graph_sql_conf": null,
+      "sql": "SET CATALOG CONCAT(foo, '1')",
+      "outcome": "rejected",
+      "exception_type": "IllegalArgumentException",
+      "message": "invalid argument: found ( at 18:19 expected ';', or end of input",
+      "condition": null,
+      "parameters": null,
+      "sql_state": null,
+      "session_catalog_after": "sail",
+      "session_database_after": "default"
+    },
+    {
+      "name": "multipart",
+      "session_ansi": "true",
+      "graph_sql_conf": null,
+      "sql": "SET CATALOG test.cat",
+      "outcome": "rejected",
+      "exception_type": "IllegalArgumentException",
+      "message": "invalid argument: found . at 16:17 expected ';', or end of input",
+      "condition": null,
+      "parameters": null,
+      "sql_state": null,
+      "session_catalog_after": "sail",
+      "session_database_after": "default"
+    },
+    {
+      "name": "wrong_type",
+      "session_ansi": "true",
+      "graph_sql_conf": null,
+      "sql": "SET CATALOG 1",
+      "outcome": "registered",
+      "session_catalog_after": "sail",
+      "session_database_after": "default"
+    },
+    {
+      "name": "null",
+      "session_ansi": "true",
+      "graph_sql_conf": null,
+      "sql": "SET CATALOG CAST(NULL AS STRING)",
+      "outcome": "rejected",
+      "exception_type": "IllegalArgumentException",
+      "message": "invalid argument: found ( at 16:17 expected ';', or end of input",
+      "condition": null,
+      "parameters": null,
+      "sql_state": null,
+      "session_catalog_after": "sail",
+      "session_database_after": "default"
+    },
+    {
+      "name": "session_true_file_false",
+      "session_ansi": "true",
+      "graph_sql_conf": null,
+      "sql": "SET spark.sql.ansi.enabled=false;\nSET CATALOG CAST(CAST('not-an-int' AS INT) AS STRING)",
+      "outcome": "rejected",
+      "exception_type": "IllegalArgumentException",
+      "message": "invalid argument: found ( at 50:51 expected ';', or end of input",
+      "condition": null,
+      "parameters": null,
+      "sql_state": null,
+      "session_catalog_after": "sail",
+      "session_database_after": "default"
+    },
+    {
+      "name": "session_false_file_true",
+      "session_ansi": "false",
+      "graph_sql_conf": null,
+      "sql": "SET spark.sql.ansi.enabled=true;\nSET CATALOG CAST(CAST('not-an-int' AS INT) AS STRING)",
+      "outcome": "rejected",
+      "exception_type": "IllegalArgumentException",
+      "message": "invalid argument: found ( at 49:50 expected ';', or end of input",
+      "condition": null,
+      "parameters": null,
+      "sql_state": null,
+      "session_catalog_after": "sail",
+      "session_database_after": "default"
+    },
+    {
+      "name": "unset_database",
+      "session_ansi": "true",
+      "graph_sql_conf": null,
+      "sql": "SET CATALOG 'sail'; CREATE MATERIALIZED VIEW unqualified_probe AS SELECT 1",
+      "outcome": "registered",
+      "session_catalog_after": "sail",
+      "session_database_after": "default"
+    },
+    {
+      "name": "explicit_database",
+      "session_ansi": "true",
+      "graph_sql_conf": null,
+      "sql": "SET CATALOG 'sail'; CREATE MATERIALIZED VIEW `default`.qualified_probe AS SELECT 1",
+      "outcome": "registered",
+      "session_catalog_after": "sail",
+      "session_database_after": "default"
+    },
+    {
+      "name": "private_view",
+      "session_ansi": "true",
+      "graph_sql_conf": null,
+      "sql": "SET CATALOG 'sail'; CREATE TEMPORARY VIEW private_probe AS SELECT 1",
+      "outcome": "registered",
+      "session_catalog_after": "sail",
+      "session_database_after": "default"
+    }
+  ]
+}

@@ -2,7 +2,9 @@
 
 The operator requests notice before a new design phase so they can switch to
 Astra. Shared SET CATALOG expression support now reaches that boundary. This
-handoff records observed behavior and open decisions; it selects no architecture.
+initial handoff recorded observed behavior and open decisions. The completed
+[catalog-expression design](CATALOG-EXPRESSION-DESIGN.md) now selects the shared
+resolution and prepare/commit boundaries; implementation remains pending.
 General SQL/catalog semantics belong in Sail. LakeCat remains a catalog adapter.
 
 ## Evidence
@@ -33,7 +35,7 @@ inside a SQL file; USE must restore it before implicit name qualification. This
 must not be replaced with the session's ordinary default namespace behavior.
 File boundaries restore pipeline defaults, and private views remain unqualified.
 
-## Decisions for Astra
+## Initial design questions
 
 - Determine how the general typed AST/spec and PlanResolver carry and resolve a
   foldable catalog expression. The existing AST and SetCurrentCatalog spec carry

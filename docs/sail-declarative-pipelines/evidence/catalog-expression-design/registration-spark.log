@@ -1,0 +1,126 @@
+WARNING: Using incubator modules: jdk.incubator.vector
+Using Spark's default log4j profile: org/apache/spark/log4j2-defaults.properties
+Setting default log level to "WARN".
+To adjust logging level use sc.setLogLevel(newLevel). For SparkR, use setLogLevel(newLevel).
+26/10/29 06:52:50 WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/conf.py:61: UserWarning: Failed to set spark.ui.enabled to Some(false) due to [CANNOT_MODIFY_CONFIG] Cannot modify the value of the Spark config: "spark.ui.enabled".
+See also 'https://spark.apache.org/docs/latest/sql-migration-guide.html#ddl-statements'. SQLSTATE: 46110
+  warnings.warn(warn)
+/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/conf.py:61: UserWarning: Failed to set spark.sql.warehouse.dir to Some(file:///var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/sdp-catalog-registration-jictu5x3/warehouse) due to [CANNOT_MODIFY_STATIC_CONFIG] Cannot modify the value of the static Spark config: "spark.sql.warehouse.dir". SQLSTATE: 46110
+  warnings.warn(warn)
+{"ts": "2026-10-29 06:52:54.175", "level": "ERROR", "logger": "SQLQueryContextLogger", "msg": "[CAST_INVALID_INPUT] The value 'not-an-int' of the type \"STRING\" cannot be cast to \"INT\" because it is malformed. Correct the value as per the syntax, or change its target type. Use `try_cast` to tolerate malformed input and return NULL instead. SQLSTATE: 22018\n== SQL (line 1, position 18) ==\nSET CATALOG CAST(CAST('not-an-int' AS INT) AS STRING)\n                 ^^^^^^^^^^^^^^^^^^^^^^^^^\n\n\nJVM stacktrace:\norg.apache.spark.SparkNumberFormatException\n\tat org.apache.spark.sql.errors.QueryExecutionErrors$.invalidInputInCastToNumberError(QueryExecutionErrors.scala:141)\n\tat org.apache.spark.sql.catalyst.util.UTF8StringUtils$.withException(UTF8StringUtils.scala:51)\n\tat org.apache.spark.sql.catalyst.util.UTF8StringUtils$.toIntExact(UTF8StringUtils.scala:34)\n\tat org.apache.spark.sql.catalyst.expressions.Cast.$anonfun$castToInt$2(Cast.scala:923)\n\tat org.apache.spark.sql.catalyst.expressions.Cast.$anonfun$castToInt$2$adapted(Cast.scala:923)\n\tat org.apache.spark.sql.catalyst.expressions.Cast.buildCast(Cast.scala:671)\n\tat org.apache.spark.sql.catalyst.expressions.Cast.$anonfun$castToInt$1(Cast.scala:923)\n\tat org.apache.spark.sql.catalyst.expressions.Cast.nullSafeEval(Cast.scala:1348)\n\tat org.apache.spark.sql.catalyst.expressions.UnaryExpression.eval(Expression.scala:610)\n\tat org.apache.spark.sql.catalyst.expressions.UnaryExpression.eval(Expression.scala:606)\n\tat org.apache.spark.sql.catalyst.analysis.IdentifierResolution$.evalIdentifierExpr(IdentifierResolution.scala:39)\n\tat org.apache.spark.sql.execution.command.SetCatalogCommand.getCatalogName(SetCatalogCommand.scala:51)\n\tat org.apache.spark.sql.pipelines.graph.SqlGraphRegistrationContext$SetCatalogCommandHandler$.handle(SqlGraphRegistrationContext.scala:552)\n\tat org.apache.spark.sql.pipelines.graph.SqlGraphRegistrationContext.processSqlQuery(SqlGraphRegistrationContext.scala:146)\n\tat org.apache.spark.sql.pipelines.graph.SqlGraphRegistrationContext.$anonfun$processSqlFile$1(SqlGraphRegistrationContext.scala:120)\n\tat org.apache.spark.sql.pipelines.graph.SqlGraphRegistrationContext.$anonfun$processSqlFile$1$adapted(SqlGraphRegistrationContext.scala:119)\n\tat scala.collection.immutable.List.foreach(List.scala:323)\n\tat org.apache.spark.sql.pipelines.graph.SqlGraphRegistrationContext.processSqlFile(SqlGraphRegistrationContext.scala:119)\n\tat org.apache.spark.sql.connect.pipelines.PipelinesHandler$.defineSqlGraphElements(PipelinesHandler.scala:233)\n\tat org.apache.spark.sql.connect.pipelines.PipelinesHandler$.handlePipelinesCommand(PipelinesHandler.scala:136)\n\tat org.apache.spark.sql.connect.planner.SparkConnectPlanner.handlePipelineCommand(SparkConnectPlanner.scala:2961)\n\tat org.apache.spark.sql.connect.planner.SparkConnectPlanner.process(SparkConnectPlanner.scala:2930)\n\tat org.apache.spark.sql.connect.execution.SparkConnectPlanExecution.handlePlan(SparkConnectPlanExecution.scala:102)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.$anonfun$executeInternal$1(ExecuteThreadRunner.scala:231)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.$anonfun$executeInternal$1$adapted(ExecuteThreadRunner.scala:203)\n\tat org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$2(SessionHolder.scala:441)\n\tat org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:810)\n\tat org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$1(SessionHolder.scala:441)\n\tat org.apache.spark.JobArtifactSet$.withActiveJobArtifactState(JobArtifactSet.scala:94)\n\tat org.apache.spark.sql.artifact.ArtifactManager.$anonfun$withResources$1(ArtifactManager.scala:112)\n\tat org.apache.spark.util.Utils$.withContextClassLoader(Utils.scala:185)\n\tat org.apache.spark.sql.artifact.ArtifactManager.withClassLoaderIfNeeded(ArtifactManager.scala:102)\n\tat org.apache.spark.sql.artifact.ArtifactManager.withResources(ArtifactManager.scala:111)\n\tat org.apache.spark.sql.connect.service.SessionHolder.withSession(SessionHolder.scala:440)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.executeInternal(ExecuteThreadRunner.scala:203)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.org$apache$spark$sql$connect$execution$ExecuteThreadRunner$$execute(ExecuteThreadRunner.scala:127)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner$ExecutionThread.run(ExecuteThreadRunner.scala:338)", "context": {"errorClass": "CAST_INVALID_INPUT"}, "exception": {"class": "_MultiThreadedRendezvous", "msg": "<_MultiThreadedRendezvous of RPC that terminated with:\n\tstatus = StatusCode.INTERNAL\n\tdetails = \"[CAST_INVALID_INPUT] The value 'not-an-int' of the type \"STRING\" cannot be cast to \"INT\" because it is malformed. Correct the value as per the syntax, or change its target type. Use `try_cast` to tolerate malformed input and return NULL instead. SQLSTATE: 22018\n== SQL (line 1, position 18) ==\nSET CATALOG CAST(CAST('not-an-int' AS INT) AS STRING)\n                 ^^^^^^^^^^^^^^^^^^^^^^^^^\n\"\n\tdebug_error_string = \"INTERNAL:[CAST_INVALID_INPUT] The value 'not-an-int' of the type \"STRING\" cannot be cast to \"INT\" because it is malformed. Correct the value as per the syntax, or change its target type. Use `try_cast` to tolerate malformed input and return NULL instead. SQLSTATE: 22018\n== SQL (line 1, position 18) ==\nSET CATALOG CAST(CAST('not-an-int' AS INT) AS STRING)\n                 ^^^^^^^^^^^^^^^^^^^^^^^^^\n\"\n>", "stacktrace": [{"class": null, "method": "_execute_and_fetch_as_iterator", "file": "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py", "line": "1705"}, {"class": null, "method": "__next__", "file": "<frozen _collections_abc>", "line": "356"}, {"class": null, "method": "send", "file": "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py", "line": "145"}, {"class": null, "method": "_has_next", "file": "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py", "line": "197"}, {"class": null, "method": "_has_next", "file": "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py", "line": "169"}, {"class": null, "method": "_call_iter", "file": "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py", "line": "292"}, {"class": null, "method": "_call_iter", "file": "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py", "line": "264"}, {"class": null, "method": "<lambda>", "file": "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py", "line": "170"}, {"class": null, "method": "__next__", "file": "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/grpc/_channel.py", "line": "547"}, {"class": null, "method": "_next", "file": "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/grpc/_channel.py", "line": "965"}]}}
+{"ts": "2026-10-29 06:52:54.589", "level": "ERROR", "logger": "SQLQueryContextLogger", "msg": "[CAST_INVALID_INPUT] The value 'not-an-int' of the type \"STRING\" cannot be cast to \"INT\" because it is malformed. Correct the value as per the syntax, or change its target type. Use `try_cast` to tolerate malformed input and return NULL instead. SQLSTATE: 22018\n== SQL (line 2, position 18) ==\nSET CATALOG CAST(CAST('not-an-int' AS INT) AS STRING)\n                 ^^^^^^^^^^^^^^^^^^^^^^^^^\n\n\nJVM stacktrace:\norg.apache.spark.SparkNumberFormatException\n\tat org.apache.spark.sql.errors.QueryExecutionErrors$.invalidInputInCastToNumberError(QueryExecutionErrors.scala:141)\n\tat org.apache.spark.sql.catalyst.util.UTF8StringUtils$.withException(UTF8StringUtils.scala:51)\n\tat org.apache.spark.sql.catalyst.util.UTF8StringUtils$.toIntExact(UTF8StringUtils.scala:34)\n\tat org.apache.spark.sql.catalyst.expressions.Cast.$anonfun$castToInt$2(Cast.scala:923)\n\tat org.apache.spark.sql.catalyst.expressions.Cast.$anonfun$castToInt$2$adapted(Cast.scala:923)\n\tat org.apache.spark.sql.catalyst.expressions.Cast.buildCast(Cast.scala:671)\n\tat org.apache.spark.sql.catalyst.expressions.Cast.$anonfun$castToInt$1(Cast.scala:923)\n\tat org.apache.spark.sql.catalyst.expressions.Cast.nullSafeEval(Cast.scala:1348)\n\tat org.apache.spark.sql.catalyst.expressions.UnaryExpression.eval(Expression.scala:610)\n\tat org.apache.spark.sql.catalyst.expressions.UnaryExpression.eval(Expression.scala:606)\n\tat org.apache.spark.sql.catalyst.analysis.IdentifierResolution$.evalIdentifierExpr(IdentifierResolution.scala:39)\n\tat org.apache.spark.sql.execution.command.SetCatalogCommand.getCatalogName(SetCatalogCommand.scala:51)\n\tat org.apache.spark.sql.pipelines.graph.SqlGraphRegistrationContext$SetCatalogCommandHandler$.handle(SqlGraphRegistrationContext.scala:552)\n\tat org.apache.spark.sql.pipelines.graph.SqlGraphRegistrationContext.processSqlQuery(SqlGraphRegistrationContext.scala:146)\n\tat org.apache.spark.sql.pipelines.graph.SqlGraphRegistrationContext.$anonfun$processSqlFile$1(SqlGraphRegistrationContext.scala:120)\n\tat org.apache.spark.sql.pipelines.graph.SqlGraphRegistrationContext.$anonfun$processSqlFile$1$adapted(SqlGraphRegistrationContext.scala:119)\n\tat scala.collection.immutable.List.foreach(List.scala:323)\n\tat org.apache.spark.sql.pipelines.graph.SqlGraphRegistrationContext.processSqlFile(SqlGraphRegistrationContext.scala:119)\n\tat org.apache.spark.sql.connect.pipelines.PipelinesHandler$.defineSqlGraphElements(PipelinesHandler.scala:233)\n\tat org.apache.spark.sql.connect.pipelines.PipelinesHandler$.handlePipelinesCommand(PipelinesHandler.scala:136)\n\tat org.apache.spark.sql.connect.planner.SparkConnectPlanner.handlePipelineCommand(SparkConnectPlanner.scala:2961)\n\tat org.apache.spark.sql.connect.planner.SparkConnectPlanner.process(SparkConnectPlanner.scala:2930)\n\tat org.apache.spark.sql.connect.execution.SparkConnectPlanExecution.handlePlan(SparkConnectPlanExecution.scala:102)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.$anonfun$executeInternal$1(ExecuteThreadRunner.scala:231)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.$anonfun$executeInternal$1$adapted(ExecuteThreadRunner.scala:203)\n\tat org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$2(SessionHolder.scala:441)\n\tat org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:810)\n\tat org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$1(SessionHolder.scala:441)\n\tat org.apache.spark.JobArtifactSet$.withActiveJobArtifactState(JobArtifactSet.scala:94)\n\tat org.apache.spark.sql.artifact.ArtifactManager.$anonfun$withResources$1(ArtifactManager.scala:112)\n\tat org.apache.spark.util.Utils$.withContextClassLoader(Utils.scala:185)\n\tat org.apache.spark.sql.artifact.ArtifactManager.withClassLoaderIfNeeded(ArtifactManager.scala:102)\n\tat org.apache.spark.sql.artifact.ArtifactManager.withResources(ArtifactManager.scala:111)\n\tat org.apache.spark.sql.connect.service.SessionHolder.withSession(SessionHolder.scala:440)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.executeInternal(ExecuteThreadRunner.scala:203)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.org$apache$spark$sql$connect$execution$ExecuteThreadRunner$$execute(ExecuteThreadRunner.scala:127)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner$ExecutionThread.run(ExecuteThreadRunner.scala:338)", "context": {"errorClass": "CAST_INVALID_INPUT"}, "exception": {"class": "_MultiThreadedRendezvous", "msg": "<_MultiThreadedRendezvous of RPC that terminated with:\n\tstatus = StatusCode.INTERNAL\n\tdetails = \"[CAST_INVALID_INPUT] The value 'not-an-int' of the type \"STRING\" cannot be cast to \"INT\" because it is malformed. Correct the value as per the syntax, or change its target type. Use `try_cast` to tolerate malformed input and return NULL instead. SQLSTATE: 22018\n== SQL (line 2, position 18) ==\nSET CATALOG CAST(CAST('not-an-int' AS INT) AS STRING)\n                 ^^^^^^^^^^^^^^^^^^^^^^^^^\n\"\n\tdebug_error_string = \"INTERNAL:[CAST_INVALID_INPUT] The value 'not-an-int' of the type \"STRING\" cannot be cast to \"INT\" because it is malformed. Correct the value as per the syntax, or change its target type. Use `try_cast` to tolerate malformed input and return NULL instead. SQLSTATE: 22018\n== SQL (line 2, position 18) ==\nSET CATALOG CAST(CAST('not-an-int' AS INT) AS STRING)\n                 ^^^^^^^^^^^^^^^^^^^^^^^^^\n\"\n>", "stacktrace": [{"class": null, "method": "_execute_and_fetch_as_iterator", "file": "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py", "line": "1705"}, {"class": null, "method": "__next__", "file": "<frozen _collections_abc>", "line": "356"}, {"class": null, "method": "send", "file": "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py", "line": "145"}, {"class": null, "method": "_has_next", "file": "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py", "line": "197"}, {"class": null, "method": "_has_next", "file": "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py", "line": "169"}, {"class": null, "method": "_call_iter", "file": "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py", "line": "292"}, {"class": null, "method": "_call_iter", "file": "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py", "line": "264"}, {"class": null, "method": "<lambda>", "file": "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/reattach.py", "line": "170"}, {"class": null, "method": "__next__", "file": "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/grpc/_channel.py", "line": "547"}, {"class": null, "method": "_next", "file": "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/grpc/_channel.py", "line": "965"}]}}
+[
+  {
+    "name": "graph_default_false",
+    "outcome": "rejected",
+    "condition": "CAST_INVALID_INPUT",
+    "parameters": {
+      "targetType": "\"INT\"",
+      "sourceType": "\"STRING\"",
+      "ansiConfig": "\"spark.sql.ansi.enabled\"",
+      "expression": "'not-an-int'"
+    }
+  },
+  {
+    "name": "graph_default_true",
+    "outcome": "rejected",
+    "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+    "parameters": {
+      "codeLocation": "Query defined at /var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/sdp-catalog-registration-jictu5x3/catalog.sql:1",
+      "offendingQuery": "\nOffending query:\nSET CATALOG CAST(CAST('not-an-int' AS INT) AS STRING)\n",
+      "message": "Failed to resolve catalog expression: [NOT_A_CONSTANT_STRING.NULL] The expression CAST(CAST('not-an-int' AS INT) AS STRING) used for the routine or clause IDENTIFIER must be a constant STRING which is NOT NULL. The expression evaluates to NULL. SQLSTATE: 42601; line 1 pos 12"
+    }
+  },
+  {
+    "name": "concat",
+    "outcome": "registered",
+    "condition": null,
+    "parameters": null
+  },
+  {
+    "name": "cast",
+    "outcome": "registered",
+    "condition": null,
+    "parameters": null
+  },
+  {
+    "name": "unresolved",
+    "outcome": "rejected",
+    "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+    "parameters": {
+      "codeLocation": "Query defined at /var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/sdp-catalog-registration-jictu5x3/catalog.sql:1",
+      "offendingQuery": "\nOffending query:\nSET CATALOG CONCAT(foo, '1')\n",
+      "message": "Failed to resolve catalog expression: [UNRESOLVED_COLUMN.WITHOUT_SUGGESTION] A column, variable, or function parameter with name `foo` cannot be resolved.  SQLSTATE: 42703; line 1 pos 19;\n'SetCatalogCommand 'CONCAT('foo, 1)\n"
+    }
+  },
+  {
+    "name": "multipart",
+    "outcome": "rejected",
+    "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+    "parameters": {
+      "codeLocation": "Query defined at /var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/sdp-catalog-registration-jictu5x3/catalog.sql:1",
+      "offendingQuery": "\nOffending query:\nSET CATALOG test.cat\n",
+      "message": "Failed to resolve catalog expression: [INVALID_SQL_SYNTAX.MULTI_PART_NAME] Invalid SQL syntax: SET CATALOG with multiple part name(`test`.`cat`) is not allowed. SQLSTATE: 42000"
+    }
+  },
+  {
+    "name": "wrong_type",
+    "outcome": "rejected",
+    "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+    "parameters": {
+      "codeLocation": "Query defined at /var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/sdp-catalog-registration-jictu5x3/catalog.sql:1",
+      "offendingQuery": "\nOffending query:\nSET CATALOG 1\n",
+      "message": "Failed to resolve catalog expression: [NOT_A_CONSTANT_STRING.WRONG_TYPE] The expression 1 used for the routine or clause IDENTIFIER must be a constant STRING which is NOT NULL. The data type of the expression is int. SQLSTATE: 42601; line 1 pos 12"
+    }
+  },
+  {
+    "name": "null",
+    "outcome": "rejected",
+    "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+    "parameters": {
+      "codeLocation": "Query defined at /var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/sdp-catalog-registration-jictu5x3/catalog.sql:1",
+      "offendingQuery": "\nOffending query:\nSET CATALOG CAST(NULL AS STRING)\n",
+      "message": "Failed to resolve catalog expression: [NOT_A_CONSTANT_STRING.NULL] The expression CAST(NULL AS STRING) used for the routine or clause IDENTIFIER must be a constant STRING which is NOT NULL. The expression evaluates to NULL. SQLSTATE: 42601; line 1 pos 12"
+    }
+  },
+  {
+    "name": "session_true_file_false",
+    "outcome": "rejected",
+    "condition": "CAST_INVALID_INPUT",
+    "parameters": {
+      "targetType": "\"INT\"",
+      "sourceType": "\"STRING\"",
+      "ansiConfig": "\"spark.sql.ansi.enabled\"",
+      "expression": "'not-an-int'"
+    }
+  },
+  {
+    "name": "session_false_file_true",
+    "outcome": "rejected",
+    "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+    "parameters": {
+      "codeLocation": "Query defined at /var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/sdp-catalog-registration-jictu5x3/catalog.sql:2",
+      "offendingQuery": "\nOffending query:\nSET CATALOG CAST(CAST('not-an-int' AS INT) AS STRING)\n",
+      "message": "Failed to resolve catalog expression: [NOT_A_CONSTANT_STRING.NULL] The expression CAST(CAST('not-an-int' AS INT) AS STRING) used for the routine or clause IDENTIFIER must be a constant STRING which is NOT NULL. The expression evaluates to NULL. SQLSTATE: 42601; line 2 pos 12"
+    }
+  },
+  {
+    "name": "unset_database",
+    "outcome": "rejected",
+    "condition": null,
+    "parameters": null
+  },
+  {
+    "name": "explicit_database",
+    "outcome": "registered",
+    "condition": null,
+    "parameters": null
+  },
+  {
+    "name": "private_view",
+    "outcome": "registered",
+    "condition": null,
+    "parameters": null
+  }
+]
