@@ -885,3 +885,35 @@ SqlPipelineSuite:759 now has partial behavioral coverage of all six source
 combinations. SQL audit counts are 27 partial ports/eleven unmapped, with total
 reviewed 97 and unaudited 365 unchanged. Full Scala-suite/batch acceptance and
 Astra architecture work remain outstanding. No publication.
+
+## Review batch file inputs and empty SQL location handling
+
+Commit `9c42934ed8` rejects a recognized SQL format/path reference with an empty
+path before source construction, returning the expected location cause through
+existing PlanError analysis transport. This shared resolver guard applies outside
+pipelines too. It does not change DataFrameReader path semantics or add structured
+condition/SQL-state metadata. Three new batch input cases check Parquet/JSON/CSV
+values, including CSV strings; two error cases check direct SQL and pipeline
+cause observation and no publication.
+
+The [receipt](evidence/9c42934ed8e095b2e7ccaafeef2faea3f35f797a/gate.json)
+records fmt, strict Clippy, CLI build, Ruff, 222 selected pytest cases and 67
+upstream Python executions. Six Spark 4.2.1 reference checks pass, including ORC
+as a fixture-validity control. Only the three supported file formats are in
+passing Sail coverage. The initial Sail probe had three passes and three failures:
+ORC plus two empty-location diagnostics. The final ORC counterprobe remains a
+failure and its exact source/XML/log are retained. No ORC pass or skip is claimed.
+
+The initial Spark reference incorrectly required the pipeline cause in the outer
+error; it actually arrives in preceding flow events. That reference is retained.
+The corrected observer collects events and outer error while retaining the exact
+cause assertion, and passes on both engines. Original internal failure container,
+per-flow attribution and missing-file case remain open.
+
+Two SQL registrations now have partial ports; SQL counts are 29 partial/nine
+unmapped, overall 97 reviewed/365 unaudited unchanged. The ORC capability gap
+reaches a shared data-source design checkpoint for Astra and is recorded in the
+[file-source handoff](FILE-SOURCE-DESIGN-HANDOFF.md). No format implementation or
+new dependency was selected. Full batch and original Scala-suite acceptance,
+source-text/catalog-expression and event/REST-view architecture, streaming and
+CDC remain outstanding.

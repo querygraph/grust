@@ -3964,19 +3964,33 @@
       "line": 434,
       "method": "gridTest",
       "name_expression": "s\"Pipeline dataset can read from file based data sources\"",
-      "status": "unmapped",
-      "sail_tests": [],
+      "status": "partial-behavioral-port",
+      "sail_tests": [
+        "python/pysail/tests/spark/pipelines/test_file_sources.py::test_batch_pipeline_reads_file_source[parquet]",
+        "python/pysail/tests/spark/pipelines/test_file_sources.py::test_batch_pipeline_reads_file_source[json]",
+        "python/pysail/tests/spark/pipelines/test_file_sources.py::test_batch_pipeline_reads_file_source[csv]"
+      ],
       "coverage_review": {
-        "phase": "streaming-files",
-        "covered_assertions": "None mapped in this audit.",
-        "remaining_assertions": "For parquet/orc/json/csv, direct file-backed MV plus external-table streaming output both return 0,1,2; CSV values are strings.",
+        "phase": "batch-file-input",
+        "covered_assertions": "Batch MV directly reading Parquet/JSON/CSV files returns original 0,1,2 values (CSV strings). All four generated fixture formats, including ORC, pass on Spark 4.2.1.",
+        "remaining_assertions": "ORC remains unsupported in Sail. Original external table plus streaming output is unported. Inputs are generated with PyArrow/stdlib instead of original Spark writer. Original Scala suite is unexecuted.",
+        "sail_evidence": "evidence/9c42934ed8e095b2e7ccaafeef2faea3f35f797a/pytest.xml",
+        "gap_evidence": "evidence/file-source-design-boundary/provenance.json",
         "scala_suite_executed": false,
         "parameter_instances": [
           "parquet",
           "orc",
           "json",
           "csv"
+        ],
+        "unsupported_instances": [
+          "orc"
         ]
+      },
+      "failing_pytest_reproduction": {
+        "name": "test_batch_pipeline_reads_file_source[orc]",
+        "source": "evidence/file-source-design-boundary/test_file_sources.py",
+        "evidence": "evidence/file-source-design-boundary/initial-sail.xml"
       }
     },
     {
@@ -3985,12 +3999,16 @@
       "line": 475,
       "method": "gridTest",
       "name_expression": "\"Invalid reads produce correct error message\"",
-      "status": "unmapped",
-      "sail_tests": [],
+      "status": "partial-behavioral-port",
+      "sail_tests": [
+        "python/pysail/tests/spark/pipelines/test_file_sources.py::test_empty_sql_file_location_is_rejected[query]",
+        "python/pysail/tests/spark/pipelines/test_file_sources.py::test_empty_sql_file_location_is_rejected[pipeline]"
+      ],
       "coverage_review": {
-        "phase": "batch-failures-events",
-        "covered_assertions": "None mapped in this audit.",
-        "remaining_assertions": "Per-flow resolutionFailedFlows entry must attribute each bad CSV path to dataset a and contain the exact path-specific failure substring.",
+        "phase": "batch-file-errors",
+        "covered_assertions": "Empty CSV location fails as AnalysisException with the required location cause visible in direct query or pipeline event/error observations; no output is published. Both wire tests match Spark 4.2.1 at that cause-observation scope.",
+        "remaining_assertions": "Original per-flow resolutionFailedFlows entry, dataset-name attribution and missing-file error instance remain unported. Structured direct error condition/SQL-state metadata is not asserted. Original Scala suite is unexecuted.",
+        "sail_evidence": "evidence/9c42934ed8e095b2e7ccaafeef2faea3f35f797a/pytest.xml",
         "scala_suite_executed": false,
         "parameter_instances": [
           {

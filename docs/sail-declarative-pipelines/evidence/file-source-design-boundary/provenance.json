@@ -1,0 +1,23 @@
+{
+  "recorded_at": "2026-10-29T12:52:34.640746+00:00",
+  "sail_commit": "9c42934ed8e095b2e7ccaafeef2faea3f35f797a",
+  "sail_initial_engine_commit": "bbf438c0661cdfa4a3fab3af70439f7f788615d8",
+  "spark_commit": "617618396087429b5627a86ce933bb0f5d6645cb",
+  "initial_outcomes": {
+    "passed": 3,
+    "failed": 3,
+    "failures": [
+      "ORC reader unavailable",
+      "empty SQL location query message",
+      "empty SQL location pipeline message"
+    ]
+  },
+  "final_orc_probe": "unsupported",
+  "orc_fixture": "PyArrow-generated ORC input passes the same batch query on Spark 4.2.1.",
+  "reproduction": "Copy test_file_sources.py into the Sail pipeline test directory under a distinct filename and run test_batch_pipeline_reads_file_source[orc], or run orc-probe.py against the recorded local endpoint.",
+  "limits": [
+    "ORC remains a failing required format, not a skipped/passing Sail assertion.",
+    "Original fixture writes via Spark and includes a streaming consumer; ports generate inputs with PyArrow/stdlib and cover batch reads only.",
+    "No general ORC implementation selected."
+  ]
+}

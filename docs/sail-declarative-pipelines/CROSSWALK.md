@@ -11,8 +11,8 @@ is fully qualified by executing the original Scala suite against Sail.
 | MaterializeTablesSuite | 27 | 8 | 19 |
 | SparkDeclarativePipelinesServerSuite | 19 | 14 | 5 |
 | PipelinesHandlerSuite | 2 | 0 | 2 |
-| SqlPipelineSuite | 38 | 27 | 11 |
-| Total | 97 | 56 | 41 |
+| SqlPipelineSuite | 38 | 29 | 9 |
+| Total | 97 | 58 | 39 |
 
 Each audited [inventory record](spark-4.2.1-inventory.json) identifies its phase,
 covered/missing assertions and evidence. A partial behavioral Connect port does
@@ -59,7 +59,7 @@ parameter when no cause exists. These belong to the pending Astra
 ## SQL pipeline assertions
 
 All 38 SQL registration sites have an [assertion audit](evidence/sql-complete-assertion-audit/validation.json):
-27 partial ports and 11 unmapped. This is not a complete Scala-suite verdict.
+29 partial ports and 9 unmapped. This is not a complete Scala-suite verdict.
 The reviewed groups include:
 
 - Basic batch cases: static dataset, escaped names, a four-view dependency chain,
@@ -120,3 +120,9 @@ All six pass with two Sail memory catalogs and with LakeCat as the secondary
 Iceberg REST catalog, using Parquet in the primary catalog. Rows, schemas,
 providers and catalog cleanup are checked. This is partial behavioral coverage
 of SqlPipelineSuite:759, with no original Scala/JVM matrix run claimed.
+
+Three batch file-format instances (Parquet/JSON/CSV) and the empty-location cause
+now have partial wire ports. ORC remains a verified failure with a passing Spark
+fixture/control; the [shared file-source handoff](FILE-SOURCE-DESIGN-HANDOFF.md)
+records it explicitly. Original streaming output, writer setup, per-flow failure
+container/attribution and missing-file instance remain unqualified.

@@ -81,3 +81,13 @@ verbatim message parameter. Both remain unmapped in Sail's assertion inventory.
 The eventual outcome/error design must retain these distinctions; no architecture
 is chosen here. The source hash and audit limits are recorded in the
 [handler audit](evidence/handler-crosswalk/validation.json).
+
+## File-source cause observation
+
+The file-input reference confirms that Spark's outer unresolved-pipeline exception
+does not include the empty-location cause. Preceding flow events carry that cause.
+The passing wire port collects events and the outer error without requiring one
+specific transport location for the cause. Original resolutionFailedFlows objects,
+dataset attribution and missing-file instance remain unqualified. Initial wrong-
+observer reference failure is retained in the [receipt](evidence/9c42934ed8e095b2e7ccaafeef2faea3f35f797a/gate.json).
+The [file-source handoff](FILE-SOURCE-DESIGN-HANDOFF.md) records the separate ORC gap.
