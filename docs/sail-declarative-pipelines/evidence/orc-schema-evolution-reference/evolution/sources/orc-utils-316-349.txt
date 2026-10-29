@@ -1,0 +1,34 @@
+  def getOrcSchemaString(dt: DataType): String = dt match {
+    case s: StructType =>
+      val fieldTypes = s.fields.map { f =>
+        s"${quoteIdentifier(f.name)}:${getOrcSchemaString(f.dataType)}"
+      }
+      s"struct<${fieldTypes.mkString(",")}>"
+    case a: ArrayType =>
+      s"array<${getOrcSchemaString(a.elementType)}>"
+    case m: MapType =>
+      s"map<${getOrcSchemaString(m.keyType)},${getOrcSchemaString(m.valueType)}>"
+    case _: DayTimeIntervalType | _: TimestampNTZType | _: TimeType => LongType.catalogString
+    case _: YearMonthIntervalType => IntegerType.catalogString
+    case _ => dt.catalogString
+  }
+
+  def orcTypeDescription(dt: DataType): TypeDescription = {
+    def getInnerTypeDecription(dt: DataType): Option[TypeDescription] = {
+      dt match {
+        case y: YearMonthIntervalType =>
+          val typeDesc = new TypeDescription(TypeDescription.Category.INT)
+          typeDesc.setAttribute(CATALYST_TYPE_ATTRIBUTE_NAME, y.typeName)
+          Some(typeDesc)
+        case d: DayTimeIntervalType =>
+          val typeDesc = new TypeDescription(TypeDescription.Category.LONG)
+          typeDesc.setAttribute(CATALYST_TYPE_ATTRIBUTE_NAME, d.typeName)
+          Some(typeDesc)
+        case n: TimestampNTZType =>
+          val typeDesc = new TypeDescription(TypeDescription.Category.LONG)
+          typeDesc.setAttribute(CATALYST_TYPE_ATTRIBUTE_NAME, n.typeName)
+          Some(typeDesc)
+        case tm: TimeType =>
+          val typeDesc = new TypeDescription(TypeDescription.Category.LONG)
+          typeDesc.setAttribute(CATALYST_TYPE_ATTRIBUTE_NAME, tm.typeName)
+          Some(typeDesc)

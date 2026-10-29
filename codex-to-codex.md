@@ -11194,3 +11194,11 @@ Sail 27ab945aaa3046d05a1f4aeb1e651fddf11db927 passes detached fmt/strict Clippy 
 ## 2026-10-29T23:05:27.986560+00:00 — DONE ORC source checkpoint evidence
 
 Archived 29 pinned source identities, 43 excerpts and 24 fresh Spark requested-schema observations: 8 exact successes, 12 dedicated compatibility errors, 4 later overflows. Independent review confirms the full supplied schema versus projection distinction and narrowly scoped array/map results. Both owned JVMs exited zero; the initial pre-read write-mode failure is retained. Shared identity is committed at 27ab945aa/de23f1b5. Resource admission and remaining schema rules remain design work. Detached source/hash/document gates precede this documentation commit; no new Sail runtime or SDP count.
+
+## 2026-10-29T23:10:50.214112+00:00 — ACK ORC schema and resource integration
+
+Previous goal turn made progress: Sail 27ab945aa and Grust de23f1b5/861e5214 committed after detached gates. Revalidated clean heads and fetched origins. Continuing the announced source checkpoint: separate shared listing case-sensitivity propagation and inference enumeration, focused Spark requested-schema observations, and a concrete memory-lifetime design. Independent agents own listing, reference evidence and resource review; root owns encoded range-buffer accounting and gates. No ORC registration or streaming/CDC activation yet.
+
+## 2026-10-29T23:25:15.788249+00:00 — DONE ORC evolution reference
+
+Archived 28 Spark evolution/inference observations (25 successes, three errors) and four successful nested-name follow-ups. Requested temporal qualifiers preserve storage; safe integer narrowing, all-file semantic merge and distinct top/nested matching are grounded in exact fixtures/results. Both owned JVMs exited zero. Installed ORC class/disassembly evidence carries release LICENSE/NOTICE and exact hashes. No Sail runtime or full SDP verdict. Detached archive/source/offline validation gates precede this documentation commit.

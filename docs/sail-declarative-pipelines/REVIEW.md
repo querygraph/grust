@@ -1302,3 +1302,7 @@ Sail `27ab945aaa3046d05a1f4aeb1e651fddf11db927` preserves listed ETags/versions 
 ### ORC source checkpoint and requested-schema reference (2026-10-29T23:05:27.986560+00:00)
 
 [Evidence](evidence/orc-source-checkpoint/README.md) captures shared listing/resource integration requirements and 24 fresh Spark 4.2.1 requested-schema observations. Eight exact successes, twelve dedicated positional timestamp errors and four fixture-specific later overflows are retained under both vectorization settings. Full supplied schema and output projection must remain distinct. This is reference/design evidence; ORC source registration, writer, streaming/Iggy, CDC and full SDP qualification remain open.
+
+### ORC schema evolution reference (2026-10-29T23:25:15.788249+00:00)
+
+[32 fresh Spark observations](evidence/orc-schema-evolution-reference/README.md) establish read-schema TIME/interval value preservation, null-on-overflow integer narrowing, eleventh-file semantic merging and four nested ASCII name-selection cases. All raw successes/errors, exact values/schemas, fixtures, source/disassembly and owned JVM shutdowns are retained. No Sail runtime, registry or additional SDP test pass is claimed.

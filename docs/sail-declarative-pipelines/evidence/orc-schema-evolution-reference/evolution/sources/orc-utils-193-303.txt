@@ -1,0 +1,111 @@
+    }
+  }
+
+  /**
+   * Reads ORC file schemas in multi-threaded manner, using native version of ORC.
+   * This is visible for testing.
+   */
+  def readOrcSchemasInParallel(
+    files: Seq[FileStatus], conf: Configuration, ignoreCorruptFiles: Boolean,
+    ignoreMissingFiles: Boolean): Seq[StructType] = {
+    ThreadUtils.parmap(files, "readingOrcSchemas", 8) { currentFile =>
+      OrcUtils.readSchema(currentFile.getPath, conf, ignoreCorruptFiles, ignoreMissingFiles)
+        .map(toCatalystSchema)
+    }.flatten
+  }
+
+  def inferSchema(sparkSession: SparkSession, files: Seq[FileStatus], options: Map[String, String])
+    : Option[StructType] = {
+    val orcOptions = new OrcOptions(options, sparkSession.sessionState.conf)
+    if (orcOptions.mergeSchema) {
+      SchemaMergeUtils.mergeSchemasInParallel(
+        sparkSession, options, files, OrcUtils.readOrcSchemasInParallel)
+    } else {
+      OrcUtils.readSchema(sparkSession, files, options)
+    }
+  }
+
+  /**
+   * @return Returns the combination of requested column ids from the given ORC file and
+   *         boolean flag to find if the pruneCols is allowed or not. Requested Column id can be
+   *         -1, which means the requested column doesn't exist in the ORC file. Returns None
+   *         if the given ORC file is empty.
+   */
+  def requestedColumnIds(
+      isCaseSensitive: Boolean,
+      dataSchema: StructType,
+      requiredSchema: StructType,
+      orcSchema: TypeDescription,
+      conf: Configuration): Option[(Array[Int], Boolean)] = {
+    def checkTimestampCompatibility(orcCatalystSchema: StructType, dataSchema: StructType): Unit = {
+      orcCatalystSchema.fields.map(_.dataType).zip(dataSchema.fields.map(_.dataType)).foreach {
+        case (TimestampType, TimestampNTZType) =>
+          throw QueryExecutionErrors.cannotConvertOrcTimestampToTimestampNTZError()
+        case (TimestampNTZType, TimestampType) =>
+          throw QueryExecutionErrors.cannotConvertOrcTimestampNTZToTimestampLTZError()
+        case (t1: StructType, t2: StructType) => checkTimestampCompatibility(t1, t2)
+        case _ =>
+      }
+    }
+
+    checkTimestampCompatibility(toCatalystSchema(orcSchema), dataSchema)
+    val orcFieldNames = orcSchema.getFieldNames.asScala
+    val forcePositionalEvolution = OrcConf.FORCE_POSITIONAL_EVOLUTION.getBoolean(conf)
+    if (orcFieldNames.isEmpty) {
+      // SPARK-8501: Some old empty ORC files always have an empty schema stored in their footer.
+      None
+    } else {
+      if (forcePositionalEvolution || orcFieldNames.forall(_.startsWith("_col"))) {
+        // This is either an ORC file written by an old version of Hive and there are no field
+        // names in the physical schema, or `orc.force.positional.evolution=true` is forced because
+        // the file was written by a newer version of Hive where
+        // `orc.force.positional.evolution=true` was set (possibly because columns were renamed so
+        // the physical schema doesn't match the data schema).
+        // In these cases we map the physical schema to the data schema by index.
+        assert(orcFieldNames.length <= dataSchema.length, "The given data schema " +
+          s"${dataSchema.catalogString} (length:${dataSchema.length}) " +
+          s"has fewer ${orcFieldNames.length - dataSchema.length} fields than " +
+          s"the actual ORC physical schema $orcSchema (length:${orcFieldNames.length}), " +
+          "no idea which columns were dropped, fail to read.")
+        // for ORC file written by Hive, no field names
+        // in the physical schema, there is a need to send the
+        // entire dataSchema instead of required schema.
+        // So pruneCols is not done in this case
+        Some(requiredSchema.fieldNames.map { name =>
+          val index = dataSchema.fieldIndex(name)
+          if (index < orcFieldNames.length) {
+            index
+          } else {
+            -1
+          }
+        }, false)
+      } else {
+        if (isCaseSensitive) {
+          Some(requiredSchema.fieldNames.zipWithIndex.map { case (name, idx) =>
+            if (orcFieldNames.indexWhere(caseSensitiveResolution(_, name)) != -1) {
+              idx
+            } else {
+              -1
+            }
+          }, true)
+        } else {
+          // Do case-insensitive resolution only if in case-insensitive mode
+          val caseInsensitiveOrcFieldMap = orcFieldNames.groupBy(_.toLowerCase(Locale.ROOT))
+          Some(requiredSchema.fieldNames.zipWithIndex.map { case (requiredFieldName, idx) =>
+            caseInsensitiveOrcFieldMap
+              .get(requiredFieldName.toLowerCase(Locale.ROOT))
+              .map { matchedOrcFields =>
+                if (matchedOrcFields.size > 1) {
+                  // Need to fail if there is ambiguity, i.e. more than one field is matched.
+                  val matchedOrcFieldsString = matchedOrcFields.mkString("[", ", ", "]")
+                  throw QueryExecutionErrors.foundDuplicateFieldInCaseInsensitiveModeError(
+                    requiredFieldName, matchedOrcFieldsString)
+                } else {
+                  idx
+                }
+              }.getOrElse(-1)
+          }, true)
+        }
+      }
+    }
+  }

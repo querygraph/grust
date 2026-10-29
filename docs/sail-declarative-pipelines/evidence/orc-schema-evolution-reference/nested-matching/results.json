@@ -1,0 +1,366 @@
+{
+  "baseline_results_sha256": "4708c295cdb22ab3ba549a4480807ce2cc6abf38082bc862768638c506a1f8ce",
+  "cases": [
+    {
+      "arrow": {
+        "columns": [
+          {
+            "name": "st",
+            "type": "struct<BAR: int32>",
+            "values": [
+              {
+                "BAR": 22
+              }
+            ]
+          }
+        ],
+        "num_rows": 1,
+        "schema": "st: struct<BAR: int32>\n  child 0, BAR: int32"
+      },
+      "fixture": "original",
+      "physical_plan": "== Physical Plan ==\n* ColumnarToRow (2)\n+- Scan orc  (1)\n\n\n(1) Scan orc \nOutput [1]: [st#7]\nBatched: true\nLocation: InMemoryFileIndex [file:/private/tmp/sail-sdp-orc-nested-matching-reference/inputs/original.orc]\nReadSchema: struct<st:struct<BAR:int>>\n\n(2) ColumnarToRow [codegen id : 1]\nInput [1]: [st#7]\n\n\n",
+      "read_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "st",
+            "nullable": true,
+            "type": {
+              "fields": [
+                {
+                  "metadata": {},
+                  "name": "BAR",
+                  "nullable": true,
+                  "type": "integer"
+                }
+              ],
+              "type": "struct"
+            }
+          }
+        ],
+        "type": "struct"
+      },
+      "requested_name": "BAR",
+      "requested_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "st",
+            "nullable": true,
+            "type": {
+              "fields": [
+                {
+                  "metadata": {},
+                  "name": "BAR",
+                  "nullable": true,
+                  "type": "integer"
+                }
+              ],
+              "type": "struct"
+            }
+          }
+        ],
+        "type": "struct"
+      },
+      "stage": "materialize_to_arrow",
+      "status": "success"
+    },
+    {
+      "arrow": {
+        "columns": [
+          {
+            "name": "st",
+            "type": "struct<Bar: int32>",
+            "values": [
+              {
+                "Bar": 22
+              }
+            ]
+          }
+        ],
+        "num_rows": 1,
+        "schema": "st: struct<Bar: int32>\n  child 0, Bar: int32"
+      },
+      "fixture": "original",
+      "physical_plan": "== Physical Plan ==\n* ColumnarToRow (2)\n+- Scan orc  (1)\n\n\n(1) Scan orc \nOutput [1]: [st#11]\nBatched: true\nLocation: InMemoryFileIndex [file:/private/tmp/sail-sdp-orc-nested-matching-reference/inputs/original.orc]\nReadSchema: struct<st:struct<Bar:int>>\n\n(2) ColumnarToRow [codegen id : 1]\nInput [1]: [st#11]\n\n\n",
+      "read_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "st",
+            "nullable": true,
+            "type": {
+              "fields": [
+                {
+                  "metadata": {},
+                  "name": "Bar",
+                  "nullable": true,
+                  "type": "integer"
+                }
+              ],
+              "type": "struct"
+            }
+          }
+        ],
+        "type": "struct"
+      },
+      "requested_name": "Bar",
+      "requested_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "st",
+            "nullable": true,
+            "type": {
+              "fields": [
+                {
+                  "metadata": {},
+                  "name": "Bar",
+                  "nullable": true,
+                  "type": "integer"
+                }
+              ],
+              "type": "struct"
+            }
+          }
+        ],
+        "type": "struct"
+      },
+      "stage": "materialize_to_arrow",
+      "status": "success"
+    },
+    {
+      "arrow": {
+        "columns": [
+          {
+            "name": "st",
+            "type": "struct<bar: int32>",
+            "values": [
+              {
+                "bar": 11
+              }
+            ]
+          }
+        ],
+        "num_rows": 1,
+        "schema": "st: struct<bar: int32>\n  child 0, bar: int32"
+      },
+      "fixture": "reverse",
+      "physical_plan": "== Physical Plan ==\n* ColumnarToRow (2)\n+- Scan orc  (1)\n\n\n(1) Scan orc \nOutput [1]: [st#15]\nBatched: true\nLocation: InMemoryFileIndex [file:/private/tmp/sail-sdp-orc-nested-matching-reference/data/reverse/part-00000-3de4fec1-bb30-4df7-ba91-3be54e2a9944-c000.zstd.orc]\nReadSchema: struct<st:struct<bar:int>>\n\n(2) ColumnarToRow [codegen id : 1]\nInput [1]: [st#15]\n\n\n",
+      "read_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "st",
+            "nullable": true,
+            "type": {
+              "fields": [
+                {
+                  "metadata": {},
+                  "name": "bar",
+                  "nullable": true,
+                  "type": "integer"
+                }
+              ],
+              "type": "struct"
+            }
+          }
+        ],
+        "type": "struct"
+      },
+      "requested_name": "bar",
+      "requested_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "st",
+            "nullable": true,
+            "type": {
+              "fields": [
+                {
+                  "metadata": {},
+                  "name": "bar",
+                  "nullable": true,
+                  "type": "integer"
+                }
+              ],
+              "type": "struct"
+            }
+          }
+        ],
+        "type": "struct"
+      },
+      "stage": "materialize_to_arrow",
+      "status": "success"
+    },
+    {
+      "arrow": {
+        "columns": [
+          {
+            "name": "st",
+            "type": "struct<BAR: int32>",
+            "values": [
+              {
+                "BAR": 11
+              }
+            ]
+          }
+        ],
+        "num_rows": 1,
+        "schema": "st: struct<BAR: int32>\n  child 0, BAR: int32"
+      },
+      "fixture": "reverse",
+      "physical_plan": "== Physical Plan ==\n* ColumnarToRow (2)\n+- Scan orc  (1)\n\n\n(1) Scan orc \nOutput [1]: [st#19]\nBatched: true\nLocation: InMemoryFileIndex [file:/private/tmp/sail-sdp-orc-nested-matching-reference/data/reverse/part-00000-3de4fec1-bb30-4df7-ba91-3be54e2a9944-c000.zstd.orc]\nReadSchema: struct<st:struct<BAR:int>>\n\n(2) ColumnarToRow [codegen id : 1]\nInput [1]: [st#19]\n\n\n",
+      "read_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "st",
+            "nullable": true,
+            "type": {
+              "fields": [
+                {
+                  "metadata": {},
+                  "name": "BAR",
+                  "nullable": true,
+                  "type": "integer"
+                }
+              ],
+              "type": "struct"
+            }
+          }
+        ],
+        "type": "struct"
+      },
+      "requested_name": "BAR",
+      "requested_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "st",
+            "nullable": true,
+            "type": {
+              "fields": [
+                {
+                  "metadata": {},
+                  "name": "BAR",
+                  "nullable": true,
+                  "type": "integer"
+                }
+              ],
+              "type": "struct"
+            }
+          }
+        ],
+        "type": "struct"
+      },
+      "stage": "materialize_to_arrow",
+      "status": "success"
+    }
+  ],
+  "config": {
+    "spark.sql.ansi.enabled": "true",
+    "spark.sql.caseSensitive": "false",
+    "spark.sql.orc.enableNestedColumnVectorizedReader": "true",
+    "spark.sql.orc.enableVectorizedReader": "true",
+    "spark.sql.orc.impl": "native",
+    "spark.sql.session.timeZone": "UTC",
+    "spark.sql.timeType.enabled": "false"
+  },
+  "fixtures": {
+    "original": {
+      "original_path": "/private/tmp/sail-sdp-orc-schema-evolution-reference/data/ambiguous_nested/part-00000-6de53add-91af-40fc-aa67-d2855a58bdc3-c000.zstd.orc",
+      "original_sha256": "c025480288c6305fb9063dc5582122022d159b8db3d18a5630eab7c2d637cf43",
+      "path": "/private/tmp/sail-sdp-orc-nested-matching-reference/inputs/original.orc",
+      "physical_arrow": {
+        "columns": [
+          {
+            "name": "st",
+            "type": "struct<Bar: int32, bar: int32>",
+            "values": [
+              {
+                "Bar": 11,
+                "bar": 22
+              }
+            ]
+          }
+        ],
+        "num_rows": 1,
+        "schema": "st: struct<Bar: int32, bar: int32>\n  child 0, Bar: int32\n  child 1, bar: int32\n-- schema metadata --\norg.apache.spark.version: '4.2.1'"
+      },
+      "sha256": "c025480288c6305fb9063dc5582122022d159b8db3d18a5630eab7c2d637cf43",
+      "size": 370
+    },
+    "reverse": {
+      "path": "/private/tmp/sail-sdp-orc-nested-matching-reference/data/reverse/part-00000-3de4fec1-bb30-4df7-ba91-3be54e2a9944-c000.zstd.orc",
+      "physical_arrow": {
+        "columns": [
+          {
+            "name": "st",
+            "type": "struct<bar: int32, Bar: int32>",
+            "values": [
+              {
+                "Bar": 11,
+                "bar": 22
+              }
+            ]
+          }
+        ],
+        "num_rows": 1,
+        "schema": "st: struct<bar: int32, Bar: int32>\n  child 0, bar: int32\n  child 1, Bar: int32\n-- schema metadata --\norg.apache.spark.version: '4.2.1'"
+      },
+      "sha256": "acbc70feeaac66fed2596c87e5efa9241099e784bac8202918eecac6e7569143",
+      "size": 370,
+      "source_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "st",
+            "nullable": false,
+            "type": {
+              "fields": [
+                {
+                  "metadata": {},
+                  "name": "bar",
+                  "nullable": false,
+                  "type": "integer"
+                },
+                {
+                  "metadata": {},
+                  "name": "Bar",
+                  "nullable": false,
+                  "type": "integer"
+                }
+              ],
+              "type": "struct"
+            }
+          }
+        ],
+        "type": "struct"
+      },
+      "source_sql": "SELECT named_struct('bar', 22, 'Bar', 11) AS st"
+    }
+  },
+  "java": {
+    "actual_pid": 83895,
+    "default_timezone_id": "UTC",
+    "format_locale": "en-US",
+    "gateway_pid": 83895,
+    "oldmapping_property": "false",
+    "runtime_version": "20.0.2+9-78",
+    "tzdb_versions": [
+      "2023c"
+    ],
+    "user_timezone_property": "UTC",
+    "vendor": "Oracle Corporation"
+  },
+  "java_tool_options": "-Duser.timezone=UTC -Dsun.timezone.ids.oldmapping=false -Duser.language=en -Duser.country=US",
+  "owned_gateway_exit_code": 0,
+  "python_pid": 83882,
+  "recorded_at_utc": "2026-10-29T23:16:20.085014+00:00",
+  "scope": "Four nested name observations only; no Sail qualification or general Unicode/matching policy",
+  "script_sha256": "bdfbe6c036acb61c81b4af15620642873ad1618f1e08bbbb384b6606a15dd2b5",
+  "source_pin": "617618396087429b5627a86ce933bb0f5d6645cb",
+  "spark_version": "4.2.1",
+  "status": "completed"
+}

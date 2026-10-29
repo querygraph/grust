@@ -1,0 +1,24 @@
+  /**
+   * Creates a writer to write ORC values to Catalyst data structure at the given ordinal.
+   */
+  private def newWriter(
+      dataType: DataType, updater: CatalystDataUpdater): (Int, WritableComparable[_]) => Unit =
+    dataType match {
+      case NullType => (ordinal, _) =>
+        updater.setNullAt(ordinal)
+
+      case BooleanType => (ordinal, value) =>
+        updater.setBoolean(ordinal, value.asInstanceOf[BooleanWritable].get)
+
+      case ByteType => (ordinal, value) =>
+        updater.setByte(ordinal, value.asInstanceOf[ByteWritable].get)
+
+      case ShortType => (ordinal, value) =>
+        updater.setShort(ordinal, value.asInstanceOf[ShortWritable].get)
+
+      case IntegerType | _: YearMonthIntervalType => (ordinal, value) =>
+        updater.setInt(ordinal, value.asInstanceOf[IntWritable].get)
+
+      case LongType | _: DayTimeIntervalType | _: TimestampNTZType | _: TimeType =>
+        (ordinal, value) => updater.setLong(ordinal, value.asInstanceOf[LongWritable].get)
+
