@@ -1,0 +1,62 @@
+{
+  "sail_commit": "12664ae7eee787e1d70bc5a9d78934869da95af0",
+  "spark_commit": "617618396087429b5627a86ce933bb0f5d6645cb",
+  "recorded_at": "2026-10-29T08:15:28.553659+00:00",
+  "platform": "macOS arm64",
+  "gate_checkout": "detached; private target directory; immutable HEAD for the gate",
+  "cli_sha256": "de6cdac5c077add8269643c60ed2c7138739e21858358c2c845e93cd231c0ba8",
+  "checks": [
+    {
+      "command": "cargo +nightly fmt -p sail-spark-connect -- --check",
+      "outcome": "pass"
+    },
+    {
+      "command": "cargo +1.98.1 clippy -p sail-spark-connect --all-targets --all-features --locked -- -D warnings",
+      "outcome": "pass"
+    },
+    {
+      "command": "cargo +1.98.1 build -p sail-cli --locked",
+      "outcome": "pass",
+      "note": "CARGO_PROFILE_DEV_DEBUG=0; CARGO_PROFILE_DEV_INCREMENTAL=false; linker warned about __eh_frame size."
+    },
+    {
+      "command": "PYTHONPATH=<gate>/python SPARK_REMOTE=sc://localhost:50082 python -m pytest -q python/pysail/tests/spark/pipelines --junitxml=pytest.xml",
+      "outcome": "pass",
+      "passed": 75,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "command": "python scripts/spark-pipelines-tests/run.py --spark-source <pinned Spark checkout> --remote sc://localhost:50082 --report spark-python.json",
+      "outcome": "pass",
+      "server_spark_version": "4.2.1",
+      "tests_run": 67,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "command": "ruff check and format --check on changed Python files",
+      "outcome": "pass"
+    },
+    {
+      "command": "python spark-reference.py",
+      "outcome": "pass",
+      "spark_version": "4.2.1",
+      "cases": 9,
+      "note": "Same lifecycle assertions called directly against the local Spark Connect JVM; isolated warehouse.",
+      "limits": "Targeted reference, not full Spark suite."
+    }
+  ],
+  "corrections": [
+    "The first reference used an empty graph as an analysis failure, but Spark rejects empty and duplicate registrations before reserving an execution entry. Registration validation was moved before reservation.",
+    "The second reference asserted an unresolved column in the first error message; Spark wraps query failures in UnresolvedPipelineException. The lifecycle assertion now checks AnalysisException and separately verifies the second-run condition, parameters, and SQL state.",
+    "The first Sail gate exposed one remaining BDD fixture reusing a completed graph; it now registers the same definitions in a fresh graph."
+  ],
+  "limits": [
+    "General pipeline analysis diagnostic parity remains outstanding.",
+    "Declared schema publication remains outstanding.",
+    "No distributed cluster execution claim.",
+    "Upstream Python includes inherited and client-only tests."
+  ]
+}

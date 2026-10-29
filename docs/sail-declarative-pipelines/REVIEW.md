@@ -151,6 +151,30 @@ Declared schema publication, lifecycle/diagnostic parity, and the remaining
 batch crosswalk stay open. The static 462-call-site inventory is still not a
 runtime acceptance count. Streaming and CDC follow batch acceptance.
 
+## Review execution-entry lifetime
+
+Commit `12664ae7ee` retains a graph's execution entry after successful or failed
+analysis/execution. A subsequent start returns Spark's structured condition,
+`graphId` parameter, and `XXSC0` SQL state. Command-option validation and empty
+or duplicate registration checks happen before reservation, so a corrected
+request can still start the graph. Refresh fixtures now register fresh graphs
+while preserving the same published tables and pipeline storage location.
+
+Review the short registration lock, the separation of selection validation from
+dependency expansion, and the Connect error metadata helper. The helper leaves
+ordinary exception conversion intact; it does not parse error conditions from
+messages. The [receipt](evidence/12664ae7eee787e1d70bc5a9d78934869da95af0/gate.json)
+records 75 Sail pipeline cases and 67 unchanged upstream Python executions,
+all passing without skips, plus nightly formatting, strict Clippy, CLI build,
+and Python lint. Nine identical lifecycle assertions passed against a live
+Spark 4.2.1 JVM. The initially failing reference probes are retained with the
+corrections they caused. Broader analysis-error wrapping remains outstanding.
+
+Before beginning the next design phase, notify the operator so they can switch
+to Astra. This applies to streaming checkpoint/recovery design, CDC design, or
+a batch issue that requires reconsidering the architecture. Routine batch
+implementation and compatibility fixes continue within the agreed design.
+
 ## Constraints for subsequent units
 
 - Keep pipeline declarations in Sail's typed SQL AST and analyzer. Registration

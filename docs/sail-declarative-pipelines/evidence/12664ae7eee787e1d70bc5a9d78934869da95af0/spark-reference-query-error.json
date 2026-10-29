@@ -1,0 +1,44 @@
+{
+  "spark_version": "4.2.1",
+  "test_source_commit": "0dc41743e922383ad571edb7509f1f6124d67d46",
+  "cases": [
+    {
+      "name": "completed_dry",
+      "outcome": "passed"
+    },
+    {
+      "name": "completed_real",
+      "outcome": "passed"
+    },
+    {
+      "name": "failed_analysis",
+      "outcome": "failed",
+      "type": "AssertionError",
+      "message": "Regex pattern did not match.\n  Expected regex: 'missing_column'\n  Actual message: '\\nFailed to resolve flows in the pipeline.\\n\\nA flow can fail to resolve because the flow itself contains errors or because it reads\\nfrom an upstream flow which failed to resolve.\\n\\nFlows with errors: spark_catalog.default.output\\nFlows that failed due to upstream errors: \\n\\nTo view the exceptions that were raised while resolving these flows, look for flow\\nfailures that precede this log.\\n\\nJVM stacktrace:\\norg.apache.spark.sql.pipelines.graph.UnresolvedPipelineException\\n\\tat org.apache.spark.sql.pipelines.graph.GraphValidations.validateSuccessfulFlowAnalysis(GraphValidations.scala:325)\\n\\tat org.apache.spark.sql.pipelines.graph.GraphValidations.validateSuccessfulFlowAnalysis$(GraphValidations.scala:288)\\n\\tat org.apache.spark.sql.pipelines.graph.DataflowGraph.validateSuccessfulFlowAnalysis(DataflowGraph.scala:33)\\n\\tat org.apache.spark.sql.pipelines.graph.DataflowGraph.$anonfun$validationFailure$1(DataflowGraph.scala:199)\\n\\tat scala.util.Try$.apply(Try.scala:217)\\n\\tat org.apache.spark.sql.pipelines.graph.DataflowGraph.validationFailure$lzycompute(DataflowGraph.scala:198)\\n\\tat org.apache.spark.sql.pipelines.graph.DataflowGraph.validationFailure(DataflowGraph.scala:198)\\n\\tat org.apache.spark.sql.pipelines.graph.DataflowGraph.validate(DataflowGraph.scala:186)\\n\\tat org.apache.spark.sql.pipelines.graph.PipelineExecution.resolveGraph(PipelineExecution.scala:113)\\n\\tat org.apache.spark.sql.pipelines.graph.PipelineExecution.dryRunPipeline(PipelineExecution.scala:89)\\n\\tat org.apache.spark.sql.connect.pipelines.PipelinesHandler$.$anonfun$startRun$1(PipelinesHandler.scala:561)\\n\\tat org.apache.spark.sql.connect.pipelines.PipelinesHandler$.$anonfun$startRun$1$adapted(PipelinesHandler.scala:525)\\n\\tat scala.util.Using$.resource(Using.scala:296)\\n\\tat org.apache.spark.sql.connect.pipelines.PipelinesHandler$.startRun(PipelinesHandler.scala:525)\\n\\tat org.apache.spark.sql.connect.pipelines.PipelinesHandler$.handlePipelinesCommand(PipelinesHandler.scala:132)\\n\\tat org.apache.spark.sql.connect.planner.SparkConnectPlanner.handlePipelineCommand(SparkConnectPlanner.scala:2961)\\n\\tat org.apache.spark.sql.connect.planner.SparkConnectPlanner.process(SparkConnectPlanner.scala:2930)\\n\\tat org.apache.spark.sql.connect.execution.SparkConnectPlanExecution.handlePlan(SparkConnectPlanExecution.scala:102)\\n\\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.$anonfun$executeInternal$1(ExecuteThreadRunner.scala:231)\\n\\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.$anonfun$executeInternal$1$adapted(ExecuteThreadRunner.scala:203)\\n\\tat org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$2(SessionHolder.scala:441)\\n\\tat org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:810)\\n\\tat org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$1(SessionHolder.scala:441)\\n\\tat org.apache.spark.JobArtifactSet$.withActiveJobArtifactState(JobArtifactSet.scala:94)\\n\\tat org.apache.spark.sql.artifact.ArtifactManager.$anonfun$withResources$1(ArtifactManager.scala:112)\\n\\tat org.apache.spark.util.Utils$.withContextClassLoader(Utils.scala:185)\\n\\tat org.apache.spark.sql.artifact.ArtifactManager.withClassLoaderIfNeeded(ArtifactManager.scala:102)\\n\\tat org.apache.spark.sql.artifact.ArtifactManager.withResources(ArtifactManager.scala:111)\\n\\tat org.apache.spark.sql.connect.service.SessionHolder.withSession(SessionHolder.scala:440)\\n\\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.executeInternal(ExecuteThreadRunner.scala:203)\\n\\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.org$apache$spark$sql$connect$execution$ExecuteThreadRunner$$execute(ExecuteThreadRunner.scala:127)\\n\\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner$ExecutionThread.run(ExecuteThreadRunner.scala:338)'"
+    },
+    {
+      "name": "empty_registration",
+      "outcome": "passed"
+    },
+    {
+      "name": "duplicate_registration",
+      "outcome": "passed"
+    },
+    {
+      "name": "missing_storage",
+      "outcome": "passed"
+    },
+    {
+      "name": "invalid_selection_6",
+      "outcome": "passed"
+    },
+    {
+      "name": "invalid_selection_7",
+      "outcome": "passed"
+    },
+    {
+      "name": "invalid_selection_8",
+      "outcome": "passed"
+    }
+  ]
+}

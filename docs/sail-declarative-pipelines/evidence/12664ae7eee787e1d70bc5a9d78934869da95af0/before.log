@@ -1,0 +1,167 @@
+FFFF                                                                     [100%]
+=================================== FAILURES ===================================
+__________________ test_graph_can_only_be_started_once[True] ___________________
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x115208c80>
+pipeline = ('05301d8b-bdb8-4633-baf3-f4521756f1f2', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x114fb1c40>, <function pipeline_factory.<locals>.create.<locals>.run at 0x115207c40>)
+dry = True
+
+    @pytest.mark.parametrize("dry", [True, False])
+    def test_graph_can_only_be_started_once(pipeline_spark, pipeline, dry):
+        graph_id, registry, run = pipeline
+        with graph_element_registration_context(registry):
+            dp.materialized_view(name="output")(lambda: pipeline_spark.range(2))
+    
+        run(dry=dry)
+>       with pytest.raises(UnknownException) as error:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE UnknownException
+
+python/pysail/tests/spark/pipelines/test_execution.py:150: Failed
+----------------------------- Captured stdout call -----------------------------
+2026-10-29 08:04:48: Starting pipeline analysis
+2026-10-29 08:04:48: Pipeline run completed
+2026-10-29 08:04:48: Starting pipeline analysis
+2026-10-29 08:04:48: Pipeline run completed
+__________________ test_graph_can_only_be_started_once[False] __________________
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x115223ad0>
+pipeline = ('303637bb-c2f3-438b-9d2e-ddd7c831e4ca', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x1153504d0>, <function pipeline_factory.<locals>.create.<locals>.run at 0x11530b560>)
+dry = False
+
+    @pytest.mark.parametrize("dry", [True, False])
+    def test_graph_can_only_be_started_once(pipeline_spark, pipeline, dry):
+        graph_id, registry, run = pipeline
+        with graph_element_registration_context(registry):
+            dp.materialized_view(name="output")(lambda: pipeline_spark.range(2))
+    
+        run(dry=dry)
+>       with pytest.raises(UnknownException) as error:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE UnknownException
+
+python/pysail/tests/spark/pipelines/test_execution.py:150: Failed
+----------------------------- Captured stdout call -----------------------------
+2026-10-29 08:04:48: Starting pipeline analysis
+2026-10-29 08:04:48: Pipeline run completed
+2026-10-29 08:04:48: Starting pipeline analysis
+2026-10-29 08:04:48: Pipeline run completed
+________________ test_failed_analysis_still_reserves_the_graph _________________
+
+pipeline = ('1fe49079-1667-4312-895b-e5b107ff7486', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x1153521e0>, <function pipeline_factory.<locals>.create.<locals>.run at 0x11530cc20>)
+
+    def test_failed_analysis_still_reserves_the_graph(pipeline):
+        graph_id, _, run = pipeline
+        with pytest.raises(AnalysisException, match="RUN_EMPTY_PIPELINE"):
+            run(dry=True)
+        with pytest.raises(UnknownException) as error:
+>           run(dry=True)
+
+python/pysail/tests/spark/pipelines/test_execution.py:167: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+python/pysail/tests/spark/pipelines/conftest.py:31: in run
+    client.handle_pipeline_events(
+.venv/lib/python3.12/site-packages/pyspark/pipelines/spark_connect_pipeline.py:53: in handle_pipeline_events
+    for result in iter:
+                  ^^^^
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1245: in execute_command_as_iterator
+    for response in self._execute_and_fetch_as_iterator(req, observations or {}):
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1731: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2093: in _handle_error
+    self._handle_rpc_error(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <pyspark.sql.connect.client.core.SparkConnectClient object at 0x115350800>
+rpc_error = <_MultiThreadedRendezvous of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = "[RUN_EMPTY_PIPELINE] no materialized outputs"
+	debug_error_string = "INTERNAL:[RUN_EMPTY_PIPELINE] no materialized outputs"
+>
+
+    def _handle_rpc_error(self, rpc_error: grpc.RpcError) -> NoReturn:
+        """
+        Error handling helper for dealing with GRPC Errors. On the server side, certain
+        exceptions are enriched with additional RPC Status information. These are
+        unpacked in this function and put into the exception.
+    
+        To avoid overloading the user with GRPC errors, this message explicitly
+        swallows the error context from the call. This GRPC Error is logged however,
+        and can be enabled.
+    
+        Parameters
+        ----------
+        rpc_error : grpc.RpcError
+           RPC Error containing the details of the exception.
+    
+        Returns
+        -------
+        Throws the appropriate internal Python exception.
+        """
+        logger.exception("GRPC Error received")
+        # We have to cast the value here because, a RpcError is a Call as well.
+        # https://grpc.github.io/grpc/python/grpc.html#grpc.UnaryUnaryMultiCallable.__call__
+        error: grpc.Call = cast(grpc.Call, rpc_error)
+        status_code: grpc.StatusCode = error.code()
+        status: Optional[Status] = rpc_status.from_call(error)
+        if status:
+            for d in status.details:
+                if d.Is(error_details_pb2.ErrorInfo.DESCRIPTOR):
+                    info = error_details_pb2.ErrorInfo()
+                    d.Unpack(info)
+                    logger.debug(f"Received ErrorInfo: {info}")
+    
+                    if info.metadata.get("errorClass") == "INVALID_HANDLE.SESSION_CHANGED":
+                        self._closed = True
+    
+                    if info.metadata.get("errorClass") == "CONNECT_INVALID_PLAN.CANNOT_PARSE":
+                        # Disable plan compression if the server fails to interpret the plan.
+                        logger.info(
+                            "Disabling plan compression for the session due to "
+                            "CONNECT_INVALID_PLAN.CANNOT_PARSE error."
+                        )
+                        self._plan_compression_threshold, self._plan_compression_algorithm = (
+                            -1,
+                            "NONE",
+                        )
+    
+>                   raise convert_exception(
+                        info,
+                        status.message,
+                        self._fetch_enriched_error(info),
+                        self._display_server_stack_trace(),
+                        status_code,
+                    ) from None
+E                   pyspark.errors.exceptions.connect.AnalysisException: [RUN_EMPTY_PIPELINE] no materialized outputs
+
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2177: AnalysisException
+----------------------------- Captured stdout call -----------------------------
+2026-10-29 08:04:48: Starting pipeline analysis
+2026-10-29 08:04:48: Starting pipeline analysis
+_______________ test_missing_storage_does_not_reserve_the_graph ________________
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x115353050>
+pipeline = ('629ff540-d1fa-420b-a87e-ce5ed6d8f87b', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x115353ec0>, <function pipeline_factory.<locals>.create.<locals>.run at 0x11530e200>)
+
+    def test_missing_storage_does_not_reserve_the_graph(pipeline_spark, pipeline):
+        graph_id, registry, run = pipeline
+        with graph_element_registration_context(registry):
+            dp.materialized_view(name="output")(lambda: pipeline_spark.range(2))
+    
+        command = pb.Command()
+        command.pipeline_command.start_run.dataflow_graph_id = graph_id
+        command.pipeline_command.start_run.dry = True
+>       with pytest.raises(IllegalArgumentException, match="Storage must be specified"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: Regex pattern did not match.
+E         Expected regex: 'Storage must be specified'
+E         Actual message: 'missing argument: pipeline storage'
+
+python/pysail/tests/spark/pipelines/test_execution.py:182: AssertionError
+=========================== short test summary info ============================
+FAILED python/pysail/tests/spark/pipelines/test_execution.py::test_graph_can_only_be_started_once[True]
+FAILED python/pysail/tests/spark/pipelines/test_execution.py::test_graph_can_only_be_started_once[False]
+FAILED python/pysail/tests/spark/pipelines/test_execution.py::test_failed_analysis_still_reserves_the_graph
+FAILED python/pysail/tests/spark/pipelines/test_execution.py::test_missing_storage_does_not_reserve_the_graph
+4 failed, 19 deselected in 0.36s

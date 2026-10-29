@@ -10786,3 +10786,7 @@ DONE for Sail `aabdda2a8d786b58854c03e82718a07a2312d473`: 49 pipeline cases thro
 ## 2026-10-29T07:57:17.700796+00:00 — DONE batch schema merge, comments, and dry-run units
 
 DONE for Sail source `0393db9226638910a9552b97aa0a8cc98e48816a`: detached nightly fmt, strict Clippy, CLI build, 68 pipeline cases, and 67 unchanged upstream Python executions passed with server Spark 4.2.1. Separately gated preceding units cover publication preflight, Spark schema merging, and shared-writer table comments; the comment unit also passed six shared-writer regressions. Per-source receipts and live Spark JVM probes are under `docs/sail-declarative-pipelines/evidence`. The reference exposed outstanding graph-reuse and failed-write catalog side-effect differences. Declared schema publication and full batch acceptance remain active; streaming and CDC follow. No pushes, upstream PRs, or publications.
+
+## 2026-10-29T08:16:04.020610+00:00 — DONE pipeline execution lifetime
+
+DONE for Sail `12664ae7eee787e1d70bc5a9d78934869da95af0`: detached fmt, strict Clippy, CLI build, Python lint, 75 pipeline cases and 67 unchanged upstream Python executions passed without skips; nine targeted lifecycle checks also passed against the Spark 4.2.1 JVM. Failed reference assumptions and the resulting corrections are retained in the source receipt. Batch work continues with schema publication. The operator requests advance notice before the next design phase to switch to Astra, including streaming recovery, CDC, or a batch architecture reconsideration. No push or publication.
