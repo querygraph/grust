@@ -10994,3 +10994,11 @@ Recording a typed catalog-expression command and graph-independent prepare/curre
 ## 2026-10-29T15:45:12.215264+00:00 — DONE asynchronous SQL preparation
 
 Committed Sail 73305d1f7b3d69fefad19944e1270b69fe9adf8f: detached fmt/strict Clippy/CLI, full Connect 38/planner 23/analyzer 23 Rust tests and fresh-server 238 selected pytest + 67 upstream executions pass. Initial ANSI fixture failure retained, assertions unchanged. Deterministic lifecycle schedules are not saturated-release concurrency qualification. Three pending grammar/namespace paths remain a separate next unit. Full goal active, no publication.
+
+## 2026-10-29T15:54:57.938385+00:00 — DONE shared catalog expression activation
+
+Sail 992f5bcbf60added5b44596f279ab8801f0c0045: fmt/strict Clippy/CLI, full Connect 38/parser 6/analyzer 23/planner 23 Rust tests, 246 selected pytest + 67 upstream executions pass. Eight public controls fail before and pass unchanged on Spark 4.2.1/candidate. Retained thirteen registration assertions remain unchanged: eleven pass, two still fail on shared ANSI cast metadata; historical failing packet preserved. Single AST golden update reviewed, initial failure retained. SqlPipelineSuite:739 gains partial coverage of both original values; no original Scala execution or full-goal claim. A shared execution-error metadata design checkpoint precedes remaining adapter acceptance. No publication.
+
+## 2026-10-29T15:55:56.560379+00:00 — ACK next design boundary: shared execution errors
+
+Operator notified to switch to Astra before next architecture selection. Two unchanged catalog registration assertions still fail; ordinary SELECT CAST reproduces missing condition/state/parameters in shared Sail error transport. Paired Spark 4.2.1/Sail controls and handoff retained. No pipeline-only cast workaround or new error design selected. Goal active.

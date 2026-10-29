@@ -4195,18 +4195,22 @@
       "line": 739,
       "method": "gridTest",
       "name_expression": "\"Set catalog throws error if catalog name expression cannot be resolved\"",
-      "status": "unmapped",
-      "sail_tests": [],
+      "status": "partial-behavioral-port",
+      "sail_tests": [
+        "python/pysail/tests/spark/pipelines/test_catalog_expressions.py::test_invalid_catalog_expression_has_native_pipeline_diagnostics[CONCAT(foo, '1')]",
+        "python/pysail/tests/spark/pipelines/test_catalog_expressions.py::test_invalid_catalog_expression_has_native_pipeline_diagnostics[test.cat]"
+      ],
       "coverage_review": {
         "phase": "batch-sql-catalog",
-        "covered_assertions": "None mapped. Paired probes confirm both engines reject both invalid inputs at registration, with different error surfaces.",
-        "remaining_assertions": "Spark returns PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR with Failed to resolve catalog expression; Sail rejects unsupported grammar as an argument/parser error. Shared catalog-expression support and wrapping remain open.",
+        "covered_assertions": "Both original expression instances reject at registration with the native pipeline analysis wrapper and Failed to resolve catalog expression. Public tests also pin error condition, SQL state, source statement/path/line and unchanged session defaults.",
+        "remaining_assertions": "Original Scala fixture and suite remain unexecuted; public Connect behavioral port covers both source parameter values.",
         "gap_evidence": "evidence/catalog-scope-design-boundary",
         "scala_suite_executed": false,
         "parameter_instances": [
           "CONCAT(foo, '1')",
           "test.cat"
-        ]
+        ],
+        "sail_evidence": "evidence/992f5bcbf60added5b44596f279ab8801f0c0045/pytest.xml"
       },
       "failing_behavioral_reproduction": {
         "source": "evidence/catalog-expression-design/required-assertions.py",
@@ -4215,7 +4219,7 @@
           "CONCAT(foo, '1')": "unresolved",
           "test.cat": "multipart"
         },
-        "scope": "Registration assertions include both original expression instances plus broader design controls. Spark 13/13; Sail 2/13, with both original instances failing the required error assertions. Original Scala suite remains unexecuted."
+        "scope": "Historical pre-activation packet: Spark 13/13, Sail 2/13. Both original instances failed there. The new activation receipt separately passes eleven of thirteen unchanged assertions, with shared cast metadata still failing; original Scala suite remains unexecuted."
       }
     },
     {

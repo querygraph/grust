@@ -1070,3 +1070,34 @@ selected Python regressions and 67 upstream Python executions. See the
 These deterministic schedules do not qualify general concurrency under saturated
 release execution. Expression grammar activation remains a separate next unit;
 original Scala, full batch, streaming and CDC acceptance remain outstanding.
+
+## Enable shared catalog expressions in SQL and pipelines
+
+Sail 992f5bcbf60added5b44596f279ab8801f0c0045 switches SET CATALOG to the expression AST and shared
+resolver command. The direct catalog API and USE CATALOG keep their static-name
+commands. Pipeline qualification rejects implicit persistent names while the file
+database is unset after SET CATALOG; explicit namespaces and private views work.
+No dependency or catalog adapter is added.
+
+Eight new public tests fail against the prior CLI and pass unchanged on Spark
+4.2.1 and this candidate: ordinary CONCAT/CAST, pipeline publication, both
+SqlPipelineSuite:739 invalid expressions, numeric type and typed null diagnostics.
+The retained 13-case registration assertions now pass 11/13 on Sail. Both remaining
+failures preserve NumberFormatException but lack CAST_INVALID_INPUT and SQL state
+22018 in shared execution-error transport; ordinary SQL reproduces the same gap.
+Analysis wrappers, configuration priority and unset/explicit/private namespace
+controls pass. The historical 2/13 Sail failure package and all thirteen unchanged
+assertions are preserved. See the
+[receipt](evidence/992f5bcbf60added5b44596f279ab8801f0c0045/gate.json).
+
+Detached fmt, strict Clippy and CLI build pass. Full Connect 38, parser six,
+analyzer 23 and planner 23 library tests pass without filters. Fresh-server
+regressions pass 246 selected Python cases and 67 upstream executions. The one
+changed golden case now parses subtraction before later catalog resolution; its
+input and original captured Spark error are unchanged. Initial golden failure
+and the eight Spark fixture setup errors are retained separately from passing
+function-level reference evidence.
+
+This qualifies shared expression activation and the selected registration/publication
+behaviors. It does not execute the original Scala suite or finish catalog adapter,
+full batch, REST view, event/failure, ORC, streaming or CDC acceptance.

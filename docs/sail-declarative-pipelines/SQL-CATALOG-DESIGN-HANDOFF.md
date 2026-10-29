@@ -6,8 +6,10 @@ initial handoff recorded observed behavior and open decisions. The completed
 [catalog-expression design](CATALOG-EXPRESSION-DESIGN.md) now selects the shared
 resolution and prepare/commit boundaries. The shared resolver prerequisite is
 implemented in 564738318. Shared statement origins and native pipeline SQL error
-parameters are implemented in 1f281cdfd/010469d3c. Catalog-expression activation
-remains pending.
+parameters are implemented in 1f281cdfd/010469d3c. Asynchronous preparation and expression activation are implemented in
+73305d1f7/992f5bcbf. The retained probe now passes eleven of thirteen assertions;
+two shared ANSI error metadata failures remain. See the
+[execution-error handoff](EXECUTION-ERROR-DESIGN-HANDOFF.md).
 General SQL/catalog semantics belong in Sail. LakeCat remains a catalog adapter.
 
 ## Evidence

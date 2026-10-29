@@ -1,0 +1,62 @@
+WARNING: Using incubator modules: jdk.incubator.vector
+Using Spark's default log4j profile: org/apache/spark/log4j2-defaults.properties
+Setting default log level to "WARN".
+To adjust logging level use sc.setLogLevel(newLevel). For SparkR, use setLogLevel(newLevel).
+26/10/29 08:46:45 WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/conf.py:61: UserWarning: Failed to set spark.ui.enabled to Some(false) due to [CANNOT_MODIFY_CONFIG] Cannot modify the value of the Spark config: "spark.ui.enabled".
+See also 'https://spark.apache.org/docs/latest/sql-migration-guide.html#ddl-statements'. SQLSTATE: 46110
+  warnings.warn(warn)
+/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/conf.py:61: UserWarning: Failed to set spark.sql.warehouse.dir to Some(file:///var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/sdp-catalog-activation-reference-pc7x26f0/warehouse) due to [CANNOT_MODIFY_STATIC_CONFIG] Cannot modify the value of the static Spark config: "spark.sql.warehouse.dir". SQLSTATE: 46110
+  warnings.warn(warn)
+[Stage 0:>                                                          (0 + 1) / 1]                                                                                2026-10-29 15:46:50: Flow spark_catalog.default.catalog_expression_11094edf985e418e82f515c5271390d9 is QUEUED.
+2026-10-29 15:46:50: Flow spark_catalog.default.catalog_expression_11094edf985e418e82f515c5271390d9 is PLANNING.
+2026-10-29 15:46:50: Flow spark_catalog.default.catalog_expression_11094edf985e418e82f515c5271390d9 is STARTING.
+2026-10-29 15:46:50: Flow spark_catalog.default.catalog_expression_11094edf985e418e82f515c5271390d9 is RUNNING.
+2026-10-29 15:46:51: Flow spark_catalog.default.catalog_expression_11094edf985e418e82f515c5271390d9 has COMPLETED.
+2026-10-29 15:46:53: Run is COMPLETED.
+2026-10-29 15:46:53: Flow spark_catalog.default.catalog_expression_5662568c0e8146b088539dc31cfadbb1 is QUEUED.
+2026-10-29 15:46:53: Flow spark_catalog.default.catalog_expression_5662568c0e8146b088539dc31cfadbb1 is PLANNING.
+2026-10-29 15:46:53: Flow spark_catalog.default.catalog_expression_5662568c0e8146b088539dc31cfadbb1 is STARTING.
+2026-10-29 15:46:53: Flow spark_catalog.default.catalog_expression_5662568c0e8146b088539dc31cfadbb1 is RUNNING.
+2026-10-29 15:46:54: Flow spark_catalog.default.catalog_expression_5662568c0e8146b088539dc31cfadbb1 has COMPLETED.
+2026-10-29 15:46:55: Run is COMPLETED.
+{
+  "recorded_at": "2026-10-29T15:46:48.520280+00:00",
+  "spark_version": "4.2.1",
+  "test_source_sha256": "99fc14252f2b8550d8f31d43c1d9ce5780fb0247c2fa82fc9eaf6bee602dba65",
+  "fixture": "warehouse configured on builder; invokes unchanged public test functions",
+  "cases": [
+    {
+      "name": "ordinary: CONCAT({catalog}, '')",
+      "outcome": "passed"
+    },
+    {
+      "name": "pipeline: CONCAT({catalog}, '')",
+      "outcome": "passed"
+    },
+    {
+      "name": "ordinary: CAST({catalog} AS STRING)",
+      "outcome": "passed"
+    },
+    {
+      "name": "pipeline: CAST({catalog} AS STRING)",
+      "outcome": "passed"
+    },
+    {
+      "name": "invalid: CONCAT(foo, '1')",
+      "outcome": "passed"
+    },
+    {
+      "name": "invalid: test.cat",
+      "outcome": "passed"
+    },
+    {
+      "name": "invalid: 1",
+      "outcome": "passed"
+    },
+    {
+      "name": "invalid: CAST(NULL AS STRING)",
+      "outcome": "passed"
+    }
+  ]
+}

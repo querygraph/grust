@@ -4,15 +4,19 @@ This design follows the announced Astra checkpoint. General expression analysis,
 identifier interpretation and catalog selection stay in Sail. LakeCat remains one
 catalog adapter. The shared resolver prerequisite is implemented in 564738318;
 Statement spans and pipeline diagnostics are implemented in 1f281cdfd and
-010469d3c. Catalog-expression activation remains pending. The evidence below is a required
-failing registration baseline, not a passing SDP verdict.
+010469d3c. Asynchronous preparation is implemented in 73305d1f7 and expression
+activation in 992f5bcbf. The historical evidence below remains a required failing
+baseline. The new [activation receipt](evidence/992f5bcbf60added5b44596f279ab8801f0c0045/gate.json) records
+eleven passing registration cases and two unresolved ANSI error-metadata cases;
+there is no complete catalog-expression or SDP verdict.
 
 ## Evidence that determines the boundary
 
 The [recorded probe package](evidence/catalog-expression-design/provenance.json)
 contains 22 Spark 4.2.1 parser/analyzer expression cases and 13 registration cases
-per engine. The same retained assertions pass 13/13 on Spark and 2/13 on the
-unchanged Sail engine; eleven Sail failures remain. Registration probes never
+per engine. At that historical baseline the same retained assertions passed
+13/13 on Spark and 2/13 on Sail; eleven failures were recorded. The separate
+activation receipt now records eleven passes and two metadata failures. Registration probes never
 start a graph run. They cannot qualify publication or full Scala fixtures.
 
 Pinned Spark sources establish the evaluation path:
@@ -196,6 +200,7 @@ unset flow database, without falling back to the session's default namespace.
 3. Asynchronous preparation plus locked, file-atomic commit, including the new
    typed expression command and its resolver paths before the parser produces
    it. Preserve config capture, error ordering, source text and concurrency.
+   Implemented in [73305d1f7](evidence/73305d1f7b3d69fefad19944e1270b69fe9adf8f/gate.json).
 4. Activate the SET CATALOG expression AST/lowering and ordinary SQL wiring once
    pipeline preparation can consume it. Preserve direct Catalog API semantics;
    update only affected goldens and run complete library/golden tests.
@@ -215,3 +220,17 @@ Exact metadata/control coverage remains subject to their gates. General SQL
 variable/command-parameter support is not silently added through this path.
 The original Scala suites, full batch acceptance, ORC, failure/event behavior,
 REST views, streaming and CDC remain separate required work.
+
+## Shared execution-error metadata boundary
+
+Activation now passes the eight new public functions on Spark 4.2.1 and Sail,
+including both original invalid grid values. The unchanged thirteen-case probe
+passes eleven cases on Sail. Two ANSI execution failures retain NumberFormatException
+but expose no condition or SQL state. An ordinary SELECT CAST control reproduces
+that shared gap. The [next design handoff](EXECUTION-ERROR-DESIGN-HANDOFF.md) records
+the boundary without selecting a new transport architecture. Adapter and original
+Scala acceptance remain outstanding.
+
+The expression AST/lowering activation is implemented in 992f5bcbf. Its unset
+namespace guard also covers the focused registration check from unit five. The
+rest of unit five, including catalog adapter acceptance, remains outstanding.

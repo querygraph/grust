@@ -1,0 +1,117 @@
+{
+  "sail_commit": "992f5bcbf60added5b44596f279ab8801f0c0045",
+  "spark_commit": "617618396087429b5627a86ce933bb0f5d6645cb",
+  "recorded_at": "2026-10-29T15:54:46.523513+00:00",
+  "platform": "macOS arm64",
+  "gate_checkout": "detached; private target directory; immutable HEAD for the gate",
+  "cli_sha256": "8ab719d50bbec28f654612ba5649895cc72da18e8ab1d1db5021a8f64b7d1055",
+  "checks": [
+    {
+      "command": "cargo +nightly fmt -p sail-sql-parser -p sail-sql-analyzer -p sail-plan -p sail-spark-connect -- --check",
+      "outcome": "pass"
+    },
+    {
+      "command": "cargo +1.98.1 clippy -p sail-sql-parser -p sail-sql-analyzer -p sail-plan -p sail-spark-connect --all-targets --all-features --locked -- -D warnings",
+      "outcome": "pass"
+    },
+    {
+      "command": "cargo +1.98.1 build -p sail-cli --locked",
+      "outcome": "pass",
+      "note": "CARGO_PROFILE_DEV_DEBUG=0; CARGO_PROFILE_DEV_INCREMENTAL=false; linker warned about __eh_frame size."
+    },
+    {
+      "command": "PYTHONPATH=<gate>/python SPARK_REMOTE=sc://localhost:50082 python -m pytest -q <cases listed in pytest.xml> --junitxml=pytest.xml",
+      "outcome": "pass",
+      "passed": 246,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "command": "python scripts/spark-pipelines-tests/run.py --spark-source <pinned Spark checkout> --remote sc://localhost:50082 --report spark-python.json",
+      "outcome": "pass",
+      "server_spark_version": "4.2.1",
+      "tests_run": 67,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "command": "ruff check and format --check on changed Python files",
+      "outcome": "pass"
+    },
+    {
+      "command": "cargo +1.98.1 test -p sail-spark-connect --lib --locked",
+      "outcome": "pass",
+      "passed": 38,
+      "failed": 0,
+      "ignored": 0,
+      "filtered": 0
+    },
+    {
+      "command": "cargo +1.98.1 test -p sail-sql-parser --lib --locked",
+      "outcome": "pass",
+      "passed": 6,
+      "failed": 0,
+      "ignored": 0,
+      "filtered": 0
+    },
+    {
+      "command": "cargo +1.98.1 test -p sail-sql-analyzer --lib --locked",
+      "outcome": "pass",
+      "passed": 23,
+      "failed": 0,
+      "ignored": 0,
+      "filtered": 0
+    },
+    {
+      "command": "cargo +1.98.1 test -p sail-plan --lib --locked",
+      "outcome": "pass",
+      "passed": 23,
+      "failed": 0,
+      "ignored": 0,
+      "filtered": 0
+    },
+    {
+      "command": "Invoke eight unchanged public test functions on local Spark Connect 4.2.1",
+      "outcome": "pass",
+      "passed": 8,
+      "test_source_sha256": "99fc14252f2b8550d8f31d43c1d9ce5780fb0247c2fa82fc9eaf6bee602dba65"
+    },
+    {
+      "command": "Retained registration-probe.py sail && required-assertions.py sail",
+      "outcome": "failed",
+      "passed": 11,
+      "failed": 2,
+      "remaining_gap": "ANSI numeric cast error condition and SQL state absent in shared Sail error transport"
+    },
+    {
+      "command": "cast-transport-probe.py sail; cast-transport-probe.py spark",
+      "outcome": "mismatch",
+      "scope": "Ordinary SELECT CAST of malformed string to INT, session ANSI true",
+      "sail": {
+        "exception": "NumberFormatException",
+        "condition": null,
+        "sql_state": null
+      },
+      "spark": {
+        "exception": "NumberFormatException",
+        "condition": "CAST_INVALID_INPUT",
+        "sql_state": "22018"
+      }
+    }
+  ],
+  "limits": [
+    "No distributed cluster execution claim.",
+    "Upstream Python includes inherited and client-only tests.",
+    "Full batch acceptance and the remaining Spark SDP crosswalk are outstanding.",
+    "Initial direct Spark pytest invocation had eight fixture setup errors because its shared fixture changes a static warehouse setting. The unchanged test functions were then invoked with a local Spark Connect session, retaining all assertions. Builder configuration requests may warn when reusing the local server; no isolated-warehouse claim.",
+    "Historical Spark 13/13 reference and Sail 2/13 failure packet remain immutable; new Sail registration results are separate.",
+    "Two required retained registration assertions still fail on shared ANSI cast condition/state metadata. These failures remain open; no complete catalog-expression parity claim.",
+    "Original Scala suite not executed; adapter matrix acceptance remains separately scoped."
+  ],
+  "initial_gate": {
+    "connect_passed": 37,
+    "connect_failed": 1,
+    "cause": "One expected parser golden AST change for SET CATALOG test-test; reviewed scratch regeneration across 45 fixture files found exactly one changed case. Input and captured Spark exception metadata unchanged."
+  }
+}

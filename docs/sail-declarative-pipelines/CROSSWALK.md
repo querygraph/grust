@@ -59,7 +59,7 @@ parameter when no cause exists. These belong to the pending Astra
 ## SQL pipeline assertions
 
 All 38 SQL registration sites have an [assertion audit](evidence/sql-complete-assertion-audit/validation.json):
-29 partial ports and 9 unmapped. This is not a complete Scala-suite verdict.
+30 partial ports and 8 unmapped. This is not a complete Scala-suite verdict.
 The reviewed groups include:
 
 - Basic batch cases: static dataset, escaped names, a four-view dependency chain,
@@ -84,14 +84,17 @@ The reviewed groups include:
   unexecuted.
 - [Catalog scope](evidence/sql-catalog-crosswalk/validation.json): four positive
   single-catalog namespace/file/private-view behaviors partially port the larger
-  multi-catalog fixture. The invalid catalog-expression grid remains unmapped.
+  multi-catalog fixture. Both invalid catalog-expression grid values now have partial behavioral ports
+  with native registration error metadata in
+  [992f5bcbf](evidence/992f5bcbf60added5b44596f279ab8801f0c0045/gate.json); the original Scala suite is unexecuted.
 
 The [paired catalog probes](evidence/catalog-scope-design-boundary/provenance.json)
-expose missing foldable catalog expressions, wrong missing-namespace validation
-stage and differing invalid-expression error metadata. The
-[shared SQL catalog handoff](SQL-CATALOG-DESIGN-HANDOFF.md) is ready for Astra;
-no architecture is selected there. Full multi-catalog and streaming assertions
-in the original fixture remain outstanding.
+record the historical expression/namespace/error failures. Shared expression
+activation now passes eleven of thirteen retained registration assertions and
+eight paired public controls. Two ANSI cast condition/state failures remain in
+shared Sail transport; the next [design handoff](EXECUTION-ERROR-DESIGN-HANDOFF.md)
+records ordinary SQL controls. Full multi-catalog and streaming assertions in the
+original fixture remain outstanding.
 
 Continue reviewing assertions, expanding parameter grids and identifying helper
 registrations. Full batch acceptance, original Scala-suite execution, distributed
@@ -114,8 +117,8 @@ log, not pytest XML. No original Scala execution is inferred from these ports.
 
 The original non-nullable RANGE query schema now has a direct Rust PlanResolver
 and declaration-validation check, separately from catalog publication. Exact
-persisted-view SQL text remains a [confirmed source-preservation gap](evidence/view-source-design-boundary/provenance.json)
-with a retained failing Rust test. The shared SQL design handoff now includes
+persisted-view SQL text has a [retained historical failure](evidence/view-source-design-boundary/provenance.json)
+and now passes its unchanged Rust assertion plus four paired publication controls. The shared SQL design handoff now includes
 source text as well as catalog expressions; TreeText reconstruction is not a
 verbatim-source API. Review/status counts remain unchanged by this refinement.
 

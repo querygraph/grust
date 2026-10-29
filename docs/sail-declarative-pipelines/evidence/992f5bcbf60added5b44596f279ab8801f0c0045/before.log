@@ -1,0 +1,691 @@
+FFFFFFFF                                                                 [100%]
+=================================== FAILURES ===================================
+________ test_catalog_expression_in_ordinary_sql[CONCAT({catalog}, '')] ________
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x117d69940>
+expression = "CONCAT({catalog}, '')"
+
+    @pytest.mark.parametrize("expression", ["CONCAT({catalog}, '')", "CAST({catalog} AS STRING)"])
+    def test_catalog_expression_in_ordinary_sql(pipeline_spark, expression):
+        catalog = pipeline_spark.catalog.currentCatalog()
+        quoted = "'" + catalog.replace("'", "''") + "'"
+>       pipeline_spark.sql("SET CATALOG " + expression.format(catalog=quoted)).collect()
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+python/pysail/tests/spark/pipelines/test_catalog_expressions.py:15: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/session.py:836: in sql
+    data, properties, ei = self.client.execute_command(cmd.command(self._client))
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1219: in execute_command
+    data, _, metrics, observed_metrics, properties = self._execute_and_fetch(
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1754: in _execute_and_fetch
+    for response in self._execute_and_fetch_as_iterator(
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1731: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2093: in _handle_error
+    self._handle_rpc_error(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <pyspark.sql.connect.client.core.SparkConnectClient object at 0x117d69ca0>
+rpc_error = <_MultiThreadedRendezvous of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = "invalid argument: fou...', or end of input"
+	debug_error_string = "INTERNAL:invalid argument: found ( at 18:19 expected ';', or end of input"
+>
+
+    def _handle_rpc_error(self, rpc_error: grpc.RpcError) -> NoReturn:
+        """
+        Error handling helper for dealing with GRPC Errors. On the server side, certain
+        exceptions are enriched with additional RPC Status information. These are
+        unpacked in this function and put into the exception.
+    
+        To avoid overloading the user with GRPC errors, this message explicitly
+        swallows the error context from the call. This GRPC Error is logged however,
+        and can be enabled.
+    
+        Parameters
+        ----------
+        rpc_error : grpc.RpcError
+           RPC Error containing the details of the exception.
+    
+        Returns
+        -------
+        Throws the appropriate internal Python exception.
+        """
+        logger.exception("GRPC Error received")
+        # We have to cast the value here because, a RpcError is a Call as well.
+        # https://grpc.github.io/grpc/python/grpc.html#grpc.UnaryUnaryMultiCallable.__call__
+        error: grpc.Call = cast(grpc.Call, rpc_error)
+        status_code: grpc.StatusCode = error.code()
+        status: Optional[Status] = rpc_status.from_call(error)
+        if status:
+            for d in status.details:
+                if d.Is(error_details_pb2.ErrorInfo.DESCRIPTOR):
+                    info = error_details_pb2.ErrorInfo()
+                    d.Unpack(info)
+                    logger.debug(f"Received ErrorInfo: {info}")
+    
+                    if info.metadata.get("errorClass") == "INVALID_HANDLE.SESSION_CHANGED":
+                        self._closed = True
+    
+                    if info.metadata.get("errorClass") == "CONNECT_INVALID_PLAN.CANNOT_PARSE":
+                        # Disable plan compression if the server fails to interpret the plan.
+                        logger.info(
+                            "Disabling plan compression for the session due to "
+                            "CONNECT_INVALID_PLAN.CANNOT_PARSE error."
+                        )
+                        self._plan_compression_threshold, self._plan_compression_algorithm = (
+                            -1,
+                            "NONE",
+                        )
+    
+>                   raise convert_exception(
+                        info,
+                        status.message,
+                        self._fetch_enriched_error(info),
+                        self._display_server_stack_trace(),
+                        status_code,
+                    ) from None
+E                   pyspark.errors.exceptions.connect.IllegalArgumentException: invalid argument: found ( at 18:19 expected ';', or end of input
+
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2177: IllegalArgumentException
+______ test_catalog_expression_in_ordinary_sql[CAST({catalog} AS STRING)] ______
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x117d92870>
+expression = 'CAST({catalog} AS STRING)'
+
+    @pytest.mark.parametrize("expression", ["CONCAT({catalog}, '')", "CAST({catalog} AS STRING)"])
+    def test_catalog_expression_in_ordinary_sql(pipeline_spark, expression):
+        catalog = pipeline_spark.catalog.currentCatalog()
+        quoted = "'" + catalog.replace("'", "''") + "'"
+>       pipeline_spark.sql("SET CATALOG " + expression.format(catalog=quoted)).collect()
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+python/pysail/tests/spark/pipelines/test_catalog_expressions.py:15: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/session.py:836: in sql
+    data, properties, ei = self.client.execute_command(cmd.command(self._client))
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1219: in execute_command
+    data, _, metrics, observed_metrics, properties = self._execute_and_fetch(
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1754: in _execute_and_fetch
+    for response in self._execute_and_fetch_as_iterator(
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1731: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2093: in _handle_error
+    self._handle_rpc_error(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <pyspark.sql.connect.client.core.SparkConnectClient object at 0x117d935c0>
+rpc_error = <_MultiThreadedRendezvous of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = "invalid argument: fou...', or end of input"
+	debug_error_string = "INTERNAL:invalid argument: found ( at 16:17 expected ';', or end of input"
+>
+
+    def _handle_rpc_error(self, rpc_error: grpc.RpcError) -> NoReturn:
+        """
+        Error handling helper for dealing with GRPC Errors. On the server side, certain
+        exceptions are enriched with additional RPC Status information. These are
+        unpacked in this function and put into the exception.
+    
+        To avoid overloading the user with GRPC errors, this message explicitly
+        swallows the error context from the call. This GRPC Error is logged however,
+        and can be enabled.
+    
+        Parameters
+        ----------
+        rpc_error : grpc.RpcError
+           RPC Error containing the details of the exception.
+    
+        Returns
+        -------
+        Throws the appropriate internal Python exception.
+        """
+        logger.exception("GRPC Error received")
+        # We have to cast the value here because, a RpcError is a Call as well.
+        # https://grpc.github.io/grpc/python/grpc.html#grpc.UnaryUnaryMultiCallable.__call__
+        error: grpc.Call = cast(grpc.Call, rpc_error)
+        status_code: grpc.StatusCode = error.code()
+        status: Optional[Status] = rpc_status.from_call(error)
+        if status:
+            for d in status.details:
+                if d.Is(error_details_pb2.ErrorInfo.DESCRIPTOR):
+                    info = error_details_pb2.ErrorInfo()
+                    d.Unpack(info)
+                    logger.debug(f"Received ErrorInfo: {info}")
+    
+                    if info.metadata.get("errorClass") == "INVALID_HANDLE.SESSION_CHANGED":
+                        self._closed = True
+    
+                    if info.metadata.get("errorClass") == "CONNECT_INVALID_PLAN.CANNOT_PARSE":
+                        # Disable plan compression if the server fails to interpret the plan.
+                        logger.info(
+                            "Disabling plan compression for the session due to "
+                            "CONNECT_INVALID_PLAN.CANNOT_PARSE error."
+                        )
+                        self._plan_compression_threshold, self._plan_compression_algorithm = (
+                            -1,
+                            "NONE",
+                        )
+    
+>                   raise convert_exception(
+                        info,
+                        status.message,
+                        self._fetch_enriched_error(info),
+                        self._display_server_stack_trace(),
+                        status_code,
+                    ) from None
+E                   pyspark.errors.exceptions.connect.IllegalArgumentException: invalid argument: found ( at 16:17 expected ';', or end of input
+
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2177: IllegalArgumentException
+___ test_catalog_expression_publishes_pipeline_output[CONCAT({catalog}, '')] ___
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x117ded4c0>
+pipeline = ('1351c1bb-32d3-401f-84a6-a68963b89198', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x117defb90>, <function pipeline_factory.<locals>.create.<locals>.run at 0x117dff920>)
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-131/test_catalog_expression_publis0')
+expression = "CONCAT({catalog}, '')"
+
+    @pytest.mark.parametrize("expression", ["CONCAT({catalog}, '')", "CAST({catalog} AS STRING)"])
+    def test_catalog_expression_publishes_pipeline_output(pipeline_spark, pipeline, tmp_path, expression):
+        _, registry, run = pipeline
+        catalog = pipeline_spark.catalog.currentCatalog()
+        database = pipeline_spark.catalog.currentDatabase()
+        quoted = "'" + catalog.replace("'", "''") + "'"
+        name = "catalog_expression_" + uuid4().hex
+        output = f"`{catalog}`.`{database}`.`{name}`"
+        sql = (
+            "SET CATALOG " + expression.format(catalog=quoted) + "; "
+            f"CREATE MATERIALIZED VIEW `{database}`.`{name}` AS SELECT 17 AS value"
+        )
+        try:
+>           registry.register_sql(sql, tmp_path / "catalog.sql")
+
+python/pysail/tests/spark/pipelines/test_catalog_expressions.py:32: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/pyspark/pipelines/spark_connect_graph_element_registry.py:178: in register_sql
+    self._client.execute_command(command)
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1219: in execute_command
+    data, _, metrics, observed_metrics, properties = self._execute_and_fetch(
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1754: in _execute_and_fetch
+    for response in self._execute_and_fetch_as_iterator(
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1731: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2093: in _handle_error
+    self._handle_rpc_error(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <pyspark.sql.connect.client.core.SparkConnectClient object at 0x117ded520>
+rpc_error = <_MultiThreadedRendezvous of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = "invalid argument: fou...', or end of input"
+	debug_error_string = "INTERNAL:invalid argument: found ( at 18:19 expected ';', or end of input"
+>
+
+    def _handle_rpc_error(self, rpc_error: grpc.RpcError) -> NoReturn:
+        """
+        Error handling helper for dealing with GRPC Errors. On the server side, certain
+        exceptions are enriched with additional RPC Status information. These are
+        unpacked in this function and put into the exception.
+    
+        To avoid overloading the user with GRPC errors, this message explicitly
+        swallows the error context from the call. This GRPC Error is logged however,
+        and can be enabled.
+    
+        Parameters
+        ----------
+        rpc_error : grpc.RpcError
+           RPC Error containing the details of the exception.
+    
+        Returns
+        -------
+        Throws the appropriate internal Python exception.
+        """
+        logger.exception("GRPC Error received")
+        # We have to cast the value here because, a RpcError is a Call as well.
+        # https://grpc.github.io/grpc/python/grpc.html#grpc.UnaryUnaryMultiCallable.__call__
+        error: grpc.Call = cast(grpc.Call, rpc_error)
+        status_code: grpc.StatusCode = error.code()
+        status: Optional[Status] = rpc_status.from_call(error)
+        if status:
+            for d in status.details:
+                if d.Is(error_details_pb2.ErrorInfo.DESCRIPTOR):
+                    info = error_details_pb2.ErrorInfo()
+                    d.Unpack(info)
+                    logger.debug(f"Received ErrorInfo: {info}")
+    
+                    if info.metadata.get("errorClass") == "INVALID_HANDLE.SESSION_CHANGED":
+                        self._closed = True
+    
+                    if info.metadata.get("errorClass") == "CONNECT_INVALID_PLAN.CANNOT_PARSE":
+                        # Disable plan compression if the server fails to interpret the plan.
+                        logger.info(
+                            "Disabling plan compression for the session due to "
+                            "CONNECT_INVALID_PLAN.CANNOT_PARSE error."
+                        )
+                        self._plan_compression_threshold, self._plan_compression_algorithm = (
+                            -1,
+                            "NONE",
+                        )
+    
+>                   raise convert_exception(
+                        info,
+                        status.message,
+                        self._fetch_enriched_error(info),
+                        self._display_server_stack_trace(),
+                        status_code,
+                    ) from None
+E                   pyspark.errors.exceptions.connect.IllegalArgumentException: invalid argument: found ( at 18:19 expected ';', or end of input
+
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2177: IllegalArgumentException
+_ test_catalog_expression_publishes_pipeline_output[CAST({catalog} AS STRING)] _
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x117ef8290>
+pipeline = ('a007e89f-8ac7-418e-a39d-3444cfa1b53d', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x117efa300>, <function pipeline_factory.<locals>.create.<locals>.run at 0x117efd4e0>)
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-131/test_catalog_expression_publis1')
+expression = 'CAST({catalog} AS STRING)'
+
+    @pytest.mark.parametrize("expression", ["CONCAT({catalog}, '')", "CAST({catalog} AS STRING)"])
+    def test_catalog_expression_publishes_pipeline_output(pipeline_spark, pipeline, tmp_path, expression):
+        _, registry, run = pipeline
+        catalog = pipeline_spark.catalog.currentCatalog()
+        database = pipeline_spark.catalog.currentDatabase()
+        quoted = "'" + catalog.replace("'", "''") + "'"
+        name = "catalog_expression_" + uuid4().hex
+        output = f"`{catalog}`.`{database}`.`{name}`"
+        sql = (
+            "SET CATALOG " + expression.format(catalog=quoted) + "; "
+            f"CREATE MATERIALIZED VIEW `{database}`.`{name}` AS SELECT 17 AS value"
+        )
+        try:
+>           registry.register_sql(sql, tmp_path / "catalog.sql")
+
+python/pysail/tests/spark/pipelines/test_catalog_expressions.py:32: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/pyspark/pipelines/spark_connect_graph_element_registry.py:178: in register_sql
+    self._client.execute_command(command)
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1219: in execute_command
+    data, _, metrics, observed_metrics, properties = self._execute_and_fetch(
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1754: in _execute_and_fetch
+    for response in self._execute_and_fetch_as_iterator(
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1731: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2093: in _handle_error
+    self._handle_rpc_error(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <pyspark.sql.connect.client.core.SparkConnectClient object at 0x117efb800>
+rpc_error = <_MultiThreadedRendezvous of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = "invalid argument: fou...', or end of input"
+	debug_error_string = "INTERNAL:invalid argument: found ( at 16:17 expected ';', or end of input"
+>
+
+    def _handle_rpc_error(self, rpc_error: grpc.RpcError) -> NoReturn:
+        """
+        Error handling helper for dealing with GRPC Errors. On the server side, certain
+        exceptions are enriched with additional RPC Status information. These are
+        unpacked in this function and put into the exception.
+    
+        To avoid overloading the user with GRPC errors, this message explicitly
+        swallows the error context from the call. This GRPC Error is logged however,
+        and can be enabled.
+    
+        Parameters
+        ----------
+        rpc_error : grpc.RpcError
+           RPC Error containing the details of the exception.
+    
+        Returns
+        -------
+        Throws the appropriate internal Python exception.
+        """
+        logger.exception("GRPC Error received")
+        # We have to cast the value here because, a RpcError is a Call as well.
+        # https://grpc.github.io/grpc/python/grpc.html#grpc.UnaryUnaryMultiCallable.__call__
+        error: grpc.Call = cast(grpc.Call, rpc_error)
+        status_code: grpc.StatusCode = error.code()
+        status: Optional[Status] = rpc_status.from_call(error)
+        if status:
+            for d in status.details:
+                if d.Is(error_details_pb2.ErrorInfo.DESCRIPTOR):
+                    info = error_details_pb2.ErrorInfo()
+                    d.Unpack(info)
+                    logger.debug(f"Received ErrorInfo: {info}")
+    
+                    if info.metadata.get("errorClass") == "INVALID_HANDLE.SESSION_CHANGED":
+                        self._closed = True
+    
+                    if info.metadata.get("errorClass") == "CONNECT_INVALID_PLAN.CANNOT_PARSE":
+                        # Disable plan compression if the server fails to interpret the plan.
+                        logger.info(
+                            "Disabling plan compression for the session due to "
+                            "CONNECT_INVALID_PLAN.CANNOT_PARSE error."
+                        )
+                        self._plan_compression_threshold, self._plan_compression_algorithm = (
+                            -1,
+                            "NONE",
+                        )
+    
+>                   raise convert_exception(
+                        info,
+                        status.message,
+                        self._fetch_enriched_error(info),
+                        self._display_server_stack_trace(),
+                        status_code,
+                    ) from None
+E                   pyspark.errors.exceptions.connect.IllegalArgumentException: invalid argument: found ( at 16:17 expected ';', or end of input
+
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2177: IllegalArgumentException
+_ test_invalid_catalog_expression_has_native_pipeline_diagnostics[CONCAT(foo, '1')] _
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x117decd70>
+pipeline = ('3e6e4a3e-f20f-4a34-b959-67fcb4de6158', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x117d92720>, <function pipeline_factory.<locals>.create.<locals>.run at 0x117efd440>)
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-131/test_invalid_catalog_expressio0')
+expression = "CONCAT(foo, '1')"
+
+    @pytest.mark.parametrize("expression", ["CONCAT(foo, '1')", "test.cat", "1", "CAST(NULL AS STRING)"])
+    def test_invalid_catalog_expression_has_native_pipeline_diagnostics(pipeline_spark, pipeline, tmp_path, expression):
+        _, registry, _ = pipeline
+        catalog = pipeline_spark.catalog.currentCatalog()
+        database = pipeline_spark.catalog.currentDatabase()
+        query = "SET CATALOG " + expression
+        path = tmp_path / "catalog.sql"
+        with pytest.raises(AnalysisException) as error:
+>           registry.register_sql("-- source\n" + query, path)
+
+python/pysail/tests/spark/pipelines/test_catalog_expressions.py:49: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/pyspark/pipelines/spark_connect_graph_element_registry.py:178: in register_sql
+    self._client.execute_command(command)
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1219: in execute_command
+    data, _, metrics, observed_metrics, properties = self._execute_and_fetch(
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1754: in _execute_and_fetch
+    for response in self._execute_and_fetch_as_iterator(
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1731: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2093: in _handle_error
+    self._handle_rpc_error(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <pyspark.sql.connect.client.core.SparkConnectClient object at 0x117ded1f0>
+rpc_error = <_MultiThreadedRendezvous of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = "invalid argument: fou...', or end of input"
+	debug_error_string = "INTERNAL:invalid argument: found ( at 28:29 expected ';', or end of input"
+>
+
+    def _handle_rpc_error(self, rpc_error: grpc.RpcError) -> NoReturn:
+        """
+        Error handling helper for dealing with GRPC Errors. On the server side, certain
+        exceptions are enriched with additional RPC Status information. These are
+        unpacked in this function and put into the exception.
+    
+        To avoid overloading the user with GRPC errors, this message explicitly
+        swallows the error context from the call. This GRPC Error is logged however,
+        and can be enabled.
+    
+        Parameters
+        ----------
+        rpc_error : grpc.RpcError
+           RPC Error containing the details of the exception.
+    
+        Returns
+        -------
+        Throws the appropriate internal Python exception.
+        """
+        logger.exception("GRPC Error received")
+        # We have to cast the value here because, a RpcError is a Call as well.
+        # https://grpc.github.io/grpc/python/grpc.html#grpc.UnaryUnaryMultiCallable.__call__
+        error: grpc.Call = cast(grpc.Call, rpc_error)
+        status_code: grpc.StatusCode = error.code()
+        status: Optional[Status] = rpc_status.from_call(error)
+        if status:
+            for d in status.details:
+                if d.Is(error_details_pb2.ErrorInfo.DESCRIPTOR):
+                    info = error_details_pb2.ErrorInfo()
+                    d.Unpack(info)
+                    logger.debug(f"Received ErrorInfo: {info}")
+    
+                    if info.metadata.get("errorClass") == "INVALID_HANDLE.SESSION_CHANGED":
+                        self._closed = True
+    
+                    if info.metadata.get("errorClass") == "CONNECT_INVALID_PLAN.CANNOT_PARSE":
+                        # Disable plan compression if the server fails to interpret the plan.
+                        logger.info(
+                            "Disabling plan compression for the session due to "
+                            "CONNECT_INVALID_PLAN.CANNOT_PARSE error."
+                        )
+                        self._plan_compression_threshold, self._plan_compression_algorithm = (
+                            -1,
+                            "NONE",
+                        )
+    
+>                   raise convert_exception(
+                        info,
+                        status.message,
+                        self._fetch_enriched_error(info),
+                        self._display_server_stack_trace(),
+                        status_code,
+                    ) from None
+E                   pyspark.errors.exceptions.connect.IllegalArgumentException: invalid argument: found ( at 28:29 expected ';', or end of input
+
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2177: IllegalArgumentException
+__ test_invalid_catalog_expression_has_native_pipeline_diagnostics[test.cat] ___
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x117ef93d0>
+pipeline = ('6639137c-6a94-4941-899b-ebd8d4401997', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x117f28c50>, <function pipeline_factory.<locals>.create.<locals>.run at 0x117eff920>)
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-131/test_invalid_catalog_expressio1')
+expression = 'test.cat'
+
+    @pytest.mark.parametrize("expression", ["CONCAT(foo, '1')", "test.cat", "1", "CAST(NULL AS STRING)"])
+    def test_invalid_catalog_expression_has_native_pipeline_diagnostics(pipeline_spark, pipeline, tmp_path, expression):
+        _, registry, _ = pipeline
+        catalog = pipeline_spark.catalog.currentCatalog()
+        database = pipeline_spark.catalog.currentDatabase()
+        query = "SET CATALOG " + expression
+        path = tmp_path / "catalog.sql"
+        with pytest.raises(AnalysisException) as error:
+>           registry.register_sql("-- source\n" + query, path)
+
+python/pysail/tests/spark/pipelines/test_catalog_expressions.py:49: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/pyspark/pipelines/spark_connect_graph_element_registry.py:178: in register_sql
+    self._client.execute_command(command)
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1219: in execute_command
+    data, _, metrics, observed_metrics, properties = self._execute_and_fetch(
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1754: in _execute_and_fetch
+    for response in self._execute_and_fetch_as_iterator(
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1731: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2093: in _handle_error
+    self._handle_rpc_error(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <pyspark.sql.connect.client.core.SparkConnectClient object at 0x117ef8f20>
+rpc_error = <_MultiThreadedRendezvous of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = "invalid argument: fou...', or end of input"
+	debug_error_string = "INTERNAL:invalid argument: found . at 26:27 expected ';', or end of input"
+>
+
+    def _handle_rpc_error(self, rpc_error: grpc.RpcError) -> NoReturn:
+        """
+        Error handling helper for dealing with GRPC Errors. On the server side, certain
+        exceptions are enriched with additional RPC Status information. These are
+        unpacked in this function and put into the exception.
+    
+        To avoid overloading the user with GRPC errors, this message explicitly
+        swallows the error context from the call. This GRPC Error is logged however,
+        and can be enabled.
+    
+        Parameters
+        ----------
+        rpc_error : grpc.RpcError
+           RPC Error containing the details of the exception.
+    
+        Returns
+        -------
+        Throws the appropriate internal Python exception.
+        """
+        logger.exception("GRPC Error received")
+        # We have to cast the value here because, a RpcError is a Call as well.
+        # https://grpc.github.io/grpc/python/grpc.html#grpc.UnaryUnaryMultiCallable.__call__
+        error: grpc.Call = cast(grpc.Call, rpc_error)
+        status_code: grpc.StatusCode = error.code()
+        status: Optional[Status] = rpc_status.from_call(error)
+        if status:
+            for d in status.details:
+                if d.Is(error_details_pb2.ErrorInfo.DESCRIPTOR):
+                    info = error_details_pb2.ErrorInfo()
+                    d.Unpack(info)
+                    logger.debug(f"Received ErrorInfo: {info}")
+    
+                    if info.metadata.get("errorClass") == "INVALID_HANDLE.SESSION_CHANGED":
+                        self._closed = True
+    
+                    if info.metadata.get("errorClass") == "CONNECT_INVALID_PLAN.CANNOT_PARSE":
+                        # Disable plan compression if the server fails to interpret the plan.
+                        logger.info(
+                            "Disabling plan compression for the session due to "
+                            "CONNECT_INVALID_PLAN.CANNOT_PARSE error."
+                        )
+                        self._plan_compression_threshold, self._plan_compression_algorithm = (
+                            -1,
+                            "NONE",
+                        )
+    
+>                   raise convert_exception(
+                        info,
+                        status.message,
+                        self._fetch_enriched_error(info),
+                        self._display_server_stack_trace(),
+                        status_code,
+                    ) from None
+E                   pyspark.errors.exceptions.connect.IllegalArgumentException: invalid argument: found . at 26:27 expected ';', or end of input
+
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2177: IllegalArgumentException
+______ test_invalid_catalog_expression_has_native_pipeline_diagnostics[1] ______
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x117f28860>
+pipeline = ('2ebd5eaf-6cea-4f6a-adc0-f013dfc8073c', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x117f2b5f0>, <function pipeline_factory.<locals>.create.<locals>.run at 0x117ea1440>)
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-131/test_invalid_catalog_expressio2')
+expression = '1'
+
+    @pytest.mark.parametrize("expression", ["CONCAT(foo, '1')", "test.cat", "1", "CAST(NULL AS STRING)"])
+    def test_invalid_catalog_expression_has_native_pipeline_diagnostics(pipeline_spark, pipeline, tmp_path, expression):
+        _, registry, _ = pipeline
+        catalog = pipeline_spark.catalog.currentCatalog()
+        database = pipeline_spark.catalog.currentDatabase()
+        query = "SET CATALOG " + expression
+        path = tmp_path / "catalog.sql"
+>       with pytest.raises(AnalysisException) as error:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE AnalysisException
+
+python/pysail/tests/spark/pipelines/test_catalog_expressions.py:48: Failed
+_ test_invalid_catalog_expression_has_native_pipeline_diagnostics[CAST(NULL AS STRING)] _
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x117f2a4b0>
+pipeline = ('21ee0ab1-3711-4b9b-9193-f20dd3f2261f', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x117f2d400>, <function pipeline_factory.<locals>.create.<locals>.run at 0x117ea2a20>)
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-131/test_invalid_catalog_expressio3')
+expression = 'CAST(NULL AS STRING)'
+
+    @pytest.mark.parametrize("expression", ["CONCAT(foo, '1')", "test.cat", "1", "CAST(NULL AS STRING)"])
+    def test_invalid_catalog_expression_has_native_pipeline_diagnostics(pipeline_spark, pipeline, tmp_path, expression):
+        _, registry, _ = pipeline
+        catalog = pipeline_spark.catalog.currentCatalog()
+        database = pipeline_spark.catalog.currentDatabase()
+        query = "SET CATALOG " + expression
+        path = tmp_path / "catalog.sql"
+        with pytest.raises(AnalysisException) as error:
+>           registry.register_sql("-- source\n" + query, path)
+
+python/pysail/tests/spark/pipelines/test_catalog_expressions.py:49: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/pyspark/pipelines/spark_connect_graph_element_registry.py:178: in register_sql
+    self._client.execute_command(command)
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1219: in execute_command
+    data, _, metrics, observed_metrics, properties = self._execute_and_fetch(
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1754: in _execute_and_fetch
+    for response in self._execute_and_fetch_as_iterator(
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1731: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2093: in _handle_error
+    self._handle_rpc_error(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <pyspark.sql.connect.client.core.SparkConnectClient object at 0x117f2b1a0>
+rpc_error = <_MultiThreadedRendezvous of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = "invalid argument: fou...', or end of input"
+	debug_error_string = "INTERNAL:invalid argument: found ( at 26:27 expected ';', or end of input"
+>
+
+    def _handle_rpc_error(self, rpc_error: grpc.RpcError) -> NoReturn:
+        """
+        Error handling helper for dealing with GRPC Errors. On the server side, certain
+        exceptions are enriched with additional RPC Status information. These are
+        unpacked in this function and put into the exception.
+    
+        To avoid overloading the user with GRPC errors, this message explicitly
+        swallows the error context from the call. This GRPC Error is logged however,
+        and can be enabled.
+    
+        Parameters
+        ----------
+        rpc_error : grpc.RpcError
+           RPC Error containing the details of the exception.
+    
+        Returns
+        -------
+        Throws the appropriate internal Python exception.
+        """
+        logger.exception("GRPC Error received")
+        # We have to cast the value here because, a RpcError is a Call as well.
+        # https://grpc.github.io/grpc/python/grpc.html#grpc.UnaryUnaryMultiCallable.__call__
+        error: grpc.Call = cast(grpc.Call, rpc_error)
+        status_code: grpc.StatusCode = error.code()
+        status: Optional[Status] = rpc_status.from_call(error)
+        if status:
+            for d in status.details:
+                if d.Is(error_details_pb2.ErrorInfo.DESCRIPTOR):
+                    info = error_details_pb2.ErrorInfo()
+                    d.Unpack(info)
+                    logger.debug(f"Received ErrorInfo: {info}")
+    
+                    if info.metadata.get("errorClass") == "INVALID_HANDLE.SESSION_CHANGED":
+                        self._closed = True
+    
+                    if info.metadata.get("errorClass") == "CONNECT_INVALID_PLAN.CANNOT_PARSE":
+                        # Disable plan compression if the server fails to interpret the plan.
+                        logger.info(
+                            "Disabling plan compression for the session due to "
+                            "CONNECT_INVALID_PLAN.CANNOT_PARSE error."
+                        )
+                        self._plan_compression_threshold, self._plan_compression_algorithm = (
+                            -1,
+                            "NONE",
+                        )
+    
+>                   raise convert_exception(
+                        info,
+                        status.message,
+                        self._fetch_enriched_error(info),
+                        self._display_server_stack_trace(),
+                        status_code,
+                    ) from None
+E                   pyspark.errors.exceptions.connect.IllegalArgumentException: invalid argument: found ( at 26:27 expected ';', or end of input
+
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2177: IllegalArgumentException
+=========================== short test summary info ============================
+FAILED python/pysail/tests/spark/pipelines/test_catalog_expressions.py::test_catalog_expression_in_ordinary_sql[CONCAT({catalog}, '')]
+FAILED python/pysail/tests/spark/pipelines/test_catalog_expressions.py::test_catalog_expression_in_ordinary_sql[CAST({catalog} AS STRING)]
+FAILED python/pysail/tests/spark/pipelines/test_catalog_expressions.py::test_catalog_expression_publishes_pipeline_output[CONCAT({catalog}, '')]
+FAILED python/pysail/tests/spark/pipelines/test_catalog_expressions.py::test_catalog_expression_publishes_pipeline_output[CAST({catalog} AS STRING)]
+FAILED python/pysail/tests/spark/pipelines/test_catalog_expressions.py::test_invalid_catalog_expression_has_native_pipeline_diagnostics[CONCAT(foo, '1')]
+FAILED python/pysail/tests/spark/pipelines/test_catalog_expressions.py::test_invalid_catalog_expression_has_native_pipeline_diagnostics[test.cat]
+FAILED python/pysail/tests/spark/pipelines/test_catalog_expressions.py::test_invalid_catalog_expression_has_native_pipeline_diagnostics[1]
+FAILED python/pysail/tests/spark/pipelines/test_catalog_expressions.py::test_invalid_catalog_expression_has_native_pipeline_diagnostics[CAST(NULL AS STRING)]
+8 failed in 0.75s

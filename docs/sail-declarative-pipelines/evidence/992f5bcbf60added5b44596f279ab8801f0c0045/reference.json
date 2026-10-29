@@ -1,0 +1,40 @@
+{
+  "recorded_at": "2026-10-29T15:46:48.520280+00:00",
+  "spark_version": "4.2.1",
+  "test_source_sha256": "99fc14252f2b8550d8f31d43c1d9ce5780fb0247c2fa82fc9eaf6bee602dba65",
+  "fixture": "warehouse configured on builder; invokes unchanged public test functions",
+  "cases": [
+    {
+      "name": "ordinary: CONCAT({catalog}, '')",
+      "outcome": "passed"
+    },
+    {
+      "name": "pipeline: CONCAT({catalog}, '')",
+      "outcome": "passed"
+    },
+    {
+      "name": "ordinary: CAST({catalog} AS STRING)",
+      "outcome": "passed"
+    },
+    {
+      "name": "pipeline: CAST({catalog} AS STRING)",
+      "outcome": "passed"
+    },
+    {
+      "name": "invalid: CONCAT(foo, '1')",
+      "outcome": "passed"
+    },
+    {
+      "name": "invalid: test.cat",
+      "outcome": "passed"
+    },
+    {
+      "name": "invalid: 1",
+      "outcome": "passed"
+    },
+    {
+      "name": "invalid: CAST(NULL AS STRING)",
+      "outcome": "passed"
+    }
+  ]
+}
