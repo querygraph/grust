@@ -158,3 +158,9 @@ The mechanical extraction in unit one is implemented in [cd79b2bcc](evidence/cd7
 All 101 affected Rust tests, 246 selected Python tests and 67 upstream executions
 pass. Required failing probe counts remain unchanged; typed task-cause retention
 and cast production/activation are still outstanding.
+
+Typed cause/serde/task-stream/Connect retention from unit two is implemented in
+[96eb6d75f](evidence/96eb6d75fe13f1254af5fb1452d16abbd1fff446/gate.json). Seven new boundary tests and all
+257 affected library tests pass, as do 246 selected Python cases and 67 upstream
+executions. Cast producers and SQL activation remain pending; no required probe
+failure is removed or relabeled.

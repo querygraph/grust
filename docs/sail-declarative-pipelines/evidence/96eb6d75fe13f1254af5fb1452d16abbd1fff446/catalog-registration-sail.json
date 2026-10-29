@@ -1,0 +1,204 @@
+{
+  "recorded_at": "2026-10-29T16:27:36.450541+00:00",
+  "engine": "sail",
+  "spark_version": "4.2.1",
+  "catalog": "sail",
+  "database": "default",
+  "scope": "DefineSqlGraphElements registration only; fresh graph per case, no run/publication",
+  "cases": [
+    {
+      "name": "graph_default_false",
+      "session_ansi": "true",
+      "graph_sql_conf": {
+        "spark.sql.ansi.enabled": "false"
+      },
+      "sql": "SET CATALOG CAST(CAST('not-an-int' AS INT) AS STRING)",
+      "outcome": "rejected",
+      "exception_type": "SparkRuntimeException",
+      "message": "Cast error: Cannot cast string 'not-an-int' to value of Int32 type",
+      "condition": null,
+      "parameters": null,
+      "sql_state": null,
+      "session_catalog_after": "sail",
+      "session_database_after": "default"
+    },
+    {
+      "name": "graph_default_true",
+      "session_ansi": "false",
+      "graph_sql_conf": {
+        "spark.sql.ansi.enabled": "true"
+      },
+      "sql": "SET CATALOG CAST(CAST('not-an-int' AS INT) AS STRING)",
+      "outcome": "rejected",
+      "exception_type": "AnalysisException",
+      "message": "[PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] Failed to resolve catalog expression: [NOT_A_CONSTANT_STRING.NULL] catalog expression must not be NULL\n\nOffending query:\nSET CATALOG CAST(CAST('not-an-int' AS INT) AS STRING)\n\nQuery defined at /var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/sdp-catalog-registration-cxzr62fi/catalog.sql:1",
+      "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+      "parameters": {
+        "offendingQuery": "\nOffending query:\nSET CATALOG CAST(CAST('not-an-int' AS INT) AS STRING)\n",
+        "codeLocation": "Query defined at /var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/sdp-catalog-registration-cxzr62fi/catalog.sql:1",
+        "message": "Failed to resolve catalog expression: [NOT_A_CONSTANT_STRING.NULL] catalog expression must not be NULL"
+      },
+      "sql_state": "42000",
+      "session_catalog_after": "sail",
+      "session_database_after": "default"
+    },
+    {
+      "name": "concat",
+      "session_ansi": "true",
+      "graph_sql_conf": null,
+      "sql": "SET CATALOG CONCAT('sail', '')",
+      "outcome": "registered",
+      "session_catalog_after": "sail",
+      "session_database_after": "default"
+    },
+    {
+      "name": "cast",
+      "session_ansi": "true",
+      "graph_sql_conf": null,
+      "sql": "SET CATALOG CAST('sail' AS STRING)",
+      "outcome": "registered",
+      "session_catalog_after": "sail",
+      "session_database_after": "default"
+    },
+    {
+      "name": "unresolved",
+      "session_ansi": "true",
+      "graph_sql_conf": null,
+      "sql": "SET CATALOG CONCAT(foo, '1')",
+      "outcome": "rejected",
+      "exception_type": "AnalysisException",
+      "message": "[PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] Failed to resolve catalog expression: analysis error: attribute ObjectName([Identifier(\"foo\")]) is missing from the schema: cannot resolve attribute\n\nOffending query:\nSET CATALOG CONCAT(foo, '1')\n\nQuery defined at /var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/sdp-catalog-registration-cxzr62fi/catalog.sql:1",
+      "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+      "parameters": {
+        "message": "Failed to resolve catalog expression: analysis error: attribute ObjectName([Identifier(\"foo\")]) is missing from the schema: cannot resolve attribute",
+        "offendingQuery": "\nOffending query:\nSET CATALOG CONCAT(foo, '1')\n",
+        "codeLocation": "Query defined at /var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/sdp-catalog-registration-cxzr62fi/catalog.sql:1"
+      },
+      "sql_state": "42000",
+      "session_catalog_after": "sail",
+      "session_database_after": "default"
+    },
+    {
+      "name": "multipart",
+      "session_ansi": "true",
+      "graph_sql_conf": null,
+      "sql": "SET CATALOG test.cat",
+      "outcome": "rejected",
+      "exception_type": "AnalysisException",
+      "message": "[PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] Failed to resolve catalog expression: [INVALID_SQL_SYNTAX.MULTI_PART_NAME] SET CATALOG requires a single-part name\n\nOffending query:\nSET CATALOG test.cat\n\nQuery defined at /var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/sdp-catalog-registration-cxzr62fi/catalog.sql:1",
+      "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+      "parameters": {
+        "message": "Failed to resolve catalog expression: [INVALID_SQL_SYNTAX.MULTI_PART_NAME] SET CATALOG requires a single-part name",
+        "codeLocation": "Query defined at /var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/sdp-catalog-registration-cxzr62fi/catalog.sql:1",
+        "offendingQuery": "\nOffending query:\nSET CATALOG test.cat\n"
+      },
+      "sql_state": "42000",
+      "session_catalog_after": "sail",
+      "session_database_after": "default"
+    },
+    {
+      "name": "wrong_type",
+      "session_ansi": "true",
+      "graph_sql_conf": null,
+      "sql": "SET CATALOG 1",
+      "outcome": "rejected",
+      "exception_type": "AnalysisException",
+      "message": "[PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] Failed to resolve catalog expression: [NOT_A_CONSTANT_STRING.WRONG_TYPE] catalog expression must have STRING type\n\nOffending query:\nSET CATALOG 1\n\nQuery defined at /var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/sdp-catalog-registration-cxzr62fi/catalog.sql:1",
+      "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+      "parameters": {
+        "codeLocation": "Query defined at /var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/sdp-catalog-registration-cxzr62fi/catalog.sql:1",
+        "offendingQuery": "\nOffending query:\nSET CATALOG 1\n",
+        "message": "Failed to resolve catalog expression: [NOT_A_CONSTANT_STRING.WRONG_TYPE] catalog expression must have STRING type"
+      },
+      "sql_state": "42000",
+      "session_catalog_after": "sail",
+      "session_database_after": "default"
+    },
+    {
+      "name": "null",
+      "session_ansi": "true",
+      "graph_sql_conf": null,
+      "sql": "SET CATALOG CAST(NULL AS STRING)",
+      "outcome": "rejected",
+      "exception_type": "AnalysisException",
+      "message": "[PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] Failed to resolve catalog expression: [NOT_A_CONSTANT_STRING.NULL] catalog expression must not be NULL\n\nOffending query:\nSET CATALOG CAST(NULL AS STRING)\n\nQuery defined at /var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/sdp-catalog-registration-cxzr62fi/catalog.sql:1",
+      "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+      "parameters": {
+        "codeLocation": "Query defined at /var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/sdp-catalog-registration-cxzr62fi/catalog.sql:1",
+        "message": "Failed to resolve catalog expression: [NOT_A_CONSTANT_STRING.NULL] catalog expression must not be NULL",
+        "offendingQuery": "\nOffending query:\nSET CATALOG CAST(NULL AS STRING)\n"
+      },
+      "sql_state": "42000",
+      "session_catalog_after": "sail",
+      "session_database_after": "default"
+    },
+    {
+      "name": "session_true_file_false",
+      "session_ansi": "true",
+      "graph_sql_conf": null,
+      "sql": "SET spark.sql.ansi.enabled=false;\nSET CATALOG CAST(CAST('not-an-int' AS INT) AS STRING)",
+      "outcome": "rejected",
+      "exception_type": "SparkRuntimeException",
+      "message": "Cast error: Cannot cast string 'not-an-int' to value of Int32 type",
+      "condition": null,
+      "parameters": null,
+      "sql_state": null,
+      "session_catalog_after": "sail",
+      "session_database_after": "default"
+    },
+    {
+      "name": "session_false_file_true",
+      "session_ansi": "false",
+      "graph_sql_conf": null,
+      "sql": "SET spark.sql.ansi.enabled=true;\nSET CATALOG CAST(CAST('not-an-int' AS INT) AS STRING)",
+      "outcome": "rejected",
+      "exception_type": "AnalysisException",
+      "message": "[PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] Failed to resolve catalog expression: [NOT_A_CONSTANT_STRING.NULL] catalog expression must not be NULL\n\nOffending query:\nSET CATALOG CAST(CAST('not-an-int' AS INT) AS STRING)\n\nQuery defined at /var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/sdp-catalog-registration-cxzr62fi/catalog.sql:2",
+      "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+      "parameters": {
+        "message": "Failed to resolve catalog expression: [NOT_A_CONSTANT_STRING.NULL] catalog expression must not be NULL",
+        "codeLocation": "Query defined at /var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/sdp-catalog-registration-cxzr62fi/catalog.sql:2",
+        "offendingQuery": "\nOffending query:\nSET CATALOG CAST(CAST('not-an-int' AS INT) AS STRING)\n"
+      },
+      "sql_state": "42000",
+      "session_catalog_after": "sail",
+      "session_database_after": "default"
+    },
+    {
+      "name": "unset_database",
+      "session_ansi": "true",
+      "graph_sql_conf": null,
+      "sql": "SET CATALOG 'sail'; CREATE MATERIALIZED VIEW unqualified_probe AS SELECT 1",
+      "outcome": "rejected",
+      "exception_type": "AnalysisException",
+      "message": "[PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR] analysis error: The current pipeline database is unset; use USE or qualify the name explicitly\n\nOffending query:\nCREATE MATERIALIZED VIEW unqualified_probe AS SELECT 1\n\nQuery defined at /var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/sdp-catalog-registration-cxzr62fi/catalog.sql:1",
+      "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+      "parameters": {
+        "codeLocation": "Query defined at /var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/sdp-catalog-registration-cxzr62fi/catalog.sql:1",
+        "message": "analysis error: The current pipeline database is unset; use USE or qualify the name explicitly",
+        "offendingQuery": "\nOffending query:\nCREATE MATERIALIZED VIEW unqualified_probe AS SELECT 1\n"
+      },
+      "sql_state": "42000",
+      "session_catalog_after": "sail",
+      "session_database_after": "default"
+    },
+    {
+      "name": "explicit_database",
+      "session_ansi": "true",
+      "graph_sql_conf": null,
+      "sql": "SET CATALOG 'sail'; CREATE MATERIALIZED VIEW `default`.qualified_probe AS SELECT 1",
+      "outcome": "registered",
+      "session_catalog_after": "sail",
+      "session_database_after": "default"
+    },
+    {
+      "name": "private_view",
+      "session_ansi": "true",
+      "graph_sql_conf": null,
+      "sql": "SET CATALOG 'sail'; CREATE TEMPORARY VIEW private_probe AS SELECT 1",
+      "outcome": "registered",
+      "session_catalog_after": "sail",
+      "session_database_after": "default"
+    }
+  ]
+}

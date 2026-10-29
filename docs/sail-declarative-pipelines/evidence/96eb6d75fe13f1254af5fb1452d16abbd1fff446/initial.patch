@@ -1,0 +1,371 @@
+diff --git a/crates/sail-common-datafusion/src/error.rs b/crates/sail-common-datafusion/src/error.rs
+index cd2eb8d3f..1571b618f 100644
+--- a/crates/sail-common-datafusion/src/error.rs
++++ b/crates/sail-common-datafusion/src/error.rs
+@@ -55,6 +55,7 @@ pub enum CommonErrorCause {
+     InvalidArgument(String),
+     Io(String),
+     Python(PythonErrorCause),
++    Structured(Box<StructuredSparkError>),
+     ArrowCast(String),
+     ArrowMemory(String),
+     ArrowParse(String),
+@@ -107,6 +108,7 @@ impl fmt::Display for CommonErrorCause {
+             | CommonErrorCause::Execution(x)
+             | CommonErrorCause::DeltaTable(x)
+             | CommonErrorCause::CommitStateUnknown(x) => write!(f, "{x}"),
++            CommonErrorCause::Structured(error) => write!(f, "{error}"),
+             CommonErrorCause::Python(PythonErrorCause { summary, .. }) => {
+                 write!(f, "{summary}")
+             }
+@@ -128,6 +130,9 @@ impl CommonErrorCause {
+             return Self::Unknown("circular error reference".to_string());
+         }
+         seen.insert(ptr);
++        if let Some(error) = error.downcast_ref::<StructuredSparkError>() {
++            return Self::Structured(Box::new(error.clone()));
++        }
+         if let Some(e) = error.downcast_ref::<ArrowError>() {
+             return match e {
+                 ArrowError::NotYetImplemented(x) => Self::NotImplemented(x.clone()),
+@@ -219,3 +224,6 @@ impl CommonErrorCause {
+         Self::build::<Py>(error, &mut HashSet::new())
+     }
+ }
++
++#[cfg(test)]
++mod tests;
+diff --git a/crates/sail-common-datafusion/src/error/tests.rs b/crates/sail-common-datafusion/src/error/tests.rs
+new file mode 100644
+index 000000000..971066f81
+--- /dev/null
++++ b/crates/sail-common-datafusion/src/error/tests.rs
+@@ -0,0 +1,79 @@
++use std::collections::HashMap;
++use std::sync::Arc;
++
++use super::*;
++
++type TestResult = Result<(), Box<dyn std::error::Error>>;
++
++struct NoPython;
++
++impl PythonErrorCauseExtractor for NoPython {
++    fn extract(_: &(dyn std::error::Error + 'static)) -> Option<PythonErrorCause> {
++        None
++    }
++}
++
++fn fixture() -> StructuredSparkError {
++    StructuredSparkError {
++        class: "java.lang.NumberFormatException".into(),
++        condition: "CAST_INVALID_INPUT".into(),
++        sql_state: "22018".into(),
++        message: "malformed value '雪\n'".into(),
++        parameters: HashMap::from([
++            ("expression".into(), "'雪\n'".into()),
++            ("targetType".into(), "\"INT\"".into()),
++        ]),
++    }
++}
++
++fn assert_fixture(cause: CommonErrorCause) -> TestResult {
++    let CommonErrorCause::Structured(error) = cause else {
++        return Err(format!("structured cause lost: {cause:?}").into());
++    };
++    assert_eq!(
++        serde_json::to_value(error)?,
++        serde_json::to_value(fixture())?
++    );
++    Ok(())
++}
++
++#[test]
++fn structured_cause_survives_datafusion_arrow_context_and_shared_wrappers() -> TestResult {
++    let errors = [
++        DataFusionError::External(Box::new(fixture())),
++        DataFusionError::ArrowError(
++            Box::new(ArrowError::ExternalError(Box::new(fixture()))),
++            None,
++        ),
++        DataFusionError::Shared(Arc::new(DataFusionError::Context(
++            "projection".into(),
++            Box::new(DataFusionError::External(Box::new(fixture()))),
++        ))),
++    ];
++    for error in errors {
++        assert_fixture(CommonErrorCause::new::<NoPython>(&error))?;
++    }
++    Ok(())
++}
++
++#[test]
++fn structured_cause_survives_serde_and_remote_source() -> TestResult {
++    let cause = CommonErrorCause::new::<NoPython>(&fixture());
++    assert!(cause.is_retryable());
++    let message = cause.to_string();
++    assert_eq!(message, fixture().to_string());
++    let cause = serde_json::from_str(&serde_json::to_string(&cause)?)?;
++    let error = DataFusionError::External(Box::new(RemoteError { cause }));
++    assert_fixture(CommonErrorCause::new::<NoPython>(&error))
++}
++
++#[test]
++fn unknown_commit_keeps_precedence_over_structured_execution_error() {
++    let error = DataFusionError::Collection(vec![
++        DataFusionError::External(Box::new(fixture())),
++        DataFusionError::External(Box::new(CommitStateUnknownError("response lost".into()))),
++    ]);
++    let cause = CommonErrorCause::new::<NoPython>(&error);
++    assert!(!cause.is_retryable());
++    assert!(matches!(cause, CommonErrorCause::CommitStateUnknown(_)));
++}
+diff --git a/crates/sail-execution/src/stream/error.rs b/crates/sail-execution/src/stream/error.rs
+index f911e98b3..47dcd9e8d 100644
+--- a/crates/sail-execution/src/stream/error.rs
++++ b/crates/sail-execution/src/stream/error.rs
+@@ -95,3 +95,42 @@ impl From<TaskStreamError> for CommonErrorCause {
+         }
+     }
+ }
++
++#[cfg(test)]
++mod tests {
++    use datafusion::arrow::error::ArrowError;
++    use datafusion_common::DataFusionError;
++    use sail_common_datafusion::error::StructuredSparkError;
++
++    use super::*;
++
++    #[test]
++    fn structured_cause_survives_flight_status_and_error_sources()
++    -> Result<(), Box<dyn std::error::Error>> {
++        let error = StructuredSparkError {
++            class: "java.lang.NumberFormatException".into(),
++            condition: "CAST_INVALID_INPUT".into(),
++            sql_state: "22018".into(),
++            message: "malformed 雪\nvalue".into(),
++            parameters: HashMap::from([("expression".into(), "'雪\n'".into())]),
++        };
++        let expected = serde_json::to_value(&error)?;
++        let status: Status =
++            TaskStreamError::from(CommonErrorCause::Structured(Box::new(error.clone()))).into();
++        let sources = [
++            FlightError::Tonic(Box::new(status)),
++            FlightError::Arrow(ArrowError::ExternalError(Box::new(error.clone()))),
++            FlightError::ExternalError(Box::new(error)),
++        ];
++        for source in sources {
++            let source = DataFusionError::External(Box::new(TaskStreamError::from(source)));
++            let CommonErrorCause::Structured(error) =
++                CommonErrorCause::new::<PyErrExtractor>(&source)
++            else {
++                return Err(format!("structured Flight cause lost: {source:?}").into());
++            };
++            assert_eq!(serde_json::to_value(error)?, expected);
++        }
++        Ok(())
++    }
++}
+diff --git a/crates/sail-execution/src/task_runner/monitor.rs b/crates/sail-execution/src/task_runner/monitor.rs
+index 6eda577c5..9fabe7758 100644
+--- a/crates/sail-execution/src/task_runner/monitor.rs
++++ b/crates/sail-execution/src/task_runner/monitor.rs
+@@ -209,6 +209,48 @@ mod tests {
+         Ok(())
+     }
+ 
++    #[tokio::test]
++    async fn preserves_structured_cause_through_failed_task_status()
++    -> Result<(), Box<dyn std::error::Error>> {
++        use std::collections::HashMap;
++        use std::sync::Arc;
++
++        use datafusion::arrow::datatypes::Schema;
++        use datafusion::common::DataFusionError;
++        use datafusion::physical_plan::stream::RecordBatchStreamAdapter;
++        use sail_common_datafusion::error::{RemoteError, StructuredSparkError};
++
++        let error = StructuredSparkError {
++            class: "java.lang.NumberFormatException".into(),
++            condition: "CAST_INVALID_INPUT".into(),
++            sql_state: "22018".into(),
++            message: "malformed value".into(),
++            parameters: HashMap::from([("expression".into(), "'bad'".into())]),
++        };
++        let expected = serde_json::to_value(&error)?;
++        let stream = RecordBatchStreamAdapter::new(
++            Arc::new(Schema::empty()),
++            futures::stream::iter([Err(DataFusionError::External(Box::new(error)))]),
++        );
++        let message = TaskMonitor::execute(task_key(), Box::pin(stream)).await;
++        let TaskRunnerMessage::ReportTaskStatus {
++            status: TaskStatus::Failed,
++            cause: Some(cause),
++            ..
++        } = message
++        else {
++            return Err("expected failed task with structured cause".into());
++        };
++        let cause = serde_json::from_str(&serde_json::to_string(&cause)?)?;
++        let CommonErrorCause::Structured(error) =
++            CommonErrorCause::new::<PyErrExtractor>(&RemoteError { cause })
++        else {
++            return Err("task status lost structured cause".into());
++        };
++        assert_eq!(serde_json::to_value(error)?, expected);
++        Ok(())
++    }
++
+     fn task_key() -> TaskKey {
+         TaskKey {
+             job_id: JobId::from(1),
+diff --git a/crates/sail-spark-connect/src/error.rs b/crates/sail-spark-connect/src/error.rs
+index 06cfda6d2..159f29849 100644
+--- a/crates/sail-spark-connect/src/error.rs
++++ b/crates/sail-spark-connect/src/error.rs
+@@ -1,3 +1,4 @@
++use std::borrow::Cow;
+ use std::collections::HashMap;
+ use std::num::ParseIntError;
+ use std::str::ParseBoolError;
+@@ -246,10 +247,11 @@ pub(crate) enum SparkThrowable {
+     SparkUpgradeException(String),
+     SparkException(String),
+     PythonException(String),
++    Structured(Box<StructuredSparkError>),
+ }
+ 
+ impl SparkThrowable {
+-    pub fn message(&self) -> &str {
++    pub fn message(&self) -> Cow<'_, str> {
+         match self {
+             SparkThrowable::ParseException(message)
+             | SparkThrowable::AnalysisException(message)
+@@ -264,12 +266,14 @@ impl SparkThrowable {
+             | SparkThrowable::SparkRuntimeException(message)
+             | SparkThrowable::SparkUpgradeException(message)
+             | SparkThrowable::SparkException(message)
+-            | SparkThrowable::PythonException(message) => message,
++            | SparkThrowable::PythonException(message) => Cow::Borrowed(message),
++            SparkThrowable::Structured(error) => Cow::Owned(error.to_string()),
+         }
+     }
+ 
+-    pub fn class_name(&self) -> &'static str {
++    pub fn class_name(&self) -> &str {
+         match self {
++            SparkThrowable::Structured(error) => &error.class,
+             SparkThrowable::ParseException(_) => {
+                 "org.apache.spark.sql.catalyst.parser.ParseException"
+             }
+@@ -338,7 +342,10 @@ fn truncate_grpc_message(message: &str) -> String {
+ 
+ impl From<SparkThrowable> for Status {
+     fn from(throwable: SparkThrowable) -> Status {
+-        spark_status(throwable.class_name(), throwable.message(), HashMap::new())
++        match throwable {
++            SparkThrowable::Structured(error) => structured::into_status(*error),
++            throwable => spark_status(throwable.class_name(), &throwable.message(), HashMap::new()),
++        }
+     }
+ }
+ 
+@@ -364,6 +371,7 @@ fn spark_status(class: &str, message: &str, mut metadata: HashMap<String, String
+ impl From<CommonErrorCause> for SparkThrowable {
+     fn from(value: CommonErrorCause) -> Self {
+         match value {
++            CommonErrorCause::Structured(error) => SparkThrowable::Structured(error),
+             CommonErrorCause::NotImplemented(x) => SparkThrowable::UnsupportedOperationException(x),
+             CommonErrorCause::InvalidArgument(x) => SparkThrowable::IllegalArgumentException(x),
+             CommonErrorCause::Unknown(x)
+diff --git a/crates/sail-spark-connect/src/error/structured.rs b/crates/sail-spark-connect/src/error/structured.rs
+index 1ee10ab5e..511429cdf 100644
+--- a/crates/sail-spark-connect/src/error/structured.rs
++++ b/crates/sail-spark-connect/src/error/structured.rs
+@@ -17,3 +17,6 @@ pub(super) fn into_status(error: StructuredSparkError) -> Status {
+         ]),
+     )
+ }
++
++#[cfg(test)]
++mod tests;
+diff --git a/crates/sail-spark-connect/src/error/structured/tests.rs b/crates/sail-spark-connect/src/error/structured/tests.rs
+new file mode 100644
+index 000000000..c5b2423bd
+--- /dev/null
++++ b/crates/sail-spark-connect/src/error/structured/tests.rs
+@@ -0,0 +1,73 @@
++use std::collections::HashMap;
++
++use datafusion::arrow::error::ArrowError;
++use datafusion_common::DataFusionError;
++use sail_common_datafusion::error::{CommonErrorCause, RemoteError, StructuredSparkError};
++use tonic::Status;
++use tonic_types::StatusExt;
++
++use crate::error::{SparkError, SparkThrowable};
++
++type TestResult = Result<(), Box<dyn std::error::Error>>;
++
++fn fixture() -> StructuredSparkError {
++    StructuredSparkError {
++        class: "java.lang.NumberFormatException".into(),
++        condition: "CAST_INVALID_INPUT".into(),
++        sql_state: "22018".into(),
++        message: "malformed 雪\nvalue".into(),
++        parameters: HashMap::from([
++            ("expression".into(), "'雪\n'".into()),
++            ("sourceType".into(), "\"STRING\"".into()),
++            ("targetType".into(), "\"INT\"".into()),
++            ("ansiConfig".into(), "\"spark.sql.ansi.enabled\"".into()),
++        ]),
++    }
++}
++
++fn assert_status(status: Status) -> TestResult {
++    let expected = fixture();
++    assert_eq!(status.code(), tonic::Code::Internal);
++    assert_eq!(status.message(), expected.to_string());
++    let details = status.get_error_details();
++    let info = details.error_info().ok_or("missing error metadata")?;
++    assert_eq!(info.reason, expected.class);
++    assert_eq!(info.domain, "org.apache.spark");
++    assert_eq!(info.metadata.len(), 4);
++    assert_eq!(
++        info.metadata["classes"],
++        format!("[\"{}\"]", expected.class)
++    );
++    assert_eq!(info.metadata["errorClass"], expected.condition);
++    assert_eq!(info.metadata["sqlState"], expected.sql_state);
++    assert_eq!(
++        serde_json::from_str::<HashMap<String, String>>(&info.metadata["messageParameters"])?,
++        expected.parameters
++    );
++    Ok(())
++}
++
++#[test]
++fn direct_and_wrapped_structured_errors_preserve_complete_connect_metadata() -> TestResult {
++    let errors = [
++        SparkError::Structured(Box::new(fixture())),
++        SparkError::DataFusionError(DataFusionError::External(Box::new(fixture()))),
++        SparkError::ArrowError(ArrowError::ExternalError(Box::new(fixture()))),
++        SparkError::DataFusionError(DataFusionError::External(Box::new(RemoteError {
++            cause: CommonErrorCause::Structured(Box::new(fixture())),
++        }))),
++    ];
++    for error in errors {
++        assert_status(error.into())?;
++    }
++    Ok(())
++}
++
++#[test]
++fn stored_throwable_exposes_native_message_class_and_metadata() -> TestResult {
++    let error = fixture();
++    let throwable = SparkThrowable::from(CommonErrorCause::Structured(Box::new(error.clone())));
++    assert_eq!(throwable.message(), error.to_string());
++    assert_eq!(throwable.class_name(), error.class);
++    assert_status(throwable.into())
++}

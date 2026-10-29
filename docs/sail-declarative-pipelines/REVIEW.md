@@ -1127,3 +1127,21 @@ Fresh-CLI retained probes preserve the known failures: catalog 11/13, ordinary
 casts 4/24. This extraction does not close either gap or newly qualify task/serde
 metadata preservation. The next unit adds typed-cause and transport retention;
 producer/codec/SQL activation remain later granular units. Full SDP goal active.
+
+## Preserve structured execution-error causes
+
+Sail 96eb6d75fe13f1254af5fb1452d16abbd1fff446 adds a boxed structured CommonErrorCause variant,
+recognition through existing DataFusion/Arrow wrappers and Connect conversion
+through the existing metadata formatter. Stored throwables retain their rendered
+message and dynamic class. Seven new tests cover shared/context/external wrappers,
+serde/RemoteError, task-status and Flight paths, complete Connect metadata and
+unknown-commit collection precedence. Initial compile/lint failures and patch
+are retained; assertions are unchanged. See the
+[receipt](evidence/96eb6d75fe13f1254af5fb1452d16abbd1fff446/gate.json).
+
+Detached fmt/strict Clippy, full common 66/execution 151/Connect 40 library tests,
+CLI build, fresh-server 246 selected pytest and 67 upstream Python executions pass.
+The complete retained probe assertions match baseline: catalog 11/13 and ordinary
+casts 4/24. This synthetic transport qualification does not implement a cast
+producer, execute a distributed cluster or close either compatibility gap.
+The shared cast UDF and typed codec are the next review unit.

@@ -11018,3 +11018,11 @@ Sail candidate cd79b2bcc extracts the existing error data into sail-common-dataf
 ## 2026-10-29T16:14:01.203964+00:00 — DONE shared structured-error extraction
 
 Sail cd79b2bcc94fdf69418615fb0c0c60b5bee9f871: fmt/strict Clippy, common 63/Connect 38 library tests, CLI build, fresh-server 246 selected pytest + 67 upstream executions pass. Nine mechanical constructor conversions, no new dependency or cast producer. Fresh probes preserve catalog 11/13 and ordinary casts 4/24 with failures retained. Typed cause/task transport is next; full SDP goal active, no publication.
+
+## 2026-10-29T16:15:19.736026+00:00 — ACK typed structured-error transport
+
+Implementing selected design unit two from Sail cd79b2bcc: CommonErrorCause extraction/serde/RemoteError and Connect terminal conversion, with task status and Flight status round-trip tests. Cast producers and SQL activation remain separate. Immutable detached gate before branch advance; no publication.
+
+## 2026-10-29T16:29:18.351261+00:00 — DONE typed structured-error transport
+
+Sail 96eb6d75fe13f1254af5fb1452d16abbd1fff446: fmt/strict Clippy, full common 66/execution 151/Connect 40 library tests, CLI build, fresh-server 246 selected pytest + 67 upstream executions pass. Seven new wrapper/serde/task/Flight/Connect/commit-precedence tests. Initial import/lint failures retained, assertions unchanged. Complete known-probe outcomes unchanged: catalog 11/13, ordinary casts 4/24. No cast producer/codec/SQL activation yet. Owned unused planner/Connect and completed execution test executable caches removed only after lsof checks to bound disk use; no source or user server touched. Full SDP goal active, no publication.
