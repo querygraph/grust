@@ -1,0 +1,210 @@
+FF..F.                                                                   [100%]
+=================================== FAILURES ===================================
+__ test_append_rejects_unmatched_columns[id BIGINT, optional STRING-<lambda>] __
+
+spark = <pyspark.sql.connect.session.SparkSession object at 0x1184dae40>
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-70/test_append_rejects_unmatched_0')
+schema = 'id BIGINT, optional STRING'
+query = <function <lambda> at 0x10b0eb920>
+
+    @pytest.mark.parametrize(
+        "schema, query",
+        [
+            ("id BIGINT, optional STRING", lambda spark: spark.range(2)),
+            (
+                "value STRUCT<amount: BIGINT, optional: STRING>",
+                lambda spark: spark.range(2).select(F.struct(F.col("id").alias("amount")).alias("value")),
+            ),
+            (
+                "value ARRAY<STRUCT<amount: BIGINT, optional: STRING>>",
+                lambda spark: spark.range(2).select(F.array(F.struct(F.col("id").alias("amount"))).alias("value")),
+            ),
+            (
+                "value MAP<STRING, STRUCT<amount: BIGINT, optional: STRING>>",
+                lambda spark: spark.range(2).select(
+                    F.create_map(F.lit("key"), F.struct(F.col("id").alias("amount"))).alias("value")
+                ),
+            ),
+            (
+                "value STRUCT<amount: BIGINT>",
+                lambda spark: spark.range(2).select(
+                    F.struct(F.col("id").alias("amount"), F.lit("extra").alias("extra")).alias("value")
+                ),
+            ),
+        ],
+    )
+    def test_append_rejects_unmatched_columns(spark, tmp_path, schema, query):
+        table = f"write_schema_{uuid.uuid4().hex}"
+        location = escape_sql_string_literal((tmp_path / "table").as_uri())
+        spark.sql(f"CREATE TABLE {table} ({schema}) USING parquet LOCATION '{location}'")
+        try:
+            with pytest.raises(AnalysisException):
+>               query(spark).write.mode("append").saveAsTable(table)
+
+python/pysail/tests/spark/dataframe/test_write_schema.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/readwriter.py:796: in saveAsTable
+    _, _, ei = self._spark.client.execute_command(
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1219: in execute_command
+    data, _, metrics, observed_metrics, properties = self._execute_and_fetch(
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1754: in _execute_and_fetch
+    for response in self._execute_and_fetch_as_iterator(
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1731: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2093: in _handle_error
+    self._handle_rpc_error(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <pyspark.sql.connect.client.core.SparkConnectClient object at 0x1184daed0>
+rpc_error = <_MultiThreadedRendezvous of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = "invalid argument: inp...debug_error_string = "INTERNAL:invalid argument: input schema for INSERT has 1 fields, but table schema has 2 fields"
+>
+
+    def _handle_rpc_error(self, rpc_error: grpc.RpcError) -> NoReturn:
+        """
+        Error handling helper for dealing with GRPC Errors. On the server side, certain
+        exceptions are enriched with additional RPC Status information. These are
+        unpacked in this function and put into the exception.
+    
+        To avoid overloading the user with GRPC errors, this message explicitly
+        swallows the error context from the call. This GRPC Error is logged however,
+        and can be enabled.
+    
+        Parameters
+        ----------
+        rpc_error : grpc.RpcError
+           RPC Error containing the details of the exception.
+    
+        Returns
+        -------
+        Throws the appropriate internal Python exception.
+        """
+        logger.exception("GRPC Error received")
+        # We have to cast the value here because, a RpcError is a Call as well.
+        # https://grpc.github.io/grpc/python/grpc.html#grpc.UnaryUnaryMultiCallable.__call__
+        error: grpc.Call = cast(grpc.Call, rpc_error)
+        status_code: grpc.StatusCode = error.code()
+        status: Optional[Status] = rpc_status.from_call(error)
+        if status:
+            for d in status.details:
+                if d.Is(error_details_pb2.ErrorInfo.DESCRIPTOR):
+                    info = error_details_pb2.ErrorInfo()
+                    d.Unpack(info)
+                    logger.debug(f"Received ErrorInfo: {info}")
+    
+                    if info.metadata.get("errorClass") == "INVALID_HANDLE.SESSION_CHANGED":
+                        self._closed = True
+    
+                    if info.metadata.get("errorClass") == "CONNECT_INVALID_PLAN.CANNOT_PARSE":
+                        # Disable plan compression if the server fails to interpret the plan.
+                        logger.info(
+                            "Disabling plan compression for the session due to "
+                            "CONNECT_INVALID_PLAN.CANNOT_PARSE error."
+                        )
+                        self._plan_compression_threshold, self._plan_compression_algorithm = (
+                            -1,
+                            "NONE",
+                        )
+    
+>                   raise convert_exception(
+                        info,
+                        status.message,
+                        self._fetch_enriched_error(info),
+                        self._display_server_stack_trace(),
+                        status_code,
+                    ) from None
+E                   pyspark.errors.exceptions.connect.IllegalArgumentException: invalid argument: input schema for INSERT has 1 fields, but table schema has 2 fields
+
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2177: IllegalArgumentException
+_ test_append_rejects_unmatched_columns[value STRUCT<amount: BIGINT, optional: STRING>-<lambda>] _
+
+spark = <pyspark.sql.connect.session.SparkSession object at 0x1184dae40>
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-70/test_append_rejects_unmatched_1')
+schema = 'value STRUCT<amount: BIGINT, optional: STRING>'
+query = <function <lambda> at 0x115ef4b80>
+
+    @pytest.mark.parametrize(
+        "schema, query",
+        [
+            ("id BIGINT, optional STRING", lambda spark: spark.range(2)),
+            (
+                "value STRUCT<amount: BIGINT, optional: STRING>",
+                lambda spark: spark.range(2).select(F.struct(F.col("id").alias("amount")).alias("value")),
+            ),
+            (
+                "value ARRAY<STRUCT<amount: BIGINT, optional: STRING>>",
+                lambda spark: spark.range(2).select(F.array(F.struct(F.col("id").alias("amount"))).alias("value")),
+            ),
+            (
+                "value MAP<STRING, STRUCT<amount: BIGINT, optional: STRING>>",
+                lambda spark: spark.range(2).select(
+                    F.create_map(F.lit("key"), F.struct(F.col("id").alias("amount"))).alias("value")
+                ),
+            ),
+            (
+                "value STRUCT<amount: BIGINT>",
+                lambda spark: spark.range(2).select(
+                    F.struct(F.col("id").alias("amount"), F.lit("extra").alias("extra")).alias("value")
+                ),
+            ),
+        ],
+    )
+    def test_append_rejects_unmatched_columns(spark, tmp_path, schema, query):
+        table = f"write_schema_{uuid.uuid4().hex}"
+        location = escape_sql_string_literal((tmp_path / "table").as_uri())
+        spark.sql(f"CREATE TABLE {table} ({schema}) USING parquet LOCATION '{location}'")
+        try:
+>           with pytest.raises(AnalysisException):
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           Failed: DID NOT RAISE AnalysisException
+
+python/pysail/tests/spark/dataframe/test_write_schema.py:42: Failed
+_ test_append_rejects_unmatched_columns[value STRUCT<amount: BIGINT>-<lambda>] _
+
+spark = <pyspark.sql.connect.session.SparkSession object at 0x1184dae40>
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-70/test_append_rejects_unmatched_4')
+schema = 'value STRUCT<amount: BIGINT>'
+query = <function <lambda> at 0x1184f23e0>
+
+    @pytest.mark.parametrize(
+        "schema, query",
+        [
+            ("id BIGINT, optional STRING", lambda spark: spark.range(2)),
+            (
+                "value STRUCT<amount: BIGINT, optional: STRING>",
+                lambda spark: spark.range(2).select(F.struct(F.col("id").alias("amount")).alias("value")),
+            ),
+            (
+                "value ARRAY<STRUCT<amount: BIGINT, optional: STRING>>",
+                lambda spark: spark.range(2).select(F.array(F.struct(F.col("id").alias("amount"))).alias("value")),
+            ),
+            (
+                "value MAP<STRING, STRUCT<amount: BIGINT, optional: STRING>>",
+                lambda spark: spark.range(2).select(
+                    F.create_map(F.lit("key"), F.struct(F.col("id").alias("amount"))).alias("value")
+                ),
+            ),
+            (
+                "value STRUCT<amount: BIGINT>",
+                lambda spark: spark.range(2).select(
+                    F.struct(F.col("id").alias("amount"), F.lit("extra").alias("extra")).alias("value")
+                ),
+            ),
+        ],
+    )
+    def test_append_rejects_unmatched_columns(spark, tmp_path, schema, query):
+        table = f"write_schema_{uuid.uuid4().hex}"
+        location = escape_sql_string_literal((tmp_path / "table").as_uri())
+        spark.sql(f"CREATE TABLE {table} ({schema}) USING parquet LOCATION '{location}'")
+        try:
+>           with pytest.raises(AnalysisException):
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           Failed: DID NOT RAISE AnalysisException
+
+python/pysail/tests/spark/dataframe/test_write_schema.py:42: Failed
+=========================== short test summary info ============================
+FAILED python/pysail/tests/spark/dataframe/test_write_schema.py::test_append_rejects_unmatched_columns[id BIGINT, optional STRING-<lambda>]
+FAILED python/pysail/tests/spark/dataframe/test_write_schema.py::test_append_rejects_unmatched_columns[value STRUCT<amount: BIGINT, optional: STRING>-<lambda>]
+FAILED python/pysail/tests/spark/dataframe/test_write_schema.py::test_append_rejects_unmatched_columns[value STRUCT<amount: BIGINT>-<lambda>]
+3 failed, 3 passed in 0.35s

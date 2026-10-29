@@ -1,0 +1,949 @@
+FFFFFFFFF                                                                [100%]
+=================================== FAILURES ===================================
+_ test_declared_schema_publication[value DECIMAL(8, 2)-<lambda>-data_type0-value0] _
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x119868ad0>
+pipeline = ('ebe8ae48-605f-46fb-b9e3-18d1069fe6b4', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x1195cfd40>, <function pipeline_factory.<locals>.create.<locals>.run at 0x1198880e0>)
+schema = 'value DECIMAL(8, 2)', expression = <function <lambda> at 0x119063920>
+data_type = DecimalType(8,2), value = Decimal('1.00')
+
+    @pytest.mark.parametrize(
+        "schema, expression, data_type, value",
+        [
+            ("value DECIMAL(8, 2)", lambda: F.lit(1).cast("decimal(4, 2)"), DecimalType(8, 2), Decimal("1.00")),
+            (
+                "value ARRAY<DECIMAL(8, 2)>",
+                lambda: F.array(F.lit(1).cast("decimal(4, 2)")),
+                ArrayType(DecimalType(8, 2)),
+                [Decimal("1.00")],
+            ),
+            (
+                "value MAP<STRING, DECIMAL(8, 2)>",
+                lambda: F.create_map(F.lit("key"), F.lit(1).cast("decimal(4, 2)")),
+                MapType(StringType(), DecimalType(8, 2)),
+                {"key": Decimal("1.00")},
+            ),
+            (
+                "value STRUCT<second: BIGINT, amount: DECIMAL(8, 2)>",
+                lambda: F.struct(F.lit(1).cast("decimal(4, 2)").alias("amount"), F.lit(7).cast("long").alias("second")),
+                StructType([StructField("second", LongType()), StructField("amount", DecimalType(8, 2))]),
+                Row(second=7, amount=Decimal("1.00")),
+            ),
+        ],
+    )
+    def test_declared_schema_publication(pipeline_spark, pipeline, schema, expression, data_type, value):
+        _, registry, run = pipeline
+        with graph_element_registration_context(registry):
+    
+            @dp.materialized_view(schema=schema)
+            def output():
+                return pipeline_spark.range(1).select(expression().alias("value"))
+    
+>       run()
+
+python/pysail/tests/spark/pipelines/test_schema.py:175: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+python/pysail/tests/spark/pipelines/conftest.py:31: in run
+    client.handle_pipeline_events(
+.venv/lib/python3.12/site-packages/pyspark/pipelines/spark_connect_pipeline.py:53: in handle_pipeline_events
+    for result in iter:
+                  ^^^^
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1245: in execute_command_as_iterator
+    for response in self._execute_and_fetch_as_iterator(req, observations or {}):
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1731: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2093: in _handle_error
+    self._handle_rpc_error(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <pyspark.sql.connect.client.core.SparkConnectClient object at 0x11986aae0>
+rpc_error = <_MultiThreadedRendezvous of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = "declared pipeline schema publication"
+	debug_error_string = "INTERNAL:declared pipeline schema publication"
+>
+
+    def _handle_rpc_error(self, rpc_error: grpc.RpcError) -> NoReturn:
+        """
+        Error handling helper for dealing with GRPC Errors. On the server side, certain
+        exceptions are enriched with additional RPC Status information. These are
+        unpacked in this function and put into the exception.
+    
+        To avoid overloading the user with GRPC errors, this message explicitly
+        swallows the error context from the call. This GRPC Error is logged however,
+        and can be enabled.
+    
+        Parameters
+        ----------
+        rpc_error : grpc.RpcError
+           RPC Error containing the details of the exception.
+    
+        Returns
+        -------
+        Throws the appropriate internal Python exception.
+        """
+        logger.exception("GRPC Error received")
+        # We have to cast the value here because, a RpcError is a Call as well.
+        # https://grpc.github.io/grpc/python/grpc.html#grpc.UnaryUnaryMultiCallable.__call__
+        error: grpc.Call = cast(grpc.Call, rpc_error)
+        status_code: grpc.StatusCode = error.code()
+        status: Optional[Status] = rpc_status.from_call(error)
+        if status:
+            for d in status.details:
+                if d.Is(error_details_pb2.ErrorInfo.DESCRIPTOR):
+                    info = error_details_pb2.ErrorInfo()
+                    d.Unpack(info)
+                    logger.debug(f"Received ErrorInfo: {info}")
+    
+                    if info.metadata.get("errorClass") == "INVALID_HANDLE.SESSION_CHANGED":
+                        self._closed = True
+    
+                    if info.metadata.get("errorClass") == "CONNECT_INVALID_PLAN.CANNOT_PARSE":
+                        # Disable plan compression if the server fails to interpret the plan.
+                        logger.info(
+                            "Disabling plan compression for the session due to "
+                            "CONNECT_INVALID_PLAN.CANNOT_PARSE error."
+                        )
+                        self._plan_compression_threshold, self._plan_compression_algorithm = (
+                            -1,
+                            "NONE",
+                        )
+    
+>                   raise convert_exception(
+                        info,
+                        status.message,
+                        self._fetch_enriched_error(info),
+                        self._display_server_stack_trace(),
+                        status_code,
+                    ) from None
+E                   pyspark.errors.exceptions.connect.UnsupportedOperationException: declared pipeline schema publication
+
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2177: UnsupportedOperationException
+----------------------------- Captured stdout call -----------------------------
+2026-10-29 08:29:06: Starting pipeline analysis
+_ test_declared_schema_publication[value ARRAY<DECIMAL(8, 2)>-<lambda>-data_type1-value1] _
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x11986bfb0>
+pipeline = ('30b8f21c-c0ab-43ea-ada6-e3222fe4f455', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x1199acd40>, <function pipeline_factory.<locals>.create.<locals>.run at 0x119a1c720>)
+schema = 'value ARRAY<DECIMAL(8, 2)>'
+expression = <function <lambda> at 0x1190639c0>
+data_type = ArrayType(DecimalType(8,2), True), value = [Decimal('1.00')]
+
+    @pytest.mark.parametrize(
+        "schema, expression, data_type, value",
+        [
+            ("value DECIMAL(8, 2)", lambda: F.lit(1).cast("decimal(4, 2)"), DecimalType(8, 2), Decimal("1.00")),
+            (
+                "value ARRAY<DECIMAL(8, 2)>",
+                lambda: F.array(F.lit(1).cast("decimal(4, 2)")),
+                ArrayType(DecimalType(8, 2)),
+                [Decimal("1.00")],
+            ),
+            (
+                "value MAP<STRING, DECIMAL(8, 2)>",
+                lambda: F.create_map(F.lit("key"), F.lit(1).cast("decimal(4, 2)")),
+                MapType(StringType(), DecimalType(8, 2)),
+                {"key": Decimal("1.00")},
+            ),
+            (
+                "value STRUCT<second: BIGINT, amount: DECIMAL(8, 2)>",
+                lambda: F.struct(F.lit(1).cast("decimal(4, 2)").alias("amount"), F.lit(7).cast("long").alias("second")),
+                StructType([StructField("second", LongType()), StructField("amount", DecimalType(8, 2))]),
+                Row(second=7, amount=Decimal("1.00")),
+            ),
+        ],
+    )
+    def test_declared_schema_publication(pipeline_spark, pipeline, schema, expression, data_type, value):
+        _, registry, run = pipeline
+        with graph_element_registration_context(registry):
+    
+            @dp.materialized_view(schema=schema)
+            def output():
+                return pipeline_spark.range(1).select(expression().alias("value"))
+    
+>       run()
+
+python/pysail/tests/spark/pipelines/test_schema.py:175: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+python/pysail/tests/spark/pipelines/conftest.py:31: in run
+    client.handle_pipeline_events(
+.venv/lib/python3.12/site-packages/pyspark/pipelines/spark_connect_pipeline.py:53: in handle_pipeline_events
+    for result in iter:
+                  ^^^^
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1245: in execute_command_as_iterator
+    for response in self._execute_and_fetch_as_iterator(req, observations or {}):
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1731: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2093: in _handle_error
+    self._handle_rpc_error(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <pyspark.sql.connect.client.core.SparkConnectClient object at 0x11987fa70>
+rpc_error = <_MultiThreadedRendezvous of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = "declared pipeline schema publication"
+	debug_error_string = "INTERNAL:declared pipeline schema publication"
+>
+
+    def _handle_rpc_error(self, rpc_error: grpc.RpcError) -> NoReturn:
+        """
+        Error handling helper for dealing with GRPC Errors. On the server side, certain
+        exceptions are enriched with additional RPC Status information. These are
+        unpacked in this function and put into the exception.
+    
+        To avoid overloading the user with GRPC errors, this message explicitly
+        swallows the error context from the call. This GRPC Error is logged however,
+        and can be enabled.
+    
+        Parameters
+        ----------
+        rpc_error : grpc.RpcError
+           RPC Error containing the details of the exception.
+    
+        Returns
+        -------
+        Throws the appropriate internal Python exception.
+        """
+        logger.exception("GRPC Error received")
+        # We have to cast the value here because, a RpcError is a Call as well.
+        # https://grpc.github.io/grpc/python/grpc.html#grpc.UnaryUnaryMultiCallable.__call__
+        error: grpc.Call = cast(grpc.Call, rpc_error)
+        status_code: grpc.StatusCode = error.code()
+        status: Optional[Status] = rpc_status.from_call(error)
+        if status:
+            for d in status.details:
+                if d.Is(error_details_pb2.ErrorInfo.DESCRIPTOR):
+                    info = error_details_pb2.ErrorInfo()
+                    d.Unpack(info)
+                    logger.debug(f"Received ErrorInfo: {info}")
+    
+                    if info.metadata.get("errorClass") == "INVALID_HANDLE.SESSION_CHANGED":
+                        self._closed = True
+    
+                    if info.metadata.get("errorClass") == "CONNECT_INVALID_PLAN.CANNOT_PARSE":
+                        # Disable plan compression if the server fails to interpret the plan.
+                        logger.info(
+                            "Disabling plan compression for the session due to "
+                            "CONNECT_INVALID_PLAN.CANNOT_PARSE error."
+                        )
+                        self._plan_compression_threshold, self._plan_compression_algorithm = (
+                            -1,
+                            "NONE",
+                        )
+    
+>                   raise convert_exception(
+                        info,
+                        status.message,
+                        self._fetch_enriched_error(info),
+                        self._display_server_stack_trace(),
+                        status_code,
+                    ) from None
+E                   pyspark.errors.exceptions.connect.UnsupportedOperationException: declared pipeline schema publication
+
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2177: UnsupportedOperationException
+----------------------------- Captured stdout call -----------------------------
+2026-10-29 08:29:06: Starting pipeline analysis
+_ test_declared_schema_publication[value MAP<STRING, DECIMAL(8, 2)>-<lambda>-data_type2-value2] _
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x1199ac890>
+pipeline = ('6bd92dc3-4102-42fa-9f1b-5c93a3617f5b', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x1199af8c0>, <function pipeline_factory.<locals>.create.<locals>.run at 0x119a1e7a0>)
+schema = 'value MAP<STRING, DECIMAL(8, 2)>'
+expression = <function <lambda> at 0x119063a60>
+data_type = MapType(StringType(), DecimalType(8,2), True)
+value = {'key': Decimal('1.00')}
+
+    @pytest.mark.parametrize(
+        "schema, expression, data_type, value",
+        [
+            ("value DECIMAL(8, 2)", lambda: F.lit(1).cast("decimal(4, 2)"), DecimalType(8, 2), Decimal("1.00")),
+            (
+                "value ARRAY<DECIMAL(8, 2)>",
+                lambda: F.array(F.lit(1).cast("decimal(4, 2)")),
+                ArrayType(DecimalType(8, 2)),
+                [Decimal("1.00")],
+            ),
+            (
+                "value MAP<STRING, DECIMAL(8, 2)>",
+                lambda: F.create_map(F.lit("key"), F.lit(1).cast("decimal(4, 2)")),
+                MapType(StringType(), DecimalType(8, 2)),
+                {"key": Decimal("1.00")},
+            ),
+            (
+                "value STRUCT<second: BIGINT, amount: DECIMAL(8, 2)>",
+                lambda: F.struct(F.lit(1).cast("decimal(4, 2)").alias("amount"), F.lit(7).cast("long").alias("second")),
+                StructType([StructField("second", LongType()), StructField("amount", DecimalType(8, 2))]),
+                Row(second=7, amount=Decimal("1.00")),
+            ),
+        ],
+    )
+    def test_declared_schema_publication(pipeline_spark, pipeline, schema, expression, data_type, value):
+        _, registry, run = pipeline
+        with graph_element_registration_context(registry):
+    
+            @dp.materialized_view(schema=schema)
+            def output():
+                return pipeline_spark.range(1).select(expression().alias("value"))
+    
+>       run()
+
+python/pysail/tests/spark/pipelines/test_schema.py:175: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+python/pysail/tests/spark/pipelines/conftest.py:31: in run
+    client.handle_pipeline_events(
+.venv/lib/python3.12/site-packages/pyspark/pipelines/spark_connect_pipeline.py:53: in handle_pipeline_events
+    for result in iter:
+                  ^^^^
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1245: in execute_command_as_iterator
+    for response in self._execute_and_fetch_as_iterator(req, observations or {}):
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1731: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2093: in _handle_error
+    self._handle_rpc_error(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <pyspark.sql.connect.client.core.SparkConnectClient object at 0x1199acbc0>
+rpc_error = <_MultiThreadedRendezvous of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = "declared pipeline schema publication"
+	debug_error_string = "INTERNAL:declared pipeline schema publication"
+>
+
+    def _handle_rpc_error(self, rpc_error: grpc.RpcError) -> NoReturn:
+        """
+        Error handling helper for dealing with GRPC Errors. On the server side, certain
+        exceptions are enriched with additional RPC Status information. These are
+        unpacked in this function and put into the exception.
+    
+        To avoid overloading the user with GRPC errors, this message explicitly
+        swallows the error context from the call. This GRPC Error is logged however,
+        and can be enabled.
+    
+        Parameters
+        ----------
+        rpc_error : grpc.RpcError
+           RPC Error containing the details of the exception.
+    
+        Returns
+        -------
+        Throws the appropriate internal Python exception.
+        """
+        logger.exception("GRPC Error received")
+        # We have to cast the value here because, a RpcError is a Call as well.
+        # https://grpc.github.io/grpc/python/grpc.html#grpc.UnaryUnaryMultiCallable.__call__
+        error: grpc.Call = cast(grpc.Call, rpc_error)
+        status_code: grpc.StatusCode = error.code()
+        status: Optional[Status] = rpc_status.from_call(error)
+        if status:
+            for d in status.details:
+                if d.Is(error_details_pb2.ErrorInfo.DESCRIPTOR):
+                    info = error_details_pb2.ErrorInfo()
+                    d.Unpack(info)
+                    logger.debug(f"Received ErrorInfo: {info}")
+    
+                    if info.metadata.get("errorClass") == "INVALID_HANDLE.SESSION_CHANGED":
+                        self._closed = True
+    
+                    if info.metadata.get("errorClass") == "CONNECT_INVALID_PLAN.CANNOT_PARSE":
+                        # Disable plan compression if the server fails to interpret the plan.
+                        logger.info(
+                            "Disabling plan compression for the session due to "
+                            "CONNECT_INVALID_PLAN.CANNOT_PARSE error."
+                        )
+                        self._plan_compression_threshold, self._plan_compression_algorithm = (
+                            -1,
+                            "NONE",
+                        )
+    
+>                   raise convert_exception(
+                        info,
+                        status.message,
+                        self._fetch_enriched_error(info),
+                        self._display_server_stack_trace(),
+                        status_code,
+                    ) from None
+E                   pyspark.errors.exceptions.connect.UnsupportedOperationException: declared pipeline schema publication
+
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2177: UnsupportedOperationException
+----------------------------- Captured stdout call -----------------------------
+2026-10-29 08:29:06: Starting pipeline analysis
+_ test_declared_schema_publication[value STRUCT<second: BIGINT, amount: DECIMAL(8, 2)>-<lambda>-data_type3-value3] _
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x1199ad910>
+pipeline = ('29a58e73-c41e-4b7e-b6fb-accd2daeba03', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x11987ec60>, <function pipeline_factory.<locals>.create.<locals>.run at 0x119a1c860>)
+schema = 'value STRUCT<second: BIGINT, amount: DECIMAL(8, 2)>'
+expression = <function <lambda> at 0x119063b00>
+data_type = StructType([StructField('second', LongType(), True), StructField('amount', DecimalType(8,2), True)])
+value = Row(second=7, amount=Decimal('1.00'))
+
+    @pytest.mark.parametrize(
+        "schema, expression, data_type, value",
+        [
+            ("value DECIMAL(8, 2)", lambda: F.lit(1).cast("decimal(4, 2)"), DecimalType(8, 2), Decimal("1.00")),
+            (
+                "value ARRAY<DECIMAL(8, 2)>",
+                lambda: F.array(F.lit(1).cast("decimal(4, 2)")),
+                ArrayType(DecimalType(8, 2)),
+                [Decimal("1.00")],
+            ),
+            (
+                "value MAP<STRING, DECIMAL(8, 2)>",
+                lambda: F.create_map(F.lit("key"), F.lit(1).cast("decimal(4, 2)")),
+                MapType(StringType(), DecimalType(8, 2)),
+                {"key": Decimal("1.00")},
+            ),
+            (
+                "value STRUCT<second: BIGINT, amount: DECIMAL(8, 2)>",
+                lambda: F.struct(F.lit(1).cast("decimal(4, 2)").alias("amount"), F.lit(7).cast("long").alias("second")),
+                StructType([StructField("second", LongType()), StructField("amount", DecimalType(8, 2))]),
+                Row(second=7, amount=Decimal("1.00")),
+            ),
+        ],
+    )
+    def test_declared_schema_publication(pipeline_spark, pipeline, schema, expression, data_type, value):
+        _, registry, run = pipeline
+        with graph_element_registration_context(registry):
+    
+            @dp.materialized_view(schema=schema)
+            def output():
+                return pipeline_spark.range(1).select(expression().alias("value"))
+    
+>       run()
+
+python/pysail/tests/spark/pipelines/test_schema.py:175: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+python/pysail/tests/spark/pipelines/conftest.py:31: in run
+    client.handle_pipeline_events(
+.venv/lib/python3.12/site-packages/pyspark/pipelines/spark_connect_pipeline.py:53: in handle_pipeline_events
+    for result in iter:
+                  ^^^^
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1245: in execute_command_as_iterator
+    for response in self._execute_and_fetch_as_iterator(req, observations or {}):
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1731: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2093: in _handle_error
+    self._handle_rpc_error(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <pyspark.sql.connect.client.core.SparkConnectClient object at 0x1199af6e0>
+rpc_error = <_MultiThreadedRendezvous of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = "declared pipeline schema publication"
+	debug_error_string = "INTERNAL:declared pipeline schema publication"
+>
+
+    def _handle_rpc_error(self, rpc_error: grpc.RpcError) -> NoReturn:
+        """
+        Error handling helper for dealing with GRPC Errors. On the server side, certain
+        exceptions are enriched with additional RPC Status information. These are
+        unpacked in this function and put into the exception.
+    
+        To avoid overloading the user with GRPC errors, this message explicitly
+        swallows the error context from the call. This GRPC Error is logged however,
+        and can be enabled.
+    
+        Parameters
+        ----------
+        rpc_error : grpc.RpcError
+           RPC Error containing the details of the exception.
+    
+        Returns
+        -------
+        Throws the appropriate internal Python exception.
+        """
+        logger.exception("GRPC Error received")
+        # We have to cast the value here because, a RpcError is a Call as well.
+        # https://grpc.github.io/grpc/python/grpc.html#grpc.UnaryUnaryMultiCallable.__call__
+        error: grpc.Call = cast(grpc.Call, rpc_error)
+        status_code: grpc.StatusCode = error.code()
+        status: Optional[Status] = rpc_status.from_call(error)
+        if status:
+            for d in status.details:
+                if d.Is(error_details_pb2.ErrorInfo.DESCRIPTOR):
+                    info = error_details_pb2.ErrorInfo()
+                    d.Unpack(info)
+                    logger.debug(f"Received ErrorInfo: {info}")
+    
+                    if info.metadata.get("errorClass") == "INVALID_HANDLE.SESSION_CHANGED":
+                        self._closed = True
+    
+                    if info.metadata.get("errorClass") == "CONNECT_INVALID_PLAN.CANNOT_PARSE":
+                        # Disable plan compression if the server fails to interpret the plan.
+                        logger.info(
+                            "Disabling plan compression for the session due to "
+                            "CONNECT_INVALID_PLAN.CANNOT_PARSE error."
+                        )
+                        self._plan_compression_threshold, self._plan_compression_algorithm = (
+                            -1,
+                            "NONE",
+                        )
+    
+>                   raise convert_exception(
+                        info,
+                        status.message,
+                        self._fetch_enriched_error(info),
+                        self._display_server_stack_trace(),
+                        status_code,
+                    ) from None
+E                   pyspark.errors.exceptions.connect.UnsupportedOperationException: declared pipeline schema publication
+
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2177: UnsupportedOperationException
+----------------------------- Captured stdout call -----------------------------
+2026-10-29 08:29:06: Starting pipeline analysis
+________ test_declared_schema_publication_preserves_order_and_comments _________
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x119a176e0>
+pipeline = ('4f3dbbcd-d973-42ab-b155-da2e34653b87', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x119a16780>, <function pipeline_factory.<locals>.create.<locals>.run at 0x119a30d60>)
+
+    def test_declared_schema_publication_preserves_order_and_comments(pipeline_spark, pipeline):
+        _, registry, run = pipeline
+        schema = StructType(
+            [
+                StructField("second", LongType(), metadata={"comment": "two"}),
+                StructField("first", LongType(), metadata={"comment": "one"}),
+            ]
+        )
+        with graph_element_registration_context(registry):
+    
+            @dp.materialized_view(schema=schema)
+            def output():
+                return pipeline_spark.range(2).selectExpr("id AS first", "id + 10 AS second")
+    
+>       run()
+
+python/pysail/tests/spark/pipelines/test_schema.py:195: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+python/pysail/tests/spark/pipelines/conftest.py:31: in run
+    client.handle_pipeline_events(
+.venv/lib/python3.12/site-packages/pyspark/pipelines/spark_connect_pipeline.py:53: in handle_pipeline_events
+    for result in iter:
+                  ^^^^
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1245: in execute_command_as_iterator
+    for response in self._execute_and_fetch_as_iterator(req, observations or {}):
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1731: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2093: in _handle_error
+    self._handle_rpc_error(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <pyspark.sql.connect.client.core.SparkConnectClient object at 0x119a170b0>
+rpc_error = <_MultiThreadedRendezvous of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = "declared pipeline schema publication"
+	debug_error_string = "INTERNAL:declared pipeline schema publication"
+>
+
+    def _handle_rpc_error(self, rpc_error: grpc.RpcError) -> NoReturn:
+        """
+        Error handling helper for dealing with GRPC Errors. On the server side, certain
+        exceptions are enriched with additional RPC Status information. These are
+        unpacked in this function and put into the exception.
+    
+        To avoid overloading the user with GRPC errors, this message explicitly
+        swallows the error context from the call. This GRPC Error is logged however,
+        and can be enabled.
+    
+        Parameters
+        ----------
+        rpc_error : grpc.RpcError
+           RPC Error containing the details of the exception.
+    
+        Returns
+        -------
+        Throws the appropriate internal Python exception.
+        """
+        logger.exception("GRPC Error received")
+        # We have to cast the value here because, a RpcError is a Call as well.
+        # https://grpc.github.io/grpc/python/grpc.html#grpc.UnaryUnaryMultiCallable.__call__
+        error: grpc.Call = cast(grpc.Call, rpc_error)
+        status_code: grpc.StatusCode = error.code()
+        status: Optional[Status] = rpc_status.from_call(error)
+        if status:
+            for d in status.details:
+                if d.Is(error_details_pb2.ErrorInfo.DESCRIPTOR):
+                    info = error_details_pb2.ErrorInfo()
+                    d.Unpack(info)
+                    logger.debug(f"Received ErrorInfo: {info}")
+    
+                    if info.metadata.get("errorClass") == "INVALID_HANDLE.SESSION_CHANGED":
+                        self._closed = True
+    
+                    if info.metadata.get("errorClass") == "CONNECT_INVALID_PLAN.CANNOT_PARSE":
+                        # Disable plan compression if the server fails to interpret the plan.
+                        logger.info(
+                            "Disabling plan compression for the session due to "
+                            "CONNECT_INVALID_PLAN.CANNOT_PARSE error."
+                        )
+                        self._plan_compression_threshold, self._plan_compression_algorithm = (
+                            -1,
+                            "NONE",
+                        )
+    
+>                   raise convert_exception(
+                        info,
+                        status.message,
+                        self._fetch_enriched_error(info),
+                        self._display_server_stack_trace(),
+                        status_code,
+                    ) from None
+E                   pyspark.errors.exceptions.connect.UnsupportedOperationException: declared pipeline schema publication
+
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2177: UnsupportedOperationException
+----------------------------- Captured stdout call -----------------------------
+2026-10-29 08:29:06: Starting pipeline analysis
+___________ test_inferred_publication_schema_is_nullable_recursively ___________
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x119a071d0>
+pipeline = ('8fc4a8cf-1771-4abc-91b0-1843f2998b4d', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x119a046b0>, <function pipeline_factory.<locals>.create.<locals>.run at 0x119a32ac0>)
+
+    def test_inferred_publication_schema_is_nullable_recursively(pipeline_spark, pipeline):
+        _, registry, run = pipeline
+        with graph_element_registration_context(registry):
+    
+            @dp.materialized_view
+            def output():
+                return pipeline_spark.range(1).select(F.struct("id").alias("value"))
+    
+        run()
+>       assert pipeline_spark.table("output").schema == StructType(
+            [StructField("value", StructType([StructField("id", LongType())]))]
+        )
+E       assert StructType([S...e)]), False)]) == StructType([S...ue)]), True)])
+E         
+E         Use -v to get more diff
+
+python/pysail/tests/spark/pipelines/test_schema.py:210: AssertionError
+----------------------------- Captured stdout call -----------------------------
+2026-10-29 08:29:06: Starting pipeline analysis
+2026-10-29 08:29:06: Pipeline run completed
+_ test_missing_declared_columns_fail_after_table_materialization[id BIGINT, optional STRING-<lambda>] _
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x119a04200>
+pipeline = ('5a0627a2-2a18-4df2-8f0e-68810c64cafe', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x119a07980>, <function pipeline_factory.<locals>.create.<locals>.run at 0x119a33f60>)
+schema = 'id BIGINT, optional STRING'
+query = <function <lambda> at 0x119063d80>
+
+    @pytest.mark.parametrize(
+        "schema, query",
+        [
+            ("id BIGINT, optional STRING", lambda spark: spark.range(2)),
+            (
+                "value STRUCT<amount: DECIMAL(8, 2), optional: STRING>",
+                lambda spark: spark.range(1).select(
+                    F.struct(F.lit(1).cast("decimal(4, 2)").alias("amount")).alias("value")
+                ),
+            ),
+        ],
+    )
+    def test_missing_declared_columns_fail_after_table_materialization(pipeline_spark, pipeline, schema, query):
+        _, registry, run = pipeline
+        with graph_element_registration_context(registry):
+            dp.materialized_view(name="output", schema=schema)(lambda: query(pipeline_spark))
+    
+        with pytest.raises(AnalysisException):
+>           run()
+
+python/pysail/tests/spark/pipelines/test_schema.py:233: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+python/pysail/tests/spark/pipelines/conftest.py:31: in run
+    client.handle_pipeline_events(
+.venv/lib/python3.12/site-packages/pyspark/pipelines/spark_connect_pipeline.py:53: in handle_pipeline_events
+    for result in iter:
+                  ^^^^
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1245: in execute_command_as_iterator
+    for response in self._execute_and_fetch_as_iterator(req, observations or {}):
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1731: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2093: in _handle_error
+    self._handle_rpc_error(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <pyspark.sql.connect.client.core.SparkConnectClient object at 0x119a063c0>
+rpc_error = <_MultiThreadedRendezvous of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = "declared pipeline schema publication"
+	debug_error_string = "INTERNAL:declared pipeline schema publication"
+>
+
+    def _handle_rpc_error(self, rpc_error: grpc.RpcError) -> NoReturn:
+        """
+        Error handling helper for dealing with GRPC Errors. On the server side, certain
+        exceptions are enriched with additional RPC Status information. These are
+        unpacked in this function and put into the exception.
+    
+        To avoid overloading the user with GRPC errors, this message explicitly
+        swallows the error context from the call. This GRPC Error is logged however,
+        and can be enabled.
+    
+        Parameters
+        ----------
+        rpc_error : grpc.RpcError
+           RPC Error containing the details of the exception.
+    
+        Returns
+        -------
+        Throws the appropriate internal Python exception.
+        """
+        logger.exception("GRPC Error received")
+        # We have to cast the value here because, a RpcError is a Call as well.
+        # https://grpc.github.io/grpc/python/grpc.html#grpc.UnaryUnaryMultiCallable.__call__
+        error: grpc.Call = cast(grpc.Call, rpc_error)
+        status_code: grpc.StatusCode = error.code()
+        status: Optional[Status] = rpc_status.from_call(error)
+        if status:
+            for d in status.details:
+                if d.Is(error_details_pb2.ErrorInfo.DESCRIPTOR):
+                    info = error_details_pb2.ErrorInfo()
+                    d.Unpack(info)
+                    logger.debug(f"Received ErrorInfo: {info}")
+    
+                    if info.metadata.get("errorClass") == "INVALID_HANDLE.SESSION_CHANGED":
+                        self._closed = True
+    
+                    if info.metadata.get("errorClass") == "CONNECT_INVALID_PLAN.CANNOT_PARSE":
+                        # Disable plan compression if the server fails to interpret the plan.
+                        logger.info(
+                            "Disabling plan compression for the session due to "
+                            "CONNECT_INVALID_PLAN.CANNOT_PARSE error."
+                        )
+                        self._plan_compression_threshold, self._plan_compression_algorithm = (
+                            -1,
+                            "NONE",
+                        )
+    
+>                   raise convert_exception(
+                        info,
+                        status.message,
+                        self._fetch_enriched_error(info),
+                        self._display_server_stack_trace(),
+                        status_code,
+                    ) from None
+E                   pyspark.errors.exceptions.connect.UnsupportedOperationException: declared pipeline schema publication
+
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2177: UnsupportedOperationException
+----------------------------- Captured stdout call -----------------------------
+2026-10-29 08:29:06: Starting pipeline analysis
+_ test_missing_declared_columns_fail_after_table_materialization[value STRUCT<amount: DECIMAL(8, 2), optional: STRING>-<lambda>] _
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x119a0d1c0>
+pipeline = ('e36b8b01-5c36-4e72-80e7-953f1baa574c', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x119a0e360>, <function pipeline_factory.<locals>.create.<locals>.run at 0x1199cdb20>)
+schema = 'value STRUCT<amount: DECIMAL(8, 2), optional: STRING>'
+query = <function <lambda> at 0x119063e20>
+
+    @pytest.mark.parametrize(
+        "schema, query",
+        [
+            ("id BIGINT, optional STRING", lambda spark: spark.range(2)),
+            (
+                "value STRUCT<amount: DECIMAL(8, 2), optional: STRING>",
+                lambda spark: spark.range(1).select(
+                    F.struct(F.lit(1).cast("decimal(4, 2)").alias("amount")).alias("value")
+                ),
+            ),
+        ],
+    )
+    def test_missing_declared_columns_fail_after_table_materialization(pipeline_spark, pipeline, schema, query):
+        _, registry, run = pipeline
+        with graph_element_registration_context(registry):
+            dp.materialized_view(name="output", schema=schema)(lambda: query(pipeline_spark))
+    
+        with pytest.raises(AnalysisException):
+>           run()
+
+python/pysail/tests/spark/pipelines/test_schema.py:233: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+python/pysail/tests/spark/pipelines/conftest.py:31: in run
+    client.handle_pipeline_events(
+.venv/lib/python3.12/site-packages/pyspark/pipelines/spark_connect_pipeline.py:53: in handle_pipeline_events
+    for result in iter:
+                  ^^^^
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1245: in execute_command_as_iterator
+    for response in self._execute_and_fetch_as_iterator(req, observations or {}):
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1731: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2093: in _handle_error
+    self._handle_rpc_error(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <pyspark.sql.connect.client.core.SparkConnectClient object at 0x119a0f0e0>
+rpc_error = <_MultiThreadedRendezvous of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = "declared pipeline schema publication"
+	debug_error_string = "INTERNAL:declared pipeline schema publication"
+>
+
+    def _handle_rpc_error(self, rpc_error: grpc.RpcError) -> NoReturn:
+        """
+        Error handling helper for dealing with GRPC Errors. On the server side, certain
+        exceptions are enriched with additional RPC Status information. These are
+        unpacked in this function and put into the exception.
+    
+        To avoid overloading the user with GRPC errors, this message explicitly
+        swallows the error context from the call. This GRPC Error is logged however,
+        and can be enabled.
+    
+        Parameters
+        ----------
+        rpc_error : grpc.RpcError
+           RPC Error containing the details of the exception.
+    
+        Returns
+        -------
+        Throws the appropriate internal Python exception.
+        """
+        logger.exception("GRPC Error received")
+        # We have to cast the value here because, a RpcError is a Call as well.
+        # https://grpc.github.io/grpc/python/grpc.html#grpc.UnaryUnaryMultiCallable.__call__
+        error: grpc.Call = cast(grpc.Call, rpc_error)
+        status_code: grpc.StatusCode = error.code()
+        status: Optional[Status] = rpc_status.from_call(error)
+        if status:
+            for d in status.details:
+                if d.Is(error_details_pb2.ErrorInfo.DESCRIPTOR):
+                    info = error_details_pb2.ErrorInfo()
+                    d.Unpack(info)
+                    logger.debug(f"Received ErrorInfo: {info}")
+    
+                    if info.metadata.get("errorClass") == "INVALID_HANDLE.SESSION_CHANGED":
+                        self._closed = True
+    
+                    if info.metadata.get("errorClass") == "CONNECT_INVALID_PLAN.CANNOT_PARSE":
+                        # Disable plan compression if the server fails to interpret the plan.
+                        logger.info(
+                            "Disabling plan compression for the session due to "
+                            "CONNECT_INVALID_PLAN.CANNOT_PARSE error."
+                        )
+                        self._plan_compression_threshold, self._plan_compression_algorithm = (
+                            -1,
+                            "NONE",
+                        )
+    
+>                   raise convert_exception(
+                        info,
+                        status.message,
+                        self._fetch_enriched_error(info),
+                        self._display_server_stack_trace(),
+                        status_code,
+                    ) from None
+E                   pyspark.errors.exceptions.connect.UnsupportedOperationException: declared pipeline schema publication
+
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2177: UnsupportedOperationException
+----------------------------- Captured stdout call -----------------------------
+2026-10-29 08:29:06: Starting pipeline analysis
+___ test_schema_refresh_updates_comments_without_reordering_existing_columns ___
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x119a047d0>
+pipeline_factory = <function pipeline_factory.<locals>.create at 0x1199cd940>
+
+    def test_schema_refresh_updates_comments_without_reordering_existing_columns(pipeline_spark, pipeline_factory):
+        for value, fields in [
+            (1, [StructField("first", LongType(), metadata={"comment": "old"}), StructField("second", LongType())]),
+            (2, [StructField("second", LongType(), metadata={"comment": "new"}), StructField("first", LongType())]),
+        ]:
+            _, registry, run = pipeline_factory()
+            with graph_element_registration_context(registry):
+                dp.materialized_view(name="output", schema=StructType(fields))(
+                    lambda value=value: pipeline_spark.range(1).select(
+                        F.lit(value).cast("long").alias("first"), F.lit(10).cast("long").alias("second")
+                    )
+                )
+>           run()
+
+python/pysail/tests/spark/pipelines/test_schema.py:250: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+python/pysail/tests/spark/pipelines/conftest.py:31: in run
+    client.handle_pipeline_events(
+.venv/lib/python3.12/site-packages/pyspark/pipelines/spark_connect_pipeline.py:53: in handle_pipeline_events
+    for result in iter:
+                  ^^^^
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1245: in execute_command_as_iterator
+    for response in self._execute_and_fetch_as_iterator(req, observations or {}):
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1731: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2093: in _handle_error
+    self._handle_rpc_error(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <pyspark.sql.connect.client.core.SparkConnectClient object at 0x119a04a40>
+rpc_error = <_MultiThreadedRendezvous of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = "declared pipeline schema publication"
+	debug_error_string = "INTERNAL:declared pipeline schema publication"
+>
+
+    def _handle_rpc_error(self, rpc_error: grpc.RpcError) -> NoReturn:
+        """
+        Error handling helper for dealing with GRPC Errors. On the server side, certain
+        exceptions are enriched with additional RPC Status information. These are
+        unpacked in this function and put into the exception.
+    
+        To avoid overloading the user with GRPC errors, this message explicitly
+        swallows the error context from the call. This GRPC Error is logged however,
+        and can be enabled.
+    
+        Parameters
+        ----------
+        rpc_error : grpc.RpcError
+           RPC Error containing the details of the exception.
+    
+        Returns
+        -------
+        Throws the appropriate internal Python exception.
+        """
+        logger.exception("GRPC Error received")
+        # We have to cast the value here because, a RpcError is a Call as well.
+        # https://grpc.github.io/grpc/python/grpc.html#grpc.UnaryUnaryMultiCallable.__call__
+        error: grpc.Call = cast(grpc.Call, rpc_error)
+        status_code: grpc.StatusCode = error.code()
+        status: Optional[Status] = rpc_status.from_call(error)
+        if status:
+            for d in status.details:
+                if d.Is(error_details_pb2.ErrorInfo.DESCRIPTOR):
+                    info = error_details_pb2.ErrorInfo()
+                    d.Unpack(info)
+                    logger.debug(f"Received ErrorInfo: {info}")
+    
+                    if info.metadata.get("errorClass") == "INVALID_HANDLE.SESSION_CHANGED":
+                        self._closed = True
+    
+                    if info.metadata.get("errorClass") == "CONNECT_INVALID_PLAN.CANNOT_PARSE":
+                        # Disable plan compression if the server fails to interpret the plan.
+                        logger.info(
+                            "Disabling plan compression for the session due to "
+                            "CONNECT_INVALID_PLAN.CANNOT_PARSE error."
+                        )
+                        self._plan_compression_threshold, self._plan_compression_algorithm = (
+                            -1,
+                            "NONE",
+                        )
+    
+>                   raise convert_exception(
+                        info,
+                        status.message,
+                        self._fetch_enriched_error(info),
+                        self._display_server_stack_trace(),
+                        status_code,
+                    ) from None
+E                   pyspark.errors.exceptions.connect.UnsupportedOperationException: declared pipeline schema publication
+
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2177: UnsupportedOperationException
+----------------------------- Captured stdout call -----------------------------
+2026-10-29 08:29:07: Starting pipeline analysis
+=========================== short test summary info ============================
+FAILED python/pysail/tests/spark/pipelines/test_schema.py::test_declared_schema_publication[value DECIMAL(8, 2)-<lambda>-data_type0-value0]
+FAILED python/pysail/tests/spark/pipelines/test_schema.py::test_declared_schema_publication[value ARRAY<DECIMAL(8, 2)>-<lambda>-data_type1-value1]
+FAILED python/pysail/tests/spark/pipelines/test_schema.py::test_declared_schema_publication[value MAP<STRING, DECIMAL(8, 2)>-<lambda>-data_type2-value2]
+FAILED python/pysail/tests/spark/pipelines/test_schema.py::test_declared_schema_publication[value STRUCT<second: BIGINT, amount: DECIMAL(8, 2)>-<lambda>-data_type3-value3]
+FAILED python/pysail/tests/spark/pipelines/test_schema.py::test_declared_schema_publication_preserves_order_and_comments
+FAILED python/pysail/tests/spark/pipelines/test_schema.py::test_inferred_publication_schema_is_nullable_recursively
+FAILED python/pysail/tests/spark/pipelines/test_schema.py::test_missing_declared_columns_fail_after_table_materialization[id BIGINT, optional STRING-<lambda>]
+FAILED python/pysail/tests/spark/pipelines/test_schema.py::test_missing_declared_columns_fail_after_table_materialization[value STRUCT<amount: DECIMAL(8, 2), optional: STRING>-<lambda>]
+FAILED python/pysail/tests/spark/pipelines/test_schema.py::test_schema_refresh_updates_comments_without_reordering_existing_columns
+9 failed, 18 deselected in 0.80s

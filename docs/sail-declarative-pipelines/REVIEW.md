@@ -5,6 +5,13 @@ existing design. Work is on `work/spark-declarative-pipelines`, based on Sail
 `0ba425c0331aee4dd4e9a280c6a793926fd0876e`. These are local commits; no upstream
 pull requests have been opened or branches pushed.
 
+Current batch source `bbda0c14d5` publishes declared table schemas before batch
+writes and refreshes existing tables through catalog operations. Its detached
+gate passed 101 selected Sail cases and 67 unchanged upstream Python executions.
+These counts do not establish full SDP parity. Persisted-view materialization
+ordering, diagnostics, catalog properties, and the remaining acceptance crosswalk
+are still open; streaming and CDC follow batch acceptance.
+
 ## Review the batch implementation
 
 The original batch commit `52aa203b0790027e3d39c598e0bd1995c4c89d72` was split
@@ -87,7 +94,8 @@ also passed. The [receipt](evidence/aabdda2a8d786b58854c03e82718a07a2312d473/gat
 records the two test modes separately; there is no claim that 69 tests ran
 against the remote CLI server.
 
-Declared schema/comment publication and full batch acceptance remain open.
+At this milestone, declared schema/comment publication remained open; the later
+publication unit below adds that behavior. Full batch acceptance remains open.
 The next phases are streaming and CDC, in that order; see the
 [Iggy source review](STREAMING-REUSE.md) before implementing streaming.
 
@@ -116,7 +124,7 @@ receipts now disclose this limit; their recorded outcomes are retained.
 
 | Commit | Boundary and manual review |
 | --- | --- |
-| `3221b8ab68` | Resolve all output publication plans before executing the first write. Check an invalid provider on a later output. This commit also preflights dry runs; `0393db9226` corrects that boundary. |
+| `3221b8ab68` | Resolve all output publication plans before executing the first write. Check an invalid provider on a later output. `0393db9226` corrects dry runs; `038f28f95e` replaces preflight with Spark's metadata materialization sequence. |
 | `8dccd5a6e4` | Merge schemas using Spark field order, metadata precedence, nullability, recursive containers, decimal precision, and interval bounds. Normalize through Sail's existing Spark/Arrow type conversions. Check the 18 schema cases, including rejection of untyped null as a wildcard. |
 | `fd93eb6ef4` | Carry declared table comments through the shared write specification, builder, and catalog create operation. Check replacement of an existing comment and that dry runs create no output. |
 | `0393db9226` | Restrict publication preflight to real runs. A dry run with an unknown output provider succeeds without creating the table, matching Spark 4.2.1. |
@@ -142,14 +150,16 @@ warehouses. They establish the following behavior:
 - Missing declared columns pass dry-run schema validation when nullable, but
   real batch writes fail for missing top-level or nested fields. Do not synthesize
   null values to make those writes succeed.
-- Spark creates the target tables before those failed writes. Sail's current
-  publication preflight does not reproduce all these catalog side effects.
+- Spark creates the target tables before those failed writes. The preflight at
+  this milestone did not reproduce those catalog side effects; `038f28f95e`
+  now covers the observed cases.
 - Spark rejects a second `StartRun` on the same graph ID, even after a dry run.
-  Sail's current repeated-run fixtures and lifecycle still need correction.
+  The lifecycle unit below corrects the repeated-run fixtures and behavior.
 
-Declared schema publication, lifecycle/diagnostic parity, and the remaining
-batch crosswalk stay open. The static 462-call-site inventory is still not a
-runtime acceptance count. Streaming and CDC follow batch acceptance.
+The subsequent units address declared schema publication and execution-entry
+lifetime. Broader diagnostic parity and the remaining batch crosswalk stay open.
+The static 462-call-site inventory is still not a runtime acceptance count.
+Streaming and CDC follow batch acceptance.
 
 ## Review execution-entry lifetime
 
@@ -174,6 +184,55 @@ Before beginning the next design phase, notify the operator so they can switch
 to Astra. This applies to streaming checkpoint/recovery design, CDC design, or
 a batch issue that requires reconsidering the architecture. Routine batch
 implementation and compatibility fixes continue within the agreed design.
+
+## Review catalog schemas and table materialization
+
+| Commit | Boundary and manual review |
+| --- | --- |
+| `789d28ac30` | Expose catalog column comments in Spark schema metadata when canonical Spark metadata is absent. Check ordinary and quoted comments and precedence of existing canonical metadata. |
+| `29eeb6546c` | Reject missing or extra nested fields on the standard table append-by-name path before DataFusion can synthesize or discard fields. Check nested structs, arrays and maps, reordered fields, and explicit typed nulls. Top-level column-count failures now use an analysis exception. |
+| `038f28f95e` | Create or update selected table metadata before batch queries run. Use declared schemas or recursively nullable inferred schemas, preserve column comments, truncate existing complete tables, and apply schema changes without replacing their location. Batch flows append through the shared writer. |
+| `bbda0c14d5` | Remove the now-unused `WriteTo.table_comment` and writer builder extension. Metadata publication uses the existing catalog comment operations, so the common write specification no longer needs a pipeline-specific addition. |
+
+The [materialization receipt](evidence/038f28f95eebfb78edf1ae8a76d0fbd27adf4366/gate.json)
+and preceding receipts record separate detached gates: 77 selected cases for
+column comments, 89 for append validation, and 101 for materialization.
+Each also passed the 67 unchanged
+upstream Python executions, nightly formatting, strict Clippy, CLI compilation,
+and Python lint. The final selection includes 87 pipeline cases and 14 shared
+writer/catalog regressions, with no failures or skips. Receipts for the shared
+fixes are under [column comments](evidence/789d28ac301ce646fdb4e15d73e4954e687709ae/gate.json)
+and [append schemas](evidence/29eeb6546c4d5353fe4b0d611f14dbd1fb9ecdf9/gate.json).
+The [writer cleanup](evidence/bbda0c14d59920b650618cb8682fc68261106079/gate.json)
+passed the same 101 and 67 executions, formatting, Clippy, and build; it changes
+no Python files and introduces no new tests.
+
+Eight identical shared-writer/comment assertions and nine identical pipeline
+publication assertions passed against a live Spark 4.2.1 JVM. The publication
+reference used candidate `738107ab3`; its test and fixture blobs are identical
+to committed `038f28f95e`, which only relocates a Rust import. Separate probes
+confirm that a later unknown provider can leave an earlier target created but
+empty. Preserve that side effect rather than asserting all-or-nothing output
+metadata. The initial failed Sail gate and reference fixture are retained.
+
+Review `pipelines/materialize.rs` alongside Spark `DatasetManager` and
+`MaterializeTablesSuite`. It issues existing catalog command specifications
+through Sail's shared planner and `JobService`; there is no new physical node
+or pipeline-specific table writer. Normal and full refresh use the same complete
+table behavior. Existing column order and table location survive refresh;
+declared order governs initial creation. The add/drop/type refresh cases follow
+the upstream V2 test catalog and were not run against Spark's default V1 catalog,
+which lacks those alterations.
+
+The comment-removal fixture now checks the CatalogV2 semantic value: Spark's
+session catalog returns `comment: null`, while Sail omits the key. Byte-for-byte
+metadata JSON parity is not claimed. Existing-table truncation, schema changes,
+and properties use separate commands, so they are not an atomic catalog update.
+The nested-field guard covers the ordinary append-by-name path; Delta and
+generated/default-column paths need their own coverage. Persisted views still
+publish during flow execution; publishing every persisted view before data writes
+is the next materialization gap. Clustering, pipeline property validation,
+structured diagnostics, and complete batch acceptance remain outstanding.
 
 ## Constraints for subsequent units
 

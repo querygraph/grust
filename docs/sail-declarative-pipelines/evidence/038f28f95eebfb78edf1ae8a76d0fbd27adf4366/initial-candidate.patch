@@ -1,0 +1,705 @@
+diff --git a/crates/sail-spark-connect/src/pipelines/execution.rs b/crates/sail-spark-connect/src/pipelines/execution.rs
+index 5bd91a661..983f32acd 100644
+--- a/crates/sail-spark-connect/src/pipelines/execution.rs
++++ b/crates/sail-spark-connect/src/pipelines/execution.rs
+@@ -1,5 +1,5 @@
+ use std::collections::BTreeMap;
+-use std::sync::Mutex;
++use std::sync::{Arc, Mutex};
+ 
+ use datafusion::prelude::SessionContext;
+ use futures::TryStreamExt;
+@@ -7,8 +7,10 @@ use sail_common::spec;
+ use sail_common_datafusion::extension::SessionExtensionAccessor;
+ use sail_common_datafusion::rename::logical_plan::rename_logical_plan;
+ use sail_common_datafusion::session::job::JobService;
++use sail_plan::config::PlanConfig;
+ use sail_plan::resolve_and_execute_plan_with_scope;
+ use sail_plan::resolver::PlanResolver;
++use sail_plan::resolver::scope::RelationScope;
+ 
+ use super::analysis::{AnalyzedGraph, GraphScope};
+ use super::graph::{Flow, GraphDefinition, Output, analysis};
+@@ -17,41 +19,6 @@ use crate::error::{SparkError, SparkResult};
+ use crate::session::SparkSession;
+ use crate::spark::connect::{OutputType, pipeline_command as pc};
+ 
+-pub(super) async fn validate_publication(
+-    ctx: &SessionContext,
+-    graph: &GraphDefinition,
+-    analyzed: &AnalyzedGraph,
+-) -> SparkResult<()> {
+-    let spark = ctx.extension::<SparkSession>()?;
+-    for output in &graph.outputs {
+-        if output.kind != OutputType::MaterializedView {
+-            continue;
+-        }
+-        let flow = graph
+-            .flows
+-            .iter()
+-            .find(|x| x.target == output.name)
+-            .ok_or_else(|| analysis("PIPELINE_DATASET_WITHOUT_FLOW", output.name.join(".")))?;
+-        let scope = GraphScope {
+-            graph,
+-            resolved: &analyzed.relations,
+-            reads: Mutex::default(),
+-            flow,
+-        };
+-        let config = spark.plan_config_with_overrides(flow.sql_conf.clone())?;
+-        // Resolve catalog preconditions and writer options against analyzed
+-        // placeholders. Executing these plans here would publish output during
+-        // dry runs or before the remaining writers have been validated.
+-        PlanResolver::new(ctx, config)
+-            .with_relation_scope(&scope)
+-            .resolve_named_plan(spec::Plan::Command(spec::CommandPlan::new(
+-                publication_command(output, flow),
+-            )))
+-            .await?;
+-    }
+-    Ok(())
+-}
+-
+ pub(super) async fn execute(
+     ctx: &SessionContext,
+     graph: &GraphDefinition,
+@@ -68,14 +35,9 @@ pub(super) async fn execute(
+         return Err(SparkError::unsupported("incremental pipeline execution"));
+     }
+     let spark = ctx.extension::<SparkSession>()?;
+-    let service = ctx.extension::<JobService>()?;
++    super::materialize::tables(ctx, graph, &analyzed, &selection).await?;
+     let mut resolved = BTreeMap::new();
+     for output in &graph.outputs {
+-        if output.schema.is_some() {
+-            return Err(SparkError::unsupported(
+-                "declared pipeline schema publication",
+-            ));
+-        }
+         if output.kind != OutputType::TemporaryView
+             && !selection.runs(&output.name)
+             && selection.required.contains(&output.name)
+@@ -121,15 +83,7 @@ pub(super) async fn execute(
+             resolved.insert(name, plan);
+             continue;
+         }
+-        let (physical, _) = resolve_and_execute_plan_with_scope(
+-            ctx,
+-            config,
+-            spec::Plan::Command(spec::CommandPlan::new(publication_command(output, flow))),
+-            Some(&scope),
+-        )
+-        .await?;
+-        let mut stream = service.runner().execute(ctx, physical).await?;
+-        while stream.try_next().await?.is_some() {}
++        run_command(ctx, config, publication_command(output, flow), Some(&scope)).await?;
+         // Downstream flows scan the newly committed table. They must not inline
+         // and recompute the producer's definition, especially for nondeterminism.
+         resolved.insert(name.clone(), read_output(ctx, name).await?);
+@@ -137,6 +91,25 @@ pub(super) async fn execute(
+     Ok(())
+ }
+ 
++pub(super) async fn run_command(
++    ctx: &SessionContext,
++    config: Arc<PlanConfig>,
++    command: spec::CommandNode,
++    scope: Option<&dyn RelationScope>,
++) -> SparkResult<()> {
++    let (physical, _) = resolve_and_execute_plan_with_scope(
++        ctx,
++        config,
++        spec::Plan::Command(spec::CommandPlan::new(command)),
++        scope,
++    )
++    .await?;
++    let service = ctx.extension::<JobService>()?;
++    let mut stream = service.runner().execute(ctx, physical).await?;
++    while stream.try_next().await?.is_some() {}
++    Ok(())
++}
++
+ fn publication_command(output: &Output, flow: &Flow) -> spec::CommandNode {
+     if let Some(mut definition) = output.view.clone() {
+         definition.replace = true;
+@@ -154,7 +127,7 @@ fn publication_command(output: &Output, flow: &Flow) -> spec::CommandNode {
+         input: Box::new(flow.query.clone()),
+         provider: details.format,
+         table: output.name.clone().into(),
+-        mode: spec::WriteToMode::CreateOrReplace,
++        mode: spec::WriteToMode::Append,
+         partitioning_columns: details
+             .partition_cols
+             .into_iter()
+@@ -170,8 +143,8 @@ fn publication_command(output: &Output, flow: &Flow) -> spec::CommandNode {
+             .map(Into::into)
+             .collect(),
+         options: vec![],
+-        table_properties: details.table_properties.into_iter().collect(),
+-        table_comment: output.definition.comment.clone(),
++        table_properties: vec![],
++        table_comment: None,
+     })
+ }
+ 
+diff --git a/crates/sail-spark-connect/src/pipelines/materialize.rs b/crates/sail-spark-connect/src/pipelines/materialize.rs
+new file mode 100644
+index 000000000..2dc35e5bf
+--- /dev/null
++++ b/crates/sail-spark-connect/src/pipelines/materialize.rs
+@@ -0,0 +1,242 @@
++use std::collections::BTreeMap;
++
++use datafusion::prelude::SessionContext;
++use sail_catalog::error::{CatalogError, CatalogObject};
++use sail_catalog::manager::CatalogManager;
++use sail_common::spec;
++use sail_common_datafusion::catalog::{PartitionTransform, TableKind};
++use sail_common_datafusion::datasource::DataSourceRegistry;
++use sail_common_datafusion::extension::SessionExtensionAccessor;
++use sail_plan::error::PlanError;
++
++use super::analysis::AnalyzedGraph;
++use super::execution::run_command;
++use super::graph::{GraphDefinition, analysis, quoted};
++use super::selection::Selection;
++use crate::error::{SparkError, SparkResult};
++use crate::session::SparkSession;
++use crate::spark::connect::{OutputType, pipeline_command as pc};
++
++/// Materialize the selected table metadata before executing any batch flow,
++/// matching Spark's DatasetManager. A failed write can leave an empty target.
++pub(super) async fn tables(
++    ctx: &SessionContext,
++    graph: &GraphDefinition,
++    analyzed: &AnalyzedGraph,
++    selection: &Selection,
++) -> SparkResult<()> {
++    let manager = ctx.extension::<CatalogManager>()?;
++    let config = ctx
++        .extension::<SparkSession>()?
++        .plan_config_with_overrides(graph.sql_conf.clone())?;
++    for output in &graph.outputs {
++        if output.kind != OutputType::MaterializedView
++            || output.view.is_some()
++            || !selection.runs(&output.name)
++        {
++            continue;
++        }
++        let details = match &output.definition.details {
++            Some(pc::define_output::Details::TableDetails(details)) => details.clone(),
++            _ => pc::define_output::TableDetails::default(),
++        };
++        let mut properties: BTreeMap<_, _> = details.table_properties.into_iter().collect();
++        for (key, value) in [
++            ("comment", output.definition.comment.as_ref()),
++            ("provider", details.format.as_ref()),
++        ] {
++            if let Some(value) = value {
++                if properties
++                    .get(key)
++                    .is_some_and(|previous| previous != value)
++                {
++                    return Err(SparkError::invalid(format!(
++                        "For dataset {}, {key} '{value}' does not match its reserved table property",
++                        quoted(&output.name)
++                    )));
++                }
++                properties.insert(key.to_string(), value.clone());
++            }
++        }
++        if !details.clustering_columns.is_empty() {
++            if !details.partition_cols.is_empty() {
++                return Err(analysis(
++                    "SPECIFY_CLUSTER_BY_WITH_PARTITIONED_BY_IS_NOT_ALLOWED",
++                    quoted(&output.name),
++                ));
++            }
++            return Err(SparkError::unsupported("pipeline table clustering"));
++        }
++        let schema = analyzed
++            .relations
++            .get(&output.name)
++            .ok_or_else(|| SparkError::internal("analyzed output missing"))?
++            .schema()
++            .as_arrow();
++        let columns = super::schema::table_columns(output, schema)?;
++        let table: spec::ObjectName = output.name.clone().into();
++        let existing = match manager.get_table_or_view(&output.name).await {
++            Ok(status) => Some(status),
++            Err(CatalogError::NotFound(CatalogObject::Table | CatalogObject::View, _)) => None,
++            Err(error) => return Err(PlanError::from(error).into()),
++        };
++        if let Some(existing) = existing {
++            let TableKind::Table {
++                columns: old_columns,
++                partition_by,
++                ..
++            } = existing.kind
++            else {
++                return Err(analysis(
++                    "EXPECT_TABLE_NOT_VIEW.NO_ALTERNATIVE",
++                    quoted(&output.name),
++                ));
++            };
++            if partition_by.len() != details.partition_cols.len()
++                || partition_by
++                    .iter()
++                    .zip(&details.partition_cols)
++                    .any(|(old, new)| {
++                        old.column != *new
++                            || !matches!(old.transform, None | Some(PartitionTransform::Identity))
++                    })
++            {
++                return Err(analysis(
++                    "CANNOT_UPDATE_PARTITION_COLUMNS",
++                    quoted(&output.name),
++                ));
++            }
++            run_command(
++                ctx,
++                config.clone(),
++                spec::CommandNode::TruncateTable {
++                    table: table.clone(),
++                },
++                None,
++            )
++            .await?;
++            let mut changes = vec![];
++            for column in &columns {
++                if let Some(old) = old_columns.iter().find(|old| old.name == column.name) {
++                    let old_type: spec::DataType =
++                        crate::spark::connect::DataType::try_from(old.data_type.clone())?
++                            .try_into()?;
++                    if old_type != column.data_type {
++                        run_command(
++                            ctx,
++                            config.clone(),
++                            spec::CommandNode::AlterTable {
++                                table: table.clone(),
++                                if_exists: false,
++                                operation: spec::AlterTableOperation::AlterColumnType {
++                                    name: spec::ObjectName::bare(column.name.clone()),
++                                    data_type: column.data_type.clone(),
++                                },
++                            },
++                            None,
++                        )
++                        .await?;
++                    }
++                    if old.nullable != column.nullable {
++                        changes.push(spec::ColumnChange::Nullability {
++                            path: vec![column.name.clone()],
++                            nullable: column.nullable,
++                        });
++                    }
++                    if old.comment != column.comment {
++                        changes.push(spec::ColumnChange::Comment {
++                            path: vec![column.name.clone()],
++                            comment: column.comment.clone(),
++                        });
++                    }
++                } else {
++                    changes.push(spec::ColumnChange::Add {
++                        path: vec![column.name.clone()],
++                        data_type: column.data_type.clone(),
++                        nullable: column.nullable,
++                        comment: column.comment.clone(),
++                        default: None,
++                        position: None,
++                    });
++                }
++            }
++            for column in &old_columns {
++                if !columns.iter().any(|new| new.name == column.name) {
++                    changes.push(spec::ColumnChange::Drop {
++                        path: vec![column.name.clone()],
++                        if_exists: false,
++                    });
++                }
++            }
++            if !changes.is_empty() {
++                run_command(
++                    ctx,
++                    config.clone(),
++                    spec::CommandNode::AlterTable {
++                        table: table.clone(),
++                        if_exists: false,
++                        operation: spec::AlterTableOperation::AlterColumns { changes },
++                    },
++                    None,
++                )
++                .await?;
++            }
++            if !properties.is_empty() {
++                run_command(
++                    ctx,
++                    config.clone(),
++                    spec::CommandNode::AlterTable {
++                        table,
++                        if_exists: false,
++                        operation: spec::AlterTableOperation::SetTableProperties {
++                            properties: properties.into_iter().collect(),
++                        },
++                    },
++                    None,
++                )
++                .await?;
++            }
++        } else {
++            let format = properties
++                .get("provider")
++                .cloned()
++                .unwrap_or_else(|| config.default_table_file_format.clone());
++            ctx.extension::<DataSourceRegistry>()?
++                .get_data_source(&format.to_ascii_lowercase())?;
++            let definition = spec::TableDefinition {
++                external: false,
++                columns,
++                comment: properties.get("comment").cloned(),
++                constraints: vec![],
++                location: None,
++                file_format: Some(spec::TableFileFormat::General { format }),
++                row_format: None,
++                partition_by: details
++                    .partition_cols
++                    .into_iter()
++                    .map(|name| {
++                        spec::PartitionColumn::Expression(spec::Expr::UnresolvedAttribute {
++                            name: spec::ObjectName::bare(name),
++                            plan_id: None,
++                            is_metadata_column: false,
++                        })
++                    })
++                    .collect(),
++                sort_by: vec![],
++                bucket_by: None,
++                cluster_by: vec![],
++                mode: spec::CreateTableMode::Create,
++                options: vec![],
++                properties: properties.into_iter().collect(),
++            };
++            run_command(
++                ctx,
++                config.clone(),
++                spec::CommandNode::CreateTable { table, definition },
++                None,
++            )
++            .await?;
++        }
++    }
++    Ok(())
++}
+diff --git a/crates/sail-spark-connect/src/pipelines/mod.rs b/crates/sail-spark-connect/src/pipelines/mod.rs
+index f2253a290..b27ce1956 100644
+--- a/crates/sail-spark-connect/src/pipelines/mod.rs
++++ b/crates/sail-spark-connect/src/pipelines/mod.rs
+@@ -1,6 +1,7 @@
+ mod analysis;
+ mod execution;
+ mod graph;
++mod materialize;
+ mod schema;
+ mod schema_merge;
+ mod selection;
+@@ -141,7 +142,6 @@ pub(crate) async fn handle_command(
+                     let analyzed = analysis::analyze(&ctx, &definition).await?;
+                     let selection = selection.with_dependencies(&definition, &analyzed);
+                     if !command.dry.unwrap_or(false) {
+-                        execution::validate_publication(&ctx, &definition, &analyzed).await?;
+                         execution::execute(&ctx, &definition, analyzed, selection).await?;
+                     }
+                     Ok::<_, SparkError>(())
+diff --git a/crates/sail-spark-connect/src/pipelines/schema.rs b/crates/sail-spark-connect/src/pipelines/schema.rs
+index cb7e7ff40..690842a6f 100644
+--- a/crates/sail-spark-connect/src/pipelines/schema.rs
++++ b/crates/sail-spark-connect/src/pipelines/schema.rs
+@@ -89,6 +89,88 @@ fn spark_fields(schema: &Schema) -> SparkResult<spec::Fields> {
+         .collect()
+ }
+ 
++pub(super) fn table_columns(
++    output: &Output,
++    inferred: &Schema,
++) -> SparkResult<Vec<spec::TableColumnDefinition>> {
++    let fields = match &output.schema {
++        Some(schema) => schema.fields.clone(),
++        None => nullable_fields(&spark_fields(inferred)?),
++    };
++    fields
++        .iter()
++        .map(|field| {
++            let metadata = field
++                .metadata
++                .iter()
++                .find(|(key, _)| key == spec::SPARK_METADATA_JSON_KEY)
++                .map(|(_, value)| serde_json::from_str::<serde_json::Value>(value))
++                .transpose()?;
++            let comment = metadata
++                .as_ref()
++                .and_then(|value| value.get("comment"))
++                .and_then(serde_json::Value::as_str)
++                .map(str::to_string);
++            Ok(spec::TableColumnDefinition {
++                name: field.name.clone(),
++                data_type: field.data_type.clone(),
++                nullable: field.nullable,
++                comment,
++                default: None,
++                generated_always_as: None,
++                identity: None,
++            })
++        })
++        .collect()
++}
++
++fn nullable_fields(fields: &spec::Fields) -> spec::Fields {
++    fields
++        .iter()
++        .map(|field| {
++            let mut field = field.as_ref().clone();
++            field.nullable = true;
++            field.data_type = nullable_type(&field.data_type);
++            Arc::new(field)
++        })
++        .collect()
++}
++
++fn nullable_type(data_type: &spec::DataType) -> spec::DataType {
++    let mut data_type = data_type.clone();
++    match &mut data_type {
++        spec::DataType::Struct { fields } => *fields = nullable_fields(fields),
++        spec::DataType::List {
++            data_type,
++            nullable,
++        }
++        | spec::DataType::LargeList {
++            data_type,
++            nullable,
++        }
++        | spec::DataType::FixedSizeList {
++            data_type,
++            nullable,
++            ..
++        } => {
++            **data_type = nullable_type(data_type);
++            *nullable = true;
++        }
++        spec::DataType::Map {
++            key_type,
++            value_type,
++            value_type_nullable,
++            ..
++        } => {
++            **key_type = nullable_type(key_type);
++            **value_type = nullable_type(value_type);
++            *value_type_nullable = true;
++        }
++        _ => {}
++    }
++    data_type
++}
++
+ fn arrow_schema(resolver: &PlanResolver<'_>, fields: spec::Fields) -> SparkResult<Schema> {
+     let data_type = resolver.resolve_data_type_for_plan(&spec::DataType::Struct { fields })?;
+     let DataType::Struct(fields) = data_type else {
+@@ -98,3 +180,4 @@ fn arrow_schema(resolver: &PlanResolver<'_>, fields: spec::Fields) -> SparkResul
+     };
+     Ok(Schema::new(fields))
+ }
++use std::sync::Arc;
+diff --git a/python/pysail/tests/spark/pipelines/features/sql.feature b/python/pysail/tests/spark/pipelines/features/sql.feature
+index 55505960f..36426738f 100644
+--- a/python/pysail/tests/spark/pipelines/features/sql.feature
++++ b/python/pysail/tests/spark/pipelines/features/sql.feature
+@@ -126,15 +126,21 @@ Feature: Declarative pipeline SQL
+       | 3     |
+     Then pipeline dataset ordinary is not published
+ 
+-  Scenario: Publication validation precedes dependency-ordered writes
++  Scenario: Table materialization errors precede data writes
+     Given pipeline SQL file invalid_format.sql
+       """
+       CREATE MATERIALIZED VIEW a_valid AS SELECT * FROM range(2);
+       CREATE MATERIALIZED VIEW z_invalid USING missing_format AS SELECT * FROM a_valid;
+       """
+     When the pipeline fails with No data source found for: missing_format
+-    Then pipeline dataset a_valid is not published
+     Then pipeline dataset z_invalid is not published
++    When query
++      """
++      SELECT count(*) AS rows FROM a_valid
++      """
++    Then query result
++      | rows |
++      | 0    |
+ 
+   Scenario: Dry run validates the graph without planning publication
+     Given pipeline SQL file invalid_format.sql
+@@ -206,6 +212,31 @@ Feature: Declarative pipeline SQL
+       """
+     Then query result row where "col_name" is "Comment" has "data_type" equal to "daily summary"
+ 
++  Scenario: Declared columns are published with their order and comments
++    Given pipeline SQL file columns.sql
++      """
++      CREATE MATERIALIZED VIEW output (
++        second BIGINT COMMENT 'two', first BIGINT COMMENT 'one'
++      ) AS SELECT id AS first, id + 10 AS second FROM range(2);
++      """
++    When the pipeline runs
++    When query
++      """
++      SELECT * FROM output ORDER BY first
++      """
++    Then query result ordered
++      | second | first |
++      | 10     | 0     |
++      | 11     | 1     |
++    When query
++      """
++      DESCRIBE output
++      """
++    Then query result
++      | col_name | data_type | comment |
++      | second   | bigint    | two     |
++      | first    | bigint    | one     |
++
+   Scenario: Streaming table definitions require a producer
+     Given pipeline SQL file empty.sql
+       """
+diff --git a/python/pysail/tests/spark/pipelines/test_schema.py b/python/pysail/tests/spark/pipelines/test_schema.py
+index 43e85c4e1..df29505df 100644
+--- a/python/pysail/tests/spark/pipelines/test_schema.py
++++ b/python/pysail/tests/spark/pipelines/test_schema.py
+@@ -1,7 +1,10 @@
++from decimal import Decimal
++
+ import pytest
+ from pyspark.errors.exceptions.connect import AnalysisException
++from pyspark.sql import Row
+ from pyspark.sql import functions as F
+-from pyspark.sql.types import LongType, StructField, StructType
++from pyspark.sql.types import ArrayType, DecimalType, LongType, MapType, StringType, StructField, StructType
+ 
+ try:
+     from pyspark import pipelines as dp
+@@ -135,3 +138,119 @@ def test_incompatible_nested_schema_merges(pipeline_spark, pipeline, schema, exp
+     with pytest.raises(AnalysisException, match="USER_SPECIFIED_AND_INFERRED_SCHEMA_NOT_COMPATIBLE"):
+         run(dry=True)
+     assert not pipeline_spark.catalog.tableExists("output")
++
++
++@pytest.mark.parametrize(
++    "schema, expression, data_type, value",
++    [
++        ("value DECIMAL(8, 2)", lambda: F.lit(1).cast("decimal(4, 2)"), DecimalType(8, 2), Decimal("1.00")),
++        (
++            "value ARRAY<DECIMAL(8, 2)>",
++            lambda: F.array(F.lit(1).cast("decimal(4, 2)")),
++            ArrayType(DecimalType(8, 2)),
++            [Decimal("1.00")],
++        ),
++        (
++            "value MAP<STRING, DECIMAL(8, 2)>",
++            lambda: F.create_map(F.lit("key"), F.lit(1).cast("decimal(4, 2)")),
++            MapType(StringType(), DecimalType(8, 2)),
++            {"key": Decimal("1.00")},
++        ),
++        (
++            "value STRUCT<second: BIGINT, amount: DECIMAL(8, 2)>",
++            lambda: F.struct(F.lit(1).cast("decimal(4, 2)").alias("amount"), F.lit(7).cast("long").alias("second")),
++            StructType([StructField("second", LongType()), StructField("amount", DecimalType(8, 2))]),
++            Row(second=7, amount=Decimal("1.00")),
++        ),
++    ],
++)
++def test_declared_schema_publication(pipeline_spark, pipeline, schema, expression, data_type, value):
++    _, registry, run = pipeline
++    with graph_element_registration_context(registry):
++
++        @dp.materialized_view(schema=schema)
++        def output():
++            return pipeline_spark.range(1).select(expression().alias("value"))
++
++    run()
++    result = pipeline_spark.table("output")
++    assert result.schema["value"].dataType == data_type
++    assert result.collect() == [Row(value=value)]
++
++
++def test_declared_schema_publication_preserves_order_and_comments(pipeline_spark, pipeline):
++    _, registry, run = pipeline
++    schema = StructType(
++        [
++            StructField("second", LongType(), metadata={"comment": "two"}),
++            StructField("first", LongType(), metadata={"comment": "one"}),
++        ]
++    )
++    with graph_element_registration_context(registry):
++
++        @dp.materialized_view(schema=schema)
++        def output():
++            return pipeline_spark.range(2).selectExpr("id AS first", "id + 10 AS second")
++
++    run()
++    result = pipeline_spark.table("output")
++    assert result.schema == schema
++    assert result.orderBy("first").collect() == [Row(second=10, first=0), Row(second=11, first=1)]
++
++
++def test_inferred_publication_schema_is_nullable_recursively(pipeline_spark, pipeline):
++    _, registry, run = pipeline
++    with graph_element_registration_context(registry):
++
++        @dp.materialized_view
++        def output():
++            return pipeline_spark.range(1).select(F.struct("id").alias("value"))
++
++    run()
++    assert pipeline_spark.table("output").schema == StructType(
++        [StructField("value", StructType([StructField("id", LongType())]))]
++    )
++
++
++@pytest.mark.parametrize(
++    "schema, query",
++    [
++        ("id BIGINT, optional STRING", lambda spark: spark.range(2)),
++        (
++            "value STRUCT<amount: DECIMAL(8, 2), optional: STRING>",
++            lambda spark: spark.range(1).select(
++                F.struct(F.lit(1).cast("decimal(4, 2)").alias("amount")).alias("value")
++            ),
++        ),
++    ],
++)
++def test_missing_declared_columns_fail_after_table_materialization(pipeline_spark, pipeline, schema, query):
++    _, registry, run = pipeline
++    with graph_element_registration_context(registry):
++        dp.materialized_view(name="output", schema=schema)(lambda: query(pipeline_spark))
++
++    with pytest.raises(AnalysisException):
++        run()
++    assert pipeline_spark.catalog.tableExists("output")
++    assert pipeline_spark.table("output").count() == 0
++
++
++def test_schema_refresh_updates_comments_without_reordering_existing_columns(pipeline_spark, pipeline_factory):
++    for value, fields in [
++        (1, [StructField("first", LongType(), metadata={"comment": "old"}), StructField("second", LongType())]),
++        (2, [StructField("second", LongType(), metadata={"comment": "new"}), StructField("first", LongType())]),
++    ]:
++        _, registry, run = pipeline_factory()
++        with graph_element_registration_context(registry):
++            dp.materialized_view(name="output", schema=StructType(fields))(
++                lambda value=value: pipeline_spark.range(1).select(
++                    F.lit(value).cast("long").alias("first"), F.lit(10).cast("long").alias("second")
++                )
++            )
++        run()
++
++    result = pipeline_spark.table("output")
++    assert result.schema == StructType(
++        [StructField("first", LongType()), StructField("second", LongType(), metadata={"comment": "new"})]
++    )
++    assert result.collect() == [Row(first=2, second=10)]

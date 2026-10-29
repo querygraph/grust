@@ -1,0 +1,72 @@
+{
+  "sail_commit": "038f28f95eebfb78edf1ae8a76d0fbd27adf4366",
+  "spark_commit": "617618396087429b5627a86ce933bb0f5d6645cb",
+  "recorded_at": "2026-10-29T08:56:16.546714+00:00",
+  "platform": "macOS arm64",
+  "gate_checkout": "detached; private target directory; immutable HEAD for the gate",
+  "cli_sha256": "2e48c231ab498fd50787a19ce8f0d97c4f1e2649fbc2902582cad71a424e310f",
+  "checks": [
+    {
+      "command": "cargo +nightly fmt -p sail-spark-connect -- --check",
+      "outcome": "pass"
+    },
+    {
+      "command": "cargo +1.98.1 clippy -p sail-spark-connect --all-targets --all-features --locked -- -D warnings",
+      "outcome": "pass"
+    },
+    {
+      "command": "cargo +1.98.1 build -p sail-cli --locked",
+      "outcome": "pass",
+      "note": "CARGO_PROFILE_DEV_DEBUG=0; CARGO_PROFILE_DEV_INCREMENTAL=false; linker warned about __eh_frame size."
+    },
+    {
+      "command": "PYTHONPATH=<gate>/python SPARK_REMOTE=sc://localhost:50082 python -m pytest -q <cases listed in pytest.xml> --junitxml=pytest.xml",
+      "outcome": "pass",
+      "passed": 101,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "command": "python scripts/spark-pipelines-tests/run.py --spark-source <pinned Spark checkout> --remote sc://localhost:50082 --report spark-python.json",
+      "outcome": "pass",
+      "server_spark_version": "4.2.1",
+      "tests_run": 67,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "command": "ruff check and format --check on changed Python files",
+      "outcome": "pass"
+    },
+    {
+      "command": "python spark-reference.py",
+      "outcome": "pass",
+      "spark_version": "4.2.1",
+      "cases": 9,
+      "test_source_commit": "738107ab36bf79a0aab5c92f6f21357095ea66c4",
+      "test_blobs": {
+        "python/pysail/tests/spark/pipelines/test_schema.py": "ca7978a73e91fd3640c70078b98e7ff9448f64a5",
+        "python/pysail/tests/spark/pipelines/conftest.py": "6c64f4e90c1c263e2730c414a37897d1d12963b7"
+      },
+      "note": "Both Python test and fixture files are byte-identical to this receipt source. The subsequent Rust-only change moved an import."
+    }
+  ],
+  "limits": [
+    "No distributed cluster execution claim.",
+    "Upstream Python includes inherited and client-only tests.",
+    "Full batch acceptance and the remaining Spark SDP crosswalk are outstanding.",
+    "Full refresh and normal refresh schema add/drop/type checks use Sail catalog support and were not rerun on the Spark default V1 catalog, which lacks those V2 alterations. Their source reference is MaterializeTablesSuite with its V2 catalog.",
+    "Sail omits removed column comments from Spark metadata; the Spark session catalog returns comment: null. Semantic comment removal is covered, not identical metadata JSON.",
+    "Existing-table truncation and subsequent schema/property alterations are separate catalog commands; no atomic multi-command publication claim.",
+    "Persisted views still publish in flow execution order; matching Spark materialization of every persisted view before query execution remains outstanding."
+  ],
+  "retained_failures": {
+    "initial_sail_candidate": "c615e2a7aeaa5ed625d767f5484ad9f768a0d439",
+    "sail_passed": 81,
+    "sail_failed": 4,
+    "reference_passed": 8,
+    "reference_failed": 1,
+    "resolution": "Shared catalog-comment conversion and write-schema validation were committed separately. The refresh fixture now checks CatalogV2 comment semantics; Spark V1 represents removed comments as JSON null."
+  }
+}

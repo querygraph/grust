@@ -1,0 +1,67 @@
+WARNING: Using incubator modules: jdk.incubator.vector
+Using Spark's default log4j profile: org/apache/spark/log4j2-defaults.properties
+Setting default log level to "WARN".
+To adjust logging level use sc.setLogLevel(newLevel). For SparkR, use setLogLevel(newLevel).
+26/10/29 01:35:55 WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/conf.py:61: UserWarning: Failed to set spark.ui.enabled to Some(false) due to [CANNOT_MODIFY_CONFIG] Cannot modify the value of the Spark config: "spark.ui.enabled".
+See also 'https://spark.apache.org/docs/latest/sql-migration-guide.html#ddl-statements'. SQLSTATE: 46110
+  warnings.warn(warn)
+/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/conf.py:61: UserWarning: Failed to set spark.sql.warehouse.dir to Some(file:///var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/sail-sdp-spark-publication-rdbm3ud6/warehouse) due to [CANNOT_MODIFY_STATIC_CONFIG] Cannot modify the value of the static Spark config: "spark.sql.warehouse.dir". SQLSTATE: 46110
+  warnings.warn(warn)
+I1029 01:35:58.508597 83585306 ev_poll_posix.cc:588] FD from fork parent still in poll list: fd(13, generation: 1)
+[Stage 0:>                                                          (0 + 2) / 2][Stage 0:=============================>                             (1 + 1) / 2]                                                                                2026-10-29 08:35:59: Flow spark_catalog.default.output is QUEUED.
+2026-10-29 08:35:59: Flow spark_catalog.default.output is PLANNING.
+2026-10-29 08:35:59: Flow spark_catalog.default.output is STARTING.
+2026-10-29 08:35:59: Flow spark_catalog.default.output is RUNNING.
+2026-10-29 08:36:01: Flow spark_catalog.default.output has COMPLETED.
+2026-10-29 08:36:02: Run is COMPLETED.
+2026-10-29 08:36:02: Flow spark_catalog.default.output is QUEUED.
+2026-10-29 08:36:02: Flow spark_catalog.default.output is PLANNING.
+2026-10-29 08:36:02: Flow spark_catalog.default.output is STARTING.
+2026-10-29 08:36:02: Flow spark_catalog.default.output is RUNNING.
+2026-10-29 08:36:03: Flow spark_catalog.default.output has COMPLETED.
+2026-10-29 08:36:04: Run is COMPLETED.
+{
+  "spark_version": "4.2.1",
+  "test_source_commit": "c615e2a7aeaa5ed625d767f5484ad9f768a0d439",
+  "cases": [
+    {
+      "name": "refresh_comments",
+      "outcome": "failed",
+      "type": "AssertionError",
+      "message": "",
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "first",
+            "type": "long",
+            "nullable": true,
+            "metadata": {
+              "comment": null
+            }
+          },
+          {
+            "name": "second",
+            "type": "long",
+            "nullable": true,
+            "metadata": {
+              "comment": "new"
+            }
+          }
+        ]
+      },
+      "rows": [
+        {
+          "first": 2,
+          "second": 10
+        }
+      ]
+    }
+  ]
+}
+Traceback (most recent call last):
+  File "/tmp/sail-sdp-spark-refresh-comments.py", line 39, in <module>
+    assert all(case['outcome']=='passed' for case in results['cases'])
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError

@@ -1,0 +1,48 @@
+FF                                                                       [100%]
+=================================== FAILURES ===================================
+_____ test_dataframe_schema_preserves_catalog_column_comments[identifier] ______
+
+spark = <pyspark.sql.connect.session.SparkSession object at 0x115854410>
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-67/test_dataframe_schema_preserve0')
+comment = 'identifier'
+
+    @pytest.mark.parametrize("comment", ["identifier", 'a "quoted" comment'])
+    def test_dataframe_schema_preserves_catalog_column_comments(spark, tmp_path, comment):
+        table = f"schema_{uuid.uuid4().hex}"
+        location = escape_sql_string_literal((tmp_path / "table").as_uri())
+        text = escape_sql_string_literal(comment)
+        spark.sql(f"CREATE TABLE {table} (id BIGINT COMMENT '{text}') USING parquet LOCATION '{location}'")
+        try:
+>           assert spark.table(table).schema["id"].metadata == {"comment": comment}
+E           AssertionError: assert {} == {'comment': 'identifier'}
+E             
+E             Right contains 1 more item:
+E             {'comment': 'identifier'}
+E             Use -v to get more diff
+
+python/pysail/tests/spark/dataframe/test_table_schema.py:15: AssertionError
+_ test_dataframe_schema_preserves_catalog_column_comments[a "quoted" comment] __
+
+spark = <pyspark.sql.connect.session.SparkSession object at 0x115854410>
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-67/test_dataframe_schema_preserve1')
+comment = 'a "quoted" comment'
+
+    @pytest.mark.parametrize("comment", ["identifier", 'a "quoted" comment'])
+    def test_dataframe_schema_preserves_catalog_column_comments(spark, tmp_path, comment):
+        table = f"schema_{uuid.uuid4().hex}"
+        location = escape_sql_string_literal((tmp_path / "table").as_uri())
+        text = escape_sql_string_literal(comment)
+        spark.sql(f"CREATE TABLE {table} (id BIGINT COMMENT '{text}') USING parquet LOCATION '{location}'")
+        try:
+>           assert spark.table(table).schema["id"].metadata == {"comment": comment}
+E           assert {} == {'comment': '...ted" comment'}
+E             
+E             Right contains 1 more item:
+E             {'comment': 'a "quoted" comment'}
+E             Use -v to get more diff
+
+python/pysail/tests/spark/dataframe/test_table_schema.py:15: AssertionError
+=========================== short test summary info ============================
+FAILED python/pysail/tests/spark/dataframe/test_table_schema.py::test_dataframe_schema_preserves_catalog_column_comments[identifier]
+FAILED python/pysail/tests/spark/dataframe/test_table_schema.py::test_dataframe_schema_preserves_catalog_column_comments[a "quoted" comment]
+2 failed in 0.21s

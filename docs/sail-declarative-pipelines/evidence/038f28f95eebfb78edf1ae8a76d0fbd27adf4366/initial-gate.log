@@ -1,0 +1,221 @@
+........................................................................ [ 84%]
+........F.FFF                                                            [100%]
+=================================== FAILURES ===================================
+________ test_declared_schema_publication_preserves_order_and_comments _________
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x119e28050>
+pipeline = ('9f06c165-acd0-40c7-8358-c38f103997bd', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x119e29eb0>, <function pipeline_factory.<locals>.create.<locals>.run at 0x119e22f20>)
+
+    def test_declared_schema_publication_preserves_order_and_comments(pipeline_spark, pipeline):
+        _, registry, run = pipeline
+        schema = StructType(
+            [
+                StructField("second", LongType(), metadata={"comment": "two"}),
+                StructField("first", LongType(), metadata={"comment": "one"}),
+            ]
+        )
+        with graph_element_registration_context(registry):
+    
+            @dp.materialized_view(schema=schema)
+            def output():
+                return pipeline_spark.range(2).selectExpr("id AS first", "id + 10 AS second")
+    
+        run()
+        result = pipeline_spark.table("output")
+>       assert result.schema == schema
+E       assert StructType([S...ype(), True)]) == StructType([S...ype(), True)])
+E         
+E         Use -v to get more diff
+
+python/pysail/tests/spark/pipelines/test_schema.py:197: AssertionError
+----------------------------- Captured stdout call -----------------------------
+2026-10-29 08:31:25: Starting pipeline analysis
+2026-10-29 08:31:25: Pipeline run completed
+_ test_missing_declared_columns_fail_after_table_materialization[id BIGINT, optional STRING-<lambda>] _
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x119e40a10>
+pipeline = ('acd82fc8-31eb-4bc3-89b6-5719253b6bce', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x119e42360>, <function pipeline_factory.<locals>.create.<locals>.run at 0x119e7ee80>)
+schema = 'id BIGINT, optional STRING'
+query = <function <lambda> at 0x11974b920>
+
+    @pytest.mark.parametrize(
+        "schema, query",
+        [
+            ("id BIGINT, optional STRING", lambda spark: spark.range(2)),
+            (
+                "value STRUCT<amount: DECIMAL(8, 2), optional: STRING>",
+                lambda spark: spark.range(1).select(
+                    F.struct(F.lit(1).cast("decimal(4, 2)").alias("amount")).alias("value")
+                ),
+            ),
+        ],
+    )
+    def test_missing_declared_columns_fail_after_table_materialization(pipeline_spark, pipeline, schema, query):
+        _, registry, run = pipeline
+        with graph_element_registration_context(registry):
+            dp.materialized_view(name="output", schema=schema)(lambda: query(pipeline_spark))
+    
+        with pytest.raises(AnalysisException):
+>           run()
+
+python/pysail/tests/spark/pipelines/test_schema.py:233: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+python/pysail/tests/spark/pipelines/conftest.py:31: in run
+    client.handle_pipeline_events(
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/pipelines/spark_connect_pipeline.py:53: in handle_pipeline_events
+    for result in iter:
+                  ^^^^
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1245: in execute_command_as_iterator
+    for response in self._execute_and_fetch_as_iterator(req, observations or {}):
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1731: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2093: in _handle_error
+    self._handle_rpc_error(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <pyspark.sql.connect.client.core.SparkConnectClient object at 0x119e41bb0>
+rpc_error = <_MultiThreadedRendezvous of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = "invalid argument: inp...debug_error_string = "INTERNAL:invalid argument: input schema for INSERT has 1 fields, but table schema has 2 fields"
+>
+
+    def _handle_rpc_error(self, rpc_error: grpc.RpcError) -> NoReturn:
+        """
+        Error handling helper for dealing with GRPC Errors. On the server side, certain
+        exceptions are enriched with additional RPC Status information. These are
+        unpacked in this function and put into the exception.
+    
+        To avoid overloading the user with GRPC errors, this message explicitly
+        swallows the error context from the call. This GRPC Error is logged however,
+        and can be enabled.
+    
+        Parameters
+        ----------
+        rpc_error : grpc.RpcError
+           RPC Error containing the details of the exception.
+    
+        Returns
+        -------
+        Throws the appropriate internal Python exception.
+        """
+        logger.exception("GRPC Error received")
+        # We have to cast the value here because, a RpcError is a Call as well.
+        # https://grpc.github.io/grpc/python/grpc.html#grpc.UnaryUnaryMultiCallable.__call__
+        error: grpc.Call = cast(grpc.Call, rpc_error)
+        status_code: grpc.StatusCode = error.code()
+        status: Optional[Status] = rpc_status.from_call(error)
+        if status:
+            for d in status.details:
+                if d.Is(error_details_pb2.ErrorInfo.DESCRIPTOR):
+                    info = error_details_pb2.ErrorInfo()
+                    d.Unpack(info)
+                    logger.debug(f"Received ErrorInfo: {info}")
+    
+                    if info.metadata.get("errorClass") == "INVALID_HANDLE.SESSION_CHANGED":
+                        self._closed = True
+    
+                    if info.metadata.get("errorClass") == "CONNECT_INVALID_PLAN.CANNOT_PARSE":
+                        # Disable plan compression if the server fails to interpret the plan.
+                        logger.info(
+                            "Disabling plan compression for the session due to "
+                            "CONNECT_INVALID_PLAN.CANNOT_PARSE error."
+                        )
+                        self._plan_compression_threshold, self._plan_compression_algorithm = (
+                            -1,
+                            "NONE",
+                        )
+    
+>                   raise convert_exception(
+                        info,
+                        status.message,
+                        self._fetch_enriched_error(info),
+                        self._display_server_stack_trace(),
+                        status_code,
+                    ) from None
+E                   pyspark.errors.exceptions.connect.IllegalArgumentException: invalid argument: input schema for INSERT has 1 fields, but table schema has 2 fields
+
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2177: IllegalArgumentException
+----------------------------- Captured stdout call -----------------------------
+2026-10-29 08:31:25: Starting pipeline analysis
+_ test_missing_declared_columns_fail_after_table_materialization[value STRUCT<amount: DECIMAL(8, 2), optional: STRING>-<lambda>] _
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x119e42e70>
+pipeline = ('22f2d765-1c94-49e6-a74e-e97caee2b23c', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x119ebcfb0>, <function pipeline_factory.<locals>.create.<locals>.run at 0x119ea0ae0>)
+schema = 'value STRUCT<amount: DECIMAL(8, 2), optional: STRING>'
+query = <function <lambda> at 0x11974b9c0>
+
+    @pytest.mark.parametrize(
+        "schema, query",
+        [
+            ("id BIGINT, optional STRING", lambda spark: spark.range(2)),
+            (
+                "value STRUCT<amount: DECIMAL(8, 2), optional: STRING>",
+                lambda spark: spark.range(1).select(
+                    F.struct(F.lit(1).cast("decimal(4, 2)").alias("amount")).alias("value")
+                ),
+            ),
+        ],
+    )
+    def test_missing_declared_columns_fail_after_table_materialization(pipeline_spark, pipeline, schema, query):
+        _, registry, run = pipeline
+        with graph_element_registration_context(registry):
+            dp.materialized_view(name="output", schema=schema)(lambda: query(pipeline_spark))
+    
+>       with pytest.raises(AnalysisException):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE AnalysisException
+
+python/pysail/tests/spark/pipelines/test_schema.py:232: Failed
+----------------------------- Captured stdout call -----------------------------
+2026-10-29 08:31:25: Starting pipeline analysis
+2026-10-29 08:31:25: Pipeline run completed
+___ test_schema_refresh_updates_comments_without_reordering_existing_columns ___
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x119ebdb20>
+pipeline_factory = <function pipeline_factory.<locals>.create at 0x119ea1f80>
+
+    def test_schema_refresh_updates_comments_without_reordering_existing_columns(pipeline_spark, pipeline_factory):
+        for value, fields in [
+            (1, [StructField("first", LongType(), metadata={"comment": "old"}), StructField("second", LongType())]),
+            (2, [StructField("second", LongType(), metadata={"comment": "new"}), StructField("first", LongType())]),
+        ]:
+            _, registry, run = pipeline_factory()
+            with graph_element_registration_context(registry):
+                dp.materialized_view(name="output", schema=StructType(fields))(
+                    lambda value=value: pipeline_spark.range(1).select(
+                        F.lit(value).cast("long").alias("first"), F.lit(10).cast("long").alias("second")
+                    )
+                )
+            run()
+    
+        result = pipeline_spark.table("output")
+>       assert result.schema == StructType(
+            [StructField("first", LongType()), StructField("second", LongType(), metadata={"comment": "new"})]
+        )
+E       assert StructType([S...ype(), True)]) == StructType([S...ype(), True)])
+E         
+E         Use -v to get more diff
+
+python/pysail/tests/spark/pipelines/test_schema.py:253: AssertionError
+----------------------------- Captured stdout call -----------------------------
+2026-10-29 08:31:25: Starting pipeline analysis
+2026-10-29 08:31:25: Pipeline run completed
+2026-10-29 08:31:25: Starting pipeline analysis
+2026-10-29 08:31:25: Pipeline run completed
+=============================== warnings summary ===============================
+python/pysail/tests/spark/pipelines/test_features.py: 56 warnings
+  /Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pytest_bdd/compat.py:28: PytestRemovedIn10Warning: Passing nodeid to _register_fixture is deprecated. Pass node instead for fixture scoping.
+    request._fixturemanager._register_fixture(
+
+python/pysail/tests/spark/pipelines/test_features.py: 56 warnings
+  /Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/_pytest/fixtures.py:1986: PytestRemovedIn10Warning: Passing baseid to FixtureDef is deprecated. Pass node instead for fixture scoping.
+    fixture_def = FixtureDef(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED python/pysail/tests/spark/pipelines/test_schema.py::test_declared_schema_publication_preserves_order_and_comments
+FAILED python/pysail/tests/spark/pipelines/test_schema.py::test_missing_declared_columns_fail_after_table_materialization[id BIGINT, optional STRING-<lambda>]
+FAILED python/pysail/tests/spark/pipelines/test_schema.py::test_missing_declared_columns_fail_after_table_materialization[value STRUCT<amount: DECIMAL(8, 2), optional: STRING>-<lambda>]
+FAILED python/pysail/tests/spark/pipelines/test_schema.py::test_schema_refresh_updates_comments_without_reordering_existing_columns
+4 failed, 81 passed, 112 warnings in 21.06s

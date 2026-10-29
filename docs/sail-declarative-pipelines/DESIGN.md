@@ -88,9 +88,12 @@ protobufs.
    writes. Report direct errors separately from blocked downstream flows.
 3. **Dry run has no output writes.** Match Spark's graph resolution and validation:
    names, schemas, query types, dependencies, selection, and reset policy.
-   Metadata access needed for analysis is allowed. Output publication planning
-   belongs to a real run, before its first write. Do not create tables, advance
-   offsets, reset checkpoints, or execute user queries to discover their schemas.
+   Metadata access needed for analysis is allowed. On a real run, materialize
+   selected table metadata and persisted views before executing data writes.
+   A failed materialization or write may leave created or truncated tables;
+   Spark does not preflight every publication command as one atomic operation.
+   A dry run must not create tables, advance offsets, reset checkpoints, or
+   execute user queries to discover their schemas.
 4. **Execution respects dependencies.** A dataset is ready only after all its
    required producer flows succeed. Independent flows may run concurrently.
    Failed producers block consumers; cancellation propagates to active jobs.
