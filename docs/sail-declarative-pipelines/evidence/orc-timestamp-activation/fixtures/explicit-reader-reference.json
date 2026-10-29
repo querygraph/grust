@@ -1,0 +1,448 @@
+{
+  "spark_version": "4.2.1",
+  "spark_source_pin": "617618396087429b5627a86ce933bb0f5d6645cb",
+  "original_reference_expected_sha256": "5bfc52739c3fa3c780146af441750154128d05040fda0e994eebe19a68289861",
+  "script_sha256": "86d427e2e8fa005ff0c84af8b5ec9c0dad58fca92441a75bde3d03244826b453",
+  "arrow_observation": "Spark Connect toArrow labels LTZ UTC in both SQL sessions; Sail session-label policy is a separate existing representation choice.",
+  "original_reader_id_limitation": "Earlier collection did not log reader default ID; this fresh reread proves selected LA context reproduces every retained value, not the identity of the earlier JVM.",
+  "sources": [
+    {
+      "file": "la.json",
+      "sha256": "f2a5bded875be123b840c1ecd01bdfa6ceb4aa8b2e726b659dd0af1a9270a54d"
+    },
+    {
+      "file": "utc.json",
+      "sha256": "9efc3266943adfed1446d5220ff857368808d580fb9b4f0654c3b85e3ae4fbd8"
+    },
+    {
+      "file": "summary.json",
+      "sha256": "c7939ce791f7a87743fc4219ec8f7e6768daa558f72a37ed60b8b7ca44d800b1"
+    },
+    {
+      "file": "reread.py",
+      "sha256": "86d427e2e8fa005ff0c84af8b5ec9c0dad58fca92441a75bde3d03244826b453"
+    }
+  ],
+  "runs": [
+    {
+      "requested_reader_timezone": "America/Los_Angeles",
+      "java": {
+        "actual_pid": 66036,
+        "default_timezone_id": "America/Los_Angeles",
+        "format_locale": "en-US",
+        "gateway_pid": 66036,
+        "oldmapping_property": "false",
+        "runtime_version": "20.0.2+9-78",
+        "tzdb_versions": [
+          "2023c"
+        ],
+        "user_timezone_property": "America/Los_Angeles",
+        "vendor": "Oracle Corporation"
+      },
+      "java_tool_options": "-Duser.timezone=America/Los_Angeles -Dsun.timezone.ids.oldmapping=false -Duser.language=en -Duser.country=US",
+      "owned_gateway_exit_code": 0,
+      "recorded_at_utc": "2026-10-29T22:37:02.771171+00:00",
+      "status": "passed",
+      "cases": [
+        {
+          "name": "timestamps_utc",
+          "reader_timezone": "America/Los_Angeles",
+          "session_timezone": "UTC",
+          "fixture_sha256": "3acd5455d4585b48358c15c523d408ded4a6a17c3eb5007d34c421d8d68cbaae",
+          "rows": [
+            {
+              "id": 0,
+              "ltz_micros": -1876544,
+              "ntz_micros": -1876544
+            },
+            {
+              "id": 1,
+              "ltz_micros": -999999,
+              "ntz_micros": -999999
+            },
+            {
+              "id": 2,
+              "ltz_micros": 999999,
+              "ntz_micros": -1
+            },
+            {
+              "id": 3,
+              "ltz_micros": 0,
+              "ntz_micros": 0
+            },
+            {
+              "id": 4,
+              "ltz_micros": 1577934245123456,
+              "ntz_micros": 1577934245123456
+            },
+            {
+              "id": 5,
+              "ltz_micros": null,
+              "ntz_micros": null
+            }
+          ],
+          "arrow_schema": "id: int32\nntz: timestamp[us]\nltz: timestamp[us, tz=UTC]",
+          "matches_expected": true
+        },
+        {
+          "name": "timestamps_utc",
+          "reader_timezone": "America/Los_Angeles",
+          "session_timezone": "America/Los_Angeles",
+          "fixture_sha256": "3acd5455d4585b48358c15c523d408ded4a6a17c3eb5007d34c421d8d68cbaae",
+          "rows": [
+            {
+              "id": 0,
+              "ltz_micros": -1876544,
+              "ntz_micros": -1876544
+            },
+            {
+              "id": 1,
+              "ltz_micros": -999999,
+              "ntz_micros": -999999
+            },
+            {
+              "id": 2,
+              "ltz_micros": 999999,
+              "ntz_micros": -1
+            },
+            {
+              "id": 3,
+              "ltz_micros": 0,
+              "ntz_micros": 0
+            },
+            {
+              "id": 4,
+              "ltz_micros": 1577934245123456,
+              "ntz_micros": 1577934245123456
+            },
+            {
+              "id": 5,
+              "ltz_micros": null,
+              "ntz_micros": null
+            }
+          ],
+          "arrow_schema": "id: int32\nntz: timestamp[us]\nltz: timestamp[us, tz=UTC]",
+          "matches_expected": true
+        },
+        {
+          "name": "timestamps_los_angeles",
+          "reader_timezone": "America/Los_Angeles",
+          "session_timezone": "UTC",
+          "fixture_sha256": "a5b81d62725050485515244d5c9aafb1c82d2520b234a05b8fcfe44ef0a41fcb",
+          "rows": [
+            {
+              "id": 0,
+              "ltz_micros": 28798123456,
+              "ntz_micros": -1876544
+            },
+            {
+              "id": 1,
+              "ltz_micros": 28799000001,
+              "ntz_micros": -999999
+            },
+            {
+              "id": 2,
+              "ltz_micros": 28799999999,
+              "ntz_micros": -1
+            },
+            {
+              "id": 3,
+              "ltz_micros": 28800000000,
+              "ntz_micros": 0
+            },
+            {
+              "id": 4,
+              "ltz_micros": 1577963045123456,
+              "ntz_micros": 1577934245123456
+            },
+            {
+              "id": 5,
+              "ltz_micros": null,
+              "ntz_micros": null
+            }
+          ],
+          "arrow_schema": "id: int32\nntz: timestamp[us]\nltz: timestamp[us, tz=UTC]",
+          "matches_expected": true
+        },
+        {
+          "name": "timestamps_los_angeles",
+          "reader_timezone": "America/Los_Angeles",
+          "session_timezone": "America/Los_Angeles",
+          "fixture_sha256": "a5b81d62725050485515244d5c9aafb1c82d2520b234a05b8fcfe44ef0a41fcb",
+          "rows": [
+            {
+              "id": 0,
+              "ltz_micros": 28798123456,
+              "ntz_micros": -1876544
+            },
+            {
+              "id": 1,
+              "ltz_micros": 28799000001,
+              "ntz_micros": -999999
+            },
+            {
+              "id": 2,
+              "ltz_micros": 28799999999,
+              "ntz_micros": -1
+            },
+            {
+              "id": 3,
+              "ltz_micros": 28800000000,
+              "ntz_micros": 0
+            },
+            {
+              "id": 4,
+              "ltz_micros": 1577963045123456,
+              "ntz_micros": 1577934245123456
+            },
+            {
+              "id": 5,
+              "ltz_micros": null,
+              "ntz_micros": null
+            }
+          ],
+          "arrow_schema": "id: int32\nntz: timestamp[us]\nltz: timestamp[us, tz=UTC]",
+          "matches_expected": true
+        },
+        {
+          "name": "nested_timestamp_nulls",
+          "reader_timezone": "America/Los_Angeles",
+          "session_timezone": "UTC",
+          "fixture_sha256": "67823c5ec6d968c1ce714c0d42adb278d80615e873dd0c7f433f5abe67c33888",
+          "rows": [
+            {
+              "id": 0,
+              "lts": [
+                1577934245123456,
+                null
+              ],
+              "ntm": {
+                "null": null,
+                "value": -1876544
+              },
+              "nts": [
+                -1876544,
+                null,
+                1577934245123456
+              ],
+              "st": {
+                "ltz": 1577934245123456,
+                "ntz": -1876544
+              },
+              "sts": [
+                {
+                  "ltz": null,
+                  "ntz": 1577934245123456
+                },
+                null
+              ]
+            },
+            {
+              "id": 1,
+              "lts": null,
+              "ntm": null,
+              "nts": null,
+              "st": null,
+              "sts": null
+            },
+            {
+              "id": 2,
+              "lts": [],
+              "ntm": {},
+              "nts": [],
+              "st": {
+                "ltz": null,
+                "ntz": null
+              },
+              "sts": []
+            }
+          ],
+          "arrow_schema": "id: int32\nst: struct<ntz: timestamp[us], ltz: timestamp[us, tz=UTC]>\n  child 0, ntz: timestamp[us]\n  child 1, ltz: timestamp[us, tz=UTC]\nnts: list<element: timestamp[us]>\n  child 0, element: timestamp[us]\nlts: list<element: timestamp[us, tz=UTC]>\n  child 0, element: timestamp[us, tz=UTC]\nntm: map<string, timestamp[us]>\n  child 0, entries: struct<key: string not null, value: timestamp[us]> not null\n      child 0, key: string not null\n      child 1, value: timestamp[us]\nsts: list<element: struct<ntz: timestamp[us], ltz: timestamp[us, tz=UTC]>>\n  child 0, element: struct<ntz: timestamp[us], ltz: timestamp[us, tz=UTC]>\n      child 0, ntz: timestamp[us]\n      child 1, ltz: timestamp[us, tz=UTC]",
+          "matches_expected": true
+        },
+        {
+          "name": "nested_timestamp_nulls",
+          "reader_timezone": "America/Los_Angeles",
+          "session_timezone": "America/Los_Angeles",
+          "fixture_sha256": "67823c5ec6d968c1ce714c0d42adb278d80615e873dd0c7f433f5abe67c33888",
+          "rows": [
+            {
+              "id": 0,
+              "lts": [
+                1577934245123456,
+                null
+              ],
+              "ntm": {
+                "null": null,
+                "value": -1876544
+              },
+              "nts": [
+                -1876544,
+                null,
+                1577934245123456
+              ],
+              "st": {
+                "ltz": 1577934245123456,
+                "ntz": -1876544
+              },
+              "sts": [
+                {
+                  "ltz": null,
+                  "ntz": 1577934245123456
+                },
+                null
+              ]
+            },
+            {
+              "id": 1,
+              "lts": null,
+              "ntm": null,
+              "nts": null,
+              "st": null,
+              "sts": null
+            },
+            {
+              "id": 2,
+              "lts": [],
+              "ntm": {},
+              "nts": [],
+              "st": {
+                "ltz": null,
+                "ntz": null
+              },
+              "sts": []
+            }
+          ],
+          "arrow_schema": "id: int32\nst: struct<ntz: timestamp[us], ltz: timestamp[us, tz=UTC]>\n  child 0, ntz: timestamp[us]\n  child 1, ltz: timestamp[us, tz=UTC]\nnts: list<element: timestamp[us]>\n  child 0, element: timestamp[us]\nlts: list<element: timestamp[us, tz=UTC]>\n  child 0, element: timestamp[us, tz=UTC]\nntm: map<string, timestamp[us]>\n  child 0, entries: struct<key: string not null, value: timestamp[us]> not null\n      child 0, key: string not null\n      child 1, value: timestamp[us]\nsts: list<element: struct<ntz: timestamp[us], ltz: timestamp[us, tz=UTC]>>\n  child 0, element: struct<ntz: timestamp[us], ltz: timestamp[us, tz=UTC]>\n      child 0, ntz: timestamp[us]\n      child 1, ltz: timestamp[us, tz=UTC]",
+          "matches_expected": true
+        },
+        {
+          "name": "foreign_submicro",
+          "reader_timezone": "America/Los_Angeles",
+          "session_timezone": "UTC",
+          "fixture_sha256": "ea1b4632e1ccab05a903443d83a51b06b428327dcef9bfd73dd993598495b468",
+          "rows": [
+            {
+              "id": 0,
+              "ts_micros": 1577963045123456
+            },
+            {
+              "id": 1,
+              "ts_micros": 28798123456
+            },
+            {
+              "id": 2,
+              "ts_micros": 28800000000
+            },
+            {
+              "id": 3,
+              "ts_micros": null
+            }
+          ],
+          "arrow_schema": "id: int32\nts: timestamp[us, tz=UTC]",
+          "matches_expected": true
+        },
+        {
+          "name": "foreign_submicro",
+          "reader_timezone": "America/Los_Angeles",
+          "session_timezone": "America/Los_Angeles",
+          "fixture_sha256": "ea1b4632e1ccab05a903443d83a51b06b428327dcef9bfd73dd993598495b468",
+          "rows": [
+            {
+              "id": 0,
+              "ts_micros": 1577963045123456
+            },
+            {
+              "id": 1,
+              "ts_micros": 28798123456
+            },
+            {
+              "id": 2,
+              "ts_micros": 28800000000
+            },
+            {
+              "id": 3,
+              "ts_micros": null
+            }
+          ],
+          "arrow_schema": "id: int32\nts: timestamp[us, tz=UTC]",
+          "matches_expected": true
+        }
+      ]
+    },
+    {
+      "requested_reader_timezone": "UTC",
+      "java": {
+        "actual_pid": 66417,
+        "default_timezone_id": "UTC",
+        "format_locale": "en-US",
+        "gateway_pid": 66417,
+        "oldmapping_property": "false",
+        "runtime_version": "20.0.2+9-78",
+        "tzdb_versions": [
+          "2023c"
+        ],
+        "user_timezone_property": "UTC",
+        "vendor": "Oracle Corporation"
+      },
+      "java_tool_options": "-Duser.timezone=UTC -Dsun.timezone.ids.oldmapping=false -Duser.language=en -Duser.country=US",
+      "owned_gateway_exit_code": 0,
+      "recorded_at_utc": "2026-10-29T22:37:55.965152+00:00",
+      "status": "passed",
+      "cases": [
+        {
+          "name": "foreign_submicro",
+          "reader_timezone": "UTC",
+          "session_timezone": "UTC",
+          "fixture_sha256": "ea1b4632e1ccab05a903443d83a51b06b428327dcef9bfd73dd993598495b468",
+          "rows": [
+            {
+              "id": 0,
+              "ts_micros": 1577934245123456
+            },
+            {
+              "id": 1,
+              "ts_micros": -1876544
+            },
+            {
+              "id": 2,
+              "ts_micros": 0
+            },
+            {
+              "id": 3,
+              "ts_micros": null
+            }
+          ],
+          "arrow_schema": "id: int32\nts: timestamp[us, tz=UTC]",
+          "matches_expected": true
+        },
+        {
+          "name": "foreign_submicro",
+          "reader_timezone": "UTC",
+          "session_timezone": "America/Los_Angeles",
+          "fixture_sha256": "ea1b4632e1ccab05a903443d83a51b06b428327dcef9bfd73dd993598495b468",
+          "rows": [
+            {
+              "id": 0,
+              "ts_micros": 1577934245123456
+            },
+            {
+              "id": 1,
+              "ts_micros": -1876544
+            },
+            {
+              "id": 2,
+              "ts_micros": 0
+            },
+            {
+              "id": 3,
+              "ts_micros": null
+            }
+          ],
+          "arrow_schema": "id: int32\nts: timestamp[us, tz=UTC]",
+          "matches_expected": true
+        }
+      ]
+    }
+  ]
+}

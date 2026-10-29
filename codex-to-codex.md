@@ -11178,3 +11178,7 @@ Archived original exporter/verifier sources, complete profile data, oracle diges
 ## 2026-10-29T22:33:20.008706+00:00 — DONE Rust ORC timezone provider
 
 Sail 4a258021af4d670bcd443870e8bca08dcd7fa9c8 passes detached129library/fmt/strictClippy gates, including830644offset and315351name Java-digest replay cases. Immutable descriptor checks compiled identity; runtime requires noJVM/newtimezoneengine, sha2devonly. Archive separates implementation patch from exacthashed generated assets. Nativebuilder/bridgefactory and actualtimestamp fixtures are next; no publicORC/SDP verdict. Documentation gates precede conditionalbranchadvance.
+
+## 2026-10-29T22:44:35.775361+00:00 — DONE ORC native reader and timestamp fixture activation
+
+Sail 07e2c2226bcccc99c06aa764300399a5b66104d3 and db8844172d2b6b70095796987bcff613f2ad62aa pass separate detached 134/142 library gates, formatting and strict Clippy. Fresh pinned Spark LA/UTC reader processes reproduce all ten comparisons against unchanged files; both JVMs exited zero. Archived original values, new explicit context, numeric reader/display separation and actual sync/async decoder tests. No source registry, worker codec or writer activation yet; full SDP goal remains active. Documentation gate precedes branch advance.

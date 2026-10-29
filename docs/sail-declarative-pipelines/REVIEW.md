@@ -1290,3 +1290,7 @@ The [archived Java export](evidence/orc-timezone-profiles/README.md) advances th
 ## Review Rust ORC timezone provider
 
 Sail `4a258021af` passes 129 library tests plus formatting/strict Clippy. [Evidence](evidence/orc-java-timezone-runtime/provenance.json) includes full Rust replay of 830,644 Java offset cases and 315,351 name cases. Only the immutable provider/resolver/configuration foundation is qualified; native reader/bridge activation and public ORC paths remain separate.
+
+## Review ORC timestamp activation
+
+Sail `07e2c2226b` and `db8844172d` separately pass 134/142 library tests with formatting/strict Clippy. [Evidence](evidence/orc-timestamp-activation/provenance.json) covers actual native timezone decoding, three Spark files, one foreign file and ten fresh Spark comparisons with directly observed reader identity. Public file-source/worker/writer integration remains pending; no additional SDP or CLI pass is claimed.

@@ -1,0 +1,162 @@
+{
+  "cases": [
+    {
+      "arrow_schema": "id: int32\nts: timestamp[us, tz=UTC]",
+      "expected_basis": "Recorded physical nanoseconds, UTC reader, Euclidean microsecond truncation",
+      "expected_rows": [
+        {
+          "id": 0,
+          "ts_micros": 1577934245123456
+        },
+        {
+          "id": 1,
+          "ts_micros": -1876544
+        },
+        {
+          "id": 2,
+          "ts_micros": 0
+        },
+        {
+          "id": 3,
+          "ts_micros": null
+        }
+      ],
+      "fixture": "/tmp/sail-sdp-orc-bridge-reference/data/foreign_submicro/foreign.orc",
+      "fixture_sha256": "ea1b4632e1ccab05a903443d83a51b06b428327dcef9bfd73dd993598495b468",
+      "matches_expected": true,
+      "name": "foreign_submicro",
+      "numeric_projection": [
+        "id",
+        "unix_micros(ts) AS ts_micros"
+      ],
+      "reader_timezone": "UTC",
+      "rows": [
+        {
+          "id": 0,
+          "ts_micros": 1577934245123456
+        },
+        {
+          "id": 1,
+          "ts_micros": -1876544
+        },
+        {
+          "id": 2,
+          "ts_micros": 0
+        },
+        {
+          "id": 3,
+          "ts_micros": null
+        }
+      ],
+      "session_timezone": "UTC",
+      "spark_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "id",
+            "nullable": true,
+            "type": "integer"
+          },
+          {
+            "metadata": {},
+            "name": "ts",
+            "nullable": true,
+            "type": "timestamp"
+          }
+        ],
+        "type": "struct"
+      }
+    },
+    {
+      "arrow_schema": "id: int32\nts: timestamp[us, tz=UTC]",
+      "expected_basis": "Recorded physical nanoseconds, UTC reader, Euclidean microsecond truncation",
+      "expected_rows": [
+        {
+          "id": 0,
+          "ts_micros": 1577934245123456
+        },
+        {
+          "id": 1,
+          "ts_micros": -1876544
+        },
+        {
+          "id": 2,
+          "ts_micros": 0
+        },
+        {
+          "id": 3,
+          "ts_micros": null
+        }
+      ],
+      "fixture": "/tmp/sail-sdp-orc-bridge-reference/data/foreign_submicro/foreign.orc",
+      "fixture_sha256": "ea1b4632e1ccab05a903443d83a51b06b428327dcef9bfd73dd993598495b468",
+      "matches_expected": true,
+      "name": "foreign_submicro",
+      "numeric_projection": [
+        "id",
+        "unix_micros(ts) AS ts_micros"
+      ],
+      "reader_timezone": "UTC",
+      "rows": [
+        {
+          "id": 0,
+          "ts_micros": 1577934245123456
+        },
+        {
+          "id": 1,
+          "ts_micros": -1876544
+        },
+        {
+          "id": 2,
+          "ts_micros": 0
+        },
+        {
+          "id": 3,
+          "ts_micros": null
+        }
+      ],
+      "session_timezone": "America/Los_Angeles",
+      "spark_schema": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "id",
+            "nullable": true,
+            "type": "integer"
+          },
+          {
+            "metadata": {},
+            "name": "ts",
+            "nullable": true,
+            "type": "timestamp"
+          }
+        ],
+        "type": "struct"
+      }
+    }
+  ],
+  "java": {
+    "actual_pid": 66417,
+    "default_timezone_id": "UTC",
+    "format_locale": "en-US",
+    "gateway_pid": 66417,
+    "oldmapping_property": "false",
+    "runtime_version": "20.0.2+9-78",
+    "tzdb_versions": [
+      "2023c"
+    ],
+    "user_timezone_property": "UTC",
+    "vendor": "Oracle Corporation"
+  },
+  "java_tool_options": "-Duser.timezone=UTC -Dsun.timezone.ids.oldmapping=false -Duser.language=en -Duser.country=US",
+  "owned_gateway_exit_code": 0,
+  "python_pid": 66406,
+  "recorded_at_utc": "2026-10-29T22:37:55.965152+00:00",
+  "reference_expected_sha256": "5bfc52739c3fa3c780146af441750154128d05040fda0e994eebe19a68289861",
+  "requested_reader_timezone": "UTC",
+  "scope": "Fresh explicit-reader reread; original fixture bytes and expected.json are unchanged",
+  "script_sha256": "86d427e2e8fa005ff0c84af8b5ec9c0dad58fca92441a75bde3d03244826b453",
+  "spark_source_pin": "617618396087429b5627a86ce933bb0f5d6645cb",
+  "spark_version": "4.2.1",
+  "status": "passed"
+}
