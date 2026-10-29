@@ -6,6 +6,15 @@ reconstructed from Git history, release commits, and the shipped docs.
 
 ## Unreleased
 
+### Pipeline integration
+
+- Extract the iterative directed topological sorter into `grust-topology`, a
+  crate with no dependencies. Grust retains its projection identity, memory
+  reservations, work accounting, cancellation, and cycle-witness API around the
+  shared kernel. Sail can import just the kernel for declarative pipelines.
+- Record the Spark 4.2.1 Sail pipeline design and compatibility contract in
+  `docs/sail-declarative-pipelines/DESIGN.md`.
+
 ### Cypher
 
 - **Backtick-quoted names in write statements are read as names.** The

@@ -61,11 +61,20 @@ pub fn depth_first(graph: &GraphProjection, source: &str) -> Result<NodeOrder> {
     })
 }
 
-#[derive(Clone, Copy, PartialEq, Eq)]
-enum Color {
-    Unseen,
-    Active,
-    Finished,
+struct Topology<'a>(&'a GraphProjection);
+
+impl grust_topology::DirectedGraph for Topology<'_> {
+    fn node_count(&self) -> usize {
+        self.0.node_count()
+    }
+
+    fn outgoing(&self, node: usize) -> std::ops::Range<usize> {
+        self.0.outgoing().range(node)
+    }
+
+    fn target(&self, arc: usize) -> usize {
+        self.0.outgoing().target(arc)
+    }
 }
 
 /// Topological ordering using iterative DFS. Directed orientation follows the
@@ -76,55 +85,33 @@ pub fn topological_sort(graph: &GraphProjection) -> Result<TopologicalOrder> {
     let context = graph.execution();
     let mut meter = context.work_meter();
     let n = graph.node_count();
-    let adjacency = graph.outgoing();
-    let mut colors = Buffer::filled(n, Color::Unseen, context)?;
+    let mut colors = Buffer::filled(n, grust_topology::Visit::Unseen, context)?;
     let mut finished = Buffer::capacity(n, context)?;
     let mut stack = Buffer::capacity(n, context)?;
-    for seed in 0..n {
-        meter.charge(1)?;
-        if colors.values[seed] != Color::Unseen {
-            continue;
-        }
-        colors.values[seed] = Color::Active;
-        stack.values.push((seed, adjacency.range(seed).start));
-        while let Some(&mut (node, ref mut next)) = stack.values.last_mut() {
+    let outcome = grust_topology::topological_sort(
+        &Topology(graph),
+        grust_topology::Scratch {
+            visits: &mut colors.values,
+            order: &mut finished.values,
+            stack: &mut stack.values,
+        },
+        |cost| meter.charge(cost),
+    )?;
+    if let grust_topology::Outcome::Cycle { entry } = outcome {
+        let mut witness = Buffer::capacity(n.saturating_add(1), context)?;
+        let mut inside = false;
+        for &(ancestor, _) in &stack.values {
             meter.charge(1)?;
-            if *next == adjacency.range(node).end {
-                colors.values[node] = Color::Finished;
-                finished.values.push(node);
-                stack.values.pop();
-                continue;
-            }
-            let target = adjacency.target(*next);
-            *next += 1;
-            match colors.values[target] {
-                Color::Unseen => {
-                    colors.values[target] = Color::Active;
-                    stack.values.push((target, adjacency.range(target).start));
-                }
-                Color::Active => {
-                    let mut witness = Buffer::capacity(n.saturating_add(1), context)?;
-                    let mut inside = false;
-                    for &(ancestor, _) in &stack.values {
-                        meter.charge(1)?;
-                        inside |= ancestor == target;
-                        if inside {
-                            witness.values.push(ancestor);
-                        }
-                    }
-                    witness.values.push(target);
-                    return Ok(TopologicalOrder::Cycle(NodeOrder {
-                        graph: graph.clone(),
-                        nodes: witness,
-                    }));
-                }
-                Color::Finished => {}
+            inside |= ancestor == entry;
+            if inside {
+                witness.values.push(ancestor);
             }
         }
-    }
-    for index in 0..finished.values.len() / 2 {
-        meter.charge(1)?;
-        finished.values.swap(index, n - index - 1);
+        witness.values.push(entry);
+        return Ok(TopologicalOrder::Cycle(NodeOrder {
+            graph: graph.clone(),
+            nodes: witness,
+        }));
     }
     Ok(TopologicalOrder::Acyclic(NodeOrder {
         graph: graph.clone(),

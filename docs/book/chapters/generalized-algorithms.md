@@ -25,6 +25,16 @@ providers, checked cursors and the shared execution budget. The
 independent provider without changing the parser, analyzer or executor. The facade
 exposes these through `algorithms`, `cypher` and optional `arrow` features.
 
+The extracted `grust-topology` kernel has no dependencies. A caller that only
+needs dependency ordering implements `DirectedGraph` over dense node and arc
+indices, supplies reusable `Scratch` buffers, and calls `topological_sort` with
+a work-admission callback. The result is either a complete order or the entry
+of a concrete cycle on the retained DFS stack. The kernel does not allocate a
+graph, interpret identifiers, or choose a resource policy. `grust-algorithms`
+uses it behind the existing budgeted projection API; Sail's declarative
+pipeline scheduler can use the same kernel without importing graph stores or
+Arrow adapters. The extracted crate is an unreleased addition.
+
 ## Starting from the facade
 
 ```toml
