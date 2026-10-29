@@ -1,0 +1,32 @@
+{
+  "spark_version": "4.2.1",
+  "cases": [
+    {
+      "name": "typed_case_sensitive",
+      "case_sensitive": true,
+      "ddl": "CREATE TABLE output(id BIGINT, payload STRING) USING parquet PARTITIONED BY (ID BIGINT)",
+      "insert": "INSERT INTO output (id, payload, ID) VALUES (1, 'a', 2)",
+      "query": "SELECT id AS original, ID AS part FROM output",
+      "rows": [
+        {
+          "original": 1,
+          "part": 2
+        }
+      ],
+      "outcome": "success"
+    },
+    {
+      "name": "by_name_insensitive",
+      "case_sensitive": false,
+      "ddl": "CREATE TABLE output(id BIGINT) USING parquet",
+      "insert": "INSERT INTO output BY NAME SELECT CAST(7 AS BIGINT) AS ID",
+      "query": "SELECT * FROM output",
+      "rows": [
+        {
+          "id": 7
+        }
+      ],
+      "outcome": "success"
+    }
+  ]
+}

@@ -5,9 +5,9 @@ existing design. Work is on `work/spark-declarative-pipelines`, based on Sail
 `0ba425c0331aee4dd4e9a280c6a793926fd0876e`. These are local commits; no upstream
 pull requests have been opened or branches pushed.
 
-Current batch source `0a84375381` publishes table and persisted-view metadata
+Current batch source `eb417941e8` publishes table and persisted-view metadata
 before batch writes and refreshes existing tables through catalog operations.
-Its detached gate passed 121 selected Sail cases and 67 unchanged upstream Python
+Its detached gate passed 122 selected Sail cases and 67 unchanged upstream Python
 executions. These counts do not establish full SDP parity. Diagnostics, remaining catalog
 properties, publication failure events, and the remaining acceptance crosswalk
 are still open; streaming and CDC follow batch acceptance.
@@ -414,3 +414,24 @@ return Result. Its patch is retained. The initial partition unit's failed read
 fixture is now restored. The by-name writer still folds case; restore its retained
 INSERT/result fixture in the next shared writer fix. Empty-table schema analysis
 does not qualify a persisted-row round trip or LakeCat integration.
+
+## Review case-sensitive appends by name
+
+Commit `eb417941e8` makes the standard table append-by-name resolver honor its
+PlanConfig case-sensitivity setting. Exact matching is required when enabled;
+case-insensitive matching is retained when disabled. The change uses the existing
+resolver and writer paths and adds no catalog dependency.
+
+The [receipt](evidence/eb417941e86dfe18cbdc141d7a55a675ea0e26e6/gate.json) records
+122 selected Sail cases and 67 upstream Python executions, formatting, strict
+Clippy and CLI build, all passing. The retained case-distinct INSERT/result fixture
+is restored in the partition scenario: creation, insert, schema analysis, and
+SELECT distinguish ordinary id=1 from partition ID=2. A new insensitive control
+writes an ID input to an id target. The parent source failed the first and passed
+the control; both SQL round trips return identical values on Spark 4.2.1.
+
+Together with the preceding shared scan fix this closes the two failures retained
+from partition validation for these fixtures. It does not establish general
+coverage of generated/default/identity or Delta-special write paths. LakeCat
+integration remains pending. The next catalog check should exercise the existing
+standard catalog protocol path as well as assessing the optional embedded adapter.

@@ -1,0 +1,42 @@
+WARNING: Using incubator modules: jdk.incubator.vector
+Using Spark's default log4j profile: org/apache/spark/log4j2-defaults.properties
+Setting default log level to "WARN".
+To adjust logging level use sc.setLogLevel(newLevel). For SparkR, use setLogLevel(newLevel).
+26/10/29 03:08:10 WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/conf.py:61: UserWarning: Failed to set spark.ui.enabled to Some(false) due to [CANNOT_MODIFY_CONFIG] Cannot modify the value of the Spark config: "spark.ui.enabled".
+See also 'https://spark.apache.org/docs/latest/sql-migration-guide.html#ddl-statements'. SQLSTATE: 46110
+  warnings.warn(warn)
+/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/conf.py:61: UserWarning: Failed to set spark.sql.warehouse.dir to Some(file:///var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/sail-sdp-properties-zmjzsrv0/warehouse) due to [CANNOT_MODIFY_STATIC_CONFIG] Cannot modify the value of the static Spark config: "spark.sql.warehouse.dir". SQLSTATE: 46110
+  warnings.warn(warn)
+[Stage 0:>                                                          (0 + 1) / 1]                                                                                {
+  "spark_version": "4.2.1",
+  "cases": [
+    {
+      "name": "typed_case_sensitive",
+      "case_sensitive": true,
+      "ddl": "CREATE TABLE output(id BIGINT, payload STRING) USING parquet PARTITIONED BY (ID BIGINT)",
+      "insert": "INSERT INTO output (id, payload, ID) VALUES (1, 'a', 2)",
+      "query": "SELECT id AS original, ID AS part FROM output",
+      "rows": [
+        {
+          "original": 1,
+          "part": 2
+        }
+      ],
+      "outcome": "success"
+    },
+    {
+      "name": "by_name_insensitive",
+      "case_sensitive": false,
+      "ddl": "CREATE TABLE output(id BIGINT) USING parquet",
+      "insert": "INSERT INTO output BY NAME SELECT CAST(7 AS BIGINT) AS ID",
+      "query": "SELECT * FROM output",
+      "rows": [
+        {
+          "id": 7
+        }
+      ],
+      "outcome": "success"
+    }
+  ]
+}
