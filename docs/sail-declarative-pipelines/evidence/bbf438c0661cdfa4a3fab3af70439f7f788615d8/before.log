@@ -1,0 +1,1240 @@
+FFFFFFFFFFFF                                                             [100%]
+=================================== FAILURES ===================================
+___ test_duplicate_flows_preserve_identifiers_and_targets[same-target-False] ___
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x119b0cbf0>
+pipeline = ('4eed09a6-fa3c-43b9-b32d-ae933dbab47a', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x119a49340>, <function pipeline_factory.<locals>.create.<locals>.run at 0x119b253a0>)
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-114/test_duplicate_flows_preserve_0')
+files = ['CREATE STREAMING TABLE st; CREATE FLOW f AS INSERT INTO st BY NAME SELECT * FROM STREAM(source)', 'CREATE FLOW f AS INSERT INTO st BY NAME SELECT * FROM STREAM(source)']
+flow_name = 'f', targets = ['st'], dry = False
+
+    @pytest.mark.parametrize("dry", [False, True])
+    @pytest.mark.parametrize(
+        ("files", "flow_name", "targets"),
+        [
+            pytest.param(
+                [
+                    "CREATE STREAMING TABLE st; CREATE FLOW f AS INSERT INTO st BY NAME SELECT * FROM STREAM(source)",
+                    "CREATE FLOW f AS INSERT INTO st BY NAME SELECT * FROM STREAM(source)",
+                ],
+                "f",
+                ["st"],
+                id="same-target",
+            ),
+            pytest.param(
+                [
+                    "CREATE STREAMING TABLE st AS SELECT * FROM STREAM(source); CREATE STREAMING TABLE st2",
+                    "CREATE FLOW st AS INSERT INTO st2 BY NAME SELECT * FROM STREAM(source2)",
+                ],
+                "st",
+                ["st", "st2"],
+                id="implicit-explicit",
+            ),
+            pytest.param(
+                [
+                    (
+                        "CREATE STREAMING TABLE st; CREATE STREAMING TABLE st2; "
+                        "CREATE FLOW f AS INSERT INTO st2 BY NAME SELECT * FROM STREAM(source)"
+                    ),
+                    "CREATE FLOW f AS INSERT INTO st BY NAME SELECT * FROM STREAM(source)",
+                ],
+                "f",
+                ["st2", "st"],
+                id="target-order",
+            ),
+            pytest.param(
+                [
+                    (
+                        "CREATE STREAMING TABLE st; CREATE STREAMING TABLE st2; CREATE STREAMING TABLE st3; "
+                        "CREATE FLOW f AS INSERT INTO st BY NAME SELECT * FROM STREAM(source)"
+                    ),
+                    "CREATE FLOW f AS INSERT INTO st2 BY NAME SELECT * FROM STREAM(source)",
+                    "CREATE FLOW f AS INSERT INTO st3 BY NAME SELECT * FROM STREAM(source)",
+                ],
+                "f",
+                ["st", "st2"],
+                id="first-two-targets",
+            ),
+            pytest.param(
+                [
+                    (
+                        "CREATE STREAMING TABLE st; CREATE STREAMING TABLE st2; "
+                        "CREATE FLOW f AS INSERT INTO st BY NAME SELECT * FROM STREAM(source); "
+                        "CREATE FLOW g AS INSERT INTO st BY NAME SELECT * FROM STREAM(source)"
+                    ),
+                    (
+                        "CREATE FLOW g AS INSERT INTO st2 BY NAME SELECT * FROM STREAM(source); "
+                        "CREATE FLOW f AS INSERT INTO st2 BY NAME SELECT * FROM STREAM(source)"
+                    ),
+                ],
+                "f",
+                ["st", "st2"],
+                id="first-registered-identifier",
+            ),
+            pytest.param(
+                [
+                    (
+                        "CREATE STREAMING TABLE `st.with.dot`; "
+                        "CREATE FLOW `flow``with.dot` AS INSERT INTO `st.with.dot` BY NAME SELECT * FROM STREAM(source)"
+                    ),
+                    "CREATE FLOW `flow``with.dot` AS INSERT INTO `st.with.dot` BY NAME SELECT * FROM STREAM(source)",
+                ],
+                "flow`with.dot",
+                ["st.with.dot"],
+                id="escaped-identifiers",
+            ),
+        ],
+    )
+    def test_duplicate_flows_preserve_identifiers_and_targets(
+        pipeline_spark, pipeline, tmp_path, files, flow_name, targets, dry
+    ):
+        _, registry, run = pipeline
+        for index, sql in enumerate(files):
+            registry.register_sql(sql, tmp_path / f"flow_{index}.sql")
+        with pytest.raises(AnalysisException) as error:
+            run(dry=dry)
+        catalog = pipeline_spark.catalog.currentCatalog()
+        database = pipeline_spark.catalog.currentDatabase()
+>       assert error.value.getCondition() == "PIPELINE_DUPLICATE_IDENTIFIERS.FLOW"
+E       AssertionError: assert None == 'PIPELINE_DUPLICATE_IDENTIFIERS.FLOW'
+E        +  where None = getCondition()
+E        +    where getCondition = AnalysisException('[PIPELINE_DUPLICATE_IDENTIFIERS.FLOW] `sail`.`default`.`f`').getCondition
+E        +      where AnalysisException('[PIPELINE_DUPLICATE_IDENTIFIERS.FLOW] `sail`.`default`.`f`') = <ExceptionInfo AnalysisException('[PIPELINE_DUPLICATE_IDENTIFIERS.FLOW] `sail`.`default`.`f`') tblen=7>.value
+
+python/pysail/tests/spark/pipelines/test_registration_errors.py:225: AssertionError
+___ test_duplicate_flows_preserve_identifiers_and_targets[same-target-True] ____
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x119b2ac00>
+pipeline = ('8d48911e-475c-4dc5-a161-0053c88a2370', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x119ba03e0>, <function pipeline_factory.<locals>.create.<locals>.run at 0x119b72de0>)
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-114/test_duplicate_flows_preserve_1')
+files = ['CREATE STREAMING TABLE st; CREATE FLOW f AS INSERT INTO st BY NAME SELECT * FROM STREAM(source)', 'CREATE FLOW f AS INSERT INTO st BY NAME SELECT * FROM STREAM(source)']
+flow_name = 'f', targets = ['st'], dry = True
+
+    @pytest.mark.parametrize("dry", [False, True])
+    @pytest.mark.parametrize(
+        ("files", "flow_name", "targets"),
+        [
+            pytest.param(
+                [
+                    "CREATE STREAMING TABLE st; CREATE FLOW f AS INSERT INTO st BY NAME SELECT * FROM STREAM(source)",
+                    "CREATE FLOW f AS INSERT INTO st BY NAME SELECT * FROM STREAM(source)",
+                ],
+                "f",
+                ["st"],
+                id="same-target",
+            ),
+            pytest.param(
+                [
+                    "CREATE STREAMING TABLE st AS SELECT * FROM STREAM(source); CREATE STREAMING TABLE st2",
+                    "CREATE FLOW st AS INSERT INTO st2 BY NAME SELECT * FROM STREAM(source2)",
+                ],
+                "st",
+                ["st", "st2"],
+                id="implicit-explicit",
+            ),
+            pytest.param(
+                [
+                    (
+                        "CREATE STREAMING TABLE st; CREATE STREAMING TABLE st2; "
+                        "CREATE FLOW f AS INSERT INTO st2 BY NAME SELECT * FROM STREAM(source)"
+                    ),
+                    "CREATE FLOW f AS INSERT INTO st BY NAME SELECT * FROM STREAM(source)",
+                ],
+                "f",
+                ["st2", "st"],
+                id="target-order",
+            ),
+            pytest.param(
+                [
+                    (
+                        "CREATE STREAMING TABLE st; CREATE STREAMING TABLE st2; CREATE STREAMING TABLE st3; "
+                        "CREATE FLOW f AS INSERT INTO st BY NAME SELECT * FROM STREAM(source)"
+                    ),
+                    "CREATE FLOW f AS INSERT INTO st2 BY NAME SELECT * FROM STREAM(source)",
+                    "CREATE FLOW f AS INSERT INTO st3 BY NAME SELECT * FROM STREAM(source)",
+                ],
+                "f",
+                ["st", "st2"],
+                id="first-two-targets",
+            ),
+            pytest.param(
+                [
+                    (
+                        "CREATE STREAMING TABLE st; CREATE STREAMING TABLE st2; "
+                        "CREATE FLOW f AS INSERT INTO st BY NAME SELECT * FROM STREAM(source); "
+                        "CREATE FLOW g AS INSERT INTO st BY NAME SELECT * FROM STREAM(source)"
+                    ),
+                    (
+                        "CREATE FLOW g AS INSERT INTO st2 BY NAME SELECT * FROM STREAM(source); "
+                        "CREATE FLOW f AS INSERT INTO st2 BY NAME SELECT * FROM STREAM(source)"
+                    ),
+                ],
+                "f",
+                ["st", "st2"],
+                id="first-registered-identifier",
+            ),
+            pytest.param(
+                [
+                    (
+                        "CREATE STREAMING TABLE `st.with.dot`; "
+                        "CREATE FLOW `flow``with.dot` AS INSERT INTO `st.with.dot` BY NAME SELECT * FROM STREAM(source)"
+                    ),
+                    "CREATE FLOW `flow``with.dot` AS INSERT INTO `st.with.dot` BY NAME SELECT * FROM STREAM(source)",
+                ],
+                "flow`with.dot",
+                ["st.with.dot"],
+                id="escaped-identifiers",
+            ),
+        ],
+    )
+    def test_duplicate_flows_preserve_identifiers_and_targets(
+        pipeline_spark, pipeline, tmp_path, files, flow_name, targets, dry
+    ):
+        _, registry, run = pipeline
+        for index, sql in enumerate(files):
+            registry.register_sql(sql, tmp_path / f"flow_{index}.sql")
+        with pytest.raises(AnalysisException) as error:
+            run(dry=dry)
+        catalog = pipeline_spark.catalog.currentCatalog()
+        database = pipeline_spark.catalog.currentDatabase()
+>       assert error.value.getCondition() == "PIPELINE_DUPLICATE_IDENTIFIERS.FLOW"
+E       AssertionError: assert None == 'PIPELINE_DUPLICATE_IDENTIFIERS.FLOW'
+E        +  where None = getCondition()
+E        +    where getCondition = AnalysisException('[PIPELINE_DUPLICATE_IDENTIFIERS.FLOW] `sail`.`default`.`f`').getCondition
+E        +      where AnalysisException('[PIPELINE_DUPLICATE_IDENTIFIERS.FLOW] `sail`.`default`.`f`') = <ExceptionInfo AnalysisException('[PIPELINE_DUPLICATE_IDENTIFIERS.FLOW] `sail`.`default`.`f`') tblen=7>.value
+
+python/pysail/tests/spark/pipelines/test_registration_errors.py:225: AssertionError
+_ test_duplicate_flows_preserve_identifiers_and_targets[implicit-explicit-False] _
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x119ba34a0>
+pipeline = ('143ff171-d40f-4bf6-bc63-5096dd1b548b', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x119ba2540>, <function pipeline_factory.<locals>.create.<locals>.run at 0x119b9ccc0>)
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-114/test_duplicate_flows_preserve_2')
+files = ['CREATE STREAMING TABLE st AS SELECT * FROM STREAM(source); CREATE STREAMING TABLE st2', 'CREATE FLOW st AS INSERT INTO st2 BY NAME SELECT * FROM STREAM(source2)']
+flow_name = 'st', targets = ['st', 'st2'], dry = False
+
+    @pytest.mark.parametrize("dry", [False, True])
+    @pytest.mark.parametrize(
+        ("files", "flow_name", "targets"),
+        [
+            pytest.param(
+                [
+                    "CREATE STREAMING TABLE st; CREATE FLOW f AS INSERT INTO st BY NAME SELECT * FROM STREAM(source)",
+                    "CREATE FLOW f AS INSERT INTO st BY NAME SELECT * FROM STREAM(source)",
+                ],
+                "f",
+                ["st"],
+                id="same-target",
+            ),
+            pytest.param(
+                [
+                    "CREATE STREAMING TABLE st AS SELECT * FROM STREAM(source); CREATE STREAMING TABLE st2",
+                    "CREATE FLOW st AS INSERT INTO st2 BY NAME SELECT * FROM STREAM(source2)",
+                ],
+                "st",
+                ["st", "st2"],
+                id="implicit-explicit",
+            ),
+            pytest.param(
+                [
+                    (
+                        "CREATE STREAMING TABLE st; CREATE STREAMING TABLE st2; "
+                        "CREATE FLOW f AS INSERT INTO st2 BY NAME SELECT * FROM STREAM(source)"
+                    ),
+                    "CREATE FLOW f AS INSERT INTO st BY NAME SELECT * FROM STREAM(source)",
+                ],
+                "f",
+                ["st2", "st"],
+                id="target-order",
+            ),
+            pytest.param(
+                [
+                    (
+                        "CREATE STREAMING TABLE st; CREATE STREAMING TABLE st2; CREATE STREAMING TABLE st3; "
+                        "CREATE FLOW f AS INSERT INTO st BY NAME SELECT * FROM STREAM(source)"
+                    ),
+                    "CREATE FLOW f AS INSERT INTO st2 BY NAME SELECT * FROM STREAM(source)",
+                    "CREATE FLOW f AS INSERT INTO st3 BY NAME SELECT * FROM STREAM(source)",
+                ],
+                "f",
+                ["st", "st2"],
+                id="first-two-targets",
+            ),
+            pytest.param(
+                [
+                    (
+                        "CREATE STREAMING TABLE st; CREATE STREAMING TABLE st2; "
+                        "CREATE FLOW f AS INSERT INTO st BY NAME SELECT * FROM STREAM(source); "
+                        "CREATE FLOW g AS INSERT INTO st BY NAME SELECT * FROM STREAM(source)"
+                    ),
+                    (
+                        "CREATE FLOW g AS INSERT INTO st2 BY NAME SELECT * FROM STREAM(source); "
+                        "CREATE FLOW f AS INSERT INTO st2 BY NAME SELECT * FROM STREAM(source)"
+                    ),
+                ],
+                "f",
+                ["st", "st2"],
+                id="first-registered-identifier",
+            ),
+            pytest.param(
+                [
+                    (
+                        "CREATE STREAMING TABLE `st.with.dot`; "
+                        "CREATE FLOW `flow``with.dot` AS INSERT INTO `st.with.dot` BY NAME SELECT * FROM STREAM(source)"
+                    ),
+                    "CREATE FLOW `flow``with.dot` AS INSERT INTO `st.with.dot` BY NAME SELECT * FROM STREAM(source)",
+                ],
+                "flow`with.dot",
+                ["st.with.dot"],
+                id="escaped-identifiers",
+            ),
+        ],
+    )
+    def test_duplicate_flows_preserve_identifiers_and_targets(
+        pipeline_spark, pipeline, tmp_path, files, flow_name, targets, dry
+    ):
+        _, registry, run = pipeline
+        for index, sql in enumerate(files):
+            registry.register_sql(sql, tmp_path / f"flow_{index}.sql")
+        with pytest.raises(AnalysisException) as error:
+            run(dry=dry)
+        catalog = pipeline_spark.catalog.currentCatalog()
+        database = pipeline_spark.catalog.currentDatabase()
+>       assert error.value.getCondition() == "PIPELINE_DUPLICATE_IDENTIFIERS.FLOW"
+E       AssertionError: assert None == 'PIPELINE_DUPLICATE_IDENTIFIERS.FLOW'
+E        +  where None = getCondition()
+E        +    where getCondition = AnalysisException('[PIPELINE_DUPLICATE_IDENTIFIERS.FLOW] `sail`.`default`.`st`').getCondition
+E        +      where AnalysisException('[PIPELINE_DUPLICATE_IDENTIFIERS.FLOW] `sail`.`default`.`st`') = <ExceptionInfo AnalysisException('[PIPELINE_DUPLICATE_IDENTIFIERS.FLOW] `sail`.`default`.`st`') tblen=7>.value
+
+python/pysail/tests/spark/pipelines/test_registration_errors.py:225: AssertionError
+_ test_duplicate_flows_preserve_identifiers_and_targets[implicit-explicit-True] _
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x119ba0740>
+pipeline = ('3898f4b8-ff1c-46c2-88d7-7f8d3073d852', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x119bbcad0>, <function pipeline_factory.<locals>.create.<locals>.run at 0x119b9e8e0>)
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-114/test_duplicate_flows_preserve_3')
+files = ['CREATE STREAMING TABLE st AS SELECT * FROM STREAM(source); CREATE STREAMING TABLE st2', 'CREATE FLOW st AS INSERT INTO st2 BY NAME SELECT * FROM STREAM(source2)']
+flow_name = 'st', targets = ['st', 'st2'], dry = True
+
+    @pytest.mark.parametrize("dry", [False, True])
+    @pytest.mark.parametrize(
+        ("files", "flow_name", "targets"),
+        [
+            pytest.param(
+                [
+                    "CREATE STREAMING TABLE st; CREATE FLOW f AS INSERT INTO st BY NAME SELECT * FROM STREAM(source)",
+                    "CREATE FLOW f AS INSERT INTO st BY NAME SELECT * FROM STREAM(source)",
+                ],
+                "f",
+                ["st"],
+                id="same-target",
+            ),
+            pytest.param(
+                [
+                    "CREATE STREAMING TABLE st AS SELECT * FROM STREAM(source); CREATE STREAMING TABLE st2",
+                    "CREATE FLOW st AS INSERT INTO st2 BY NAME SELECT * FROM STREAM(source2)",
+                ],
+                "st",
+                ["st", "st2"],
+                id="implicit-explicit",
+            ),
+            pytest.param(
+                [
+                    (
+                        "CREATE STREAMING TABLE st; CREATE STREAMING TABLE st2; "
+                        "CREATE FLOW f AS INSERT INTO st2 BY NAME SELECT * FROM STREAM(source)"
+                    ),
+                    "CREATE FLOW f AS INSERT INTO st BY NAME SELECT * FROM STREAM(source)",
+                ],
+                "f",
+                ["st2", "st"],
+                id="target-order",
+            ),
+            pytest.param(
+                [
+                    (
+                        "CREATE STREAMING TABLE st; CREATE STREAMING TABLE st2; CREATE STREAMING TABLE st3; "
+                        "CREATE FLOW f AS INSERT INTO st BY NAME SELECT * FROM STREAM(source)"
+                    ),
+                    "CREATE FLOW f AS INSERT INTO st2 BY NAME SELECT * FROM STREAM(source)",
+                    "CREATE FLOW f AS INSERT INTO st3 BY NAME SELECT * FROM STREAM(source)",
+                ],
+                "f",
+                ["st", "st2"],
+                id="first-two-targets",
+            ),
+            pytest.param(
+                [
+                    (
+                        "CREATE STREAMING TABLE st; CREATE STREAMING TABLE st2; "
+                        "CREATE FLOW f AS INSERT INTO st BY NAME SELECT * FROM STREAM(source); "
+                        "CREATE FLOW g AS INSERT INTO st BY NAME SELECT * FROM STREAM(source)"
+                    ),
+                    (
+                        "CREATE FLOW g AS INSERT INTO st2 BY NAME SELECT * FROM STREAM(source); "
+                        "CREATE FLOW f AS INSERT INTO st2 BY NAME SELECT * FROM STREAM(source)"
+                    ),
+                ],
+                "f",
+                ["st", "st2"],
+                id="first-registered-identifier",
+            ),
+            pytest.param(
+                [
+                    (
+                        "CREATE STREAMING TABLE `st.with.dot`; "
+                        "CREATE FLOW `flow``with.dot` AS INSERT INTO `st.with.dot` BY NAME SELECT * FROM STREAM(source)"
+                    ),
+                    "CREATE FLOW `flow``with.dot` AS INSERT INTO `st.with.dot` BY NAME SELECT * FROM STREAM(source)",
+                ],
+                "flow`with.dot",
+                ["st.with.dot"],
+                id="escaped-identifiers",
+            ),
+        ],
+    )
+    def test_duplicate_flows_preserve_identifiers_and_targets(
+        pipeline_spark, pipeline, tmp_path, files, flow_name, targets, dry
+    ):
+        _, registry, run = pipeline
+        for index, sql in enumerate(files):
+            registry.register_sql(sql, tmp_path / f"flow_{index}.sql")
+        with pytest.raises(AnalysisException) as error:
+            run(dry=dry)
+        catalog = pipeline_spark.catalog.currentCatalog()
+        database = pipeline_spark.catalog.currentDatabase()
+>       assert error.value.getCondition() == "PIPELINE_DUPLICATE_IDENTIFIERS.FLOW"
+E       AssertionError: assert None == 'PIPELINE_DUPLICATE_IDENTIFIERS.FLOW'
+E        +  where None = getCondition()
+E        +    where getCondition = AnalysisException('[PIPELINE_DUPLICATE_IDENTIFIERS.FLOW] `sail`.`default`.`st`').getCondition
+E        +      where AnalysisException('[PIPELINE_DUPLICATE_IDENTIFIERS.FLOW] `sail`.`default`.`st`') = <ExceptionInfo AnalysisException('[PIPELINE_DUPLICATE_IDENTIFIERS.FLOW] `sail`.`default`.`st`') tblen=7>.value
+
+python/pysail/tests/spark/pipelines/test_registration_errors.py:225: AssertionError
+__ test_duplicate_flows_preserve_identifiers_and_targets[target-order-False] ___
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x119bbc7a0>
+pipeline = ('a53fe3ac-35de-4166-b9ec-591d9d5a4dde', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x119bbf920>, <function pipeline_factory.<locals>.create.<locals>.run at 0x119bd8540>)
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-114/test_duplicate_flows_preserve_4')
+files = ['CREATE STREAMING TABLE st; CREATE STREAMING TABLE st2; CREATE FLOW f AS INSERT INTO st2 BY NAME SELECT * FROM STREAM(source)', 'CREATE FLOW f AS INSERT INTO st BY NAME SELECT * FROM STREAM(source)']
+flow_name = 'f', targets = ['st2', 'st'], dry = False
+
+    @pytest.mark.parametrize("dry", [False, True])
+    @pytest.mark.parametrize(
+        ("files", "flow_name", "targets"),
+        [
+            pytest.param(
+                [
+                    "CREATE STREAMING TABLE st; CREATE FLOW f AS INSERT INTO st BY NAME SELECT * FROM STREAM(source)",
+                    "CREATE FLOW f AS INSERT INTO st BY NAME SELECT * FROM STREAM(source)",
+                ],
+                "f",
+                ["st"],
+                id="same-target",
+            ),
+            pytest.param(
+                [
+                    "CREATE STREAMING TABLE st AS SELECT * FROM STREAM(source); CREATE STREAMING TABLE st2",
+                    "CREATE FLOW st AS INSERT INTO st2 BY NAME SELECT * FROM STREAM(source2)",
+                ],
+                "st",
+                ["st", "st2"],
+                id="implicit-explicit",
+            ),
+            pytest.param(
+                [
+                    (
+                        "CREATE STREAMING TABLE st; CREATE STREAMING TABLE st2; "
+                        "CREATE FLOW f AS INSERT INTO st2 BY NAME SELECT * FROM STREAM(source)"
+                    ),
+                    "CREATE FLOW f AS INSERT INTO st BY NAME SELECT * FROM STREAM(source)",
+                ],
+                "f",
+                ["st2", "st"],
+                id="target-order",
+            ),
+            pytest.param(
+                [
+                    (
+                        "CREATE STREAMING TABLE st; CREATE STREAMING TABLE st2; CREATE STREAMING TABLE st3; "
+                        "CREATE FLOW f AS INSERT INTO st BY NAME SELECT * FROM STREAM(source)"
+                    ),
+                    "CREATE FLOW f AS INSERT INTO st2 BY NAME SELECT * FROM STREAM(source)",
+                    "CREATE FLOW f AS INSERT INTO st3 BY NAME SELECT * FROM STREAM(source)",
+                ],
+                "f",
+                ["st", "st2"],
+                id="first-two-targets",
+            ),
+            pytest.param(
+                [
+                    (
+                        "CREATE STREAMING TABLE st; CREATE STREAMING TABLE st2; "
+                        "CREATE FLOW f AS INSERT INTO st BY NAME SELECT * FROM STREAM(source); "
+                        "CREATE FLOW g AS INSERT INTO st BY NAME SELECT * FROM STREAM(source)"
+                    ),
+                    (
+                        "CREATE FLOW g AS INSERT INTO st2 BY NAME SELECT * FROM STREAM(source); "
+                        "CREATE FLOW f AS INSERT INTO st2 BY NAME SELECT * FROM STREAM(source)"
+                    ),
+                ],
+                "f",
+                ["st", "st2"],
+                id="first-registered-identifier",
+            ),
+            pytest.param(
+                [
+                    (
+                        "CREATE STREAMING TABLE `st.with.dot`; "
+                        "CREATE FLOW `flow``with.dot` AS INSERT INTO `st.with.dot` BY NAME SELECT * FROM STREAM(source)"
+                    ),
+                    "CREATE FLOW `flow``with.dot` AS INSERT INTO `st.with.dot` BY NAME SELECT * FROM STREAM(source)",
+                ],
+                "flow`with.dot",
+                ["st.with.dot"],
+                id="escaped-identifiers",
+            ),
+        ],
+    )
+    def test_duplicate_flows_preserve_identifiers_and_targets(
+        pipeline_spark, pipeline, tmp_path, files, flow_name, targets, dry
+    ):
+        _, registry, run = pipeline
+        for index, sql in enumerate(files):
+            registry.register_sql(sql, tmp_path / f"flow_{index}.sql")
+        with pytest.raises(AnalysisException) as error:
+            run(dry=dry)
+        catalog = pipeline_spark.catalog.currentCatalog()
+        database = pipeline_spark.catalog.currentDatabase()
+>       assert error.value.getCondition() == "PIPELINE_DUPLICATE_IDENTIFIERS.FLOW"
+E       AssertionError: assert None == 'PIPELINE_DUPLICATE_IDENTIFIERS.FLOW'
+E        +  where None = getCondition()
+E        +    where getCondition = AnalysisException('[PIPELINE_DUPLICATE_IDENTIFIERS.FLOW] `sail`.`default`.`f`').getCondition
+E        +      where AnalysisException('[PIPELINE_DUPLICATE_IDENTIFIERS.FLOW] `sail`.`default`.`f`') = <ExceptionInfo AnalysisException('[PIPELINE_DUPLICATE_IDENTIFIERS.FLOW] `sail`.`default`.`f`') tblen=7>.value
+
+python/pysail/tests/spark/pipelines/test_registration_errors.py:225: AssertionError
+___ test_duplicate_flows_preserve_identifiers_and_targets[target-order-True] ___
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x119bbe150>
+pipeline = ('1d98821d-1f08-4f0c-bca0-b37674007802', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x119ba1310>, <function pipeline_factory.<locals>.create.<locals>.run at 0x119b26480>)
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-114/test_duplicate_flows_preserve_5')
+files = ['CREATE STREAMING TABLE st; CREATE STREAMING TABLE st2; CREATE FLOW f AS INSERT INTO st2 BY NAME SELECT * FROM STREAM(source)', 'CREATE FLOW f AS INSERT INTO st BY NAME SELECT * FROM STREAM(source)']
+flow_name = 'f', targets = ['st2', 'st'], dry = True
+
+    @pytest.mark.parametrize("dry", [False, True])
+    @pytest.mark.parametrize(
+        ("files", "flow_name", "targets"),
+        [
+            pytest.param(
+                [
+                    "CREATE STREAMING TABLE st; CREATE FLOW f AS INSERT INTO st BY NAME SELECT * FROM STREAM(source)",
+                    "CREATE FLOW f AS INSERT INTO st BY NAME SELECT * FROM STREAM(source)",
+                ],
+                "f",
+                ["st"],
+                id="same-target",
+            ),
+            pytest.param(
+                [
+                    "CREATE STREAMING TABLE st AS SELECT * FROM STREAM(source); CREATE STREAMING TABLE st2",
+                    "CREATE FLOW st AS INSERT INTO st2 BY NAME SELECT * FROM STREAM(source2)",
+                ],
+                "st",
+                ["st", "st2"],
+                id="implicit-explicit",
+            ),
+            pytest.param(
+                [
+                    (
+                        "CREATE STREAMING TABLE st; CREATE STREAMING TABLE st2; "
+                        "CREATE FLOW f AS INSERT INTO st2 BY NAME SELECT * FROM STREAM(source)"
+                    ),
+                    "CREATE FLOW f AS INSERT INTO st BY NAME SELECT * FROM STREAM(source)",
+                ],
+                "f",
+                ["st2", "st"],
+                id="target-order",
+            ),
+            pytest.param(
+                [
+                    (
+                        "CREATE STREAMING TABLE st; CREATE STREAMING TABLE st2; CREATE STREAMING TABLE st3; "
+                        "CREATE FLOW f AS INSERT INTO st BY NAME SELECT * FROM STREAM(source)"
+                    ),
+                    "CREATE FLOW f AS INSERT INTO st2 BY NAME SELECT * FROM STREAM(source)",
+                    "CREATE FLOW f AS INSERT INTO st3 BY NAME SELECT * FROM STREAM(source)",
+                ],
+                "f",
+                ["st", "st2"],
+                id="first-two-targets",
+            ),
+            pytest.param(
+                [
+                    (
+                        "CREATE STREAMING TABLE st; CREATE STREAMING TABLE st2; "
+                        "CREATE FLOW f AS INSERT INTO st BY NAME SELECT * FROM STREAM(source); "
+                        "CREATE FLOW g AS INSERT INTO st BY NAME SELECT * FROM STREAM(source)"
+                    ),
+                    (
+                        "CREATE FLOW g AS INSERT INTO st2 BY NAME SELECT * FROM STREAM(source); "
+                        "CREATE FLOW f AS INSERT INTO st2 BY NAME SELECT * FROM STREAM(source)"
+                    ),
+                ],
+                "f",
+                ["st", "st2"],
+                id="first-registered-identifier",
+            ),
+            pytest.param(
+                [
+                    (
+                        "CREATE STREAMING TABLE `st.with.dot`; "
+                        "CREATE FLOW `flow``with.dot` AS INSERT INTO `st.with.dot` BY NAME SELECT * FROM STREAM(source)"
+                    ),
+                    "CREATE FLOW `flow``with.dot` AS INSERT INTO `st.with.dot` BY NAME SELECT * FROM STREAM(source)",
+                ],
+                "flow`with.dot",
+                ["st.with.dot"],
+                id="escaped-identifiers",
+            ),
+        ],
+    )
+    def test_duplicate_flows_preserve_identifiers_and_targets(
+        pipeline_spark, pipeline, tmp_path, files, flow_name, targets, dry
+    ):
+        _, registry, run = pipeline
+        for index, sql in enumerate(files):
+            registry.register_sql(sql, tmp_path / f"flow_{index}.sql")
+        with pytest.raises(AnalysisException) as error:
+            run(dry=dry)
+        catalog = pipeline_spark.catalog.currentCatalog()
+        database = pipeline_spark.catalog.currentDatabase()
+>       assert error.value.getCondition() == "PIPELINE_DUPLICATE_IDENTIFIERS.FLOW"
+E       AssertionError: assert None == 'PIPELINE_DUPLICATE_IDENTIFIERS.FLOW'
+E        +  where None = getCondition()
+E        +    where getCondition = AnalysisException('[PIPELINE_DUPLICATE_IDENTIFIERS.FLOW] `sail`.`default`.`f`').getCondition
+E        +      where AnalysisException('[PIPELINE_DUPLICATE_IDENTIFIERS.FLOW] `sail`.`default`.`f`') = <ExceptionInfo AnalysisException('[PIPELINE_DUPLICATE_IDENTIFIERS.FLOW] `sail`.`default`.`f`') tblen=7>.value
+
+python/pysail/tests/spark/pipelines/test_registration_errors.py:225: AssertionError
+_ test_duplicate_flows_preserve_identifiers_and_targets[first-two-targets-False] _
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x119ba2ed0>
+pipeline = ('8597529f-3abb-4ed2-b04c-0a56658455f2', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x119b29d60>, <function pipeline_factory.<locals>.create.<locals>.run at 0x119bd9ee0>)
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-114/test_duplicate_flows_preserve_6')
+files = ['CREATE STREAMING TABLE st; CREATE STREAMING TABLE st2; CREATE STREAMING TABLE st3; CREATE FLOW f AS INSERT INTO st B...NTO st2 BY NAME SELECT * FROM STREAM(source)', 'CREATE FLOW f AS INSERT INTO st3 BY NAME SELECT * FROM STREAM(source)']
+flow_name = 'f', targets = ['st', 'st2'], dry = False
+
+    @pytest.mark.parametrize("dry", [False, True])
+    @pytest.mark.parametrize(
+        ("files", "flow_name", "targets"),
+        [
+            pytest.param(
+                [
+                    "CREATE STREAMING TABLE st; CREATE FLOW f AS INSERT INTO st BY NAME SELECT * FROM STREAM(source)",
+                    "CREATE FLOW f AS INSERT INTO st BY NAME SELECT * FROM STREAM(source)",
+                ],
+                "f",
+                ["st"],
+                id="same-target",
+            ),
+            pytest.param(
+                [
+                    "CREATE STREAMING TABLE st AS SELECT * FROM STREAM(source); CREATE STREAMING TABLE st2",
+                    "CREATE FLOW st AS INSERT INTO st2 BY NAME SELECT * FROM STREAM(source2)",
+                ],
+                "st",
+                ["st", "st2"],
+                id="implicit-explicit",
+            ),
+            pytest.param(
+                [
+                    (
+                        "CREATE STREAMING TABLE st; CREATE STREAMING TABLE st2; "
+                        "CREATE FLOW f AS INSERT INTO st2 BY NAME SELECT * FROM STREAM(source)"
+                    ),
+                    "CREATE FLOW f AS INSERT INTO st BY NAME SELECT * FROM STREAM(source)",
+                ],
+                "f",
+                ["st2", "st"],
+                id="target-order",
+            ),
+            pytest.param(
+                [
+                    (
+                        "CREATE STREAMING TABLE st; CREATE STREAMING TABLE st2; CREATE STREAMING TABLE st3; "
+                        "CREATE FLOW f AS INSERT INTO st BY NAME SELECT * FROM STREAM(source)"
+                    ),
+                    "CREATE FLOW f AS INSERT INTO st2 BY NAME SELECT * FROM STREAM(source)",
+                    "CREATE FLOW f AS INSERT INTO st3 BY NAME SELECT * FROM STREAM(source)",
+                ],
+                "f",
+                ["st", "st2"],
+                id="first-two-targets",
+            ),
+            pytest.param(
+                [
+                    (
+                        "CREATE STREAMING TABLE st; CREATE STREAMING TABLE st2; "
+                        "CREATE FLOW f AS INSERT INTO st BY NAME SELECT * FROM STREAM(source); "
+                        "CREATE FLOW g AS INSERT INTO st BY NAME SELECT * FROM STREAM(source)"
+                    ),
+                    (
+                        "CREATE FLOW g AS INSERT INTO st2 BY NAME SELECT * FROM STREAM(source); "
+                        "CREATE FLOW f AS INSERT INTO st2 BY NAME SELECT * FROM STREAM(source)"
+                    ),
+                ],
+                "f",
+                ["st", "st2"],
+                id="first-registered-identifier",
+            ),
+            pytest.param(
+                [
+                    (
+                        "CREATE STREAMING TABLE `st.with.dot`; "
+                        "CREATE FLOW `flow``with.dot` AS INSERT INTO `st.with.dot` BY NAME SELECT * FROM STREAM(source)"
+                    ),
+                    "CREATE FLOW `flow``with.dot` AS INSERT INTO `st.with.dot` BY NAME SELECT * FROM STREAM(source)",
+                ],
+                "flow`with.dot",
+                ["st.with.dot"],
+                id="escaped-identifiers",
+            ),
+        ],
+    )
+    def test_duplicate_flows_preserve_identifiers_and_targets(
+        pipeline_spark, pipeline, tmp_path, files, flow_name, targets, dry
+    ):
+        _, registry, run = pipeline
+        for index, sql in enumerate(files):
+            registry.register_sql(sql, tmp_path / f"flow_{index}.sql")
+        with pytest.raises(AnalysisException) as error:
+            run(dry=dry)
+        catalog = pipeline_spark.catalog.currentCatalog()
+        database = pipeline_spark.catalog.currentDatabase()
+>       assert error.value.getCondition() == "PIPELINE_DUPLICATE_IDENTIFIERS.FLOW"
+E       AssertionError: assert None == 'PIPELINE_DUPLICATE_IDENTIFIERS.FLOW'
+E        +  where None = getCondition()
+E        +    where getCondition = AnalysisException('[PIPELINE_DUPLICATE_IDENTIFIERS.FLOW] `sail`.`default`.`f`').getCondition
+E        +      where AnalysisException('[PIPELINE_DUPLICATE_IDENTIFIERS.FLOW] `sail`.`default`.`f`') = <ExceptionInfo AnalysisException('[PIPELINE_DUPLICATE_IDENTIFIERS.FLOW] `sail`.`default`.`f`') tblen=7>.value
+
+python/pysail/tests/spark/pipelines/test_registration_errors.py:225: AssertionError
+_ test_duplicate_flows_preserve_identifiers_and_targets[first-two-targets-True] _
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x119b29e20>
+pipeline = ('7812fa18-c112-43b5-ada7-01baea34f006', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x119bd6630>, <function pipeline_factory.<locals>.create.<locals>.run at 0x119bdbd80>)
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-114/test_duplicate_flows_preserve_7')
+files = ['CREATE STREAMING TABLE st; CREATE STREAMING TABLE st2; CREATE STREAMING TABLE st3; CREATE FLOW f AS INSERT INTO st B...NTO st2 BY NAME SELECT * FROM STREAM(source)', 'CREATE FLOW f AS INSERT INTO st3 BY NAME SELECT * FROM STREAM(source)']
+flow_name = 'f', targets = ['st', 'st2'], dry = True
+
+    @pytest.mark.parametrize("dry", [False, True])
+    @pytest.mark.parametrize(
+        ("files", "flow_name", "targets"),
+        [
+            pytest.param(
+                [
+                    "CREATE STREAMING TABLE st; CREATE FLOW f AS INSERT INTO st BY NAME SELECT * FROM STREAM(source)",
+                    "CREATE FLOW f AS INSERT INTO st BY NAME SELECT * FROM STREAM(source)",
+                ],
+                "f",
+                ["st"],
+                id="same-target",
+            ),
+            pytest.param(
+                [
+                    "CREATE STREAMING TABLE st AS SELECT * FROM STREAM(source); CREATE STREAMING TABLE st2",
+                    "CREATE FLOW st AS INSERT INTO st2 BY NAME SELECT * FROM STREAM(source2)",
+                ],
+                "st",
+                ["st", "st2"],
+                id="implicit-explicit",
+            ),
+            pytest.param(
+                [
+                    (
+                        "CREATE STREAMING TABLE st; CREATE STREAMING TABLE st2; "
+                        "CREATE FLOW f AS INSERT INTO st2 BY NAME SELECT * FROM STREAM(source)"
+                    ),
+                    "CREATE FLOW f AS INSERT INTO st BY NAME SELECT * FROM STREAM(source)",
+                ],
+                "f",
+                ["st2", "st"],
+                id="target-order",
+            ),
+            pytest.param(
+                [
+                    (
+                        "CREATE STREAMING TABLE st; CREATE STREAMING TABLE st2; CREATE STREAMING TABLE st3; "
+                        "CREATE FLOW f AS INSERT INTO st BY NAME SELECT * FROM STREAM(source)"
+                    ),
+                    "CREATE FLOW f AS INSERT INTO st2 BY NAME SELECT * FROM STREAM(source)",
+                    "CREATE FLOW f AS INSERT INTO st3 BY NAME SELECT * FROM STREAM(source)",
+                ],
+                "f",
+                ["st", "st2"],
+                id="first-two-targets",
+            ),
+            pytest.param(
+                [
+                    (
+                        "CREATE STREAMING TABLE st; CREATE STREAMING TABLE st2; "
+                        "CREATE FLOW f AS INSERT INTO st BY NAME SELECT * FROM STREAM(source); "
+                        "CREATE FLOW g AS INSERT INTO st BY NAME SELECT * FROM STREAM(source)"
+                    ),
+                    (
+                        "CREATE FLOW g AS INSERT INTO st2 BY NAME SELECT * FROM STREAM(source); "
+                        "CREATE FLOW f AS INSERT INTO st2 BY NAME SELECT * FROM STREAM(source)"
+                    ),
+                ],
+                "f",
+                ["st", "st2"],
+                id="first-registered-identifier",
+            ),
+            pytest.param(
+                [
+                    (
+                        "CREATE STREAMING TABLE `st.with.dot`; "
+                        "CREATE FLOW `flow``with.dot` AS INSERT INTO `st.with.dot` BY NAME SELECT * FROM STREAM(source)"
+                    ),
+                    "CREATE FLOW `flow``with.dot` AS INSERT INTO `st.with.dot` BY NAME SELECT * FROM STREAM(source)",
+                ],
+                "flow`with.dot",
+                ["st.with.dot"],
+                id="escaped-identifiers",
+            ),
+        ],
+    )
+    def test_duplicate_flows_preserve_identifiers_and_targets(
+        pipeline_spark, pipeline, tmp_path, files, flow_name, targets, dry
+    ):
+        _, registry, run = pipeline
+        for index, sql in enumerate(files):
+            registry.register_sql(sql, tmp_path / f"flow_{index}.sql")
+        with pytest.raises(AnalysisException) as error:
+            run(dry=dry)
+        catalog = pipeline_spark.catalog.currentCatalog()
+        database = pipeline_spark.catalog.currentDatabase()
+>       assert error.value.getCondition() == "PIPELINE_DUPLICATE_IDENTIFIERS.FLOW"
+E       AssertionError: assert None == 'PIPELINE_DUPLICATE_IDENTIFIERS.FLOW'
+E        +  where None = getCondition()
+E        +    where getCondition = AnalysisException('[PIPELINE_DUPLICATE_IDENTIFIERS.FLOW] `sail`.`default`.`f`').getCondition
+E        +      where AnalysisException('[PIPELINE_DUPLICATE_IDENTIFIERS.FLOW] `sail`.`default`.`f`') = <ExceptionInfo AnalysisException('[PIPELINE_DUPLICATE_IDENTIFIERS.FLOW] `sail`.`default`.`f`') tblen=7>.value
+
+python/pysail/tests/spark/pipelines/test_registration_errors.py:225: AssertionError
+_ test_duplicate_flows_preserve_identifiers_and_targets[first-registered-identifier-False] _
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x119bd6390>
+pipeline = ('e609954f-ca7e-4c42-9474-f504e6810101', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x119c10b90>, <function pipeline_factory.<locals>.create.<locals>.run at 0x119c199e0>)
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-114/test_duplicate_flows_preserve_8')
+files = ['CREATE STREAMING TABLE st; CREATE STREAMING TABLE st2; CREATE FLOW f AS INSERT INTO st BY NAME SELECT * FROM STREAM(... INTO st2 BY NAME SELECT * FROM STREAM(source); CREATE FLOW f AS INSERT INTO st2 BY NAME SELECT * FROM STREAM(source)']
+flow_name = 'f', targets = ['st', 'st2'], dry = False
+
+    @pytest.mark.parametrize("dry", [False, True])
+    @pytest.mark.parametrize(
+        ("files", "flow_name", "targets"),
+        [
+            pytest.param(
+                [
+                    "CREATE STREAMING TABLE st; CREATE FLOW f AS INSERT INTO st BY NAME SELECT * FROM STREAM(source)",
+                    "CREATE FLOW f AS INSERT INTO st BY NAME SELECT * FROM STREAM(source)",
+                ],
+                "f",
+                ["st"],
+                id="same-target",
+            ),
+            pytest.param(
+                [
+                    "CREATE STREAMING TABLE st AS SELECT * FROM STREAM(source); CREATE STREAMING TABLE st2",
+                    "CREATE FLOW st AS INSERT INTO st2 BY NAME SELECT * FROM STREAM(source2)",
+                ],
+                "st",
+                ["st", "st2"],
+                id="implicit-explicit",
+            ),
+            pytest.param(
+                [
+                    (
+                        "CREATE STREAMING TABLE st; CREATE STREAMING TABLE st2; "
+                        "CREATE FLOW f AS INSERT INTO st2 BY NAME SELECT * FROM STREAM(source)"
+                    ),
+                    "CREATE FLOW f AS INSERT INTO st BY NAME SELECT * FROM STREAM(source)",
+                ],
+                "f",
+                ["st2", "st"],
+                id="target-order",
+            ),
+            pytest.param(
+                [
+                    (
+                        "CREATE STREAMING TABLE st; CREATE STREAMING TABLE st2; CREATE STREAMING TABLE st3; "
+                        "CREATE FLOW f AS INSERT INTO st BY NAME SELECT * FROM STREAM(source)"
+                    ),
+                    "CREATE FLOW f AS INSERT INTO st2 BY NAME SELECT * FROM STREAM(source)",
+                    "CREATE FLOW f AS INSERT INTO st3 BY NAME SELECT * FROM STREAM(source)",
+                ],
+                "f",
+                ["st", "st2"],
+                id="first-two-targets",
+            ),
+            pytest.param(
+                [
+                    (
+                        "CREATE STREAMING TABLE st; CREATE STREAMING TABLE st2; "
+                        "CREATE FLOW f AS INSERT INTO st BY NAME SELECT * FROM STREAM(source); "
+                        "CREATE FLOW g AS INSERT INTO st BY NAME SELECT * FROM STREAM(source)"
+                    ),
+                    (
+                        "CREATE FLOW g AS INSERT INTO st2 BY NAME SELECT * FROM STREAM(source); "
+                        "CREATE FLOW f AS INSERT INTO st2 BY NAME SELECT * FROM STREAM(source)"
+                    ),
+                ],
+                "f",
+                ["st", "st2"],
+                id="first-registered-identifier",
+            ),
+            pytest.param(
+                [
+                    (
+                        "CREATE STREAMING TABLE `st.with.dot`; "
+                        "CREATE FLOW `flow``with.dot` AS INSERT INTO `st.with.dot` BY NAME SELECT * FROM STREAM(source)"
+                    ),
+                    "CREATE FLOW `flow``with.dot` AS INSERT INTO `st.with.dot` BY NAME SELECT * FROM STREAM(source)",
+                ],
+                "flow`with.dot",
+                ["st.with.dot"],
+                id="escaped-identifiers",
+            ),
+        ],
+    )
+    def test_duplicate_flows_preserve_identifiers_and_targets(
+        pipeline_spark, pipeline, tmp_path, files, flow_name, targets, dry
+    ):
+        _, registry, run = pipeline
+        for index, sql in enumerate(files):
+            registry.register_sql(sql, tmp_path / f"flow_{index}.sql")
+        with pytest.raises(AnalysisException) as error:
+            run(dry=dry)
+        catalog = pipeline_spark.catalog.currentCatalog()
+        database = pipeline_spark.catalog.currentDatabase()
+>       assert error.value.getCondition() == "PIPELINE_DUPLICATE_IDENTIFIERS.FLOW"
+E       AssertionError: assert None == 'PIPELINE_DUPLICATE_IDENTIFIERS.FLOW'
+E        +  where None = getCondition()
+E        +    where getCondition = AnalysisException('[PIPELINE_DUPLICATE_IDENTIFIERS.FLOW] `sail`.`default`.`g`').getCondition
+E        +      where AnalysisException('[PIPELINE_DUPLICATE_IDENTIFIERS.FLOW] `sail`.`default`.`g`') = <ExceptionInfo AnalysisException('[PIPELINE_DUPLICATE_IDENTIFIERS.FLOW] `sail`.`default`.`g`') tblen=7>.value
+
+python/pysail/tests/spark/pipelines/test_registration_errors.py:225: AssertionError
+_ test_duplicate_flows_preserve_identifiers_and_targets[first-registered-identifier-True] _
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x119c11190>
+pipeline = ('ef911097-dcd1-420d-89ad-c6ac4c46f44f', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x119c13ce0>, <function pipeline_factory.<locals>.create.<locals>.run at 0x119c1b600>)
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-114/test_duplicate_flows_preserve_9')
+files = ['CREATE STREAMING TABLE st; CREATE STREAMING TABLE st2; CREATE FLOW f AS INSERT INTO st BY NAME SELECT * FROM STREAM(... INTO st2 BY NAME SELECT * FROM STREAM(source); CREATE FLOW f AS INSERT INTO st2 BY NAME SELECT * FROM STREAM(source)']
+flow_name = 'f', targets = ['st', 'st2'], dry = True
+
+    @pytest.mark.parametrize("dry", [False, True])
+    @pytest.mark.parametrize(
+        ("files", "flow_name", "targets"),
+        [
+            pytest.param(
+                [
+                    "CREATE STREAMING TABLE st; CREATE FLOW f AS INSERT INTO st BY NAME SELECT * FROM STREAM(source)",
+                    "CREATE FLOW f AS INSERT INTO st BY NAME SELECT * FROM STREAM(source)",
+                ],
+                "f",
+                ["st"],
+                id="same-target",
+            ),
+            pytest.param(
+                [
+                    "CREATE STREAMING TABLE st AS SELECT * FROM STREAM(source); CREATE STREAMING TABLE st2",
+                    "CREATE FLOW st AS INSERT INTO st2 BY NAME SELECT * FROM STREAM(source2)",
+                ],
+                "st",
+                ["st", "st2"],
+                id="implicit-explicit",
+            ),
+            pytest.param(
+                [
+                    (
+                        "CREATE STREAMING TABLE st; CREATE STREAMING TABLE st2; "
+                        "CREATE FLOW f AS INSERT INTO st2 BY NAME SELECT * FROM STREAM(source)"
+                    ),
+                    "CREATE FLOW f AS INSERT INTO st BY NAME SELECT * FROM STREAM(source)",
+                ],
+                "f",
+                ["st2", "st"],
+                id="target-order",
+            ),
+            pytest.param(
+                [
+                    (
+                        "CREATE STREAMING TABLE st; CREATE STREAMING TABLE st2; CREATE STREAMING TABLE st3; "
+                        "CREATE FLOW f AS INSERT INTO st BY NAME SELECT * FROM STREAM(source)"
+                    ),
+                    "CREATE FLOW f AS INSERT INTO st2 BY NAME SELECT * FROM STREAM(source)",
+                    "CREATE FLOW f AS INSERT INTO st3 BY NAME SELECT * FROM STREAM(source)",
+                ],
+                "f",
+                ["st", "st2"],
+                id="first-two-targets",
+            ),
+            pytest.param(
+                [
+                    (
+                        "CREATE STREAMING TABLE st; CREATE STREAMING TABLE st2; "
+                        "CREATE FLOW f AS INSERT INTO st BY NAME SELECT * FROM STREAM(source); "
+                        "CREATE FLOW g AS INSERT INTO st BY NAME SELECT * FROM STREAM(source)"
+                    ),
+                    (
+                        "CREATE FLOW g AS INSERT INTO st2 BY NAME SELECT * FROM STREAM(source); "
+                        "CREATE FLOW f AS INSERT INTO st2 BY NAME SELECT * FROM STREAM(source)"
+                    ),
+                ],
+                "f",
+                ["st", "st2"],
+                id="first-registered-identifier",
+            ),
+            pytest.param(
+                [
+                    (
+                        "CREATE STREAMING TABLE `st.with.dot`; "
+                        "CREATE FLOW `flow``with.dot` AS INSERT INTO `st.with.dot` BY NAME SELECT * FROM STREAM(source)"
+                    ),
+                    "CREATE FLOW `flow``with.dot` AS INSERT INTO `st.with.dot` BY NAME SELECT * FROM STREAM(source)",
+                ],
+                "flow`with.dot",
+                ["st.with.dot"],
+                id="escaped-identifiers",
+            ),
+        ],
+    )
+    def test_duplicate_flows_preserve_identifiers_and_targets(
+        pipeline_spark, pipeline, tmp_path, files, flow_name, targets, dry
+    ):
+        _, registry, run = pipeline
+        for index, sql in enumerate(files):
+            registry.register_sql(sql, tmp_path / f"flow_{index}.sql")
+        with pytest.raises(AnalysisException) as error:
+            run(dry=dry)
+        catalog = pipeline_spark.catalog.currentCatalog()
+        database = pipeline_spark.catalog.currentDatabase()
+>       assert error.value.getCondition() == "PIPELINE_DUPLICATE_IDENTIFIERS.FLOW"
+E       AssertionError: assert None == 'PIPELINE_DUPLICATE_IDENTIFIERS.FLOW'
+E        +  where None = getCondition()
+E        +    where getCondition = AnalysisException('[PIPELINE_DUPLICATE_IDENTIFIERS.FLOW] `sail`.`default`.`g`').getCondition
+E        +      where AnalysisException('[PIPELINE_DUPLICATE_IDENTIFIERS.FLOW] `sail`.`default`.`g`') = <ExceptionInfo AnalysisException('[PIPELINE_DUPLICATE_IDENTIFIERS.FLOW] `sail`.`default`.`g`') tblen=7>.value
+
+python/pysail/tests/spark/pipelines/test_registration_errors.py:225: AssertionError
+_ test_duplicate_flows_preserve_identifiers_and_targets[escaped-identifiers-False] _
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x119c39670>
+pipeline = ('b6bfd602-060b-4b28-a18d-d60d5a4e89c3', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x119c39dc0>, <function pipeline_factory.<locals>.create.<locals>.run at 0x119c55260>)
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-114/test_duplicate_flows_preserve_10')
+files = ['CREATE STREAMING TABLE `st.with.dot`; CREATE FLOW `flow``with.dot` AS INSERT INTO `st.with.dot` BY NAME SELECT * FROM STREAM(source)', 'CREATE FLOW `flow``with.dot` AS INSERT INTO `st.with.dot` BY NAME SELECT * FROM STREAM(source)']
+flow_name = 'flow`with.dot', targets = ['st.with.dot'], dry = False
+
+    @pytest.mark.parametrize("dry", [False, True])
+    @pytest.mark.parametrize(
+        ("files", "flow_name", "targets"),
+        [
+            pytest.param(
+                [
+                    "CREATE STREAMING TABLE st; CREATE FLOW f AS INSERT INTO st BY NAME SELECT * FROM STREAM(source)",
+                    "CREATE FLOW f AS INSERT INTO st BY NAME SELECT * FROM STREAM(source)",
+                ],
+                "f",
+                ["st"],
+                id="same-target",
+            ),
+            pytest.param(
+                [
+                    "CREATE STREAMING TABLE st AS SELECT * FROM STREAM(source); CREATE STREAMING TABLE st2",
+                    "CREATE FLOW st AS INSERT INTO st2 BY NAME SELECT * FROM STREAM(source2)",
+                ],
+                "st",
+                ["st", "st2"],
+                id="implicit-explicit",
+            ),
+            pytest.param(
+                [
+                    (
+                        "CREATE STREAMING TABLE st; CREATE STREAMING TABLE st2; "
+                        "CREATE FLOW f AS INSERT INTO st2 BY NAME SELECT * FROM STREAM(source)"
+                    ),
+                    "CREATE FLOW f AS INSERT INTO st BY NAME SELECT * FROM STREAM(source)",
+                ],
+                "f",
+                ["st2", "st"],
+                id="target-order",
+            ),
+            pytest.param(
+                [
+                    (
+                        "CREATE STREAMING TABLE st; CREATE STREAMING TABLE st2; CREATE STREAMING TABLE st3; "
+                        "CREATE FLOW f AS INSERT INTO st BY NAME SELECT * FROM STREAM(source)"
+                    ),
+                    "CREATE FLOW f AS INSERT INTO st2 BY NAME SELECT * FROM STREAM(source)",
+                    "CREATE FLOW f AS INSERT INTO st3 BY NAME SELECT * FROM STREAM(source)",
+                ],
+                "f",
+                ["st", "st2"],
+                id="first-two-targets",
+            ),
+            pytest.param(
+                [
+                    (
+                        "CREATE STREAMING TABLE st; CREATE STREAMING TABLE st2; "
+                        "CREATE FLOW f AS INSERT INTO st BY NAME SELECT * FROM STREAM(source); "
+                        "CREATE FLOW g AS INSERT INTO st BY NAME SELECT * FROM STREAM(source)"
+                    ),
+                    (
+                        "CREATE FLOW g AS INSERT INTO st2 BY NAME SELECT * FROM STREAM(source); "
+                        "CREATE FLOW f AS INSERT INTO st2 BY NAME SELECT * FROM STREAM(source)"
+                    ),
+                ],
+                "f",
+                ["st", "st2"],
+                id="first-registered-identifier",
+            ),
+            pytest.param(
+                [
+                    (
+                        "CREATE STREAMING TABLE `st.with.dot`; "
+                        "CREATE FLOW `flow``with.dot` AS INSERT INTO `st.with.dot` BY NAME SELECT * FROM STREAM(source)"
+                    ),
+                    "CREATE FLOW `flow``with.dot` AS INSERT INTO `st.with.dot` BY NAME SELECT * FROM STREAM(source)",
+                ],
+                "flow`with.dot",
+                ["st.with.dot"],
+                id="escaped-identifiers",
+            ),
+        ],
+    )
+    def test_duplicate_flows_preserve_identifiers_and_targets(
+        pipeline_spark, pipeline, tmp_path, files, flow_name, targets, dry
+    ):
+        _, registry, run = pipeline
+        for index, sql in enumerate(files):
+            registry.register_sql(sql, tmp_path / f"flow_{index}.sql")
+        with pytest.raises(AnalysisException) as error:
+            run(dry=dry)
+        catalog = pipeline_spark.catalog.currentCatalog()
+        database = pipeline_spark.catalog.currentDatabase()
+>       assert error.value.getCondition() == "PIPELINE_DUPLICATE_IDENTIFIERS.FLOW"
+E       AssertionError: assert None == 'PIPELINE_DUPLICATE_IDENTIFIERS.FLOW'
+E        +  where None = getCondition()
+E        +    where getCondition = AnalysisException('[PIPELINE_DUPLICATE_IDENTIFIERS.FLOW] `sail`.`default`.`flow``with.dot`').getCondition
+E        +      where AnalysisException('[PIPELINE_DUPLICATE_IDENTIFIERS.FLOW] `sail`.`default`.`flow``with.dot`') = <ExceptionInfo AnalysisException('[PIPELINE_DUPLICATE_IDENTIFIERS.FLOW] `sail`.`default`.`flow``with.dot`') tblen=7>.value
+
+python/pysail/tests/spark/pipelines/test_registration_errors.py:225: AssertionError
+_ test_duplicate_flows_preserve_identifiers_and_targets[escaped-identifiers-True] _
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x119c38440>
+pipeline = ('caef9229-60c4-4c19-9532-cd98a38cd889', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x119c6c5c0>, <function pipeline_factory.<locals>.create.<locals>.run at 0x119c57420>)
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-114/test_duplicate_flows_preserve_11')
+files = ['CREATE STREAMING TABLE `st.with.dot`; CREATE FLOW `flow``with.dot` AS INSERT INTO `st.with.dot` BY NAME SELECT * FROM STREAM(source)', 'CREATE FLOW `flow``with.dot` AS INSERT INTO `st.with.dot` BY NAME SELECT * FROM STREAM(source)']
+flow_name = 'flow`with.dot', targets = ['st.with.dot'], dry = True
+
+    @pytest.mark.parametrize("dry", [False, True])
+    @pytest.mark.parametrize(
+        ("files", "flow_name", "targets"),
+        [
+            pytest.param(
+                [
+                    "CREATE STREAMING TABLE st; CREATE FLOW f AS INSERT INTO st BY NAME SELECT * FROM STREAM(source)",
+                    "CREATE FLOW f AS INSERT INTO st BY NAME SELECT * FROM STREAM(source)",
+                ],
+                "f",
+                ["st"],
+                id="same-target",
+            ),
+            pytest.param(
+                [
+                    "CREATE STREAMING TABLE st AS SELECT * FROM STREAM(source); CREATE STREAMING TABLE st2",
+                    "CREATE FLOW st AS INSERT INTO st2 BY NAME SELECT * FROM STREAM(source2)",
+                ],
+                "st",
+                ["st", "st2"],
+                id="implicit-explicit",
+            ),
+            pytest.param(
+                [
+                    (
+                        "CREATE STREAMING TABLE st; CREATE STREAMING TABLE st2; "
+                        "CREATE FLOW f AS INSERT INTO st2 BY NAME SELECT * FROM STREAM(source)"
+                    ),
+                    "CREATE FLOW f AS INSERT INTO st BY NAME SELECT * FROM STREAM(source)",
+                ],
+                "f",
+                ["st2", "st"],
+                id="target-order",
+            ),
+            pytest.param(
+                [
+                    (
+                        "CREATE STREAMING TABLE st; CREATE STREAMING TABLE st2; CREATE STREAMING TABLE st3; "
+                        "CREATE FLOW f AS INSERT INTO st BY NAME SELECT * FROM STREAM(source)"
+                    ),
+                    "CREATE FLOW f AS INSERT INTO st2 BY NAME SELECT * FROM STREAM(source)",
+                    "CREATE FLOW f AS INSERT INTO st3 BY NAME SELECT * FROM STREAM(source)",
+                ],
+                "f",
+                ["st", "st2"],
+                id="first-two-targets",
+            ),
+            pytest.param(
+                [
+                    (
+                        "CREATE STREAMING TABLE st; CREATE STREAMING TABLE st2; "
+                        "CREATE FLOW f AS INSERT INTO st BY NAME SELECT * FROM STREAM(source); "
+                        "CREATE FLOW g AS INSERT INTO st BY NAME SELECT * FROM STREAM(source)"
+                    ),
+                    (
+                        "CREATE FLOW g AS INSERT INTO st2 BY NAME SELECT * FROM STREAM(source); "
+                        "CREATE FLOW f AS INSERT INTO st2 BY NAME SELECT * FROM STREAM(source)"
+                    ),
+                ],
+                "f",
+                ["st", "st2"],
+                id="first-registered-identifier",
+            ),
+            pytest.param(
+                [
+                    (
+                        "CREATE STREAMING TABLE `st.with.dot`; "
+                        "CREATE FLOW `flow``with.dot` AS INSERT INTO `st.with.dot` BY NAME SELECT * FROM STREAM(source)"
+                    ),
+                    "CREATE FLOW `flow``with.dot` AS INSERT INTO `st.with.dot` BY NAME SELECT * FROM STREAM(source)",
+                ],
+                "flow`with.dot",
+                ["st.with.dot"],
+                id="escaped-identifiers",
+            ),
+        ],
+    )
+    def test_duplicate_flows_preserve_identifiers_and_targets(
+        pipeline_spark, pipeline, tmp_path, files, flow_name, targets, dry
+    ):
+        _, registry, run = pipeline
+        for index, sql in enumerate(files):
+            registry.register_sql(sql, tmp_path / f"flow_{index}.sql")
+        with pytest.raises(AnalysisException) as error:
+            run(dry=dry)
+        catalog = pipeline_spark.catalog.currentCatalog()
+        database = pipeline_spark.catalog.currentDatabase()
+>       assert error.value.getCondition() == "PIPELINE_DUPLICATE_IDENTIFIERS.FLOW"
+E       AssertionError: assert None == 'PIPELINE_DUPLICATE_IDENTIFIERS.FLOW'
+E        +  where None = getCondition()
+E        +    where getCondition = AnalysisException('[PIPELINE_DUPLICATE_IDENTIFIERS.FLOW] `sail`.`default`.`flow``with.dot`').getCondition
+E        +      where AnalysisException('[PIPELINE_DUPLICATE_IDENTIFIERS.FLOW] `sail`.`default`.`flow``with.dot`') = <ExceptionInfo AnalysisException('[PIPELINE_DUPLICATE_IDENTIFIERS.FLOW] `sail`.`default`.`flow``with.dot`') tblen=7>.value
+
+python/pysail/tests/spark/pipelines/test_registration_errors.py:225: AssertionError
+=========================== short test summary info ============================
+FAILED python/pysail/tests/spark/pipelines/test_registration_errors.py::test_duplicate_flows_preserve_identifiers_and_targets[same-target-False]
+FAILED python/pysail/tests/spark/pipelines/test_registration_errors.py::test_duplicate_flows_preserve_identifiers_and_targets[same-target-True]
+FAILED python/pysail/tests/spark/pipelines/test_registration_errors.py::test_duplicate_flows_preserve_identifiers_and_targets[implicit-explicit-False]
+FAILED python/pysail/tests/spark/pipelines/test_registration_errors.py::test_duplicate_flows_preserve_identifiers_and_targets[implicit-explicit-True]
+FAILED python/pysail/tests/spark/pipelines/test_registration_errors.py::test_duplicate_flows_preserve_identifiers_and_targets[target-order-False]
+FAILED python/pysail/tests/spark/pipelines/test_registration_errors.py::test_duplicate_flows_preserve_identifiers_and_targets[target-order-True]
+FAILED python/pysail/tests/spark/pipelines/test_registration_errors.py::test_duplicate_flows_preserve_identifiers_and_targets[first-two-targets-False]
+FAILED python/pysail/tests/spark/pipelines/test_registration_errors.py::test_duplicate_flows_preserve_identifiers_and_targets[first-two-targets-True]
+FAILED python/pysail/tests/spark/pipelines/test_registration_errors.py::test_duplicate_flows_preserve_identifiers_and_targets[first-registered-identifier-False]
+FAILED python/pysail/tests/spark/pipelines/test_registration_errors.py::test_duplicate_flows_preserve_identifiers_and_targets[first-registered-identifier-True]
+FAILED python/pysail/tests/spark/pipelines/test_registration_errors.py::test_duplicate_flows_preserve_identifiers_and_targets[escaped-identifiers-False]
+FAILED python/pysail/tests/spark/pipelines/test_registration_errors.py::test_duplicate_flows_preserve_identifiers_and_targets[escaped-identifiers-True]
+12 failed in 0.58s

@@ -4027,8 +4027,26 @@
       "line": 897,
       "method": "test",
       "name_expression": "\"Duplicate standalone flow identifiers throw an exception\"",
-      "status": "unmapped",
-      "sail_tests": []
+      "status": "partial-behavioral-port",
+      "sail_tests": [
+        "python/pysail/tests/spark/pipelines/test_registration_errors.py::test_duplicate_flows_preserve_identifiers_and_targets[same-target-False]",
+        "python/pysail/tests/spark/pipelines/test_registration_errors.py::test_duplicate_flows_preserve_identifiers_and_targets[same-target-True]"
+      ],
+      "coverage_review": {
+        "phase": "batch-registration",
+        "covered_assertions": "Cross-file duplicate flow f targeting the same streaming table returns AnalysisException, PIPELINE_DUPLICATE_IDENTIFIERS.FLOW, SQL state 42710, fully qualified unquoted flowName and exact quoted datasetNames. Dry/real starts publish no target.",
+        "remaining_assertions": "Original internal graph conversion is replaced by Connect StartRun. External STREAM sources are intentionally absent, checking duplicate validation precedes analysis; original fixture creates external tables. Original Scala suite has not executed against Sail.",
+        "sail_evidence": "evidence/bbf438c0661cdfa4a3fab3af70439f7f788615d8/pytest.xml",
+        "scala_suite_executed": false,
+        "parameter_instances": [
+          {
+            "dry_run": false
+          },
+          {
+            "dry_run": true
+          }
+        ]
+      }
     },
     {
       "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/SqlPipelineSuite.scala:933",
@@ -4036,8 +4054,26 @@
       "line": 933,
       "method": "test",
       "name_expression": "\"Duplicate standalone implicit flow identifier throws exception\"",
-      "status": "unmapped",
-      "sail_tests": []
+      "status": "partial-behavioral-port",
+      "sail_tests": [
+        "python/pysail/tests/spark/pipelines/test_registration_errors.py::test_duplicate_flows_preserve_identifiers_and_targets[implicit-explicit-False]",
+        "python/pysail/tests/spark/pipelines/test_registration_errors.py::test_duplicate_flows_preserve_identifiers_and_targets[implicit-explicit-True]"
+      ],
+      "coverage_review": {
+        "phase": "batch-registration",
+        "covered_assertions": "Cross-file duplicate flow st shared by an implicit streaming-table flow and an explicit flow targeting st2 returns AnalysisException, PIPELINE_DUPLICATE_IDENTIFIERS.FLOW, SQL state 42710, fully qualified unquoted flowName and exact quoted datasetNames. Dry/real starts publish no target.",
+        "remaining_assertions": "Original internal graph conversion is replaced by Connect StartRun. External STREAM sources are intentionally absent, checking duplicate validation precedes analysis; original fixture creates external tables. Original Scala suite has not executed against Sail.",
+        "sail_evidence": "evidence/bbf438c0661cdfa4a3fab3af70439f7f788615d8/pytest.xml",
+        "scala_suite_executed": false,
+        "parameter_instances": [
+          {
+            "dry_run": false
+          },
+          {
+            "dry_run": true
+          }
+        ]
+      }
     },
     {
       "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/SqlPipelineSuite.scala:969",

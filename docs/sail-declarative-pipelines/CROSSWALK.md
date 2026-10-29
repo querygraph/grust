@@ -2,7 +2,7 @@
 
 The pinned inventory has 462 static Scala test registration call sites, including
 helpers and parameter declarations. It is not an expanded runtime denominator.
-Assertion review currently covers 69 registrations; 393 remain unaudited. None
+Assertion review currently covers 71 registrations; 391 remain unaudited. None
 is fully qualified by executing the original Scala suite against Sail.
 
 | Suite | Reviewed | Partial ports | Unmapped |
@@ -11,8 +11,8 @@ is fully qualified by executing the original Scala suite against Sail.
 | MaterializeTablesSuite | 27 | 8 | 19 |
 | SparkDeclarativePipelinesServerSuite | 19 | 14 | 5 |
 | PipelinesHandlerSuite | 2 | 0 | 2 |
-| SqlPipelineSuite | 10 | 9 | 1 |
-| Total | 69 | 38 | 31 |
+| SqlPipelineSuite | 12 | 11 | 1 |
+| Total | 71 | 40 | 31 |
 
 Each audited [inventory record](spark-4.2.1-inventory.json) identifies its phase,
 covered/missing assertions and evidence. A partial behavioral Connect port does
@@ -58,7 +58,7 @@ parameter when no cause exists. These belong to the pending Astra
 
 ## SQL pipeline assertions
 
-Ten of the SQL suite's 38 registration sites are reviewed; 28 await assertion
+Twelve of the SQL suite's 38 registration sites are reviewed; 26 await assertion
 audit. The reviewed groups are:
 
 - [Empty-pipeline cases](evidence/sql-empty-crosswalk/validation.json): no outputs,
@@ -66,6 +66,10 @@ audit. The reviewed groups are:
 - [Duplicate outputs](evidence/sql-duplicate-crosswalk/validation.json): cross-file
   table/view collision metadata, with a larger type/order matrix as regression
   coverage. Sink collisions remain unqualified.
+- [Duplicate flows](evidence/sql-duplicate-flow-crosswalk/validation.json): same-target
+  and implicit/explicit collisions, with exact identifier/destination parameters.
+  Additional cases cover destination order, first-two selection, first-registered
+  identifier priority and escaped names.
 - [Missing producer and batch queries](evidence/sql-producer-query-crosswalk/validation.json):
   exact missing-producer metadata, scalar subquery, nested CTE and rollup results.
 - [Catalog scope](evidence/sql-catalog-crosswalk/validation.json): four positive

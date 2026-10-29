@@ -741,3 +741,31 @@ Two additional SQL registrations are audited, with one partial port and one
 unmapped expression grid. Total reviewed 69; unaudited 393. SQL suite reviewed
 10 of 38. Full multi-catalog/streaming source fixture and original Scala suite
 remain unexecuted. No full batch or SDP acceptance claim.
+
+## Review duplicate-flow metadata and registration priority
+
+Commit `bbf438c066` groups destination identifiers by flow name, then validates
+in original registration order. This matches Spark's first-registered duplicate
+identifier even when another flow reaches its second occurrence earlier. Error
+parameters use the fully qualified unquoted flow name and only the first two
+quoted destinations, preserving their order and removing a repeated destination.
+The existing StructuredSparkError transport now carries AnalysisException,
+PIPELINE_DUPLICATE_IDENTIFIERS.FLOW and SQL state 42710. Validation remains before
+execution reservation and flow analysis.
+
+The [receipt](evidence/bbf438c0661cdfa4a3fab3af70439f7f788615d8/gate.json)
+records formatting, strict Clippy, CLI build, Ruff, 211 selected pytest cases and
+67 upstream Python executions, all passing. Twelve new dry/real assertions also
+pass on Spark 4.2.1; all twelve failed on the prior Sail engine and that baseline
+is retained. The matrix covers same-target deduplication, implicit/explicit
+collision, reversed destination order, three targets with only the first two
+reported, first-registered duplicate priority and escaped identifiers. Declared
+external STREAM sources are absent to verify duplicate validation precedes
+analysis; no streaming execution claim follows from these fixtures.
+
+Two additional SQL registrations have partial assertion ports: total reviewed
+71, remaining unaudited 391. The SQL suite has twelve reviewed registrations
+and 26 awaiting audit. Original Scala-suite execution, private/sink collision
+variants, full batch acceptance, shared SQL catalog expressions, failure/event
+and REST-view architecture, streaming and CDC remain open. Astra handoffs remain
+ready; no new architecture or publication was introduced in this unit.
