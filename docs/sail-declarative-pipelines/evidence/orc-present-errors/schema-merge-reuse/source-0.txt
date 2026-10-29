@@ -1,0 +1,162 @@
+use std::collections::{HashMap, HashSet};
+use std::sync::Arc;
+
+use sail_common::spec;
+
+use crate::error::{SparkError, SparkResult};
+
+/// Spark 4.2.1's SchemaMergingUtils delegates to StructType.merge. Field order
+/// and metadata come from the left schema; matching fields merge their types
+/// and nullability. Arrow's merge also merges metadata and promotes Null types,
+/// which would change the pipeline's declared-schema compatibility contract.
+pub(super) fn merge_fields(left: &spec::Fields, right: &spec::Fields) -> SparkResult<spec::Fields> {
+    let right_by_name: HashMap<_, _> = right.iter().map(|field| (&field.name, field)).collect();
+    let left_names: HashSet<_> = left.iter().map(|field| &field.name).collect();
+    let mut fields = Vec::with_capacity(left.len() + right.len());
+    for field in left {
+        let merged = match right_by_name.get(&field.name) {
+            Some(other) => Arc::new(spec::Field {
+                data_type: merge_type(&field.data_type, &other.data_type)?,
+                nullable: field.nullable || other.nullable,
+                ..field.as_ref().clone()
+            }),
+            None => Arc::clone(field),
+        };
+        fields.push(merged);
+    }
+    fields.extend(
+        right
+            .iter()
+            .filter(|field| !left_names.contains(&field.name))
+            .cloned(),
+    );
+    Ok(fields.into())
+}
+
+fn merge_type(left: &spec::DataType, right: &spec::DataType) -> SparkResult<spec::DataType> {
+    use spec::DataType;
+
+    if left == right {
+        return Ok(left.clone());
+    }
+    Ok(match (left, right) {
+        (DataType::Struct { fields: left }, DataType::Struct { fields: right }) => {
+            DataType::Struct {
+                fields: merge_fields(left, right)?,
+            }
+        }
+        (
+            DataType::List {
+                data_type: left,
+                nullable: left_nullable,
+            },
+            DataType::List {
+                data_type: right,
+                nullable: right_nullable,
+            },
+        ) => DataType::List {
+            data_type: Box::new(merge_type(left, right)?),
+            nullable: *left_nullable || *right_nullable,
+        },
+        (
+            DataType::Map {
+                key_type: left_key,
+                value_type: left_value,
+                value_type_nullable: left_nullable,
+                keys_sorted,
+            },
+            DataType::Map {
+                key_type: right_key,
+                value_type: right_value,
+                value_type_nullable: right_nullable,
+                ..
+            },
+        ) => DataType::Map {
+            key_type: Box::new(merge_type(left_key, right_key)?),
+            value_type: Box::new(merge_type(left_value, right_value)?),
+            value_type_nullable: *left_nullable || *right_nullable,
+            keys_sorted: *keys_sorted,
+        },
+        (
+            DataType::Decimal128 {
+                precision: left_precision,
+                scale: left_scale,
+            },
+            DataType::Decimal128 {
+                precision: right_precision,
+                scale: right_scale,
+            },
+        ) if left_scale == right_scale => DataType::Decimal128 {
+            precision: *left_precision.max(right_precision),
+            scale: *left_scale,
+        },
+        (
+            DataType::Interval {
+                interval_unit: left_unit,
+                start_field: left_start,
+                end_field: left_end,
+            },
+            DataType::Interval {
+                interval_unit: right_unit,
+                start_field: right_start,
+                end_field: right_end,
+            },
+        ) if left_unit == right_unit => {
+            let (default_start, default_end) = match left_unit {
+                spec::IntervalUnit::YearMonth => (
+                    spec::IntervalFieldType::Year,
+                    spec::IntervalFieldType::Month,
+                ),
+                spec::IntervalUnit::DayTime => (
+                    spec::IntervalFieldType::Day,
+                    spec::IntervalFieldType::Second,
+                ),
+                spec::IntervalUnit::MonthDayNano => return incompatible(left, right),
+            };
+            let left_end = left_end.unwrap_or(left_start.unwrap_or(default_end));
+            let right_end = right_end.unwrap_or(right_start.unwrap_or(default_end));
+            DataType::Interval {
+                interval_unit: *left_unit,
+                start_field: Some(
+                    left_start
+                        .unwrap_or(default_start)
+                        .min(right_start.unwrap_or(default_start)),
+                ),
+                end_field: Some(left_end.max(right_end)),
+            }
+        }
+        (
+            DataType::UserDefined {
+                jvm_class: Some(left_class),
+                ..
+            },
+            DataType::UserDefined {
+                jvm_class: Some(right_class),
+                ..
+            },
+        ) if left_class == right_class => left.clone(),
+        _ => return incompatible(left, right),
+    })
+}
+
+fn incompatible(left: &spec::DataType, right: &spec::DataType) -> SparkResult<spec::DataType> {
+    Err(SparkError::invalid(format!(
+        "cannot merge incompatible pipeline types {left:?} and {right:?}"
+    )))
+}
+
+#[cfg(test)]
+mod tests {
+    use datafusion::arrow::datatypes as adt;
+
+    use super::*;
+    use crate::spark::connect::data_type::StructField;
+
+    fn time_field(name: &str, precision: i32, nullable: bool) -> SparkResult<adt::Field> {
+        Ok(adt::Field::new(
+            name,
+            adt::DataType::Time64(adt::TimeUnit::Nanosecond),
+            nullable,
+        )
+        .with_metadata(HashMap::from([(
+            spec::SAIL_SPARK_TIME_METADATA_KEY.to_string(),

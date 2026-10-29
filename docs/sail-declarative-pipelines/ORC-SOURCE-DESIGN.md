@@ -444,3 +444,19 @@ now retain all fixture/budget cases. An operational advance retry is recorded;
 all production changes and the final gate remain bound to this exact commit.
 Requested-schema mapping, source/worker/registry/writer integration and original
 public Spark assertions remain incomplete.
+
+## Preserve malformed PRESENT errors before dependent decoding
+
+Recorded: 2026-10-29T23:56:34.461756+00:00. [Native `bc0c0cef83` and Sail `25524aa551`](evidence/orc-present-errors/README.md)
+preserve null-stream decode errors previously discarded by the native adapter.
+Real malformed encodings prove primitive DATA remains unread and STRING LENGTH
+errors do not mask the earlier PRESENT error, including nested parent validity.
+Native gates pass 323 tests (eight ignored), 202 no-default tests; exact vendor
+and all 156 Sail data-source tests pass with formatting/strict Clippy.
+
+The retained value-safety handoff leaves signed materialized/skip lengths,
+dictionary setup and RLE delta arithmetic as separate units. A separate pinned
+merge audit distinguishes existing pipeline semantic merging, outer versus nested
+case policy, and requested-reader matching. Source/opener/mapper drafts remain
+outside this verdict until their own exact gates; public ORC/SDP runtime remains
+unqualified by these dependency changes.

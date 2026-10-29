@@ -11226,3 +11226,12 @@ candidate/unused_mut failure and 154-pass/two-error-expectation run; corrected
 checks require exact native errors for the same budgets and fixtures. Production
 code is unchanged across those test corrections. Advance wrapper retry recorded. Docs gate precedes
 advance. Ordinary source and requested-schema adapter work remain next.
+
+## 2026-10-29T23:56:34.461756+00:00 — DONE native PRESENT error propagation and vendor
+
+Native bc0c0cef83 and Sail 25524aa551 passed detached exact gates:
+323 native tests (eight ignored), 202 no-default, 156 Sail data-source, formatting,
+strict Clippy and portable-package verification. No failed attempts. Retained
+remaining intrinsic value-safety and pinned semantic-merge reuse audits. Mapper
+and ordinary source drafts are separate units and not yet runtime-qualified.
+Documentation gates precede advance; full SDP objective remains active.

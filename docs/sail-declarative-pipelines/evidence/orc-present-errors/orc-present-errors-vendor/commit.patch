@@ -1,0 +1,355 @@
+commit 25524aa551c15b0708711f88776d681cbcd73834
+Author:     Alexy Khrabrov <deliverable@gmail.com>
+AuthorDate: Thu Oct 29 16:51:37 2026 -0700
+Commit:     Alexy Khrabrov <deliverable@gmail.com>
+CommitDate: Thu Oct 29 16:51:37 2026 -0700
+
+    build: vendor ORC null-stream error propagation
+
+diff --git a/vendor/orc-rust/.cargo_vcs_info.json b/vendor/orc-rust/.cargo_vcs_info.json
+index e89fa6446..5695b4c8f 100644
+--- a/vendor/orc-rust/.cargo_vcs_info.json
++++ b/vendor/orc-rust/.cargo_vcs_info.json
+@@ -1,6 +1,6 @@
+ {
+   "git": {
+-    "sha1": "2ecec391db0699019b55f731fc9eefd8971b3802"
++    "sha1": "bc0c0cef83ba4bb297aaf6941ba0f328a95a2663"
+   },
+   "path_in_vcs": ""
+ }
+\ No newline at end of file
+diff --git a/vendor/orc-rust/SOURCE.json b/vendor/orc-rust/SOURCE.json
+index 0c58d5ebe..4e027d851 100644
+--- a/vendor/orc-rust/SOURCE.json
++++ b/vendor/orc-rust/SOURCE.json
+@@ -1,6 +1,6 @@
+ {
+   "repository": "https://github.com/datafusion-contrib/orc-rust",
+-  "commit": "2ecec391db0699019b55f731fc9eefd8971b3802",
++  "commit": "bc0c0cef83ba4bb297aaf6941ba0f328a95a2663",
+   "source_kind": "Locally patched upstream package; patch revisions have not been published to the upstream repository.",
+   "upstream_tag": "v0.9.0",
+   "upstream_commit": "d21a6e4d2f8b5f4465fa5c0cad046c7ec2284307",
+@@ -52,11 +52,15 @@
+     {
+       "commit": "2ecec391db0699019b55f731fc9eefd8971b3802",
+       "subject": "fix: validate ORC stripe and stream arithmetic before reads"
++    },
++    {
++      "commit": "bc0c0cef83ba4bb297aaf6941ba0f328a95a2663",
++      "subject": "fix: propagate ORC PRESENT stream decoding failures"
+     }
+   ],
+   "package": {
+     "command": "cargo +1.98.1 package --locked --no-verify",
+-    "sha256": "ee7f7a1875d595fb3f9c3daa3a97a42c9e20de23bfd5c280da9c2bf8387a1f5f",
++    "sha256": "320b85b9897547def241efb25fa4c1b875c3e586d361503ddc8ff90c87ae3194",
+     "excluded_files": [
+       "Cargo.lock"
+     ],
+@@ -66,7 +70,7 @@
+     "note": "Cargo-normalized manifest; upstream package omits integration fixtures and benchmarks. Source tests were run in the full detached source checkout."
+   },
+   "files_sha256": {
+-    ".cargo_vcs_info.json": "596cc87fb1dc181ded0de2120159beccbbb9cb5c46da5b85a0f90d97717afaa1",
++    ".cargo_vcs_info.json": "2187ccf2f5a593acb73e642487384f13068c1b7bddac37b774504a16073c8d45",
+     "Cargo.toml": "0a69cbe6449e27e1be0f020c1f0e9393a135b99fa00a115e45a0e7e7b8726385",
+     "Cargo.toml.orig": "58ccc950aa988bb2c70c7850de74c1ac9ad182773452dc9a08a0b25cceeb7874",
+     "LICENSE": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+@@ -74,7 +78,8 @@
+     "src/array_decoder/decimal.rs": "dc5f37e42304a4ac84d521ab5c0c1823f55a49549f225d5c27995f0bcbcf540d",
+     "src/array_decoder/list.rs": "f2bcb848b3b188147cc488cbe26c13f8a99a7fb3e320410ee716c1758f012ce8",
+     "src/array_decoder/map.rs": "24bef4f153ed5a52a4b23742edf006078313e818d56e8c086198341329f69daf",
+-    "src/array_decoder/mod.rs": "7cadad17e516a5ae2d4828a386e11d5dc1ff7736c41b9680f4ed5ca47757e5b6",
++    "src/array_decoder/mod.rs": "570f6f3d90cd70336b7b6268a680fce45a465406fe42a6358ffb8f2dbcdfb837",
++    "src/array_decoder/present_tests.rs": "149a1a6241c7db44e90777fd2ee62756a393270bece8ff756c034f4f940e7cf7",
+     "src/array_decoder/string.rs": "04b6244c315100525c9a7d37bc7e1537be699070522393772ddf2c203e49f2d3",
+     "src/array_decoder/struct_decoder.rs": "521c29e4ef19fa36a1c301a6214b69c851496f535b2f0666205e6731b49a97a2",
+     "src/array_decoder/timestamp.rs": "97fa9d02382de00cb16b813fef94e9bc7b0cf92236d5e20ddd90a803be2a5496",
+diff --git a/vendor/orc-rust/src/array_decoder/mod.rs b/vendor/orc-rust/src/array_decoder/mod.rs
+index 376e60eab..6000717ef 100644
+--- a/vendor/orc-rust/src/array_decoder/mod.rs
++++ b/vendor/orc-rust/src/array_decoder/mod.rs
+@@ -247,6 +247,7 @@ fn derive_present_vec(
+     // omit the null buffer if there are no nulls
+     match present {
+         Some(Ok(present)) if present.null_count() > 0 => Some(Ok(present)),
++        Some(Err(error)) => Some(Err(error)),
+         _ => None,
+     }
+ }
+@@ -364,6 +365,9 @@ impl NaiveStripeDecoder {
+     }
+ }
+ 
++#[cfg(test)]
++mod present_tests;
++
+ impl Iterator for NaiveStripeDecoder {
+     type Item = Result<RecordBatch>;
+ 
+diff --git a/vendor/orc-rust/src/array_decoder/present_tests.rs b/vendor/orc-rust/src/array_decoder/present_tests.rs
+new file mode 100644
+index 000000000..a6827f06c
+--- /dev/null
++++ b/vendor/orc-rust/src/array_decoder/present_tests.rs
+@@ -0,0 +1,258 @@
++// Licensed to the Apache Software Foundation (ASF) under one
++// or more contributor license agreements.  See the NOTICE file
++// distributed with this work for additional information
++// regarding copyright ownership.  The ASF licenses this file
++// to you under the Apache License, Version 2.0 (the
++// "License"); you may not use this file except in compliance
++// with the License.  You may obtain a copy of the License at
++//
++//   http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing,
++// software distributed under the License is distributed on an
++// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
++// KIND, either express or implied.  See the License for the
++// specific language governing permissions and limitations
++// under the License.
++
++use std::io::{self, Cursor, Read};
++use std::sync::atomic::{AtomicUsize, Ordering};
++
++use arrow::array::{Array, StringArray, StructArray};
++use arrow::error::ArrowError;
++use bytes::Bytes;
++use prost::Message;
++
++use super::*;
++use crate::encoding::integer::RleVersion;
++use crate::error::OrcError;
++use crate::{proto, ArrowReaderBuilder};
++
++struct CountedReader {
++    bytes: Cursor<Vec<u8>>,
++    reads: Arc<AtomicUsize>,
++}
++
++impl Read for CountedReader {
++    fn read(&mut self, out: &mut [u8]) -> io::Result<usize> {
++        self.reads.fetch_add(1, Ordering::Relaxed);
++        self.bytes.read(out)
++    }
++}
++
++fn assert_unexpected_eof(error: &OrcError) {
++    let OrcError::IoError { source, .. } = error else {
++        panic!("expected PRESENT I/O error, got {error}");
++    };
++    assert_eq!(source.kind(), io::ErrorKind::UnexpectedEof);
++}
++
++#[test]
++fn truncated_present_stops_before_primitive_data_with_and_without_parent_nulls() {
++    // Byte RLE: absent header, absent literal byte, and a two-byte literal run
++    // missing its second byte. These are real malformed PRESENT encodings.
++    for present_bytes in [vec![], vec![0xff], vec![0xfe, 0xff]] {
++        for parent in [None, Some(NullBuffer::from(vec![true, false]))] {
++            let reads = Arc::new(AtomicUsize::new(0));
++            let data = CountedReader {
++                // Two signed RLEv1 literal values: 7, 8.
++                bytes: Cursor::new(vec![0xfe, 14, 16]),
++                reads: reads.clone(),
++            };
++            let present = PresentDecoder {
++                inner: Box::new(BooleanDecoder::new(Cursor::new(present_bytes.clone()))),
++            };
++            let mut decoder =
++                Int64ArrayDecoder::new(get_signed_int_decoder(data, RleVersion::V1), Some(present));
++            let error = decoder
++                .next_primitive_batch(2, parent.as_ref())
++                .unwrap_err();
++            assert_unexpected_eof(&error);
++            assert_eq!(reads.load(Ordering::Relaxed), 0);
++        }
++    }
++}
++
++// A complete, uncompressed one-stripe ORC fixture. The nested form has a
++// STRUCT column containing one STRING, exercising merged parent/child validity.
++fn string_file(
++    nested: bool,
++    rows: u64,
++    parent_present: Option<&[u8]>,
++    child_present: Option<&[u8]>,
++    lengths: &[u8],
++    data: &[u8],
++) -> Bytes {
++    let string_id = if nested { 2 } else { 1 };
++    let struct_type = |name: &str, child| proto::Type {
++        kind: Some(proto::r#type::Kind::Struct.into()),
++        field_names: vec![name.into()],
++        subtypes: vec![child],
++        ..Default::default()
++    };
++    let mut types = vec![struct_type("value", 1)];
++    if nested {
++        types.push(struct_type("text", string_id));
++    }
++    types.push(proto::Type {
++        kind: Some(proto::r#type::Kind::String.into()),
++        ..Default::default()
++    });
++
++    let mut file = b"ORC".to_vec();
++    let mut streams = vec![];
++    let mut add_stream = |column, kind: Kind, bytes: &[u8]| {
++        streams.push(proto::Stream {
++            kind: Some(kind.into()),
++            column: Some(column),
++            length: Some(bytes.len() as u64),
++        });
++        file.extend_from_slice(bytes);
++    };
++    if let Some(present) = parent_present {
++        assert!(nested);
++        add_stream(1, Kind::Present, present);
++    }
++    if let Some(present) = child_present {
++        add_stream(string_id, Kind::Present, present);
++    }
++    add_stream(string_id, Kind::Length, lengths);
++    add_stream(string_id, Kind::Data, data);
++
++    let data_length = file.len() as u64 - 3;
++    let stripe_footer = proto::StripeFooter {
++        streams,
++        columns: vec![
++            proto::ColumnEncoding {
++                kind: Some(proto::column_encoding::Kind::Direct.into()),
++                ..Default::default()
++            };
++            types.len()
++        ],
++        ..Default::default()
++    }
++    .encode_to_vec();
++    let footer = proto::Footer {
++        stripes: vec![proto::StripeInformation {
++            offset: Some(3),
++            index_length: Some(0),
++            data_length: Some(data_length),
++            footer_length: Some(stripe_footer.len() as u64),
++            number_of_rows: Some(rows),
++            ..Default::default()
++        }],
++        types,
++        number_of_rows: Some(rows),
++        ..Default::default()
++    }
++    .encode_to_vec();
++    let postscript = proto::PostScript {
++        footer_length: Some(footer.len() as u64),
++        metadata_length: Some(0),
++        version: vec![0, 12],
++        ..Default::default()
++    }
++    .encode_to_vec();
++    file.extend(stripe_footer);
++    file.extend(footer);
++    file.extend_from_slice(&postscript);
++    file.push(u8::try_from(postscript.len()).unwrap());
++    file.into()
++}
++
++fn read(file: Bytes) -> std::result::Result<Vec<RecordBatch>, ArrowError> {
++    ArrowReaderBuilder::try_new(file).unwrap().build().collect()
++}
++
++fn native_error(error: &ArrowError) -> &OrcError {
++    let ArrowError::ExternalError(error) = error else {
++        panic!("expected native ORC error, got {error}");
++    };
++    error.downcast_ref::<OrcError>().unwrap()
++}
++
++#[test]
++fn truncated_string_and_struct_present_precedes_a_distinct_length_error() {
++    // RLEv1 one literal whose varint exceeds 64 bits. With valid PRESENT this
++    // must fail as VarintTooLarge, distinguishing length decoding from PRESENT.
++    let mut bad_lengths = vec![0xff];
++    bad_lengths.extend([0x80; 11]);
++    let parent_bytes = [0xff, 0xa0]; // true, false, true
++    for nested in [false, true] {
++        let parent = nested.then_some(parent_bytes.as_slice());
++        let file = string_file(nested, 3, parent, Some(&[0xff]), &bad_lengths, b"x");
++        assert_unexpected_eof(native_error(&read(file).unwrap_err()));
++
++        let file = string_file(nested, 3, parent, Some(&[0xff, 0xe0]), &bad_lengths, b"x");
++        assert!(matches!(
++            native_error(&read(file).unwrap_err()),
++            OrcError::VarintTooLarge { .. }
++        ));
++    }
++    let file = string_file(true, 3, Some(&[0xff]), None, &bad_lengths, b"x");
++    assert_unexpected_eof(native_error(&read(file).unwrap_err()));
++}
++
++#[test]
++fn valid_string_nulls_and_nested_parent_child_nulls_are_preserved() {
++    let flat = read(string_file(
++        false,
++        3,
++        None,
++        Some(&[0xff, 0xa0]), // true, false, true
++        &[0xfe, 1, 1],
++        b"ab",
++    ))
++    .unwrap();
++    let actual = flat[0]
++        .column(0)
++        .as_any()
++        .downcast_ref::<StringArray>()
++        .unwrap();
++    assert_eq!(actual, &StringArray::from(vec![Some("a"), None, Some("b")]));
++
++    let nested = read(string_file(
++        true,
++        3,
++        Some(&[0xff, 0xa0]), // parent: true, false, true
++        Some(&[0xff, 0x40]), // child among non-null parents: false, true
++        &[0xff, 1],
++        b"b",
++    ))
++    .unwrap();
++    let actual = nested[0]
++        .column(0)
++        .as_any()
++        .downcast_ref::<StructArray>()
++        .unwrap();
++    assert_eq!(
++        actual.nulls(),
++        Some(&NullBuffer::from(vec![true, false, true]))
++    );
++    let child = actual
++        .column(0)
++        .as_any()
++        .downcast_ref::<StringArray>()
++        .unwrap();
++    assert_eq!(child, &StringArray::from(vec![None, None, Some("b")]));
++
++    let all_valid = [0xff, 0xe0];
++    for present in [None, Some(all_valid.as_slice())] {
++        let batches = read(string_file(
++            false,
++            3,
++            None,
++            present,
++            &[0xfd, 1, 1, 1],
++            b"abc",
++        ))
++        .unwrap();
++        let actual = batches[0]
++            .column(0)
++            .as_any()
++            .downcast_ref::<StringArray>()
++            .unwrap();
++        assert_eq!(actual, &StringArray::from(vec!["a", "b", "c"]));
++        assert!(actual.nulls().is_none());
++    }
++}

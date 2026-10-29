@@ -1326,3 +1326,11 @@ expectations and an operational advance retry. Final checks pass
 320 native tests (eight ignored), 199 no-default tests and 150/156 Sail
 data-source tests. These are configured resource/source prerequisites, not a
 public ORC or full SDP verdict.
+
+### ORC PRESENT decode failures (2026-10-29T23:56:34.461756+00:00)
+
+[Evidence](evidence/orc-present-errors/README.md) qualifies native `bc0c0cef83`
+and exact Sail vendor `25524aa551`. Three new malformed/valid controls
+preserve null-stream failure ordering; full native tests pass 323 (eight ignored),
+no-default 202, Sail data-source 156. Source/value-safety/merge follow-ups are
+retained explicitly; no new public pipeline runtime pass is claimed.
