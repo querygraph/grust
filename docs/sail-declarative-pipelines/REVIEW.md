@@ -5,10 +5,10 @@ existing design. Work is on `work/spark-declarative-pipelines`, based on Sail
 `0ba425c0331aee4dd4e9a280c6a793926fd0876e`. These are local commits; no upstream
 pull requests have been opened or branches pushed.
 
-Current batch source `a007290e7a` publishes table and persisted-view metadata
+Current batch source `e4d578ce06` publishes table and persisted-view metadata
 before batch writes and refreshes existing tables through catalog operations.
-Its detached gate passed 106 selected Sail cases and 67 unchanged upstream Python
-executions. These counts do not establish full SDP parity. Diagnostics, catalog
+Its detached gate passed 112 selected Sail cases and 67 unchanged upstream Python
+executions. These counts do not establish full SDP parity. Diagnostics, remaining catalog
 properties, publication failure events, and the remaining acceptance crosswalk
 are still open; streaming and CDC follow batch acceptance.
 
@@ -264,12 +264,33 @@ scenarios. No new physical plan or catalog API was introduced. Handling multiple
 view-publication failures, independent flow progress, and exact event/error
 semantics still require dedicated acceptance work.
 
+## Review pipeline table property validation
+
+Commit `e4d578ce06` validates the exact canonical reset key after query/schema
+analysis, including dry runs. A small private module filters unknown pipeline
+properties, canonicalizes recognized keys at publication, and logs unknown or
+suspiciously unprefixed keys through Sail's existing logger. It preserves Spark's
+observed mixed-case value lookup asymmetry and rejects surrounding whitespace in
+canonical boolean values.
+
+The [receipt](evidence/e4d578ce0658f94884753e3bfdadb3f2208f5af6/gate.json) records
+112 selected Sail cases (98 pipeline and 14 shared regressions), 67 unchanged
+upstream Python executions, nightly formatting, strict Clippy, CLI build, and
+Python lint, all passing. Six new API assertions failed on the previous Sail
+source and passed unchanged against both this source and Spark 4.2.1. The
+[six SQL probes](evidence/spark-4.2.1-properties-reference/README.md) remain a
+separate reference for the behavior motivating this change.
+
+Streaming reset-policy graph constraints, duplicate case-variant keys, and warning
+event parity still need acceptance coverage. This unit adds no new catalog API,
+physical plan, dependency, or streaming behavior.
+
 ## Constraints for subsequent units
 
-The next property-validation unit is grounded in a
+The property-validation unit is grounded in a
 [six-case Spark/Sail comparison](evidence/spark-4.2.1-properties-reference/README.md).
 It exposes unknown-key filtering, canonical key storage, dry-run validation, and
-an upstream mixed-case lookup asymmetry. Those differences are currently open.
+an upstream mixed-case lookup asymmetry. The unit above covers those six observations; broader property coverage remains open.
 
 - Keep pipeline declarations in Sail's typed SQL AST and analyzer. Registration
   produces definitions; it must not execute DDL or rewrite SQL strings.

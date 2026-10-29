@@ -10802,3 +10802,7 @@ DONE for Sail `a007290e7a628c0b9da373b4490431147134e94e`: detached nightly forma
 ## 2026-10-29T09:23:48.776892+00:00 — DONE pipeline property reference comparison
 
 Six batch SQL property probes ran against Spark 4.2.1 and Sail `a007290e7a628c0b9da373b4490431147134e94e`. Evidence under `docs/sail-declarative-pipelines/evidence/spark-4.2.1-properties-reference` establishes open differences in unknown-key filtering, canonical key storage, invalid reset values during dry runs, and mixed-case lookup order. Initial Spark static-config setup failure is retained. No implementation parity verdict; next action is graph-validation and materialization corrections within the existing batch design.
+
+## 2026-10-29T09:27:15.731812+00:00 — DONE pipeline property validation
+
+Sail `e4d578ce0658f94884753e3bfdadb3f2208f5af6` passed its detached fmt, strict Clippy, CLI build, Python lint, 112 selected Sail cases and 67 unchanged upstream Python executions. Six new property API assertions failed at the prior source and passed unchanged on Spark 4.2.1 and the committed implementation. Exact canonical reset values are validated during analysis; publication filters unknown pipeline keys and canonicalizes known keys while retaining upstream mixed-case lookup order. Evidence is under `docs/sail-declarative-pipelines/evidence/e4d578ce0658f94884753e3bfdadb3f2208f5af6`. Batch acceptance remains active, including broader property/reset constraints, diagnostics and event semantics. No new design phase, push, PR or publication.

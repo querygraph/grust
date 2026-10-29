@@ -1,0 +1,261 @@
+FFFFFF                                                                   [100%]
+=================================== FAILURES ===================================
+_________ test_pipeline_table_properties[properties0-False-expected0] __________
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x119330c80>
+pipeline = ('d0edd36c-c21d-4e89-92c4-347b113037fc', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x119271430>, <function pipeline_factory.<locals>.create.<locals>.run at 0x11933e840>)
+properties = {'pipelines.unknown': 'x', 'custom': 'keep'}, dry = False
+expected = {'custom': 'keep'}
+
+    @pytest.mark.parametrize(
+        "properties, dry, expected",
+        [
+            ({"pipelines.unknown": "x", "custom": "keep"}, False, {"custom": "keep"}),
+            ({"PIPELINES.RESET.ALLOWED": "false"}, False, {"pipelines.reset.allowed": "false"}),
+            ({"pipelines.reset.allowed": "maybe"}, False, None),
+            ({"pipelines.reset.allowed": "maybe"}, True, None),
+            ({"PIPELINES.RESET.ALLOWED": "maybe"}, False, {"pipelines.reset.allowed": "maybe"}),
+            ({"pipelines.reset.allowed": " TRUE "}, False, None),
+        ],
+    )
+    def test_pipeline_table_properties(pipeline_spark, pipeline, properties, dry, expected):
+        _, registry, run = pipeline
+        with graph_element_registration_context(registry):
+    
+            @dp.materialized_view(table_properties=properties)
+            def output():
+                return pipeline_spark.range(1)
+    
+        if expected is None:
+            with pytest.raises(IllegalArgumentException, match="Could not parse value"):
+                run(dry=dry)
+            assert not pipeline_spark.catalog.tableExists("output")
+        else:
+            run(dry=dry)
+            stored = {
+                row.key: row.value
+                for row in pipeline_spark.sql("SHOW TBLPROPERTIES output").collect()
+                if row.key.lower().startswith("pipelines.") or row.key == "custom"
+            }
+>           assert stored == expected
+E           AssertionError: assert {'custom': 'k...unknown': 'x'} == {'custom': 'keep'}
+E             
+E             Omitting 1 identical items, use -vv to show
+E             Left contains 1 more item:
+E             {'pipelines.unknown': 'x'}
+E             Use -v to get more diff
+
+python/pysail/tests/spark/pipelines/test_properties.py:41: AssertionError
+----------------------------- Captured stdout call -----------------------------
+2026-10-29 09:25:08: Starting pipeline analysis
+2026-10-29 09:25:08: Pipeline run completed
+_________ test_pipeline_table_properties[properties1-False-expected1] __________
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x119353bc0>
+pipeline = ('99edda5b-0a3c-4bfb-ab5a-c0697ab7c9f3', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x1194444a0>, <function pipeline_factory.<locals>.create.<locals>.run at 0x119432020>)
+properties = {'PIPELINES.RESET.ALLOWED': 'false'}, dry = False
+expected = {'pipelines.reset.allowed': 'false'}
+
+    @pytest.mark.parametrize(
+        "properties, dry, expected",
+        [
+            ({"pipelines.unknown": "x", "custom": "keep"}, False, {"custom": "keep"}),
+            ({"PIPELINES.RESET.ALLOWED": "false"}, False, {"pipelines.reset.allowed": "false"}),
+            ({"pipelines.reset.allowed": "maybe"}, False, None),
+            ({"pipelines.reset.allowed": "maybe"}, True, None),
+            ({"PIPELINES.RESET.ALLOWED": "maybe"}, False, {"pipelines.reset.allowed": "maybe"}),
+            ({"pipelines.reset.allowed": " TRUE "}, False, None),
+        ],
+    )
+    def test_pipeline_table_properties(pipeline_spark, pipeline, properties, dry, expected):
+        _, registry, run = pipeline
+        with graph_element_registration_context(registry):
+    
+            @dp.materialized_view(table_properties=properties)
+            def output():
+                return pipeline_spark.range(1)
+    
+        if expected is None:
+            with pytest.raises(IllegalArgumentException, match="Could not parse value"):
+                run(dry=dry)
+            assert not pipeline_spark.catalog.tableExists("output")
+        else:
+            run(dry=dry)
+            stored = {
+                row.key: row.value
+                for row in pipeline_spark.sql("SHOW TBLPROPERTIES output").collect()
+                if row.key.lower().startswith("pipelines.") or row.key == "custom"
+            }
+>           assert stored == expected
+E           AssertionError: assert {'PIPELINES.R...WED': 'false'} == {'pipelines.r...wed': 'false'}
+E             
+E             Left contains 1 more item:
+E             {'PIPELINES.RESET.ALLOWED': 'false'}
+E             Right contains 1 more item:
+E             {'pipelines.reset.allowed': 'false'}
+E             Use -v to get more diff
+
+python/pysail/tests/spark/pipelines/test_properties.py:41: AssertionError
+----------------------------- Captured stdout call -----------------------------
+2026-10-29 09:25:08: Starting pipeline analysis
+2026-10-29 09:25:08: Pipeline run completed
+____________ test_pipeline_table_properties[properties2-False-None] ____________
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x119353470>
+pipeline = ('f322c8b5-1527-4dd4-990f-ef4c15c2de19', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x119445910>, <function pipeline_factory.<locals>.create.<locals>.run at 0x119433060>)
+properties = {'pipelines.reset.allowed': 'maybe'}, dry = False, expected = None
+
+    @pytest.mark.parametrize(
+        "properties, dry, expected",
+        [
+            ({"pipelines.unknown": "x", "custom": "keep"}, False, {"custom": "keep"}),
+            ({"PIPELINES.RESET.ALLOWED": "false"}, False, {"pipelines.reset.allowed": "false"}),
+            ({"pipelines.reset.allowed": "maybe"}, False, None),
+            ({"pipelines.reset.allowed": "maybe"}, True, None),
+            ({"PIPELINES.RESET.ALLOWED": "maybe"}, False, {"pipelines.reset.allowed": "maybe"}),
+            ({"pipelines.reset.allowed": " TRUE "}, False, None),
+        ],
+    )
+    def test_pipeline_table_properties(pipeline_spark, pipeline, properties, dry, expected):
+        _, registry, run = pipeline
+        with graph_element_registration_context(registry):
+    
+            @dp.materialized_view(table_properties=properties)
+            def output():
+                return pipeline_spark.range(1)
+    
+        if expected is None:
+>           with pytest.raises(IllegalArgumentException, match="Could not parse value"):
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           Failed: DID NOT RAISE IllegalArgumentException
+
+python/pysail/tests/spark/pipelines/test_properties.py:31: Failed
+----------------------------- Captured stdout call -----------------------------
+2026-10-29 09:25:08: Starting pipeline analysis
+2026-10-29 09:25:08: Pipeline run completed
+____________ test_pipeline_table_properties[properties3-True-None] _____________
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x119445a00>
+pipeline = ('b885b83b-90a2-4891-8a38-0cb3c7dfc26b', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x119447890>, <function pipeline_factory.<locals>.create.<locals>.run at 0x119450180>)
+properties = {'pipelines.reset.allowed': 'maybe'}, dry = True, expected = None
+
+    @pytest.mark.parametrize(
+        "properties, dry, expected",
+        [
+            ({"pipelines.unknown": "x", "custom": "keep"}, False, {"custom": "keep"}),
+            ({"PIPELINES.RESET.ALLOWED": "false"}, False, {"pipelines.reset.allowed": "false"}),
+            ({"pipelines.reset.allowed": "maybe"}, False, None),
+            ({"pipelines.reset.allowed": "maybe"}, True, None),
+            ({"PIPELINES.RESET.ALLOWED": "maybe"}, False, {"pipelines.reset.allowed": "maybe"}),
+            ({"pipelines.reset.allowed": " TRUE "}, False, None),
+        ],
+    )
+    def test_pipeline_table_properties(pipeline_spark, pipeline, properties, dry, expected):
+        _, registry, run = pipeline
+        with graph_element_registration_context(registry):
+    
+            @dp.materialized_view(table_properties=properties)
+            def output():
+                return pipeline_spark.range(1)
+    
+        if expected is None:
+>           with pytest.raises(IllegalArgumentException, match="Could not parse value"):
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           Failed: DID NOT RAISE IllegalArgumentException
+
+python/pysail/tests/spark/pipelines/test_properties.py:31: Failed
+----------------------------- Captured stdout call -----------------------------
+2026-10-29 09:25:08: Starting pipeline analysis
+2026-10-29 09:25:08: Pipeline run completed
+_________ test_pipeline_table_properties[properties4-False-expected4] __________
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x119446f30>
+pipeline = ('ad831e09-9e65-4398-be43-1f0cb5440890', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x119465730>, <function pipeline_factory.<locals>.create.<locals>.run at 0x119451d00>)
+properties = {'PIPELINES.RESET.ALLOWED': 'maybe'}, dry = False
+expected = {'pipelines.reset.allowed': 'maybe'}
+
+    @pytest.mark.parametrize(
+        "properties, dry, expected",
+        [
+            ({"pipelines.unknown": "x", "custom": "keep"}, False, {"custom": "keep"}),
+            ({"PIPELINES.RESET.ALLOWED": "false"}, False, {"pipelines.reset.allowed": "false"}),
+            ({"pipelines.reset.allowed": "maybe"}, False, None),
+            ({"pipelines.reset.allowed": "maybe"}, True, None),
+            ({"PIPELINES.RESET.ALLOWED": "maybe"}, False, {"pipelines.reset.allowed": "maybe"}),
+            ({"pipelines.reset.allowed": " TRUE "}, False, None),
+        ],
+    )
+    def test_pipeline_table_properties(pipeline_spark, pipeline, properties, dry, expected):
+        _, registry, run = pipeline
+        with graph_element_registration_context(registry):
+    
+            @dp.materialized_view(table_properties=properties)
+            def output():
+                return pipeline_spark.range(1)
+    
+        if expected is None:
+            with pytest.raises(IllegalArgumentException, match="Could not parse value"):
+                run(dry=dry)
+            assert not pipeline_spark.catalog.tableExists("output")
+        else:
+            run(dry=dry)
+            stored = {
+                row.key: row.value
+                for row in pipeline_spark.sql("SHOW TBLPROPERTIES output").collect()
+                if row.key.lower().startswith("pipelines.") or row.key == "custom"
+            }
+>           assert stored == expected
+E           AssertionError: assert {'PIPELINES.R...WED': 'maybe'} == {'pipelines.r...wed': 'maybe'}
+E             
+E             Left contains 1 more item:
+E             {'PIPELINES.RESET.ALLOWED': 'maybe'}
+E             Right contains 1 more item:
+E             {'pipelines.reset.allowed': 'maybe'}
+E             Use -v to get more diff
+
+python/pysail/tests/spark/pipelines/test_properties.py:41: AssertionError
+----------------------------- Captured stdout call -----------------------------
+2026-10-29 09:25:08: Starting pipeline analysis
+2026-10-29 09:25:08: Pipeline run completed
+____________ test_pipeline_table_properties[properties5-False-None] ____________
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x119465310>
+pipeline = ('1a3dc783-be61-4e37-bc04-7b45ec986a04', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x119467590>, <function pipeline_factory.<locals>.create.<locals>.run at 0x119453560>)
+properties = {'pipelines.reset.allowed': ' TRUE '}, dry = False, expected = None
+
+    @pytest.mark.parametrize(
+        "properties, dry, expected",
+        [
+            ({"pipelines.unknown": "x", "custom": "keep"}, False, {"custom": "keep"}),
+            ({"PIPELINES.RESET.ALLOWED": "false"}, False, {"pipelines.reset.allowed": "false"}),
+            ({"pipelines.reset.allowed": "maybe"}, False, None),
+            ({"pipelines.reset.allowed": "maybe"}, True, None),
+            ({"PIPELINES.RESET.ALLOWED": "maybe"}, False, {"pipelines.reset.allowed": "maybe"}),
+            ({"pipelines.reset.allowed": " TRUE "}, False, None),
+        ],
+    )
+    def test_pipeline_table_properties(pipeline_spark, pipeline, properties, dry, expected):
+        _, registry, run = pipeline
+        with graph_element_registration_context(registry):
+    
+            @dp.materialized_view(table_properties=properties)
+            def output():
+                return pipeline_spark.range(1)
+    
+        if expected is None:
+>           with pytest.raises(IllegalArgumentException, match="Could not parse value"):
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           Failed: DID NOT RAISE IllegalArgumentException
+
+python/pysail/tests/spark/pipelines/test_properties.py:31: Failed
+----------------------------- Captured stdout call -----------------------------
+2026-10-29 09:25:08: Starting pipeline analysis
+2026-10-29 09:25:08: Pipeline run completed
+=========================== short test summary info ============================
+FAILED python/pysail/tests/spark/pipelines/test_properties.py::test_pipeline_table_properties[properties0-False-expected0]
+FAILED python/pysail/tests/spark/pipelines/test_properties.py::test_pipeline_table_properties[properties1-False-expected1]
+FAILED python/pysail/tests/spark/pipelines/test_properties.py::test_pipeline_table_properties[properties2-False-None]
+FAILED python/pysail/tests/spark/pipelines/test_properties.py::test_pipeline_table_properties[properties3-True-None]
+FAILED python/pysail/tests/spark/pipelines/test_properties.py::test_pipeline_table_properties[properties4-False-expected4]
+FAILED python/pysail/tests/spark/pipelines/test_properties.py::test_pipeline_table_properties[properties5-False-None]
+6 failed in 0.36s
