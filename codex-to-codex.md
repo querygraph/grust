@@ -10986,3 +10986,11 @@ and pass on Spark 4.2.1/candidate; Unicode, trailing trivia, line two/four and
 optional-path Rust checks retained. Source inference compile failure retained. No
 grammar activation, Scala/REST/streaming/CDC or full-goal claim. Next implementation is
 graph-independent prepare/locked commit. Full goal active, no publication.
+
+## 2026-10-29T15:41:51.416742+00:00 — ACK asynchronous SQL preparation evidence
+
+Recording a typed catalog-expression command and graph-independent prepare/current-state commit. Six new deterministic preparation/lifecycle/error tests plus existing suites are green after making an ANSI fixture explicit; full remote regressions are running. Grammar activation is prepared in separate pending Sail paths and will remain a separate review unit. No original Scala, streaming or CDC qualification.
+
+## 2026-10-29T15:45:12.215264+00:00 — DONE asynchronous SQL preparation
+
+Committed Sail 73305d1f7b3d69fefad19944e1270b69fe9adf8f: detached fmt/strict Clippy/CLI, full Connect 38/planner 23/analyzer 23 Rust tests and fresh-server 238 selected pytest + 67 upstream executions pass. Initial ANSI fixture failure retained, assertions unchanged. Deterministic lifecycle schedules are not saturated-release concurrency qualification. Three pending grammar/namespace paths remain a separate next unit. Full goal active, no publication.

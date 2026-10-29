@@ -1,0 +1,815 @@
+commit da35278a96e7d049eb0299f9858758bcc59a583b
+Author: Alexy Khrabrov <deliverable@gmail.com>
+Date:   Thu Oct 29 08:22:39 2026 -0700
+
+    refactor: prepare pipeline SQL outside the graph lock
+
+diff --git a/crates/sail-common/src/spec/plan.rs b/crates/sail-common/src/spec/plan.rs
+index 4203afad2..8e8dace44 100644
+--- a/crates/sail-common/src/spec/plan.rs
++++ b/crates/sail-common/src/spec/plan.rs
+@@ -418,6 +418,9 @@ pub enum CommandNode {
+     SetCurrentCatalog {
+         catalog: Identifier,
+     },
++    SetCurrentCatalogExpression {
++        catalog: Expr,
++    },
+     CreateCatalog {
+         catalog: Identifier,
+         #[serde(flatten)]
+diff --git a/crates/sail-plan/src/resolver/command/mod.rs b/crates/sail-plan/src/resolver/command/mod.rs
+index 01f4115ec..1372902f2 100644
+--- a/crates/sail-plan/src/resolver/command/mod.rs
++++ b/crates/sail-plan/src/resolver/command/mod.rs
+@@ -231,6 +231,10 @@ impl PlanResolver<'_> {
+                     catalog: catalog.into(),
+                 })
+             }
++            CommandNode::SetCurrentCatalogExpression { catalog } => {
++                let catalog = self.resolve_catalog_name(catalog).await?;
++                self.resolve_catalog_command(CatalogCommand::SetCurrentCatalog { catalog })
++            }
+             CommandNode::ListCatalogs { pattern } => {
+                 self.resolve_catalog_command(CatalogCommand::ListCatalogs { pattern })
+             }
+diff --git a/crates/sail-plan/src/resolver/constant/tests.rs b/crates/sail-plan/src/resolver/constant/tests.rs
+index a3108530e..e9c29b087 100644
+--- a/crates/sail-plan/src/resolver/constant/tests.rs
++++ b/crates/sail-plan/src/resolver/constant/tests.rs
+@@ -25,6 +25,42 @@ use crate::function::common::{FunctionContextInput, ScalarFunctionBuilder, Scala
+ 
+ type TestResult = Result<(), Box<dyn std::error::Error>>;
+ 
++#[tokio::test]
++async fn catalog_expression_command_emits_the_existing_catalog_operation() -> TestResult {
++    let context = context()?;
++    let resolver = PlanResolver::new(&context, Arc::new(PlanConfig::default()));
++    let named = resolver
++        .resolve_named_plan(spec::Plan::Command(spec::CommandPlan::new(
++            spec::CommandNode::SetCurrentCatalogExpression {
++                catalog: expression("CONCAT('cat', 'alog')")?,
++            },
++        )))
++        .await?;
++    assert!(named.fields.is_none());
++    let datafusion_expr::LogicalPlan::Extension(extension) = named.plan else {
++        return Err(PlanError::internal("expected catalog command").into());
++    };
++    let command = extension
++        .node
++        .as_any()
++        .downcast_ref::<crate::catalog::CatalogCommandNode>()
++        .ok_or_else(|| PlanError::internal("expected catalog command node"))?;
++    assert_eq!(
++        command.command(),
++        &sail_catalog::command::CatalogCommand::SetCurrentCatalog {
++            catalog: "catalog".into(),
++        }
++    );
++    assert_eq!(
++        context
++            .extension::<CatalogManager>()?
++            .default_catalog()?
++            .as_ref(),
++        "catalog"
++    );
++    Ok(())
++}
++
+ fn context() -> Result<SessionContext, Box<dyn std::error::Error>> {
+     let provider = MemoryCatalogProvider::new("catalog".into(), vec!["db"].try_into()?, None);
+     let catalog = CatalogManager::try_new(CatalogManagerOptions {
+diff --git a/crates/sail-spark-connect/src/pipelines/mod.rs b/crates/sail-spark-connect/src/pipelines/mod.rs
+index d2801288c..3da7bcffe 100644
+--- a/crates/sail-spark-connect/src/pipelines/mod.rs
++++ b/crates/sail-spark-connect/src/pipelines/mod.rs
+@@ -10,6 +10,7 @@ mod sql;
+ mod topology;
+ 
+ use std::collections::HashMap;
++use std::sync::Arc;
+ use std::time::SystemTime;
+ 
+ use datafusion::prelude::SessionContext;
+@@ -187,13 +188,30 @@ pub(crate) async fn handle_command(
+             ));
+         }
+         pc::CommandType::DefineSqlGraphElements(command) => {
+-            let graph = spark.pipeline(
+-                command
+-                    .dataflow_graph_id
+-                    .as_deref()
+-                    .required("dataflow graph id")?,
+-            )?;
+-            sql::register(&mut *graph.lock()?, command)?;
++            let id = command
++                .dataflow_graph_id
++                .as_deref()
++                .required("dataflow graph id")?
++                .to_string();
++            let mut config = None;
++            let preparation = sql::prepare(command, |expression| {
++                // Capture session planning configuration lazily, only when a catalog
++                // expression requires it. File/graph overrides belong to flows.
++                let config = match &config {
++                    Some(config) => Ok(Arc::clone(config)),
++                    None => spark
++                        .plan_config()
++                        .inspect(|value| config = Some(value.clone())),
++                };
++                async move {
++                    let resolver = sail_plan::resolver::PlanResolver::new(ctx, config?);
++                    resolver
++                        .resolve_catalog_name(expression)
++                        .await
++                        .map_err(SparkError::from)
++                }
++            });
++            sql::register(&spark, &id, preparation).await?;
+             sc::PipelineCommandResult::default()
+         }
+         _ => return Err(SparkError::unsupported("pipeline command")),
+diff --git a/crates/sail-spark-connect/src/pipelines/sql.rs b/crates/sail-spark-connect/src/pipelines/sql.rs
+index 61749c56b..5e56349bd 100644
+--- a/crates/sail-spark-connect/src/pipelines/sql.rs
++++ b/crates/sail-spark-connect/src/pipelines/sql.rs
+@@ -9,48 +9,143 @@ use super::graph::{Flow, PipelineGraph, analysis, quoted};
+ use crate::error::{ProtoFieldExt, SparkError, SparkResult, StructuredSparkError};
+ use crate::spark::connect::{OutputType, pipeline_command as pc};
+ 
+-pub(super) fn register(
+-    graph: &mut PipelineGraph,
++enum PreparationFailure {
++    Analysis(String),
++    Evaluation(SparkError),
++}
++
++struct PreparedStatement {
++    span: sail_sql_analyzer::source::TokenSpan,
++    result: Result<PipelineStatement, PreparationFailure>,
++}
++
++pub(super) struct PreparedSql {
++    text: String,
++    file: Option<String>,
++    statements: Vec<PreparedStatement>,
++}
++
++/// Preparation owns no graph state. Its future is polled only after the initial
++/// membership/idle check, and no graph guard survives its await.
++pub(super) async fn register<F>(
++    spark: &crate::session::SparkSession,
++    id: &str,
++    preparation: F,
++) -> SparkResult<()>
++where
++    F: std::future::Future<Output = SparkResult<PreparedSql>>,
++{
++    {
++        let graph = spark.pipeline(id)?;
++        graph.lock()?.ensure_idle()?;
++    }
++    let prepared = preparation.await?;
++    let graph = spark.pipeline(id)?;
++    let mut graph = graph.lock()?;
++    prepared.commit(&mut graph)
++}
++
++pub(super) async fn prepare<F, R>(
+     command: pc::DefineSqlGraphElements,
+-) -> SparkResult<()> {
+-    graph.ensure_idle()?;
++    mut resolve_catalog: F,
++) -> SparkResult<PreparedSql>
++where
++    F: FnMut(spec::Expr) -> R,
++    R: std::future::Future<Output = SparkResult<String>>,
++{
+     let text = command.sql_text.required("pipeline SQL text")?;
+-    let mut draft = PipelineGraph::new(
+-        graph.definition.catalog.clone(),
+-        graph.definition.database.clone(),
+-        graph.definition.sql_conf.clone(),
+-    );
+-    draft.definition = graph.definition.clone();
+     let source = SqlSource::new(&text)?;
++    let mut statements = vec![];
+     for (statement, span) in source.parse_statements_with_spans()? {
+-        let result = from_ast_pipeline_statement_with_source(statement, &source)
+-            .map_err(SparkError::from)
+-            .and_then(|statement| register_statement(&mut draft, statement));
+-        if let Err(error) = result {
+-            return Err(Box::new(registration_error(
+-                error.to_string(),
+-                source.statement_origin(span)?,
+-                command.sql_file_path.as_deref(),
+-            ))
+-            .into());
++        let result = match from_ast_pipeline_statement_with_source(statement, &source) {
++            Ok(statement) => resolve_statement(statement, &mut resolve_catalog).await,
++            Err(error) => Err(PreparationFailure::Analysis(error.to_string())),
++        };
++        let failed = result.is_err();
++        statements.push(PreparedStatement { span, result });
++        if failed {
++            break;
+         }
+     }
+-    // USE and SET apply to this SQL file. Each flow keeps its own captured
+-    // namespace/configuration; subsequent files start from pipeline defaults.
+-    draft
+-        .definition
+-        .catalog
+-        .clone_from(&graph.definition.catalog);
+-    draft
+-        .definition
+-        .database
+-        .clone_from(&graph.definition.database);
+-    draft
+-        .definition
+-        .sql_conf
+-        .clone_from(&graph.definition.sql_conf);
+-    graph.definition = draft.definition;
+-    Ok(())
++    drop(source);
++    Ok(PreparedSql {
++        text,
++        file: command.sql_file_path,
++        statements,
++    })
++}
++
++async fn resolve_statement<F, R>(
++    statement: PipelineStatement,
++    resolve_catalog: &mut F,
++) -> Result<PipelineStatement, PreparationFailure>
++where
++    F: FnMut(spec::Expr) -> R,
++    R: std::future::Future<Output = SparkResult<String>>,
++{
++    let PipelineStatement::Command(spec::CommandNode::SetCurrentCatalogExpression { catalog }) =
++        statement
++    else {
++        return Ok(statement);
++    };
++    match resolve_catalog(catalog).await {
++        Ok(catalog) => Ok(PipelineStatement::Command(
++            spec::CommandNode::SetCurrentCatalog {
++                catalog: catalog.into(),
++            },
++        )),
++        Err(SparkError::AnalysisError(message)) => Err(PreparationFailure::Analysis(format!(
++            "Failed to resolve catalog expression: {message}"
++        ))),
++        Err(error) => Err(PreparationFailure::Evaluation(error)),
++    }
++}
++
++impl PreparedSql {
++    pub(super) fn commit(self, graph: &mut PipelineGraph) -> SparkResult<()> {
++        graph.ensure_idle()?;
++        // Clone current state only after preparation, retaining concurrent registrations.
++        let mut draft = PipelineGraph::new(
++            graph.definition.catalog.clone(),
++            graph.definition.database.clone(),
++            graph.definition.sql_conf.clone(),
++        );
++        draft.definition = graph.definition.clone();
++        for statement in self.statements {
++            let result = match statement.result {
++                Ok(statement) => register_statement(&mut draft, statement)
++                    .map_err(|error| PreparationFailure::Analysis(error.to_string())),
++                Err(error) => Err(error),
++            };
++            match result {
++                Ok(()) => {}
++                Err(PreparationFailure::Evaluation(error)) => return Err(error),
++                Err(PreparationFailure::Analysis(message)) => {
++                    return Err(Box::new(registration_error(
++                        message,
++                        StatementOrigin::from_span(&self.text, statement.span)?,
++                        self.file.as_deref(),
++                    ))
++                    .into());
++                }
++            }
++        }
++        // Namespace/configuration directives are local to this file.
++        draft
++            .definition
++            .catalog
++            .clone_from(&graph.definition.catalog);
++        draft
++            .definition
++            .database
++            .clone_from(&graph.definition.database);
++        draft
++            .definition
++            .sql_conf
++            .clone_from(&graph.definition.sql_conf);
++        graph.definition = draft.definition;
++        Ok(())
++    }
+ }
+ 
+ fn registration_error(
+diff --git a/crates/sail-spark-connect/src/pipelines/sql/tests.rs b/crates/sail-spark-connect/src/pipelines/sql/tests.rs
+index ffa9e7040..116f88d2c 100644
+--- a/crates/sail-spark-connect/src/pipelines/sql/tests.rs
++++ b/crates/sail-spark-connect/src/pipelines/sql/tests.rs
+@@ -17,7 +17,7 @@ use sail_plan::catalog::SparkCatalogObjectDisplay;
+ use sail_plan::formatter::SparkPlanFormatter;
+ use sail_plan::resolver::PlanResolver;
+ 
+-use super::{PipelineGraph, register, registration_error};
++use super::{PipelineGraph, prepare, registration_error};
+ use crate::error::{SparkError, SparkResult};
+ use crate::session::{SparkSession, SparkSessionOptions};
+ use crate::spark::connect::{OutputType, pipeline_command as pc};
+@@ -26,15 +26,25 @@ fn graph() -> PipelineGraph {
+     PipelineGraph::new("test_catalog".into(), "test_db".into(), HashMap::new())
+ }
+ 
+-fn register_sql(graph: &mut PipelineGraph, sql: &str, file: &str) -> SparkResult<()> {
+-    register(
+-        graph,
++async fn register_sql(graph: &mut PipelineGraph, sql: &str, file: &str) -> SparkResult<()> {
++    prepare(
+         pc::DefineSqlGraphElements {
+             sql_text: Some(sql.into()),
+             sql_file_path: Some(file.into()),
+             ..Default::default()
+         },
++        |expression| async move {
++            let context =
++                resolution_context().map_err(|error| SparkError::internal(error.to_string()))?;
++            let spark = context.extension::<SparkSession>()?;
++            PlanResolver::new(&context, spark.plan_config()?)
++                .resolve_catalog_name(expression)
++                .await
++                .map_err(SparkError::from)
++        },
+     )
++    .await?
++    .commit(graph)
+ }
+ 
+ fn name(table: &str) -> Vec<String> {
+@@ -73,15 +83,16 @@ fn sql_registration_errors_have_origin_parameters_with_optional_paths() {
+     }
+ }
+ 
+-#[test]
+-fn identity_partition_columns_keep_declared_order() -> SparkResult<()> {
++#[tokio::test]
++async fn identity_partition_columns_keep_declared_order() -> SparkResult<()> {
+     let mut graph = graph();
+     register_sql(
+         &mut graph,
+         "CREATE MATERIALIZED VIEW a PARTITIONED BY (id1, id2) \
+          AS SELECT id AS id1, id AS id2 FROM range(1, 2)",
+         "partition.sql",
+-    )?;
++    )
++    .await?;
+     let [output] = graph.definition.outputs.as_slice() else {
+         return Err(SparkError::internal("expected one partitioned output"));
+     };
+@@ -94,15 +105,16 @@ fn identity_partition_columns_keep_declared_order() -> SparkResult<()> {
+     Ok(())
+ }
+ 
+-#[test]
+-fn streaming_table_properties_are_registered_without_execution() -> SparkResult<()> {
++#[tokio::test]
++async fn streaming_table_properties_are_registered_without_execution() -> SparkResult<()> {
+     let mut graph = graph();
+     // The original Spark fixture resolves registration without validating streamingness.
+     register_sql(
+         &mut graph,
+         "CREATE STREAMING TABLE st TBLPROPERTIES ('prop1'='foo', 'prop2'='bar') AS SELECT 1",
+         "properties.sql",
+-    )?;
++    )
++    .await?;
+     let [output] = graph.definition.outputs.as_slice() else {
+         return Err(SparkError::internal("expected one streaming output"));
+     };
+@@ -121,8 +133,8 @@ fn streaming_table_properties_are_registered_without_execution() -> SparkResult<
+     Ok(())
+ }
+ 
+-#[test]
+-fn sql_configuration_is_captured_per_flow_and_reset_per_file() -> SparkResult<()> {
++#[tokio::test]
++async fn sql_configuration_is_captured_per_flow_and_reset_per_file() -> SparkResult<()> {
+     let mut graph = graph();
+     register_sql(
+         &mut graph,
+@@ -133,7 +145,8 @@ fn sql_configuration_is_captured_per_flow_and_reset_per_file() -> SparkResult<()
+          SET conf.test2 = c; \
+          CREATE STREAMING TABLE c AS SELECT id FROM range(1, 2);",
+         "configuration.sql",
+-    )?;
++    )
++    .await?;
+     let configurations: Vec<_> = graph
+         .definition
+         .flows
+@@ -159,7 +172,8 @@ fn sql_configuration_is_captured_per_flow_and_reset_per_file() -> SparkResult<()
+         &mut graph,
+         "CREATE MATERIALIZED VIEW d AS SELECT 1 AS value",
+         "next.sql",
+-    )?;
++    )
++    .await?;
+     let Some(flow) = graph.definition.flows.last() else {
+         return Err(SparkError::internal("expected next-file flow"));
+     };
+@@ -209,7 +223,8 @@ async fn declared_schema_validation_preserves_resolved_query_nullability()
+         &mut graph,
+         "CREATE MATERIALIZED VIEW a (id LONG COMMENT 'comment') AS SELECT * FROM RANGE(5);",
+         "schema.sql",
+-    )?;
++    )
++    .await?;
+     let [output] = graph.definition.outputs.as_slice() else {
+         return Err(SparkError::internal("expected one declared output").into());
+     };
+@@ -233,14 +248,15 @@ async fn declared_schema_validation_preserves_resolved_query_nullability()
+     Ok(())
+ }
+ 
+-#[test]
+-fn persisted_view_retains_original_query_text_and_comment() -> SparkResult<()> {
++#[tokio::test]
++async fn persisted_view_retains_original_query_text_and_comment() -> SparkResult<()> {
+     let mut graph = graph();
+     register_sql(
+         &mut graph,
+         "CREATE VIEW b COMMENT 'my persisted comment' AS SELECT * FROM range(1, 4);",
+         "view.sql",
+-    )?;
++    )
++    .await?;
+     let [output] = graph.definition.outputs.as_slice() else {
+         return Err(SparkError::internal("expected one persisted view"));
+     };
+@@ -254,15 +270,16 @@ fn persisted_view_retains_original_query_text_and_comment() -> SparkResult<()> {
+     Ok(())
+ }
+ 
+-#[test]
+-fn view_source_intervals_preserve_file_atomicity_and_namespace_reset() -> SparkResult<()> {
++#[tokio::test]
++async fn view_source_intervals_preserve_file_atomicity_and_namespace_reset() -> SparkResult<()> {
+     let mut graph = graph();
+     register_sql(
+         &mut graph,
+         "USE other_db; CREATE VIEW a AS SELECT 'é;雪' AS x; \
+          CREATE VIEW b AS SELECT /* ; */ x FROM a;",
+         "views.sql",
+-    )?;
++    )
++    .await?;
+     assert_eq!(graph.definition.outputs.len(), 2);
+     for (output, (table, query)) in graph.definition.outputs.iter().zip([
+         ("a", "SELECT 'é;雪' AS x"),
+@@ -280,11 +297,14 @@ fn view_source_intervals_preserve_file_atomicity_and_namespace_reset() -> SparkR
+             "USE failed_db; CREATE VIEW rejected AS SELECT 2; SELECT 3;",
+             "failed.sql",
+         )
++        .await
+         .is_err()
+     );
+     assert_eq!(graph.definition.outputs.len(), 2);
+-    register_sql(&mut graph, "CREATE VIEW c AS SELECT 4", "next.sql")?;
++    register_sql(&mut graph, "CREATE VIEW c AS SELECT 4", "next.sql").await?;
+     assert_eq!(graph.definition.outputs.len(), 3);
+     assert_eq!(graph.definition.outputs[2].name, name("c"));
+     Ok(())
+ }
++
++mod preparation;
+diff --git a/crates/sail-spark-connect/src/pipelines/sql/tests/preparation.rs b/crates/sail-spark-connect/src/pipelines/sql/tests/preparation.rs
+new file mode 100644
+index 000000000..fa8a3fcea
+--- /dev/null
++++ b/crates/sail-spark-connect/src/pipelines/sql/tests/preparation.rs
+@@ -0,0 +1,261 @@
++use std::sync::atomic::{AtomicBool, Ordering};
++
++use sail_sql_analyzer::pipeline::PipelineStatement;
++use sail_sql_analyzer::source::SqlSource;
++use tokio::sync::Barrier;
++use tokio::task::JoinHandle;
++
++use super::super::{
++    PreparationFailure, PreparedSql, PreparedStatement, register, resolve_statement,
++};
++use super::*;
++
++fn command(sql: &str) -> pc::DefineSqlGraphElements {
++    pc::DefineSqlGraphElements {
++        sql_text: Some(sql.into()),
++        sql_file_path: Some("preparation.sql".into()),
++        ..Default::default()
++    }
++}
++
++fn paused_registration(
++    spark: Arc<SparkSession>,
++    id: String,
++) -> (JoinHandle<SparkResult<()>>, Arc<Barrier>, Arc<Barrier>) {
++    let entered = Arc::new(Barrier::new(2));
++    let resume = Arc::new(Barrier::new(2));
++    let entered_task = entered.clone();
++    let resume_task = resume.clone();
++    let task = tokio::spawn(async move {
++        register(&spark, &id, async {
++            entered_task.wait().await;
++            resume_task.wait().await;
++            prepare(
++                command("CREATE MATERIALIZED VIEW prepared AS SELECT 1"),
++                |_| async { Err(SparkError::internal("unexpected expression in static SQL")) },
++            )
++            .await
++        })
++        .await
++    });
++    (task, entered, resume)
++}
++
++async fn wait_until_preparing(
++    task: &mut JoinHandle<SparkResult<()>>,
++    entered: &Barrier,
++) -> SparkResult<()> {
++    tokio::select! {
++        _ = entered.wait() => Ok(()),
++        result = task => {
++            result??;
++            Err(SparkError::internal("registration completed before preparation barrier"))
++        }
++    }
++}
++
++#[tokio::test]
++async fn preparation_releases_graph_lock_and_retains_concurrent_outputs()
++-> Result<(), Box<dyn std::error::Error>> {
++    let context = resolution_context()?;
++    let spark = context.extension::<SparkSession>()?;
++    let id = spark.add_pipeline(graph())?;
++    let (mut task, entered, resume) = paused_registration(spark.clone(), id.clone());
++    wait_until_preparing(&mut task, &entered).await?;
++    {
++        let graph = spark.pipeline(&id)?;
++        graph
++            .try_lock()
++            .map_err(|error| SparkError::internal(error.to_string()))?
++            .define_output(pc::DefineOutput {
++                output_name: Some("concurrent".into()),
++                output_type: Some(OutputType::MaterializedView as i32),
++                ..Default::default()
++            })?;
++    }
++    resume.wait().await;
++    task.await??;
++    let graph = spark.pipeline(&id)?;
++    let graph = graph
++        .lock()
++        .map_err(|error| SparkError::internal(error.to_string()))?;
++    assert_eq!(
++        graph
++            .definition
++            .outputs
++            .iter()
++            .map(|output| output.name.clone())
++            .collect::<Vec<_>>(),
++        vec![name("concurrent"), name("prepared")]
++    );
++    Ok(())
++}
++
++#[tokio::test]
++async fn graph_dropped_during_preparation_is_not_committed()
++-> Result<(), Box<dyn std::error::Error>> {
++    let context = resolution_context()?;
++    let spark = context.extension::<SparkSession>()?;
++    let id = spark.add_pipeline(graph())?;
++    let (mut task, entered, resume) = paused_registration(spark.clone(), id.clone());
++    wait_until_preparing(&mut task, &entered).await?;
++    spark.drop_pipeline(&id)?;
++    resume.wait().await;
++    let error = task
++        .await?
++        .err()
++        .ok_or_else(|| SparkError::internal("expected graph-not-found"))?;
++    assert!(
++        error.to_string().contains("DATAFLOW_GRAPH_NOT_FOUND"),
++        "{error}"
++    );
++    assert!(spark.pipeline(&id).is_err());
++    Ok(())
++}
++
++#[tokio::test]
++async fn run_started_during_preparation_rejects_commit() -> Result<(), Box<dyn std::error::Error>> {
++    let context = resolution_context()?;
++    let spark = context.extension::<SparkSession>()?;
++    let mut initial = graph();
++    register_sql(
++        &mut initial,
++        "CREATE MATERIALIZED VIEW initial AS SELECT 1",
++        "initial.sql",
++    )
++    .await?;
++    let id = spark.add_pipeline(initial)?;
++    let (mut task, entered, resume) = paused_registration(spark.clone(), id.clone());
++    wait_until_preparing(&mut task, &entered).await?;
++    let (_, active) = spark
++        .pipeline(&id)?
++        .lock()
++        .map_err(|error| SparkError::internal(error.to_string()))?
++        .start(&id)?;
++    resume.wait().await;
++    let error = task
++        .await?
++        .err()
++        .ok_or_else(|| SparkError::internal("expected active-run rejection"))?;
++    assert!(error.to_string().contains("already active"), "{error}");
++    assert_eq!(
++        spark
++            .pipeline(&id)?
++            .lock()
++            .map_err(|error| SparkError::internal(error.to_string()))?
++            .definition
++            .outputs
++            .len(),
++        1
++    );
++    drop(active);
++    Ok(())
++}
++
++#[tokio::test]
++async fn missing_graph_is_checked_before_polling_preparation() -> SparkResult<()> {
++    let context = resolution_context().map_err(|error| SparkError::internal(error.to_string()))?;
++    let spark = context.extension::<SparkSession>()?;
++    let polled = AtomicBool::new(false);
++    let result = register(&spark, "missing", async {
++        polled.store(true, Ordering::SeqCst);
++        prepare(command("SELECT 1"), |_| async { Ok("unused".into()) }).await
++    })
++    .await;
++    assert!(result.is_err());
++    assert!(!polled.load(Ordering::SeqCst));
++    Ok(())
++}
++
++#[tokio::test]
++async fn earlier_registration_error_wins_and_discards_the_entire_draft() -> SparkResult<()> {
++    let mut graph = graph();
++    let prepared = prepare(
++        command(
++            "SET conf.test = changed; USE other_db; \
++         CREATE MATERIALIZED VIEW transient AS SELECT 1; \
++         CREATE GLOBAL TEMPORARY VIEW rejected AS SELECT 1; SELECT 2",
++        ),
++        |_| async { Ok("unused".into()) },
++    )
++    .await?;
++    let error = prepared
++        .commit(&mut graph)
++        .err()
++        .ok_or_else(|| SparkError::internal("expected registration failure"))?;
++    assert!(
++        error
++            .to_string()
++            .contains("SQL statement in pipeline definitions"),
++        "{error}"
++    );
++    assert!(
++        !error.to_string().contains("Unsupported query statement"),
++        "{error}"
++    );
++    assert!(graph.definition.outputs.is_empty());
++    assert!(graph.definition.flows.is_empty());
++    assert_eq!(graph.definition.catalog, "test_catalog");
++    assert_eq!(graph.definition.database, "test_db");
++    assert!(graph.definition.sql_conf.is_empty());
++    Ok(())
++}
++
++#[tokio::test]
++async fn typed_catalog_preparation_uses_shared_resolution_and_preserves_error_kinds()
++-> Result<(), Box<dyn std::error::Error>> {
++    let context = resolution_context()?;
++    let spark = context.extension::<SparkSession>()?;
++    let resolver = &PlanResolver::new(&context, spark.plan_config()?);
++    let mut resolve = |expression| async move {
++        resolver
++            .resolve_catalog_name(expression)
++            .await
++            .map_err(SparkError::from)
++    };
++    let statement = |sql| -> SparkResult<PipelineStatement> {
++        Ok(PipelineStatement::Command(
++            spec::CommandNode::SetCurrentCatalogExpression {
++                catalog: sail_sql_analyzer::expression::from_ast_expression(
++                    sail_sql_analyzer::parser::parse_expression(sql)?,
++                )?,
++            },
++        ))
++    };
++    let result = resolve_statement(statement("CONCAT('test_', 'catalog')")?, &mut resolve).await;
++    assert!(
++        matches!(result, Ok(PipelineStatement::Command(spec::CommandNode::SetCurrentCatalog { catalog }))
++        if catalog.as_ref() == "test_catalog")
++    );
++    let result = resolve_statement(statement("CAST(NULL AS STRING)")?, &mut resolve).await;
++    assert!(matches!(result, Err(PreparationFailure::Analysis(message))
++        if message.starts_with("Failed to resolve catalog expression: ") && message.contains("NOT_A_CONSTANT_STRING.NULL")));
++    let result = resolve_statement(
++        statement("CAST(CAST('bad' AS INT) AS STRING)")?,
++        &mut resolve,
++    )
++    .await;
++    assert!(matches!(result, Err(PreparationFailure::Evaluation(_))));
++    let text = "SET CATALOG 'placeholder'";
++    let source = SqlSource::new(text)?;
++    let (_, span) = source
++        .parse_statements_with_spans()?
++        .pop()
++        .ok_or_else(|| SparkError::internal("expected statement span"))?;
++    let prepared = PreparedSql {
++        text: text.into(),
++        file: Some("preparation.sql".into()),
++        statements: vec![PreparedStatement { span, result }],
++    };
++    let error = prepared
++        .commit(&mut graph())
++        .err()
++        .ok_or_else(|| SparkError::internal("expected evaluation failure"))?;
++    assert!(matches!(error, SparkError::DataFusionError(_)), "{error}");
++    assert!(
++        !error
++            .to_string()
++            .contains("PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR")
++    );
++    Ok(())
++}
+diff --git a/crates/sail-sql-analyzer/src/source.rs b/crates/sail-sql-analyzer/src/source.rs
+index a2bab4449..575dda09d 100644
+--- a/crates/sail-sql-analyzer/src/source.rs
++++ b/crates/sail-sql-analyzer/src/source.rs
+@@ -6,7 +6,7 @@ use chumsky::span::SimpleSpan;
+ use sail_sql_parser::ast::statement::Statement;
+ use sail_sql_parser::options::ParserOptions;
+ use sail_sql_parser::parser::{create_parser, create_parser_with_spans};
+-use sail_sql_parser::span::TokenSpan;
++pub use sail_sql_parser::span::TokenSpan;
+ use sail_sql_parser::token::{Keyword, Punctuation, Token};
+ 
+ use crate::error::{SqlError, SqlResult};
+@@ -27,6 +27,22 @@ pub struct StatementOrigin<'a> {
+     pub line: usize,
+ }
+ 
++impl<'a> StatementOrigin<'a> {
++    /// Recover an origin after parsing without retaining or rebuilding lexer tokens.
++    pub fn from_span(input: &'a str, span: TokenSpan) -> SqlResult<Self> {
++        let invalid = || SqlError::invalid("statement span does not match SQL source");
++        if span.is_empty() {
++            return Err(invalid());
++        }
++        let text = input.get(span.start..span.end).ok_or_else(invalid)?;
++        let prefix = input.get(..span.start).ok_or_else(invalid)?;
++        Ok(Self {
++            text,
++            line: 1 + prefix.bytes().filter(|byte| *byte == b'\n').count(),
++        })
++    }
++}
++
+ impl<'a> SqlSource<'a> {
+     pub fn new(text: &'a str) -> SqlResult<Self> {
+         let options = ParserOptions::default();
+@@ -74,16 +90,7 @@ impl<'a> SqlSource<'a> {
+ 
+     /// Statement intervals retain trailing trivia, unlike a view's query text.
+     pub fn statement_origin(&self, span: TokenSpan) -> SqlResult<StatementOrigin<'a>> {
+-        let invalid = || SqlError::invalid("statement span does not match SQL source");
+-        if span.is_empty() {
+-            return Err(invalid());
+-        }
+-        let text = self.text.get(span.start..span.end).ok_or_else(invalid)?;
+-        let prefix = self.text.get(..span.start).ok_or_else(invalid)?;
+-        Ok(StatementOrigin {
+-            text,
+-            line: 1 + prefix.bytes().filter(|byte| *byte == b'\n').count(),
+-        })
++        StatementOrigin::from_span(self.text, span)
+     }
+ 
+     /// The current CREATE VIEW grammar ends with AS query. Keep the query's

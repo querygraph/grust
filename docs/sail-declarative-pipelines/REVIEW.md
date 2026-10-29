@@ -1048,3 +1048,25 @@ This finishes the statement-origin/diagnostic prerequisite. Asynchronous prepara
 typed catalog-expression activation and unset-namespace/adaptor acceptance remain
 pending. No original Scala registration is newly marked complete, and inventory counts
 remain unchanged.
+
+## Graph-independent SQL preparation and atomic replay
+
+Sail 73305d1f7b3d69fefad19944e1270b69fe9adf8f adds a typed catalog-expression
+command and prepares SQL without holding the pipeline graph lock. Commit rechecks graph
+existence and idle state, then replays against its current definition. Earlier
+registration failures retain source order ahead of later preparation failures, and a
+failed file publishes no partial definition. Constant evaluation uses the shared Sail
+planner and session SQL configuration; runtime errors retain native transport.
+
+Six new tests cover graph lock availability during preparation, concurrent registration,
+graph deletion, a newly started run, missing-graph priority, source-order rollback, and
+analysis versus runtime error handling. An initial ANSI fixture failure is retained;
+the fixture now explicitly selects ANSI mode without changing the assertion or
+production defaults. Full Connect 38, planner 23 and analyzer 23 Rust tests pass, with
+zero filters. Detached formatting, strict Clippy and CLI build pass, followed by 238
+selected Python regressions and 67 upstream Python executions. See the
+[receipt](evidence/73305d1f7b3d69fefad19944e1270b69fe9adf8f/gate.json).
+
+These deterministic schedules do not qualify general concurrency under saturated
+release execution. Expression grammar activation remains a separate next unit;
+original Scala, full batch, streaming and CDC acceptance remain outstanding.
