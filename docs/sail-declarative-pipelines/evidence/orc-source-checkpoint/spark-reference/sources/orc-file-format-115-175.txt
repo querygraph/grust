@@ -1,0 +1,61 @@
+      options: Map[String, String],
+      path: Path): Boolean = {
+    true
+  }
+
+  /**
+   * Build the reader.
+   *
+   * @note It is required to pass FileFormat.OPTION_RETURNING_BATCH in options, to indicate whether
+   *       the reader should return row or columnar output.
+   *       If the caller can handle both, pass
+   *       FileFormat.OPTION_RETURNING_BATCH ->
+   *         supportBatch(sparkSession,
+   *           StructType(requiredSchema.fields ++ partitionSchema.fields))
+   *       as the option.
+   *       It should be set to "true" only if this reader can support it.
+   */
+  override def buildReaderWithPartitionValues(
+      sparkSession: SparkSession,
+      dataSchema: StructType,
+      partitionSchema: StructType,
+      requiredSchema: StructType,
+      filters: Seq[Filter],
+      options: Map[String, String],
+      hadoopConf: Configuration): (PartitionedFile) => Iterator[InternalRow] = {
+
+    val resultSchema = StructType(requiredSchema.fields ++ partitionSchema.fields)
+    val sqlConf = getSqlConf(sparkSession)
+    val capacity = sqlConf.orcVectorizedReaderBatchSize
+
+    // Should always be set by FileSourceScanExec creating this.
+    // Check conf before checking option, to allow working around an issue by changing conf.
+    val enableVectorizedReader = sqlConf.orcVectorizedReaderEnabled &&
+      options.getOrElse(FileFormat.OPTION_RETURNING_BATCH,
+        throw new IllegalArgumentException(
+          "OPTION_RETURNING_BATCH should always be set for OrcFileFormat. " +
+            "To workaround this issue, set spark.sql.orc.enableVectorizedReader=false."))
+        .equals("true")
+    if (enableVectorizedReader) {
+      // If the passed option said that we are to return batches, we need to also be able to
+      // do this based on config and resultSchema.
+      assert(supportBatch(sparkSession, resultSchema))
+    }
+
+    val memoryMode = if (sqlConf.offHeapColumnVectorEnabled) {
+      MemoryMode.OFF_HEAP
+    } else {
+      MemoryMode.ON_HEAP
+    }
+
+    OrcConf.IS_SCHEMA_EVOLUTION_CASE_SENSITIVE.setBoolean(hadoopConf, sqlConf.caseSensitiveAnalysis)
+
+    val broadcastedConf =
+        SerializableConfiguration.broadcast(sparkSession.sparkContext, hadoopConf)
+    val isCaseSensitive = sqlConf.caseSensitiveAnalysis
+    val orcFilterPushDown = sqlConf.orcFilterPushDown
+
+    (file: PartitionedFile) => {
+      val conf = broadcastedConf.value.value
+
+      val filePath = file.toPath

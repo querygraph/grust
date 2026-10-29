@@ -1,0 +1,61 @@
+impl TryFrom<&protobuf::FileRange> for FileRange {
+    type Error = DataFusionError;
+
+    fn try_from(range: &protobuf::FileRange) -> Result<Self> {
+        Ok(FileRange {
+            start: range.start,
+            end: range.end,
+        })
+    }
+}
+
+impl TryFrom<&PartitionedFile> for protobuf::PartitionedFile {
+    type Error = DataFusionError;
+
+    fn try_from(file: &PartitionedFile) -> Result<Self> {
+        let last_modified = file.object_meta.last_modified;
+        let last_modified_ns = last_modified.timestamp_nanos_opt().ok_or_else(|| {
+            DataFusionError::Plan(format!(
+                "Invalid timestamp on PartitionedFile::ObjectMeta: {last_modified}"
+            ))
+        })? as u64;
+        Ok(protobuf::PartitionedFile {
+            arrow_schema: file
+                .arrow_schema
+                .as_ref()
+                .map(|s| s.as_ref().try_into())
+                .transpose()?,
+            path: file.object_meta.location.as_ref().to_owned(),
+            size: file.object_meta.size,
+            last_modified_ns,
+            partition_values: file
+                .partition_values
+                .iter()
+                .map(|v| v.try_into())
+                .collect::<Result<Vec<_>, _>>()?,
+            range: file.range.as_ref().map(TryInto::try_into).transpose()?,
+            statistics: file.statistics.as_ref().map(|s| s.as_ref().into()),
+        })
+    }
+}
+
+impl TryFrom<&protobuf::PartitionedFile> for PartitionedFile {
+    type Error = DataFusionError;
+
+    fn try_from(file: &protobuf::PartitionedFile) -> Result<Self> {
+        let mut pf = PartitionedFile::new_from_meta(ObjectMeta {
+            location: Path::parse(file.path.as_str()).map_err(|e| {
+                internal_datafusion_err!("Invalid object_store path: {e}")
+            })?,
+            last_modified: Utc.timestamp_nanos(file.last_modified_ns as i64),
+            size: file.size,
+            e_tag: None,
+            version: None,
+        })
+        .with_partition_values(
+            file.partition_values
+                .iter()
+                .map(|v| v.try_into())
+                .collect::<Result<Vec<_>, _>>()?,
+        );
+        if let Some(proto_schema) = file.arrow_schema.as_ref() {

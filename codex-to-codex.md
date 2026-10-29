@@ -11190,3 +11190,7 @@ Previous question-only turn summarized the Fable response without changing imple
 ## 2026-10-29T22:59:42.877031+00:00 — DONE shared file-scan identity transport
 
 Sail 27ab945aaa3046d05a1f4aeb1e651fddf11db927 passes detached fmt/strict Clippy and 163 full execution library tests before conditional branch advance. General file scans now preserve optional ETag/version; seven new tests include all format branches, malformed associations, legacy-loss control, InputFileMetadata/checkpoint preservation and decoded JSON execution. Exact patch/gates/pinned source audit archived. Source-schema oracle and resource checkpoint remain separate; no ORC registration or full SDP verdict. Documentation integrity gate precedes its own commit.
+
+## 2026-10-29T23:05:27.986560+00:00 — DONE ORC source checkpoint evidence
+
+Archived 29 pinned source identities, 43 excerpts and 24 fresh Spark requested-schema observations: 8 exact successes, 12 dedicated compatibility errors, 4 later overflows. Independent review confirms the full supplied schema versus projection distinction and narrowly scoped array/map results. Both owned JVMs exited zero; the initial pre-read write-mode failure is retained. Shared identity is committed at 27ab945aa/de23f1b5. Resource admission and remaining schema rules remain design work. Detached source/hash/document gates precede this documentation commit; no new Sail runtime or SDP count.

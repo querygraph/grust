@@ -1,0 +1,35 @@
+
+    fn open_with_args(&self, args: OpenArgs) -> Result<SendableRecordBatchStream> {
+        let OpenArgs {
+            partition,
+            context,
+            sibling_state,
+        } = args;
+        let object_store = context.runtime_env().object_store(&self.object_store_url)?;
+        let batch_size = self
+            .batch_size
+            .unwrap_or_else(|| context.session_config().batch_size());
+
+        let source = self.file_source.with_batch_size(batch_size);
+
+        let morselizer = source.create_morselizer(object_store, self, partition)?;
+
+        // Extract the shared work source from the sibling state if it exists.
+        // This allows multiple sibling streams to steal work from a single
+        // shared queue of unopened files.
+        let shared_work_source = sibling_state
+            .as_ref()
+            .and_then(|state| state.downcast_ref::<SharedWorkSource>())
+            .cloned();
+
+        let stream = FileStreamBuilder::new(self)
+            .with_partition(partition)
+            .with_shared_work_source(shared_work_source)
+            .with_morselizer(morselizer)
+            .with_metrics(source.metrics())
+            .build()?;
+        Ok(Box::pin(cooperative(stream)))
+    }
+
+    fn fmt_as(&self, t: DisplayFormatType, f: &mut Formatter) -> FmtResult {
+        match t {

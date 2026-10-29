@@ -1,0 +1,95 @@
+fn can_cast_field_with_schema_evolution(
+    source: &Field,
+    target: &Field,
+    matching: StructFieldMatching,
+) -> Result<bool> {
+    if source.data_type() == &DataType::Null {
+        return Ok(target.is_nullable());
+    }
+    if source.is_nullable() && !target.is_nullable() {
+        return Ok(false);
+    }
+    if source.data_type() == target.data_type() {
+        return Ok(true);
+    }
+    if is_binary_variant_field(source) && is_binary_variant_field(target) {
+        return Ok(true);
+    }
+    if is_variant_arrow_field(target) && is_variant_storage_type(source.data_type()) {
+        return Ok(true);
+    }
+
+    match (source.data_type(), target.data_type()) {
+        (DataType::Struct(from_fields), DataType::Struct(to_fields)) => {
+            validate_struct_compatibility_with_variant(from_fields, to_fields, matching)?;
+            Ok(true)
+        }
+        (
+            DataType::List(from_elem) | DataType::LargeList(from_elem),
+            DataType::List(to_elem) | DataType::LargeList(to_elem),
+        ) => can_cast_field_with_schema_evolution(from_elem, to_elem, matching),
+        (
+            DataType::FixedSizeList(from_elem, from_len),
+            DataType::FixedSizeList(to_elem, to_len),
+        ) => {
+            if from_len != to_len {
+                return Ok(false);
+            }
+            can_cast_field_with_schema_evolution(from_elem, to_elem, matching)
+        }
+        (DataType::Map(from_entries, _), DataType::Map(to_entries, _)) => {
+            validate_map_entries_compatibility(from_entries, to_entries, matching)?;
+            Ok(true)
+        }
+        _ => Ok(can_cast_types(source.data_type(), target.data_type())),
+    }
+}
+
+const DELTA_COLUMN_MAPPING_PHYSICAL_NAME_METADATA_KEY: &str = "delta.columnMapping.physicalName";
+// Delta kernel schemas, Arrow Parquet readers, and Delta's physical schema builder use
+// different field-ID metadata spellings, all of which represent the same identity.
+const STRUCT_FIELD_ID_METADATA_KEYS: [&str; 3] = [
+    "delta.columnMapping.id",
+    PARQUET_FIELD_ID_META_KEY,
+    "parquet.field.id",
+];
+
+fn struct_field_id(field: &Field) -> Option<&str> {
+    STRUCT_FIELD_ID_METADATA_KEYS
+        .iter()
+        .find_map(|key| field.metadata().get(*key).map(String::as_str))
+}
+
+fn find_matching_struct_field<'a>(
+    source_fields: &'a [Arc<Field>],
+    target_field: &Field,
+    matching: StructFieldMatching,
+) -> Result<Option<(usize, &'a Arc<Field>)>> {
+    Ok(match matching {
+        StructFieldMatching::Name => source_fields
+            .iter()
+            .enumerate()
+            .find(|(_, source)| source.name() == target_field.name()),
+        StructFieldMatching::PhysicalName => {
+            // Synthetic list/map wrappers are matched by their container handlers; only
+            // actual Delta struct fields with physicalName metadata reach this branch.
+            let physical_name = target_field
+                .metadata()
+                .get(DELTA_COLUMN_MAPPING_PHYSICAL_NAME_METADATA_KEY);
+            let Some(physical_name) = physical_name else {
+                return Ok(None);
+            };
+            source_fields
+                .iter()
+                .enumerate()
+                .find(|(_, source)| source.name() == physical_name)
+        }
+        StructFieldMatching::FieldId => {
+            if let Some(target_id) = struct_field_id(target_field) {
+                let mut identified = source_fields
+                    .iter()
+                    .enumerate()
+                    .filter(|(_, source)| struct_field_id(source) == Some(target_id));
+                if let Some(found) = identified.next() {
+                    if identified.next().is_some() {
+                        return exec_err!("Multiple physical fields match field ID {target_id}");

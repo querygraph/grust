@@ -1,0 +1,69 @@
+use crate::{
+    PartitionedFile, TableSchema,
+    file_stream::{FileOpenFuture, FileOpener},
+};
+
+/// A file opener that handles applying a projection on top of an inner opener.
+///
+/// This includes handling partition columns.
+///
+/// Any projection pushed down will be split up into:
+/// - Simple column indices / column selection
+/// - A remainder projection that this opener applies on top of it
+///
+/// This is meant to simplify projection pushdown for sources like CSV
+/// that can only handle "simple" column selection.
+pub struct ProjectionOpener {
+    inner: Arc<dyn FileOpener>,
+    projection: ProjectionExprs,
+    input_schema: SchemaRef,
+    partition_columns: Vec<PartitionColumnIndex>,
+}
+
+impl ProjectionOpener {
+    pub fn try_new(
+        projection: SplitProjection,
+        inner: Arc<dyn FileOpener>,
+        file_schema: &Schema,
+    ) -> Result<Arc<dyn FileOpener>> {
+        Ok(Arc::new(ProjectionOpener {
+            inner,
+            projection: projection.remapped_projection,
+            input_schema: Arc::new(file_schema.project(&projection.file_indices)?),
+            partition_columns: projection.partition_columns,
+        }))
+    }
+}
+
+impl FileOpener for ProjectionOpener {
+    fn open(&self, partitioned_file: PartitionedFile) -> Result<FileOpenFuture> {
+        let partition_values = partitioned_file.partition_values.clone();
+
+        // Modify any references to partition columns in the projection expressions
+        // and substitute them with literal values from PartitionedFile.partition_values
+        let projection = if self.partition_columns.is_empty() {
+            self.projection.clone()
+        } else {
+            inject_partition_columns_into_projection(
+                &self.projection,
+                &self.partition_columns,
+                partition_values,
+            )
+        };
+        // Replace `input_file_name()` with a per-file literal if present.
+        let projection = rewrite_input_file_name_in_projection(
+            projection,
+            partitioned_file.object_meta.location.as_ref(),
+        )?;
+        let projector = projection.make_projector(&self.input_schema)?;
+
+        let inner = self.inner.open(partitioned_file)?;
+
+        Ok(async move {
+            let stream = inner.await?;
+            let stream = stream.map(move |batch| {
+                let batch = batch?;
+                let batch = projector.project_batch(&batch)?;
+                Ok(batch)
+            });
+            Ok(stream.boxed())

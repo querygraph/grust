@@ -1,0 +1,58 @@
+use std::collections::VecDeque;
+use std::sync::{Arc, Mutex};
+
+use arrow_pyarrow::{FromPyArrow, ToPyArrow};
+use datafusion::arrow::array::RecordBatch;
+use datafusion::execution::memory_pool::{MemoryConsumer, MemoryReservation};
+use datafusion::execution::{SendableRecordBatchStream, TaskContext};
+use datafusion::physical_plan::metrics::{ExecutionPlanMetricsSet, SpillMetrics};
+use datafusion::physical_plan::spill::SpillManager;
+use datafusion::physical_plan::spill::spill_pool::{SpillPoolSink, spsc_channel};
+use datafusion_common::{Result, internal_datafusion_err};
+use futures::StreamExt;
+use pyo3::exceptions::PyRuntimeError;
+use pyo3::{Bound, Py, PyAny, PyResult, Python, pyclass, pymethods};
+use tokio::runtime::Handle;
+
+struct SpilledBatches {
+    writer: SpillPoolSink,
+    reader: SendableRecordBatchStream,
+    remaining: usize,
+}
+
+/// FIFO storage for rows consumed by Python before their output is available.
+struct PassthroughBuffer {
+    batches: VecDeque<RecordBatch>,
+    reservation: MemoryReservation,
+    spilled: Option<SpilledBatches>,
+    context: Arc<TaskContext>,
+    capacity: usize,
+}
+
+impl PassthroughBuffer {
+    fn new(context: Arc<TaskContext>, capacity: usize) -> Self {
+        Self {
+            batches: VecDeque::new(),
+            reservation: MemoryConsumer::new("ScalarIteratorPassthrough")
+                .with_can_spill(true)
+                .register(context.memory_pool()),
+            spilled: None,
+            context,
+            capacity,
+        }
+    }
+
+    fn push(&mut self, batch: RecordBatch) -> Result<()> {
+        if batch.num_rows() == 0 {
+            return Ok(());
+        }
+        let size = batch.get_array_memory_size();
+        if self.spilled.is_none()
+            && size <= self.capacity.saturating_sub(self.reservation.size())
+            && self.reservation.try_grow(size).is_ok()
+        {
+            self.batches.push_back(batch);
+            return Ok(());
+        }
+        if self.spilled.is_none() {
+            let options = &self.context.session_config().options().execution;

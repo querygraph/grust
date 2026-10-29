@@ -1,0 +1,133 @@
+    fn missing_length(&self) -> usize {
+        self.length.saturating_sub(self.bytes.len())
+    }
+
+    fn check_encoded_limit(&self, options: MetadataReadOptions) -> Result<()> {
+        if let Some(limit) = options.max_encoded_metadata_bytes {
+            ensure!(
+                self.length <= limit,
+                OutOfSpecSnafu {
+                    msg: "Encoded footer and metadata exceed the configured limit"
+                }
+            );
+        }
+        Ok(())
+    }
+
+    fn decode(self, prefix: Bytes, options: MetadataReadOptions) -> Result<FileMetadata> {
+        ensure!(
+            prefix.len() == self.missing_length(),
+            OutOfSpecSnafu {
+                msg: "Metadata read returned an unexpected number of bytes"
+            }
+        );
+        let mut bytes = if prefix.is_empty() {
+            self.bytes
+        } else {
+            let mut bytes = BytesMut::with_capacity(self.length);
+            bytes.extend_from_slice(&prefix);
+            bytes.extend_from_slice(&self.bytes);
+            bytes.freeze()
+        };
+        let compression = Compression::from_proto(
+            self.postscript.compression(),
+            self.postscript.compression_block_size,
+        );
+        let footer_start = bytes.len() - self.footer_length;
+        let mut remaining = options.max_decoded_metadata_bytes;
+        let footer: Footer =
+            decode_section(bytes.slice(footer_start..), compression, &mut remaining)?;
+        bytes.truncate(footer_start);
+        let metadata: Metadata = decode_section(
+            bytes.slice(bytes.len() - self.metadata_length..),
+            compression,
+            &mut remaining,
+        )?;
+        FileMetadata::from_proto(&self.postscript, &footer, &metadata, options)
+    }
+}
+
+pub fn read_metadata<R: ChunkReader>(reader: &mut R) -> Result<FileMetadata> {
+    read_metadata_with_options(reader, MetadataReadOptions::default())
+}
+
+/// Read metadata with explicit tail byte and schema-depth limits.
+pub fn read_metadata_with_options<R: ChunkReader>(
+    reader: &mut R,
+    options: MetadataReadOptions,
+) -> Result<FileMetadata> {
+    let file_len = reader.len();
+    if file_len == 0 {
+        return EmptyFileSnafu.fail();
+    }
+    // At most two reads: first the usual tail size, then any missing prefix.
+    let tail_length = file_len.min(DEFAULT_FOOTER_SIZE);
+    let bytes = reader
+        .get_bytes(file_len - tail_length, tail_length)
+        .context(error::IoSnafu)?;
+    let tail = EncodedTail::parse(file_len, bytes)?;
+    tail.check_encoded_limit(options)?;
+    let prefix = if tail.missing_length() == 0 {
+        Bytes::new()
+    } else {
+        reader
+            .get_bytes(tail.offset, tail.missing_length() as u64)
+            .context(error::IoSnafu)?
+    };
+    tail.decode(prefix, options)
+}
+
+#[cfg(feature = "async")]
+pub async fn read_metadata_async<R: super::AsyncChunkReader>(
+    reader: &mut R,
+) -> Result<FileMetadata> {
+    read_metadata_async_with_options(reader, MetadataReadOptions::default()).await
+}
+
+/// Asynchronously read metadata with the same limits as the synchronous reader.
+#[cfg(feature = "async")]
+pub async fn read_metadata_async_with_options<R: super::AsyncChunkReader>(
+    reader: &mut R,
+    options: MetadataReadOptions,
+) -> Result<FileMetadata> {
+    let file_len = reader.len().await.context(error::IoSnafu)?;
+    if file_len == 0 {
+        return EmptyFileSnafu.fail();
+    }
+    let tail_length = file_len.min(DEFAULT_FOOTER_SIZE);
+    let bytes = reader
+        .get_bytes(file_len - tail_length, tail_length)
+        .await
+        .context(error::IoSnafu)?;
+    let tail = EncodedTail::parse(file_len, bytes)?;
+    tail.check_encoded_limit(options)?;
+    let prefix = if tail.missing_length() == 0 {
+        Bytes::new()
+    } else {
+        reader
+            .get_bytes(tail.offset, tail.missing_length() as u64)
+            .await
+            .context(error::IoSnafu)?
+    };
+    tail.decode(prefix, options)
+}
+
+fn decode_section<T: Message + Default>(
+    bytes: Bytes,
+    compression: Option<Compression>,
+    remaining: &mut Option<usize>,
+) -> Result<T> {
+    let mut decoder = match *remaining {
+        Some(limit) => Decompressor::new_with_limit(bytes, compression, vec![], limit),
+        None => Decompressor::new(bytes, compression, vec![]),
+    };
+    let mut buffer = vec![];
+    decoder.read_to_end(&mut buffer).context(error::IoSnafu)?;
+    if let Some(limit) = remaining {
+        *limit = limit.checked_sub(buffer.len()).context(OutOfSpecSnafu {
+            msg: "Decoded footer and metadata exceed the configured limit",
+        })?;
+    }
+    T::decode(buffer.as_slice()).context(error::DecodeProtoSnafu)
+}
+

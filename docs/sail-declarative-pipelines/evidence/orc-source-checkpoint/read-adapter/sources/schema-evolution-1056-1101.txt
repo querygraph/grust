@@ -1,0 +1,46 @@
+pub fn cast_array_with_schema_evolution(
+    source: &ArrayRef,
+    target_field: &Field,
+    cast_options: &CastOptions,
+    matching: StructFieldMatching,
+) -> Result<ArrayRef> {
+    cast_array_with_schema_evolution_inner(source, target_field, cast_options, matching, false)
+}
+
+pub fn cast_array_with_schema_evolution_relaxed_tz(
+    source: &ArrayRef,
+    target_field: &Field,
+    cast_options: &CastOptions,
+    matching: StructFieldMatching,
+) -> Result<ArrayRef> {
+    cast_array_with_schema_evolution_inner(source, target_field, cast_options, matching, true)
+}
+
+fn cast_array_with_schema_evolution_inner(
+    source: &ArrayRef,
+    target_field: &Field,
+    cast_options: &CastOptions,
+    matching: StructFieldMatching,
+    relaxed_timezone: bool,
+) -> Result<ArrayRef> {
+    if is_variant_arrow_field(target_field) && is_variant_storage_type(source.data_type()) {
+        return cast_variant_array_with_schema_evolution(source, target_field, cast_options);
+    }
+
+    if source.data_type() == target_field.data_type() {
+        return Ok(Arc::clone(source));
+    }
+
+    if relaxed_timezone
+        && let (DataType::Timestamp(source_unit, _), DataType::Timestamp(target_unit, _)) =
+            (source.data_type(), target_field.data_type())
+    {
+        let source_without_timezone = DataType::Timestamp(*source_unit, None);
+        let source = cast_array_recursively(source, &source_without_timezone)?;
+        let target_without_timezone = DataType::Timestamp(*target_unit, None);
+        let scaled = cast_with_options(&source, &target_without_timezone, cast_options)?;
+        return cast_array_recursively(&scaled, target_field.data_type());
+    }
+
+    // Convert only offsets here so nested values retain schema-evolution field matching.
+    let offset_cast = match (source.data_type(), target_field.data_type()) {

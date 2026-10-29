@@ -1,0 +1,96 @@
+    /// Extracts the inner `StripeFactory` and `SchemaRef` from the `ArrowStreamReader`.
+    pub fn into_parts(self) -> (Option<Box<StripeFactory<R>>>, SchemaRef) {
+        (self.factory, self.schema_ref)
+    }
+
+    pub fn schema(&self) -> SchemaRef {
+        self.schema_ref.clone()
+    }
+
+    fn poll_next_inner(
+        mut self: Pin<&mut Self>,
+        cx: &mut Context<'_>,
+    ) -> Poll<Option<Result<RecordBatch>>> {
+        loop {
+            match &mut self.state {
+                StreamState::Decoding(decoder) => match decoder.next() {
+                    Some(Ok(batch)) => {
+                        return Poll::Ready(Some(Ok(batch)));
+                    }
+                    Some(Err(e)) => {
+                        self.state = StreamState::Error;
+                        return Poll::Ready(Some(Err(e)));
+                    }
+                    None => self.state = StreamState::Init,
+                },
+                StreamState::Init => {
+                    let factory = self.factory.take().expect("lost factory");
+                    if factory.is_end {
+                        return Poll::Ready(None);
+                    }
+
+                    let fut = factory.read_next_stripe().boxed();
+
+                    self.state = StreamState::Reading(fut)
+                }
+                StreamState::Reading(f) => match ready!(f.poll_unpin(cx)) {
+                    Ok((factory, Some(stripe))) => {
+                        self.factory = Some(Box::new(factory));
+
+                        let stripe_rows = stripe.number_of_rows();
+
+                        // Evaluate predicate if present
+                        let mut stripe_selection: Option<RowSelection> = None;
+                        if let Some(predicate) = self.predicate.as_ref().filter(|_| {
+                            self.factory.as_ref().is_some_and(|factory| {
+                                factory.inner.timestamp_time_zone_state.is_none()
+                            })
+                        }) {
+                            // Try to read row indexes for this stripe
+                            match stripe.read_row_indexes(&self.file_metadata) {
+                                Ok(row_index) => {
+                                    // Evaluate predicate against row group statistics
+                                    match evaluate_predicate(
+                                        predicate,
+                                        &row_index,
+                                        &self.projected_data_type,
+                                    ) {
+                                        Ok(row_group_filter) => {
+                                            // Generate RowSelection from filter results
+                                            let rows_per_group = self
+                                                .file_metadata
+                                                .row_index_stride()
+                                                .unwrap_or(10_000);
+                                            stripe_selection =
+                                                Some(RowSelection::from_row_group_filter(
+                                                    &row_group_filter,
+                                                    rows_per_group,
+                                                    stripe_rows,
+                                                ));
+                                        }
+                                        Err(_) => {
+                                            // Predicate evaluation failed (e.g., column not found)
+                                            // Keep all rows (maybe)
+                                            stripe_selection =
+                                                Some(RowSelection::select_all(stripe_rows));
+                                        }
+                                    }
+                                }
+                                Err(_) => {
+                                    // Row indexes not available, keep all rows (maybe)
+                                    stripe_selection = Some(RowSelection::select_all(stripe_rows));
+                                }
+                            }
+                        }
+
+                        // Combine with existing row_selection if present
+                        let mut final_selection = stripe_selection;
+                        if let Some(ref mut existing_selection) = self.row_selection {
+                            if existing_selection.row_count() > 0 {
+                                let existing_for_stripe = existing_selection.split_off(stripe_rows);
+                                final_selection = match final_selection {
+                                    Some(predicate_selection) => {
+                                        // Both predicate and manual selection: combine with AND
+                                        Some(existing_for_stripe.and_then(&predicate_selection))
+                                    }
+                                    None => Some(existing_for_stripe),

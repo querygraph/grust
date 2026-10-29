@@ -1,0 +1,21 @@
+impl Debug for RemoteExecutionCodec {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "RemoteExecutionCodec")
+    }
+}
+
+impl PhysicalExtensionCodec for RemoteExecutionCodec {
+    fn try_decode(
+        &self,
+        buf: &[u8],
+        inputs: &[Arc<dyn ExecutionPlan>],
+        ctx: &TaskContext,
+        proto_converter: &dyn PhysicalProtoConverterExtension,
+    ) -> Result<Arc<dyn ExecutionPlan>> {
+        let node = ExtendedPhysicalPlanNode::decode(buf)
+            .map_err(|e| plan_datafusion_err!("failed to decode plan: {e}"))?;
+        let ExtendedPhysicalPlanNode { node_kind } = node;
+        let node_kind = match node_kind {
+            Some(x) => x,
+            None => return plan_err!("no physical plan node found"),
+        };

@@ -1,0 +1,101 @@
+pub struct SchemaEvolutionPhysicalExprAdapterFactory {}
+
+impl PhysicalExprAdapterFactory for SchemaEvolutionPhysicalExprAdapterFactory {
+    fn create(
+        &self,
+        logical_file_schema: SchemaRef,
+        physical_file_schema: SchemaRef,
+    ) -> Result<Arc<dyn PhysicalExprAdapter>> {
+        create_schema_evolution_adapter(
+            logical_file_schema,
+            physical_file_schema,
+            StructFieldMatching::Name,
+            SchemaEvolutionTimezoneMode::Strict,
+        )
+    }
+}
+
+#[derive(Debug)]
+pub struct SchemaEvolutionPhysicalExprAdapterFactoryWithMatching {
+    matching: StructFieldMatching,
+    timezone_mode: SchemaEvolutionTimezoneMode,
+}
+
+impl SchemaEvolutionPhysicalExprAdapterFactoryWithMatching {
+    pub fn new(matching: StructFieldMatching) -> Self {
+        Self {
+            matching,
+            timezone_mode: SchemaEvolutionTimezoneMode::Strict,
+        }
+    }
+
+    pub fn new_relaxed_timezone(matching: StructFieldMatching) -> Self {
+        Self {
+            matching,
+            timezone_mode: SchemaEvolutionTimezoneMode::Relaxed,
+        }
+    }
+}
+
+impl PhysicalExprAdapterFactory for SchemaEvolutionPhysicalExprAdapterFactoryWithMatching {
+    fn create(
+        &self,
+        logical_file_schema: SchemaRef,
+        physical_file_schema: SchemaRef,
+    ) -> Result<Arc<dyn PhysicalExprAdapter>> {
+        create_schema_evolution_adapter(
+            logical_file_schema,
+            physical_file_schema,
+            self.matching,
+            self.timezone_mode,
+        )
+    }
+}
+
+fn create_schema_evolution_adapter(
+    logical_file_schema: SchemaRef,
+    physical_file_schema: SchemaRef,
+    matching: StructFieldMatching,
+    timezone_mode: SchemaEvolutionTimezoneMode,
+) -> Result<Arc<dyn PhysicalExprAdapter>> {
+    let (column_mapping, default_values) =
+        create_column_mapping(&logical_file_schema, &physical_file_schema, matching)?;
+
+    Ok(Arc::new(SchemaEvolutionPhysicalExprAdapter {
+        logical_file_schema,
+        physical_file_schema,
+        column_mapping,
+        default_values,
+        matching,
+        timezone_mode,
+    }))
+}
+
+type ColumnMapping = (Vec<Option<usize>>, Vec<Option<ScalarValue>>);
+
+fn create_column_mapping(
+    logical_schema: &Schema,
+    physical_schema: &Schema,
+    matching: StructFieldMatching,
+) -> Result<ColumnMapping> {
+    let mut column_mapping = Vec::with_capacity(logical_schema.fields().len());
+    let mut default_values = Vec::with_capacity(logical_schema.fields().len());
+
+    for logical_field in logical_schema.fields() {
+        // Reader-generated positions have no Delta physical name or field ID.
+        // Match their typed virtual fields before applying persisted-column rules.
+        let physical_field = if logical_field.try_extension_type::<RowNumber>().is_ok() {
+            physical_schema
+                .fields()
+                .iter()
+                .enumerate()
+                .find(|(_, field)| {
+                    field.name() == logical_field.name()
+                        && field.try_extension_type::<RowNumber>().is_ok()
+                })
+        } else {
+            find_matching_struct_field(physical_schema.fields(), logical_field, matching)?
+        };
+        match physical_field {
+            Some((physical_index, _)) => {
+                column_mapping.push(Some(physical_index));

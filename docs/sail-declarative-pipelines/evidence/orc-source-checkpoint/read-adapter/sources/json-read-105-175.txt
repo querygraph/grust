@@ -1,0 +1,71 @@
+        Ok(Arc::new(schema))
+    }
+
+    async fn scan(&self, _ctx: &dyn Session, input: ListingScanInput) -> Result<FileScanConfig> {
+        let mut options = self
+            .options
+            .clone()
+            .into_table_options()
+            .map_err(DataFusionError::from)?;
+        options.compression = input.compression;
+
+        let source =
+            JsonSource::new(input.schema).with_newline_delimited(options.newline_delimited);
+
+        let config = FileScanConfigBuilder::new(input.object_store_url, Arc::new(source))
+            .with_file_groups(input.file_groups)
+            .with_constraints(input.constraints)
+            .with_statistics(input.statistics)
+            .with_projection_indices(input.projection)?
+            .with_limit(input.limit)
+            .with_output_ordering(input.output_ordering)
+            .with_file_compression_type(FileCompressionType::from(options.compression))
+            .with_preserve_order(input.preserve_order)
+            .with_output_partitioning(input.output_partitioning)
+            .build();
+
+        Ok(config)
+    }
+
+    fn path_glob_filter(&self) -> Option<&str> {
+        self.options.path_glob_filter.as_deref()
+    }
+}
+
+/// Removes fields whose inferred JSON type contains no concrete value.
+fn drop_all_null_fields(schema: Schema) -> Schema {
+    let fields = schema
+        .fields()
+        .iter()
+        .filter_map(|field| canonicalize_inferred_field(field))
+        .collect::<Vec<_>>();
+    Schema::new_with_metadata(fields, schema.metadata().clone())
+}
+
+/// Canonicalizes one field using Spark's `dropFieldIfAllNull` behavior.
+fn canonicalize_inferred_field(field: &Field) -> Option<Field> {
+    let data_type = match field.data_type() {
+        DataType::Null => return None,
+        DataType::List(element) => {
+            let element = canonicalize_inferred_field(element)?;
+            DataType::List(Arc::new(element))
+        }
+        DataType::Struct(fields) => {
+            let fields = fields
+                .iter()
+                .filter_map(|field| canonicalize_inferred_field(field))
+                .collect::<Vec<_>>();
+            if fields.is_empty() {
+                return None;
+            }
+            DataType::Struct(fields.into())
+        }
+        data_type => data_type.clone(),
+    };
+    Some(
+        Field::new(field.name(), data_type, field.is_nullable())
+            .with_metadata(field.metadata().clone()),
+    )
+}
+
+/// A tuple of (Schema, records_consumed) where records_consumed is the number of records that were

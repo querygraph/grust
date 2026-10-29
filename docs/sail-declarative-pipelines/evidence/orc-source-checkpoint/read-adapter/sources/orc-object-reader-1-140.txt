@@ -1,0 +1,140 @@
+use std::io;
+use std::sync::Arc;
+
+use bytes::Bytes;
+use futures::future::BoxFuture;
+use futures::{FutureExt, TryStreamExt};
+use object_store::{GetOptions, GetRange, ObjectMeta, ObjectStore};
+use orc_rust::reader::AsyncChunkReader;
+
+/// Reads bounded ORC ranges against the object identity supplied by listing.
+///
+/// Every nonempty read requires an object version or a usable ETag. Both are
+/// sent when present; size and modification time alone are not an identity.
+/// Consistency relies on the store's version/conditional-read contract. In
+/// particular, a local filesystem's metadata-derived ETag cannot establish an
+/// immutable snapshot against out-of-band writes that preserve that metadata.
+#[derive(Debug)]
+pub struct OrcObjectReader {
+    store: Arc<dyn ObjectStore>,
+    meta: ObjectMeta,
+}
+
+impl OrcObjectReader {
+    pub fn new(store: Arc<dyn ObjectStore>, meta: ObjectMeta) -> Self {
+        Self { store, meta }
+    }
+
+    async fn read_range(&self, offset: u64, length: u64) -> io::Result<Bytes> {
+        let end = offset.checked_add(length).ok_or_else(|| {
+            io::Error::new(io::ErrorKind::InvalidInput, "ORC byte range overflows u64")
+        })?;
+        if end > self.meta.size {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                format!(
+                    "ORC byte range {offset}..{end} exceeds object size {}",
+                    self.meta.size
+                ),
+            ));
+        }
+        // Vec/Bytes allocations cannot exceed isize::MAX, even when usize is
+        // wide enough to represent the requested length.
+        let length = usize::try_from(length)
+            .ok()
+            .filter(|length| *length <= isize::MAX as usize)
+            .ok_or_else(|| {
+                io::Error::new(
+                    io::ErrorKind::InvalidInput,
+                    "ORC byte range length exceeds the addressable buffer size",
+                )
+            })?;
+        if length == 0 {
+            return Ok(Bytes::new());
+        }
+
+        let has_version = self
+            .meta
+            .version
+            .as_deref()
+            .is_some_and(|version| !version.is_empty());
+        let has_etag = self
+            .meta
+            .e_tag
+            .as_deref()
+            .is_some_and(|etag| !etag.is_empty() && etag != "*" && !etag.starts_with("W/"));
+        if !has_version && !has_etag {
+            return Err(io::Error::new(
+                io::ErrorKind::Unsupported,
+                format!(
+                    "ORC range reads require a version or usable ETag for object {}",
+                    self.meta.location
+                ),
+            ));
+        }
+
+        let range = offset..end;
+        let result = self
+            .store
+            .get_opts(
+                &self.meta.location,
+                GetOptions {
+                    range: Some(GetRange::Bounded(range.clone())),
+                    version: self.meta.version.clone(),
+                    if_match: self.meta.e_tag.clone(),
+                    ..Default::default()
+                },
+            )
+            .await
+            .map_err(io::Error::from)?;
+        if result.range != range {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                format!(
+                    "ORC object store returned range {:?} for requested range {range:?}",
+                    result.range
+                ),
+            ));
+        }
+        if result.meta.location != self.meta.location
+            || result.meta.size != self.meta.size
+            || self
+                .meta
+                .version
+                .as_ref()
+                .is_some_and(|version| result.meta.version.as_ref() != Some(version))
+            || self
+                .meta
+                .e_tag
+                .as_ref()
+                .is_some_and(|etag| result.meta.e_tag.as_ref() != Some(etag))
+        {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                format!(
+                    "ORC object store returned a different object identity for {}",
+                    self.meta.location
+                ),
+            ));
+        }
+
+        // Do not use GetResult::bytes(): a misbehaving stream could otherwise
+        // accumulate more than the requested range before its length is checked.
+        let mut stream = result.into_stream();
+        let mut buffer = Vec::new();
+        buffer
+            .try_reserve_exact(length)
+            .map_err(|error| io::Error::new(io::ErrorKind::OutOfMemory, error))?;
+        while let Some(chunk) = stream.try_next().await.map_err(io::Error::from)? {
+            if chunk.len() > length - buffer.len() {
+                return Err(io::Error::new(
+                    io::ErrorKind::InvalidData,
+                    "ORC object store returned more bytes than the requested range",
+                ));
+            }
+            buffer.extend_from_slice(&chunk);
+        }
+        if buffer.len() != length {
+            return Err(io::Error::new(
+                io::ErrorKind::UnexpectedEof,
+                format!(

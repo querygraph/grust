@@ -1,0 +1,194 @@
+{
+  "cases": [
+    {
+      "classification": "success",
+      "condition": null,
+      "name": "exact_schema",
+      "stage": "materialize_to_arrow",
+      "vectorized": true
+    },
+    {
+      "classification": "dedicated_positional_orc_timestamp_compatibility_error",
+      "condition": "FAILED_READ_FILE.NO_HINT",
+      "name": "scalar_ltz_to_ntz",
+      "stage": "materialize_to_arrow",
+      "vectorized": true
+    },
+    {
+      "classification": "dedicated_positional_orc_timestamp_compatibility_error",
+      "condition": "FAILED_READ_FILE.NO_HINT",
+      "name": "scalar_ntz_to_ltz",
+      "stage": "materialize_to_arrow",
+      "vectorized": true
+    },
+    {
+      "classification": "dedicated_positional_orc_timestamp_compatibility_error",
+      "condition": "FAILED_READ_FILE.NO_HINT",
+      "name": "requested_only_second_ntz",
+      "stage": "materialize_to_arrow",
+      "vectorized": true
+    },
+    {
+      "classification": "success",
+      "condition": null,
+      "name": "exact_schema_project_only_second_ntz",
+      "stage": "materialize_to_arrow",
+      "vectorized": true
+    },
+    {
+      "classification": "dedicated_positional_orc_timestamp_compatibility_error",
+      "condition": "FAILED_READ_FILE.NO_HINT",
+      "name": "reordered_matching_names",
+      "stage": "materialize_to_arrow",
+      "vectorized": true
+    },
+    {
+      "classification": "success",
+      "condition": null,
+      "name": "missing_ltz_appended",
+      "stage": "materialize_to_arrow",
+      "vectorized": true
+    },
+    {
+      "classification": "success",
+      "condition": null,
+      "name": "missing_ntz_appended",
+      "stage": "materialize_to_arrow",
+      "vectorized": true
+    },
+    {
+      "classification": "dedicated_positional_orc_timestamp_compatibility_error",
+      "condition": "FAILED_READ_FILE.NO_HINT",
+      "name": "nested_struct_swaps",
+      "stage": "materialize_to_arrow",
+      "vectorized": true
+    },
+    {
+      "classification": "dedicated_positional_orc_timestamp_compatibility_error",
+      "condition": "FAILED_READ_FILE.NO_HINT",
+      "name": "nested_struct_reordered_matching_names",
+      "stage": "materialize_to_arrow",
+      "vectorized": true
+    },
+    {
+      "classification": "later_timestamp_conversion_overflow",
+      "condition": null,
+      "name": "array_swaps",
+      "stage": "materialize_to_arrow",
+      "vectorized": true
+    },
+    {
+      "classification": "later_timestamp_conversion_overflow",
+      "condition": null,
+      "name": "map_swaps",
+      "stage": "materialize_to_arrow",
+      "vectorized": true
+    },
+    {
+      "classification": "success",
+      "condition": null,
+      "name": "exact_schema",
+      "stage": "materialize_to_arrow",
+      "vectorized": false
+    },
+    {
+      "classification": "dedicated_positional_orc_timestamp_compatibility_error",
+      "condition": "FAILED_READ_FILE.NO_HINT",
+      "name": "scalar_ltz_to_ntz",
+      "stage": "materialize_to_arrow",
+      "vectorized": false
+    },
+    {
+      "classification": "dedicated_positional_orc_timestamp_compatibility_error",
+      "condition": "FAILED_READ_FILE.NO_HINT",
+      "name": "scalar_ntz_to_ltz",
+      "stage": "materialize_to_arrow",
+      "vectorized": false
+    },
+    {
+      "classification": "dedicated_positional_orc_timestamp_compatibility_error",
+      "condition": "FAILED_READ_FILE.NO_HINT",
+      "name": "requested_only_second_ntz",
+      "stage": "materialize_to_arrow",
+      "vectorized": false
+    },
+    {
+      "classification": "success",
+      "condition": null,
+      "name": "exact_schema_project_only_second_ntz",
+      "stage": "materialize_to_arrow",
+      "vectorized": false
+    },
+    {
+      "classification": "dedicated_positional_orc_timestamp_compatibility_error",
+      "condition": "FAILED_READ_FILE.NO_HINT",
+      "name": "reordered_matching_names",
+      "stage": "materialize_to_arrow",
+      "vectorized": false
+    },
+    {
+      "classification": "success",
+      "condition": null,
+      "name": "missing_ltz_appended",
+      "stage": "materialize_to_arrow",
+      "vectorized": false
+    },
+    {
+      "classification": "success",
+      "condition": null,
+      "name": "missing_ntz_appended",
+      "stage": "materialize_to_arrow",
+      "vectorized": false
+    },
+    {
+      "classification": "dedicated_positional_orc_timestamp_compatibility_error",
+      "condition": "FAILED_READ_FILE.NO_HINT",
+      "name": "nested_struct_swaps",
+      "stage": "materialize_to_arrow",
+      "vectorized": false
+    },
+    {
+      "classification": "dedicated_positional_orc_timestamp_compatibility_error",
+      "condition": "FAILED_READ_FILE.NO_HINT",
+      "name": "nested_struct_reordered_matching_names",
+      "stage": "materialize_to_arrow",
+      "vectorized": false
+    },
+    {
+      "classification": "later_timestamp_conversion_overflow",
+      "condition": null,
+      "name": "array_swaps",
+      "stage": "materialize_to_arrow",
+      "vectorized": false
+    },
+    {
+      "classification": "later_timestamp_conversion_overflow",
+      "condition": null,
+      "name": "map_swaps",
+      "stage": "materialize_to_arrow",
+      "vectorized": false
+    }
+  ],
+  "cases_total": 24,
+  "dedicated_compatibility_errors": 12,
+  "exact_success_values_validated": true,
+  "first_attempt_failure": "Connect rejects errorifexists write mode before any read cases; exact artifacts preserved",
+  "fixture": {
+    "file": "data/mixed_timestamps/part-00000-9495ba11-fc17-4fc1-a7e6-921e60422232-c000.zstd.orc",
+    "sha256": "84d9cfde57daf8f48e33081cfd342decee8488cbcf56469a68af26d47e1f593e"
+  },
+  "harness_attempts": 2,
+  "later_conversion_overflows": 4,
+  "owned_gateway_exit_codes": [
+    0,
+    0
+  ],
+  "owned_gateway_pids": [
+    75766,
+    75911
+  ],
+  "recorded_at_utc": "2026-10-29T23:04:13.217837+00:00",
+  "scope": "Observed Spark reference, no Sail runtime qualification or production policy decision",
+  "source_pin": "617618396087429b5627a86ce933bb0f5d6645cb",
+  "successful_reads": 8
+}

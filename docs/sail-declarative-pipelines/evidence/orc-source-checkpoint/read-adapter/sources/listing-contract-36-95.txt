@@ -1,0 +1,60 @@
+pub trait FormatFactory: Debug + Send + Sync + 'static {
+    type Read: ReadFormat;
+    type Write: WriteFormat;
+
+    /// The name of the format.
+    fn name() -> &'static str;
+
+    /// Creates the read format.
+    fn read(ctx: &dyn Session, options: Vec<OptionLayer>) -> Result<Self::Read>;
+
+    /// Creates the write format.
+    fn write(ctx: &dyn Session, options: Vec<OptionLayer>) -> Result<Self::Write>;
+}
+
+/// A trait for format-specific logic for reading listing files.
+#[async_trait]
+pub trait ReadFormat: Debug + Send + Sync + 'static {
+    async fn infer_compression(
+        &self,
+        ctx: &dyn Session,
+        files: &[ListingFileSample<'_>],
+    ) -> Result<CompressionTypeVariant>;
+
+    /// Infer the file schema from the given files.
+    async fn infer_schema(
+        &self,
+        ctx: &dyn Session,
+        files: &[ListingFileSample<'_>],
+        compression: CompressionTypeVariant,
+    ) -> Result<SchemaRef>;
+
+    /// Infer file-level metadata needed for planning.
+    /// The metadata includes statistics and ordering.
+    async fn infer_file_meta(
+        &self,
+        ctx: &dyn Session,
+        store: &Arc<dyn ObjectStore>,
+        object: &ObjectMeta,
+        file_schema: SchemaRef,
+        compression: CompressionTypeVariant,
+    ) -> Result<ListingFileMeta> {
+        let _ = (ctx, store, object, compression);
+        Ok(ListingFileMeta {
+            statistics: Statistics::new_unknown(&file_schema),
+            ordering: None,
+        })
+    }
+
+    /// Build a scan configuration for listing reads.
+    async fn scan(&self, ctx: &dyn Session, input: ListingScanInput) -> Result<FileScanConfig>;
+
+    /// Whether validating an explicit schema requires the physical file schema.
+    fn requires_explicit_schema_validation(&self) -> bool {
+        false
+    }
+
+    /// Validate a user-provided file schema against the physical file schema.
+    fn validate_explicit_schema(&self, _schema: &Schema, _physical: &Schema) -> Result<()> {
+        Ok(())
+    }

@@ -1,0 +1,31 @@
+   * The goal of the function is to have the same local date-time in the original calendar
+   *   - the hybrid calendar (Julian + Gregorian) and in the target calendar which is Proleptic
+   *     Gregorian calendar, see SPARK-26651.
+   *
+   * @param t
+   *   It represents a specific instant in time based on the hybrid calendar which combines Julian
+   *   and Gregorian calendars.
+   * @return
+   *   The number of micros since epoch from `java.sql.Timestamp`.
+   */
+  def fromJavaTimestamp(t: Timestamp): Long =
+    rebaseJulianToGregorianMicros(fromJavaTimestampNoRebase(t))
+
+  def fromJavaTimestamp(timeZoneId: String, t: Timestamp): Long =
+    rebaseJulianToGregorianMicros(timeZoneId, fromJavaTimestampNoRebase(t))
+
+  /**
+   * Converts an instance of `java.sql.Timestamp` to the number of microseconds since
+   * 1970-01-01T00:00:00.000000Z.
+   *
+   * @param t
+   *   an instance of `java.sql.Timestamp`.
+   * @return
+   *   The number of micros since epoch from `java.sql.Timestamp`.
+   */
+  def fromJavaTimestampNoRebase(t: Timestamp): Long =
+    millisToMicros(t.getTime) + (t.getNanos / NANOS_PER_MICROS) % MICROS_PER_MILLIS
+
+  /**
+   * Trims and parses a given UTF8 date string to a corresponding [[Int]] value. The return type
+   * is [[Option]] in order to distinguish between 0 and null. The following formats are allowed:

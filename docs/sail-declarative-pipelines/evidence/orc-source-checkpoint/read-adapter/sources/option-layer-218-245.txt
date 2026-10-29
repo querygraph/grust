@@ -1,0 +1,28 @@
+
+/// Information required to create a data source.
+#[derive(Debug, Clone)]
+pub struct SourceInfo {
+    pub paths: Vec<String>,
+    /// Unified lakehouse catalog context for catalog-coordinated reads.
+    pub lakehouse_table: Option<LakehouseExecutionContext>,
+    /// The (optional) schema of the data source including partitioning columns.
+    pub schema: Option<Schema>,
+    pub constraints: Constraints,
+    pub partition_by: Vec<String>,
+    pub bucket_by: Option<BucketBy>,
+    pub sort_order: Vec<Sort>,
+    /// The layers of options for the data source.
+    /// A later layer can override earlier ones.
+    pub options: Vec<OptionLayer>,
+    /// Whether reads match the requested columns case-sensitively against the
+    /// physical file schema. Spark defaults to case-insensitive matching
+    /// (`spark.sql.caseSensitive=false`). This only affects formats that
+    /// reconcile a requested schema against files on read (e.g. Parquet); it is
+    /// inert for formats that resolve their schema from metadata.
+    pub read_case_sensitive: bool,
+}
+
+impl SourceInfo {
+    pub fn catalog_table(&self) -> Option<&[String]> {
+        self.lakehouse_table
+            .as_ref()

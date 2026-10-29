@@ -1,0 +1,29 @@
+            return Err(PlanError::todo("data source predicates"));
+        }
+        let format = format.unwrap_or_else(|| self.config.default_table_file_format.clone());
+        let schema = match schema {
+            Some(schema) => Some(self.resolve_schema(schema, state)?),
+            None => None,
+        };
+        let info = SourceInfo {
+            paths,
+            lakehouse_table: None,
+            schema,
+            constraints: Default::default(),
+            partition_by: vec![],
+            bucket_by: None,
+            sort_order: vec![],
+            // TODO: detect duplicated keys in the set of options
+            options: vec![OptionLayer::OptionList {
+                items: options.into_iter().collect(),
+            }],
+            read_case_sensitive: self.config.case_sensitive,
+        };
+        let registry = self.ctx.extension::<DataSourceRegistry>()?;
+        let table_source = registry
+            .get_data_source(&format)?
+            .create_source(&self.ctx.state(), info)
+            .await?;
+        self.resolve_table_source_with_rename(
+            table_source,
+            UNNAMED_TABLE,

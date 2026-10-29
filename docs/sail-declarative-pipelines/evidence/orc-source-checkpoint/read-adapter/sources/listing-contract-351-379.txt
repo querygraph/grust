@@ -1,0 +1,29 @@
+fn reconcile_schema_names_case_insensitive(schema: Schema, physical: &Schema) -> Result<Schema> {
+    let mut fields = Vec::with_capacity(schema.fields().len());
+    for field in schema.fields() {
+        let name = field.name();
+        let mut matches = physical
+            .fields()
+            .iter()
+            .filter(|f| f.name().eq_ignore_ascii_case(name));
+        let reconciled = match matches.next() {
+            None => Arc::clone(field),
+            Some(first) => {
+                if let Some(second) = matches.next() {
+                    let mut names = vec![first.name().as_str(), second.name().as_str()];
+                    names.extend(matches.map(|f| f.name().as_str()));
+                    return plan_err!(
+                        "Ambiguous case-insensitive column match for `{name}`: [{}]",
+                        names.join(", ")
+                    );
+                }
+                if first.name() == name {
+                    Arc::clone(field)
+                } else {
+                    Arc::new(field.as_ref().clone().with_name(first.name().as_str()))
+                }
+            }
+        };
+        fields.push(reconciled);
+    }
+    Ok(Schema::new_with_metadata(fields, schema.metadata().clone()))

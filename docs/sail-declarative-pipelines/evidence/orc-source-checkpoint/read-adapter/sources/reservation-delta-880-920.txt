@@ -1,0 +1,41 @@
+                            None => {
+                                st.finished = true;
+                                continue;
+                            }
+                        }
+                    }
+                });
+
+                Ok(Box::pin(RecordBatchStreamAdapter::new(output_schema, s)))
+            }
+            ReplayMode::Hash {
+                checkpoint,
+                commits,
+            } => {
+                let reservation =
+                    MemoryConsumer::new(format!("DeltaLogReplayExec[partition={partition}]"))
+                        .register(context.memory_pool());
+                let commits_stream = commits.execute(partition, Arc::clone(&context))?;
+                let checkpoint_stream = checkpoint.execute(partition, context)?;
+
+                let state = HashReplayState::new(
+                    commits_stream,
+                    checkpoint_stream,
+                    Arc::clone(&output_schema),
+                    reservation,
+                );
+                Ok(hash_replay_stream(state, output_schema))
+            }
+            ReplayMode::HashCommits { commits } => {
+                let reservation =
+                    MemoryConsumer::new(format!("DeltaLogReplayExec[partition={partition}]"))
+                        .register(context.memory_pool());
+                let input_schema = commits.schema();
+                let commits_stream = commits.execute(partition, context)?;
+                let checkpoint_stream: SendableRecordBatchStream =
+                    Box::pin(EmptyRecordBatchStream::new(input_schema));
+                let state = HashReplayState::new(
+                    commits_stream,
+                    checkpoint_stream,
+                    Arc::clone(&output_schema),
+                    reservation,

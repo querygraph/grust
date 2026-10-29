@@ -1,0 +1,26 @@
+        &self.session_config
+    }
+
+    /// Return the `session_id` of this [TaskContext]
+    pub fn session_id(&self) -> String {
+        self.session_id.clone()
+    }
+
+    /// Return the `task_id` of this [TaskContext]
+    pub fn task_id(&self) -> Option<String> {
+        self.task_id.clone()
+    }
+
+    /// Return the [`MemoryPool`] associated with this [TaskContext]
+    pub fn memory_pool(&self) -> &Arc<dyn MemoryPool> {
+        &self.runtime.memory_pool
+    }
+
+    /// Return the [RuntimeEnv] associated with this [TaskContext]
+    pub fn runtime_env(&self) -> Arc<RuntimeEnv> {
+        Arc::clone(&self.runtime)
+    }
+
+    pub fn scalar_functions(&self) -> &HashMap<String, Arc<ScalarUDF>> {
+        &self.scalar_functions
+    }

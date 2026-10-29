@@ -1,0 +1,19 @@
+    new SparkUnsupportedOperationException(
+      errorClass = "UNSUPPORTED_FEATURE.ORC_TYPE_CAST",
+      messageParameters = Map(
+        "orcType" -> toSQLType(TimestampType),
+        "toType" -> toSQLType(TimestampNTZType)))
+  }
+
+  def cannotConvertOrcTimestampNTZToTimestampLTZError(): Throwable = {
+    new SparkUnsupportedOperationException(
+      errorClass = "UNSUPPORTED_FEATURE.ORC_TYPE_CAST",
+      messageParameters = Map(
+        "orcType" -> toSQLType(TimestampNTZType),
+        "toType" -> toSQLType(TimestampType)))
+  }
+
+  def writePartitionExceedConfigSizeWhenDynamicPartitionError(
+      numWrittenParts: Int,
+      maxDynamicPartitions: Int,
+      maxDynamicPartitionsKey: String): Throwable = {

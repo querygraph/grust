@@ -1,0 +1,51 @@
+                ends_with_ignore_ascii_case(path, &ext)
+            })
+            .unwrap_or(CompressionTypeVariant::UNCOMPRESSED);
+
+            match inferred {
+                None => inferred = Some(compression),
+                Some(x) if x == compression => {}
+                Some(_) => return plan_err!("found mixed compression types"),
+            }
+        }
+    }
+
+    Ok(inferred)
+}
+
+/// List up to 10 files per URL into in-memory groups, suitable for schema inference, compression
+/// inference, and partition inference.
+///
+/// File extensions are intentionally ignored since `ListingTableUrl` carries the filtering glob
+/// already, and Spark reads every non-hidden file regardless of extension.
+pub async fn sample_listing_files<'a>(
+    ctx: &dyn Session,
+    urls: &'a [ListingTableUrl],
+    path_glob_filter: Option<&'a PathGlobFilter>,
+) -> Result<Vec<ListingFileSample<'a>>> {
+    let mut samples = vec![];
+    for url in urls {
+        let store = ctx.runtime_env().object_store(url)?;
+        let objects: Vec<_> = list_all_files(url, ctx, store.as_ref(), path_glob_filter)
+            .await?
+            // Empty files can't contribute to schema / partition inference and may error when read.
+            .try_filter(|meta| futures::future::ready(meta.size > 0))
+            .take(10)
+            .try_collect()
+            .await?;
+        samples.push(ListingFileSample {
+            url,
+            store,
+            objects,
+        });
+    }
+    Ok(samples)
+}
+
+pub fn validate_partitions(
+    files: &[ListingFileSample<'_>],
+    table_partition_fields: &[FieldRef],
+) -> Result<()> {
+    if table_partition_fields.is_empty() {
+        return Ok(());
+    }

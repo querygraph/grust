@@ -1,0 +1,14 @@
+    pub projection: Option<Vec<usize>>,
+    pub limit: Option<usize>,
+    pub preserve_order: bool,
+    pub output_ordering: Vec<LexOrdering>,
+    pub statistics: Statistics,
+    pub output_partitioning: Option<Partitioning>,
+    pub schema: TableSchema,
+    pub compression: CompressionTypeVariant,
+}
+
+/// Configuration for creating a listing-file sink execution plan.
+pub struct ListingSinkInput {
+    pub input: Arc<dyn ExecutionPlan>,
+    pub sink: FileSinkConfig,

@@ -1,0 +1,110 @@
+    /// error from this method and implementing [`Self::create_morselizer`] instead.
+    fn create_file_opener(
+        &self,
+        object_store: Arc<dyn ObjectStore>,
+        base_config: &FileScanConfig,
+        partition: usize,
+    ) -> Result<Arc<dyn FileOpener>>;
+
+    /// Creates a `dyn Morselizer` based on given parameters.
+    ///
+    /// The default implementation preserves existing behavior by adapting the
+    /// legacy [`FileOpener`] API into a [`Morselizer`].
+    ///
+    /// It is preferred to implement the [`Morselizer`] API directly by
+    /// implementing this method.
+    fn create_morselizer(
+        &self,
+        object_store: Arc<dyn ObjectStore>,
+        base_config: &FileScanConfig,
+        partition: usize,
+    ) -> Result<Box<dyn Morselizer>> {
+        let opener = self.create_file_opener(object_store, base_config, partition)?;
+        Ok(Box::new(FileOpenerMorselizer::new(opener)))
+    }
+
+    /// Returns the table schema for the overall table (including partition columns, if any)
+    ///
+    /// This method returns the unprojected schema: the full schema of the data
+    /// without [`Self::projection`] applied.
+    ///
+    /// The output schema of this `FileSource` is this TableSchema
+    /// with [`Self::projection`] applied.
+    ///
+    /// Use [`ProjectionExprs::project_schema`] to get the projected schema
+    /// after applying the projection.
+    fn table_schema(&self) -> &crate::table_schema::TableSchema;
+
+    /// Initialize new type with batch size configuration
+    fn with_batch_size(&self, batch_size: usize) -> Arc<dyn FileSource>;
+
+    /// Returns the filter expression that will be applied *during* the file scan.
+    ///
+    /// These expressions are in terms of the unprojected [`Self::table_schema`].
+    fn filter(&self) -> Option<Arc<dyn PhysicalExpr>> {
+        None
+    }
+
+    /// Return the projection that will be applied to the output stream on top
+    /// of [`Self::table_schema`].
+    ///
+    /// Note you can use [`ProjectionExprs::project_schema`] on the table
+    /// schema to get the effective output schema of this source.
+    fn projection(&self) -> Option<&ProjectionExprs> {
+        None
+    }
+
+    /// Return execution plan metrics
+    fn metrics(&self) -> &ExecutionPlanMetricsSet;
+
+    /// String representation of file source such as "csv", "json", "parquet"
+    fn file_type(&self) -> &str;
+
+    /// Format FileType specific information
+    fn fmt_extra(&self, _t: DisplayFormatType, _f: &mut Formatter) -> fmt::Result {
+        Ok(())
+    }
+
+    /// Returns whether this file source supports repartitioning files by byte ranges.
+    ///
+    /// When this returns `true`, files can be split into multiple partitions
+    /// based on byte offsets for parallel reading.
+    ///
+    /// When this returns `false`, files cannot be repartitioned (e.g., CSV files
+    /// with `newlines_in_values` enabled cannot be split because record boundaries
+    /// cannot be determined by byte offset alone).
+    ///
+    /// The default implementation returns `true`. File sources that cannot support
+    /// repartitioning should override this method.
+    fn supports_repartitioning(&self) -> bool {
+        true
+    }
+
+    /// If supported by the [`FileSource`], redistribute files across partitions
+    /// according to their size. Allows custom file formats to implement their
+    /// own repartitioning logic.
+    ///
+    /// The default implementation uses [`FileGroupPartitioner`]. See that
+    /// struct for more details.
+    fn repartitioned(
+        &self,
+        target_partitions: usize,
+        repartition_file_min_size: usize,
+        output_ordering: Option<LexOrdering>,
+        config: &FileScanConfig,
+    ) -> Result<Option<FileScanConfig>> {
+        if config.file_compression_type.is_compressed() || !self.supports_repartitioning()
+        {
+            return Ok(None);
+        }
+
+        let repartitioned_file_groups_option = FileGroupPartitioner::new()
+            .with_target_partitions(target_partitions)
+            .with_repartition_file_min_size(repartition_file_min_size)
+            .with_preserve_order_within_groups(output_ordering.is_some())
+            .repartition_file_groups(&config.file_groups);
+
+        if let Some(repartitioned_file_groups) = repartitioned_file_groups_option {
+            let mut source = config.clone();
+            source.file_groups = repartitioned_file_groups;
+            return Ok(Some(source));

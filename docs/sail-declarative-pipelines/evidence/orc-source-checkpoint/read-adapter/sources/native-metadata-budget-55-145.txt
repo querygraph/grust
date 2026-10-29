@@ -1,0 +1,91 @@
+use crate::schema::RootDataType;
+use crate::statistics::ColumnStatistics;
+use crate::stripe::StripeMetadata;
+
+use crate::reader::ChunkReader;
+
+const DEFAULT_FOOTER_SIZE: u64 = 16 * 1024;
+
+/// Optional limits applied while reading the ORC file tail.
+///
+/// Defaults preserve the existing unrestricted metadata API. Applications reading
+/// untrusted files should set all three limits. These bound encoded/decoded byte
+/// counts and schema nesting, not total heap usage: protobuf objects, retained
+/// metadata, codec history, buffer capacity and scratch space also consume memory.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct MetadataReadOptions {
+    /// Maximum combined encoded footer and metadata length. Checked before the
+    /// second range read; the initial tail read is at most 16 KiB regardless.
+    pub max_encoded_metadata_bytes: Option<usize>,
+    /// Maximum combined decoded footer and metadata length. The remaining budget
+    /// is passed into block decoding before allocating its output. Streaming
+    /// codecs may decode one extra byte to detect an exceeded limit.
+    pub max_decoded_metadata_bytes: Option<usize>,
+    /// Maximum schema depth, with the root STRUCT at depth zero. Checked before
+    /// recursively constructing the schema, including unprojected columns.
+    pub max_schema_depth: Option<usize>,
+}
+
+/// The file's metadata.
+#[derive(Debug, Clone)]
+pub struct FileMetadata {
+    compression: Option<Compression>,
+    root_data_type: RootDataType,
+    column_types: Arc<[proto::Type]>,
+    number_of_rows: u64,
+    file_format_version: String,
+    /// Statistics of columns across entire file
+    column_statistics: Vec<ColumnStatistics>,
+    stripes: Vec<StripeMetadata>,
+    user_custom_metadata: HashMap<String, Vec<u8>>,
+    /// The maximum number of rows in each index entry (default 10,000)
+    row_index_stride: Option<u32>,
+}
+
+impl FileMetadata {
+    fn from_proto(
+        postscript: &proto::PostScript,
+        footer: &proto::Footer,
+        metadata: &proto::Metadata,
+        options: MetadataReadOptions,
+    ) -> Result<Self> {
+        let compression =
+            Compression::from_proto(postscript.compression(), postscript.compression_block_size);
+        let root_data_type = match options.max_schema_depth {
+            Some(depth) => RootDataType::from_proto_with_max_depth(&footer.types, Some(depth))?,
+            None => RootDataType::from_proto(&footer.types)?,
+        };
+        let number_of_rows = footer.number_of_rows();
+        let column_statistics = footer
+            .statistics
+            .iter()
+            .map(TryFrom::try_from)
+            .collect::<Result<Vec<_>>>()?;
+        ensure!(
+            metadata.stripe_stats.is_empty() || metadata.stripe_stats.len() == footer.stripes.len(),
+            OutOfSpecSnafu {
+                msg: "stripe stats length must equal the number of stripes"
+            }
+        );
+        // TODO: confirm if this is valid
+        let stripes = if metadata.stripe_stats.is_empty() {
+            footer
+                .stripes
+                .iter()
+                .map(TryFrom::try_from)
+                .collect::<Result<Vec<_>>>()?
+        } else {
+            footer
+                .stripes
+                .iter()
+                .zip(metadata.stripe_stats.iter())
+                .map(TryFrom::try_from)
+                .collect::<Result<Vec<_>>>()?
+        };
+        let user_custom_metadata = footer
+            .metadata
+            .iter()
+            .map(|kv| (kv.name().to_owned(), kv.value().to_vec()))
+            .collect::<HashMap<_, _>>();
+
+        let file_format_version = postscript

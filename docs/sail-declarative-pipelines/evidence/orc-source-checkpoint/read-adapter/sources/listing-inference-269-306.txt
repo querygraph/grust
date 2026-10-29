@@ -1,0 +1,38 @@
+pub async fn list_all_files<'a>(
+    url: &'a ListingTableUrl,
+    ctx: &'a dyn Session,
+    store: &'a dyn ObjectStore,
+    path_glob_filter: Option<&'a PathGlobFilter>,
+) -> Result<BoxStream<'a, Result<ObjectMeta>>> {
+    let exec_options = &ctx.config_options().execution;
+    let ignore_subdirectory = exec_options.listing_table_ignore_subdirectory;
+    // If the prefix is a file, use a head request, otherwise use a list request.
+    let list = match url.is_collection() {
+        true => match ctx.runtime_env().cache_manager.get_list_files_cache() {
+            None => store.list(Some(url.prefix())),
+            Some(cache) => {
+                let key = TableScopedPath {
+                    table: None,
+                    path: url.prefix().clone(),
+                };
+                if let Some(res) = cache.get(&key) {
+                    debug!("Hit list all files cache");
+                    futures::stream::iter(res.files.as_ref().clone().into_iter().map(Ok)).boxed()
+                } else {
+                    let list_res = store.list(Some(url.prefix()));
+                    let vec = list_res.try_collect::<Vec<ObjectMeta>>().await?;
+                    cache.put(&key, CachedFileList::new(vec.clone()));
+                    futures::stream::iter(vec.into_iter().map(Ok)).boxed()
+                }
+            }
+        },
+        false => futures::stream::once(store.head(url.prefix())).boxed(),
+    };
+    Ok(list
+        .try_filter(move |meta| {
+            let path = &meta.location;
+            let included = url.contains(path, ignore_subdirectory)
+                && !has_hidden_path_component(url, path)
+                && matches_path_glob_filter(path_glob_filter, path);
+            futures::future::ready(included)
+        })

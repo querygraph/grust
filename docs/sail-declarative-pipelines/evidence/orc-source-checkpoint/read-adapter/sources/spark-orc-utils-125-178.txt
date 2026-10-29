@@ -1,0 +1,54 @@
+            Thread.currentThread().interrupt()
+          }
+        }
+      }
+    }
+  }
+
+  def toCatalystSchema(schema: TypeDescription): StructType = {
+    import TypeDescription.Category
+
+    def toCatalystType(orcType: TypeDescription): DataType = {
+      orcType.getCategory match {
+        case Category.STRUCT => toStructType(orcType)
+        case Category.LIST => toArrayType(orcType)
+        case Category.MAP => toMapType(orcType)
+        // A Spark TIMESTAMP_LTZ column (catalyst type attribute `timestamp`) and a foreign ORC
+        // TIMESTAMP column (no attribute) are both read as TimestampType, so do not let the
+        // parser resolve `timestamp` by spark.sql.timestampType.
+        case Category.TIMESTAMP if Option(orcType.getAttributeValue(CATALYST_TYPE_ATTRIBUTE_NAME))
+            .forall(_ == TimestampType.typeName) =>
+          TimestampType
+        case _ =>
+          val catalystTypeAttrValue = orcType.getAttributeValue(CATALYST_TYPE_ATTRIBUTE_NAME)
+          if (catalystTypeAttrValue != null) {
+            CatalystSqlParser.parseDataType(catalystTypeAttrValue)
+          } else {
+            CatalystSqlParser.parseDataType(orcType.toString)
+          }
+      }
+    }
+
+    def toStructType(orcType: TypeDescription): StructType = {
+      val fieldNames = orcType.getFieldNames.asScala
+      val fieldTypes = orcType.getChildren.asScala
+      val fields = new ArrayBuffer[StructField]()
+      fieldNames.zip(fieldTypes).foreach {
+        case (fieldName, fieldType) =>
+          val catalystType = toCatalystType(fieldType)
+          fields += StructField(fieldName, catalystType)
+      }
+      StructType(fields.toArray)
+    }
+
+    def toArrayType(orcType: TypeDescription): ArrayType = {
+      val elementType = orcType.getChildren.get(0)
+      ArrayType(toCatalystType(elementType))
+    }
+
+    def toMapType(orcType: TypeDescription): MapType = {
+      val Seq(keyType, valueType) = orcType.getChildren.asScala.toSeq
+      val catalystKeyType = toCatalystType(keyType)
+      val catalystValueType = toCatalystType(valueType)
+      MapType(catalystKeyType, catalystValueType)
+    }

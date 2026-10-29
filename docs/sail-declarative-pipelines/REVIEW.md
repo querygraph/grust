@@ -1298,3 +1298,7 @@ Sail `07e2c2226b` and `db8844172d` separately pass 134/142 library tests with fo
 ### Shared file-scan identity transport (2026-10-29T22:59:42.877031+00:00)
 
 Sail `27ab945aaa3046d05a1f4aeb1e651fddf11db927` preserves listed ETags/versions across all seven existing file-format codecs with exact group/file/path validation. Detached fmt/strict Clippy and 163 execution library tests pass, including legacy-loss control, wrapper/checkpoint preservation and decoded JSON execution. [Receipt](evidence/file-scan-identity/provenance.json). No ORC source, writer, new CLI or full SDP verdict; mixed-version workers are outside this identity guarantee.
+
+### ORC source checkpoint and requested-schema reference (2026-10-29T23:05:27.986560+00:00)
+
+[Evidence](evidence/orc-source-checkpoint/README.md) captures shared listing/resource integration requirements and 24 fresh Spark 4.2.1 requested-schema observations. Eight exact successes, twelve dedicated positional timestamp errors and four fixture-specific later overflows are retained under both vectorization settings. Full supplied schema and output projection must remain distinct. This is reference/design evidence; ORC source registration, writer, streaming/Iggy, CDC and full SDP qualification remain open.

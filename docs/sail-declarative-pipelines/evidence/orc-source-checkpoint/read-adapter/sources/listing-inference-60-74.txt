@@ -1,0 +1,15 @@
+/// happen before the merge rather than after it. A directory holding the same column as
+/// `timestamp[ms]` in one file and `timestamp[us]` in another would otherwise fail to merge,
+/// even though Spark represents both as a single timestamp type, and that failure would occur
+/// before [`rewrite_unsupported_fields`] ever ran.
+pub fn try_merge_normalized(
+    schemas: impl IntoIterator<Item = Schema>,
+    nanoseconds: NanosecondTimestamps,
+) -> Result<Schema> {
+    Ok(Schema::try_merge(schemas.into_iter().map(|schema| {
+        normalize_unsupported_fields(&schema, nanoseconds)
+    }))?)
+}
+
+fn normalize_unsupported_fields(schema: &Schema, nanoseconds: NanosecondTimestamps) -> Schema {
+    // TODO: Apply Spark-compatible type normalization recursively inside structs, lists, and

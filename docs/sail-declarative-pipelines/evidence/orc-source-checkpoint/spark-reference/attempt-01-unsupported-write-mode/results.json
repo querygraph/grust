@@ -1,0 +1,211 @@
+{
+  "cases": [],
+  "config": {
+    "spark.sql.ansi.enabled": "true",
+    "spark.sql.caseSensitive": "true",
+    "spark.sql.files.ignoreCorruptFiles": "false",
+    "spark.sql.orc.enableNestedColumnVectorizedReader": "true",
+    "spark.sql.orc.filterPushdown": "true",
+    "spark.sql.orc.impl": "native",
+    "spark.sql.orc.mergeSchema": "false",
+    "spark.sql.session.timeZone": "UTC",
+    "spark.sql.shuffle.partitions": "1",
+    "spark.sql.timestampType": "TIMESTAMP_LTZ"
+  },
+  "failure": "Traceback (most recent call last):\n  File \"/tmp/sail-sdp-orc-requested-schema-reference/probe.py\", line 139, in main\n    source.coalesce(1).write.mode('errorifexists').orc(str(directory))\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/readwriter.py\", line 941, in orc\n    self.format(\"orc\").save(path)\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/readwriter.py\", line 763, in save\n    self._write.command(self._spark.client), self._write.observations\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/plan.py\", line 2160, in command\n    raise PySparkValueError(\npyspark.errors.exceptions.base.PySparkValueError: [UNSUPPORTED_OPERATION] errorifexists is not supported.\n",
+  "java": {
+    "actual_pid": 75766,
+    "default_timezone_id": "UTC",
+    "format_locale": "en-US",
+    "gateway_pid": 75766,
+    "oldmapping_property": "false",
+    "runtime_version": "20.0.2+9-78",
+    "tzdb_versions": [
+      "2023c"
+    ],
+    "user_timezone_property": "UTC",
+    "vendor": "Oracle Corporation"
+  },
+  "java_tool_options": "-Duser.timezone=UTC -Dsun.timezone.ids.oldmapping=false -Duser.language=en -Duser.country=US",
+  "owned_gateway_exit_code": 0,
+  "python_pid": 75765,
+  "recorded_at_utc": "2026-10-29T22:58:45.579866+00:00",
+  "scope": "Fresh native ORC reads with supplied schemas; no Sail runtime qualification or production policy selection",
+  "script_sha256": "3da3a45dde468ce4af75d50ac47c367c6bf1d90cd21ed573964bf9f42d67da59",
+  "source": {
+    "arrow": {
+      "columns": [
+        {
+          "name": "ltz",
+          "type": "timestamp[us, tz=UTC]",
+          "values": [
+            1577934245123456,
+            null
+          ]
+        },
+        {
+          "name": "ntz",
+          "type": "timestamp[us]",
+          "values": [
+            1623053350654321,
+            null
+          ]
+        },
+        {
+          "name": "st",
+          "type": "struct<ltz: timestamp[us, tz=UTC], ntz: timestamp[us]>",
+          "values": [
+            {
+              "ltz": 1577934245123456,
+              "ntz": 1623053350654321
+            },
+            null
+          ]
+        },
+        {
+          "name": "la",
+          "type": "list<element: timestamp[us, tz=UTC]>",
+          "values": [
+            [
+              1577934245123456,
+              null
+            ],
+            null
+          ]
+        },
+        {
+          "name": "na",
+          "type": "list<element: timestamp[us]>",
+          "values": [
+            [
+              1623053350654321,
+              null
+            ],
+            null
+          ]
+        },
+        {
+          "name": "lm",
+          "type": "map<string, timestamp[us, tz=UTC]>",
+          "values": [
+            [
+              [
+                "value",
+                1577934245123456
+              ],
+              [
+                "null",
+                null
+              ]
+            ],
+            null
+          ]
+        },
+        {
+          "name": "nm",
+          "type": "map<string, timestamp[us]>",
+          "values": [
+            [
+              [
+                "value",
+                1623053350654321
+              ],
+              [
+                "null",
+                null
+              ]
+            ],
+            null
+          ]
+        }
+      ],
+      "num_rows": 2,
+      "schema": "ltz: timestamp[us, tz=UTC]\nntz: timestamp[us]\nst: struct<ltz: timestamp[us, tz=UTC], ntz: timestamp[us]>\n  child 0, ltz: timestamp[us, tz=UTC]\n  child 1, ntz: timestamp[us]\nla: list<element: timestamp[us, tz=UTC]>\n  child 0, element: timestamp[us, tz=UTC]\nna: list<element: timestamp[us]>\n  child 0, element: timestamp[us]\nlm: map<string, timestamp[us, tz=UTC]>\n  child 0, entries: struct<key: string not null, value: timestamp[us, tz=UTC]> not null\n      child 0, key: string not null\n      child 1, value: timestamp[us, tz=UTC]\nnm: map<string, timestamp[us]>\n  child 0, entries: struct<key: string not null, value: timestamp[us]> not null\n      child 0, key: string not null\n      child 1, value: timestamp[us]"
+    },
+    "schema": {
+      "fields": [
+        {
+          "metadata": {},
+          "name": "ltz",
+          "nullable": true,
+          "type": "timestamp"
+        },
+        {
+          "metadata": {},
+          "name": "ntz",
+          "nullable": true,
+          "type": "timestamp_ntz"
+        },
+        {
+          "metadata": {},
+          "name": "st",
+          "nullable": true,
+          "type": {
+            "fields": [
+              {
+                "metadata": {},
+                "name": "ltz",
+                "nullable": true,
+                "type": "timestamp"
+              },
+              {
+                "metadata": {},
+                "name": "ntz",
+                "nullable": true,
+                "type": "timestamp_ntz"
+              }
+            ],
+            "type": "struct"
+          }
+        },
+        {
+          "metadata": {},
+          "name": "la",
+          "nullable": true,
+          "type": {
+            "containsNull": true,
+            "elementType": "timestamp",
+            "type": "array"
+          }
+        },
+        {
+          "metadata": {},
+          "name": "na",
+          "nullable": true,
+          "type": {
+            "containsNull": true,
+            "elementType": "timestamp_ntz",
+            "type": "array"
+          }
+        },
+        {
+          "metadata": {},
+          "name": "lm",
+          "nullable": true,
+          "type": {
+            "keyType": "string",
+            "type": "map",
+            "valueContainsNull": true,
+            "valueType": "timestamp"
+          }
+        },
+        {
+          "metadata": {},
+          "name": "nm",
+          "nullable": true,
+          "type": {
+            "keyType": "string",
+            "type": "map",
+            "valueContainsNull": true,
+            "valueType": "timestamp_ntz"
+          }
+        }
+      ],
+      "type": "struct"
+    },
+    "sql": "SELECT IF(id = 0, CAST('2020-01-02 03:04:05.123456' AS TIMESTAMP_LTZ), NULL) AS ltz, IF(id = 0, CAST('2021-06-07 08:09:10.654321' AS TIMESTAMP_NTZ), NULL) AS ntz, IF(id = 0, named_struct('ltz', CAST('2020-01-02 03:04:05.123456' AS TIMESTAMP_LTZ), 'ntz', CAST('2021-06-07 08:09:10.654321' AS TIMESTAMP_NTZ)), NULL) AS st, IF(id = 0, array(CAST('2020-01-02 03:04:05.123456' AS TIMESTAMP_LTZ), CAST(NULL AS TIMESTAMP_LTZ)), NULL) AS la, IF(id = 0, array(CAST('2021-06-07 08:09:10.654321' AS TIMESTAMP_NTZ), CAST(NULL AS TIMESTAMP_NTZ)), NULL) AS na, IF(id = 0, map('value', CAST('2020-01-02 03:04:05.123456' AS TIMESTAMP_LTZ), 'null', CAST(NULL AS TIMESTAMP_LTZ)), NULL) AS lm, IF(id = 0, map('value', CAST('2021-06-07 08:09:10.654321' AS TIMESTAMP_NTZ), 'null', CAST(NULL AS TIMESTAMP_NTZ)), NULL) AS nm FROM range(2)"
+  },
+  "spark_source_pin": "617618396087429b5627a86ce933bb0f5d6645cb",
+  "spark_version": "4.2.1",
+  "status": "failed"
+}

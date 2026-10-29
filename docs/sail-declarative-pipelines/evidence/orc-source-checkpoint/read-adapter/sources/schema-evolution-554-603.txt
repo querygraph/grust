@@ -1,0 +1,50 @@
+    fn apply_type_cast(
+        &self,
+        column_expr: Arc<dyn PhysicalExpr>,
+        logical_field: &Field,
+        physical_field: &Field,
+    ) -> Result<Transformed<Arc<dyn PhysicalExpr>>> {
+        if !can_cast_field_with_schema_evolution(physical_field, logical_field, self.matching)? {
+            return exec_err!(
+                "Cannot cast column '{}' from '{}' (physical) to '{}' (logical)",
+                logical_field.name(),
+                physical_field.data_type(),
+                logical_field.data_type()
+            );
+        }
+
+        // TODO: Expose a pruning target for PhysicalName and FieldId casts so Delta and Iceberg
+        // can prune nested Parquet leaves without weakening their field-identity semantics.
+        if self.matching == StructFieldMatching::Name
+            && is_pure_name_structural_narrowing(physical_field, logical_field)
+        {
+            return Ok(Transformed::yes(Arc::new(CastExpr::new_with_target_field(
+                column_expr,
+                Arc::new(logical_field.clone()),
+                None,
+            ))));
+        }
+
+        let input_field = Arc::new(physical_field.clone());
+        let target_field = Arc::new(logical_field.clone());
+        let cast = match self.timezone_mode {
+            SchemaEvolutionTimezoneMode::Strict => {
+                SchemaEvolutionCastColumnExpr::new_with_matching(
+                    column_expr,
+                    input_field,
+                    target_field,
+                    None,
+                    self.matching,
+                )
+            }
+            SchemaEvolutionTimezoneMode::Relaxed => {
+                SchemaEvolutionCastColumnExpr::new_relaxed_timezone(
+                    column_expr,
+                    input_field,
+                    target_field,
+                    None,
+                    self.matching,
+                )
+            }
+        };
+        Ok(Transformed::yes(Arc::new(cast)))
