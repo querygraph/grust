@@ -1145,3 +1145,25 @@ The complete retained probe assertions match baseline: catalog 11/13 and ordinar
 casts 4/24. This synthetic transport qualification does not implement a cast
 producer, execute a distributed cluster or close either compatibility gap.
 The shared cast UDF and typed codec are the next review unit.
+
+## Shared ANSI string cast and worker codec
+
+Sail e28c27782604cc9f31ed6ec219114149d4ecdca8 adds SparkAnsiStringCast for primitive string
+conversions and a typed ExtendedScalarUdf payload. The success path uses the
+existing kernel; only cast failures inspect retained input values. Native error
+parameters use the actual value and canonical type. Source nullability and
+non-extension metadata match the prior type-only cast. Seven new tests cover
+scalar/array/null/empty/sliced string layouts, target validation, metadata,
+decoded execution and malformed payload rejection. See the
+[receipt](evidence/e28c27782604cc9f31ed6ec219114149d4ecdca8/gate.json).
+
+Detached fmt/strict Clippy, full function 385/execution 153/Connect 40 library
+tests, CLI build, 246 selected pytest and 67 upstream Python executions pass.
+The initial execution-test artifact failed before running because stripping ran
+out of disk; its log and cleanup summary are retained. The same immutable source
+passed after unused private compile cache was removed. LakeCat source/service
+executable and user servers were untouched.
+
+SQL activation remains separate. Both complete retained probe outcomes are
+unchanged: catalog 11/13, ordinary casts 4/24. No failure is removed or counted
+as passing; full SDP acceptance remains outstanding.

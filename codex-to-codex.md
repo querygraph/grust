@@ -11034,3 +11034,11 @@ Operator requested a complete review document, then renamed it SDP-FABLE-DESIGN-
 ## 2026-10-29T16:33:06.639855+00:00 — DONE Fable review brief
 
 SDP-FABLE-DESIGN-REVIEW.md covers the complete implementation/evidence map, pinned Sail-Iggy/Iggy/LakeCat sources, draft maturity, streaming offset/commit/fencing/recovery/codec questions and CDC ordering/auxiliary-state/reset/atomicity questions. Links, filename, Sail pin 96eb6d75f, 462/97/59 inventory figures and 246/67 cited gate counts verified. Current CROSSWALK table and DESIGN catalog-status navigation reconciled. No new streaming/CDC design selected, no external message or publication. Full SDP goal remains active.
+
+## 2026-10-29T16:36:02.963308+00:00 — ACK ANSI string cast producer and codec
+
+Implementing selected error-design unit three from Sail 96eb6d75f: focused primitive ANSI string cast with unchanged success kernel, retained input on failure, source field semantics and typed worker codec. SQL activation stays a separate unit. Current batch/streaming/CDC acceptance gaps remain open; no publication.
+
+## 2026-10-29T16:55:31.932286+00:00 — DONE ANSI string cast producer and codec
+
+Sail e28c27782604cc9f31ed6ec219114149d4ecdca8: fmt/strict Clippy, function 385/execution 153/Connect 40 full library tests, CLI build, fresh-server 246 selected pytest + 67 upstream executions pass. Seven new producer/field/codec tests. Initial disk/strip artifact failure retained; unchanged source rebuilt after unused private cache removal. SQL activation is separately pending in Sail paths. Catalog 11/13 and ordinary cast 4/24 complete retained probe outcomes unchanged. Full SDP goal active, no publication.

@@ -1,0 +1,108 @@
+[
+  {
+    "name": "graph_default_false",
+    "outcome": "rejected",
+    "condition": null,
+    "parameters": null
+  },
+  {
+    "name": "graph_default_true",
+    "outcome": "rejected",
+    "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+    "parameters": {
+      "message": "Failed to resolve catalog expression: [NOT_A_CONSTANT_STRING.NULL] catalog expression must not be NULL",
+      "codeLocation": "Query defined at /var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/sdp-catalog-registration-ywuo4ux1/catalog.sql:1",
+      "offendingQuery": "\nOffending query:\nSET CATALOG CAST(CAST('not-an-int' AS INT) AS STRING)\n"
+    }
+  },
+  {
+    "name": "concat",
+    "outcome": "registered",
+    "condition": null,
+    "parameters": null
+  },
+  {
+    "name": "cast",
+    "outcome": "registered",
+    "condition": null,
+    "parameters": null
+  },
+  {
+    "name": "unresolved",
+    "outcome": "rejected",
+    "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+    "parameters": {
+      "offendingQuery": "\nOffending query:\nSET CATALOG CONCAT(foo, '1')\n",
+      "codeLocation": "Query defined at /var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/sdp-catalog-registration-ywuo4ux1/catalog.sql:1",
+      "message": "Failed to resolve catalog expression: analysis error: attribute ObjectName([Identifier(\"foo\")]) is missing from the schema: cannot resolve attribute"
+    }
+  },
+  {
+    "name": "multipart",
+    "outcome": "rejected",
+    "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+    "parameters": {
+      "codeLocation": "Query defined at /var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/sdp-catalog-registration-ywuo4ux1/catalog.sql:1",
+      "offendingQuery": "\nOffending query:\nSET CATALOG test.cat\n",
+      "message": "Failed to resolve catalog expression: [INVALID_SQL_SYNTAX.MULTI_PART_NAME] SET CATALOG requires a single-part name"
+    }
+  },
+  {
+    "name": "wrong_type",
+    "outcome": "rejected",
+    "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+    "parameters": {
+      "message": "Failed to resolve catalog expression: [NOT_A_CONSTANT_STRING.WRONG_TYPE] catalog expression must have STRING type",
+      "offendingQuery": "\nOffending query:\nSET CATALOG 1\n",
+      "codeLocation": "Query defined at /var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/sdp-catalog-registration-ywuo4ux1/catalog.sql:1"
+    }
+  },
+  {
+    "name": "null",
+    "outcome": "rejected",
+    "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+    "parameters": {
+      "codeLocation": "Query defined at /var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/sdp-catalog-registration-ywuo4ux1/catalog.sql:1",
+      "offendingQuery": "\nOffending query:\nSET CATALOG CAST(NULL AS STRING)\n",
+      "message": "Failed to resolve catalog expression: [NOT_A_CONSTANT_STRING.NULL] catalog expression must not be NULL"
+    }
+  },
+  {
+    "name": "session_true_file_false",
+    "outcome": "rejected",
+    "condition": null,
+    "parameters": null
+  },
+  {
+    "name": "session_false_file_true",
+    "outcome": "rejected",
+    "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+    "parameters": {
+      "message": "Failed to resolve catalog expression: [NOT_A_CONSTANT_STRING.NULL] catalog expression must not be NULL",
+      "offendingQuery": "\nOffending query:\nSET CATALOG CAST(CAST('not-an-int' AS INT) AS STRING)\n",
+      "codeLocation": "Query defined at /var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/sdp-catalog-registration-ywuo4ux1/catalog.sql:2"
+    }
+  },
+  {
+    "name": "unset_database",
+    "outcome": "rejected",
+    "condition": "PIPELINE_SQL_GRAPH_ELEMENT_REGISTRATION_ERROR",
+    "parameters": {
+      "message": "analysis error: The current pipeline database is unset; use USE or qualify the name explicitly",
+      "offendingQuery": "\nOffending query:\nCREATE MATERIALIZED VIEW unqualified_probe AS SELECT 1\n",
+      "codeLocation": "Query defined at /var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/sdp-catalog-registration-ywuo4ux1/catalog.sql:1"
+    }
+  },
+  {
+    "name": "explicit_database",
+    "outcome": "registered",
+    "condition": null,
+    "parameters": null
+  },
+  {
+    "name": "private_view",
+    "outcome": "registered",
+    "condition": null,
+    "parameters": null
+  }
+]

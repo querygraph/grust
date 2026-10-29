@@ -164,3 +164,8 @@ Typed cause/serde/task-stream/Connect retention from unit two is implemented in
 257 affected library tests pass, as do 246 selected Python cases and 67 upstream
 executions. Cast producers and SQL activation remain pending; no required probe
 failure is removed or relabeled.
+
+Unit three is implemented in [e28c27782](evidence/e28c27782604cc9f31ed6ec219114149d4ecdca8/gate.json):
+the focused cast producer and typed codec pass seven new tests and 578 full
+library tests, plus the existing 246/67 remote gates. SQL activation remains
+pending; all required failing probe outcomes are preserved.
