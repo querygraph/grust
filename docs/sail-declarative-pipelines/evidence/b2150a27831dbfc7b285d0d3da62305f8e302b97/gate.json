@@ -1,0 +1,80 @@
+{
+  "sail_commit": "b2150a27831dbfc7b285d0d3da62305f8e302b97",
+  "engine_commit": "bbf438c0661cdfa4a3fab3af70439f7f788615d8",
+  "spark_commit": "617618396087429b5627a86ce933bb0f5d6645cb",
+  "lakecat_commit": "27e18f390c450c187a34b1c3bb2037c26d107699",
+  "recorded_at": "2026-10-29T12:37:30.980420+00:00",
+  "platform": "macOS arm64",
+  "gate_checkout": "detached immutable script source; existing verified CLI engine unchanged",
+  "cli_sha256": "683b0b7525f4f02a608fb71ce950a6926033eeb5ce7c22f8c376af431abb1b1c",
+  "checks": [
+    {
+      "command": "ruff check and format --check scripts/spark-pipelines-tests/namespaces.py",
+      "outcome": "pass"
+    },
+    {
+      "command": "python scripts/spark-pipelines-tests/namespaces.py --remote <owned Sail profile> --primary-catalog primary --secondary-catalog secondary --warehouse <local URI> --storage <local URI> --report memory.json",
+      "outcome": "pass",
+      "cases": 6,
+      "cleanup": "passed"
+    },
+    {
+      "command": "python scripts/spark-pipelines-tests/namespaces.py --remote <owned Sail profile> --primary-catalog primary --secondary-catalog lakecat --secondary-provider iceberg --warehouse <local URI> --storage <local URI> --report lakecat.json",
+      "outcome": "pass",
+      "cases": 6,
+      "cleanup": "passed"
+    },
+    {
+      "command": "python controls.py",
+      "outcome": "pass",
+      "invalid_invocations": 3,
+      "post_materialization_failure_recorded": true,
+      "failure_cleanup": "passed"
+    },
+    {
+      "command": "Independent LakeCat REST GET default namespace / generated namespace after cleanup",
+      "outcome": "pass",
+      "default_status": 200,
+      "temporary_namespace_status": 404
+    },
+    {
+      "command": "Compare CLI SHA256 with verified engine receipt and verify detached source identity",
+      "outcome": "pass"
+    }
+  ],
+  "profile": {
+    "default_catalog": "primary",
+    "default_database": [
+      "default"
+    ],
+    "catalogs": [
+      {
+        "name": "primary",
+        "type": "memory",
+        "initial_database": [
+          "default"
+        ]
+      },
+      {
+        "name": "secondary",
+        "type": "memory",
+        "initial_database": [
+          "default"
+        ]
+      },
+      {
+        "name": "lakecat",
+        "type": "iceberg-rest",
+        "uri": "http://127.0.0.1:51881/catalog"
+      }
+    ]
+  },
+  "limits": [
+    "Python tool-only commit; no new Rust build, native extension or broad pytest/upstream-suite execution claimed.",
+    "No original Scala-suite or new Spark JVM reference run for the six-pair matrix.",
+    "Profiles qualify memory/parquet and memory-to-LakeCat/Iceberg table paths; Delta option remains unqualified.",
+    "LakeCat profile uses memory catalog store, allow-all test governance and local files; no durability/authentication/distributed qualification.",
+    "Catalog objects are cleaned; no general storage-file reclamation guarantee is asserted.",
+    "Full batch, shared SQL source/expressions, failure/events, REST views, streaming and CDC remain outstanding."
+  ]
+}

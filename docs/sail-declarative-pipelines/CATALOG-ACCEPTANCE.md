@@ -55,3 +55,45 @@ failure events, streaming, CDC, distributed execution and durability require
 their own coverage. The delta provider option has not been executed in this
 profile. No passing percentage or original Scala-suite verdict follows from
 these four checks.
+
+## Six-pair namespace matrix
+
+`scripts/spark-pipelines-tests/namespaces.py` runs SqlPipelineSuite:759's six batch
+producer/consumer name combinations: unqualified/unqualified, unqualified/second
+database, unqualified/second catalog, second database/unqualified, second catalog/
+unqualified and second catalog/second database. Each has a declared BIGINT
+producer and an even-ID consumer. The runner checks both data sets, schemas and
+provider metadata. It owns unique names, drops each graph and removes/verifies
+its table and namespace metadata after success or failure. Optimized Python and
+same-catalog/relative-storage invocations are rejected.
+
+Both catalogs must be configured on the server. The recorded isolated profile
+uses primary/secondary memory catalogs plus a LakeCat REST catalog. Example
+commands against that profile are:
+
+```sh
+python scripts/spark-pipelines-tests/namespaces.py \
+  --remote sc://localhost:50084 \
+  --primary-catalog primary --secondary-catalog secondary \
+  --warehouse file:///tmp/sail-sdp-namespace-matrix/warehouse \
+  --storage file:///tmp/sail-sdp-namespace-matrix/state \
+  --report /tmp/sail-sdp-namespace-memory.json
+
+python scripts/spark-pipelines-tests/namespaces.py \
+  --remote sc://localhost:50084 \
+  --primary-catalog primary --secondary-catalog lakecat \
+  --secondary-provider iceberg \
+  --warehouse file:///tmp/sail-sdp-namespace-matrix/warehouse \
+  --storage file:///tmp/sail-sdp-namespace-matrix/lakecat-state \
+  --report /tmp/sail-sdp-namespace-lakecat.json
+```
+
+The warehouse override is optional and intended for Sail. Catalogs, endpoints and
+credentials use normal server configuration; the runner imports only PySpark and
+standard Python libraries. Metadata cleanup does not assert general storage-file
+reclamation. The [receipt](evidence/b2150a27831dbfc7b285d0d3da62305f8e302b97/gate.json)
+records six passes on each profile, an injected acceptance failure after table
+materialization with successful cleanup, three invalid-invocation controls and
+an independent REST check that the temporary LakeCat namespace is absent. Delta
+arguments are accepted but unqualified by these receipts. LakeCat durability,
+authentication and distributed operation remain outside this isolated profile.

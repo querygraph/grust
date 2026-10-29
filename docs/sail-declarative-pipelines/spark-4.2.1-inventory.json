@@ -4186,12 +4186,13 @@
       "line": 759,
       "method": "test",
       "name_expression": "\"Writing/reading datasets from fully and partially qualified names works\"",
-      "status": "unmapped",
+      "status": "partial-behavioral-port",
       "sail_tests": [],
       "coverage_review": {
         "phase": "batch-catalog",
-        "covered_assertions": "None mapped in this audit.",
-        "remaining_assertions": "Six upstream/downstream name pairs spanning unqualified, second database and second catalog; downstream even rows 0,2,4,6,8 with declared upstream id BIGINT, then explicit cleanup.",
+        "covered_assertions": "All six original upstream/downstream namespace combinations declare id BIGINT, publish/query the intended tables and return even IDs 0,2,4,6,8. Runner additionally verifies upstream 0..9, both exact single-bigint schemas, provider identity and owned table/namespace cleanup. Runs pass on two memory catalogs and memory primary plus LakeCat secondary through standard Iceberg REST.",
+        "remaining_assertions": "Original Spark internal Scala entry point, InMemoryManagedCatalog implementation and complete Scala-suite execution are unqualified. Dataset/namespace names are generated uniquely; providers are explicit in SQL.",
+        "sail_evidence": "evidence/b2150a27831dbfc7b285d0d3da62305f8e302b97/gate.json",
         "scala_suite_executed": false,
         "parameter_instances": [
           [
@@ -4218,6 +4219,17 @@
             "$otherCatalog.$otherDatabase.upstream_mv6",
             "$otherDatabase2.downstream_mv6"
           ]
+        ]
+      },
+      "runner_cases": {
+        "script": "scripts/spark-pipelines-tests/namespaces.py",
+        "cases": [
+          "unqualified",
+          "unqualified_to_database",
+          "unqualified_to_catalog",
+          "database_to_unqualified",
+          "catalog_to_unqualified",
+          "catalog_to_database"
         ]
       }
     },

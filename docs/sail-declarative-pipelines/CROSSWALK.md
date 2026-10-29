@@ -11,8 +11,8 @@ is fully qualified by executing the original Scala suite against Sail.
 | MaterializeTablesSuite | 27 | 8 | 19 |
 | SparkDeclarativePipelinesServerSuite | 19 | 14 | 5 |
 | PipelinesHandlerSuite | 2 | 0 | 2 |
-| SqlPipelineSuite | 38 | 26 | 12 |
-| Total | 97 | 55 | 42 |
+| SqlPipelineSuite | 38 | 27 | 11 |
+| Total | 97 | 56 | 41 |
 
 Each audited [inventory record](spark-4.2.1-inventory.json) identifies its phase,
 covered/missing assertions and evidence. A partial behavioral Connect port does
@@ -59,7 +59,7 @@ parameter when no cause exists. These belong to the pending Astra
 ## SQL pipeline assertions
 
 All 38 SQL registration sites have an [assertion audit](evidence/sql-complete-assertion-audit/validation.json):
-26 partial ports and 12 unmapped. This is not a complete Scala-suite verdict.
+27 partial ports and 11 unmapped. This is not a complete Scala-suite verdict.
 The reviewed groups include:
 
 - Basic batch cases: static dataset, escaped names, a four-view dependency chain,
@@ -98,7 +98,7 @@ Three Rust registration tests now inspect the exact original partition order,
 property map and per-flow configuration maps; original resolved-graph and catalog
 materialization assertions remain distinct. Exact parser assertions remain gaps.
 Unmapped cases include internal graph counts/input sets, catalog partition
-transforms, schema-qualified/cross-catalog combinations, per-flow invalid-read attribution,
+transforms, the separate original two-database fixture, per-flow invalid-read attribution,
 multipart temporary-view errors and streaming file/window refresh behavior.
 The four file formats, two invalid CSV paths and six namespace pairs are explicit
 source instances, not an expanded runtime denominator.
@@ -113,3 +113,10 @@ persisted-view SQL text remains a [confirmed source-preservation gap](evidence/v
 with a retained failing Rust test. The shared SQL design handoff now includes
 source text as well as catalog expressions; TreeText reconstruction is not a
 verbatim-source API. Review/status counts remain unchanged by this refinement.
+
+The six fully/partially qualified producer/consumer pairs now have a reusable
+[namespace-runner receipt](evidence/b2150a27831dbfc7b285d0d3da62305f8e302b97/gate.json).
+All six pass with two Sail memory catalogs and with LakeCat as the secondary
+Iceberg REST catalog, using Parquet in the primary catalog. Rows, schemas,
+providers and catalog cleanup are checked. This is partial behavioral coverage
+of SqlPipelineSuite:759, with no original Scala/JVM matrix run claimed.

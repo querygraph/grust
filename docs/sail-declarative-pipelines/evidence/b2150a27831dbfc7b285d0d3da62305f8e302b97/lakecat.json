@@ -1,0 +1,288 @@
+{
+  "runner_commit": "b2150a27831dbfc7b285d0d3da62305f8e302b97",
+  "cases": [
+    {
+      "name": "unqualified",
+      "outcome": "passed",
+      "sql": "CREATE MATERIALIZED VIEW `sdp_namespaces_736a1d6d873248059447e81d9a262f49_upstream_0` (id BIGINT) USING parquet AS SELECT * FROM RANGE(10);\nCREATE MATERIALIZED VIEW `sdp_namespaces_736a1d6d873248059447e81d9a262f49_downstream_0` USING parquet AS SELECT id FROM `sdp_namespaces_736a1d6d873248059447e81d9a262f49_upstream_0` WHERE (id%2)=0;",
+      "tables": [
+        "`primary`.`default`.`sdp_namespaces_736a1d6d873248059447e81d9a262f49_upstream_0`",
+        "`primary`.`default`.`sdp_namespaces_736a1d6d873248059447e81d9a262f49_downstream_0`"
+      ],
+      "providers": [
+        "parquet",
+        "parquet"
+      ],
+      "schemas": [
+        {
+          "type": "struct",
+          "fields": [
+            {
+              "name": "id",
+              "type": "long",
+              "nullable": true,
+              "metadata": {}
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "fields": [
+            {
+              "name": "id",
+              "type": "long",
+              "nullable": true,
+              "metadata": {}
+            }
+          ]
+        }
+      ],
+      "rows": [
+        0,
+        2,
+        4,
+        6,
+        8
+      ]
+    },
+    {
+      "name": "unqualified_to_database",
+      "outcome": "passed",
+      "sql": "CREATE MATERIALIZED VIEW `sdp_namespaces_736a1d6d873248059447e81d9a262f49_upstream_1` (id BIGINT) USING parquet AS SELECT * FROM RANGE(10);\nCREATE MATERIALIZED VIEW `sdp_namespaces_736a1d6d873248059447e81d9a262f49_db`.`sdp_namespaces_736a1d6d873248059447e81d9a262f49_downstream_1` USING parquet AS SELECT id FROM `sdp_namespaces_736a1d6d873248059447e81d9a262f49_upstream_1` WHERE (id%2)=0;",
+      "tables": [
+        "`primary`.`default`.`sdp_namespaces_736a1d6d873248059447e81d9a262f49_upstream_1`",
+        "`primary`.`sdp_namespaces_736a1d6d873248059447e81d9a262f49_db`.`sdp_namespaces_736a1d6d873248059447e81d9a262f49_downstream_1`"
+      ],
+      "providers": [
+        "parquet",
+        "parquet"
+      ],
+      "schemas": [
+        {
+          "type": "struct",
+          "fields": [
+            {
+              "name": "id",
+              "type": "long",
+              "nullable": true,
+              "metadata": {}
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "fields": [
+            {
+              "name": "id",
+              "type": "long",
+              "nullable": true,
+              "metadata": {}
+            }
+          ]
+        }
+      ],
+      "rows": [
+        0,
+        2,
+        4,
+        6,
+        8
+      ]
+    },
+    {
+      "name": "unqualified_to_catalog",
+      "outcome": "passed",
+      "sql": "CREATE MATERIALIZED VIEW `sdp_namespaces_736a1d6d873248059447e81d9a262f49_upstream_2` (id BIGINT) USING parquet AS SELECT * FROM RANGE(10);\nCREATE MATERIALIZED VIEW `lakecat`.`sdp_namespaces_736a1d6d873248059447e81d9a262f49_db`.`sdp_namespaces_736a1d6d873248059447e81d9a262f49_downstream_2` USING iceberg AS SELECT id FROM `sdp_namespaces_736a1d6d873248059447e81d9a262f49_upstream_2` WHERE (id%2)=0;",
+      "tables": [
+        "`primary`.`default`.`sdp_namespaces_736a1d6d873248059447e81d9a262f49_upstream_2`",
+        "`lakecat`.`sdp_namespaces_736a1d6d873248059447e81d9a262f49_db`.`sdp_namespaces_736a1d6d873248059447e81d9a262f49_downstream_2`"
+      ],
+      "providers": [
+        "parquet",
+        "iceberg"
+      ],
+      "schemas": [
+        {
+          "type": "struct",
+          "fields": [
+            {
+              "name": "id",
+              "type": "long",
+              "nullable": true,
+              "metadata": {}
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "fields": [
+            {
+              "name": "id",
+              "type": "long",
+              "nullable": true,
+              "metadata": {}
+            }
+          ]
+        }
+      ],
+      "rows": [
+        0,
+        2,
+        4,
+        6,
+        8
+      ]
+    },
+    {
+      "name": "database_to_unqualified",
+      "outcome": "passed",
+      "sql": "CREATE MATERIALIZED VIEW `sdp_namespaces_736a1d6d873248059447e81d9a262f49_db`.`sdp_namespaces_736a1d6d873248059447e81d9a262f49_upstream_3` (id BIGINT) USING parquet AS SELECT * FROM RANGE(10);\nCREATE MATERIALIZED VIEW `sdp_namespaces_736a1d6d873248059447e81d9a262f49_downstream_3` USING parquet AS SELECT id FROM `sdp_namespaces_736a1d6d873248059447e81d9a262f49_db`.`sdp_namespaces_736a1d6d873248059447e81d9a262f49_upstream_3` WHERE (id%2)=0;",
+      "tables": [
+        "`primary`.`sdp_namespaces_736a1d6d873248059447e81d9a262f49_db`.`sdp_namespaces_736a1d6d873248059447e81d9a262f49_upstream_3`",
+        "`primary`.`default`.`sdp_namespaces_736a1d6d873248059447e81d9a262f49_downstream_3`"
+      ],
+      "providers": [
+        "parquet",
+        "parquet"
+      ],
+      "schemas": [
+        {
+          "type": "struct",
+          "fields": [
+            {
+              "name": "id",
+              "type": "long",
+              "nullable": true,
+              "metadata": {}
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "fields": [
+            {
+              "name": "id",
+              "type": "long",
+              "nullable": true,
+              "metadata": {}
+            }
+          ]
+        }
+      ],
+      "rows": [
+        0,
+        2,
+        4,
+        6,
+        8
+      ]
+    },
+    {
+      "name": "catalog_to_unqualified",
+      "outcome": "passed",
+      "sql": "CREATE MATERIALIZED VIEW `lakecat`.`sdp_namespaces_736a1d6d873248059447e81d9a262f49_db`.`sdp_namespaces_736a1d6d873248059447e81d9a262f49_upstream_4` (id BIGINT) USING iceberg AS SELECT * FROM RANGE(10);\nCREATE MATERIALIZED VIEW `sdp_namespaces_736a1d6d873248059447e81d9a262f49_downstream_4` USING parquet AS SELECT id FROM `lakecat`.`sdp_namespaces_736a1d6d873248059447e81d9a262f49_db`.`sdp_namespaces_736a1d6d873248059447e81d9a262f49_upstream_4` WHERE (id%2)=0;",
+      "tables": [
+        "`lakecat`.`sdp_namespaces_736a1d6d873248059447e81d9a262f49_db`.`sdp_namespaces_736a1d6d873248059447e81d9a262f49_upstream_4`",
+        "`primary`.`default`.`sdp_namespaces_736a1d6d873248059447e81d9a262f49_downstream_4`"
+      ],
+      "providers": [
+        "iceberg",
+        "parquet"
+      ],
+      "schemas": [
+        {
+          "type": "struct",
+          "fields": [
+            {
+              "name": "id",
+              "type": "long",
+              "nullable": true,
+              "metadata": {}
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "fields": [
+            {
+              "name": "id",
+              "type": "long",
+              "nullable": true,
+              "metadata": {}
+            }
+          ]
+        }
+      ],
+      "rows": [
+        0,
+        2,
+        4,
+        6,
+        8
+      ]
+    },
+    {
+      "name": "catalog_to_database",
+      "outcome": "passed",
+      "sql": "CREATE MATERIALIZED VIEW `lakecat`.`sdp_namespaces_736a1d6d873248059447e81d9a262f49_db`.`sdp_namespaces_736a1d6d873248059447e81d9a262f49_upstream_5` (id BIGINT) USING iceberg AS SELECT * FROM RANGE(10);\nCREATE MATERIALIZED VIEW `sdp_namespaces_736a1d6d873248059447e81d9a262f49_db`.`sdp_namespaces_736a1d6d873248059447e81d9a262f49_downstream_5` USING parquet AS SELECT id FROM `lakecat`.`sdp_namespaces_736a1d6d873248059447e81d9a262f49_db`.`sdp_namespaces_736a1d6d873248059447e81d9a262f49_upstream_5` WHERE (id%2)=0;",
+      "tables": [
+        "`lakecat`.`sdp_namespaces_736a1d6d873248059447e81d9a262f49_db`.`sdp_namespaces_736a1d6d873248059447e81d9a262f49_upstream_5`",
+        "`primary`.`sdp_namespaces_736a1d6d873248059447e81d9a262f49_db`.`sdp_namespaces_736a1d6d873248059447e81d9a262f49_downstream_5`"
+      ],
+      "providers": [
+        "iceberg",
+        "parquet"
+      ],
+      "schemas": [
+        {
+          "type": "struct",
+          "fields": [
+            {
+              "name": "id",
+              "type": "long",
+              "nullable": true,
+              "metadata": {}
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "fields": [
+            {
+              "name": "id",
+              "type": "long",
+              "nullable": true,
+              "metadata": {}
+            }
+          ]
+        }
+      ],
+      "rows": [
+        0,
+        2,
+        4,
+        6,
+        8
+      ]
+    }
+  ],
+  "server_spark_version": "4.2.1",
+  "namespaces": {
+    "default": [
+      "primary",
+      "default"
+    ],
+    "database": [
+      "primary",
+      "sdp_namespaces_736a1d6d873248059447e81d9a262f49_db"
+    ],
+    "catalog": [
+      "lakecat",
+      "sdp_namespaces_736a1d6d873248059447e81d9a262f49_db"
+    ]
+  },
+  "cleanup": {
+    "outcome": "passed",
+    "errors": []
+  }
+}

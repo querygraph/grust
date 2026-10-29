@@ -857,3 +857,31 @@ The schema assertion coverage improves; source-text compatibility remains open.
 SQL counts remain 26 partial ports/twelve unmapped, overall 97 reviewed and 365
 unaudited. Original Scala-suite execution, full batch acceptance and later
 architecture phases remain incomplete. No new production architecture selected.
+
+## Review reusable catalog namespace matrix
+
+Commit `b2150a2783` adds a standalone PySpark 4.2.1 runner for all six namespace
+pairs in SqlPipelineSuite:759. Catalogs and table providers are arguments; there
+is no LakeCat-specific query path or Sail fixture import. Unique owned names
+allow table/namespace cleanup on success or failure. Data, declared BIGINT
+schema, provider metadata, graph disposal and metadata cleanup are checked.
+
+The [receipt](evidence/b2150a27831dbfc7b285d0d3da62305f8e302b97/gate.json)
+records Ruff, six passes on two memory/Parquet catalogs and six passes with a
+memory/Parquet primary and LakeCat/Iceberg secondary over REST. All cases use
+verified engine bbf438c066 with matching CLI hash and unchanged LakeCat 27e18f39.
+Three invalid invocation controls reject with exit 2. An injected failure after
+successful materialization records failed acceptance and still cleans the tables
+and namespaces. Independent REST GET confirms default namespace exists and the
+generated LakeCat namespace returns 404. Initial memory baseline is retained.
+
+This Python-only tool unit claims no new Rust/native build, broad pytest/upstream
+run or Spark JVM matrix execution. LakeCat uses its existing memory store,
+allow-all test governance and local files; no production LakeCat source changes,
+durability, authentication or distributed verdict. Existing Rust dependency
+versions differ across client/server and remain separated by standard REST.
+
+SqlPipelineSuite:759 now has partial behavioral coverage of all six source
+combinations. SQL audit counts are 27 partial ports/eleven unmapped, with total
+reviewed 97 and unaudited 365 unchanged. Full Scala-suite/batch acceptance and
+Astra architecture work remain outstanding. No publication.
