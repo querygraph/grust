@@ -1,0 +1,203 @@
+{
+  "recorded_at": "2026-10-29T21:36:49.540828+00:00",
+  "units": [
+    {
+      "name": "transform",
+      "sail_commit": "2f5192d50a5dd0b1740ec0f3d796e9c943107440",
+      "base": "6bba6817b52c53d532e8019421293b5e20619905",
+      "library_counts_in_log_order": [
+        155,
+        390
+      ],
+      "scope": "Recursive precision transform and worker UDF payload.",
+      "gate": "transform/gate.json"
+    },
+    {
+      "name": "planner",
+      "sail_commit": "aacea1ecfb33ed724f4b588b4a8f6d9154174c36",
+      "base": "2f5192d50a5dd0b1740ec0f3d796e9c943107440",
+      "library_counts_in_log_order": [
+        37
+      ],
+      "scope": "Scalar and recursive cast activation; nested type display.",
+      "gate": "planner/gate.json"
+    },
+    {
+      "name": "regressions",
+      "sail_commit": "dce4bd7514c3aa34f598393b0ae82159cc372d2d",
+      "base": "aacea1ecfb33ed724f4b588b4a8f6d9154174c36",
+      "library_counts_in_log_order": [
+        156,
+        394
+      ],
+      "scope": "Sliced arrays, signed truncation and physical worker expression execution.",
+      "gate": "regressions/gate.json"
+    },
+    {
+      "name": "connect",
+      "sail_commit": "39e63d6863deb79baffa43d08678f9fa08d22596",
+      "base": "dce4bd7514c3aa34f598393b0ae82159cc372d2d",
+      "library_counts_in_log_order": [
+        60
+      ],
+      "scope": "Connect schemas, typed/non-null literals and pipeline schema merging.",
+      "gate": "connect/gate.json"
+    }
+  ],
+  "initial_failure": "The first transform codec test used an arrow crate import unavailable to sail-execution. Corrected to datafusion::arrow; original failed candidate and logs retained.",
+  "scope": "Exact detached Rust library gates. Public CLI/runtime qualification is recorded separately.",
+  "limitations": [
+    "No integrated ORC source or sink qualification from these units.",
+    "SQL type/literal lowering, TIME-specific string parsing and configuration enforcement remain incomplete.",
+    "Nested container literal conversion does not yet use the enclosing declared type to supply child literal types.",
+    "Generic DataFusion scalar physical-expression decoding loses top-level return-field metadata. The activated precision helper handles containers, whose nested field metadata survives and is executed in the codec test.",
+    "Streaming/Iggy and CDC runtime remain unimplemented; the canonical SDP assertion inventory is unchanged."
+  ],
+  "files": [
+    {
+      "path": "connect/candidate.json",
+      "bytes": 441,
+      "sha256": "8233e4a8faba0d47c2d70046558f7085c3fa8969dafeb976304f632c9413c43b"
+    },
+    {
+      "path": "connect/clippy.log",
+      "bytes": 6451,
+      "sha256": "52f9f79e584add0ad9d913005fee17eea777d968cc450d77ead7896b4ae191b8"
+    },
+    {
+      "path": "connect/commit.patch",
+      "bytes": 22017,
+      "sha256": "8b4931988d93d9547d14e3243c26515338148196a6694a1fec1514d572130f47"
+    },
+    {
+      "path": "connect/fmt.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "connect/gate.json",
+      "bytes": 1524,
+      "sha256": "a42d1d7e6f418cc1d54a358def68d33c88ce8611842944a0ad54a7fc9e5112cc"
+    },
+    {
+      "path": "connect/rust.log",
+      "bytes": 11885,
+      "sha256": "94f5115f269082752399fd3face4252e52007c3cba61622804be5c861f88a49a"
+    },
+    {
+      "path": "planner/candidate.json",
+      "bytes": 399,
+      "sha256": "23de6fc24e504494a4f9bbabef1d16ceaf108e933f73e9a48a46f32913c1a0e2"
+    },
+    {
+      "path": "planner/clippy.log",
+      "bytes": 623,
+      "sha256": "2b00b29b4494f76b961dc5800275e3ba4c521d153867e9e16ad6d87abfa54acf"
+    },
+    {
+      "path": "planner/commit.patch",
+      "bytes": 30990,
+      "sha256": "03fe206c76884dfc83c6d35ddfd3d8e2b09badc5e5891ce11a192435935c80ea"
+    },
+    {
+      "path": "planner/fmt.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "planner/gate.json",
+      "bytes": 1488,
+      "sha256": "4c8eb251b8d131900f797b3fb296211faaaae0081ea76168e655dd7efcc56848"
+    },
+    {
+      "path": "planner/rust.log",
+      "bytes": 4643,
+      "sha256": "a81b275f275b636fc669422d204606859374fc784134556c10316ca906d1b465"
+    },
+    {
+      "path": "regressions/candidate.json",
+      "bytes": 278,
+      "sha256": "29c707c4df41b29482df70a83898600de9a34346282d3631e8b72dee752cb621"
+    },
+    {
+      "path": "regressions/clippy.log",
+      "bytes": 239,
+      "sha256": "6a6002f435417bec4ce1ff00e9f427da72311f3e62359bfba641f40532766eea"
+    },
+    {
+      "path": "regressions/commit.patch",
+      "bytes": 9579,
+      "sha256": "d586b24ef3d65692146122b065c6f5dc15d7bcc944ce3eef895e0cfd58ccfb07"
+    },
+    {
+      "path": "regressions/fmt.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "regressions/gate.json",
+      "bytes": 1688,
+      "sha256": "f00f17b1bd9a740c5e3845d2c9e725d25f81bcc7d06d7d5629cdee1bda292d47"
+    },
+    {
+      "path": "regressions/rust.log",
+      "bytes": 48462,
+      "sha256": "5115bd85f6f8bd187ac00c09363745cafdadcd4dfcd3ef3c9cda881194fe656b"
+    },
+    {
+      "path": "transform/candidate.json",
+      "bytes": 500,
+      "sha256": "8f6ba63321a2f87d5ca46878077efce1fd52047810d9418a162be292bd014ca8"
+    },
+    {
+      "path": "transform/clippy.log",
+      "bytes": 150,
+      "sha256": "5271d5d8185390479e3648bbb61b04e7baba7c248d0adb63a4c251c0757bc769"
+    },
+    {
+      "path": "transform/commit.patch",
+      "bytes": 27217,
+      "sha256": "0b44568a44433e7e159977652ef3c22bf6b15fdc8174a57e2d5be95f69b91924"
+    },
+    {
+      "path": "transform/fmt.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "transform/gate.json",
+      "bytes": 1670,
+      "sha256": "c814f299f5cf26344e445ce1b739e87084ce434f4cb376abb03f4a3ca9f4b4e9"
+    },
+    {
+      "path": "transform/rust.log",
+      "bytes": 54825,
+      "sha256": "87932bab641a2f77c641418ae72ae51c0837a154603599b1271da57bb9f5c169"
+    },
+    {
+      "path": "transform-initial-failure/candidate.json",
+      "bytes": 500,
+      "sha256": "459082bec95adeb745b203cfa73058be2d81d958aaf3bacc08bc4cbce2bf1e27"
+    },
+    {
+      "path": "transform-initial-failure/clippy.log",
+      "bytes": 7750,
+      "sha256": "c53bb5cd77587b24b773430f5194d315e55078fe0c0f80a74972344aec3cb2e2"
+    },
+    {
+      "path": "transform-initial-failure/commit.patch",
+      "bytes": 27205,
+      "sha256": "edbb541e7f261fd575475b4c910edebb95bd4b030ec4b1413e020535741d9092"
+    },
+    {
+      "path": "transform-initial-failure/fmt.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "transform-initial-failure/gate.json",
+      "bytes": 1254,
+      "sha256": "0233195ab27c28bea04b3e98239a6bf0a853c09336e778d3395599e6de1bc250"
+    }
+  ]
+}

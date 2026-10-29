@@ -1,0 +1,32 @@
+WARNING: Using incubator modules: jdk.incubator.vector
+Using Spark's default log4j profile: org/apache/spark/log4j2-defaults.properties
+Setting default log level to "WARN".
+To adjust logging level use sc.setLogLevel(newLevel). For SparkR, use setLogLevel(newLevel).
+26/10/29 14:32:36 WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+Traceback (most recent call last):
+  File "/tmp/sail-sdp-time-public/run.py", line 54, in <module>
+    spark = builder.getOrCreate()
+            ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/session.py", line 537, in getOrCreate
+    RemoteSparkSession.builder.config(map=opts).getOrCreate(),
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/session.py", line 258, in getOrCreate
+    session = self.create()
+              ^^^^^^^^^^^^^
+  File "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/session.py", line 249, in create
+    self._apply_options(session)
+  File "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/session.py", line 225, in _apply_options
+    session.conf._set_all(configs=opts, silent=True)
+  File "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/conf.py", line 59, in _set_all
+    result = self._client.config(operation)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py", line 1852, in config
+    for attempt in self._retrying():
+                   ^^^^^^^^^^^^^^^^
+  File "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/retries.py", line 297, in __iter__
+    self._wait()
+  File "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/retries.py", line 276, in _wait
+    self._sleep(wait_time / 1000)
+  File "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/core/context.py", line 410, in signal_handler
+    raise KeyboardInterrupt()
+KeyboardInterrupt

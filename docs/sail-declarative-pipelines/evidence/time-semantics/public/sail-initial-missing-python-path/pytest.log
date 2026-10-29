@@ -1,0 +1,383 @@
+........................................................................ [ 25%]
+..F...................................FF................................ [ 50%]
+........................................................................ [ 75%]
+...............................................................F.....    [100%]
+=================================== FAILURES ===================================
+_________ test_declared_nonnullable_field_cannot_receive_nullable_data _________
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x115a8a900>
+pipeline = ('6b6dcd0d-8560-48e7-b88b-0d442d4d3c25', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x115a8b5c0>, <function pipeline_factory.<locals>.create.<locals>.run at 0x115aabd80>)
+
+    def test_declared_nonnullable_field_cannot_receive_nullable_data(pipeline_spark, pipeline):
+        _, registry, run = pipeline
+        with graph_element_registration_context(registry):
+    
+>           @dp.materialized_view(schema=StructType([StructField("id", LongType(), nullable=False)]))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+python/pysail/tests/spark/pipelines/test_schema.py:73: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/pipelines/api.py:289: in outer
+    registry.register_flow(
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/pipelines/spark_connect_graph_element_registry.py:117: in register_flow
+    df = flow.func()
+         ^^^^^^^^^^^
+python/pysail/tests/spark/pipelines/test_schema.py:75: in output
+    return pipeline_spark.createDataFrame([(1,), (None,)], "id BIGINT")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/session.py:532: in createDataFrame
+    configs = self._client.get_config_dict(
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1821: in get_config_dict
+    return dict(self.config(op).pairs)
+                ^^^^^^^^^^^^^^^
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1859: in config
+    self._handle_error(error)
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2093: in _handle_error
+    self._handle_rpc_error(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <pyspark.sql.connect.client.core.SparkConnectClient object at 0x115a8a210>
+rpc_error = <_InactiveRpcError of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = "invalid argument: configurat...
+	debug_error_string = "INTERNAL:invalid argument: configuration not found: spark.sql.session.localRelationSizeLimit"
+>
+
+    def _handle_rpc_error(self, rpc_error: grpc.RpcError) -> NoReturn:
+        """
+        Error handling helper for dealing with GRPC Errors. On the server side, certain
+        exceptions are enriched with additional RPC Status information. These are
+        unpacked in this function and put into the exception.
+    
+        To avoid overloading the user with GRPC errors, this message explicitly
+        swallows the error context from the call. This GRPC Error is logged however,
+        and can be enabled.
+    
+        Parameters
+        ----------
+        rpc_error : grpc.RpcError
+           RPC Error containing the details of the exception.
+    
+        Returns
+        -------
+        Throws the appropriate internal Python exception.
+        """
+        logger.exception("GRPC Error received")
+        # We have to cast the value here because, a RpcError is a Call as well.
+        # https://grpc.github.io/grpc/python/grpc.html#grpc.UnaryUnaryMultiCallable.__call__
+        error: grpc.Call = cast(grpc.Call, rpc_error)
+        status_code: grpc.StatusCode = error.code()
+        status: Optional[Status] = rpc_status.from_call(error)
+        if status:
+            for d in status.details:
+                if d.Is(error_details_pb2.ErrorInfo.DESCRIPTOR):
+                    info = error_details_pb2.ErrorInfo()
+                    d.Unpack(info)
+                    logger.debug(f"Received ErrorInfo: {info}")
+    
+                    if info.metadata.get("errorClass") == "INVALID_HANDLE.SESSION_CHANGED":
+                        self._closed = True
+    
+                    if info.metadata.get("errorClass") == "CONNECT_INVALID_PLAN.CANNOT_PARSE":
+                        # Disable plan compression if the server fails to interpret the plan.
+                        logger.info(
+                            "Disabling plan compression for the session due to "
+                            "CONNECT_INVALID_PLAN.CANNOT_PARSE error."
+                        )
+                        self._plan_compression_threshold, self._plan_compression_algorithm = (
+                            -1,
+                            "NONE",
+                        )
+    
+>                   raise convert_exception(
+                        info,
+                        status.message,
+                        self._fetch_enriched_error(info),
+                        self._display_server_stack_trace(),
+                        status_code,
+                    ) from None
+E                   pyspark.errors.exceptions.connect.IllegalArgumentException: invalid argument: configuration not found: spark.sql.session.localRelationSizeLimit
+
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2177: IllegalArgumentException
+______________________________ test_save_as_table ______________________________
+
+spark = <pyspark.sql.connect.session.SparkSession object at 0x115b8f050>
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-141/test_save_as_table0')
+
+    def test_save_as_table(spark, tmp_path):
+        location = str(tmp_path / "t2")
+>       df = spark.createDataFrame([(1001, "Alice")], schema="id LONG, name STRING")
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+python/pysail/tests/spark/dml/test_write_table.py:95: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/session.py:532: in createDataFrame
+    configs = self._client.get_config_dict(
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1821: in get_config_dict
+    return dict(self.config(op).pairs)
+                ^^^^^^^^^^^^^^^
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1859: in config
+    self._handle_error(error)
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2093: in _handle_error
+    self._handle_rpc_error(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <pyspark.sql.connect.client.core.SparkConnectClient object at 0x115b8e390>
+rpc_error = <_InactiveRpcError of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = "invalid argument: configurat...
+	debug_error_string = "INTERNAL:invalid argument: configuration not found: spark.sql.session.localRelationSizeLimit"
+>
+
+    def _handle_rpc_error(self, rpc_error: grpc.RpcError) -> NoReturn:
+        """
+        Error handling helper for dealing with GRPC Errors. On the server side, certain
+        exceptions are enriched with additional RPC Status information. These are
+        unpacked in this function and put into the exception.
+    
+        To avoid overloading the user with GRPC errors, this message explicitly
+        swallows the error context from the call. This GRPC Error is logged however,
+        and can be enabled.
+    
+        Parameters
+        ----------
+        rpc_error : grpc.RpcError
+           RPC Error containing the details of the exception.
+    
+        Returns
+        -------
+        Throws the appropriate internal Python exception.
+        """
+        logger.exception("GRPC Error received")
+        # We have to cast the value here because, a RpcError is a Call as well.
+        # https://grpc.github.io/grpc/python/grpc.html#grpc.UnaryUnaryMultiCallable.__call__
+        error: grpc.Call = cast(grpc.Call, rpc_error)
+        status_code: grpc.StatusCode = error.code()
+        status: Optional[Status] = rpc_status.from_call(error)
+        if status:
+            for d in status.details:
+                if d.Is(error_details_pb2.ErrorInfo.DESCRIPTOR):
+                    info = error_details_pb2.ErrorInfo()
+                    d.Unpack(info)
+                    logger.debug(f"Received ErrorInfo: {info}")
+    
+                    if info.metadata.get("errorClass") == "INVALID_HANDLE.SESSION_CHANGED":
+                        self._closed = True
+    
+                    if info.metadata.get("errorClass") == "CONNECT_INVALID_PLAN.CANNOT_PARSE":
+                        # Disable plan compression if the server fails to interpret the plan.
+                        logger.info(
+                            "Disabling plan compression for the session due to "
+                            "CONNECT_INVALID_PLAN.CANNOT_PARSE error."
+                        )
+                        self._plan_compression_threshold, self._plan_compression_algorithm = (
+                            -1,
+                            "NONE",
+                        )
+    
+>                   raise convert_exception(
+                        info,
+                        status.message,
+                        self._fetch_enriched_error(info),
+                        self._display_server_stack_trace(),
+                        status_code,
+                    ) from None
+E                   pyspark.errors.exceptions.connect.IllegalArgumentException: invalid argument: configuration not found: spark.sql.session.localRelationSizeLimit
+
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2177: IllegalArgumentException
+____________________________ test_insert_overwrite _____________________________
+
+spark = <pyspark.sql.connect.session.SparkSession object at 0x115b8f050>
+
+    def test_insert_overwrite(spark):
+        spark.sql("INSERT INTO t1 VALUES (401, 'Alice', 22)")
+        spark.sql("INSERT OVERWRITE t1 VALUES (402, 'Bob', 32)")
+        actual = spark.sql("SELECT * FROM t1").toPandas()
+        expected = pd.DataFrame(
+            {"id": [402], "name": ["Bob"], "age": [32]},
+        )
+        assert_frame_equal(actual, expected)
+    
+>       df = spark.createDataFrame([(403, "Alice", 25)])
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+python/pysail/tests/spark/dml/test_write_table.py:76: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/session.py:532: in createDataFrame
+    configs = self._client.get_config_dict(
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1821: in get_config_dict
+    return dict(self.config(op).pairs)
+                ^^^^^^^^^^^^^^^
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1859: in config
+    self._handle_error(error)
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2093: in _handle_error
+    self._handle_rpc_error(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <pyspark.sql.connect.client.core.SparkConnectClient object at 0x115b8e390>
+rpc_error = <_InactiveRpcError of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = "invalid argument: configurat...
+	debug_error_string = "INTERNAL:invalid argument: configuration not found: spark.sql.session.localRelationSizeLimit"
+>
+
+    def _handle_rpc_error(self, rpc_error: grpc.RpcError) -> NoReturn:
+        """
+        Error handling helper for dealing with GRPC Errors. On the server side, certain
+        exceptions are enriched with additional RPC Status information. These are
+        unpacked in this function and put into the exception.
+    
+        To avoid overloading the user with GRPC errors, this message explicitly
+        swallows the error context from the call. This GRPC Error is logged however,
+        and can be enabled.
+    
+        Parameters
+        ----------
+        rpc_error : grpc.RpcError
+           RPC Error containing the details of the exception.
+    
+        Returns
+        -------
+        Throws the appropriate internal Python exception.
+        """
+        logger.exception("GRPC Error received")
+        # We have to cast the value here because, a RpcError is a Call as well.
+        # https://grpc.github.io/grpc/python/grpc.html#grpc.UnaryUnaryMultiCallable.__call__
+        error: grpc.Call = cast(grpc.Call, rpc_error)
+        status_code: grpc.StatusCode = error.code()
+        status: Optional[Status] = rpc_status.from_call(error)
+        if status:
+            for d in status.details:
+                if d.Is(error_details_pb2.ErrorInfo.DESCRIPTOR):
+                    info = error_details_pb2.ErrorInfo()
+                    d.Unpack(info)
+                    logger.debug(f"Received ErrorInfo: {info}")
+    
+                    if info.metadata.get("errorClass") == "INVALID_HANDLE.SESSION_CHANGED":
+                        self._closed = True
+    
+                    if info.metadata.get("errorClass") == "CONNECT_INVALID_PLAN.CANNOT_PARSE":
+                        # Disable plan compression if the server fails to interpret the plan.
+                        logger.info(
+                            "Disabling plan compression for the session due to "
+                            "CONNECT_INVALID_PLAN.CANNOT_PARSE error."
+                        )
+                        self._plan_compression_threshold, self._plan_compression_algorithm = (
+                            -1,
+                            "NONE",
+                        )
+    
+>                   raise convert_exception(
+                        info,
+                        status.message,
+                        self._fetch_enriched_error(info),
+                        self._display_server_stack_trace(),
+                        status_code,
+                    ) from None
+E                   pyspark.errors.exceptions.connect.IllegalArgumentException: invalid argument: configuration not found: spark.sql.session.localRelationSizeLimit
+
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2177: IllegalArgumentException
+______________ test_time_cast_preserves_nulls_and_day_boundaries _______________
+
+time_spark = <pyspark.sql.connect.session.SparkSession object at 0x116d6ec00>
+
+    def test_time_cast_preserves_nulls_and_day_boundaries(time_spark):
+>       source = time_spark.createDataFrame(
+            [(0, "00:00:00"), (1, "23:59:59.999999"), (2, None)],
+            T.StructType([T.StructField("id", T.IntegerType()), T.StructField("raw", T.StringType())]),
+        ).select("id", F.col("raw").cast(T.TimeType(6)).alias("clock"))
+
+python/pysail/tests/spark/dataframe/test_time_precision.py:82: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/session.py:532: in createDataFrame
+    configs = self._client.get_config_dict(
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1821: in get_config_dict
+    return dict(self.config(op).pairs)
+                ^^^^^^^^^^^^^^^
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1859: in config
+    self._handle_error(error)
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2093: in _handle_error
+    self._handle_rpc_error(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <pyspark.sql.connect.client.core.SparkConnectClient object at 0x116d6e600>
+rpc_error = <_InactiveRpcError of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = "invalid argument: configurat...
+	debug_error_string = "INTERNAL:invalid argument: configuration not found: spark.sql.session.localRelationSizeLimit"
+>
+
+    def _handle_rpc_error(self, rpc_error: grpc.RpcError) -> NoReturn:
+        """
+        Error handling helper for dealing with GRPC Errors. On the server side, certain
+        exceptions are enriched with additional RPC Status information. These are
+        unpacked in this function and put into the exception.
+    
+        To avoid overloading the user with GRPC errors, this message explicitly
+        swallows the error context from the call. This GRPC Error is logged however,
+        and can be enabled.
+    
+        Parameters
+        ----------
+        rpc_error : grpc.RpcError
+           RPC Error containing the details of the exception.
+    
+        Returns
+        -------
+        Throws the appropriate internal Python exception.
+        """
+        logger.exception("GRPC Error received")
+        # We have to cast the value here because, a RpcError is a Call as well.
+        # https://grpc.github.io/grpc/python/grpc.html#grpc.UnaryUnaryMultiCallable.__call__
+        error: grpc.Call = cast(grpc.Call, rpc_error)
+        status_code: grpc.StatusCode = error.code()
+        status: Optional[Status] = rpc_status.from_call(error)
+        if status:
+            for d in status.details:
+                if d.Is(error_details_pb2.ErrorInfo.DESCRIPTOR):
+                    info = error_details_pb2.ErrorInfo()
+                    d.Unpack(info)
+                    logger.debug(f"Received ErrorInfo: {info}")
+    
+                    if info.metadata.get("errorClass") == "INVALID_HANDLE.SESSION_CHANGED":
+                        self._closed = True
+    
+                    if info.metadata.get("errorClass") == "CONNECT_INVALID_PLAN.CANNOT_PARSE":
+                        # Disable plan compression if the server fails to interpret the plan.
+                        logger.info(
+                            "Disabling plan compression for the session due to "
+                            "CONNECT_INVALID_PLAN.CANNOT_PARSE error."
+                        )
+                        self._plan_compression_threshold, self._plan_compression_algorithm = (
+                            -1,
+                            "NONE",
+                        )
+    
+>                   raise convert_exception(
+                        info,
+                        status.message,
+                        self._fetch_enriched_error(info),
+                        self._display_server_stack_trace(),
+                        status_code,
+                    ) from None
+E                   pyspark.errors.exceptions.connect.IllegalArgumentException: invalid argument: configuration not found: spark.sql.session.localRelationSizeLimit
+
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2177: IllegalArgumentException
+=============================== warnings summary ===============================
+python/pysail/tests/spark/pipelines/test_features.py: 75 warnings
+python/pysail/tests/spark/dml/test_features.py: 13 warnings
+  /Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pytest_bdd/compat.py:28: PytestRemovedIn10Warning: Passing nodeid to _register_fixture is deprecated. Pass node instead for fixture scoping.
+    request._fixturemanager._register_fixture(
+
+python/pysail/tests/spark/pipelines/test_features.py: 75 warnings
+python/pysail/tests/spark/dml/test_features.py: 13 warnings
+  /Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/_pytest/fixtures.py:1986: PytestRemovedIn10Warning: Passing baseid to FixtureDef is deprecated. Pass node instead for fixture scoping.
+    fixture_def = FixtureDef(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED python/pysail/tests/spark/pipelines/test_schema.py::test_declared_nonnullable_field_cannot_receive_nullable_data
+FAILED python/pysail/tests/spark/dml/test_write_table.py::test_save_as_table
+FAILED python/pysail/tests/spark/dml/test_write_table.py::test_insert_overwrite
+FAILED python/pysail/tests/spark/dataframe/test_time_precision.py::test_time_cast_preserves_nulls_and_day_boundaries
+4 failed, 281 passed, 176 warnings in 9.80s

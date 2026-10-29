@@ -1,0 +1,572 @@
+commit 39e63d6863deb79baffa43d08678f9fa08d22596
+Author:     Alexy Khrabrov <deliverable@gmail.com>
+AuthorDate: Thu Oct 29 14:29:13 2026 -0700
+Commit:     Alexy Khrabrov <deliverable@gmail.com>
+CommitDate: Thu Oct 29 14:29:13 2026 -0700
+
+    feat: preserve Spark TIME precision through Connect schemas and literals
+
+diff --git a/crates/sail-spark-connect/src/pipelines/schema_merge.rs b/crates/sail-spark-connect/src/pipelines/schema_merge.rs
+index 5e483ad7d..b7fe441ea 100644
+--- a/crates/sail-spark-connect/src/pipelines/schema_merge.rs
++++ b/crates/sail-spark-connect/src/pipelines/schema_merge.rs
+@@ -144,3 +144,111 @@ fn incompatible(left: &spec::DataType, right: &spec::DataType) -> SparkResult<sp
+         "cannot merge incompatible pipeline types {left:?} and {right:?}"
+     )))
+ }
++
++#[cfg(test)]
++mod tests {
++    use datafusion::arrow::datatypes as adt;
++
++    use super::*;
++    use crate::spark::connect::data_type::StructField;
++
++    fn time_field(name: &str, precision: i32, nullable: bool) -> SparkResult<adt::Field> {
++        Ok(adt::Field::new(
++            name,
++            adt::DataType::Time64(adt::TimeUnit::Nanosecond),
++            nullable,
++        )
++        .with_metadata(HashMap::from([(
++            spec::SAIL_SPARK_TIME_METADATA_KEY.to_string(),
++            spec::SparkTimeMetadata::try_new(precision)?.to_json()?,
++        )])))
++    }
++
++    fn fields(field: adt::Field) -> SparkResult<spec::Fields> {
++        // Use the same Arrow -> Connect -> spec normalization as schema::spark_fields.
++        Ok(vec![spec::FieldRef::try_from(StructField::try_from(field)?)?].into())
++    }
++
++    // Spark 4.2.1 StructType.merge preserves equal TIME precision and merges nullability;
++    // different precisions are incompatible despite sharing Arrow nanosecond storage.
++    #[test]
++    fn time_merge_preserves_precision_and_combines_nullability() -> SparkResult<()> {
++        let left = fields(time_field("clock", 3, false)?)?;
++        let right = fields(time_field("clock", 3, true)?)?;
++
++        assert_eq!(merge_fields(&left, &right)?, right);
++        assert_eq!(merge_fields(&right, &left)?, right);
++        assert_eq!(right[0].data_type, spec::DataType::Time { precision: 3 });
++        Ok(())
++    }
++
++    #[test]
++    fn time_merge_rejects_different_precision_with_identical_arrow_storage() -> SparkResult<()> {
++        for (left_precision, right_precision) in [(0, 3), (3, 6), (1, 2)] {
++            let left = time_field("clock", left_precision, false)?;
++            let right = time_field("clock", right_precision, true)?;
++            assert_eq!(left.data_type(), right.data_type());
++
++            let left = fields(left)?;
++            let right = fields(right)?;
++            assert!(merge_fields(&left, &right).is_err());
++            assert!(merge_fields(&right, &left).is_err());
++        }
++        Ok(())
++    }
++
++    #[test]
++    fn time_merge_rejects_nested_precision_changes() -> SparkResult<()> {
++        fn containers(precision: i32) -> SparkResult<[adt::DataType; 3]> {
++            Ok([
++                adt::DataType::List(Arc::new(time_field(
++                    spec::SAIL_LIST_FIELD_NAME,
++                    precision,
++                    true,
++                )?)),
++                adt::DataType::Struct(vec![time_field("clock", precision, true)?].into()),
++                adt::DataType::Map(
++                    Arc::new(adt::Field::new(
++                        spec::SAIL_MAP_FIELD_NAME,
++                        adt::DataType::Struct(
++                            vec![
++                                adt::Field::new(
++                                    spec::SAIL_MAP_KEY_FIELD_NAME,
++                                    adt::DataType::Utf8,
++                                    false,
++                                ),
++                                time_field(spec::SAIL_MAP_VALUE_FIELD_NAME, precision, true)?,
++                            ]
++                            .into(),
++                        ),
++                        false,
++                    )),
++                    false,
++                ),
++            ])
++        }
++
++        for (left_type, right_type) in containers(3)?.into_iter().zip(containers(6)?) {
++            let left = fields(adt::Field::new("nested", left_type, true))?;
++            let right = fields(adt::Field::new("nested", right_type, true))?;
++            assert!(
++                merge_fields(&left, &right).is_err(),
++                "{left:?} vs {right:?}"
++            );
++        }
++        Ok(())
++    }
++
++    #[test]
++    fn time_merge_keeps_different_precisions_in_distinct_fields() -> SparkResult<()> {
++        let left = fields(time_field("seconds", 0, false)?)?;
++        let right = fields(time_field("micros", 6, true)?)?;
++        let merged = merge_fields(&left, &right)?;
++        let expected: spec::Fields = vec![Arc::clone(&left[0]), Arc::clone(&right[0])].into();
++
++        assert_eq!(merged, expected);
++        assert_eq!(merged[0].data_type, spec::DataType::Time { precision: 0 });
++        assert_eq!(merged[1].data_type, spec::DataType::Time { precision: 6 });
++        Ok(())
++    }
++}
+diff --git a/crates/sail-spark-connect/src/proto/data_type.rs b/crates/sail-spark-connect/src/proto/data_type.rs
+index 3e1c5c5b5..2e6ac54f1 100644
+--- a/crates/sail-spark-connect/src/proto/data_type.rs
++++ b/crates/sail-spark-connect/src/proto/data_type.rs
+@@ -272,25 +272,10 @@ impl TryFrom<DataType> for spec::DataType {
+                 precision,
+                 type_variation_reference: _,
+             }) => {
+-                let precision = precision.unwrap_or(6); // Default to microsecond if not specified
+-                match precision {
+-                    0 => Ok(spec::DataType::Time32 {
+-                        time_unit: spec::TimeUnit::Second,
+-                    }),
+-                    3 => Ok(spec::DataType::Time32 {
+-                        time_unit: spec::TimeUnit::Millisecond,
+-                    }),
+-                    6 => Ok(spec::DataType::Time64 {
+-                        time_unit: spec::TimeUnit::Microsecond,
+-                    }),
+-                    9 => Ok(spec::DataType::Time64 {
+-                        time_unit: spec::TimeUnit::Nanosecond,
+-                    }),
+-                    _ => Err(SparkError::invalid(format!(
+-                        "unsupported TIME precision: {}. Only 0, 3, 6, and 9 are supported",
+-                        precision
+-                    ))),
+-                }
++                let metadata = spec::SparkTimeMetadata::try_new(precision.unwrap_or(6))?;
++                Ok(spec::DataType::Time {
++                    precision: metadata.precision(),
++                })
+             }
+         }
+     }
+@@ -423,61 +408,18 @@ mod tests {
+     fn test_time_proto_to_spec() -> SparkResult<()> {
+         use crate::spark::connect::data_type::{Kind, Time};
+ 
+-        // TIME(0) -> Time32 Second
+-        let proto = crate::spark::connect::DataType {
+-            kind: Some(Kind::Time(Time {
+-                precision: Some(0),
+-                type_variation_reference: 0,
+-            })),
+-        };
+-        assert_eq!(
+-            spec::DataType::try_from(proto)?,
+-            spec::DataType::Time32 {
+-                time_unit: spec::TimeUnit::Second
+-            }
+-        );
+-
+-        // TIME(3) -> Time32 Millisecond
+-        let proto = crate::spark::connect::DataType {
+-            kind: Some(Kind::Time(Time {
+-                precision: Some(3),
+-                type_variation_reference: 0,
+-            })),
+-        };
+-        assert_eq!(
+-            spec::DataType::try_from(proto)?,
+-            spec::DataType::Time32 {
+-                time_unit: spec::TimeUnit::Millisecond
+-            }
+-        );
+-
+-        // TIME(6) -> Time64 Microsecond
+-        let proto = crate::spark::connect::DataType {
+-            kind: Some(Kind::Time(Time {
+-                precision: Some(6),
+-                type_variation_reference: 0,
+-            })),
+-        };
+-        assert_eq!(
+-            spec::DataType::try_from(proto)?,
+-            spec::DataType::Time64 {
+-                time_unit: spec::TimeUnit::Microsecond
+-            }
+-        );
+-
+-        // TIME(9) -> Time64 Nanosecond
+-        let proto = crate::spark::connect::DataType {
+-            kind: Some(Kind::Time(Time {
+-                precision: Some(9),
+-                type_variation_reference: 0,
+-            })),
+-        };
+-        assert_eq!(
+-            spec::DataType::try_from(proto)?,
+-            spec::DataType::Time64 {
+-                time_unit: spec::TimeUnit::Nanosecond
+-            }
+-        );
++        for precision in 0..=6 {
++            let proto = crate::spark::connect::DataType {
++                kind: Some(Kind::Time(Time {
++                    precision: Some(precision),
++                    type_variation_reference: 0,
++                })),
++            };
++            assert_eq!(
++                spec::DataType::try_from(proto)?,
++                spec::DataType::Time { precision }
++            );
++        }
+ 
+         // TIME (no precision) defaults to TIME(6)
+         let proto = crate::spark::connect::DataType {
+@@ -488,9 +430,7 @@ mod tests {
+         };
+         assert_eq!(
+             spec::DataType::try_from(proto)?,
+-            spec::DataType::Time64 {
+-                time_unit: spec::TimeUnit::Microsecond
+-            }
++            spec::DataType::Time { precision: 6 }
+         );
+ 
+         Ok(())
+@@ -500,8 +440,7 @@ mod tests {
+     fn test_time_proto_invalid_precision() {
+         use crate::spark::connect::data_type::{Kind, Time};
+ 
+-        // Invalid precisions: 1, 2, 4, 5, 7, 8, 10+
+-        for precision in [1, 2, 4, 5, 7, 8, 10] {
++        for precision in [i32::MIN, -1, 7, 8, 9, 10, i32::MAX] {
+             let proto = crate::spark::connect::DataType {
+                 kind: Some(Kind::Time(Time {
+                     precision: Some(precision),
+diff --git a/crates/sail-spark-connect/src/proto/data_type_arrow_time_tests.rs b/crates/sail-spark-connect/src/proto/data_type_arrow_time_tests.rs
+index d0c8abe2d..2c0482e60 100644
+--- a/crates/sail-spark-connect/src/proto/data_type_arrow_time_tests.rs
++++ b/crates/sail-spark-connect/src/proto/data_type_arrow_time_tests.rs
+@@ -24,6 +24,78 @@ fn spark_time(precision: i32) -> DataType {
+     }
+ }
+ 
++#[test]
++fn spark_time_schema_round_trip_preserves_scalar_and_nested_precision() -> SparkResult<()> {
++    use datafusion::prelude::SessionContext;
++    use sail_plan::config::PlanConfig;
++    use sail_plan::resolver::PlanResolver;
++
++    let context = SessionContext::new();
++    let resolver = PlanResolver::new(&context, Arc::new(PlanConfig::default()));
++    for precision in 0..=6 {
++        let mut scalar = time_field("clock", precision, false)?;
++        scalar.metadata_mut().insert(
++            spec::SPARK_METADATA_JSON_KEY.to_string(),
++            r#"{"comment":"declared precision"}"#.to_string(),
++        );
++        let element = Arc::new(time_field(spec::SAIL_LIST_FIELD_NAME, precision, false)?);
++        let entries = adt::DataType::Struct(
++            vec![
++                time_field(spec::SAIL_MAP_KEY_FIELD_NAME, precision, false)?,
++                time_field(spec::SAIL_MAP_VALUE_FIELD_NAME, precision, true)?,
++            ]
++            .into(),
++        );
++        let original = adt::DataType::Struct(
++            vec![
++                scalar,
++                adt::Field::new("clocks", adt::DataType::List(element), true),
++                adt::Field::new(
++                    "nested",
++                    adt::DataType::Struct(vec![time_field("clock", precision, true)?].into()),
++                    true,
++                ),
++                adt::Field::new(
++                    "lookup",
++                    adt::DataType::Map(
++                        Arc::new(adt::Field::new(spec::SAIL_MAP_FIELD_NAME, entries, false)),
++                        false,
++                    ),
++                    true,
++                ),
++            ]
++            .into(),
++        );
++        let proto = DataType::try_from(original.clone())?;
++        let logical = spec::DataType::try_from(proto.clone())?;
++        let restored = resolver.resolve_data_type_for_plan(&logical)?;
++        assert_eq!(restored, original, "TIME({precision})");
++        assert_eq!(DataType::try_from(restored)?, proto);
++    }
++    Ok(())
++}
++
++#[test]
++fn spark_time_connect_typed_null_retains_precision() -> SparkResult<()> {
++    use crate::spark::connect::expression::Literal;
++    use crate::spark::connect::expression::literal::LiteralType;
++
++    for precision in 0..=6 {
++        let literal = spec::Literal::try_from(Literal {
++            data_type: None,
++            literal_type: Some(LiteralType::Null(spark_time(precision))),
++        })?;
++        assert_eq!(
++            literal,
++            spec::Literal::Time {
++                nanoseconds: None,
++                precision
++            }
++        );
++    }
++    Ok(())
++}
++
+ #[test]
+ fn spark_time_metadata_controls_declared_precision_without_leaking() -> SparkResult<()> {
+     for precision in 0..=6 {
+diff --git a/crates/sail-spark-connect/src/proto/literal.rs b/crates/sail-spark-connect/src/proto/literal.rs
+index 919bd14d6..5dd8c1dba 100644
+--- a/crates/sail-spark-connect/src/proto/literal.rs
++++ b/crates/sail-spark-connect/src/proto/literal.rs
+@@ -17,8 +17,11 @@ impl TryFrom<Literal> for spec::Literal {
+         } = literal;
+         let literal_type = literal_type.required("literal type")?;
+         let literal = match literal_type {
+-            LiteralType::Null(data_type) => {
+-                if data_type.kind.is_some() {
++            LiteralType::Null(null_type) => {
++                // Spark gives the root type precedence over the legacy null type.
++                let has_data_type = data_type.is_some() || null_type.kind.is_some();
++                let data_type = data_type.unwrap_or(null_type);
++                if has_data_type {
+                     let data_type: spec::DataType = data_type.try_into()?;
+                     data_type_to_null_literal(data_type)?
+                 } else {
+@@ -219,25 +222,36 @@ impl TryFrom<Literal> for spec::Literal {
+                 return Err(SparkError::todo("specialized array literal"));
+             }
+             LiteralType::Time(Time { nano, precision }) => {
+-                // Spark TIME literals carry nanoseconds since midnight.
+-                // Precision values: 0 = seconds, 3 = milliseconds, 6 = microseconds (default), 9 = nanoseconds.
+-                match precision.unwrap_or(6) {
+-                    0 => spec::Literal::Time32Second {
+-                        seconds: Some((nano / 1_000_000_000) as i32),
+-                    },
+-                    3 => spec::Literal::Time32Millisecond {
+-                        milliseconds: Some((nano / 1_000_000) as i32),
+-                    },
+-                    6 => spec::Literal::Time64Microsecond {
+-                        microseconds: Some(nano / 1_000),
+-                    },
+-                    9 => spec::Literal::Time64Nanosecond {
+-                        nanoseconds: Some(nano),
+-                    },
+-                    p => return Err(SparkError::invalid(format!("invalid TIME precision: {p}"))),
++                // The root type overrides the legacy TIME payload precision.
++                let precision = match data_type {
++                    Some(DataType {
++                        kind: Some(sdt::Kind::Time(time)),
++                    }) => time.precision,
++                    Some(_) => {
++                        return Err(SparkError::invalid(
++                            "expected TIME data type for TIME literal",
++                        ));
++                    }
++                    None => precision,
++                };
++                let metadata = spec::SparkTimeMetadata::try_new(precision.unwrap_or(6))?;
++                // Spark converts through LocalTime.ofNanoOfDay. Precision does
++                // not truncate a literal's value, including sub-microsecond bits.
++                if !(0..86_400_000_000_000).contains(&nano) {
++                    return Err(SparkError::invalid(format!(
++                        "TIME literal nanoseconds must be within a day: {nano}"
++                    )));
++                }
++                spec::Literal::Time {
++                    nanoseconds: Some(nano),
++                    precision: metadata.precision(),
+                 }
+             }
+         };
+         Ok(literal)
+     }
+ }
++
++#[cfg(test)]
++#[path = "literal_time_tests.rs"]
++mod time_tests;
+diff --git a/crates/sail-spark-connect/src/proto/literal_time_tests.rs b/crates/sail-spark-connect/src/proto/literal_time_tests.rs
+new file mode 100644
+index 000000000..1eec101d4
+--- /dev/null
++++ b/crates/sail-spark-connect/src/proto/literal_time_tests.rs
+@@ -0,0 +1,159 @@
++use super::*;
++
++const NANOS: i64 = 45_296_123_456_789;
++const NANOS_PER_DAY: i64 = 86_400_000_000_000;
++
++fn time_type(precision: Option<i32>) -> DataType {
++    DataType {
++        kind: Some(sdt::Kind::Time(sdt::Time {
++            precision,
++            type_variation_reference: 0,
++        })),
++    }
++}
++
++fn time_literal(nano: i64, precision: Option<i32>, data_type: Option<DataType>) -> Literal {
++    Literal {
++        data_type,
++        literal_type: Some(LiteralType::Time(Time { nano, precision })),
++    }
++}
++
++fn assert_time(literal: Literal, nano: i64, precision: i32) -> SparkResult<()> {
++    let literal = spec::Literal::try_from(literal)?;
++    assert_eq!(
++        literal,
++        spec::Literal::Time {
++            nanoseconds: Some(nano),
++            precision,
++        }
++    );
++    assert_eq!(
++        literal.spark_time_metadata()?,
++        Some(spec::SparkTimeMetadata::try_new(precision)?)
++    );
++    Ok(())
++}
++
++#[test]
++fn time_literal_preserves_nanoseconds_at_every_declared_precision() -> SparkResult<()> {
++    for precision in 0..=6 {
++        for nano in [0, 1, 999, NANOS, NANOS_PER_DAY - 1] {
++            assert_time(time_literal(nano, Some(precision), None), nano, precision)?;
++        }
++    }
++    assert_time(time_literal(NANOS, None, None), NANOS, 6)
++}
++
++#[test]
++fn time_literal_root_type_overrides_payload_precision() -> SparkResult<()> {
++    for precision in 0..=6 {
++        for payload_precision in [None, Some(0), Some(6), Some(-1), Some(9)] {
++            assert_time(
++                time_literal(NANOS, payload_precision, Some(time_type(Some(precision)))),
++                NANOS,
++                precision,
++            )?;
++        }
++    }
++    // An explicit root TIME with no precision uses its own default, not the payload's.
++    assert_time(
++        time_literal(NANOS, Some(0), Some(time_type(None))),
++        NANOS,
++        6,
++    )
++}
++
++#[test]
++fn time_literal_rejects_invalid_effective_precision_and_root_kind() {
++    for precision in [i32::MIN, -1, 7, 9, i32::MAX] {
++        assert!(spec::Literal::try_from(time_literal(NANOS, Some(precision), None)).is_err());
++        assert!(
++            spec::Literal::try_from(time_literal(
++                NANOS,
++                Some(6),
++                Some(time_type(Some(precision))),
++            ))
++            .is_err()
++        );
++    }
++    for data_type in [
++        DataType { kind: None },
++        DataType {
++            kind: Some(sdt::Kind::Integer(sdt::Integer {
++                type_variation_reference: 0,
++            })),
++        },
++    ] {
++        let result = spec::Literal::try_from(time_literal(NANOS, Some(6), Some(data_type)));
++        assert!(matches!(result, Err(SparkError::InvalidArgument(message))
++            if message.contains("expected TIME data type")));
++    }
++}
++
++#[test]
++fn time_literal_rejects_nanoseconds_outside_the_day() {
++    for nano in [i64::MIN, -1, NANOS_PER_DAY, i64::MAX] {
++        for root_type in [None, Some(time_type(Some(3)))] {
++            let result = spec::Literal::try_from(time_literal(nano, Some(6), root_type));
++            assert!(matches!(result, Err(SparkError::InvalidArgument(message))
++                if message.contains("nanoseconds must be within a day")));
++        }
++    }
++}
++
++#[test]
++fn time_typed_null_uses_root_type_before_legacy_type() -> SparkResult<()> {
++    for precision in 0..=6 {
++        for legacy_type in [DataType { kind: None }, time_type(Some(9))] {
++            let literal = Literal {
++                data_type: Some(time_type(Some(precision))),
++                literal_type: Some(LiteralType::Null(legacy_type)),
++            };
++            assert_eq!(
++                spec::Literal::try_from(literal)?,
++                spec::Literal::Time {
++                    nanoseconds: None,
++                    precision,
++                }
++            );
++        }
++    }
++    let integer_type = DataType {
++        kind: Some(sdt::Kind::Integer(sdt::Integer {
++            type_variation_reference: 0,
++        })),
++    };
++    assert_eq!(
++        spec::Literal::try_from(Literal {
++            data_type: Some(integer_type),
++            literal_type: Some(LiteralType::Null(time_type(Some(3)))),
++        })?,
++        spec::Literal::Int32 { value: None }
++    );
++    assert!(
++        spec::Literal::try_from(Literal {
++            data_type: Some(time_type(Some(9))),
++            literal_type: Some(LiteralType::Null(time_type(Some(3)))),
++        })
++        .is_err()
++    );
++    assert_eq!(
++        spec::Literal::try_from(Literal {
++            data_type: Some(time_type(None)),
++            literal_type: Some(LiteralType::Null(time_type(Some(0)))),
++        })?,
++        spec::Literal::Time {
++            nanoseconds: None,
++            precision: 6,
++        }
++    );
++    assert!(
++        spec::Literal::try_from(Literal {
++            data_type: Some(DataType { kind: None }),
++            literal_type: Some(LiteralType::Null(time_type(Some(3)))),
++        })
++        .is_err()
++    );
++    Ok(())
++}

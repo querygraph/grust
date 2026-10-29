@@ -11150,3 +11150,11 @@ Prior turn committed requested Fable review closeout c2a87fc9 with detached sour
 ## 2026-10-29T21:05:59.836586+00:00 — DONE shared semantic TIME core
 
 Sail 6bba6817b52c53d532e8019421293b5e20619905: detached fmt/strict Clippy, common17/plan28 full library tests passed before conditional branch advance. Source/field/literal precision remains separate from Arrow units; raw types unchanged. Archived two Spark4.2.1 reference runs (23 scalar/schema operations including12 expected rejections;10 nested cast operations;191+50 source/result checks). Crossprecision nested casts proved necessary, so planner/codec/Connect activation stays in separate drafts. Existing ORC drafts preserved; no CLI, public SDP, streaming or CDC verdict. Documentation/source archive gate precedes its own commit.
+
+## 2026-10-29T21:33:16.202251+00:00 — ACK TIME cast and Connect activation evidence
+
+Prior turn verified completion of the recursive transform/codec gate at Sail2f5192d50. This continuation committed planner activation aacea1ecf (37 planner tests) and array/worker transport regressions dce4bd751 (394 function/156 execution tests), each after immutable detached gates. Connect schema/literal activation is gating separately; unchanged public assertions are running against installed Spark4.2.1 and the previous Sail CLI before the new CLI build. Native ORC timezone API work continues independently. No new streaming/CDC phase or full SDP qualification.
+
+## 2026-10-29T21:42:25.105752+00:00 — DONE TIME cast and Connect activation
+
+Sail2f5192d50/aacea1ecf/dce4bd751/39e63d686 separately pass detached Rust gates; final public test commit1e1d3760ab23ce61d2f8eb3b9a7a272b4f0a4564 passes285 selected pytest/67 upstream Python and Ruff with fresh CLI hashe7d352f6aa60ea62f39ad76f995786c30d4be45cbad0a4fb4cd1d5af47066626. All8 new assertions pass unchanged on installed Spark4.2.1; previous Sail1pass7fail retained. Initial codec import, Spark runner port and Sail Python-path failures retained with corrections; no assertion weakening. Shared SQL TIME/configuration/container-literal follow-ups and ORC registration remain open. Streaming/Iggy/CDC unimplemented; full goal active. Documentation integrity gate precedes conditional branch advance.

@@ -1,0 +1,51 @@
+{
+  "sail_commit": "a3f851851b83f7162a2aa463b71c0b7f7d48f147",
+  "base": "6bba6817b52c53d532e8019421293b5e20619905",
+  "packages": [
+    "sail-function",
+    "sail-execution"
+  ],
+  "started_at": "2026-10-29T21:12:12.637416+00:00",
+  "checks": [
+    {
+      "name": "fmt",
+      "command": [
+        "cargo",
+        "+nightly",
+        "fmt",
+        "-p",
+        "sail-function",
+        "-p",
+        "sail-execution",
+        "--",
+        "--check"
+      ],
+      "exit_code": 0,
+      "log": "/tmp/sail-sdp-time-precision-codec-fmt.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "clippy",
+      "command": [
+        "cargo",
+        "+1.98.1",
+        "clippy",
+        "-p",
+        "sail-function",
+        "-p",
+        "sail-execution",
+        "--all-targets",
+        "--all-features",
+        "--locked",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 101,
+      "log": "/tmp/sail-sdp-time-precision-codec-clippy.log",
+      "sha256": "c53bb5cd77587b24b773430f5194d315e55078fe0c0f80a74972344aec3cb2e2"
+    }
+  ],
+  "scope": "Rust library gates only; no public CLI or SDP runtime verdict",
+  "recorded_at": "2026-10-29T21:13:36.030707+00:00"
+}

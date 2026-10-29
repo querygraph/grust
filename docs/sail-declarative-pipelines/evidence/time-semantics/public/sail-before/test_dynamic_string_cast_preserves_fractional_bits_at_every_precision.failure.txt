@@ -1,0 +1,24 @@
+Traceback (most recent call last):
+  File "/tmp/sail-sdp-time-public/run.py", line 66, in <module>
+    getattr(module, name)(session)
+  File "/private/tmp/sail-sdp-time-public/test_time_precision.py", line 45, in test_dynamic_string_cast_preserves_fractional_bits_at_every_precision
+    assert_types(frame, {f"t{precision}": T.TimeType(precision) for precision in range(7)})
+  File "/private/tmp/sail-sdp-time-public/test_time_precision.py", line 38, in assert_types
+    assert {field.name: field.dataType for field in frame.schema} == expected
+                                                    ^^^^^^^^^^^^
+  File "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py", line 2035, in schema
+    _schema = self._schema
+              ^^^^^^^^^^^^
+  File "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py", line 2024, in _schema
+    self._cached_schema = self._session.client.schema(query)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py", line 1183, in schema
+    schema = self._analyze(method="schema", plan=plan).schema
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py", line 1460, in _analyze
+    self._handle_error(error)
+  File "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py", line 2093, in _handle_error
+    self._handle_rpc_error(error)
+  File "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py", line 2177, in _handle_rpc_error
+    raise convert_exception(
+pyspark.errors.exceptions.connect.IllegalArgumentException: invalid argument: unsupported TIME precision: 1. Only 0, 3, 6, and 9 are supported

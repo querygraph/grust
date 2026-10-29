@@ -80,3 +80,26 @@ any streaming/CDC runtime work.
 ## Qualified implementation
 
 Recorded: 2026-10-29T21:05:59.836586+00:00. Sail `6bba6817b52c53d532e8019421293b5e20619905` implements review unit 1. Its [receipt](evidence/time-semantics/core/gate.json) records 17 common and 28 planner library tests, formatting and strict all-target/all-feature Clippy on the exact detached candidate. The Connect mapping and cast changes are deliberately outside this commit. The test link step emitted the retained macOS unwind-table size warning; all tests completed successfully. No CLI or public SDP verdict was produced.
+
+## Qualified cast and Connect units
+
+Recorded: 2026-10-29T21:36:49.540828+00:00. The [activation archive](evidence/time-semantics/activation/provenance.json) retains four separately gated commits:
+
+| Sail commit | Boundary | Full library tests |
+| --- | --- | --- |
+| `2f5192d50a` | Recursive precision transform and worker UDF payload. | 390 function / 155 execution |
+| `aacea1ecfb` | Scalar and recursive cast activation; nested type display. | 37 planner |
+| `dce4bd7514` | Sliced arrays, signed truncation and physical worker expression execution. | 394 function / 156 execution |
+| `39e63d6863` | Connect schemas, typed/non-null literals and pipeline schema merging. | 60 Connect |
+
+All four pass formatting and strict all-target/all-feature Clippy on their exact detached candidates. The first transform candidate failed to compile a codec test because of an unavailable direct Arrow import; the correction and failed logs are retained. These counts are overlapping library suites, not additional SDP assertions.
+
+The planner runs the recursive TIME transform before its existing positional rename and ordinary leaf casts. Optimized column tests preserve identity bits, changed precision, nested nulls and mixed numeric casts. The worker test serializes, decodes and evaluates an actual physical column expression. Connect now accepts every declared precision 0 through 6, preserves nanoseconds in non-null literals, validates day bounds, and honors an explicit root literal type. Typed-null root precedence is corrected in the shared literal converter.
+
+Remaining shared work includes SQL type/literal lowering, TIME-specific string parsing, configuration admission, field-aware schema converters and enclosing-type propagation for container literals. Native ORC timezone conversion and Sail ORC registration remain separate. No full SDP, streaming or CDC verdict follows from these units.
+
+## Public runtime qualification
+
+Recorded: 2026-10-29T21:42:25.105752+00:00. Sail `1e1d3760ab23ce61d2f8eb3b9a7a272b4f0a4564` passes **285 selected pytest cases and 67 upstream Python executions** on a freshly built CLI. The [runtime archive](evidence/time-semantics/public/provenance.json) records the binary hash, exact candidate, commands, environment and raw results. Eight new shared TIME checks pass unchanged on installed Spark4.2.1; the previous Sail CLI passes one and fails seven. They cover all49 scalar precision pairs, declared schemas, fractional values, null/day boundaries, nested arrays/maps/renamed mixed structs, and a Python TIME literal.
+
+The first new Sail launch passed281 and failed4 during `createDataFrame` configuration lookup because it lacked the established Python environment. Restoring `PYTHONPATH` and `VIRTUAL_ENV` fixed the focused control and full run without changing the binary or assertions. The initial failed gate is retained alongside a corrected Spark-runner port setup failure. The canonical462 SDP registrations,97 assertion reviews and59 partial ports remain unchanged; these shared-type regressions do not close additional upstream SDP assertions by themselves.

@@ -1,0 +1,179 @@
+"""Spark 4.2.1 TIME schemas and nanosecond values through typed Column.cast."""
+
+import datetime
+
+import pyarrow as pa
+import pytest
+from pyspark.sql import functions as F
+from pyspark.sql import types as T
+
+NANOS = 45_296_123_456_000
+MILLIS_NANOS = 45_296_123_000_000
+DAY_END_NANOS = 86_399_999_999_000
+
+
+@pytest.fixture
+def time_spark(spark):
+    key = "spark.sql.timeType.enabled"
+    previous = spark.conf.get(key, "false")
+    spark.conf.set(key, "true")
+    try:
+        yield spark
+    finally:
+        spark.conf.set(key, previous)
+
+
+def dynamic_string(spark):
+    return spark.range(123456, 123457).select(
+        F.concat(F.lit("12:34:56."), F.col("id").cast(T.StringType())).alias("raw")
+    )
+
+
+def time_values(array):
+    assert array.type == pa.time64("ns")
+    return array.cast(pa.int64()).to_pylist()
+
+
+def assert_types(frame, expected):
+    assert {field.name: field.dataType for field in frame.schema} == expected
+
+
+def test_dynamic_string_cast_preserves_fractional_bits_at_every_precision(time_spark):
+    frame = dynamic_string(time_spark).select(
+        *(F.col("raw").cast(T.TimeType(precision)).alias(f"t{precision}") for precision in range(7))
+    )
+    assert_types(frame, {f"t{precision}": T.TimeType(precision) for precision in range(7)})
+    table = frame.toArrow()
+    for precision in range(7):
+        assert time_values(table.column(f"t{precision}")) == [NANOS]
+
+
+def test_time_cast_matrix_preserves_identity_and_truncates_changed_precision(time_spark):
+    source = dynamic_string(time_spark).select(
+        *(F.col("raw").cast(T.TimeType(precision)).alias(f"t{precision}") for precision in range(7))
+    )
+    frame = source.select(
+        *(
+            F.col(f"t{source_precision}")
+            .cast(T.TimeType(target_precision))
+            .alias(f"p{source_precision}_to_p{target_precision}")
+            for source_precision in range(7)
+            for target_precision in range(7)
+        )
+    )
+    assert_types(
+        frame,
+        {
+            f"p{source_precision}_to_p{target_precision}": T.TimeType(target_precision)
+            for source_precision in range(7)
+            for target_precision in range(7)
+        },
+    )
+    table = frame.toArrow()
+    for source_precision in range(7):
+        for target_precision in range(7):
+            name = f"p{source_precision}_to_p{target_precision}"
+            factor = 10 ** (9 - target_precision)
+            expected = NANOS if source_precision == target_precision else NANOS // factor * factor
+            assert time_values(table.column(name)) == [expected], name
+
+
+def test_time_cast_preserves_nulls_and_day_boundaries(time_spark):
+    source = time_spark.createDataFrame(
+        [(0, "00:00:00"), (1, "23:59:59.999999"), (2, None)],
+        T.StructType([T.StructField("id", T.IntegerType()), T.StructField("raw", T.StringType())]),
+    ).select("id", F.col("raw").cast(T.TimeType(6)).alias("clock"))
+    frame = source.orderBy("id").select(
+        *(F.col("clock").cast(T.TimeType(precision)).alias(f"t{precision}") for precision in range(7))
+    )
+    assert_types(frame, {f"t{precision}": T.TimeType(precision) for precision in range(7)})
+    table = frame.toArrow()
+    for precision in range(7):
+        factor = 10 ** (9 - precision)
+        assert time_values(table.column(f"t{precision}")) == [0, DAY_END_NANOS // factor * factor, None]
+
+
+def test_typed_time_nulls_retain_declared_precision(time_spark):
+    frame = time_spark.range(1).select(
+        *(F.lit(None).cast(T.TimeType(precision)).alias(f"t{precision}") for precision in range(7))
+    )
+    assert_types(frame, {f"t{precision}": T.TimeType(precision) for precision in range(7)})
+    assert all(field.nullable for field in frame.schema)
+    table = frame.toArrow()
+    for precision in range(7):
+        assert time_values(table.column(f"t{precision}")) == [None]
+
+
+def test_nested_time_array_cast_changes_only_requested_precision(time_spark):
+    # Construct strings first so the source TIME precision comes from a typed cast.
+    source = dynamic_string(time_spark).select(
+        F.array("raw", F.lit(None).cast(T.StringType())).cast(T.ArrayType(T.TimeType(0))).alias("times")
+    )
+    types = {"changed": T.ArrayType(T.TimeType(3)), "identity": T.ArrayType(T.TimeType(0))}
+    frame = source.select(*(F.col("times").cast(data_type).alias(name) for name, data_type in types.items()))
+    assert_types(frame, types)
+    table = frame.toArrow()
+    for name, expected in [("changed", MILLIS_NANOS), ("identity", NANOS)]:
+        array = table.column(name).combine_chunks()
+        assert array.offsets.to_pylist() == [0, 2]
+        assert time_values(array.values) == [expected, None]
+
+
+def test_nested_time_struct_cast_preserves_identity_and_casts_other_fields(time_spark):
+    source_type = T.StructType(
+        [
+            T.StructField("changed", T.TimeType(0)),
+            T.StructField("kept", T.TimeType(0)),
+            T.StructField("number", T.IntegerType()),
+        ]
+    )
+    target_type = T.StructType(
+        [
+            T.StructField("renamed", T.TimeType(3)),
+            T.StructField("unchanged", T.TimeType(0)),
+            T.StructField("widened", T.LongType()),
+        ]
+    )
+    source = dynamic_string(time_spark).select(
+        F.struct(F.col("raw").alias("changed"), F.col("raw").alias("kept"), F.lit("7").alias("number"))
+        .cast(source_type)
+        .alias("record")
+    )
+    frame = source.select(F.col("record").cast(target_type).alias("record"))
+    assert_types(frame, {"record": target_type})
+    record = frame.toArrow().column("record").combine_chunks()
+    assert time_values(record.field("renamed")) == [MILLIS_NANOS]
+    assert time_values(record.field("unchanged")) == [NANOS]
+    assert record.field("widened").type == pa.int64()
+    assert record.field("widened").to_pylist() == [7]
+
+
+def test_nested_time_map_cast_changes_keys_and_values_independently(time_spark):
+    source_type = T.MapType(T.TimeType(0), T.TimeType(0))
+    source = dynamic_string(time_spark).select(
+        F.create_map("raw", "raw", F.lit("00:00:00"), F.lit(None).cast(T.StringType())).cast(source_type).alias("times")
+    )
+    types = {
+        "values_changed": T.MapType(T.TimeType(0), T.TimeType(3)),
+        "keys_changed": T.MapType(T.TimeType(3), T.TimeType(0)),
+        "identity": source_type,
+    }
+    frame = source.select(*(F.col("times").cast(data_type).alias(name) for name, data_type in types.items()))
+    assert_types(frame, types)
+    table = frame.toArrow()
+    for name, key, value in [
+        ("values_changed", NANOS, MILLIS_NANOS),
+        ("keys_changed", MILLIS_NANOS, NANOS),
+        ("identity", NANOS, NANOS),
+    ]:
+        array = table.column(name).combine_chunks()
+        assert array.offsets.to_pylist() == [0, 2]
+        assert time_values(array.keys) == [key, 0]
+        assert time_values(array.items) == [value, None]
+
+
+def test_datetime_time_literal_retains_microseconds_and_default_precision(time_spark):
+    value = datetime.time(12, 34, 56, 123456)
+    frame = time_spark.range(1).select(F.lit(value).alias("clock"))
+    assert_types(frame, {"clock": T.TimeType(6)})
+    assert time_values(frame.toArrow().column("clock")) == [NANOS]

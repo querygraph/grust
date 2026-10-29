@@ -1,0 +1,259 @@
+commit dce4bd7514c3aa34f598393b0ae82159cc372d2d
+Author:     Alexy Khrabrov <deliverable@gmail.com>
+AuthorDate: Thu Oct 29 14:27:06 2026 -0700
+Commit:     Alexy Khrabrov <deliverable@gmail.com>
+CommitDate: Thu Oct 29 14:27:06 2026 -0700
+
+    test: cover TIME array slices and worker expression transport
+
+diff --git a/crates/sail-execution/src/proto/codec/time_precision_cast_tests.rs b/crates/sail-execution/src/proto/codec/time_precision_cast_tests.rs
+index bd1aa6d61..6f8531529 100644
+--- a/crates/sail-execution/src/proto/codec/time_precision_cast_tests.rs
++++ b/crates/sail-execution/src/proto/codec/time_precision_cast_tests.rs
+@@ -1,7 +1,10 @@
+-use datafusion::arrow::array::{Array, AsArray, ListArray, Time64NanosecondArray};
+-use datafusion::arrow::buffer::OffsetBuffer;
++use datafusion::arrow::array::{
++    Array, AsArray, Int32Array, ListArray, RecordBatch, Time64NanosecondArray,
++};
++use datafusion::arrow::buffer::{NullBuffer, OffsetBuffer};
+ use datafusion::common::config::ConfigOptions;
+ use datafusion::logical_expr::{ColumnarValue, ScalarFunctionArgs};
++use datafusion::physical_expr::ScalarFunctionExpr;
+ use sail_common::spec;
+ 
+ use super::*;
+@@ -66,6 +69,77 @@ fn decoded_time_precision_cast_preserves_nested_fields_and_executes() -> Result<
+     Ok(())
+ }
+ 
++#[test]
++fn time_precision_physical_expression_round_trip_preserves_nested_schema_and_values() -> Result<()>
++{
++    let source = list_field(0)?;
++    let target = list_field(3)?;
++    let schema = Arc::new(Schema::new(vec![
++        Arc::new(Field::new("id", DataType::Int32, false)),
++        Arc::clone(&source),
++    ]));
++    let function = ScalarUDF::from(SparkTimePrecisionCast::try_new(
++        Arc::clone(&source),
++        Arc::clone(&target),
++    )?);
++    let expression = Arc::new(ScalarFunctionExpr::try_new(
++        Arc::new(function),
++        vec![Arc::new(Column::new("times", 1))],
++        schema.as_ref(),
++        Arc::new(ConfigOptions::default()),
++    )?) as Arc<dyn PhysicalExpr>;
++    let bytes = try_encode_physical_expr(&RemoteExecutionCodec, &expression)?;
++    assert!(!bytes.is_empty());
++    let decoded = try_decode_physical_expr(
++        &TaskContext::default(),
++        &RemoteExecutionCodec,
++        &bytes,
++        schema.as_ref(),
++    )?;
++    assert_eq!(expression.return_field(schema.as_ref())?, target);
++    assert_eq!(decoded.return_field(schema.as_ref())?, target);
++    assert_eq!(
++        decoded.data_type(schema.as_ref())?,
++        target.data_type().clone()
++    );
++
++    let DataType::List(element) = source.data_type() else {
++        return plan_err!("expected list");
++    };
++    let offsets = OffsetBuffer::from_lengths([2, 0, 1]);
++    let nulls = Some(NullBuffer::from(vec![true, false, true]));
++    let values = Arc::new(ListArray::try_new(
++        Arc::clone(element),
++        offsets.clone(),
++        Arc::new(Time64NanosecondArray::from(vec![
++            Some(45_296_123_456_000),
++            None,
++            Some(86_399_999_999_000),
++        ])),
++        nulls.clone(),
++    )?);
++    let batch = RecordBatch::try_new(
++        schema,
++        vec![Arc::new(Int32Array::from(vec![10, 11, 12])), values],
++    )?;
++    let expected = expression.evaluate(&batch)?.into_array(batch.num_rows())?;
++    let actual = decoded.evaluate(&batch)?.into_array(batch.num_rows())?;
++    assert_eq!(actual.to_data(), expected.to_data());
++    assert_eq!(actual.data_type(), target.data_type());
++    let actual = actual.as_list::<i32>();
++    assert_eq!(actual.offsets(), &offsets);
++    assert_eq!(actual.nulls(), nulls.as_ref());
++    assert_eq!(
++        actual
++            .values()
++            .as_primitive::<datafusion::arrow::datatypes::Time64NanosecondType>()
++            .iter()
++            .collect::<Vec<_>>(),
++        vec![Some(45_296_123_000_000), None, Some(86_399_999_000_000)]
++    );
++    Ok(())
++}
++
+ #[test]
+ fn time_precision_codec_rejects_malformed_and_mislabeled_fields() -> Result<()> {
+     let source = try_encode_field_ref(&list_field(0)?)?;
+diff --git a/crates/sail-function/src/scalar/spark_time_precision_cast_tests.rs b/crates/sail-function/src/scalar/spark_time_precision_cast_tests.rs
+index 92959dd2c..c14fc1165 100644
+--- a/crates/sail-function/src/scalar/spark_time_precision_cast_tests.rs
++++ b/crates/sail-function/src/scalar/spark_time_precision_cast_tests.rs
+@@ -245,3 +245,151 @@ fn rejects_invalid_precision_metadata_before_execution() -> Result<()> {
+     assert!(SparkTimePrecisionCast::try_new(bad_storage, time("t", 3, true)?).is_err());
+     Ok(())
+ }
++
++#[test]
++fn negative_nanoseconds_truncate_towards_zero_without_changing_identity() -> Result<()> {
++    // Pin Spark's integer arithmetic independently of SQL TIME range validation.
++    let input: ArrayRef = Arc::new(Time64NanosecondArray::from(vec![
++        Some(-1_234_567),
++        Some(-999_999),
++        None,
++    ]));
++    for (precision, expected) in [
++        (0, vec![Some(-1_234_567), Some(-999_999), None]),
++        (3, vec![Some(-1_000_000), Some(0), None]),
++    ] {
++        let function =
++            SparkTimePrecisionCast::try_new(time("t", 0, true)?, time("t", precision, true)?)?;
++        let output = invoke(&function, ColumnarValue::Array(Arc::clone(&input)))?.into_array(3)?;
++        let actual = output
++            .as_primitive::<Time64NanosecondType>()
++            .iter()
++            .collect::<Vec<_>>();
++        assert_eq!(actual, expected);
++    }
++    Ok(())
++}
++
++#[test]
++fn sliced_large_list_keeps_nonzero_offsets_parent_nulls_and_null_elements() -> Result<()> {
++    let source_element = time("item", 0, true)?;
++    let source = Arc::new(Field::new(
++        "values",
++        DataType::LargeList(Arc::clone(&source_element)),
++        true,
++    ));
++    let target = Arc::new(Field::new(
++        "values",
++        DataType::LargeList(time("item", 3, true)?),
++        true,
++    ));
++    let function = SparkTimePrecisionCast::try_new(source, target)?;
++    let input = LargeListArray::try_new(
++        source_element,
++        OffsetBuffer::from_lengths([1, 2, 2]),
++        Arc::new(Time64NanosecondArray::from(vec![
++            Some(NANOS),
++            Some(1_234_567),
++            None,
++            Some(NANOS),
++            None,
++        ])),
++        Some(NullBuffer::from(vec![true, false, true])),
++    )?
++    .slice(1, 2);
++    let nulls = input.nulls().cloned();
++    let output = invoke(&function, ColumnarValue::Array(Arc::new(input)))?.into_array(2)?;
++    let output = output.as_list::<i64>();
++    assert_eq!(output.len(), 2);
++    assert_eq!(output.value_offsets(), &[1, 3, 5]);
++    assert_eq!(output.nulls(), nulls.as_ref());
++    assert_eq!(output.values().len(), 5);
++    let values = output.value(1);
++    assert_eq!(
++        values
++            .as_primitive::<Time64NanosecondType>()
++            .iter()
++            .collect::<Vec<_>>(),
++        vec![Some(45_296_123_000_000), None]
++    );
++    Ok(())
++}
++
++#[test]
++fn sliced_fixed_size_list_keeps_sliced_children_and_parent_nulls() -> Result<()> {
++    let source_element = time("item", 0, true)?;
++    let source = Arc::new(Field::new(
++        "values",
++        DataType::FixedSizeList(Arc::clone(&source_element), 2),
++        true,
++    ));
++    let target = Arc::new(Field::new(
++        "values",
++        DataType::FixedSizeList(time("item", 3, true)?, 2),
++        true,
++    ));
++    let function = SparkTimePrecisionCast::try_new(source, target)?;
++    let input = FixedSizeListArray::try_new(
++        source_element,
++        2,
++        Arc::new(Time64NanosecondArray::from(vec![
++            Some(0),
++            Some(0),
++            Some(1_234_567),
++            None,
++            Some(NANOS),
++            None,
++        ])),
++        Some(NullBuffer::from(vec![true, false, true])),
++    )?
++    .slice(1, 2);
++    let nulls = input.nulls().cloned();
++    let output = invoke(&function, ColumnarValue::Array(Arc::new(input)))?.into_array(2)?;
++    let output = output.as_fixed_size_list();
++    assert_eq!(output.len(), 2);
++    assert_eq!(output.value_length(), 2);
++    assert_eq!(output.nulls(), nulls.as_ref());
++    assert_eq!(output.values().len(), 4);
++    let values = output.value(1);
++    assert_eq!(
++        values
++            .as_primitive::<Time64NanosecondType>()
++            .iter()
++            .collect::<Vec<_>>(),
++        vec![Some(45_296_123_000_000), None]
++    );
++    Ok(())
++}
++
++#[test]
++fn zero_width_fixed_size_list_preserves_positive_sliced_row_count() -> Result<()> {
++    let source_element = time("item", 0, false)?;
++    let source = Arc::new(Field::new(
++        "values",
++        DataType::FixedSizeList(Arc::clone(&source_element), 0),
++        false,
++    ));
++    let target = Arc::new(Field::new(
++        "values",
++        DataType::FixedSizeList(time("item", 3, false)?, 0),
++        false,
++    ));
++    let function = SparkTimePrecisionCast::try_new(source, target)?;
++    let input = FixedSizeListArray::try_new_with_length(
++        source_element,
++        0,
++        Arc::new(Time64NanosecondArray::from(Vec::<i64>::new())),
++        None,
++        4,
++    )?
++    .slice(1, 2);
++    let output = invoke(&function, ColumnarValue::Array(Arc::new(input)))?.into_array(2)?;
++    let output = output.as_fixed_size_list();
++    assert_eq!(output.len(), 2);
++    assert_eq!(output.value_length(), 0);
++    assert_eq!(output.values().len(), 0);
++    assert_eq!(output.null_count(), 0);
++    assert_eq!(output.data_type(), function.output_field().data_type());
++    assert!(function.is_needed());
++    Ok(())
++}

@@ -1,0 +1,783 @@
+commit aacea1ecfb33ed724f4b588b4a8f6d9154174c36
+Author:     Alexy Khrabrov <deliverable@gmail.com>
+AuthorDate: Thu Oct 29 14:22:56 2026 -0700
+Commit:     Alexy Khrabrov <deliverable@gmail.com>
+CommitDate: Thu Oct 29 14:22:56 2026 -0700
+
+    feat: resolve Spark TIME precision in scalar and nested casts
+
+diff --git a/crates/sail-plan/src/formatter.rs b/crates/sail-plan/src/formatter.rs
+index d9f1b7f96..61e9a4275 100644
+--- a/crates/sail-plan/src/formatter.rs
++++ b/crates/sail-plan/src/formatter.rs
+@@ -3,9 +3,10 @@ use std::hash::Hash;
+ 
+ use datafusion::arrow::array::Array;
+ use datafusion::arrow::array::timezone::Tz;
+-use datafusion::arrow::datatypes::{DataType, IntervalUnit, TimeUnit};
+-use datafusion_common::{Result, ScalarValue, not_impl_err, plan_err};
++use datafusion::arrow::datatypes::{DataType, Field, IntervalUnit, TimeUnit};
++use datafusion_common::{Result, ScalarValue, not_impl_err, plan_datafusion_err, plan_err};
+ use half::f16;
++use sail_common::spec::{SAIL_SPARK_TIME_METADATA_KEY, SparkTimeMetadata};
+ use sail_common_datafusion::display::{spark_f32_to_string, spark_f64_to_string};
+ use sail_common_datafusion::formatter::{
+     Date32Formatter, Date64Formatter, DurationMicrosecondFormatter, DurationMillisecondFormatter,
+@@ -22,6 +23,18 @@ use sail_common_datafusion::utils::items::ItemTaker;
+ pub struct SparkPlanFormatter;
+ 
+ impl SparkPlanFormatter {
++    fn field_data_type_to_simple_string(&self, field: &Field) -> Result<String> {
++        if let Some(metadata) = field.metadata().get(SAIL_SPARK_TIME_METADATA_KEY) {
++            if field.data_type() != &DataType::Time64(TimeUnit::Nanosecond) {
++                return plan_err!("Spark TIME metadata requires Arrow Time64(Nanosecond)");
++            }
++            let metadata = SparkTimeMetadata::from_json(metadata)
++                .map_err(|error| plan_datafusion_err!("{error}"))?;
++            return Ok(format!("time({})", metadata.precision()));
++        }
++        self.data_type_to_simple_string(field.data_type())
++    }
++
+     fn time_unit_to_simple_string(unit: &TimeUnit) -> &'static str {
+         match unit {
+             TimeUnit::Second => "second",
+@@ -86,7 +99,7 @@ impl PlanFormatter for SparkPlanFormatter {
+             | DataType::ListView(field)
+             | DataType::LargeListView(field) => Ok(format!(
+                 "array<{}>",
+-                self.data_type_to_simple_string(field.data_type())?
++                self.field_data_type_to_simple_string(field)?
+             )),
+             DataType::Struct(fields) => {
+                 let fields = fields
+@@ -95,7 +108,7 @@ impl PlanFormatter for SparkPlanFormatter {
+                         Ok(format!(
+                             "{}:{}",
+                             field.name(),
+-                            self.data_type_to_simple_string(field.data_type())?
++                            self.field_data_type_to_simple_string(field)?
+                         ))
+                     })
+                     .collect::<Result<Vec<String>>>()?;
+@@ -110,8 +123,8 @@ impl PlanFormatter for SparkPlanFormatter {
+                 };
+                 Ok(format!(
+                     "map<{},{}>",
+-                    self.data_type_to_simple_string(key_field.data_type())?,
+-                    self.data_type_to_simple_string(value_field.data_type())?
++                    self.field_data_type_to_simple_string(key_field)?,
++                    self.field_data_type_to_simple_string(value_field)?
+                 ))
+             }
+             DataType::Union(_union_fields, _union_mode) => {
+diff --git a/crates/sail-plan/src/resolver/expression/cast.rs b/crates/sail-plan/src/resolver/expression/cast.rs
+index 1226545d3..c2e718978 100644
+--- a/crates/sail-plan/src/resolver/expression/cast.rs
++++ b/crates/sail-plan/src/resolver/expression/cast.rs
+@@ -21,6 +21,7 @@ use sail_function::scalar::datetime::timestamp_cast::{
+ use sail_function::scalar::spark_ansi_string_cast::SparkAnsiStringCast;
+ use sail_function::scalar::spark_cast_string_to_int32::SparkCastStringToInt32;
+ use sail_function::scalar::spark_struct_rename::SparkStructRename;
++use sail_function::scalar::spark_time_precision_cast::SparkTimePrecisionCast;
+ use sail_function::scalar::spark_to_string::{SparkToLargeUtf8, SparkToUtf8, SparkToUtf8View};
+ use sail_function::scalar::variant::spark_cast_to_variant::SparkCastToVariant;
+ use sail_function::scalar::variant::spark_variant_get::SparkVariantGet;
+@@ -113,17 +114,31 @@ impl PlanResolver<'_> {
+                 .transpose()?,
+             _ => None,
+         };
++        let spark_time_metadata = match &cast_to_type {
++            spec::DataType::Time { precision } => {
++                Some(spec::SparkTimeMetadata::try_new(*precision)?)
++            }
++            _ => None,
++        };
+         let cast_to_type = self.resolve_data_type(&cast_to_type, state)?;
+         let NamedExpr { expr, name, .. } =
+             self.resolve_named_expression(expr, schema, state).await?;
+         let expr_field = expr.to_field(schema)?.1;
+         let expr_type = expr_field.data_type().clone();
++        let source_time_precision = if spark_time_metadata.is_some() {
++            time_cast_source_precision(expr_field.as_ref())?
++        } else {
++            None
++        };
+         let expr_is_variant = is_variant_storage_field(expr_field.as_ref());
+         let name = if need_rename_cast(&expr) {
+             let service = self.ctx.extension::<PlanService>()?;
+-            let data_type_string = service
+-                .plan_formatter()
+-                .data_type_to_simple_string(&cast_to_type)?;
++            let data_type_string = match spark_time_metadata {
++                Some(metadata) => format!("time({})", metadata.precision()),
++                None => service
++                    .plan_formatter()
++                    .data_type_to_simple_string(&cast_to_type)?,
++            };
+             vec![format!(
+                 "{}CAST({} AS {})",
+                 if is_try { "TRY_" } else { "" },
+@@ -133,6 +148,31 @@ impl PlanResolver<'_> {
+         } else {
+             name
+         };
++        // TIME precision is part of the Spark leaf type, even though every
++        // precision uses the same Arrow storage. Transform those leaves before
++        // the ordinary cast handles other types and positional struct renaming.
++        let (expr, expr_type) = if matches!(
++            expr_type,
++            DataType::Struct(_)
++                | DataType::List(_)
++                | DataType::LargeList(_)
++                | DataType::FixedSizeList(_, _)
++                | DataType::Map(_, _)
++        ) {
++            let target = Arc::new(Field::new("", cast_to_type.clone(), true));
++            let transform = SparkTimePrecisionCast::try_new(Arc::clone(&expr_field), target)?;
++            if transform.is_needed() {
++                let data_type = transform.output_field().data_type().clone();
++                (
++                    ScalarUDF::new_from_impl(transform).call(vec![expr]),
++                    data_type,
++                )
++            } else {
++                (expr, expr_type)
++            }
++        } else {
++            (expr, expr_type)
++        };
+         let override_string_cast = matches!(
+             expr_type,
+             DataType::Date32
+@@ -153,6 +193,23 @@ impl PlanResolver<'_> {
+         // Spark renders TIMESTAMP in the session time zone, whatever zone labels the values.
+         let session_timezone = self.config.session_timezone_label();
+         let expr = match (expr_type, cast_to_type.clone(), is_try) {
++            (DataType::Time32(_) | DataType::Time64(_), _, _) if spark_time_metadata.is_some() => {
++                let target_precision = spark_time_metadata
++                    .ok_or_else(|| PlanError::internal("missing TIME cast precision"))?
++                    .precision();
++                let nanos = cast(expr, DataType::Time64(TimeUnit::Nanosecond));
++                if source_time_precision == Some(target_precision) {
++                    // Spark's identity cast retains sub-precision bits. Declared
++                    // precision alone does not constrain the stored value.
++                    nanos
++                } else {
++                    let factor = 10_i64.pow(9 - target_precision as u32);
++                    let truncated = cast(nanos, DataType::Int64)
++                        .div(lit(factor))
++                        .mul(lit(factor));
++                    cast(truncated, cast_to_type)
++                }
++            }
+             (
+                 DataType::Timestamp(_, None),
+                 DataType::Timestamp(TimeUnit::Microsecond, Some(timezone)),
+@@ -337,34 +394,68 @@ impl PlanResolver<'_> {
+             (_, to, true) => try_cast(expr, to),
+             (_, to, _) => cast(expr, to),
+         };
+-        Ok(match spark_interval_metadata {
+-            Some(metadata) => {
+-                // Nested expressions consume the Expr without its NamedExpr metadata.
+-                // Keep the target qualifier on the cast field as well as the projection.
+-                let field = expr.to_field(schema)?.1;
+-                let mut field_metadata = field.metadata().clone();
+-                field_metadata.insert(
+-                    spec::SAIL_SPARK_INTERVAL_METADATA_KEY.to_string(),
+-                    metadata.clone(),
+-                );
+-                let field = Arc::new(field.as_ref().clone().with_metadata(field_metadata));
+-                let expr = match expr {
+-                    expr::Expr::Cast(cast) => {
+-                        expr::Expr::Cast(expr::Cast::new_from_field(cast.expr, field))
+-                    }
+-                    expr::Expr::TryCast(cast) => {
+-                        expr::Expr::TryCast(expr::TryCast::new_from_field(cast.expr, field))
+-                    }
+-                    expr => expr::Expr::Cast(expr::Cast::new_from_field(Box::new(expr), field)),
+-                };
+-                NamedExpr::new(name, expr).with_metadata(vec![(
+-                    spec::SAIL_SPARK_INTERVAL_METADATA_KEY.to_string(),
+-                    metadata,
+-                )])
++        let mut target_metadata = vec![];
++        if let Some(metadata) = spark_interval_metadata {
++            target_metadata.push((spec::SAIL_SPARK_INTERVAL_METADATA_KEY.to_string(), metadata));
++        }
++        if let Some(metadata) = spark_time_metadata {
++            target_metadata.push((
++                spec::SAIL_SPARK_TIME_METADATA_KEY.to_string(),
++                metadata.to_json()?,
++            ));
++        }
++        if target_metadata.is_empty()
++            && !expr_field
++                .metadata()
++                .contains_key(spec::SAIL_SPARK_TIME_METADATA_KEY)
++        {
++            return Ok(NamedExpr::new(name, expr));
++        }
++        let field = expr.to_field(schema)?.1;
++        let mut field_metadata = field.metadata().clone();
++        // A type-only Arrow cast inherits source metadata. TIME describes the
++        // target Spark type, so replacing it also removes it when casting away.
++        field_metadata.remove(spec::SAIL_SPARK_TIME_METADATA_KEY);
++        field_metadata.extend(target_metadata.iter().cloned());
++        let expr = if field_metadata != *field.metadata() || !target_metadata.is_empty() {
++            // Nested expressions consume the Expr without its NamedExpr metadata.
++            // Keep the target metadata on the cast field as well as the projection.
++            let field = Arc::new(field.as_ref().clone().with_metadata(field_metadata));
++            match expr {
++                expr::Expr::Cast(cast) => {
++                    expr::Expr::Cast(expr::Cast::new_from_field(cast.expr, field))
++                }
++                expr::Expr::TryCast(cast) => {
++                    expr::Expr::TryCast(expr::TryCast::new_from_field(cast.expr, field))
++                }
++                expr => expr::Expr::Cast(expr::Cast::new_from_field(Box::new(expr), field)),
+             }
+-            None => NamedExpr::new(name, expr),
+-        })
++        } else {
++            expr
++        };
++        Ok(NamedExpr::new(name, expr).with_metadata(target_metadata))
++    }
++}
++
++fn time_cast_source_precision(field: &Field) -> PlanResult<Option<i32>> {
++    if let Some(metadata) = field.metadata().get(spec::SAIL_SPARK_TIME_METADATA_KEY) {
++        let metadata = spec::SparkTimeMetadata::from_json(metadata)?;
++        if field.data_type() != &DataType::Time64(TimeUnit::Nanosecond) {
++            return Err(PlanError::invalid(
++                "Spark TIME metadata requires Arrow Time64(Nanosecond)",
++            ));
++        }
++        return Ok(Some(metadata.precision()));
+     }
++    // Keep the existing raw Arrow TIME unit semantics when the input has no
++    // Spark annotation. Only the target is converted to the semantic type.
++    Ok(match field.data_type() {
++        DataType::Time32(TimeUnit::Second) => Some(0),
++        DataType::Time32(TimeUnit::Millisecond) => Some(3),
++        DataType::Time64(TimeUnit::Microsecond) => Some(6),
++        DataType::Time64(TimeUnit::Nanosecond) => Some(9),
++        _ => None,
++    })
+ }
+ 
+ fn decimal_cast_can_overflow(from: &DataType, precision: u8, scale: i8) -> bool {
+diff --git a/crates/sail-plan/src/resolver/time_tests.rs b/crates/sail-plan/src/resolver/time_tests.rs
+index 187bcbe5d..ed1fdc555 100644
+--- a/crates/sail-plan/src/resolver/time_tests.rs
++++ b/crates/sail-plan/src/resolver/time_tests.rs
+@@ -16,6 +16,9 @@ use crate::config::PlanConfig;
+ use crate::error::{PlanError, PlanResult};
+ use crate::formatter::SparkPlanFormatter;
+ 
++mod casts;
++mod nested_casts;
++
+ fn context() -> SessionContext {
+     SessionContext::new_with_config(SessionConfig::new().with_extension(Arc::new(
+         PlanService::new(
+diff --git a/crates/sail-plan/src/resolver/time_tests/casts.rs b/crates/sail-plan/src/resolver/time_tests/casts.rs
+new file mode 100644
+index 000000000..0ab71c75a
+--- /dev/null
++++ b/crates/sail-plan/src/resolver/time_tests/casts.rs
+@@ -0,0 +1,209 @@
++use std::collections::HashMap;
++
++use arrow::array::{
++    ArrayRef, RecordBatch, StringArray, Time32MillisecondArray, Time32SecondArray,
++    Time64MicrosecondArray, Time64NanosecondArray,
++};
++use arrow::datatypes::Schema;
++
++use super::*;
++
++const NANOS: i64 = 45_296_123_456_000;
++
++/// Resolve casts over a column, then execute through DataFrame's optimizer and
++/// physical planner. Constant folding alone must not hide a value or metadata bug.
++async fn execute_casts(
++    values: ArrayRef,
++    declared_precision: Option<i32>,
++) -> PlanResult<Vec<RecordBatch>> {
++    let context = context();
++    let resolver = PlanResolver::new(&context, Arc::new(PlanConfig::default()));
++    let mut state = PlanResolverState::new();
++    let column_id = state.register_field_name("clock");
++    let mut field = Field::new(column_id, values.data_type().clone(), true);
++    if let Some(precision) = declared_precision {
++        field = field.with_metadata(HashMap::from([(
++            spec::SAIL_SPARK_TIME_METADATA_KEY.to_string(),
++            spec::SparkTimeMetadata::try_new(precision)?.to_json()?,
++        )]));
++    }
++    let batch = RecordBatch::try_new(Arc::new(Schema::new(vec![field])), vec![values])?;
++    let input = context.read_batch(batch)?;
++    let schema = Arc::new(input.schema().clone());
++    let mut projections = vec![];
++    for precision in 0..=6 {
++        for is_try in [false, true] {
++            let source = spec::Expr::UnresolvedAttribute {
++                name: spec::ObjectName::bare("clock"),
++                plan_id: None,
++                is_metadata_column: false,
++            };
++            let named = resolver
++                .resolve_named_expression(
++                    time_cast(source, spec::DataType::Time { precision }, is_try),
++                    &schema,
++                    &mut state,
++                )
++                .await?;
++            projections.push(named.expr.alias(format!("time_{precision}_{is_try}")));
++        }
++    }
++    let output = input.select(projections)?;
++    let batches = output.collect().await?;
++    assert_eq!(batches.iter().map(RecordBatch::num_rows).sum::<usize>(), 2);
++    for batch in &batches {
++        for (index, field) in batch.schema().fields().iter().enumerate() {
++            assert_time_field(field, (index / 2) as i32)?;
++        }
++    }
++    Ok(batches)
++}
++
++fn assert_cast_values(batches: &[RecordBatch], nanos: i64, source_precision: Option<i32>) {
++    for index in 0..14 {
++        let precision = (index / 2) as i32;
++        let expected = match source_precision {
++            Some(source) if source != precision => {
++                let factor = 10_i64.pow(9 - precision as u32);
++                nanos / factor * factor
++            }
++            _ => nanos,
++        };
++        let actual = batches
++            .iter()
++            .flat_map(|batch| {
++                batch
++                    .column(index)
++                    .as_primitive::<Time64NanosecondType>()
++                    .iter()
++            })
++            .collect::<Vec<_>>();
++        assert_eq!(actual, vec![Some(expected), None], "column {index}");
++    }
++}
++
++#[tokio::test]
++async fn spark_time_cast_column_preserves_identity_and_truncates_changed_precision()
++-> PlanResult<()> {
++    for precision in 0..=6 {
++        // Even TIME(0) may contain fractions after a string cast in Spark. A
++        // change to TIME(1) truncates, whereas TIME(0) -> TIME(0) keeps them.
++        let values = Arc::new(Time64NanosecondArray::from(vec![Some(NANOS), None]));
++        let batches = execute_casts(values, Some(precision)).await?;
++        assert_cast_values(&batches, NANOS, Some(precision));
++    }
++    Ok(())
++}
++
++#[tokio::test]
++async fn spark_time_cast_column_preserves_legacy_source_units() -> PlanResult<()> {
++    let inputs: Vec<(ArrayRef, i32, i64)> = vec![
++        (
++            Arc::new(Time32SecondArray::from(vec![Some(45_296), None])),
++            0,
++            45_296_000_000_000,
++        ),
++        (
++            Arc::new(Time32MillisecondArray::from(vec![Some(45_296_123), None])),
++            3,
++            45_296_123_000_000,
++        ),
++        (
++            Arc::new(Time64MicrosecondArray::from(vec![
++                Some(45_296_123_456),
++                None,
++            ])),
++            6,
++            NANOS,
++        ),
++        (
++            Arc::new(Time64NanosecondArray::from(vec![Some(NANOS), None])),
++            9,
++            NANOS,
++        ),
++    ];
++    for (values, precision, nanos) in inputs {
++        let batches = execute_casts(values, None).await?;
++        assert_cast_values(&batches, nanos, Some(precision));
++    }
++    Ok(())
++}
++
++#[tokio::test]
++async fn spark_time_cast_string_column_preserves_fraction_at_every_precision() -> PlanResult<()> {
++    let values = Arc::new(StringArray::from(vec![Some("12:34:56.123456"), None]));
++    let batches = execute_casts(values, None).await?;
++    assert_cast_values(&batches, NANOS, None);
++    Ok(())
++}
++
++#[tokio::test]
++async fn spark_time_cast_rejects_metadata_on_non_nanosecond_storage() {
++    let values = Arc::new(Time64MicrosecondArray::from(vec![
++        Some(45_296_123_456),
++        None,
++    ]));
++    let result = execute_casts(values, Some(6)).await;
++    assert!(matches!(result, Err(PlanError::InvalidArgument(message))
++        if message.contains("Time64(Nanosecond)")));
++}
++
++pub(super) fn time_cast(source: spec::Expr, target: spec::DataType, is_try: bool) -> spec::Expr {
++    spec::Expr::Cast {
++        expr: Box::new(source),
++        cast_to_type: target,
++        rename: true,
++        is_try,
++    }
++}
++
++#[tokio::test]
++async fn spark_time_casts_replace_precision_and_clear_annotations_when_casting_away()
++-> PlanResult<()> {
++    let context = context();
++    let resolver = PlanResolver::new(&context, Arc::new(PlanConfig::default()));
++    let schema = Arc::new(DFSchema::empty());
++    for precision in 0..=6 {
++        for is_try in [false, true] {
++            let source = spec::Expr::Literal(spec::Literal::Time {
++                nanoseconds: None,
++                precision: 6,
++            });
++            let cast = time_cast(source, spec::DataType::Time { precision }, is_try);
++            let named = resolver
++                .resolve_named_expression(cast.clone(), &schema, &mut PlanResolverState::new())
++                .await?;
++            assert_time_field(&named.expr.to_field(&schema)?.1, precision)?;
++            assert!(named.name[0].contains(&format!("AS TIME({precision})")));
++            for target in [
++                spec::DataType::Int64,
++                spec::DataType::Time64 {
++                    time_unit: spec::TimeUnit::Nanosecond,
++                },
++            ] {
++                let named = resolver
++                    .resolve_named_expression(
++                        time_cast(cast.clone(), target, is_try),
++                        &schema,
++                        &mut PlanResolverState::new(),
++                    )
++                    .await?;
++                assert!(
++                    !named
++                        .expr
++                        .to_field(&schema)?
++                        .1
++                        .metadata()
++                        .contains_key(spec::SAIL_SPARK_TIME_METADATA_KEY)
++                );
++                assert!(
++                    !named
++                        .metadata
++                        .iter()
++                        .any(|(key, _)| key == spec::SAIL_SPARK_TIME_METADATA_KEY)
++                );
++            }
++        }
++    }
++    Ok(())
++}
+diff --git a/crates/sail-plan/src/resolver/time_tests/nested_casts.rs b/crates/sail-plan/src/resolver/time_tests/nested_casts.rs
+new file mode 100644
+index 000000000..8f34100b0
+--- /dev/null
++++ b/crates/sail-plan/src/resolver/time_tests/nested_casts.rs
+@@ -0,0 +1,277 @@
++use std::collections::HashMap;
++
++use arrow::array::{
++    ArrayRef, Int32Array, Int64Array, ListArray, MapArray, RecordBatch, StructArray,
++    Time64NanosecondArray,
++};
++use arrow::buffer::{NullBuffer, OffsetBuffer};
++use arrow::datatypes::{FieldRef, Schema};
++
++use super::casts::time_cast;
++use super::*;
++
++const NANOS: i64 = 45_296_123_456_000;
++const MILLIS: i64 = 45_296_123_000_000;
++
++fn time(name: &str, precision: i32, nullable: bool) -> PlanResult<FieldRef> {
++    Ok(Arc::new(
++        Field::new(name, DataType::Time64(TimeUnit::Nanosecond), nullable).with_metadata(
++            HashMap::from([(
++                spec::SAIL_SPARK_TIME_METADATA_KEY.to_string(),
++                spec::SparkTimeMetadata::try_new(precision)?.to_json()?,
++            )]),
++        ),
++    ))
++}
++
++fn field(name: &str, data_type: spec::DataType) -> spec::Field {
++    spec::Field {
++        name: name.to_string(),
++        data_type,
++        nullable: true,
++        metadata: vec![],
++    }
++}
++
++/// Use a column through optimization and physical execution. Both the output
++/// values and its nested fields must survive precision conversion and renaming.
++async fn assert_cast(
++    input: ArrayRef,
++    target: spec::DataType,
++    expected: ArrayRef,
++) -> PlanResult<()> {
++    let context = context();
++    let resolver = PlanResolver::new(&context, Arc::new(PlanConfig::default()));
++    let mut state = PlanResolverState::new();
++    let name = state.register_field_name("clock");
++    let schema = Arc::new(Schema::new(vec![Field::new(
++        name,
++        input.data_type().clone(),
++        true,
++    )]));
++    let input = context.read_batch(RecordBatch::try_new(schema, vec![input])?)?;
++    let schema = Arc::new(input.schema().clone());
++    for is_try in [false, true] {
++        let expression = resolver
++            .resolve_named_expression(
++                time_cast(
++                    spec::Expr::UnresolvedAttribute {
++                        name: spec::ObjectName::bare("clock"),
++                        plan_id: None,
++                        is_metadata_column: false,
++                    },
++                    target.clone(),
++                    is_try,
++                ),
++                &schema,
++                &mut state,
++            )
++            .await?;
++        assert_eq!(
++            expression.expr.to_field(&schema)?.1.data_type(),
++            expected.data_type()
++        );
++        let batches = input
++            .clone()
++            .select(vec![expression.expr.alias("result")])?
++            .collect()
++            .await?;
++        let mut offset = 0;
++        for batch in &batches {
++            assert_eq!(batch.column(0).data_type(), expected.data_type());
++            assert_eq!(
++                batch.column(0).to_data(),
++                expected.slice(offset, batch.num_rows()).to_data()
++            );
++            offset += batch.num_rows();
++        }
++        assert_eq!(offset, expected.len());
++    }
++    Ok(())
++}
++
++fn mixed_struct(converted: bool) -> PlanResult<StructArray> {
++    let (name, precision, value, numbers) = if converted {
++        (
++            "after",
++            3,
++            MILLIS,
++            Arc::new(Int64Array::from(vec![Some(7), Some(8), None])) as ArrayRef,
++        )
++    } else {
++        (
++            "before",
++            0,
++            NANOS,
++            Arc::new(Int32Array::from(vec![Some(7), Some(8), None])) as ArrayRef,
++        )
++    };
++    Ok(StructArray::try_new(
++        vec![
++            time(name, precision, true)?,
++            time("same", 3, true)?,
++            Arc::new(Field::new("number", numbers.data_type().clone(), true)),
++        ]
++        .into(),
++        vec![
++            Arc::new(Time64NanosecondArray::from(vec![
++                Some(value),
++                Some(value),
++                None,
++            ])),
++            Arc::new(Time64NanosecondArray::from(vec![
++                Some(NANOS),
++                Some(NANOS),
++                None,
++            ])),
++            numbers,
++        ],
++        Some(NullBuffer::from(vec![true, false, true])),
++    )?)
++}
++
++fn mixed_target() -> spec::DataType {
++    spec::DataType::Struct {
++        fields: vec![
++            field("after", spec::DataType::Time { precision: 3 }),
++            field("same", spec::DataType::Time { precision: 3 }),
++            field("number", spec::DataType::Int64),
++        ]
++        .into(),
++    }
++}
++
++#[tokio::test]
++async fn nested_time_cast_precedes_struct_rename_and_other_leaf_casts() -> PlanResult<()> {
++    assert_cast(
++        Arc::new(mixed_struct(false)?),
++        mixed_target(),
++        Arc::new(mixed_struct(true)?),
++    )
++    .await
++}
++
++#[tokio::test]
++async fn nested_time_cast_preserves_null_lists_structs_and_elements() -> PlanResult<()> {
++    let list = |values: ArrayRef| {
++        ListArray::try_new(
++            Arc::new(Field::new(
++                spec::SAIL_LIST_FIELD_NAME,
++                values.data_type().clone(),
++                true,
++            )),
++            OffsetBuffer::from_lengths([2, 0, 1]),
++            values,
++            Some(NullBuffer::from(vec![true, false, true])),
++        )
++    };
++    assert_cast(
++        Arc::new(list(Arc::new(mixed_struct(false)?))?),
++        spec::DataType::List {
++            data_type: Box::new(mixed_target()),
++            nullable: true,
++        },
++        Arc::new(list(Arc::new(mixed_struct(true)?))?),
++    )
++    .await?;
++    for precision in [0, 3] {
++        let input = Arc::new(ListArray::try_new(
++            time(spec::SAIL_LIST_FIELD_NAME, 0, true)?,
++            OffsetBuffer::from_lengths([2, 0, 1]),
++            Arc::new(Time64NanosecondArray::from(vec![
++                Some(NANOS),
++                None,
++                Some(NANOS),
++            ])),
++            Some(NullBuffer::from(vec![true, false, true])),
++        )?);
++        let value = if precision == 0 { NANOS } else { MILLIS };
++        let expected = Arc::new(ListArray::try_new(
++            time(spec::SAIL_LIST_FIELD_NAME, precision, true)?,
++            OffsetBuffer::from_lengths([2, 0, 1]),
++            Arc::new(Time64NanosecondArray::from(vec![
++                Some(value),
++                None,
++                Some(value),
++            ])),
++            Some(NullBuffer::from(vec![true, false, true])),
++        )?);
++        assert_cast(
++            input,
++            spec::DataType::List {
++                data_type: Box::new(spec::DataType::Time { precision }),
++                nullable: true,
++            },
++            expected,
++        )
++        .await?;
++    }
++    Ok(())
++}
++
++#[tokio::test]
++async fn nested_time_cast_changes_map_keys_without_truncating_identity_values() -> PlanResult<()> {
++    let map = |precision, key| -> PlanResult<MapArray> {
++        let entries = StructArray::try_new(
++            vec![
++                time(spec::SAIL_MAP_KEY_FIELD_NAME, precision, false)?,
++                time(spec::SAIL_MAP_VALUE_FIELD_NAME, 3, true)?,
++            ]
++            .into(),
++            vec![
++                Arc::new(Time64NanosecondArray::from(vec![key, key])),
++                Arc::new(Time64NanosecondArray::from(vec![Some(NANOS), None])),
++            ],
++            None,
++        )?;
++        Ok(MapArray::try_new(
++            Arc::new(Field::new(
++                spec::SAIL_MAP_FIELD_NAME,
++                entries.data_type().clone(),
++                false,
++            )),
++            OffsetBuffer::from_lengths([1, 0, 1]),
++            entries,
++            Some(NullBuffer::from(vec![true, false, true])),
++            false,
++        )?)
++    };
++    assert_cast(
++        Arc::new(map(0, NANOS)?),
++        spec::DataType::Map {
++            key_type: Box::new(spec::DataType::Time { precision: 3 }),
++            value_type: Box::new(spec::DataType::Time { precision: 3 }),
++            value_type_nullable: true,
++            keys_sorted: false,
++        },
++        Arc::new(map(3, MILLIS)?),
++    )
++    .await
++}
++
++#[tokio::test]
++async fn nested_time_cast_name_uses_declared_precision() -> PlanResult<()> {
++    let context = context();
++    let resolver = PlanResolver::new(&context, Arc::new(PlanConfig::default()));
++    let target = spec::DataType::List {
++        data_type: Box::new(spec::DataType::Map {
++            key_type: Box::new(spec::DataType::Time { precision: 1 }),
++            value_type: Box::new(mixed_target()),
++            value_type_nullable: true,
++            keys_sorted: false,
++        }),
++        nullable: true,
++    };
++    let named = resolver
++        .resolve_named_expression(
++            time_cast(spec::Expr::Literal(spec::Literal::Null), target, false),
++            &Arc::new(DFSchema::empty()),
++            &mut PlanResolverState::new(),
++        )
++        .await?;
++    assert_eq!(
++        named.name,
++        ["CAST(NULL AS ARRAY<MAP<TIME(1),STRUCT<AFTER:TIME(3),SAME:TIME(3),NUMBER:BIGINT>>>)"]
++    );
++    Ok(())
++}

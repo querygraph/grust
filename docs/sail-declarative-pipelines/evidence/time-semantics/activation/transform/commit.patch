@@ -1,0 +1,727 @@
+commit 2f5192d50a5dd0b1740ec0f3d796e9c943107440
+Author:     Alexy Khrabrov <deliverable@gmail.com>
+AuthorDate: Thu Oct 29 14:14:03 2026 -0700
+Commit:     Alexy Khrabrov <deliverable@gmail.com>
+CommitDate: Thu Oct 29 14:14:03 2026 -0700
+
+    feat: encode recursive Spark TIME precision transformations
+
+diff --git a/crates/sail-execution/proto/sail/plan/physical.proto b/crates/sail-execution/proto/sail/plan/physical.proto
+index 0f904d50c..5932b4c02 100644
+--- a/crates/sail-execution/proto/sail/plan/physical.proto
++++ b/crates/sail-execution/proto/sail/plan/physical.proto
+@@ -269,6 +269,7 @@ message ExtendedScalarUdf {
+     SparkSequenceUdf spark_sequence = 39;
+     SparkToStringUdf spark_to_string = 40;
+     SparkAnsiStringCastUdf spark_ansi_string_cast = 41;
++    SparkTimePrecisionCastUdf spark_time_precision_cast = 42;
+   }
+ }
+ 
+@@ -455,6 +456,12 @@ message SparkStructRenameUdf {
+   bytes target_type = 1;
+ }
+ 
++message SparkTimePrecisionCastUdf {
++  // Encoded Arrow fields retain logical TIME precision at every nested leaf.
++  bytes source_field = 1;
++  bytes target_field = 2;
++}
++
+ message SparkToCsvUdf {
+   string session_timezone = 1;
+ }
+diff --git a/crates/sail-execution/src/proto/codec.rs b/crates/sail-execution/src/proto/codec.rs
+index afb06c07a..701c9acea 100644
+--- a/crates/sail-execution/src/proto/codec.rs
++++ b/crates/sail-execution/src/proto/codec.rs
+@@ -240,6 +240,7 @@ use sail_function::scalar::predicate::rewrite_like_pattern::RewriteLikePatternFu
+ use sail_function::scalar::spark_ansi_string_cast::SparkAnsiStringCast;
+ use sail_function::scalar::spark_cast_string_to_int32::SparkCastStringToInt32;
+ use sail_function::scalar::spark_struct_rename::SparkStructRename;
++use sail_function::scalar::spark_time_precision_cast::SparkTimePrecisionCast;
+ use sail_function::scalar::spark_to_string::{SparkToLargeUtf8, SparkToUtf8, SparkToUtf8View};
+ use sail_function::scalar::string::format_number::FormatNumber;
+ use sail_function::scalar::string::levenshtein::Levenshtein;
+@@ -3774,6 +3775,20 @@ impl PhysicalExtensionCodec for RemoteExecutionCodec {
+                     target_type,
+                 ))));
+             }
++            UdfKind::SparkTimePrecisionCast(r#gen::SparkTimePrecisionCastUdf {
++                source_field,
++                target_field,
++            }) => {
++                if name != "spark_time_precision_cast" {
++                    return plan_err!(
++                        "TIME precision cast payload has mismatched function name: {name}"
++                    );
++                }
++                return Ok(Arc::new(ScalarUDF::from(SparkTimePrecisionCast::try_new(
++                    try_decode_field_ref(&source_field)?,
++                    try_decode_field_ref(&target_field)?,
++                )?)));
++            }
+         };
+         match name {
+             "array_element" => Ok(Arc::new(ScalarUDF::from(ArrayElement::new()))),
+@@ -4349,6 +4364,11 @@ impl PhysicalExtensionCodec for RemoteExecutionCodec {
+         } else if let Some(func) = node.inner().downcast_ref::<SparkStructRename>() {
+             let target_type = self.try_encode_data_type(func.target_type())?;
+             UdfKind::SparkStructRename(r#gen::SparkStructRenameUdf { target_type })
++        } else if let Some(func) = node.inner().downcast_ref::<SparkTimePrecisionCast>() {
++            UdfKind::SparkTimePrecisionCast(r#gen::SparkTimePrecisionCastUdf {
++                source_field: try_encode_field_ref(func.source_field())?,
++                target_field: try_encode_field_ref(func.target_field())?,
++            })
+         } else {
+             return Ok(());
+         };
+@@ -9190,3 +9210,6 @@ mod tests {
+ 
+ #[cfg(test)]
+ mod ansi_string_cast_tests;
++
++#[cfg(test)]
++mod time_precision_cast_tests;
+diff --git a/crates/sail-execution/src/proto/codec/time_precision_cast_tests.rs b/crates/sail-execution/src/proto/codec/time_precision_cast_tests.rs
+new file mode 100644
+index 000000000..bd1aa6d61
+--- /dev/null
++++ b/crates/sail-execution/src/proto/codec/time_precision_cast_tests.rs
+@@ -0,0 +1,90 @@
++use datafusion::arrow::array::{Array, AsArray, ListArray, Time64NanosecondArray};
++use datafusion::arrow::buffer::OffsetBuffer;
++use datafusion::common::config::ConfigOptions;
++use datafusion::logical_expr::{ColumnarValue, ScalarFunctionArgs};
++use sail_common::spec;
++
++use super::*;
++
++fn list_field(precision: i32) -> Result<Arc<Field>> {
++    let metadata = spec::SparkTimeMetadata::try_new(precision)
++        .and_then(spec::SparkTimeMetadata::to_json)
++        .map_err(|error| plan_datafusion_err!("{error}"))?;
++    let element = Arc::new(
++        Field::new("item", DataType::Time64(TimeUnit::Nanosecond), true).with_metadata(
++            HashMap::from([(spec::SAIL_SPARK_TIME_METADATA_KEY.to_string(), metadata)]),
++        ),
++    );
++    Ok(Arc::new(Field::new("times", DataType::List(element), true)))
++}
++
++#[test]
++fn decoded_time_precision_cast_preserves_nested_fields_and_executes() -> Result<()> {
++    let source = list_field(0)?;
++    let target = list_field(3)?;
++    let original = ScalarUDF::from(SparkTimePrecisionCast::try_new(
++        Arc::clone(&source),
++        Arc::clone(&target),
++    )?);
++    let mut encoded = vec![];
++    RemoteExecutionCodec.try_encode_udf(&original, &mut encoded)?;
++    assert!(!encoded.is_empty());
++    let decoded = RemoteExecutionCodec.try_decode_udf(original.name(), &encoded)?;
++    let implementation = decoded
++        .inner()
++        .downcast_ref::<SparkTimePrecisionCast>()
++        .ok_or_else(|| plan_datafusion_err!("decoded wrong TIME precision function"))?;
++    assert_eq!(implementation.source_field(), &source);
++    assert_eq!(implementation.target_field(), &target);
++    let DataType::List(element) = source.data_type() else {
++        return plan_err!("expected list");
++    };
++    let input = Arc::new(ListArray::try_new(
++        Arc::clone(element),
++        OffsetBuffer::from_lengths([2]),
++        Arc::new(Time64NanosecondArray::from(vec![
++            Some(45_296_123_456_000),
++            None,
++        ])),
++        None,
++    )?);
++    let result = decoded.invoke_with_args(ScalarFunctionArgs {
++        args: vec![ColumnarValue::Array(input)],
++        arg_fields: vec![source],
++        number_rows: 1,
++        return_field: Arc::clone(implementation.output_field()),
++        config_options: Arc::new(ConfigOptions::default()),
++    })?;
++    let result = result.into_array(1)?;
++    let values = result
++        .as_list::<i32>()
++        .values()
++        .as_primitive::<datafusion::arrow::datatypes::Time64NanosecondType>();
++    assert_eq!(values.value(0), 45_296_123_000_000);
++    assert!(values.is_null(1));
++    assert_eq!(result.data_type(), target.data_type());
++    Ok(())
++}
++
++#[test]
++fn time_precision_codec_rejects_malformed_and_mislabeled_fields() -> Result<()> {
++    let source = try_encode_field_ref(&list_field(0)?)?;
++    let target = try_encode_field_ref(&list_field(3)?)?;
++    for (source_field, target_field, name) in [
++        (vec![0xff], target.clone(), "spark_time_precision_cast"),
++        (source.clone(), vec![0xff], "spark_time_precision_cast"),
++        (source, target, "another_function"),
++    ] {
++        let payload = ExtendedScalarUdf {
++            udf_kind: Some(r#gen::extended_scalar_udf::UdfKind::SparkTimePrecisionCast(
++                r#gen::SparkTimePrecisionCastUdf {
++                    source_field,
++                    target_field,
++                },
++            )),
++        }
++        .encode_to_vec();
++        assert!(RemoteExecutionCodec.try_decode_udf(name, &payload).is_err());
++    }
++    Ok(())
++}
+diff --git a/crates/sail-function/src/scalar/mod.rs b/crates/sail-function/src/scalar/mod.rs
+index b843191a9..1ec6b434c 100644
+--- a/crates/sail-function/src/scalar/mod.rs
++++ b/crates/sail-function/src/scalar/mod.rs
+@@ -18,6 +18,7 @@ pub mod predicate;
+ pub mod spark_ansi_string_cast;
+ pub mod spark_cast_string_to_int32;
+ pub mod spark_struct_rename;
++pub mod spark_time_precision_cast;
+ pub mod spark_to_string;
+ pub mod string;
+ pub mod struct_function;
+diff --git a/crates/sail-function/src/scalar/spark_time_precision_cast.rs b/crates/sail-function/src/scalar/spark_time_precision_cast.rs
+new file mode 100644
+index 000000000..3d410b6c0
+--- /dev/null
++++ b/crates/sail-function/src/scalar/spark_time_precision_cast.rs
+@@ -0,0 +1,275 @@
++use std::sync::Arc;
++
++use datafusion::arrow::array::{
++    Array, ArrayRef, AsArray, FixedSizeListArray, LargeListArray, ListArray, MapArray, StructArray,
++};
++use datafusion::arrow::compute::cast;
++use datafusion::arrow::datatypes::{DataType, Field, FieldRef, Time64NanosecondType, TimeUnit};
++use datafusion_common::{Result, ScalarValue, exec_err, plan_datafusion_err};
++use datafusion_expr::{
++    ColumnarValue, ReturnFieldArgs, ScalarFunctionArgs, ScalarUDFImpl, Signature, Volatility,
++};
++use sail_common::spec::{SAIL_SPARK_TIME_METADATA_KEY, SparkTimeMetadata};
++
++/// Applies only TIME precision changes before the ordinary Spark cast.
++///
++/// The intermediate field retains the source's container shape, names and
++/// non-TIME leaves. The planner still owns positional renaming and other casts.
++#[derive(Debug, Clone, PartialEq, Eq, Hash)]
++pub struct SparkTimePrecisionCast {
++    signature: Signature,
++    source_field: FieldRef,
++    target_field: FieldRef,
++    output_field: FieldRef,
++}
++
++impl SparkTimePrecisionCast {
++    pub fn try_new(source_field: FieldRef, target_field: FieldRef) -> Result<Self> {
++        let output_field = prepare_field(&source_field, &target_field)?;
++        Ok(Self {
++            signature: Signature::any(1, Volatility::Immutable),
++            source_field,
++            target_field,
++            output_field,
++        })
++    }
++
++    pub fn source_field(&self) -> &FieldRef {
++        &self.source_field
++    }
++
++    pub fn target_field(&self) -> &FieldRef {
++        &self.target_field
++    }
++
++    pub fn output_field(&self) -> &FieldRef {
++        &self.output_field
++    }
++
++    pub fn is_needed(&self) -> bool {
++        self.source_field != self.output_field
++    }
++}
++
++impl ScalarUDFImpl for SparkTimePrecisionCast {
++    fn name(&self) -> &str {
++        "spark_time_precision_cast"
++    }
++
++    fn signature(&self) -> &Signature {
++        &self.signature
++    }
++
++    fn return_type(&self, arg_types: &[DataType]) -> Result<DataType> {
++        if arg_types != [self.source_field.data_type().clone()] {
++            return exec_err!("TIME precision cast input does not match its declared source field");
++        }
++        Ok(self.output_field.data_type().clone())
++    }
++
++    fn return_field_from_args(&self, args: ReturnFieldArgs) -> Result<FieldRef> {
++        let types = args
++            .arg_fields
++            .iter()
++            .map(|f| f.data_type().clone())
++            .collect::<Vec<_>>();
++        self.return_type(&types)?;
++        Ok(Arc::clone(&self.output_field))
++    }
++
++    fn invoke_with_args(&self, args: ScalarFunctionArgs) -> Result<ColumnarValue> {
++        let [input] = args.args.as_slice() else {
++            return exec_err!("TIME precision cast expects one input");
++        };
++        self.return_type(&[input.data_type()])?;
++        let scalar = matches!(input, ColumnarValue::Scalar(_));
++        let input = input.to_array(if scalar { 1 } else { args.number_rows })?;
++        let output = transform(&input, &self.source_field, &self.output_field)?;
++        if scalar {
++            Ok(ColumnarValue::Scalar(ScalarValue::try_from_array(
++                &output, 0,
++            )?))
++        } else {
++            Ok(ColumnarValue::Array(output))
++        }
++    }
++}
++
++fn declared_precision(field: &Field) -> Result<Option<i32>> {
++    let Some(metadata) = field.metadata().get(SAIL_SPARK_TIME_METADATA_KEY) else {
++        return Ok(None);
++    };
++    if field.data_type() != &DataType::Time64(TimeUnit::Nanosecond) {
++        return Err(plan_datafusion_err!(
++            "Spark TIME metadata requires Time64(Nanosecond)"
++        ));
++    }
++    SparkTimeMetadata::from_json(metadata)
++        .map(|value| Some(value.precision()))
++        .map_err(|error| plan_datafusion_err!("{error}"))
++}
++
++fn source_precision(field: &Field) -> Result<i32> {
++    if let Some(precision) = declared_precision(field)? {
++        return Ok(precision);
++    }
++    match field.data_type() {
++        DataType::Time32(TimeUnit::Second) => Ok(0),
++        DataType::Time32(TimeUnit::Millisecond) => Ok(3),
++        DataType::Time64(TimeUnit::Microsecond) => Ok(6),
++        DataType::Time64(TimeUnit::Nanosecond) => Ok(9),
++        other => Err(plan_datafusion_err!("invalid TIME source type: {other}")),
++    }
++}
++
++fn list_element(data_type: &DataType) -> Option<&FieldRef> {
++    match data_type {
++        DataType::List(field) | DataType::LargeList(field) | DataType::FixedSizeList(field, _) => {
++            Some(field)
++        }
++        _ => None,
++    }
++}
++
++fn prepare_field(source: &FieldRef, target: &FieldRef) -> Result<FieldRef> {
++    let target_precision = declared_precision(target)?;
++    if matches!(
++        source.data_type(),
++        DataType::Time32(_) | DataType::Time64(_)
++    ) && let Some(precision) = target_precision
++    {
++        source_precision(source)?;
++        let mut field = source
++            .as_ref()
++            .clone()
++            .with_data_type(DataType::Time64(TimeUnit::Nanosecond));
++        field.metadata_mut().insert(
++            SAIL_SPARK_TIME_METADATA_KEY.to_string(),
++            SparkTimeMetadata::try_new(precision)
++                .and_then(SparkTimeMetadata::to_json)
++                .map_err(|error| plan_datafusion_err!("{error}"))?,
++        );
++        return Ok(Arc::new(field));
++    }
++    let data_type = match (source.data_type(), target.data_type()) {
++        (DataType::Struct(from), DataType::Struct(to)) if from.len() == to.len() => {
++            DataType::Struct(
++                from.iter()
++                    .zip(to)
++                    .map(|(a, b)| prepare_field(a, b))
++                    .collect::<Result<_>>()?,
++            )
++        }
++        (DataType::List(from), to) if list_element(to).is_some() => DataType::List(prepare_field(
++            from,
++            list_element(to).ok_or_else(|| plan_datafusion_err!("missing list element"))?,
++        )?),
++        (DataType::LargeList(from), to) if list_element(to).is_some() => {
++            DataType::LargeList(prepare_field(
++                from,
++                list_element(to).ok_or_else(|| plan_datafusion_err!("missing list element"))?,
++            )?)
++        }
++        (DataType::FixedSizeList(from, length), to) if list_element(to).is_some() => {
++            DataType::FixedSizeList(
++                prepare_field(
++                    from,
++                    list_element(to).ok_or_else(|| plan_datafusion_err!("missing list element"))?,
++                )?,
++                *length,
++            )
++        }
++        (DataType::Map(from, sorted), DataType::Map(to, _)) => {
++            DataType::Map(prepare_field(from, to)?, *sorted)
++        }
++        _ => return Ok(Arc::clone(source)),
++    };
++    Ok(Arc::new(source.as_ref().clone().with_data_type(data_type)))
++}
++
++fn transform(input: &ArrayRef, source: &FieldRef, output: &FieldRef) -> Result<ArrayRef> {
++    if source == output {
++        return Ok(Arc::clone(input));
++    }
++    if matches!(
++        source.data_type(),
++        DataType::Time32(_) | DataType::Time64(_)
++    ) {
++        let precision = declared_precision(output)?
++            .ok_or_else(|| plan_datafusion_err!("missing target TIME precision"))?;
++        let normalized = cast(input, &DataType::Time64(TimeUnit::Nanosecond))?;
++        if source_precision(source)? == precision {
++            return Ok(normalized);
++        }
++        let factor = 10_i64.pow((9 - precision) as u32);
++        // Spark's truncateTimeToPrecision uses integer division, not floating point.
++        return Ok(Arc::new(
++            normalized
++                .as_primitive::<Time64NanosecondType>()
++                .unary::<_, Time64NanosecondType>(|value| value / factor * factor),
++        ));
++    }
++    match (source.data_type(), output.data_type()) {
++        (DataType::Struct(from), DataType::Struct(to)) => {
++            let array = input.as_struct();
++            let columns = array
++                .columns()
++                .iter()
++                .zip(from)
++                .zip(to)
++                .map(|((column, a), b)| transform(column, a, b))
++                .collect::<Result<Vec<_>>>()?;
++            Ok(Arc::new(StructArray::try_new_with_length(
++                to.clone(),
++                columns,
++                array.nulls().cloned(),
++                array.len(),
++            )?))
++        }
++        (DataType::List(from), DataType::List(to)) => {
++            let array = input.as_list::<i32>();
++            Ok(Arc::new(ListArray::try_new(
++                Arc::clone(to),
++                array.offsets().clone(),
++                transform(array.values(), from, to)?,
++                array.nulls().cloned(),
++            )?))
++        }
++        (DataType::LargeList(from), DataType::LargeList(to)) => {
++            let array = input.as_list::<i64>();
++            Ok(Arc::new(LargeListArray::try_new(
++                Arc::clone(to),
++                array.offsets().clone(),
++                transform(array.values(), from, to)?,
++                array.nulls().cloned(),
++            )?))
++        }
++        (DataType::FixedSizeList(from, _), DataType::FixedSizeList(to, length)) => {
++            let array = input.as_fixed_size_list();
++            Ok(Arc::new(FixedSizeListArray::try_new_with_length(
++                Arc::clone(to),
++                *length,
++                transform(array.values(), from, to)?,
++                array.nulls().cloned(),
++                array.len(),
++            )?))
++        }
++        (DataType::Map(from, _), DataType::Map(to, sorted)) => {
++            let array = input.as_map();
++            let entries: ArrayRef = Arc::new(array.entries().clone());
++            let entries = transform(&entries, from, to)?;
++            Ok(Arc::new(MapArray::try_new(
++                Arc::clone(to),
++                array.offsets().clone(),
++                entries.as_struct().clone(),
++                array.nulls().cloned(),
++                *sorted,
++            )?))
++        }
++        _ => exec_err!("TIME precision transform changed a non-TIME leaf"),
++    }
++}
++
++#[cfg(test)]
++#[path = "spark_time_precision_cast_tests.rs"]
++mod tests;
+diff --git a/crates/sail-function/src/scalar/spark_time_precision_cast_tests.rs b/crates/sail-function/src/scalar/spark_time_precision_cast_tests.rs
+new file mode 100644
+index 000000000..92959dd2c
+--- /dev/null
++++ b/crates/sail-function/src/scalar/spark_time_precision_cast_tests.rs
+@@ -0,0 +1,247 @@
++use std::collections::HashMap;
++
++use datafusion::arrow::array::{Int32Array, Time64NanosecondArray};
++use datafusion::arrow::buffer::{NullBuffer, OffsetBuffer};
++use datafusion_common::config::ConfigOptions;
++
++use super::*;
++
++const NANOS: i64 = 45_296_123_456_000;
++
++fn time(name: &str, precision: i32, nullable: bool) -> Result<FieldRef> {
++    let metadata = SparkTimeMetadata::try_new(precision)
++        .and_then(SparkTimeMetadata::to_json)
++        .map_err(|error| plan_datafusion_err!("{error}"))?;
++    Ok(Arc::new(
++        Field::new(name, DataType::Time64(TimeUnit::Nanosecond), nullable).with_metadata(
++            HashMap::from([(SAIL_SPARK_TIME_METADATA_KEY.to_string(), metadata)]),
++        ),
++    ))
++}
++
++fn invoke(function: &SparkTimePrecisionCast, input: ColumnarValue) -> Result<ColumnarValue> {
++    let number_rows = match &input {
++        ColumnarValue::Array(array) => array.len(),
++        ColumnarValue::Scalar(_) => 1,
++    };
++    function.invoke_with_args(ScalarFunctionArgs {
++        arg_fields: vec![Arc::clone(function.source_field())],
++        args: vec![input],
++        number_rows,
++        return_field: Arc::clone(function.output_field()),
++        config_options: Arc::new(ConfigOptions::default()),
++    })
++}
++
++#[test]
++fn precision_changes_truncate_but_identity_preserves_fractional_bits() -> Result<()> {
++    for (source, target, expected) in [
++        (0, 0, NANOS),
++        (0, 1, 45_296_100_000_000),
++        (0, 3, 45_296_123_000_000),
++        (6, 3, 45_296_123_000_000),
++    ] {
++        let function =
++            SparkTimePrecisionCast::try_new(time("t", source, true)?, time("t", target, true)?)?;
++        for value in [Some(NANOS), None] {
++            let result = invoke(
++                &function,
++                ColumnarValue::Scalar(ScalarValue::Time64Nanosecond(value)),
++            )?;
++            let ColumnarValue::Scalar(result) = result else {
++                return exec_err!("expected scalar");
++            };
++            assert_eq!(
++                result,
++                ScalarValue::Time64Nanosecond(value.map(|_| expected))
++            );
++        }
++    }
++    let source = Arc::new(Field::new(
++        "t",
++        DataType::Time64(TimeUnit::Microsecond),
++        true,
++    ));
++    let function = SparkTimePrecisionCast::try_new(source, time("t", 3, true)?)?;
++    let result = invoke(
++        &function,
++        ColumnarValue::Scalar(ScalarValue::Time64Microsecond(Some(NANOS / 1000))),
++    )?;
++    let ColumnarValue::Scalar(result) = result else {
++        return exec_err!("expected scalar");
++    };
++    assert_eq!(
++        result,
++        ScalarValue::Time64Nanosecond(Some(45_296_123_000_000))
++    );
++    Ok(())
++}
++
++#[test]
++fn nested_transform_preserves_source_names_other_leaves_and_struct_nulls() -> Result<()> {
++    let source_fields = vec![
++        time("clock", 0, true)?,
++        Arc::new(Field::new("number", DataType::Int32, true)),
++    ];
++    let source = Arc::new(Field::new(
++        "record",
++        DataType::Struct(source_fields.clone().into()),
++        true,
++    ));
++    let target = Arc::new(Field::new(
++        "renamed",
++        DataType::Struct(
++            vec![
++                time("renamed_clock", 3, true)?,
++                Arc::new(Field::new("renamed_number", DataType::Int64, true)),
++            ]
++            .into(),
++        ),
++        true,
++    ));
++    let function = SparkTimePrecisionCast::try_new(source, target)?;
++    let nulls = Some(NullBuffer::from(vec![true, false]));
++    let input = Arc::new(StructArray::try_new(
++        source_fields.into(),
++        vec![
++            Arc::new(Time64NanosecondArray::from(vec![Some(NANOS), None])),
++            Arc::new(Int32Array::from(vec![7, 8])),
++        ],
++        nulls.clone(),
++    )?);
++    let output = invoke(&function, ColumnarValue::Array(input))?.into_array(2)?;
++    let output = output.as_struct();
++    assert_eq!(output.nulls(), nulls.as_ref());
++    assert_eq!(output.fields()[0].name(), "clock");
++    assert_eq!(output.fields()[1].name(), "number");
++    assert_eq!(output.column(1).data_type(), &DataType::Int32);
++    assert_eq!(
++        output
++            .column(0)
++            .as_primitive::<Time64NanosecondType>()
++            .value(0),
++        45_296_123_000_000
++    );
++    assert_eq!(declared_precision(&output.fields()[0])?, Some(3));
++    Ok(())
++}
++
++#[test]
++fn sliced_list_keeps_offsets_nulls_and_null_elements() -> Result<()> {
++    let source_element = time("item", 0, true)?;
++    let source = Arc::new(Field::new(
++        "values",
++        DataType::List(Arc::clone(&source_element)),
++        true,
++    ));
++    let target = Arc::new(Field::new(
++        "values",
++        DataType::List(time("item", 3, true)?),
++        true,
++    ));
++    let function = SparkTimePrecisionCast::try_new(source, target)?;
++    let input = ListArray::try_new(
++        source_element,
++        OffsetBuffer::from_lengths([2, 0, 2]),
++        Arc::new(Time64NanosecondArray::from(vec![
++            Some(NANOS),
++            None,
++            Some(NANOS),
++            None,
++        ])),
++        Some(NullBuffer::from(vec![true, false, true])),
++    )?
++    .slice(1, 2);
++    let offsets = input.offsets().clone();
++    let nulls = input.nulls().cloned();
++    let output = invoke(&function, ColumnarValue::Array(Arc::new(input)))?.into_array(2)?;
++    let output = output.as_list::<i32>();
++    assert_eq!(output.offsets(), &offsets);
++    assert_eq!(output.nulls(), nulls.as_ref());
++    let values = output.value(1);
++    let values = values.as_primitive::<Time64NanosecondType>();
++    assert_eq!(values.value(0), 45_296_123_000_000);
++    assert!(values.is_null(1));
++    Ok(())
++}
++
++#[test]
++fn map_changes_only_requested_key_precision() -> Result<()> {
++    let source_entries = Arc::new(Field::new(
++        "entries",
++        DataType::Struct(vec![time("key", 0, false)?, time("value", 3, true)?].into()),
++        false,
++    ));
++    let target_entries = Arc::new(Field::new(
++        "entries",
++        DataType::Struct(vec![time("key", 3, false)?, time("value", 3, true)?].into()),
++        false,
++    ));
++    let source = Arc::new(Field::new(
++        "lookup",
++        DataType::Map(Arc::clone(&source_entries), false),
++        true,
++    ));
++    let target = Arc::new(Field::new(
++        "lookup",
++        DataType::Map(target_entries, false),
++        true,
++    ));
++    let function = SparkTimePrecisionCast::try_new(source, target)?;
++    let DataType::Struct(fields) = source_entries.data_type() else {
++        return exec_err!("expected entries");
++    };
++    let entries = StructArray::try_new(
++        fields.clone(),
++        vec![
++            Arc::new(Time64NanosecondArray::from(vec![NANOS])),
++            Arc::new(Time64NanosecondArray::from(vec![NANOS])),
++        ],
++        None,
++    )?;
++    let input = Arc::new(MapArray::try_new(
++        source_entries,
++        OffsetBuffer::from_lengths([1]),
++        entries,
++        None,
++        false,
++    )?);
++    let output = invoke(&function, ColumnarValue::Array(input))?.into_array(1)?;
++    let output = output.as_map();
++    assert_eq!(
++        output
++            .keys()
++            .as_primitive::<Time64NanosecondType>()
++            .value(0),
++        45_296_123_000_000
++    );
++    assert_eq!(
++        output
++            .values()
++            .as_primitive::<Time64NanosecondType>()
++            .value(0),
++        NANOS
++    );
++    Ok(())
++}
++
++#[test]
++fn rejects_invalid_precision_metadata_before_execution() -> Result<()> {
++    let bad = Arc::new(
++        Field::new("t", DataType::Time64(TimeUnit::Nanosecond), true).with_metadata(HashMap::from(
++            [(
++                SAIL_SPARK_TIME_METADATA_KEY.to_string(),
++                r#"{"precision":9}"#.to_string(),
++            )],
++        )),
++    );
++    assert!(SparkTimePrecisionCast::try_new(time("t", 0, true)?, bad).is_err());
++    let bad_storage = Arc::new(
++        time("t", 0, true)?
++            .as_ref()
++            .clone()
++            .with_data_type(DataType::Time64(TimeUnit::Microsecond)),
++    );
++    assert!(SparkTimePrecisionCast::try_new(bad_storage, time("t", 3, true)?).is_err());
++    Ok(())
++}
