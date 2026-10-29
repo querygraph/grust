@@ -648,3 +648,34 @@ reviewed inventory to 62 and the remaining unaudited call sites to 400. The
 other 35 registrations in SqlPipelineSuite are not qualified by this unit. Full
 batch acceptance, Scala-suite execution, failure/event design, persisted REST
 views, streaming and CDC remain outstanding. No new architecture is selected.
+
+## Review duplicate-output categories and structured metadata
+
+Commit `b145ed12d9` validates duplicate outputs with Spark's table/view/sink
+category order. Streaming tables and materialized views are TABLE; persisted
+and temporary views are VIEW. For a collision, the first two category-grouped
+entries determine the types, which are sorted lexicographically in the error.
+This matters when views were registered before a table with the same name.
+The error uses existing StructuredSparkError transport for AnalysisException,
+PIPELINE_DUPLICATE_IDENTIFIERS.OUTPUT, SQL state 42710 and outputName/outputType1/
+outputType2 parameters. Validation still precedes execution reservation.
+
+The [receipt](evidence/b145ed12d92fb98b0e484b101be17b24f8ec38fc/gate.json)
+records formatting, strict Clippy, CLI build, Ruff, 184 selected pytest cases and
+67 upstream Python executions, all passing. Fourteen new assertions match Spark
+4.2.1; all fourteen failed on parent Sail's missing structured metadata. The
+matrix includes reversed table/view order, materialized pairs, streaming versus
+materialized, persisted pairs, private temporary pairs and two views followed
+by a table. Every case checks dry/real starts, exact metadata and no publication
+of an independent valid output. Sink collisions and first-error selection among
+multiple distinct duplicate identifiers are not qualified by this matrix.
+
+The first reference-script run failed before assertions because a test-function
+variable was rebound to the case lambda; script, log and report are retained
+separately. Correcting the runner left the tests and candidate unchanged and
+produced the passing fourteen-case Spark reference result.
+
+One additional SQL registration is audited: total reviewed 63, remaining 399.
+Only four of SqlPipelineSuite's 38 registrations have been reviewed. Missing-
+producer structured errors, full batch acceptance, original Scala-suite execution,
+Astra failure/event and persisted-view design, streaming and CDC remain open.

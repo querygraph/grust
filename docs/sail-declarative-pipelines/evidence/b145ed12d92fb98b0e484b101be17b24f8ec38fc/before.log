@@ -1,0 +1,1068 @@
+FFFFFFFFFFFFFF                                                           [100%]
+=================================== FAILURES ===================================
+________ test_duplicate_outputs_have_structured_types[table-view-False] ________
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x116041910>
+pipeline = ('86588579-3a99-4143-9367-ef1790ecea65', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x1150fb230>, <function pipeline_factory.<locals>.create.<locals>.run at 0x11607c900>)
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-106/test_duplicate_outputs_have_st0')
+definitions = ['CREATE STREAMING TABLE duplicate', 'CREATE VIEW duplicate AS SELECT 1 AS value']
+private = False, types = ['TABLE', 'VIEW'], dry = False
+
+    @pytest.mark.parametrize("dry", [False, True])
+    @pytest.mark.parametrize(
+        ("definitions", "private", "types"),
+        [
+            pytest.param(
+                ["CREATE STREAMING TABLE duplicate", "CREATE VIEW duplicate AS SELECT 1 AS value"],
+                False,
+                ["TABLE", "VIEW"],
+                id="table-view",
+            ),
+            pytest.param(
+                ["CREATE VIEW duplicate AS SELECT 1 AS value", "CREATE STREAMING TABLE duplicate"],
+                False,
+                ["TABLE", "VIEW"],
+                id="view-table",
+            ),
+            pytest.param(
+                ["CREATE MATERIALIZED VIEW duplicate AS SELECT 1 AS value"] * 2,
+                False,
+                ["TABLE", "TABLE"],
+                id="materialized-materialized",
+            ),
+            pytest.param(
+                ["CREATE STREAMING TABLE duplicate", "CREATE MATERIALIZED VIEW duplicate AS SELECT 1 AS value"],
+                False,
+                ["TABLE", "TABLE"],
+                id="streaming-materialized",
+            ),
+            pytest.param(
+                ["CREATE VIEW duplicate AS SELECT 1 AS value"] * 2,
+                False,
+                ["VIEW", "VIEW"],
+                id="persisted-persisted",
+            ),
+            pytest.param(
+                ["CREATE TEMPORARY VIEW duplicate AS SELECT 1 AS value"] * 2,
+                True,
+                ["VIEW", "VIEW"],
+                id="temporary-temporary",
+            ),
+            pytest.param(
+                ["CREATE VIEW duplicate AS SELECT 1 AS value"] * 2 + ["CREATE STREAMING TABLE duplicate"],
+                False,
+                ["TABLE", "VIEW"],
+                id="views-before-table",
+            ),
+        ],
+    )
+    def test_duplicate_outputs_have_structured_types(pipeline_spark, pipeline, tmp_path, definitions, private, types, dry):
+        _, registry, run = pipeline
+        registry.register_sql("CREATE MATERIALIZED VIEW valid_output AS SELECT 1 AS value", tmp_path / "valid.sql")
+        for index, definition in enumerate(definitions):
+            registry.register_sql(definition, tmp_path / f"duplicate_{index}.sql")
+        with pytest.raises(AnalysisException) as error:
+            run(dry=dry)
+        identifier = "`duplicate`"
+        if not private:
+            identifier = (
+                f"`{pipeline_spark.catalog.currentCatalog()}`.`{pipeline_spark.catalog.currentDatabase()}`.{identifier}"
+            )
+>       assert error.value.getCondition() == "PIPELINE_DUPLICATE_IDENTIFIERS.OUTPUT"
+E       AssertionError: assert None == 'PIPELINE_DUPLICATE_IDENTIFIERS.OUTPUT'
+E        +  where None = getCondition()
+E        +    where getCondition = AnalysisException('[PIPELINE_DUPLICATE_IDENTIFIERS.OUTPUT] `sail`.`default`.`duplicate`').getCondition
+E        +      where AnalysisException('[PIPELINE_DUPLICATE_IDENTIFIERS.OUTPUT] `sail`.`default`.`duplicate`') = <ExceptionInfo AnalysisException('[PIPELINE_DUPLICATE_IDENTIFIERS.OUTPUT] `sail`.`default`.`duplicate`') tblen=7>.value
+
+python/pysail/tests/spark/pipelines/test_registration_errors.py:89: AssertionError
+________ test_duplicate_outputs_have_structured_types[table-view-True] _________
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x11606f980>
+pipeline = ('04b9907d-2186-414a-8f26-d444380247d3', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x1160946b0>, <function pipeline_factory.<locals>.create.<locals>.run at 0x1160cdc60>)
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-106/test_duplicate_outputs_have_st1')
+definitions = ['CREATE STREAMING TABLE duplicate', 'CREATE VIEW duplicate AS SELECT 1 AS value']
+private = False, types = ['TABLE', 'VIEW'], dry = True
+
+    @pytest.mark.parametrize("dry", [False, True])
+    @pytest.mark.parametrize(
+        ("definitions", "private", "types"),
+        [
+            pytest.param(
+                ["CREATE STREAMING TABLE duplicate", "CREATE VIEW duplicate AS SELECT 1 AS value"],
+                False,
+                ["TABLE", "VIEW"],
+                id="table-view",
+            ),
+            pytest.param(
+                ["CREATE VIEW duplicate AS SELECT 1 AS value", "CREATE STREAMING TABLE duplicate"],
+                False,
+                ["TABLE", "VIEW"],
+                id="view-table",
+            ),
+            pytest.param(
+                ["CREATE MATERIALIZED VIEW duplicate AS SELECT 1 AS value"] * 2,
+                False,
+                ["TABLE", "TABLE"],
+                id="materialized-materialized",
+            ),
+            pytest.param(
+                ["CREATE STREAMING TABLE duplicate", "CREATE MATERIALIZED VIEW duplicate AS SELECT 1 AS value"],
+                False,
+                ["TABLE", "TABLE"],
+                id="streaming-materialized",
+            ),
+            pytest.param(
+                ["CREATE VIEW duplicate AS SELECT 1 AS value"] * 2,
+                False,
+                ["VIEW", "VIEW"],
+                id="persisted-persisted",
+            ),
+            pytest.param(
+                ["CREATE TEMPORARY VIEW duplicate AS SELECT 1 AS value"] * 2,
+                True,
+                ["VIEW", "VIEW"],
+                id="temporary-temporary",
+            ),
+            pytest.param(
+                ["CREATE VIEW duplicate AS SELECT 1 AS value"] * 2 + ["CREATE STREAMING TABLE duplicate"],
+                False,
+                ["TABLE", "VIEW"],
+                id="views-before-table",
+            ),
+        ],
+    )
+    def test_duplicate_outputs_have_structured_types(pipeline_spark, pipeline, tmp_path, definitions, private, types, dry):
+        _, registry, run = pipeline
+        registry.register_sql("CREATE MATERIALIZED VIEW valid_output AS SELECT 1 AS value", tmp_path / "valid.sql")
+        for index, definition in enumerate(definitions):
+            registry.register_sql(definition, tmp_path / f"duplicate_{index}.sql")
+        with pytest.raises(AnalysisException) as error:
+            run(dry=dry)
+        identifier = "`duplicate`"
+        if not private:
+            identifier = (
+                f"`{pipeline_spark.catalog.currentCatalog()}`.`{pipeline_spark.catalog.currentDatabase()}`.{identifier}"
+            )
+>       assert error.value.getCondition() == "PIPELINE_DUPLICATE_IDENTIFIERS.OUTPUT"
+E       AssertionError: assert None == 'PIPELINE_DUPLICATE_IDENTIFIERS.OUTPUT'
+E        +  where None = getCondition()
+E        +    where getCondition = AnalysisException('[PIPELINE_DUPLICATE_IDENTIFIERS.OUTPUT] `sail`.`default`.`duplicate`').getCondition
+E        +      where AnalysisException('[PIPELINE_DUPLICATE_IDENTIFIERS.OUTPUT] `sail`.`default`.`duplicate`') = <ExceptionInfo AnalysisException('[PIPELINE_DUPLICATE_IDENTIFIERS.OUTPUT] `sail`.`default`.`duplicate`') tblen=7>.value
+
+python/pysail/tests/spark/pipelines/test_registration_errors.py:89: AssertionError
+________ test_duplicate_outputs_have_structured_types[view-table-False] ________
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x116095670>
+pipeline = ('c5ed1b8a-e53e-4f5e-8131-e30fbd184bd1', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x116096ea0>, <function pipeline_factory.<locals>.create.<locals>.run at 0x1160cfa60>)
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-106/test_duplicate_outputs_have_st2')
+definitions = ['CREATE VIEW duplicate AS SELECT 1 AS value', 'CREATE STREAMING TABLE duplicate']
+private = False, types = ['TABLE', 'VIEW'], dry = False
+
+    @pytest.mark.parametrize("dry", [False, True])
+    @pytest.mark.parametrize(
+        ("definitions", "private", "types"),
+        [
+            pytest.param(
+                ["CREATE STREAMING TABLE duplicate", "CREATE VIEW duplicate AS SELECT 1 AS value"],
+                False,
+                ["TABLE", "VIEW"],
+                id="table-view",
+            ),
+            pytest.param(
+                ["CREATE VIEW duplicate AS SELECT 1 AS value", "CREATE STREAMING TABLE duplicate"],
+                False,
+                ["TABLE", "VIEW"],
+                id="view-table",
+            ),
+            pytest.param(
+                ["CREATE MATERIALIZED VIEW duplicate AS SELECT 1 AS value"] * 2,
+                False,
+                ["TABLE", "TABLE"],
+                id="materialized-materialized",
+            ),
+            pytest.param(
+                ["CREATE STREAMING TABLE duplicate", "CREATE MATERIALIZED VIEW duplicate AS SELECT 1 AS value"],
+                False,
+                ["TABLE", "TABLE"],
+                id="streaming-materialized",
+            ),
+            pytest.param(
+                ["CREATE VIEW duplicate AS SELECT 1 AS value"] * 2,
+                False,
+                ["VIEW", "VIEW"],
+                id="persisted-persisted",
+            ),
+            pytest.param(
+                ["CREATE TEMPORARY VIEW duplicate AS SELECT 1 AS value"] * 2,
+                True,
+                ["VIEW", "VIEW"],
+                id="temporary-temporary",
+            ),
+            pytest.param(
+                ["CREATE VIEW duplicate AS SELECT 1 AS value"] * 2 + ["CREATE STREAMING TABLE duplicate"],
+                False,
+                ["TABLE", "VIEW"],
+                id="views-before-table",
+            ),
+        ],
+    )
+    def test_duplicate_outputs_have_structured_types(pipeline_spark, pipeline, tmp_path, definitions, private, types, dry):
+        _, registry, run = pipeline
+        registry.register_sql("CREATE MATERIALIZED VIEW valid_output AS SELECT 1 AS value", tmp_path / "valid.sql")
+        for index, definition in enumerate(definitions):
+            registry.register_sql(definition, tmp_path / f"duplicate_{index}.sql")
+        with pytest.raises(AnalysisException) as error:
+            run(dry=dry)
+        identifier = "`duplicate`"
+        if not private:
+            identifier = (
+                f"`{pipeline_spark.catalog.currentCatalog()}`.`{pipeline_spark.catalog.currentDatabase()}`.{identifier}"
+            )
+>       assert error.value.getCondition() == "PIPELINE_DUPLICATE_IDENTIFIERS.OUTPUT"
+E       AssertionError: assert None == 'PIPELINE_DUPLICATE_IDENTIFIERS.OUTPUT'
+E        +  where None = getCondition()
+E        +    where getCondition = AnalysisException('[PIPELINE_DUPLICATE_IDENTIFIERS.OUTPUT] `sail`.`default`.`duplicate`').getCondition
+E        +      where AnalysisException('[PIPELINE_DUPLICATE_IDENTIFIERS.OUTPUT] `sail`.`default`.`duplicate`') = <ExceptionInfo AnalysisException('[PIPELINE_DUPLICATE_IDENTIFIERS.OUTPUT] `sail`.`default`.`duplicate`') tblen=7>.value
+
+python/pysail/tests/spark/pipelines/test_registration_errors.py:89: AssertionError
+________ test_duplicate_outputs_have_structured_types[view-table-True] _________
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x116095550>
+pipeline = ('dd537748-84c4-4590-b1c4-496893adcf65', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x1160d5370>, <function pipeline_factory.<locals>.create.<locals>.run at 0x1160e5620>)
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-106/test_duplicate_outputs_have_st3')
+definitions = ['CREATE VIEW duplicate AS SELECT 1 AS value', 'CREATE STREAMING TABLE duplicate']
+private = False, types = ['TABLE', 'VIEW'], dry = True
+
+    @pytest.mark.parametrize("dry", [False, True])
+    @pytest.mark.parametrize(
+        ("definitions", "private", "types"),
+        [
+            pytest.param(
+                ["CREATE STREAMING TABLE duplicate", "CREATE VIEW duplicate AS SELECT 1 AS value"],
+                False,
+                ["TABLE", "VIEW"],
+                id="table-view",
+            ),
+            pytest.param(
+                ["CREATE VIEW duplicate AS SELECT 1 AS value", "CREATE STREAMING TABLE duplicate"],
+                False,
+                ["TABLE", "VIEW"],
+                id="view-table",
+            ),
+            pytest.param(
+                ["CREATE MATERIALIZED VIEW duplicate AS SELECT 1 AS value"] * 2,
+                False,
+                ["TABLE", "TABLE"],
+                id="materialized-materialized",
+            ),
+            pytest.param(
+                ["CREATE STREAMING TABLE duplicate", "CREATE MATERIALIZED VIEW duplicate AS SELECT 1 AS value"],
+                False,
+                ["TABLE", "TABLE"],
+                id="streaming-materialized",
+            ),
+            pytest.param(
+                ["CREATE VIEW duplicate AS SELECT 1 AS value"] * 2,
+                False,
+                ["VIEW", "VIEW"],
+                id="persisted-persisted",
+            ),
+            pytest.param(
+                ["CREATE TEMPORARY VIEW duplicate AS SELECT 1 AS value"] * 2,
+                True,
+                ["VIEW", "VIEW"],
+                id="temporary-temporary",
+            ),
+            pytest.param(
+                ["CREATE VIEW duplicate AS SELECT 1 AS value"] * 2 + ["CREATE STREAMING TABLE duplicate"],
+                False,
+                ["TABLE", "VIEW"],
+                id="views-before-table",
+            ),
+        ],
+    )
+    def test_duplicate_outputs_have_structured_types(pipeline_spark, pipeline, tmp_path, definitions, private, types, dry):
+        _, registry, run = pipeline
+        registry.register_sql("CREATE MATERIALIZED VIEW valid_output AS SELECT 1 AS value", tmp_path / "valid.sql")
+        for index, definition in enumerate(definitions):
+            registry.register_sql(definition, tmp_path / f"duplicate_{index}.sql")
+        with pytest.raises(AnalysisException) as error:
+            run(dry=dry)
+        identifier = "`duplicate`"
+        if not private:
+            identifier = (
+                f"`{pipeline_spark.catalog.currentCatalog()}`.`{pipeline_spark.catalog.currentDatabase()}`.{identifier}"
+            )
+>       assert error.value.getCondition() == "PIPELINE_DUPLICATE_IDENTIFIERS.OUTPUT"
+E       AssertionError: assert None == 'PIPELINE_DUPLICATE_IDENTIFIERS.OUTPUT'
+E        +  where None = getCondition()
+E        +    where getCondition = AnalysisException('[PIPELINE_DUPLICATE_IDENTIFIERS.OUTPUT] `sail`.`default`.`duplicate`').getCondition
+E        +      where AnalysisException('[PIPELINE_DUPLICATE_IDENTIFIERS.OUTPUT] `sail`.`default`.`duplicate`') = <ExceptionInfo AnalysisException('[PIPELINE_DUPLICATE_IDENTIFIERS.OUTPUT] `sail`.`default`.`duplicate`') tblen=7>.value
+
+python/pysail/tests/spark/pipelines/test_registration_errors.py:89: AssertionError
+_ test_duplicate_outputs_have_structured_types[materialized-materialized-False] _
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x1160d4620>
+pipeline = ('9f64ffce-f1fc-4a33-8d63-a68321adb5a1', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x1160d7f80>, <function pipeline_factory.<locals>.create.<locals>.run at 0x1160e71a0>)
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-106/test_duplicate_outputs_have_st4')
+definitions = ['CREATE MATERIALIZED VIEW duplicate AS SELECT 1 AS value', 'CREATE MATERIALIZED VIEW duplicate AS SELECT 1 AS value']
+private = False, types = ['TABLE', 'TABLE'], dry = False
+
+    @pytest.mark.parametrize("dry", [False, True])
+    @pytest.mark.parametrize(
+        ("definitions", "private", "types"),
+        [
+            pytest.param(
+                ["CREATE STREAMING TABLE duplicate", "CREATE VIEW duplicate AS SELECT 1 AS value"],
+                False,
+                ["TABLE", "VIEW"],
+                id="table-view",
+            ),
+            pytest.param(
+                ["CREATE VIEW duplicate AS SELECT 1 AS value", "CREATE STREAMING TABLE duplicate"],
+                False,
+                ["TABLE", "VIEW"],
+                id="view-table",
+            ),
+            pytest.param(
+                ["CREATE MATERIALIZED VIEW duplicate AS SELECT 1 AS value"] * 2,
+                False,
+                ["TABLE", "TABLE"],
+                id="materialized-materialized",
+            ),
+            pytest.param(
+                ["CREATE STREAMING TABLE duplicate", "CREATE MATERIALIZED VIEW duplicate AS SELECT 1 AS value"],
+                False,
+                ["TABLE", "TABLE"],
+                id="streaming-materialized",
+            ),
+            pytest.param(
+                ["CREATE VIEW duplicate AS SELECT 1 AS value"] * 2,
+                False,
+                ["VIEW", "VIEW"],
+                id="persisted-persisted",
+            ),
+            pytest.param(
+                ["CREATE TEMPORARY VIEW duplicate AS SELECT 1 AS value"] * 2,
+                True,
+                ["VIEW", "VIEW"],
+                id="temporary-temporary",
+            ),
+            pytest.param(
+                ["CREATE VIEW duplicate AS SELECT 1 AS value"] * 2 + ["CREATE STREAMING TABLE duplicate"],
+                False,
+                ["TABLE", "VIEW"],
+                id="views-before-table",
+            ),
+        ],
+    )
+    def test_duplicate_outputs_have_structured_types(pipeline_spark, pipeline, tmp_path, definitions, private, types, dry):
+        _, registry, run = pipeline
+        registry.register_sql("CREATE MATERIALIZED VIEW valid_output AS SELECT 1 AS value", tmp_path / "valid.sql")
+        for index, definition in enumerate(definitions):
+            registry.register_sql(definition, tmp_path / f"duplicate_{index}.sql")
+        with pytest.raises(AnalysisException) as error:
+            run(dry=dry)
+        identifier = "`duplicate`"
+        if not private:
+            identifier = (
+                f"`{pipeline_spark.catalog.currentCatalog()}`.`{pipeline_spark.catalog.currentDatabase()}`.{identifier}"
+            )
+>       assert error.value.getCondition() == "PIPELINE_DUPLICATE_IDENTIFIERS.OUTPUT"
+E       AssertionError: assert None == 'PIPELINE_DUPLICATE_IDENTIFIERS.OUTPUT'
+E        +  where None = getCondition()
+E        +    where getCondition = AnalysisException('[PIPELINE_DUPLICATE_IDENTIFIERS.OUTPUT] `sail`.`default`.`duplicate`').getCondition
+E        +      where AnalysisException('[PIPELINE_DUPLICATE_IDENTIFIERS.OUTPUT] `sail`.`default`.`duplicate`') = <ExceptionInfo AnalysisException('[PIPELINE_DUPLICATE_IDENTIFIERS.OUTPUT] `sail`.`default`.`duplicate`') tblen=7>.value
+
+python/pysail/tests/spark/pipelines/test_registration_errors.py:89: AssertionError
+_ test_duplicate_outputs_have_structured_types[materialized-materialized-True] _
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x11613dcd0>
+pipeline = ('26513219-c193-44a4-97e2-a9a1d0b7b56a', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x11613e180>, <function pipeline_factory.<locals>.create.<locals>.run at 0x1161451c0>)
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-106/test_duplicate_outputs_have_st5')
+definitions = ['CREATE MATERIALIZED VIEW duplicate AS SELECT 1 AS value', 'CREATE MATERIALIZED VIEW duplicate AS SELECT 1 AS value']
+private = False, types = ['TABLE', 'TABLE'], dry = True
+
+    @pytest.mark.parametrize("dry", [False, True])
+    @pytest.mark.parametrize(
+        ("definitions", "private", "types"),
+        [
+            pytest.param(
+                ["CREATE STREAMING TABLE duplicate", "CREATE VIEW duplicate AS SELECT 1 AS value"],
+                False,
+                ["TABLE", "VIEW"],
+                id="table-view",
+            ),
+            pytest.param(
+                ["CREATE VIEW duplicate AS SELECT 1 AS value", "CREATE STREAMING TABLE duplicate"],
+                False,
+                ["TABLE", "VIEW"],
+                id="view-table",
+            ),
+            pytest.param(
+                ["CREATE MATERIALIZED VIEW duplicate AS SELECT 1 AS value"] * 2,
+                False,
+                ["TABLE", "TABLE"],
+                id="materialized-materialized",
+            ),
+            pytest.param(
+                ["CREATE STREAMING TABLE duplicate", "CREATE MATERIALIZED VIEW duplicate AS SELECT 1 AS value"],
+                False,
+                ["TABLE", "TABLE"],
+                id="streaming-materialized",
+            ),
+            pytest.param(
+                ["CREATE VIEW duplicate AS SELECT 1 AS value"] * 2,
+                False,
+                ["VIEW", "VIEW"],
+                id="persisted-persisted",
+            ),
+            pytest.param(
+                ["CREATE TEMPORARY VIEW duplicate AS SELECT 1 AS value"] * 2,
+                True,
+                ["VIEW", "VIEW"],
+                id="temporary-temporary",
+            ),
+            pytest.param(
+                ["CREATE VIEW duplicate AS SELECT 1 AS value"] * 2 + ["CREATE STREAMING TABLE duplicate"],
+                False,
+                ["TABLE", "VIEW"],
+                id="views-before-table",
+            ),
+        ],
+    )
+    def test_duplicate_outputs_have_structured_types(pipeline_spark, pipeline, tmp_path, definitions, private, types, dry):
+        _, registry, run = pipeline
+        registry.register_sql("CREATE MATERIALIZED VIEW valid_output AS SELECT 1 AS value", tmp_path / "valid.sql")
+        for index, definition in enumerate(definitions):
+            registry.register_sql(definition, tmp_path / f"duplicate_{index}.sql")
+        with pytest.raises(AnalysisException) as error:
+            run(dry=dry)
+        identifier = "`duplicate`"
+        if not private:
+            identifier = (
+                f"`{pipeline_spark.catalog.currentCatalog()}`.`{pipeline_spark.catalog.currentDatabase()}`.{identifier}"
+            )
+>       assert error.value.getCondition() == "PIPELINE_DUPLICATE_IDENTIFIERS.OUTPUT"
+E       AssertionError: assert None == 'PIPELINE_DUPLICATE_IDENTIFIERS.OUTPUT'
+E        +  where None = getCondition()
+E        +    where getCondition = AnalysisException('[PIPELINE_DUPLICATE_IDENTIFIERS.OUTPUT] `sail`.`default`.`duplicate`').getCondition
+E        +      where AnalysisException('[PIPELINE_DUPLICATE_IDENTIFIERS.OUTPUT] `sail`.`default`.`duplicate`') = <ExceptionInfo AnalysisException('[PIPELINE_DUPLICATE_IDENTIFIERS.OUTPUT] `sail`.`default`.`duplicate`') tblen=7>.value
+
+python/pysail/tests/spark/pipelines/test_registration_errors.py:89: AssertionError
+__ test_duplicate_outputs_have_structured_types[streaming-materialized-False] __
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x11613cb30>
+pipeline = ('7f309505-1fbd-4300-a1d6-23df87074673', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x116150080>, <function pipeline_factory.<locals>.create.<locals>.run at 0x116146de0>)
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-106/test_duplicate_outputs_have_st6')
+definitions = ['CREATE STREAMING TABLE duplicate', 'CREATE MATERIALIZED VIEW duplicate AS SELECT 1 AS value']
+private = False, types = ['TABLE', 'TABLE'], dry = False
+
+    @pytest.mark.parametrize("dry", [False, True])
+    @pytest.mark.parametrize(
+        ("definitions", "private", "types"),
+        [
+            pytest.param(
+                ["CREATE STREAMING TABLE duplicate", "CREATE VIEW duplicate AS SELECT 1 AS value"],
+                False,
+                ["TABLE", "VIEW"],
+                id="table-view",
+            ),
+            pytest.param(
+                ["CREATE VIEW duplicate AS SELECT 1 AS value", "CREATE STREAMING TABLE duplicate"],
+                False,
+                ["TABLE", "VIEW"],
+                id="view-table",
+            ),
+            pytest.param(
+                ["CREATE MATERIALIZED VIEW duplicate AS SELECT 1 AS value"] * 2,
+                False,
+                ["TABLE", "TABLE"],
+                id="materialized-materialized",
+            ),
+            pytest.param(
+                ["CREATE STREAMING TABLE duplicate", "CREATE MATERIALIZED VIEW duplicate AS SELECT 1 AS value"],
+                False,
+                ["TABLE", "TABLE"],
+                id="streaming-materialized",
+            ),
+            pytest.param(
+                ["CREATE VIEW duplicate AS SELECT 1 AS value"] * 2,
+                False,
+                ["VIEW", "VIEW"],
+                id="persisted-persisted",
+            ),
+            pytest.param(
+                ["CREATE TEMPORARY VIEW duplicate AS SELECT 1 AS value"] * 2,
+                True,
+                ["VIEW", "VIEW"],
+                id="temporary-temporary",
+            ),
+            pytest.param(
+                ["CREATE VIEW duplicate AS SELECT 1 AS value"] * 2 + ["CREATE STREAMING TABLE duplicate"],
+                False,
+                ["TABLE", "VIEW"],
+                id="views-before-table",
+            ),
+        ],
+    )
+    def test_duplicate_outputs_have_structured_types(pipeline_spark, pipeline, tmp_path, definitions, private, types, dry):
+        _, registry, run = pipeline
+        registry.register_sql("CREATE MATERIALIZED VIEW valid_output AS SELECT 1 AS value", tmp_path / "valid.sql")
+        for index, definition in enumerate(definitions):
+            registry.register_sql(definition, tmp_path / f"duplicate_{index}.sql")
+        with pytest.raises(AnalysisException) as error:
+            run(dry=dry)
+        identifier = "`duplicate`"
+        if not private:
+            identifier = (
+                f"`{pipeline_spark.catalog.currentCatalog()}`.`{pipeline_spark.catalog.currentDatabase()}`.{identifier}"
+            )
+>       assert error.value.getCondition() == "PIPELINE_DUPLICATE_IDENTIFIERS.OUTPUT"
+E       AssertionError: assert None == 'PIPELINE_DUPLICATE_IDENTIFIERS.OUTPUT'
+E        +  where None = getCondition()
+E        +    where getCondition = AnalysisException('[PIPELINE_DUPLICATE_IDENTIFIERS.OUTPUT] `sail`.`default`.`duplicate`').getCondition
+E        +      where AnalysisException('[PIPELINE_DUPLICATE_IDENTIFIERS.OUTPUT] `sail`.`default`.`duplicate`') = <ExceptionInfo AnalysisException('[PIPELINE_DUPLICATE_IDENTIFIERS.OUTPUT] `sail`.`default`.`duplicate`') tblen=7>.value
+
+python/pysail/tests/spark/pipelines/test_registration_errors.py:89: AssertionError
+__ test_duplicate_outputs_have_structured_types[streaming-materialized-True] ___
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x116150d10>
+pipeline = ('127e3249-d376-49b9-b21f-62721a939f52', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x116152ea0>, <function pipeline_factory.<locals>.create.<locals>.run at 0x11616cc20>)
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-106/test_duplicate_outputs_have_st7')
+definitions = ['CREATE STREAMING TABLE duplicate', 'CREATE MATERIALIZED VIEW duplicate AS SELECT 1 AS value']
+private = False, types = ['TABLE', 'TABLE'], dry = True
+
+    @pytest.mark.parametrize("dry", [False, True])
+    @pytest.mark.parametrize(
+        ("definitions", "private", "types"),
+        [
+            pytest.param(
+                ["CREATE STREAMING TABLE duplicate", "CREATE VIEW duplicate AS SELECT 1 AS value"],
+                False,
+                ["TABLE", "VIEW"],
+                id="table-view",
+            ),
+            pytest.param(
+                ["CREATE VIEW duplicate AS SELECT 1 AS value", "CREATE STREAMING TABLE duplicate"],
+                False,
+                ["TABLE", "VIEW"],
+                id="view-table",
+            ),
+            pytest.param(
+                ["CREATE MATERIALIZED VIEW duplicate AS SELECT 1 AS value"] * 2,
+                False,
+                ["TABLE", "TABLE"],
+                id="materialized-materialized",
+            ),
+            pytest.param(
+                ["CREATE STREAMING TABLE duplicate", "CREATE MATERIALIZED VIEW duplicate AS SELECT 1 AS value"],
+                False,
+                ["TABLE", "TABLE"],
+                id="streaming-materialized",
+            ),
+            pytest.param(
+                ["CREATE VIEW duplicate AS SELECT 1 AS value"] * 2,
+                False,
+                ["VIEW", "VIEW"],
+                id="persisted-persisted",
+            ),
+            pytest.param(
+                ["CREATE TEMPORARY VIEW duplicate AS SELECT 1 AS value"] * 2,
+                True,
+                ["VIEW", "VIEW"],
+                id="temporary-temporary",
+            ),
+            pytest.param(
+                ["CREATE VIEW duplicate AS SELECT 1 AS value"] * 2 + ["CREATE STREAMING TABLE duplicate"],
+                False,
+                ["TABLE", "VIEW"],
+                id="views-before-table",
+            ),
+        ],
+    )
+    def test_duplicate_outputs_have_structured_types(pipeline_spark, pipeline, tmp_path, definitions, private, types, dry):
+        _, registry, run = pipeline
+        registry.register_sql("CREATE MATERIALIZED VIEW valid_output AS SELECT 1 AS value", tmp_path / "valid.sql")
+        for index, definition in enumerate(definitions):
+            registry.register_sql(definition, tmp_path / f"duplicate_{index}.sql")
+        with pytest.raises(AnalysisException) as error:
+            run(dry=dry)
+        identifier = "`duplicate`"
+        if not private:
+            identifier = (
+                f"`{pipeline_spark.catalog.currentCatalog()}`.`{pipeline_spark.catalog.currentDatabase()}`.{identifier}"
+            )
+>       assert error.value.getCondition() == "PIPELINE_DUPLICATE_IDENTIFIERS.OUTPUT"
+E       AssertionError: assert None == 'PIPELINE_DUPLICATE_IDENTIFIERS.OUTPUT'
+E        +  where None = getCondition()
+E        +    where getCondition = AnalysisException('[PIPELINE_DUPLICATE_IDENTIFIERS.OUTPUT] `sail`.`default`.`duplicate`').getCondition
+E        +      where AnalysisException('[PIPELINE_DUPLICATE_IDENTIFIERS.OUTPUT] `sail`.`default`.`duplicate`') = <ExceptionInfo AnalysisException('[PIPELINE_DUPLICATE_IDENTIFIERS.OUTPUT] `sail`.`default`.`duplicate`') tblen=7>.value
+
+python/pysail/tests/spark/pipelines/test_registration_errors.py:89: AssertionError
+___ test_duplicate_outputs_have_structured_types[persisted-persisted-False] ____
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x11613fb00>
+pipeline = ('adadee51-4415-46e8-8af9-5732de0b1100', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x11613d010>, <function pipeline_factory.<locals>.create.<locals>.run at 0x1160e7d80>)
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-106/test_duplicate_outputs_have_st8')
+definitions = ['CREATE VIEW duplicate AS SELECT 1 AS value', 'CREATE VIEW duplicate AS SELECT 1 AS value']
+private = False, types = ['VIEW', 'VIEW'], dry = False
+
+    @pytest.mark.parametrize("dry", [False, True])
+    @pytest.mark.parametrize(
+        ("definitions", "private", "types"),
+        [
+            pytest.param(
+                ["CREATE STREAMING TABLE duplicate", "CREATE VIEW duplicate AS SELECT 1 AS value"],
+                False,
+                ["TABLE", "VIEW"],
+                id="table-view",
+            ),
+            pytest.param(
+                ["CREATE VIEW duplicate AS SELECT 1 AS value", "CREATE STREAMING TABLE duplicate"],
+                False,
+                ["TABLE", "VIEW"],
+                id="view-table",
+            ),
+            pytest.param(
+                ["CREATE MATERIALIZED VIEW duplicate AS SELECT 1 AS value"] * 2,
+                False,
+                ["TABLE", "TABLE"],
+                id="materialized-materialized",
+            ),
+            pytest.param(
+                ["CREATE STREAMING TABLE duplicate", "CREATE MATERIALIZED VIEW duplicate AS SELECT 1 AS value"],
+                False,
+                ["TABLE", "TABLE"],
+                id="streaming-materialized",
+            ),
+            pytest.param(
+                ["CREATE VIEW duplicate AS SELECT 1 AS value"] * 2,
+                False,
+                ["VIEW", "VIEW"],
+                id="persisted-persisted",
+            ),
+            pytest.param(
+                ["CREATE TEMPORARY VIEW duplicate AS SELECT 1 AS value"] * 2,
+                True,
+                ["VIEW", "VIEW"],
+                id="temporary-temporary",
+            ),
+            pytest.param(
+                ["CREATE VIEW duplicate AS SELECT 1 AS value"] * 2 + ["CREATE STREAMING TABLE duplicate"],
+                False,
+                ["TABLE", "VIEW"],
+                id="views-before-table",
+            ),
+        ],
+    )
+    def test_duplicate_outputs_have_structured_types(pipeline_spark, pipeline, tmp_path, definitions, private, types, dry):
+        _, registry, run = pipeline
+        registry.register_sql("CREATE MATERIALIZED VIEW valid_output AS SELECT 1 AS value", tmp_path / "valid.sql")
+        for index, definition in enumerate(definitions):
+            registry.register_sql(definition, tmp_path / f"duplicate_{index}.sql")
+        with pytest.raises(AnalysisException) as error:
+            run(dry=dry)
+        identifier = "`duplicate`"
+        if not private:
+            identifier = (
+                f"`{pipeline_spark.catalog.currentCatalog()}`.`{pipeline_spark.catalog.currentDatabase()}`.{identifier}"
+            )
+>       assert error.value.getCondition() == "PIPELINE_DUPLICATE_IDENTIFIERS.OUTPUT"
+E       AssertionError: assert None == 'PIPELINE_DUPLICATE_IDENTIFIERS.OUTPUT'
+E        +  where None = getCondition()
+E        +    where getCondition = AnalysisException('[PIPELINE_DUPLICATE_IDENTIFIERS.OUTPUT] `sail`.`default`.`duplicate`').getCondition
+E        +      where AnalysisException('[PIPELINE_DUPLICATE_IDENTIFIERS.OUTPUT] `sail`.`default`.`duplicate`') = <ExceptionInfo AnalysisException('[PIPELINE_DUPLICATE_IDENTIFIERS.OUTPUT] `sail`.`default`.`duplicate`') tblen=7>.value
+
+python/pysail/tests/spark/pipelines/test_registration_errors.py:89: AssertionError
+____ test_duplicate_outputs_have_structured_types[persisted-persisted-True] ____
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x1160d4dd0>
+pipeline = ('458d3d72-fcf2-4406-bd6e-a8403d0770de', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x116094590>, <function pipeline_factory.<locals>.create.<locals>.run at 0x11616ca40>)
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-106/test_duplicate_outputs_have_st9')
+definitions = ['CREATE VIEW duplicate AS SELECT 1 AS value', 'CREATE VIEW duplicate AS SELECT 1 AS value']
+private = False, types = ['VIEW', 'VIEW'], dry = True
+
+    @pytest.mark.parametrize("dry", [False, True])
+    @pytest.mark.parametrize(
+        ("definitions", "private", "types"),
+        [
+            pytest.param(
+                ["CREATE STREAMING TABLE duplicate", "CREATE VIEW duplicate AS SELECT 1 AS value"],
+                False,
+                ["TABLE", "VIEW"],
+                id="table-view",
+            ),
+            pytest.param(
+                ["CREATE VIEW duplicate AS SELECT 1 AS value", "CREATE STREAMING TABLE duplicate"],
+                False,
+                ["TABLE", "VIEW"],
+                id="view-table",
+            ),
+            pytest.param(
+                ["CREATE MATERIALIZED VIEW duplicate AS SELECT 1 AS value"] * 2,
+                False,
+                ["TABLE", "TABLE"],
+                id="materialized-materialized",
+            ),
+            pytest.param(
+                ["CREATE STREAMING TABLE duplicate", "CREATE MATERIALIZED VIEW duplicate AS SELECT 1 AS value"],
+                False,
+                ["TABLE", "TABLE"],
+                id="streaming-materialized",
+            ),
+            pytest.param(
+                ["CREATE VIEW duplicate AS SELECT 1 AS value"] * 2,
+                False,
+                ["VIEW", "VIEW"],
+                id="persisted-persisted",
+            ),
+            pytest.param(
+                ["CREATE TEMPORARY VIEW duplicate AS SELECT 1 AS value"] * 2,
+                True,
+                ["VIEW", "VIEW"],
+                id="temporary-temporary",
+            ),
+            pytest.param(
+                ["CREATE VIEW duplicate AS SELECT 1 AS value"] * 2 + ["CREATE STREAMING TABLE duplicate"],
+                False,
+                ["TABLE", "VIEW"],
+                id="views-before-table",
+            ),
+        ],
+    )
+    def test_duplicate_outputs_have_structured_types(pipeline_spark, pipeline, tmp_path, definitions, private, types, dry):
+        _, registry, run = pipeline
+        registry.register_sql("CREATE MATERIALIZED VIEW valid_output AS SELECT 1 AS value", tmp_path / "valid.sql")
+        for index, definition in enumerate(definitions):
+            registry.register_sql(definition, tmp_path / f"duplicate_{index}.sql")
+        with pytest.raises(AnalysisException) as error:
+            run(dry=dry)
+        identifier = "`duplicate`"
+        if not private:
+            identifier = (
+                f"`{pipeline_spark.catalog.currentCatalog()}`.`{pipeline_spark.catalog.currentDatabase()}`.{identifier}"
+            )
+>       assert error.value.getCondition() == "PIPELINE_DUPLICATE_IDENTIFIERS.OUTPUT"
+E       AssertionError: assert None == 'PIPELINE_DUPLICATE_IDENTIFIERS.OUTPUT'
+E        +  where None = getCondition()
+E        +    where getCondition = AnalysisException('[PIPELINE_DUPLICATE_IDENTIFIERS.OUTPUT] `sail`.`default`.`duplicate`').getCondition
+E        +      where AnalysisException('[PIPELINE_DUPLICATE_IDENTIFIERS.OUTPUT] `sail`.`default`.`duplicate`') = <ExceptionInfo AnalysisException('[PIPELINE_DUPLICATE_IDENTIFIERS.OUTPUT] `sail`.`default`.`duplicate`') tblen=7>.value
+
+python/pysail/tests/spark/pipelines/test_registration_errors.py:89: AssertionError
+___ test_duplicate_outputs_have_structured_types[temporary-temporary-False] ____
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x116097d40>
+pipeline = ('57c79bd4-9e77-46a7-af0e-51a741f9d956', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x1161533b0>, <function pipeline_factory.<locals>.create.<locals>.run at 0x11616eb60>)
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-106/test_duplicate_outputs_have_st10')
+definitions = ['CREATE TEMPORARY VIEW duplicate AS SELECT 1 AS value', 'CREATE TEMPORARY VIEW duplicate AS SELECT 1 AS value']
+private = True, types = ['VIEW', 'VIEW'], dry = False
+
+    @pytest.mark.parametrize("dry", [False, True])
+    @pytest.mark.parametrize(
+        ("definitions", "private", "types"),
+        [
+            pytest.param(
+                ["CREATE STREAMING TABLE duplicate", "CREATE VIEW duplicate AS SELECT 1 AS value"],
+                False,
+                ["TABLE", "VIEW"],
+                id="table-view",
+            ),
+            pytest.param(
+                ["CREATE VIEW duplicate AS SELECT 1 AS value", "CREATE STREAMING TABLE duplicate"],
+                False,
+                ["TABLE", "VIEW"],
+                id="view-table",
+            ),
+            pytest.param(
+                ["CREATE MATERIALIZED VIEW duplicate AS SELECT 1 AS value"] * 2,
+                False,
+                ["TABLE", "TABLE"],
+                id="materialized-materialized",
+            ),
+            pytest.param(
+                ["CREATE STREAMING TABLE duplicate", "CREATE MATERIALIZED VIEW duplicate AS SELECT 1 AS value"],
+                False,
+                ["TABLE", "TABLE"],
+                id="streaming-materialized",
+            ),
+            pytest.param(
+                ["CREATE VIEW duplicate AS SELECT 1 AS value"] * 2,
+                False,
+                ["VIEW", "VIEW"],
+                id="persisted-persisted",
+            ),
+            pytest.param(
+                ["CREATE TEMPORARY VIEW duplicate AS SELECT 1 AS value"] * 2,
+                True,
+                ["VIEW", "VIEW"],
+                id="temporary-temporary",
+            ),
+            pytest.param(
+                ["CREATE VIEW duplicate AS SELECT 1 AS value"] * 2 + ["CREATE STREAMING TABLE duplicate"],
+                False,
+                ["TABLE", "VIEW"],
+                id="views-before-table",
+            ),
+        ],
+    )
+    def test_duplicate_outputs_have_structured_types(pipeline_spark, pipeline, tmp_path, definitions, private, types, dry):
+        _, registry, run = pipeline
+        registry.register_sql("CREATE MATERIALIZED VIEW valid_output AS SELECT 1 AS value", tmp_path / "valid.sql")
+        for index, definition in enumerate(definitions):
+            registry.register_sql(definition, tmp_path / f"duplicate_{index}.sql")
+        with pytest.raises(AnalysisException) as error:
+            run(dry=dry)
+        identifier = "`duplicate`"
+        if not private:
+            identifier = (
+                f"`{pipeline_spark.catalog.currentCatalog()}`.`{pipeline_spark.catalog.currentDatabase()}`.{identifier}"
+            )
+>       assert error.value.getCondition() == "PIPELINE_DUPLICATE_IDENTIFIERS.OUTPUT"
+E       AssertionError: assert None == 'PIPELINE_DUPLICATE_IDENTIFIERS.OUTPUT'
+E        +  where None = getCondition()
+E        +    where getCondition = AnalysisException('[PIPELINE_DUPLICATE_IDENTIFIERS.OUTPUT] `duplicate`').getCondition
+E        +      where AnalysisException('[PIPELINE_DUPLICATE_IDENTIFIERS.OUTPUT] `duplicate`') = <ExceptionInfo AnalysisException('[PIPELINE_DUPLICATE_IDENTIFIERS.OUTPUT] `duplicate`') tblen=7>.value
+
+python/pysail/tests/spark/pipelines/test_registration_errors.py:89: AssertionError
+____ test_duplicate_outputs_have_structured_types[temporary-temporary-True] ____
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x1161888f0>
+pipeline = ('50644fdc-462f-416e-9d3c-07d8b0641fb6', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x11618a870>, <function pipeline_factory.<locals>.create.<locals>.run at 0x11619cd60>)
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-106/test_duplicate_outputs_have_st11')
+definitions = ['CREATE TEMPORARY VIEW duplicate AS SELECT 1 AS value', 'CREATE TEMPORARY VIEW duplicate AS SELECT 1 AS value']
+private = True, types = ['VIEW', 'VIEW'], dry = True
+
+    @pytest.mark.parametrize("dry", [False, True])
+    @pytest.mark.parametrize(
+        ("definitions", "private", "types"),
+        [
+            pytest.param(
+                ["CREATE STREAMING TABLE duplicate", "CREATE VIEW duplicate AS SELECT 1 AS value"],
+                False,
+                ["TABLE", "VIEW"],
+                id="table-view",
+            ),
+            pytest.param(
+                ["CREATE VIEW duplicate AS SELECT 1 AS value", "CREATE STREAMING TABLE duplicate"],
+                False,
+                ["TABLE", "VIEW"],
+                id="view-table",
+            ),
+            pytest.param(
+                ["CREATE MATERIALIZED VIEW duplicate AS SELECT 1 AS value"] * 2,
+                False,
+                ["TABLE", "TABLE"],
+                id="materialized-materialized",
+            ),
+            pytest.param(
+                ["CREATE STREAMING TABLE duplicate", "CREATE MATERIALIZED VIEW duplicate AS SELECT 1 AS value"],
+                False,
+                ["TABLE", "TABLE"],
+                id="streaming-materialized",
+            ),
+            pytest.param(
+                ["CREATE VIEW duplicate AS SELECT 1 AS value"] * 2,
+                False,
+                ["VIEW", "VIEW"],
+                id="persisted-persisted",
+            ),
+            pytest.param(
+                ["CREATE TEMPORARY VIEW duplicate AS SELECT 1 AS value"] * 2,
+                True,
+                ["VIEW", "VIEW"],
+                id="temporary-temporary",
+            ),
+            pytest.param(
+                ["CREATE VIEW duplicate AS SELECT 1 AS value"] * 2 + ["CREATE STREAMING TABLE duplicate"],
+                False,
+                ["TABLE", "VIEW"],
+                id="views-before-table",
+            ),
+        ],
+    )
+    def test_duplicate_outputs_have_structured_types(pipeline_spark, pipeline, tmp_path, definitions, private, types, dry):
+        _, registry, run = pipeline
+        registry.register_sql("CREATE MATERIALIZED VIEW valid_output AS SELECT 1 AS value", tmp_path / "valid.sql")
+        for index, definition in enumerate(definitions):
+            registry.register_sql(definition, tmp_path / f"duplicate_{index}.sql")
+        with pytest.raises(AnalysisException) as error:
+            run(dry=dry)
+        identifier = "`duplicate`"
+        if not private:
+            identifier = (
+                f"`{pipeline_spark.catalog.currentCatalog()}`.`{pipeline_spark.catalog.currentDatabase()}`.{identifier}"
+            )
+>       assert error.value.getCondition() == "PIPELINE_DUPLICATE_IDENTIFIERS.OUTPUT"
+E       AssertionError: assert None == 'PIPELINE_DUPLICATE_IDENTIFIERS.OUTPUT'
+E        +  where None = getCondition()
+E        +    where getCondition = AnalysisException('[PIPELINE_DUPLICATE_IDENTIFIERS.OUTPUT] `duplicate`').getCondition
+E        +      where AnalysisException('[PIPELINE_DUPLICATE_IDENTIFIERS.OUTPUT] `duplicate`') = <ExceptionInfo AnalysisException('[PIPELINE_DUPLICATE_IDENTIFIERS.OUTPUT] `duplicate`') tblen=7>.value
+
+python/pysail/tests/spark/pipelines/test_registration_errors.py:89: AssertionError
+____ test_duplicate_outputs_have_structured_types[views-before-table-False] ____
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x116188b60>
+pipeline = ('61a935e4-71d6-48aa-9a44-07a606644981', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x1161a4d40>, <function pipeline_factory.<locals>.create.<locals>.run at 0x11619f1a0>)
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-106/test_duplicate_outputs_have_st12')
+definitions = ['CREATE VIEW duplicate AS SELECT 1 AS value', 'CREATE VIEW duplicate AS SELECT 1 AS value', 'CREATE STREAMING TABLE duplicate']
+private = False, types = ['TABLE', 'VIEW'], dry = False
+
+    @pytest.mark.parametrize("dry", [False, True])
+    @pytest.mark.parametrize(
+        ("definitions", "private", "types"),
+        [
+            pytest.param(
+                ["CREATE STREAMING TABLE duplicate", "CREATE VIEW duplicate AS SELECT 1 AS value"],
+                False,
+                ["TABLE", "VIEW"],
+                id="table-view",
+            ),
+            pytest.param(
+                ["CREATE VIEW duplicate AS SELECT 1 AS value", "CREATE STREAMING TABLE duplicate"],
+                False,
+                ["TABLE", "VIEW"],
+                id="view-table",
+            ),
+            pytest.param(
+                ["CREATE MATERIALIZED VIEW duplicate AS SELECT 1 AS value"] * 2,
+                False,
+                ["TABLE", "TABLE"],
+                id="materialized-materialized",
+            ),
+            pytest.param(
+                ["CREATE STREAMING TABLE duplicate", "CREATE MATERIALIZED VIEW duplicate AS SELECT 1 AS value"],
+                False,
+                ["TABLE", "TABLE"],
+                id="streaming-materialized",
+            ),
+            pytest.param(
+                ["CREATE VIEW duplicate AS SELECT 1 AS value"] * 2,
+                False,
+                ["VIEW", "VIEW"],
+                id="persisted-persisted",
+            ),
+            pytest.param(
+                ["CREATE TEMPORARY VIEW duplicate AS SELECT 1 AS value"] * 2,
+                True,
+                ["VIEW", "VIEW"],
+                id="temporary-temporary",
+            ),
+            pytest.param(
+                ["CREATE VIEW duplicate AS SELECT 1 AS value"] * 2 + ["CREATE STREAMING TABLE duplicate"],
+                False,
+                ["TABLE", "VIEW"],
+                id="views-before-table",
+            ),
+        ],
+    )
+    def test_duplicate_outputs_have_structured_types(pipeline_spark, pipeline, tmp_path, definitions, private, types, dry):
+        _, registry, run = pipeline
+        registry.register_sql("CREATE MATERIALIZED VIEW valid_output AS SELECT 1 AS value", tmp_path / "valid.sql")
+        for index, definition in enumerate(definitions):
+            registry.register_sql(definition, tmp_path / f"duplicate_{index}.sql")
+        with pytest.raises(AnalysisException) as error:
+            run(dry=dry)
+        identifier = "`duplicate`"
+        if not private:
+            identifier = (
+                f"`{pipeline_spark.catalog.currentCatalog()}`.`{pipeline_spark.catalog.currentDatabase()}`.{identifier}"
+            )
+>       assert error.value.getCondition() == "PIPELINE_DUPLICATE_IDENTIFIERS.OUTPUT"
+E       AssertionError: assert None == 'PIPELINE_DUPLICATE_IDENTIFIERS.OUTPUT'
+E        +  where None = getCondition()
+E        +    where getCondition = AnalysisException('[PIPELINE_DUPLICATE_IDENTIFIERS.OUTPUT] `sail`.`default`.`duplicate`').getCondition
+E        +      where AnalysisException('[PIPELINE_DUPLICATE_IDENTIFIERS.OUTPUT] `sail`.`default`.`duplicate`') = <ExceptionInfo AnalysisException('[PIPELINE_DUPLICATE_IDENTIFIERS.OUTPUT] `sail`.`default`.`duplicate`') tblen=7>.value
+
+python/pysail/tests/spark/pipelines/test_registration_errors.py:89: AssertionError
+____ test_duplicate_outputs_have_structured_types[views-before-table-True] _____
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x1161a47d0>
+pipeline = ('adbcc51e-a1c5-4da8-9d4b-9c3ae80a71b3', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x1161a78c0>, <function pipeline_factory.<locals>.create.<locals>.run at 0x1161a9080>)
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-106/test_duplicate_outputs_have_st13')
+definitions = ['CREATE VIEW duplicate AS SELECT 1 AS value', 'CREATE VIEW duplicate AS SELECT 1 AS value', 'CREATE STREAMING TABLE duplicate']
+private = False, types = ['TABLE', 'VIEW'], dry = True
+
+    @pytest.mark.parametrize("dry", [False, True])
+    @pytest.mark.parametrize(
+        ("definitions", "private", "types"),
+        [
+            pytest.param(
+                ["CREATE STREAMING TABLE duplicate", "CREATE VIEW duplicate AS SELECT 1 AS value"],
+                False,
+                ["TABLE", "VIEW"],
+                id="table-view",
+            ),
+            pytest.param(
+                ["CREATE VIEW duplicate AS SELECT 1 AS value", "CREATE STREAMING TABLE duplicate"],
+                False,
+                ["TABLE", "VIEW"],
+                id="view-table",
+            ),
+            pytest.param(
+                ["CREATE MATERIALIZED VIEW duplicate AS SELECT 1 AS value"] * 2,
+                False,
+                ["TABLE", "TABLE"],
+                id="materialized-materialized",
+            ),
+            pytest.param(
+                ["CREATE STREAMING TABLE duplicate", "CREATE MATERIALIZED VIEW duplicate AS SELECT 1 AS value"],
+                False,
+                ["TABLE", "TABLE"],
+                id="streaming-materialized",
+            ),
+            pytest.param(
+                ["CREATE VIEW duplicate AS SELECT 1 AS value"] * 2,
+                False,
+                ["VIEW", "VIEW"],
+                id="persisted-persisted",
+            ),
+            pytest.param(
+                ["CREATE TEMPORARY VIEW duplicate AS SELECT 1 AS value"] * 2,
+                True,
+                ["VIEW", "VIEW"],
+                id="temporary-temporary",
+            ),
+            pytest.param(
+                ["CREATE VIEW duplicate AS SELECT 1 AS value"] * 2 + ["CREATE STREAMING TABLE duplicate"],
+                False,
+                ["TABLE", "VIEW"],
+                id="views-before-table",
+            ),
+        ],
+    )
+    def test_duplicate_outputs_have_structured_types(pipeline_spark, pipeline, tmp_path, definitions, private, types, dry):
+        _, registry, run = pipeline
+        registry.register_sql("CREATE MATERIALIZED VIEW valid_output AS SELECT 1 AS value", tmp_path / "valid.sql")
+        for index, definition in enumerate(definitions):
+            registry.register_sql(definition, tmp_path / f"duplicate_{index}.sql")
+        with pytest.raises(AnalysisException) as error:
+            run(dry=dry)
+        identifier = "`duplicate`"
+        if not private:
+            identifier = (
+                f"`{pipeline_spark.catalog.currentCatalog()}`.`{pipeline_spark.catalog.currentDatabase()}`.{identifier}"
+            )
+>       assert error.value.getCondition() == "PIPELINE_DUPLICATE_IDENTIFIERS.OUTPUT"
+E       AssertionError: assert None == 'PIPELINE_DUPLICATE_IDENTIFIERS.OUTPUT'
+E        +  where None = getCondition()
+E        +    where getCondition = AnalysisException('[PIPELINE_DUPLICATE_IDENTIFIERS.OUTPUT] `sail`.`default`.`duplicate`').getCondition
+E        +      where AnalysisException('[PIPELINE_DUPLICATE_IDENTIFIERS.OUTPUT] `sail`.`default`.`duplicate`') = <ExceptionInfo AnalysisException('[PIPELINE_DUPLICATE_IDENTIFIERS.OUTPUT] `sail`.`default`.`duplicate`') tblen=7>.value
+
+python/pysail/tests/spark/pipelines/test_registration_errors.py:89: AssertionError
+=========================== short test summary info ============================
+FAILED python/pysail/tests/spark/pipelines/test_registration_errors.py::test_duplicate_outputs_have_structured_types[table-view-False]
+FAILED python/pysail/tests/spark/pipelines/test_registration_errors.py::test_duplicate_outputs_have_structured_types[table-view-True]
+FAILED python/pysail/tests/spark/pipelines/test_registration_errors.py::test_duplicate_outputs_have_structured_types[view-table-False]
+FAILED python/pysail/tests/spark/pipelines/test_registration_errors.py::test_duplicate_outputs_have_structured_types[view-table-True]
+FAILED python/pysail/tests/spark/pipelines/test_registration_errors.py::test_duplicate_outputs_have_structured_types[materialized-materialized-False]
+FAILED python/pysail/tests/spark/pipelines/test_registration_errors.py::test_duplicate_outputs_have_structured_types[materialized-materialized-True]
+FAILED python/pysail/tests/spark/pipelines/test_registration_errors.py::test_duplicate_outputs_have_structured_types[streaming-materialized-False]
+FAILED python/pysail/tests/spark/pipelines/test_registration_errors.py::test_duplicate_outputs_have_structured_types[streaming-materialized-True]
+FAILED python/pysail/tests/spark/pipelines/test_registration_errors.py::test_duplicate_outputs_have_structured_types[persisted-persisted-False]
+FAILED python/pysail/tests/spark/pipelines/test_registration_errors.py::test_duplicate_outputs_have_structured_types[persisted-persisted-True]
+FAILED python/pysail/tests/spark/pipelines/test_registration_errors.py::test_duplicate_outputs_have_structured_types[temporary-temporary-False]
+FAILED python/pysail/tests/spark/pipelines/test_registration_errors.py::test_duplicate_outputs_have_structured_types[temporary-temporary-True]
+FAILED python/pysail/tests/spark/pipelines/test_registration_errors.py::test_duplicate_outputs_have_structured_types[views-before-table-False]
+FAILED python/pysail/tests/spark/pipelines/test_registration_errors.py::test_duplicate_outputs_have_structured_types[views-before-table-True]
+14 failed in 0.59s

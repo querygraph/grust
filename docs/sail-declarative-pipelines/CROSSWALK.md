@@ -8,7 +8,7 @@ do not qualify this whole inventory.
 The first assertion-level audit covers all 11 `ViewSuite.scala` registrations at
 Spark `617618396087429b5627a86ce933bb0f5d6645cb`. Seven have partial behavioral
 ports in Sail; four remain unmapped. None is marked fully qualified. A further 27 materialization registrations have now been reviewed; the remaining
-400 call sites still need an assertion-level audit after the additional server-suite review below. These are inventory counts,
+399 call sites still need an assertion-level audit after the additional server-suite review below. These are inventory counts,
 not a completion percentage.
 
 Each audited record in [the inventory](spark-4.2.1-inventory.json) now identifies
@@ -64,7 +64,7 @@ checkpoint remains ready for Astra.
 All 19 SparkDeclarativePipelinesServerSuite registrations are reviewed. Fourteen
 have partial behavioral ports; five remain unmapped. Including the two failure-handler
 registrations reviewed below, there were 59 reviewed registrations across four
-suites. The three SQL registrations below bring the total to 62, with 400 still
+suites. The four SQL registrations below bring the total to 63, with 399 still
 awaiting review. There
 is no full Scala-suite verdict. The [validation record](evidence/server-crosswalk/validation.json)
 binds the pinned source hash and passing Sail test nodes to the updated inventory.
@@ -96,4 +96,15 @@ has a partial Connect port that checks the exact structured error in both dry
 and real runs. The [validation record](evidence/sql-empty-crosswalk/validation.json)
 binds the source hash and all six passing nodes. Three API/correction controls
 also match Spark 4.2.1. The internal Scala entry point remains unexecuted; the
-other 35 SQL registrations still need assertion-level review.
+other 35 SQL registrations still needed assertion-level review at that point.
+The additional duplicate-output review below reduces that remainder to 34.
+
+## SQL duplicate-output assertions
+
+SqlPipelineSuite:90 now has a partial port of the cross-file table/view collision,
+including the condition, SQL state and all three parameters in dry/real starts.
+The [validation record](evidence/sql-duplicate-crosswalk/validation.json) binds the
+pinned source and both mapped nodes. The extended 14-instance matrix also covers
+reversed order, materialized/streaming table classification, persisted and
+temporary views, and three duplicate definitions. Sink collisions remain
+unqualified. Four of this suite's 38 registrations have now been reviewed.
