@@ -1,0 +1,53 @@
+{
+  "spark_version": "4.2.1",
+  "cases": [
+    {
+      "name": "unknown_format",
+      "dry": true,
+      "outcome": "success",
+      "published": false
+    },
+    {
+      "name": "missing_nullable",
+      "dry": true,
+      "outcome": "success",
+      "published": false
+    },
+    {
+      "name": "missing_nullable",
+      "dry": false,
+      "outcome": "error",
+      "condition": "SPARK_CONNECT_ILLEGAL_STATE.EXECUTION_STATE_EXECUTE_HOLDER_ALREADY_EXISTS_GRAPH",
+      "message": "(org.apache.spark.SparkIllegalStateException) [SPARK_CONNECT_ILLEGAL_STATE.EXECUTION_STATE_EXECUTE_HOLDER_ALREADY_EXISTS_GRAPH] Spark Connect encountered an illegal state condition. Pipeline execution for graph ID ec40f710-1e9c-40d3-8cd0-de8cf408431d already exists. Stop the existing execution before starting a new one. SQLSTATE: XXSC0\n\nJVM stacktrace:\norg.apache.spark.SparkIllegalStateException\n\tat org.apache.spark.sql.connect.IllegalStateErrors$.executeHolderAlreadyExistsGraphId(IllegalStateErrors.scala:69)\n\tat org.apache.spark.sql.connect.service.SessionHolder.$anonfun$cachePipelineExecution$1(SessionHolder.scala:545)\n\tat java.util.concurrent.ConcurrentHashMap.compute(ConcurrentHashMap.java:1940)\n\tat org.apache.spark.sql.connect.service.SessionHolder.cachePipelineExecution(SessionHolder.scala:543)\n\tat org.apache.spark.sql.connect.pipelines.PipelinesHandler$.$anonfun$startRun$1(PipelinesHandler.scala:558)\n\tat org.apache.spark.sql.connect.pipelines.PipelinesHandler$.$anonfun$startRun$1$adapted(PipelinesHandler.scala:525)\n\tat scala.util.Using$.resource(Using.scala:296)\n\tat org.apache.spark.sql.connect.pipelines.PipelinesHandler$.startRun(PipelinesHandler.scala:525)\n\tat org.apache.spark.sql.connect.pipelines.PipelinesHandler$.handlePipelinesCommand(PipelinesHandler.scala:132)\n\tat org.apache.spark.sql.connect.planner.SparkConnectPlanner.handlePipelineCommand(SparkConnectPlanner.scala:2961)\n\tat org.apache.spark.sql.connect.planner.SparkConnectPlanner.process(SparkConnectPlanner.scala:2930)\n\tat org.apache.spark.sql.connect.execution.SparkConnectPlanExecution.handlePlan(SparkConnectPlanExecution.scala:102)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.$anonfun$executeInternal$1(ExecuteThreadRunner.scala:231)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.$anonfun$executeInternal$1$adapted(ExecuteThreadRunner.scala:203)\n\tat org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$2(SessionHolder.scala:441)\n\tat org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:810)\n\tat org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$1(SessionHolder.scala:441)\n\tat org.apache.spark.JobArtifactSet$.withActiveJobArtifactState(JobArtifactSet.scala:94)\n\tat org.apache.spark.sql.artifact.ArtifactManager.$anonfun$withResources$1(ArtifactManager.scala:112)\n\tat org.apache.spark.util.Utils$.withContextClassLoader(Utils.scala:185)\n\tat org.apache.spark.sql.artifact.ArtifactManager.withClassLoaderIfNeeded(ArtifactManager.scala:102)\n\tat org.apache.spark.sql.artifact.ArtifactManager.withResources(ArtifactManager.scala:111)\n\tat org.apache.spark.sql.connect.service.SessionHolder.withSession(SessionHolder.scala:440)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.executeInternal(ExecuteThreadRunner.scala:203)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.org$apache$spark$sql$connect$execution$ExecuteThreadRunner$$execute(ExecuteThreadRunner.scala:127)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner$ExecutionThread.run(ExecuteThreadRunner.scala:338)",
+      "published": false
+    },
+    {
+      "name": "wider_decimal",
+      "dry": true,
+      "outcome": "success",
+      "published": false
+    },
+    {
+      "name": "wider_decimal",
+      "dry": false,
+      "outcome": "error",
+      "condition": "SPARK_CONNECT_ILLEGAL_STATE.EXECUTION_STATE_EXECUTE_HOLDER_ALREADY_EXISTS_GRAPH",
+      "message": "(org.apache.spark.SparkIllegalStateException) [SPARK_CONNECT_ILLEGAL_STATE.EXECUTION_STATE_EXECUTE_HOLDER_ALREADY_EXISTS_GRAPH] Spark Connect encountered an illegal state condition. Pipeline execution for graph ID a89d133a-6651-45d9-bc22-d183825b47d5 already exists. Stop the existing execution before starting a new one. SQLSTATE: XXSC0\n\nJVM stacktrace:\norg.apache.spark.SparkIllegalStateException\n\tat org.apache.spark.sql.connect.IllegalStateErrors$.executeHolderAlreadyExistsGraphId(IllegalStateErrors.scala:69)\n\tat org.apache.spark.sql.connect.service.SessionHolder.$anonfun$cachePipelineExecution$1(SessionHolder.scala:545)\n\tat java.util.concurrent.ConcurrentHashMap.compute(ConcurrentHashMap.java:1940)\n\tat org.apache.spark.sql.connect.service.SessionHolder.cachePipelineExecution(SessionHolder.scala:543)\n\tat org.apache.spark.sql.connect.pipelines.PipelinesHandler$.$anonfun$startRun$1(PipelinesHandler.scala:558)\n\tat org.apache.spark.sql.connect.pipelines.PipelinesHandler$.$anonfun$startRun$1$adapted(PipelinesHandler.scala:525)\n\tat scala.util.Using$.resource(Using.scala:296)\n\tat org.apache.spark.sql.connect.pipelines.PipelinesHandler$.startRun(PipelinesHandler.scala:525)\n\tat org.apache.spark.sql.connect.pipelines.PipelinesHandler$.handlePipelinesCommand(PipelinesHandler.scala:132)\n\tat org.apache.spark.sql.connect.planner.SparkConnectPlanner.handlePipelineCommand(SparkConnectPlanner.scala:2961)\n\tat org.apache.spark.sql.connect.planner.SparkConnectPlanner.process(SparkConnectPlanner.scala:2930)\n\tat org.apache.spark.sql.connect.execution.SparkConnectPlanExecution.handlePlan(SparkConnectPlanExecution.scala:102)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.$anonfun$executeInternal$1(ExecuteThreadRunner.scala:231)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.$anonfun$executeInternal$1$adapted(ExecuteThreadRunner.scala:203)\n\tat org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$2(SessionHolder.scala:441)\n\tat org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:810)\n\tat org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$1(SessionHolder.scala:441)\n\tat org.apache.spark.JobArtifactSet$.withActiveJobArtifactState(JobArtifactSet.scala:94)\n\tat org.apache.spark.sql.artifact.ArtifactManager.$anonfun$withResources$1(ArtifactManager.scala:112)\n\tat org.apache.spark.util.Utils$.withContextClassLoader(Utils.scala:185)\n\tat org.apache.spark.sql.artifact.ArtifactManager.withClassLoaderIfNeeded(ArtifactManager.scala:102)\n\tat org.apache.spark.sql.artifact.ArtifactManager.withResources(ArtifactManager.scala:111)\n\tat org.apache.spark.sql.connect.service.SessionHolder.withSession(SessionHolder.scala:440)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.executeInternal(ExecuteThreadRunner.scala:203)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.org$apache$spark$sql$connect$execution$ExecuteThreadRunner$$execute(ExecuteThreadRunner.scala:127)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner$ExecutionThread.run(ExecuteThreadRunner.scala:338)",
+      "published": false
+    },
+    {
+      "name": "missing_nested_nullable",
+      "dry": true,
+      "outcome": "success",
+      "published": false
+    },
+    {
+      "name": "missing_nested_nullable",
+      "dry": false,
+      "outcome": "error",
+      "condition": "SPARK_CONNECT_ILLEGAL_STATE.EXECUTION_STATE_EXECUTE_HOLDER_ALREADY_EXISTS_GRAPH",
+      "message": "(org.apache.spark.SparkIllegalStateException) [SPARK_CONNECT_ILLEGAL_STATE.EXECUTION_STATE_EXECUTE_HOLDER_ALREADY_EXISTS_GRAPH] Spark Connect encountered an illegal state condition. Pipeline execution for graph ID 30e5d777-a0b3-4062-920c-b0a4d2a1f20a already exists. Stop the existing execution before starting a new one. SQLSTATE: XXSC0\n\nJVM stacktrace:\norg.apache.spark.SparkIllegalStateException\n\tat org.apache.spark.sql.connect.IllegalStateErrors$.executeHolderAlreadyExistsGraphId(IllegalStateErrors.scala:69)\n\tat org.apache.spark.sql.connect.service.SessionHolder.$anonfun$cachePipelineExecution$1(SessionHolder.scala:545)\n\tat java.util.concurrent.ConcurrentHashMap.compute(ConcurrentHashMap.java:1940)\n\tat org.apache.spark.sql.connect.service.SessionHolder.cachePipelineExecution(SessionHolder.scala:543)\n\tat org.apache.spark.sql.connect.pipelines.PipelinesHandler$.$anonfun$startRun$1(PipelinesHandler.scala:558)\n\tat org.apache.spark.sql.connect.pipelines.PipelinesHandler$.$anonfun$startRun$1$adapted(PipelinesHandler.scala:525)\n\tat scala.util.Using$.resource(Using.scala:296)\n\tat org.apache.spark.sql.connect.pipelines.PipelinesHandler$.startRun(PipelinesHandler.scala:525)\n\tat org.apache.spark.sql.connect.pipelines.PipelinesHandler$.handlePipelinesCommand(PipelinesHandler.scala:132)\n\tat org.apache.spark.sql.connect.planner.SparkConnectPlanner.handlePipelineCommand(SparkConnectPlanner.scala:2961)\n\tat org.apache.spark.sql.connect.planner.SparkConnectPlanner.process(SparkConnectPlanner.scala:2930)\n\tat org.apache.spark.sql.connect.execution.SparkConnectPlanExecution.handlePlan(SparkConnectPlanExecution.scala:102)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.$anonfun$executeInternal$1(ExecuteThreadRunner.scala:231)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.$anonfun$executeInternal$1$adapted(ExecuteThreadRunner.scala:203)\n\tat org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$2(SessionHolder.scala:441)\n\tat org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:810)\n\tat org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$1(SessionHolder.scala:441)\n\tat org.apache.spark.JobArtifactSet$.withActiveJobArtifactState(JobArtifactSet.scala:94)\n\tat org.apache.spark.sql.artifact.ArtifactManager.$anonfun$withResources$1(ArtifactManager.scala:112)\n\tat org.apache.spark.util.Utils$.withContextClassLoader(Utils.scala:185)\n\tat org.apache.spark.sql.artifact.ArtifactManager.withClassLoaderIfNeeded(ArtifactManager.scala:102)\n\tat org.apache.spark.sql.artifact.ArtifactManager.withResources(ArtifactManager.scala:111)\n\tat org.apache.spark.sql.connect.service.SessionHolder.withSession(SessionHolder.scala:440)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.executeInternal(ExecuteThreadRunner.scala:203)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.org$apache$spark$sql$connect$execution$ExecuteThreadRunner$$execute(ExecuteThreadRunner.scala:127)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner$ExecutionThread.run(ExecuteThreadRunner.scala:338)",
+      "published": false
+    }
+  ]
+}

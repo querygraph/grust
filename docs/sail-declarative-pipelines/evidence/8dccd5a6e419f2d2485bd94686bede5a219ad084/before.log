@@ -1,0 +1,704 @@
+......FFFFFF..FF                                                         [100%]
+=================================== FAILURES ===================================
+______________ test_declared_metadata_takes_precedence[metadata0] ______________
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x115fcef60>
+pipeline = ('9fb8f747-a9e9-44eb-95fd-85e7c5bb2f57', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x115ff8290>, <function pipeline.<locals>.run at 0x115ff4cc0>)
+metadata = {}
+
+    @pytest.mark.parametrize("metadata", [{}, {"comment": "declared", "tag": "declaration"}])
+    def test_declared_metadata_takes_precedence(pipeline_spark, pipeline, metadata):
+        _, registry, run = pipeline
+        with graph_element_registration_context(registry):
+    
+            @dp.materialized_view(schema=StructType([StructField("id", LongType(), metadata=metadata)]))
+            def output():
+                return pipeline_spark.range(2).select(F.col("id").alias("id", metadata={"comment": "inferred"}))
+    
+>       run(dry=True)
+
+python/pysail/tests/spark/pipelines/test_schema.py:88: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+python/pysail/tests/spark/pipelines/conftest.py:29: in run
+    client.handle_pipeline_events(
+.venv/lib/python3.12/site-packages/pyspark/pipelines/spark_connect_pipeline.py:53: in handle_pipeline_events
+    for result in iter:
+                  ^^^^
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1245: in execute_command_as_iterator
+    for response in self._execute_and_fetch_as_iterator(req, observations or {}):
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1731: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2093: in _handle_error
+    self._handle_rpc_error(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <pyspark.sql.connect.client.core.SparkConnectClient object at 0x115fcfd70>
+rpc_error = <_MultiThreadedRendezvous of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = "[USER_SPECIFIED_AND_I... name: "id", data_type: Int64, metadata: {"SPARK::metadata::json": "{\"comment\": \"inferred\"}"} }], metadata: {} }"
+>
+
+    def _handle_rpc_error(self, rpc_error: grpc.RpcError) -> NoReturn:
+        """
+        Error handling helper for dealing with GRPC Errors. On the server side, certain
+        exceptions are enriched with additional RPC Status information. These are
+        unpacked in this function and put into the exception.
+    
+        To avoid overloading the user with GRPC errors, this message explicitly
+        swallows the error context from the call. This GRPC Error is logged however,
+        and can be enabled.
+    
+        Parameters
+        ----------
+        rpc_error : grpc.RpcError
+           RPC Error containing the details of the exception.
+    
+        Returns
+        -------
+        Throws the appropriate internal Python exception.
+        """
+        logger.exception("GRPC Error received")
+        # We have to cast the value here because, a RpcError is a Call as well.
+        # https://grpc.github.io/grpc/python/grpc.html#grpc.UnaryUnaryMultiCallable.__call__
+        error: grpc.Call = cast(grpc.Call, rpc_error)
+        status_code: grpc.StatusCode = error.code()
+        status: Optional[Status] = rpc_status.from_call(error)
+        if status:
+            for d in status.details:
+                if d.Is(error_details_pb2.ErrorInfo.DESCRIPTOR):
+                    info = error_details_pb2.ErrorInfo()
+                    d.Unpack(info)
+                    logger.debug(f"Received ErrorInfo: {info}")
+    
+                    if info.metadata.get("errorClass") == "INVALID_HANDLE.SESSION_CHANGED":
+                        self._closed = True
+    
+                    if info.metadata.get("errorClass") == "CONNECT_INVALID_PLAN.CANNOT_PARSE":
+                        # Disable plan compression if the server fails to interpret the plan.
+                        logger.info(
+                            "Disabling plan compression for the session due to "
+                            "CONNECT_INVALID_PLAN.CANNOT_PARSE error."
+                        )
+                        self._plan_compression_threshold, self._plan_compression_algorithm = (
+                            -1,
+                            "NONE",
+                        )
+    
+>                   raise convert_exception(
+                        info,
+                        status.message,
+                        self._fetch_enriched_error(info),
+                        self._display_server_stack_trace(),
+                        status_code,
+                    ) from None
+E                   pyspark.errors.exceptions.connect.AnalysisException: [USER_SPECIFIED_AND_INFERRED_SCHEMA_NOT_COMPATIBLE] 'sail.default.output' has a user-specified schema that is incompatible: specified Schema { fields: [Field { name: "id", data_type: Int64, nullable: true }], metadata: {} }, inferred Schema { fields: [Field { name: "id", data_type: Int64, metadata: {"SPARK::metadata::json": "{\"comment\": \"inferred\"}"} }], metadata: {} }
+
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2177: AnalysisException
+----------------------------- Captured stdout call -----------------------------
+2026-10-29 07:23:16: Starting pipeline analysis
+______________ test_declared_metadata_takes_precedence[metadata1] ______________
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x115ff8980>
+pipeline = ('4980fb59-f41d-4ed0-b89c-428984adf1f8', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x115ffb770>, <function pipeline.<locals>.run at 0x11604c0e0>)
+metadata = {'comment': 'declared', 'tag': 'declaration'}
+
+    @pytest.mark.parametrize("metadata", [{}, {"comment": "declared", "tag": "declaration"}])
+    def test_declared_metadata_takes_precedence(pipeline_spark, pipeline, metadata):
+        _, registry, run = pipeline
+        with graph_element_registration_context(registry):
+    
+            @dp.materialized_view(schema=StructType([StructField("id", LongType(), metadata=metadata)]))
+            def output():
+                return pipeline_spark.range(2).select(F.col("id").alias("id", metadata={"comment": "inferred"}))
+    
+>       run(dry=True)
+
+python/pysail/tests/spark/pipelines/test_schema.py:88: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+python/pysail/tests/spark/pipelines/conftest.py:29: in run
+    client.handle_pipeline_events(
+.venv/lib/python3.12/site-packages/pyspark/pipelines/spark_connect_pipeline.py:53: in handle_pipeline_events
+    for result in iter:
+                  ^^^^
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1245: in execute_command_as_iterator
+    for response in self._execute_and_fetch_as_iterator(req, observations or {}):
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1731: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2093: in _handle_error
+    self._handle_rpc_error(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <pyspark.sql.connect.client.core.SparkConnectClient object at 0x115ffb110>
+rpc_error = <_MultiThreadedRendezvous of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = "[USER_SPECIFIED_AND_I...                   From value = {"comment": "inferred"} does not match {"comment": "declared", "tag": "declaration"}"
+>
+
+    def _handle_rpc_error(self, rpc_error: grpc.RpcError) -> NoReturn:
+        """
+        Error handling helper for dealing with GRPC Errors. On the server side, certain
+        exceptions are enriched with additional RPC Status information. These are
+        unpacked in this function and put into the exception.
+    
+        To avoid overloading the user with GRPC errors, this message explicitly
+        swallows the error context from the call. This GRPC Error is logged however,
+        and can be enabled.
+    
+        Parameters
+        ----------
+        rpc_error : grpc.RpcError
+           RPC Error containing the details of the exception.
+    
+        Returns
+        -------
+        Throws the appropriate internal Python exception.
+        """
+        logger.exception("GRPC Error received")
+        # We have to cast the value here because, a RpcError is a Call as well.
+        # https://grpc.github.io/grpc/python/grpc.html#grpc.UnaryUnaryMultiCallable.__call__
+        error: grpc.Call = cast(grpc.Call, rpc_error)
+        status_code: grpc.StatusCode = error.code()
+        status: Optional[Status] = rpc_status.from_call(error)
+        if status:
+            for d in status.details:
+                if d.Is(error_details_pb2.ErrorInfo.DESCRIPTOR):
+                    info = error_details_pb2.ErrorInfo()
+                    d.Unpack(info)
+                    logger.debug(f"Received ErrorInfo: {info}")
+    
+                    if info.metadata.get("errorClass") == "INVALID_HANDLE.SESSION_CHANGED":
+                        self._closed = True
+    
+                    if info.metadata.get("errorClass") == "CONNECT_INVALID_PLAN.CANNOT_PARSE":
+                        # Disable plan compression if the server fails to interpret the plan.
+                        logger.info(
+                            "Disabling plan compression for the session due to "
+                            "CONNECT_INVALID_PLAN.CANNOT_PARSE error."
+                        )
+                        self._plan_compression_threshold, self._plan_compression_algorithm = (
+                            -1,
+                            "NONE",
+                        )
+    
+>                   raise convert_exception(
+                        info,
+                        status.message,
+                        self._fetch_enriched_error(info),
+                        self._display_server_stack_trace(),
+                        status_code,
+                    ) from None
+E                   pyspark.errors.exceptions.connect.AnalysisException: [USER_SPECIFIED_AND_INFERRED_SCHEMA_NOT_COMPATIBLE] 'sail.default.output' has a user-specified schema that is incompatible: specified Schema { fields: [Field { name: "id", data_type: Int64, nullable: true, metadata: {"SPARK::metadata::json": "{\"comment\": \"declared\", \"tag\": \"declaration\"}"} }], metadata: {} }, inferred Schema { fields: [Field { name: "id", data_type: Int64, metadata: {"SPARK::metadata::json": "{\"comment\": \"inferred\"}"} }], metadata: {} }: Schema error: Fail to merge field 'id' due to conflicting metadata data value for key SPARK::metadata::json.
+E                                                       From value = {"comment": "inferred"} does not match {"comment": "declared", "tag": "declaration"}
+
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2177: AnalysisException
+----------------------------- Captured stdout call -----------------------------
+2026-10-29 07:23:16: Starting pipeline analysis
+______ test_compatible_nested_schema_merges[value DECIMAL(8, 2)-<lambda>] ______
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x116086db0>
+pipeline = ('6032dcf1-1bf5-4089-896e-cce1389074ac', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x116085d60>, <function pipeline.<locals>.run at 0x11604df80>)
+schema = 'value DECIMAL(8, 2)', expression = <function <lambda> at 0x11573ad40>
+
+    @pytest.mark.parametrize(
+        "schema, expression",
+        [
+            ("value DECIMAL(8, 2)", lambda: F.lit(1).cast("decimal(4, 2)")),
+            ("value ARRAY<DECIMAL(8, 2)>", lambda: F.array(F.lit(1).cast("decimal(4, 2)"))),
+            ("value MAP<STRING, DECIMAL(8, 2)>", lambda: F.create_map(F.lit("key"), F.lit(1).cast("decimal(4, 2)"))),
+            (
+                "value STRUCT<amount: DECIMAL(8, 2), optional: STRING>",
+                lambda: F.struct(F.lit(1).cast("decimal(4, 2)").alias("amount", metadata={"comment": "inferred"})),
+            ),
+        ],
+    )
+    def test_compatible_nested_schema_merges(pipeline_spark, pipeline, schema, expression):
+        _, registry, run = pipeline
+        with graph_element_registration_context(registry):
+    
+            @dp.materialized_view(schema=schema)
+            def output():
+                return pipeline_spark.range(1).select(expression().alias("value"))
+    
+>       run(dry=True)
+
+python/pysail/tests/spark/pipelines/test_schema.py:112: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+python/pysail/tests/spark/pipelines/conftest.py:29: in run
+    client.handle_pipeline_events(
+.venv/lib/python3.12/site-packages/pyspark/pipelines/spark_connect_pipeline.py:53: in handle_pipeline_events
+    for result in iter:
+                  ^^^^
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1245: in execute_command_as_iterator
+    for response in self._execute_and_fetch_as_iterator(req, observations or {}):
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1731: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2093: in _handle_error
+    self._handle_rpc_error(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <pyspark.sql.connect.client.core.SparkConnectClient object at 0x116085af0>
+rpc_error = <_MultiThreadedRendezvous of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = "[USER_SPECIFIED_AND_I...or: Fail to merge schema field 'value' because the from data_type = Decimal128(4, 2) does not equal Decimal128(8, 2)"
+>
+
+    def _handle_rpc_error(self, rpc_error: grpc.RpcError) -> NoReturn:
+        """
+        Error handling helper for dealing with GRPC Errors. On the server side, certain
+        exceptions are enriched with additional RPC Status information. These are
+        unpacked in this function and put into the exception.
+    
+        To avoid overloading the user with GRPC errors, this message explicitly
+        swallows the error context from the call. This GRPC Error is logged however,
+        and can be enabled.
+    
+        Parameters
+        ----------
+        rpc_error : grpc.RpcError
+           RPC Error containing the details of the exception.
+    
+        Returns
+        -------
+        Throws the appropriate internal Python exception.
+        """
+        logger.exception("GRPC Error received")
+        # We have to cast the value here because, a RpcError is a Call as well.
+        # https://grpc.github.io/grpc/python/grpc.html#grpc.UnaryUnaryMultiCallable.__call__
+        error: grpc.Call = cast(grpc.Call, rpc_error)
+        status_code: grpc.StatusCode = error.code()
+        status: Optional[Status] = rpc_status.from_call(error)
+        if status:
+            for d in status.details:
+                if d.Is(error_details_pb2.ErrorInfo.DESCRIPTOR):
+                    info = error_details_pb2.ErrorInfo()
+                    d.Unpack(info)
+                    logger.debug(f"Received ErrorInfo: {info}")
+    
+                    if info.metadata.get("errorClass") == "INVALID_HANDLE.SESSION_CHANGED":
+                        self._closed = True
+    
+                    if info.metadata.get("errorClass") == "CONNECT_INVALID_PLAN.CANNOT_PARSE":
+                        # Disable plan compression if the server fails to interpret the plan.
+                        logger.info(
+                            "Disabling plan compression for the session due to "
+                            "CONNECT_INVALID_PLAN.CANNOT_PARSE error."
+                        )
+                        self._plan_compression_threshold, self._plan_compression_algorithm = (
+                            -1,
+                            "NONE",
+                        )
+    
+>                   raise convert_exception(
+                        info,
+                        status.message,
+                        self._fetch_enriched_error(info),
+                        self._display_server_stack_trace(),
+                        status_code,
+                    ) from None
+E                   pyspark.errors.exceptions.connect.AnalysisException: [USER_SPECIFIED_AND_INFERRED_SCHEMA_NOT_COMPATIBLE] 'sail.default.output' has a user-specified schema that is incompatible: specified Schema { fields: [Field { name: "value", data_type: Decimal128(8, 2), nullable: true }], metadata: {} }, inferred Schema { fields: [Field { name: "value", data_type: Decimal128(4, 2) }], metadata: {} }: Schema error: Fail to merge schema field 'value' because the from data_type = Decimal128(4, 2) does not equal Decimal128(8, 2)
+
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2177: AnalysisException
+----------------------------- Captured stdout call -----------------------------
+2026-10-29 07:23:16: Starting pipeline analysis
+__ test_compatible_nested_schema_merges[value ARRAY<DECIMAL(8, 2)>-<lambda>] ___
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x115ff8110>
+pipeline = ('3fc3b048-27dd-4b29-ab7b-ca6955136f12', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x115fbb4d0>, <function pipeline.<locals>.run at 0x11604e2a0>)
+schema = 'value ARRAY<DECIMAL(8, 2)>'
+expression = <function <lambda> at 0x11573ade0>
+
+    @pytest.mark.parametrize(
+        "schema, expression",
+        [
+            ("value DECIMAL(8, 2)", lambda: F.lit(1).cast("decimal(4, 2)")),
+            ("value ARRAY<DECIMAL(8, 2)>", lambda: F.array(F.lit(1).cast("decimal(4, 2)"))),
+            ("value MAP<STRING, DECIMAL(8, 2)>", lambda: F.create_map(F.lit("key"), F.lit(1).cast("decimal(4, 2)"))),
+            (
+                "value STRUCT<amount: DECIMAL(8, 2), optional: STRING>",
+                lambda: F.struct(F.lit(1).cast("decimal(4, 2)").alias("amount", metadata={"comment": "inferred"})),
+            ),
+        ],
+    )
+    def test_compatible_nested_schema_merges(pipeline_spark, pipeline, schema, expression):
+        _, registry, run = pipeline
+        with graph_element_registration_context(registry):
+    
+            @dp.materialized_view(schema=schema)
+            def output():
+                return pipeline_spark.range(1).select(expression().alias("value"))
+    
+>       run(dry=True)
+
+python/pysail/tests/spark/pipelines/test_schema.py:112: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+python/pysail/tests/spark/pipelines/conftest.py:29: in run
+    client.handle_pipeline_events(
+.venv/lib/python3.12/site-packages/pyspark/pipelines/spark_connect_pipeline.py:53: in handle_pipeline_events
+    for result in iter:
+                  ^^^^
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1245: in execute_command_as_iterator
+    for response in self._execute_and_fetch_as_iterator(req, observations or {}):
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1731: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2093: in _handle_error
+    self._handle_rpc_error(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <pyspark.sql.connect.client.core.SparkConnectClient object at 0x115ffb350>
+rpc_error = <_MultiThreadedRendezvous of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = "[USER_SPECIFIED_AND_I...ror: Fail to merge schema field 'item' because the from data_type = Decimal128(4, 2) does not equal Decimal128(8, 2)"
+>
+
+    def _handle_rpc_error(self, rpc_error: grpc.RpcError) -> NoReturn:
+        """
+        Error handling helper for dealing with GRPC Errors. On the server side, certain
+        exceptions are enriched with additional RPC Status information. These are
+        unpacked in this function and put into the exception.
+    
+        To avoid overloading the user with GRPC errors, this message explicitly
+        swallows the error context from the call. This GRPC Error is logged however,
+        and can be enabled.
+    
+        Parameters
+        ----------
+        rpc_error : grpc.RpcError
+           RPC Error containing the details of the exception.
+    
+        Returns
+        -------
+        Throws the appropriate internal Python exception.
+        """
+        logger.exception("GRPC Error received")
+        # We have to cast the value here because, a RpcError is a Call as well.
+        # https://grpc.github.io/grpc/python/grpc.html#grpc.UnaryUnaryMultiCallable.__call__
+        error: grpc.Call = cast(grpc.Call, rpc_error)
+        status_code: grpc.StatusCode = error.code()
+        status: Optional[Status] = rpc_status.from_call(error)
+        if status:
+            for d in status.details:
+                if d.Is(error_details_pb2.ErrorInfo.DESCRIPTOR):
+                    info = error_details_pb2.ErrorInfo()
+                    d.Unpack(info)
+                    logger.debug(f"Received ErrorInfo: {info}")
+    
+                    if info.metadata.get("errorClass") == "INVALID_HANDLE.SESSION_CHANGED":
+                        self._closed = True
+    
+                    if info.metadata.get("errorClass") == "CONNECT_INVALID_PLAN.CANNOT_PARSE":
+                        # Disable plan compression if the server fails to interpret the plan.
+                        logger.info(
+                            "Disabling plan compression for the session due to "
+                            "CONNECT_INVALID_PLAN.CANNOT_PARSE error."
+                        )
+                        self._plan_compression_threshold, self._plan_compression_algorithm = (
+                            -1,
+                            "NONE",
+                        )
+    
+>                   raise convert_exception(
+                        info,
+                        status.message,
+                        self._fetch_enriched_error(info),
+                        self._display_server_stack_trace(),
+                        status_code,
+                    ) from None
+E                   pyspark.errors.exceptions.connect.AnalysisException: [USER_SPECIFIED_AND_INFERRED_SCHEMA_NOT_COMPATIBLE] 'sail.default.output' has a user-specified schema that is incompatible: specified Schema { fields: [Field { name: "value", data_type: List(Field { data_type: Decimal128(8, 2), nullable: true }), nullable: true }], metadata: {} }, inferred Schema { fields: [Field { name: "value", data_type: List(Field { data_type: Decimal128(4, 2) }) }], metadata: {} }: Schema error: Fail to merge schema field 'item' because the from data_type = Decimal128(4, 2) does not equal Decimal128(8, 2)
+
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2177: AnalysisException
+----------------------------- Captured stdout call -----------------------------
+2026-10-29 07:23:16: Starting pipeline analysis
+_ test_compatible_nested_schema_merges[value MAP<STRING, DECIMAL(8, 2)>-<lambda>] _
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x116085c70>
+pipeline = ('d7b0656a-c3ba-4203-b2bf-ab1a4a28df56', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x1160986e0>, <function pipeline.<locals>.run at 0x11604fa60>)
+schema = 'value MAP<STRING, DECIMAL(8, 2)>'
+expression = <function <lambda> at 0x11573ae80>
+
+    @pytest.mark.parametrize(
+        "schema, expression",
+        [
+            ("value DECIMAL(8, 2)", lambda: F.lit(1).cast("decimal(4, 2)")),
+            ("value ARRAY<DECIMAL(8, 2)>", lambda: F.array(F.lit(1).cast("decimal(4, 2)"))),
+            ("value MAP<STRING, DECIMAL(8, 2)>", lambda: F.create_map(F.lit("key"), F.lit(1).cast("decimal(4, 2)"))),
+            (
+                "value STRUCT<amount: DECIMAL(8, 2), optional: STRING>",
+                lambda: F.struct(F.lit(1).cast("decimal(4, 2)").alias("amount", metadata={"comment": "inferred"})),
+            ),
+        ],
+    )
+    def test_compatible_nested_schema_merges(pipeline_spark, pipeline, schema, expression):
+        _, registry, run = pipeline
+        with graph_element_registration_context(registry):
+    
+            @dp.materialized_view(schema=schema)
+            def output():
+                return pipeline_spark.range(1).select(expression().alias("value"))
+    
+>       run(dry=True)
+
+python/pysail/tests/spark/pipelines/test_schema.py:112: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+python/pysail/tests/spark/pipelines/conftest.py:29: in run
+    client.handle_pipeline_events(
+.venv/lib/python3.12/site-packages/pyspark/pipelines/spark_connect_pipeline.py:53: in handle_pipeline_events
+    for result in iter:
+                  ^^^^
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1245: in execute_command_as_iterator
+    for response in self._execute_and_fetch_as_iterator(req, observations or {}):
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1731: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2093: in _handle_error
+    self._handle_rpc_error(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <pyspark.sql.connect.client.core.SparkConnectClient object at 0x1160878c0>
+rpc_error = <_MultiThreadedRendezvous of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = "[USER_SPECIFIED_AND_I... unsorted) does not equal Map("entries": non-null Struct("key": non-null Utf8, "value": Decimal128(8, 2)), unsorted)"
+>
+
+    def _handle_rpc_error(self, rpc_error: grpc.RpcError) -> NoReturn:
+        """
+        Error handling helper for dealing with GRPC Errors. On the server side, certain
+        exceptions are enriched with additional RPC Status information. These are
+        unpacked in this function and put into the exception.
+    
+        To avoid overloading the user with GRPC errors, this message explicitly
+        swallows the error context from the call. This GRPC Error is logged however,
+        and can be enabled.
+    
+        Parameters
+        ----------
+        rpc_error : grpc.RpcError
+           RPC Error containing the details of the exception.
+    
+        Returns
+        -------
+        Throws the appropriate internal Python exception.
+        """
+        logger.exception("GRPC Error received")
+        # We have to cast the value here because, a RpcError is a Call as well.
+        # https://grpc.github.io/grpc/python/grpc.html#grpc.UnaryUnaryMultiCallable.__call__
+        error: grpc.Call = cast(grpc.Call, rpc_error)
+        status_code: grpc.StatusCode = error.code()
+        status: Optional[Status] = rpc_status.from_call(error)
+        if status:
+            for d in status.details:
+                if d.Is(error_details_pb2.ErrorInfo.DESCRIPTOR):
+                    info = error_details_pb2.ErrorInfo()
+                    d.Unpack(info)
+                    logger.debug(f"Received ErrorInfo: {info}")
+    
+                    if info.metadata.get("errorClass") == "INVALID_HANDLE.SESSION_CHANGED":
+                        self._closed = True
+    
+                    if info.metadata.get("errorClass") == "CONNECT_INVALID_PLAN.CANNOT_PARSE":
+                        # Disable plan compression if the server fails to interpret the plan.
+                        logger.info(
+                            "Disabling plan compression for the session due to "
+                            "CONNECT_INVALID_PLAN.CANNOT_PARSE error."
+                        )
+                        self._plan_compression_threshold, self._plan_compression_algorithm = (
+                            -1,
+                            "NONE",
+                        )
+    
+>                   raise convert_exception(
+                        info,
+                        status.message,
+                        self._fetch_enriched_error(info),
+                        self._display_server_stack_trace(),
+                        status_code,
+                    ) from None
+E                   pyspark.errors.exceptions.connect.AnalysisException: [USER_SPECIFIED_AND_INFERRED_SCHEMA_NOT_COMPATIBLE] 'sail.default.output' has a user-specified schema that is incompatible: specified Schema { fields: [Field { name: "value", data_type: Map(Field { name: "entries", data_type: Struct([Field { name: "key", data_type: Utf8 }, Field { name: "value", data_type: Decimal128(8, 2), nullable: true }]) }, false), nullable: true }], metadata: {} }, inferred Schema { fields: [Field { name: "value", data_type: Map(Field { name: "entries", data_type: Struct([Field { name: "key", data_type: Utf8 }, Field { name: "value", data_type: Decimal128(4, 2) }]) }, false) }], metadata: {} }: Schema error: Fail to merge schema field 'value' because the from data_type = Map("entries": non-null Struct("key": non-null Utf8, "value": non-null Decimal128(4, 2)), unsorted) does not equal Map("entries": non-null Struct("key": non-null Utf8, "value": Decimal128(8, 2)), unsorted)
+
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2177: AnalysisException
+----------------------------- Captured stdout call -----------------------------
+2026-10-29 07:23:16: Starting pipeline analysis
+_ test_compatible_nested_schema_merges[value STRUCT<amount: DECIMAL(8, 2), optional: STRING>-<lambda>] _
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x116098560>
+pipeline = ('fae27226-b599-4c2b-ba8b-fbd33196532d', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x11609b140>, <function pipeline.<locals>.run at 0x116075bc0>)
+schema = 'value STRUCT<amount: DECIMAL(8, 2), optional: STRING>'
+expression = <function <lambda> at 0x11573af20>
+
+    @pytest.mark.parametrize(
+        "schema, expression",
+        [
+            ("value DECIMAL(8, 2)", lambda: F.lit(1).cast("decimal(4, 2)")),
+            ("value ARRAY<DECIMAL(8, 2)>", lambda: F.array(F.lit(1).cast("decimal(4, 2)"))),
+            ("value MAP<STRING, DECIMAL(8, 2)>", lambda: F.create_map(F.lit("key"), F.lit(1).cast("decimal(4, 2)"))),
+            (
+                "value STRUCT<amount: DECIMAL(8, 2), optional: STRING>",
+                lambda: F.struct(F.lit(1).cast("decimal(4, 2)").alias("amount", metadata={"comment": "inferred"})),
+            ),
+        ],
+    )
+    def test_compatible_nested_schema_merges(pipeline_spark, pipeline, schema, expression):
+        _, registry, run = pipeline
+        with graph_element_registration_context(registry):
+    
+            @dp.materialized_view(schema=schema)
+            def output():
+                return pipeline_spark.range(1).select(expression().alias("value"))
+    
+>       run(dry=True)
+
+python/pysail/tests/spark/pipelines/test_schema.py:112: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+python/pysail/tests/spark/pipelines/conftest.py:29: in run
+    client.handle_pipeline_events(
+.venv/lib/python3.12/site-packages/pyspark/pipelines/spark_connect_pipeline.py:53: in handle_pipeline_events
+    for result in iter:
+                  ^^^^
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1245: in execute_command_as_iterator
+    for response in self._execute_and_fetch_as_iterator(req, observations or {}):
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1731: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2093: in _handle_error
+    self._handle_rpc_error(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <pyspark.sql.connect.client.core.SparkConnectClient object at 0x11609aba0>
+rpc_error = <_MultiThreadedRendezvous of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = "[USER_SPECIFIED_AND_I...r: Fail to merge schema field 'amount' because the from data_type = Decimal128(4, 2) does not equal Decimal128(8, 2)"
+>
+
+    def _handle_rpc_error(self, rpc_error: grpc.RpcError) -> NoReturn:
+        """
+        Error handling helper for dealing with GRPC Errors. On the server side, certain
+        exceptions are enriched with additional RPC Status information. These are
+        unpacked in this function and put into the exception.
+    
+        To avoid overloading the user with GRPC errors, this message explicitly
+        swallows the error context from the call. This GRPC Error is logged however,
+        and can be enabled.
+    
+        Parameters
+        ----------
+        rpc_error : grpc.RpcError
+           RPC Error containing the details of the exception.
+    
+        Returns
+        -------
+        Throws the appropriate internal Python exception.
+        """
+        logger.exception("GRPC Error received")
+        # We have to cast the value here because, a RpcError is a Call as well.
+        # https://grpc.github.io/grpc/python/grpc.html#grpc.UnaryUnaryMultiCallable.__call__
+        error: grpc.Call = cast(grpc.Call, rpc_error)
+        status_code: grpc.StatusCode = error.code()
+        status: Optional[Status] = rpc_status.from_call(error)
+        if status:
+            for d in status.details:
+                if d.Is(error_details_pb2.ErrorInfo.DESCRIPTOR):
+                    info = error_details_pb2.ErrorInfo()
+                    d.Unpack(info)
+                    logger.debug(f"Received ErrorInfo: {info}")
+    
+                    if info.metadata.get("errorClass") == "INVALID_HANDLE.SESSION_CHANGED":
+                        self._closed = True
+    
+                    if info.metadata.get("errorClass") == "CONNECT_INVALID_PLAN.CANNOT_PARSE":
+                        # Disable plan compression if the server fails to interpret the plan.
+                        logger.info(
+                            "Disabling plan compression for the session due to "
+                            "CONNECT_INVALID_PLAN.CANNOT_PARSE error."
+                        )
+                        self._plan_compression_threshold, self._plan_compression_algorithm = (
+                            -1,
+                            "NONE",
+                        )
+    
+>                   raise convert_exception(
+                        info,
+                        status.message,
+                        self._fetch_enriched_error(info),
+                        self._display_server_stack_trace(),
+                        status_code,
+                    ) from None
+E                   pyspark.errors.exceptions.connect.AnalysisException: [USER_SPECIFIED_AND_INFERRED_SCHEMA_NOT_COMPATIBLE] 'sail.default.output' has a user-specified schema that is incompatible: specified Schema { fields: [Field { name: "value", data_type: Struct([Field { name: "amount", data_type: Decimal128(8, 2), nullable: true }, Field { name: "optional", data_type: Utf8, nullable: true }]), nullable: true }], metadata: {} }, inferred Schema { fields: [Field { name: "value", data_type: Struct([Field { name: "amount", data_type: Decimal128(4, 2), metadata: {"SPARK::metadata::json": "{\"comment\": \"inferred\"}"} }]) }], metadata: {} }: Schema error: Fail to merge schema field 'amount' because the from data_type = Decimal128(4, 2) does not equal Decimal128(8, 2)
+
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2177: AnalysisException
+----------------------------- Captured stdout call -----------------------------
+2026-10-29 07:23:16: Starting pipeline analysis
+________ test_incompatible_nested_schema_merges[value STRING-<lambda>] _________
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x11605bb60>
+pipeline = ('0aabff22-e6e2-40f9-a43e-62d2e633eacd', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x1160e9310>, <function pipeline.<locals>.run at 0x116186520>)
+schema = 'value STRING', expression = <function <lambda> at 0x11573b1a0>
+
+    @pytest.mark.parametrize(
+        "schema, expression",
+        [
+            ("value DECIMAL(4, 2)", lambda: F.lit(1).cast("decimal(8, 2)")),
+            ("value DECIMAL(8, 3)", lambda: F.lit(1).cast("decimal(4, 2)")),
+            ("value STRING", lambda: F.lit(None)),
+            ("value ARRAY<STRING>", lambda: F.array(F.lit(None))),
+        ],
+    )
+    def test_incompatible_nested_schema_merges(pipeline_spark, pipeline, schema, expression):
+        _, registry, run = pipeline
+        with graph_element_registration_context(registry):
+    
+            @dp.materialized_view(schema=schema)
+            def output():
+                return pipeline_spark.range(1).select(expression().alias("value"))
+    
+>       with pytest.raises(AnalysisException, match="USER_SPECIFIED_AND_INFERRED_SCHEMA_NOT_COMPATIBLE"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE AnalysisException
+
+python/pysail/tests/spark/pipelines/test_schema.py:133: Failed
+----------------------------- Captured stdout call -----------------------------
+2026-10-29 07:23:16: Starting pipeline analysis
+2026-10-29 07:23:16: Pipeline run completed
+_____ test_incompatible_nested_schema_merges[value ARRAY<STRING>-<lambda>] _____
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x11609b350>
+pipeline = ('064c8aba-1f57-4ae3-9480-a98c6de9202e', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x115ffbd70>, <function pipeline.<locals>.run at 0x116076020>)
+schema = 'value ARRAY<STRING>', expression = <function <lambda> at 0x11573b240>
+
+    @pytest.mark.parametrize(
+        "schema, expression",
+        [
+            ("value DECIMAL(4, 2)", lambda: F.lit(1).cast("decimal(8, 2)")),
+            ("value DECIMAL(8, 3)", lambda: F.lit(1).cast("decimal(4, 2)")),
+            ("value STRING", lambda: F.lit(None)),
+            ("value ARRAY<STRING>", lambda: F.array(F.lit(None))),
+        ],
+    )
+    def test_incompatible_nested_schema_merges(pipeline_spark, pipeline, schema, expression):
+        _, registry, run = pipeline
+        with graph_element_registration_context(registry):
+    
+            @dp.materialized_view(schema=schema)
+            def output():
+                return pipeline_spark.range(1).select(expression().alias("value"))
+    
+>       with pytest.raises(AnalysisException, match="USER_SPECIFIED_AND_INFERRED_SCHEMA_NOT_COMPATIBLE"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE AnalysisException
+
+python/pysail/tests/spark/pipelines/test_schema.py:133: Failed
+----------------------------- Captured stdout call -----------------------------
+2026-10-29 07:23:16: Starting pipeline analysis
+2026-10-29 07:23:16: Pipeline run completed
+=========================== short test summary info ============================
+FAILED python/pysail/tests/spark/pipelines/test_schema.py::test_declared_metadata_takes_precedence[metadata0]
+FAILED python/pysail/tests/spark/pipelines/test_schema.py::test_declared_metadata_takes_precedence[metadata1]
+FAILED python/pysail/tests/spark/pipelines/test_schema.py::test_compatible_nested_schema_merges[value DECIMAL(8, 2)-<lambda>]
+FAILED python/pysail/tests/spark/pipelines/test_schema.py::test_compatible_nested_schema_merges[value ARRAY<DECIMAL(8, 2)>-<lambda>]
+FAILED python/pysail/tests/spark/pipelines/test_schema.py::test_compatible_nested_schema_merges[value MAP<STRING, DECIMAL(8, 2)>-<lambda>]
+FAILED python/pysail/tests/spark/pipelines/test_schema.py::test_compatible_nested_schema_merges[value STRUCT<amount: DECIMAL(8, 2), optional: STRING>-<lambda>]
+FAILED python/pysail/tests/spark/pipelines/test_schema.py::test_incompatible_nested_schema_merges[value STRING-<lambda>]
+FAILED python/pysail/tests/spark/pipelines/test_schema.py::test_incompatible_nested_schema_merges[value ARRAY<STRING>-<lambda>]
+8 failed, 8 passed in 0.88s

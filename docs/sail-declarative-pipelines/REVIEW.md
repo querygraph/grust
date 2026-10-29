@@ -112,6 +112,45 @@ process needed its Python path set explicitly. The new nullable-input case
 exposed that difference before entering pipeline validation. Historical
 receipts now disclose this limit; their recorded outcomes are retained.
 
+## Review schema merging, comments, and the dry-run boundary
+
+| Commit | Boundary and manual review |
+| --- | --- |
+| `3221b8ab68` | Resolve all output publication plans before executing the first write. Check an invalid provider on a later output. This commit also preflights dry runs; `0393db9226` corrects that boundary. |
+| `8dccd5a6e4` | Merge schemas using Spark field order, metadata precedence, nullability, recursive containers, decimal precision, and interval bounds. Normalize through Sail's existing Spark/Arrow type conversions. Check the 18 schema cases, including rejection of untyped null as a wildcard. |
+| `fd93eb6ef4` | Carry declared table comments through the shared write specification, builder, and catalog create operation. Check replacement of an existing comment and that dry runs create no output. |
+| `0393db9226` | Restrict publication preflight to real runs. A dry run with an unknown output provider succeeds without creating the table, matching Spark 4.2.1. |
+
+Each unit passed detached nightly formatting, strict Clippy, CLI compilation,
+and the unchanged upstream Python runner with its server reporting 4.2.1.
+The Sail case counts were 54, 66, 74, and 68 respectively; the 74 included
+68 pipeline cases and six shared-writer regressions. All had zero failures or
+skips. Each source has its own receipt under `evidence/<full commit>/gate.json`.
+The schema-merge receipt retains the failing baseline; it does not claim all
+Spark type representations or the full engine suite are covered.
+
+### Live Spark 4.2.1 reference
+
+The [reference scripts and results](evidence/spark-4.2.1-schema-reference/README.md)
+ran against the PySpark 4.2.1 JVM with a local Connect server and isolated
+warehouses. They establish the following behavior:
+
+- Dry run resolves and validates the graph without creating outputs or resolving
+  the output provider. The earlier preflight assertion was stricter than Spark;
+  the dry-run correction follows the reference and `PipelineExecution` source.
+- A declared wider decimal accepts a narrower decimal result during execution.
+- Missing declared columns pass dry-run schema validation when nullable, but
+  real batch writes fail for missing top-level or nested fields. Do not synthesize
+  null values to make those writes succeed.
+- Spark creates the target tables before those failed writes. Sail's current
+  publication preflight does not reproduce all these catalog side effects.
+- Spark rejects a second `StartRun` on the same graph ID, even after a dry run.
+  Sail's current repeated-run fixtures and lifecycle still need correction.
+
+Declared schema publication, lifecycle/diagnostic parity, and the remaining
+batch crosswalk stay open. The static 462-call-site inventory is still not a
+runtime acceptance count. Streaming and CDC follow batch acceptance.
+
 ## Constraints for subsequent units
 
 - Keep pipeline declarations in Sail's typed SQL AST and analyzer. Registration

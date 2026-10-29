@@ -1,0 +1,62 @@
+{
+  "sail_commit": "3221b8ab68c9d248c9c9d28a04e64235db1b85a1",
+  "spark_commit": "617618396087429b5627a86ce933bb0f5d6645cb",
+  "recorded_at": "2026-10-29T07:26:45.382201+00:00",
+  "platform": "macOS arm64",
+  "rustc": "rustc 1.98.1 (48a229cea 2026-09-01)",
+  "rustfmt_toolchain": "rustc 1.98.0-nightly (57d06900f 2026-05-27)",
+  "cli_sha256": "8a41d93aab975141d4f24c594cb8dca70d9da1fa10fea79486a7bd9b8709a3ba",
+  "gate_checkout": "detached; private target directory; immutable HEAD for the gate",
+  "server_environment": {
+    "PYTHONPATH": "<pinned PySpark 4.2.1 environment>/lib/python3.12/site-packages",
+    "VIRTUAL_ENV": "<pinned PySpark 4.2.1 environment>"
+  },
+  "checks": [
+    {
+      "command": "cargo +nightly fmt -p sail-spark-connect -- --check",
+      "outcome": "pass"
+    },
+    {
+      "command": "cargo +1.98.1 clippy -p sail-spark-connect --all-targets --all-features --locked -- -D warnings",
+      "outcome": "pass"
+    },
+    {
+      "command": "cargo +1.98.1 build -p sail-cli --locked",
+      "outcome": "pass",
+      "note": "CARGO_PROFILE_DEV_DEBUG=0; CARGO_PROFILE_DEV_INCREMENTAL=false. Linker warned about __eh_frame size."
+    },
+    {
+      "command": "PYTHONPATH=<gate>/python SPARK_REMOTE=sc://localhost:50082 python -m pytest -q python/pysail/tests/spark/pipelines --junitxml=pytest.xml",
+      "outcome": "pass",
+      "passed": 54,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "command": "ruff check python/pysail/testing/spark/steps/pipelines.py",
+      "outcome": "pass"
+    },
+    {
+      "command": "python scripts/spark-pipelines-tests/run.py --spark-source <pinned Spark checkout> --remote sc://localhost:50082 --report spark-python.json",
+      "outcome": "pass",
+      "server_spark_version": "4.2.1",
+      "tests_run": 67,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  ],
+  "earlier_attempts": [
+    {
+      "source_commit": "57734881a197e38438df026d5c35a5a3b4a9ed0d",
+      "outcome": "both new publication-validation cases failed",
+      "detail": "A dependent writer with an unknown format failed after its producer had been published; a dry run accepted the unknown format. The same assertions passed with publication preflight."
+    }
+  ],
+  "limits": [
+    "Logical publication validation only; data-dependent execution errors and later physical-writer validation can still fail during a run.",
+    "Declared schema/comment publication remains outstanding.",
+    "No distributed cluster execution claim.",
+    "Upstream Python includes inherited and client-only tests."
+  ]
+}

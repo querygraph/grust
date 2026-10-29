@@ -86,10 +86,11 @@ protobufs.
    flow configuration to resolver instances without mutating another flow's
    session settings. Analyze all flows, including expressions/subqueries, before
    writes. Report direct errors separately from blocked downstream flows.
-3. **Dry run has no output writes.** Validate names, schemas, query types,
-   dependencies, selection, reset policy, and source/sink capabilities. Metadata
-   access needed for analysis is allowed. Do not create tables, advance offsets,
-   reset checkpoints, or execute user queries to discover their schemas.
+3. **Dry run has no output writes.** Match Spark's graph resolution and validation:
+   names, schemas, query types, dependencies, selection, and reset policy.
+   Metadata access needed for analysis is allowed. Output publication planning
+   belongs to a real run, before its first write. Do not create tables, advance
+   offsets, reset checkpoints, or execute user queries to discover their schemas.
 4. **Execution respects dependencies.** A dataset is ready only after all its
    required producer flows succeed. Independent flows may run concurrently.
    Failed producers block consumers; cancellation propagates to active jobs.

@@ -1,0 +1,98 @@
+FF                                                                       [100%]
+=================================== FAILURES ===================================
+________ test_publication_validation_precedes_dependencyordered_writes _________
+
+fixturefunc = <function dataset_not_published at 0x108352980>
+request = <FixtureRequest for <Function test_publication_validation_precedes_dependencyordered_writes>>
+kwargs = {'name': 'a_valid', 'pipeline_spark': <pyspark.sql.connect.session.SparkSession object at 0x1160b56d0>}
+
+    def call_fixture_func(
+        fixturefunc: _FixtureFunc[FixtureValue], request: FixtureRequest, kwargs
+    ) -> FixtureValue:
+        if inspect.isgeneratorfunction(fixturefunc):
+            fixturefunc = cast(Callable[..., Generator[FixtureValue]], fixturefunc)
+            generator = fixturefunc(**kwargs)
+            try:
+                fixture_result = next(generator)
+            except StopIteration:
+                raise ValueError(f"{request.fixturename} did not yield a value") from None
+            finalizer = functools.partial(_teardown_yield_fixture, fixturefunc, generator)
+            request.addfinalizer(finalizer)
+        else:
+            fixturefunc = cast(Callable[..., FixtureValue], fixturefunc)
+>           fixture_result = fixturefunc(**kwargs)
+                             ^^^^^^^^^^^^^^^^^^^^^
+
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:1005: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = 'a_valid'
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x1160b56d0>
+
+    @then(parsers.parse("pipeline dataset {name} is not published"))
+    def dataset_not_published(name, pipeline_spark):
+>       assert not pipeline_spark.catalog.tableExists(name)
+E       AssertionError: assert not True
+E        +  where True = tableExists('a_valid')
+E        +    where tableExists = <pyspark.sql.connect.catalog.Catalog object at 0x110985f40>.tableExists
+E        +      where <pyspark.sql.connect.catalog.Catalog object at 0x110985f40> = <pyspark.sql.connect.session.SparkSession object at 0x1160b56d0>.catalog
+
+python/pysail/testing/spark/steps/pipelines.py:56: AssertionError
+----------------------------- Captured stdout call -----------------------------
+2026-10-29 07:11:26: Starting pipeline analysis
+_______________ test_publication_validation_is_part_of_a_dry_run _______________
+
+fixturefunc = <function validate_pipeline_with_error at 0x108352700>
+request = <FixtureRequest for <Function test_publication_validation_is_part_of_a_dry_run>>
+kwargs = {'condition': 'No data source found for: missing_format', 'pipeline': ('6e0e2b97-adc8-4824-ae5c-c65d11741f6f', <pyspar...ent_registry.SparkConnectGraphElementRegistry object at 0x1161dc500>, <function pipeline.<locals>.run at 0x116152b60>)}
+
+    def call_fixture_func(
+        fixturefunc: _FixtureFunc[FixtureValue], request: FixtureRequest, kwargs
+    ) -> FixtureValue:
+        if inspect.isgeneratorfunction(fixturefunc):
+            fixturefunc = cast(Callable[..., Generator[FixtureValue]], fixturefunc)
+            generator = fixturefunc(**kwargs)
+            try:
+                fixture_result = next(generator)
+            except StopIteration:
+                raise ValueError(f"{request.fixturename} did not yield a value") from None
+            finalizer = functools.partial(_teardown_yield_fixture, fixturefunc, generator)
+            request.addfinalizer(finalizer)
+        else:
+            fixturefunc = cast(Callable[..., FixtureValue], fixturefunc)
+>           fixture_result = fixturefunc(**kwargs)
+                             ^^^^^^^^^^^^^^^^^^^^^
+
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:1005: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+condition = 'No data source found for: missing_format'
+pipeline = ('6e0e2b97-adc8-4824-ae5c-c65d11741f6f', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x1161dc500>, <function pipeline.<locals>.run at 0x116152b60>)
+
+    @when(parsers.parse("pipeline validation fails with {condition}"))
+    def validate_pipeline_with_error(condition, pipeline):
+        _, _, run = pipeline
+>       with pytest.raises(AnalysisException, match=condition):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE AnalysisException
+
+python/pysail/testing/spark/steps/pipelines.py:43: Failed
+----------------------------- Captured stdout call -----------------------------
+2026-10-29 07:11:26: Starting pipeline analysis
+2026-10-29 07:11:26: Pipeline run completed
+=============================== warnings summary ===============================
+python/pysail/tests/spark/pipelines/test_features.py::test_publication_validation_precedes_dependencyordered_writes
+python/pysail/tests/spark/pipelines/test_features.py::test_publication_validation_is_part_of_a_dry_run
+  /Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pytest_bdd/compat.py:28: PytestRemovedIn10Warning: Passing nodeid to _register_fixture is deprecated. Pass node instead for fixture scoping.
+    request._fixturemanager._register_fixture(
+
+python/pysail/tests/spark/pipelines/test_features.py::test_publication_validation_precedes_dependencyordered_writes
+python/pysail/tests/spark/pipelines/test_features.py::test_publication_validation_is_part_of_a_dry_run
+  /Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/_pytest/fixtures.py:1986: PytestRemovedIn10Warning: Passing baseid to FixtureDef is deprecated. Pass node instead for fixture scoping.
+    fixture_def = FixtureDef(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED python/pysail/tests/spark/pipelines/test_features.py::test_publication_validation_precedes_dependencyordered_writes
+FAILED python/pysail/tests/spark/pipelines/test_features.py::test_publication_validation_is_part_of_a_dry_run
+2 failed, 29 deselected, 4 warnings in 0.28s
