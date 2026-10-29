@@ -214,3 +214,45 @@ coverage, and do not count dependency experiments as SDP assertion ports. The
 canonical inventory remains 462 registrations, 97 audited and 59 partial ports.
 The next implementation step is the dependency-hardening part of unit 1; later streaming state/fencing and CDC
 coordination remain announced design checkpoints of their own.
+
+
+## Dependency implementation update
+
+The [source-bound receipts](evidence/orc-dependency-hardening/provenance.json)
+record three local commits in `orc-rust-sdp`, based on upstream v0.9.0:
+
+| Commit | Review scope | Default test result |
+| --- | --- | --- |
+| `d12c9608c6` | Align Arrow test dependencies with library 59 | 253 passed; 8 upstream ignored |
+| `b6bede0ef4` | Frame checks, typed Read failures, all five codec output bounds | 261 passed; 8 upstream ignored |
+| `8338ce9062` | Shared checked sync/async footer ranges and exact read lengths | 266 passed; 8 upstream ignored |
+
+Formatting and strict all-target/all-feature Clippy pass for the two code units.
+No-default-feature library runs pass 159/163 tests. Three external PyORC writer
+checks, ignored by default, were explicitly executed and passed at the final
+head; the five other pre-existing ignored integration cases remain unqualified.
+The retained malformed compression-block input now returns a typed error in both
+reader modes. Eight reads of Spark files and three Spark reads of new Rust writer
+outputs pass. Range/projection replay remains green. These are library results;
+Sail's production source registry and four recorded ORC failures are unchanged.
+
+The LZO decoder now uses the bounded pure-Rust `lzokay` 2.0.1 slice API. Its
+predecessor's expected-size argument was only a capacity hint. The change also
+changes the source type in the public BuildLzoDecoder error variant. No lower
+Rust-version/MSRV or cross-platform claim follows from the Rust 1.98.1 macOS gate.
+
+Before integration, complete the remaining metadata contract: iterative type-tree
+validation, explicit combined footer/metadata decoded-byte and schema-depth
+budgets, and raw type-attribute access on validated FileMetadata. The source audit
+found a root assertion, recursive cycles/shared children and defaulting of unknown
+protobuf kinds; these are source findings, not yet executed failure fixtures.
+Expose bounded sync/async entry points while preserving existing callers, and
+provide builders accepting validated metadata to avoid a second parse. Since a
+narrow dependency change is already required, a raw-type accessor can replace
+Sail-side footer reparsing. Budget checks must reach internal block allocations;
+outer Read::take alone is insufficient, and decoded bytes do not include every
+protobuf object overhead.
+
+The dependency changes are local reviewable commits with patches retained in the
+receipt. A portable dependency revision/package is still needed before the final
+Sail dependency wiring; no upstream PR, push or publication occurred.

@@ -11082,3 +11082,11 @@ Published orc-rust0.9 compiled with exact Sail Arrow59.2 family in isolated targ
 ## 2026-10-29T18:57:41.033327+00:00 — CORRECTION ORC dependency qualification boundary
 
 Final source review prompted an executed fourth malformed compressed-block probe: native split_to panics with exit101. Preserved fixture and report, and made dependency hardening a prerequisite to source registration. Native-reader-first footer extraction is attribute-access evidence only; production tail validation/decompression bounds must precede native parsing. Added explicit upload-abort ownership after checking DF ObjectWriterBuilder failure-cleanup limitation. No production ORC qualification or hidden failure.
+
+## 2026-10-29T19:01:52.587276+00:00 — ACK ORC dependency implementation
+
+Cloned public orc-rust v0.9.0 at d21a6e4d2f8b5f4465fa5c0cad046c7ec2284307 into /Users/alexy/src/orc-rust-sdp, branch work/sail-orc; detached gate /Users/alexy/src/orc-rust-sdp-gate owns transferred idle probe target cache. Separate units align test-only Arrow dependencies, harden compressed-block/Read handling and decoded-block limits, then validate sync/async tail ranges. No Sail dependency/source change or publication yet.
+
+## 2026-10-29T19:11:19.144822+00:00 — DONE initial ORC dependency implementation units
+
+Local orc-rust-sdp commits {'test-deps': 'd12c9608c6c103b0fa9d5d27aed61557081a219c', 'compression': 'b6bede0ef428f6bc81e2709884edf353bae06097', 'metadata': '8338ce9062f6e2072475cb06c68fe9379f04bcc7'}: separate Arrow test alignment, compression bounds/error propagation and shared footer-range validation. Final detached gate: fmt/strict Clippy,266 default tests (8 upstream ignored),163 no-default library tests;3 ignored-by-default PyORC writer tests separately pass. Retained panic now typed sync/async errors;8 Spark-file reads and3 Spark reads of patched Rust outputs pass. Five other upstream ignored integration cases remain unqualified. No Sail production change, publication or full SDP verdict. Metadata total budgets/type-tree validation are next.

@@ -1,0 +1,546 @@
+From 8338ce9062f6e2072475cb06c68fe9379f04bcc7 Mon Sep 17 00:00:00 2001
+From: Alexy Khrabrov <deliverable@gmail.com>
+Date: Thu, 29 Oct 2026 12:05:59 -0700
+Subject: [PATCH] fix: validate ORC footer ranges before reading and slicing
+
+---
+ src/reader/metadata.rs       | 250 ++++++++++++++++++-----------------
+ src/reader/metadata/tests.rs | 242 +++++++++++++++++++++++++++++++++
+ 2 files changed, 373 insertions(+), 119 deletions(-)
+ create mode 100644 src/reader/metadata/tests.rs
+
+diff --git a/src/reader/metadata.rs b/src/reader/metadata.rs
+index 9133211..0a94b07 100644
+--- a/src/reader/metadata.rs
++++ b/src/reader/metadata.rs
+@@ -177,73 +177,131 @@ impl FileMetadata {
+     }
+ }
+ 
++/// Validated locations of the encoded metadata and footer within a file tail.
++/// Both reader modes use this before requesting or slicing the declared sections.
++struct EncodedTail {
++    postscript: PostScript,
++    bytes: Bytes,
++    offset: u64,
++    length: usize,
++    footer_length: usize,
++    metadata_length: usize,
++}
++
++impl EncodedTail {
++    fn parse(file_len: u64, mut bytes: Bytes) -> Result<Self> {
++        ensure!(
++            bytes.len() as u64 == file_len.min(DEFAULT_FOOTER_SIZE),
++            OutOfSpecSnafu {
++                msg: "Tail read returned an unexpected number of bytes"
++            }
++        );
++        let postscript_len = usize::from(*bytes.last().context(OutOfSpecSnafu {
++            msg: "File tail is empty",
++        })?);
++        bytes.truncate(bytes.len() - 1);
++        let postscript_start = bytes
++            .len()
++            .checked_sub(postscript_len)
++            .context(OutOfSpecSnafu {
++                msg: "File too small for given postscript length",
++            })?;
++        let postscript =
++            PostScript::decode(&bytes[postscript_start..]).context(error::DecodeProtoSnafu)?;
++        bytes.truncate(postscript_start);
++
++        let footer_length = postscript.footer_length.context(OutOfSpecSnafu {
++            msg: "Footer length is empty",
++        })?;
++        let metadata_length = postscript.metadata_length.context(OutOfSpecSnafu {
++            msg: "Metadata length is empty",
++        })?;
++        let length = footer_length
++            .checked_add(metadata_length)
++            .context(OutOfSpecSnafu {
++                msg: "Footer and metadata lengths overflow",
++            })?;
++        let offset = file_len
++            .checked_sub(1 + postscript_len as u64)
++            .and_then(|end| end.checked_sub(length))
++            .context(OutOfSpecSnafu {
++                msg: "Footer and metadata lengths exceed the file",
++            })?;
++        ensure!(
++            offset >= 3,
++            OutOfSpecSnafu {
++                msg: "Footer and metadata overlap the file magic"
++            }
++        );
++        // Validate conversions before issuing a second read, whose default
++        // ChunkReader implementation allocates a usize-sized buffer.
++        let length = isize::try_from(length).ok().context(OutOfSpecSnafu {
++            msg: "Footer and metadata lengths exceed the addressable size",
++        })? as usize;
++        Ok(Self {
++            postscript,
++            bytes,
++            offset,
++            length,
++            // Each section is no larger than the validated sum.
++            footer_length: footer_length as usize,
++            metadata_length: metadata_length as usize,
++        })
++    }
++
++    fn missing_length(&self) -> usize {
++        self.length.saturating_sub(self.bytes.len())
++    }
++
++    fn decode(self, prefix: Bytes) -> Result<FileMetadata> {
++        ensure!(
++            prefix.len() == self.missing_length(),
++            OutOfSpecSnafu {
++                msg: "Metadata read returned an unexpected number of bytes"
++            }
++        );
++        let mut bytes = if prefix.is_empty() {
++            self.bytes
++        } else {
++            let mut bytes = BytesMut::with_capacity(self.length);
++            bytes.extend_from_slice(&prefix);
++            bytes.extend_from_slice(&self.bytes);
++            bytes.freeze()
++        };
++        let compression = Compression::from_proto(
++            self.postscript.compression(),
++            self.postscript.compression_block_size,
++        );
++        let footer_start = bytes.len() - self.footer_length;
++        let footer = deserialize_footer(bytes.slice(footer_start..), compression)?;
++        bytes.truncate(footer_start);
++        let metadata = deserialize_footer_metadata(
++            bytes.slice(bytes.len() - self.metadata_length..),
++            compression,
++        )?;
++        FileMetadata::from_proto(&self.postscript, &footer, &metadata)
++    }
++}
++
+ pub fn read_metadata<R: ChunkReader>(reader: &mut R) -> Result<FileMetadata> {
+     let file_len = reader.len();
+     if file_len == 0 {
+         return EmptyFileSnafu.fail();
+     }
+-
+-    // Initial read of the file tail
+-    // Use a default size for first read in hopes of capturing all sections with one read
+-    // At worst need two reads to get all necessary bytes
+-    let assume_footer_len = file_len.min(DEFAULT_FOOTER_SIZE);
+-    let mut tail_bytes = reader
+-        .get_bytes(file_len - assume_footer_len, assume_footer_len)
++    // At most two reads: first the usual tail size, then any missing prefix.
++    let tail_length = file_len.min(DEFAULT_FOOTER_SIZE);
++    let bytes = reader
++        .get_bytes(file_len - tail_length, tail_length)
+         .context(error::IoSnafu)?;
+-
+-    // The final byte of the file contains the serialized length of the Postscript,
+-    // which must be less than 256 bytes.
+-    let postscript_len = tail_bytes[tail_bytes.len() - 1] as u64;
+-    tail_bytes.truncate(tail_bytes.len() - 1);
+-
+-    if tail_bytes.len() < postscript_len as usize {
+-        return OutOfSpecSnafu {
+-            msg: "File too small for given postscript length",
+-        }
+-        .fail();
+-    }
+-    let postscript = PostScript::decode(&tail_bytes[tail_bytes.len() - postscript_len as usize..])
+-        .context(error::DecodeProtoSnafu)?;
+-    let compression =
+-        Compression::from_proto(postscript.compression(), postscript.compression_block_size);
+-    tail_bytes.truncate(tail_bytes.len() - postscript_len as usize);
+-
+-    let footer_length = postscript.footer_length.context(error::OutOfSpecSnafu {
+-        msg: "Footer length is empty",
+-    })?;
+-    let metadata_length = postscript.metadata_length.context(error::OutOfSpecSnafu {
+-        msg: "Metadata length is empty",
+-    })?;
+-
+-    // Ensure we have enough bytes for Footer and Metadata
+-    let mut tail_bytes = if footer_length + metadata_length > tail_bytes.len() as u64 {
+-        // Need second read
+-        // -1 is the postscript length byte
+-        let offset = file_len - 1 - postscript_len - footer_length - metadata_length;
+-        let bytes_to_read = (footer_length + metadata_length) - tail_bytes.len() as u64;
+-        let prepend_bytes = reader
+-            .get_bytes(offset, bytes_to_read)
+-            .context(error::IoSnafu)?;
+-        let mut all_bytes = BytesMut::with_capacity(prepend_bytes.len() + tail_bytes.len());
+-        all_bytes.extend_from_slice(&prepend_bytes);
+-        all_bytes.extend_from_slice(&tail_bytes);
+-        all_bytes.into()
++    let tail = EncodedTail::parse(file_len, bytes)?;
++    let prefix = if tail.missing_length() == 0 {
++        Bytes::new()
+     } else {
+-        tail_bytes
++        reader
++            .get_bytes(tail.offset, tail.missing_length() as u64)
++            .context(error::IoSnafu)?
+     };
+-
+-    let footer = deserialize_footer(
+-        tail_bytes.slice(tail_bytes.len() - footer_length as usize..),
+-        compression,
+-    )?;
+-    tail_bytes.truncate(tail_bytes.len() - footer_length as usize);
+-
+-    let metadata = deserialize_footer_metadata(
+-        tail_bytes.slice(tail_bytes.len() - metadata_length as usize..),
+-        compression,
+-    )?;
+-
+-    FileMetadata::from_proto(&postscript, &footer, &metadata)
++    tail.decode(prefix)
+ }
+ 
+ #[cfg(feature = "async")]
+@@ -254,70 +312,21 @@ pub async fn read_metadata_async<R: super::AsyncChunkReader>(
+     if file_len == 0 {
+         return EmptyFileSnafu.fail();
+     }
+-
+-    // Initial read of the file tail
+-    // Use a default size for first read in hopes of capturing all sections with one read
+-    // At worst need two reads to get all necessary bytes
+-    let assume_footer_len = file_len.min(DEFAULT_FOOTER_SIZE);
+-    let mut tail_bytes = reader
+-        .get_bytes(file_len - assume_footer_len, assume_footer_len)
++    let tail_length = file_len.min(DEFAULT_FOOTER_SIZE);
++    let bytes = reader
++        .get_bytes(file_len - tail_length, tail_length)
+         .await
+         .context(error::IoSnafu)?;
+-
+-    // The final byte of the file contains the serialized length of the Postscript,
+-    // which must be less than 256 bytes.
+-    let postscript_len = tail_bytes[tail_bytes.len() - 1] as u64;
+-    tail_bytes.truncate(tail_bytes.len() - 1);
+-
+-    if tail_bytes.len() < postscript_len as usize {
+-        return OutOfSpecSnafu {
+-            msg: "File too small for given postscript length",
+-        }
+-        .fail();
+-    }
+-    let postscript = PostScript::decode(&tail_bytes[tail_bytes.len() - postscript_len as usize..])
+-        .context(error::DecodeProtoSnafu)?;
+-    let compression =
+-        Compression::from_proto(postscript.compression(), postscript.compression_block_size);
+-    tail_bytes.truncate(tail_bytes.len() - postscript_len as usize);
+-
+-    let footer_length = postscript.footer_length.context(error::OutOfSpecSnafu {
+-        msg: "Footer length is empty",
+-    })?;
+-    let metadata_length = postscript.metadata_length.context(error::OutOfSpecSnafu {
+-        msg: "Metadata length is empty",
+-    })?;
+-
+-    // Ensure we have enough bytes for Footer and Metadata
+-    let mut tail_bytes = if footer_length + metadata_length > tail_bytes.len() as u64 {
+-        // Need second read
+-        // -1 is the postscript length byte
+-        let offset = file_len - 1 - postscript_len - footer_length - metadata_length;
+-        let bytes_to_read = (footer_length + metadata_length) - tail_bytes.len() as u64;
+-        let prepend_bytes = reader
+-            .get_bytes(offset, bytes_to_read)
+-            .await
+-            .context(error::IoSnafu)?;
+-        let mut all_bytes = BytesMut::with_capacity(prepend_bytes.len() + tail_bytes.len());
+-        all_bytes.extend_from_slice(&prepend_bytes);
+-        all_bytes.extend_from_slice(&tail_bytes);
+-        all_bytes.into()
++    let tail = EncodedTail::parse(file_len, bytes)?;
++    let prefix = if tail.missing_length() == 0 {
++        Bytes::new()
+     } else {
+-        tail_bytes
++        reader
++            .get_bytes(tail.offset, tail.missing_length() as u64)
++            .await
++            .context(error::IoSnafu)?
+     };
+-
+-    let footer = deserialize_footer(
+-        tail_bytes.slice(tail_bytes.len() - footer_length as usize..),
+-        compression,
+-    )?;
+-    tail_bytes.truncate(tail_bytes.len() - footer_length as usize);
+-
+-    let metadata = deserialize_footer_metadata(
+-        tail_bytes.slice(tail_bytes.len() - metadata_length as usize..),
+-        compression,
+-    )?;
+-
+-    FileMetadata::from_proto(&postscript, &footer, &metadata)
++    tail.decode(prefix)
+ }
+ 
+ fn deserialize_footer(bytes: Bytes, compression: Option<Compression>) -> Result<Footer> {
+@@ -335,3 +344,6 @@ fn deserialize_footer_metadata(bytes: Bytes, compression: Option<Compression>) -
+         .context(error::IoSnafu)?;
+     Metadata::decode(buffer.as_slice()).context(error::DecodeProtoSnafu)
+ }
++
++#[cfg(test)]
++mod tests;
+diff --git a/src/reader/metadata/tests.rs b/src/reader/metadata/tests.rs
+new file mode 100644
+index 0000000..d92e271
+--- /dev/null
++++ b/src/reader/metadata/tests.rs
+@@ -0,0 +1,242 @@
++// Licensed to the Apache Software Foundation (ASF) under one
++// or more contributor license agreements.  See the NOTICE file
++// distributed with this work for additional information
++// regarding copyright ownership.  The ASF licenses this file
++// to you under the Apache License, Version 2.0 (the
++// "License"); you may not use this file except in compliance
++// with the License.  You may obtain a copy of the License at
++//
++//   http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing,
++// software distributed under the License is distributed on an
++// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
++// KIND, either express or implied.  See the License for the
++// specific language governing permissions and limitations
++// under the License.
++
++use std::cell::RefCell;
++use std::io::{self, Cursor};
++
++use super::*;
++
++#[derive(Clone, Copy, Debug)]
++enum Fault {
++    Empty,
++    Short,
++    Extra,
++}
++
++struct TestReader {
++    data: Bytes,
++    requests: RefCell<Vec<(u64, u64)>>,
++    fault: Option<(usize, Fault)>,
++}
++
++impl TestReader {
++    fn new(data: Bytes, fault: Option<(usize, Fault)>) -> Self {
++        Self {
++            data,
++            requests: RefCell::new(vec![]),
++            fault,
++        }
++    }
++
++    fn read_bytes(&self, offset: u64, length: u64) -> io::Result<Bytes> {
++        let mut requests = self.requests.borrow_mut();
++        let call = requests.len();
++        requests.push((offset, length));
++        let range = usize::try_from(offset).unwrap()..usize::try_from(offset + length).unwrap();
++        let mut bytes = self
++            .data
++            .get(range)
++            .ok_or_else(|| io::Error::from(io::ErrorKind::UnexpectedEof))?
++            .to_vec();
++        if let Some((fault_call, fault)) = self.fault {
++            if call == fault_call {
++                match fault {
++                    Fault::Empty => bytes.clear(),
++                    Fault::Short => {
++                        bytes.pop();
++                    }
++                    Fault::Extra => bytes.push(0),
++                }
++            }
++        }
++        Ok(bytes.into())
++    }
++}
++
++impl ChunkReader for TestReader {
++    type T = Cursor<Vec<u8>>;
++
++    fn len(&self) -> u64 {
++        self.data.len() as u64
++    }
++
++    fn get_read(&self, _offset: u64) -> io::Result<Self::T> {
++        unreachable!("metadata reader uses get_bytes")
++    }
++
++    fn get_bytes(&self, offset: u64, length: u64) -> io::Result<Bytes> {
++        self.read_bytes(offset, length)
++    }
++}
++
++#[cfg(feature = "async")]
++impl crate::reader::AsyncChunkReader for TestReader {
++    fn len(&mut self) -> futures::future::BoxFuture<'_, io::Result<u64>> {
++        Box::pin(async move { Ok(self.data.len() as u64) })
++    }
++
++    fn get_bytes(
++        &mut self,
++        offset: u64,
++        length: u64,
++    ) -> futures::future::BoxFuture<'_, io::Result<Bytes>> {
++        Box::pin(async move { self.read_bytes(offset, length) })
++    }
++}
++
++fn with_postscript(mut bytes: Vec<u8>, postscript: PostScript) -> Bytes {
++    let postscript = postscript.encode_to_vec();
++    assert!(postscript.len() < 256);
++    bytes.extend_from_slice(&postscript);
++    bytes.push(postscript.len() as u8);
++    bytes.into()
++}
++
++fn valid_file(padding: usize) -> Bytes {
++    let footer = Footer {
++        types: vec![proto::Type {
++            kind: Some(proto::r#type::Kind::Struct.into()),
++            ..Default::default()
++        }],
++        metadata: vec![proto::UserMetadataItem {
++            name: Some("padding".into()),
++            value: Some(vec![7; padding]),
++        }],
++        number_of_rows: Some(0),
++        ..Default::default()
++    }
++    .encode_to_vec();
++    let postscript = PostScript {
++        footer_length: Some(footer.len() as u64),
++        metadata_length: Some(0),
++        version: vec![0, 12],
++        ..Default::default()
++    };
++    let mut bytes = b"ORC".to_vec();
++    bytes.extend(footer);
++    with_postscript(bytes, postscript)
++}
++
++fn malformed_files() -> Vec<(Bytes, &'static str)> {
++    let lengths = |footer_length, metadata_length| {
++        with_postscript(
++            b"ORC".to_vec(),
++            PostScript {
++                footer_length: Some(footer_length),
++                metadata_length: Some(metadata_length),
++                ..Default::default()
++            },
++        )
++    };
++    vec![
++        (Bytes::from_static(b"ORC\xff"), "postscript length"),
++        (lengths(u64::MAX, 1), "lengths overflow"),
++        (lengths(u64::MAX, 0), "lengths exceed the file"),
++        (lengths(4, 0), "lengths exceed the file"),
++        (lengths(1, 0), "overlap the file magic"),
++        (lengths(0, 1), "overlap the file magic"),
++    ]
++}
++
++fn check_metadata(metadata: FileMetadata, padding: usize) {
++    assert_eq!(metadata.number_of_rows(), 0);
++    assert_eq!(metadata.file_format_version(), "0.12");
++    assert_eq!(metadata.user_custom_metadata()["padding"], vec![7; padding]);
++}
++
++#[test]
++fn small_and_large_metadata_tails_keep_one_or_two_reads() {
++    for (padding, reads) in [(0, 1), (2 * DEFAULT_FOOTER_SIZE as usize, 2)] {
++        let mut reader = TestReader::new(valid_file(padding), None);
++        check_metadata(read_metadata(&mut reader).unwrap(), padding);
++        assert_eq!(reader.requests.borrow().len(), reads);
++    }
++}
++
++#[test]
++fn malformed_tail_lengths_return_errors_before_another_read() {
++    for (bytes, message) in malformed_files() {
++        let mut reader = TestReader::new(bytes, None);
++        let error = read_metadata(&mut reader).unwrap_err();
++        assert!(error.to_string().contains(message), "{error}");
++        assert_eq!(reader.requests.borrow().len(), 1);
++    }
++}
++
++#[test]
++fn unexpected_tail_read_lengths_are_rejected() {
++    for call in [0, 1] {
++        for fault in [Fault::Empty, Fault::Short, Fault::Extra] {
++            let mut reader = TestReader::new(
++                valid_file(2 * DEFAULT_FOOTER_SIZE as usize),
++                Some((call, fault)),
++            );
++            let error = read_metadata(&mut reader).unwrap_err();
++            assert!(
++                error.to_string().contains("unexpected number of bytes"),
++                "{error}"
++            );
++            assert_eq!(reader.requests.borrow().len(), call + 1);
++        }
++    }
++}
++
++#[test]
++fn empty_file_does_not_issue_a_read() {
++    let mut reader = TestReader::new(Bytes::new(), None);
++    assert!(matches!(
++        read_metadata(&mut reader),
++        Err(error::OrcError::EmptyFile { .. })
++    ));
++    assert!(reader.requests.borrow().is_empty());
++}
++
++#[cfg(feature = "async")]
++#[tokio::test]
++async fn async_tail_checks_match_sync_reader() {
++    for (padding, reads) in [(0, 1), (2 * DEFAULT_FOOTER_SIZE as usize, 2)] {
++        let mut reader = TestReader::new(valid_file(padding), None);
++        check_metadata(read_metadata_async(&mut reader).await.unwrap(), padding);
++        assert_eq!(reader.requests.borrow().len(), reads);
++    }
++    for (bytes, message) in malformed_files() {
++        let mut reader = TestReader::new(bytes, None);
++        let error = read_metadata_async(&mut reader).await.unwrap_err();
++        assert!(error.to_string().contains(message), "{error}");
++        assert_eq!(reader.requests.borrow().len(), 1);
++    }
++    for call in [0, 1] {
++        for fault in [Fault::Empty, Fault::Short, Fault::Extra] {
++            let mut reader = TestReader::new(
++                valid_file(2 * DEFAULT_FOOTER_SIZE as usize),
++                Some((call, fault)),
++            );
++            let error = read_metadata_async(&mut reader).await.unwrap_err();
++            assert!(
++                error.to_string().contains("unexpected number of bytes"),
++                "{error}"
++            );
++            assert_eq!(reader.requests.borrow().len(), call + 1);
++        }
++    }
++    let mut reader = TestReader::new(Bytes::new(), None);
++    assert!(matches!(
++        read_metadata_async(&mut reader).await,
++        Err(error::OrcError::EmptyFile { .. })
++    ));
++    assert!(reader.requests.borrow().is_empty());
++}
+-- 
+2.50.1 (Apple Git-155)
+

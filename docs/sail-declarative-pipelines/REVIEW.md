@@ -1227,3 +1227,16 @@ error are retained. Production registration now requires a narrow dependency
 hardening commit first. Public footer access alone needs no fork; it does not
 prove safe native parsing. The writer must retain its own abort-capable upload
 handle rather than assume ObjectWriterBuilder cleans up failures.
+
+
+## Review initial ORC dependency fixes
+
+The [dependency receipt](evidence/orc-dependency-hardening/provenance.json)
+records separate test-dependency, compression and footer-range commits in the
+local ORC branch. The final head `8338ce9062` passes 266 default tests, 163
+no-default library tests, strict Clippy/formatting and three explicitly enabled
+PyORC writer checks. Default runs retain eight ignored upstream cases; five remain
+unexecuted after the separate writer checks. The reproduced panic now returns an
+error, valid Spark/Rust files still cross-read, and no Sail capability count is
+advanced. Aggregate metadata budgets, type-tree validation, source/sink codecs and
+Sail integration remain required next steps.

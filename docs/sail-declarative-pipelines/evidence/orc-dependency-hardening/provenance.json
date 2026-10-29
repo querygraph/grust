@@ -1,0 +1,111 @@
+{
+  "recorded_at": "2026-10-29T19:11:19.144822+00:00",
+  "repository": "https://github.com/datafusion-contrib/orc-rust",
+  "local_branch": "work/sail-orc",
+  "upstream_tag": "v0.9.0",
+  "upstream_commit": "d21a6e4d2f8b5f4465fa5c0cad046c7ec2284307",
+  "commits": {
+    "test-deps": "d12c9608c6c103b0fa9d5d27aed61557081a219c",
+    "compression": "b6bede0ef428f6bc81e2709884edf353bae06097",
+    "metadata": "8338ce9062f6e2072475cb06c68fe9379f04bcc7"
+  },
+  "runs": {
+    "test-deps": {
+      "default_test_totals": {
+        "passed": 253,
+        "failed": 0,
+        "ignored": 8
+      }
+    },
+    "compression": {
+      "default_test_totals": {
+        "passed": 261,
+        "failed": 0,
+        "ignored": 8
+      }
+    },
+    "metadata": {
+      "default_test_totals": {
+        "passed": 266,
+        "failed": 0,
+        "ignored": 8
+      }
+    }
+  },
+  "spark_source_commit": "617618396087429b5627a86ce933bb0f5d6645cb",
+  "sail_unchanged_commit": "8d044db3860b4f55e49543c833246af31e986e2e",
+  "checks": [
+    "Immutable detached ORC gate, own target; fmt; strict all-target/all-feature Clippy for compression and metadata",
+    "Default tests:253/261/266 passes respectively, eight upstream ignored in each default invocation",
+    "No-default-feature library tests159/163 pass on compression/metadata",
+    "Three PyORC0.10.0 writer checks explicitly invoked with --ignored pass on metadata head",
+    "Retained malformed file: exit101 baseline becomes exit1 typed error in both sync/async modes",
+    "Eight Spark-file reads and range/projection/write replay pass",
+    "Three new Rust writer outputs read with exact values by Spark4.2.1"
+  ],
+  "limitations": [
+    "No production Sail ORC registration, portable dependency publication or adapter; commits remain local",
+    "Five upstream ignored integration cases not run by these gates; default ignored count also includes three writer tests that were run separately",
+    "Per-block decoded limits and tail-range safety only; aggregate metadata budget and type-tree validation are still required",
+    "No MSRV, platform matrix, distributed Sail runtime or full SDP suite verdict",
+    "LZO uses bounded pure-Rust lzokay2.0.1 API; public error variant source changes from lzokay-native::Error to lzokay::Error"
+  ],
+  "files_sha256": {
+    "compression-replay.json": "9acae7304cf8b583e6804712b9c4b94a00f00745db6a948e58bbb51fecc7d975",
+    "spark-crossread.log": "dcf277bc37b68c106464f18fb9ac857bedbb2b7ee5a9048a8205b1ad4965c9d0",
+    "spark-crossread.json": "e5aeccc1e35fa12c165020c346f69ff7cd9444f65b7ee1796cd125680499bdca",
+    "replay.py": "5f19740ffe078e19d6cb5262c94a7fc1450fe1a9256366c668b5d68ae70276ac",
+    "probe-Cargo.lock": "c875e5bf29d21bbfa9e08b312d17dd4ffd852574f6dfb1078dc34c4a591c0905",
+    "probe-Cargo.toml": "d7c12dddaf3974da8e7135ad4aac74d25504a3fc1c74b5f02bd67e0a3e6ffdba",
+    "spark-crossread.py": "37f36ad7f420f1830771591382acbd1238b3dbffe31539ee691c3b3fc53c08e2",
+    "gate-Cargo.lock": "29dd0ca91217b64ca2d56f25db1993a889ceb20961233fa2c60009339a06338e",
+    "test-deps/candidate.json": "aed65e548a3c999edc6d7908abc4fe4ee39838f1e0a33253d29edccb20bf3f3a",
+    "test-deps/orc-sdp-test-deps-build.log": "a52a8d5ad0236606b24bb914e493d259cc3edb8ac055a3024eb38eb63417e15c",
+    "test-deps/orc-sdp-test-deps-tests.log": "2a2852f51e5ae2c0dfba16bd8fa5b59cde5a0af4d7d1cc8d761d5eee2b9aae1b",
+    "test-deps/change.patch": "7125e8e9034ca3a7440289b87e2b6963342642c5068e5b950f4916e07ef56a45",
+    "compression/orc-sdp-compression-tests.log": "96dcd939c7d4c7829176fc77ee44cb1c72468cb0dbe658b7b1d7eac6e40cd65b",
+    "compression/orc-sdp-compression-fmt.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "compression/candidate.json": "145a6f5c6ac7240174818a49030880f172b0fd5bdb94f1c9a7b372aa4c832639",
+    "compression/orc-sdp-compression-clippy.log": "60c8e1fb7dac756f47d3a93f04ee709a1d940e47da678f221f804758af11d697",
+    "compression/orc-sdp-compression-probe-build.log": "ebb324cf551eb5389f00e151b628f33524c8047ee968cf0896d9269b7c062c39",
+    "compression/orc-sdp-compression-no-default.log": "3502f48f974ca7184b51decf39e9b37686f21bb95a13060b1e9134befac9f5f4",
+    "compression/change.patch": "c5b33350ddb5cef93d7d5d424f56e04503a4fa3c6fa34d4f8bc6ccb005920ce8",
+    "replay/empty-read.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "replay/logical_types-read.stdout": "eb1070ece600f4f55e3eceb1869d95fe464434e01e787c49858255c9896fa6f9",
+    "replay/malformed-block-read.stdout": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "replay/logical_types-read-async.stdout": "eb1070ece600f4f55e3eceb1869d95fe464434e01e787c49858255c9896fa6f9",
+    "replay/empty-read-async.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "replay/range-read.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "replay/report.json": "900a222f945e20dfb41c36ec79f1970af8066ccf2bbb061ef366f254e6f2dd0b",
+    "replay/primitive-read.stdout": "cdd5084c6c2ef38a758ffc1e20edd4ac4fc0655a9f229a05a07401b3f15002ad",
+    "replay/malformed-block-read-async.stderr": "543002e328c9b191d9dc01aad846531b1faf142578555a17a48e2b1c08771e6a",
+    "replay/range-read-async.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "replay/range-read-async.stdout": "314a52a5131a54272e7700cf2ec9eb0e2e06d406e1018ed5b7b5f6952b63530e",
+    "replay/logical_types-read-async.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "replay/primitive-read.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "replay/range-read.stdout": "314a52a5131a54272e7700cf2ec9eb0e2e06d406e1018ed5b7b5f6952b63530e",
+    "replay/malformed-block-read-async.stdout": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "replay/empty-read-async.stdout": "83ac4f8bae2588d4370ec23e4192dc9bb3d11698b4a0e1943418458463486876",
+    "replay/logical_types-read.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "replay/malformed-block-read.stderr": "543002e328c9b191d9dc01aad846531b1faf142578555a17a48e2b1c08771e6a",
+    "replay/empty-read.stdout": "83ac4f8bae2588d4370ec23e4192dc9bb3d11698b4a0e1943418458463486876",
+    "replay/write.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "replay/primitive-read-async.stdout": "cdd5084c6c2ef38a758ffc1e20edd4ac4fc0655a9f229a05a07401b3f15002ad",
+    "replay/extras.stdout": "db918dd5e7f7192e364089c777f4e2214e7cf7b603322afce59594e0c56a3422",
+    "replay/primitive-read-async.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "replay/extras.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "replay/write.stdout": "5c6dd490defd8160dd86a7d7af85c9ff7a7d06efffc880614c9ebf09bb369ab8",
+    "metadata/orc-sdp-metadata-pyorc.log": "0183ec4281f028e17ef3d88d2b443cc5edd6ce311456f0821f51c81306042da8",
+    "metadata/candidate.json": "1f05c904075bf66abe0f5db911787db1ce111aca88d63b59261e5697aceadaf0",
+    "metadata/orc-sdp-metadata-no-default.log": "17693734661b05dd567e4d161e7ccdad8d9ded8c47358e3df4257d71cfe5aa54",
+    "metadata/orc-sdp-metadata-probe-build.log": "9e3ad9dd681c5a44d35e60237e32068b908bb0e11de2135cac0642a52e5cfa1b",
+    "metadata/orc-sdp-metadata-tests.log": "af60e21ad64c05082c1e01141095f6d27db3e068dcbb7ce3e2f6109aef3aa81e",
+    "metadata/orc-sdp-metadata-clippy.log": "9988c6bf6c265d091c36e891b69bd927ed5e2c7fb42413b262688b016397aa69",
+    "metadata/orc-sdp-metadata-fmt.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "metadata/change.patch": "d5d1168f1d1d853d25855e15ac55710c672aaf0772076337aa52ba2e19fb6a60",
+    "metadata/orc-sdp-metadata-spark-crossread.log": "dcf277bc37b68c106464f18fb9ac857bedbb2b7ee5a9048a8205b1ad4965c9d0",
+    "replay/output/range.orc": "08ae37c7cc1995b6bd0eb3d88b1a592f4f4eb385e7aae1be4cfd3d6c709889fe",
+    "replay/output/empty.orc": "3154628f66101ebc548f7181eb42998415481a7e5cf337421e59a83aaf71dda2",
+    "replay/output/nullable.orc": "7cac5c2d271f6c9799e572a64e9782e04e8e2ce2ab6cd40e366b8aebfee6a1f0"
+  }
+}
