@@ -106,3 +106,10 @@ source instances, not an expanded runtime denominator.
 Rust test identifiers are recorded separately in each inventory case's rust_tests
 field, with package, target and exact test name. Their evidence is the Rust test
 log, not pytest XML. No original Scala execution is inferred from these ports.
+
+The original non-nullable RANGE query schema now has a direct Rust PlanResolver
+and declaration-validation check, separately from catalog publication. Exact
+persisted-view SQL text remains a [confirmed source-preservation gap](evidence/view-source-design-boundary/provenance.json)
+with a retained failing Rust test. The shared SQL design handoff now includes
+source text as well as catalog expressions; TreeText reconstruction is not a
+verbatim-source API. Review/status counts remain unchanged by this refinement.

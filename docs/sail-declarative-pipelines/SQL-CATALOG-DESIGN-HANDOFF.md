@@ -52,3 +52,25 @@ File boundaries restore pipeline defaults, and private views remain unqualified.
 
 Streaming/checkpoint and CDC architecture remain later phases. No production
 parser, catalog or error architecture was changed for this handoff.
+
+## Additional shared source-text boundary
+
+The [retained failing Rust reproduction](evidence/view-source-design-boundary/provenance.json)
+ports SqlPipelineSuite:617's exact persisted-view text assertion. Expected
+SELECT * FROM range(1, 4); registered text is SELECT * FROM range ( 1 , 4 ) with
+a trailing space. ViewDefinition.definition already carries SQL text, but the
+shared analyzer populates it with query.text(). TreeText intentionally reconstructs
+parseable AST text and requires nonempty results to end in whitespace. Its contract
+must not be conflated with verbatim source preservation.
+
+TokenSpan offsets are documented as character offsets, not UTF-8 byte offsets.
+Any source extraction design must account for Unicode and avoid blind byte
+slicing. The next Astra pass should decide how original query source is carried
+through the shared parser/analyzer while preserving TreeText's existing contract,
+comments/whitespace, query boundaries and ordinary/pipeline view behavior.
+No replacement API is selected here. General view metadata belongs in Sail;
+LakeCat should store the resulting definition through its normal catalog adapter.
+
+The failing test body, initial candidate patch and log remain committed as evidence.
+It can be appended to the existing Rust test module and run by the exact filter
+in the provenance record. Its assertion was not relaxed or marked as passing.

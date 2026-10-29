@@ -826,3 +826,34 @@ unmapped registrations. Overall review counts remain 97 reviewed and 365
 unaudited; no case becomes fully qualified. Rust identifiers/evidence are separate
 from Python nodes/XML. Original Scala-suite execution, full batch acceptance and
 Astra architecture checkpoints remain outstanding.
+
+## Review resolved query nullability and source-text design evidence
+
+Commit `cb27f1a9db` adds a Rust test resolving the original declared LONG/RANGE(5)
+fixture through PlanResolver and shared declaration validation. It asserts the
+exact id Int64/non-nullable query schema before and after validation, without
+confusing it with nullable catalog publication. The isolated context follows
+Sail's session factory: Python initialized, memory CatalogManager, SparkSession
+and PlanService extensions, and no DataFusion default functions. The existing
+memory-catalog crate is a dev-dependency only; no production dependency changes.
+
+The [receipt](evidence/cb27f1a9dbd0fd888e4d5d8babff18bb349478cc/gate.json)
+records fmt, strict Clippy and four passing Rust library tests (24 filtered),
+217 selected pytest cases and 67 upstream Python executions. Remote engine remains
+bbf438c066 with matching CLI hash; no new CLI/native-extension gate is claimed.
+Fixture failures from missing Python initialization, PlanService and inadvertent
+DataFusion defaults are retained and separated from engine compatibility evidence.
+
+An initial exact view-text test found a real gap: shared query.text() reconstructs
+spacing and retains a trailing space. TreeText documents that contract, so changing
+it in place would conflate reconstruction with original source preservation.
+The exact failing test, initial candidate patch and log are retained under the
+[design evidence](evidence/view-source-design-boundary/provenance.json); the
+passing Sail commit does not include or weaken that failing assertion. The
+[shared SQL handoff](SQL-CATALOG-DESIGN-HANDOFF.md) now records this Astra design
+boundary, including character-versus-byte span handling and general view behavior.
+
+The schema assertion coverage improves; source-text compatibility remains open.
+SQL counts remain 26 partial ports/twelve unmapped, overall 97 reviewed and 365
+unaudited. Original Scala-suite execution, full batch acceptance and later
+architecture phases remain incomplete. No new production architecture selected.

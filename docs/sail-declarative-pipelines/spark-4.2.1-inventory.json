@@ -4051,12 +4051,19 @@
         "python/pysail/tests/spark/pipelines/test_features.py::test_a_declared_schema_is_validated_without_materialization"
       ],
       "coverage_review": {
-        "phase": "batch-schema",
-        "covered_assertions": "Declared BIGINT id/comment and range(5) query pass validation without publication.",
-        "remaining_assertions": "Original exact resolved-flow StructType(id LongType nullable=false) equality remains unported; this must not be confused with nullable publication schemas. Original Scala suite remains unexecuted.",
-        "sail_evidence": "evidence/efc21f2c53b0d8c886b31928ed67131a1de7c6db/pytest.xml",
+        "phase": "batch-query-schema",
+        "covered_assertions": "Original declared LONG id/comment and RANGE(5) query are lowered and resolved through PlanResolver. Exact query schema is id Int64 nullable=false before and after shared declaration validation; no publication conversion is invoked. Existing Connect dry-validation port remains.",
+        "remaining_assertions": "Original Spark resolvedFlow object/graph entry point and Scala suite remain unexecuted. Catalog-publication schema is a separate stage.",
+        "sail_evidence": "evidence/cb27f1a9dbd0fd888e4d5d8babff18bb349478cc/rust-tests.log",
         "scala_suite_executed": false
-      }
+      },
+      "rust_tests": [
+        {
+          "package": "sail-spark-connect",
+          "target": "lib",
+          "name": "pipelines::sql::tests::declared_schema_validation_preserves_resolved_query_nullability"
+        }
+      ]
     },
     {
       "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/SqlPipelineSuite.scala:562",
@@ -4120,9 +4127,16 @@
       "coverage_review": {
         "phase": "batch-view-metadata",
         "covered_assertions": "Persisted view namespace, view type, view/column comments and dependency publication have behavioral checks.",
-        "remaining_assertions": "Original exact full identifier, PersistedView internal type and sqlText equal to SELECT * FROM range(1, 4), plus original my persisted comment fixture, remain unported. Original Scala suite remains unexecuted.",
+        "remaining_assertions": "Exact original sqlText assertion is a confirmed gap: TreeText reconstruction returns SELECT * FROM range ( 1 , 4 ) with trailing space. Failing Rust reproduction retained for shared source-handling design. Original full graph/type fixture and Scala suite remain unexecuted.",
         "sail_evidence": "evidence/efc21f2c53b0d8c886b31928ed67131a1de7c6db/pytest.xml",
         "scala_suite_executed": false
+      },
+      "failing_rust_reproduction": {
+        "package": "sail-spark-connect",
+        "target": "lib",
+        "name": "pipelines::sql::tests::persisted_view_retains_original_query_text_and_comment",
+        "evidence": "evidence/view-source-design-boundary/initial-rust.log",
+        "source": "evidence/view-source-design-boundary/failing-view-test.rs"
       }
     },
     {

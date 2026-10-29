@@ -1,0 +1,16 @@
+{
+  "recorded_at": "2026-10-29T12:25:32.399644+00:00",
+  "sail_base_commit": "35565f49d1f4666255b431c63f1e4f8cabdf3ecf",
+  "sail_current_test_commit": "cb27f1a9dbd0fd888e4d5d8babff18bb349478cc",
+  "spark_commit": "617618396087429b5627a86ce933bb0f5d6645cb",
+  "source_fixture": "SqlPipelineSuite.scala:617",
+  "expected_view_text": "SELECT * FROM range(1, 4)",
+  "observed_view_text": "SELECT * FROM range ( 1 , 4 ) ",
+  "failing_test": "pipelines::sql::tests::persisted_view_retains_original_query_text_and_comment",
+  "reproduction": "Append failing-view-test.rs to the existing pipelines/sql/tests.rs module, then run cargo test -p sail-spark-connect --lib pipelines::sql::tests::persisted_view_retains_original_query_text_and_comment. Original assertion stays exact.",
+  "limits": [
+    "Retained failing compatibility test; not a passing Rust assertion or a new original Scala-suite run.",
+    "Initial combined prototype also lacked Python initialization; subsequent fixture logs isolate PlanService and DataFusion-default setup errors. Those fixture issues are corrected in the passing schema test.",
+    "Initial candidate patch preserves source if its temporary commit is garbage-collected."
+  ]
+}

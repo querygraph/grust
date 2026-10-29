@@ -1,0 +1,38 @@
+   Compiling sail-spark-connect v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-spark-connect)
+warning: linker stderr: ld: __eh_frame section too large (max 16MB) to encode dwarf unwind offsets in compact unwind table, performance of exception handling might be affected
+  |
+  = note: `#[warn(linker_messages)]` on by default
+
+warning: `sail-spark-connect` (lib test) generated 1 warning
+    Finished `test` profile [unoptimized] target(s) in 22.89s
+     Running unittests src/lib.rs (target/debug/deps/sail_spark_connect-94a7bcff04b1a816)
+
+running 5 tests
+
+thread 'pipelines::sql::tests::persisted_view_retains_original_query_text_and_comment' (84243114) panicked at crates/sail-spark-connect/src/pipelines/sql/tests.rs:150:5:
+assertion `left == right` failed
+  left: "SELECT * FROM range ( 1 , 4 ) "
+ right: "SELECT * FROM range(1, 4)"
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test pipelines::sql::tests::identity_partition_columns_keep_declared_order ... ok
+test pipelines::sql::tests::streaming_table_properties_are_registered_without_execution ... ok
+test pipelines::sql::tests::sql_configuration_is_captured_per_flow_and_reset_per_file ... ok
+
+thread 'pipelines::sql::tests::declared_schema_validation_preserves_resolved_query_nullability' (84243112) panicked at /Users/alexy/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/pyo3-0.29.2/src/interpreter_lifecycle.rs:134:13:
+assertion `left != right` failed: The Python interpreter is not initialized and the `auto-initialize` feature is not enabled.
+
+Consider calling `Python::initialize()` before attempting to use Python APIs.
+  left: 0
+ right: 0
+test pipelines::sql::tests::persisted_view_retains_original_query_text_and_comment ... FAILED
+test pipelines::sql::tests::declared_schema_validation_preserves_resolved_query_nullability ... FAILED
+
+failures:
+
+failures:
+    pipelines::sql::tests::declared_schema_validation_preserves_resolved_query_nullability
+    pipelines::sql::tests::persisted_view_retains_original_query_text_and_comment
+
+test result: FAILED. 3 passed; 2 failed; 0 ignored; 0 measured; 24 filtered out; finished in 0.17s
+
+error: test failed, to rerun pass `-p sail-spark-connect --lib`

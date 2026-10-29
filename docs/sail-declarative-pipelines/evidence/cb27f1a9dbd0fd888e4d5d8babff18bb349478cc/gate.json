@@ -1,0 +1,62 @@
+{
+  "sail_commit": "cb27f1a9dbd0fd888e4d5d8babff18bb349478cc",
+  "engine_commit": "bbf438c0661cdfa4a3fab3af70439f7f788615d8",
+  "spark_commit": "617618396087429b5627a86ce933bb0f5d6645cb",
+  "recorded_at": "2026-10-29T12:25:32.396496+00:00",
+  "platform": "macOS arm64",
+  "gate_checkout": "detached immutable source; own target; Rust library tests built and executed at this commit",
+  "cli_sha256": "683b0b7525f4f02a608fb71ce950a6926033eeb5ce7c22f8c376af431abb1b1c",
+  "checks": [
+    {
+      "command": "cargo +nightly fmt -p sail-spark-connect -- --check",
+      "outcome": "pass"
+    },
+    {
+      "command": "cargo +1.98.1 clippy -p sail-spark-connect --all-targets --all-features --locked -- -D warnings",
+      "outcome": "pass"
+    },
+    {
+      "command": "cargo +1.98.1 test -p sail-spark-connect --lib --locked pipelines::sql::tests -- --nocapture",
+      "outcome": "pass",
+      "passed": 4,
+      "failed": 0,
+      "ignored": 0,
+      "filtered_out": 24,
+      "tests": [
+        "pipelines::sql::tests::identity_partition_columns_keep_declared_order",
+        "pipelines::sql::tests::streaming_table_properties_are_registered_without_execution",
+        "pipelines::sql::tests::sql_configuration_is_captured_per_flow_and_reset_per_file",
+        "pipelines::sql::tests::declared_schema_validation_preserves_resolved_query_nullability"
+      ],
+      "note": "CARGO_PROFILE_DEV_DEBUG=0; CARGO_PROFILE_DEV_INCREMENTAL=false; PYO3_PYTHON=<venv>/bin/python."
+    },
+    {
+      "command": "pytest replay of selected nodes listed in pytest.xml using remote engine bbf438c0661cdfa4a3fab3af70439f7f788615d8",
+      "outcome": "pass",
+      "passed": 217,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "command": "python scripts/spark-pipelines-tests/run.py --spark-source <pinned Spark checkout> --remote sc://localhost:50082 --report spark-python.json",
+      "outcome": "pass",
+      "tests_run": 67,
+      "server_spark_version": "4.2.1",
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "command": "Compare CLI hash with engine receipt and verify unchanged production dependencies",
+      "outcome": "pass"
+    }
+  ],
+  "limits": [
+    "Four Rust library tests; no new original Scala-suite execution.",
+    "Query PlanResolver schema and declaration validation are tested before catalog-publication nullability conversion.",
+    "Exact persisted view source text has a retained failing reproduction; it is not part of this passing test commit.",
+    "CLI engine unchanged; no new CLI or Python native-extension build/execution claimed.",
+    "Shared SQL source/expression handling, failure/event and REST views, full batch, streaming and CDC remain outstanding."
+  ],
+  "test_dependency": "Existing local sail-catalog-memory added only under dev-dependencies; production dependencies unchanged."
+}
