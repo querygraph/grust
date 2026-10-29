@@ -1,0 +1,241 @@
+{
+  "recorded_at": "2026-10-29T20:49:43.516502+00:00",
+  "review_base_commit": "dd65d04f0dea71eebfec20b7bc80168d7e71d846",
+  "review_path": "docs/sail-declarative-pipelines/SDP-FABLE-DESIGN-REVIEW.md",
+  "preserved_prefix_bytes": 132498,
+  "preserved_prefix_sha256": "45c4a069b7928fa409fe9da7b893b774546e1eb7c356818facd52915f5200806",
+  "sources": [
+    {
+      "id": "cdc_handler_order",
+      "repository": "/Users/alexy/src/spark-sdp-4.2.1",
+      "commit": "617618396087429b5627a86ce933bb0f5d6645cb",
+      "path": "sql/pipelines/src/main/scala/org/apache/spark/sql/pipelines/autocdc/Scd1ForeachBatchHandler.scala",
+      "git_blob": "c286f26c8263c7c56b28c6802cb351ef7f36520c",
+      "sha256": "73345667f200592d18f32ef0828eda3994a80c71b3c9848c00eb37841dc7dc5f",
+      "excerpts": [
+        {
+          "first_line": 39,
+          "last_line": 70,
+          "text": "  def execute(batchDf: DataFrame, batchId: Long): Unit = {\n    ScdBatchValidator(\n      destinationIdentifier = targetTableIdentifier,\n      changeArgs = batchProcessor.changeArgs,\n      batchDf = batchDf,\n      batchId = batchId\n    ).validateMicrobatch()\n\n    val reconciledMicrobatch = batchProcessor.reconcileMicrobatch(\n      batchDf = batchDf,\n      // Aux holds at most one row per currently-active tombstone (revived keys are GC'd\n      // by mergeMicrobatchOntoAuxiliaryTable), so it generally stays small enough for a broadcast\n      // join. Future optimizations: key-pruned reads, table format-aware clustering and tombstone\n      // TTL.\n      auxiliaryTableDf = batchDf.sparkSession.read.table(\n        auxiliaryTableIdentifier.quotedString\n      )\n    )\n\n    batchProcessor.mergeMicrobatchOntoAuxiliaryTable(\n      reconciledMicrobatchDf = reconciledMicrobatch,\n      auxiliaryTableIdentifier = auxiliaryTableIdentifier\n    )\n\n    // Failure between these two merges is safe under foreachBatch retry: the aux merge\n    // only ever mutates a tombstone when this batch's event makes it stale (strictly newer\n    // delete advances it) or redundant (`>=` upsert revives the key, GC'ing the tombstone),\n    // so on retry those preconditions no longer hold against the just-advanced aux state -\n    // the aux merge is a no-op and the target merge replays as if for the first time.\n    batchProcessor.mergeMicrobatchOntoTarget(\n      reconciledMicrobatchDf = reconciledMicrobatch,\n      targetTableIdentifier = targetTableIdentifier"
+        }
+      ]
+    },
+    {
+      "id": "cdc_all_row_validation",
+      "repository": "/Users/alexy/src/spark-sdp-4.2.1",
+      "commit": "617618396087429b5627a86ce933bb0f5d6645cb",
+      "path": "sql/pipelines/src/main/scala/org/apache/spark/sql/pipelines/autocdc/ScdBatchValidator.scala",
+      "git_blob": "0d2f47d1c4a6e6cb7ede33bc6176108343f22d52",
+      "sha256": "87cdd32d584104699582c380ae1151e5a072456e8bc3ffb9c309cf672b342c6b",
+      "excerpts": [
+        {
+          "first_line": 48,
+          "last_line": 100,
+          "text": "      throw new AnalysisException(\n        errorClass = \"AUTOCDC_MICROBATCH_VALIDATION.NON_ORDERABLE_SEQUENCE\",\n        messageParameters = Map(\n          \"tableName\" -> destinationIdentifier.quotedString,\n          \"batchId\" -> batchId.toString,\n          \"dataType\" -> seqType.catalogString\n        )\n      )\n    }\n\n    val sequencingNullCount: Column =\n      F.count(F.when(changeArgs.sequencing.isNull, F.lit(1))).as(\"__autocdc_seq_null_count\")\n    val perKeyNullCount: Seq[Column] = changeArgs.keys.map { key =>\n      F.count(F.when(F.col(key.quoted).isNull, F.lit(1)))\n        .as(s\"__autocdc_key_null_count_${key.name}\")\n    }\n    // The null count aggregations are laid out in the returned dataframe as:\n    // [# rows with null sequence, # rows with null for key1, ..., # rows with null for keyN].\n    val nullCountsResultDf =\n      batchDf.agg(sequencingNullCount, perKeyNullCount: _*).head()\n\n    val numRowsWithNullSequence = nullCountsResultDf.getLong(0)\n    if (numRowsWithNullSequence > 0) {\n      throw new AnalysisException(\n        errorClass = \"AUTOCDC_MICROBATCH_VALIDATION.NULL_SEQUENCE\",\n        messageParameters = Map(\n          \"tableName\" -> destinationIdentifier.quotedString,\n          \"batchId\" -> batchId.toString,\n          \"nullCount\" -> numRowsWithNullSequence.toString\n        )\n      )\n    }\n\n    val keysWithNullEntries = changeArgs.keys.zipWithIndex.flatMap { case (key, idx) =>\n      val rowCountForKey = nullCountsResultDf.getLong(idx + 1)\n      Option.when(rowCountForKey > 0)(key -> rowCountForKey)\n    }\n    if (keysWithNullEntries.nonEmpty) {\n      val nullKeyCounts = keysWithNullEntries\n        .map { case (key, count) => s\"${key.quoted}=$count\" }\n        .mkString(\", \")\n\n      throw new AnalysisException(\n        errorClass = \"AUTOCDC_MICROBATCH_VALIDATION.NULL_KEY\",\n        messageParameters = Map(\n          \"tableName\" -> destinationIdentifier.quotedString,\n          \"batchId\" -> batchId.toString,\n          \"nullKeyCounts\" -> nullKeyCounts\n        )\n      )\n    }\n  }\n}"
+        }
+      ]
+    },
+    {
+      "id": "cdc_validation_assertions",
+      "repository": "/Users/alexy/src/spark-sdp-4.2.1",
+      "commit": "617618396087429b5627a86ce933bb0f5d6645cb",
+      "path": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/autocdc/Scd1ForeachBatchHandlerSuite.scala",
+      "git_blob": "76790847ede5c0749a0e94176360bc0a2c2e06ef",
+      "sha256": "fc1ff89277b71ecdaca612c9ade9aa9c7fbdeb88515fe8a4ca8f2b21487959ad",
+      "excerpts": [
+        {
+          "first_line": 113,
+          "last_line": 143,
+          "text": "  test(\n    \"Scd1ForeachBatchHandler invalidates rows with a null key column before merging to aux/target\"\n  ) {\n    createAuxTable()\n    createTargetTable(Row(1, \"old\", cdcMetadataRow(deleteSeq = None, upsertSeq = Some(10L))))\n\n    // Two rows have a null id; one row is well-formed. The validator must surface a count\n    // of two without writing anything to the aux or target table.\n    val batch = microbatchOf(sourceSchema)(\n      Row(null, \"no-id-1\", 5L, false),\n      Row(2, \"ok\", 6L, false),\n      Row(null, \"no-id-2\", 7L, true)\n    )\n\n    checkError(\n      exception = intercept[AnalysisException] {\n        exec.execute(batch, batchId = 13L)\n      },\n      condition = \"AUTOCDC_MICROBATCH_VALIDATION.NULL_KEY\",\n      sqlState = \"22000\",\n      parameters = Map(\n        \"tableName\" -> defaultTargetTableIdentifier.quotedString,\n        \"batchId\" -> \"13\",\n        \"nullKeyCounts\" -> \"`id`=2\"\n      )\n    )\n    val resultAuxTable = spark.read.table(defaultAuxTableIdentifier.quotedString)\n    val resultTargetTable = spark.read.table(defaultTargetTableIdentifier.quotedString)\n    assert(resultAuxTable.collect().isEmpty)\n    checkAnswer(resultTargetTable, Row(1, \"old\", Row(null, 10L)))\n  }"
+        },
+        {
+          "first_line": 145,
+          "last_line": 204,
+          "text": "  test(\n    \"Scd1ForeachBatchHandler invalidates rows when any column of a composite key is null\"\n  ) {\n    // Composite [country, city] key. The validator must report per-column null counts in\n    // the configured key order (country before city).\n    val compositeSourceSchema = new StructType()\n      .add(\"country\", StringType)\n      .add(\"city\", StringType)\n      .add(\"seq\", LongType)\n      .add(\"is_delete\", BooleanType)\n    val compositeAuxSchema = new StructType()\n      .add(\"country\", StringType)\n      .add(\"city\", StringType)\n      .add(Scd1BatchProcessor.cdcMetadataColName, cdcMetadataColSchemaType())\n    val compositeTargetSchema = new StructType()\n      .add(\"country\", StringType)\n      .add(\"city\", StringType)\n      .add(Scd1BatchProcessor.cdcMetadataColName, cdcMetadataColSchemaType())\n\n    val compositeProcessor = Scd1BatchProcessor(\n      changeArgs = ChangeArgs(\n        keys = Seq(UnqualifiedColumnName(\"country\"), UnqualifiedColumnName(\"city\")),\n        sequencing = F.col(\"seq\"),\n        storedAsScdType = ScdType.Type1,\n        deleteCondition = Some(F.col(\"is_delete\"))\n      ),\n      resolvedSequencingType = LongType\n    )\n    val compositeExec = Scd1ForeachBatchHandler(\n      batchProcessor = compositeProcessor,\n      auxiliaryTableIdentifier = defaultAuxTableIdentifier,\n      targetTableIdentifier = defaultTargetTableIdentifier\n    )\n\n    createTable(defaultAuxIdent, defaultAuxTableIdentifier, compositeAuxSchema)\n    createTable(defaultTargetIdent, defaultTargetTableIdentifier, compositeTargetSchema)\n\n    // country is null in 2 rows, city is null in 2 rows (one row has both null).\n    val batch = microbatchOf(compositeSourceSchema)(\n      Row(null, \"Boston\", 1L, false),\n      Row(\"US\", null, 2L, false),\n      Row(null, null, 3L, false)\n    )\n\n    checkError(\n      exception = intercept[AnalysisException] {\n        compositeExec.execute(batch, batchId = 7L)\n      },\n      condition = \"AUTOCDC_MICROBATCH_VALIDATION.NULL_KEY\",\n      sqlState = \"22000\",\n      parameters = Map(\n        \"tableName\" -> defaultTargetTableIdentifier.quotedString,\n        \"batchId\" -> \"7\",\n        \"nullKeyCounts\" -> \"`country`=2, `city`=2\"\n      )\n    )\n    val resultAuxTable = spark.read.table(defaultAuxTableIdentifier.quotedString)\n    val resultTargetTable = spark.read.table(defaultTargetTableIdentifier.quotedString)\n    assert(resultAuxTable.collect().isEmpty)\n    assert(resultTargetTable.collect().isEmpty)"
+        },
+        {
+          "first_line": 207,
+          "last_line": 231,
+          "text": "  test(\n    \"Scd1ForeachBatchHandler surfaces the null-sequence error before the null-key error\"\n  ) {\n    // A single row has both a null sequence and a null id. The validator must surface the\n    // sequence error first to preserve the existing precedence.\n    createAuxTable()\n    createTargetTable()\n\n    val batch = microbatchOf(sourceSchema)(\n      Row(null, \"bad\", null, false)\n    )\n\n    checkError(\n      exception = intercept[AnalysisException] {\n        exec.execute(batch, batchId = 99L)\n      },\n      condition = \"AUTOCDC_MICROBATCH_VALIDATION.NULL_SEQUENCE\",\n      sqlState = \"22000\",\n      parameters = Map(\n        \"tableName\" -> defaultTargetTableIdentifier.quotedString,\n        \"batchId\" -> \"99\",\n        \"nullCount\" -> \"1\"\n      )\n    )\n  }"
+        }
+      ]
+    },
+    {
+      "id": "cdc_reconciliation_and_null_comparisons",
+      "repository": "/Users/alexy/src/spark-sdp-4.2.1",
+      "commit": "617618396087429b5627a86ce933bb0f5d6645cb",
+      "path": "sql/pipelines/src/main/scala/org/apache/spark/sql/pipelines/autocdc/Scd1BatchProcessor.scala",
+      "git_blob": "0656a7eb91b01ae08bb677326a7794356a54664d",
+      "sha256": "30d76961123fb7d08b2be5c02b0aa412ddd407c7c8b6cbb2d5b2ba2ec1c40ec5",
+      "excerpts": [
+        {
+          "first_line": 43,
+          "last_line": 80,
+          "text": "   * merges consume. Composes the per-step transforms in the only order that produces correct\n   * SCD1 semantics:\n   *\n   *   1. [[deduplicateMicrobatch]]: collapse same-key events to the latest by sequence.\n   *   2. [[extendMicrobatchRowsWithCdcMetadata]]: project the operational `_cdc_metadata` column\n   *      (must run before column selection, which may drop inputs the metadata expressions\n   *      reference).\n   *   3. [[projectTargetColumnsOntoMicrobatch]]: apply the user-defined column selection while\n   *      preserving the CDC metadata column.\n   *   4. [[applyTombstonesToMicrobatch]]: filter out late-arriving events superseded by\n   *      tombstones already recorded in the auxiliary table.\n   *\n   * The per-step methods are kept package-visible so that focused unit tests can pin each\n   * transform's behavior independently. This method itself is package-visible so that\n   * [[Scd1ForeachBatchHandler]] can call it after running [[ScdBatchValidator.validateMicrobatch]]\n   * - validation is intentionally not folded in here, as it must run before any of these\n   * transforms touch the data.\n   *\n   * @param batchDf          The validated incoming CDC microbatch.\n   * @param auxiliaryTableDf A snapshot of the auxiliary table for tombstone reconciliation.\n   *                         Must contain at minimum the key columns + `_cdc_metadata`.\n   * @return The reconciled microbatch, ready to be merged onto both tables.\n   */\n  private[autocdc] def reconcileMicrobatch(\n      batchDf: DataFrame,\n      auxiliaryTableDf: DataFrame): DataFrame = {\n    val deduplicated = deduplicateMicrobatch(validatedMicrobatch = batchDf)\n    val withCdcMetadata = extendMicrobatchRowsWithCdcMetadata(validatedMicrobatch = deduplicated)\n    val projected = projectTargetColumnsOntoMicrobatch(\n      microbatchWithCdcMetadataDf = withCdcMetadata\n    )\n    applyTombstonesToMicrobatch(\n      microbatchDf = projected,\n      auxiliaryTableDf = auxiliaryTableDf\n    )\n  }\n\n  /**"
+        },
+        {
+          "first_line": 94,
+          "last_line": 110,
+          "text": "  private[autocdc] def deduplicateMicrobatch(validatedMicrobatch: DataFrame): DataFrame = {\n    // The `max_by` API can only return a single column, so pack/unpack the entire row into a\n    // temporary column before and after the `max_by` operation.\n    val winningRowCol = Scd1BatchProcessor.winningRowColName\n\n    val allMicrobatchColumns =\n      validatedMicrobatch.columns\n        .map(colName => F.col(QuotingUtils.quoteIdentifier(colName)))\n        .toImmutableArraySeq\n\n    validatedMicrobatch\n      .groupBy(changeArgs.keys.map(k => F.col(k.quoted)): _*)\n      .agg(\n        F.max_by(F.struct(allMicrobatchColumns: _*), changeArgs.sequencing)\n          .as(winningRowCol)\n      )\n      .select(F.col(s\"$winningRowCol.*\"))"
+        },
+        {
+          "first_line": 347,
+          "last_line": 365,
+          "text": "    val destinationUpsertVersionField =\n      Scd1BatchProcessor.upsertSequenceOf(destinationCdcMetadataCol)\n\n    val keysMatch = changeArgs.keys\n      .map(k =>\n        F.col(s\"microbatch.${k.quoted}\") === F.col(s\"$destinationTableStr.${k.quoted}\")\n      )\n      .reduce(_ && _)\n\n    // Upsert beats existing row if incoming upsert sequence is geq to the upsert sequence on\n    // the target.\n    val incomingWinsUpsert = microbatchUpsertVersionField.isNotNull &&\n      microbatchUpsertVersionField >= destinationUpsertVersionField\n\n    // Delete beats existing row if delete sequencing is strictly greater than the upsert\n    // sequence on the target. This is an arbitrary but deliberate choice to maintain that\n    // upserts get priority over deletes on duplicate sequencing.\n    val incomingWinsDelete = microbatchDeleteVersionField.isNotNull &&\n      microbatchDeleteVersionField > destinationUpsertVersionField"
+        }
+      ]
+    },
+    {
+      "id": "cdc_target_durability_coverage",
+      "repository": "/Users/alexy/src/spark-sdp-4.2.1",
+      "commit": "617618396087429b5627a86ce933bb0f5d6645cb",
+      "path": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/AutoCdcScd1TargetTableDurabilitySuite.scala",
+      "git_blob": "46f8ee47db02f44e1fa4f441abe7ba3e212a8313",
+      "sha256": "f407daea2db6a9b319b65b6d81770f7a9966cdfb9b0eba05f2df4ba802d78f1a",
+      "excerpts": [
+        {
+          "first_line": 38,
+          "last_line": 73,
+          "text": "  test(\"pre-loaded rows: an event with a lower sequence is suppressed and a higher one \" +\n    \"wins\") {\n    val session = spark\n    import session.implicits._\n\n    spark.sql(\n      s\"CREATE TABLE $catalog.$namespace.target \" +\n      s\"(id INT NOT NULL, name STRING, version BIGINT NOT NULL, $cdcMetadataDdl)\"\n    )\n    insertPreloadedRow(s\"$catalog.$namespace.target\", \"1, 'alice', 5\", 5L)\n    insertPreloadedRow(s\"$catalog.$namespace.target\", \"2, 'bob', 5\", 5L)\n\n    val stream = MemoryStream[(Int, String, Long)]\n    stream.addData(\n      (1, \"stale\", 2L),  // < pre-existing seq=5 -> ignored\n      (2, \"bob2\", 10L)   // > pre-existing seq=5 -> upserts\n    )\n    val ctx = new TestGraphRegistrationContext(spark) {\n      registerTable(\"target\", catalog = Some(catalog), database = Some(namespace))\n      registerFlow(autoCdcFlow(\n        name = \"auto_cdc_flow\",\n        target = \"target\",\n        query = dfFlowFunc(stream.toDF().toDF(\"id\", \"name\", \"version\")),\n        keys = Seq(\"id\"),\n        sequencing = functions.col(\"version\")\n      ))\n    }\n    runPipeline(ctx)\n\n    checkAnswer(\n      spark.table(s\"$catalog.$namespace.target\"),\n      Seq(\n        Row(1, \"alice\", 5L, cdcMeta(None, Some(5L))),\n        Row(2, \"bob2\", 10L, cdcMeta(None, Some(10L)))\n      )\n    )"
+        },
+        {
+          "first_line": 76,
+          "last_line": 117,
+          "text": "  test(\"pre-loaded target rows merge correctly on the first AutoCDC run, and the \" +\n    \"auxiliary table is created lazily\") {\n    val session = spark\n    import session.implicits._\n\n    // Target was populated by some external process; this is the first AutoCDC run.\n    spark.sql(\n      s\"CREATE TABLE $catalog.$namespace.target \" +\n      s\"(id INT NOT NULL, name STRING, version BIGINT NOT NULL, $cdcMetadataDdl)\"\n    )\n    insertPreloadedRow(s\"$catalog.$namespace.target\", \"1, 'alice', 1\", 1L)\n\n    assert(\n      !spark.catalog.tableExists(auxTableNameFor(\"target\")),\n      \"Auxiliary table should not exist before the first AutoCDC run\"\n    )\n\n    val stream = MemoryStream[(Int, String, Long)]\n    stream.addData((1, \"bob\", 2L))\n\n    val ctx = new TestGraphRegistrationContext(spark) {\n      registerTable(\"target\", catalog = Some(catalog), database = Some(namespace))\n      registerFlow(autoCdcFlow(\n        name = \"auto_cdc_flow\",\n        target = \"target\",\n        query = dfFlowFunc(stream.toDF().toDF(\"id\", \"name\", \"version\")),\n        keys = Seq(\"id\"),\n        sequencing = functions.col(\"version\")\n      ))\n    }\n    runPipeline(ctx)\n\n    // seq=2 > pre-existing seq=1, so \"bob\" replaces \"alice\" via the upsert sequence column.\n    checkAnswer(\n      spark.table(s\"$catalog.$namespace.target\"),\n      Seq(Row(1, \"bob\", 2L, cdcMeta(None, Some(2L))))\n    )\n    assert(\n      spark.catalog.tableExists(auxTableNameFor(\"target\")),\n      \"Auxiliary table should be created lazily on the first AutoCDC run\"\n    )\n  }"
+        },
+        {
+          "first_line": 119,
+          "last_line": 157,
+          "text": "  test(\"a target table created without the CDC metadata column gets the column \" +\n    \"auto-added on the first AutoCDC run\") {\n    val session = spark\n    import session.implicits._\n\n    // User creates the target without the AutoCDC metadata column. DatasetManager evolves\n    // the existing table schema by merging it with the AutoCdcMergeFlow's output schema,\n    // which includes the metadata column. The first run therefore proceeds normally, and\n    // subsequent reads see the metadata struct alongside the user's data columns.\n    spark.sql(\n      s\"CREATE TABLE $catalog.$namespace.target \" +\n      s\"(id INT NOT NULL, name STRING, version BIGINT NOT NULL)\"\n    )\n\n    val stream = MemoryStream[(Int, String, Long)]\n    stream.addData((1, \"alice\", 1L))\n\n    val ctx = new TestGraphRegistrationContext(spark) {\n      registerTable(\"target\", catalog = Some(catalog), database = Some(namespace))\n      registerFlow(autoCdcFlow(\n        name = \"auto_cdc_flow\",\n        target = \"target\",\n        query = dfFlowFunc(stream.toDF().toDF(\"id\", \"name\", \"version\")),\n        keys = Seq(\"id\"),\n        sequencing = functions.col(\"version\")\n      ))\n    }\n    runPipeline(ctx)\n\n    val schema = spark.table(s\"$catalog.$namespace.target\").schema\n    assert(\n      schema.fieldNames.contains(Scd1BatchProcessor.cdcMetadataColName),\n      s\"Target must have ${Scd1BatchProcessor.cdcMetadataColName} after first AutoCDC run; \" +\n      s\"got ${schema.fieldNames.toSeq}\"\n    )\n    checkAnswer(\n      spark.table(s\"$catalog.$namespace.target\"),\n      Seq(Row(1, \"alice\", 1L, cdcMeta(None, Some(1L))))\n    )"
+        }
+      ]
+    },
+    {
+      "id": "spark_materialized_nullability",
+      "repository": "/Users/alexy/src/spark-sdp-4.2.1",
+      "commit": "617618396087429b5627a86ce933bb0f5d6645cb",
+      "path": "sql/pipelines/src/main/scala/org/apache/spark/sql/pipelines/graph/DatasetManager.scala",
+      "git_blob": "456edca8d1e22613abf6d65ed2bda398b5da5101",
+      "sha256": "46b64a91e221a3553ed5bf590a5e771494d30e95f2b2bce8cefffd72e25c346b",
+      "excerpts": [
+        {
+          "first_line": 260,
+          "last_line": 264,
+          "text": "    val identifier =\n      Identifier.of(Array(table.identifier.database.get), table.identifier.identifier)\n    val outputSchema = table.specifiedSchema.getOrElse(\n      resolvedDataflowGraph.inferredSchema(table.identifier).asNullable\n    )"
+        }
+      ]
+    },
+    {
+      "id": "sail_materialized_nullability",
+      "repository": "/Users/alexy/src/sail-pipelines-proposal",
+      "commit": "4f7a642b710cd377babaae64f26107be805f2c05",
+      "path": "crates/sail-spark-connect/src/pipelines/schema.rs",
+      "git_blob": "49a4dfa80ae1dec183ddb07be0d7c49049a37bff",
+      "sha256": "833ca58d1f0fa26ce1cf89f8bf4a4743445e8136edb72dbf96e65b3038c211f2",
+      "excerpts": [
+        {
+          "first_line": 94,
+          "last_line": 101,
+          "text": "pub(super) fn table_columns(\n    output: &Output,\n    inferred: &Schema,\n) -> SparkResult<Vec<spec::TableColumnDefinition>> {\n    let fields = match &output.schema {\n        Some(schema) => schema.fields.clone(),\n        None => nullable_fields(&spark_fields(inferred)?),\n    };"
+        }
+      ]
+    },
+    {
+      "id": "sail_incremental_execution_boundary",
+      "repository": "/Users/alexy/src/sail-pipelines-proposal",
+      "commit": "4f7a642b710cd377babaae64f26107be805f2c05",
+      "path": "crates/sail-spark-connect/src/pipelines/execution.rs",
+      "git_blob": "a0a09faa3bd6d30928279eee4ceb7b524985e0f3",
+      "sha256": "9e7c51c03c9df636f5ec920b8ba0900a9f87b816531f846d197211e2d92b96c5",
+      "excerpts": [
+        {
+          "first_line": 28,
+          "last_line": 36,
+          "text": "    // Reject unsupported modes before the first write, rather than partially\n    // publishing a batch graph that contains an incremental or sink output.\n    if graph\n        .outputs\n        .iter()\n        .any(|x| matches!(x.kind, OutputType::Table | OutputType::Sink))\n    {\n        return Err(SparkError::unsupported(\"incremental pipeline execution\"));\n    }"
+        }
+      ]
+    },
+    {
+      "id": "iggy_operation_resolution",
+      "repository": "/Users/alexy/src/iggy",
+      "commit": "153fdf466aea94b7bcb90681ee7274f9f76ec00d",
+      "path": "core/common/src/traits/client.rs",
+      "git_blob": "be51523e5c4e5e1eb7b469608488ad8df986c23e",
+      "sha256": "d599c62cfb8be92e9752850d10996a97c657e0a59882fe029a0456896bb73e2b",
+      "excerpts": [
+        {
+          "first_line": 85,
+          "last_line": 108,
+          "text": "    /// Replays the retained operation `op` until its committed result is proved\n    /// or `deadline` passes. `op` is the request id that `OperationUncertain` or\n    /// `LaneBlocked` carries.\n    ///\n    /// `Ok(())` means a successful commit was proved. A proved committed business\n    /// rejection returns its original error. Both release the retained operation\n    /// and its lane. Successful personal access token creation is an exception:\n    /// replay returns `PersonalAccessTokenAlreadyExists` because its original\n    /// secret is unrecoverable, even though the create committed successfully.\n    /// `OperationUncertain(op)` keeps the original frame and lane:\n    /// a later denial without committed-result proof cannot settle an earlier send.\n    /// TCP, QUIC and WebSocket support recovery; HTTP returns `FeatureUnavailable`.\n    ///\n    /// The client keeps the proved outcomes of its last\n    /// [`max_operations`](crate::PendingOperationsConfig::max_operations) replays,\n    /// also across a session reset. A later resolve of `op` returns the same\n    /// outcome without a request, also when a producer or a consumer of this\n    /// client replayed `op` first.\n    ///\n    /// `OperationNotRetained(op)` means the outcome is unknown and can no longer\n    /// be recovered through this client. Either a session reset or an abandon\n    /// dropped `op` before a replay proved its outcome, or that outcome aged out.\n    async fn resolve_operation(&self, _op: u64, _deadline: Instant) -> Result<(), IggyError> {\n        Err(IggyError::FeatureUnavailable)"
+        }
+      ]
+    },
+    {
+      "id": "iggy_position_ack_identity_and_errors",
+      "repository": "/Users/alexy/src/iggy",
+      "commit": "153fdf466aea94b7bcb90681ee7274f9f76ec00d",
+      "path": "core/sdk/src/clients/consumer.rs",
+      "git_blob": "9aad2501fbf855d9acb3a89c7829f5505e05d623",
+      "sha256": "90dc09ab32b3c1779f07922bed2514798f355480bd6ac1afa9ce78c66008a522",
+      "excerpts": [
+        {
+          "first_line": 288,
+          "last_line": 295,
+          "text": "            OffsetMutation::StorePosition(position) => {\n                client\n                    .store_consumer_position(\n                        &self.consumer,\n                        &self.stream_id,\n                        &self.topic_id,\n                        position,\n                    )"
+        },
+        {
+          "first_line": 794,
+          "last_line": 814,
+          "text": "    /// # Errors\n    ///\n    /// [`IggyError::OperationUncertain`] means this store may have committed and remains retained.\n    /// [`IggyError::LaneBlocked`] means the earlier operation is still unresolved and this store\n    /// was not sent. Other failures include connection, permission, history and ownership errors.\n    pub async fn store_offset(\n        &self,\n        offset: u64,\n        partition_id: Option<u32>,\n    ) -> Result<(), IggyError> {\n        self.state.store_offset(offset, partition_id).await\n    }\n\n    /// Commit a message's captured partition incarnation and owner using\n    /// [`ReceivedMessage::position`]. A position from a deleted incarnation or a previous owner is\n    /// refused without updating replacement progress.\n    ///\n    /// # Errors\n    /// Uses the recovery and error contract of [`Self::store_offset`].\n    pub async fn store_position(&self, position: ConsumerPosition) -> Result<(), IggyError> {\n        self.state.store_position(position).await"
+        }
+      ]
+    },
+    {
+      "id": "iggy_position_fields",
+      "repository": "/Users/alexy/src/iggy",
+      "commit": "153fdf466aea94b7bcb90681ee7274f9f76ec00d",
+      "path": "core/common/src/types/consumer/consumer_offset_info.rs",
+      "git_blob": "b8b4cf591bb49efc3a52563309e884ea0eef825d",
+      "sha256": "9909a00759388f445aa9bfbb8cf151ad23b27ae6859bfe82d810aeb28585655f",
+      "excerpts": [
+        {
+          "first_line": 36,
+          "last_line": 45,
+          "text": "/// A checkpoint retains the partition incarnation and owner that delivered its messages.\n#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]\npub struct ConsumerPosition {\n    /// Partition from which the message was consumed.\n    pub partition_id: u32,\n    /// Inclusive message offset to commit.\n    pub offset: u64,\n    /// Partition incarnation and owner captured by the poll; retain both for a delayed commit.\n    pub context: PartitionContext,\n}"
+        }
+      ]
+    },
+    {
+      "id": "iggy_captured_context_and_offset_read",
+      "repository": "/Users/alexy/src/iggy",
+      "commit": "153fdf466aea94b7bcb90681ee7274f9f76ec00d",
+      "path": "core/common/src/traits/consumer_offset_client.rs",
+      "git_blob": "0689356c47f26e793a64d1f784ac6be3dbcd8dd6",
+      "sha256": "b1f7c93696d72a1e156db5925fa0feef776f11247bca795b5a9946a98aa9303c",
+      "excerpts": [
+        {
+          "first_line": 27,
+          "last_line": 47,
+          "text": "/// Binary clients cache the route of an offset write with the partition context it reported.\n/// After another client deletes and recreates the partition, a write without a caller context\n/// ([`Self::store_consumer_offset`], [`Self::delete_consumer_offset`]) can fail once with\n/// [`IggyError::HistoryUnavailable`] (87), or with [`IggyError::ConsumerGroupPartitionNotOwned`]\n/// (5009) for a consumer group. The failed route is dropped, so the next call routes again and\n/// takes the new context. [`Self::store_consumer_position`] carries the caller's context, so it\n/// keeps getting the refusal for that context.\n#[async_trait]\npub trait ConsumerOffsetClient {\n    /// Commit a captured position without substituting a newer incarnation or owner.\n    /// Authentication and permission to poll messages are required.\n    /// Returns [`IggyError::HistoryUnavailable`] (87) for a deleted or replaced incarnation,\n    /// [`IggyError::ConsumerGroupPartitionNotOwned`] (5009) for a lost owner,\n    /// or [`IggyError::TooManyConsumerOffsets`] (3024) at the new-key limit.\n    async fn store_consumer_position(\n        &self,\n        consumer: &Consumer,\n        stream_id: &Identifier,\n        topic_id: &Identifier,\n        position: ConsumerPosition,\n    ) -> Result<(), IggyError>;"
+        },
+        {
+          "first_line": 64,
+          "last_line": 68,
+          "text": "    /// An absent offset key returns `Ok(None)` when its stream, topic, and consumer group resolve.\n    /// A replica unable to admit the request returns [`IggyError::TransientNotAccepted`].\n    /// A local auto-commit cursor can be visible before its durable store commits.\n    /// In a cluster the node the client is connected to answers from its own replica of the partition.\n    /// That replica can be a backup that lags the partition's primary, so a read right after a store can return the previous offset."
+        }
+      ]
+    }
+  ],
+  "existing_receipts": [
+    "../orc-sail-foundation/provenance.json",
+    "../orc-timestamp-precision/provenance.json",
+    "../8d044db3860b4f55e49543c833246af31e986e2e/gate.json"
+  ],
+  "scope": "Source-backed review response, acceptance clarifications and handoff; no new runtime test verdict.",
+  "limitations": [
+    "CDC validation/preparation binding is a recommended Sail contract, not an observed Spark recovery guarantee.",
+    "Null-version target behavior is source inference requiring reference execution.",
+    "Iggy acknowledgment recovery cases are proposed broker tests; no broker run in this response.",
+    "Existing uncommitted Sail TIME and ORC drafts remain outside the reviewed commit and are preserved."
+  ]
+}

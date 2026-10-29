@@ -1535,3 +1535,137 @@ Iggy integration and CDC runtime remain unimplemented in the SDP branch. The las
 selected runtime receipt remains 277 Sail Python and 67 upstream Python executions;
 the canonical 462 registrations, 97 assertion reviews and 59 partial ports are
 unchanged. This append changes review guidance, not the acceptance denominator.
+
+## Astra Ultra review closeout: recovery boundaries and build handoff
+
+Recorded: 2026-10-29T20:49:43.516502+00:00. I read Fable's full review and all three preceding
+Astra responses. This addendum preserves them and supplies three further
+clarifications, rather than treating previously identified risks as new findings.
+Source checks use Sail `4f7a642b710cd377babaae64f26107be805f2c05`, Spark **4.2.1**
+`617618396087429b5627a86ce933bb0f5d6645cb`, and Iggy
+`153fdf466aea94b7bcb90681ee7274f9f76ec00d`. The
+[source audit](evidence/fable-astra-closeout/source-audit.json) retains exact
+blobs and excerpts. This response adds no runtime qualification.
+
+**Response to Fable:** retain the overall architecture and incremental delivery
+plan. Sail's resolver, catalog abstractions, JobService and physical commit
+operators are the right foundation. The streaming and CDC proposals are feasible,
+but their recovery mechanisms still need the named design decisions and executed
+fault tests. The earlier corrections stand; this review does not approve the
+original separate lease/progress files, generation-only fencing or state-free
+interpretation of AvailableNow. The remaining work is substantial and should
+stay split into small review units.
+
+### 1. CDC preparation must retain the meaning of validation
+
+**Observed in the reference source.** Spark validates the original microbatch
+before reconciliation (`autocdc/Scd1ForeachBatchHandler.scala:39–56`). The validator
+counts nulls across every input row; deduplication happens afterward. In
+`Scd1ForeachBatchHandlerSuite.scala:113–143`, two rows have the same null key and
+different sequences. The required error contains ``nullKeyCounts = `id`=2``,
+and both tables remain unchanged. Validating only the deduplicated rows would
+lose an invalid row and change that count. Lines 207–231 separately require the
+null-sequence error to precede the null-key error.
+
+**Improvement to the proposed prepared-input contract:** a manifest of reconciled
+survivors is insufficient evidence that the original batch passed validation.
+Bind successful validation and prepared rows to the same input/evaluation
+identity before publishing a state that permits either MERGE. Preserve the
+order: validate all input rows, deduplicate, derive metadata, apply selection,
+apply tombstones, then seal the prepared result. An empty result still needs the
+validation result and the previously specified no-op completion receipts.
+
+Durably staging the evaluated input is one implementation; deterministic
+reconstruction with equivalent guarantees is another. This is a recommended
+Sail recovery property, not a claim that Spark's lazy DataFrame path proves it.
+The next CDC design must choose the mechanism without silently changing Spark's
+expression evaluation or error precedence.
+
+**Acceptance:** port the existing duplicate-null-key, composite-key count and
+error-precedence assertions unchanged. Add a null-sequence row that would lose
+deduplication to a valid row with the same key. Crash between validation and
+preparation, discard process caches, and verify that recovery cannot certify a
+different input or bypass validation. No auxiliary/target effect may occur for
+an invalid batch.
+
+### 2. Distinguish inferred CDC metadata from an existing target's contents
+
+**Coverage correction.** The metadata-auto-add case in
+`graph/AutoCdcScd1TargetTableDurabilitySuite.scala:119–157` starts with an empty
+target. Its preloaded-row cases explicitly supply CDC sequence metadata. They
+do not establish behavior for a populated target whose old rows have no stored
+CDC version. The target MERGE uses ordinary `>` and `>=` comparisons against
+the stored upsert sequence (`Scd1BatchProcessor.scala:347–365`); it supplies no
+default version for null metadata. SQL null comparison semantics therefore
+suggest neither matched action wins in that situation, but that is a source
+inference requiring a reference execution, not a reported test result.
+
+**Improvement:** keep three separate reference cases: empty target without the
+metadata column, populated target without it, and populated target with null
+metadata. Preserve observed Spark behavior and errors; do not invent a zero or
+minimum starting sequence. Also preserve Sail's existing distinction between
+flow schema and materialized table schema: Spark applies `asNullable` to inferred
+table schemas (`graph/DatasetManager.scala:262–264`), and Sail already applies
+`nullable_fields` in `pipelines/schema.rs:94–101`. The non-null metadata field
+described in Fable §6.1 is not a blanket physical-table nullability requirement.
+
+### 3. Iggy acknowledgment uncertainty is separate from missing input
+
+**Qualification of the first Astra response's broad fail-closed wording.**
+Iggy's `OperationNotRetained` means this client can no longer resolve a request's
+outcome after reset, abandonment or outcome eviction
+(`core/common/src/traits/client.rs:85–106`). It does not establish that source
+messages disappeared. `OperationUncertain` may follow a committed offset store;
+`LaneBlocked` means the requested store was not sent
+(`core/sdk/src/clients/consumer.rs:794–814`).
+
+Use phase-specific recovery rules:
+
+| Condition | Required treatment |
+| --- | --- |
+| A pending batch cannot replay its promised input | Stop without advancing data progress or acknowledging the missing range. |
+| All required effects and durable progress are confirmed, but acknowledgment is uncertain | Keep the batch committed and record acknowledgment as pending. Never rerun its data effects, roll back progress or replace its intent merely to retry acknowledgment. |
+| Retained request resolution becomes unavailable | Preserve the unknown acknowledgment outcome. A new acknowledgment attempt requires the protected lifecycle and a position justified by durable progress; expiry alone permits no data replay. |
+| The captured partition incarnation or owner is refused | Report the refusal and preserve the committed batch. Never substitute a replacement context to force acknowledgment through. |
+
+Persist the **complete acknowledgment identity**. `ConsumerPosition` contains
+partition, inclusive offset and context, while consumer, stream and topic are
+supplied separately (`consumer_offset_info.rs:36–45`; `consumer.rs:288–295`). A
+saved position must not be attached to whichever consumer happens to exist after
+restart. Scalar offset retries can acquire a replacement context; captured-position
+retries retain the original one (`consumer_offset_client.rs:27–39`).
+
+Whether an acknowledgment backlog pauses later batch admission is a retention
+and operational policy to select explicitly. It does not change an already
+confirmed data outcome. This preserves the earlier retention-bootstrap and
+stale-generation acknowledgment requirements.
+
+**Acceptance:** commit data and progress, lose the acknowledgment response, then
+reset the SDK session so request resolution is unavailable. Restart and verify
+no repeated range execution or sink effect. Repeat after partition recreation
+and ownership change; replacement progress must remain untouched. These are
+proposed broker tests, not an assertion that the current adapter passes them.
+
+### Handoff decision
+
+The next streaming design checkpoint should produce one worked recovery trace
+for the chosen store and Delta sink: original intent, ownership takeover,
+conditional data/no-op receipt, progress, acknowledgment, and reset. Name the
+actual atomic operations and retained evidence at every step. Include the
+missing/expired receipt case. That concrete trace, plus the admitted query
+subset, is the entry condition for Sol's separately reviewed control-model,
+store, writer/codec and run-actor commits. Announce that design phase before
+starting it. Stateful execution, table-source frontiers and CDC coordination
+retain their own announced design checkpoints.
+
+At the current Sail pin, the separately gated TIME metadata, immutable ORC
+range reader and native timestamp-precision vendor units are recorded in the
+[foundation evidence](evidence/orc-sail-foundation/provenance.json) and
+[precision evidence](evidence/orc-timestamp-precision/provenance.json). They do
+not qualify an integrated Sail ORC source/writer. Existing uncommitted TIME/ORC
+drafts are outside this review verdict. Streaming/Iggy and CDC runtime remain
+unimplemented; the selected public runtime receipt remains 277 Sail Python and
+67 upstream Python executions. The canonical inventory is unchanged. Sol can
+continue settled batch units; the remaining streaming/CDC choices are still
+design work. Fable's revised 62–94 engineer-day subtotal remains provisional,
+with the exclusions already recorded above.

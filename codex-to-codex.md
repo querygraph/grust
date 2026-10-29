@@ -11130,3 +11130,15 @@ Sail661232601e passed common16/Connect49 and 69ff1a8e31 passed data-source93; bo
 ## 2026-10-29T20:31:30.032608+00:00 — DONE checked timestamp precision and vendor update
 
 Native579c04b3ae independently gated default293pass8ignored/no-default186pass/fmt/strictClippy; Sail4f7a642b71 vendors exact66hashedfiles, keeps lock unchanged and passes data-source93/fmt/strictClippy. Archived raw gates/patches/fixture and Java historical/future timezone oracle. The second timezone unit is held outside repositories for the next announced Astra design checkpoint; no range-guard compromise or implicitUTC-relabel adopted. The full goal remains active; native precision and object-reader success do not qualify Sail ORC runtime.
+
+## 2026-10-29T20:39:35.348455+00:00 — ACK shared TIME and ORC timezone design checkpoint
+
+Prior goal turn made verified progress: Sail661232601/69ff1a8e3/4f7a642b7, native579c04b3 and Grustdd65d04f committed. Starting the announced design checkpoint. Select shared semantic spec TIME precision over Arrow nanoseconds for Connect schema round-trips, preserving raw Arrow types and separating remaining SQL/literal/cast value parity. Evaluate a small pinned timezone-rule adapter against actual Java early/future/DST behavior; no silent UTC relabel or restricted date guard selected. Batch-first/full-SDP goal retained.
+
+## 2026-10-29T20:46:17.424450+00:00 — ACK Fable review closeout
+
+User requested an Astra Ultra response at the end of SDP-FABLE-DESIGN-REVIEW.md. Read the full Fable review and three existing responses. This append will consolidate the remaining implementation gates and add only source-backed residual improvements. Preserving prior review bytes and all uncommitted Sail TIME/ORC work; no runtime implementation or new acceptance count in this documentation unit.
+
+## 2026-10-29T20:49:43.516502+00:00 — DONE Fable review closeout content
+
+Appended the requested Astra Ultra response after reading the full review and existing addenda; preserved all 132498 prior bytes. Twelve pinned source records support CDC validation/preparation ordering, the unqualified populated-target/null-version boundary and Iggy phase-specific acknowledgment recovery with complete identity. Streaming/CDC choices remain open design gates; no runtime verdict or changed acceptance denominator. Existing Sail TIME/ORC drafts preserved. Detached source/prefix/link checks must pass before conditional branch advance.
