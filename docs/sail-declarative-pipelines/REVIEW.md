@@ -351,3 +351,8 @@ The next batch work needs a focused failure/event design review. The operator ha
 been notified to switch to Astra before this phase begins. The
 [handoff](BATCH-EVENT-DESIGN-HANDOFF.md) records source observations, a Sail baseline,
 and open decisions. No replacement event architecture has been selected.
+
+The materialization crosswalk now covers all 27 registrations in addition to the
+11 view registrations. Eight materialization ports are partial and 19 remain
+unmapped. The operator authorizes updating LakeCat catalog coverage and reusing
+that support in Sail so it does not require a separate later implementation.

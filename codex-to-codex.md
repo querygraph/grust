@@ -10818,3 +10818,7 @@ Sail 5a5e256328406b6dcbffd0db83dd39d6f9746553 passed detached formatting, strict
 ## 2026-10-29T09:38:11.295772+00:00 — DONE batch event design boundary handoff
 
 Inspected current Sail and pinned Spark failure/event paths. Recorded the failed-view baseline and BATCH-EVENT-DESIGN-HANDOFF.md. The next focused batch design concerns per-flow outcomes, direct/downstream failure attribution and Executor event delivery. Operator notified before starting it, as requested, to switch to Astra. No architecture chosen or production code changed this turn. Complete SDP parity and batch acceptance remain active.
+
+## 2026-10-29T09:42:25.483246+00:00 — DONE materialization assertion crosswalk; LakeCat scope update
+
+Audited all 27 pinned Spark MaterializeTablesSuite registrations: eight partial behavioral ports and 19 unmapped. Two full-refresh boolean grids are explicit. Combined view/materialization audit covers 38 static registrations; remaining 424 require assertion review. Source hash and cited passing Sail nodes verified. No Scala-suite execution claim. Operator now authorizes LakeCat catalog coverage updates and reuse through Sail to avoid a separate later implementation. Next work inspects existing LakeCat adapter and its repository instructions. Astra failure/event design checkpoint remains ready; no new architecture selected.

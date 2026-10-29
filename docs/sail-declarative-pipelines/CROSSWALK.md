@@ -7,8 +7,8 @@ do not qualify this whole inventory.
 
 The first assertion-level audit covers all 11 `ViewSuite.scala` registrations at
 Spark `617618396087429b5627a86ce933bb0f5d6645cb`. Seven have partial behavioral
-ports in Sail; four remain unmapped. None is marked fully qualified. The other
-451 call sites still need an assertion-level audit. These are inventory counts,
+ports in Sail; four remain unmapped. None is marked fully qualified. A further 27 materialization registrations have now been reviewed; the remaining
+424 call sites still need an assertion-level audit. These are inventory counts,
 not a completion percentage.
 
 Each audited record in [the inventory](spark-4.2.1-inventory.json) now identifies
@@ -35,3 +35,25 @@ Immediate gaps exposed by the view audit:
 Continue the same assertion-level review for materialization, schema changes,
 refresh selection, execution control, and event suites. Expand parameter grids
 and identify helper declarations before treating registrations as executable cases.
+
+## Materialization audit
+
+All 27 MaterializeTablesSuite registrations are reviewed in the inventory: eight
+have partial assertion ports and 19 remain unmapped. Together with ViewSuite,
+38 registrations have an assertion-level review, with no full Scala-suite verdict.
+Two materialization registrations expand over both full-refresh boolean values;
+those instances are explicit in the records. Helpers, inheritance and other
+parameter expansion remain separate work.
+
+The suite exercises internal DatasetManager materialization. Some registerTable
+fixtures contain batch queries that the Connect streaming-table API rejects.
+Behavioral ports through materialized views therefore qualify shared catalog
+assertions only, not the original internal entry point. The empty-materializer
+case must also stay distinct from Connect's rejection of an empty pipeline.
+
+The next independent catalog gaps are identity partition preservation and
+rejection, exact post-refresh schemas, existing unknown properties, repeated
+nested-container materialization, and clustering metadata. These also need
+LakeCat catalog coverage: reusable support should land in LakeCat and be consumed
+through Sail's adapter, as authorized by the operator. The failure/event design
+checkpoint remains ready for Astra.

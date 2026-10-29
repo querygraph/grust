@@ -2908,8 +2908,20 @@
       "line": 42,
       "method": "test",
       "name_expression": "\"basic\"",
-      "status": "unmapped",
-      "sail_tests": []
+      "status": "partial-behavioral-port",
+      "sail_tests": [
+        "python/pysail/tests/spark/pipelines/test_schema.py::test_declared_schema_publication_preserves_order_and_comments",
+        "python/pysail/tests/spark/pipelines/test_schema.py::test_schema_refresh_updates_comments_without_reordering_existing_columns",
+        "python/pysail/tests/spark/pipelines/test_execution.py::test_materialized_view_comment_is_published[False]"
+      ],
+      "coverage_review": {
+        "phase": "catalog-materialization",
+        "covered_assertions": "Initial declared columns/comments, comment updates/removal, and table comments.",
+        "remaining_assertions": "Original mixed nullable/nonnullable integer schema across all three materializations is unported.",
+        "sail_evidence": "evidence/5a5e256328406b6dcbffd0db83dd39d6f9746553/pytest.xml",
+        "scala_suite_executed": false,
+        "entry_point": "Internal DatasetManager materialization; behavioral Connect ports may use materialized views instead of registerTable fixtures."
+      }
     },
     {
       "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/MaterializeTablesSuite.scala:125",
@@ -2918,7 +2930,15 @@
       "method": "test",
       "name_expression": "\"multiple\"",
       "status": "unmapped",
-      "sail_tests": []
+      "sail_tests": [],
+      "coverage_review": {
+        "phase": "catalog-materialization",
+        "covered_assertions": "",
+        "remaining_assertions": "Two independently materialized table schemas and exact nullable INT/STRING columns are unported.",
+        "sail_evidence": null,
+        "scala_suite_executed": false,
+        "entry_point": "Internal DatasetManager materialization; behavioral Connect ports may use materialized views instead of registerTable fixtures."
+      }
     },
     {
       "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/MaterializeTablesSuite.scala:161",
@@ -2926,8 +2946,18 @@
       "line": 161,
       "method": "test",
       "name_expression": "\"temporary views don't get materialized\"",
-      "status": "unmapped",
-      "sail_tests": []
+      "status": "partial-behavioral-port",
+      "sail_tests": [
+        "python/pysail/tests/spark/pipelines/test_execution.py::test_batch_dependencies_and_view_isolation"
+      ],
+      "coverage_review": {
+        "phase": "catalog-materialization",
+        "covered_assertions": "Private view stays absent from catalog while a public output exists.",
+        "remaining_assertions": "Internal registerTable fixture and exact metadata-only entry point are unported.",
+        "sail_evidence": "evidence/5a5e256328406b6dcbffd0db83dd39d6f9746553/pytest.xml",
+        "scala_suite_executed": false,
+        "entry_point": "Internal DatasetManager materialization; behavioral Connect ports may use materialized views instead of registerTable fixtures."
+      }
     },
     {
       "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/MaterializeTablesSuite.scala:194",
@@ -2936,7 +2966,15 @@
       "method": "test",
       "name_expression": "\"batch flow reading from streaming table\"",
       "status": "unmapped",
-      "sail_tests": []
+      "sail_tests": [],
+      "coverage_review": {
+        "phase": "streaming",
+        "covered_assertions": "",
+        "remaining_assertions": "Batch MV reading a streaming table changes timestamp column LONG to TIMESTAMP across materializations; unported.",
+        "sail_evidence": null,
+        "scala_suite_executed": false,
+        "entry_point": "Internal DatasetManager materialization; behavioral Connect ports may use materialized views instead of registerTable fixtures."
+      }
     },
     {
       "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/MaterializeTablesSuite.scala:236",
@@ -2944,8 +2982,18 @@
       "line": 236,
       "method": "test",
       "name_expression": "\"schema matches existing table schema\"",
-      "status": "unmapped",
-      "sail_tests": []
+      "status": "partial-behavioral-port",
+      "sail_tests": [
+        "python/pysail/tests/spark/pipelines/test_schema.py::test_schema_refresh_updates_comments_without_reordering_existing_columns"
+      ],
+      "coverage_review": {
+        "phase": "catalog-materialization",
+        "covered_assertions": "Repeated materialization retains matching common column types and nullability.",
+        "remaining_assertions": "Exact pre-existing INT table fixture and direct catalog column equality are unported.",
+        "sail_evidence": "evidence/5a5e256328406b6dcbffd0db83dd39d6f9746553/pytest.xml",
+        "scala_suite_executed": false,
+        "entry_point": "Internal DatasetManager materialization; behavioral Connect ports may use materialized views instead of registerTable fixtures."
+      }
     },
     {
       "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/MaterializeTablesSuite.scala:263",
@@ -2954,7 +3002,15 @@
       "method": "test",
       "name_expression": "\"invalid schema merge\"",
       "status": "unmapped",
-      "sail_tests": []
+      "sail_tests": [],
+      "coverage_review": {
+        "phase": "streaming",
+        "covered_assertions": "",
+        "remaining_assertions": "Streaming INT to STRING schema merge must raise TableMaterializationException with incompatible-type cause; unported.",
+        "sail_evidence": null,
+        "scala_suite_executed": false,
+        "entry_point": "Internal DatasetManager materialization; behavioral Connect ports may use materialized views instead of registerTable fixtures."
+      }
     },
     {
       "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/MaterializeTablesSuite.scala:292",
@@ -2962,8 +3018,19 @@
       "line": 292,
       "method": "test",
       "name_expression": "\"table materialized with specified schema, even if different from inferred\"",
-      "status": "unmapped",
-      "sail_tests": []
+      "status": "partial-behavioral-port",
+      "sail_tests": [
+        "python/pysail/tests/spark/pipelines/test_schema.py::test_declared_schema_publication_preserves_order_and_comments",
+        "python/pysail/tests/spark/pipelines/test_schema.py::test_missing_declared_columns_fail_after_table_materialization[id BIGINT, optional STRING-<lambda>]"
+      ],
+      "coverage_review": {
+        "phase": "catalog-materialization",
+        "covered_assertions": "Declared schema is used for publication; nullable missing columns can leave a created empty target after write failure.",
+        "remaining_assertions": "Exact schema/comments after altering an existing INT table to declared INT plus LONG, with narrower SHORT input, are unported.",
+        "sail_evidence": "evidence/5a5e256328406b6dcbffd0db83dd39d6f9746553/pytest.xml",
+        "scala_suite_executed": false,
+        "entry_point": "Internal DatasetManager materialization; behavioral Connect ports may use materialized views instead of registerTable fixtures."
+      }
     },
     {
       "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/MaterializeTablesSuite.scala:329",
@@ -2971,8 +3038,19 @@
       "line": 329,
       "method": "test",
       "name_expression": "\"specified schema incompatible with existing table\"",
-      "status": "unmapped",
-      "sail_tests": []
+      "status": "partial-behavioral-port",
+      "sail_tests": [
+        "python/pysail/tests/spark/pipelines/test_schema.py::test_materialized_view_refresh_replaces_schema_in_place[False]",
+        "python/pysail/tests/spark/pipelines/test_schema.py::test_materialized_view_refresh_replaces_schema_in_place[True]"
+      ],
+      "coverage_review": {
+        "phase": "mixed-batch-streaming",
+        "covered_assertions": "Complete tables replace column types rather than merging incompatible existing types.",
+        "remaining_assertions": "BOOLEAN to declared INT fixture and streaming-table incompatible-merge wrapper/cause checks are unported.",
+        "sail_evidence": "evidence/5a5e256328406b6dcbffd0db83dd39d6f9746553/pytest.xml",
+        "scala_suite_executed": false,
+        "entry_point": "Internal DatasetManager materialization; behavioral Connect ports may use materialized views instead of registerTable fixtures."
+      }
     },
     {
       "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/MaterializeTablesSuite.scala:374",
@@ -2981,7 +3059,15 @@
       "method": "test",
       "name_expression": "\"partition columns with user schema\"",
       "status": "unmapped",
-      "sail_tests": []
+      "sail_tests": [],
+      "coverage_review": {
+        "phase": "catalog-materialization",
+        "covered_assertions": "",
+        "remaining_assertions": "Declared two-column schema and identity partition transform are unported.",
+        "sail_evidence": null,
+        "scala_suite_executed": false,
+        "entry_point": "Internal DatasetManager materialization; behavioral Connect ports may use materialized views instead of registerTable fixtures."
+      }
     },
     {
       "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/MaterializeTablesSuite.scala:402",
@@ -2990,7 +3076,15 @@
       "method": "test",
       "name_expression": "\"specifying partition column with existing partitioned table\"",
       "status": "unmapped",
-      "sail_tests": []
+      "sail_tests": [],
+      "coverage_review": {
+        "phase": "catalog-materialization",
+        "covered_assertions": "",
+        "remaining_assertions": "Same partition preserves transform and column order; omitted partition rejects without mutating schema/transform. Unported.",
+        "sail_evidence": null,
+        "scala_suite_executed": false,
+        "entry_point": "Internal DatasetManager materialization; behavioral Connect ports may use materialized views instead of registerTable fixtures."
+      }
     },
     {
       "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/MaterializeTablesSuite.scala:467",
@@ -2999,7 +3093,15 @@
       "method": "test",
       "name_expression": "\"specifying partition column different from existing partitioned table\"",
       "status": "unmapped",
-      "sail_tests": []
+      "sail_tests": [],
+      "coverage_review": {
+        "phase": "catalog-materialization",
+        "covered_assertions": "",
+        "remaining_assertions": "Changed partition rejects with structured condition and retains original identity transform. Unported.",
+        "sail_evidence": null,
+        "scala_suite_executed": false,
+        "entry_point": "Internal DatasetManager materialization; behavioral Connect ports may use materialized views instead of registerTable fixtures."
+      }
     },
     {
       "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/MaterializeTablesSuite.scala:495",
@@ -3007,8 +3109,19 @@
       "line": 495,
       "method": "test",
       "name_expression": "\"Table properties are set when table gets materialized\"",
-      "status": "unmapped",
-      "sail_tests": []
+      "status": "partial-behavioral-port",
+      "sail_tests": [
+        "python/pysail/tests/spark/pipelines/test_properties.py::test_pipeline_table_properties[properties0-False-expected0]",
+        "python/pysail/tests/spark/pipelines/test_properties.py::test_pipeline_table_properties[properties1-False-expected1]"
+      ],
+      "coverage_review": {
+        "phase": "mixed-batch-streaming",
+        "covered_assertions": "Custom property preservation and canonical storage of mixed-case reset property keys.",
+        "remaining_assertions": "Two streaming-table fixtures, true-valued reset plus custom property on each, and direct catalog subset checks are unported.",
+        "sail_evidence": "evidence/5a5e256328406b6dcbffd0db83dd39d6f9746553/pytest.xml",
+        "scala_suite_executed": false,
+        "entry_point": "Internal DatasetManager materialization; behavioral Connect ports may use materialized views instead of registerTable fixtures."
+      }
     },
     {
       "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/MaterializeTablesSuite.scala:530",
@@ -3016,8 +3129,19 @@
       "line": 530,
       "method": "test",
       "name_expression": "\"Invalid table properties error during table materialization\"",
-      "status": "unmapped",
-      "sail_tests": []
+      "status": "partial-behavioral-port",
+      "sail_tests": [
+        "python/pysail/tests/spark/pipelines/test_properties.py::test_pipeline_table_properties[properties2-False-None]",
+        "python/pysail/tests/spark/pipelines/test_properties.py::test_pipeline_table_properties[properties5-False-None]"
+      ],
+      "coverage_review": {
+        "phase": "catalog-materialization",
+        "covered_assertions": "Invalid canonical reset value raises IllegalArgumentException mentioning the property key.",
+        "remaining_assertions": "Internal metadata-only TableMaterializationException wrapping and original 123 value are unported; Connect validates graph properties earlier.",
+        "sail_evidence": "evidence/5a5e256328406b6dcbffd0db83dd39d6f9746553/pytest.xml",
+        "scala_suite_executed": false,
+        "entry_point": "Internal DatasetManager materialization; behavioral Connect ports may use materialized views instead of registerTable fixtures."
+      }
     },
     {
       "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/MaterializeTablesSuite.scala:550",
@@ -3026,7 +3150,15 @@
       "method": "test",
       "name_expression": "\"Materialization succeeds even if there are unknown pipeline properties on the existing table\"",
       "status": "unmapped",
-      "sail_tests": []
+      "sail_tests": [],
+      "coverage_review": {
+        "phase": "streaming",
+        "covered_assertions": "",
+        "remaining_assertions": "Existing unrelated table with unknown pipelines.someProperty must not prevent a new streaming target materialization. Unported; this source fixture does not refresh the pre-existing table.",
+        "sail_evidence": null,
+        "scala_suite_executed": false,
+        "entry_point": "Internal DatasetManager materialization; behavioral Connect ports may use materialized views instead of registerTable fixtures."
+      }
     },
     {
       "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/MaterializeTablesSuite.scala:566",
@@ -3034,8 +3166,23 @@
       "line": 566,
       "method": "test",
       "name_expression": "s\"Complete tables should not evolve schema - isFullRefresh = $isFullRefresh\"",
-      "status": "unmapped",
-      "sail_tests": []
+      "status": "partial-behavioral-port",
+      "sail_tests": [
+        "python/pysail/tests/spark/pipelines/test_schema.py::test_materialized_view_refresh_replaces_schema_in_place[False]",
+        "python/pysail/tests/spark/pipelines/test_schema.py::test_materialized_view_refresh_replaces_schema_in_place[True]"
+      ],
+      "coverage_review": {
+        "phase": "batch",
+        "covered_assertions": "Both full and normal complete-table refresh replace schema columns.",
+        "remaining_assertions": "Original INT x-to-y fixture and the extra same-schema intermediate refresh are not reproduced exactly.",
+        "sail_evidence": "evidence/5a5e256328406b6dcbffd0db83dd39d6f9746553/pytest.xml",
+        "scala_suite_executed": false,
+        "entry_point": "Internal DatasetManager materialization; behavioral Connect ports may use materialized views instead of registerTable fixtures.",
+        "required_parameter_instances": [
+          "isFullRefresh=true",
+          "isFullRefresh=false"
+        ]
+      }
     },
     {
       "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/MaterializeTablesSuite.scala:621",
@@ -3044,7 +3191,19 @@
       "method": "test",
       "name_expression": "s\"Streaming tables should evolve schema only if not full refresh = $isFullRefresh\"",
       "status": "unmapped",
-      "sail_tests": []
+      "sail_tests": [],
+      "coverage_review": {
+        "phase": "streaming",
+        "covered_assertions": "",
+        "remaining_assertions": "Full refresh replaces x with y; normal streaming refresh unions x/y. Both boolean instances unported.",
+        "sail_evidence": null,
+        "scala_suite_executed": false,
+        "entry_point": "Internal DatasetManager materialization; behavioral Connect ports may use materialized views instead of registerTable fixtures.",
+        "required_parameter_instances": [
+          "isFullRefresh=true",
+          "isFullRefresh=false"
+        ]
+      }
     },
     {
       "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/MaterializeTablesSuite.scala:688",
@@ -3053,7 +3212,15 @@
       "method": "test",
       "name_expression": "\"materialize only selected tables\"",
       "status": "unmapped",
-      "sail_tests": []
+      "sail_tests": [],
+      "coverage_review": {
+        "phase": "catalog-materialization",
+        "covered_assertions": "",
+        "remaining_assertions": "Mixed refresh/full-refresh of a and c must leave b absent and retain exact schemas; original three-table metadata-only fixture unported.",
+        "sail_evidence": null,
+        "scala_suite_executed": false,
+        "entry_point": "Internal DatasetManager materialization; behavioral Connect ports may use materialized views instead of registerTable fixtures."
+      }
     },
     {
       "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/MaterializeTablesSuite.scala:735",
@@ -3062,7 +3229,15 @@
       "method": "test",
       "name_expression": "\"tables with arrays and maps\"",
       "status": "unmapped",
-      "sail_tests": []
+      "sail_tests": [],
+      "coverage_review": {
+        "phase": "catalog-materialization",
+        "covered_assertions": "",
+        "remaining_assertions": "MAP of STRUCT, ARRAY and joined output schemas must match after two materializations; dedicated multi-table fixture unported.",
+        "sail_evidence": null,
+        "scala_suite_executed": false,
+        "entry_point": "Internal DatasetManager materialization; behavioral Connect ports may use materialized views instead of registerTable fixtures."
+      }
     },
     {
       "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/MaterializeTablesSuite.scala:780",
@@ -3071,7 +3246,15 @@
       "method": "test",
       "name_expression": "\"tables with nested arrays and maps\"",
       "status": "unmapped",
-      "sail_tests": []
+      "sail_tests": [],
+      "coverage_review": {
+        "phase": "catalog-materialization",
+        "covered_assertions": "",
+        "remaining_assertions": "Nested MAP/MAP/STRUCT and ARRAY/ARRAY plus joined output exact schemas across two materializations are unported.",
+        "sail_evidence": null,
+        "scala_suite_executed": false,
+        "entry_point": "Internal DatasetManager materialization; behavioral Connect ports may use materialized views instead of registerTable fixtures."
+      }
     },
     {
       "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/MaterializeTablesSuite.scala:829",
@@ -3080,7 +3263,15 @@
       "method": "test",
       "name_expression": "\"materializing no tables doesn't throw\"",
       "status": "unmapped",
-      "sail_tests": []
+      "sail_tests": [],
+      "coverage_review": {
+        "phase": "catalog-materialization",
+        "covered_assertions": "",
+        "remaining_assertions": "Empty internal graph and explicit NoTables/NoTables materialization succeed. Connect empty-graph rejection is a different entry-point contract; unported.",
+        "sail_evidence": null,
+        "scala_suite_executed": false,
+        "entry_point": "Internal DatasetManager materialization; behavioral Connect ports may use materialized views instead of registerTable fixtures."
+      }
     },
     {
       "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/MaterializeTablesSuite.scala:858",
@@ -3089,7 +3280,15 @@
       "method": "test",
       "name_expression": "\"cluster columns with user schema\"",
       "status": "unmapped",
-      "sail_tests": []
+      "sail_tests": [],
+      "coverage_review": {
+        "phase": "catalog-materialization",
+        "covered_assertions": "",
+        "remaining_assertions": "Declared schema with two clustering fields must expose exact ClusterByTransform; unported and clustering is unsupported in Sail pipelines.",
+        "sail_evidence": null,
+        "scala_suite_executed": false,
+        "entry_point": "Internal DatasetManager materialization; behavioral Connect ports may use materialized views instead of registerTable fixtures."
+      }
     },
     {
       "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/MaterializeTablesSuite.scala:893",
@@ -3098,7 +3297,15 @@
       "method": "test",
       "name_expression": "\"specifying cluster column with existing clustered table\"",
       "status": "unmapped",
-      "sail_tests": []
+      "sail_tests": [],
+      "coverage_review": {
+        "phase": "catalog-materialization",
+        "covered_assertions": "",
+        "remaining_assertions": "Repeated identical cluster keys succeed; omission rejects and preserves metadata. Unported.",
+        "sail_evidence": null,
+        "scala_suite_executed": false,
+        "entry_point": "Internal DatasetManager materialization; behavioral Connect ports may use materialized views instead of registerTable fixtures."
+      }
     },
     {
       "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/MaterializeTablesSuite.scala:947",
@@ -3107,7 +3314,15 @@
       "method": "test",
       "name_expression": "\"specifying cluster column different from existing clustered table\"",
       "status": "unmapped",
-      "sail_tests": []
+      "sail_tests": [],
+      "coverage_review": {
+        "phase": "catalog-materialization",
+        "covered_assertions": "",
+        "remaining_assertions": "Changed cluster field rejects with CANNOT_UPDATE_PARTITION_COLUMNS and retains old transform. Unported.",
+        "sail_evidence": null,
+        "scala_suite_executed": false,
+        "entry_point": "Internal DatasetManager materialization; behavioral Connect ports may use materialized views instead of registerTable fixtures."
+      }
     },
     {
       "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/MaterializeTablesSuite.scala:984",
@@ -3116,7 +3331,15 @@
       "method": "test",
       "name_expression": "\"cluster columns only (no partitioning)\"",
       "status": "unmapped",
-      "sail_tests": []
+      "sail_tests": [],
+      "coverage_review": {
+        "phase": "catalog-materialization",
+        "covered_assertions": "",
+        "remaining_assertions": "Clustering-only declaration must publish exact schema/transform without partitioning; unported.",
+        "sail_evidence": null,
+        "scala_suite_executed": false,
+        "entry_point": "Internal DatasetManager materialization; behavioral Connect ports may use materialized views instead of registerTable fixtures."
+      }
     },
     {
       "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/MaterializeTablesSuite.scala:1021",
@@ -3125,7 +3348,15 @@
       "method": "test",
       "name_expression": "\"materialized view with cluster columns\"",
       "status": "unmapped",
-      "sail_tests": []
+      "sail_tests": [],
+      "coverage_review": {
+        "phase": "batch",
+        "covered_assertions": "",
+        "remaining_assertions": "Materialized view with clustering must expose exact schema and ClusterByTransform; unported.",
+        "sail_evidence": null,
+        "scala_suite_executed": false,
+        "entry_point": "Internal DatasetManager materialization; behavioral Connect ports may use materialized views instead of registerTable fixtures."
+      }
     },
     {
       "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/MaterializeTablesSuite.scala:1050",
@@ -3134,7 +3365,15 @@
       "method": "test",
       "name_expression": "\"partition and cluster columns together should fail\"",
       "status": "unmapped",
-      "sail_tests": []
+      "sail_tests": [],
+      "coverage_review": {
+        "phase": "catalog-materialization",
+        "covered_assertions": "",
+        "remaining_assertions": "Partition plus cluster rejects with wrapped AnalysisException and exact structured condition; production guard exists but its assertion port is absent.",
+        "sail_evidence": null,
+        "scala_suite_executed": false,
+        "entry_point": "Internal DatasetManager materialization; behavioral Connect ports may use materialized views instead of registerTable fixtures."
+      }
     },
     {
       "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/MaterializeTablesSuite.scala:1070",
@@ -3143,7 +3382,15 @@
       "method": "test",
       "name_expression": "\"cluster column that doesn't exist in table schema should fail\"",
       "status": "unmapped",
-      "sail_tests": []
+      "sail_tests": [],
+      "coverage_review": {
+        "phase": "catalog-materialization",
+        "covered_assertions": "",
+        "remaining_assertions": "Nonexistent cluster field rejects with wrapped AnalysisException; explicit unsupported clustering is insufficient. Unported.",
+        "sail_evidence": null,
+        "scala_suite_executed": false,
+        "entry_point": "Internal DatasetManager materialization; behavioral Connect ports may use materialized views instead of registerTable fixtures."
+      }
     },
     {
       "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/PipelineUpdateContextImplSuite.scala:26",
