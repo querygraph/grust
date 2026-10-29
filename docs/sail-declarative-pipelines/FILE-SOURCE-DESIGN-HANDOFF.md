@@ -39,3 +39,12 @@ optimizer, physical-planner, codecs and JobService conventions.
 
 Parquet/JSON/CSV and empty SQL location tests now pass on Sail. Full four-format,
 original Scala-suite, missing-file attribution and streaming assertions remain open.
+
+## Completed architecture pass
+
+The announced Astra pass now has a [shared ORC source design](ORC-SOURCE-DESIGN.md)
+with exact dependency compilation, bidirectional Spark 4.2.1 fixtures, raw type-
+metadata recovery and explicit source/sink codec boundaries. Implementation starts
+with a retained malformed-block regression and dependency hardening, followed by
+the metadata/type bridge. Native ZSTD probe success does not implement ORC
+in Sail; the four current Sail failures and broader type limitations are retained.

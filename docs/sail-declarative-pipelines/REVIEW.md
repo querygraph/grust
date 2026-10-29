@@ -1210,3 +1210,20 @@ and an independent REST namespace check. No LakeCat source change is needed.
 The complete parent fixture failure is retained. Historical source-review claims
 remain snapshots; these receipts supersede only their pending combined-fixture
 status. Full batch acceptance, streaming/Iggy and CDC remain unfinished.
+
+## Review shared ORC design decision
+
+The [ORC design](ORC-SOURCE-DESIGN.md) resolves the file-source checkpoint using
+orc-rust 0.9 with Sail's exact Arrow 59.2 family. The isolated library reads eight
+sync/async Spark fixture instances; Spark reads three Rust ZSTD outputs. Range,
+projection, corruption and raw footer-attribute controls expose adapter duties.
+Current Sail writing, reading, CTAS and batch-MV operations still fail and remain
+recorded. No production dependency/source or broad suite verdict is claimed.
+This is shared Sail source work; LakeCat requires no ORC-specific extension.
+
+A fourth malformed ORC compression-block probe panics (exit101); unlike the three
+basic malformed files, it exposes missing native block bounds. Its fixture and
+error are retained. Production registration now requires a narrow dependency
+hardening commit first. Public footer access alone needs no fork; it does not
+prove safe native parsing. The writer must retain its own abort-capable upload
+handle rather than assume ObjectWriterBuilder cleans up failures.

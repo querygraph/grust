@@ -11070,3 +11070,15 @@ Sail 87a7c941d reproduces SqlPipelineSuite:634 failure at STREAM(batch CTE). Fou
 ## 2026-10-29T18:41:41.814627+00:00 — DONE batch CTE classification and combined catalog acceptance
 
 Sail 8d044db3860b4f55e49543c833246af31e986e2e: detached fmt/strict Clippy, 41 Connect Rust tests, CLI build, Ruff, 277 selected pytest and 67 upstream executions pass. Four new CTE cases pass unchanged on Spark 4.2.1 and Sail; parent four failures retained. Both original combined SQL files and five output assertions pass with memory/memory and memory/LakeCat profiles; cleanup and independent REST 200/404 checks pass. Inventory counts unchanged because case634 was already partial. General semantics stay in Sail; no LakeCat production change. Full goal active; streaming/CDC runtime and broader batch gaps remain, no publication.
+
+## 2026-10-29T18:48:06.352826+00:00 — ACK announced ORC shared-source design checkpoint
+
+Sail 8d044db38 remains clean. User was notified before entering the existing FILE-SOURCE-DESIGN-HANDOFF boundary. Inspecting exact locked Arrow59.2/DataFusion55.2/object_store0.13.2 and published orc-rust0.9/datafusion-orc0.10 sources; standalone dependency proof uses its own target. Spark4.2.1 source confirms default ZSTD and table-backed streaming after CTAS, not direct streaming ORC SQL. No production dependency or adapter adopted yet.
+
+## 2026-10-29T18:53:25.850561+00:00 — DONE ORC dependency and shared-source design pass
+
+Published orc-rust0.9 compiled with exact Sail Arrow59.2 family in isolated target; eight sync/async Spark fixture reads, three Rust-output Spark reads, seven-range ownership, projection and three malformed-file controls retained. Raw schema mismatch confirmed; public footer APIs recover Spark logical type attributes without fork. Selected shared listing/source/sink codec contracts and five implementation units. Four current Sail8d044db38 operations still fail; no production ORC or new suite qualification. Unit1 metadata bridge is next; goal active.
+
+## 2026-10-29T18:57:41.033327+00:00 — CORRECTION ORC dependency qualification boundary
+
+Final source review prompted an executed fourth malformed compressed-block probe: native split_to panics with exit101. Preserved fixture and report, and made dependency hardening a prerequisite to source registration. Native-reader-first footer extraction is attribute-access evidence only; production tail validation/decompression bounds must precede native parsing. Added explicit upload-abort ownership after checking DF ObjectWriterBuilder failure-cleanup limitation. No production ORC qualification or hidden failure.
