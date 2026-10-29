@@ -287,6 +287,10 @@ physical plan, dependency, or streaming behavior.
 
 ## Constraints for subsequent units
 
+The [acceptance crosswalk](CROSSWALK.md) now audits every ViewSuite registration
+at assertion level. Seven partial behavioral ports and four unmapped cases are
+explicit; no full-suite qualification is inferred from the regression count.
+
 The property-validation unit is grounded in a
 [six-case Spark/Sail comparison](evidence/spark-4.2.1-properties-reference/README.md).
 It exposes unknown-key filtering, canonical key storage, dry-run validation, and

@@ -3799,8 +3799,17 @@
       "line": 41,
       "method": "test",
       "name_expression": "\"create persisted views\"",
-      "status": "unmapped",
-      "sail_tests": []
+      "status": "partial-behavioral-port",
+      "sail_tests": [
+        "python/pysail/tests/spark/pipelines/test_features.py::test_persistent_views_are_created_in_dependency_order"
+      ],
+      "coverage_review": {
+        "phase": "batch",
+        "covered_assertions": "Catalog view type and returned rows.",
+        "remaining_assertions": "Exact internal graph view type and original SQL text assertions remain unported.",
+        "sail_evidence": "evidence/e4d578ce0658f94884753e3bfdadb3f2208f5af6/pytest.xml",
+        "scala_suite_executed": false
+      }
     },
     {
       "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/ViewSuite.scala:70",
@@ -3808,8 +3817,17 @@
       "line": 70,
       "method": "test",
       "name_expression": "\"persisted view reads from external table\"",
-      "status": "unmapped",
-      "sail_tests": []
+      "status": "partial-behavioral-port",
+      "sail_tests": [
+        "python/pysail/tests/spark/pipelines/test_features.py::test_persistent_views_read_current_external_table_data_without_a_refresh"
+      ],
+      "coverage_review": {
+        "phase": "batch",
+        "covered_assertions": "External-table reads and live changes through the view.",
+        "remaining_assertions": "Exact internal graph SQL text and view metadata remain unported.",
+        "sail_evidence": "evidence/e4d578ce0658f94884753e3bfdadb3f2208f5af6/pytest.xml",
+        "scala_suite_executed": false
+      }
     },
     {
       "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/ViewSuite.scala:105",
@@ -3817,8 +3835,17 @@
       "line": 105,
       "method": "test",
       "name_expression": "\"persisted view reads from a temporary view\"",
-      "status": "unmapped",
-      "sail_tests": []
+      "status": "partial-behavioral-port",
+      "sail_tests": [
+        "python/pysail/tests/spark/pipelines/test_features.py::test_persistent_views_cannot_refer_to_private_pipeline_views"
+      ],
+      "coverage_review": {
+        "phase": "batch",
+        "covered_assertions": "Reject temporary-view dependencies before publication.",
+        "remaining_assertions": "Structured INVALID_TEMP_OBJ_REFERENCE condition and all four message parameters are unverified.",
+        "sail_evidence": "evidence/e4d578ce0658f94884753e3bfdadb3f2208f5af6/pytest.xml",
+        "scala_suite_executed": false
+      }
     },
     {
       "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/ViewSuite.scala:133",
@@ -3827,7 +3854,14 @@
       "method": "test",
       "name_expression": "\"persisted view reads from a non-existent dataset\"",
       "status": "unmapped",
-      "sail_tests": []
+      "sail_tests": [],
+      "coverage_review": {
+        "phase": "batch",
+        "covered_assertions": "",
+        "remaining_assertions": "UnresolvedPipelineException directFailures attribution to the persisted view is unported.",
+        "sail_evidence": null,
+        "scala_suite_executed": false
+      }
     },
     {
       "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/ViewSuite.scala:151",
@@ -3836,7 +3870,14 @@
       "method": "test",
       "name_expression": "\"persisted view reads from a streaming source\"",
       "status": "unmapped",
-      "sail_tests": []
+      "sail_tests": [],
+      "coverage_review": {
+        "phase": "batch-validation",
+        "covered_assertions": "",
+        "remaining_assertions": "Declared streaming-table source plus STREAM read rejection is unported; exact structured condition is unverified.",
+        "sail_evidence": null,
+        "scala_suite_executed": false
+      }
     },
     {
       "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/ViewSuite.scala:171",
@@ -3844,8 +3885,17 @@
       "line": 171,
       "method": "test",
       "name_expression": "\"persisted view reads from an external streaming source\"",
-      "status": "unmapped",
-      "sail_tests": []
+      "status": "partial-behavioral-port",
+      "sail_tests": [
+        "python/pysail/tests/spark/pipelines/test_features.py::test_persistent_views_cannot_have_streaming_definitions"
+      ],
+      "coverage_review": {
+        "phase": "batch-validation",
+        "covered_assertions": "Reject a persisted view reading STREAM(external source).",
+        "remaining_assertions": "Exact INVALID_FLOW_QUERY_TYPE.STREAMING_RELATION_FOR_PERSISTED_VIEW structured condition is unverified.",
+        "sail_evidence": "evidence/e4d578ce0658f94884753e3bfdadb3f2208f5af6/pytest.xml",
+        "scala_suite_executed": false
+      }
     },
     {
       "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/ViewSuite.scala:190",
@@ -3853,8 +3903,17 @@
       "line": 190,
       "method": "test",
       "name_expression": "\"persisted view reads from another persisted view\"",
-      "status": "unmapped",
-      "sail_tests": []
+      "status": "partial-behavioral-port",
+      "sail_tests": [
+        "python/pysail/tests/spark/pipelines/test_features.py::test_persistent_views_are_created_in_dependency_order"
+      ],
+      "coverage_review": {
+        "phase": "batch",
+        "covered_assertions": "Three forward-referenced views produce expected rows.",
+        "remaining_assertions": "Exact stored graph SQL text assertions for all three views remain unported.",
+        "sail_evidence": "evidence/e4d578ce0658f94884753e3bfdadb3f2208f5af6/pytest.xml",
+        "scala_suite_executed": false
+      }
     },
     {
       "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/ViewSuite.scala:221",
@@ -3863,7 +3922,14 @@
       "method": "test",
       "name_expression": "\"persisted view reads from a failed persisted view\"",
       "status": "unmapped",
-      "sail_tests": []
+      "sail_tests": [],
+      "coverage_review": {
+        "phase": "batch",
+        "covered_assertions": "",
+        "remaining_assertions": "CREATE_PERMANENT_VIEW_WITHOUT_ALIAS failure, ERROR/FAILED producer event and INFO/SKIPPED dependent event are unported.",
+        "sail_evidence": null,
+        "scala_suite_executed": false
+      }
     },
     {
       "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/ViewSuite.scala:250",
@@ -3871,8 +3937,17 @@
       "line": 250,
       "method": "test",
       "name_expression": "\"persisted view reads from MV\"",
-      "status": "unmapped",
-      "sail_tests": []
+      "status": "partial-behavioral-port",
+      "sail_tests": [
+        "python/pysail/tests/spark/pipelines/test_features.py::test_selected_tables_read_fresh_data_through_an_unselected_persistent_view"
+      ],
+      "coverage_review": {
+        "phase": "batch",
+        "covered_assertions": "Persisted view exposes freshly written MV rows to its consumer.",
+        "remaining_assertions": "Direct persisted-view result and exact graph metadata assertions remain unported; existing port checks the downstream aggregate.",
+        "sail_evidence": "evidence/e4d578ce0658f94884753e3bfdadb3f2208f5af6/pytest.xml",
+        "scala_suite_executed": false
+      }
     },
     {
       "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/ViewSuite.scala:284",
@@ -3881,7 +3956,14 @@
       "method": "test",
       "name_expression": "\"persisted view reads from ST\"",
       "status": "unmapped",
-      "sail_tests": []
+      "sail_tests": [],
+      "coverage_review": {
+        "phase": "streaming",
+        "covered_assertions": "",
+        "remaining_assertions": "Streaming-table production and subsequent batch read through a persisted view remain unimplemented.",
+        "sail_evidence": null,
+        "scala_suite_executed": false
+      }
     },
     {
       "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/ViewSuite.scala:318",
@@ -3889,8 +3971,17 @@
       "line": 318,
       "method": "test",
       "name_expression": "\"mv reading from a persisted view\"",
-      "status": "unmapped",
-      "sail_tests": []
+      "status": "partial-behavioral-port",
+      "sail_tests": [
+        "python/pysail/tests/spark/pipelines/test_features.py::test_persistent_views_retain_the_sql_file_namespace_and_column_comments"
+      ],
+      "coverage_review": {
+        "phase": "batch",
+        "covered_assertions": "MV reads persisted-view rows, retaining namespace and column name.",
+        "remaining_assertions": "Upstream exact graph metadata and independently asserted view rows for the same simple fixture remain unported.",
+        "sail_evidence": "evidence/e4d578ce0658f94884753e3bfdadb3f2208f5af6/pytest.xml",
+        "scala_suite_executed": false
+      }
     },
     {
       "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/logging/ConstructPipelineEventSuite.scala:27",
