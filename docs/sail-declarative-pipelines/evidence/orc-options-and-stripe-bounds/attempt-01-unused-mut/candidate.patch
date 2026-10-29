@@ -1,0 +1,515 @@
+commit ea0aca95c1a24fe69db07517298f5f7774961833
+Author:     Alexy Khrabrov <deliverable@gmail.com>
+AuthorDate: Thu Oct 29 16:38:04 2026 -0700
+Commit:     Alexy Khrabrov <deliverable@gmail.com>
+CommitDate: Thu Oct 29 16:38:04 2026 -0700
+
+    feat: configure bounded ORC metadata reads per local runtime
+
+diff --git a/crates/sail-data-source/build.rs b/crates/sail-data-source/build.rs
+index eca8c6804..4c6770339 100644
+--- a/crates/sail-data-source/build.rs
++++ b/crates/sail-data-source/build.rs
+@@ -6,6 +6,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
+     build_data_source_options("Csv", "csv")?;
+     build_data_source_options("Json", "json")?;
+     build_data_source_options("Parquet", "parquet")?;
++    build_data_source_options("Orc", "orc")?;
+     build_data_source_options("Text", "text")?;
+     build_data_source_options("Socket", "socket")?;
+     build_data_source_options("Rate", "rate")?;
+diff --git a/crates/sail-data-source/data/options/orc.yaml b/crates/sail-data-source/data/options/orc.yaml
+new file mode 100644
+index 000000000..8568d5a66
+--- /dev/null
++++ b/crates/sail-data-source/data/options/orc.yaml
+@@ -0,0 +1,96 @@
++# Sail operational read limits, not Spark type-validity or ORC format limits.
++# Zero is an actual zero budget. Byte limits are capped by the local runtime's
++# finite pool limit and addressability when constructing a reader.
++
++- key: max_encoded_metadata_bytes
++  description: |
++    Maximum combined encoded footer and file metadata bytes.
++    The native reader may read its initial tail of up to 16 KiB before checking
++    the declared metadata lengths. This does not bound encoded stripe data.
++  default:
++    value: "67108864"
++    parser: crate::options::parsers::parse_usize
++  supported: true
++  rust_type: usize
++  scopes:
++    - read
++  origins:
++    - type: option
++      keys:
++        - max_encoded_metadata_bytes
++        - maxEncodedMetadataBytes
++      parser: crate::options::parsers::parse_usize
++    - type: table_property
++      keys:
++        - option.max_encoded_metadata_bytes
++        - option.maxEncodedMetadataBytes
++      parser: crate::options::parsers::parse_usize
++
++- key: max_decoded_metadata_bytes
++  description: |
++    Maximum combined decoded footer and file metadata bytes.
++    This bounds decoded byte counts, not total heap use or retained protobuf objects.
++  default:
++    value: "67108864"
++    parser: crate::options::parsers::parse_usize
++  supported: true
++  rust_type: usize
++  scopes:
++    - read
++  origins:
++    - type: option
++      keys:
++        - max_decoded_metadata_bytes
++        - maxDecodedMetadataBytes
++      parser: crate::options::parsers::parse_usize
++    - type: table_property
++      keys:
++        - option.max_decoded_metadata_bytes
++        - option.maxDecodedMetadataBytes
++      parser: crate::options::parsers::parse_usize
++
++- key: max_decoded_stripe_footer_bytes
++  description: |
++    Maximum decoded bytes of each started stripe's footer before protobuf parsing.
++    This does not impose a cumulative limit on decoded column data or Arrow batches.
++  default:
++    value: "67108864"
++    parser: crate::options::parsers::parse_usize
++  supported: true
++  rust_type: usize
++  scopes:
++    - read
++  origins:
++    - type: option
++      keys:
++        - max_decoded_stripe_footer_bytes
++        - maxDecodedStripeFooterBytes
++      parser: crate::options::parsers::parse_usize
++    - type: table_property
++      keys:
++        - option.max_decoded_stripe_footer_bytes
++        - option.maxDecodedStripeFooterBytes
++      parser: crate::options::parsers::parse_usize
++
++- key: max_schema_depth
++  description: |
++    Maximum schema depth, counting the root STRUCT as depth zero.
++    Applied to the complete file type tree before projection or recursive conversion.
++  default:
++    value: "64"
++    parser: crate::options::parsers::parse_usize
++  supported: true
++  rust_type: usize
++  scopes:
++    - read
++  origins:
++    - type: option
++      keys:
++        - max_schema_depth
++        - maxSchemaDepth
++      parser: crate::options::parsers::parse_usize
++    - type: table_property
++      keys:
++        - option.max_schema_depth
++        - option.maxSchemaDepth
++      parser: crate::options::parsers::parse_usize
+diff --git a/crates/sail-data-source/src/formats/orc/mod.rs b/crates/sail-data-source/src/formats/orc/mod.rs
+index 18f564dd0..b926e0797 100644
+--- a/crates/sail-data-source/src/formats/orc/mod.rs
++++ b/crates/sail-data-source/src/formats/orc/mod.rs
+@@ -1,9 +1,11 @@
+ mod metadata;
++mod options;
+ mod reader;
+ mod schema;
+ mod timezone;
+ 
+ pub use metadata::OrcSchemaBridge;
++pub use options::OrcReadResourceLimits;
+ pub use reader::OrcObjectReader;
+ pub use schema::infer_schema as infer_orc_schema;
+ pub use timezone::OrcJavaTimeZoneConfig;
+diff --git a/crates/sail-data-source/src/formats/orc/options.rs b/crates/sail-data-source/src/formats/orc/options.rs
+new file mode 100644
+index 000000000..2c3bfea6a
+--- /dev/null
++++ b/crates/sail-data-source/src/formats/orc/options.rs
+@@ -0,0 +1,74 @@
++use datafusion::catalog::Session;
++use datafusion::execution::memory_pool::{MemoryLimit, MemoryPool};
++use orc_rust::ArrowReaderBuilder;
++use orc_rust::reader::metadata::MetadataReadOptions;
++use sail_common_datafusion::datasource::OptionLayer;
++
++use crate::error::DataSourceResult;
++use crate::options::r#gen::{OrcReadOptions, OrcReadPartialOptions};
++use crate::options::{BuildPartialOptions, PartialOptions, ResolveOptions};
++
++impl ResolveOptions for OrcReadOptions {
++    fn resolve(_ctx: &dyn Session, options: Vec<OptionLayer>) -> DataSourceResult<Self> {
++        let mut partial = OrcReadPartialOptions::initialize();
++        for layer in options {
++            partial.merge(layer.build_partial_options()?);
++        }
++        partial.finalize()
++    }
++}
++
++/// Effective metadata limits bound to a reader's local runtime pool.
++///
++/// Transport the configured [`OrcReadOptions`] fields and derive these limits
++/// again on each worker. These limits do not reserve memory or bound total heap
++/// use: encoded range admission belongs to [`super::OrcObjectReader`], while
++/// native protobuf objects, codec scratch and decoded arrays have other lifetimes.
++#[derive(Debug, Clone, Copy)]
++pub struct OrcReadResourceLimits {
++    metadata: MetadataReadOptions,
++    max_decoded_stripe_footer_bytes: usize,
++}
++
++impl OrcReadOptions {
++    /// Derive byte ceilings from the configured values and the local pool's
++    /// total finite limit. Current reservations and partition counts do not
++    /// change this policy; the pool separately admits live encoded buffers.
++    pub fn resource_limits(&self, pool: &dyn MemoryPool) -> OrcReadResourceLimits {
++        let addressable = isize::MAX as usize;
++        let byte_cap = match pool.memory_limit() {
++            MemoryLimit::Finite(limit) => limit.min(addressable),
++            MemoryLimit::Unknown | MemoryLimit::Infinite => addressable,
++        };
++        OrcReadResourceLimits {
++            metadata: MetadataReadOptions {
++                max_encoded_metadata_bytes: Some(self.max_encoded_metadata_bytes.min(byte_cap)),
++                max_decoded_metadata_bytes: Some(self.max_decoded_metadata_bytes.min(byte_cap)),
++                max_schema_depth: Some(self.max_schema_depth),
++            },
++            max_decoded_stripe_footer_bytes: self.max_decoded_stripe_footer_bytes.min(byte_cap),
++        }
++    }
++}
++
++impl OrcReadResourceLimits {
++    /// File-tail limits to apply before converting or projecting its type tree.
++    /// An explicit zero remains `Some(0)`, rather than the native unrestricted default.
++    pub fn metadata_options(&self) -> MetadataReadOptions {
++        self.metadata
++    }
++
++    pub fn max_decoded_stripe_footer_bytes(&self) -> usize {
++        self.max_decoded_stripe_footer_bytes
++    }
++
++    /// Bound each started stripe footer without replacing the builder's schema,
++    /// projection, timestamp policy or other execution controls.
++    pub fn configure_reader<R>(&self, builder: ArrowReaderBuilder<R>) -> ArrowReaderBuilder<R> {
++        builder.with_max_decoded_stripe_footer_bytes(self.max_decoded_stripe_footer_bytes)
++    }
++}
++
++#[cfg(test)]
++#[path = "options_tests.rs"]
++mod tests;
+diff --git a/crates/sail-data-source/src/formats/orc/options_tests.rs b/crates/sail-data-source/src/formats/orc/options_tests.rs
+new file mode 100644
+index 000000000..82427f8d8
+--- /dev/null
++++ b/crates/sail-data-source/src/formats/orc/options_tests.rs
+@@ -0,0 +1,279 @@
++#![expect(clippy::unwrap_used)]
++
++use std::fmt;
++use std::sync::Arc;
++
++use bytes::Bytes;
++use datafusion::execution::memory_pool::{
++    GreedyMemoryPool, MemoryConsumer, MemoryReservation, UnboundedMemoryPool,
++};
++use datafusion::prelude::SessionContext;
++use orc_rust::reader::metadata::read_metadata_with_options;
++
++use super::*;
++use crate::error::DataSourceError;
++use crate::options::option_list;
++
++const KEYS: [&str; 4] = [
++    "max_encoded_metadata_bytes",
++    "max_decoded_metadata_bytes",
++    "max_decoded_stripe_footer_bytes",
++    "max_schema_depth",
++];
++const FILE: &[u8] = include_bytes!("../../../tests/fixtures/orc/time_precisions.orc");
++
++fn resolve(layers: Vec<OptionLayer>) -> DataSourceResult<OrcReadOptions> {
++    OrcReadOptions::resolve(&SessionContext::new().state(), layers)
++}
++
++fn configured(options: &OrcReadOptions) -> [usize; 4] {
++    [
++        options.max_encoded_metadata_bytes,
++        options.max_decoded_metadata_bytes,
++        options.max_decoded_stripe_footer_bytes,
++        options.max_schema_depth,
++    ]
++}
++
++fn effective(limits: OrcReadResourceLimits) -> [usize; 4] {
++    let metadata = limits.metadata_options();
++    [
++        metadata.max_encoded_metadata_bytes.unwrap(),
++        metadata.max_decoded_metadata_bytes.unwrap(),
++        limits.max_decoded_stripe_footer_bytes(),
++        metadata.max_schema_depth.unwrap(),
++    ]
++}
++
++#[test]
++fn defaults_and_layer_precedence_preserve_explicit_zero() {
++    let defaults = resolve(vec![]).unwrap();
++    assert_eq!(
++        configured(&defaults),
++        [64 * 1024 * 1024, 64 * 1024 * 1024, 64 * 1024 * 1024, 64]
++    );
++
++    let options = resolve(vec![
++        option_list(&[
++            ("maxEncodedMetadataBytes", "1"),
++            ("maxDecodedMetadataBytes", "2"),
++            ("maxDecodedStripeFooterBytes", "3"),
++            ("maxSchemaDepth", "4"),
++        ]),
++        OptionLayer::TablePropertyList {
++            items: [
++                ("option.max_encoded_metadata_bytes", "11"),
++                ("option.maxDecodedMetadataBytes", "22"),
++                ("option.max_decoded_stripe_footer_bytes", "33"),
++                ("option.maxSchemaDepth", "0"),
++            ]
++            .into_iter()
++            .map(|(key, value)| (key.to_owned(), value.to_owned()))
++            .collect(),
++        },
++        option_list(&[("max_encoded_metadata_bytes", "0")]),
++    ])
++    .unwrap();
++    assert_eq!(configured(&options), [0, 22, 33, 0]);
++    assert_eq!(
++        effective(options.resource_limits(&UnboundedMemoryPool::default())),
++        [0, 22, 33, 0]
++    );
++
++    let zeros = resolve(vec![option_list(&KEYS.map(|key| (key, "0")))]).unwrap();
++    assert_eq!(configured(&zeros), [0; 4]);
++    assert_eq!(
++        effective(zeros.resource_limits(&UnboundedMemoryPool::default())),
++        [0; 4]
++    );
++}
++
++#[test]
++fn every_limit_rejects_invalid_integers_and_platform_width_overflow() {
++    let overflow = ((usize::MAX as u128) + 1).to_string();
++    for key in KEYS {
++        for value in ["-1", "-0", "1.5", "NaN", "1e3", "", overflow.as_str()] {
++            let error = resolve(vec![option_list(&[(key, value)])]).unwrap_err();
++            assert!(matches!(
++                error,
++                DataSourceError::InvalidOption { key: invalid_key, value: invalid_value, .. }
++                    if invalid_key == key && invalid_value == value
++            ));
++        }
++    }
++    let max = usize::MAX.to_string();
++    let options = resolve(vec![option_list(&KEYS.map(|key| (key, max.as_str())))]).unwrap();
++    assert_eq!(configured(&options), [usize::MAX; 4]);
++    assert_eq!(
++        effective(options.resource_limits(&UnboundedMemoryPool::default())),
++        [
++            isize::MAX as usize,
++            isize::MAX as usize,
++            isize::MAX as usize,
++            usize::MAX
++        ]
++    );
++}
++
++/// Uses the MemoryPool trait's default Unknown limit while delegating actual
++/// accounting to an unbounded pool.
++#[derive(Debug, Default)]
++struct UnknownLimitPool(UnboundedMemoryPool);
++
++impl fmt::Display for UnknownLimitPool {
++    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
++        write!(f, "UnknownLimitPool")
++    }
++}
++
++impl MemoryPool for UnknownLimitPool {
++    fn name(&self) -> &str {
++        "UnknownLimitPool"
++    }
++
++    fn grow(&self, reservation: &MemoryReservation, additional: usize) {
++        self.0.grow(reservation, additional);
++    }
++
++    fn shrink(&self, reservation: &MemoryReservation, shrink: usize) {
++        self.0.shrink(reservation, shrink);
++    }
++
++    fn try_grow(
++        &self,
++        reservation: &MemoryReservation,
++        additional: usize,
++    ) -> datafusion_common::Result<()> {
++        self.0.try_grow(reservation, additional)
++    }
++
++    fn reserved(&self) -> usize {
++        self.0.reserved()
++    }
++}
++
++#[test]
++fn local_pool_limit_caps_bytes_without_changing_depth_or_configured_values() {
++    let options = resolve(vec![option_list(&[
++        (KEYS[0], "100"),
++        (KEYS[1], "200"),
++        (KEYS[2], "300"),
++        (KEYS[3], "64"),
++    ])])
++    .unwrap();
++    assert_eq!(
++        effective(options.resource_limits(&GreedyMemoryPool::new(250))),
++        [100, 200, 250, 64]
++    );
++    assert_eq!(
++        effective(options.resource_limits(&GreedyMemoryPool::new(0))),
++        [0, 0, 0, 64]
++    );
++    assert_eq!(
++        effective(options.resource_limits(&UnboundedMemoryPool::default())),
++        [100, 200, 300, 64]
++    );
++    assert_eq!(
++        effective(options.resource_limits(&UnknownLimitPool::default())),
++        [100, 200, 300, 64]
++    );
++    assert_eq!(configured(&options), [100, 200, 300, 64]);
++}
++
++#[test]
++fn live_reservations_do_not_change_reader_policy() {
++    let options = resolve(vec![]).unwrap();
++    let pool: Arc<dyn MemoryPool> = Arc::new(GreedyMemoryPool::new(2048));
++    let before = effective(options.resource_limits(pool.as_ref()));
++    let mut reservation = MemoryConsumer::new("existing reader").register(&pool);
++    reservation.try_grow(2048).unwrap();
++    assert_eq!(pool.reserved(), 2048);
++    assert_eq!(effective(options.resource_limits(pool.as_ref())), before);
++    assert_eq!(before, [2048, 2048, 2048, 64]);
++    drop(reservation);
++    assert_eq!(pool.reserved(), 0);
++}
++
++#[test]
++fn actual_metadata_reads_apply_each_file_tail_limit_and_root_depth_zero() {
++    let pool = UnboundedMemoryPool::default();
++    for depth in [1, 64] {
++        let options = resolve(vec![option_list(&[(
++            "max_schema_depth",
++            &depth.to_string(),
++        )])])
++        .unwrap();
++        let mut bytes = Bytes::from_static(FILE);
++        let metadata = read_metadata_with_options(
++            &mut bytes,
++            options.resource_limits(&pool).metadata_options(),
++        )
++        .unwrap();
++        assert!(metadata.number_of_rows() > 0);
++    }
++    for key in [KEYS[0], KEYS[1]] {
++        for value in ["0", "1"] {
++            let options = resolve(vec![option_list(&[(key, value)])]).unwrap();
++            let mut bytes = Bytes::from_static(FILE);
++            let error = read_metadata_with_options(
++                &mut bytes,
++                options.resource_limits(&pool).metadata_options(),
++            )
++            .unwrap_err();
++            assert!(
++                error.to_string().contains("limit"),
++                "{key}={value}: {error}"
++            );
++        }
++    }
++    let options = resolve(vec![option_list(&[("max_schema_depth", "0")])]).unwrap();
++    let mut bytes = Bytes::from_static(FILE);
++    let error = read_metadata_with_options(
++        &mut bytes,
++        options.resource_limits(&pool).metadata_options(),
++    )
++    .unwrap_err();
++    assert!(
++        error
++            .to_string()
++            .contains("exceeding maximum schema depth 0"),
++        "{error}"
++    );
++}
++
++#[test]
++fn actual_stripe_footer_reads_apply_the_independent_budget() {
++    let pool = UnboundedMemoryPool::default();
++    let defaults = resolve(vec![]).unwrap();
++    let limits = defaults.resource_limits(&pool);
++    let mut bytes = Bytes::from_static(FILE);
++    let metadata =
++        Arc::new(read_metadata_with_options(&mut bytes, limits.metadata_options()).unwrap());
++    let expected_rows = usize::try_from(metadata.number_of_rows()).unwrap();
++    let builder =
++        ArrowReaderBuilder::new_with_metadata(bytes.clone(), metadata.clone()).with_batch_size(1);
++    let rows = limits
++        .configure_reader(builder)
++        .build()
++        .map(|batch| {
++            let batch = batch.unwrap();
++            assert!(batch.num_rows() <= 1);
++            batch.num_rows()
++        })
++        .sum::<usize>();
++    assert_eq!(rows, expected_rows);
++    assert!(rows > 0);
++
++    for value in ["0", "1"] {
++        let options = resolve(vec![option_list(&[(KEYS[2], value)])]).unwrap();
++        let builder = ArrowReaderBuilder::new_with_metadata(bytes.clone(), metadata.clone());
++        let error = options
++            .resource_limits(&pool)
++            .configure_reader(builder)
++            .build()
++            .next()
++            .unwrap()
++            .unwrap_err();
++        assert!(error.to_string().contains("limit"), "{value}: {error}");
++    }
++}
+diff --git a/crates/sail-data-source/src/options/mod.rs b/crates/sail-data-source/src/options/mod.rs
+index 026543835..690eb6cdf 100644
+--- a/crates/sail-data-source/src/options/mod.rs
++++ b/crates/sail-data-source/src/options/mod.rs
+@@ -10,6 +10,7 @@ pub mod r#gen {
+     include!(concat!(env!("OUT_DIR"), "/options/rate.rs"));
+     include!(concat!(env!("OUT_DIR"), "/options/console.rs"));
+     include!(concat!(env!("OUT_DIR"), "/options/parquet.rs"));
++    include!(concat!(env!("OUT_DIR"), "/options/orc.rs"));
+     include!(concat!(env!("OUT_DIR"), "/options/csv.rs"));
+     include!(concat!(env!("OUT_DIR"), "/options/json.rs"));
+     include!(concat!(env!("OUT_DIR"), "/options/text.rs"));

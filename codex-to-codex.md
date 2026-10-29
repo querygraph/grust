@@ -11216,3 +11216,13 @@ Evidence preserves raw logs, patches, package and selected resource contract.
 No public source registration, CLI rebuild or added SDP runtime pass. Next units
 are configured read options and intrinsic stripe arithmetic, then source mapping.
 Documentation integrity gates precede branch advance.
+
+## 2026-10-29T23:44:30.182224+00:00 — DONE configured ORC resources and stripe arithmetic
+
+Native 2ecec391db passed full detached gates (320 passing, eight ignored;
+199 no-default). Sail e9e0fe382 vendor and2c10b2da7 resource options passed
+150/156 data-source tests, formatting and strict Clippy. Retained first options
+candidate/unused_mut failure and 154-pass/two-error-expectation run; corrected
+checks require exact native errors for the same budgets and fixtures. Production
+code is unchanged across those test corrections. Advance wrapper retry recorded. Docs gate precedes
+advance. Ordinary source and requested-schema adapter work remain next.

@@ -1316,3 +1316,13 @@ pass 315 tests (eight ignored), 195 no-default tests and exact-package verificat
 The selected resource contract defines 64 MiB metadata defaults/depth 64 with honest
 ownership/cancellation limits. Source/options/codec/registry/writer integration
 and full SDP qualification remain open.
+
+### ORC options and stripe bounds (2026-10-29T23:44:30.182224+00:00)
+
+[Evidence](evidence/orc-options-and-stripe-bounds/README.md) retains native
+`2ecec391db`, Sail vendor `e9e0fe382` and options `2c10b2da7`, their exact gates,
+portable package, the unused_mut Clippy failure, two incorrect new-test error
+expectations and an operational advance retry. Final checks pass
+320 native tests (eight ignored), 199 no-default tests and 150/156 Sail
+data-source tests. These are configured resource/source prerequisites, not a
+public ORC or full SDP verdict.

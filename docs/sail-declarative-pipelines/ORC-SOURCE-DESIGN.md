@@ -424,3 +424,23 @@ decoding is not preemptible mid-call. Checked stripe/array lengths remain native
 follow-ups, and optional row-index/bloom pruning remains disabled initially.
 Options, requested-schema adaptation, opener, codec, registration and writer are
 subsequent units; these foundation gates add no public ORC/SDP runtime pass.
+
+## Configured resource options and native stripe arithmetic
+
+Recorded: 2026-10-29T23:44:30.182224+00:00. [Evidence](evidence/orc-options-and-stripe-bounds/README.md)
+records native `2ecec391db` (checked stripe/stream extents and addressability),
+Sail `e9e0fe382` (exact vendor package), and `2c10b2da7` (generated read options
+and local resource derivation). The selected 64 MiB/depth 64 defaults now have
+checked option/table-property parsing and native metadata/footer helpers.
+Transport must carry configured values and rederive limits against each worker's
+pool. The native change preserves padding and unselected large streams; physical
+object-extent preflight remains part of the upcoming source opener.
+
+Native gates pass 320 tests (eight ignored) and 199 no-default tests; Sail passes
+150 then 156 data-source tests with formatting and strict Clippy. One retained
+options attempt failed unused_mut; the next retained run passed 154 but failed
+two incorrect error-word expectations in new tests. Exact native-message checks
+now retain all fixture/budget cases. An operational advance retry is recorded;
+all production changes and the final gate remain bound to this exact commit.
+Requested-schema mapping, source/worker/registry/writer integration and original
+public Spark assertions remain incomplete.
