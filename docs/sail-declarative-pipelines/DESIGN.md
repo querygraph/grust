@@ -123,6 +123,29 @@ protobufs.
 
 ## Delivery and acceptance
 
+The agreed implementation order is **batch, then streaming, then CDC**. Finish
+and verify one phase before starting the next phase's implementation. Research
+and dependency review may run ahead of that order. Each phase is a sequence of
+small local commits with a stated review boundary and source-specific evidence;
+the phase names are not intended as single commits.
+
+1. **Batch:** finish registration, SQL and Python definitions, graph analysis,
+   declared schema and catalog metadata publication, persisted/private views,
+   selection, lifecycle, events, cancellation, and batch error semantics. Map
+   applicable Spark 4.2.1 cases to Sail tests, including failure before any
+   output writes. Verify local and distributed execution through Sail's normal
+   planner and `JobService`.
+2. **Streaming:** add reusable replayable source ranges, durable run state,
+   transactional sink progress, bounded available-data runs, append flows,
+   reset generations, and recovery. Review and adapt the private
+   `lakehq/sail-iggy` work together with the local Apache Iggy SDK. The concrete
+   reuse boundaries and gaps are recorded in [STREAMING-REUSE.md](STREAMING-REUSE.md).
+   Iggy is the first broker integration for these interfaces; the generic
+   checkpoint machinery must not depend on Iggy or its schema registry.
+3. **CDC:** build Spark 4.2.1's SCD1 processing on the verified streaming commit
+   and recovery contract, with ordering, deletes, tombstones, null behavior,
+   schema evolution, and durable auxiliary state tested separately.
+
 | Unit | Deliverable | Acceptance evidence |
 | --- | --- | --- |
 | Test baseline | Exact upstream checkout, test inventory, reproducible runner | Version/SHA verification; collected test IDs and outcomes; no hidden deselections |
