@@ -398,3 +398,29 @@ Recorded: 2026-10-29T23:25:15.788249+00:00. [Two further Spark reference runs](e
 All-file semantic merging sees an eleventh-file field, rejects an eleventh-file TIME precision conflict and an interval-family conflict, and unions qualifiers within one interval family. Matching is also layered: Spark rejects top-level case-insensitive ambiguity, while the tested nested ASCII fields use last-normalized-physical-field wins, including over an earlier exact spelling. Four reordered/name-variant cases distinguish that rule from exact-case preference. Installed ORC 2.3.0 disassembly uses default-locale lowercase; no universal Unicode or loaded-class-origin claim is made. `_col*` fallback is qualified for the two retained Spark-written cases, not all historical Hive variants. Full-schema timestamp checks remain separate and precede projection.
 
 These decisions are source-adapter requirements, not new public Sail passes. Decimal/string conversion, direction-isolated nested timestamp conversion, non-ASCII/locale edge cases, calendar rebasing, and remaining configuration/error cases still need their own reference assertions. Existing source contracts and the complete SDP objective remain unchanged.
+
+## Selected source resource limits and listing foundations
+
+Recorded: 2026-10-29T23:33:24.916037+00:00. [Four Sail units and one native unit](evidence/orc-source-resources/README.md)
+are gated and committed. Listing retains case policy and offers opt-in all-file
+inference with preserved object identities; its default ten-file selection is
+unchanged. Reader-owned encoded range buffers retain local pool reservations
+through their final Bytes owner. Native decoded stripe footers accept an
+independent optional byte budget; the exact package is vendored in Sail.
+
+The [selected resource contract](evidence/orc-source-resources/RESOURCE-CONTRACT.md)
+sets configurable Sail defaults of 64 MiB each for encoded tail, decoded tail and
+decoded stripe footer, and schema depth 64 (root STRUCT depth 0). Byte ceilings
+are min(configured, finite local pool limit, isize::MAX); Unknown/Infinite pools
+retain configured ceilings. Zero is a zero budget. They are operational resource
+settings, not Spark schema-validity limits or total-heap guarantees. The encoded
+tail limit counts footer+metadata; the initial up-to-16 KiB read can precede its
+declared-size check. No lifetime decoded-column-stream or encoded-stripe cap is
+introduced. Bind each source to its local execution pool, including worker decode.
+
+Keep one active native stripe per ordinary FileSource/FileOpener stream. Dropping
+pending work releases owned ranges/futures; synchronous footer/dictionary/batch
+decoding is not preemptible mid-call. Checked stripe/array lengths remain native
+follow-ups, and optional row-index/bloom pruning remains disabled initially.
+Options, requested-schema adaptation, opener, codec, registration and writer are
+subsequent units; these foundation gates add no public ORC/SDP runtime pass.

@@ -1,0 +1,397 @@
+   Compiling orc-rust v0.9.0 (/Users/alexy/src/orc-rust-sdp-gate)
+    Finished `test` profile [unoptimized] target(s) in 4.58s
+     Running unittests src/lib.rs (target/debug/deps/orc_rust-eaf1ef72fe4247de)
+
+running 198 tests
+test arrow_reader::stripe_footer_bounds_tests::sync_zero_budget_accepts_an_empty_stripe_footer ... ok
+test arrow_writer::tests::test_roundtrip_write_date32 ... ok
+test arrow_writer::tests::test_empty_null_buffers ... ok
+test arrow_writer::tests::test_write_inconsistent_null_buffers ... ok
+test arrow_writer::tests::test_roundtrip_write ... ok
+test arrow_writer::tests::test_roundtrip_write_large_type ... ok
+test bloom_filter::tests::test_bloom_filter_hit_and_miss ... ok
+test arrow_writer::tests::test_writer_rejects_invalid_compression_configuration ... ok
+test bloom_filter::tests::test_might_contain_hash64 ... ok
+test arrow_writer::tests::test_write_timestamps_with_inconsistent_null_buffers ... ok
+test bloom_filter::tests::test_try_from_proto_utf8_bitset ... ok
+test arrow_writer::tests::test_roundtrip_write_timestamps ... ok
+test compression::bounds_tests::empty_blocks_do_not_end_the_stream ... ok
+test compression::bounds_tests::malformed_lzo_back_reference_is_an_error ... ok
+test compression::bounds_tests::read_errors_preserve_invalid_codec_cause ... ok
+test compression::bounds_tests::rejects_incomplete_block_framing_with_typed_cause ... ok
+test compression::bounds_tests::rejects_invalid_block_sizes_before_allocation ... ok
+test compression::bounds_tests::rejects_original_blocks_larger_than_declared_size ... ok
+test compression::bounds_tests::all_codecs_enforce_decoded_block_limit ... ok
+test compression::bounds_tests::total_budget_applies_to_uncompressed_input_before_emitting ... ok
+test compression::bounds_tests::total_budget_covers_multiple_original_blocks ... ok
+test compression::bounds_tests::small_remaining_budget_limits_codec_scratch_before_decoding ... ok
+test compression::bounds_tests::zero_length_read_does_not_consume_input ... ok
+test compression::tests::compression_header_roundtrip ... ok
+test compression::bounds_tests::total_budget_covers_compressed_and_original_blocks_for_every_codec ... ok
+test compression::tests::handles_empty_original_and_chunked_blocks ... ok
+test compression::tests::rejects_invalid_writer_compression ... ok
+test compression::bounds_tests::zero_budget_accepts_only_empty_output ... ok
+test encoding::boolean::tests::literals ... ok
+test encoding::boolean::tests::another ... ok
+test encoding::boolean::tests::basic ... ok
+test encoding::boolean::tests::test_skip_all ... ok
+test encoding::boolean::tests::test_skip_cross_byte_boundary ... ok
+test encoding::boolean::tests::test_skip_exact_byte ... ok
+test encoding::boolean::tests::test_skip_more_than_available ... ok
+test encoding::boolean::tests::test_skip_partial_bits ... ok
+test encoding::boolean::tests::test_skip_zero ... ok
+test encoding::boolean::tests::test_skip_run ... ok
+test encoding::byte::tests::reader_test ... ok
+test compression::tests::roundtrips_all_writer_codecs ... ok
+test encoding::byte::tests::test_skip_values ... ok
+test encoding::decimal::tests::test_unbounded_varint_decoder_skip ... ok
+test encoding::decimal::tests::test_unbounded_varint_skip_all ... ok
+test encoding::decimal::tests::test_unbounded_varint_skip_then_decode ... ok
+test arrow_writer::tests::test_compressed_multi_stripe_physical_offsets ... ok
+test encoding::float::tests::test_float_edge_cases ... ok
+test encoding::float::tests::test_float_many ... ok
+test encoding::float::tests::test_skip_all_values ... ok
+test encoding::float::tests::test_skip_edge_cases ... ok
+test encoding::float::tests::test_skip_f32 ... ok
+test encoding::float::tests::test_skip_f64 ... ok
+test encoding::byte::tests::roundtrip_byte_rle_pure_random ... ok
+test encoding::integer::rle_v1::tests::test_run ... ok
+test encoding::integer::rle_v1::tests::test_literal ... ok
+test encoding::integer::rle_v1::tests::test_skip_values ... ok
+test encoding::integer::rle_v2::delta::tests::test_fixed_delta_negative ... ok
+test encoding::integer::rle_v2::delta::tests::test_fixed_delta_positive ... ok
+test encoding::integer::rle_v2::delta::tests::test_i16_add_sub_i64 ... ok
+test encoding::integer::rle_v2::delta::tests::test_i32_add_sub_i64 ... ok
+test encoding::integer::rle_v2::delta::tests::test_varying_delta_negative ... ok
+test encoding::integer::rle_v2::delta::tests::test_varying_delta_positive ... ok
+test encoding::integer::rle_v2::direct::tests::roundtrip_direct_i32 ... ok
+test encoding::float::tests::roundtrip_f32 ... ok
+test encoding::integer::rle_v2::direct::tests::test_direct_edge_case ... ok
+test encoding::integer::rle_v2::direct::tests::roundtrip_direct_i16 ... ok
+test encoding::float::tests::roundtrip_f64 ... ok
+test encoding::integer::rle_v2::direct::tests::roundtrip_direct_i64 ... ok
+test encoding::integer::rle_v2::short_repeat::tests::roundtrip_short_repeat_i32 ... ok
+test encoding::integer::rle_v2::short_repeat::tests::roundtrip_short_repeat_i16 ... ok
+test encoding::integer::rle_v2::tests::delta ... ok
+test encoding::integer::rle_v2::tests::direct ... ok
+test encoding::integer::rle_v2::tests::direct_signed ... ok
+test encoding::integer::rle_v2::tests::patched_base ... ok
+test encoding::integer::rle_v2::tests::patched_base_1 ... ok
+test encoding::integer::rle_v2::short_repeat::tests::roundtrip_short_repeat_i64 ... ok
+test encoding::integer::rle_v2::short_repeat::tests::roundtrip_short_repeat_i64_unsigned ... ok
+test encoding::integer::rle_v2::tests::reader_test ... ok
+test arrow_writer::tests::test_write_small_stripes ... ok
+test encoding::integer::rle_v2::direct::tests::roundtrip_direct_i64_unsigned ... ok
+test encoding::integer::rle_v2::tests::short_repeat ... ok
+test encoding::integer::rle_v2::tests::test_skip_all_values ... ok
+test encoding::integer::rle_v2::tests::test_skip_values_across_blocks ... ok
+test encoding::integer::rle_v2::tests::test_skip_values_delta_encoding ... ok
+test encoding::integer::rle_v2::tests::test_skip_values_direct_encoding ... ok
+test encoding::integer::rle_v2::tests::test_skip_values_entire_block ... ok
+test encoding::integer::rle_v2::tests::test_skip_values_patched_base ... ok
+test arrow_reader::stripe_footer_bounds_tests::async_stripe_footer_limits_match_sync_limits ... ok
+test encoding::integer::rle_v2::tests::test_skip_values_short_repeat ... ok
+test encoding::integer::rle_v2::tests::writer_test_choose_direct_over_patched_base ... ok
+test encoding::integer::rle_v2::tests::writer_test_patched_base ... ok
+test encoding::integer::util::tests::roundtrip_msb_edge_cases ... ok
+test encoding::integer::util::tests::roundtrip_msb_i32 ... ok
+test arrow_reader::stripe_footer_bounds_tests::sync_stripe_footer_limits_are_per_stripe_and_independent_of_file_metadata ... ok
+test encoding::integer::util::tests::roundtrip_msb_i64 ... ok
+test encoding::integer::util::tests::roundtrip_msb_i16 ... ok
+test encoding::integer::rle_v2::tests::roundtrip_i32 ... ok
+test encoding::integer::util::tests::roundtrip_varint_edge_cases ... ok
+test encoding::integer::util::tests::roundtrip_varint_i128 ... ok
+test encoding::integer::rle_v2::tests::roundtrip_i16 ... ok
+test encoding::integer::util::tests::roundtrip_varint_i16 ... ok
+test encoding::integer::util::tests::roundtrip_varint_i32 ... ok
+test encoding::integer::util::tests::roundtrip_varint_i64 ... ok
+test encoding::integer::util::tests::roundtrip_zigzag_edge_cases ... ok
+test encoding::integer::util::tests::roundtrip_varint_u64 ... ok
+test encoding::integer::rle_v2::tests::roundtrip_i64 ... ok
+test encoding::integer::util::tests::roundtrip_zigzag_i32 ... ok
+test encoding::integer::util::tests::test_read_varint ... ok
+test encoding::integer::util::tests::test_zigzag_decode ... ok
+test encoding::integer::util::tests::test_zigzag_encode ... ok
+test encoding::tests::decode_spaced_edge_cases ... ok
+test encoding::integer::util::tests::roundtrip_packed_ints_serde_i16 ... ok
+test encoding::tests::test_skip ... ok
+test encoding::timestamp::tests::test_timestamp_encoder_rejects_orc_763_gap ... ok
+test encoding::timestamp::tests::test_timestamp_encoder_rejects_orc_epoch_overflow ... ok
+test encoding::timestamp::tests::test_timestamp_encoder_roundtrip ... ok
+test encoding::integer::util::tests::roundtrip_zigzag_i16 ... ok
+test predicate::tests::test_predicate_creation ... ok
+test reader::metadata::tests::async_tail_checks_match_sync_reader ... ok
+test reader::metadata::tests::bounded_builder_validates_depth_before_schema_construction ... ok
+test reader::metadata::tests::empty_file_does_not_issue_a_read ... ok
+test reader::metadata::tests::encoded_limit_rejects_large_tail_before_second_read ... ok
+test encoding::integer::util::tests::roundtrip_zigzag_i64 ... ok
+test reader::metadata::tests::malformed_tail_lengths_return_errors_before_another_read ... ok
+test reader::metadata::tests::small_and_large_metadata_tails_keep_one_or_two_reads ... ok
+test reader::metadata::tests::unexpected_tail_read_lengths_are_rejected ... ok
+test reader::metadata::tests::validated_metadata_can_be_reused_without_another_tail_read ... ok
+test row_group_filter::tests::test_bloom_filter_rejects_non_matching_value ... ok
+test reader::metadata::tests::metadata_options_enforce_combined_decoded_and_encoded_limits ... ok
+test row_group_filter::tests::test_evaluate_predicate_and_combination ... ok
+test row_group_filter::tests::test_evaluate_predicate_double_negation ... ok
+test row_group_filter::tests::test_evaluate_predicate_integer_equal ... ok
+test row_group_filter::tests::test_evaluate_predicate_integer_greater_than ... ok
+test row_group_filter::tests::test_evaluate_predicate_integer_greater_than_or_equal ... ok
+test row_group_filter::tests::test_evaluate_predicate_integer_less_than ... ok
+test row_group_filter::tests::test_evaluate_predicate_integer_less_than_or_equal ... ok
+test row_group_filter::tests::test_evaluate_predicate_integer_not_equal ... ok
+test row_group_filter::tests::test_evaluate_predicate_integer_not_equal_single_value ... ok
+test row_group_filter::tests::test_evaluate_predicate_is_not_null ... ok
+test row_group_filter::tests::test_evaluate_predicate_is_null ... ok
+test row_group_filter::tests::test_evaluate_predicate_missing_column ... ok
+test row_group_filter::tests::test_evaluate_predicate_missing_row_index ... ok
+test row_group_filter::tests::test_evaluate_predicate_not_and ... ok
+test row_group_filter::tests::test_evaluate_predicate_not_comparison ... ok
+test row_group_filter::tests::test_evaluate_predicate_not_is_not_null ... ok
+test row_group_filter::tests::test_evaluate_predicate_not_is_null ... ok
+test row_group_filter::tests::test_evaluate_predicate_not_or ... ok
+test row_group_filter::tests::test_evaluate_predicate_or_combination ... ok
+test row_group_filter::tests::test_evaluate_string_comparison ... ok
+test row_group_filter::tests::test_row_index_creation ... ok
+test row_group_filter::tests::test_statistics_short_circuit_before_bloom_filter ... ok
+test row_index::tests::test_row_group_index ... ok
+test row_index::tests::test_stripe_row_index ... ok
+test row_selection::tests::test_row_selection_and_then ... ok
+test row_selection::tests::test_row_selection_consolidation ... ok
+test row_selection::tests::test_row_selection_empty ... ok
+test row_selection::tests::test_row_selection_from_filters ... ok
+test row_selection::tests::test_row_selection_from_consecutive_ranges ... ok
+test row_selection::tests::test_row_selection_from_row_group_filter ... ok
+test row_selection::tests::test_row_selection_from_row_group_filter_all_skip ... ok
+test row_selection::tests::test_row_selection_from_row_group_filter_all_keep ... ok
+test row_selection::tests::test_row_selection_from_row_group_filter_empty ... ok
+test row_selection::tests::test_row_selection_from_row_group_filter_merge ... ok
+test row_selection::tests::test_row_selection_from_row_group_filter_remaining_rows ... ok
+test row_selection::tests::test_row_selection_select_all ... ok
+test row_selection::tests::test_row_selection_skip_all ... ok
+test row_selection::tests::test_row_selection_split_off ... ok
+test row_selection::tests::test_row_selection_out_of_order - should panic ... ok
+test row_selection::tests::test_row_selector_select ... ok
+test row_selection::tests::test_row_selector_skip ... ok
+test encoding::tests::decode_spaced_proptest ... ok
+test schema::validation::tests::constructs_valid_nested_types_with_original_column_indices ... ok
+test schema::validation::tests::depth_budget_counts_root_as_zero ... ok
+test schema::validation::tests::rejects_empty_and_non_struct_roots ... ok
+test schema::validation::tests::rejects_cycles_and_shared_children ... ok
+test schema::validation::tests::rejects_invalid_container_and_primitive_arities ... ok
+test schema::validation::tests::rejects_missing_and_unknown_kinds_at_root_and_in_children ... ok
+test schema::validation::tests::rejects_orphan_types_including_disconnected_cycles ... ok
+test schema::validation::tests::preserves_union_arity_limits ... ok
+test schema::validation::tests::rejects_out_of_bounds_children_and_root_references ... ok
+test timestamp::tests::checked_decoder_retains_orc_epoch_edge_and_rejects_invalid_nanos ... ok
+test timestamp::tests::default_options_keep_strict_precision ... ok
+test timestamp::tests::fractional_truncation_floors_negative_instants ... ok
+test timestamp::tests::microsecond_range_is_not_limited_to_nanosecond_or_chrono_range ... ok
+test timestamp_timezone::tests::conversion_retains_full_microsecond_range_before_narrowing ... ok
+test timestamp_timezone::tests::java_two_offset_rule_matches_cross_zone_gap_and_fold ... ok
+test timestamp_timezone::tests::missing_names_retain_current_writer_and_resolution_errors_do_not_replace_it ... ok
+test timestamp_timezone::tests::nonhour_offsets_and_supplied_orc_epoch_are_used ... ok
+test timestamp_timezone::tests::offset_errors_and_checked_candidate_overflow_are_reported ... ok
+test timestamp_timezone::tests::precision_policy_is_applied_after_timezone_conversion ... ok
+test timestamp_timezone::tests::same_rules_preserve_both_fold_instants_without_resolving_local_time ... ok
+test schema::validation::tests::validates_deep_raw_trees_iteratively_before_construction ... ok
+test encoding::integer::util::tests::roundtrip_packed_ints_serde_i32 ... ok
+test encoding::integer::rle_v2::patched_base::tests::roundtrip_patched_base_i64 ... ok
+test reader::metadata::tests::async_metadata_options_match_sync_limits_and_attributes ... ok
+test encoding::integer::rle_v2::tests::roundtrip_i64_unsigned ... ok
+test arrow_writer::tests::test_writer_compression_modes_and_postscript ... ok
+test encoding::integer::util::tests::roundtrip_packed_ints_serde_i64 ... ok
+test encoding::byte::tests::roundtrip_byte_rle_biased ... ok
+
+test result: ok. 198 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.44s
+
+     Running tests/basic/main.rs (target/debug/deps/basic-39ef267e2b3d81b0)
+
+running 39 tests
+test async_basic_test_with_range_without_data ... ok
+test basic_test_nested_array_float ... ok
+test basic_test_3 ... ok
+test basic_test ... ok
+test basic_test_nested_array ... ok
+test basic_test_2 ... ok
+test basic_test_0 ... ok
+test basic_test_nested_map ... ok
+test basic_test_nested_struct ... ok
+test basic_test_nested_array_struct ... ok
+test basic_test_with_range_without_data ... ok
+test basic_test_nested_map_struct ... ok
+test basic_test_with_range ... ok
+test decimal128_timestamps_test ... ok
+test millisecond_timestamps_test ... ok
+test microsecond_timestamps_test ... ok
+test overflowing_timestamps_test ... ok
+test second_timestamps_test ... ok
+test rlev2_test ... ok
+test decimal128_timestamps_1900_test ... ok
+test test_read_long_bool ... ok
+test test_read_long_bool_gzip ... ok
+test async_basic_test_with_range ... ok
+test basic_test_bigint ... ok
+test async_basic_test_0 ... ok
+test test_read_long_string ... ok
+test test_read_string_dirt ... ok
+test timestamps_0001_projection_test ... ok
+test timestamps_0001_test ... ok
+test timestamps_test ... ok
+test test_read_string_long_long ... ok
+test test_read_string_dirt_gzip ... ok
+test alltypes_test ... ok
+test test_read_string_long_long_gzip ... ok
+test test_read_f32_long_long_gzip ... ok
+test basic_test_patched_int ... ok
+test v1_file_test ... ok
+test v0_file_test ... ok
+test v0_file_test_async ... ok
+
+test result: ok. 39 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.93s
+
+     Running tests/bin/main.rs (target/debug/deps/bin-0293bc1b2c9552a8)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/integration/main.rs (target/debug/deps/integration-60f632377d49af94)
+
+running 34 tests
+test meta_data ... ignored
+test orc_11_format ... ignored
+test orc_split_elim ... ignored
+test empty_file ... ok
+test bloom_filter ... ok
+test orc_index_int_string ... ok
+test decimal ... ok
+test test1 ... ok
+test test_date_2038 ... ignored
+test test_lzo ... ok
+test column_projection ... ok
+test test_lz4 ... ok
+test over1k_bloom ... ok
+test test_memory_management_v11 ... ok
+test test_predicate_pushdown ... ok
+test test_memory_management_v12 ... ok
+test test_predicate_pushdown_range_query ... ok
+test test_predicate_pushdown_equality_query ... ok
+test test_predicate_pushdown_with_filtering ... ok
+test test_string_and_binary_statistics ... ok
+test test_snappy ... ok
+test test_timestamp ... ignored
+test test_stripe_level_stats ... ok
+test orc_split_elim_cpp ... ok
+test test_predicate_pushdown_without_index ... ok
+test orc_split_elim_new ... ok
+test bloom_filter_predicate_prunes ... ok
+test nulls_at_end_snappy ... ok
+test test_date_1900_not_null ... ok
+test test_date_1900 ... ok
+test test_without_index ... ok
+test test_union_and_timestamp ... ok
+test zlib ... ok
+test test_seek ... ok
+
+test result: ok. 29 passed; 0 failed; 5 ignored; 0 measured; 0 filtered out; finished in 3.14s
+
+     Running tests/reader_schema.rs (target/debug/deps/reader_schema-f225a76615b47697)
+
+running 4 tests
+test sync_non_nullable_override_rejects_a_decoded_null ... ok
+test async_non_nullable_override_rejects_a_decoded_null ... ok
+test sync_batches_preserve_declared_schema_with_nulls_metadata_and_projection ... ok
+test async_batches_preserve_declared_schema_with_nulls_metadata_and_projection ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/row_selection/main.rs (target/debug/deps/row_selection-c32d2d0f46480b8a)
+
+running 23 tests
+test test_row_selection_async_with_compression ... ok
+test test_row_selection_async_with_large_file ... ok
+test test_row_selection_async_with_nested_array ... ok
+test test_row_selection_empty_selection ... ok
+test test_row_selection_async_with_nested_struct ... ok
+test test_row_selection_select_all ... ok
+test test_row_selection_select_first_only ... ok
+test test_row_selection_skip_all ... ok
+test test_row_selection_select_last_only ... ok
+test test_row_selection_async_select_all ... ok
+test test_row_selection_async_skip_all ... ok
+test test_row_selection_async_empty_selection ... ok
+test test_row_selection_with_compression ... ok
+test test_row_selection_async_with_consecutive_ranges ... ok
+test test_row_selection_async_select_last_only ... ok
+test test_row_selection_async ... ok
+test test_row_selection_with_nested_array ... ok
+test test_row_selection_with_nested_struct ... ok
+test test_row_selection_with_projection ... ok
+test test_row_selection_with_large_file ... ok
+test test_row_selection_async_select_first_only ... ok
+test test_row_selection_with_consecutive_ranges ... ok
+test test_row_selection_skip_first_select_middle ... ok
+
+test result: ok. 23 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/timestamp_precision.rs (target/debug/deps/timestamp_precision-a9ea789272b03759)
+
+running 3 tests
+test async_reader_propagates_precision_options ... ok
+test foreign_submicroseconds_are_strict_by_default_and_can_be_truncated ... ok
+test microsecond_instants_retain_year_one_and_year_9999 ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/timestamp_timezone.rs (target/debug/deps/timestamp_timezone-23ca2ad128bd6551)
+
+running 8 tests
+test resolver_failure_is_reported_without_a_metadata_parse_panic ... ok
+test opt_in_disables_unsafe_statistics_pruning_but_keeps_manual_selection ... ok
+test async_conversion_disables_statistics_pruning_and_keeps_manual_selection ... ok
+test wholly_skipped_stripes_do_not_change_writer_timezone ... ok
+test byte_range_start_does_not_inherit_unread_stripes ... ok
+test output_timezone_is_a_label_and_instant_columns_do_not_resolve_writer_names ... ok
+test writer_names_bypass_chrono_and_missing_names_inherit_per_reader ... ok
+test async_inheritance_range_starts_and_skipped_stripes_match_sync ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/writer_compression/main.rs (target/debug/deps/writer_compression-0fdfcb9c98a57072)
+
+running 1 test
+test compressed_files_are_readable_by_pyorc ... ignored, requires ./venv/bin/python with pyorc installed
+
+test result: ok. 0 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/writer_date/main.rs (target/debug/deps/writer_date-b0a3dac608746088)
+
+running 1 test
+test date32_file_is_readable_by_pyorc ... ignored, requires ./venv/bin/python with pyorc installed
+
+test result: ok. 0 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/writer_timestamp/main.rs (target/debug/deps/writer_timestamp-9a5592cb3cd45f46)
+
+running 1 test
+test timestamp_file_is_readable_by_pyorc ... ignored, requires ./venv/bin/python with pyorc installed
+
+test result: ok. 0 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests orc_rust
+
+running 11 tests
+test src/lib.rs - (line 33) - compile ... ok
+test src/lib.rs - (line 23) - compile ... ok
+test src/arrow_reader.rs - arrow_reader::ArrowReaderBuilder<R>::with_timestamp_precision (line 153) - compile ... ok
+test src/arrow_reader.rs - arrow_reader::ArrowReaderBuilder<R>::with_predicate (line 203) - compile ... ok
+test src/arrow_reader.rs - arrow_reader::ArrowReaderBuilder<R>::with_row_selection (line 127) - compile ... ok
+test src/stripe.rs - stripe::Stripe::read_row_indexes (line 369) - compile ... ok
+test src/row_selection.rs - row_selection::RowSelection::from_consecutive_ranges (line 149) ... ok
+test src/row_selection.rs - row_selection::RowSelection::from_row_group_filter (line 337) ... ok
+test src/row_selection.rs - row_selection::RowSelection::split_off (line 266) ... ok
+test src/predicate.rs - predicate::Predicate (line 90) ... ok
+test src/row_selection.rs - row_selection::RowSelection (line 68) ... ok
+
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.51s
+

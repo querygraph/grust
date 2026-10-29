@@ -1,0 +1,572 @@
+commit edbb0121475f0ffab2699450e3672b4864b978a6
+Author:     Alexy Khrabrov <deliverable@gmail.com>
+AuthorDate: Thu Oct 29 16:21:47 2026 -0700
+Commit:     Alexy Khrabrov <deliverable@gmail.com>
+CommitDate: Thu Oct 29 16:21:47 2026 -0700
+
+    feat: let listing formats select all files for schema inference
+
+diff --git a/crates/sail-data-source/src/listing/inference_selection_tests.rs b/crates/sail-data-source/src/listing/inference_selection_tests.rs
+new file mode 100644
+index 000000000..620008dcd
+--- /dev/null
++++ b/crates/sail-data-source/src/listing/inference_selection_tests.rs
+@@ -0,0 +1,390 @@
++#![expect(clippy::unwrap_used)]
++
++use std::collections::BTreeSet;
++use std::fmt;
++use std::sync::Mutex;
++
++use bytes::Bytes;
++use datafusion::execution::context::{SessionConfig, SessionContext};
++use futures::StreamExt;
++use futures::stream::{self, BoxStream};
++use object_store::memory::InMemory;
++use object_store::path::Path;
++use object_store::{
++    CopyOptions, GetOptions, GetResult, ListResult, MultipartUpload, ObjectStoreExt,
++    PutMultipartOptions, PutOptions, PutPayload, PutResult,
++};
++
++use super::*;
++
++/// Deliberately lists in reverse path order, with version metadata distinct
++/// from a fresh HEAD. Inference must retain the listed objects unchanged.
++#[derive(Debug, Default)]
++struct ReverseListStore(InMemory);
++
++impl fmt::Display for ReverseListStore {
++    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
++        write!(f, "ReverseListStore")
++    }
++}
++
++#[async_trait]
++impl ObjectStore for ReverseListStore {
++    async fn put_opts(
++        &self,
++        path: &Path,
++        payload: PutPayload,
++        options: PutOptions,
++    ) -> object_store::Result<PutResult> {
++        self.0.put_opts(path, payload, options).await
++    }
++
++    async fn put_multipart_opts(
++        &self,
++        path: &Path,
++        options: PutMultipartOptions,
++    ) -> object_store::Result<Box<dyn MultipartUpload>> {
++        self.0.put_multipart_opts(path, options).await
++    }
++
++    async fn get_opts(&self, path: &Path, options: GetOptions) -> object_store::Result<GetResult> {
++        self.0.get_opts(path, options).await
++    }
++
++    fn delete_stream(
++        &self,
++        paths: BoxStream<'static, object_store::Result<Path>>,
++    ) -> BoxStream<'static, object_store::Result<Path>> {
++        self.0.delete_stream(paths)
++    }
++
++    fn list(&self, prefix: Option<&Path>) -> BoxStream<'static, object_store::Result<ObjectMeta>> {
++        let files = self.0.list(prefix);
++        stream::once(async move {
++            let mut files = files.try_collect::<Vec<_>>().await?;
++            files.reverse();
++            Ok::<_, object_store::Error>(stream::iter(files.into_iter().map(|mut meta| {
++                meta.version = Some(format!("listed:{}", meta.location));
++                Ok(meta)
++            })))
++        })
++        .try_flatten()
++        .boxed()
++    }
++
++    async fn list_with_delimiter(&self, prefix: Option<&Path>) -> object_store::Result<ListResult> {
++        self.0.list_with_delimiter(prefix).await
++    }
++
++    async fn copy_opts(
++        &self,
++        from: &Path,
++        to: &Path,
++        options: CopyOptions,
++    ) -> object_store::Result<()> {
++        self.0.copy_opts(from, to, options).await
++    }
++}
++
++#[derive(Debug, Default)]
++struct Observations {
++    compression: Mutex<Vec<Vec<ObjectMeta>>>,
++    schema: Mutex<Vec<Vec<ObjectMeta>>>,
++}
++
++#[derive(Debug, Default)]
++struct SampleReadFormat(Arc<Observations>);
++
++#[derive(Debug, Default)]
++struct AllReadFormat(SampleReadFormat);
++
++impl From<Arc<Observations>> for SampleReadFormat {
++    fn from(observations: Arc<Observations>) -> Self {
++        Self(observations)
++    }
++}
++
++impl From<Arc<Observations>> for AllReadFormat {
++    fn from(observations: Arc<Observations>) -> Self {
++        Self(SampleReadFormat(observations))
++    }
++}
++
++#[derive(Debug, Default)]
++struct InferenceFactory<R>(PhantomData<R>);
++
++impl<R: ReadFormat + From<Arc<Observations>> + Default> FormatFactory for InferenceFactory<R> {
++    type Read = R;
++    type Write = SampleReadFormat;
++
++    fn name() -> &'static str {
++        "inference_selection_test"
++    }
++
++    fn read(ctx: &dyn Session, _options: Vec<OptionLayer>) -> Result<Self::Read> {
++        Ok(ctx.config().get_extension::<Observations>().unwrap().into())
++    }
++
++    fn write(ctx: &dyn Session, _options: Vec<OptionLayer>) -> Result<Self::Write> {
++        Ok(ctx.config().get_extension::<Observations>().unwrap().into())
++    }
++}
++
++#[async_trait]
++impl ReadFormat for SampleReadFormat {
++    // Intentionally inherits ReadFormat's default file selection.
++    async fn infer_compression(
++        &self,
++        _ctx: &dyn Session,
++        files: &[ListingFileSample<'_>],
++    ) -> Result<CompressionTypeVariant> {
++        *self.0.compression.lock().unwrap() = files.iter().map(|g| g.objects.clone()).collect();
++        Ok(CompressionTypeVariant::UNCOMPRESSED)
++    }
++
++    async fn infer_schema(
++        &self,
++        _ctx: &dyn Session,
++        files: &[ListingFileSample<'_>],
++        _compression: CompressionTypeVariant,
++    ) -> Result<SchemaRef> {
++        *self.0.schema.lock().unwrap() = files.iter().map(|g| g.objects.clone()).collect();
++        let mut names = BTreeSet::new();
++        for group in files {
++            for object in &group.objects {
++                // Each test file contains the name of a field. Reading its
++                // bytes proves the eleventh object reaches the inference hook.
++                let bytes = group.store.get(&object.location).await?.bytes().await?;
++                names.insert(String::from_utf8(bytes.to_vec()).unwrap());
++            }
++        }
++        Ok(Arc::new(Schema::new(
++            names
++                .into_iter()
++                .map(|name| Field::new(name, DataType::Int64, true))
++                .collect::<Vec<_>>(),
++        )))
++    }
++
++    async fn scan(&self, _ctx: &dyn Session, _input: ListingScanInput) -> Result<FileScanConfig> {
++        plan_err!("test only exercises source inference")
++    }
++
++    fn path_glob_filter(&self) -> Option<&str> {
++        Some("*.schema")
++    }
++}
++
++#[async_trait]
++impl ReadFormat for AllReadFormat {
++    fn schema_inference_file_selection(&self) -> ListingFileSelection {
++        ListingFileSelection::All
++    }
++
++    async fn infer_compression(
++        &self,
++        ctx: &dyn Session,
++        files: &[ListingFileSample<'_>],
++    ) -> Result<CompressionTypeVariant> {
++        self.0.infer_compression(ctx, files).await
++    }
++
++    async fn infer_schema(
++        &self,
++        ctx: &dyn Session,
++        files: &[ListingFileSample<'_>],
++        compression: CompressionTypeVariant,
++    ) -> Result<SchemaRef> {
++        self.0.infer_schema(ctx, files, compression).await
++    }
++
++    async fn scan(&self, ctx: &dyn Session, input: ListingScanInput) -> Result<FileScanConfig> {
++        self.0.scan(ctx, input).await
++    }
++
++    fn path_glob_filter(&self) -> Option<&str> {
++        self.0.path_glob_filter()
++    }
++}
++
++#[async_trait]
++impl WriteFormat for SampleReadFormat {
++    async fn sink(
++        &self,
++        _ctx: &dyn Session,
++        _input: ListingSinkInput,
++    ) -> Result<Arc<dyn ExecutionPlan>> {
++        plan_err!("test format does not support writing")
++    }
++}
++
++fn fixture() -> (SessionContext, Arc<ReverseListStore>, Arc<Observations>) {
++    let observations = Arc::new(Observations::default());
++    let mut config = SessionConfig::new().with_extension(observations.clone());
++    config
++        .options_mut()
++        .execution
++        .listing_table_ignore_subdirectory = false;
++    let context = SessionContext::new_with_config(config);
++    let store = Arc::new(ReverseListStore::default());
++    context.register_object_store(&Url::parse("memory://inference").unwrap(), store.clone());
++    (context, store, observations)
++}
++
++async fn put(store: &ReverseListStore, path: &str, field: &str) -> Result<ObjectMeta> {
++    let path = Path::from(path);
++    store
++        .put(&path, Bytes::copy_from_slice(field.as_bytes()).into())
++        .await?;
++    let mut meta = store.head(&path).await?;
++    meta.version = Some(format!("listed:{path}"));
++    Ok(meta)
++}
++
++async fn create_source<R: ReadFormat + From<Arc<Observations>> + Default>(
++    context: &SessionContext,
++    paths: Vec<String>,
++) -> Result<Arc<dyn TableSource>> {
++    ListingDataSource::<InferenceFactory<R>>::default()
++        .create_source(
++            &context.state(),
++            SourceInfo {
++                paths,
++                lakehouse_table: None,
++                schema: None,
++                constraints: datafusion_common::Constraints::default(),
++                partition_by: vec![],
++                bucket_by: None,
++                sort_order: vec![],
++                options: vec![],
++                read_case_sensitive: true,
++            },
++        )
++        .await
++}
++
++#[tokio::test]
++async fn all_files_reach_schema_and_compression_inference_with_exact_identities() -> Result<()> {
++    let (context, store, observations) = fixture();
++    let mut expected = Vec::new();
++    for index in 0..11 {
++        expected.push(
++            put(
++                &store,
++                &format!("data/{index:02}.schema"),
++                if index == 0 { "extra" } else { "base" },
++            )
++            .await?,
++        );
++    }
++    for (path, field) in [
++        ("data/.hidden.schema", "hidden"),
++        ("data/_private/part.schema", "hidden_directory"),
++        ("data/_SUCCESS", "marker"),
++        ("data/ignored.other", "wrong_glob"),
++        ("data/empty.schema", ""),
++    ] {
++        put(&store, path, field).await?;
++    }
++    let paths = vec!["memory://inference/data/".to_string()];
++    let sampled = create_source::<SampleReadFormat>(&context, paths.clone()).await?;
++    assert_eq!(
++        sampled
++            .schema()
++            .fields()
++            .iter()
++            .map(|f| f.name().as_str())
++            .collect::<Vec<_>>(),
++        ["base"]
++    );
++    let sampled_objects = vec![expected.iter().rev().take(10).cloned().collect::<Vec<_>>()];
++    assert_eq!(*observations.schema.lock().unwrap(), sampled_objects);
++    assert_eq!(*observations.compression.lock().unwrap(), sampled_objects);
++
++    let all = create_source::<AllReadFormat>(&context, paths).await?;
++    assert_eq!(
++        all.schema()
++            .fields()
++            .iter()
++            .map(|f| f.name().as_str())
++            .collect::<Vec<_>>(),
++        ["base", "extra"]
++    );
++    assert_eq!(*observations.schema.lock().unwrap(), vec![expected.clone()]);
++    assert_eq!(
++        *observations.compression.lock().unwrap(),
++        vec![expected.clone()]
++    );
++
++    // The URL glob and the format's filename glob both remain active.
++    create_source::<AllReadFormat>(
++        &context,
++        vec!["memory://inference/data/0*.schema".to_string()],
++    )
++    .await?;
++    assert_eq!(
++        *observations.schema.lock().unwrap(),
++        vec![expected[..10].to_vec()]
++    );
++    assert_eq!(
++        *observations.compression.lock().unwrap(),
++        vec![expected[..10].to_vec()]
++    );
++    Ok(())
++}
++
++#[tokio::test]
++async fn all_selection_retains_url_order_and_empty_groups() -> Result<()> {
++    let (context, store, observations) = fixture();
++    let z = put(&store, "z/part.schema", "z").await?;
++    let a = put(&store, "a/part.schema", "a").await?;
++    put(&store, "empty/zero.schema", "").await?;
++    let urls = ["z/", "a/", "empty/"]
++        .map(|path| ListingTableUrl::parse(format!("memory://inference/{path}")).unwrap());
++    let filter = PathGlobFilter::parse("*.schema").unwrap();
++    let state = context.state();
++    let selected =
++        select_listing_files(&state, &urls, Some(&filter), ListingFileSelection::All).await?;
++    assert_eq!(selected.len(), 3);
++    let expected = [vec![z], vec![a], vec![]];
++    let expected_store: Arc<dyn ObjectStore> = store;
++    for (index, group) in selected.iter().enumerate() {
++        assert_eq!(group.url, &urls[index]);
++        assert_eq!(group.objects, expected[index]);
++        assert!(Arc::ptr_eq(&group.store, &expected_store));
++    }
++    let empty =
++        create_source::<AllReadFormat>(&context, vec!["memory://inference/empty/".to_string()])
++            .await?;
++    assert!(empty.schema().fields().is_empty());
++    assert_eq!(
++        *observations.schema.lock().unwrap(),
++        vec![Vec::<ObjectMeta>::new()]
++    );
++    assert_eq!(
++        *observations.compression.lock().unwrap(),
++        vec![Vec::<ObjectMeta>::new()]
++    );
++    Ok(())
++}
++
++#[tokio::test]
++async fn all_selection_checks_partition_layout_beyond_the_sample() -> Result<()> {
++    let (context, store, _) = fixture();
++    for index in 0..10 {
++        put(&store, &format!("partitions/b=1/{index:02}.schema"), "base").await?;
++    }
++    put(&store, "partitions/a=1/last.schema", "base").await?;
++    let paths = vec!["memory://inference/partitions/".to_string()];
++    let sampled = create_source::<SampleReadFormat>(&context, paths.clone()).await?;
++    assert_eq!(sampled.schema().field(1).name(), "b");
++    let error = match create_source::<AllReadFormat>(&context, paths).await {
++        Err(error) => error,
++        Ok(_) => return plan_err!("all-file inference missed the conflicting partition layout"),
++    };
++    assert!(
++        error.to_string().contains("mixed partition values"),
++        "{error}"
++    );
++    Ok(())
++}
+diff --git a/crates/sail-data-source/src/listing/source.rs b/crates/sail-data-source/src/listing/source.rs
+index fb5055120..15f0148f5 100644
+--- a/crates/sail-data-source/src/listing/source.rs
++++ b/crates/sail-data-source/src/listing/source.rs
+@@ -26,7 +26,7 @@ use url::Url;
+ 
+ use crate::listing::table::{ListingTableSource, ListingTableSourceConfig};
+ use crate::listing::utils::{
+-    infer_partitions, rewrite_unsupported_fields, sample_listing_files, validate_partitions,
++    infer_partitions, rewrite_unsupported_fields, select_listing_files, validate_partitions,
+ };
+ use crate::listing::write::{FileWriteNode, FileWriteOptions};
+ use crate::resolve_listing_urls;
+@@ -50,6 +50,12 @@ pub trait FormatFactory: Debug + Send + Sync + 'static {
+ /// A trait for format-specific logic for reading listing files.
+ #[async_trait]
+ pub trait ReadFormat: Debug + Send + Sync + 'static {
++    /// Select files supplied to schema, compression, and partition inference.
++    /// Formats retain the first-ten-nonempty-files-per-URL default unless they opt in.
++    fn schema_inference_file_selection(&self) -> ListingFileSelection {
++        ListingFileSelection::Sample
++    }
++
+     async fn infer_compression(
+         &self,
+         ctx: &dyn Session,
+@@ -100,6 +106,18 @@ pub trait ReadFormat: Debug + Send + Sync + 'static {
+     }
+ }
+ 
++/// Which eligible, nonempty objects are supplied to listing inference.
++#[derive(Debug, Clone, Copy, PartialEq, Eq)]
++pub enum ListingFileSelection {
++    /// The first ten nonempty files per URL in the existing listing order.
++    Sample,
++    /// All nonempty files, sorted by location within each URL's group.
++    /// Input URL order and complete object metadata are retained. This collects
++    /// all eligible objects in memory and also broadens compression and partition
++    /// inference and partition validation to those files.
++    All,
++}
++
+ #[derive(Debug)]
+ pub struct ListingFileSample<'a> {
+     pub url: &'a ListingTableUrl,
+@@ -181,22 +199,28 @@ impl<T: FormatFactory> DataSource for ListingDataSource<T> {
+             .map(PathGlobFilter::parse)
+             .transpose()?;
+         let urls = resolve_listing_urls(ctx, paths).await?;
+-        let sampled_files = sample_listing_files(ctx, &urls, path_glob_filter.as_ref()).await?;
+-        let compression = read_format.infer_compression(ctx, &sampled_files).await?;
++        let inference_files = select_listing_files(
++            ctx,
++            &urls,
++            path_glob_filter.as_ref(),
++            read_format.schema_inference_file_selection(),
++        )
++        .await?;
++        let compression = read_format.infer_compression(ctx, &inference_files).await?;
+ 
+         let (schema, partition_fields) = match schema {
+             Some(schema) if !schema.fields().is_empty() => {
+                 let physical = if read_format.requires_explicit_schema_validation() {
+                     Some(
+                         read_format
+-                            .infer_schema(ctx, &sampled_files, compression)
++                            .infer_schema(ctx, &inference_files, compression)
+                             .await?,
+                     )
+                 } else if read_case_sensitive {
+                     None
+                 } else {
+                     read_format
+-                        .infer_schema(ctx, &sampled_files, compression)
++                        .infer_schema(ctx, &inference_files, compression)
+                         .await
+                         .ok()
+                 };
+@@ -218,7 +242,7 @@ impl<T: FormatFactory> DataSource for ListingDataSource<T> {
+                 // are treated as file columns, and the file reader fails
+                 // because the file itself does not contain them.
+                 let partition_by = if partition_by.is_empty() {
+-                    infer_partitions(&sampled_files)?
++                    infer_partitions(&inference_files)?
+                         .into_iter()
+                         .filter(|name| {
+                             schema
+@@ -239,12 +263,12 @@ impl<T: FormatFactory> DataSource for ListingDataSource<T> {
+             }
+             _ => {
+                 let schema = read_format
+-                    .infer_schema(ctx, &sampled_files, compression)
++                    .infer_schema(ctx, &inference_files, compression)
+                     .await?;
+                 let schema = rewrite_unsupported_fields(schema);
+ 
+                 let partition_by = if partition_by.is_empty() {
+-                    infer_partitions(&sampled_files)?
++                    infer_partitions(&inference_files)?
+                 } else {
+                     partition_by
+                 };
+@@ -259,7 +283,7 @@ impl<T: FormatFactory> DataSource for ListingDataSource<T> {
+             }
+         };
+ 
+-        validate_partitions(&sampled_files, &partition_fields)?;
++        validate_partitions(&inference_files, &partition_fields)?;
+ 
+         let source = ListingTableSource::try_new(ListingTableSourceConfig {
+             table_paths: urls,
+@@ -385,3 +409,7 @@ fn reconcile_schema_names_case_insensitive(schema: Schema, physical: &Schema) ->
+ #[cfg(test)]
+ #[path = "case_sensitivity_tests.rs"]
+ mod case_sensitivity_tests;
++
++#[cfg(test)]
++#[path = "inference_selection_tests.rs"]
++mod inference_selection_tests;
+diff --git a/crates/sail-data-source/src/listing/utils.rs b/crates/sail-data-source/src/listing/utils.rs
+index 07dc2b6c4..f3fffeea6 100644
+--- a/crates/sail-data-source/src/listing/utils.rs
++++ b/crates/sail-data-source/src/listing/utils.rs
+@@ -17,7 +17,7 @@ use log::debug;
+ use object_store::path::Path;
+ use object_store::{ObjectMeta, ObjectStore, ObjectStoreExt};
+ 
+-use crate::listing::source::ListingFileSample;
++use crate::listing::source::{ListingFileSample, ListingFileSelection};
+ use crate::url::PathGlobFilter;
+ 
+ /// What normalization does with an inferred nanosecond timestamp.
+@@ -181,6 +181,35 @@ pub async fn sample_listing_files<'a>(
+     Ok(samples)
+ }
+ 
++/// Select inference inputs without changing the existing sampling behavior.
++/// Both modes reuse the listing URL, hidden-file, and path-glob filters.
++pub async fn select_listing_files<'a>(
++    ctx: &dyn Session,
++    urls: &'a [ListingTableUrl],
++    path_glob_filter: Option<&'a PathGlobFilter>,
++    selection: ListingFileSelection,
++) -> Result<Vec<ListingFileSample<'a>>> {
++    if selection == ListingFileSelection::Sample {
++        return sample_listing_files(ctx, urls, path_glob_filter).await;
++    }
++    let mut groups = Vec::with_capacity(urls.len());
++    for url in urls {
++        let store = ctx.runtime_env().object_store(url)?;
++        let mut objects: Vec<_> = list_all_files(url, ctx, store.as_ref(), path_glob_filter)
++            .await?
++            .try_filter(|meta| futures::future::ready(meta.size > 0))
++            .try_collect()
++            .await?;
++        objects.sort_by(|left, right| left.location.cmp(&right.location));
++        groups.push(ListingFileSample {
++            url,
++            store,
++            objects,
++        });
++    }
++    Ok(groups)
++}
++
+ pub fn validate_partitions(
+     files: &[ListingFileSample<'_>],
+     table_partition_fields: &[FieldRef],

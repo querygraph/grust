@@ -11202,3 +11202,17 @@ Previous goal turn made progress: Sail 27ab945aa and Grust de23f1b5/861e5214 com
 ## 2026-10-29T23:25:15.788249+00:00 — DONE ORC evolution reference
 
 Archived 28 Spark evolution/inference observations (25 successes, three errors) and four successful nested-name follow-ups. Requested temporal qualifiers preserve storage; safe integer narrowing, all-file semantic merge and distinct top/nested matching are grounded in exact fixtures/results. Both owned JVMs exited zero. Installed ORC class/disassembly evidence carries release LICENSE/NOTICE and exact hashes. No Sail runtime or full SDP verdict. Detached archive/source/offline validation gates precede this documentation commit.
+
+## 2026-10-29T23:33:24.884702+00:00 — ACK ORC source resource evidence and next prerequisites
+
+Verified terminal vendor gate c0c156d7e and committed the 32-observation Spark archive after detached validation. Archiving isolated resource/listing gates while separate agents prepare read options and intrinsic native stripe bounds. No streaming/CDC design phase started.
+
+## 2026-10-29T23:33:24.916037+00:00 — DONE ORC listing/resource foundation gates
+
+Sail 51ec5acf0/9bba3434b/edbb01214/c0c156d7e passed detached formatting, strict
+Clippy and 143/147/150/150 library tests. Native 056c066173 passed 315 tests,
+eight ignored, 195 no-default tests and exact portable-package verification.
+Evidence preserves raw logs, patches, package and selected resource contract.
+No public source registration, CLI rebuild or added SDP runtime pass. Next units
+are configured read options and intrinsic stripe arithmetic, then source mapping.
+Documentation integrity gates precede branch advance.

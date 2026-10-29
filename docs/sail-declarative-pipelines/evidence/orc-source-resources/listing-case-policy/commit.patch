@@ -1,0 +1,227 @@
+commit 51ec5acf0cab3986d699a2eae208f642dddb7bea
+Author:     Alexy Khrabrov <deliverable@gmail.com>
+AuthorDate: Thu Oct 29 16:14:14 2026 -0700
+Commit:     Alexy Khrabrov <deliverable@gmail.com>
+CommitDate: Thu Oct 29 16:14:14 2026 -0700
+
+    fix: retain listing read case policy through scan planning
+
+diff --git a/crates/sail-data-source/src/listing/case_sensitivity_tests.rs b/crates/sail-data-source/src/listing/case_sensitivity_tests.rs
+new file mode 100644
+index 000000000..10cc9b9d8
+--- /dev/null
++++ b/crates/sail-data-source/src/listing/case_sensitivity_tests.rs
+@@ -0,0 +1,159 @@
++#![expect(clippy::unwrap_used)]
++
++use std::sync::Mutex;
++
++use bytes::Bytes;
++use datafusion::datasource::physical_plan::JsonSource;
++use datafusion::execution::context::{SessionConfig, SessionContext};
++use datafusion::logical_expr::physical_planning_context::PhysicalPlanningContext;
++use datafusion::physical_planner::{DefaultPhysicalPlanner, ExtensionPlanner};
++use datafusion_datasource::file_scan_config::FileScanConfigBuilder;
++use object_store::ObjectStoreExt;
++use object_store::memory::InMemory;
++use object_store::path::Path;
++
++use super::*;
++use crate::listing::planner::ListingPhysicalPlanner;
++
++#[derive(Debug, Default)]
++struct ScanObservations(Mutex<Vec<bool>>);
++
++#[derive(Debug, Default)]
++struct CaseFormatFactory;
++
++#[derive(Debug)]
++struct CaseReadFormat(Arc<ScanObservations>);
++
++impl FormatFactory for CaseFormatFactory {
++    type Read = CaseReadFormat;
++    type Write = CaseReadFormat;
++
++    fn name() -> &'static str {
++        "case_policy_test"
++    }
++
++    fn read(ctx: &dyn Session, _options: Vec<OptionLayer>) -> Result<Self::Read> {
++        Ok(CaseReadFormat(
++            ctx.config().get_extension::<ScanObservations>().unwrap(),
++        ))
++    }
++
++    fn write(ctx: &dyn Session, options: Vec<OptionLayer>) -> Result<Self::Write> {
++        Self::read(ctx, options)
++    }
++}
++
++#[async_trait]
++impl ReadFormat for CaseReadFormat {
++    async fn infer_compression(
++        &self,
++        _ctx: &dyn Session,
++        _files: &[ListingFileSample<'_>],
++    ) -> Result<CompressionTypeVariant> {
++        Ok(CompressionTypeVariant::UNCOMPRESSED)
++    }
++
++    async fn infer_schema(
++        &self,
++        _ctx: &dyn Session,
++        _files: &[ListingFileSample<'_>],
++        _compression: CompressionTypeVariant,
++    ) -> Result<SchemaRef> {
++        Ok(Arc::new(Schema::new(vec![Field::new(
++            "Value",
++            DataType::Int64,
++            true,
++        )])))
++    }
++
++    async fn scan(&self, _ctx: &dyn Session, input: ListingScanInput) -> Result<FileScanConfig> {
++        self.0.0.lock().unwrap().push(input.read_case_sensitive);
++        Ok(FileScanConfigBuilder::new(
++            input.object_store_url,
++            Arc::new(JsonSource::new(input.schema)),
++        )
++        .with_file_groups(input.file_groups)
++        .with_constraints(input.constraints)
++        .with_statistics(input.statistics)
++        .with_projection_indices(input.projection)?
++        .with_limit(input.limit)
++        .with_output_ordering(input.output_ordering)
++        .with_preserve_order(input.preserve_order)
++        .with_output_partitioning(input.output_partitioning)
++        .build())
++    }
++}
++
++#[async_trait]
++impl WriteFormat for CaseReadFormat {
++    async fn sink(
++        &self,
++        _ctx: &dyn Session,
++        _input: ListingSinkInput,
++    ) -> Result<Arc<dyn ExecutionPlan>> {
++        plan_err!("test format does not support writing")
++    }
++}
++
++#[tokio::test]
++async fn source_read_case_policy_reaches_the_format_scan() -> Result<()> {
++    let observations = Arc::new(ScanObservations::default());
++    let context = SessionContext::new_with_config(
++        SessionConfig::new()
++            .with_extension(observations.clone())
++            .with_collect_statistics(false)
++            .with_target_partitions(1),
++    );
++    let store = Arc::new(InMemory::new());
++    store
++        .put(
++            &Path::from("data/part.json"),
++            Bytes::from_static(b"{\"Value\":1}\n").into(),
++        )
++        .await?;
++    context.register_object_store(&Url::parse("memory://case-policy").unwrap(), store);
++    let state = context.state();
++    let planner = DefaultPhysicalPlanner::with_extension_planners(vec![]);
++
++    for read_case_sensitive in [false, true] {
++        let source = ListingDataSource::<CaseFormatFactory>::default()
++            .create_source(
++                &state,
++                SourceInfo {
++                    paths: vec!["memory://case-policy/data/".to_string()],
++                    lakehouse_table: None,
++                    schema: Some(Schema::new(vec![Field::new(
++                        "value",
++                        DataType::Int64,
++                        true,
++                    )])),
++                    constraints: datafusion_common::Constraints::default(),
++                    partition_by: vec![],
++                    bucket_by: None,
++                    sort_order: vec![],
++                    options: vec![],
++                    read_case_sensitive,
++                },
++            )
++            .await?;
++        // The existing up-front reconciliation remains unchanged; the captured
++        // policy must also reach the format when it later opens individual files.
++        let expected_name = if read_case_sensitive {
++            "value"
++        } else {
++            "Value"
++        };
++        assert_eq!(source.schema().field(0).name(), expected_name);
++        let plan = LogicalPlanBuilder::scan("case_policy", source, None)?.build()?;
++        let LogicalPlan::TableScan(scan) = plan else {
++            return plan_err!("expected a listing table scan");
++        };
++        let physical = ListingPhysicalPlanner
++            .plan_table_scan(&planner, &scan, &state, &PhysicalPlanningContext::default())
++            .await?
++            .unwrap();
++        assert_eq!(physical.schema().field(0).name(), expected_name);
++    }
++    assert_eq!(observations.0.lock().unwrap().as_slice(), &[false, true]);
++    Ok(())
++}
+diff --git a/crates/sail-data-source/src/listing/planner.rs b/crates/sail-data-source/src/listing/planner.rs
+index 43292437d..5dba4b4df 100644
+--- a/crates/sail-data-source/src/listing/planner.rs
++++ b/crates/sail-data-source/src/listing/planner.rs
+@@ -195,6 +195,7 @@ impl ExtensionPlanner for ListingPhysicalPlanner {
+                     output_partitioning,
+                     schema: source.config().schema.clone(),
+                     compression: source.config().compression,
++                    read_case_sensitive: source.config().read_case_sensitive,
+                 },
+             )
+             .await?;
+diff --git a/crates/sail-data-source/src/listing/source.rs b/crates/sail-data-source/src/listing/source.rs
+index 3da4f4cc7..fb5055120 100644
+--- a/crates/sail-data-source/src/listing/source.rs
++++ b/crates/sail-data-source/src/listing/source.rs
+@@ -126,6 +126,8 @@ pub struct ListingScanInput {
+     pub output_partitioning: Option<Partitioning>,
+     pub schema: TableSchema,
+     pub compression: CompressionTypeVariant,
++    /// Whether this read matches requested columns against file schemas by exact case.
++    pub read_case_sensitive: bool,
+ }
+ 
+ /// Configuration for creating a listing-file sink execution plan.
+@@ -271,6 +273,7 @@ impl<T: FormatFactory> DataSource for ListingDataSource<T> {
+             read_format: Arc::new(read_format),
+             path_glob_filter,
+             compression,
++            read_case_sensitive,
+         })?;
+         Ok(Arc::new(source))
+     }
+@@ -378,3 +381,7 @@ fn reconcile_schema_names_case_insensitive(schema: Schema, physical: &Schema) ->
+     }
+     Ok(Schema::new_with_metadata(fields, schema.metadata().clone()))
+ }
++
++#[cfg(test)]
++#[path = "case_sensitivity_tests.rs"]
++mod case_sensitivity_tests;
+diff --git a/crates/sail-data-source/src/listing/table.rs b/crates/sail-data-source/src/listing/table.rs
+index 10189151e..d6368d351 100644
+--- a/crates/sail-data-source/src/listing/table.rs
++++ b/crates/sail-data-source/src/listing/table.rs
+@@ -25,6 +25,8 @@ pub struct ListingTableSourceConfig {
+     pub read_format: Arc<dyn ReadFormat>,
+     pub path_glob_filter: Option<PathGlobFilter>,
+     pub compression: CompressionTypeVariant,
++    /// Captured read policy, retained for per-file schema matching during scan planning.
++    pub read_case_sensitive: bool,
+ }
+ 
+ /// A [`TableSource`] that represents reading one or more files via listing.

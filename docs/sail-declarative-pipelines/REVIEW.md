@@ -1306,3 +1306,13 @@ Sail `27ab945aaa3046d05a1f4aeb1e651fddf11db927` preserves listed ETags/versions 
 ### ORC schema evolution reference (2026-10-29T23:25:15.788249+00:00)
 
 [32 fresh Spark observations](evidence/orc-schema-evolution-reference/README.md) establish read-schema TIME/interval value preservation, null-on-overflow integer narrowing, eleventh-file semantic merging and four nested ASCII name-selection cases. All raw successes/errors, exact values/schemas, fixtures, source/disassembly and owned JVM shutdowns are retained. No Sail runtime, registry or additional SDP test pass is claimed.
+
+### ORC source resource foundations (2026-10-29T23:33:24.916037+00:00)
+
+[Evidence](evidence/orc-source-resources/README.md) records four granular Sail
+commits: case policy 143, range ownership 147, all-file inference 150 and footer
+vendor 150 data-source tests, with formatting/strict Clippy. Native footer bounds
+pass 315 tests (eight ignored), 195 no-default tests and exact-package verification.
+The selected resource contract defines 64 MiB metadata defaults/depth 64 with honest
+ownership/cancellation limits. Source/options/codec/registry/writer integration
+and full SDP qualification remain open.
