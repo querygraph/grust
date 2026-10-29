@@ -1,8 +1,8 @@
 # Next design checkpoint: shared execution-error metadata
 
 The operator requested notice before the next design phase to switch to Astra.
-The catalog activation gate reaches that boundary. No new error architecture is
-selected here. General SQL execution errors belong in Sail; a pipeline-specific
+The catalog activation gate reaches that boundary. The selected [shared cast error design](EXECUTION-ERROR-DESIGN.md) now completes
+this checkpoint; the original observations and questions below remain its input. General SQL execution errors belong in Sail; a pipeline-specific
 cast-message wrapper would leave the ordinary SQL failure unresolved.
 
 ## Required failing behavior

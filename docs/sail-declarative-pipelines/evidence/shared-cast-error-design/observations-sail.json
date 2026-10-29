@@ -1,0 +1,271 @@
+{
+  "recorded_at": "2026-10-29T15:58:39.636166+00:00",
+  "engine": "sail",
+  "spark_version": "4.2.1",
+  "cases": [
+    {
+      "name": "int",
+      "ansi": "true",
+      "sql": "SELECT CAST('bad' AS INT) AS value",
+      "outcome": "rejected",
+      "exception_type": "NumberFormatException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "message": "Cannot cast string 'bad' to value of Int32 type"
+    },
+    {
+      "name": "integer_alias",
+      "ansi": "true",
+      "sql": "SELECT CAST('bad' AS INTEGER) AS value",
+      "outcome": "rejected",
+      "exception_type": "NumberFormatException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "message": "Cannot cast string 'bad' to value of Int32 type"
+    },
+    {
+      "name": "tinyint",
+      "ansi": "true",
+      "sql": "SELECT CAST('bad' AS TINYINT) AS value",
+      "outcome": "rejected",
+      "exception_type": "NumberFormatException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "message": "Cannot cast string 'bad' to value of Int8 type"
+    },
+    {
+      "name": "smallint",
+      "ansi": "true",
+      "sql": "SELECT CAST('bad' AS SMALLINT) AS value",
+      "outcome": "rejected",
+      "exception_type": "NumberFormatException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "message": "Cannot cast string 'bad' to value of Int16 type"
+    },
+    {
+      "name": "bigint",
+      "ansi": "true",
+      "sql": "SELECT CAST('bad' AS BIGINT) AS value",
+      "outcome": "rejected",
+      "exception_type": "NumberFormatException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "message": "Cannot cast string 'bad' to value of Int64 type"
+    },
+    {
+      "name": "float",
+      "ansi": "true",
+      "sql": "SELECT CAST('bad' AS FLOAT) AS value",
+      "outcome": "rejected",
+      "exception_type": "NumberFormatException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "message": "Cannot cast string 'bad' to value of Float32 type"
+    },
+    {
+      "name": "double",
+      "ansi": "true",
+      "sql": "SELECT CAST('bad' AS DOUBLE) AS value",
+      "outcome": "rejected",
+      "exception_type": "NumberFormatException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "message": "Cannot cast string 'bad' to value of Float64 type"
+    },
+    {
+      "name": "decimal",
+      "ansi": "true",
+      "sql": "SELECT CAST('bad' AS DECIMAL(8,2)) AS value",
+      "outcome": "rejected",
+      "exception_type": "NumberFormatException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "message": "Cannot cast string 'bad' to value of Decimal128(38, 10) type"
+    },
+    {
+      "name": "boolean",
+      "ansi": "true",
+      "sql": "SELECT CAST('bad' AS BOOLEAN) AS value",
+      "outcome": "rejected",
+      "exception_type": "SparkRuntimeException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "message": "Cannot cast value 'bad' to value of Boolean type"
+    },
+    {
+      "name": "date",
+      "ansi": "true",
+      "sql": "SELECT CAST('bad' AS DATE) AS value",
+      "outcome": "rejected",
+      "exception_type": "AnalysisException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "message": "[CAST_INVALID_INPUT] The value 'bad' of the type \"STRING\" cannot be cast to \"DATE\" because it is malformed. Correct the value as per the syntax, or change its target type. Use `try_cast` to tolerate malformed input and return NULL instead."
+    },
+    {
+      "name": "timestamp",
+      "ansi": "true",
+      "sql": "SELECT CAST('bad' AS TIMESTAMP) AS value",
+      "outcome": "rejected",
+      "exception_type": "AnalysisException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "message": "invalid timestamp: bad"
+    },
+    {
+      "name": "int_overflow",
+      "ansi": "true",
+      "sql": "SELECT CAST('2147483648' AS INT) AS value",
+      "outcome": "rejected",
+      "exception_type": "NumberFormatException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "message": "Cannot cast string '2147483648' to value of Int32 type"
+    },
+    {
+      "name": "decimal_overflow",
+      "ansi": "true",
+      "sql": "SELECT CAST('123456' AS DECIMAL(3,1)) AS value",
+      "outcome": "rejected",
+      "exception_type": "IllegalArgumentException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "message": "123456.0 is too large to store in a Decimal128 of precision 3. Max is 99.9"
+    },
+    {
+      "name": "quote",
+      "ansi": "true",
+      "sql": "SELECT CAST('a\\'b' AS INT) AS value",
+      "outcome": "rejected",
+      "exception_type": "NumberFormatException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "message": "Cannot cast string 'a'b' to value of Int32 type"
+    },
+    {
+      "name": "newline",
+      "ansi": "true",
+      "sql": "SELECT CAST('a\\nb' AS INT) AS value",
+      "outcome": "rejected",
+      "exception_type": "NumberFormatException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "message": "Cannot cast string 'a\nb' to value of Int32 type"
+    },
+    {
+      "name": "array_row",
+      "ansi": "true",
+      "sql": "SELECT CAST(value AS INT) AS result FROM VALUES ('1'), ('bad'), ('2') AS t(value)",
+      "outcome": "rejected",
+      "exception_type": "SparkRuntimeException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "message": "Cast error: Cannot cast string 'bad' to value of Int32 type"
+    },
+    {
+      "name": "nested",
+      "ansi": "true",
+      "sql": "SELECT CAST(CAST('bad' AS INT) AS STRING) AS value",
+      "outcome": "rejected",
+      "exception_type": "NumberFormatException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "message": "Cannot cast string 'bad' to value of Int32 type"
+    },
+    {
+      "name": "try_nested",
+      "ansi": "true",
+      "sql": "SELECT TRY_CAST(CAST('bad' AS INT) AS STRING) AS value",
+      "outcome": "rejected",
+      "exception_type": "NumberFormatException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "message": "Cannot cast string 'bad' to value of Int32 type"
+    },
+    {
+      "name": "try_int",
+      "ansi": "true",
+      "sql": "SELECT TRY_CAST('bad' AS INT) AS value",
+      "outcome": "accepted",
+      "rows": [
+        [
+          null
+        ]
+      ]
+    },
+    {
+      "name": "legacy_int",
+      "ansi": "false",
+      "sql": "SELECT CAST('bad' AS INT) AS value",
+      "outcome": "accepted",
+      "rows": [
+        [
+          null
+        ]
+      ]
+    },
+    {
+      "name": "null",
+      "ansi": "true",
+      "sql": "SELECT CAST(CAST(NULL AS STRING) AS INT) AS value",
+      "outcome": "accepted",
+      "rows": [
+        [
+          null
+        ]
+      ]
+    },
+    {
+      "name": "valid",
+      "ansi": "true",
+      "sql": "SELECT CAST('12' AS INT) AS value",
+      "outcome": "accepted",
+      "rows": [
+        [
+          12
+        ]
+      ]
+    },
+    {
+      "name": "numeric_overflow",
+      "ansi": "true",
+      "sql": "SELECT CAST(1000L AS TINYINT) AS value",
+      "outcome": "rejected",
+      "exception_type": "NumberFormatException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "message": "Can't cast value 1000 to type Int8"
+    },
+    {
+      "name": "row_null",
+      "ansi": "true",
+      "sql": "SELECT CAST(value AS INT) AS result FROM VALUES (CAST(NULL AS STRING)), ('bad') AS t(value)",
+      "outcome": "rejected",
+      "exception_type": "SparkRuntimeException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "message": "Cast error: Cannot cast string 'bad' to value of Int32 type"
+    }
+  ]
+}

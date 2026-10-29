@@ -1,0 +1,32 @@
+{
+  "recorded_at": "2026-10-29T16:05:08.691084+00:00",
+  "sail_source_commit": "992f5bcbf60added5b44596f279ab8801f0c0045",
+  "spark_source_commit": "617618396087429b5627a86ce933bb0f5d6645cb",
+  "spark_version": "4.2.1",
+  "source_sha256": {
+    "sql/catalyst/src/main/scala/org/apache/spark/sql/catalyst/expressions/Cast.scala": "2c9305c13a8e63490682883c86ff3223aad800adb3227fb90d06ff5e27ecd1a8",
+    "sql/catalyst/src/main/scala/org/apache/spark/sql/errors/QueryExecutionErrors.scala": "041010673cec96f8f5b897c3ead3c72a626b0aeb84ebbc1cecf05a6cb0bc0a73",
+    "sql/catalyst/src/main/scala/org/apache/spark/sql/errors/QueryErrorsBase.scala": "7330ec664032fa29fc7a462529eedb629ead064b79ef6430b437bddee2114fd1",
+    "common/utils/src/main/resources/error/error-conditions.json": "83fc981308191ef3fdb62a36d22887eb7d12e6fcc05a10875344e19f1f88fcd1"
+  },
+  "cli_sha256": "8ab719d50bbec28f654612ba5649895cc72da18e8ab1d1db5021a8f64b7d1055",
+  "observations_per_engine": 24,
+  "reference_assertions": {
+    "spark": {
+      "passed": 24,
+      "failed": 0
+    },
+    "sail": {
+      "passed": 4,
+      "failed": 20
+    }
+  },
+  "scope": "Ordinary SQL observations/class-condition-state-complete parameters/accepted rows; design evidence, not an SDP suite verdict",
+  "limits": [
+    "Spark Connect local JVM and one Sail local server on macOS arm64; no distributed workload qualification.",
+    "Queries are SELECT only; no catalog publication or graph execution in this probe.",
+    "The required assertions compare against the retained Spark 4.2.1 observations; neither error prose nor query-context/stack frames are asserted.",
+    "Decimal/temporal/numeric-overflow cases are retained boundaries, not passing Sail controls.",
+    "Original Scala SDP suite, full batch, streaming and CDC acceptance remain outstanding."
+  ]
+}

@@ -1101,3 +1101,14 @@ function-level reference evidence.
 This qualifies shared expression activation and the selected registration/publication
 behaviors. It does not execute the original Scala suite or finish catalog adapter,
 full batch, REST view, event/failure, ORC, streaming or CDC acceptance.
+
+## Shared cast error design checkpoint
+
+The [selected design](EXECUTION-ERROR-DESIGN.md) reuses StructuredSparkError and
+CommonErrorCause, captures value/type details at shared cast producers, and keeps
+Connect wire conversion at its existing boundary. Five granular implementation
+units separate extraction, transport, scalar/codec support, SQL activation and
+acceptance. The paired 24-case required baseline passes 24/24 on Spark and 4/24 on
+Sail; every mismatch is retained, including distinct overflow/temporal conditions
+and row-dependent exception classes. Engine/source remain 992f5bcbf; this is a
+design/evidence commit, with no runtime fix or new passing SDP verdict.
