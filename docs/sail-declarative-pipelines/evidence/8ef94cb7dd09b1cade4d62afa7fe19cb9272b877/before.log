@@ -1,0 +1,236 @@
+FFFFFFFFF                                                                [100%]
+=================================== FAILURES ===================================
+___ test_sql_without_persisted_output_has_structured_error[empty-file-False] ___
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x119c93bf0>
+pipeline = ('6ddc1b33-8158-4c89-aeb1-a5479a1df30f', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x119c34320>, <function pipeline_factory.<locals>.create.<locals>.run at 0x119cca3e0>)
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-104/test_sql_without_persisted_out0')
+sql = '', dry = False
+
+    @pytest.mark.parametrize("dry", [False, True])
+    @pytest.mark.parametrize(
+        "sql",
+        [
+            pytest.param("", id="empty-file"),
+            pytest.param("CREATE TEMPORARY VIEW a AS SELECT id FROM range(1, 3)", id="temporary-only"),
+            pytest.param("CREATE FLOW f AS INSERT INTO a BY NAME SELECT 1", id="flow-only"),
+        ],
+    )
+    def test_sql_without_persisted_output_has_structured_error(pipeline_spark, pipeline, tmp_path, sql, dry):
+        _, registry, run = pipeline
+        registry.register_sql(sql, tmp_path / "empty.sql")
+        with pytest.raises(AnalysisException) as error:
+            run(dry=dry)
+>       assert error.value.getCondition() == "RUN_EMPTY_PIPELINE"
+E       AssertionError: assert None == 'RUN_EMPTY_PIPELINE'
+E        +  where None = getCondition()
+E        +    where getCondition = AnalysisException('[RUN_EMPTY_PIPELINE] no materialized outputs').getCondition
+E        +      where AnalysisException('[RUN_EMPTY_PIPELINE] no materialized outputs') = <ExceptionInfo AnalysisException('[RUN_EMPTY_PIPELINE] no materialized outputs') tblen=7>.value
+
+python/pysail/tests/spark/pipelines/test_registration_errors.py:23: AssertionError
+___ test_sql_without_persisted_output_has_structured_error[empty-file-True] ____
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x119cdd970>
+pipeline = ('3fa5cf55-55a8-4414-a3d4-cb1ba790fa52', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x119cde030>, <function pipeline_factory.<locals>.create.<locals>.run at 0x119d218a0>)
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-104/test_sql_without_persisted_out1')
+sql = '', dry = True
+
+    @pytest.mark.parametrize("dry", [False, True])
+    @pytest.mark.parametrize(
+        "sql",
+        [
+            pytest.param("", id="empty-file"),
+            pytest.param("CREATE TEMPORARY VIEW a AS SELECT id FROM range(1, 3)", id="temporary-only"),
+            pytest.param("CREATE FLOW f AS INSERT INTO a BY NAME SELECT 1", id="flow-only"),
+        ],
+    )
+    def test_sql_without_persisted_output_has_structured_error(pipeline_spark, pipeline, tmp_path, sql, dry):
+        _, registry, run = pipeline
+        registry.register_sql(sql, tmp_path / "empty.sql")
+        with pytest.raises(AnalysisException) as error:
+            run(dry=dry)
+>       assert error.value.getCondition() == "RUN_EMPTY_PIPELINE"
+E       AssertionError: assert None == 'RUN_EMPTY_PIPELINE'
+E        +  where None = getCondition()
+E        +    where getCondition = AnalysisException('[RUN_EMPTY_PIPELINE] no materialized outputs').getCondition
+E        +      where AnalysisException('[RUN_EMPTY_PIPELINE] no materialized outputs') = <ExceptionInfo AnalysisException('[RUN_EMPTY_PIPELINE] no materialized outputs') tblen=7>.value
+
+python/pysail/tests/spark/pipelines/test_registration_errors.py:23: AssertionError
+_ test_sql_without_persisted_output_has_structured_error[temporary-only-False] _
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x119cdc560>
+pipeline = ('e836d5d8-8220-47d2-a8f7-51f4c22f0499', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x119d40680>, <function pipeline_factory.<locals>.create.<locals>.run at 0x119d236a0>)
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-104/test_sql_without_persisted_out2')
+sql = 'CREATE TEMPORARY VIEW a AS SELECT id FROM range(1, 3)', dry = False
+
+    @pytest.mark.parametrize("dry", [False, True])
+    @pytest.mark.parametrize(
+        "sql",
+        [
+            pytest.param("", id="empty-file"),
+            pytest.param("CREATE TEMPORARY VIEW a AS SELECT id FROM range(1, 3)", id="temporary-only"),
+            pytest.param("CREATE FLOW f AS INSERT INTO a BY NAME SELECT 1", id="flow-only"),
+        ],
+    )
+    def test_sql_without_persisted_output_has_structured_error(pipeline_spark, pipeline, tmp_path, sql, dry):
+        _, registry, run = pipeline
+        registry.register_sql(sql, tmp_path / "empty.sql")
+        with pytest.raises(AnalysisException) as error:
+            run(dry=dry)
+>       assert error.value.getCondition() == "RUN_EMPTY_PIPELINE"
+E       AssertionError: assert None == 'RUN_EMPTY_PIPELINE'
+E        +  where None = getCondition()
+E        +    where getCondition = AnalysisException('[RUN_EMPTY_PIPELINE] no materialized outputs').getCondition
+E        +      where AnalysisException('[RUN_EMPTY_PIPELINE] no materialized outputs') = <ExceptionInfo AnalysisException('[RUN_EMPTY_PIPELINE] no materialized outputs') tblen=7>.value
+
+python/pysail/tests/spark/pipelines/test_registration_errors.py:23: AssertionError
+_ test_sql_without_persisted_output_has_structured_error[temporary-only-True] __
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x119d40230>
+pipeline = ('2c1c141c-a65f-4b6b-9222-2b12ac7f9f83', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x119d42c60>, <function pipeline_factory.<locals>.create.<locals>.run at 0x119d49260>)
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-104/test_sql_without_persisted_out3')
+sql = 'CREATE TEMPORARY VIEW a AS SELECT id FROM range(1, 3)', dry = True
+
+    @pytest.mark.parametrize("dry", [False, True])
+    @pytest.mark.parametrize(
+        "sql",
+        [
+            pytest.param("", id="empty-file"),
+            pytest.param("CREATE TEMPORARY VIEW a AS SELECT id FROM range(1, 3)", id="temporary-only"),
+            pytest.param("CREATE FLOW f AS INSERT INTO a BY NAME SELECT 1", id="flow-only"),
+        ],
+    )
+    def test_sql_without_persisted_output_has_structured_error(pipeline_spark, pipeline, tmp_path, sql, dry):
+        _, registry, run = pipeline
+        registry.register_sql(sql, tmp_path / "empty.sql")
+        with pytest.raises(AnalysisException) as error:
+            run(dry=dry)
+>       assert error.value.getCondition() == "RUN_EMPTY_PIPELINE"
+E       AssertionError: assert None == 'RUN_EMPTY_PIPELINE'
+E        +  where None = getCondition()
+E        +    where getCondition = AnalysisException('[RUN_EMPTY_PIPELINE] no materialized outputs').getCondition
+E        +      where AnalysisException('[RUN_EMPTY_PIPELINE] no materialized outputs') = <ExceptionInfo AnalysisException('[RUN_EMPTY_PIPELINE] no materialized outputs') tblen=7>.value
+
+python/pysail/tests/spark/pipelines/test_registration_errors.py:23: AssertionError
+___ test_sql_without_persisted_output_has_structured_error[flow-only-False] ____
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x119d41310>
+pipeline = ('420278aa-e76f-462a-af1c-a2dd1471a922', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x119d61250>, <function pipeline_factory.<locals>.create.<locals>.run at 0x119d4ade0>)
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-104/test_sql_without_persisted_out4')
+sql = 'CREATE FLOW f AS INSERT INTO a BY NAME SELECT 1', dry = False
+
+    @pytest.mark.parametrize("dry", [False, True])
+    @pytest.mark.parametrize(
+        "sql",
+        [
+            pytest.param("", id="empty-file"),
+            pytest.param("CREATE TEMPORARY VIEW a AS SELECT id FROM range(1, 3)", id="temporary-only"),
+            pytest.param("CREATE FLOW f AS INSERT INTO a BY NAME SELECT 1", id="flow-only"),
+        ],
+    )
+    def test_sql_without_persisted_output_has_structured_error(pipeline_spark, pipeline, tmp_path, sql, dry):
+        _, registry, run = pipeline
+        registry.register_sql(sql, tmp_path / "empty.sql")
+        with pytest.raises(AnalysisException) as error:
+            run(dry=dry)
+>       assert error.value.getCondition() == "RUN_EMPTY_PIPELINE"
+E       AssertionError: assert None == 'RUN_EMPTY_PIPELINE'
+E        +  where None = getCondition()
+E        +    where getCondition = AnalysisException('[RUN_EMPTY_PIPELINE] no materialized outputs').getCondition
+E        +      where AnalysisException('[RUN_EMPTY_PIPELINE] no materialized outputs') = <ExceptionInfo AnalysisException('[RUN_EMPTY_PIPELINE] no materialized outputs') tblen=7>.value
+
+python/pysail/tests/spark/pipelines/test_registration_errors.py:23: AssertionError
+____ test_sql_without_persisted_output_has_structured_error[flow-only-True] ____
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x119d60e00>
+pipeline = ('dcd1e661-5975-4f1a-9e98-2776d0a91606', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x119d63860>, <function pipeline_factory.<locals>.create.<locals>.run at 0x119d78d60>)
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-104/test_sql_without_persisted_out5')
+sql = 'CREATE FLOW f AS INSERT INTO a BY NAME SELECT 1', dry = True
+
+    @pytest.mark.parametrize("dry", [False, True])
+    @pytest.mark.parametrize(
+        "sql",
+        [
+            pytest.param("", id="empty-file"),
+            pytest.param("CREATE TEMPORARY VIEW a AS SELECT id FROM range(1, 3)", id="temporary-only"),
+            pytest.param("CREATE FLOW f AS INSERT INTO a BY NAME SELECT 1", id="flow-only"),
+        ],
+    )
+    def test_sql_without_persisted_output_has_structured_error(pipeline_spark, pipeline, tmp_path, sql, dry):
+        _, registry, run = pipeline
+        registry.register_sql(sql, tmp_path / "empty.sql")
+        with pytest.raises(AnalysisException) as error:
+            run(dry=dry)
+>       assert error.value.getCondition() == "RUN_EMPTY_PIPELINE"
+E       AssertionError: assert None == 'RUN_EMPTY_PIPELINE'
+E        +  where None = getCondition()
+E        +    where getCondition = AnalysisException('[RUN_EMPTY_PIPELINE] no materialized outputs').getCondition
+E        +      where AnalysisException('[RUN_EMPTY_PIPELINE] no materialized outputs') = <ExceptionInfo AnalysisException('[RUN_EMPTY_PIPELINE] no materialized outputs') tblen=7>.value
+
+python/pysail/tests/spark/pipelines/test_registration_errors.py:23: AssertionError
+_____________________________ test_empty_pipeline ______________________________
+
+pipeline = ('65eb7fb7-e8e7-4cf3-ac85-813ff7d25ebc', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x119d61430>, <function pipeline_factory.<locals>.create.<locals>.run at 0x119d4af20>)
+
+    def test_empty_pipeline(pipeline):
+        """SqlPipelineSuite: No table defined pipeline fails with RUN_EMPTY_PIPELINE."""
+        _, _, run = pipeline
+        with pytest.raises(AnalysisException) as error:
+            run(dry=True)
+>       assert error.value.getCondition() == "RUN_EMPTY_PIPELINE"
+E       AssertionError: assert None == 'RUN_EMPTY_PIPELINE'
+E        +  where None = getCondition()
+E        +    where getCondition = AnalysisException('[RUN_EMPTY_PIPELINE] no materialized outputs').getCondition
+E        +      where AnalysisException('[RUN_EMPTY_PIPELINE] no materialized outputs') = <ExceptionInfo AnalysisException('[RUN_EMPTY_PIPELINE] no materialized outputs') tblen=7>.value
+
+python/pysail/tests/spark/pipelines/test_execution.py:265: AssertionError
+__________________________ test_only_temporary_views ___________________________
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x119da1f70>
+pipeline = ('f7c42013-8de7-491c-a4b4-e169d62d14cd', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x119da1790>, <function pipeline_factory.<locals>.create.<locals>.run at 0x119d99940>)
+
+    def test_only_temporary_views(pipeline_spark, pipeline):
+        """SqlPipelineSuite: Pipeline with only temp views fails with RUN_EMPTY_PIPELINE."""
+        _, registry, run = pipeline
+        with graph_element_registration_context(registry):
+    
+            @dp.temporary_view
+            def intermediate():
+                return pipeline_spark.range(1)
+    
+        with pytest.raises(AnalysisException) as error:
+            run(dry=True)
+>       assert error.value.getCondition() == "RUN_EMPTY_PIPELINE"
+E       AssertionError: assert None == 'RUN_EMPTY_PIPELINE'
+E        +  where None = getCondition()
+E        +    where getCondition = AnalysisException('[RUN_EMPTY_PIPELINE] no materialized outputs').getCondition
+E        +      where AnalysisException('[RUN_EMPTY_PIPELINE] no materialized outputs') = <ExceptionInfo AnalysisException('[RUN_EMPTY_PIPELINE] no materialized outputs') tblen=7>.value
+
+python/pysail/tests/spark/pipelines/test_execution.py:281: AssertionError
+____________ test_empty_registration_can_be_corrected_before_start _____________
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x119e4d5e0>
+pipeline = ('76a1217d-4a2a-4bdd-a152-60102ae76226', <pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x119e4d610>, <function pipeline_factory.<locals>.create.<locals>.run at 0x119d9bec0>)
+
+    def test_empty_registration_can_be_corrected_before_start(pipeline_spark, pipeline):
+        _, registry, run = pipeline
+        with pytest.raises(AnalysisException) as error:
+            run(dry=True)
+>       assert error.value.getCondition() == "RUN_EMPTY_PIPELINE"
+E       AssertionError: assert None == 'RUN_EMPTY_PIPELINE'
+E        +  where None = getCondition()
+E        +    where getCondition = AnalysisException('[RUN_EMPTY_PIPELINE] no materialized outputs').getCondition
+E        +      where AnalysisException('[RUN_EMPTY_PIPELINE] no materialized outputs') = <ExceptionInfo AnalysisException('[RUN_EMPTY_PIPELINE] no materialized outputs') tblen=7>.value
+
+python/pysail/tests/spark/pipelines/test_execution.py:188: AssertionError
+=========================== short test summary info ============================
+FAILED python/pysail/tests/spark/pipelines/test_registration_errors.py::test_sql_without_persisted_output_has_structured_error[empty-file-False]
+FAILED python/pysail/tests/spark/pipelines/test_registration_errors.py::test_sql_without_persisted_output_has_structured_error[empty-file-True]
+FAILED python/pysail/tests/spark/pipelines/test_registration_errors.py::test_sql_without_persisted_output_has_structured_error[temporary-only-False]
+FAILED python/pysail/tests/spark/pipelines/test_registration_errors.py::test_sql_without_persisted_output_has_structured_error[temporary-only-True]
+FAILED python/pysail/tests/spark/pipelines/test_registration_errors.py::test_sql_without_persisted_output_has_structured_error[flow-only-False]
+FAILED python/pysail/tests/spark/pipelines/test_registration_errors.py::test_sql_without_persisted_output_has_structured_error[flow-only-True]
+FAILED python/pysail/tests/spark/pipelines/test_execution.py::test_empty_pipeline
+FAILED python/pysail/tests/spark/pipelines/test_execution.py::test_only_temporary_views
+FAILED python/pysail/tests/spark/pipelines/test_execution.py::test_empty_registration_can_be_corrected_before_start
+9 failed in 0.37s

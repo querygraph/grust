@@ -608,7 +608,7 @@ Commit `9f96b534dd` adds four assertion ports. A graph with inferred or explicit
 database defaults keeps them after a session database switch; the explicit case
 also checks current catalog/database. Two raw ExecutePlan cases pack the original
 PipelineAnalysisContext extension with/without a flow name and compare the first
-sql_command_result Relation byte-for-byte by protobuf equality with the input.
+sql_command_result Relation with the input using protobuf equality.
 The named-table query remains unresolved, as the Spark server fixture requires.
 
 The [receipt](evidence/9f96b534dde38228ab7e1eba7d4a383c93a6c8cb/gate.json)
@@ -625,3 +625,26 @@ bringing the reviewed inventory to 59 and the unaudited remainder to 403.
 The cause-present identity requirement and cause-absent PIPELINE_RUN_FAILED
 message requirement are added to the Astra handoff without choosing a design.
 Full batch acceptance, persisted REST views, streaming and CDC remain incomplete.
+
+## Review structured empty-pipeline rejection
+
+Commit `8ef94cb7dd` returns the existing StructuredSparkError form for
+RUN_EMPTY_PIPELINE, mapped to AnalysisException with SQL state 42617 and empty
+parameters. The message follows the pinned Spark error definition. Validation
+still precedes graph execution reservation, so callers can add a missing output
+and start the same graph after an empty-registration failure.
+
+The [receipt](evidence/8ef94cb7dd09b1cade4d62afa7fe19cb9272b877/gate.json)
+records formatting, strict Clippy, CLI build, Ruff, 170 selected pytest cases and
+67 upstream Python executions, all passing. Nine focused assertions also pass
+on Spark 4.2.1; all nine failed on the preceding Sail engine's missing structured
+metadata. Six SQL instances cover empty files, temporary-only definitions and
+flow-only definitions, each with dry/real starts. Three strengthened API tests
+cover empty registration, temporary-only registration and correction followed
+by successful start. The failed baseline is retained.
+
+Only the three corresponding SQL registrations are newly audited, bringing the
+reviewed inventory to 62 and the remaining unaudited call sites to 400. The
+other 35 registrations in SqlPipelineSuite are not qualified by this unit. Full
+batch acceptance, Scala-suite execution, failure/event design, persisted REST
+views, streaming and CDC remain outstanding. No new architecture is selected.

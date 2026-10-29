@@ -3967,8 +3967,26 @@
       "line": 969,
       "method": "test",
       "name_expression": "\"No table defined pipeline fails with RUN_EMPTY_PIPELINE\"",
-      "status": "unmapped",
-      "sail_tests": []
+      "status": "partial-behavioral-port",
+      "sail_tests": [
+        "python/pysail/tests/spark/pipelines/test_registration_errors.py::test_sql_without_persisted_output_has_structured_error[empty-file-False]",
+        "python/pysail/tests/spark/pipelines/test_registration_errors.py::test_sql_without_persisted_output_has_structured_error[empty-file-True]"
+      ],
+      "coverage_review": {
+        "phase": "batch-registration",
+        "covered_assertions": "Original SQL definition rejects with AnalysisException, RUN_EMPTY_PIPELINE, no message parameters and SQL state 42617. Both dry and real Connect starts are tested; target a remains unpublished.",
+        "remaining_assertions": "Original Scala suite uses internal graph conversion; port triggers validation through Connect StartRun. Original Scala suite is unexecuted.",
+        "sail_evidence": "evidence/8ef94cb7dd09b1cade4d62afa7fe19cb9272b877/pytest.xml",
+        "scala_suite_executed": false,
+        "parameter_instances": [
+          {
+            "dry_run": false
+          },
+          {
+            "dry_run": true
+          }
+        ]
+      }
     },
     {
       "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/SqlPipelineSuite.scala:985",
@@ -3976,8 +3994,26 @@
       "line": 985,
       "method": "test",
       "name_expression": "\"Pipeline with only temp views fails with RUN_EMPTY_PIPELINE\"",
-      "status": "unmapped",
-      "sail_tests": []
+      "status": "partial-behavioral-port",
+      "sail_tests": [
+        "python/pysail/tests/spark/pipelines/test_registration_errors.py::test_sql_without_persisted_output_has_structured_error[temporary-only-False]",
+        "python/pysail/tests/spark/pipelines/test_registration_errors.py::test_sql_without_persisted_output_has_structured_error[temporary-only-True]"
+      ],
+      "coverage_review": {
+        "phase": "batch-registration",
+        "covered_assertions": "Original SQL definition rejects with AnalysisException, RUN_EMPTY_PIPELINE, no message parameters and SQL state 42617. Both dry and real Connect starts are tested; target a remains unpublished.",
+        "remaining_assertions": "Original Scala suite uses internal graph conversion; port triggers validation through Connect StartRun. Original Scala suite is unexecuted.",
+        "sail_evidence": "evidence/8ef94cb7dd09b1cade4d62afa7fe19cb9272b877/pytest.xml",
+        "scala_suite_executed": false,
+        "parameter_instances": [
+          {
+            "dry_run": false
+          },
+          {
+            "dry_run": true
+          }
+        ]
+      }
     },
     {
       "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/SqlPipelineSuite.scala:1007",
@@ -3985,8 +4021,26 @@
       "line": 1007,
       "method": "test",
       "name_expression": "\"Pipeline with only flow fails with RUN_EMPTY_PIPELINE\"",
-      "status": "unmapped",
-      "sail_tests": []
+      "status": "partial-behavioral-port",
+      "sail_tests": [
+        "python/pysail/tests/spark/pipelines/test_registration_errors.py::test_sql_without_persisted_output_has_structured_error[flow-only-False]",
+        "python/pysail/tests/spark/pipelines/test_registration_errors.py::test_sql_without_persisted_output_has_structured_error[flow-only-True]"
+      ],
+      "coverage_review": {
+        "phase": "batch-registration",
+        "covered_assertions": "Original SQL definition rejects with AnalysisException, RUN_EMPTY_PIPELINE, no message parameters and SQL state 42617. Both dry and real Connect starts are tested; target a remains unpublished.",
+        "remaining_assertions": "Original Scala suite uses internal graph conversion; port triggers validation through Connect StartRun. Original Scala suite is unexecuted.",
+        "sail_evidence": "evidence/8ef94cb7dd09b1cade4d62afa7fe19cb9272b877/pytest.xml",
+        "scala_suite_executed": false,
+        "parameter_instances": [
+          {
+            "dry_run": false
+          },
+          {
+            "dry_run": true
+          }
+        ]
+      }
     },
     {
       "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/SqlPipelineSuite.scala:1030",
