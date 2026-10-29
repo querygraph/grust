@@ -1,0 +1,80 @@
+{
+  "sail_commit": "9031373d0dfbf5c7a876a113a0a273ec933e6ccd",
+  "spark_commit": "617618396087429b5627a86ce933bb0f5d6645cb",
+  "recorded_at": "2026-10-29T09:56:43.046385+00:00",
+  "platform": "macOS arm64",
+  "gate_checkout": "detached; private target directory; immutable HEAD for the gate",
+  "cli_sha256": "13f56a914d1f8bbb81d4c8281f2a1c2516a18024a8f5e68d6c49d0b23e4e3bd8",
+  "checks": [
+    {
+      "command": "cargo +nightly fmt -p sail-plan -- --check",
+      "outcome": "pass"
+    },
+    {
+      "command": "cargo +1.98.1 clippy -p sail-plan --all-targets --all-features --locked -- -D warnings",
+      "outcome": "pass"
+    },
+    {
+      "command": "cargo +1.98.1 build -p sail-cli --locked",
+      "outcome": "pass",
+      "note": "CARGO_PROFILE_DEV_DEBUG=0; CARGO_PROFILE_DEV_INCREMENTAL=false; linker warned about __eh_frame size."
+    },
+    {
+      "command": "PYTHONPATH=<gate>/python SPARK_REMOTE=sc://localhost:50082 python -m pytest -q <cases listed in pytest.xml> --junitxml=pytest.xml",
+      "outcome": "pass",
+      "passed": 121,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "command": "python scripts/spark-pipelines-tests/run.py --spark-source <pinned Spark checkout> --remote sc://localhost:50082 --report spark-python.json",
+      "outcome": "pass",
+      "server_spark_version": "4.2.1",
+      "tests_run": 67,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "command": "python spark-reference.py spark; python spark-typed-reference.py spark; validate recorded DDL outcomes",
+      "outcome": "pass",
+      "spark_version": "4.2.1",
+      "targeted_observations": 7,
+      "note": "DDL reference observations; not a claim that all nine BDD cases ran unchanged on Spark."
+    }
+  ],
+  "limits": [
+    "No distributed cluster execution claim.",
+    "Upstream Python includes inherited and client-only tests.",
+    "Full batch acceptance and the remaining Spark SDP crosswalk are outstanding.",
+    "Validation applies to CREATE TABLE with known columns; schema-less external tables retain provider inference. CTAS and table-writer validation paths need separate coverage.",
+    "Identical partition field records are rejected; exhaustive transform combinations are not qualified.",
+    "Plan errors include the observed condition in their message; exact structured error metadata is not qualified.",
+    "Typed case-distinct columns are verified through catalog DESCRIBE. Partition scans and by-name writes still fold case; retained failing fixtures are the next shared fixes.",
+    "This gate uses the Sail default memory catalog. LakeCat adapter/dependency integration has not run.",
+    "Rust and Gherkin only; no Python lint was run for this unit."
+  ],
+  "retained_failures": [
+    {
+      "source": "5a5e256328406b6dcbffd0db83dd39d6f9746553",
+      "passed": 1,
+      "failed": 4,
+      "file": "before.log",
+      "note": "Five initial new BDD instances; typed case-sensitive metadata scenario added subsequently."
+    },
+    {
+      "source": "1d1fabb1c72406dc8c93d073adbc1add2932e27f",
+      "passed": 117,
+      "failed": 4,
+      "file": "initial-gate.xml",
+      "note": "Three lazy SELECT absence checks and a pre-existing case-insensitive writer lookup. Failed fixture retained in initial-candidate.patch."
+    },
+    {
+      "source": "8a3063d3850cf532cbf30a756df0c56302d51b7b",
+      "passed": 120,
+      "failed": 1,
+      "file": "second-gate.xml",
+      "note": "Reading the case-distinct partition schema hits the existing partition-scan ambiguity. Failed fixture retained in second-candidate.patch."
+    }
+  ]
+}

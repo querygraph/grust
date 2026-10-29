@@ -1,0 +1,157 @@
+diff --git a/crates/sail-plan/src/resolver/command/catalog/table.rs b/crates/sail-plan/src/resolver/command/catalog/table.rs
+index e010f4f2b..4590ec960 100644
+--- a/crates/sail-plan/src/resolver/command/catalog/table.rs
++++ b/crates/sail-plan/src/resolver/command/catalog/table.rs
+@@ -280,10 +280,11 @@ impl PlanResolver<'_> {
+                 }
+                 spec::PartitionColumn::Definition(column) => {
+                     let resolved = self.resolve_table_columns(vec![column], state)?.one()?;
+-                    if let Some(existing) = columns
+-                        .iter()
+-                        .find(|c| c.name.eq_ignore_ascii_case(&resolved.name))
+-                    {
++                    if let Some(existing) = columns.iter().find(|c| {
++                        c.name == resolved.name
++                            || (!self.config.case_sensitive
++                                && c.name.eq_ignore_ascii_case(&resolved.name))
++                    }) {
+                         if existing.data_type != resolved.data_type {
+                             return Err(PlanError::invalid(format!(
+                                 "partition column '{}' has incompatible type: \
+@@ -301,6 +302,34 @@ impl PlanResolver<'_> {
+                 }
+             }
+         }
++        // Known schemas can be checked before any catalog provider sees the
++        // create command. Schema-less external tables retain provider inference.
++        if !columns.is_empty() {
++            for partition in &mut result {
++                let column = columns
++                    .iter()
++                    .find(|column| {
++                        column.name == partition.column
++                            || (!self.config.case_sensitive
++                                && column.name.eq_ignore_ascii_case(&partition.column))
++                    })
++                    .ok_or_else(|| {
++                        PlanError::analysis(format!(
++                            "[COLUMN_NOT_DEFINED_IN_TABLE] partition column `{}` is not defined in the table",
++                            partition.column
++                        ))
++                    })?;
++                partition.column = column.name.clone();
++            }
++            for (index, partition) in result.iter().enumerate() {
++                if result[..index].contains(partition) {
++                    return Err(PlanError::analysis(format!(
++                        "[COLUMN_ALREADY_EXISTS] partition column `{}` already exists",
++                        partition.column
++                    )));
++                }
++            }
++        }
+         Ok(result)
+     }
+ 
+diff --git a/python/pysail/tests/spark/dml/features/create_table_partitioned.feature b/python/pysail/tests/spark/dml/features/create_table_partitioned.feature
+index ce6f13c05..97086be1c 100644
+--- a/python/pysail/tests/spark/dml/features/create_table_partitioned.feature
++++ b/python/pysail/tests/spark/dml/features/create_table_partitioned.feature
+@@ -66,3 +66,97 @@ Feature: CREATE TABLE with PARTITIONED BY clause
+       LOCATION {{ location.sql }}
+       PARTITIONED BY (part INT)
+       """
++
++  Scenario Outline: Invalid partition fields are rejected before creating a table
++    Given final statement
++      """
++      DROP TABLE IF EXISTS invalid_partition
++      """
++    Given final statement
++      """
++      RESET spark.sql.caseSensitive
++      """
++    Given statement
++      """
++      SET spark.sql.caseSensitive = <sensitive>
++      """
++    Given statement with error <condition>
++      """
++      CREATE TABLE invalid_partition(id BIGINT, payload STRING)
++      USING parquet PARTITIONED BY (<partition>)
++      """
++    Given statement with error TABLE_OR_VIEW_NOT_FOUND
++      """
++      SELECT * FROM invalid_partition
++      """
++
++    Examples:
++      | sensitive | partition | condition                   |
++      | false     | missing   | COLUMN_NOT_DEFINED_IN_TABLE |
++      | false     | id, id    | COLUMN_ALREADY_EXISTS       |
++      | true      | ID        | COLUMN_NOT_DEFINED_IN_TABLE |
++
++  Scenario Outline: Partition fields use canonical and quoted schema names
++    Given final statement
++      """
++      DROP TABLE IF EXISTS valid_partition
++      """
++    Given final statement
++      """
++      RESET spark.sql.caseSensitive
++      """
++    Given statement
++      """
++      SET spark.sql.caseSensitive = false
++      """
++    Given statement
++      """
++      CREATE TABLE valid_partition(<column> BIGINT, payload STRING)
++      USING parquet PARTITIONED BY (<partition>)
++      """
++    Given statement
++      """
++      INSERT INTO valid_partition (<column>, payload) VALUES (1, 'a')
++      """
++    When query
++      """
++      SELECT <column> AS key, payload FROM valid_partition
++      """
++    Then query result
++      | key | payload |
++      | 1   | a       |
++
++    Examples:
++      | column | partition |
++      | id     | ID        |
++      | `a.b`  | `a.b`     |
++
++  Scenario: Typed partition columns respect case-sensitive field identity
++    Given final statement
++      """
++      DROP TABLE IF EXISTS typed_partition_case
++      """
++    Given final statement
++      """
++      RESET spark.sql.caseSensitive
++      """
++    Given statement
++      """
++      SET spark.sql.caseSensitive = true
++      """
++    Given statement
++      """
++      CREATE TABLE typed_partition_case(id BIGINT, payload STRING)
++      USING parquet PARTITIONED BY (ID BIGINT)
++      """
++    Given statement
++      """
++      INSERT INTO typed_partition_case (id, payload, ID) VALUES (1, 'a', 2)
++      """
++    When query
++      """
++      SELECT id AS original, ID AS part FROM typed_partition_case
++      """
++    Then query result
++      | original | part |
++      | 1        | 2    |

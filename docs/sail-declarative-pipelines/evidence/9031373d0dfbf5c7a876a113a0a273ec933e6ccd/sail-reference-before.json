@@ -1,0 +1,115 @@
+{
+  "engine": "sail",
+  "spark_version": "4.2.1",
+  "cases": [
+    {
+      "name": "missing",
+      "case_sensitive": false,
+      "sql": "CREATE TABLE output(id BIGINT) USING parquet PARTITIONED BY (missing)",
+      "outcome": "success",
+      "exists": true,
+      "description": [
+        {
+          "col_name": "id",
+          "data_type": "bigint",
+          "comment": null
+        }
+      ]
+    },
+    {
+      "name": "duplicate",
+      "case_sensitive": false,
+      "sql": "CREATE TABLE output(id BIGINT, payload STRING) USING parquet PARTITIONED BY (id, id)",
+      "outcome": "success",
+      "exists": true,
+      "description": [
+        {
+          "col_name": "id",
+          "data_type": "bigint",
+          "comment": null
+        },
+        {
+          "col_name": "payload",
+          "data_type": "string",
+          "comment": null
+        }
+      ]
+    },
+    {
+      "name": "case_insensitive",
+      "case_sensitive": false,
+      "sql": "CREATE TABLE output(id BIGINT, payload STRING) USING parquet PARTITIONED BY (ID)",
+      "outcome": "success",
+      "exists": true,
+      "description": [
+        {
+          "col_name": "id",
+          "data_type": "bigint",
+          "comment": null
+        },
+        {
+          "col_name": "payload",
+          "data_type": "string",
+          "comment": null
+        }
+      ]
+    },
+    {
+      "name": "case_sensitive",
+      "case_sensitive": true,
+      "sql": "CREATE TABLE output(id BIGINT, payload STRING) USING parquet PARTITIONED BY (ID)",
+      "outcome": "success",
+      "exists": true,
+      "description": [
+        {
+          "col_name": "id",
+          "data_type": "bigint",
+          "comment": null
+        },
+        {
+          "col_name": "payload",
+          "data_type": "string",
+          "comment": null
+        }
+      ]
+    },
+    {
+      "name": "typed",
+      "case_sensitive": false,
+      "sql": "CREATE TABLE output(payload STRING) USING parquet PARTITIONED BY (p INT)",
+      "outcome": "success",
+      "exists": true,
+      "description": [
+        {
+          "col_name": "payload",
+          "data_type": "string",
+          "comment": null
+        },
+        {
+          "col_name": "p",
+          "data_type": "int",
+          "comment": null
+        }
+      ]
+    },
+    {
+      "name": "quoted",
+      "case_sensitive": false,
+      "sql": "CREATE TABLE output(`a.b` BIGINT, payload STRING) USING parquet PARTITIONED BY (`a.b`)",
+      "outcome": "success",
+      "exists": true,
+      "description": [
+        {
+          "col_name": "a.b",
+          "data_type": "bigint",
+          "comment": null
+        },
+        {
+          "col_name": "payload",
+          "data_type": "string",
+          "comment": null
+        }
+      ]
+    }
+  ]
+}

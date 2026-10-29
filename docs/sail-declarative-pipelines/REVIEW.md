@@ -5,9 +5,9 @@ existing design. Work is on `work/spark-declarative-pipelines`, based on Sail
 `0ba425c0331aee4dd4e9a280c6a793926fd0876e`. These are local commits; no upstream
 pull requests have been opened or branches pushed.
 
-Current batch source `5a5e256328` publishes table and persisted-view metadata
+Current batch source `9031373d0d` publishes table and persisted-view metadata
 before batch writes and refreshes existing tables through catalog operations.
-Its detached gate passed 112 selected Sail cases and 67 unchanged upstream Python
+Its detached gate passed 121 selected Sail cases and 67 unchanged upstream Python
 executions. These counts do not establish full SDP parity. Diagnostics, remaining catalog
 properties, publication failure events, and the remaining acceptance crosswalk
 are still open; streaming and CDC follow batch acceptance.
@@ -366,3 +366,29 @@ implement its adapter, catalog-state persistence, authorization, and commit/CAS
 integration through the existing seams. They must not duplicate generic Sail
 catalog logic or make pipeline planning depend on LakeCat. The operator explicitly
 clarified this ownership after authorizing LakeCat coverage updates.
+
+## Review shared partition-field validation
+
+Commit `9031373d0d` checks declared partition fields in Sail's shared CREATE TABLE
+resolver before catalog creation. Missing fields and identical duplicate fields
+fail; valid fields use the schema's canonical spelling. Typed partition definitions
+respect case-sensitive identity, so id and ID can coexist in catalog metadata.
+Schema-less external definitions retain provider inference. This is shared Sail
+behavior; pipeline materialization consumes the existing CREATE TABLE command.
+
+The [receipt](evidence/9031373d0dfbf5c7a876a113a0a273ec933e6ccd/gate.json) records
+121 selected cases: 98 pipeline, 14 existing shared regressions and nine partition
+DDL cases (six new and three existing). All passed, together with 67 upstream
+Python executions, formatting, strict Clippy and CLI build. Seven targeted Spark
+4.2.1 DDL observations establish the reference outcomes; they are not nine
+identical BDD executions on Spark. No Python files changed.
+
+The failed baselines and two failed intermediate fixture sets remain recorded.
+Absence is now checked by executing SELECT rather than calling the lazy SQL API.
+The case-distinct catalog fixture uses DESCRIBE because broader read/write checks
+exposed two existing shared bugs: get_partition_columns_and_file_schema folds
+case even when an exact field exists, and table append-by-name ignores the session
+case-sensitivity setting. Their failing fixtures are retained as candidate patches;
+fix these next and restore the read/write assertions. Catalog creation alone does
+not qualify that data path. Structured DDL errors, CTAS/other writer paths and
+LakeCat provider integration remain acceptance work.

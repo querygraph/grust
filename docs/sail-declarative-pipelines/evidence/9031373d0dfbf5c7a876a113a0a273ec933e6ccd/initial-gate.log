@@ -1,0 +1,244 @@
+........................................................................ [ 59%]
+........................................FFF..F...                        [100%]
+=================================== FAILURES ===================================
+_ test_invalid_partition_fields_are_rejected_before_creating_a_table[false-missing-COLUMN_NOT_DEFINED_IN_TABLE] _
+
+fixturefunc = <function statement_with_error at 0x11293afc0>
+request = <FixtureRequest for <Function test_invalid_partition_fields_are_rejected_before_creating_a_table[false-missing-COLUMN_NOT_DEFINED_IN_TABLE]>>
+kwargs = {'template': '', 'error': 'TABLE_OR_VIEW_NOT_FOUND', 'docstring': 'SELECT * FROM invalid_partition', 'spark': <pyspark.sql.connect.session.SparkSession object at 0x1182c34a0>, ...}
+
+    def call_fixture_func(
+        fixturefunc: _FixtureFunc[FixtureValue], request: FixtureRequest, kwargs
+    ) -> FixtureValue:
+        if inspect.isgeneratorfunction(fixturefunc):
+            fixturefunc = cast(Callable[..., Generator[FixtureValue]], fixturefunc)
+            generator = fixturefunc(**kwargs)
+            try:
+                fixture_result = next(generator)
+            except StopIteration:
+                raise ValueError(f"{request.fixturename} did not yield a value") from None
+            finalizer = functools.partial(_teardown_yield_fixture, fixturefunc, generator)
+            request.addfinalizer(finalizer)
+        else:
+            fixturefunc = cast(Callable[..., FixtureValue], fixturefunc)
+>           fixture_result = fixturefunc(**kwargs)
+                             ^^^^^^^^^^^^^^^^^^^^^
+
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/_pytest/fixtures.py:1005: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+template = '', error = 'TABLE_OR_VIEW_NOT_FOUND'
+docstring = 'SELECT * FROM invalid_partition'
+spark = <pyspark.sql.connect.session.SparkSession object at 0x1182c34a0>
+variables = {}
+
+    @given(parsers.re(r"statement(?P<template>( template)?) with error (?P<error>.*)"))
+    def statement_with_error(template, error, docstring, spark, variables):
+        """Executes a SQL statement that is expected to fail with an error."""
+        s = Template(docstring).render(**variables) if template else docstring
+>       with pytest.raises(Exception, match=error):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE Exception
+
+python/pysail/testing/spark/steps/sql.py:153: Failed
+_ test_invalid_partition_fields_are_rejected_before_creating_a_table[false-id, id-COLUMN_ALREADY_EXISTS] _
+
+fixturefunc = <function statement_with_error at 0x11293afc0>
+request = <FixtureRequest for <Function test_invalid_partition_fields_are_rejected_before_creating_a_table[false-id, id-COLUMN_ALREADY_EXISTS]>>
+kwargs = {'template': '', 'error': 'TABLE_OR_VIEW_NOT_FOUND', 'docstring': 'SELECT * FROM invalid_partition', 'spark': <pyspark.sql.connect.session.SparkSession object at 0x1182c34a0>, ...}
+
+    def call_fixture_func(
+        fixturefunc: _FixtureFunc[FixtureValue], request: FixtureRequest, kwargs
+    ) -> FixtureValue:
+        if inspect.isgeneratorfunction(fixturefunc):
+            fixturefunc = cast(Callable[..., Generator[FixtureValue]], fixturefunc)
+            generator = fixturefunc(**kwargs)
+            try:
+                fixture_result = next(generator)
+            except StopIteration:
+                raise ValueError(f"{request.fixturename} did not yield a value") from None
+            finalizer = functools.partial(_teardown_yield_fixture, fixturefunc, generator)
+            request.addfinalizer(finalizer)
+        else:
+            fixturefunc = cast(Callable[..., FixtureValue], fixturefunc)
+>           fixture_result = fixturefunc(**kwargs)
+                             ^^^^^^^^^^^^^^^^^^^^^
+
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/_pytest/fixtures.py:1005: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+template = '', error = 'TABLE_OR_VIEW_NOT_FOUND'
+docstring = 'SELECT * FROM invalid_partition'
+spark = <pyspark.sql.connect.session.SparkSession object at 0x1182c34a0>
+variables = {}
+
+    @given(parsers.re(r"statement(?P<template>( template)?) with error (?P<error>.*)"))
+    def statement_with_error(template, error, docstring, spark, variables):
+        """Executes a SQL statement that is expected to fail with an error."""
+        s = Template(docstring).render(**variables) if template else docstring
+>       with pytest.raises(Exception, match=error):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE Exception
+
+python/pysail/testing/spark/steps/sql.py:153: Failed
+_ test_invalid_partition_fields_are_rejected_before_creating_a_table[true-ID-COLUMN_NOT_DEFINED_IN_TABLE] _
+
+fixturefunc = <function statement_with_error at 0x11293afc0>
+request = <FixtureRequest for <Function test_invalid_partition_fields_are_rejected_before_creating_a_table[true-ID-COLUMN_NOT_DEFINED_IN_TABLE]>>
+kwargs = {'template': '', 'error': 'TABLE_OR_VIEW_NOT_FOUND', 'docstring': 'SELECT * FROM invalid_partition', 'spark': <pyspark.sql.connect.session.SparkSession object at 0x1182c34a0>, ...}
+
+    def call_fixture_func(
+        fixturefunc: _FixtureFunc[FixtureValue], request: FixtureRequest, kwargs
+    ) -> FixtureValue:
+        if inspect.isgeneratorfunction(fixturefunc):
+            fixturefunc = cast(Callable[..., Generator[FixtureValue]], fixturefunc)
+            generator = fixturefunc(**kwargs)
+            try:
+                fixture_result = next(generator)
+            except StopIteration:
+                raise ValueError(f"{request.fixturename} did not yield a value") from None
+            finalizer = functools.partial(_teardown_yield_fixture, fixturefunc, generator)
+            request.addfinalizer(finalizer)
+        else:
+            fixturefunc = cast(Callable[..., FixtureValue], fixturefunc)
+>           fixture_result = fixturefunc(**kwargs)
+                             ^^^^^^^^^^^^^^^^^^^^^
+
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/_pytest/fixtures.py:1005: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+template = '', error = 'TABLE_OR_VIEW_NOT_FOUND'
+docstring = 'SELECT * FROM invalid_partition'
+spark = <pyspark.sql.connect.session.SparkSession object at 0x1182c34a0>
+variables = {}
+
+    @given(parsers.re(r"statement(?P<template>( template)?) with error (?P<error>.*)"))
+    def statement_with_error(template, error, docstring, spark, variables):
+        """Executes a SQL statement that is expected to fail with an error."""
+        s = Template(docstring).render(**variables) if template else docstring
+>       with pytest.raises(Exception, match=error):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE Exception
+
+python/pysail/testing/spark/steps/sql.py:153: Failed
+______ test_typed_partition_columns_respect_casesensitive_field_identity _______
+
+fixturefunc = <function statement at 0x11293aa20>
+request = <FixtureRequest for <Function test_typed_partition_columns_respect_casesensitive_field_identity>>
+kwargs = {'template': '', 'docstring': "INSERT INTO typed_partition_case (id, payload, ID) VALUES (1, 'a', 2)", 'spark': <pyspark.sql.connect.session.SparkSession object at 0x1182c34a0>, 'variables': {}}
+
+    def call_fixture_func(
+        fixturefunc: _FixtureFunc[FixtureValue], request: FixtureRequest, kwargs
+    ) -> FixtureValue:
+        if inspect.isgeneratorfunction(fixturefunc):
+            fixturefunc = cast(Callable[..., Generator[FixtureValue]], fixturefunc)
+            generator = fixturefunc(**kwargs)
+            try:
+                fixture_result = next(generator)
+            except StopIteration:
+                raise ValueError(f"{request.fixturename} did not yield a value") from None
+            finalizer = functools.partial(_teardown_yield_fixture, fixturefunc, generator)
+            request.addfinalizer(finalizer)
+        else:
+            fixturefunc = cast(Callable[..., FixtureValue], fixturefunc)
+>           fixture_result = fixturefunc(**kwargs)
+                             ^^^^^^^^^^^^^^^^^^^^^
+
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/_pytest/fixtures.py:1005: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+python/pysail/testing/spark/steps/sql.py:123: in statement
+    spark.sql(s)
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/session.py:836: in sql
+    data, properties, ei = self.client.execute_command(cmd.command(self._client))
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1219: in execute_command
+    data, _, metrics, observed_metrics, properties = self._execute_and_fetch(
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1754: in _execute_and_fetch
+    for response in self._execute_and_fetch_as_iterator(
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1731: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2093: in _handle_error
+    self._handle_rpc_error(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <pyspark.sql.connect.client.core.SparkConnectClient object at 0x1182c1b50>
+rpc_error = <_MultiThreadedRendezvous of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = "invalid argument: ambiguous column: id"
+	debug_error_string = "INTERNAL:invalid argument: ambiguous column: id"
+>
+
+    def _handle_rpc_error(self, rpc_error: grpc.RpcError) -> NoReturn:
+        """
+        Error handling helper for dealing with GRPC Errors. On the server side, certain
+        exceptions are enriched with additional RPC Status information. These are
+        unpacked in this function and put into the exception.
+    
+        To avoid overloading the user with GRPC errors, this message explicitly
+        swallows the error context from the call. This GRPC Error is logged however,
+        and can be enabled.
+    
+        Parameters
+        ----------
+        rpc_error : grpc.RpcError
+           RPC Error containing the details of the exception.
+    
+        Returns
+        -------
+        Throws the appropriate internal Python exception.
+        """
+        logger.exception("GRPC Error received")
+        # We have to cast the value here because, a RpcError is a Call as well.
+        # https://grpc.github.io/grpc/python/grpc.html#grpc.UnaryUnaryMultiCallable.__call__
+        error: grpc.Call = cast(grpc.Call, rpc_error)
+        status_code: grpc.StatusCode = error.code()
+        status: Optional[Status] = rpc_status.from_call(error)
+        if status:
+            for d in status.details:
+                if d.Is(error_details_pb2.ErrorInfo.DESCRIPTOR):
+                    info = error_details_pb2.ErrorInfo()
+                    d.Unpack(info)
+                    logger.debug(f"Received ErrorInfo: {info}")
+    
+                    if info.metadata.get("errorClass") == "INVALID_HANDLE.SESSION_CHANGED":
+                        self._closed = True
+    
+                    if info.metadata.get("errorClass") == "CONNECT_INVALID_PLAN.CANNOT_PARSE":
+                        # Disable plan compression if the server fails to interpret the plan.
+                        logger.info(
+                            "Disabling plan compression for the session due to "
+                            "CONNECT_INVALID_PLAN.CANNOT_PARSE error."
+                        )
+                        self._plan_compression_threshold, self._plan_compression_algorithm = (
+                            -1,
+                            "NONE",
+                        )
+    
+>                   raise convert_exception(
+                        info,
+                        status.message,
+                        self._fetch_enriched_error(info),
+                        self._display_server_stack_trace(),
+                        status_code,
+                    ) from None
+E                   pyspark.errors.exceptions.connect.IllegalArgumentException: invalid argument: ambiguous column: id
+
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2177: IllegalArgumentException
+=============================== warnings summary ===============================
+python/pysail/tests/spark/pipelines/test_features.py: 75 warnings
+python/pysail/tests/spark/dml/test_features.py: 7 warnings
+  /Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pytest_bdd/compat.py:28: PytestRemovedIn10Warning: Passing nodeid to _register_fixture is deprecated. Pass node instead for fixture scoping.
+    request._fixturemanager._register_fixture(
+
+python/pysail/tests/spark/pipelines/test_features.py: 75 warnings
+python/pysail/tests/spark/dml/test_features.py: 7 warnings
+  /Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/_pytest/fixtures.py:1986: PytestRemovedIn10Warning: Passing baseid to FixtureDef is deprecated. Pass node instead for fixture scoping.
+    fixture_def = FixtureDef(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED python/pysail/tests/spark/dml/test_features.py::test_invalid_partition_fields_are_rejected_before_creating_a_table[false-missing-COLUMN_NOT_DEFINED_IN_TABLE]
+FAILED python/pysail/tests/spark/dml/test_features.py::test_invalid_partition_fields_are_rejected_before_creating_a_table[false-id, id-COLUMN_ALREADY_EXISTS]
+FAILED python/pysail/tests/spark/dml/test_features.py::test_invalid_partition_fields_are_rejected_before_creating_a_table[true-ID-COLUMN_NOT_DEFINED_IN_TABLE]
+FAILED python/pysail/tests/spark/dml/test_features.py::test_typed_partition_columns_respect_casesensitive_field_identity
+4 failed, 117 passed, 164 warnings in 5.08s

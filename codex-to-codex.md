@@ -10826,3 +10826,7 @@ Audited all 27 pinned Spark MaterializeTablesSuite registrations: eight partial 
 ## 2026-10-29T09:44:05.205292+00:00 — catalog ownership clarification
 
 Operator clarified that general catalog support must improve in Sail, with LakeCat one supported catalog. Shared DDL, schema, partition/property and Iceberg behavior stays in Sail; LakeCat changes are provider-adapter, persistence/CAS and governance integration plus coverage. Inspected LakeCat master/origin/master 27e18f390c450c187a34b1c3bb2037c26d107699: existing LakeCatCatalogProvider supports create/load/views but alter_table is explicitly unsupported; it consumes Sail git revision 9f6f8065dd810be8146995876acf872ea803adf0. No production code changed. Next implementation must reconcile the shared Sail catalog surface and dependency revisions before adapter changes.
+
+## 2026-10-29T09:58:06.483645+00:00 — DONE shared Sail partition-field validation
+
+Sail 9031373d0dfbf5c7a876a113a0a273ec933e6ccd passed detached fmt, strict Clippy, CLI build, 121 selected Sail cases and 67 upstream Python executions. Shared CREATE TABLE rejects missing/duplicate known-schema partition fields, canonicalizes their names and respects typed case-sensitive identity. Seven Spark 4.2.1 DDL observations retained. Failed intermediate fixtures expose existing shared partition-scan and append-by-name case-folding bugs; patches and failures are retained for the next fixes. LakeCat integration remains pending; no LakeCat production changes, no new event design, no publication.
