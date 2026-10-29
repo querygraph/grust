@@ -10830,3 +10830,7 @@ Operator clarified that general catalog support must improve in Sail, with LakeC
 ## 2026-10-29T09:58:06.483645+00:00 — DONE shared Sail partition-field validation
 
 Sail 9031373d0dfbf5c7a876a113a0a273ec933e6ccd passed detached fmt, strict Clippy, CLI build, 121 selected Sail cases and 67 upstream Python executions. Shared CREATE TABLE rejects missing/duplicate known-schema partition fields, canonicalizes their names and respects typed case-sensitive identity. Seven Spark 4.2.1 DDL observations retained. Failed intermediate fixtures expose existing shared partition-scan and append-by-name case-folding bugs; patches and failures are retained for the next fixes. LakeCat integration remains pending; no LakeCat production changes, no new event design, no publication.
+
+## 2026-10-29T10:06:15.417024+00:00 — DONE exact partition identity during scans
+
+Sail 0a84375381236786f66f09ada7578c9c8efef0c7 passed detached fmt, strict Clippy, four focused Rust schema-utility tests, CLI build, 121 selected Sail cases and 67 upstream Python executions. Exact partition names take precedence and file schema retains case-distinct non-partition fields. Restored BDD schema-read assertion failed at parent source; Spark 4.2.1 reference confirms expected schema. Initial unwrap-related Clippy failure is recorded with patch. Next shared fix is case-sensitive by-name writing, then restore its retained data-round-trip fixture. LakeCat integration and the Astra event-design checkpoint remain open. No new architecture or publication.

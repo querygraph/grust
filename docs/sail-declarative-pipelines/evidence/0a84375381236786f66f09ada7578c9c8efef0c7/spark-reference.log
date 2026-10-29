@@ -1,0 +1,78 @@
+WARNING: Using incubator modules: jdk.incubator.vector
+Using Spark's default log4j profile: org/apache/spark/log4j2-defaults.properties
+Setting default log level to "WARN".
+To adjust logging level use sc.setLogLevel(newLevel). For SparkR, use setLogLevel(newLevel).
+26/10/29 03:00:16 WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/conf.py:61: UserWarning: Failed to set spark.ui.enabled to Some(false) due to [CANNOT_MODIFY_CONFIG] Cannot modify the value of the Spark config: "spark.ui.enabled".
+See also 'https://spark.apache.org/docs/latest/sql-migration-guide.html#ddl-statements'. SQLSTATE: 46110
+  warnings.warn(warn)
+/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/conf.py:61: UserWarning: Failed to set spark.sql.warehouse.dir to Some(file:///var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/sail-sdp-properties-9g7tvvo2/warehouse) due to [CANNOT_MODIFY_STATIC_CONFIG] Cannot modify the value of the static Spark config: "spark.sql.warehouse.dir". SQLSTATE: 46110
+  warnings.warn(warn)
+{
+  "engine": "spark",
+  "spark_version": "4.2.1",
+  "cases": [
+    {
+      "name": "typed_case_sensitive",
+      "case_sensitive": true,
+      "sql": "CREATE TABLE output(id BIGINT, payload STRING) USING parquet PARTITIONED BY (ID BIGINT)",
+      "outcome": "success",
+      "exists": true,
+      "description": [
+        {
+          "col_name": "id",
+          "data_type": "bigint",
+          "comment": null
+        },
+        {
+          "col_name": "payload",
+          "data_type": "string",
+          "comment": null
+        },
+        {
+          "col_name": "ID",
+          "data_type": "bigint",
+          "comment": null
+        },
+        {
+          "col_name": "# Partition Information",
+          "data_type": "",
+          "comment": ""
+        },
+        {
+          "col_name": "# col_name",
+          "data_type": "data_type",
+          "comment": "comment"
+        },
+        {
+          "col_name": "ID",
+          "data_type": "bigint",
+          "comment": null
+        }
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "id",
+            "type": "long",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "payload",
+            "type": "string",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "ID",
+            "type": "long",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    }
+  ]
+}

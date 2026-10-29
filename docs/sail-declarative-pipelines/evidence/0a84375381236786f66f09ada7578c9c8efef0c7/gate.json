@@ -1,0 +1,74 @@
+{
+  "sail_commit": "0a84375381236786f66f09ada7578c9c8efef0c7",
+  "spark_commit": "617618396087429b5627a86ce933bb0f5d6645cb",
+  "recorded_at": "2026-10-29T10:04:50.982693+00:00",
+  "platform": "macOS arm64",
+  "gate_checkout": "detached; private target directory; immutable HEAD for the gate",
+  "cli_sha256": "b270cfaf04dc85f79bb5ac89f0e0ec1a937ce0af1ea729c7af0eb4c505e92135",
+  "checks": [
+    {
+      "command": "cargo +nightly fmt -p sail-common-datafusion -- --check",
+      "outcome": "pass"
+    },
+    {
+      "command": "cargo +1.98.1 clippy -p sail-common-datafusion --all-targets --all-features --locked -- -D warnings",
+      "outcome": "pass"
+    },
+    {
+      "command": "cargo +1.98.1 build -p sail-cli --locked",
+      "outcome": "pass",
+      "note": "CARGO_PROFILE_DEV_DEBUG=0; CARGO_PROFILE_DEV_INCREMENTAL=false; linker warned about __eh_frame size."
+    },
+    {
+      "command": "PYTHONPATH=<gate>/python SPARK_REMOTE=sc://localhost:50082 python -m pytest -q <cases listed in pytest.xml> --junitxml=pytest.xml",
+      "outcome": "pass",
+      "passed": 121,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "command": "python scripts/spark-pipelines-tests/run.py --spark-source <pinned Spark checkout> --remote sc://localhost:50082 --report spark-python.json",
+      "outcome": "pass",
+      "server_spark_version": "4.2.1",
+      "tests_run": 67,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "command": "cargo +1.98.1 test -p sail-common-datafusion --locked partition_lookup -- --nocapture",
+      "outcome": "pass",
+      "passed": 4,
+      "failed": 0,
+      "filtered_out": 59,
+      "note": "Internal schema utility inputs; no Rust query execution tests."
+    },
+    {
+      "command": "python spark-reference.py spark; verify resulting schema",
+      "outcome": "pass",
+      "spark_version": "4.2.1",
+      "targeted_observations": 1,
+      "schema_fields": [
+        "id",
+        "payload",
+        "ID"
+      ]
+    }
+  ],
+  "limits": [
+    "No distributed cluster execution claim.",
+    "Upstream Python includes inherited and client-only tests.",
+    "Full batch acceptance and the remaining Spark SDP crosswalk are outstanding.",
+    "The restored BDD assertion analyzes an empty partitioned table schema; persisted-row round trips remain pending the by-name writer fix.",
+    "LakeCat provider/dependency integration has not run.",
+    "The unique case-insensitive fallback is preserved; SQL expression resolution remains responsible for session case-sensitivity semantics.",
+    "Rust and Gherkin changes only; no Python lint run."
+  ],
+  "retained_failures": {
+    "baseline": "9031373d0dfbf5c7a876a113a0a273ec933e6ccd",
+    "file": "before.log",
+    "failed": 1,
+    "initial_candidate": "d4e9e00e7fb758917261f1618597d7f86c4a5d1e",
+    "initial_candidate_failure": "Clippy rejected unwrap() in two new tests; final tests return Result and propagate errors. Initial patch retained."
+  }
+}

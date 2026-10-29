@@ -1,0 +1,68 @@
+{
+  "engine": "spark",
+  "spark_version": "4.2.1",
+  "cases": [
+    {
+      "name": "typed_case_sensitive",
+      "case_sensitive": true,
+      "sql": "CREATE TABLE output(id BIGINT, payload STRING) USING parquet PARTITIONED BY (ID BIGINT)",
+      "outcome": "success",
+      "exists": true,
+      "description": [
+        {
+          "col_name": "id",
+          "data_type": "bigint",
+          "comment": null
+        },
+        {
+          "col_name": "payload",
+          "data_type": "string",
+          "comment": null
+        },
+        {
+          "col_name": "ID",
+          "data_type": "bigint",
+          "comment": null
+        },
+        {
+          "col_name": "# Partition Information",
+          "data_type": "",
+          "comment": ""
+        },
+        {
+          "col_name": "# col_name",
+          "data_type": "data_type",
+          "comment": "comment"
+        },
+        {
+          "col_name": "ID",
+          "data_type": "bigint",
+          "comment": null
+        }
+      ],
+      "schema": {
+        "type": "struct",
+        "fields": [
+          {
+            "name": "id",
+            "type": "long",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "payload",
+            "type": "string",
+            "nullable": true,
+            "metadata": {}
+          },
+          {
+            "name": "ID",
+            "type": "long",
+            "nullable": true,
+            "metadata": {}
+          }
+        ]
+      }
+    }
+  ]
+}

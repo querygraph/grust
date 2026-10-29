@@ -5,7 +5,7 @@ existing design. Work is on `work/spark-declarative-pipelines`, based on Sail
 `0ba425c0331aee4dd4e9a280c6a793926fd0876e`. These are local commits; no upstream
 pull requests have been opened or branches pushed.
 
-Current batch source `9031373d0d` publishes table and persisted-view metadata
+Current batch source `0a84375381` publishes table and persisted-view metadata
 before batch writes and refreshes existing tables through catalog operations.
 Its detached gate passed 121 selected Sail cases and 67 unchanged upstream Python
 executions. These counts do not establish full SDP parity. Diagnostics, remaining catalog
@@ -392,3 +392,25 @@ case-sensitivity setting. Their failing fixtures are retained as candidate patch
 fix these next and restore the read/write assertions. Catalog creation alone does
 not qualify that data path. Structured DDL errors, CTAS/other writer paths and
 LakeCat provider integration remain acceptance work.
+
+## Review exact partition identity during scans
+
+Commit `0a84375381` prefers an exact schema name when resolving physical partition
+fields, retaining the existing unique case-insensitive fallback when no exact
+name exists. The file schema removes only the resolved partition field, preserving
+case-distinct non-partition fields and their types. This shared DataFusion utility
+is independent of pipeline and catalog-provider implementations.
+
+The [receipt](evidence/0a84375381236786f66f09ada7578c9c8efef0c7/gate.json) records
+121 selected Sail cases, 67 upstream Python executions, four focused schema-utility
+tests, nightly formatting, strict Clippy and CLI build, all passing. The restored
+case-distinct BDD schema read fails at the preceding committed source and passes
+here. A Spark 4.2.1 reference returns the same id/payload/ID schema. The four utility
+tests verify exact matching, unique fallback, ambiguous/missing/duplicate-field
+rejection, and preservation of file fields. Their other 59 crate tests were not run.
+
+The first candidate's tests used unwrap, rejected by Clippy; the final tests
+return Result. Its patch is retained. The initial partition unit's failed read
+fixture is now restored. The by-name writer still folds case; restore its retained
+INSERT/result fixture in the next shared writer fix. Empty-table schema analysis
+does not qualify a persisted-row round trip or LakeCat integration.

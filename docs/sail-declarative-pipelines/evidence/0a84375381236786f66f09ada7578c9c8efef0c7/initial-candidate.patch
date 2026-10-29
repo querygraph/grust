@@ -1,0 +1,109 @@
+diff --git a/crates/sail-common-datafusion/src/datasource.rs b/crates/sail-common-datafusion/src/datasource.rs
+index f9ad98c79..04651bcc5 100644
+--- a/crates/sail-common-datafusion/src/datasource.rs
++++ b/crates/sail-common-datafusion/src/datasource.rs
+@@ -636,10 +636,10 @@ pub fn get_partition_columns_and_file_schema(
+     let partition_fields = partition_by
+         .into_iter()
+         .map(|col| {
+-            let mut candidates = schema
+-                .fields()
+-                .iter()
+-                .filter(|f| f.name().eq_ignore_ascii_case(&col));
++            let has_exact = schema.fields().iter().any(|field| field.name() == &col);
++            let mut candidates = schema.fields().iter().filter(|field| {
++                field.name() == &col || (!has_exact && field.name().eq_ignore_ascii_case(&col))
++            });
+             match (candidates.next(), candidates.next()) {
+                 (Some(field), None) => Ok(field.clone()),
+                 _ => {
+@@ -651,11 +651,7 @@ pub fn get_partition_columns_and_file_schema(
+     let file_schema_fields = schema
+         .fields()
+         .iter()
+-        .filter(|f| {
+-            !partition_fields
+-                .iter()
+-                .any(|p| f.name().eq_ignore_ascii_case(p.name()))
+-        })
++        .filter(|f| !partition_fields.iter().any(|p| f.name() == p.name()))
+         .cloned()
+         .collect::<Vec<_>>();
+     let file_schema = Schema::new(file_schema_fields);
+@@ -665,9 +661,55 @@ pub fn get_partition_columns_and_file_schema(
+ #[cfg(test)]
+ mod tests {
+     use async_trait::async_trait;
++    use datafusion::arrow::datatypes::{DataType, Field};
+ 
+     use super::*;
+ 
++    #[test]
++    fn partition_lookup_preserves_case_distinct_file_fields() {
++        let schema = Schema::new(vec![
++            Field::new("id", DataType::Utf8, true),
++            Field::new("ID", DataType::Int64, true),
++            Field::new("payload", DataType::Boolean, true),
++        ]);
++        let (partition, file) =
++            get_partition_columns_and_file_schema(&schema, vec!["ID".into()]).unwrap();
++        assert_eq!(partition, vec![schema.fields()[1].clone()]);
++        assert_eq!(
++            file.fields(),
++            &vec![schema.fields()[0].clone(), schema.fields()[2].clone()].into()
++        );
++    }
++
++    #[test]
++    fn partition_lookup_retains_unique_case_insensitive_fallback() {
++        let schema = Schema::new(vec![Field::new("PaRt", DataType::Int32, false)]);
++        let (partition, file) =
++            get_partition_columns_and_file_schema(&schema, vec!["part".into()]).unwrap();
++        assert_eq!(partition, vec![schema.fields()[0].clone()]);
++        assert!(file.fields().is_empty());
++    }
++
++    #[test]
++    fn partition_lookup_rejects_ambiguous_fallback() {
++        let schema = Schema::new(vec![
++            Field::new("Id", DataType::Int64, true),
++            Field::new("iD", DataType::Int64, true),
++        ]);
++        assert!(get_partition_columns_and_file_schema(&schema, vec!["id".into()]).is_err());
++    }
++
++    #[test]
++    fn partition_lookup_rejects_missing_and_duplicate_exact_fields() {
++        let schema = Schema::new(vec![
++            Field::new("p", DataType::Int64, true),
++            Field::new("p", DataType::Int64, true),
++        ]);
++        for name in ["missing", "p"] {
++            assert!(get_partition_columns_and_file_schema(&schema, vec![name.into()]).is_err());
++        }
++    }
++
+     #[test]
+     fn row_level_operation_type_decodes_typed_values() {
+         let operations = [
+diff --git a/python/pysail/tests/spark/dml/features/create_table_partitioned.feature b/python/pysail/tests/spark/dml/features/create_table_partitioned.feature
+index 4cba418b2..0cb4216dd 100644
+--- a/python/pysail/tests/spark/dml/features/create_table_partitioned.feature
++++ b/python/pysail/tests/spark/dml/features/create_table_partitioned.feature
+@@ -152,8 +152,12 @@ Feature: CREATE TABLE with PARTITIONED BY clause
+       """
+     When query
+       """
+-      DESCRIBE typed_partition_case
++      SELECT * FROM typed_partition_case
++      """
++    Then query schema
++      """
++      root
++       |-- id: long (nullable = true)
++       |-- payload: string (nullable = true)
++       |-- ID: long (nullable = true)
+       """
+-    Then query result row where "col_name" is "id" has "data_type" equal to "bigint"
+-    Then query result row where "col_name" is "ID" has "data_type" equal to "bigint"
+-    Then query result row where "col_name" is "payload" has "data_type" equal to "string"
