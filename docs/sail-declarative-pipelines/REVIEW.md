@@ -801,3 +801,28 @@ unaudited. This is not an expanded test denominator or a completion percentage.
 Original Scala suites, full batch acceptance, shared SQL catalog expressions,
 failure/event and REST-view architecture, streaming and CDC remain outstanding.
 Astra handoffs remain ready; this unit selects no new architecture.
+
+## Review internal SQL registration metadata fixtures
+
+Commit `35565f49d1` adds a cfg(test) child module to pipeline SQL registration.
+Three Rust tests preserve the original SQL fixtures and inspect registered state:
+identity partition order id1/id2; streaming-table output kind and exact prop1/
+prop2 map; and the three original arbitrary per-flow configuration maps. The
+configuration test also checks reset for the next file. No runtime behavior,
+public API, dependency or catalog integration changes.
+
+The [receipt](evidence/35565f49d1f4666255b431c63f1e4f8cabdf3ecf/gate.json)
+records formatting, strict Clippy and three passing Rust library tests (24 other
+tests filtered), plus 217 selected pytest cases and 67 upstream Python executions.
+The Rust test binary is built/executed at this commit; the remote CLI remains
+verified engine bbf438c066 with matching hash. No new CLI or Python native-extension
+build/execution is claimed.
+
+This closes the direct registered metadata assertion gaps without replacing the
+streaming-table fixtures with materialized views. Original Spark tests inspect
+resolved graphs; these tests stop at registration, preserving that remaining
+entry-point distinction. The SQL inventory now has 26 partial ports and twelve
+unmapped registrations. Overall review counts remain 97 reviewed and 365
+unaudited; no case becomes fully qualified. Rust identifiers/evidence are separate
+from Python nodes/XML. Original Scala-suite execution, full batch acceptance and
+Astra architecture checkpoints remain outstanding.

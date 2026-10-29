@@ -11,8 +11,8 @@ is fully qualified by executing the original Scala suite against Sail.
 | MaterializeTablesSuite | 27 | 8 | 19 |
 | SparkDeclarativePipelinesServerSuite | 19 | 14 | 5 |
 | PipelinesHandlerSuite | 2 | 0 | 2 |
-| SqlPipelineSuite | 38 | 24 | 14 |
-| Total | 97 | 53 | 44 |
+| SqlPipelineSuite | 38 | 26 | 12 |
+| Total | 97 | 55 | 42 |
 
 Each audited [inventory record](spark-4.2.1-inventory.json) identifies its phase,
 covered/missing assertions and evidence. A partial behavioral Connect port does
@@ -59,7 +59,7 @@ parameter when no cause exists. These belong to the pending Astra
 ## SQL pipeline assertions
 
 All 38 SQL registration sites have an [assertion audit](evidence/sql-complete-assertion-audit/validation.json):
-24 partial ports and 14 unmapped. This is not a complete Scala-suite verdict.
+26 partial ports and 12 unmapped. This is not a complete Scala-suite verdict.
 The reviewed groups include:
 
 - Basic batch cases: static dataset, escaped names, a four-view dependency chain,
@@ -94,9 +94,15 @@ and cancellation coverage, streaming and CDC remain incomplete.
 
 The completed SQL audit also records partial configuration, location, partition-
 rejection, ordinary-DDL rejection, declared-schema and view-comment coverage.
-Exact original metadata/parser assertions remain explicit gaps. Unmapped cases
-include internal graph counts/input sets, identity partition/property metadata,
-schema-qualified/cross-catalog combinations, per-flow invalid-read attribution,
+Three Rust registration tests now inspect the exact original partition order,
+property map and per-flow configuration maps; original resolved-graph and catalog
+materialization assertions remain distinct. Exact parser assertions remain gaps.
+Unmapped cases include internal graph counts/input sets, catalog partition
+transforms, schema-qualified/cross-catalog combinations, per-flow invalid-read attribution,
 multipart temporary-view errors and streaming file/window refresh behavior.
 The four file formats, two invalid CSV paths and six namespace pairs are explicit
 source instances, not an expanded runtime denominator.
+
+Rust test identifiers are recorded separately in each inventory case's rust_tests
+field, with package, target and exact test name. Their evidence is the Rust test
+log, not pytest XML. No original Scala execution is inferred from these ports.

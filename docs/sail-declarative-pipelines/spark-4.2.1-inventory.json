@@ -3827,14 +3827,22 @@
       "line": 252,
       "method": "test",
       "name_expression": "\"Partition cols correctly registered\"",
-      "status": "unmapped",
+      "status": "partial-behavioral-port",
       "sail_tests": [],
       "coverage_review": {
-        "phase": "batch-registration",
-        "covered_assertions": "None mapped in this audit.",
-        "remaining_assertions": "Inspect resolved table partitionCols exactly [id1,id2] from the original identity-partition declaration.",
+        "phase": "batch-registration-internal",
+        "covered_assertions": "Original SQL declaration retains exactly [id1,id2] in declared order in table details; qualified output name and materialized output kind are checked directly in Rust.",
+        "remaining_assertions": "Rust inspects registered metadata before resolution. Original Spark resolved-graph entry point and Scala suite are unexecuted; streaming validation and catalog materialization are not qualified.",
+        "sail_evidence": "evidence/35565f49d1f4666255b431c63f1e4f8cabdf3ecf/rust-tests.log",
         "scala_suite_executed": false
-      }
+      },
+      "rust_tests": [
+        {
+          "package": "sail-spark-connect",
+          "target": "lib",
+          "name": "pipelines::sql::tests::identity_partition_columns_keep_declared_order"
+        }
+      ]
     },
     {
       "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/SqlPipelineSuite.scala:270",
@@ -3875,14 +3883,22 @@
       "line": 329,
       "method": "test",
       "name_expression": "\"Table properties are correctly registered\"",
-      "status": "unmapped",
+      "status": "partial-behavioral-port",
       "sail_tests": [],
       "coverage_review": {
-        "phase": "batch-registration",
-        "covered_assertions": "None mapped in this audit.",
-        "remaining_assertions": "Inspect original registered streaming table properties exactly prop1=foo and prop2=bar without replacing its internal resolve-only entry point with streaming validation.",
+        "phase": "batch-registration-internal",
+        "covered_assertions": "Original CREATE STREAMING TABLE ... AS SELECT 1 retains streaming output kind, qualified name and exactly prop1=foo/prop2=bar. Registration is inspected without substituting a materialized view or invoking streaming validation.",
+        "remaining_assertions": "Rust inspects registered metadata before resolution. Original Spark resolved-graph entry point and Scala suite are unexecuted; streaming validation and catalog materialization are not qualified.",
+        "sail_evidence": "evidence/35565f49d1f4666255b431c63f1e4f8cabdf3ecf/rust-tests.log",
         "scala_suite_executed": false
-      }
+      },
+      "rust_tests": [
+        {
+          "package": "sail-spark-connect",
+          "target": "lib",
+          "name": "pipelines::sql::tests::streaming_table_properties_are_registered_without_execution"
+        }
+      ]
     },
     {
       "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/SqlPipelineSuite.scala:345",
@@ -3895,12 +3911,19 @@
         "python/pysail/tests/spark/pipelines/test_features.py::test_set_configuration_is_captured_per_flow_and_reset_between_files"
       ],
       "coverage_review": {
-        "phase": "batch-registration",
-        "covered_assertions": "SET configuration is captured per flow and reset per file, observed through timezone-dependent query results.",
-        "remaining_assertions": "Original exact sqlConf maps for arbitrary conf.test/conf.test2 and three MV/persisted/streaming outputs are not inspected. Original Scala suite remains unexecuted.",
-        "sail_evidence": "evidence/efc21f2c53b0d8c886b31928ed67131a1de7c6db/pytest.xml",
+        "phase": "batch-registration-internal",
+        "covered_assertions": "Original three SQL fixtures have exact per-flow configuration maps: a empty, b {conf.test:a}, c {conf.test:b,conf.test2:c}. Rust tests inspect each captured qualified flow name/map and additionally verify reset for the following file; existing timezone behavioral port remains.",
+        "remaining_assertions": "Rust inspects registered metadata before resolution. Original Spark resolved-graph entry point and Scala suite are unexecuted; streaming validation and catalog materialization are not qualified.",
+        "sail_evidence": "evidence/35565f49d1f4666255b431c63f1e4f8cabdf3ecf/rust-tests.log",
         "scala_suite_executed": false
-      }
+      },
+      "rust_tests": [
+        {
+          "package": "sail-spark-connect",
+          "target": "lib",
+          "name": "pipelines::sql::tests::sql_configuration_is_captured_per_flow_and_reset_per_file"
+        }
+      ]
     },
     {
       "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/SqlPipelineSuite.scala:386",
