@@ -489,3 +489,26 @@ mismatch that fails acceptance while cleaning its table. The runner source is
 Only the Python script differs between those source trees. No Rust or upstream
 Python-suite rerun is claimed for this unit. The [usage note](CATALOG-ACCEPTANCE.md)
 keeps these focused checks distinct from full SDP acceptance.
+
+## Review structured errors for missing pipeline graphs
+
+Commit `6c87cd39de` uses Sail's existing structured-error transport when graph
+lookup fails. Define-output, define-flow, define-SQL and start-run now expose
+Spark's DATAFLOW_GRAPH_NOT_FOUND condition, graphId parameter and KD011 SQL
+state as SparkException. Dropping an absent graph remains idempotent; dropping
+a graph still preserves its published tables.
+
+The [receipt](evidence/6c87cd39de51f925221fbc97ed475810f655b188/gate.json)
+records 129 selected pytest cases, 67 upstream Python executions, formatting,
+strict Clippy, CLI build and Python lint, all passing. The six focused lifecycle
+assertions also pass against Spark 4.2.1. The preceding Sail build failed five
+of them and passed the absent-drop control; that baseline is retained. Tests
+omit the define-flow once option, whose validation priority is separate. This
+unit does not establish complete session isolation or command error precedence.
+The static Scala crosswalk is unchanged; these checks do not constitute a
+Scala-suite execution.
+
+General catalog behavior continues to belong in Sail. LakeCat remains one
+supported catalog; the earlier shared Iceberg-comment fix and reusable catalog
+runner demonstrate that boundary. Failure/events and persisted REST views still
+need the focused Astra design review before architectural implementation.

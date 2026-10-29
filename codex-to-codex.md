@@ -10846,3 +10846,7 @@ Sail 24533f1f0d32621b54d3f0f78f353be673dc493c passed detached formatting, strict
 ## 2026-10-29T11:01:33.035238+00:00 — DONE reusable catalog acceptance runner
 
 Sail 7fd30c4187be2e1c735bf84af583b9fff82b540f adds a standalone PySpark 4.2.1 catalog runner, without fixture imports or backend-specific logic. Four table-pipeline cases and cleanup pass on both memory/parquet and LakeCat/Iceberg against engine 24533f1f0. Ruff passes; optimized-Python/invalid-storage controls reject with exit 2, and deliberate answer mismatch records failure plus cleanup. Source is Python-only; prior Rust/124-pytest/67-upstream gates stay on the engine commit. Acceptance reports and controls are committed per-source. Views, events, streaming, CDC and LakeCat durability remain open; Astra design checkpoint remains ready.
+
+## 2026-10-29T11:14:19.155961+00:00 — DONE missing-graph structured error compatibility
+
+Sail 6c87cd39de51f925221fbc97ed475810f655b188 passed detached formatting, strict Clippy, CLI build, Python lint, 129 selected pytest cases and 67 upstream Python executions. Six lifecycle assertions also pass on Spark 4.2.1; parent baseline five failures and one idempotent-drop control pass retained. Uses existing structured-error machinery; no new architecture, catalog dependency, LakeCat production change or publication. User ownership clarification remains binding: general catalog semantics in Sail, LakeCat a supported adapter. Astra event/REST-view design checkpoint remains ready; full batch acceptance, streaming and CDC remain incomplete.
