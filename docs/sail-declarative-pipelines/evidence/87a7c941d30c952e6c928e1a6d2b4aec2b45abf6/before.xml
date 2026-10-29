@@ -1,0 +1,1434 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="23" skipped="0" tests="27" time="19.206" timestamp="2026-10-29T09:54:36.225255-07:00" hostname="Capitola.local"><testcase classname="python.pysail.tests.spark.dataframe.test_cast_errors" name="test_invalid_ansi_cast_has_native_metadata[constant-TINYINT-TINYINT]" time="17.982"><failure message="assert None == 'CAST_INVALID_INPUT'&#10; +  where None = getCondition()&#10; +    where getCondition = NumberFormatException(&quot;Cannot cast string 'bad' to value of Int8 type&quot;).getCondition">ansi_spark = &lt;pyspark.sql.connect.session.SparkSession object at 0x118c35ac0&gt;
+target = 'TINYINT', canonical = 'TINYINT', context = 'constant'
+
+    @pytest.mark.parametrize(
+        ("target", "canonical"),
+        [
+            ("TINYINT", "TINYINT"),
+            ("SMALLINT", "SMALLINT"),
+            ("INT", "INT"),
+            ("INTEGER", "INT"),
+            ("BIGINT", "BIGINT"),
+            ("FLOAT", "FLOAT"),
+            ("DOUBLE", "DOUBLE"),
+            ("BOOLEAN", "BOOLEAN"),
+        ],
+    )
+    @pytest.mark.parametrize("context", ["constant", "rows"])
+    def test_invalid_ansi_cast_has_native_metadata(ansi_spark, target, canonical, context):
+        exception = SparkRuntimeException if target == "BOOLEAN" else NumberFormatException
+        valid = "true" if target == "BOOLEAN" else "1"
+        sql = (
+            f"SELECT CAST('bad' AS {target})"
+            if context == "constant"
+            else f"SELECT CAST(value AS {target}) FROM VALUES (CAST(NULL AS STRING)), ('{valid}'), ('bad') AS t(value)"
+        )
+        with pytest.raises(exception) as error:
+            ansi_spark.sql(sql).collect()
+&gt;       assert_invalid_input(error.value, canonical)
+
+python/pysail/tests/spark/dataframe/test_cast_errors.py:52: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+error = NumberFormatException("Cannot cast string 'bad' to value of Int8 type")
+target = 'TINYINT', expression = "'bad'"
+
+    def assert_invalid_input(error, target, expression="'bad'"):
+&gt;       assert error.getCondition() == "CAST_INVALID_INPUT"
+E       assert None == 'CAST_INVALID_INPUT'
+E        +  where None = getCondition()
+E        +    where getCondition = NumberFormatException("Cannot cast string 'bad' to value of Int8 type").getCondition
+
+python/pysail/tests/spark/dataframe/test_cast_errors.py:18: AssertionError</failure></testcase><testcase classname="python.pysail.tests.spark.dataframe.test_cast_errors" name="test_invalid_ansi_cast_has_native_metadata[constant-SMALLINT-SMALLINT]" time="0.010"><failure message="assert None == 'CAST_INVALID_INPUT'&#10; +  where None = getCondition()&#10; +    where getCondition = NumberFormatException(&quot;Cannot cast string 'bad' to value of Int16 type&quot;).getCondition">ansi_spark = &lt;pyspark.sql.connect.session.SparkSession object at 0x118c35ac0&gt;
+target = 'SMALLINT', canonical = 'SMALLINT', context = 'constant'
+
+    @pytest.mark.parametrize(
+        ("target", "canonical"),
+        [
+            ("TINYINT", "TINYINT"),
+            ("SMALLINT", "SMALLINT"),
+            ("INT", "INT"),
+            ("INTEGER", "INT"),
+            ("BIGINT", "BIGINT"),
+            ("FLOAT", "FLOAT"),
+            ("DOUBLE", "DOUBLE"),
+            ("BOOLEAN", "BOOLEAN"),
+        ],
+    )
+    @pytest.mark.parametrize("context", ["constant", "rows"])
+    def test_invalid_ansi_cast_has_native_metadata(ansi_spark, target, canonical, context):
+        exception = SparkRuntimeException if target == "BOOLEAN" else NumberFormatException
+        valid = "true" if target == "BOOLEAN" else "1"
+        sql = (
+            f"SELECT CAST('bad' AS {target})"
+            if context == "constant"
+            else f"SELECT CAST(value AS {target}) FROM VALUES (CAST(NULL AS STRING)), ('{valid}'), ('bad') AS t(value)"
+        )
+        with pytest.raises(exception) as error:
+            ansi_spark.sql(sql).collect()
+&gt;       assert_invalid_input(error.value, canonical)
+
+python/pysail/tests/spark/dataframe/test_cast_errors.py:52: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+error = NumberFormatException("Cannot cast string 'bad' to value of Int16 type")
+target = 'SMALLINT', expression = "'bad'"
+
+    def assert_invalid_input(error, target, expression="'bad'"):
+&gt;       assert error.getCondition() == "CAST_INVALID_INPUT"
+E       assert None == 'CAST_INVALID_INPUT'
+E        +  where None = getCondition()
+E        +    where getCondition = NumberFormatException("Cannot cast string 'bad' to value of Int16 type").getCondition
+
+python/pysail/tests/spark/dataframe/test_cast_errors.py:18: AssertionError</failure></testcase><testcase classname="python.pysail.tests.spark.dataframe.test_cast_errors" name="test_invalid_ansi_cast_has_native_metadata[constant-INT-INT]" time="0.009"><failure message="assert None == 'CAST_INVALID_INPUT'&#10; +  where None = getCondition()&#10; +    where getCondition = NumberFormatException(&quot;Cannot cast string 'bad' to value of Int32 type&quot;).getCondition">ansi_spark = &lt;pyspark.sql.connect.session.SparkSession object at 0x118c35ac0&gt;
+target = 'INT', canonical = 'INT', context = 'constant'
+
+    @pytest.mark.parametrize(
+        ("target", "canonical"),
+        [
+            ("TINYINT", "TINYINT"),
+            ("SMALLINT", "SMALLINT"),
+            ("INT", "INT"),
+            ("INTEGER", "INT"),
+            ("BIGINT", "BIGINT"),
+            ("FLOAT", "FLOAT"),
+            ("DOUBLE", "DOUBLE"),
+            ("BOOLEAN", "BOOLEAN"),
+        ],
+    )
+    @pytest.mark.parametrize("context", ["constant", "rows"])
+    def test_invalid_ansi_cast_has_native_metadata(ansi_spark, target, canonical, context):
+        exception = SparkRuntimeException if target == "BOOLEAN" else NumberFormatException
+        valid = "true" if target == "BOOLEAN" else "1"
+        sql = (
+            f"SELECT CAST('bad' AS {target})"
+            if context == "constant"
+            else f"SELECT CAST(value AS {target}) FROM VALUES (CAST(NULL AS STRING)), ('{valid}'), ('bad') AS t(value)"
+        )
+        with pytest.raises(exception) as error:
+            ansi_spark.sql(sql).collect()
+&gt;       assert_invalid_input(error.value, canonical)
+
+python/pysail/tests/spark/dataframe/test_cast_errors.py:52: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+error = NumberFormatException("Cannot cast string 'bad' to value of Int32 type")
+target = 'INT', expression = "'bad'"
+
+    def assert_invalid_input(error, target, expression="'bad'"):
+&gt;       assert error.getCondition() == "CAST_INVALID_INPUT"
+E       assert None == 'CAST_INVALID_INPUT'
+E        +  where None = getCondition()
+E        +    where getCondition = NumberFormatException("Cannot cast string 'bad' to value of Int32 type").getCondition
+
+python/pysail/tests/spark/dataframe/test_cast_errors.py:18: AssertionError</failure></testcase><testcase classname="python.pysail.tests.spark.dataframe.test_cast_errors" name="test_invalid_ansi_cast_has_native_metadata[constant-INTEGER-INT]" time="0.018"><failure message="assert None == 'CAST_INVALID_INPUT'&#10; +  where None = getCondition()&#10; +    where getCondition = NumberFormatException(&quot;Cannot cast string 'bad' to value of Int32 type&quot;).getCondition">ansi_spark = &lt;pyspark.sql.connect.session.SparkSession object at 0x118c35ac0&gt;
+target = 'INTEGER', canonical = 'INT', context = 'constant'
+
+    @pytest.mark.parametrize(
+        ("target", "canonical"),
+        [
+            ("TINYINT", "TINYINT"),
+            ("SMALLINT", "SMALLINT"),
+            ("INT", "INT"),
+            ("INTEGER", "INT"),
+            ("BIGINT", "BIGINT"),
+            ("FLOAT", "FLOAT"),
+            ("DOUBLE", "DOUBLE"),
+            ("BOOLEAN", "BOOLEAN"),
+        ],
+    )
+    @pytest.mark.parametrize("context", ["constant", "rows"])
+    def test_invalid_ansi_cast_has_native_metadata(ansi_spark, target, canonical, context):
+        exception = SparkRuntimeException if target == "BOOLEAN" else NumberFormatException
+        valid = "true" if target == "BOOLEAN" else "1"
+        sql = (
+            f"SELECT CAST('bad' AS {target})"
+            if context == "constant"
+            else f"SELECT CAST(value AS {target}) FROM VALUES (CAST(NULL AS STRING)), ('{valid}'), ('bad') AS t(value)"
+        )
+        with pytest.raises(exception) as error:
+            ansi_spark.sql(sql).collect()
+&gt;       assert_invalid_input(error.value, canonical)
+
+python/pysail/tests/spark/dataframe/test_cast_errors.py:52: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+error = NumberFormatException("Cannot cast string 'bad' to value of Int32 type")
+target = 'INT', expression = "'bad'"
+
+    def assert_invalid_input(error, target, expression="'bad'"):
+&gt;       assert error.getCondition() == "CAST_INVALID_INPUT"
+E       assert None == 'CAST_INVALID_INPUT'
+E        +  where None = getCondition()
+E        +    where getCondition = NumberFormatException("Cannot cast string 'bad' to value of Int32 type").getCondition
+
+python/pysail/tests/spark/dataframe/test_cast_errors.py:18: AssertionError</failure></testcase><testcase classname="python.pysail.tests.spark.dataframe.test_cast_errors" name="test_invalid_ansi_cast_has_native_metadata[constant-BIGINT-BIGINT]" time="0.010"><failure message="assert None == 'CAST_INVALID_INPUT'&#10; +  where None = getCondition()&#10; +    where getCondition = NumberFormatException(&quot;Cannot cast string 'bad' to value of Int64 type&quot;).getCondition">ansi_spark = &lt;pyspark.sql.connect.session.SparkSession object at 0x118c35ac0&gt;
+target = 'BIGINT', canonical = 'BIGINT', context = 'constant'
+
+    @pytest.mark.parametrize(
+        ("target", "canonical"),
+        [
+            ("TINYINT", "TINYINT"),
+            ("SMALLINT", "SMALLINT"),
+            ("INT", "INT"),
+            ("INTEGER", "INT"),
+            ("BIGINT", "BIGINT"),
+            ("FLOAT", "FLOAT"),
+            ("DOUBLE", "DOUBLE"),
+            ("BOOLEAN", "BOOLEAN"),
+        ],
+    )
+    @pytest.mark.parametrize("context", ["constant", "rows"])
+    def test_invalid_ansi_cast_has_native_metadata(ansi_spark, target, canonical, context):
+        exception = SparkRuntimeException if target == "BOOLEAN" else NumberFormatException
+        valid = "true" if target == "BOOLEAN" else "1"
+        sql = (
+            f"SELECT CAST('bad' AS {target})"
+            if context == "constant"
+            else f"SELECT CAST(value AS {target}) FROM VALUES (CAST(NULL AS STRING)), ('{valid}'), ('bad') AS t(value)"
+        )
+        with pytest.raises(exception) as error:
+            ansi_spark.sql(sql).collect()
+&gt;       assert_invalid_input(error.value, canonical)
+
+python/pysail/tests/spark/dataframe/test_cast_errors.py:52: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+error = NumberFormatException("Cannot cast string 'bad' to value of Int64 type")
+target = 'BIGINT', expression = "'bad'"
+
+    def assert_invalid_input(error, target, expression="'bad'"):
+&gt;       assert error.getCondition() == "CAST_INVALID_INPUT"
+E       assert None == 'CAST_INVALID_INPUT'
+E        +  where None = getCondition()
+E        +    where getCondition = NumberFormatException("Cannot cast string 'bad' to value of Int64 type").getCondition
+
+python/pysail/tests/spark/dataframe/test_cast_errors.py:18: AssertionError</failure></testcase><testcase classname="python.pysail.tests.spark.dataframe.test_cast_errors" name="test_invalid_ansi_cast_has_native_metadata[constant-FLOAT-FLOAT]" time="0.014"><failure message="assert None == 'CAST_INVALID_INPUT'&#10; +  where None = getCondition()&#10; +    where getCondition = NumberFormatException(&quot;Cannot cast string 'bad' to value of Float32 type&quot;).getCondition">ansi_spark = &lt;pyspark.sql.connect.session.SparkSession object at 0x118c35ac0&gt;
+target = 'FLOAT', canonical = 'FLOAT', context = 'constant'
+
+    @pytest.mark.parametrize(
+        ("target", "canonical"),
+        [
+            ("TINYINT", "TINYINT"),
+            ("SMALLINT", "SMALLINT"),
+            ("INT", "INT"),
+            ("INTEGER", "INT"),
+            ("BIGINT", "BIGINT"),
+            ("FLOAT", "FLOAT"),
+            ("DOUBLE", "DOUBLE"),
+            ("BOOLEAN", "BOOLEAN"),
+        ],
+    )
+    @pytest.mark.parametrize("context", ["constant", "rows"])
+    def test_invalid_ansi_cast_has_native_metadata(ansi_spark, target, canonical, context):
+        exception = SparkRuntimeException if target == "BOOLEAN" else NumberFormatException
+        valid = "true" if target == "BOOLEAN" else "1"
+        sql = (
+            f"SELECT CAST('bad' AS {target})"
+            if context == "constant"
+            else f"SELECT CAST(value AS {target}) FROM VALUES (CAST(NULL AS STRING)), ('{valid}'), ('bad') AS t(value)"
+        )
+        with pytest.raises(exception) as error:
+            ansi_spark.sql(sql).collect()
+&gt;       assert_invalid_input(error.value, canonical)
+
+python/pysail/tests/spark/dataframe/test_cast_errors.py:52: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+error = NumberFormatException("Cannot cast string 'bad' to value of Float32 type")
+target = 'FLOAT', expression = "'bad'"
+
+    def assert_invalid_input(error, target, expression="'bad'"):
+&gt;       assert error.getCondition() == "CAST_INVALID_INPUT"
+E       assert None == 'CAST_INVALID_INPUT'
+E        +  where None = getCondition()
+E        +    where getCondition = NumberFormatException("Cannot cast string 'bad' to value of Float32 type").getCondition
+
+python/pysail/tests/spark/dataframe/test_cast_errors.py:18: AssertionError</failure></testcase><testcase classname="python.pysail.tests.spark.dataframe.test_cast_errors" name="test_invalid_ansi_cast_has_native_metadata[constant-DOUBLE-DOUBLE]" time="0.009"><failure message="assert None == 'CAST_INVALID_INPUT'&#10; +  where None = getCondition()&#10; +    where getCondition = NumberFormatException(&quot;Cannot cast string 'bad' to value of Float64 type&quot;).getCondition">ansi_spark = &lt;pyspark.sql.connect.session.SparkSession object at 0x118c35ac0&gt;
+target = 'DOUBLE', canonical = 'DOUBLE', context = 'constant'
+
+    @pytest.mark.parametrize(
+        ("target", "canonical"),
+        [
+            ("TINYINT", "TINYINT"),
+            ("SMALLINT", "SMALLINT"),
+            ("INT", "INT"),
+            ("INTEGER", "INT"),
+            ("BIGINT", "BIGINT"),
+            ("FLOAT", "FLOAT"),
+            ("DOUBLE", "DOUBLE"),
+            ("BOOLEAN", "BOOLEAN"),
+        ],
+    )
+    @pytest.mark.parametrize("context", ["constant", "rows"])
+    def test_invalid_ansi_cast_has_native_metadata(ansi_spark, target, canonical, context):
+        exception = SparkRuntimeException if target == "BOOLEAN" else NumberFormatException
+        valid = "true" if target == "BOOLEAN" else "1"
+        sql = (
+            f"SELECT CAST('bad' AS {target})"
+            if context == "constant"
+            else f"SELECT CAST(value AS {target}) FROM VALUES (CAST(NULL AS STRING)), ('{valid}'), ('bad') AS t(value)"
+        )
+        with pytest.raises(exception) as error:
+            ansi_spark.sql(sql).collect()
+&gt;       assert_invalid_input(error.value, canonical)
+
+python/pysail/tests/spark/dataframe/test_cast_errors.py:52: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+error = NumberFormatException("Cannot cast string 'bad' to value of Float64 type")
+target = 'DOUBLE', expression = "'bad'"
+
+    def assert_invalid_input(error, target, expression="'bad'"):
+&gt;       assert error.getCondition() == "CAST_INVALID_INPUT"
+E       assert None == 'CAST_INVALID_INPUT'
+E        +  where None = getCondition()
+E        +    where getCondition = NumberFormatException("Cannot cast string 'bad' to value of Float64 type").getCondition
+
+python/pysail/tests/spark/dataframe/test_cast_errors.py:18: AssertionError</failure></testcase><testcase classname="python.pysail.tests.spark.dataframe.test_cast_errors" name="test_invalid_ansi_cast_has_native_metadata[constant-BOOLEAN-BOOLEAN]" time="0.009"><failure message="assert None == 'CAST_INVALID_INPUT'&#10; +  where None = getCondition()&#10; +    where getCondition = SparkRuntimeException(&quot;Cannot cast value 'bad' to value of Boolean type&quot;).getCondition">ansi_spark = &lt;pyspark.sql.connect.session.SparkSession object at 0x118c35ac0&gt;
+target = 'BOOLEAN', canonical = 'BOOLEAN', context = 'constant'
+
+    @pytest.mark.parametrize(
+        ("target", "canonical"),
+        [
+            ("TINYINT", "TINYINT"),
+            ("SMALLINT", "SMALLINT"),
+            ("INT", "INT"),
+            ("INTEGER", "INT"),
+            ("BIGINT", "BIGINT"),
+            ("FLOAT", "FLOAT"),
+            ("DOUBLE", "DOUBLE"),
+            ("BOOLEAN", "BOOLEAN"),
+        ],
+    )
+    @pytest.mark.parametrize("context", ["constant", "rows"])
+    def test_invalid_ansi_cast_has_native_metadata(ansi_spark, target, canonical, context):
+        exception = SparkRuntimeException if target == "BOOLEAN" else NumberFormatException
+        valid = "true" if target == "BOOLEAN" else "1"
+        sql = (
+            f"SELECT CAST('bad' AS {target})"
+            if context == "constant"
+            else f"SELECT CAST(value AS {target}) FROM VALUES (CAST(NULL AS STRING)), ('{valid}'), ('bad') AS t(value)"
+        )
+        with pytest.raises(exception) as error:
+            ansi_spark.sql(sql).collect()
+&gt;       assert_invalid_input(error.value, canonical)
+
+python/pysail/tests/spark/dataframe/test_cast_errors.py:52: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+error = SparkRuntimeException("Cannot cast value 'bad' to value of Boolean type")
+target = 'BOOLEAN', expression = "'bad'"
+
+    def assert_invalid_input(error, target, expression="'bad'"):
+&gt;       assert error.getCondition() == "CAST_INVALID_INPUT"
+E       assert None == 'CAST_INVALID_INPUT'
+E        +  where None = getCondition()
+E        +    where getCondition = SparkRuntimeException("Cannot cast value 'bad' to value of Boolean type").getCondition
+
+python/pysail/tests/spark/dataframe/test_cast_errors.py:18: AssertionError</failure></testcase><testcase classname="python.pysail.tests.spark.dataframe.test_cast_errors" name="test_invalid_ansi_cast_has_native_metadata[rows-TINYINT-TINYINT]" time="0.015"><failure message="pyspark.errors.exceptions.connect.SparkRuntimeException: Cast error: Cannot cast string 'bad' to value of Int8 type">ansi_spark = &lt;pyspark.sql.connect.session.SparkSession object at 0x118c35ac0&gt;
+target = 'TINYINT', canonical = 'TINYINT', context = 'rows'
+
+    @pytest.mark.parametrize(
+        ("target", "canonical"),
+        [
+            ("TINYINT", "TINYINT"),
+            ("SMALLINT", "SMALLINT"),
+            ("INT", "INT"),
+            ("INTEGER", "INT"),
+            ("BIGINT", "BIGINT"),
+            ("FLOAT", "FLOAT"),
+            ("DOUBLE", "DOUBLE"),
+            ("BOOLEAN", "BOOLEAN"),
+        ],
+    )
+    @pytest.mark.parametrize("context", ["constant", "rows"])
+    def test_invalid_ansi_cast_has_native_metadata(ansi_spark, target, canonical, context):
+        exception = SparkRuntimeException if target == "BOOLEAN" else NumberFormatException
+        valid = "true" if target == "BOOLEAN" else "1"
+        sql = (
+            f"SELECT CAST('bad' AS {target})"
+            if context == "constant"
+            else f"SELECT CAST(value AS {target}) FROM VALUES (CAST(NULL AS STRING)), ('{valid}'), ('bad') AS t(value)"
+        )
+        with pytest.raises(exception) as error:
+&gt;           ansi_spark.sql(sql).collect()
+
+python/pysail/tests/spark/dataframe/test_cast_errors.py:51: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:1954: in collect
+    table, schema = self._to_table()
+                    ^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:1974: in _to_table
+    table, schema, self._execution_info = self._session.client.to_table(
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1039: in to_table
+    table, schema, metrics, observed_metrics, _ = self._execute_and_fetch(req, observations)
+                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1754: in _execute_and_fetch
+    for response in self._execute_and_fetch_as_iterator(
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1731: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2093: in _handle_error
+    self._handle_rpc_error(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;pyspark.sql.connect.client.core.SparkConnectClient object at 0x118c35b80&gt;
+rpc_error = &lt;_MultiThreadedRendezvous of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = "Cast error: Cannot ca...d' to value of Int8 type"
+	debug_error_string = "INTERNAL:Cast error: Cannot cast string 'bad' to value of Int8 type"
+&gt;
+
+    def _handle_rpc_error(self, rpc_error: grpc.RpcError) -&gt; NoReturn:
+        """
+        Error handling helper for dealing with GRPC Errors. On the server side, certain
+        exceptions are enriched with additional RPC Status information. These are
+        unpacked in this function and put into the exception.
+    
+        To avoid overloading the user with GRPC errors, this message explicitly
+        swallows the error context from the call. This GRPC Error is logged however,
+        and can be enabled.
+    
+        Parameters
+        ----------
+        rpc_error : grpc.RpcError
+           RPC Error containing the details of the exception.
+    
+        Returns
+        -------
+        Throws the appropriate internal Python exception.
+        """
+        logger.exception("GRPC Error received")
+        # We have to cast the value here because, a RpcError is a Call as well.
+        # https://grpc.github.io/grpc/python/grpc.html#grpc.UnaryUnaryMultiCallable.__call__
+        error: grpc.Call = cast(grpc.Call, rpc_error)
+        status_code: grpc.StatusCode = error.code()
+        status: Optional[Status] = rpc_status.from_call(error)
+        if status:
+            for d in status.details:
+                if d.Is(error_details_pb2.ErrorInfo.DESCRIPTOR):
+                    info = error_details_pb2.ErrorInfo()
+                    d.Unpack(info)
+                    logger.debug(f"Received ErrorInfo: {info}")
+    
+                    if info.metadata.get("errorClass") == "INVALID_HANDLE.SESSION_CHANGED":
+                        self._closed = True
+    
+                    if info.metadata.get("errorClass") == "CONNECT_INVALID_PLAN.CANNOT_PARSE":
+                        # Disable plan compression if the server fails to interpret the plan.
+                        logger.info(
+                            "Disabling plan compression for the session due to "
+                            "CONNECT_INVALID_PLAN.CANNOT_PARSE error."
+                        )
+                        self._plan_compression_threshold, self._plan_compression_algorithm = (
+                            -1,
+                            "NONE",
+                        )
+    
+&gt;                   raise convert_exception(
+                        info,
+                        status.message,
+                        self._fetch_enriched_error(info),
+                        self._display_server_stack_trace(),
+                        status_code,
+                    ) from None
+E                   pyspark.errors.exceptions.connect.SparkRuntimeException: Cast error: Cannot cast string 'bad' to value of Int8 type
+
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2177: SparkRuntimeException</failure></testcase><testcase classname="python.pysail.tests.spark.dataframe.test_cast_errors" name="test_invalid_ansi_cast_has_native_metadata[rows-SMALLINT-SMALLINT]" time="0.016"><failure message="pyspark.errors.exceptions.connect.SparkRuntimeException: Cast error: Cannot cast string 'bad' to value of Int16 type">ansi_spark = &lt;pyspark.sql.connect.session.SparkSession object at 0x118c35ac0&gt;
+target = 'SMALLINT', canonical = 'SMALLINT', context = 'rows'
+
+    @pytest.mark.parametrize(
+        ("target", "canonical"),
+        [
+            ("TINYINT", "TINYINT"),
+            ("SMALLINT", "SMALLINT"),
+            ("INT", "INT"),
+            ("INTEGER", "INT"),
+            ("BIGINT", "BIGINT"),
+            ("FLOAT", "FLOAT"),
+            ("DOUBLE", "DOUBLE"),
+            ("BOOLEAN", "BOOLEAN"),
+        ],
+    )
+    @pytest.mark.parametrize("context", ["constant", "rows"])
+    def test_invalid_ansi_cast_has_native_metadata(ansi_spark, target, canonical, context):
+        exception = SparkRuntimeException if target == "BOOLEAN" else NumberFormatException
+        valid = "true" if target == "BOOLEAN" else "1"
+        sql = (
+            f"SELECT CAST('bad' AS {target})"
+            if context == "constant"
+            else f"SELECT CAST(value AS {target}) FROM VALUES (CAST(NULL AS STRING)), ('{valid}'), ('bad') AS t(value)"
+        )
+        with pytest.raises(exception) as error:
+&gt;           ansi_spark.sql(sql).collect()
+
+python/pysail/tests/spark/dataframe/test_cast_errors.py:51: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:1954: in collect
+    table, schema = self._to_table()
+                    ^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:1974: in _to_table
+    table, schema, self._execution_info = self._session.client.to_table(
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1039: in to_table
+    table, schema, metrics, observed_metrics, _ = self._execute_and_fetch(req, observations)
+                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1754: in _execute_and_fetch
+    for response in self._execute_and_fetch_as_iterator(
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1731: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2093: in _handle_error
+    self._handle_rpc_error(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;pyspark.sql.connect.client.core.SparkConnectClient object at 0x118c35b80&gt;
+rpc_error = &lt;_MultiThreadedRendezvous of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = "Cast error: Cannot ca... to value of Int16 type"
+	debug_error_string = "INTERNAL:Cast error: Cannot cast string 'bad' to value of Int16 type"
+&gt;
+
+    def _handle_rpc_error(self, rpc_error: grpc.RpcError) -&gt; NoReturn:
+        """
+        Error handling helper for dealing with GRPC Errors. On the server side, certain
+        exceptions are enriched with additional RPC Status information. These are
+        unpacked in this function and put into the exception.
+    
+        To avoid overloading the user with GRPC errors, this message explicitly
+        swallows the error context from the call. This GRPC Error is logged however,
+        and can be enabled.
+    
+        Parameters
+        ----------
+        rpc_error : grpc.RpcError
+           RPC Error containing the details of the exception.
+    
+        Returns
+        -------
+        Throws the appropriate internal Python exception.
+        """
+        logger.exception("GRPC Error received")
+        # We have to cast the value here because, a RpcError is a Call as well.
+        # https://grpc.github.io/grpc/python/grpc.html#grpc.UnaryUnaryMultiCallable.__call__
+        error: grpc.Call = cast(grpc.Call, rpc_error)
+        status_code: grpc.StatusCode = error.code()
+        status: Optional[Status] = rpc_status.from_call(error)
+        if status:
+            for d in status.details:
+                if d.Is(error_details_pb2.ErrorInfo.DESCRIPTOR):
+                    info = error_details_pb2.ErrorInfo()
+                    d.Unpack(info)
+                    logger.debug(f"Received ErrorInfo: {info}")
+    
+                    if info.metadata.get("errorClass") == "INVALID_HANDLE.SESSION_CHANGED":
+                        self._closed = True
+    
+                    if info.metadata.get("errorClass") == "CONNECT_INVALID_PLAN.CANNOT_PARSE":
+                        # Disable plan compression if the server fails to interpret the plan.
+                        logger.info(
+                            "Disabling plan compression for the session due to "
+                            "CONNECT_INVALID_PLAN.CANNOT_PARSE error."
+                        )
+                        self._plan_compression_threshold, self._plan_compression_algorithm = (
+                            -1,
+                            "NONE",
+                        )
+    
+&gt;                   raise convert_exception(
+                        info,
+                        status.message,
+                        self._fetch_enriched_error(info),
+                        self._display_server_stack_trace(),
+                        status_code,
+                    ) from None
+E                   pyspark.errors.exceptions.connect.SparkRuntimeException: Cast error: Cannot cast string 'bad' to value of Int16 type
+
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2177: SparkRuntimeException</failure></testcase><testcase classname="python.pysail.tests.spark.dataframe.test_cast_errors" name="test_invalid_ansi_cast_has_native_metadata[rows-INT-INT]" time="0.015"><failure message="pyspark.errors.exceptions.connect.SparkRuntimeException: Cast error: Cannot cast string 'bad' to value of Int32 type">ansi_spark = &lt;pyspark.sql.connect.session.SparkSession object at 0x118c35ac0&gt;
+target = 'INT', canonical = 'INT', context = 'rows'
+
+    @pytest.mark.parametrize(
+        ("target", "canonical"),
+        [
+            ("TINYINT", "TINYINT"),
+            ("SMALLINT", "SMALLINT"),
+            ("INT", "INT"),
+            ("INTEGER", "INT"),
+            ("BIGINT", "BIGINT"),
+            ("FLOAT", "FLOAT"),
+            ("DOUBLE", "DOUBLE"),
+            ("BOOLEAN", "BOOLEAN"),
+        ],
+    )
+    @pytest.mark.parametrize("context", ["constant", "rows"])
+    def test_invalid_ansi_cast_has_native_metadata(ansi_spark, target, canonical, context):
+        exception = SparkRuntimeException if target == "BOOLEAN" else NumberFormatException
+        valid = "true" if target == "BOOLEAN" else "1"
+        sql = (
+            f"SELECT CAST('bad' AS {target})"
+            if context == "constant"
+            else f"SELECT CAST(value AS {target}) FROM VALUES (CAST(NULL AS STRING)), ('{valid}'), ('bad') AS t(value)"
+        )
+        with pytest.raises(exception) as error:
+&gt;           ansi_spark.sql(sql).collect()
+
+python/pysail/tests/spark/dataframe/test_cast_errors.py:51: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:1954: in collect
+    table, schema = self._to_table()
+                    ^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:1974: in _to_table
+    table, schema, self._execution_info = self._session.client.to_table(
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1039: in to_table
+    table, schema, metrics, observed_metrics, _ = self._execute_and_fetch(req, observations)
+                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1754: in _execute_and_fetch
+    for response in self._execute_and_fetch_as_iterator(
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1731: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2093: in _handle_error
+    self._handle_rpc_error(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;pyspark.sql.connect.client.core.SparkConnectClient object at 0x118c35b80&gt;
+rpc_error = &lt;_MultiThreadedRendezvous of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = "Cast error: Cannot ca... to value of Int32 type"
+	debug_error_string = "INTERNAL:Cast error: Cannot cast string 'bad' to value of Int32 type"
+&gt;
+
+    def _handle_rpc_error(self, rpc_error: grpc.RpcError) -&gt; NoReturn:
+        """
+        Error handling helper for dealing with GRPC Errors. On the server side, certain
+        exceptions are enriched with additional RPC Status information. These are
+        unpacked in this function and put into the exception.
+    
+        To avoid overloading the user with GRPC errors, this message explicitly
+        swallows the error context from the call. This GRPC Error is logged however,
+        and can be enabled.
+    
+        Parameters
+        ----------
+        rpc_error : grpc.RpcError
+           RPC Error containing the details of the exception.
+    
+        Returns
+        -------
+        Throws the appropriate internal Python exception.
+        """
+        logger.exception("GRPC Error received")
+        # We have to cast the value here because, a RpcError is a Call as well.
+        # https://grpc.github.io/grpc/python/grpc.html#grpc.UnaryUnaryMultiCallable.__call__
+        error: grpc.Call = cast(grpc.Call, rpc_error)
+        status_code: grpc.StatusCode = error.code()
+        status: Optional[Status] = rpc_status.from_call(error)
+        if status:
+            for d in status.details:
+                if d.Is(error_details_pb2.ErrorInfo.DESCRIPTOR):
+                    info = error_details_pb2.ErrorInfo()
+                    d.Unpack(info)
+                    logger.debug(f"Received ErrorInfo: {info}")
+    
+                    if info.metadata.get("errorClass") == "INVALID_HANDLE.SESSION_CHANGED":
+                        self._closed = True
+    
+                    if info.metadata.get("errorClass") == "CONNECT_INVALID_PLAN.CANNOT_PARSE":
+                        # Disable plan compression if the server fails to interpret the plan.
+                        logger.info(
+                            "Disabling plan compression for the session due to "
+                            "CONNECT_INVALID_PLAN.CANNOT_PARSE error."
+                        )
+                        self._plan_compression_threshold, self._plan_compression_algorithm = (
+                            -1,
+                            "NONE",
+                        )
+    
+&gt;                   raise convert_exception(
+                        info,
+                        status.message,
+                        self._fetch_enriched_error(info),
+                        self._display_server_stack_trace(),
+                        status_code,
+                    ) from None
+E                   pyspark.errors.exceptions.connect.SparkRuntimeException: Cast error: Cannot cast string 'bad' to value of Int32 type
+
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2177: SparkRuntimeException</failure></testcase><testcase classname="python.pysail.tests.spark.dataframe.test_cast_errors" name="test_invalid_ansi_cast_has_native_metadata[rows-INTEGER-INT]" time="0.015"><failure message="pyspark.errors.exceptions.connect.SparkRuntimeException: Cast error: Cannot cast string 'bad' to value of Int32 type">ansi_spark = &lt;pyspark.sql.connect.session.SparkSession object at 0x118c35ac0&gt;
+target = 'INTEGER', canonical = 'INT', context = 'rows'
+
+    @pytest.mark.parametrize(
+        ("target", "canonical"),
+        [
+            ("TINYINT", "TINYINT"),
+            ("SMALLINT", "SMALLINT"),
+            ("INT", "INT"),
+            ("INTEGER", "INT"),
+            ("BIGINT", "BIGINT"),
+            ("FLOAT", "FLOAT"),
+            ("DOUBLE", "DOUBLE"),
+            ("BOOLEAN", "BOOLEAN"),
+        ],
+    )
+    @pytest.mark.parametrize("context", ["constant", "rows"])
+    def test_invalid_ansi_cast_has_native_metadata(ansi_spark, target, canonical, context):
+        exception = SparkRuntimeException if target == "BOOLEAN" else NumberFormatException
+        valid = "true" if target == "BOOLEAN" else "1"
+        sql = (
+            f"SELECT CAST('bad' AS {target})"
+            if context == "constant"
+            else f"SELECT CAST(value AS {target}) FROM VALUES (CAST(NULL AS STRING)), ('{valid}'), ('bad') AS t(value)"
+        )
+        with pytest.raises(exception) as error:
+&gt;           ansi_spark.sql(sql).collect()
+
+python/pysail/tests/spark/dataframe/test_cast_errors.py:51: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:1954: in collect
+    table, schema = self._to_table()
+                    ^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:1974: in _to_table
+    table, schema, self._execution_info = self._session.client.to_table(
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1039: in to_table
+    table, schema, metrics, observed_metrics, _ = self._execute_and_fetch(req, observations)
+                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1754: in _execute_and_fetch
+    for response in self._execute_and_fetch_as_iterator(
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1731: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2093: in _handle_error
+    self._handle_rpc_error(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;pyspark.sql.connect.client.core.SparkConnectClient object at 0x118c35b80&gt;
+rpc_error = &lt;_MultiThreadedRendezvous of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = "Cast error: Cannot ca... to value of Int32 type"
+	debug_error_string = "INTERNAL:Cast error: Cannot cast string 'bad' to value of Int32 type"
+&gt;
+
+    def _handle_rpc_error(self, rpc_error: grpc.RpcError) -&gt; NoReturn:
+        """
+        Error handling helper for dealing with GRPC Errors. On the server side, certain
+        exceptions are enriched with additional RPC Status information. These are
+        unpacked in this function and put into the exception.
+    
+        To avoid overloading the user with GRPC errors, this message explicitly
+        swallows the error context from the call. This GRPC Error is logged however,
+        and can be enabled.
+    
+        Parameters
+        ----------
+        rpc_error : grpc.RpcError
+           RPC Error containing the details of the exception.
+    
+        Returns
+        -------
+        Throws the appropriate internal Python exception.
+        """
+        logger.exception("GRPC Error received")
+        # We have to cast the value here because, a RpcError is a Call as well.
+        # https://grpc.github.io/grpc/python/grpc.html#grpc.UnaryUnaryMultiCallable.__call__
+        error: grpc.Call = cast(grpc.Call, rpc_error)
+        status_code: grpc.StatusCode = error.code()
+        status: Optional[Status] = rpc_status.from_call(error)
+        if status:
+            for d in status.details:
+                if d.Is(error_details_pb2.ErrorInfo.DESCRIPTOR):
+                    info = error_details_pb2.ErrorInfo()
+                    d.Unpack(info)
+                    logger.debug(f"Received ErrorInfo: {info}")
+    
+                    if info.metadata.get("errorClass") == "INVALID_HANDLE.SESSION_CHANGED":
+                        self._closed = True
+    
+                    if info.metadata.get("errorClass") == "CONNECT_INVALID_PLAN.CANNOT_PARSE":
+                        # Disable plan compression if the server fails to interpret the plan.
+                        logger.info(
+                            "Disabling plan compression for the session due to "
+                            "CONNECT_INVALID_PLAN.CANNOT_PARSE error."
+                        )
+                        self._plan_compression_threshold, self._plan_compression_algorithm = (
+                            -1,
+                            "NONE",
+                        )
+    
+&gt;                   raise convert_exception(
+                        info,
+                        status.message,
+                        self._fetch_enriched_error(info),
+                        self._display_server_stack_trace(),
+                        status_code,
+                    ) from None
+E                   pyspark.errors.exceptions.connect.SparkRuntimeException: Cast error: Cannot cast string 'bad' to value of Int32 type
+
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2177: SparkRuntimeException</failure></testcase><testcase classname="python.pysail.tests.spark.dataframe.test_cast_errors" name="test_invalid_ansi_cast_has_native_metadata[rows-BIGINT-BIGINT]" time="0.015"><failure message="pyspark.errors.exceptions.connect.SparkRuntimeException: Cast error: Cannot cast string 'bad' to value of Int64 type">ansi_spark = &lt;pyspark.sql.connect.session.SparkSession object at 0x118c35ac0&gt;
+target = 'BIGINT', canonical = 'BIGINT', context = 'rows'
+
+    @pytest.mark.parametrize(
+        ("target", "canonical"),
+        [
+            ("TINYINT", "TINYINT"),
+            ("SMALLINT", "SMALLINT"),
+            ("INT", "INT"),
+            ("INTEGER", "INT"),
+            ("BIGINT", "BIGINT"),
+            ("FLOAT", "FLOAT"),
+            ("DOUBLE", "DOUBLE"),
+            ("BOOLEAN", "BOOLEAN"),
+        ],
+    )
+    @pytest.mark.parametrize("context", ["constant", "rows"])
+    def test_invalid_ansi_cast_has_native_metadata(ansi_spark, target, canonical, context):
+        exception = SparkRuntimeException if target == "BOOLEAN" else NumberFormatException
+        valid = "true" if target == "BOOLEAN" else "1"
+        sql = (
+            f"SELECT CAST('bad' AS {target})"
+            if context == "constant"
+            else f"SELECT CAST(value AS {target}) FROM VALUES (CAST(NULL AS STRING)), ('{valid}'), ('bad') AS t(value)"
+        )
+        with pytest.raises(exception) as error:
+&gt;           ansi_spark.sql(sql).collect()
+
+python/pysail/tests/spark/dataframe/test_cast_errors.py:51: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:1954: in collect
+    table, schema = self._to_table()
+                    ^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:1974: in _to_table
+    table, schema, self._execution_info = self._session.client.to_table(
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1039: in to_table
+    table, schema, metrics, observed_metrics, _ = self._execute_and_fetch(req, observations)
+                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1754: in _execute_and_fetch
+    for response in self._execute_and_fetch_as_iterator(
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1731: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2093: in _handle_error
+    self._handle_rpc_error(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;pyspark.sql.connect.client.core.SparkConnectClient object at 0x118c35b80&gt;
+rpc_error = &lt;_MultiThreadedRendezvous of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = "Cast error: Cannot ca... to value of Int64 type"
+	debug_error_string = "INTERNAL:Cast error: Cannot cast string 'bad' to value of Int64 type"
+&gt;
+
+    def _handle_rpc_error(self, rpc_error: grpc.RpcError) -&gt; NoReturn:
+        """
+        Error handling helper for dealing with GRPC Errors. On the server side, certain
+        exceptions are enriched with additional RPC Status information. These are
+        unpacked in this function and put into the exception.
+    
+        To avoid overloading the user with GRPC errors, this message explicitly
+        swallows the error context from the call. This GRPC Error is logged however,
+        and can be enabled.
+    
+        Parameters
+        ----------
+        rpc_error : grpc.RpcError
+           RPC Error containing the details of the exception.
+    
+        Returns
+        -------
+        Throws the appropriate internal Python exception.
+        """
+        logger.exception("GRPC Error received")
+        # We have to cast the value here because, a RpcError is a Call as well.
+        # https://grpc.github.io/grpc/python/grpc.html#grpc.UnaryUnaryMultiCallable.__call__
+        error: grpc.Call = cast(grpc.Call, rpc_error)
+        status_code: grpc.StatusCode = error.code()
+        status: Optional[Status] = rpc_status.from_call(error)
+        if status:
+            for d in status.details:
+                if d.Is(error_details_pb2.ErrorInfo.DESCRIPTOR):
+                    info = error_details_pb2.ErrorInfo()
+                    d.Unpack(info)
+                    logger.debug(f"Received ErrorInfo: {info}")
+    
+                    if info.metadata.get("errorClass") == "INVALID_HANDLE.SESSION_CHANGED":
+                        self._closed = True
+    
+                    if info.metadata.get("errorClass") == "CONNECT_INVALID_PLAN.CANNOT_PARSE":
+                        # Disable plan compression if the server fails to interpret the plan.
+                        logger.info(
+                            "Disabling plan compression for the session due to "
+                            "CONNECT_INVALID_PLAN.CANNOT_PARSE error."
+                        )
+                        self._plan_compression_threshold, self._plan_compression_algorithm = (
+                            -1,
+                            "NONE",
+                        )
+    
+&gt;                   raise convert_exception(
+                        info,
+                        status.message,
+                        self._fetch_enriched_error(info),
+                        self._display_server_stack_trace(),
+                        status_code,
+                    ) from None
+E                   pyspark.errors.exceptions.connect.SparkRuntimeException: Cast error: Cannot cast string 'bad' to value of Int64 type
+
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2177: SparkRuntimeException</failure></testcase><testcase classname="python.pysail.tests.spark.dataframe.test_cast_errors" name="test_invalid_ansi_cast_has_native_metadata[rows-FLOAT-FLOAT]" time="0.018"><failure message="pyspark.errors.exceptions.connect.SparkRuntimeException: Cast error: Cannot cast string 'bad' to value of Float32 type">ansi_spark = &lt;pyspark.sql.connect.session.SparkSession object at 0x118c35ac0&gt;
+target = 'FLOAT', canonical = 'FLOAT', context = 'rows'
+
+    @pytest.mark.parametrize(
+        ("target", "canonical"),
+        [
+            ("TINYINT", "TINYINT"),
+            ("SMALLINT", "SMALLINT"),
+            ("INT", "INT"),
+            ("INTEGER", "INT"),
+            ("BIGINT", "BIGINT"),
+            ("FLOAT", "FLOAT"),
+            ("DOUBLE", "DOUBLE"),
+            ("BOOLEAN", "BOOLEAN"),
+        ],
+    )
+    @pytest.mark.parametrize("context", ["constant", "rows"])
+    def test_invalid_ansi_cast_has_native_metadata(ansi_spark, target, canonical, context):
+        exception = SparkRuntimeException if target == "BOOLEAN" else NumberFormatException
+        valid = "true" if target == "BOOLEAN" else "1"
+        sql = (
+            f"SELECT CAST('bad' AS {target})"
+            if context == "constant"
+            else f"SELECT CAST(value AS {target}) FROM VALUES (CAST(NULL AS STRING)), ('{valid}'), ('bad') AS t(value)"
+        )
+        with pytest.raises(exception) as error:
+&gt;           ansi_spark.sql(sql).collect()
+
+python/pysail/tests/spark/dataframe/test_cast_errors.py:51: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:1954: in collect
+    table, schema = self._to_table()
+                    ^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:1974: in _to_table
+    table, schema, self._execution_info = self._session.client.to_table(
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1039: in to_table
+    table, schema, metrics, observed_metrics, _ = self._execute_and_fetch(req, observations)
+                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1754: in _execute_and_fetch
+    for response in self._execute_and_fetch_as_iterator(
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1731: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2093: in _handle_error
+    self._handle_rpc_error(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;pyspark.sql.connect.client.core.SparkConnectClient object at 0x118c35b80&gt;
+rpc_error = &lt;_MultiThreadedRendezvous of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = "Cast error: Cannot ca...value of Float32 type"
+	debug_error_string = "INTERNAL:Cast error: Cannot cast string 'bad' to value of Float32 type"
+&gt;
+
+    def _handle_rpc_error(self, rpc_error: grpc.RpcError) -&gt; NoReturn:
+        """
+        Error handling helper for dealing with GRPC Errors. On the server side, certain
+        exceptions are enriched with additional RPC Status information. These are
+        unpacked in this function and put into the exception.
+    
+        To avoid overloading the user with GRPC errors, this message explicitly
+        swallows the error context from the call. This GRPC Error is logged however,
+        and can be enabled.
+    
+        Parameters
+        ----------
+        rpc_error : grpc.RpcError
+           RPC Error containing the details of the exception.
+    
+        Returns
+        -------
+        Throws the appropriate internal Python exception.
+        """
+        logger.exception("GRPC Error received")
+        # We have to cast the value here because, a RpcError is a Call as well.
+        # https://grpc.github.io/grpc/python/grpc.html#grpc.UnaryUnaryMultiCallable.__call__
+        error: grpc.Call = cast(grpc.Call, rpc_error)
+        status_code: grpc.StatusCode = error.code()
+        status: Optional[Status] = rpc_status.from_call(error)
+        if status:
+            for d in status.details:
+                if d.Is(error_details_pb2.ErrorInfo.DESCRIPTOR):
+                    info = error_details_pb2.ErrorInfo()
+                    d.Unpack(info)
+                    logger.debug(f"Received ErrorInfo: {info}")
+    
+                    if info.metadata.get("errorClass") == "INVALID_HANDLE.SESSION_CHANGED":
+                        self._closed = True
+    
+                    if info.metadata.get("errorClass") == "CONNECT_INVALID_PLAN.CANNOT_PARSE":
+                        # Disable plan compression if the server fails to interpret the plan.
+                        logger.info(
+                            "Disabling plan compression for the session due to "
+                            "CONNECT_INVALID_PLAN.CANNOT_PARSE error."
+                        )
+                        self._plan_compression_threshold, self._plan_compression_algorithm = (
+                            -1,
+                            "NONE",
+                        )
+    
+&gt;                   raise convert_exception(
+                        info,
+                        status.message,
+                        self._fetch_enriched_error(info),
+                        self._display_server_stack_trace(),
+                        status_code,
+                    ) from None
+E                   pyspark.errors.exceptions.connect.SparkRuntimeException: Cast error: Cannot cast string 'bad' to value of Float32 type
+
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2177: SparkRuntimeException</failure></testcase><testcase classname="python.pysail.tests.spark.dataframe.test_cast_errors" name="test_invalid_ansi_cast_has_native_metadata[rows-DOUBLE-DOUBLE]" time="0.020"><failure message="pyspark.errors.exceptions.connect.SparkRuntimeException: Cast error: Cannot cast string 'bad' to value of Float64 type">ansi_spark = &lt;pyspark.sql.connect.session.SparkSession object at 0x118c35ac0&gt;
+target = 'DOUBLE', canonical = 'DOUBLE', context = 'rows'
+
+    @pytest.mark.parametrize(
+        ("target", "canonical"),
+        [
+            ("TINYINT", "TINYINT"),
+            ("SMALLINT", "SMALLINT"),
+            ("INT", "INT"),
+            ("INTEGER", "INT"),
+            ("BIGINT", "BIGINT"),
+            ("FLOAT", "FLOAT"),
+            ("DOUBLE", "DOUBLE"),
+            ("BOOLEAN", "BOOLEAN"),
+        ],
+    )
+    @pytest.mark.parametrize("context", ["constant", "rows"])
+    def test_invalid_ansi_cast_has_native_metadata(ansi_spark, target, canonical, context):
+        exception = SparkRuntimeException if target == "BOOLEAN" else NumberFormatException
+        valid = "true" if target == "BOOLEAN" else "1"
+        sql = (
+            f"SELECT CAST('bad' AS {target})"
+            if context == "constant"
+            else f"SELECT CAST(value AS {target}) FROM VALUES (CAST(NULL AS STRING)), ('{valid}'), ('bad') AS t(value)"
+        )
+        with pytest.raises(exception) as error:
+&gt;           ansi_spark.sql(sql).collect()
+
+python/pysail/tests/spark/dataframe/test_cast_errors.py:51: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:1954: in collect
+    table, schema = self._to_table()
+                    ^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:1974: in _to_table
+    table, schema, self._execution_info = self._session.client.to_table(
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1039: in to_table
+    table, schema, metrics, observed_metrics, _ = self._execute_and_fetch(req, observations)
+                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1754: in _execute_and_fetch
+    for response in self._execute_and_fetch_as_iterator(
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1731: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2093: in _handle_error
+    self._handle_rpc_error(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;pyspark.sql.connect.client.core.SparkConnectClient object at 0x118c35b80&gt;
+rpc_error = &lt;_MultiThreadedRendezvous of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = "Cast error: Cannot ca...value of Float64 type"
+	debug_error_string = "INTERNAL:Cast error: Cannot cast string 'bad' to value of Float64 type"
+&gt;
+
+    def _handle_rpc_error(self, rpc_error: grpc.RpcError) -&gt; NoReturn:
+        """
+        Error handling helper for dealing with GRPC Errors. On the server side, certain
+        exceptions are enriched with additional RPC Status information. These are
+        unpacked in this function and put into the exception.
+    
+        To avoid overloading the user with GRPC errors, this message explicitly
+        swallows the error context from the call. This GRPC Error is logged however,
+        and can be enabled.
+    
+        Parameters
+        ----------
+        rpc_error : grpc.RpcError
+           RPC Error containing the details of the exception.
+    
+        Returns
+        -------
+        Throws the appropriate internal Python exception.
+        """
+        logger.exception("GRPC Error received")
+        # We have to cast the value here because, a RpcError is a Call as well.
+        # https://grpc.github.io/grpc/python/grpc.html#grpc.UnaryUnaryMultiCallable.__call__
+        error: grpc.Call = cast(grpc.Call, rpc_error)
+        status_code: grpc.StatusCode = error.code()
+        status: Optional[Status] = rpc_status.from_call(error)
+        if status:
+            for d in status.details:
+                if d.Is(error_details_pb2.ErrorInfo.DESCRIPTOR):
+                    info = error_details_pb2.ErrorInfo()
+                    d.Unpack(info)
+                    logger.debug(f"Received ErrorInfo: {info}")
+    
+                    if info.metadata.get("errorClass") == "INVALID_HANDLE.SESSION_CHANGED":
+                        self._closed = True
+    
+                    if info.metadata.get("errorClass") == "CONNECT_INVALID_PLAN.CANNOT_PARSE":
+                        # Disable plan compression if the server fails to interpret the plan.
+                        logger.info(
+                            "Disabling plan compression for the session due to "
+                            "CONNECT_INVALID_PLAN.CANNOT_PARSE error."
+                        )
+                        self._plan_compression_threshold, self._plan_compression_algorithm = (
+                            -1,
+                            "NONE",
+                        )
+    
+&gt;                   raise convert_exception(
+                        info,
+                        status.message,
+                        self._fetch_enriched_error(info),
+                        self._display_server_stack_trace(),
+                        status_code,
+                    ) from None
+E                   pyspark.errors.exceptions.connect.SparkRuntimeException: Cast error: Cannot cast string 'bad' to value of Float64 type
+
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2177: SparkRuntimeException</failure></testcase><testcase classname="python.pysail.tests.spark.dataframe.test_cast_errors" name="test_invalid_ansi_cast_has_native_metadata[rows-BOOLEAN-BOOLEAN]" time="0.019"><failure message="assert None == 'CAST_INVALID_INPUT'&#10; +  where None = getCondition()&#10; +    where getCondition = SparkRuntimeException(&quot;Cast error: Cannot cast value 'bad' to value of Boolean type&quot;).getCondition">ansi_spark = &lt;pyspark.sql.connect.session.SparkSession object at 0x118c35ac0&gt;
+target = 'BOOLEAN', canonical = 'BOOLEAN', context = 'rows'
+
+    @pytest.mark.parametrize(
+        ("target", "canonical"),
+        [
+            ("TINYINT", "TINYINT"),
+            ("SMALLINT", "SMALLINT"),
+            ("INT", "INT"),
+            ("INTEGER", "INT"),
+            ("BIGINT", "BIGINT"),
+            ("FLOAT", "FLOAT"),
+            ("DOUBLE", "DOUBLE"),
+            ("BOOLEAN", "BOOLEAN"),
+        ],
+    )
+    @pytest.mark.parametrize("context", ["constant", "rows"])
+    def test_invalid_ansi_cast_has_native_metadata(ansi_spark, target, canonical, context):
+        exception = SparkRuntimeException if target == "BOOLEAN" else NumberFormatException
+        valid = "true" if target == "BOOLEAN" else "1"
+        sql = (
+            f"SELECT CAST('bad' AS {target})"
+            if context == "constant"
+            else f"SELECT CAST(value AS {target}) FROM VALUES (CAST(NULL AS STRING)), ('{valid}'), ('bad') AS t(value)"
+        )
+        with pytest.raises(exception) as error:
+            ansi_spark.sql(sql).collect()
+&gt;       assert_invalid_input(error.value, canonical)
+
+python/pysail/tests/spark/dataframe/test_cast_errors.py:52: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+error = SparkRuntimeException("Cast error: Cannot cast value 'bad' to value of Boolean type")
+target = 'BOOLEAN', expression = "'bad'"
+
+    def assert_invalid_input(error, target, expression="'bad'"):
+&gt;       assert error.getCondition() == "CAST_INVALID_INPUT"
+E       assert None == 'CAST_INVALID_INPUT'
+E        +  where None = getCondition()
+E        +    where getCondition = SparkRuntimeException("Cast error: Cannot cast value 'bad' to value of Boolean type").getCondition
+
+python/pysail/tests/spark/dataframe/test_cast_errors.py:18: AssertionError</failure></testcase><testcase classname="python.pysail.tests.spark.dataframe.test_cast_errors" name="test_outer_cast_keeps_the_inner_ansi_failure[CAST]" time="0.010"><failure message="assert None == 'CAST_INVALID_INPUT'&#10; +  where None = getCondition()&#10; +    where getCondition = NumberFormatException(&quot;Cannot cast string 'bad' to value of Int32 type&quot;).getCondition">ansi_spark = &lt;pyspark.sql.connect.session.SparkSession object at 0x118c35ac0&gt;
+outer = 'CAST'
+
+    @pytest.mark.parametrize("outer", ["CAST", "TRY_CAST"])
+    def test_outer_cast_keeps_the_inner_ansi_failure(ansi_spark, outer):
+        with pytest.raises(NumberFormatException) as error:
+            ansi_spark.sql(f"SELECT {outer}(CAST('bad' AS INT) AS STRING)").collect()
+&gt;       assert_invalid_input(error.value, "INT")
+
+python/pysail/tests/spark/dataframe/test_cast_errors.py:59: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+error = NumberFormatException("Cannot cast string 'bad' to value of Int32 type")
+target = 'INT', expression = "'bad'"
+
+    def assert_invalid_input(error, target, expression="'bad'"):
+&gt;       assert error.getCondition() == "CAST_INVALID_INPUT"
+E       assert None == 'CAST_INVALID_INPUT'
+E        +  where None = getCondition()
+E        +    where getCondition = NumberFormatException("Cannot cast string 'bad' to value of Int32 type").getCondition
+
+python/pysail/tests/spark/dataframe/test_cast_errors.py:18: AssertionError</failure></testcase><testcase classname="python.pysail.tests.spark.dataframe.test_cast_errors" name="test_outer_cast_keeps_the_inner_ansi_failure[TRY_CAST]" time="0.013"><failure message="assert None == 'CAST_INVALID_INPUT'&#10; +  where None = getCondition()&#10; +    where getCondition = NumberFormatException(&quot;Cannot cast string 'bad' to value of Int32 type&quot;).getCondition">ansi_spark = &lt;pyspark.sql.connect.session.SparkSession object at 0x118c35ac0&gt;
+outer = 'TRY_CAST'
+
+    @pytest.mark.parametrize("outer", ["CAST", "TRY_CAST"])
+    def test_outer_cast_keeps_the_inner_ansi_failure(ansi_spark, outer):
+        with pytest.raises(NumberFormatException) as error:
+            ansi_spark.sql(f"SELECT {outer}(CAST('bad' AS INT) AS STRING)").collect()
+&gt;       assert_invalid_input(error.value, "INT")
+
+python/pysail/tests/spark/dataframe/test_cast_errors.py:59: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+error = NumberFormatException("Cannot cast string 'bad' to value of Int32 type")
+target = 'INT', expression = "'bad'"
+
+    def assert_invalid_input(error, target, expression="'bad'"):
+&gt;       assert error.getCondition() == "CAST_INVALID_INPUT"
+E       assert None == 'CAST_INVALID_INPUT'
+E        +  where None = getCondition()
+E        +    where getCondition = NumberFormatException("Cannot cast string 'bad' to value of Int32 type").getCondition
+
+python/pysail/tests/spark/dataframe/test_cast_errors.py:18: AssertionError</failure></testcase><testcase classname="python.pysail.tests.spark.dataframe.test_cast_errors" name="test_ansi_cast_reports_the_actual_escaped_value[SELECT CAST('a\\'b' AS INT)-'a\\'b']" time="0.010"><failure message="assert None == 'CAST_INVALID_INPUT'&#10; +  where None = getCondition()&#10; +    where getCondition = NumberFormatException(&quot;Cannot cast string 'a'b' to value of Int32 type&quot;).getCondition">ansi_spark = &lt;pyspark.sql.connect.session.SparkSession object at 0x118c35ac0&gt;
+sql = "SELECT CAST('a\\'b' AS INT)", expression = "'a\\'b'"
+
+    @pytest.mark.parametrize(
+        ("sql", "expression"),
+        [
+            (r"SELECT CAST('a\'b' AS INT)", "'a\\'b'"),
+            (r"SELECT CAST('a\nb' AS INT)", "'a\nb'"),
+            (r"SELECT CAST('a\\b' AS INT)", r"'a\\b'"),
+        ],
+    )
+    def test_ansi_cast_reports_the_actual_escaped_value(ansi_spark, sql, expression):
+        with pytest.raises(NumberFormatException) as error:
+            ansi_spark.sql(sql).collect()
+&gt;       assert_invalid_input(error.value, "INT", expression)
+
+python/pysail/tests/spark/dataframe/test_cast_errors.py:73: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+error = NumberFormatException("Cannot cast string 'a'b' to value of Int32 type")
+target = 'INT', expression = "'a\\'b'"
+
+    def assert_invalid_input(error, target, expression="'bad'"):
+&gt;       assert error.getCondition() == "CAST_INVALID_INPUT"
+E       assert None == 'CAST_INVALID_INPUT'
+E        +  where None = getCondition()
+E        +    where getCondition = NumberFormatException("Cannot cast string 'a'b' to value of Int32 type").getCondition
+
+python/pysail/tests/spark/dataframe/test_cast_errors.py:18: AssertionError</failure></testcase><testcase classname="python.pysail.tests.spark.dataframe.test_cast_errors" name="test_ansi_cast_reports_the_actual_escaped_value[SELECT CAST('a\\nb' AS INT)-'a\nb']" time="0.013"><failure message="assert None == 'CAST_INVALID_INPUT'&#10; +  where None = getCondition()&#10; +    where getCondition = NumberFormatException(&quot;Cannot cast string 'a\nb' to value of Int32 type&quot;).getCondition">ansi_spark = &lt;pyspark.sql.connect.session.SparkSession object at 0x118c35ac0&gt;
+sql = "SELECT CAST('a\\nb' AS INT)", expression = "'a\nb'"
+
+    @pytest.mark.parametrize(
+        ("sql", "expression"),
+        [
+            (r"SELECT CAST('a\'b' AS INT)", "'a\\'b'"),
+            (r"SELECT CAST('a\nb' AS INT)", "'a\nb'"),
+            (r"SELECT CAST('a\\b' AS INT)", r"'a\\b'"),
+        ],
+    )
+    def test_ansi_cast_reports_the_actual_escaped_value(ansi_spark, sql, expression):
+        with pytest.raises(NumberFormatException) as error:
+            ansi_spark.sql(sql).collect()
+&gt;       assert_invalid_input(error.value, "INT", expression)
+
+python/pysail/tests/spark/dataframe/test_cast_errors.py:73: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+error = NumberFormatException("Cannot cast string 'a\nb' to value of Int32 type")
+target = 'INT', expression = "'a\nb'"
+
+    def assert_invalid_input(error, target, expression="'bad'"):
+&gt;       assert error.getCondition() == "CAST_INVALID_INPUT"
+E       assert None == 'CAST_INVALID_INPUT'
+E        +  where None = getCondition()
+E        +    where getCondition = NumberFormatException("Cannot cast string 'a\nb' to value of Int32 type").getCondition
+
+python/pysail/tests/spark/dataframe/test_cast_errors.py:18: AssertionError</failure></testcase><testcase classname="python.pysail.tests.spark.dataframe.test_cast_errors" name="test_ansi_cast_reports_the_actual_escaped_value[SELECT CAST('a\\\\b' AS INT)-'a\\\\b']" time="0.010"><failure message="assert None == 'CAST_INVALID_INPUT'&#10; +  where None = getCondition()&#10; +    where getCondition = NumberFormatException(&quot;Cannot cast string 'a\\b' to value of Int32 type&quot;).getCondition">ansi_spark = &lt;pyspark.sql.connect.session.SparkSession object at 0x118c35ac0&gt;
+sql = "SELECT CAST('a\\\\b' AS INT)", expression = "'a\\\\b'"
+
+    @pytest.mark.parametrize(
+        ("sql", "expression"),
+        [
+            (r"SELECT CAST('a\'b' AS INT)", "'a\\'b'"),
+            (r"SELECT CAST('a\nb' AS INT)", "'a\nb'"),
+            (r"SELECT CAST('a\\b' AS INT)", r"'a\\b'"),
+        ],
+    )
+    def test_ansi_cast_reports_the_actual_escaped_value(ansi_spark, sql, expression):
+        with pytest.raises(NumberFormatException) as error:
+            ansi_spark.sql(sql).collect()
+&gt;       assert_invalid_input(error.value, "INT", expression)
+
+python/pysail/tests/spark/dataframe/test_cast_errors.py:73: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+error = NumberFormatException("Cannot cast string 'a\\b' to value of Int32 type")
+target = 'INT', expression = "'a\\\\b'"
+
+    def assert_invalid_input(error, target, expression="'bad'"):
+&gt;       assert error.getCondition() == "CAST_INVALID_INPUT"
+E       assert None == 'CAST_INVALID_INPUT'
+E        +  where None = getCondition()
+E        +    where getCondition = NumberFormatException("Cannot cast string 'a\\b' to value of Int32 type").getCondition
+
+python/pysail/tests/spark/dataframe/test_cast_errors.py:18: AssertionError</failure></testcase><testcase classname="python.pysail.tests.spark.dataframe.test_cast_errors" name="test_ansi_cast_controls_keep_null_and_valid_results[true-TRY_CAST('bad' AS INT)-None]" time="0.015" /><testcase classname="python.pysail.tests.spark.dataframe.test_cast_errors" name="test_ansi_cast_controls_keep_null_and_valid_results[false-CAST('bad' AS INT)-None]" time="0.019" /><testcase classname="python.pysail.tests.spark.dataframe.test_cast_errors" name="test_ansi_cast_controls_keep_null_and_valid_results[true-CAST(CAST(NULL AS STRING) AS INT)-None]" time="0.019" /><testcase classname="python.pysail.tests.spark.dataframe.test_cast_errors" name="test_ansi_cast_controls_keep_null_and_valid_results[true-CAST('12' AS INT)-12]" time="0.018" /><testcase classname="python.pysail.tests.spark.pipelines.test_catalog_cast_errors" name="test_catalog_cast_failure_uses_session_ansi_and_native_metadata[true]" time="0.035"><failure message="pyspark.errors.exceptions.connect.SparkRuntimeException: Cast error: Cannot cast string 'bad' to value of Int32 type">pipeline_spark = &lt;pyspark.sql.connect.session.SparkSession object at 0x1195f82f0&gt;
+pipeline = ('f9e91811-a8ba-4675-aa41-13f6c3d74a2d', &lt;pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x119125640&gt;, &lt;function pipeline_factory.&lt;locals&gt;.create.&lt;locals&gt;.run at 0x1195e04a0&gt;)
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-137/test_catalog_cast_failure_uses0')
+file_ansi = 'true'
+
+    @pytest.mark.parametrize("file_ansi", ["true", "false"])
+    def test_catalog_cast_failure_uses_session_ansi_and_native_metadata(pipeline_spark, pipeline, tmp_path, file_ansi):
+        _, registry, _ = pipeline
+        pipeline_spark.conf.set("spark.sql.ansi.enabled", "true")
+        catalog = pipeline_spark.catalog.currentCatalog()
+        database = pipeline_spark.catalog.currentDatabase()
+        sql = f"SET spark.sql.ansi.enabled={file_ansi};\nSET CATALOG CAST(CAST('bad' AS INT) AS STRING)"
+        with pytest.raises(NumberFormatException) as error:
+&gt;           registry.register_sql(sql, tmp_path / "ansi.sql")
+
+python/pysail/tests/spark/pipelines/test_catalog_cast_errors.py:17: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/pyspark/pipelines/spark_connect_graph_element_registry.py:178: in register_sql
+    self._client.execute_command(command)
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1219: in execute_command
+    data, _, metrics, observed_metrics, properties = self._execute_and_fetch(
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1754: in _execute_and_fetch
+    for response in self._execute_and_fetch_as_iterator(
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1731: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2093: in _handle_error
+    self._handle_rpc_error(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;pyspark.sql.connect.client.core.SparkConnectClient object at 0x1195f9a60&gt;
+rpc_error = &lt;_MultiThreadedRendezvous of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = "Cast error: Cannot ca... to value of Int32 type"
+	debug_error_string = "INTERNAL:Cast error: Cannot cast string 'bad' to value of Int32 type"
+&gt;
+
+    def _handle_rpc_error(self, rpc_error: grpc.RpcError) -&gt; NoReturn:
+        """
+        Error handling helper for dealing with GRPC Errors. On the server side, certain
+        exceptions are enriched with additional RPC Status information. These are
+        unpacked in this function and put into the exception.
+    
+        To avoid overloading the user with GRPC errors, this message explicitly
+        swallows the error context from the call. This GRPC Error is logged however,
+        and can be enabled.
+    
+        Parameters
+        ----------
+        rpc_error : grpc.RpcError
+           RPC Error containing the details of the exception.
+    
+        Returns
+        -------
+        Throws the appropriate internal Python exception.
+        """
+        logger.exception("GRPC Error received")
+        # We have to cast the value here because, a RpcError is a Call as well.
+        # https://grpc.github.io/grpc/python/grpc.html#grpc.UnaryUnaryMultiCallable.__call__
+        error: grpc.Call = cast(grpc.Call, rpc_error)
+        status_code: grpc.StatusCode = error.code()
+        status: Optional[Status] = rpc_status.from_call(error)
+        if status:
+            for d in status.details:
+                if d.Is(error_details_pb2.ErrorInfo.DESCRIPTOR):
+                    info = error_details_pb2.ErrorInfo()
+                    d.Unpack(info)
+                    logger.debug(f"Received ErrorInfo: {info}")
+    
+                    if info.metadata.get("errorClass") == "INVALID_HANDLE.SESSION_CHANGED":
+                        self._closed = True
+    
+                    if info.metadata.get("errorClass") == "CONNECT_INVALID_PLAN.CANNOT_PARSE":
+                        # Disable plan compression if the server fails to interpret the plan.
+                        logger.info(
+                            "Disabling plan compression for the session due to "
+                            "CONNECT_INVALID_PLAN.CANNOT_PARSE error."
+                        )
+                        self._plan_compression_threshold, self._plan_compression_algorithm = (
+                            -1,
+                            "NONE",
+                        )
+    
+&gt;                   raise convert_exception(
+                        info,
+                        status.message,
+                        self._fetch_enriched_error(info),
+                        self._display_server_stack_trace(),
+                        status_code,
+                    ) from None
+E                   pyspark.errors.exceptions.connect.SparkRuntimeException: Cast error: Cannot cast string 'bad' to value of Int32 type
+
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2177: SparkRuntimeException</failure></testcase><testcase classname="python.pysail.tests.spark.pipelines.test_catalog_cast_errors" name="test_catalog_cast_failure_uses_session_ansi_and_native_metadata[false]" time="0.028"><failure message="pyspark.errors.exceptions.connect.SparkRuntimeException: Cast error: Cannot cast string 'bad' to value of Int32 type">pipeline_spark = &lt;pyspark.sql.connect.session.SparkSession object at 0x1195dfe30&gt;
+pipeline = ('45a28c1d-735b-405b-bfb0-dbd2ba3d140b', &lt;pyspark.pipelines.spark_connect_graph_element_registry.SparkConnectGraphElementRegistry object at 0x1195dd400&gt;, &lt;function pipeline_factory.&lt;locals&gt;.create.&lt;locals&gt;.run at 0x11961d3a0&gt;)
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-137/test_catalog_cast_failure_uses1')
+file_ansi = 'false'
+
+    @pytest.mark.parametrize("file_ansi", ["true", "false"])
+    def test_catalog_cast_failure_uses_session_ansi_and_native_metadata(pipeline_spark, pipeline, tmp_path, file_ansi):
+        _, registry, _ = pipeline
+        pipeline_spark.conf.set("spark.sql.ansi.enabled", "true")
+        catalog = pipeline_spark.catalog.currentCatalog()
+        database = pipeline_spark.catalog.currentDatabase()
+        sql = f"SET spark.sql.ansi.enabled={file_ansi};\nSET CATALOG CAST(CAST('bad' AS INT) AS STRING)"
+        with pytest.raises(NumberFormatException) as error:
+&gt;           registry.register_sql(sql, tmp_path / "ansi.sql")
+
+python/pysail/tests/spark/pipelines/test_catalog_cast_errors.py:17: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/pyspark/pipelines/spark_connect_graph_element_registry.py:178: in register_sql
+    self._client.execute_command(command)
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1219: in execute_command
+    data, _, metrics, observed_metrics, properties = self._execute_and_fetch(
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1754: in _execute_and_fetch
+    for response in self._execute_and_fetch_as_iterator(
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1731: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2093: in _handle_error
+    self._handle_rpc_error(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;pyspark.sql.connect.client.core.SparkConnectClient object at 0x1195dd4c0&gt;
+rpc_error = &lt;_MultiThreadedRendezvous of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = "Cast error: Cannot ca... to value of Int32 type"
+	debug_error_string = "INTERNAL:Cast error: Cannot cast string 'bad' to value of Int32 type"
+&gt;
+
+    def _handle_rpc_error(self, rpc_error: grpc.RpcError) -&gt; NoReturn:
+        """
+        Error handling helper for dealing with GRPC Errors. On the server side, certain
+        exceptions are enriched with additional RPC Status information. These are
+        unpacked in this function and put into the exception.
+    
+        To avoid overloading the user with GRPC errors, this message explicitly
+        swallows the error context from the call. This GRPC Error is logged however,
+        and can be enabled.
+    
+        Parameters
+        ----------
+        rpc_error : grpc.RpcError
+           RPC Error containing the details of the exception.
+    
+        Returns
+        -------
+        Throws the appropriate internal Python exception.
+        """
+        logger.exception("GRPC Error received")
+        # We have to cast the value here because, a RpcError is a Call as well.
+        # https://grpc.github.io/grpc/python/grpc.html#grpc.UnaryUnaryMultiCallable.__call__
+        error: grpc.Call = cast(grpc.Call, rpc_error)
+        status_code: grpc.StatusCode = error.code()
+        status: Optional[Status] = rpc_status.from_call(error)
+        if status:
+            for d in status.details:
+                if d.Is(error_details_pb2.ErrorInfo.DESCRIPTOR):
+                    info = error_details_pb2.ErrorInfo()
+                    d.Unpack(info)
+                    logger.debug(f"Received ErrorInfo: {info}")
+    
+                    if info.metadata.get("errorClass") == "INVALID_HANDLE.SESSION_CHANGED":
+                        self._closed = True
+    
+                    if info.metadata.get("errorClass") == "CONNECT_INVALID_PLAN.CANNOT_PARSE":
+                        # Disable plan compression if the server fails to interpret the plan.
+                        logger.info(
+                            "Disabling plan compression for the session due to "
+                            "CONNECT_INVALID_PLAN.CANNOT_PARSE error."
+                        )
+                        self._plan_compression_threshold, self._plan_compression_algorithm = (
+                            -1,
+                            "NONE",
+                        )
+    
+&gt;                   raise convert_exception(
+                        info,
+                        status.message,
+                        self._fetch_enriched_error(info),
+                        self._display_server_stack_trace(),
+                        status_code,
+                    ) from None
+E                   pyspark.errors.exceptions.connect.SparkRuntimeException: Cast error: Cannot cast string 'bad' to value of Int32 type
+
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2177: SparkRuntimeException</failure></testcase></testsuite></testsuites>

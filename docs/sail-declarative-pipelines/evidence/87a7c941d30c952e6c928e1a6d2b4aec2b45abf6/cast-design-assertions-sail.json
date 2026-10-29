@@ -1,0 +1,234 @@
+{
+  "engine": "sail",
+  "scope": "Paired public SELECT casts: class, condition, SQL state, complete message parameters or exact accepted rows; no full message/query-context assertion",
+  "passed": 19,
+  "failed": 5,
+  "checks": [
+    {
+      "name": "int",
+      "outcome": "passed",
+      "mismatches": {}
+    },
+    {
+      "name": "integer_alias",
+      "outcome": "passed",
+      "mismatches": {}
+    },
+    {
+      "name": "tinyint",
+      "outcome": "passed",
+      "mismatches": {}
+    },
+    {
+      "name": "smallint",
+      "outcome": "passed",
+      "mismatches": {}
+    },
+    {
+      "name": "bigint",
+      "outcome": "passed",
+      "mismatches": {}
+    },
+    {
+      "name": "float",
+      "outcome": "passed",
+      "mismatches": {}
+    },
+    {
+      "name": "double",
+      "outcome": "passed",
+      "mismatches": {}
+    },
+    {
+      "name": "decimal",
+      "outcome": "failed",
+      "mismatches": {
+        "condition": {
+          "expected": "CAST_INVALID_INPUT",
+          "actual": null
+        },
+        "sql_state": {
+          "expected": "22018",
+          "actual": null
+        },
+        "parameters": {
+          "expected": {
+            "ansiConfig": "\"spark.sql.ansi.enabled\"",
+            "targetType": "\"DECIMAL(8,2)\"",
+            "expression": "'bad'",
+            "sourceType": "\"STRING\""
+          },
+          "actual": null
+        }
+      }
+    },
+    {
+      "name": "boolean",
+      "outcome": "passed",
+      "mismatches": {}
+    },
+    {
+      "name": "date",
+      "outcome": "failed",
+      "mismatches": {
+        "exception_type": {
+          "expected": "DateTimeException",
+          "actual": "AnalysisException"
+        },
+        "condition": {
+          "expected": "CAST_INVALID_INPUT",
+          "actual": null
+        },
+        "sql_state": {
+          "expected": "22018",
+          "actual": null
+        },
+        "parameters": {
+          "expected": {
+            "ansiConfig": "\"spark.sql.ansi.enabled\"",
+            "targetType": "\"DATE\"",
+            "expression": "'bad'",
+            "sourceType": "\"STRING\""
+          },
+          "actual": null
+        }
+      }
+    },
+    {
+      "name": "timestamp",
+      "outcome": "failed",
+      "mismatches": {
+        "exception_type": {
+          "expected": "DateTimeException",
+          "actual": "AnalysisException"
+        },
+        "condition": {
+          "expected": "CAST_INVALID_INPUT",
+          "actual": null
+        },
+        "sql_state": {
+          "expected": "22018",
+          "actual": null
+        },
+        "parameters": {
+          "expected": {
+            "ansiConfig": "\"spark.sql.ansi.enabled\"",
+            "targetType": "\"TIMESTAMP\"",
+            "expression": "'bad'",
+            "sourceType": "\"STRING\""
+          },
+          "actual": null
+        }
+      }
+    },
+    {
+      "name": "int_overflow",
+      "outcome": "passed",
+      "mismatches": {}
+    },
+    {
+      "name": "decimal_overflow",
+      "outcome": "failed",
+      "mismatches": {
+        "exception_type": {
+          "expected": "ArithmeticException",
+          "actual": "IllegalArgumentException"
+        },
+        "condition": {
+          "expected": "NUMERIC_VALUE_OUT_OF_RANGE.WITH_SUGGESTION",
+          "actual": null
+        },
+        "sql_state": {
+          "expected": "22003",
+          "actual": null
+        },
+        "parameters": {
+          "expected": {
+            "value": "123456",
+            "scale": "1",
+            "config": "\"spark.sql.ansi.enabled\"",
+            "precision": "3"
+          },
+          "actual": null
+        }
+      }
+    },
+    {
+      "name": "quote",
+      "outcome": "passed",
+      "mismatches": {}
+    },
+    {
+      "name": "newline",
+      "outcome": "passed",
+      "mismatches": {}
+    },
+    {
+      "name": "array_row",
+      "outcome": "passed",
+      "mismatches": {}
+    },
+    {
+      "name": "nested",
+      "outcome": "passed",
+      "mismatches": {}
+    },
+    {
+      "name": "try_nested",
+      "outcome": "passed",
+      "mismatches": {}
+    },
+    {
+      "name": "try_int",
+      "outcome": "passed",
+      "mismatches": {}
+    },
+    {
+      "name": "legacy_int",
+      "outcome": "passed",
+      "mismatches": {}
+    },
+    {
+      "name": "null",
+      "outcome": "passed",
+      "mismatches": {}
+    },
+    {
+      "name": "valid",
+      "outcome": "passed",
+      "mismatches": {}
+    },
+    {
+      "name": "numeric_overflow",
+      "outcome": "failed",
+      "mismatches": {
+        "exception_type": {
+          "expected": "ArithmeticException",
+          "actual": "NumberFormatException"
+        },
+        "condition": {
+          "expected": "CAST_OVERFLOW",
+          "actual": null
+        },
+        "sql_state": {
+          "expected": "22003",
+          "actual": null
+        },
+        "parameters": {
+          "expected": {
+            "ansiConfig": "\"spark.sql.ansi.enabled\"",
+            "targetType": "\"TINYINT\"",
+            "value": "1000L",
+            "sourceType": "\"BIGINT\""
+          },
+          "actual": null
+        }
+      }
+    },
+    {
+      "name": "row_null",
+      "outcome": "passed",
+      "mismatches": {}
+    }
+  ]
+}

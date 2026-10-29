@@ -11042,3 +11042,15 @@ Implementing selected error-design unit three from Sail 96eb6d75f: focused primi
 ## 2026-10-29T16:55:31.932286+00:00 — DONE ANSI string cast producer and codec
 
 Sail e28c27782604cc9f31ed6ec219114149d4ecdca8: fmt/strict Clippy, function 385/execution 153/Connect 40 full library tests, CLI build, fresh-server 246 selected pytest + 67 upstream executions pass. Seven new producer/field/codec tests. Initial disk/strip artifact failure retained; unchanged source rebuilt after unused private cache removal. SQL activation is separately pending in Sail paths. Catalog 11/13 and ordinary cast 4/24 complete retained probe outcomes unchanged. Full SDP goal active, no publication.
+
+## 2026-10-29T16:56:40.070433+00:00 — ACK shared ANSI SQL activation
+
+Producer/codec committed as e28c27782. Activating selected ANSI primitive string casts through PlanResolver with a nested-cast naming invariant test. Two new public modules: all 27 instances pass unchanged on Spark 4.2.1; pre-activation Sail has 23 failures/four passes. Full affected Rust and fresh CLI gates now precede advance. Retained thirteen catalog assertions stay unchanged.
+
+## 2026-10-29T17:06:44.976693+00:00 — DONE shared ANSI SQL activation
+
+Sail 87a7c941d30c952e6c928e1a6d2b4aec2b45abf6: fmt/strict Clippy/Ruff, full planner 24/Connect 40 tests, CLI build, 273 selected pytest and 67 upstream Python executions pass. 27 unchanged public Spark 4.2.1 references pass; pre-activation 23-fail/four-pass record retained. All thirteen unchanged catalog assertions now pass. Broader ordinary casts: nineteen pass/five still fail, preserved explicitly. Nested-cast naming invariant tested; no legacy/TRY/general catalog architecture rewrite. Updated overview/review navigation; Fable snapshot retained with subsequent receipts appended. Full SDP goal active, no publication.
+
+## 2026-10-29T17:12:14.011027+00:00 — DONE preserve externally supplied Fable review
+
+Fable's appended source review appeared during the cast activation gate. Preserved its body without edits in independent commit ee5f767523f40fccb8bc146e1e92e31b7d21918a; the known-baseline documentation gate passes for that review-only snapshot. Verified cast updates are a separate following unit. Recommendations remain proposals; source-only CDC case expansion is not a runtime verdict. Cross-microbatch state/output modes and reset-generation fencing need verification before design adoption. No streaming/CDC implementation phase started, no external message or publication.

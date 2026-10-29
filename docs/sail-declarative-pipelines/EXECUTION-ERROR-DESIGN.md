@@ -169,3 +169,11 @@ Unit three is implemented in [e28c27782](evidence/e28c27782604cc9f31ed6ec2191141
 the focused cast producer and typed codec pass seven new tests and 578 full
 library tests, plus the existing 246/67 remote gates. SQL activation remains
 pending; all required failing probe outcomes are preserved.
+
+SQL activation is implemented in [87a7c941d](evidence/87a7c941d30c952e6c928e1a6d2b4aec2b45abf6/gate.json).
+The same 27 public instances pass on Spark 4.2.1 and Sail, with their 23-failure
+pre-activation baseline retained. All thirteen catalog assertions now pass. The
+broader matrix is nineteen passes/five retained failures; other cast producers
+and full SDP acceptance remain outstanding. The activation commit passes full
+planner 24/Connect 40 tests and 273 selected Python plus 67 upstream executions.
+Remaining catalog adapter/combined-fixture acceptance is still separate work.

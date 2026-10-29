@@ -1167,3 +1167,26 @@ executable and user servers were untouched.
 SQL activation remains separate. Both complete retained probe outcomes are
 unchanged: catalog 11/13, ordinary casts 4/24. No failure is removed or counted
 as passing; full SDP acceptance remains outstanding.
+
+## Activate shared ANSI cast identity for ordinary SQL and pipeline expressions
+
+Sail 87a7c941d30c952e6c928e1a6d2b4aec2b45abf6 selects the shared primitive string-cast producer
+from PlanResolver for ANSI, non-TRY casts. A focused planner regression preserves
+the previous nested-cast naming decisions after the representation changes.
+Ordinary SQL and pipeline catalog folding use the same producer and error
+transport. No pipeline-specific error repair is added. See the
+[receipt](evidence/87a7c941d30c952e6c928e1a6d2b4aec2b45abf6/gate.json).
+
+Twenty-seven public test instances fail 23/pass four before activation and pass
+unchanged on Spark 4.2.1 and this Sail CLI. They cover primitive targets/INTEGER
+alias, constants and null-leading rows, complete native metadata, nested CAST
+and TRY_CAST child attribution, quotes/newlines/backslashes, valid/null/legacy/try
+controls and opposite file/session ANSI catalog cases. Strict fmt/Clippy, full
+planner 24/Connect 40 library tests, CLI build and Ruff pass. The fresh CLI passes
+273 selected pytest and 67 upstream Python executions without skips.
+
+All thirteen original retained catalog assertions now pass unchanged. The broader
+ordinary-cast probe improves from four to nineteen passes; five failures remain
+explicit: malformed decimal/date/timestamp, decimal overflow and numeric overflow.
+Historical failing packets remain immutable. This closes the recorded primitive
+ANSI catalog diagnostic gap, not full cast, catalog, batch or SDP acceptance.

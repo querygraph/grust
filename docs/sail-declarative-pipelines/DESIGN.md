@@ -55,10 +55,11 @@ The [catalog-expression design](CATALOG-EXPRESSION-DESIGN.md) defines shared
 typed SQL expression resolution and asynchronous preparation followed by locked,
 file-atomic pipeline registration. The historical baseline passes thirteen checks
 on Spark and two on Sail. Preparation and expression activation are now implemented;
-the retained probe passes eleven cases on Sail, with two ANSI cast metadata failures
-still open. The [shared execution-error design](EXECUTION-ERROR-DESIGN.md) has its
-error extraction and transport units implemented; cast producers, codec and SQL
-activation remain pending. See the [Fable review brief](SDP-FABLE-DESIGN-REVIEW.md)
+the retained thirteen-case probe now passes on Sail. The
+[shared execution-error design](EXECUTION-ERROR-DESIGN.md) has error extraction,
+transport, primitive ANSI cast producer/codec and SQL activation implemented.
+The broader ordinary-cast probe passes nineteen of twenty-four cases, with five
+other cast-family failures retained. Full catalog/batch acceptance remains open. See the [Fable review brief](SDP-FABLE-DESIGN-REVIEW.md)
 for the current implementation/evidence snapshot and streaming/CDC draft status.
 
 | Existing component | Reuse and required change |

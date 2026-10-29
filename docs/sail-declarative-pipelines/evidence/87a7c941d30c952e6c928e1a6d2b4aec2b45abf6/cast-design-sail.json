@@ -1,0 +1,346 @@
+{
+  "recorded_at": "2026-10-29T17:02:45.002808+00:00",
+  "engine": "sail",
+  "spark_version": "4.2.1",
+  "cases": [
+    {
+      "name": "int",
+      "ansi": "true",
+      "sql": "SELECT CAST('bad' AS INT) AS value",
+      "outcome": "rejected",
+      "exception_type": "NumberFormatException",
+      "condition": "CAST_INVALID_INPUT",
+      "sql_state": "22018",
+      "parameters": {
+        "expression": "'bad'",
+        "targetType": "\"INT\"",
+        "sourceType": "\"STRING\"",
+        "ansiConfig": "\"spark.sql.ansi.enabled\""
+      },
+      "message": "[CAST_INVALID_INPUT] The value 'bad' of the type \"STRING\" cannot be cast to \"INT\" because it is malformed. Correct the value as per the syntax, or change its target type. Use `try_cast` to tolerate malformed input and return NULL instead."
+    },
+    {
+      "name": "integer_alias",
+      "ansi": "true",
+      "sql": "SELECT CAST('bad' AS INTEGER) AS value",
+      "outcome": "rejected",
+      "exception_type": "NumberFormatException",
+      "condition": "CAST_INVALID_INPUT",
+      "sql_state": "22018",
+      "parameters": {
+        "ansiConfig": "\"spark.sql.ansi.enabled\"",
+        "expression": "'bad'",
+        "sourceType": "\"STRING\"",
+        "targetType": "\"INT\""
+      },
+      "message": "[CAST_INVALID_INPUT] The value 'bad' of the type \"STRING\" cannot be cast to \"INT\" because it is malformed. Correct the value as per the syntax, or change its target type. Use `try_cast` to tolerate malformed input and return NULL instead."
+    },
+    {
+      "name": "tinyint",
+      "ansi": "true",
+      "sql": "SELECT CAST('bad' AS TINYINT) AS value",
+      "outcome": "rejected",
+      "exception_type": "NumberFormatException",
+      "condition": "CAST_INVALID_INPUT",
+      "sql_state": "22018",
+      "parameters": {
+        "expression": "'bad'",
+        "sourceType": "\"STRING\"",
+        "ansiConfig": "\"spark.sql.ansi.enabled\"",
+        "targetType": "\"TINYINT\""
+      },
+      "message": "[CAST_INVALID_INPUT] The value 'bad' of the type \"STRING\" cannot be cast to \"TINYINT\" because it is malformed. Correct the value as per the syntax, or change its target type. Use `try_cast` to tolerate malformed input and return NULL instead."
+    },
+    {
+      "name": "smallint",
+      "ansi": "true",
+      "sql": "SELECT CAST('bad' AS SMALLINT) AS value",
+      "outcome": "rejected",
+      "exception_type": "NumberFormatException",
+      "condition": "CAST_INVALID_INPUT",
+      "sql_state": "22018",
+      "parameters": {
+        "sourceType": "\"STRING\"",
+        "expression": "'bad'",
+        "targetType": "\"SMALLINT\"",
+        "ansiConfig": "\"spark.sql.ansi.enabled\""
+      },
+      "message": "[CAST_INVALID_INPUT] The value 'bad' of the type \"STRING\" cannot be cast to \"SMALLINT\" because it is malformed. Correct the value as per the syntax, or change its target type. Use `try_cast` to tolerate malformed input and return NULL instead."
+    },
+    {
+      "name": "bigint",
+      "ansi": "true",
+      "sql": "SELECT CAST('bad' AS BIGINT) AS value",
+      "outcome": "rejected",
+      "exception_type": "NumberFormatException",
+      "condition": "CAST_INVALID_INPUT",
+      "sql_state": "22018",
+      "parameters": {
+        "ansiConfig": "\"spark.sql.ansi.enabled\"",
+        "targetType": "\"BIGINT\"",
+        "expression": "'bad'",
+        "sourceType": "\"STRING\""
+      },
+      "message": "[CAST_INVALID_INPUT] The value 'bad' of the type \"STRING\" cannot be cast to \"BIGINT\" because it is malformed. Correct the value as per the syntax, or change its target type. Use `try_cast` to tolerate malformed input and return NULL instead."
+    },
+    {
+      "name": "float",
+      "ansi": "true",
+      "sql": "SELECT CAST('bad' AS FLOAT) AS value",
+      "outcome": "rejected",
+      "exception_type": "NumberFormatException",
+      "condition": "CAST_INVALID_INPUT",
+      "sql_state": "22018",
+      "parameters": {
+        "ansiConfig": "\"spark.sql.ansi.enabled\"",
+        "expression": "'bad'",
+        "sourceType": "\"STRING\"",
+        "targetType": "\"FLOAT\""
+      },
+      "message": "[CAST_INVALID_INPUT] The value 'bad' of the type \"STRING\" cannot be cast to \"FLOAT\" because it is malformed. Correct the value as per the syntax, or change its target type. Use `try_cast` to tolerate malformed input and return NULL instead."
+    },
+    {
+      "name": "double",
+      "ansi": "true",
+      "sql": "SELECT CAST('bad' AS DOUBLE) AS value",
+      "outcome": "rejected",
+      "exception_type": "NumberFormatException",
+      "condition": "CAST_INVALID_INPUT",
+      "sql_state": "22018",
+      "parameters": {
+        "ansiConfig": "\"spark.sql.ansi.enabled\"",
+        "expression": "'bad'",
+        "sourceType": "\"STRING\"",
+        "targetType": "\"DOUBLE\""
+      },
+      "message": "[CAST_INVALID_INPUT] The value 'bad' of the type \"STRING\" cannot be cast to \"DOUBLE\" because it is malformed. Correct the value as per the syntax, or change its target type. Use `try_cast` to tolerate malformed input and return NULL instead."
+    },
+    {
+      "name": "decimal",
+      "ansi": "true",
+      "sql": "SELECT CAST('bad' AS DECIMAL(8,2)) AS value",
+      "outcome": "rejected",
+      "exception_type": "NumberFormatException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "message": "Cannot cast string 'bad' to value of Decimal128(38, 10) type"
+    },
+    {
+      "name": "boolean",
+      "ansi": "true",
+      "sql": "SELECT CAST('bad' AS BOOLEAN) AS value",
+      "outcome": "rejected",
+      "exception_type": "SparkRuntimeException",
+      "condition": "CAST_INVALID_INPUT",
+      "sql_state": "22018",
+      "parameters": {
+        "sourceType": "\"STRING\"",
+        "ansiConfig": "\"spark.sql.ansi.enabled\"",
+        "expression": "'bad'",
+        "targetType": "\"BOOLEAN\""
+      },
+      "message": "[CAST_INVALID_INPUT] The value 'bad' of the type \"STRING\" cannot be cast to \"BOOLEAN\" because it is malformed. Correct the value as per the syntax, or change its target type. Use `try_cast` to tolerate malformed input and return NULL instead."
+    },
+    {
+      "name": "date",
+      "ansi": "true",
+      "sql": "SELECT CAST('bad' AS DATE) AS value",
+      "outcome": "rejected",
+      "exception_type": "AnalysisException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "message": "[CAST_INVALID_INPUT] The value 'bad' of the type \"STRING\" cannot be cast to \"DATE\" because it is malformed. Correct the value as per the syntax, or change its target type. Use `try_cast` to tolerate malformed input and return NULL instead."
+    },
+    {
+      "name": "timestamp",
+      "ansi": "true",
+      "sql": "SELECT CAST('bad' AS TIMESTAMP) AS value",
+      "outcome": "rejected",
+      "exception_type": "AnalysisException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "message": "invalid timestamp: bad"
+    },
+    {
+      "name": "int_overflow",
+      "ansi": "true",
+      "sql": "SELECT CAST('2147483648' AS INT) AS value",
+      "outcome": "rejected",
+      "exception_type": "NumberFormatException",
+      "condition": "CAST_INVALID_INPUT",
+      "sql_state": "22018",
+      "parameters": {
+        "targetType": "\"INT\"",
+        "ansiConfig": "\"spark.sql.ansi.enabled\"",
+        "sourceType": "\"STRING\"",
+        "expression": "'2147483648'"
+      },
+      "message": "[CAST_INVALID_INPUT] The value '2147483648' of the type \"STRING\" cannot be cast to \"INT\" because it is malformed. Correct the value as per the syntax, or change its target type. Use `try_cast` to tolerate malformed input and return NULL instead."
+    },
+    {
+      "name": "decimal_overflow",
+      "ansi": "true",
+      "sql": "SELECT CAST('123456' AS DECIMAL(3,1)) AS value",
+      "outcome": "rejected",
+      "exception_type": "IllegalArgumentException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "message": "123456.0 is too large to store in a Decimal128 of precision 3. Max is 99.9"
+    },
+    {
+      "name": "quote",
+      "ansi": "true",
+      "sql": "SELECT CAST('a\\'b' AS INT) AS value",
+      "outcome": "rejected",
+      "exception_type": "NumberFormatException",
+      "condition": "CAST_INVALID_INPUT",
+      "sql_state": "22018",
+      "parameters": {
+        "sourceType": "\"STRING\"",
+        "ansiConfig": "\"spark.sql.ansi.enabled\"",
+        "expression": "'a\\'b'",
+        "targetType": "\"INT\""
+      },
+      "message": "[CAST_INVALID_INPUT] The value 'a\\'b' of the type \"STRING\" cannot be cast to \"INT\" because it is malformed. Correct the value as per the syntax, or change its target type. Use `try_cast` to tolerate malformed input and return NULL instead."
+    },
+    {
+      "name": "newline",
+      "ansi": "true",
+      "sql": "SELECT CAST('a\\nb' AS INT) AS value",
+      "outcome": "rejected",
+      "exception_type": "NumberFormatException",
+      "condition": "CAST_INVALID_INPUT",
+      "sql_state": "22018",
+      "parameters": {
+        "ansiConfig": "\"spark.sql.ansi.enabled\"",
+        "expression": "'a\nb'",
+        "sourceType": "\"STRING\"",
+        "targetType": "\"INT\""
+      },
+      "message": "[CAST_INVALID_INPUT] The value 'a\nb' of the type \"STRING\" cannot be cast to \"INT\" because it is malformed. Correct the value as per the syntax, or change its target type. Use `try_cast` to tolerate malformed input and return NULL instead."
+    },
+    {
+      "name": "array_row",
+      "ansi": "true",
+      "sql": "SELECT CAST(value AS INT) AS result FROM VALUES ('1'), ('bad'), ('2') AS t(value)",
+      "outcome": "rejected",
+      "exception_type": "NumberFormatException",
+      "condition": "CAST_INVALID_INPUT",
+      "sql_state": "22018",
+      "parameters": {
+        "targetType": "\"INT\"",
+        "ansiConfig": "\"spark.sql.ansi.enabled\"",
+        "sourceType": "\"STRING\"",
+        "expression": "'bad'"
+      },
+      "message": "[CAST_INVALID_INPUT] The value 'bad' of the type \"STRING\" cannot be cast to \"INT\" because it is malformed. Correct the value as per the syntax, or change its target type. Use `try_cast` to tolerate malformed input and return NULL instead."
+    },
+    {
+      "name": "nested",
+      "ansi": "true",
+      "sql": "SELECT CAST(CAST('bad' AS INT) AS STRING) AS value",
+      "outcome": "rejected",
+      "exception_type": "NumberFormatException",
+      "condition": "CAST_INVALID_INPUT",
+      "sql_state": "22018",
+      "parameters": {
+        "expression": "'bad'",
+        "sourceType": "\"STRING\"",
+        "targetType": "\"INT\"",
+        "ansiConfig": "\"spark.sql.ansi.enabled\""
+      },
+      "message": "[CAST_INVALID_INPUT] The value 'bad' of the type \"STRING\" cannot be cast to \"INT\" because it is malformed. Correct the value as per the syntax, or change its target type. Use `try_cast` to tolerate malformed input and return NULL instead."
+    },
+    {
+      "name": "try_nested",
+      "ansi": "true",
+      "sql": "SELECT TRY_CAST(CAST('bad' AS INT) AS STRING) AS value",
+      "outcome": "rejected",
+      "exception_type": "NumberFormatException",
+      "condition": "CAST_INVALID_INPUT",
+      "sql_state": "22018",
+      "parameters": {
+        "sourceType": "\"STRING\"",
+        "expression": "'bad'",
+        "targetType": "\"INT\"",
+        "ansiConfig": "\"spark.sql.ansi.enabled\""
+      },
+      "message": "[CAST_INVALID_INPUT] The value 'bad' of the type \"STRING\" cannot be cast to \"INT\" because it is malformed. Correct the value as per the syntax, or change its target type. Use `try_cast` to tolerate malformed input and return NULL instead."
+    },
+    {
+      "name": "try_int",
+      "ansi": "true",
+      "sql": "SELECT TRY_CAST('bad' AS INT) AS value",
+      "outcome": "accepted",
+      "rows": [
+        [
+          null
+        ]
+      ]
+    },
+    {
+      "name": "legacy_int",
+      "ansi": "false",
+      "sql": "SELECT CAST('bad' AS INT) AS value",
+      "outcome": "accepted",
+      "rows": [
+        [
+          null
+        ]
+      ]
+    },
+    {
+      "name": "null",
+      "ansi": "true",
+      "sql": "SELECT CAST(CAST(NULL AS STRING) AS INT) AS value",
+      "outcome": "accepted",
+      "rows": [
+        [
+          null
+        ]
+      ]
+    },
+    {
+      "name": "valid",
+      "ansi": "true",
+      "sql": "SELECT CAST('12' AS INT) AS value",
+      "outcome": "accepted",
+      "rows": [
+        [
+          12
+        ]
+      ]
+    },
+    {
+      "name": "numeric_overflow",
+      "ansi": "true",
+      "sql": "SELECT CAST(1000L AS TINYINT) AS value",
+      "outcome": "rejected",
+      "exception_type": "NumberFormatException",
+      "condition": null,
+      "sql_state": null,
+      "parameters": null,
+      "message": "Can't cast value 1000 to type Int8"
+    },
+    {
+      "name": "row_null",
+      "ansi": "true",
+      "sql": "SELECT CAST(value AS INT) AS result FROM VALUES (CAST(NULL AS STRING)), ('bad') AS t(value)",
+      "outcome": "rejected",
+      "exception_type": "NumberFormatException",
+      "condition": "CAST_INVALID_INPUT",
+      "sql_state": "22018",
+      "parameters": {
+        "expression": "'bad'",
+        "sourceType": "\"STRING\"",
+        "targetType": "\"INT\"",
+        "ansiConfig": "\"spark.sql.ansi.enabled\""
+      },
+      "message": "[CAST_INVALID_INPUT] The value 'bad' of the type \"STRING\" cannot be cast to \"INT\" because it is malformed. Correct the value as per the syntax, or change its target type. Use `try_cast` to tolerate malformed input and return NULL instead."
+    }
+  ]
+}

@@ -6,8 +6,8 @@ catalog adapter. The shared resolver prerequisite is implemented in 564738318;
 Statement spans and pipeline diagnostics are implemented in 1f281cdfd and
 010469d3c. Asynchronous preparation is implemented in 73305d1f7 and expression
 activation in 992f5bcbf. The historical evidence below remains a required failing
-baseline. The new [activation receipt](evidence/992f5bcbf60added5b44596f279ab8801f0c0045/gate.json) records
-eleven passing registration cases and two unresolved ANSI error-metadata cases;
+baseline. The new [activation receipt](evidence/87a7c941d30c952e6c928e1a6d2b4aec2b45abf6/gate.json) records
+thirteen passing registration cases after shared ANSI activation;
 there is no complete catalog-expression or SDP verdict.
 
 ## Evidence that determines the boundary
@@ -16,7 +16,7 @@ The [recorded probe package](evidence/catalog-expression-design/provenance.json)
 contains 22 Spark 4.2.1 parser/analyzer expression cases and 13 registration cases
 per engine. At that historical baseline the same retained assertions passed
 13/13 on Spark and 2/13 on Sail; eleven failures were recorded. The separate
-activation receipt now records eleven passes and two metadata failures. Registration probes never
+activation receipt now records thirteen passes after the shared ANSI error work. Registration probes never
 start a graph run. They cannot qualify publication or full Scala fixtures.
 
 Pinned Spark sources establish the evaluation path:
@@ -223,14 +223,23 @@ REST views, streaming and CDC remain separate required work.
 
 ## Shared execution-error metadata boundary
 
-Activation now passes the eight new public functions on Spark 4.2.1 and Sail,
-including both original invalid grid values. The unchanged thirteen-case probe
-passes eleven cases on Sail. Two ANSI execution failures retain NumberFormatException
-but expose no condition or SQL state. An ordinary SELECT CAST control reproduces
-that shared gap. The [next design handoff](EXECUTION-ERROR-DESIGN-HANDOFF.md) records
-the boundary without selecting a new transport architecture. Adapter and original
-Scala acceptance remain outstanding.
+At the initial 992f5bcbf activation, eight public functions passed on Spark and
+Sail, while the thirteen-case probe passed eleven cases and exposed missing ANSI
+condition/state metadata. That historical [handoff](EXECUTION-ERROR-DESIGN-HANDOFF.md)
+led to the selected [shared error design](EXECUTION-ERROR-DESIGN.md). The later
+shared producer/transport activation now passes all thirteen unchanged assertions.
+Adapter and original Scala acceptance remain outstanding.
 
 The expression AST/lowering activation is implemented in 992f5bcbf. Its unset
 namespace guard also covers the focused registration check from unit five. The
 rest of unit five, including catalog adapter acceptance, remains outstanding.
+
+## ANSI execution metadata acceptance
+
+Shared producer/codec e28c27782 and ordinary SQL activation 87a7c941d
+close the two recorded ANSI cast metadata failures through Sail's common planner
+and execution transport. The [activation receipt](evidence/87a7c941d30c952e6c928e1a6d2b4aec2b45abf6/gate.json)
+passes all thirteen unchanged registration assertions and 27 paired public
+controls. Earlier 2/13 and 11/13 packets remain historical failures. Full catalog
+adapter and original combined Scala-fixture acceptance remain outstanding; five
+broader cast-family failures remain visible in the new receipt.

@@ -90,10 +90,10 @@ The reviewed groups include:
 
 The [paired catalog probes](evidence/catalog-scope-design-boundary/provenance.json)
 record the historical expression/namespace/error failures. Shared expression
-activation now passes eleven of thirteen retained registration assertions and
-eight paired public controls. Two ANSI cast condition/state failures remain in
-shared Sail transport; the next [design handoff](EXECUTION-ERROR-DESIGN-HANDOFF.md)
-records ordinary SQL controls. Full multi-catalog and streaming assertions in the
+activation now passes all thirteen retained registration assertions, after the
+[shared ANSI work](evidence/87a7c941d30c952e6c928e1a6d2b4aec2b45abf6/gate.json). Twenty-seven
+new public instances pass unchanged on Spark 4.2.1 and Sail. Five broader cast-family
+failures remain recorded; full multi-catalog and streaming assertions in the
 original fixture remain outstanding.
 
 Continue reviewing assertions, expanding parameter grids and identifying helper

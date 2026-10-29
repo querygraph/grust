@@ -962,3 +962,23 @@ the commit, and the book and changelog follow any public-surface change.
   Scala suites use internal once flows that run once per checkpoint generation.
   Decide whether Sail models them internally for the streaming-table suites
   that depend on them, and record the decision in the crosswalk.
+
+## Implementation updates after the pinned review snapshot
+
+The snapshot above remains the historical 96eb6d75f review baseline. Subsequent
+small commits are also available for review: [e28c27782](evidence/e28c27782604cc9f31ed6ec219114149d4ecdca8/gate.json) adds the shared
+primitive cast and typed worker codec; [87a7c941d](evidence/87a7c941d30c952e6c928e1a6d2b4aec2b45abf6/gate.json)
+activates them through PlanResolver. All thirteen catalog checks now pass; the
+broader cast matrix is nineteen passes/five retained failures. The same 27 new
+public instances pass on Spark 4.2.1 and Sail, with their pre-activation failure
+recorded. The latest CLI passes 273 selected Python and 67 upstream executions.
+Fable's appended review supplies detailed recommendations, not adopted Sail
+implementation decisions. Streaming/Iggy and CDC runtime work is still pending;
+these proposals need the announced design checkpoint before implementation.
+
+Before adopting the streaming recommendations, verify cross-microbatch state and
+allowed output modes for joins/aggregates/windows; batch-planner support alone
+is not evidence of streaming parity. Recheck stale-writer behavior across reset
+generations. The review's CDC parameter expansion is source analysis, not a new
+runtime test verdict; the canonical inventory and execution counts above are
+unchanged by preserving the review.

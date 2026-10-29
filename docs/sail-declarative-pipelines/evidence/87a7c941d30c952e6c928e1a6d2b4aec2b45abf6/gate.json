@@ -1,0 +1,103 @@
+{
+  "sail_commit": "87a7c941d30c952e6c928e1a6d2b4aec2b45abf6",
+  "spark_commit": "617618396087429b5627a86ce933bb0f5d6645cb",
+  "recorded_at": "2026-10-29T17:06:44.415435+00:00",
+  "platform": "macOS arm64",
+  "gate_checkout": "detached; private target directory; immutable HEAD for the gate",
+  "cli_sha256": "c1f9c2fb4feb848008b32e535f3078f3bc506d7a1397549ad40289730cf9fb70",
+  "checks": [
+    {
+      "command": "cargo +nightly fmt -p sail-plan -p sail-spark-connect -- --check",
+      "outcome": "pass"
+    },
+    {
+      "command": "cargo +1.98.1 clippy -p sail-plan -p sail-spark-connect --all-targets --all-features --locked -- -D warnings",
+      "outcome": "pass"
+    },
+    {
+      "command": "cargo +1.98.1 build -p sail-cli --locked",
+      "outcome": "pass",
+      "note": "CARGO_PROFILE_DEV_DEBUG=0; CARGO_PROFILE_DEV_INCREMENTAL=false; linker warned about __eh_frame size."
+    },
+    {
+      "command": "PYTHONPATH=<gate>/python SPARK_REMOTE=sc://localhost:50082 python -m pytest -q <cases listed in pytest.xml> --junitxml=pytest.xml",
+      "outcome": "pass",
+      "passed": 273,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "command": "python scripts/spark-pipelines-tests/run.py --spark-source <pinned Spark checkout> --remote sc://localhost:50082 --report spark-python.json",
+      "outcome": "pass",
+      "server_spark_version": "4.2.1",
+      "tests_run": 67,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "command": "ruff check and format --check on changed Python files",
+      "outcome": "pass"
+    },
+    {
+      "command": "cargo +1.98.1 test -p sail-plan --lib --locked",
+      "outcome": "pass",
+      "passed": 24,
+      "failed": 0,
+      "ignored": 0,
+      "filtered": 0
+    },
+    {
+      "command": "cargo +1.98.1 test -p sail-spark-connect --lib --locked",
+      "outcome": "pass",
+      "passed": 40,
+      "failed": 0,
+      "ignored": 0,
+      "filtered": 0
+    },
+    {
+      "command": "Invoke 27 unchanged public test instances on Spark Connect 4.2.1",
+      "outcome": "pass",
+      "passed": 27,
+      "test_sources_sha256": {
+        "test_cast_errors.py": "0f00d0a4e33d591267756b38f0e9af73b7563d754cbb450d60473b93a458fbad",
+        "test_catalog_cast_errors.py": "04ba872b8d0fa64b0d133250c6bade6853d74a4dc62beb395b41cda90505c567"
+      }
+    },
+    {
+      "command": "Same public tests against pre-activation Sail CLI",
+      "outcome": "required failing baseline",
+      "passed": 4,
+      "failed": 23,
+      "engine_commit": "e28c27782604cc9f31ed6ec219114149d4ecdca8",
+      "cli_sha256": "745d7312d28018a73cf37304d3328a42e32a7361cd1467a8916458703b71688a"
+    },
+    {
+      "command": "Retained thirteen catalog registration assertions",
+      "outcome": "pass",
+      "passed": 13,
+      "failed": 0
+    },
+    {
+      "command": "Retained twenty-four ordinary cast assertions",
+      "outcome": "partial with retained failures",
+      "passed": 19,
+      "failed": 5,
+      "remaining": [
+        "decimal",
+        "date",
+        "timestamp",
+        "decimal_overflow",
+        "numeric_overflow"
+      ]
+    }
+  ],
+  "limits": [
+    "No distributed cluster execution claim.",
+    "Upstream Python includes inherited and client-only tests.",
+    "Full batch acceptance and the remaining Spark SDP crosswalk are outstanding.",
+    "Only the selected primitive ANSI string casts are activated. TRY_CAST and legacy behavior, other cast families and existing naming policy are preserved.",
+    "The five broader cast failures remain open; neither all-cast nor full SDP parity is claimed.",
+    "No new original Scala suite, distributed cluster, streaming/Iggy or CDC execution verdict."
+  ]
+}
