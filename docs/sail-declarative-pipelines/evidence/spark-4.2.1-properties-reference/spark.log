@@ -1,0 +1,105 @@
+WARNING: Using incubator modules: jdk.incubator.vector
+Using Spark's default log4j profile: org/apache/spark/log4j2-defaults.properties
+Setting default log level to "WARN".
+To adjust logging level use sc.setLogLevel(newLevel). For SparkR, use setLogLevel(newLevel).
+26/10/29 02:22:23 WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/conf.py:61: UserWarning: Failed to set spark.ui.enabled to Some(false) due to [CANNOT_MODIFY_CONFIG] Cannot modify the value of the Spark config: "spark.ui.enabled".
+See also 'https://spark.apache.org/docs/latest/sql-migration-guide.html#ddl-statements'. SQLSTATE: 46110
+  warnings.warn(warn)
+/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/conf.py:61: UserWarning: Failed to set spark.sql.warehouse.dir to Some(file:///var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/sail-sdp-properties-w_b06ma0/warehouse) due to [CANNOT_MODIFY_STATIC_CONFIG] Cannot modify the value of the static Spark config: "spark.sql.warehouse.dir". SQLSTATE: 46110
+  warnings.warn(warn)
+26/10/29 02:22:27 WARN DatasetManager: Unknown pipelines table property 'pipelines.unknown'.
+[Stage 0:>                                                          (0 + 1) / 1]                                                                                2026-10-29 09:22:27: Flow spark_catalog.default.output is QUEUED.
+2026-10-29 09:22:27: Flow spark_catalog.default.output is PLANNING.
+2026-10-29 09:22:27: Flow spark_catalog.default.output is STARTING.
+2026-10-29 09:22:27: Flow spark_catalog.default.output is RUNNING.
+2026-10-29 09:22:29: Flow spark_catalog.default.output has COMPLETED.
+2026-10-29 09:22:30: Run is COMPLETED.
+2026-10-29 09:22:30: Flow spark_catalog.default.output is QUEUED.
+2026-10-29 09:22:30: Flow spark_catalog.default.output is PLANNING.
+2026-10-29 09:22:30: Flow spark_catalog.default.output is STARTING.
+2026-10-29 09:22:30: Flow spark_catalog.default.output is RUNNING.
+2026-10-29 09:22:31: Flow spark_catalog.default.output has COMPLETED.
+2026-10-29 09:22:32: Run is COMPLETED.
+2026-10-29 09:22:33: Flow spark_catalog.default.output is QUEUED.
+2026-10-29 09:22:33: Flow spark_catalog.default.output is PLANNING.
+2026-10-29 09:22:33: Flow spark_catalog.default.output is STARTING.
+2026-10-29 09:22:33: Flow spark_catalog.default.output is RUNNING.
+2026-10-29 09:22:33: Flow spark_catalog.default.output has COMPLETED.
+2026-10-29 09:22:35: Run is COMPLETED.
+{
+  "engine": "spark",
+  "spark_version": "4.2.1",
+  "cases": [
+    {
+      "name": "unknown",
+      "properties": {
+        "pipelines.unknown": "x",
+        "custom": "keep"
+      },
+      "dry": false,
+      "run": "success",
+      "exists": true,
+      "stored_properties": {
+        "custom": "keep"
+      }
+    },
+    {
+      "name": "canonical",
+      "properties": {
+        "PIPELINES.RESET.ALLOWED": "false"
+      },
+      "dry": false,
+      "run": "success",
+      "exists": true,
+      "stored_properties": {
+        "pipelines.reset.allowed": "false"
+      }
+    },
+    {
+      "name": "invalid",
+      "properties": {
+        "pipelines.reset.allowed": "maybe"
+      },
+      "dry": false,
+      "run": "failed",
+      "error_type": "IllegalArgumentException",
+      "error": "Could not parse value 'maybe' for table property 'pipelines.reset.allowed'\n\nJVM stacktrace:\njava.lang.IllegalArgumentException\n\tat org.apache.spark.sql.pipelines.graph.PipelineTableProperty.parseFromString(PipelinesTableProperties.scala:108)\n\tat org.apache.spark.sql.pipelines.graph.PipelineTableProperty.fromMap(PipelinesTableProperties.scala:100)\n\tat org.apache.spark.sql.pipelines.graph.GraphValidations.$anonfun$validateTablesAreResettable$2(GraphValidations.scala:214)\n\tat org.apache.spark.sql.pipelines.graph.GraphValidations.$anonfun$validateTablesAreResettable$2$adapted(GraphValidations.scala:214)\n\tat scala.collection.immutable.List.filter(List.scala:505)\n\tat scala.collection.immutable.List.filter(List.scala:79)\n\tat org.apache.spark.sql.pipelines.graph.GraphValidations.validateTablesAreResettable(GraphValidations.scala:214)\n\tat org.apache.spark.sql.pipelines.graph.GraphValidations.validateTablesAreResettable$(GraphValidations.scala:211)\n\tat org.apache.spark.sql.pipelines.graph.DataflowGraph.validateTablesAreResettable(DataflowGraph.scala:33)\n\tat org.apache.spark.sql.pipelines.graph.GraphValidations.validateTablesAreResettable(GraphValidations.scala:207)\n\tat org.apache.spark.sql.pipelines.graph.GraphValidations.validateTablesAreResettable$(GraphValidations.scala:206)\n\tat org.apache.spark.sql.pipelines.graph.DataflowGraph.validateTablesAreResettable(DataflowGraph.scala:33)\n\tat org.apache.spark.sql.pipelines.graph.DataflowGraph.$anonfun$validationFailure$1(DataflowGraph.scala:206)\n\tat scala.util.Try$.apply(Try.scala:217)\n\tat org.apache.spark.sql.pipelines.graph.DataflowGraph.validationFailure$lzycompute(DataflowGraph.scala:198)\n\tat org.apache.spark.sql.pipelines.graph.DataflowGraph.validationFailure(DataflowGraph.scala:198)\n\tat org.apache.spark.sql.pipelines.graph.DataflowGraph.validate(DataflowGraph.scala:186)\n\tat org.apache.spark.sql.pipelines.graph.PipelineExecution.resolveGraph(PipelineExecution.scala:113)\n\tat org.apache.spark.sql.pipelines.graph.PipelineExecution.startPipeline(PipelineExecution.scala:48)\n\tat org.apache.spark.sql.pipelines.graph.PipelineExecution.runPipeline(PipelineExecution.scala:67)\n\tat org.apache.spark.sql.connect.pipelines.PipelinesHandler$.$anonfun$startRun$1(PipelinesHandler.scala:563)\n\tat org.apache.spark.sql.connect.pipelines.PipelinesHandler$.$anonfun$startRun$1$adapted(PipelinesHandler.scala:525)\n\tat scala.util.Using$.resource(Using.scala:296)\n\tat org.apache.spark.sql.connect.pipelines.PipelinesHandler$.startRun(PipelinesHandler.scala:525)\n\tat org.apache.spark.sql.connect.pipelines.PipelinesHandler$.handlePipelinesCommand(PipelinesHandler.scala:132)\n\tat org.apache.spark.sql.connect.planner.SparkConnectPlanner.handlePipelineCommand(SparkConnectPlanner.scala:2961)\n\tat org.apache.spark.sql.connect.planner.SparkConnectPlanner.process(SparkConnectPlanner.scala:2930)\n\tat org.apache.spark.sql.connect.execution.SparkConnectPlanExecution.handlePlan(SparkConnectPlanExecution.scala:102)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.$anonfun$executeInternal$1(ExecuteThreadRunner.scala:231)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.$anonfun$executeInternal$1$adapted(ExecuteThreadRunner.scala:203)\n\tat org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$2(SessionHolder.scala:441)\n\tat org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:810)\n\tat org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$1(SessionHolder.scala:441)\n\tat org.apache.spark.JobArtifactSet$.withActiveJobArtifactState(JobArtifactSet.scala:94)\n\tat org.apache.spark.sql.artifact.ArtifactManager.$anonfun$withResources$1(ArtifactManager.scala:112)\n\tat org.apache.spark.util.Utils$.withContextClassLoader(Utils.scala:185)\n\tat org.apache.spark.sql.artifact.ArtifactManager.withClassLoaderIfNeeded(ArtifactManager.scala:102)\n\tat org.apache.spark.sql.artifact.ArtifactManager.withResources(ArtifactManager.scala:111)\n\tat org.apache.spark.sql.connect.service.SessionHolder.withSession(SessionHolder.scala:440)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.executeInternal(ExecuteThreadRunner.scala:203)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.org$apache$spark$sql$connect$execution$ExecuteThreadRunner$$execute(ExecuteThreadRunner.scala:127)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner$ExecutionThread.run(ExecuteThreadRunner.scala:338)",
+      "exists": false
+    },
+    {
+      "name": "invalid_dry",
+      "properties": {
+        "pipelines.reset.allowed": "maybe"
+      },
+      "dry": true,
+      "run": "failed",
+      "error_type": "IllegalArgumentException",
+      "error": "Could not parse value 'maybe' for table property 'pipelines.reset.allowed'\n\nJVM stacktrace:\njava.lang.IllegalArgumentException\n\tat org.apache.spark.sql.pipelines.graph.PipelineTableProperty.parseFromString(PipelinesTableProperties.scala:108)\n\tat org.apache.spark.sql.pipelines.graph.PipelineTableProperty.fromMap(PipelinesTableProperties.scala:100)\n\tat org.apache.spark.sql.pipelines.graph.GraphValidations.$anonfun$validateTablesAreResettable$2(GraphValidations.scala:214)\n\tat org.apache.spark.sql.pipelines.graph.GraphValidations.$anonfun$validateTablesAreResettable$2$adapted(GraphValidations.scala:214)\n\tat scala.collection.immutable.List.filter(List.scala:505)\n\tat scala.collection.immutable.List.filter(List.scala:79)\n\tat org.apache.spark.sql.pipelines.graph.GraphValidations.validateTablesAreResettable(GraphValidations.scala:214)\n\tat org.apache.spark.sql.pipelines.graph.GraphValidations.validateTablesAreResettable$(GraphValidations.scala:211)\n\tat org.apache.spark.sql.pipelines.graph.DataflowGraph.validateTablesAreResettable(DataflowGraph.scala:33)\n\tat org.apache.spark.sql.pipelines.graph.GraphValidations.validateTablesAreResettable(GraphValidations.scala:207)\n\tat org.apache.spark.sql.pipelines.graph.GraphValidations.validateTablesAreResettable$(GraphValidations.scala:206)\n\tat org.apache.spark.sql.pipelines.graph.DataflowGraph.validateTablesAreResettable(DataflowGraph.scala:33)\n\tat org.apache.spark.sql.pipelines.graph.DataflowGraph.$anonfun$validationFailure$1(DataflowGraph.scala:206)\n\tat scala.util.Try$.apply(Try.scala:217)\n\tat org.apache.spark.sql.pipelines.graph.DataflowGraph.validationFailure$lzycompute(DataflowGraph.scala:198)\n\tat org.apache.spark.sql.pipelines.graph.DataflowGraph.validationFailure(DataflowGraph.scala:198)\n\tat org.apache.spark.sql.pipelines.graph.DataflowGraph.validate(DataflowGraph.scala:186)\n\tat org.apache.spark.sql.pipelines.graph.PipelineExecution.resolveGraph(PipelineExecution.scala:113)\n\tat org.apache.spark.sql.pipelines.graph.PipelineExecution.dryRunPipeline(PipelineExecution.scala:89)\n\tat org.apache.spark.sql.connect.pipelines.PipelinesHandler$.$anonfun$startRun$1(PipelinesHandler.scala:561)\n\tat org.apache.spark.sql.connect.pipelines.PipelinesHandler$.$anonfun$startRun$1$adapted(PipelinesHandler.scala:525)\n\tat scala.util.Using$.resource(Using.scala:296)\n\tat org.apache.spark.sql.connect.pipelines.PipelinesHandler$.startRun(PipelinesHandler.scala:525)\n\tat org.apache.spark.sql.connect.pipelines.PipelinesHandler$.handlePipelinesCommand(PipelinesHandler.scala:132)\n\tat org.apache.spark.sql.connect.planner.SparkConnectPlanner.handlePipelineCommand(SparkConnectPlanner.scala:2961)\n\tat org.apache.spark.sql.connect.planner.SparkConnectPlanner.process(SparkConnectPlanner.scala:2930)\n\tat org.apache.spark.sql.connect.execution.SparkConnectPlanExecution.handlePlan(SparkConnectPlanExecution.scala:102)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.$anonfun$executeInternal$1(ExecuteThreadRunner.scala:231)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.$anonfun$executeInternal$1$adapted(ExecuteThreadRunner.scala:203)\n\tat org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$2(SessionHolder.scala:441)\n\tat org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:810)\n\tat org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$1(SessionHolder.scala:441)\n\tat org.apache.spark.JobArtifactSet$.withActiveJobArtifactState(JobArtifactSet.scala:94)\n\tat org.apache.spark.sql.artifact.ArtifactManager.$anonfun$withResources$1(ArtifactManager.scala:112)\n\tat org.apache.spark.util.Utils$.withContextClassLoader(Utils.scala:185)\n\tat org.apache.spark.sql.artifact.ArtifactManager.withClassLoaderIfNeeded(ArtifactManager.scala:102)\n\tat org.apache.spark.sql.artifact.ArtifactManager.withResources(ArtifactManager.scala:111)\n\tat org.apache.spark.sql.connect.service.SessionHolder.withSession(SessionHolder.scala:440)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.executeInternal(ExecuteThreadRunner.scala:203)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.org$apache$spark$sql$connect$execution$ExecuteThreadRunner$$execute(ExecuteThreadRunner.scala:127)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner$ExecutionThread.run(ExecuteThreadRunner.scala:338)",
+      "exists": false
+    },
+    {
+      "name": "invalid_mixed_case",
+      "properties": {
+        "PIPELINES.RESET.ALLOWED": "maybe"
+      },
+      "dry": false,
+      "run": "success",
+      "exists": true,
+      "stored_properties": {
+        "pipelines.reset.allowed": "maybe"
+      }
+    },
+    {
+      "name": "trimmed",
+      "properties": {
+        "pipelines.reset.allowed": " TRUE "
+      },
+      "dry": false,
+      "run": "failed",
+      "error_type": "IllegalArgumentException",
+      "error": "Could not parse value ' TRUE ' for table property 'pipelines.reset.allowed'\n\nJVM stacktrace:\njava.lang.IllegalArgumentException\n\tat org.apache.spark.sql.pipelines.graph.PipelineTableProperty.parseFromString(PipelinesTableProperties.scala:108)\n\tat org.apache.spark.sql.pipelines.graph.PipelineTableProperty.fromMap(PipelinesTableProperties.scala:100)\n\tat org.apache.spark.sql.pipelines.graph.GraphValidations.$anonfun$validateTablesAreResettable$2(GraphValidations.scala:214)\n\tat org.apache.spark.sql.pipelines.graph.GraphValidations.$anonfun$validateTablesAreResettable$2$adapted(GraphValidations.scala:214)\n\tat scala.collection.immutable.List.filter(List.scala:505)\n\tat scala.collection.immutable.List.filter(List.scala:79)\n\tat org.apache.spark.sql.pipelines.graph.GraphValidations.validateTablesAreResettable(GraphValidations.scala:214)\n\tat org.apache.spark.sql.pipelines.graph.GraphValidations.validateTablesAreResettable$(GraphValidations.scala:211)\n\tat org.apache.spark.sql.pipelines.graph.DataflowGraph.validateTablesAreResettable(DataflowGraph.scala:33)\n\tat org.apache.spark.sql.pipelines.graph.GraphValidations.validateTablesAreResettable(GraphValidations.scala:207)\n\tat org.apache.spark.sql.pipelines.graph.GraphValidations.validateTablesAreResettable$(GraphValidations.scala:206)\n\tat org.apache.spark.sql.pipelines.graph.DataflowGraph.validateTablesAreResettable(DataflowGraph.scala:33)\n\tat org.apache.spark.sql.pipelines.graph.DataflowGraph.$anonfun$validationFailure$1(DataflowGraph.scala:206)\n\tat scala.util.Try$.apply(Try.scala:217)\n\tat org.apache.spark.sql.pipelines.graph.DataflowGraph.validationFailure$lzycompute(DataflowGraph.scala:198)\n\tat org.apache.spark.sql.pipelines.graph.DataflowGraph.validationFailure(DataflowGraph.scala:198)\n\tat org.apache.spark.sql.pipelines.graph.DataflowGraph.validate(DataflowGraph.scala:186)\n\tat org.apache.spark.sql.pipelines.graph.PipelineExecution.resolveGraph(PipelineExecution.scala:113)\n\tat org.apache.spark.sql.pipelines.graph.PipelineExecution.startPipeline(PipelineExecution.scala:48)\n\tat org.apache.spark.sql.pipelines.graph.PipelineExecution.runPipeline(PipelineExecution.scala:67)\n\tat org.apache.spark.sql.connect.pipelines.PipelinesHandler$.$anonfun$startRun$1(PipelinesHandler.scala:563)\n\tat org.apache.spark.sql.connect.pipelines.PipelinesHandler$.$anonfun$startRun$1$adapted(PipelinesHandler.scala:525)\n\tat scala.util.Using$.resource(Using.scala:296)\n\tat org.apache.spark.sql.connect.pipelines.PipelinesHandler$.startRun(PipelinesHandler.scala:525)\n\tat org.apache.spark.sql.connect.pipelines.PipelinesHandler$.handlePipelinesCommand(PipelinesHandler.scala:132)\n\tat org.apache.spark.sql.connect.planner.SparkConnectPlanner.handlePipelineCommand(SparkConnectPlanner.scala:2961)\n\tat org.apache.spark.sql.connect.planner.SparkConnectPlanner.process(SparkConnectPlanner.scala:2930)\n\tat org.apache.spark.sql.connect.execution.SparkConnectPlanExecution.handlePlan(SparkConnectPlanExecution.scala:102)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.$anonfun$executeInternal$1(ExecuteThreadRunner.scala:231)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.$anonfun$executeInternal$1$adapted(ExecuteThreadRunner.scala:203)\n\tat org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$2(SessionHolder.scala:441)\n\tat org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:810)\n\tat org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$1(SessionHolder.scala:441)\n\tat org.apache.spark.JobArtifactSet$.withActiveJobArtifactState(JobArtifactSet.scala:94)\n\tat org.apache.spark.sql.artifact.ArtifactManager.$anonfun$withResources$1(ArtifactManager.scala:112)\n\tat org.apache.spark.util.Utils$.withContextClassLoader(Utils.scala:185)\n\tat org.apache.spark.sql.artifact.ArtifactManager.withClassLoaderIfNeeded(ArtifactManager.scala:102)\n\tat org.apache.spark.sql.artifact.ArtifactManager.withResources(ArtifactManager.scala:111)\n\tat org.apache.spark.sql.connect.service.SessionHolder.withSession(SessionHolder.scala:440)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.executeInternal(ExecuteThreadRunner.scala:203)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.org$apache$spark$sql$connect$execution$ExecuteThreadRunner$$execute(ExecuteThreadRunner.scala:127)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner$ExecutionThread.run(ExecuteThreadRunner.scala:338)",
+      "exists": false
+    }
+  ]
+}

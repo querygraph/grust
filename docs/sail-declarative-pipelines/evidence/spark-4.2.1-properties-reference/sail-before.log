@@ -1,0 +1,89 @@
+2026-10-29 09:21:54: Starting pipeline analysis
+2026-10-29 09:21:54: Pipeline run completed
+2026-10-29 09:21:54: Starting pipeline analysis
+2026-10-29 09:21:54: Pipeline run completed
+2026-10-29 09:21:54: Starting pipeline analysis
+2026-10-29 09:21:54: Pipeline run completed
+2026-10-29 09:21:54: Starting pipeline analysis
+2026-10-29 09:21:54: Pipeline run completed
+2026-10-29 09:21:54: Starting pipeline analysis
+2026-10-29 09:21:54: Pipeline run completed
+2026-10-29 09:21:55: Starting pipeline analysis
+2026-10-29 09:21:55: Pipeline run completed
+{
+  "engine": "sail",
+  "spark_version": "4.2.1",
+  "cases": [
+    {
+      "name": "unknown",
+      "properties": {
+        "pipelines.unknown": "x",
+        "custom": "keep"
+      },
+      "dry": false,
+      "run": "success",
+      "exists": true,
+      "stored_properties": {
+        "custom": "keep",
+        "pipelines.unknown": "x"
+      }
+    },
+    {
+      "name": "canonical",
+      "properties": {
+        "PIPELINES.RESET.ALLOWED": "false"
+      },
+      "dry": false,
+      "run": "success",
+      "exists": true,
+      "stored_properties": {
+        "PIPELINES.RESET.ALLOWED": "false"
+      }
+    },
+    {
+      "name": "invalid",
+      "properties": {
+        "pipelines.reset.allowed": "maybe"
+      },
+      "dry": false,
+      "run": "success",
+      "exists": true,
+      "stored_properties": {
+        "pipelines.reset.allowed": "maybe"
+      }
+    },
+    {
+      "name": "invalid_dry",
+      "properties": {
+        "pipelines.reset.allowed": "maybe"
+      },
+      "dry": true,
+      "run": "success",
+      "exists": false
+    },
+    {
+      "name": "invalid_mixed_case",
+      "properties": {
+        "PIPELINES.RESET.ALLOWED": "maybe"
+      },
+      "dry": false,
+      "run": "success",
+      "exists": true,
+      "stored_properties": {
+        "PIPELINES.RESET.ALLOWED": "maybe"
+      }
+    },
+    {
+      "name": "trimmed",
+      "properties": {
+        "pipelines.reset.allowed": " TRUE "
+      },
+      "dry": false,
+      "run": "success",
+      "exists": true,
+      "stored_properties": {
+        "pipelines.reset.allowed": " TRUE "
+      }
+    }
+  ]
+}

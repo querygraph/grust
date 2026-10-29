@@ -266,6 +266,11 @@ semantics still require dedicated acceptance work.
 
 ## Constraints for subsequent units
 
+The next property-validation unit is grounded in a
+[six-case Spark/Sail comparison](evidence/spark-4.2.1-properties-reference/README.md).
+It exposes unknown-key filtering, canonical key storage, dry-run validation, and
+an upstream mixed-case lookup asymmetry. Those differences are currently open.
+
 - Keep pipeline declarations in Sail's typed SQL AST and analyzer. Registration
   produces definitions; it must not execute DDL or rewrite SQL strings.
 - Use the same resolution, optimization, streaming rewrite, physical planning,
