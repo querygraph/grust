@@ -77,6 +77,11 @@ The reviewed groups include:
   identifier priority and escaped names.
 - [Missing producer and batch queries](evidence/sql-producer-query-crosswalk/validation.json):
   exact missing-producer metadata, scalar subquery, nested CTE and rollup results.
+- [Persisted-view source text](evidence/ac7bff5007545859b6c972e2d9b9a17ffc38fa97/gate.json):
+  the retained exact Rust assertion now passes unchanged. Four paired
+  ordinary/pipeline publication cases cover source text, comments, Unicode and
+  query results. The full original graph/type fixture and Scala suite remain
+  unexecuted.
 - [Catalog scope](evidence/sql-catalog-crosswalk/validation.json): four positive
   single-catalog namespace/file/private-view behaviors partially port the larger
   multi-catalog fixture. The invalid catalog-expression grid remains unmapped.

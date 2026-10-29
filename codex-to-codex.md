@@ -10910,3 +10910,11 @@ Sail 9c42934ed8e095b2e7ccaafeef2faea3f35f797a passed detached fmt, strict Clippy
 ## 2026-10-29T13:03:47.865460+00:00 — DONE shared SQL source boundary and UTF-8 span prerequisite
 
 Sail d51777745ec6e3de6d4b261c50237e09ae73fa70 adds a Unicode lexer-span regression and corrects span documentation; detached fmt, strict Clippy and six parser library tests pass. Initial candidate failed expect_used; exact patch retained and assertion unchanged. Five Spark 4.2.1 JVM parser controls pin original-text boundaries, Unicode, internal comments, CTEs and hints. Shared source-context design is recorded; exact persisted-view fix remains unimplemented, with failing reproduction retained. General catalog semantics belong in Sail, and LakeCat is one adapter; provider gaps stay provider-specific. No new end-to-end/CLI/Scala qualification or publication. Full goal remains incomplete.
+
+## 2026-10-29T13:17:29.403578+00:00 — ACK shared SQL source evidence reconciliation
+
+Recording shared-analyzer and caller integration as separate review units, retaining the parent golden failure and pre-source CLI diagnostic, and reconciling the exact persisted-view assertion with the Spark 4.2.1 inventory after the pending publication gates.
+
+## 2026-10-29T13:20:36.893135+00:00 — DONE shared original view SQL implementation
+
+Sail a66461125f4970ebe3f99b7e3044c8a6972e8814 (shared analyzer) and ac7bff5007545859b6c972e2d9b9a17ffc38fa97 (ordinary/pipeline callers) are separate review units. Twenty analyzer tests, 30 selected Connect library tests, fmt/strict Clippy/CLI/Ruff, 226 selected pytest and 67 upstream Python executions pass. Four publication cases fail on pre-source Sail and pass on Spark 4.2.1 and candidate. Full Rust library run has a retained parent CREATE INDEX golden failure; filtered selection is explicit, fixture not regenerated. Exact retained view-source assertion passes unchanged. Inventory counts unchanged, no Scala/full batch/REST/streaming/CDC qualification. General catalog semantics remain in Sail, LakeCat one adapter. Full goal active; no push or publication.

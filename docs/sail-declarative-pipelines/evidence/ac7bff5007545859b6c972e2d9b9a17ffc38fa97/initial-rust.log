@@ -1,0 +1,71 @@
+   Compiling sail-sql-parser v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-sql-parser)
+   Compiling sail-python-udf v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-python-udf)
+   Compiling sail-sql-analyzer v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-sql-analyzer)
+   Compiling sail-function v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-function)
+   Compiling sail-logical-plan v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-logical-plan)
+   Compiling sail-physical-plan v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-physical-plan)
+   Compiling sail-logical-optimizer v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-logical-optimizer)
+   Compiling sail-data-source v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-data-source)
+   Compiling sail-physical-optimizer v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-physical-optimizer)
+   Compiling sail-iceberg v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-iceberg)
+   Compiling sail-delta-lake v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-delta-lake)
+   Compiling sail-plan v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-plan)
+   Compiling sail-catalog-iceberg v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-catalog-iceberg)
+   Compiling sail-execution v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-execution)
+   Compiling sail-catalog-onelake v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-catalog-onelake)
+   Compiling sail-session v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-session)
+   Compiling sail-spark-connect v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-spark-connect)
+warning: linker stderr: ld: __eh_frame section too large (max 16MB) to encode dwarf unwind offsets in compact unwind table, performance of exception handling might be affected
+  |
+  = note: `#[warn(linker_messages)]` on by default
+
+warning: `sail-spark-connect` (lib test) generated 1 warning
+    Finished `test` profile [unoptimized] target(s) in 1m 59s
+     Running unittests src/lib.rs (target/debug/deps/sail_spark_connect-94a7bcff04b1a816)
+
+running 31 tests
+test error::tests::execution_timestamp_parse_error_maps_to_datetime_exception ... ok
+test proto::data_type::tests::test_geography_proto_conversion ... ok
+test proto::data_type::tests::test_geography_default_srid ... ok
+test proto::data_type::tests::test_geometry_default_srid ... ok
+test proto::data_type::tests::test_geometry_mixed_srid ... ok
+test proto::data_type::tests::test_geometry_proto_conversion ... ok
+test error::tests::truncate_grpc_message_preserves_tail ... ok
+test proto::data_type::tests::test_time_proto_to_spec ... ok
+test proto::data_type::tests::test_time_proto_invalid_precision ... ok
+test proto::data_type_arrow::tests::test_geoarrow_field_mixed_srid ... ok
+test proto::data_type_arrow::tests::test_geoarrow_field_to_proto_geography ... ok
+test proto::data_type_arrow::tests::test_geoarrow_field_to_proto_geometry ... ok
+test proto::data_type_arrow::tests::test_geoarrow_metadata_parsing ... ok
+test proto::data_type_arrow::tests::test_time_arrow_to_proto ... ok
+test proto::data_type_arrow::tests::test_time_arrow_to_proto_unsupported ... ok
+test proto::data_type_arrow::tests::test_qualified_interval_field_to_proto ... ok
+test pipelines::sql::tests::identity_partition_columns_keep_declared_order ... ok
+test pipelines::sql::tests::persisted_view_retains_original_query_text_and_comment ... ok
+test pipelines::sql::tests::streaming_table_properties_are_registered_without_execution ... ok
+test pipelines::sql::tests::sql_configuration_is_captured_per_flow_and_reset_per_file ... ok
+test pipelines::sql::tests::view_source_intervals_preserve_file_atomicity_and_namespace_reset ... ok
+test proto::plan::tests::sql_relation_preserves_persisted_view_source ... ok
+test proto::data_type::tests::test_parse_spark_table_schema_gold_set ... ok
+test proto::plan::tests::test_write_operation_without_save_type_uses_sink ... ok
+test proto::plan::tests::test_merge_into_table_command_to_plan ... ok
+test proto::data_type::tests::test_parse_spark_data_type_gold_set ... ok
+test proto::data_type_json::tests::test_parse_spark_json_data_type ... ok
+[2026-10-29T13:11:14Z INFO sail_session::session_manager::actor::handler] creating session test
+test pipelines::sql::tests::declared_schema_validation_preserves_resolved_query_nullability ... ok
+test proto::plan::tests::test_sql_to_plan ... FAILED
+test proto::expression::tests::test_sql_to_expression ... ok
+test proto::function::tests::test_sql_function ... ok
+
+failures:
+
+---- proto::plan::tests::test_sql_to_plan stdout ----
+Error: InternalError("The test data from tests/gold_data/plan/ddl_create_index.json is not up-to-date. Please run 'env SAIL_UPDATE_GOLD_DATA=1 cargo test' to save the updates.")
+
+
+failures:
+    proto::plan::tests::test_sql_to_plan
+
+test result: FAILED. 30 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.80s
+
+error: test failed, to rerun pass `-p sail-spark-connect --lib`

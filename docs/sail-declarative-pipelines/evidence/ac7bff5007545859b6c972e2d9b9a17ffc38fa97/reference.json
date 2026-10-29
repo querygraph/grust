@@ -1,0 +1,26 @@
+{
+  "spark_version": "4.2.1",
+  "test_source_sha256": "c028bc05b8095c4e69527651b49851a01c6e1e3ee940089d9f6a0f399fe1f739",
+  "cases": [
+    {
+      "context": "ordinary",
+      "query": "SELECT * FROM range(1, 4)",
+      "outcome": "passed"
+    },
+    {
+      "context": "ordinary",
+      "query": "SELECT  /* inside ; */ 'é;雪' AS `值`",
+      "outcome": "passed"
+    },
+    {
+      "context": "pipeline",
+      "query": "SELECT * FROM range(1, 4)",
+      "outcome": "passed"
+    },
+    {
+      "context": "pipeline",
+      "query": "SELECT  /* inside ; */ 'é;雪' AS `值`",
+      "outcome": "passed"
+    }
+  ]
+}

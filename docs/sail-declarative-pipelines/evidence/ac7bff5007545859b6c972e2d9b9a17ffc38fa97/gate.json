@@ -1,0 +1,87 @@
+{
+  "sail_commit": "ac7bff5007545859b6c972e2d9b9a17ffc38fa97",
+  "spark_commit": "617618396087429b5627a86ce933bb0f5d6645cb",
+  "recorded_at": "2026-10-29T13:20:36.230670+00:00",
+  "platform": "macOS arm64",
+  "gate_checkout": "detached; private target directory; immutable HEAD for the gate",
+  "cli_sha256": "25738279b3a3913b0107b956ffcede3181538cf4e023b40f0605400bc9d9c833",
+  "checks": [
+    {
+      "command": "cargo +nightly fmt -p sail-sql-analyzer -p sail-spark-connect -- --check",
+      "outcome": "pass"
+    },
+    {
+      "command": "cargo +1.98.1 clippy -p sail-sql-analyzer -p sail-spark-connect --all-targets --all-features --locked -- -D warnings",
+      "outcome": "pass"
+    },
+    {
+      "command": "cargo +1.98.1 build -p sail-cli --locked",
+      "outcome": "pass",
+      "note": "CARGO_PROFILE_DEV_DEBUG=0; CARGO_PROFILE_DEV_INCREMENTAL=false; linker warned about __eh_frame size."
+    },
+    {
+      "command": "PYTHONPATH=<gate>/python SPARK_REMOTE=sc://localhost:50082 python -m pytest -q <cases listed in pytest.xml> --junitxml=pytest.xml",
+      "outcome": "pass",
+      "passed": 226,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "command": "python scripts/spark-pipelines-tests/run.py --spark-source <pinned Spark checkout> --remote sc://localhost:50082 --report spark-python.json",
+      "outcome": "pass",
+      "server_spark_version": "4.2.1",
+      "tests_run": 67,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "command": "ruff check and format --check on changed Python files",
+      "outcome": "pass"
+    },
+    {
+      "command": "cargo +1.98.1 test -p sail-spark-connect --lib --locked -- --skip proto::plan::tests::test_sql_to_plan",
+      "outcome": "pass",
+      "passed": 30,
+      "failed": 0,
+      "ignored": 0,
+      "filtered_out": 1,
+      "log": "rust.log",
+      "scope": "All library tests except the separately retained parent golden failure."
+    },
+    {
+      "command": "python reference.py",
+      "outcome": "pass",
+      "engine": "Spark 4.2.1 local Connect",
+      "passed": 4,
+      "report": "reference.json",
+      "test_source_sha256": "c028bc05b8095c4e69527651b49851a01c6e1e3ee940089d9f6a0f399fe1f739"
+    },
+    {
+      "command": "Four exact View Text checks against unchanged pre-source engine 9c42934ed8e095b2e7ccaafeef2faea3f35f797a",
+      "outcome": "failed",
+      "failures": 4,
+      "xml": "before.xml",
+      "log": "before.log"
+    }
+  ],
+  "limits": [
+    "No distributed cluster execution claim.",
+    "Upstream Python includes inherited and client-only tests.",
+    "Full batch acceptance and the remaining Spark SDP crosswalk are outstanding.",
+    "No complete Rust library-suite pass: the known parent SQL-plan golden failure was filtered only for the reported 30-test run.",
+    "No LakeCat/REST view persistence, original Scala-suite, distributed, streaming or CDC qualification.",
+    "Original persisted-view exact text assertion is restored unchanged; broader original graph/type fixture remains unexecuted."
+  ],
+  "existing_failure": {
+    "test": "proto::plan::tests::test_sql_to_plan",
+    "fixture": "tests/gold_data/plan/ddl_create_index.json",
+    "parent_commit": "a66461125f4970ebe3f99b7e3044c8a6972e8814",
+    "parent_log": "parent-gold.log",
+    "initial_integration_commit": "d84d576100098dc1768b060a3c27461c355f8ee0",
+    "initial_log": "initial-rust.log",
+    "rust_source_identical_to_final": true,
+    "pre_source_diagnostic": "pre-source-gold-cause.json",
+    "cause": "Expected-token alternatives include MATERIALIZED/STREAMING/FLOW in the pre-source engine; golden fixture still expects the old list. No fixture regenerated in these commits."
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "sail_commit": "a66461125f4970ebe3f99b7e3044c8a6972e8814",
+  "recorded_at": "2026-10-29T13:13:30.480126+00:00",
+  "spark_commit": "617618396087429b5627a86ce933bb0f5d6645cb",
+  "gate_checkout": "detached immutable source; own target",
+  "checks": [
+    {
+      "command": "cargo +nightly fmt -p sail-sql-analyzer -- --check",
+      "outcome": "pass",
+      "log": "fmt.log"
+    },
+    {
+      "command": "cargo +1.98.1 clippy -p sail-sql-analyzer --all-targets --all-features --locked -- -D warnings",
+      "outcome": "pass",
+      "log": "clippy.log"
+    },
+    {
+      "command": "cargo +1.98.1 test -p sail-sql-analyzer --lib --locked",
+      "outcome": "pass",
+      "passed": 20,
+      "failed": 0,
+      "ignored": 0,
+      "log": "rust.log"
+    }
+  ],
+  "initial_candidate": {
+    "commit": "dcb1af58dcea7e820bb2e9b30ef3511d05422c68",
+    "clippy": "failed items_after_test_module; moved tests after implementation without changing assertions",
+    "log": "initial-clippy.log",
+    "patch": "initial-candidate.patch"
+  },
+  "limits": [
+    "Shared analyzer API only; no caller integration or new CLI/end-to-end/Scala claim at this commit.",
+    "Existing TreeText and AST-only lowering contract retained; no new dependencies.",
+    "Full batch, catalog expressions, REST views, streaming and CDC remain incomplete."
+  ]
+}

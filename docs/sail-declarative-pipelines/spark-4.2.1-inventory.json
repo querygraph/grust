@@ -4140,22 +4140,33 @@
       "status": "partial-behavioral-port",
       "sail_tests": [
         "python/pysail/tests/spark/pipelines/test_features.py::test_persistent_views_retain_the_sql_file_namespace_and_column_comments",
-        "python/pysail/tests/spark/pipelines/test_features.py::test_persistent_views_are_created_in_dependency_order"
+        "python/pysail/tests/spark/pipelines/test_features.py::test_persistent_views_are_created_in_dependency_order",
+        "python/pysail/tests/spark/pipelines/test_view_source.py::test_catalog_retains_original_view_query"
       ],
       "coverage_review": {
         "phase": "batch-view-metadata",
-        "covered_assertions": "Persisted view namespace, view type, view/column comments and dependency publication have behavioral checks.",
-        "remaining_assertions": "Exact original sqlText assertion is a confirmed gap: TreeText reconstruction returns SELECT * FROM range ( 1 , 4 ) with trailing space. Failing Rust reproduction retained for shared source-handling design. Original full graph/type fixture and Scala suite remain unexecuted.",
+        "covered_assertions": "Persisted view namespace, view type, view/column comments and dependency publication have behavioral checks. Exact original sqlText and comment now pass the unchanged retained Rust fixture; ordinary/pipeline catalog publication retains exact text, internal comments, Unicode and query results.",
+        "remaining_assertions": "Original full graph/type fixture and Scala suite remain unexecuted; REST persisted-view operations remain a separate provider gap.",
         "sail_evidence": "evidence/efc21f2c53b0d8c886b31928ed67131a1de7c6db/pytest.xml",
-        "scala_suite_executed": false
+        "scala_suite_executed": false,
+        "source_text_evidence": "evidence/ac7bff5007545859b6c972e2d9b9a17ffc38fa97/gate.json"
       },
       "failing_rust_reproduction": {
         "package": "sail-spark-connect",
         "target": "lib",
         "name": "pipelines::sql::tests::persisted_view_retains_original_query_text_and_comment",
         "evidence": "evidence/view-source-design-boundary/initial-rust.log",
-        "source": "evidence/view-source-design-boundary/failing-view-test.rs"
-      }
+        "source": "evidence/view-source-design-boundary/failing-view-test.rs",
+        "resolved_by": "ac7bff5007545859b6c972e2d9b9a17ffc38fa97"
+      },
+      "rust_tests": [
+        {
+          "package": "sail-spark-connect",
+          "target": "lib",
+          "name": "pipelines::sql::tests::persisted_view_retains_original_query_text_and_comment",
+          "evidence": "evidence/ac7bff5007545859b6c972e2d9b9a17ffc38fa97/rust.log"
+        }
+      ]
     },
     {
       "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/SqlPipelineSuite.scala:634",

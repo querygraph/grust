@@ -1,0 +1,330 @@
+commit dcb1af58dcea7e820bb2e9b30ef3511d05422c68
+Author:     Alexy Khrabrov <deliverable@gmail.com>
+AuthorDate: Thu Oct 29 06:05:40 2026 -0700
+Commit:     Alexy Khrabrov <deliverable@gmail.com>
+CommitDate: Thu Oct 29 06:05:40 2026 -0700
+
+    feat: preserve original view SQL in shared analyzer lowering
+
+diff --git a/crates/sail-sql-analyzer/src/lib.rs b/crates/sail-sql-analyzer/src/lib.rs
+index 272088b9f..f3876bba1 100644
+--- a/crates/sail-sql-analyzer/src/lib.rs
++++ b/crates/sail-sql-analyzer/src/lib.rs
+@@ -5,5 +5,6 @@ pub mod literal;
+ pub mod parser;
+ pub mod pipeline;
+ pub mod query;
++pub mod source;
+ pub mod statement;
+ mod value;
+diff --git a/crates/sail-sql-analyzer/src/parser.rs b/crates/sail-sql-analyzer/src/parser.rs
+index d5acb5bfa..c541ee421 100644
+--- a/crates/sail-sql-analyzer/src/parser.rs
++++ b/crates/sail-sql-analyzer/src/parser.rs
+@@ -11,8 +11,7 @@ use sail_sql_parser::lexer::create_lexer;
+ use sail_sql_parser::options::ParserOptions;
+ use sail_sql_parser::parser::{
+     create_data_type_parser, create_expression_parser, create_interval_literal_parser,
+-    create_named_expression_parser, create_object_name_parser, create_parser,
+-    create_qualified_wildcard_parser,
++    create_named_expression_parser, create_object_name_parser, create_qualified_wildcard_parser,
+ };
+ use sail_sql_parser::token::{Punctuation, Token};
+ 
+@@ -24,13 +23,13 @@ use crate::literal::datetime::{
+ };
+ use crate::literal::interval::{IntervalValue, parse_unqualified_interval_string};
+ 
+-fn map_parser_input<'a, C>(
++pub(crate) fn map_parser_input<'a, C>(
+     (t, s): &'a (Token<'a>, SimpleSpan<usize, C>),
+ ) -> (&'a Token<'a>, &'a SimpleSpan<usize, C>) {
+     (t, s)
+ }
+ 
+-fn tokenize<'a>(
++pub(crate) fn tokenize<'a>(
+     input: &'a str,
+     options: &ParserOptions,
+ ) -> SqlResult<Vec<(Token<'a>, SimpleSpan<usize>)>> {
+@@ -107,16 +106,12 @@ pub fn parse_native_config_value(s: &str) -> SqlResult<String> {
+ }
+ 
+ pub fn parse_statements(s: &str) -> SqlResult<Vec<Statement>> {
+-    parse!(s, create_parser)
++    crate::source::SqlSource::new(s)?.parse_statements()
+ }
+ 
+ /// Parses a SQL string containing exactly one statement into an AST.
+ pub fn parse_one_statement(s: &str) -> SqlResult<Statement> {
+-    let mut plan = parse_statements(s)?;
+-    match (plan.pop(), plan.is_empty()) {
+-        (Some(x), true) => Ok(x),
+-        _ => Err(SqlError::invalid("expected one statement")),
+-    }
++    crate::source::SqlSource::new(s)?.parse_one_statement()
+ }
+ 
+ pub fn parse_object_name(s: &str) -> SqlResult<ObjectName> {
+diff --git a/crates/sail-sql-analyzer/src/source.rs b/crates/sail-sql-analyzer/src/source.rs
+new file mode 100644
+index 000000000..ad2867ded
+--- /dev/null
++++ b/crates/sail-sql-analyzer/src/source.rs
+@@ -0,0 +1,192 @@
++//! Original SQL text and the lexer spans used to parse it.
++
++use chumsky::Parser;
++use chumsky::input::Input;
++use chumsky::span::SimpleSpan;
++use sail_sql_parser::ast::statement::Statement;
++use sail_sql_parser::options::ParserOptions;
++use sail_sql_parser::parser::create_parser;
++use sail_sql_parser::span::TokenSpan;
++use sail_sql_parser::token::{Keyword, Punctuation, Token};
++
++use crate::error::{SqlError, SqlResult};
++use crate::parser::{map_parser_input, tokenize};
++
++/// A SQL input tokenized once, retaining original text for source-aware lowering.
++/// AST spans passed to the analyzer must come from this same input.
++pub struct SqlSource<'a> {
++    text: &'a str,
++    options: ParserOptions,
++    tokens: Vec<(Token<'a>, SimpleSpan<usize>)>,
++}
++
++#[cfg(test)]
++mod tests {
++    use sail_common::spec;
++
++    use super::*;
++    use crate::statement::{from_ast_statement, from_ast_statement_with_source};
++
++    fn view(plan: spec::Plan) -> SqlResult<spec::ViewDefinition> {
++        match plan {
++            spec::Plan::Command(spec::CommandPlan {
++                node: spec::CommandNode::CreateView { definition, .. },
++                ..
++            }) => Ok(definition),
++            _ => Err(SqlError::invalid("expected persisted view")),
++        }
++    }
++
++    #[test]
++    fn persisted_views_preserve_query_source_and_typed_plan() -> SqlResult<()> {
++        for (sql, expected) in [
++            (
++                "CREATE VIEW b COMMENT 'my persisted comment' AS SELECT * FROM range(1, 4);",
++                "SELECT * FROM range(1, 4)",
++            ),
++            (
++                "CREATE VIEW b AS /* leading */ SELECT  1 /* inside */ + 2 /* trailing */ ;",
++                "SELECT  1 /* inside */ + 2",
++            ),
++            (
++                "CREATE VIEW `雪` AS SELECT 'é;雪' AS `值`; -- after",
++                "SELECT 'é;雪' AS `值`",
++            ),
++            (
++                "CREATE VIEW b AS\nWITH c AS (SELECT 1 AS x)\nSELECT x FROM c\n-- trailing\n;",
++                "WITH c AS (SELECT 1 AS x)\nSELECT x FROM c",
++            ),
++            (
++                "CREATE VIEW b AS SELECT /*+ REPARTITION(1) */ * FROM range(2);",
++                "SELECT /*+ REPARTITION(1) */ * FROM range(2)",
++            ),
++            ("CREATE VIEW b AS VALUES (1), (2)", "VALUES (1), (2)"),
++            ("CREATE VIEW b AS SELECT 1", "SELECT 1"),
++        ] {
++            let source = SqlSource::new(sql)?;
++            let statement = source.parse_one_statement()?;
++            let mut reconstructed = view(from_ast_statement(statement.clone())?)?;
++            let original = view(from_ast_statement_with_source(statement, &source)?)?;
++            assert_eq!(original.definition, expected, "{sql}");
++            assert!(reconstructed.definition.ends_with(' '), "{sql}");
++            // Only the source text changes; query, columns, flags and metadata agree.
++            reconstructed.definition.clone_from(&original.definition);
++            assert_eq!(original, reconstructed, "{sql}");
++        }
++        Ok(())
++    }
++
++    #[test]
++    fn multiple_views_have_separate_query_intervals() -> SqlResult<()> {
++        let source = SqlSource::new(
++            "/* 雪 */ ;; CREATE VIEW a AS SELECT ';' AS x; -- next\n\
++             CREATE VIEW b AS SELECT /* ; */ x FROM a;;;",
++        )?;
++        let definitions = source
++            .parse_statements()?
++            .into_iter()
++            .map(|statement| view(from_ast_statement_with_source(statement, &source)?))
++            .collect::<SqlResult<Vec<_>>>()?;
++        assert_eq!(definitions.len(), 2);
++        assert_eq!(definitions[0].definition, "SELECT ';' AS x");
++        assert_eq!(definitions[1].definition, "SELECT /* ; */ x FROM a");
++        Ok(())
++    }
++
++    #[test]
++    fn explain_preserves_nested_view_source() -> SqlResult<()> {
++        let source = SqlSource::new("EXPLAIN CREATE VIEW b AS SELECT * FROM range(1, 4);")?;
++        let plan = from_ast_statement_with_source(source.parse_one_statement()?, &source)?;
++        let spec::Plan::Command(spec::CommandPlan {
++            node: spec::CommandNode::Explain { input, .. },
++            ..
++        }) = plan
++        else {
++            return Err(SqlError::invalid("expected EXPLAIN"));
++        };
++        assert_eq!(view(*input)?.definition, "SELECT * FROM range(1, 4)");
++        Ok(())
++    }
++
++    #[test]
++    fn parsing_and_source_validation_reject_invalid_inputs() -> SqlResult<()> {
++        for sql in ["", ";;;", "SELECT 1; SELECT 2", "CREATE VIEW b AS"] {
++            assert!(SqlSource::new(sql)?.parse_one_statement().is_err(), "{sql}");
++        }
++        let source = SqlSource::new("CREATE VIEW b AS SELECT 1")?;
++        for span in [
++            TokenSpan::default(),
++            TokenSpan {
++                start: usize::MAX,
++                end: usize::MAX,
++            },
++        ] {
++            assert!(source.view_query(span).is_err());
++        }
++        Ok(())
++    }
++}
++
++impl<'a> SqlSource<'a> {
++    pub fn new(text: &'a str) -> SqlResult<Self> {
++        let options = ParserOptions::default();
++        let tokens = tokenize(text, &options)?;
++        Ok(Self {
++            text,
++            options,
++            tokens,
++        })
++    }
++
++    pub fn parse_statements(&self) -> SqlResult<Vec<Statement>> {
++        let length = self.text.len();
++        let tokens = self
++            .tokens
++            .as_slice()
++            .map((length..length).into(), map_parser_input);
++        create_parser::<_, chumsky::extra::Err<chumsky::error::Rich<_, _>>>(&self.options)
++            .parse(tokens)
++            .into_result()
++            .map_err(SqlError::parser)
++    }
++
++    pub fn parse_one_statement(&self) -> SqlResult<Statement> {
++        let mut statements = self.parse_statements()?;
++        match (statements.pop(), statements.is_empty()) {
++            (Some(statement), true) => Ok(statement),
++            _ => Err(SqlError::invalid("expected one statement")),
++        }
++    }
++
++    /// The current CREATE VIEW grammar ends with AS query. Keep the query's
++    /// original token interval, excluding surrounding trivia and its separator.
++    pub(crate) fn view_query(&self, r#as: TokenSpan) -> SqlResult<&'a str> {
++        let index = self
++            .tokens
++            .partition_point(|(_, span)| span.start < r#as.start);
++        let Some((
++            Token::Word {
++                keyword: Some(Keyword::As),
++                ..
++            },
++            span,
++        )) = self.tokens.get(index)
++        else {
++            return Err(SqlError::invalid("view AS span does not match SQL source"));
++        };
++        if (span.start, span.end) != (r#as.start, r#as.end) {
++            return Err(SqlError::invalid("view AS span does not match SQL source"));
++        }
++        let mut query = self.tokens[index + 1..]
++            .iter()
++            .take_while(|(token, _)| !matches!(token, Token::Punctuation(Punctuation::Semicolon)))
++            .filter(|(token, _)| !token.is_whitespace());
++        let Some((_, first)) = query.next() else {
++            return Err(SqlError::invalid("missing view query in SQL source"));
++        };
++        let last = query.map(|(_, span)| span).last().unwrap_or(first);
++        self.text
++            .get(first.start..last.end)
++            .ok_or_else(|| SqlError::invalid("view query span does not match SQL source"))
++    }
++}
+diff --git a/crates/sail-sql-analyzer/src/statement.rs b/crates/sail-sql-analyzer/src/statement.rs
+index adc1e43b9..6951ab827 100644
+--- a/crates/sail-sql-analyzer/src/statement.rs
++++ b/crates/sail-sql-analyzer/src/statement.rs
+@@ -40,6 +40,7 @@ use crate::expression::{
+ use crate::literal::interval::{IntervalValue, from_ast_signed_interval, multi_unit_interval_days};
+ use crate::literal::utils::Signed;
+ use crate::query::{from_ast_query, from_ast_with_clause};
++use crate::source::SqlSource;
+ use crate::value::from_ast_string;
+ 
+ fn from_ast_show_function_scope(scope: Option<ShowFunctionScope>) -> (bool, bool) {
+@@ -110,6 +111,21 @@ fn from_ast_describe_function_name(name: DescribeFunctionName) -> SqlResult<spec
+ 
+ /// Converts a parsed SQL AST statement into a spec plan (either a query or a command).
+ pub fn from_ast_statement(statement: Statement) -> SqlResult<spec::Plan> {
++    from_ast_statement_impl(statement, None)
++}
++
++/// Lowers an AST parsed from `source`, preserving original persisted-view SQL.
++pub fn from_ast_statement_with_source(
++    statement: Statement,
++    source: &SqlSource<'_>,
++) -> SqlResult<spec::Plan> {
++    from_ast_statement_impl(statement, Some(source))
++}
++
++fn from_ast_statement_impl(
++    statement: Statement,
++    source: Option<&SqlSource<'_>>,
++) -> SqlResult<spec::Plan> {
+     match statement {
+         Statement::CreatePipelineDataset(_) | Statement::CreatePipelineFlow { .. } => Err(
+             SqlError::unsupported("pipeline declarations require a pipeline registration context"),
+@@ -520,7 +536,7 @@ pub fn from_ast_statement(statement: Statement) -> SqlResult<spec::Plan> {
+                     name,
+                     columns,
+                     clauses,
+-                    r#as: _,
++                    r#as,
+                     query,
+                 } => {
+                     let name = from_ast_object_name(name)?;
+@@ -551,7 +567,10 @@ pub fn from_ast_statement(statement: Statement) -> SqlResult<spec::Plan> {
+                     let columns = view_columns(columns)
+                         .map(from_ast_view_columns)
+                         .transpose()?;
+-                    let query_text = query.text();
++                    let query_text = match source {
++                        Some(source) => source.view_query(r#as.span)?.to_string(),
++                        None => query.text(),
++                    };
+                     let query = from_ast_query(query)?;
+                     if let Some(temporary) = temporary {
+                         spec::CommandNode::CreateTemporaryView {
+@@ -728,7 +747,7 @@ pub fn from_ast_statement(statement: Statement) -> SqlResult<spec::Plan> {
+             statement,
+         } => {
+             let mode = from_ast_explain_format(format)?;
+-            let statement = from_ast_statement(*statement)?;
++            let statement = from_ast_statement_impl(*statement, source)?;
+             let node = spec::CommandNode::Explain {
+                 mode,
+                 input: Box::new(statement),

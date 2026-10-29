@@ -1,0 +1,38 @@
+   Compiling sail-sql-analyzer v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-sql-analyzer)
+   Compiling sail-function v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-function)
+   Compiling sail-logical-plan v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-logical-plan)
+   Compiling sail-physical-plan v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-physical-plan)
+   Compiling sail-logical-optimizer v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-logical-optimizer)
+   Compiling sail-data-source v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-data-source)
+   Compiling sail-physical-optimizer v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-physical-optimizer)
+   Compiling sail-iceberg v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-iceberg)
+   Compiling sail-delta-lake v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-delta-lake)
+   Compiling sail-plan v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-plan)
+   Compiling sail-catalog-iceberg v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-catalog-iceberg)
+   Compiling sail-execution v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-execution)
+   Compiling sail-catalog-onelake v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-catalog-onelake)
+   Compiling sail-session v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-session)
+   Compiling sail-spark-connect v0.7.2 (/Users/alexy/src/sail-sdp-gate/crates/sail-spark-connect)
+warning: linker stderr: ld: __eh_frame section too large (max 16MB) to encode dwarf unwind offsets in compact unwind table, performance of exception handling might be affected
+  |
+  = note: `#[warn(linker_messages)]` on by default
+
+warning: `sail-spark-connect` (lib test) generated 1 warning
+    Finished `test` profile [unoptimized] target(s) in 1m 46s
+     Running unittests src/lib.rs (target/debug/deps/sail_spark_connect-94a7bcff04b1a816)
+
+running 1 test
+test proto::plan::tests::test_sql_to_plan ... FAILED
+
+failures:
+
+---- proto::plan::tests::test_sql_to_plan stdout ----
+Error: InternalError("The test data from tests/gold_data/plan/ddl_create_index.json is not up-to-date. Please run 'env SAIL_UPDATE_GOLD_DATA=1 cargo test' to save the updates.")
+
+
+failures:
+    proto::plan::tests::test_sql_to_plan
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 27 filtered out; finished in 0.11s
+
+error: test failed, to rerun pass `-p sail-spark-connect --lib`

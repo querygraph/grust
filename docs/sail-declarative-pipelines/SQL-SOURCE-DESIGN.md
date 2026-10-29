@@ -9,7 +9,7 @@ not reconstruct SQL. No new dependency on Grust or LakeCat is required.
 
 The [original failing reproduction](evidence/view-source-design-boundary/provenance.json)
 retains SqlPipelineSuite:617's exact assertion: `SELECT * FROM range(1, 4)`.
-The current analyzer stores reconstructed token text with inserted spaces and a
+The AST-only analyzer stores reconstructed token text with inserted spaces and a
 trailing space. `TreeText` intentionally promises parseable reconstruction and
 whitespace for concatenation; retain that contract and the AST-only analyzer API.
 
@@ -69,7 +69,16 @@ query evaluator, AST-wide span derive or `TreeText` behavior change is needed.
    exact pipeline view assertion unchanged, test multiple views in one file,
    and verify failure atomicity and file reset alongside existing batch tests.
 
-The latter two units remain unimplemented. Do not mark SqlPipelineSuite:617
+The shared context is implemented in a66461125, with
+[20 analyzer tests](evidence/a66461125f4970ebe3f99b7e3044c8a6972e8814/gate.json).
+Caller integration is committed as ac7bff5007, with
+[publication gates](evidence/ac7bff5007545859b6c972e2d9b9a17ffc38fa97/gate.json).
+The original failing Rust assertion is restored unchanged. The SQL-command
+callback found during inspection is an AST-only golden test, not another
+production entry point; it intentionally retains reconstructed text.
+Session-generated commands also retain the AST-only path.
+
+Do not mark SqlPipelineSuite:617
 fully qualified until its remaining assertions and relevant execution boundary
 are covered. REST catalog view operations are a separate provider capability
 gap; correct source text does not establish that LakeCat can persist a view.
@@ -78,4 +87,4 @@ Foldable SET CATALOG expressions, unset pipeline namespaces and registration
 error wrapping remain the separate architecture checkpoint in the
 [SQL catalog handoff](SQL-CATALOG-DESIGN-HANDOFF.md). Notify the operator before
 starting that design phase, as requested. The source-context implementation above
-can proceed without selecting an expression evaluator or streaming architecture.
+does not select an expression evaluator or streaming architecture.

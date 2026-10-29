@@ -1,0 +1,152 @@
+FFFF                                                                     [100%]
+=================================== FAILURES ===================================
+_ test_catalog_retains_original_view_query[SELECT * FROM range(1, 4)-expected_rows0-ordinary] _
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x11533d490>
+pipeline_factory = <function pipeline_factory.<locals>.create at 0x11534b880>
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-125/test_catalog_retains_original_0')
+context = 'ordinary', query = 'SELECT * FROM range(1, 4)'
+expected_rows = [(1,), (2,), (3,)]
+
+    @pytest.mark.parametrize("context", ["ordinary", "pipeline"])
+    @pytest.mark.parametrize(
+        ("query", "expected_rows"),
+        [
+            ("SELECT * FROM range(1, 4)", [(1,), (2,), (3,)]),
+            ("SELECT  /* inside ; */ 'é;雪' AS `值`", [("é;雪",)]),
+        ],
+    )
+    def test_catalog_retains_original_view_query(pipeline_spark, pipeline_factory, tmp_path, context, query, expected_rows):
+        name = "source_view_" + uuid4().hex
+        sql = f"CREATE VIEW `{name}` COMMENT 'source comment' AS /* before */ {query} /* after */;"
+        try:
+            if context == "ordinary":
+                pipeline_spark.sql(sql)
+            else:
+                _, registry, run = pipeline_factory()
+                registry.register_sql(sql, tmp_path / "source.sql")
+                run()
+            details = {row.col_name: row.data_type for row in pipeline_spark.sql(f"DESCRIBE EXTENDED `{name}`").collect()}
+>           assert details["View Text"] == query
+E           AssertionError: assert 'SELECT * FRO...ge ( 1 , 4 ) ' == 'SELECT * FROM range(1, 4)'
+E             
+E             - SELECT * FROM range(1, 4)
+E             + SELECT * FROM range ( 1 , 4 ) 
+E             ?                    + + +   + +
+
+python/pysail/tests/spark/pipelines/test_view_source.py:29: AssertionError
+_ test_catalog_retains_original_view_query[SELECT * FROM range(1, 4)-expected_rows0-pipeline] _
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x115360920>
+pipeline_factory = <function pipeline_factory.<locals>.create at 0x1153af1a0>
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-125/test_catalog_retains_original_1')
+context = 'pipeline', query = 'SELECT * FROM range(1, 4)'
+expected_rows = [(1,), (2,), (3,)]
+
+    @pytest.mark.parametrize("context", ["ordinary", "pipeline"])
+    @pytest.mark.parametrize(
+        ("query", "expected_rows"),
+        [
+            ("SELECT * FROM range(1, 4)", [(1,), (2,), (3,)]),
+            ("SELECT  /* inside ; */ 'é;雪' AS `值`", [("é;雪",)]),
+        ],
+    )
+    def test_catalog_retains_original_view_query(pipeline_spark, pipeline_factory, tmp_path, context, query, expected_rows):
+        name = "source_view_" + uuid4().hex
+        sql = f"CREATE VIEW `{name}` COMMENT 'source comment' AS /* before */ {query} /* after */;"
+        try:
+            if context == "ordinary":
+                pipeline_spark.sql(sql)
+            else:
+                _, registry, run = pipeline_factory()
+                registry.register_sql(sql, tmp_path / "source.sql")
+                run()
+            details = {row.col_name: row.data_type for row in pipeline_spark.sql(f"DESCRIBE EXTENDED `{name}`").collect()}
+>           assert details["View Text"] == query
+E           AssertionError: assert 'SELECT * FRO...ge ( 1 , 4 ) ' == 'SELECT * FROM range(1, 4)'
+E             
+E             - SELECT * FROM range(1, 4)
+E             + SELECT * FROM range ( 1 , 4 ) 
+E             ?                    + + +   + +
+
+python/pysail/tests/spark/pipelines/test_view_source.py:29: AssertionError
+----------------------------- Captured stdout call -----------------------------
+2026-10-29 13:09:20: Starting pipeline analysis
+2026-10-29 13:09:20: Pipeline run completed
+_ test_catalog_retains_original_view_query[SELECT  /* inside ; */ '\xe9;\u96ea' AS `\u503c`-expected_rows1-ordinary] _
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x115361610>
+pipeline_factory = <function pipeline_factory.<locals>.create at 0x1153c09a0>
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-125/test_catalog_retains_original_2')
+context = 'ordinary', query = "SELECT  /* inside ; */ 'é;雪' AS `值`"
+expected_rows = [('é;雪',)]
+
+    @pytest.mark.parametrize("context", ["ordinary", "pipeline"])
+    @pytest.mark.parametrize(
+        ("query", "expected_rows"),
+        [
+            ("SELECT * FROM range(1, 4)", [(1,), (2,), (3,)]),
+            ("SELECT  /* inside ; */ 'é;雪' AS `值`", [("é;雪",)]),
+        ],
+    )
+    def test_catalog_retains_original_view_query(pipeline_spark, pipeline_factory, tmp_path, context, query, expected_rows):
+        name = "source_view_" + uuid4().hex
+        sql = f"CREATE VIEW `{name}` COMMENT 'source comment' AS /* before */ {query} /* after */;"
+        try:
+            if context == "ordinary":
+                pipeline_spark.sql(sql)
+            else:
+                _, registry, run = pipeline_factory()
+                registry.register_sql(sql, tmp_path / "source.sql")
+                run()
+            details = {row.col_name: row.data_type for row in pipeline_spark.sql(f"DESCRIBE EXTENDED `{name}`").collect()}
+>           assert details["View Text"] == query
+E           assert "SELECT 'é;雪' AS 值 " == "SELECT  /* i... 'é;雪' AS `值`"
+E             
+E             - SELECT  /* inside ; */ 'é;雪' AS `值`
+E             + SELECT 'é;雪' AS 值
+
+python/pysail/tests/spark/pipelines/test_view_source.py:29: AssertionError
+_ test_catalog_retains_original_view_query[SELECT  /* inside ; */ '\xe9;\u96ea' AS `\u503c`-expected_rows1-pipeline] _
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x1153634d0>
+pipeline_factory = <function pipeline_factory.<locals>.create at 0x1153c1a80>
+tmp_path = PosixPath('/private/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/pytest-of-alexy/pytest-125/test_catalog_retains_original_3')
+context = 'pipeline', query = "SELECT  /* inside ; */ 'é;雪' AS `值`"
+expected_rows = [('é;雪',)]
+
+    @pytest.mark.parametrize("context", ["ordinary", "pipeline"])
+    @pytest.mark.parametrize(
+        ("query", "expected_rows"),
+        [
+            ("SELECT * FROM range(1, 4)", [(1,), (2,), (3,)]),
+            ("SELECT  /* inside ; */ 'é;雪' AS `值`", [("é;雪",)]),
+        ],
+    )
+    def test_catalog_retains_original_view_query(pipeline_spark, pipeline_factory, tmp_path, context, query, expected_rows):
+        name = "source_view_" + uuid4().hex
+        sql = f"CREATE VIEW `{name}` COMMENT 'source comment' AS /* before */ {query} /* after */;"
+        try:
+            if context == "ordinary":
+                pipeline_spark.sql(sql)
+            else:
+                _, registry, run = pipeline_factory()
+                registry.register_sql(sql, tmp_path / "source.sql")
+                run()
+            details = {row.col_name: row.data_type for row in pipeline_spark.sql(f"DESCRIBE EXTENDED `{name}`").collect()}
+>           assert details["View Text"] == query
+E           assert "SELECT 'é;雪' AS 值 " == "SELECT  /* i... 'é;雪' AS `值`"
+E             
+E             - SELECT  /* inside ; */ 'é;雪' AS `值`
+E             + SELECT 'é;雪' AS 值
+
+python/pysail/tests/spark/pipelines/test_view_source.py:29: AssertionError
+----------------------------- Captured stdout call -----------------------------
+2026-10-29 13:09:20: Starting pipeline analysis
+2026-10-29 13:09:20: Pipeline run completed
+=========================== short test summary info ============================
+FAILED python/pysail/tests/spark/pipelines/test_view_source.py::test_catalog_retains_original_view_query[SELECT * FROM range(1, 4)-expected_rows0-ordinary]
+FAILED python/pysail/tests/spark/pipelines/test_view_source.py::test_catalog_retains_original_view_query[SELECT * FROM range(1, 4)-expected_rows0-pipeline]
+FAILED python/pysail/tests/spark/pipelines/test_view_source.py::test_catalog_retains_original_view_query[SELECT  /* inside ; */ '\xe9;\u96ea' AS `\u503c`-expected_rows1-ordinary]
+FAILED python/pysail/tests/spark/pipelines/test_view_source.py::test_catalog_retains_original_view_query[SELECT  /* inside ; */ '\xe9;\u96ea' AS `\u503c`-expected_rows1-pipeline]
+4 failed in 0.36s

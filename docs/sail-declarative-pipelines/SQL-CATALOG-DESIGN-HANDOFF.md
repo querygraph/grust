@@ -57,9 +57,9 @@ parser, catalog or error architecture was changed for this handoff.
 
 The [retained failing Rust reproduction](evidence/view-source-design-boundary/provenance.json)
 ports SqlPipelineSuite:617's exact persisted-view text assertion. Expected
-SELECT * FROM range(1, 4); registered text is SELECT * FROM range ( 1 , 4 ) with
-a trailing space. ViewDefinition.definition already carries SQL text, but the
-shared analyzer populates it with query.text(). TreeText intentionally reconstructs
+SELECT * FROM range(1, 4); the initial baseline registered SELECT * FROM range ( 1 , 4 )
+with a trailing space. ViewDefinition.definition already carries SQL text, but the
+AST-only analyzer populates it with query.text(). TreeText intentionally reconstructs
 parseable AST text and requires nonempty results to end in whitespace. Its contract
 must not be conflated with verbatim source preservation.
 
@@ -68,10 +68,11 @@ actual Chumsky 0.13.0 string input and a new Unicode lexer regression establish
 UTF-8 byte offsets; Sail d51777745 corrects that documentation. The completed
 [source-preservation design](SQL-SOURCE-DESIGN.md) records the shared source
 context and Spark 4.2.1 boundary controls. It leaves TreeText's reconstruction
-contract intact. Its implementation remains outstanding. General view metadata
+contract intact. Its shared analyzer and ordinary/pipeline caller implementation
+are now committed, with qualified gates in that design record. General view metadata
 belongs in Sail; LakeCat should store the resulting definition through its normal
 catalog adapter, once its applicable provider operations are supported.
 
 The failing test body, initial candidate patch and log remain committed as evidence.
-It can be appended to the existing Rust test module and run by the exact filter
-in the provenance record. Its assertion was not relaxed or marked as passing.
+It is now restored in the existing Rust test module and passes unchanged. The
+original failed source and log remain historical evidence.

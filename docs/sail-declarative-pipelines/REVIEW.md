@@ -917,3 +917,13 @@ reaches a shared data-source design checkpoint for Astra and is recorded in the
 new dependency was selected. Full batch and original Scala-suite acceptance,
 source-text/catalog-expression and event/REST-view architecture, streaming and
 CDC remain outstanding.
+
+## Shared original view SQL through ordinary and pipeline lowering
+
+Sail a66461125f4970ebe3f99b7e3044c8a6972e8814 adds the shared SqlSource context and source-aware analyzer API with no new dependencies. Twenty analyzer library tests, formatting and strict Clippy pass. TreeText and AST-only reconstruction remain intact. Initial Clippy placement failure is retained.
+
+Sail ac7bff5007545859b6c972e2d9b9a17ffc38fa97 wires ordinary SQL relations and pipeline commands to the shared context. The exact SqlPipelineSuite:617 Rust reproduction passes unchanged; additional checks cover multi-view source intervals, file atomicity, namespace reset and ordinary protocol conversion. Thirty selected Spark Connect library tests pass, with one filtered golden test. Strict Clippy, formatting, CLI build, Ruff, 226 selected pytest cases and 67 upstream Python executions pass. Four original-text publication checks fail against the pre-source engine and pass against Spark 4.2.1 and the candidate. See the [qualified receipt](evidence/ac7bff5007545859b6c972e2d9b9a17ffc38fa97/gate.json).
+
+The full initial Rust library run is not green: 30 pass and the SQL-plan golden test fails on ddl_create_index.json. The same golden test fails on parent a66461125. A hash-verified pre-source 9c42934ed8 CLI probe confirms its expected-token diagnostic already includes MATERIALIZED/STREAMING/FLOW, unlike the fixture. Logs and the failing result remain retained; no golden data was regenerated. No full Rust-suite pass is claimed.
+
+Inventory counts remain 97 reviewed/365 unaudited, SQL 29 partial/nine unmapped, with no fully qualified original Scala registration. Exact view text is no longer an open defect. Catalog-expression/namespace and event architecture, REST view operations, ORC, full batch, streaming and CDC remain incomplete.
