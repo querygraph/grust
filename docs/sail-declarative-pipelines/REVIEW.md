@@ -40,6 +40,33 @@ upstream Python test executions in the detached Sail gate checkout. Formatting
 of the initial pipeline modules was aligned with Sail's nightly formatter in
 the same commit.
 
+## Review the SQL implementation
+
+| Commit | Boundary and manual review |
+| --- | --- |
+| `6dacfb7d6d` | Move DataFrame pipeline tests into Sail's Python test tree and reuse its session factory. Check that scenarios still use independent sessions and that error assertions use specific exception types. |
+| `a22b849eb3` | Include parameterized Spark test registration calls in the static inventory. The inventory remains a source index, not an expanded runtime test count. |
+| `2ffbbdb1d9` | Add typed AST nodes and pipeline-specific lowering for dataset declarations, standalone flows, and streaming table references. Ordinary SQL execution rejects pipeline DDL outside registration. |
+| `f4f879890c` | Capture a catalog/database per flow and qualify external reads without changing shared session defaults. Graph-private views continue to take precedence. |
+| `644c346229` | Parse Python-declared schemas and compare them with inferred schemas before execution. Includes DDL-string and `StructType` API tests. Declared schema publication remains a separate deliverable. |
+| `b76b3d929c` | Register SQL files atomically as graph definitions, retaining per-file `USE`/`SET` context. Includes BDD coverage for dependency resolution, queries, rejection, and side effects. |
+| `004e527037` | Add BDD cases for namespace/configuration capture, private-view columns, standalone flow syntax, and duplicate output declarations. |
+
+The final source at `004e527037c63283d05c0660aac544c30378fe02` passed nightly
+formatting, strict Clippy for the parser/analyzer/planner/Connect crates, CLI
+compilation, 43 Sail pytest cases, and 67 unchanged upstream Python test
+executions. Vendor hashes and Python lint also passed. The source was tested in
+the detached gate checkout with its own target directory; pytest used its CLI
+server through Spark Connect.
+
+The 43 cases cover 17 existing batch scenarios, three Python schema cases, and
+23 SQL BDD cases. The SQL run still rejects persisted-view execution and declared
+schema/comment publication before writes. Incremental execution, recovery, and
+CDC are also outstanding. Do not infer full Spark engine parity from these
+counts. The static source inventory currently has 462 registration call sites,
+including shared helpers and parameterized declarations; it is not a denominator
+for a completion percentage.
+
 ## Constraints for subsequent units
 
 - Keep pipeline declarations in Sail's typed SQL AST and analyzer. Registration

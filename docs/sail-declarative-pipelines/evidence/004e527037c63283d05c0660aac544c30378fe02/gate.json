@@ -1,0 +1,55 @@
+{
+  "sail_commit": "004e527037c63283d05c0660aac544c30378fe02",
+  "spark_commit": "617618396087429b5627a86ce933bb0f5d6645cb",
+  "recorded_at": "2026-10-29T06:26:49.250708+00:00",
+  "rustc": "rustc 1.98.1 (48a229cea 2026-09-01)",
+  "rustfmt_toolchain": "rustc 1.98.0-nightly (57d06900f 2026-05-27)",
+  "platform": "macOS arm64",
+  "cli_sha256": "1af5895cc8885d75b31b43b0a051e65ca521f2fd03fc626cfd0740db5ebb3938",
+  "gate_checkout": "detached; private target directory; immutable HEAD for the gate",
+  "checks": [
+    {
+      "command": "cargo +nightly fmt -p sail-plan -p sail-spark-connect -p sail-sql-parser -p sail-sql-analyzer -- --check",
+      "outcome": "pass"
+    },
+    {
+      "command": "cargo +1.98.1 clippy -p sail-sql-parser -p sail-sql-analyzer -p sail-plan -p sail-spark-connect --all-targets --all-features --locked -- -D warnings",
+      "outcome": "pass"
+    },
+    {
+      "command": "cargo +1.98.1 build -p sail-cli --locked",
+      "outcome": "pass",
+      "note": "CARGO_PROFILE_DEV_DEBUG=0; CARGO_PROFILE_DEV_INCREMENTAL=false. Linker warned about the size of __eh_frame."
+    },
+    {
+      "command": "SPARK_REMOTE=sc://localhost:50082 python -m pytest -q python/pysail/tests/spark/pipelines",
+      "outcome": "pass",
+      "passed": 43,
+      "failed": 0,
+      "skipped": 0,
+      "note": "64 pytest-bdd deprecation warnings from fixture registration; no assertion changes or test exclusions."
+    },
+    {
+      "command": "python scripts/spark-pipelines-tests/run.py --spark-source <pinned Spark checkout> --remote sc://localhost:50082 --report spark-python.json",
+      "outcome": "pass",
+      "tests_run": 67,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "command": "python scripts/spark-pipelines-tests/verify_vendor.py",
+      "outcome": "pass"
+    },
+    {
+      "command": "ruff check python/pysail/tests/spark/pipelines python/pysail/testing/spark/steps/pipelines.py",
+      "outcome": "pass"
+    }
+  ],
+  "limits": [
+    "No distributed cluster execution claim.",
+    "Upstream Python includes client-only and inherited tests.",
+    "Static Scala registration inventory is not an expanded runtime count.",
+    "Persisted view execution, declared schema/comment publication, incremental recovery, and CDC remain outstanding at this source."
+  ]
+}
