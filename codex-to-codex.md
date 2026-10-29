@@ -11170,3 +11170,7 @@ Previous question-only turn summarized the completed Fable response and did not 
 ## 2026-10-29T22:21:47.414214+00:00 — DONE ORC schema and array bridge
 
 orc-schema 7ac8e1fe84dae4438920c8d8e3c7680af7a8111a: 104 library passes; orc-arrays c61fdec30902ff66bd684d6a70679462a9a4a883: 114 library passes; orc-batch-schema-vendor 28d46b84512c5155bde01c2cfab8862e983a022d: 114 library passes; orc-fixtures 3eb9ea2630e59f8e08681cf06a97f4ac58e475ba: 117 library passes. All pass detached fmt/strict Clippy before conditional branch advance. Archived exact patches, failure evidence and Spark fixtures; no new CLI/SDP verdict. Source/worker/writer activation and full timezone integration remain open. Documentation integrity gate precedes its own branch advance.
+
+## 2026-10-29T22:24:15.099448+00:00 — DONE Java timezone profile export evidence
+
+Archived original exporter/verifier sources, complete profile data, oracle digests, repeatability proof and proposed runtime handoff under evidence/orc-timezone-profiles. Artifact1f90695f80f862138bf1635b8727281eb7b0a76d838513eaf09675cb6ee7212b covers631names/349profiles/36cycles for explicitly pinned JVM settings; independent replay830644offset/35336conversion/315351resolver checks haszero failures. Runtime profile/resolver drafts are separate uncommitted Sail work, with no activation verdict. Detached archive replay/hash/source checks precede conditional documentation commit.
