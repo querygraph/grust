@@ -11010,3 +11010,11 @@ Beginning announced design checkpoint from Sail 992f5bcbf. Inspecting existing C
 ## 2026-10-29T16:05:09.241430+00:00 — DONE shared cast execution-error design
 
 Selected focused extraction of existing StructuredSparkError, CommonErrorCause transport, ANSI primitive string cast producer plus existing UDF codec and ordinary SQL activation. Five granular units; no pipeline-only workaround, message parsing or evaluator rewrite. Paired required probe: Spark 24/24, Sail 4/24, all twenty mismatches retained. Distinct overflow/temporal boundaries and unproven row-loss point explicit. Sail source/engine unchanged at 992f5bcbf. Ready for implementation; full SDP goal remains active. No publication.
+
+## 2026-10-29T16:06:38.357010+00:00 — ACK shared structured-error extraction
+
+Sail candidate cd79b2bcc extracts the existing error data into sail-common-datafusion with owned serializable fields. Nine constructors receive only mechanical ownership conversions; Connect keeps wire formatting/truncation. No new CommonErrorCause variant, cast producer or SQL activation yet. Immutable detached fmt/Clippy/library/CLI gate running before branch advance.
+
+## 2026-10-29T16:14:01.203964+00:00 — DONE shared structured-error extraction
+
+Sail cd79b2bcc94fdf69418615fb0c0c60b5bee9f871: fmt/strict Clippy, common 63/Connect 38 library tests, CLI build, fresh-server 246 selected pytest + 67 upstream executions pass. Nine mechanical constructor conversions, no new dependency or cast producer. Fresh probes preserve catalog 11/13 and ordinary casts 4/24 with failures retained. Typed cause/task transport is next; full SDP goal active, no publication.

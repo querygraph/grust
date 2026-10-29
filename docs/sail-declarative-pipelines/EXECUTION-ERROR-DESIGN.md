@@ -151,3 +151,10 @@ No original Scala-suite, distributed-cluster, query-context/stack-trace, full ba
 streaming or CDC verdict follows from this design. The complete thread objective
 remains active. This checkpoint is ready for implementation without another error
 architecture decision; notify the operator before the next distinct design phase.
+
+## Implementation receipts
+
+The mechanical extraction in unit one is implemented in [cd79b2bcc](evidence/cd79b2bcc94fdf69418615fb0c0c60b5bee9f871/gate.json).
+All 101 affected Rust tests, 246 selected Python tests and 67 upstream executions
+pass. Required failing probe counts remain unchanged; typed task-cause retention
+and cast production/activation are still outstanding.

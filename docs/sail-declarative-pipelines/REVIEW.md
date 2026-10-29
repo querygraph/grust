@@ -1112,3 +1112,18 @@ acceptance. The paired 24-case required baseline passes 24/24 on Spark and 4/24 
 Sail; every mismatch is retained, including distinct overflow/temporal conditions
 and row-dependent exception classes. Engine/source remain 992f5bcbf; this is a
 design/evidence commit, with no runtime fix or new passing SDP verdict.
+
+## Extract shared structured error data
+
+Sail cd79b2bcc94fdf69418615fb0c0c60b5bee9f871 moves the existing StructuredSparkError record into
+sail-common-datafusion with owned serializable fields. Nine existing constructors
+receive mechanical ownership conversions; the existing Connect import is re-exported
+and its wire formatting/truncation stays local. No dependency or cast behavior is
+added. Detached formatting, strict Clippy, full common 63/Connect 38 library tests,
+CLI build, 246 selected Python cases and 67 upstream Python executions pass. See
+the [receipt](evidence/cd79b2bcc94fdf69418615fb0c0c60b5bee9f871/gate.json).
+
+Fresh-CLI retained probes preserve the known failures: catalog 11/13, ordinary
+casts 4/24. This extraction does not close either gap or newly qualify task/serde
+metadata preservation. The next unit adds typed-cause and transport retention;
+producer/codec/SQL activation remain later granular units. Full SDP goal active.

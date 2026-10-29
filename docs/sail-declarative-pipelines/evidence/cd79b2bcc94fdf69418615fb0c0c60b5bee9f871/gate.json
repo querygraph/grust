@@ -1,0 +1,76 @@
+{
+  "sail_commit": "cd79b2bcc94fdf69418615fb0c0c60b5bee9f871",
+  "spark_commit": "617618396087429b5627a86ce933bb0f5d6645cb",
+  "recorded_at": "2026-10-29T16:14:00.568903+00:00",
+  "platform": "macOS arm64",
+  "gate_checkout": "detached; private target directory; immutable HEAD for the gate",
+  "cli_sha256": "6a1ef6c0ad5e9a07f307b9ea7cb3d7b3c81e25dc829fad33a6e1a84461bcf87d",
+  "checks": [
+    {
+      "command": "cargo +nightly fmt -p sail-common-datafusion -p sail-spark-connect -- --check",
+      "outcome": "pass"
+    },
+    {
+      "command": "cargo +1.98.1 clippy -p sail-common-datafusion -p sail-spark-connect --all-targets --all-features --locked -- -D warnings",
+      "outcome": "pass"
+    },
+    {
+      "command": "cargo +1.98.1 build -p sail-cli --locked",
+      "outcome": "pass",
+      "note": "CARGO_PROFILE_DEV_DEBUG=0; CARGO_PROFILE_DEV_INCREMENTAL=false; linker warned about __eh_frame size."
+    },
+    {
+      "command": "PYTHONPATH=<gate>/python SPARK_REMOTE=sc://localhost:50082 python -m pytest -q <cases listed in pytest.xml> --junitxml=pytest.xml",
+      "outcome": "pass",
+      "passed": 246,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "command": "python scripts/spark-pipelines-tests/run.py --spark-source <pinned Spark checkout> --remote sc://localhost:50082 --report spark-python.json",
+      "outcome": "pass",
+      "server_spark_version": "4.2.1",
+      "tests_run": 67,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "command": "cargo +1.98.1 test -p sail-common-datafusion --lib --locked",
+      "outcome": "pass",
+      "passed": 63,
+      "failed": 0,
+      "ignored": 0,
+      "filtered": 0
+    },
+    {
+      "command": "cargo +1.98.1 test -p sail-spark-connect --lib --locked",
+      "outcome": "pass",
+      "passed": 38,
+      "failed": 0,
+      "ignored": 0,
+      "filtered": 0
+    },
+    {
+      "command": "Retained catalog registration assertions on fresh CLI",
+      "outcome": "unchanged known failures",
+      "passed": 11,
+      "failed": 2
+    },
+    {
+      "command": "Retained twenty-four ordinary cast assertions on fresh CLI",
+      "outcome": "unchanged known failures",
+      "passed": 4,
+      "failed": 20
+    }
+  ],
+  "limits": [
+    "No distributed cluster execution claim.",
+    "Upstream Python includes inherited and client-only tests.",
+    "Full batch acceptance and the remaining Spark SDP crosswalk are outstanding.",
+    "Mechanical extraction only: no new structured CommonErrorCause variant, producer, cast UDF, codec or SQL activation.",
+    "No new Python source or Ruff check in this unit.",
+    "Serialization derives compile; actual serde/task-path preservation is the next implementation unit, not newly qualified here.",
+    "Required catalog and ordinary-cast metadata failures remain open and retained."
+  ]
+}
