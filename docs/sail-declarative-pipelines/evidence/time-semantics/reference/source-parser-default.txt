@@ -1,0 +1,13 @@
+        case TIMESTAMP if currentCtx.withLocalTimeZone() != null =>
+          TimestampType
+        case TIMESTAMP if currentCtx.withoutTimeZone() != null =>
+          TimestampNTZType
+        case TIMESTAMP =>
+          SqlApiConf.get.timestampType
+        case TIME =>
+          val precision = if (currentCtx.precision == null) {
+            TimeType.DEFAULT_PRECISION
+          } else {
+            currentCtx.precision.getText.toInt
+          }
+          TimeType(precision)

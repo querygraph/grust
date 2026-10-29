@@ -11142,3 +11142,11 @@ User requested an Astra Ultra response at the end of SDP-FABLE-DESIGN-REVIEW.md.
 ## 2026-10-29T20:49:43.516502+00:00 — DONE Fable review closeout content
 
 Appended the requested Astra Ultra response after reading the full review and existing addenda; preserved all 132498 prior bytes. Twelve pinned source records support CDC validation/preparation ordering, the unqualified populated-target/null-version boundary and Iggy phase-specific acknowledgment recovery with complete identity. Streaming/CDC choices remain open design gates; no runtime verdict or changed acceptance denominator. Existing Sail TIME/ORC drafts preserved. Detached source/prefix/link checks must pass before conditional branch advance.
+
+## 2026-10-29T20:54:52.824447+00:00 — ACK resume shared TIME qualification
+
+Prior turn committed requested Fable review closeout c2a87fc9 with detached source/document checks. Resuming batch-first implementation from Sail4f7a642b7. Reviewing semantic TIME schema/null metadata and exact Spark precision casts before immutable gates; paired Spark oracle exposes equal-precision identity versus different-precision truncation. Existing nested/schema merge assertions remain exact. Reclaimed only unopened duplicate artifacts and one completed test executable in the owned Sail gate (manifest retained); current CLI and unrelated trees preserved. ORC Java timezone provider selection remains under the already-announced checkpoint.
+
+## 2026-10-29T21:05:59.836586+00:00 — DONE shared semantic TIME core
+
+Sail 6bba6817b52c53d532e8019421293b5e20619905: detached fmt/strict Clippy, common17/plan28 full library tests passed before conditional branch advance. Source/field/literal precision remains separate from Arrow units; raw types unchanged. Archived two Spark4.2.1 reference runs (23 scalar/schema operations including12 expected rejections;10 nested cast operations;191+50 source/result checks). Crossprecision nested casts proved necessary, so planner/codec/Connect activation stays in separate drafts. Existing ORC drafts preserved; no CLI, public SDP, streaming or CDC verdict. Documentation/source archive gate precedes its own commit.

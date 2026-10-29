@@ -1,0 +1,26 @@
+  protected override def nullSafeEval(input: Any): Any = cast(input)
+
+  override def genCode(ctx: CodegenContext): ExprCode = {
+    // If the cast does not change the structure, then we don't really need to cast anything.
+    // We can return what the children return. Same thing should happen in the interpreted path.
+    if (DataType.equalsStructurally(child.dataType, dataType)) {
+      child.genCode(ctx)
+    } else {
+      super.genCode(ctx)
+    }
+  }
+
+  override def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = {
+    val eval = child.genCode(ctx)
+    val nullSafeCast = nullSafeCastFunction(child.dataType, dataType, ctx)
+
+    ev.copy(code = eval.code +
+      castCode(ctx, eval.value, eval.isNull, ev.value, ev.isNull, dataType, nullSafeCast))
+  }
+
+  // The function arguments are: `input`, `result` and `resultIsNull`. We don't need `inputIsNull`
+  // in parameter list, because the returned code will be put in null safe evaluation region.
+  protected[this] type CastFunction = (ExprValue, ExprValue, ExprValue) => Block
+
+  private[this] def nullSafeCastFunction(
+      from: DataType,

@@ -1,0 +1,19 @@
+  private def castInternal(from: DataType, to: DataType): Any => Any = {
+    // If the cast does not change the structure, then we don't really need to cast anything.
+    // We can return what the children return. Same thing should happen in the codegen path.
+    if (DataType.equalsStructurally(from, to)) {
+      identity
+    } else if (from == NullType) {
+      // According to `canCast`, NullType can be casted to any type.
+      // For primitive types, we don't reach here because the guard of `nullSafeEval`.
+      // But for nested types like struct, we might reach here for nested null type field.
+      // We won't call the returned function actually, but returns a placeholder.
+      _ => throw QueryExecutionErrors.cannotCastFromNullTypeError(to)
+    } else if (from.isInstanceOf[VariantType]) {
+      buildCast[VariantVal](_, v => {
+        variant.VariantGet.cast(v, to, castArgs)
+      })
+    } else {
+      to match {
+        case dt if dt == from => identity[Any]
+        case VariantType => input => variant.VariantExpressionEvalUtils.castToVariant(input, from)

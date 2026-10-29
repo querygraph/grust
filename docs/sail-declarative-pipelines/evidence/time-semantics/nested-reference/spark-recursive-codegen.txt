@@ -1,0 +1,109 @@
+  private[this] def castArrayCode(
+      fromType: DataType, toType: DataType, ctx: CodegenContext): CastFunction = {
+    val elementCast = nullSafeCastFunction(fromType, toType, ctx)
+    val arrayClass = JavaCode.javaType(classOf[GenericArrayData])
+    val fromElementNull = ctx.freshVariable("feNull", BooleanType)
+    val fromElementPrim = ctx.freshVariable("fePrim", fromType)
+    val toElementNull = ctx.freshVariable("teNull", BooleanType)
+    val toElementPrim = ctx.freshVariable("tePrim", toType)
+    val size = ctx.freshVariable("n", IntegerType)
+    val j = ctx.freshVariable("j", IntegerType)
+    val values = ctx.freshVariable("values", classOf[Array[Object]])
+    val javaType = JavaCode.javaType(fromType)
+
+    (c, evPrim, evNull) =>
+      code"""
+        final int $size = $c.numElements();
+        final Object[] $values = new Object[$size];
+        for (int $j = 0; $j < $size; $j ++) {
+          if ($c.isNullAt($j)) {
+            $values[$j] = null;
+          } else {
+            boolean $fromElementNull = false;
+            $javaType $fromElementPrim =
+              ${CodeGenerator.getValue(c, fromType, j)};
+            ${castCode(ctx, fromElementPrim,
+              fromElementNull, toElementPrim, toElementNull, toType, elementCast)}
+            if ($toElementNull) {
+              $values[$j] = null;
+            } else {
+              $values[$j] = $toElementPrim;
+            }
+          }
+        }
+        $evPrim = new $arrayClass($values);
+      """
+  }
+
+  private[this] def castMapCode(from: MapType, to: MapType, ctx: CodegenContext): CastFunction = {
+    val keysCast = castArrayCode(from.keyType, to.keyType, ctx)
+    val valuesCast = castArrayCode(from.valueType, to.valueType, ctx)
+
+    val mapClass = JavaCode.javaType(classOf[ArrayBasedMapData])
+
+    val keys = ctx.freshVariable("keys", ArrayType(from.keyType))
+    val convertedKeys = ctx.freshVariable("convertedKeys", ArrayType(to.keyType))
+    val convertedKeysNull = ctx.freshVariable("convertedKeysNull", BooleanType)
+
+    val values = ctx.freshVariable("values", ArrayType(from.valueType))
+    val convertedValues = ctx.freshVariable("convertedValues", ArrayType(to.valueType))
+    val convertedValuesNull = ctx.freshVariable("convertedValuesNull", BooleanType)
+
+    (c, evPrim, evNull) =>
+      code"""
+        final ArrayData $keys = $c.keyArray();
+        final ArrayData $values = $c.valueArray();
+        ${castCode(ctx, keys, FalseLiteral,
+          convertedKeys, convertedKeysNull, ArrayType(to.keyType), keysCast)}
+        ${castCode(ctx, values, FalseLiteral,
+          convertedValues, convertedValuesNull, ArrayType(to.valueType), valuesCast)}
+
+        $evPrim = new $mapClass($convertedKeys, $convertedValues);
+      """
+  }
+
+  private[this] def castStructCode(
+      from: StructType, to: StructType, ctx: CodegenContext): CastFunction = {
+
+    val fieldsCasts = from.fields.zip(to.fields).map {
+      case (fromField, toField) => nullSafeCastFunction(fromField.dataType, toField.dataType, ctx)
+    }
+    val tmpResult = ctx.freshVariable("tmpResult", classOf[GenericInternalRow])
+    val rowClass = JavaCode.javaType(classOf[GenericInternalRow])
+    val tmpInput = ctx.freshVariable("tmpInput", classOf[InternalRow])
+
+    val fieldsEvalCode = fieldsCasts.zipWithIndex.map { case (cast, i) =>
+      val fromFieldPrim = ctx.freshVariable("ffp", from.fields(i).dataType)
+      val fromFieldNull = ctx.freshVariable("ffn", BooleanType)
+      val toFieldPrim = ctx.freshVariable("tfp", to.fields(i).dataType)
+      val toFieldNull = ctx.freshVariable("tfn", BooleanType)
+      val fromType = JavaCode.javaType(from.fields(i).dataType)
+      val setColumn = CodeGenerator.setColumn(tmpResult, to.fields(i).dataType, i, toFieldPrim)
+      code"""
+        boolean $fromFieldNull = $tmpInput.isNullAt($i);
+        if ($fromFieldNull) {
+          $tmpResult.setNullAt($i);
+        } else {
+          $fromType $fromFieldPrim =
+            ${CodeGenerator.getValue(tmpInput, from.fields(i).dataType, i.toString)};
+          ${castCode(ctx, fromFieldPrim,
+            fromFieldNull, toFieldPrim, toFieldNull, to.fields(i).dataType, cast)}
+          if ($toFieldNull) {
+            $tmpResult.setNullAt($i);
+          } else {
+            $setColumn;
+          }
+        }
+       """
+    }
+    val fieldsEvalCodes = ctx.splitExpressions(
+      expressions = fieldsEvalCode.map(_.code).toImmutableArraySeq,
+      funcName = "castStruct",
+      arguments = ("InternalRow", tmpInput.code) :: (rowClass.code, tmpResult.code) :: Nil)
+
+    (input, result, resultIsNull) =>
+      code"""
+        final $rowClass $tmpResult = new $rowClass(${fieldsCasts.length});
+        final InternalRow $tmpInput = $input;
+        $fieldsEvalCodes
+        $result = $tmpResult;

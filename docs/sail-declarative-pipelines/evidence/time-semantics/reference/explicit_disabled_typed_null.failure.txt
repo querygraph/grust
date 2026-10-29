@@ -1,0 +1,19 @@
+Traceback (most recent call last):
+  File "/tmp/sail-sdp-time-semantic-reference/probe.py", line 63, in case
+    entry['value'] = action()
+                     ^^^^^^^^
+  File "/tmp/sail-sdp-time-semantic-reference/probe.py", line 148, in <lambda>
+    return case(name, lambda: sql_result(query), sql=query,
+                              ^^^^^^^^^^^^^^^^^
+  File "/tmp/sail-sdp-time-semantic-reference/probe.py", line 131, in sql_result
+    frame = spark.sql(query)
+            ^^^^^^^^^^^^^^^^
+  File "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/session.py", line 1915, in sql
+    return DataFrame(self._jsparkSession.sql(sqlQuery, litArgs), self)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/py4j/java_gateway.py", line 1362, in __call__
+    return_value = get_return_value(
+                   ^^^^^^^^^^^^^^^^^
+  File "/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/errors/exceptions/captured.py", line 257, in deco
+    raise converted from None
+pyspark.errors.exceptions.captured.AnalysisException: [UNSUPPORTED_TIME_TYPE] The data type TIME is not supported. SQLSTATE: 0A000

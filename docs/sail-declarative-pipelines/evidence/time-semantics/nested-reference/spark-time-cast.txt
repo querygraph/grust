@@ -1,0 +1,10 @@
+  private[this] def castToTime(from: DataType, to: TimeType): Any => Any = from match {
+    case _: StringType =>
+      if (ansiEnabled) {
+        buildCast[UTF8String](_, s => DateTimeUtils.stringToTimeAnsi(s, getContextOrNull()))
+      } else {
+        buildCast[UTF8String](_, s => DateTimeUtils.stringToTime(s).orNull)
+      }
+    case _: TimeType =>
+      buildCast[Long](_, nanos => DateTimeUtils.truncateTimeToPrecision(nanos, to.precision))
+  }

@@ -1264,3 +1264,7 @@ The [Spark logical-type archive](evidence/orc-logical-types-reference/README.md)
 ## Review opt-in ORC timestamp precision
 
 Native `579c04b3ae` adds checked truncation independently of timezone conversion; Sail `4f7a642b71` is its mechanical vendor update. [Evidence](evidence/orc-timestamp-precision/provenance.json): 293 native default passes/eight ignored, 186 no-default library passes, strict Clippy/formatting, exact package/source verification and 93 Sail data-source passes. The retained foreign submicrosecond input now has actual strict-error and opt-in-value checks. No production format registration or new SDP execution count. Java historical/future timezone differences are retained as the next design checkpoint, with no unqualified timezone prototype enabled.
+
+## Review shared semantic TIME type
+
+Sail `6bba6817b52c53d532e8019421293b5e20619905` preserves declared TIME precision through the shared spec, field resolver, typed nulls, aliases and nested literal fields. [Design and reference behavior](TIME-SEMANTICS.md) separate physical nanoseconds from logical precision and require recursive cast values before Connect activation. [Evidence](evidence/time-semantics/provenance.json): 17 common and 28 planner library tests, fmt and strict Clippy pass on the exact detached candidate. Two retained Spark reference runs supply scalar/schema-merge and nested-cast observations; they are not Sail acceptance counts. Scalar/nested cast, codec and inbound Connect work remains uncommitted; no public runtime or ORC registration claim.

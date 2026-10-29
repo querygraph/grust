@@ -1,0 +1,33 @@
+  private[this] def castToTimeCode(
+      from: DataType,
+      to: TimeType,
+      ctx: CodegenContext): CastFunction = {
+    from match {
+      case _: StringType =>
+        val longOpt = ctx.freshVariable("longOpt", classOf[Option[Long]])
+        (c, evPrim, evNull) =>
+          if (ansiEnabled) {
+            val errorContext = getContextOrNullCode(ctx)
+            code"""
+              $evPrim = $dateTimeUtilsCls.stringToTimeAnsi($c, $errorContext);
+            """
+          } else {
+            code"""
+              scala.Option<Long> $longOpt = $dateTimeUtilsCls.stringToTime($c);
+              if ($longOpt.isDefined()) {
+                $evPrim = ((Long) $longOpt.get()).longValue();
+              } else {
+                $evNull = true;
+              }
+            """
+          }
+      case _: TimeType =>
+        (nanos, evPrim, _) =>
+          code"""
+            $evPrim = $dateTimeUtilsCls.truncateTimeToPrecision($nanos, ${to.precision});
+          """
+      case _ =>
+        (_, _, evNull) => code"$evNull = true;"
+    }
+  }
+

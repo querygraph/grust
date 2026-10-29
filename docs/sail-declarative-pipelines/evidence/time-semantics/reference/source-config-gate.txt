@@ -1,0 +1,12 @@
+      case _ => false
+    }
+    if (dataType.existsRecursively(isInterval)) f
+  }
+
+  def failUnsupportedDataType(dataType: DataType, conf: SQLConf): Unit = {
+    if (!conf.isTimeTypeEnabled && dataType.existsRecursively(_.isInstanceOf[TimeType])) {
+      throw QueryCompilationErrors.unsupportedTimeTypeError()
+    }
+    if (!conf.geospatialEnabled && dataType.existsRecursively(isGeoSpatialType)) {
+      throw new org.apache.spark.sql.AnalysisException(
+        errorClass = "UNSUPPORTED_FEATURE.GEOSPATIAL_DISABLED",

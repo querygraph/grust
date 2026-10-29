@@ -1,0 +1,581 @@
+commit 6bba6817b52c53d532e8019421293b5e20619905
+Author:     Alexy Khrabrov <deliverable@gmail.com>
+AuthorDate: Thu Oct 29 14:01:21 2026 -0700
+Commit:     Alexy Khrabrov <deliverable@gmail.com>
+CommitDate: Thu Oct 29 14:01:21 2026 -0700
+
+    feat: preserve semantic TIME precision in shared type resolution
+
+diff --git a/crates/sail-common/src/spec/data_type.rs b/crates/sail-common/src/spec/data_type.rs
+index 083e5e671..6933b209f 100644
+--- a/crates/sail-common/src/spec/data_type.rs
++++ b/crates/sail-common/src/spec/data_type.rs
+@@ -306,6 +306,12 @@ pub enum DataType {
+         utf8_type: Utf8Type,
+     },
+     ConfiguredBinary,
++    /// Spark's TIME type with a declared precision between 0 and 6.
++    /// All precisions use Arrow Time64(Nanosecond) storage. The precision is
++    /// carried by [`super::SparkTimeMetadata`] on the Arrow field.
++    Time {
++        precision: i32,
++    },
+ }
+ 
+ #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
+diff --git a/crates/sail-common/src/spec/literal.rs b/crates/sail-common/src/spec/literal.rs
+index 4c9723cac..0f2a97134 100644
+--- a/crates/sail-common/src/spec/literal.rs
++++ b/crates/sail-common/src/spec/literal.rs
+@@ -189,6 +189,11 @@ pub enum Literal {
+         keys: Option<Vec<Literal>>,
+         values: Option<Vec<Literal>>,
+     },
++    /// Spark TIME retains nanosecond storage independently of its declared precision.
++    Time {
++        nanoseconds: Option<i64>,
++        precision: i32,
++    },
+ }
+ 
+ #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+@@ -205,6 +210,15 @@ pub struct IntervalMonthDayNano {
+ }
+ 
+ impl Literal {
++    pub fn spark_time_metadata(&self) -> CommonResult<Option<spec::SparkTimeMetadata>> {
++        match self {
++            Literal::Time { precision, .. } => {
++                spec::SparkTimeMetadata::try_new(*precision).map(Some)
++            }
++            _ => Ok(None),
++        }
++    }
++
+     pub fn spark_interval_metadata(&self) -> CommonResult<Option<spec::SparkIntervalMetadata>> {
+         match self {
+             Literal::IntervalYearMonth {
+@@ -303,6 +317,13 @@ pub fn data_type_to_null_literal(data_type: spec::DataType) -> CommonResult<Lite
+             spec::TimeUnit::Microsecond => Ok(Literal::Time64Microsecond { microseconds: None }),
+             spec::TimeUnit::Nanosecond => Ok(Literal::Time64Nanosecond { nanoseconds: None }),
+         },
++        spec::DataType::Time { precision } => {
++            spec::SparkTimeMetadata::try_new(precision)?;
++            Ok(Literal::Time {
++                nanoseconds: None,
++                precision,
++            })
++        }
+         spec::DataType::Duration { time_unit } => match time_unit {
+             spec::TimeUnit::Second => Ok(Literal::DurationSecond { seconds: None }),
+             spec::TimeUnit::Millisecond => Ok(Literal::DurationMillisecond { milliseconds: None }),
+diff --git a/crates/sail-common/src/spec/time.rs b/crates/sail-common/src/spec/time.rs
+index 4f4cc8d63..4bcb028bd 100644
+--- a/crates/sail-common/src/spec/time.rs
++++ b/crates/sail-common/src/spec/time.rs
+@@ -44,6 +44,7 @@ impl SparkTimeMetadata {
+ #[cfg(test)]
+ mod tests {
+     use super::*;
++    use crate::spec::{DataType, Literal, TimeUnit, data_type_to_null_literal};
+ 
+     #[test]
+     fn spark_time_metadata_preserves_every_supported_precision() -> CommonResult<()> {
+@@ -84,4 +85,49 @@ mod tests {
+             assert!(SparkTimeMetadata::from_json(json).is_err(), "{json}");
+         }
+     }
++
++    #[test]
++    fn spark_time_spec_and_typed_null_retain_declared_precision() -> CommonResult<()> {
++        for precision in 0..=6 {
++            let data_type = DataType::Time { precision };
++            let json = serde_json::to_string(&data_type)
++                .map_err(|error| CommonError::internal(error.to_string()))?;
++            assert_eq!(json, format!(r#"{{"time":{{"precision":{precision}}}}}"#));
++            let restored: DataType = serde_json::from_str(&json)
++                .map_err(|error| CommonError::internal(error.to_string()))?;
++            assert_eq!(restored, data_type);
++            let literal = data_type_to_null_literal(data_type)?;
++            assert_eq!(
++                literal,
++                Literal::Time {
++                    nanoseconds: None,
++                    precision
++                }
++            );
++            assert_eq!(
++                literal
++                    .spark_time_metadata()?
++                    .map(SparkTimeMetadata::precision),
++                Some(precision)
++            );
++        }
++        for precision in [-1, 7, 9] {
++            assert!(data_type_to_null_literal(DataType::Time { precision }).is_err());
++            assert!(
++                Literal::Time {
++                    nanoseconds: None,
++                    precision
++                }
++                .spark_time_metadata()
++                .is_err()
++            );
++        }
++        assert_eq!(
++            data_type_to_null_literal(DataType::Time64 {
++                time_unit: TimeUnit::Microsecond
++            })?,
++            Literal::Time64Microsecond { microseconds: None }
++        );
++        Ok(())
++    }
+ }
+diff --git a/crates/sail-plan/src/resolver/data_type.rs b/crates/sail-plan/src/resolver/data_type.rs
+index 8d7950cd8..d98bed36a 100644
+--- a/crates/sail-plan/src/resolver/data_type.rs
++++ b/crates/sail-plan/src/resolver/data_type.rs
+@@ -128,6 +128,10 @@ impl PlanResolver<'_> {
+             DataType::Time64 { time_unit } => {
+                 Ok(adt::DataType::Time64(Self::resolve_time_unit(time_unit)?))
+             }
++            DataType::Time { precision } => {
++                spec::SparkTimeMetadata::try_new(*precision)?;
++                Ok(adt::DataType::Time64(adt::TimeUnit::Nanosecond))
++            }
+             DataType::Duration { time_unit } => {
+                 Ok(adt::DataType::Duration(Self::resolve_time_unit(time_unit)?))
+             }
+@@ -306,6 +310,12 @@ impl PlanResolver<'_> {
+             metadata,
+         } = field;
+         let mut metadata: HashMap<String, String> = metadata.iter().cloned().collect();
++        if let spec::DataType::Time { precision } = data_type {
++            metadata.insert(
++                spec::SAIL_SPARK_TIME_METADATA_KEY.to_string(),
++                spec::SparkTimeMetadata::try_new(*precision)?.to_json()?,
++            );
++        }
+         if let spec::DataType::Interval {
+             interval_unit,
+             start_field,
+diff --git a/crates/sail-plan/src/resolver/expression/literal.rs b/crates/sail-plan/src/resolver/expression/literal.rs
+index 51275d563..c5023f5eb 100644
+--- a/crates/sail-plan/src/resolver/expression/literal.rs
++++ b/crates/sail-plan/src/resolver/expression/literal.rs
+@@ -23,16 +23,21 @@ impl PlanResolver<'_> {
+         literal: spec::Literal,
+         state: &mut PlanResolverState,
+     ) -> PlanResult<NamedExpr> {
+-        let field_metadata = literal
+-            .spark_interval_metadata()?
+-            .map(|metadata| {
+-                let metadata = metadata.to_json()?;
+-                Ok::<_, crate::error::PlanError>(FieldMetadata::from(HashMap::from([(
+-                    spec::SAIL_SPARK_INTERVAL_METADATA_KEY.to_string(),
+-                    metadata,
+-                )])))
+-            })
+-            .transpose()?;
++        let mut field_metadata = HashMap::new();
++        if let Some(metadata) = literal.spark_interval_metadata()? {
++            field_metadata.insert(
++                spec::SAIL_SPARK_INTERVAL_METADATA_KEY.to_string(),
++                metadata.to_json()?,
++            );
++        }
++        if let Some(metadata) = literal.spark_time_metadata()? {
++            field_metadata.insert(
++                spec::SAIL_SPARK_TIME_METADATA_KEY.to_string(),
++                metadata.to_json()?,
++            );
++        }
++        let field_metadata =
++            (!field_metadata.is_empty()).then(|| FieldMetadata::from(field_metadata));
+         let literal = self.resolve_literal(literal, state)?;
+         let service = self.ctx.extension::<PlanService>()?;
+         let name = service
+diff --git a/crates/sail-plan/src/resolver/literal.rs b/crates/sail-plan/src/resolver/literal.rs
+index f01486736..c49b8c02b 100644
+--- a/crates/sail-plan/src/resolver/literal.rs
++++ b/crates/sail-plan/src/resolver/literal.rs
+@@ -1,16 +1,16 @@
+ use std::sync::Arc;
+ 
+ use datafusion::arrow::array::{
+-    ArrayData, AsArray, FixedSizeListArray, LargeListArray, MapArray, StructArray, new_empty_array,
+-    new_null_array,
++    ArrayData, AsArray, FixedSizeListArray, LargeListArray, ListArray, MapArray, StructArray,
++    new_empty_array, new_null_array,
+ };
+ use datafusion::arrow::buffer::OffsetBuffer;
+ use datafusion::arrow::datatypes as adt;
+ use datafusion_common::ScalarValue;
+ use datafusion_common::scalar::ScalarStructBuilder;
+-use datafusion_common::utils::SingleRowListArrayBuilder;
+ use sail_common::spec::{
+-    self, Literal, SAIL_MAP_FIELD_NAME, SAIL_MAP_KEY_FIELD_NAME, SAIL_MAP_VALUE_FIELD_NAME,
++    self, Literal, SAIL_LIST_FIELD_NAME, SAIL_MAP_FIELD_NAME, SAIL_MAP_KEY_FIELD_NAME,
++    SAIL_MAP_VALUE_FIELD_NAME,
+ };
+ 
+ use crate::error::{PlanError, PlanResult};
+@@ -77,6 +77,13 @@ impl PlanResolver<'_> {
+             Literal::Time64Nanosecond { nanoseconds } => {
+                 Ok(ScalarValue::Time64Nanosecond(nanoseconds))
+             }
++            Literal::Time {
++                nanoseconds,
++                precision,
++            } => {
++                spec::SparkTimeMetadata::try_new(precision)?;
++                Ok(ScalarValue::Time64Nanosecond(nanoseconds))
++            }
+             Literal::DurationSecond { seconds } => Ok(ScalarValue::DurationSecond(seconds)),
+             Literal::DurationMillisecond { milliseconds } => {
+                 Ok(ScalarValue::DurationMillisecond(milliseconds))
+@@ -127,19 +134,28 @@ impl PlanResolver<'_> {
+                 nullable,
+                 values,
+             } => {
+-                let data_type = self.resolve_data_type(&data_type, state)?;
++                let field = self.resolve_literal_list_field(data_type, nullable, state)?;
+                 if let Some(values) = values {
+                     let scalars: Vec<ScalarValue> = values
+                         .into_iter()
+                         .map(|literal| self.resolve_literal(literal, state))
+                         .collect::<PlanResult<Vec<_>>>()?;
+-                    Ok(ScalarValue::List(ScalarValue::new_list_from_iter(
++                    let array = ScalarValue::new_list_from_iter(
+                         scalars.into_iter(),
+-                        &data_type,
++                        field.data_type(),
+                         nullable,
+-                    )))
++                    );
++                    Ok(ScalarValue::List(Arc::new(ListArray::try_new(
++                        field,
++                        array.offsets().clone(),
++                        Arc::clone(array.values()),
++                        None,
++                    )?)))
+                 } else {
+-                    Ok(ScalarValue::new_null_list(data_type, true, 0))
++                    let field = Arc::new(field.as_ref().clone().with_nullable(true));
++                    Ok(ScalarValue::List(Arc::new(ListArray::from(
++                        ArrayData::new_null(&adt::DataType::List(field), 0),
++                    ))))
+                 }
+             }
+             Literal::FixedSizeList {
+@@ -148,14 +164,14 @@ impl PlanResolver<'_> {
+                 nullable,
+                 values,
+             } => {
+-                let data_type = self.resolve_data_type(&data_type, state)?;
++                let field = self.resolve_literal_list_field(data_type, nullable, state)?;
+                 if let Some(values) = values {
+                     let scalars: Vec<ScalarValue> = values
+                         .into_iter()
+                         .map(|literal| self.resolve_literal(literal, state))
+                         .collect::<PlanResult<Vec<_>>>()?;
+                     let scalars = if scalars.is_empty() {
+-                        new_empty_array(&data_type)
++                        new_empty_array(field.data_type())
+                     } else {
+                         ScalarValue::iter_to_array(scalars).map_err(|e| {
+                             PlanError::internal(format!(
+@@ -163,15 +179,12 @@ impl PlanResolver<'_> {
+                             ))
+                         })?
+                     };
++                    let field = Arc::new(field.as_ref().clone().with_nullable(true));
+                     Ok(ScalarValue::FixedSizeList(Arc::new(
+-                        SingleRowListArrayBuilder::new(scalars)
+-                            .build_fixed_size_list_array(length as usize),
++                        FixedSizeListArray::try_new_with_length(field, length, scalars, None, 1)?,
+                     )))
+                 } else {
+-                    let data_type = adt::DataType::FixedSizeList(
+-                        adt::Field::new_list_field(data_type, nullable).into(),
+-                        length,
+-                    );
++                    let data_type = adt::DataType::FixedSizeList(field, length);
+                     Ok(ScalarValue::FixedSizeList(Arc::new(
+                         FixedSizeListArray::from(ArrayData::new_null(&data_type, 0)),
+                     )))
+@@ -182,14 +195,14 @@ impl PlanResolver<'_> {
+                 nullable,
+                 values,
+             } => {
+-                let data_type = self.resolve_data_type(&data_type, state)?;
++                let field = self.resolve_literal_list_field(data_type, nullable, state)?;
+                 if let Some(values) = values {
+                     let scalars: Vec<ScalarValue> = values
+                         .into_iter()
+                         .map(|literal| self.resolve_literal(literal, state))
+                         .collect::<PlanResult<Vec<_>>>()?;
+                     let scalars = if scalars.is_empty() {
+-                        new_empty_array(&data_type)
++                        new_empty_array(field.data_type())
+                     } else {
+                         ScalarValue::iter_to_array(scalars).map_err(|e| {
+                             PlanError::internal(format!(
+@@ -197,13 +210,13 @@ impl PlanResolver<'_> {
+                             ))
+                         })?
+                     };
+-                    Ok(ScalarValue::LargeList(Arc::new(
+-                        SingleRowListArrayBuilder::new(scalars).build_large_list_array(),
+-                    )))
++                    let field = Arc::new(field.as_ref().clone().with_nullable(true));
++                    let offsets = OffsetBuffer::from_lengths([scalars.len()]);
++                    Ok(ScalarValue::LargeList(Arc::new(LargeListArray::try_new(
++                        field, offsets, scalars, None,
++                    )?)))
+                 } else {
+-                    let data_type = adt::DataType::LargeList(
+-                        adt::Field::new_list_field(data_type, nullable).into(),
+-                    );
++                    let data_type = adt::DataType::LargeList(field);
+                     Ok(ScalarValue::LargeList(Arc::new(LargeListArray::from(
+                         ArrayData::new_null(&data_type, 0),
+                     ))))
+@@ -351,4 +364,21 @@ impl PlanResolver<'_> {
+             }
+         }
+     }
++
++    fn resolve_literal_list_field(
++        &self,
++        data_type: spec::DataType,
++        nullable: bool,
++        state: &mut PlanResolverState,
++    ) -> PlanResult<Arc<adt::Field>> {
++        Ok(Arc::new(self.resolve_field(
++            &spec::Field {
++                name: SAIL_LIST_FIELD_NAME.to_string(),
++                data_type,
++                nullable,
++                metadata: vec![],
++            },
++            state,
++        )?))
++    }
+ }
+diff --git a/crates/sail-plan/src/resolver/mod.rs b/crates/sail-plan/src/resolver/mod.rs
+index 989d430db..6bd64f6a3 100644
+--- a/crates/sail-plan/src/resolver/mod.rs
++++ b/crates/sail-plan/src/resolver/mod.rs
+@@ -19,6 +19,9 @@ pub mod scope;
+ mod state;
+ mod tree;
+ 
++#[cfg(test)]
++mod time_tests;
++
+ pub struct PlanResolver<'a> {
+     ctx: &'a SessionContext,
+     config: Arc<PlanConfig>,
+diff --git a/crates/sail-plan/src/resolver/time_tests.rs b/crates/sail-plan/src/resolver/time_tests.rs
+new file mode 100644
+index 000000000..187bcbe5d
+--- /dev/null
++++ b/crates/sail-plan/src/resolver/time_tests.rs
+@@ -0,0 +1,196 @@
++use std::sync::Arc;
++
++use arrow::array::{Array, AsArray};
++use arrow::datatypes::{DataType, Field, Time64NanosecondType, TimeUnit};
++use datafusion::prelude::{SessionConfig, SessionContext};
++use datafusion_common::{DFSchema, ScalarValue};
++use datafusion_expr::ExprSchemable;
++use sail_common::spec;
++use sail_common_datafusion::catalog::display::DefaultCatalogDisplay;
++use sail_common_datafusion::session::plan::PlanService;
++
++use super::PlanResolver;
++use super::state::PlanResolverState;
++use crate::catalog::SparkCatalogObjectDisplay;
++use crate::config::PlanConfig;
++use crate::error::{PlanError, PlanResult};
++use crate::formatter::SparkPlanFormatter;
++
++fn context() -> SessionContext {
++    SessionContext::new_with_config(SessionConfig::new().with_extension(Arc::new(
++        PlanService::new(
++            Box::new(DefaultCatalogDisplay::<SparkCatalogObjectDisplay>::default()),
++            Box::new(SparkPlanFormatter),
++        ),
++    )))
++}
++
++fn assert_time_field(field: &Field, precision: i32) -> PlanResult<()> {
++    assert_eq!(field.data_type(), &DataType::Time64(TimeUnit::Nanosecond));
++    assert_eq!(
++        field.metadata().get(spec::SAIL_SPARK_TIME_METADATA_KEY),
++        Some(&spec::SparkTimeMetadata::try_new(precision)?.to_json()?)
++    );
++    Ok(())
++}
++
++#[test]
++fn spark_time_resolver_validates_semantic_precision_and_preserves_raw_types() -> PlanResult<()> {
++    let context = context();
++    let resolver = PlanResolver::new(&context, Arc::new(PlanConfig::default()));
++    for precision in [-1, 7, 9] {
++        assert!(
++            resolver
++                .resolve_data_type_for_plan(&spec::DataType::Time { precision })
++                .is_err()
++        );
++    }
++    for (logical, expected) in [
++        (
++            spec::DataType::Time32 {
++                time_unit: spec::TimeUnit::Second,
++            },
++            DataType::Time32(TimeUnit::Second),
++        ),
++        (
++            spec::DataType::Time32 {
++                time_unit: spec::TimeUnit::Millisecond,
++            },
++            DataType::Time32(TimeUnit::Millisecond),
++        ),
++        (
++            spec::DataType::Time64 {
++                time_unit: spec::TimeUnit::Microsecond,
++            },
++            DataType::Time64(TimeUnit::Microsecond),
++        ),
++        (
++            spec::DataType::Time64 {
++                time_unit: spec::TimeUnit::Nanosecond,
++            },
++            DataType::Time64(TimeUnit::Nanosecond),
++        ),
++    ] {
++        let field = resolver.resolve_field(
++            &spec::Field {
++                name: "raw".to_string(),
++                data_type: logical,
++                nullable: true,
++                metadata: vec![],
++            },
++            &mut PlanResolverState::new(),
++        )?;
++        assert_eq!(field.data_type(), &expected);
++        assert!(
++            !field
++                .metadata()
++                .contains_key(spec::SAIL_SPARK_TIME_METADATA_KEY)
++        );
++    }
++    Ok(())
++}
++
++#[tokio::test]
++async fn spark_time_typed_null_and_alias_preserve_precision() -> PlanResult<()> {
++    let context = context();
++    let resolver = PlanResolver::new(&context, Arc::new(PlanConfig::default()));
++    let schema = Arc::new(DFSchema::empty());
++    for precision in 0..=6 {
++        let literal = spec::data_type_to_null_literal(spec::DataType::Time { precision })?;
++        let named = resolver
++            .resolve_named_expression(
++                spec::Expr::Alias {
++                    expr: Box::new(spec::Expr::Literal(literal)),
++                    name: vec!["renamed".into()],
++                    metadata: Some(vec![("comment".into(), "time alias".into())]),
++                },
++                &schema,
++                &mut PlanResolverState::new(),
++            )
++            .await?;
++        let field = named.expr.to_field(&schema)?.1;
++        assert_eq!(field.name(), "renamed");
++        assert_time_field(&field, precision)?;
++        assert_eq!(
++            field.metadata().get("comment").map(String::as_str),
++            Some("time alias")
++        );
++    }
++    Ok(())
++}
++
++#[test]
++fn spark_time_nested_typed_nulls_preserve_element_fields() -> PlanResult<()> {
++    let context = context();
++    let resolver = PlanResolver::new(&context, Arc::new(PlanConfig::default()));
++    for precision in 0..=6 {
++        let time = spec::DataType::Time { precision };
++        for logical in [
++            spec::DataType::List {
++                data_type: Box::new(time.clone()),
++                nullable: true,
++            },
++            spec::DataType::LargeList {
++                data_type: Box::new(time.clone()),
++                nullable: true,
++            },
++            spec::DataType::FixedSizeList {
++                data_type: Box::new(time.clone()),
++                nullable: true,
++                length: 2,
++            },
++        ] {
++            let expected = resolver.resolve_data_type_for_plan(&logical)?;
++            let literal = spec::data_type_to_null_literal(logical)?;
++            let scalar = resolver.resolve_literal(literal, &mut PlanResolverState::new())?;
++            assert_eq!(scalar.data_type(), expected);
++        }
++        let logical = spec::DataType::Map {
++            key_type: Box::new(time.clone()),
++            value_type: Box::new(spec::DataType::List {
++                data_type: Box::new(time),
++                nullable: true,
++            }),
++            value_type_nullable: true,
++            keys_sorted: false,
++        };
++        let expected = resolver.resolve_data_type_for_plan(&logical)?;
++        let literal = spec::data_type_to_null_literal(logical)?;
++        let scalar = resolver.resolve_literal(literal, &mut PlanResolverState::new())?;
++        assert_eq!(scalar.data_type(), expected);
++    }
++    Ok(())
++}
++
++#[test]
++fn spark_time_list_literals_preserve_metadata_and_nanoseconds() -> PlanResult<()> {
++    let context = context();
++    let resolver = PlanResolver::new(&context, Arc::new(PlanConfig::default()));
++    for precision in 0..=6 {
++        let literal = spec::Literal::List {
++            data_type: spec::DataType::Time { precision },
++            nullable: false,
++            values: Some(vec![spec::Literal::Time {
++                nanoseconds: Some(1_234_567_890),
++                precision,
++            }]),
++        };
++        let scalar = resolver.resolve_literal(literal, &mut PlanResolverState::new())?;
++        let ScalarValue::List(array) = scalar else {
++            return Err(PlanError::internal("expected list"));
++        };
++        let DataType::List(field) = array.data_type() else {
++            return Err(PlanError::internal("expected list type"));
++        };
++        assert_time_field(field, precision)?;
++        assert!(!field.is_nullable());
++        assert_eq!(
++            array
++                .values()
++                .as_primitive::<Time64NanosecondType>()
++                .value(0),
++            1_234_567_890
++        );
++    }
++    Ok(())
++}
