@@ -53,10 +53,13 @@ LakeCat machinery only where a small dependency boundary is actually needed.
 
 The [catalog-expression design](CATALOG-EXPRESSION-DESIGN.md) defines shared
 typed SQL expression resolution and asynchronous preparation followed by locked,
-file-atomic pipeline registration. Its retained baseline passes 13 checks on
-Spark and fails eleven on its recorded Sail engine. The shared resolver
-and statement-origin prerequisites are implemented. Catalog-expression
-preparation and activation remain pending.
+file-atomic pipeline registration. The historical baseline passes thirteen checks
+on Spark and two on Sail. Preparation and expression activation are now implemented;
+the retained probe passes eleven cases on Sail, with two ANSI cast metadata failures
+still open. The [shared execution-error design](EXECUTION-ERROR-DESIGN.md) has its
+error extraction and transport units implemented; cast producers, codec and SQL
+activation remain pending. See the [Fable review brief](SDP-FABLE-DESIGN-REVIEW.md)
+for the current implementation/evidence snapshot and streaming/CDC draft status.
 
 | Existing component | Reuse and required change |
 | --- | --- |

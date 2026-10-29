@@ -11026,3 +11026,11 @@ Implementing selected design unit two from Sail cd79b2bcc: CommonErrorCause extr
 ## 2026-10-29T16:29:18.351261+00:00 — DONE typed structured-error transport
 
 Sail 96eb6d75fe13f1254af5fb1452d16abbd1fff446: fmt/strict Clippy, full common 66/execution 151/Connect 40 library tests, CLI build, fresh-server 246 selected pytest + 67 upstream executions pass. Seven new wrapper/serde/task/Flight/Connect/commit-precedence tests. Initial import/lint failures retained, assertions unchanged. Complete known-probe outcomes unchanged: catalog 11/13, ordinary casts 4/24. No cast producer/codec/SQL activation yet. Owned unused planner/Connect and completed execution test executable caches removed only after lsof checks to bound disk use; no source or user server touched. Full SDP goal active, no publication.
+
+## 2026-10-29T16:31:56.621637+00:00 — ACK Fable review brief
+
+Operator requested a complete review document, then renamed it SDP-FABLE-DESIGN-REVIEW.md. Created beside SDP plans in Grust with exact source pins, implementation/evidence limits, small reuse boundaries and focused streaming/Iggy and CDC correctness/durability questions. Explicitly distinguishes existing source review/outline from implementation-ready designs. Reconciled stale overview/catalog state and crosswalk table totals with the inventory. No external message or new streaming/CDC architecture selection.
+
+## 2026-10-29T16:33:06.639855+00:00 — DONE Fable review brief
+
+SDP-FABLE-DESIGN-REVIEW.md covers the complete implementation/evidence map, pinned Sail-Iggy/Iggy/LakeCat sources, draft maturity, streaming offset/commit/fencing/recovery/codec questions and CDC ordering/auxiliary-state/reset/atomicity questions. Links, filename, Sail pin 96eb6d75f, 462/97/59 inventory figures and 246/67 cited gate counts verified. Current CROSSWALK table and DESIGN catalog-status navigation reconciled. No new streaming/CDC design selected, no external message or publication. Full SDP goal remains active.

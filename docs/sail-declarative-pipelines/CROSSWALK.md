@@ -11,8 +11,8 @@ is fully qualified by executing the original Scala suite against Sail.
 | MaterializeTablesSuite | 27 | 8 | 19 |
 | SparkDeclarativePipelinesServerSuite | 19 | 14 | 5 |
 | PipelinesHandlerSuite | 2 | 0 | 2 |
-| SqlPipelineSuite | 38 | 29 | 9 |
-| Total | 97 | 58 | 39 |
+| SqlPipelineSuite | 38 | 30 | 8 |
+| Total | 97 | 59 | 38 |
 
 Each audited [inventory record](spark-4.2.1-inventory.json) identifies its phase,
 covered/missing assertions and evidence. A partial behavioral Connect port does
