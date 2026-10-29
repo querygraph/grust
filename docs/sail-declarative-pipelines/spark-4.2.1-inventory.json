@@ -936,18 +936,23 @@
       "line": 603,
       "method": "namedGridTest",
       "name_expression": "\"DefineOutput returns resolved data name for default catalog/schema\"",
-      "status": "unmapped",
-      "sail_tests": [],
+      "status": "partial-behavioral-port",
+      "sail_tests": [
+        "python/pysail/tests/spark/pipelines/test_protocol_identifiers.py::test_define_output_returns_resolved_identifier[default-temporary-view]",
+        "python/pysail/tests/spark/pipelines/test_protocol_identifiers.py::test_define_output_returns_resolved_identifier[default-table]",
+        "python/pysail/tests/spark/pipelines/test_protocol_identifiers.py::test_define_output_returns_resolved_identifier[default-materialized-view]"
+      ],
       "coverage_review": {
         "phase": "batch-protocol",
-        "covered_assertions": "None mapped in this audit.",
-        "remaining_assertions": "Three default-schema output grids: temporary view, quoted table, MV; exact response presence and catalog/namespace/table identifiers.",
+        "covered_assertions": "All public response assertions in this grid: nonempty graph ID; correct result variant; exact catalog, namespace and table/flow names. Temporary-view target registration is explicit for flow grids. Quoted table/flow/database cases retained as in pinned source.",
+        "remaining_assertions": "Original Scala suite is unexecuted against Sail. Tests obtain the configured catalog name rather than hardcode spark_catalog. These are registration response checks, not materialization of the registered streaming table or of a quoted-database graph.",
         "scala_suite_executed": false,
         "parameter_instances": [
           "TEMPORARY_VIEW",
           "TABLE",
           "MV"
-        ]
+        ],
+        "sail_evidence": "evidence/900925b7d0a01ea118fa6e3fd0d1d3bf8d5d1b2d/pytest.xml"
       }
     },
     {
@@ -956,18 +961,23 @@
       "line": 632,
       "method": "namedGridTest",
       "name_expression": "\"DefineOutput returns resolved data name for custom schema\"",
-      "status": "unmapped",
-      "sail_tests": [],
+      "status": "partial-behavioral-port",
+      "sail_tests": [
+        "python/pysail/tests/spark/pipelines/test_protocol_identifiers.py::test_define_output_returns_resolved_identifier[custom-temporary-view]",
+        "python/pysail/tests/spark/pipelines/test_protocol_identifiers.py::test_define_output_returns_resolved_identifier[custom-table]",
+        "python/pysail/tests/spark/pipelines/test_protocol_identifiers.py::test_define_output_returns_resolved_identifier[custom-materialized-view]"
+      ],
       "coverage_review": {
         "phase": "batch-protocol",
-        "covered_assertions": "None mapped in this audit.",
-        "remaining_assertions": "Three custom-schema output grids: temporary view, quoted table, MV; exact graph/result presence and resolved identifier including quoted database behavior.",
+        "covered_assertions": "All public response assertions in this grid: nonempty graph ID; correct result variant; exact catalog, namespace and table/flow names. Temporary-view target registration is explicit for flow grids. Quoted table/flow/database cases retained as in pinned source.",
+        "remaining_assertions": "Original Scala suite is unexecuted against Sail. Tests obtain the configured catalog name rather than hardcode spark_catalog. These are registration response checks, not materialization of the registered streaming table or of a quoted-database graph.",
         "scala_suite_executed": false,
         "parameter_instances": [
           "TEMPORARY_VIEW",
           "TABLE",
           "MV"
-        ]
+        ],
+        "sail_evidence": "evidence/900925b7d0a01ea118fa6e3fd0d1d3bf8d5d1b2d/pytest.xml"
       }
     },
     {
@@ -976,17 +986,21 @@
       "line": 719,
       "method": "namedGridTest",
       "name_expression": "\"DefineFlow returns resolved data name for default catalog/schema\"",
-      "status": "unmapped",
-      "sail_tests": [],
+      "status": "partial-behavioral-port",
+      "sail_tests": [
+        "python/pysail/tests/spark/pipelines/test_protocol_identifiers.py::test_define_flow_returns_resolved_identifier[default-materialized-view]",
+        "python/pysail/tests/spark/pipelines/test_protocol_identifiers.py::test_define_flow_returns_resolved_identifier[default-temporary-view]"
+      ],
       "coverage_review": {
         "phase": "batch-protocol",
-        "covered_assertions": "None mapped in this audit.",
-        "remaining_assertions": "Two default-schema flow grids: quoted MV and registered temporary-view target; exact result presence and resolved identifiers.",
+        "covered_assertions": "All public response assertions in this grid: nonempty graph ID; correct result variant; exact catalog, namespace and table/flow names. Temporary-view target registration is explicit for flow grids. Quoted table/flow/database cases retained as in pinned source.",
+        "remaining_assertions": "Original Scala suite is unexecuted against Sail. Tests obtain the configured catalog name rather than hardcode spark_catalog. These are registration response checks, not materialization of the registered streaming table or of a quoted-database graph.",
         "scala_suite_executed": false,
         "parameter_instances": [
           "MV",
           "TV"
-        ]
+        ],
+        "sail_evidence": "evidence/f064fb2709e14d3064c93a9c03b25dbcd8d40ec5/pytest.xml"
       }
     },
     {
@@ -995,17 +1009,21 @@
       "line": 781,
       "method": "namedGridTest",
       "name_expression": "\"DefineFlow returns resolved data name for custom catalog/schema\"",
-      "status": "unmapped",
-      "sail_tests": [],
+      "status": "partial-behavioral-port",
+      "sail_tests": [
+        "python/pysail/tests/spark/pipelines/test_protocol_identifiers.py::test_define_flow_returns_resolved_identifier[custom-materialized-view]",
+        "python/pysail/tests/spark/pipelines/test_protocol_identifiers.py::test_define_flow_returns_resolved_identifier[custom-temporary-view]"
+      ],
       "coverage_review": {
         "phase": "batch-protocol",
-        "covered_assertions": "None mapped in this audit.",
-        "remaining_assertions": "Two custom-schema flow grids: MV and temporary-view target; exact result presence and resolved identifiers.",
+        "covered_assertions": "All public response assertions in this grid: nonempty graph ID; correct result variant; exact catalog, namespace and table/flow names. Temporary-view target registration is explicit for flow grids. Quoted table/flow/database cases retained as in pinned source.",
+        "remaining_assertions": "Original Scala suite is unexecuted against Sail. Tests obtain the configured catalog name rather than hardcode spark_catalog. These are registration response checks, not materialization of the registered streaming table or of a quoted-database graph.",
         "scala_suite_executed": false,
         "parameter_instances": [
           "MV",
           "TV"
-        ]
+        ],
+        "sail_evidence": "evidence/f064fb2709e14d3064c93a9c03b25dbcd8d40ec5/pytest.xml"
       }
     },
     {

@@ -1,0 +1,734 @@
+FFFFFFF                                                                  [100%]
+=================================== FAILURES ===================================
+___ test_define_flow_returns_resolved_identifier[default-materialized-view] ____
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x119b5fe90>
+kind = 1, name = '`mv`', database = None
+
+    @pytest.mark.parametrize(
+        ("kind", "name", "database"),
+        [
+            pytest.param(pb.MATERIALIZED_VIEW, "`mv`", None, id="default-materialized-view"),
+            pytest.param(pb.TEMPORARY_VIEW, "tv", None, id="default-temporary-view"),
+            pytest.param(pb.MATERIALIZED_VIEW, "mv", "custom_db", id="custom-materialized-view"),
+            pytest.param(pb.TEMPORARY_VIEW, "tv", "custom_db", id="custom-temporary-view"),
+        ],
+    )
+    def test_define_flow_returns_resolved_identifier(pipeline_spark, kind, name, database):
+        with _graph(pipeline_spark, database) as (graph_id, catalog, namespace):
+            private = kind == pb.TEMPORARY_VIEW
+            if private:
+                command = pb.Command()
+                output = command.pipeline_command.define_output
+                output.dataflow_graph_id = graph_id
+                output.output_name = name
+                output.output_type = kind
+                _, properties, _ = pipeline_spark.client.execute_command(command)
+                assert properties["pipeline_command_result"].HasField("define_output_result")
+            command = pb.Command()
+            flow = command.pipeline_command.define_flow
+            flow.dataflow_graph_id = graph_id
+            flow.flow_name = name
+            flow.target_dataset_name = name
+            function = flow.relation_flow_details.relation.unresolved_table_valued_function
+            function.function_name = "range"
+            function.arguments.add().literal.integer = 5
+>           _, properties, _ = pipeline_spark.client.execute_command(command)
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+python/pysail/tests/spark/pipelines/test_protocol_identifiers.py:98: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1219: in execute_command
+    data, _, metrics, observed_metrics, properties = self._execute_and_fetch(
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1754: in _execute_and_fetch
+    for response in self._execute_and_fetch_as_iterator(
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1731: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2093: in _handle_error
+    self._handle_rpc_error(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <pyspark.sql.connect.client.core.SparkConnectClient object at 0x119ba9eb0>
+rpc_error = <_MultiThreadedRendezvous of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = "unresolved table valued function"
+	debug_error_string = "INTERNAL:unresolved table valued function"
+>
+
+    def _handle_rpc_error(self, rpc_error: grpc.RpcError) -> NoReturn:
+        """
+        Error handling helper for dealing with GRPC Errors. On the server side, certain
+        exceptions are enriched with additional RPC Status information. These are
+        unpacked in this function and put into the exception.
+    
+        To avoid overloading the user with GRPC errors, this message explicitly
+        swallows the error context from the call. This GRPC Error is logged however,
+        and can be enabled.
+    
+        Parameters
+        ----------
+        rpc_error : grpc.RpcError
+           RPC Error containing the details of the exception.
+    
+        Returns
+        -------
+        Throws the appropriate internal Python exception.
+        """
+        logger.exception("GRPC Error received")
+        # We have to cast the value here because, a RpcError is a Call as well.
+        # https://grpc.github.io/grpc/python/grpc.html#grpc.UnaryUnaryMultiCallable.__call__
+        error: grpc.Call = cast(grpc.Call, rpc_error)
+        status_code: grpc.StatusCode = error.code()
+        status: Optional[Status] = rpc_status.from_call(error)
+        if status:
+            for d in status.details:
+                if d.Is(error_details_pb2.ErrorInfo.DESCRIPTOR):
+                    info = error_details_pb2.ErrorInfo()
+                    d.Unpack(info)
+                    logger.debug(f"Received ErrorInfo: {info}")
+    
+                    if info.metadata.get("errorClass") == "INVALID_HANDLE.SESSION_CHANGED":
+                        self._closed = True
+    
+                    if info.metadata.get("errorClass") == "CONNECT_INVALID_PLAN.CANNOT_PARSE":
+                        # Disable plan compression if the server fails to interpret the plan.
+                        logger.info(
+                            "Disabling plan compression for the session due to "
+                            "CONNECT_INVALID_PLAN.CANNOT_PARSE error."
+                        )
+                        self._plan_compression_threshold, self._plan_compression_algorithm = (
+                            -1,
+                            "NONE",
+                        )
+    
+>                   raise convert_exception(
+                        info,
+                        status.message,
+                        self._fetch_enriched_error(info),
+                        self._display_server_stack_trace(),
+                        status_code,
+                    ) from None
+E                   pyspark.errors.exceptions.connect.UnsupportedOperationException: unresolved table valued function
+
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2177: UnsupportedOperationException
+_____ test_define_flow_returns_resolved_identifier[default-temporary-view] _____
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x119bb5220>
+kind = 3, name = 'tv', database = None
+
+    @pytest.mark.parametrize(
+        ("kind", "name", "database"),
+        [
+            pytest.param(pb.MATERIALIZED_VIEW, "`mv`", None, id="default-materialized-view"),
+            pytest.param(pb.TEMPORARY_VIEW, "tv", None, id="default-temporary-view"),
+            pytest.param(pb.MATERIALIZED_VIEW, "mv", "custom_db", id="custom-materialized-view"),
+            pytest.param(pb.TEMPORARY_VIEW, "tv", "custom_db", id="custom-temporary-view"),
+        ],
+    )
+    def test_define_flow_returns_resolved_identifier(pipeline_spark, kind, name, database):
+        with _graph(pipeline_spark, database) as (graph_id, catalog, namespace):
+            private = kind == pb.TEMPORARY_VIEW
+            if private:
+                command = pb.Command()
+                output = command.pipeline_command.define_output
+                output.dataflow_graph_id = graph_id
+                output.output_name = name
+                output.output_type = kind
+                _, properties, _ = pipeline_spark.client.execute_command(command)
+                assert properties["pipeline_command_result"].HasField("define_output_result")
+            command = pb.Command()
+            flow = command.pipeline_command.define_flow
+            flow.dataflow_graph_id = graph_id
+            flow.flow_name = name
+            flow.target_dataset_name = name
+            function = flow.relation_flow_details.relation.unresolved_table_valued_function
+            function.function_name = "range"
+            function.arguments.add().literal.integer = 5
+>           _, properties, _ = pipeline_spark.client.execute_command(command)
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+python/pysail/tests/spark/pipelines/test_protocol_identifiers.py:98: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1219: in execute_command
+    data, _, metrics, observed_metrics, properties = self._execute_and_fetch(
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1754: in _execute_and_fetch
+    for response in self._execute_and_fetch_as_iterator(
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1731: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2093: in _handle_error
+    self._handle_rpc_error(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <pyspark.sql.connect.client.core.SparkConnectClient object at 0x119bb7290>
+rpc_error = <_MultiThreadedRendezvous of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = "unresolved table valued function"
+	debug_error_string = "INTERNAL:unresolved table valued function"
+>
+
+    def _handle_rpc_error(self, rpc_error: grpc.RpcError) -> NoReturn:
+        """
+        Error handling helper for dealing with GRPC Errors. On the server side, certain
+        exceptions are enriched with additional RPC Status information. These are
+        unpacked in this function and put into the exception.
+    
+        To avoid overloading the user with GRPC errors, this message explicitly
+        swallows the error context from the call. This GRPC Error is logged however,
+        and can be enabled.
+    
+        Parameters
+        ----------
+        rpc_error : grpc.RpcError
+           RPC Error containing the details of the exception.
+    
+        Returns
+        -------
+        Throws the appropriate internal Python exception.
+        """
+        logger.exception("GRPC Error received")
+        # We have to cast the value here because, a RpcError is a Call as well.
+        # https://grpc.github.io/grpc/python/grpc.html#grpc.UnaryUnaryMultiCallable.__call__
+        error: grpc.Call = cast(grpc.Call, rpc_error)
+        status_code: grpc.StatusCode = error.code()
+        status: Optional[Status] = rpc_status.from_call(error)
+        if status:
+            for d in status.details:
+                if d.Is(error_details_pb2.ErrorInfo.DESCRIPTOR):
+                    info = error_details_pb2.ErrorInfo()
+                    d.Unpack(info)
+                    logger.debug(f"Received ErrorInfo: {info}")
+    
+                    if info.metadata.get("errorClass") == "INVALID_HANDLE.SESSION_CHANGED":
+                        self._closed = True
+    
+                    if info.metadata.get("errorClass") == "CONNECT_INVALID_PLAN.CANNOT_PARSE":
+                        # Disable plan compression if the server fails to interpret the plan.
+                        logger.info(
+                            "Disabling plan compression for the session due to "
+                            "CONNECT_INVALID_PLAN.CANNOT_PARSE error."
+                        )
+                        self._plan_compression_threshold, self._plan_compression_algorithm = (
+                            -1,
+                            "NONE",
+                        )
+    
+>                   raise convert_exception(
+                        info,
+                        status.message,
+                        self._fetch_enriched_error(info),
+                        self._display_server_stack_trace(),
+                        status_code,
+                    ) from None
+E                   pyspark.errors.exceptions.connect.UnsupportedOperationException: unresolved table valued function
+
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2177: UnsupportedOperationException
+____ test_define_flow_returns_resolved_identifier[custom-materialized-view] ____
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x119bb69f0>
+kind = 1, name = 'mv', database = 'custom_db'
+
+    @pytest.mark.parametrize(
+        ("kind", "name", "database"),
+        [
+            pytest.param(pb.MATERIALIZED_VIEW, "`mv`", None, id="default-materialized-view"),
+            pytest.param(pb.TEMPORARY_VIEW, "tv", None, id="default-temporary-view"),
+            pytest.param(pb.MATERIALIZED_VIEW, "mv", "custom_db", id="custom-materialized-view"),
+            pytest.param(pb.TEMPORARY_VIEW, "tv", "custom_db", id="custom-temporary-view"),
+        ],
+    )
+    def test_define_flow_returns_resolved_identifier(pipeline_spark, kind, name, database):
+        with _graph(pipeline_spark, database) as (graph_id, catalog, namespace):
+            private = kind == pb.TEMPORARY_VIEW
+            if private:
+                command = pb.Command()
+                output = command.pipeline_command.define_output
+                output.dataflow_graph_id = graph_id
+                output.output_name = name
+                output.output_type = kind
+                _, properties, _ = pipeline_spark.client.execute_command(command)
+                assert properties["pipeline_command_result"].HasField("define_output_result")
+            command = pb.Command()
+            flow = command.pipeline_command.define_flow
+            flow.dataflow_graph_id = graph_id
+            flow.flow_name = name
+            flow.target_dataset_name = name
+            function = flow.relation_flow_details.relation.unresolved_table_valued_function
+            function.function_name = "range"
+            function.arguments.add().literal.integer = 5
+>           _, properties, _ = pipeline_spark.client.execute_command(command)
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+python/pysail/tests/spark/pipelines/test_protocol_identifiers.py:98: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1219: in execute_command
+    data, _, metrics, observed_metrics, properties = self._execute_and_fetch(
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1754: in _execute_and_fetch
+    for response in self._execute_and_fetch_as_iterator(
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1731: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2093: in _handle_error
+    self._handle_rpc_error(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <pyspark.sql.connect.client.core.SparkConnectClient object at 0x119bb7470>
+rpc_error = <_MultiThreadedRendezvous of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = "unresolved table valued function"
+	debug_error_string = "INTERNAL:unresolved table valued function"
+>
+
+    def _handle_rpc_error(self, rpc_error: grpc.RpcError) -> NoReturn:
+        """
+        Error handling helper for dealing with GRPC Errors. On the server side, certain
+        exceptions are enriched with additional RPC Status information. These are
+        unpacked in this function and put into the exception.
+    
+        To avoid overloading the user with GRPC errors, this message explicitly
+        swallows the error context from the call. This GRPC Error is logged however,
+        and can be enabled.
+    
+        Parameters
+        ----------
+        rpc_error : grpc.RpcError
+           RPC Error containing the details of the exception.
+    
+        Returns
+        -------
+        Throws the appropriate internal Python exception.
+        """
+        logger.exception("GRPC Error received")
+        # We have to cast the value here because, a RpcError is a Call as well.
+        # https://grpc.github.io/grpc/python/grpc.html#grpc.UnaryUnaryMultiCallable.__call__
+        error: grpc.Call = cast(grpc.Call, rpc_error)
+        status_code: grpc.StatusCode = error.code()
+        status: Optional[Status] = rpc_status.from_call(error)
+        if status:
+            for d in status.details:
+                if d.Is(error_details_pb2.ErrorInfo.DESCRIPTOR):
+                    info = error_details_pb2.ErrorInfo()
+                    d.Unpack(info)
+                    logger.debug(f"Received ErrorInfo: {info}")
+    
+                    if info.metadata.get("errorClass") == "INVALID_HANDLE.SESSION_CHANGED":
+                        self._closed = True
+    
+                    if info.metadata.get("errorClass") == "CONNECT_INVALID_PLAN.CANNOT_PARSE":
+                        # Disable plan compression if the server fails to interpret the plan.
+                        logger.info(
+                            "Disabling plan compression for the session due to "
+                            "CONNECT_INVALID_PLAN.CANNOT_PARSE error."
+                        )
+                        self._plan_compression_threshold, self._plan_compression_algorithm = (
+                            -1,
+                            "NONE",
+                        )
+    
+>                   raise convert_exception(
+                        info,
+                        status.message,
+                        self._fetch_enriched_error(info),
+                        self._display_server_stack_trace(),
+                        status_code,
+                    ) from None
+E                   pyspark.errors.exceptions.connect.UnsupportedOperationException: unresolved table valued function
+
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2177: UnsupportedOperationException
+_____ test_define_flow_returns_resolved_identifier[custom-temporary-view] ______
+
+pipeline_spark = <pyspark.sql.connect.session.SparkSession object at 0x119c1cfe0>
+kind = 3, name = 'tv', database = 'custom_db'
+
+    @pytest.mark.parametrize(
+        ("kind", "name", "database"),
+        [
+            pytest.param(pb.MATERIALIZED_VIEW, "`mv`", None, id="default-materialized-view"),
+            pytest.param(pb.TEMPORARY_VIEW, "tv", None, id="default-temporary-view"),
+            pytest.param(pb.MATERIALIZED_VIEW, "mv", "custom_db", id="custom-materialized-view"),
+            pytest.param(pb.TEMPORARY_VIEW, "tv", "custom_db", id="custom-temporary-view"),
+        ],
+    )
+    def test_define_flow_returns_resolved_identifier(pipeline_spark, kind, name, database):
+        with _graph(pipeline_spark, database) as (graph_id, catalog, namespace):
+            private = kind == pb.TEMPORARY_VIEW
+            if private:
+                command = pb.Command()
+                output = command.pipeline_command.define_output
+                output.dataflow_graph_id = graph_id
+                output.output_name = name
+                output.output_type = kind
+                _, properties, _ = pipeline_spark.client.execute_command(command)
+                assert properties["pipeline_command_result"].HasField("define_output_result")
+            command = pb.Command()
+            flow = command.pipeline_command.define_flow
+            flow.dataflow_graph_id = graph_id
+            flow.flow_name = name
+            flow.target_dataset_name = name
+            function = flow.relation_flow_details.relation.unresolved_table_valued_function
+            function.function_name = "range"
+            function.arguments.add().literal.integer = 5
+>           _, properties, _ = pipeline_spark.client.execute_command(command)
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+python/pysail/tests/spark/pipelines/test_protocol_identifiers.py:98: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1219: in execute_command
+    data, _, metrics, observed_metrics, properties = self._execute_and_fetch(
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1754: in _execute_and_fetch
+    for response in self._execute_and_fetch_as_iterator(
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1731: in _execute_and_fetch_as_iterator
+    self._handle_error(error)
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2093: in _handle_error
+    self._handle_rpc_error(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <pyspark.sql.connect.client.core.SparkConnectClient object at 0x119c1da00>
+rpc_error = <_MultiThreadedRendezvous of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = "unresolved table valued function"
+	debug_error_string = "INTERNAL:unresolved table valued function"
+>
+
+    def _handle_rpc_error(self, rpc_error: grpc.RpcError) -> NoReturn:
+        """
+        Error handling helper for dealing with GRPC Errors. On the server side, certain
+        exceptions are enriched with additional RPC Status information. These are
+        unpacked in this function and put into the exception.
+    
+        To avoid overloading the user with GRPC errors, this message explicitly
+        swallows the error context from the call. This GRPC Error is logged however,
+        and can be enabled.
+    
+        Parameters
+        ----------
+        rpc_error : grpc.RpcError
+           RPC Error containing the details of the exception.
+    
+        Returns
+        -------
+        Throws the appropriate internal Python exception.
+        """
+        logger.exception("GRPC Error received")
+        # We have to cast the value here because, a RpcError is a Call as well.
+        # https://grpc.github.io/grpc/python/grpc.html#grpc.UnaryUnaryMultiCallable.__call__
+        error: grpc.Call = cast(grpc.Call, rpc_error)
+        status_code: grpc.StatusCode = error.code()
+        status: Optional[Status] = rpc_status.from_call(error)
+        if status:
+            for d in status.details:
+                if d.Is(error_details_pb2.ErrorInfo.DESCRIPTOR):
+                    info = error_details_pb2.ErrorInfo()
+                    d.Unpack(info)
+                    logger.debug(f"Received ErrorInfo: {info}")
+    
+                    if info.metadata.get("errorClass") == "INVALID_HANDLE.SESSION_CHANGED":
+                        self._closed = True
+    
+                    if info.metadata.get("errorClass") == "CONNECT_INVALID_PLAN.CANNOT_PARSE":
+                        # Disable plan compression if the server fails to interpret the plan.
+                        logger.info(
+                            "Disabling plan compression for the session due to "
+                            "CONNECT_INVALID_PLAN.CANNOT_PARSE error."
+                        )
+                        self._plan_compression_threshold, self._plan_compression_algorithm = (
+                            -1,
+                            "NONE",
+                        )
+    
+>                   raise convert_exception(
+                        info,
+                        status.message,
+                        self._fetch_enriched_error(info),
+                        self._display_server_stack_trace(),
+                        status_code,
+                    ) from None
+E                   pyspark.errors.exceptions.connect.UnsupportedOperationException: unresolved table valued function
+
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2177: UnsupportedOperationException
+__________________ test_connect_table_function_relation[None] __________________
+
+spark = <pyspark.sql.connect.session.SparkSession object at 0x119c1e000>
+values = None
+
+    @pytest.mark.parametrize("values", [None, [], [2, 5]])
+    def test_connect_table_function_relation(spark, values):
+        if not hasattr(spark, "tvf"):
+            pytest.skip("Table-valued function API requires Spark 4.0+")
+        df = spark.tvf.explode_outer(F.lit(values).cast("array<int>"))
+>       assert df.schema.simpleString() == "struct<col:int>"
+               ^^^^^^^^^
+
+python/pysail/tests/spark/dataframe/test_table_function.py:170: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:2035: in schema
+    _schema = self._schema
+              ^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:2024: in _schema
+    self._cached_schema = self._session.client.schema(query)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1183: in schema
+    schema = self._analyze(method="schema", plan=plan).schema
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1460: in _analyze
+    self._handle_error(error)
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2093: in _handle_error
+    self._handle_rpc_error(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <pyspark.sql.connect.client.core.SparkConnectClient object at 0x119c1d6a0>
+rpc_error = <_InactiveRpcError of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = "unresolved table valued function"
+	debug_error_string = "INTERNAL:unresolved table valued function"
+>
+
+    def _handle_rpc_error(self, rpc_error: grpc.RpcError) -> NoReturn:
+        """
+        Error handling helper for dealing with GRPC Errors. On the server side, certain
+        exceptions are enriched with additional RPC Status information. These are
+        unpacked in this function and put into the exception.
+    
+        To avoid overloading the user with GRPC errors, this message explicitly
+        swallows the error context from the call. This GRPC Error is logged however,
+        and can be enabled.
+    
+        Parameters
+        ----------
+        rpc_error : grpc.RpcError
+           RPC Error containing the details of the exception.
+    
+        Returns
+        -------
+        Throws the appropriate internal Python exception.
+        """
+        logger.exception("GRPC Error received")
+        # We have to cast the value here because, a RpcError is a Call as well.
+        # https://grpc.github.io/grpc/python/grpc.html#grpc.UnaryUnaryMultiCallable.__call__
+        error: grpc.Call = cast(grpc.Call, rpc_error)
+        status_code: grpc.StatusCode = error.code()
+        status: Optional[Status] = rpc_status.from_call(error)
+        if status:
+            for d in status.details:
+                if d.Is(error_details_pb2.ErrorInfo.DESCRIPTOR):
+                    info = error_details_pb2.ErrorInfo()
+                    d.Unpack(info)
+                    logger.debug(f"Received ErrorInfo: {info}")
+    
+                    if info.metadata.get("errorClass") == "INVALID_HANDLE.SESSION_CHANGED":
+                        self._closed = True
+    
+                    if info.metadata.get("errorClass") == "CONNECT_INVALID_PLAN.CANNOT_PARSE":
+                        # Disable plan compression if the server fails to interpret the plan.
+                        logger.info(
+                            "Disabling plan compression for the session due to "
+                            "CONNECT_INVALID_PLAN.CANNOT_PARSE error."
+                        )
+                        self._plan_compression_threshold, self._plan_compression_algorithm = (
+                            -1,
+                            "NONE",
+                        )
+    
+>                   raise convert_exception(
+                        info,
+                        status.message,
+                        self._fetch_enriched_error(info),
+                        self._display_server_stack_trace(),
+                        status_code,
+                    ) from None
+E                   pyspark.errors.exceptions.connect.UnsupportedOperationException: unresolved table valued function
+
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2177: UnsupportedOperationException
+________________ test_connect_table_function_relation[values1] _________________
+
+spark = <pyspark.sql.connect.session.SparkSession object at 0x119c1e000>
+values = []
+
+    @pytest.mark.parametrize("values", [None, [], [2, 5]])
+    def test_connect_table_function_relation(spark, values):
+        if not hasattr(spark, "tvf"):
+            pytest.skip("Table-valued function API requires Spark 4.0+")
+        df = spark.tvf.explode_outer(F.lit(values).cast("array<int>"))
+>       assert df.schema.simpleString() == "struct<col:int>"
+               ^^^^^^^^^
+
+python/pysail/tests/spark/dataframe/test_table_function.py:170: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:2035: in schema
+    _schema = self._schema
+              ^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:2024: in _schema
+    self._cached_schema = self._session.client.schema(query)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1183: in schema
+    schema = self._analyze(method="schema", plan=plan).schema
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1460: in _analyze
+    self._handle_error(error)
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2093: in _handle_error
+    self._handle_rpc_error(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <pyspark.sql.connect.client.core.SparkConnectClient object at 0x119c1d6a0>
+rpc_error = <_InactiveRpcError of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = "unresolved table valued function"
+	debug_error_string = "INTERNAL:unresolved table valued function"
+>
+
+    def _handle_rpc_error(self, rpc_error: grpc.RpcError) -> NoReturn:
+        """
+        Error handling helper for dealing with GRPC Errors. On the server side, certain
+        exceptions are enriched with additional RPC Status information. These are
+        unpacked in this function and put into the exception.
+    
+        To avoid overloading the user with GRPC errors, this message explicitly
+        swallows the error context from the call. This GRPC Error is logged however,
+        and can be enabled.
+    
+        Parameters
+        ----------
+        rpc_error : grpc.RpcError
+           RPC Error containing the details of the exception.
+    
+        Returns
+        -------
+        Throws the appropriate internal Python exception.
+        """
+        logger.exception("GRPC Error received")
+        # We have to cast the value here because, a RpcError is a Call as well.
+        # https://grpc.github.io/grpc/python/grpc.html#grpc.UnaryUnaryMultiCallable.__call__
+        error: grpc.Call = cast(grpc.Call, rpc_error)
+        status_code: grpc.StatusCode = error.code()
+        status: Optional[Status] = rpc_status.from_call(error)
+        if status:
+            for d in status.details:
+                if d.Is(error_details_pb2.ErrorInfo.DESCRIPTOR):
+                    info = error_details_pb2.ErrorInfo()
+                    d.Unpack(info)
+                    logger.debug(f"Received ErrorInfo: {info}")
+    
+                    if info.metadata.get("errorClass") == "INVALID_HANDLE.SESSION_CHANGED":
+                        self._closed = True
+    
+                    if info.metadata.get("errorClass") == "CONNECT_INVALID_PLAN.CANNOT_PARSE":
+                        # Disable plan compression if the server fails to interpret the plan.
+                        logger.info(
+                            "Disabling plan compression for the session due to "
+                            "CONNECT_INVALID_PLAN.CANNOT_PARSE error."
+                        )
+                        self._plan_compression_threshold, self._plan_compression_algorithm = (
+                            -1,
+                            "NONE",
+                        )
+    
+>                   raise convert_exception(
+                        info,
+                        status.message,
+                        self._fetch_enriched_error(info),
+                        self._display_server_stack_trace(),
+                        status_code,
+                    ) from None
+E                   pyspark.errors.exceptions.connect.UnsupportedOperationException: unresolved table valued function
+
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2177: UnsupportedOperationException
+________________ test_connect_table_function_relation[values2] _________________
+
+spark = <pyspark.sql.connect.session.SparkSession object at 0x119c1e000>
+values = [2, 5]
+
+    @pytest.mark.parametrize("values", [None, [], [2, 5]])
+    def test_connect_table_function_relation(spark, values):
+        if not hasattr(spark, "tvf"):
+            pytest.skip("Table-valued function API requires Spark 4.0+")
+        df = spark.tvf.explode_outer(F.lit(values).cast("array<int>"))
+>       assert df.schema.simpleString() == "struct<col:int>"
+               ^^^^^^^^^
+
+python/pysail/tests/spark/dataframe/test_table_function.py:170: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:2035: in schema
+    _schema = self._schema
+              ^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/dataframe.py:2024: in _schema
+    self._cached_schema = self._session.client.schema(query)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1183: in schema
+    schema = self._analyze(method="schema", plan=plan).schema
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:1460: in _analyze
+    self._handle_error(error)
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2093: in _handle_error
+    self._handle_rpc_error(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <pyspark.sql.connect.client.core.SparkConnectClient object at 0x119c1d6a0>
+rpc_error = <_InactiveRpcError of RPC that terminated with:
+	status = StatusCode.INTERNAL
+	details = "unresolved table valued function"
+	debug_error_string = "INTERNAL:unresolved table valued function"
+>
+
+    def _handle_rpc_error(self, rpc_error: grpc.RpcError) -> NoReturn:
+        """
+        Error handling helper for dealing with GRPC Errors. On the server side, certain
+        exceptions are enriched with additional RPC Status information. These are
+        unpacked in this function and put into the exception.
+    
+        To avoid overloading the user with GRPC errors, this message explicitly
+        swallows the error context from the call. This GRPC Error is logged however,
+        and can be enabled.
+    
+        Parameters
+        ----------
+        rpc_error : grpc.RpcError
+           RPC Error containing the details of the exception.
+    
+        Returns
+        -------
+        Throws the appropriate internal Python exception.
+        """
+        logger.exception("GRPC Error received")
+        # We have to cast the value here because, a RpcError is a Call as well.
+        # https://grpc.github.io/grpc/python/grpc.html#grpc.UnaryUnaryMultiCallable.__call__
+        error: grpc.Call = cast(grpc.Call, rpc_error)
+        status_code: grpc.StatusCode = error.code()
+        status: Optional[Status] = rpc_status.from_call(error)
+        if status:
+            for d in status.details:
+                if d.Is(error_details_pb2.ErrorInfo.DESCRIPTOR):
+                    info = error_details_pb2.ErrorInfo()
+                    d.Unpack(info)
+                    logger.debug(f"Received ErrorInfo: {info}")
+    
+                    if info.metadata.get("errorClass") == "INVALID_HANDLE.SESSION_CHANGED":
+                        self._closed = True
+    
+                    if info.metadata.get("errorClass") == "CONNECT_INVALID_PLAN.CANNOT_PARSE":
+                        # Disable plan compression if the server fails to interpret the plan.
+                        logger.info(
+                            "Disabling plan compression for the session due to "
+                            "CONNECT_INVALID_PLAN.CANNOT_PARSE error."
+                        )
+                        self._plan_compression_threshold, self._plan_compression_algorithm = (
+                            -1,
+                            "NONE",
+                        )
+    
+>                   raise convert_exception(
+                        info,
+                        status.message,
+                        self._fetch_enriched_error(info),
+                        self._display_server_stack_trace(),
+                        status_code,
+                    ) from None
+E                   pyspark.errors.exceptions.connect.UnsupportedOperationException: unresolved table valued function
+
+.venv/lib/python3.12/site-packages/pyspark/sql/connect/client/core.py:2177: UnsupportedOperationException
+=========================== short test summary info ============================
+FAILED python/pysail/tests/spark/pipelines/test_protocol_identifiers.py::test_define_flow_returns_resolved_identifier[default-materialized-view]
+FAILED python/pysail/tests/spark/pipelines/test_protocol_identifiers.py::test_define_flow_returns_resolved_identifier[default-temporary-view]
+FAILED python/pysail/tests/spark/pipelines/test_protocol_identifiers.py::test_define_flow_returns_resolved_identifier[custom-materialized-view]
+FAILED python/pysail/tests/spark/pipelines/test_protocol_identifiers.py::test_define_flow_returns_resolved_identifier[custom-temporary-view]
+FAILED python/pysail/tests/spark/dataframe/test_table_function.py::test_connect_table_function_relation[None]
+FAILED python/pysail/tests/spark/dataframe/test_table_function.py::test_connect_table_function_relation[values1]
+FAILED python/pysail/tests/spark/dataframe/test_table_function.py::test_connect_table_function_relation[values2]
+7 failed in 0.74s

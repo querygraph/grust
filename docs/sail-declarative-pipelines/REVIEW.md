@@ -535,3 +535,44 @@ behavioral ports and 16 remain unmapped. The [crosswalk](CROSSWALK.md) keeps
 internal registry checks, protocol responses, streaming fixtures and absent
 assertions explicit. Across the audited suites 57 registrations are reviewed;
 405 remain unaudited. No whole Scala suite has run against Sail.
+
+## Review quoted graph database defaults
+
+Commit `900925b7d0` parses the graph database default before setting the shared
+CatalogManager namespace, reusing the SQL analyzer's existing object-name parser
+as the ordinary SetCurrentDatabase command does. The graph's original default
+string remains available for Spark-compatible resolved-identifier responses.
+
+The [receipt](evidence/900925b7d0a01ea118fa6e3fd0d1d3bf8d5d1b2d/gate.json)
+records 143 selected pytest cases, 67 upstream Python executions, six matching
+Spark 4.2.1 output-identifier checks, formatting, strict Clippy, CLI build and
+Python lint. All pass. The parent baseline failed the quoted-database case and
+passed the other five. The broader initial ten-case probe also exposed four
+unresolved-table-function failures, retained for the separate following unit.
+The output grids register a TABLE but do not execute it; no new streaming or
+quoted-database materialization qualification follows from these checks.
+
+## Review Connect table-function relations
+
+Commit `f064fb2709` translates UnresolvedTableValuedFunction into Sail's existing
+ReadUdtf spec using the existing object-name and expression translators. Both
+built-in table functions and generators continue through the shared resolver,
+optimizer and physical planner. There is no pipeline-specific evaluator or
+new physical node.
+
+The [receipt](evidence/f064fb2709e14d3064c93a9c03b25dbcd8d40ec5/gate.json)
+records 157 selected pytest cases and 67 upstream Python executions, formatting,
+strict Clippy, CLI build and Python lint. Four original flow-identifier grid
+instances and three ordinary DataFrame explode_outer API cases also pass on
+Spark 4.2.1. All seven failed on the parent Sail engine; failures are retained.
+Seven existing SQL range cases remain passing as shared-path controls. Null,
+empty and nonempty array API cases verify schema and physical result rows.
+The protocol flow grid verifies registration responses for raw range relations;
+it does not execute a pipeline containing those relations. Qualified table
+functions and untested function families retain the shared resolver's existing
+capabilities and limitations.
+
+All ten public identifier-grid instances now have explicit ports in the server
+crosswalk: seven of its 19 registrations have partial behavioral ports and 12
+remain unmapped. Original Scala-suite execution and the broader SDP goal remain
+outstanding. The Astra failure/event and REST-view design checkpoint is unchanged.
