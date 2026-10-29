@@ -2,7 +2,7 @@
 
 The pinned inventory has 462 static Scala test registration call sites, including
 helpers and parameter declarations. It is not an expanded runtime denominator.
-Assertion review currently covers 71 registrations; 391 remain unaudited. None
+Assertion review currently covers 97 registrations; 365 remain unaudited. None
 is fully qualified by executing the original Scala suite against Sail.
 
 | Suite | Reviewed | Partial ports | Unmapped |
@@ -11,8 +11,8 @@ is fully qualified by executing the original Scala suite against Sail.
 | MaterializeTablesSuite | 27 | 8 | 19 |
 | SparkDeclarativePipelinesServerSuite | 19 | 14 | 5 |
 | PipelinesHandlerSuite | 2 | 0 | 2 |
-| SqlPipelineSuite | 12 | 11 | 1 |
-| Total | 71 | 40 | 31 |
+| SqlPipelineSuite | 38 | 24 | 14 |
+| Total | 97 | 53 | 44 |
 
 Each audited [inventory record](spark-4.2.1-inventory.json) identifies its phase,
 covered/missing assertions and evidence. A partial behavioral Connect port does
@@ -58,9 +58,14 @@ parameter when no cause exists. These belong to the pending Astra
 
 ## SQL pipeline assertions
 
-Twelve of the SQL suite's 38 registration sites are reviewed; 26 await assertion
-audit. The reviewed groups are:
+All 38 SQL registration sites have an [assertion audit](evidence/sql-complete-assertion-audit/validation.json):
+24 partial ports and 14 unmapped. This is not a complete Scala-suite verdict.
+The reviewed groups include:
 
+- Basic batch cases: static dataset, escaped names, a four-view dependency chain,
+  aggregation and a private-view join. Hyphen resolution matches the original
+  source phase; stronger Sail publication checks remain separate from Spark V1
+  catalog limitations.
 - [Empty-pipeline cases](evidence/sql-empty-crosswalk/validation.json): no outputs,
   temporary-only and flow-only, with exact errors in dry/real starts.
 - [Duplicate outputs](evidence/sql-duplicate-crosswalk/validation.json): cross-file
@@ -86,3 +91,12 @@ in the original fixture remain outstanding.
 Continue reviewing assertions, expanding parameter grids and identifying helper
 registrations. Full batch acceptance, original Scala-suite execution, distributed
 and cancellation coverage, streaming and CDC remain incomplete.
+
+The completed SQL audit also records partial configuration, location, partition-
+rejection, ordinary-DDL rejection, declared-schema and view-comment coverage.
+Exact original metadata/parser assertions remain explicit gaps. Unmapped cases
+include internal graph counts/input sets, identity partition/property metadata,
+schema-qualified/cross-catalog combinations, per-flow invalid-read attribution,
+multipart temporary-view errors and streaming file/window refresh behavior.
+The four file formats, two invalid CSV paths and six namespace pairs are explicit
+source instances, not an expanded runtime denominator.

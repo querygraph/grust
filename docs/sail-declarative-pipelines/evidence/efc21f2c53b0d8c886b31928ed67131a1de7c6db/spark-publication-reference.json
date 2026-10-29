@@ -1,0 +1,27 @@
+{
+  "spark_version": "4.2.1",
+  "test_source_commit": "f84c6529262feb66d37aa99a05ff96566eebbaf3",
+  "cases": [
+    {
+      "name": "test_static_sql_dataset",
+      "outcome": "passed"
+    },
+    {
+      "name": "test_escaped_hyphenated_dataset_dependencies",
+      "outcome": "failed",
+      "error": "(org.apache.spark.sql.pipelines.graph.DatasetManager$TableMaterializationException) org.apache.spark.sql.AnalysisException: [INVALID_SCHEMA_OR_RELATION_NAME] `hyphen-mv` is not a valid name for tables/schemas. Valid names only contain alphabet characters, numbers and _. SQLSTATE: 42602\n\nJVM stacktrace:\norg.apache.spark.sql.pipelines.graph.DatasetManager$TableMaterializationException\nCaused by: org.apache.spark.sql.AnalysisException: [INVALID_SCHEMA_OR_RELATION_NAME] `hyphen-mv` is not a valid name for tables/schemas. Valid names only contain alphabet characters, numbers and _. SQLSTATE: 42602\n\tat org.apache.spark.sql.errors.QueryCompilationErrors$.invalidNameForTableOrDatabaseError(QueryCompilationErrors.scala:1240)\n\tat org.apache.spark.sql.catalyst.catalog.SessionCatalog.validateName(SessionCatalog.scala:325)\n\tat org.apache.spark.sql.catalyst.catalog.SessionCatalog.createTable(SessionCatalog.scala:577)\n\tat org.apache.spark.sql.execution.datasources.v2.V2SessionCatalog.createTable0(V2SessionCatalog.scala:250)\n\tat org.apache.spark.sql.execution.datasources.v2.V2SessionCatalog.createTable(V2SessionCatalog.scala:275)\n\tat org.apache.spark.sql.connector.catalog.TableCatalog.createTable(TableCatalog.java:290)\n\tat org.apache.spark.sql.execution.datasources.v2.V2SessionCatalog.createTable(V2SessionCatalog.scala:46)\n\tat org.apache.spark.sql.pipelines.graph.DatasetManager$.materializeTable(DatasetManager.scala:342)\n\tat org.apache.spark.sql.pipelines.graph.DatasetManager$.$anonfun$materializeDatasets$7(DatasetManager.scala:109)\n\tat scala.collection.immutable.List.map(List.scala:236)\n\tat scala.collection.immutable.List.map(List.scala:79)\n\tat org.apache.spark.sql.pipelines.graph.DataflowGraphTransformer.transformTables(DataflowGraphTransformer.scala:107)\n\tat org.apache.spark.sql.pipelines.graph.DatasetManager$.$anonfun$materializeDatasets$6(DatasetManager.scala:102)\n\tat org.apache.spark.sql.pipelines.graph.DataflowGraphTransformer$.withDataflowGraphTransformer(DataflowGraphTransformer.scala:399)\n\tat org.apache.spark.sql.pipelines.graph.DatasetManager$.materializeDatasets(DatasetManager.scala:101)\n\tat org.apache.spark.sql.pipelines.graph.PipelineExecution.startPipeline(PipelineExecution.scala:53)\n\tat org.apache.spark.sql.pipelines.graph.PipelineExecution.runPipeline(PipelineExecution.scala:67)\n\tat org.apache.spark.sql.connect.pipelines.PipelinesHandler$.$anonfun$startRun$1(PipelinesHandler.scala:563)\n\tat org.apache.spark.sql.connect.pipelines.PipelinesHandler$.$anonfun$startRun$1$adapted(PipelinesHandler.scala:525)\n\tat scala.util.Using$.resource(Using.scala:296)\n\tat org.apache.spark.sql.connect.pipelines.PipelinesHandler$.startRun(PipelinesHandler.scala:525)\n\tat org.apache.spark.sql.connect.pipelines.PipelinesHandler$.handlePipelinesCommand(PipelinesHandler.scala:132)\n\tat org.apache.spark.sql.connect.planner.SparkConnectPlanner.handlePipelineCommand(SparkConnectPlanner.scala:2961)\n\tat org.apache.spark.sql.connect.planner.SparkConnectPlanner.process(SparkConnectPlanner.scala:2930)\n\tat org.apache.spark.sql.connect.execution.SparkConnectPlanExecution.handlePlan(SparkConnectPlanExecution.scala:102)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.$anonfun$executeInternal$1(ExecuteThreadRunner.scala:231)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.$anonfun$executeInternal$1$adapted(ExecuteThreadRunner.scala:203)\n\tat org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$2(SessionHolder.scala:441)\n\tat org.apache.spark.sql.SparkSession.withActive(SparkSession.scala:810)\n\tat org.apache.spark.sql.connect.service.SessionHolder.$anonfun$withSession$1(SessionHolder.scala:441)\n\tat org.apache.spark.JobArtifactSet$.withActiveJobArtifactState(JobArtifactSet.scala:94)\n\tat org.apache.spark.sql.artifact.ArtifactManager.$anonfun$withResources$1(ArtifactManager.scala:112)\n\tat org.apache.spark.util.Utils$.withContextClassLoader(Utils.scala:185)\n\tat org.apache.spark.sql.artifact.ArtifactManager.withClassLoaderIfNeeded(ArtifactManager.scala:102)\n\tat org.apache.spark.sql.artifact.ArtifactManager.withResources(ArtifactManager.scala:111)\n\tat org.apache.spark.sql.connect.service.SessionHolder.withSession(SessionHolder.scala:440)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.executeInternal(ExecuteThreadRunner.scala:203)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner.org$apache$spark$sql$connect$execution$ExecuteThreadRunner$$execute(ExecuteThreadRunner.scala:127)\n\tat org.apache.spark.sql.connect.execution.ExecuteThreadRunner$ExecutionThread.run(ExecuteThreadRunner.scala:338)"
+    },
+    {
+      "name": "test_persisted_view_dependency_chain",
+      "outcome": "passed"
+    },
+    {
+      "name": "test_sql_aggregation_over_pipeline_dataset",
+      "outcome": "passed"
+    },
+    {
+      "name": "test_sql_join_over_private_views",
+      "outcome": "passed"
+    }
+  ]
+}

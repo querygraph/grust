@@ -3662,7 +3662,13 @@
       "method": "test",
       "name_expression": "\"Simple register SQL dataset test\"",
       "status": "unmapped",
-      "sail_tests": []
+      "sail_tests": [],
+      "coverage_review": {
+        "phase": "streaming-graph",
+        "covered_assertions": "None mapped in this audit.",
+        "remaining_assertions": "Exact four flows/two tables/one view, empty/internal/external input sets and fully qualified destinations for MV, streaming table, persisted view and standalone flow.",
+        "scala_suite_executed": false
+      }
     },
     {
       "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/SqlPipelineSuite.scala:90",
@@ -3697,8 +3703,17 @@
       "line": 122,
       "method": "test",
       "name_expression": "\"Static pipeline dataset resolves correctly\"",
-      "status": "unmapped",
-      "sail_tests": []
+      "status": "partial-behavioral-port",
+      "sail_tests": [
+        "python/pysail/tests/spark/pipelines/test_sql_batch.py::test_static_sql_dataset"
+      ],
+      "coverage_review": {
+        "phase": "batch-query",
+        "covered_assertions": "Original range(1,4) rows 1,2,3 with table-comment syntax accepted; target renamed static_a.",
+        "remaining_assertions": "Original resolvedFlow.df is replaced by a published table read. Original Scala suite remains unexecuted.",
+        "sail_evidence": "evidence/efc21f2c53b0d8c886b31928ed67131a1de7c6db/pytest.xml",
+        "scala_suite_executed": false
+      }
     },
     {
       "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/SqlPipelineSuite.scala:137",
@@ -3706,8 +3721,18 @@
       "line": 137,
       "method": "test",
       "name_expression": "\"Special characters in dataset name allowed when escaped\"",
-      "status": "unmapped",
-      "sail_tests": []
+      "status": "partial-behavioral-port",
+      "sail_tests": [
+        "python/pysail/tests/spark/pipelines/test_sql_batch.py::test_escaped_hyphenated_dataset_resolution",
+        "python/pysail/tests/spark/pipelines/test_sql_batch.py::test_escaped_hyphenated_dataset_dependencies"
+      ],
+      "coverage_review": {
+        "phase": "batch-registration",
+        "covered_assertions": "Original hyphenated producer/consumer definitions validate without publication. Stronger Sail case publishes both, checks non-streaming DataFrames and rows 1,2,3.",
+        "remaining_assertions": "Original resolved-flow identifier/streaming flags are not inspected directly. Spark V1 rejects actual hyphen table publication; only the separate resolution case matches the original source scope in the Spark reference. Original Scala suite remains unexecuted.",
+        "sail_evidence": "evidence/efc21f2c53b0d8c886b31928ed67131a1de7c6db/pytest.xml",
+        "scala_suite_executed": false
+      }
     },
     {
       "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/SqlPipelineSuite.scala:159",
@@ -3715,8 +3740,17 @@
       "line": 159,
       "method": "test",
       "name_expression": "\"Pipeline with batch dependencies is correctly resolved\"",
-      "status": "unmapped",
-      "sail_tests": []
+      "status": "partial-behavioral-port",
+      "sail_tests": [
+        "python/pysail/tests/spark/pipelines/test_sql_batch.py::test_persisted_view_dependency_chain"
+      ],
+      "coverage_review": {
+        "phase": "batch-query",
+        "covered_assertions": "Original forward-defined four-view chain b->a, c->b, d->c; all four read rows 1,2,3.",
+        "remaining_assertions": "Original resolvedFlow.df reads are replaced by stored view reads. Original Scala suite remains unexecuted.",
+        "sail_evidence": "evidence/efc21f2c53b0d8c886b31928ed67131a1de7c6db/pytest.xml",
+        "scala_suite_executed": false
+      }
     },
     {
       "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/SqlPipelineSuite.scala:179",
@@ -3743,7 +3777,13 @@
       "method": "test",
       "name_expression": "\"Pipeline datasets can have dependency on streaming table\"",
       "status": "unmapped",
-      "sail_tests": []
+      "sail_tests": [],
+      "coverage_review": {
+        "phase": "streaming",
+        "covered_assertions": "None mapped in this audit.",
+        "remaining_assertions": "Streaming table reading external source feeds materialized view; final rows 0,1,2.",
+        "scala_suite_executed": false
+      }
     },
     {
       "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/SqlPipelineSuite.scala:214",
@@ -3751,8 +3791,17 @@
       "line": 214,
       "method": "test",
       "name_expression": "\"SQL aggregation works\"",
-      "status": "unmapped",
-      "sail_tests": []
+      "status": "partial-behavioral-port",
+      "sail_tests": [
+        "python/pysail/tests/spark/pipelines/test_sql_batch.py::test_sql_aggregation_over_pipeline_dataset"
+      ],
+      "coverage_review": {
+        "phase": "batch-query",
+        "covered_assertions": "Original modulo grouping and max aggregation returns (0,8),(1,9); dataset names renamed aggregation_a/b.",
+        "remaining_assertions": "Original internal graph entry point is replaced by Connect StartRun. Original Scala suite remains unexecuted.",
+        "sail_evidence": "evidence/efc21f2c53b0d8c886b31928ed67131a1de7c6db/pytest.xml",
+        "scala_suite_executed": false
+      }
     },
     {
       "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/SqlPipelineSuite.scala:233",
@@ -3760,8 +3809,17 @@
       "line": 233,
       "method": "test",
       "name_expression": "\"SQL join works\"",
-      "status": "unmapped",
-      "sail_tests": []
+      "status": "partial-behavioral-port",
+      "sail_tests": [
+        "python/pysail/tests/spark/pipelines/test_sql_batch.py::test_sql_join_over_private_views"
+      ],
+      "coverage_review": {
+        "phase": "batch-query",
+        "covered_assertions": "Original two range-backed private views join to (1,1),(2,2). Port also checks private views remain unpublished; names renamed join_a/b/c.",
+        "remaining_assertions": "Original internal graph entry point is replaced by Connect StartRun. Original Scala suite remains unexecuted.",
+        "sail_evidence": "evidence/efc21f2c53b0d8c886b31928ed67131a1de7c6db/pytest.xml",
+        "scala_suite_executed": false
+      }
     },
     {
       "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/SqlPipelineSuite.scala:252",
@@ -3770,7 +3828,13 @@
       "method": "test",
       "name_expression": "\"Partition cols correctly registered\"",
       "status": "unmapped",
-      "sail_tests": []
+      "sail_tests": [],
+      "coverage_review": {
+        "phase": "batch-registration",
+        "covered_assertions": "None mapped in this audit.",
+        "remaining_assertions": "Inspect resolved table partitionCols exactly [id1,id2] from the original identity-partition declaration.",
+        "scala_suite_executed": false
+      }
     },
     {
       "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/SqlPipelineSuite.scala:270",
@@ -3779,7 +3843,13 @@
       "method": "test",
       "name_expression": "\"MV/ST with partition columns works\"",
       "status": "unmapped",
-      "sail_tests": []
+      "sail_tests": [],
+      "coverage_review": {
+        "phase": "streaming",
+        "covered_assertions": "None mapped in this audit.",
+        "remaining_assertions": "MV and streaming table both retain identity partition id_mod and rows (0,0),(1,1),(2,0); inspect catalog transforms and read data.",
+        "scala_suite_executed": false
+      }
     },
     {
       "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/SqlPipelineSuite.scala:311",
@@ -3787,8 +3857,17 @@
       "line": 311,
       "method": "test",
       "name_expression": "\"Exception is thrown when non-identity partition columns are used\"",
-      "status": "unmapped",
-      "sail_tests": []
+      "status": "partial-behavioral-port",
+      "sail_tests": [
+        "python/pysail/tests/spark/pipelines/test_features.py::test_nonidentity_partitioning_is_rejected_during_registration"
+      ],
+      "coverage_review": {
+        "phase": "batch-parser",
+        "covered_assertions": "Non-identity year transform is rejected during registration and output remains unpublished.",
+        "remaining_assertions": "Original SqlGraphElementRegistrationException class and Invalid partitioning transform message are unported; port uses year(id), original year(id1). Original Scala suite remains unexecuted.",
+        "sail_evidence": "evidence/efc21f2c53b0d8c886b31928ed67131a1de7c6db/pytest.xml",
+        "scala_suite_executed": false
+      }
     },
     {
       "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/SqlPipelineSuite.scala:329",
@@ -3797,7 +3876,13 @@
       "method": "test",
       "name_expression": "\"Table properties are correctly registered\"",
       "status": "unmapped",
-      "sail_tests": []
+      "sail_tests": [],
+      "coverage_review": {
+        "phase": "batch-registration",
+        "covered_assertions": "None mapped in this audit.",
+        "remaining_assertions": "Inspect original registered streaming table properties exactly prop1=foo and prop2=bar without replacing its internal resolve-only entry point with streaming validation.",
+        "scala_suite_executed": false
+      }
     },
     {
       "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/SqlPipelineSuite.scala:345",
@@ -3805,8 +3890,17 @@
       "line": 345,
       "method": "test",
       "name_expression": "\"Spark confs are correctly registered\"",
-      "status": "unmapped",
-      "sail_tests": []
+      "status": "partial-behavioral-port",
+      "sail_tests": [
+        "python/pysail/tests/spark/pipelines/test_features.py::test_set_configuration_is_captured_per_flow_and_reset_between_files"
+      ],
+      "coverage_review": {
+        "phase": "batch-registration",
+        "covered_assertions": "SET configuration is captured per flow and reset per file, observed through timezone-dependent query results.",
+        "remaining_assertions": "Original exact sqlConf maps for arbitrary conf.test/conf.test2 and three MV/persisted/streaming outputs are not inspected. Original Scala suite remains unexecuted.",
+        "sail_evidence": "evidence/efc21f2c53b0d8c886b31928ed67131a1de7c6db/pytest.xml",
+        "scala_suite_executed": false
+      }
     },
     {
       "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/SqlPipelineSuite.scala:386",
@@ -3814,8 +3908,17 @@
       "line": 386,
       "method": "test",
       "name_expression": "\"Setting dataset location is disallowed\"",
-      "status": "unmapped",
-      "sail_tests": []
+      "status": "partial-behavioral-port",
+      "sail_tests": [
+        "python/pysail/tests/spark/pipelines/test_features.py::test_dataset_location_is_rejected_during_registration"
+      ],
+      "coverage_review": {
+        "phase": "batch-parser",
+        "covered_assertions": "Explicit LOCATION is rejected during registration without publication.",
+        "remaining_assertions": "Original streaming-table fixture, ParseException class and Specifying location is not supported substring are unported; port uses an MV and checks source filename. Original Scala suite remains unexecuted.",
+        "sail_evidence": "evidence/efc21f2c53b0d8c886b31928ed67131a1de7c6db/pytest.xml",
+        "scala_suite_executed": false
+      }
     },
     {
       "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/SqlPipelineSuite.scala:403",
@@ -3824,7 +3927,13 @@
       "method": "test",
       "name_expression": "\"Tables living in arbitrary schemas can be read from pipeline\"",
       "status": "unmapped",
-      "sail_tests": []
+      "sail_tests": [],
+      "coverage_review": {
+        "phase": "streaming",
+        "covered_assertions": "None mapped in this audit.",
+        "remaining_assertions": "Original arbitrary-schema external table feeds batch and streaming outputs; both final rows 1,2,3, alongside a private view.",
+        "scala_suite_executed": false
+      }
     },
     {
       "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/SqlPipelineSuite.scala:434",
@@ -3833,7 +3942,19 @@
       "method": "gridTest",
       "name_expression": "s\"Pipeline dataset can read from file based data sources\"",
       "status": "unmapped",
-      "sail_tests": []
+      "sail_tests": [],
+      "coverage_review": {
+        "phase": "streaming-files",
+        "covered_assertions": "None mapped in this audit.",
+        "remaining_assertions": "For parquet/orc/json/csv, direct file-backed MV plus external-table streaming output both return 0,1,2; CSV values are strings.",
+        "scala_suite_executed": false,
+        "parameter_instances": [
+          "parquet",
+          "orc",
+          "json",
+          "csv"
+        ]
+      }
     },
     {
       "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/SqlPipelineSuite.scala:475",
@@ -3842,7 +3963,23 @@
       "method": "gridTest",
       "name_expression": "\"Invalid reads produce correct error message\"",
       "status": "unmapped",
-      "sail_tests": []
+      "sail_tests": [],
+      "coverage_review": {
+        "phase": "batch-failures-events",
+        "covered_assertions": "None mapped in this audit.",
+        "remaining_assertions": "Per-flow resolutionFailedFlows entry must attribute each bad CSV path to dataset a and contain the exact path-specific failure substring.",
+        "scala_suite_executed": false,
+        "parameter_instances": [
+          {
+            "path": "csv.``",
+            "message": "The location name cannot be empty string, but `` was given."
+          },
+          {
+            "path": "csv.`/non/existing/file`",
+            "message": "Path does not exist: file:/non/existing/file"
+          }
+        ]
+      }
     },
     {
       "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/SqlPipelineSuite.scala:501",
@@ -3868,8 +4005,17 @@
       "line": 525,
       "method": "test",
       "name_expression": "\"Unsupported SQL statements throws error\"",
-      "status": "unmapped",
-      "sail_tests": []
+      "status": "partial-behavioral-port",
+      "sail_tests": [
+        "python/pysail/tests/spark/pipelines/test_features.py::test_a_failed_sql_file_registers_no_partial_definitions"
+      ],
+      "coverage_review": {
+        "phase": "batch-parser",
+        "covered_assertions": "Ordinary CREATE TABLE AS SELECT is rejected in pipeline SQL; port also checks failed-file registration is atomic and later valid definition succeeds.",
+        "remaining_assertions": "Original SqlGraphElementRegistrationException class and Unsupported plan substring are not checked; port has an earlier valid statement in the same file. Original Scala suite remains unexecuted.",
+        "sail_evidence": "evidence/efc21f2c53b0d8c886b31928ed67131a1de7c6db/pytest.xml",
+        "scala_suite_executed": false
+      }
     },
     {
       "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/SqlPipelineSuite.scala:540",
@@ -3877,8 +4023,17 @@
       "line": 540,
       "method": "test",
       "name_expression": "\"Table schema is correctly parsed\"",
-      "status": "unmapped",
-      "sail_tests": []
+      "status": "partial-behavioral-port",
+      "sail_tests": [
+        "python/pysail/tests/spark/pipelines/test_features.py::test_a_declared_schema_is_validated_without_materialization"
+      ],
+      "coverage_review": {
+        "phase": "batch-schema",
+        "covered_assertions": "Declared BIGINT id/comment and range(5) query pass validation without publication.",
+        "remaining_assertions": "Original exact resolved-flow StructType(id LongType nullable=false) equality remains unported; this must not be confused with nullable publication schemas. Original Scala suite remains unexecuted.",
+        "sail_evidence": "evidence/efc21f2c53b0d8c886b31928ed67131a1de7c6db/pytest.xml",
+        "scala_suite_executed": false
+      }
     },
     {
       "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/SqlPipelineSuite.scala:562",
@@ -3887,7 +4042,13 @@
       "method": "test",
       "name_expression": "\"Multipart table names supported\"",
       "status": "unmapped",
-      "sail_tests": []
+      "sail_tests": [],
+      "coverage_review": {
+        "phase": "batch-catalog",
+        "covered_assertions": "None mapped in this audit.",
+        "remaining_assertions": "Two distinct database-qualified pipeline outputs depend on each other; both read Row(1). Exact original two-database assertions unported.",
+        "scala_suite_executed": false
+      }
     },
     {
       "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/SqlPipelineSuite.scala:580",
@@ -3895,8 +4056,17 @@
       "line": 580,
       "method": "test",
       "name_expression": "\"Flow cannot be created with multipart identifier\"",
-      "status": "unmapped",
-      "sail_tests": []
+      "status": "partial-behavioral-port",
+      "sail_tests": [
+        "python/pysail/tests/spark/pipelines/test_features.py::test_standalone_flow_names_must_have_one_component[a.b]"
+      ],
+      "coverage_review": {
+        "phase": "batch-parser",
+        "covered_assertions": "Two-part standalone flow name is rejected at registration; output remains unpublished.",
+        "remaining_assertions": "Original some_database.f message Flow with multipart name ... is not supported and original exception class are not asserted. Original Scala suite remains unexecuted.",
+        "sail_evidence": "evidence/efc21f2c53b0d8c886b31928ed67131a1de7c6db/pytest.xml",
+        "scala_suite_executed": false
+      }
     },
     {
       "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/SqlPipelineSuite.scala:599",
@@ -3905,7 +4075,13 @@
       "method": "test",
       "name_expression": "\"Temporary view cannot be created with multipart identifier\"",
       "status": "unmapped",
-      "sail_tests": []
+      "sail_tests": [],
+      "coverage_review": {
+        "phase": "batch-parser",
+        "covered_assertions": "None mapped in this audit.",
+        "remaining_assertions": "Multipart temporary-view name must throw ParseException with INVALID_TEMP_OBJ_QUALIFIER.",
+        "scala_suite_executed": false
+      }
     },
     {
       "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/SqlPipelineSuite.scala:617",
@@ -3913,8 +4089,18 @@
       "line": 617,
       "method": "test",
       "name_expression": "\"create view syntax for persisted views\"",
-      "status": "unmapped",
-      "sail_tests": []
+      "status": "partial-behavioral-port",
+      "sail_tests": [
+        "python/pysail/tests/spark/pipelines/test_features.py::test_persistent_views_retain_the_sql_file_namespace_and_column_comments",
+        "python/pysail/tests/spark/pipelines/test_features.py::test_persistent_views_are_created_in_dependency_order"
+      ],
+      "coverage_review": {
+        "phase": "batch-view-metadata",
+        "covered_assertions": "Persisted view namespace, view type, view/column comments and dependency publication have behavioral checks.",
+        "remaining_assertions": "Original exact full identifier, PersistedView internal type and sqlText equal to SELECT * FROM range(1, 4), plus original my persisted comment fixture, remain unported. Original Scala suite remains unexecuted.",
+        "sail_evidence": "evidence/efc21f2c53b0d8c886b31928ed67131a1de7c6db/pytest.xml",
+        "scala_suite_executed": false
+      }
     },
     {
       "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/SqlPipelineSuite.scala:634",
@@ -3964,7 +4150,39 @@
       "method": "test",
       "name_expression": "\"Writing/reading datasets from fully and partially qualified names works\"",
       "status": "unmapped",
-      "sail_tests": []
+      "sail_tests": [],
+      "coverage_review": {
+        "phase": "batch-catalog",
+        "covered_assertions": "None mapped in this audit.",
+        "remaining_assertions": "Six upstream/downstream name pairs spanning unqualified, second database and second catalog; downstream even rows 0,2,4,6,8 with declared upstream id BIGINT, then explicit cleanup.",
+        "scala_suite_executed": false,
+        "parameter_instances": [
+          [
+            "upstream_mv",
+            "downstream_mv"
+          ],
+          [
+            "upstream_mv2",
+            "$otherDatabase2.downstream_mv2"
+          ],
+          [
+            "upstream_mv3",
+            "$otherCatalog.$otherDatabase.downstream_mv3"
+          ],
+          [
+            "$otherDatabase2.upstream_mv4",
+            "downstream_mv4"
+          ],
+          [
+            "$otherCatalog.$otherDatabase.upstream_mv5",
+            "downstream_mv5"
+          ],
+          [
+            "$otherCatalog.$otherDatabase.upstream_mv6",
+            "$otherDatabase2.downstream_mv6"
+          ]
+        ]
+      }
     },
     {
       "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/SqlPipelineSuite.scala:808",
@@ -3973,7 +4191,13 @@
       "method": "test",
       "name_expression": "\"Creating streaming table without subquery works if streaming table is backed by flows\"",
       "status": "unmapped",
-      "sail_tests": []
+      "sail_tests": [],
+      "coverage_review": {
+        "phase": "streaming",
+        "covered_assertions": "None mapped in this audit.",
+        "remaining_assertions": "Queryless streaming table backed by explicit named flow consumes external source; final rows 0,1,2.",
+        "scala_suite_executed": false
+      }
     },
     {
       "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/SqlPipelineSuite.scala:825",
@@ -4018,8 +4242,22 @@
       "line": 877,
       "method": "test",
       "name_expression": "\"Flow identifiers must be single part\"",
-      "status": "unmapped",
-      "sail_tests": []
+      "status": "partial-behavioral-port",
+      "sail_tests": [
+        "python/pysail/tests/spark/pipelines/test_features.py::test_standalone_flow_names_must_have_one_component[a.b]",
+        "python/pysail/tests/spark/pipelines/test_features.py::test_standalone_flow_names_must_have_one_component[a.b.c]"
+      ],
+      "coverage_review": {
+        "phase": "batch-parser",
+        "covered_assertions": "Both original a.b/a.b.c identifier shapes are rejected with MULTIPART_FLOW_NAME_NOT_SUPPORTED in message; output remains unpublished.",
+        "remaining_assertions": "Original structured condition and flowName parameter are not checked; SQL registration error wrapping remains different. Original Scala suite remains unexecuted.",
+        "sail_evidence": "evidence/efc21f2c53b0d8c886b31928ed67131a1de7c6db/pytest.xml",
+        "scala_suite_executed": false,
+        "parameter_instances": [
+          "a.b",
+          "a.b.c"
+        ]
+      }
     },
     {
       "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/SqlPipelineSuite.scala:897",
@@ -4163,7 +4401,13 @@
       "method": "test",
       "name_expression": "\"Streaming Table with watermark clause\"",
       "status": "unmapped",
-      "sail_tests": []
+      "sail_tests": [],
+      "coverage_review": {
+        "phase": "streaming-stateful",
+        "covered_assertions": "None mapped in this audit.",
+        "remaining_assertions": "Repeated run of same update context with 10-second watermark and 5-second window: first output empty; after event at 20 seconds, total windows (0,5,a,2),(0,5,b,1).",
+        "scala_suite_executed": false
+      }
     },
     {
       "id": "sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/SqlQueryOriginSuite.scala:24",

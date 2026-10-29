@@ -769,3 +769,35 @@ and 26 awaiting audit. Original Scala-suite execution, private/sink collision
 variants, full batch acceptance, shared SQL catalog expressions, failure/event
 and REST-view architecture, streaming and CDC remain open. Astra handoffs remain
 ready; no new architecture or publication was introduced in this unit.
+
+## Review basic SQL execution ports and complete SQL assertion audit
+
+Commit `efc21f2c53` adds six tests: static range rows with comment syntax,
+hyphenated publication and resolution as separate cases, a forward four-view
+persisted dependency chain, modulo/max aggregation and a private-view join.
+Original row assertions are retained; some dataset names are changed to avoid
+collisions between reference cases. Stronger checks include private-view absence,
+non-streaming published DataFrames and actual Sail reads of hyphenated outputs.
+
+The [receipt](evidence/efc21f2c53b0d8c886b31928ed67131a1de7c6db/gate.json)
+records Ruff, 217 selected pytest cases, 67 upstream Python executions and five
+matching Spark 4.2.1 reference checks. Runtime is unchanged engine bbf438c066
+with matching CLI hash; no additional Rust/native gate is claimed. The first
+reference attempted hyphen publication, which Spark's default V1 catalog rejects
+as INVALID_SCHEMA_OR_RELATION_NAME. The original Scala test only resolves its
+graph. That failed publication script/report/log and initial candidate patch are
+retained. The original stronger Sail publication assertions remain unchanged;
+a separate dry-resolution test matches the source phase and passes on Spark.
+
+All 38 SQL registrations now have an assertion-level audit: 24 partial ports and
+14 unmapped. Newly reviewed records spell out graph metadata, exact partition/
+property/config/schema/parser requirements, cross-catalog combinations and
+streaming/window behavior. File-format, bad-read, multipart-flow and six
+namespace-pair instances are explicit. Existing behavioral BDD ports are mapped
+with their exact missing original assertions rather than counted as full parity.
+
+The total reviewed inventory is 97 of 462 static registration sites; 365 remain
+unaudited. This is not an expanded test denominator or a completion percentage.
+Original Scala suites, full batch acceptance, shared SQL catalog expressions,
+failure/event and REST-view architecture, streaming and CDC remain outstanding.
+Astra handoffs remain ready; this unit selects no new architecture.
