@@ -1,0 +1,1179 @@
+Compiled from "StripePlanner.java"
+public class org.apache.orc.impl.reader.StripePlanner {
+  private static final org.slf4j.Logger LOG;
+
+  private final org.apache.orc.TypeDescription schema;
+
+  private final org.apache.orc.OrcFile$WriterVersion version;
+
+  private final org.apache.orc.OrcProto$ColumnEncoding[] encodings;
+
+  private final org.apache.orc.impl.reader.ReaderEncryption encryption;
+
+  private final org.apache.orc.DataReader dataReader;
+
+  private final boolean ignoreNonUtf8BloomFilter;
+
+  private final long maxBufferSize;
+
+  private java.lang.String writerTimezone;
+
+  private long currentStripeId;
+
+  private long originalStripeId;
+
+  private final java.util.Map<org.apache.orc.impl.StreamName, org.apache.orc.impl.reader.StripePlanner$StreamInformation> streams;
+
+  private final java.util.List<org.apache.orc.impl.reader.StripePlanner$StreamInformation> indexStreams;
+
+  private final java.util.List<org.apache.orc.impl.reader.StripePlanner$StreamInformation> dataStreams;
+
+  private final org.apache.orc.OrcProto$Stream$Kind[] bloomFilterKinds;
+
+  private final boolean[] hasNull;
+
+  private final java.util.Set<java.lang.Integer> filterColIds;
+
+  public org.apache.orc.impl.reader.StripePlanner(org.apache.orc.TypeDescription, org.apache.orc.impl.reader.ReaderEncryption, org.apache.orc.DataReader, org.apache.orc.OrcFile$WriterVersion, boolean, long, java.util.Set<java.lang.Integer>);
+    Code:
+       0: aload_0
+       1: invokespecial #103                // Method java/lang/Object."<init>":()V
+       4: aload_0
+       5: new           #105                // class java/util/HashMap
+       8: dup
+       9: invokespecial #106                // Method java/util/HashMap."<init>":()V
+      12: putfield      #108                // Field streams:Ljava/util/Map;
+      15: aload_0
+      16: new           #110                // class java/util/ArrayList
+      19: dup
+      20: invokespecial #111                // Method java/util/ArrayList."<init>":()V
+      23: putfield      #113                // Field indexStreams:Ljava/util/List;
+      26: aload_0
+      27: new           #110                // class java/util/ArrayList
+      30: dup
+      31: invokespecial #111                // Method java/util/ArrayList."<init>":()V
+      34: putfield      #115                // Field dataStreams:Ljava/util/List;
+      37: aload_0
+      38: aload_1
+      39: putfield      #117                // Field schema:Lorg/apache/orc/TypeDescription;
+      42: aload_0
+      43: aload         4
+      45: putfield      #119                // Field version:Lorg/apache/orc/OrcFile$WriterVersion;
+      48: aload_0
+      49: aload_1
+      50: invokevirtual #123                // Method org/apache/orc/TypeDescription.getMaximumId:()I
+      53: iconst_1
+      54: iadd
+      55: anewarray     #16                 // class org/apache/orc/OrcProto$ColumnEncoding
+      58: putfield      #125                // Field encodings:[Lorg/apache/orc/OrcProto$ColumnEncoding;
+      61: aload_0
+      62: aload_2
+      63: putfield      #127                // Field encryption:Lorg/apache/orc/impl/reader/ReaderEncryption;
+      66: aload_0
+      67: aload_3
+      68: putfield      #129                // Field dataReader:Lorg/apache/orc/DataReader;
+      71: aload_0
+      72: iload         5
+      74: putfield      #131                // Field ignoreNonUtf8BloomFilter:Z
+      77: aload_0
+      78: aload_1
+      79: invokevirtual #123                // Method org/apache/orc/TypeDescription.getMaximumId:()I
+      82: iconst_1
+      83: iadd
+      84: anewarray     #24                 // class org/apache/orc/OrcProto$Stream$Kind
+      87: putfield      #133                // Field bloomFilterKinds:[Lorg/apache/orc/OrcProto$Stream$Kind;
+      90: aload_0
+      91: aload_1
+      92: invokevirtual #123                // Method org/apache/orc/TypeDescription.getMaximumId:()I
+      95: iconst_1
+      96: iadd
+      97: newarray       boolean
+      99: putfield      #135                // Field hasNull:[Z
+     102: aload_0
+     103: lload         6
+     105: putfield      #137                // Field maxBufferSize:J
+     108: aload_0
+     109: aload         8
+     111: putfield      #139                // Field filterColIds:Ljava/util/Set;
+     114: return
+
+  public org.apache.orc.impl.reader.StripePlanner(org.apache.orc.TypeDescription, org.apache.orc.impl.reader.ReaderEncryption, org.apache.orc.DataReader, org.apache.orc.OrcFile$WriterVersion, boolean, long);
+    Code:
+       0: aload_0
+       1: aload_1
+       2: aload_2
+       3: aload_3
+       4: aload         4
+       6: iload         5
+       8: lload         6
+      10: invokestatic  #148                // InterfaceMethod java/util/Set.of:()Ljava/util/Set;
+      13: invokespecial #150                // Method "<init>":(Lorg/apache/orc/TypeDescription;Lorg/apache/orc/impl/reader/ReaderEncryption;Lorg/apache/orc/DataReader;Lorg/apache/orc/OrcFile$WriterVersion;ZJLjava/util/Set;)V
+      16: return
+
+  public org.apache.orc.impl.reader.StripePlanner(org.apache.orc.impl.reader.StripePlanner);
+    Code:
+       0: aload_0
+       1: aload_1
+       2: getfield      #117                // Field schema:Lorg/apache/orc/TypeDescription;
+       5: aload_1
+       6: getfield      #127                // Field encryption:Lorg/apache/orc/impl/reader/ReaderEncryption;
+       9: aload_1
+      10: getfield      #129                // Field dataReader:Lorg/apache/orc/DataReader;
+      13: aload_1
+      14: getfield      #119                // Field version:Lorg/apache/orc/OrcFile$WriterVersion;
+      17: aload_1
+      18: getfield      #131                // Field ignoreNonUtf8BloomFilter:Z
+      21: aload_1
+      22: getfield      #137                // Field maxBufferSize:J
+      25: aload_1
+      26: getfield      #139                // Field filterColIds:Ljava/util/Set;
+      29: invokespecial #150                // Method "<init>":(Lorg/apache/orc/TypeDescription;Lorg/apache/orc/impl/reader/ReaderEncryption;Lorg/apache/orc/DataReader;Lorg/apache/orc/OrcFile$WriterVersion;ZJLjava/util/Set;)V
+      32: return
+
+  public org.apache.orc.impl.reader.StripePlanner parseStripe(org.apache.orc.StripeInformation, boolean[]) throws java.io.IOException;
+    Code:
+       0: aload_0
+       1: getfield      #129                // Field dataReader:Lorg/apache/orc/DataReader;
+       4: aload_1
+       5: invokeinterface #162,  2          // InterfaceMethod org/apache/orc/DataReader.readStripeFooter:(Lorg/apache/orc/StripeInformation;)Lorg/apache/orc/OrcProto$StripeFooter;
+      10: astore_3
+      11: aload_0
+      12: aload_1
+      13: invokeinterface #168,  1          // InterfaceMethod org/apache/orc/StripeInformation.getStripeId:()J
+      18: putfield      #170                // Field currentStripeId:J
+      21: aload_0
+      22: aload_1
+      23: invokeinterface #173,  1          // InterfaceMethod org/apache/orc/StripeInformation.getEncryptionStripeId:()J
+      28: putfield      #175                // Field originalStripeId:J
+      31: aload_0
+      32: aload_3
+      33: invokevirtual #179                // Method org/apache/orc/OrcProto$StripeFooter.getWriterTimezone:()Ljava/lang/String;
+      36: putfield      #181                // Field writerTimezone:Ljava/lang/String;
+      39: aload_0
+      40: getfield      #108                // Field streams:Ljava/util/Map;
+      43: invokeinterface #186,  1          // InterfaceMethod java/util/Map.clear:()V
+      48: aload_0
+      49: getfield      #115                // Field dataStreams:Ljava/util/List;
+      52: invokeinterface #189,  1          // InterfaceMethod java/util/List.clear:()V
+      57: aload_0
+      58: getfield      #113                // Field indexStreams:Ljava/util/List;
+      61: invokeinterface #189,  1          // InterfaceMethod java/util/List.clear:()V
+      66: aload_0
+      67: aload_3
+      68: aload_2
+      69: invokevirtual #193                // Method buildEncodings:(Lorg/apache/orc/OrcProto$StripeFooter;[Z)V
+      72: aload_0
+      73: aload_1
+      74: invokeinterface #196,  1          // InterfaceMethod org/apache/orc/StripeInformation.getOffset:()J
+      79: aload_3
+      80: aload_2
+      81: invokevirtual #200                // Method findStreams:(JLorg/apache/orc/OrcProto$StripeFooter;[Z)V
+      84: aload_0
+      85: getfield      #135                // Field hasNull:[Z
+      88: iconst_0
+      89: invokestatic  #206                // Method java/util/Arrays.fill:([ZZ)V
+      92: aload_0
+      93: getfield      #115                // Field dataStreams:Ljava/util/List;
+      96: invokeinterface #210,  1          // InterfaceMethod java/util/List.iterator:()Ljava/util/Iterator;
+     101: astore        4
+     103: aload         4
+     105: invokeinterface #216,  1          // InterfaceMethod java/util/Iterator.hasNext:()Z
+     110: ifeq          150
+     113: aload         4
+     115: invokeinterface #220,  1          // InterfaceMethod java/util/Iterator.next:()Ljava/lang/Object;
+     120: checkcast     #9                  // class org/apache/orc/impl/reader/StripePlanner$StreamInformation
+     123: astore        5
+     125: aload         5
+     127: getfield      #224                // Field org/apache/orc/impl/reader/StripePlanner$StreamInformation.kind:Lorg/apache/orc/OrcProto$Stream$Kind;
+     130: getstatic     #227                // Field org/apache/orc/OrcProto$Stream$Kind.PRESENT:Lorg/apache/orc/OrcProto$Stream$Kind;
+     133: if_acmpne     147
+     136: aload_0
+     137: getfield      #135                // Field hasNull:[Z
+     140: aload         5
+     142: getfield      #231                // Field org/apache/orc/impl/reader/StripePlanner$StreamInformation.column:I
+     145: iconst_1
+     146: bastore
+     147: goto          103
+     150: aload_0
+     151: areturn
+
+  public org.apache.orc.impl.BufferChunkList readData(org.apache.orc.impl.OrcIndex, boolean[], boolean, org.apache.orc.impl.reader.tree.TypeReader$ReadPhase) throws java.io.IOException;
+    Code:
+       0: aload_1
+       1: ifnull        8
+       4: aload_2
+       5: ifnonnull     17
+       8: aload_0
+       9: aload         4
+      11: invokevirtual #244                // Method planDataReading:(Lorg/apache/orc/impl/reader/tree/TypeReader$ReadPhase;)Lorg/apache/orc/impl/BufferChunkList;
+      14: goto          25
+      17: aload_0
+      18: aload_1
+      19: aload_2
+      20: aload         4
+      22: invokevirtual #248                // Method planPartialDataReading:(Lorg/apache/orc/impl/OrcIndex;[ZLorg/apache/orc/impl/reader/tree/TypeReader$ReadPhase;)Lorg/apache/orc/impl/BufferChunkList;
+      25: astore        5
+      27: aload_0
+      28: getfield      #129                // Field dataReader:Lorg/apache/orc/DataReader;
+      31: aload         5
+      33: iload_3
+      34: invokeinterface #254,  3          // InterfaceMethod org/apache/orc/DataReader.readFileData:(Lorg/apache/orc/impl/BufferChunkList;Z)Lorg/apache/orc/impl/BufferChunkList;
+      39: pop
+      40: aload         5
+      42: areturn
+
+  public org.apache.orc.impl.BufferChunkList readFollowData(org.apache.orc.impl.OrcIndex, boolean[], int, boolean) throws java.io.IOException;
+    Code:
+       0: aload_1
+       1: ifnull        8
+       4: aload_2
+       5: ifnonnull     18
+       8: aload_0
+       9: getstatic     #267                // Field org/apache/orc/impl/reader/tree/TypeReader$ReadPhase.FOLLOWERS:Lorg/apache/orc/impl/reader/tree/TypeReader$ReadPhase;
+      12: invokevirtual #244                // Method planDataReading:(Lorg/apache/orc/impl/reader/tree/TypeReader$ReadPhase;)Lorg/apache/orc/impl/BufferChunkList;
+      15: goto          28
+      18: aload_0
+      19: aload_1
+      20: aload_2
+      21: iload_3
+      22: getstatic     #267                // Field org/apache/orc/impl/reader/tree/TypeReader$ReadPhase.FOLLOWERS:Lorg/apache/orc/impl/reader/tree/TypeReader$ReadPhase;
+      25: invokevirtual #270                // Method planPartialDataReading:(Lorg/apache/orc/impl/OrcIndex;[ZILorg/apache/orc/impl/reader/tree/TypeReader$ReadPhase;)Lorg/apache/orc/impl/BufferChunkList;
+      28: astore        5
+      30: aload_0
+      31: getfield      #129                // Field dataReader:Lorg/apache/orc/DataReader;
+      34: aload         5
+      36: iload         4
+      38: invokeinterface #254,  3          // InterfaceMethod org/apache/orc/DataReader.readFileData:(Lorg/apache/orc/impl/BufferChunkList;Z)Lorg/apache/orc/impl/BufferChunkList;
+      43: pop
+      44: aload         5
+      46: areturn
+
+  public java.lang.String getWriterTimezone();
+    Code:
+       0: aload_0
+       1: getfield      #181                // Field writerTimezone:Ljava/lang/String;
+       4: areturn
+
+  public org.apache.orc.impl.InStream getStream(org.apache.orc.impl.StreamName) throws java.io.IOException;
+    Code:
+       0: aload_0
+       1: getfield      #108                // Field streams:Ljava/util/Map;
+       4: aload_1
+       5: invokeinterface #277,  2          // InterfaceMethod java/util/Map.get:(Ljava/lang/Object;)Ljava/lang/Object;
+      10: checkcast     #9                  // class org/apache/orc/impl/reader/StripePlanner$StreamInformation
+      13: astore_2
+      14: aload_2
+      15: ifnonnull     22
+      18: aconst_null
+      19: goto          50
+      22: aload_1
+      23: aload_2
+      24: getfield      #281                // Field org/apache/orc/impl/reader/StripePlanner$StreamInformation.firstChunk:Lorg/apache/orc/impl/BufferChunk;
+      27: aload_2
+      28: getfield      #284                // Field org/apache/orc/impl/reader/StripePlanner$StreamInformation.offset:J
+      31: aload_2
+      32: getfield      #287                // Field org/apache/orc/impl/reader/StripePlanner$StreamInformation.length:J
+      35: aload_0
+      36: aload_2
+      37: getfield      #231                // Field org/apache/orc/impl/reader/StripePlanner$StreamInformation.column:I
+      40: aload_2
+      41: getfield      #224                // Field org/apache/orc/impl/reader/StripePlanner$StreamInformation.kind:Lorg/apache/orc/OrcProto$Stream$Kind;
+      44: invokevirtual #291                // Method getStreamOptions:(ILorg/apache/orc/OrcProto$Stream$Kind;)Lorg/apache/orc/impl/InStream$StreamOptions;
+      47: invokestatic  #295                // Method org/apache/orc/impl/InStream.create:(Ljava/lang/Object;Lorg/apache/hadoop/hive/common/io/DiskRangeList;JJLorg/apache/orc/impl/InStream$StreamOptions;)Lorg/apache/orc/impl/InStream;
+      50: areturn
+
+  public void clearStreams();
+    Code:
+       0: aload_0
+       1: getfield      #129                // Field dataReader:Lorg/apache/orc/DataReader;
+       4: invokeinterface #301,  1          // InterfaceMethod org/apache/orc/DataReader.isTrackingDiskRanges:()Z
+       9: ifeq          21
+      12: aload_0
+      13: getfield      #129                // Field dataReader:Lorg/apache/orc/DataReader;
+      16: invokeinterface #304,  1          // InterfaceMethod org/apache/orc/DataReader.releaseAllBuffers:()V
+      21: aload_0
+      22: getfield      #113                // Field indexStreams:Ljava/util/List;
+      25: invokeinterface #189,  1          // InterfaceMethod java/util/List.clear:()V
+      30: aload_0
+      31: getfield      #115                // Field dataStreams:Ljava/util/List;
+      34: invokeinterface #189,  1          // InterfaceMethod java/util/List.clear:()V
+      39: aload_0
+      40: getfield      #108                // Field streams:Ljava/util/Map;
+      43: invokeinterface #186,  1          // InterfaceMethod java/util/Map.clear:()V
+      48: return
+
+  private org.apache.orc.impl.InStream$StreamOptions getStreamOptions(int, org.apache.orc.OrcProto$Stream$Kind) throws java.io.IOException;
+    Code:
+       0: aload_0
+       1: getfield      #127                // Field encryption:Lorg/apache/orc/impl/reader/ReaderEncryption;
+       4: iload_1
+       5: invokevirtual #310                // Method org/apache/orc/impl/reader/ReaderEncryption.getVariant:(I)Lorg/apache/orc/impl/reader/ReaderEncryptionVariant;
+       8: astore_3
+       9: aload_0
+      10: getfield      #129                // Field dataReader:Lorg/apache/orc/DataReader;
+      13: invokeinterface #314,  1          // InterfaceMethod org/apache/orc/DataReader.getCompressionOptions:()Lorg/apache/orc/impl/InStream$StreamOptions;
+      18: astore        4
+      20: aload_3
+      21: ifnonnull     27
+      24: aload         4
+      26: areturn
+      27: aload_3
+      28: invokevirtual #320                // Method org/apache/orc/impl/reader/ReaderEncryptionVariant.getKeyDescription:()Lorg/apache/orc/impl/reader/ReaderEncryptionKey;
+      31: invokevirtual #326                // Method org/apache/orc/impl/reader/ReaderEncryptionKey.getAlgorithm:()Lorg/apache/orc/EncryptionAlgorithm;
+      34: astore        5
+      36: aload         5
+      38: invokevirtual #331                // Method org/apache/orc/EncryptionAlgorithm.getIvLength:()I
+      41: newarray       byte
+      43: astore        6
+      45: aload_3
+      46: aload_0
+      47: getfield      #170                // Field currentStripeId:J
+      50: invokevirtual #335                // Method org/apache/orc/impl/reader/ReaderEncryptionVariant.getStripeKey:(J)Ljava/security/Key;
+      53: astore        7
+      55: iload_1
+      56: aload_2
+      57: aload_0
+      58: getfield      #175                // Field originalStripeId:J
+      61: invokestatic  #341                // Method org/apache/orc/impl/CryptoUtils.modifyIvForStream:(ILorg/apache/orc/OrcProto$Stream$Kind;J)Ljava/util/function/Consumer;
+      64: aload         6
+      66: invokeinterface #347,  2          // InterfaceMethod java/util/function/Consumer.accept:(Ljava/lang/Object;)V
+      71: new           #36                 // class org/apache/orc/impl/InStream$StreamOptions
+      74: dup
+      75: aload         4
+      77: invokespecial #350                // Method org/apache/orc/impl/InStream$StreamOptions."<init>":(Lorg/apache/orc/impl/InStream$StreamOptions;)V
+      80: aload         5
+      82: aload         7
+      84: aload         6
+      86: invokevirtual #354                // Method org/apache/orc/impl/InStream$StreamOptions.withEncryption:(Lorg/apache/orc/EncryptionAlgorithm;Ljava/security/Key;[B)Lorg/apache/orc/impl/InStream$StreamOptions;
+      89: areturn
+
+  public org.apache.orc.OrcProto$ColumnEncoding getEncoding(int);
+    Code:
+       0: aload_0
+       1: getfield      #125                // Field encodings:[Lorg/apache/orc/OrcProto$ColumnEncoding;
+       4: iload_1
+       5: aaload
+       6: areturn
+
+  private void buildEncodings(org.apache.orc.OrcProto$StripeFooter, boolean[]);
+    Code:
+       0: iconst_0
+       1: istore_3
+       2: iload_3
+       3: aload_0
+       4: getfield      #125                // Field encodings:[Lorg/apache/orc/OrcProto$ColumnEncoding;
+       7: arraylength
+       8: if_icmpge     88
+      11: aload_2
+      12: ifnull        21
+      15: aload_2
+      16: iload_3
+      17: baload
+      18: ifeq          82
+      21: aload_0
+      22: getfield      #127                // Field encryption:Lorg/apache/orc/impl/reader/ReaderEncryption;
+      25: iload_3
+      26: invokevirtual #310                // Method org/apache/orc/impl/reader/ReaderEncryption.getVariant:(I)Lorg/apache/orc/impl/reader/ReaderEncryptionVariant;
+      29: astore        4
+      31: aload         4
+      33: ifnonnull     50
+      36: aload_0
+      37: getfield      #125                // Field encodings:[Lorg/apache/orc/OrcProto$ColumnEncoding;
+      40: iload_3
+      41: aload_1
+      42: iload_3
+      43: invokevirtual #369                // Method org/apache/orc/OrcProto$StripeFooter.getColumns:(I)Lorg/apache/orc/OrcProto$ColumnEncoding;
+      46: aastore
+      47: goto          82
+      50: iload_3
+      51: aload         4
+      53: invokevirtual #373                // Method org/apache/orc/impl/reader/ReaderEncryptionVariant.getRoot:()Lorg/apache/orc/TypeDescription;
+      56: invokevirtual #376                // Method org/apache/orc/TypeDescription.getId:()I
+      59: isub
+      60: istore        5
+      62: aload_0
+      63: getfield      #125                // Field encodings:[Lorg/apache/orc/OrcProto$ColumnEncoding;
+      66: iload_3
+      67: aload_1
+      68: aload         4
+      70: invokevirtual #379                // Method org/apache/orc/impl/reader/ReaderEncryptionVariant.getVariantId:()I
+      73: invokevirtual #383                // Method org/apache/orc/OrcProto$StripeFooter.getEncryption:(I)Lorg/apache/orc/OrcProto$StripeEncryptionVariant;
+      76: iload         5
+      78: invokevirtual #385                // Method org/apache/orc/OrcProto$StripeEncryptionVariant.getEncoding:(I)Lorg/apache/orc/OrcProto$ColumnEncoding;
+      81: aastore
+      82: iinc          3, 1
+      85: goto          2
+      88: return
+
+  private long handleStream(long, boolean[], org.apache.orc.OrcProto$Stream, org.apache.orc.impl.StreamName$Area, org.apache.orc.impl.reader.ReaderEncryptionVariant);
+    Code:
+       0: aload         4
+       2: invokevirtual #392                // Method org/apache/orc/OrcProto$Stream.getColumn:()I
+       5: istore        7
+       7: aload         4
+       9: invokevirtual #395                // Method org/apache/orc/OrcProto$Stream.hasKind:()Z
+      12: ifeq          245
+      15: aload         4
+      17: invokevirtual #399                // Method org/apache/orc/OrcProto$Stream.getKind:()Lorg/apache/orc/OrcProto$Stream$Kind;
+      20: astore        8
+      22: aload         8
+      24: invokestatic  #403                // Method org/apache/orc/impl/StreamName.getArea:(Lorg/apache/orc/OrcProto$Stream$Kind;)Lorg/apache/orc/impl/StreamName$Area;
+      27: aload         5
+      29: if_acmpne     48
+      32: aload         8
+      34: getstatic     #406                // Field org/apache/orc/OrcProto$Stream$Kind.ENCRYPTED_INDEX:Lorg/apache/orc/OrcProto$Stream$Kind;
+      37: if_acmpeq     48
+      40: aload         8
+      42: getstatic     #409                // Field org/apache/orc/OrcProto$Stream$Kind.ENCRYPTED_DATA:Lorg/apache/orc/OrcProto$Stream$Kind;
+      45: if_acmpne     50
+      48: lconst_0
+      49: lreturn
+      50: aload_3
+      51: iload         7
+      53: baload
+      54: ifeq          245
+      57: aload_0
+      58: getfield      #127                // Field encryption:Lorg/apache/orc/impl/reader/ReaderEncryption;
+      61: iload         7
+      63: invokevirtual #310                // Method org/apache/orc/impl/reader/ReaderEncryption.getVariant:(I)Lorg/apache/orc/impl/reader/ReaderEncryptionVariant;
+      66: aload         6
+      68: if_acmpne     245
+      71: aload         8
+      73: getstatic     #412                // Field org/apache/orc/OrcProto$Stream$Kind.BLOOM_FILTER:Lorg/apache/orc/OrcProto$Stream$Kind;
+      76: if_acmpne     108
+      79: aload_0
+      80: getfield      #131                // Field ignoreNonUtf8BloomFilter:Z
+      83: ifeq          108
+      86: aload_0
+      87: getfield      #117                // Field schema:Lorg/apache/orc/TypeDescription;
+      90: iload         7
+      92: invokevirtual #416                // Method org/apache/orc/TypeDescription.findSubtype:(I)Lorg/apache/orc/TypeDescription;
+      95: invokevirtual #420                // Method org/apache/orc/TypeDescription.getCategory:()Lorg/apache/orc/TypeDescription$Category;
+      98: aload_0
+      99: getfield      #119                // Field version:Lorg/apache/orc/OrcFile$WriterVersion;
+     102: invokestatic  #424                // Method hadBadBloomFilters:(Lorg/apache/orc/TypeDescription$Category;Lorg/apache/orc/OrcFile$WriterVersion;)Z
+     105: ifne          245
+     108: aload         8
+     110: getstatic     #427                // Field org/apache/orc/OrcProto$Stream$Kind.BLOOM_FILTER_UTF8:Lorg/apache/orc/OrcProto$Stream$Kind;
+     113: if_acmpeq     124
+     116: aload         8
+     118: getstatic     #412                // Field org/apache/orc/OrcProto$Stream$Kind.BLOOM_FILTER:Lorg/apache/orc/OrcProto$Stream$Kind;
+     121: if_acmpne     133
+     124: aload_0
+     125: getfield      #133                // Field bloomFilterKinds:[Lorg/apache/orc/OrcProto$Stream$Kind;
+     128: iload         7
+     130: aload         8
+     132: aastore
+     133: new           #9                  // class org/apache/orc/impl/reader/StripePlanner$StreamInformation
+     136: dup
+     137: aload         8
+     139: iload         7
+     141: lload_1
+     142: aload         4
+     144: invokevirtual #430                // Method org/apache/orc/OrcProto$Stream.getLength:()J
+     147: invokespecial #433                // Method org/apache/orc/impl/reader/StripePlanner$StreamInformation."<init>":(Lorg/apache/orc/OrcProto$Stream$Kind;IJJ)V
+     150: astore        9
+     152: getstatic     #437                // Field org/apache/orc/impl/reader/StripePlanner$1.$SwitchMap$org$apache$orc$impl$StreamName$Area:[I
+     155: aload         8
+     157: invokestatic  #403                // Method org/apache/orc/impl/StreamName.getArea:(Lorg/apache/orc/OrcProto$Stream$Kind;)Lorg/apache/orc/impl/StreamName$Area;
+     160: invokevirtual #440                // Method org/apache/orc/impl/StreamName$Area.ordinal:()I
+     163: iaload
+     164: lookupswitch  { // 2
+                     1: 192
+                     2: 207
+               default: 222
+          }
+     192: aload_0
+     193: getfield      #115                // Field dataStreams:Ljava/util/List;
+     196: aload         9
+     198: invokeinterface #444,  2          // InterfaceMethod java/util/List.add:(Ljava/lang/Object;)Z
+     203: pop
+     204: goto          222
+     207: aload_0
+     208: getfield      #113                // Field indexStreams:Ljava/util/List;
+     211: aload         9
+     213: invokeinterface #444,  2          // InterfaceMethod java/util/List.add:(Ljava/lang/Object;)Z
+     218: pop
+     219: goto          222
+     222: aload_0
+     223: getfield      #108                // Field streams:Ljava/util/Map;
+     226: new           #46                 // class org/apache/orc/impl/StreamName
+     229: dup
+     230: iload         7
+     232: aload         8
+     234: invokespecial #447                // Method org/apache/orc/impl/StreamName."<init>":(ILorg/apache/orc/OrcProto$Stream$Kind;)V
+     237: aload         9
+     239: invokeinterface #451,  3          // InterfaceMethod java/util/Map.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
+     244: pop
+     245: aload         4
+     247: invokevirtual #430                // Method org/apache/orc/OrcProto$Stream.getLength:()J
+     250: lreturn
+
+  private void findStreams(long, org.apache.orc.OrcProto$StripeFooter, boolean[]) throws java.io.IOException;
+    Code:
+       0: lload_1
+       1: lstore        5
+       3: aload_0
+       4: getfield      #133                // Field bloomFilterKinds:[Lorg/apache/orc/OrcProto$Stream$Kind;
+       7: aconst_null
+       8: invokestatic  #458                // Method java/util/Arrays.fill:([Ljava/lang/Object;Ljava/lang/Object;)V
+      11: aload_0
+      12: lload         5
+      14: aload_3
+      15: getstatic     #461                // Field org/apache/orc/impl/StreamName$Area.INDEX:Lorg/apache/orc/impl/StreamName$Area;
+      18: aload         4
+      20: invokevirtual #465                // Method findStreamsByArea:(JLorg/apache/orc/OrcProto$StripeFooter;Lorg/apache/orc/impl/StreamName$Area;[Z)J
+      23: lstore        5
+      25: aload_0
+      26: lload         5
+      28: aload_3
+      29: getstatic     #468                // Field org/apache/orc/impl/StreamName$Area.DATA:Lorg/apache/orc/impl/StreamName$Area;
+      32: aload         4
+      34: invokevirtual #465                // Method findStreamsByArea:(JLorg/apache/orc/OrcProto$StripeFooter;Lorg/apache/orc/impl/StreamName$Area;[Z)J
+      37: pop2
+      38: return
+
+  private long findStreamsByArea(long, org.apache.orc.OrcProto$StripeFooter, org.apache.orc.impl.StreamName$Area, boolean[]);
+    Code:
+       0: aload_3
+       1: invokevirtual #474                // Method org/apache/orc/OrcProto$StripeFooter.getStreamsList:()Ljava/util/List;
+       4: invokeinterface #210,  1          // InterfaceMethod java/util/List.iterator:()Ljava/util/Iterator;
+       9: astore        6
+      11: aload         6
+      13: invokeinterface #216,  1          // InterfaceMethod java/util/Iterator.hasNext:()Z
+      18: ifeq          51
+      21: aload         6
+      23: invokeinterface #220,  1          // InterfaceMethod java/util/Iterator.next:()Ljava/lang/Object;
+      28: checkcast     #21                 // class org/apache/orc/OrcProto$Stream
+      31: astore        7
+      33: lload_1
+      34: aload_0
+      35: lload_1
+      36: aload         5
+      38: aload         7
+      40: aload         4
+      42: aconst_null
+      43: invokevirtual #476                // Method handleStream:(J[ZLorg/apache/orc/OrcProto$Stream;Lorg/apache/orc/impl/StreamName$Area;Lorg/apache/orc/impl/reader/ReaderEncryptionVariant;)J
+      46: ladd
+      47: lstore_1
+      48: goto          11
+      51: aload_0
+      52: getfield      #127                // Field encryption:Lorg/apache/orc/impl/reader/ReaderEncryption;
+      55: invokevirtual #480                // Method org/apache/orc/impl/reader/ReaderEncryption.getVariants:()[Lorg/apache/orc/impl/reader/ReaderEncryptionVariant;
+      58: astore        6
+      60: aload         6
+      62: arraylength
+      63: istore        7
+      65: iconst_0
+      66: istore        8
+      68: iload         8
+      70: iload         7
+      72: if_icmpge     156
+      75: aload         6
+      77: iload         8
+      79: aaload
+      80: astore        9
+      82: aload         9
+      84: invokevirtual #379                // Method org/apache/orc/impl/reader/ReaderEncryptionVariant.getVariantId:()I
+      87: istore        10
+      89: aload_3
+      90: iload         10
+      92: invokevirtual #383                // Method org/apache/orc/OrcProto$StripeFooter.getEncryption:(I)Lorg/apache/orc/OrcProto$StripeEncryptionVariant;
+      95: astore        11
+      97: aload         11
+      99: invokevirtual #483                // Method org/apache/orc/OrcProto$StripeEncryptionVariant.getStreamsList:()Ljava/util/List;
+     102: invokeinterface #210,  1          // InterfaceMethod java/util/List.iterator:()Ljava/util/Iterator;
+     107: astore        12
+     109: aload         12
+     111: invokeinterface #216,  1          // InterfaceMethod java/util/Iterator.hasNext:()Z
+     116: ifeq          150
+     119: aload         12
+     121: invokeinterface #220,  1          // InterfaceMethod java/util/Iterator.next:()Ljava/lang/Object;
+     126: checkcast     #21                 // class org/apache/orc/OrcProto$Stream
+     129: astore        13
+     131: lload_1
+     132: aload_0
+     133: lload_1
+     134: aload         5
+     136: aload         13
+     138: aload         4
+     140: aload         9
+     142: invokevirtual #476                // Method handleStream:(J[ZLorg/apache/orc/OrcProto$Stream;Lorg/apache/orc/impl/StreamName$Area;Lorg/apache/orc/impl/reader/ReaderEncryptionVariant;)J
+     145: ladd
+     146: lstore_1
+     147: goto          109
+     150: iinc          8, 1
+     153: goto          68
+     156: lload_1
+     157: lreturn
+
+  public org.apache.orc.impl.OrcIndex readRowIndex(boolean[], org.apache.orc.impl.OrcIndex) throws java.io.IOException;
+    Code:
+       0: aload_0
+       1: getfield      #117                // Field schema:Lorg/apache/orc/TypeDescription;
+       4: invokevirtual #123                // Method org/apache/orc/TypeDescription.getMaximumId:()I
+       7: iconst_1
+       8: iadd
+       9: istore_3
+      10: aload_2
+      11: ifnonnull     34
+      14: new           #491                // class org/apache/orc/impl/OrcIndex
+      17: dup
+      18: iload_3
+      19: anewarray     #54                 // class org/apache/orc/OrcProto$RowIndex
+      22: iload_3
+      23: anewarray     #24                 // class org/apache/orc/OrcProto$Stream$Kind
+      26: iload_3
+      27: anewarray     #57                 // class org/apache/orc/OrcProto$BloomFilterIndex
+      30: invokespecial #494                // Method org/apache/orc/impl/OrcIndex."<init>":([Lorg/apache/orc/OrcProto$RowIndex;[Lorg/apache/orc/OrcProto$Stream$Kind;[Lorg/apache/orc/OrcProto$BloomFilterIndex;)V
+      33: astore_2
+      34: aload_0
+      35: getfield      #133                // Field bloomFilterKinds:[Lorg/apache/orc/OrcProto$Stream$Kind;
+      38: iconst_0
+      39: aload_2
+      40: invokevirtual #498                // Method org/apache/orc/impl/OrcIndex.getBloomFilterKinds:()[Lorg/apache/orc/OrcProto$Stream$Kind;
+      43: iconst_0
+      44: aload_0
+      45: getfield      #133                // Field bloomFilterKinds:[Lorg/apache/orc/OrcProto$Stream$Kind;
+      48: arraylength
+      49: invokestatic  #504                // Method java/lang/System.arraycopy:(Ljava/lang/Object;ILjava/lang/Object;II)V
+      52: aload_0
+      53: aload_1
+      54: invokevirtual #508                // Method planIndexReading:([Z)Lorg/apache/orc/impl/BufferChunkList;
+      57: astore        4
+      59: aload_0
+      60: getfield      #129                // Field dataReader:Lorg/apache/orc/DataReader;
+      63: aload         4
+      65: iconst_0
+      66: invokeinterface #254,  3          // InterfaceMethod org/apache/orc/DataReader.readFileData:(Lorg/apache/orc/impl/BufferChunkList;Z)Lorg/apache/orc/impl/BufferChunkList;
+      71: pop
+      72: aload_2
+      73: invokevirtual #512                // Method org/apache/orc/impl/OrcIndex.getRowGroupIndex:()[Lorg/apache/orc/OrcProto$RowIndex;
+      76: astore        5
+      78: aload_2
+      79: invokevirtual #516                // Method org/apache/orc/impl/OrcIndex.getBloomFilterIndex:()[Lorg/apache/orc/OrcProto$BloomFilterIndex;
+      82: astore        6
+      84: aload_0
+      85: getfield      #113                // Field indexStreams:Ljava/util/List;
+      88: invokeinterface #210,  1          // InterfaceMethod java/util/List.iterator:()Ljava/util/Iterator;
+      93: astore        7
+      95: aload         7
+      97: invokeinterface #216,  1          // InterfaceMethod java/util/Iterator.hasNext:()Z
+     102: ifeq          248
+     105: aload         7
+     107: invokeinterface #220,  1          // InterfaceMethod java/util/Iterator.next:()Ljava/lang/Object;
+     112: checkcast     #9                  // class org/apache/orc/impl/reader/StripePlanner$StreamInformation
+     115: astore        8
+     117: aload         8
+     119: getfield      #231                // Field org/apache/orc/impl/reader/StripePlanner$StreamInformation.column:I
+     122: istore        9
+     124: aload         8
+     126: getfield      #281                // Field org/apache/orc/impl/reader/StripePlanner$StreamInformation.firstChunk:Lorg/apache/orc/impl/BufferChunk;
+     129: ifnull        245
+     132: ldc_w         #521                // String index
+     135: aload         8
+     137: getfield      #281                // Field org/apache/orc/impl/reader/StripePlanner$StreamInformation.firstChunk:Lorg/apache/orc/impl/BufferChunk;
+     140: aload         8
+     142: getfield      #284                // Field org/apache/orc/impl/reader/StripePlanner$StreamInformation.offset:J
+     145: aload         8
+     147: getfield      #287                // Field org/apache/orc/impl/reader/StripePlanner$StreamInformation.length:J
+     150: aload_0
+     151: iload         9
+     153: aload         8
+     155: getfield      #224                // Field org/apache/orc/impl/reader/StripePlanner$StreamInformation.kind:Lorg/apache/orc/OrcProto$Stream$Kind;
+     158: invokevirtual #291                // Method getStreamOptions:(ILorg/apache/orc/OrcProto$Stream$Kind;)Lorg/apache/orc/impl/InStream$StreamOptions;
+     161: invokestatic  #295                // Method org/apache/orc/impl/InStream.create:(Ljava/lang/Object;Lorg/apache/hadoop/hive/common/io/DiskRangeList;JJLorg/apache/orc/impl/InStream$StreamOptions;)Lorg/apache/orc/impl/InStream;
+     164: invokestatic  #525                // Method org/apache/orc/impl/InStream.createCodedInputStream:(Lorg/apache/orc/impl/InStream;)Lorg/apache/orc/protobuf/CodedInputStream;
+     167: astore        10
+     169: getstatic     #528                // Field org/apache/orc/impl/reader/StripePlanner$1.$SwitchMap$org$apache$orc$OrcProto$Stream$Kind:[I
+     172: aload         8
+     174: getfield      #224                // Field org/apache/orc/impl/reader/StripePlanner$StreamInformation.kind:Lorg/apache/orc/OrcProto$Stream$Kind;
+     177: invokevirtual #529                // Method org/apache/orc/OrcProto$Stream$Kind.ordinal:()I
+     180: iaload
+     181: tableswitch   { // 1 to 3
+                     1: 208
+                     2: 221
+                     3: 221
+               default: 245
+          }
+     208: aload         5
+     210: iload         9
+     212: aload         10
+     214: invokestatic  #535                // Method org/apache/orc/OrcProto$RowIndex.parseFrom:(Lorg/apache/orc/protobuf/CodedInputStream;)Lorg/apache/orc/OrcProto$RowIndex;
+     217: aastore
+     218: goto          245
+     221: aload_1
+     222: ifnull        245
+     225: aload_1
+     226: iload         9
+     228: baload
+     229: ifeq          245
+     232: aload         6
+     234: iload         9
+     236: aload         10
+     238: invokestatic  #538                // Method org/apache/orc/OrcProto$BloomFilterIndex.parseFrom:(Lorg/apache/orc/protobuf/CodedInputStream;)Lorg/apache/orc/OrcProto$BloomFilterIndex;
+     241: aastore
+     242: goto          245
+     245: goto          95
+     248: aload_2
+     249: areturn
+
+  private void addChunk(org.apache.orc.impl.BufferChunkList, org.apache.orc.impl.reader.StripePlanner$StreamInformation, long, long);
+    Code:
+       0: lload         5
+       2: lconst_0
+       3: lcmp
+       4: ifle          65
+       7: lload         5
+       9: aload_0
+      10: getfield      #137                // Field maxBufferSize:J
+      13: invokestatic  #554                // Method java/lang/Math.min:(JJ)J
+      16: lstore        7
+      18: new           #556                // class org/apache/orc/impl/BufferChunk
+      21: dup
+      22: lload_3
+      23: lload         7
+      25: l2i
+      26: invokespecial #559                // Method org/apache/orc/impl/BufferChunk."<init>":(JI)V
+      29: astore        9
+      31: aload_2
+      32: getfield      #281                // Field org/apache/orc/impl/reader/StripePlanner$StreamInformation.firstChunk:Lorg/apache/orc/impl/BufferChunk;
+      35: ifnonnull     44
+      38: aload_2
+      39: aload         9
+      41: putfield      #281                // Field org/apache/orc/impl/reader/StripePlanner$StreamInformation.firstChunk:Lorg/apache/orc/impl/BufferChunk;
+      44: aload_1
+      45: aload         9
+      47: invokevirtual #562                // Method org/apache/orc/impl/BufferChunkList.add:(Lorg/apache/orc/impl/BufferChunk;)V
+      50: lload_3
+      51: lload         7
+      53: ladd
+      54: lstore_3
+      55: lload         5
+      57: lload         7
+      59: lsub
+      60: lstore        5
+      62: goto          0
+      65: return
+
+  private org.apache.orc.impl.BufferChunkList planIndexReading(boolean[]);
+    Code:
+       0: new           #250                // class org/apache/orc/impl/BufferChunkList
+       3: dup
+       4: invokespecial #566                // Method org/apache/orc/impl/BufferChunkList."<init>":()V
+       7: astore_2
+       8: aload_0
+       9: getfield      #113                // Field indexStreams:Ljava/util/List;
+      12: invokeinterface #210,  1          // InterfaceMethod java/util/List.iterator:()Ljava/util/Iterator;
+      17: astore_3
+      18: aload_3
+      19: invokeinterface #216,  1          // InterfaceMethod java/util/Iterator.hasNext:()Z
+      24: ifeq          147
+      27: aload_3
+      28: invokeinterface #220,  1          // InterfaceMethod java/util/Iterator.next:()Ljava/lang/Object;
+      33: checkcast     #9                  // class org/apache/orc/impl/reader/StripePlanner$StreamInformation
+      36: astore        4
+      38: getstatic     #528                // Field org/apache/orc/impl/reader/StripePlanner$1.$SwitchMap$org$apache$orc$OrcProto$Stream$Kind:[I
+      41: aload         4
+      43: getfield      #224                // Field org/apache/orc/impl/reader/StripePlanner$StreamInformation.kind:Lorg/apache/orc/OrcProto$Stream$Kind;
+      46: invokevirtual #529                // Method org/apache/orc/OrcProto$Stream$Kind.ordinal:()I
+      49: iaload
+      50: tableswitch   { // 1 to 3
+                     1: 76
+                     2: 96
+                     3: 96
+               default: 144
+          }
+      76: aload_0
+      77: aload_2
+      78: aload         4
+      80: aload         4
+      82: getfield      #284                // Field org/apache/orc/impl/reader/StripePlanner$StreamInformation.offset:J
+      85: aload         4
+      87: getfield      #287                // Field org/apache/orc/impl/reader/StripePlanner$StreamInformation.length:J
+      90: invokevirtual #568                // Method addChunk:(Lorg/apache/orc/impl/BufferChunkList;Lorg/apache/orc/impl/reader/StripePlanner$StreamInformation;JJ)V
+      93: goto          144
+      96: aload_1
+      97: aload         4
+      99: getfield      #231                // Field org/apache/orc/impl/reader/StripePlanner$StreamInformation.column:I
+     102: baload
+     103: ifeq          144
+     106: aload_0
+     107: getfield      #133                // Field bloomFilterKinds:[Lorg/apache/orc/OrcProto$Stream$Kind;
+     110: aload         4
+     112: getfield      #231                // Field org/apache/orc/impl/reader/StripePlanner$StreamInformation.column:I
+     115: aaload
+     116: aload         4
+     118: getfield      #224                // Field org/apache/orc/impl/reader/StripePlanner$StreamInformation.kind:Lorg/apache/orc/OrcProto$Stream$Kind;
+     121: if_acmpne     144
+     124: aload_0
+     125: aload_2
+     126: aload         4
+     128: aload         4
+     130: getfield      #284                // Field org/apache/orc/impl/reader/StripePlanner$StreamInformation.offset:J
+     133: aload         4
+     135: getfield      #287                // Field org/apache/orc/impl/reader/StripePlanner$StreamInformation.length:J
+     138: invokevirtual #568                // Method addChunk:(Lorg/apache/orc/impl/BufferChunkList;Lorg/apache/orc/impl/reader/StripePlanner$StreamInformation;JJ)V
+     141: goto          144
+     144: goto          18
+     147: aload_2
+     148: areturn
+
+  private org.apache.orc.impl.BufferChunkList planDataReading(org.apache.orc.impl.reader.tree.TypeReader$ReadPhase);
+    Code:
+       0: new           #250                // class org/apache/orc/impl/BufferChunkList
+       3: dup
+       4: invokespecial #566                // Method org/apache/orc/impl/BufferChunkList."<init>":()V
+       7: astore_2
+       8: aload_0
+       9: getfield      #115                // Field dataStreams:Ljava/util/List;
+      12: invokeinterface #210,  1          // InterfaceMethod java/util/List.iterator:()Ljava/util/Iterator;
+      17: astore_3
+      18: aload_3
+      19: invokeinterface #216,  1          // InterfaceMethod java/util/Iterator.hasNext:()Z
+      24: ifeq          135
+      27: aload_3
+      28: invokeinterface #220,  1          // InterfaceMethod java/util/Iterator.next:()Ljava/lang/Object;
+      33: checkcast     #9                  // class org/apache/orc/impl/reader/StripePlanner$StreamInformation
+      36: astore        4
+      38: aload_1
+      39: getstatic     #573                // Field org/apache/orc/impl/reader/tree/TypeReader$ReadPhase.ALL:Lorg/apache/orc/impl/reader/tree/TypeReader$ReadPhase;
+      42: if_acmpeq     99
+      45: aload_1
+      46: getstatic     #576                // Field org/apache/orc/impl/reader/tree/TypeReader$ReadPhase.LEADERS:Lorg/apache/orc/impl/reader/tree/TypeReader$ReadPhase;
+      49: if_acmpne     72
+      52: aload_0
+      53: getfield      #139                // Field filterColIds:Ljava/util/Set;
+      56: aload         4
+      58: getfield      #231                // Field org/apache/orc/impl/reader/StripePlanner$StreamInformation.column:I
+      61: invokestatic  #582                // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;
+      64: invokeinterface #585,  2          // InterfaceMethod java/util/Set.contains:(Ljava/lang/Object;)Z
+      69: ifne          99
+      72: aload_1
+      73: getstatic     #267                // Field org/apache/orc/impl/reader/tree/TypeReader$ReadPhase.FOLLOWERS:Lorg/apache/orc/impl/reader/tree/TypeReader$ReadPhase;
+      76: if_acmpne     119
+      79: aload_0
+      80: getfield      #139                // Field filterColIds:Ljava/util/Set;
+      83: aload         4
+      85: getfield      #231                // Field org/apache/orc/impl/reader/StripePlanner$StreamInformation.column:I
+      88: invokestatic  #582                // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;
+      91: invokeinterface #585,  2          // InterfaceMethod java/util/Set.contains:(Ljava/lang/Object;)Z
+      96: ifne          119
+      99: aload_0
+     100: aload_2
+     101: aload         4
+     103: aload         4
+     105: getfield      #284                // Field org/apache/orc/impl/reader/StripePlanner$StreamInformation.offset:J
+     108: aload         4
+     110: getfield      #287                // Field org/apache/orc/impl/reader/StripePlanner$StreamInformation.length:J
+     113: invokevirtual #568                // Method addChunk:(Lorg/apache/orc/impl/BufferChunkList;Lorg/apache/orc/impl/reader/StripePlanner$StreamInformation;JJ)V
+     116: goto          132
+     119: getstatic     #587                // Field LOG:Lorg/slf4j/Logger;
+     122: ldc_w         #589                // String Skipping planning for lazy column stream {}
+     125: aload         4
+     127: invokeinterface #595,  3          // InterfaceMethod org/slf4j/Logger.debug:(Ljava/lang/String;Ljava/lang/Object;)V
+     132: goto          18
+     135: aload_2
+     136: areturn
+
+  static boolean hadBadBloomFilters(org.apache.orc.TypeDescription$Category, org.apache.orc.OrcFile$WriterVersion);
+    Code:
+       0: getstatic     #598                // Field org/apache/orc/impl/reader/StripePlanner$1.$SwitchMap$org$apache$orc$TypeDescription$Category:[I
+       3: aload_0
+       4: invokevirtual #599                // Method org/apache/orc/TypeDescription$Category.ordinal:()I
+       7: iaload
+       8: tableswitch   { // 1 to 5
+                     1: 44
+                     2: 44
+                     3: 44
+                     4: 60
+                     5: 62
+               default: 78
+          }
+      44: aload_1
+      45: getstatic     #602                // Field org/apache/orc/OrcFile$WriterVersion.HIVE_12055:Lorg/apache/orc/OrcFile$WriterVersion;
+      48: invokevirtual #606                // Method org/apache/orc/OrcFile$WriterVersion.includes:(Lorg/apache/orc/OrcFile$WriterVersion;)Z
+      51: ifne          58
+      54: iconst_1
+      55: goto          59
+      58: iconst_0
+      59: ireturn
+      60: iconst_1
+      61: ireturn
+      62: aload_1
+      63: getstatic     #609                // Field org/apache/orc/OrcFile$WriterVersion.ORC_135:Lorg/apache/orc/OrcFile$WriterVersion;
+      66: invokevirtual #606                // Method org/apache/orc/OrcFile$WriterVersion.includes:(Lorg/apache/orc/OrcFile$WriterVersion;)Z
+      69: ifne          76
+      72: iconst_1
+      73: goto          77
+      76: iconst_0
+      77: ireturn
+      78: iconst_0
+      79: ireturn
+
+  private static boolean hasSomeRowGroups(boolean[]);
+    Code:
+       0: aload_0
+       1: astore_1
+       2: aload_1
+       3: arraylength
+       4: istore_2
+       5: iconst_0
+       6: istore_3
+       7: iload_3
+       8: iload_2
+       9: if_icmpge     30
+      12: aload_1
+      13: iload_3
+      14: baload
+      15: istore        4
+      17: iload         4
+      19: ifeq          24
+      22: iconst_1
+      23: ireturn
+      24: iinc          3, 1
+      27: goto          7
+      30: iconst_0
+      31: ireturn
+
+  private org.apache.orc.impl.BufferChunkList planPartialDataReading(org.apache.orc.impl.OrcIndex, boolean[], org.apache.orc.impl.reader.tree.TypeReader$ReadPhase);
+    Code:
+       0: aload_0
+       1: aload_1
+       2: aload_2
+       3: iconst_0
+       4: aload_3
+       5: invokevirtual #270                // Method planPartialDataReading:(Lorg/apache/orc/impl/OrcIndex;[ZILorg/apache/orc/impl/reader/tree/TypeReader$ReadPhase;)Lorg/apache/orc/impl/BufferChunkList;
+       8: areturn
+
+  private org.apache.orc.impl.BufferChunkList planPartialDataReading(org.apache.orc.impl.OrcIndex, boolean[], int, org.apache.orc.impl.reader.tree.TypeReader$ReadPhase);
+    Code:
+       0: new           #250                // class org/apache/orc/impl/BufferChunkList
+       3: dup
+       4: invokespecial #566                // Method org/apache/orc/impl/BufferChunkList."<init>":()V
+       7: astore        5
+       9: aload_2
+      10: invokestatic  #618                // Method hasSomeRowGroups:([Z)Z
+      13: ifeq          189
+      16: aload_0
+      17: getfield      #129                // Field dataReader:Lorg/apache/orc/DataReader;
+      20: invokeinterface #314,  1          // InterfaceMethod org/apache/orc/DataReader.getCompressionOptions:()Lorg/apache/orc/impl/InStream$StreamOptions;
+      25: astore        6
+      27: aload         6
+      29: invokevirtual #622                // Method org/apache/orc/impl/InStream$StreamOptions.getCodec:()Lorg/apache/orc/CompressionCodec;
+      32: ifnull        39
+      35: iconst_1
+      36: goto          40
+      39: iconst_0
+      40: istore        7
+      42: aload         6
+      44: invokevirtual #625                // Method org/apache/orc/impl/InStream$StreamOptions.getBufferSize:()I
+      47: istore        8
+      49: aload_1
+      50: invokevirtual #512                // Method org/apache/orc/impl/OrcIndex.getRowGroupIndex:()[Lorg/apache/orc/OrcProto$RowIndex;
+      53: astore        9
+      55: aload_0
+      56: getfield      #115                // Field dataStreams:Ljava/util/List;
+      59: invokeinterface #210,  1          // InterfaceMethod java/util/List.iterator:()Ljava/util/Iterator;
+      64: astore        10
+      66: aload         10
+      68: invokeinterface #216,  1          // InterfaceMethod java/util/Iterator.hasNext:()Z
+      73: ifeq          189
+      76: aload         10
+      78: invokeinterface #220,  1          // InterfaceMethod java/util/Iterator.next:()Ljava/lang/Object;
+      83: checkcast     #9                  // class org/apache/orc/impl/reader/StripePlanner$StreamInformation
+      86: astore        11
+      88: aload         4
+      90: getstatic     #573                // Field org/apache/orc/impl/reader/tree/TypeReader$ReadPhase.ALL:Lorg/apache/orc/impl/reader/tree/TypeReader$ReadPhase;
+      93: if_acmpeq     152
+      96: aload         4
+      98: getstatic     #576                // Field org/apache/orc/impl/reader/tree/TypeReader$ReadPhase.LEADERS:Lorg/apache/orc/impl/reader/tree/TypeReader$ReadPhase;
+     101: if_acmpne     124
+     104: aload_0
+     105: getfield      #139                // Field filterColIds:Ljava/util/Set;
+     108: aload         11
+     110: getfield      #231                // Field org/apache/orc/impl/reader/StripePlanner$StreamInformation.column:I
+     113: invokestatic  #582                // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;
+     116: invokeinterface #585,  2          // InterfaceMethod java/util/Set.contains:(Ljava/lang/Object;)Z
+     121: ifne          152
+     124: aload         4
+     126: getstatic     #267                // Field org/apache/orc/impl/reader/tree/TypeReader$ReadPhase.FOLLOWERS:Lorg/apache/orc/impl/reader/tree/TypeReader$ReadPhase;
+     129: if_acmpne     171
+     132: aload_0
+     133: getfield      #139                // Field filterColIds:Ljava/util/Set;
+     136: aload         11
+     138: getfield      #231                // Field org/apache/orc/impl/reader/StripePlanner$StreamInformation.column:I
+     141: invokestatic  #582                // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;
+     144: invokeinterface #585,  2          // InterfaceMethod java/util/Set.contains:(Ljava/lang/Object;)Z
+     149: ifne          171
+     152: aload_0
+     153: aload         11
+     155: aload         5
+     157: aload         9
+     159: iload_3
+     160: aload_2
+     161: iload         7
+     163: iload         8
+     165: invokevirtual #629                // Method processStream:(Lorg/apache/orc/impl/reader/StripePlanner$StreamInformation;Lorg/apache/orc/impl/BufferChunkList;[Lorg/apache/orc/OrcProto$RowIndex;I[ZZI)V
+     168: goto          186
+     171: getstatic     #587                // Field LOG:Lorg/slf4j/Logger;
+     174: ldc_w         #631                // String Skipping planning for column stream {} at level {}
+     177: aload         11
+     179: aload         4
+     181: invokeinterface #634,  4          // InterfaceMethod org/slf4j/Logger.debug:(Ljava/lang/String;Ljava/lang/Object;Ljava/lang/Object;)V
+     186: goto          66
+     189: aload         5
+     191: areturn
+
+  private void processStream(org.apache.orc.impl.reader.StripePlanner$StreamInformation, org.apache.orc.impl.BufferChunkList, org.apache.orc.OrcProto$RowIndex[], int, boolean[], boolean, int);
+    Code:
+       0: aload_1
+       1: getfield      #224                // Field org/apache/orc/impl/reader/StripePlanner$StreamInformation.kind:Lorg/apache/orc/OrcProto$Stream$Kind;
+       4: aload_0
+       5: getfield      #125                // Field encodings:[Lorg/apache/orc/OrcProto$ColumnEncoding;
+       8: aload_1
+       9: getfield      #231                // Field org/apache/orc/impl/reader/StripePlanner$StreamInformation.column:I
+      12: aaload
+      13: invokestatic  #644                // Method org/apache/orc/impl/RecordReaderUtils.isDictionary:(Lorg/apache/orc/OrcProto$Stream$Kind;Lorg/apache/orc/OrcProto$ColumnEncoding;)Z
+      16: ifeq          36
+      19: aload_0
+      20: aload_2
+      21: aload_1
+      22: aload_1
+      23: getfield      #284                // Field org/apache/orc/impl/reader/StripePlanner$StreamInformation.offset:J
+      26: aload_1
+      27: getfield      #287                // Field org/apache/orc/impl/reader/StripePlanner$StreamInformation.length:J
+      30: invokevirtual #568                // Method addChunk:(Lorg/apache/orc/impl/BufferChunkList;Lorg/apache/orc/impl/reader/StripePlanner$StreamInformation;JJ)V
+      33: goto          278
+      36: aload_1
+      37: getfield      #231                // Field org/apache/orc/impl/reader/StripePlanner$StreamInformation.column:I
+      40: istore        8
+      42: aload_3
+      43: iload         8
+      45: aaload
+      46: astore        9
+      48: aload_0
+      49: getfield      #117                // Field schema:Lorg/apache/orc/TypeDescription;
+      52: iload         8
+      54: invokevirtual #416                // Method org/apache/orc/TypeDescription.findSubtype:(I)Lorg/apache/orc/TypeDescription;
+      57: invokevirtual #420                // Method org/apache/orc/TypeDescription.getCategory:()Lorg/apache/orc/TypeDescription$Category;
+      60: astore        10
+      62: lconst_0
+      63: lstore        11
+      65: iload         4
+      67: istore        13
+      69: iload         13
+      71: aload         5
+      73: arraylength
+      74: if_icmpge     278
+      77: aload         5
+      79: iload         13
+      81: baload
+      82: ifeq          272
+      85: iload         13
+      87: istore        14
+      89: iload         14
+      91: aload         5
+      93: arraylength
+      94: iconst_1
+      95: isub
+      96: if_icmpge     115
+      99: aload         5
+     101: iload         14
+     103: iconst_1
+     104: iadd
+     105: baload
+     106: ifeq          115
+     109: iinc          14, 1
+     112: goto          89
+     115: aload_0
+     116: getfield      #125                // Field encodings:[Lorg/apache/orc/OrcProto$ColumnEncoding;
+     119: aload_1
+     120: getfield      #231                // Field org/apache/orc/impl/reader/StripePlanner$StreamInformation.column:I
+     123: aaload
+     124: invokevirtual #647                // Method org/apache/orc/OrcProto$ColumnEncoding.getKind:()Lorg/apache/orc/OrcProto$ColumnEncoding$Kind;
+     127: aload         10
+     129: aload_1
+     130: getfield      #224                // Field org/apache/orc/impl/reader/StripePlanner$StreamInformation.kind:Lorg/apache/orc/OrcProto$Stream$Kind;
+     133: iload         6
+     135: aload_0
+     136: getfield      #135                // Field hasNull:[Z
+     139: iload         8
+     141: baload
+     142: invokestatic  #651                // Method org/apache/orc/impl/RecordReaderUtils.getIndexPosition:(Lorg/apache/orc/OrcProto$ColumnEncoding$Kind;Lorg/apache/orc/TypeDescription$Category;Lorg/apache/orc/OrcProto$Stream$Kind;ZZ)I
+     145: istore        15
+     147: lload         11
+     149: aload_1
+     150: getfield      #284                // Field org/apache/orc/impl/reader/StripePlanner$StreamInformation.offset:J
+     153: iload         13
+     155: ifne          162
+     158: lconst_0
+     159: goto          174
+     162: aload         9
+     164: iload         13
+     166: invokevirtual #655                // Method org/apache/orc/OrcProto$RowIndex.getEntry:(I)Lorg/apache/orc/OrcProto$RowIndexEntry;
+     169: iload         15
+     171: invokevirtual #659                // Method org/apache/orc/OrcProto$RowIndexEntry.getPositions:(I)J
+     174: ladd
+     175: invokestatic  #662                // Method java/lang/Math.max:(JJ)J
+     178: lstore        16
+     180: aload_1
+     181: getfield      #284                // Field org/apache/orc/impl/reader/StripePlanner$StreamInformation.offset:J
+     184: lstore        18
+     186: iload         14
+     188: aload         5
+     190: arraylength
+     191: iconst_1
+     192: isub
+     193: if_icmpne     208
+     196: lload         18
+     198: aload_1
+     199: getfield      #287                // Field org/apache/orc/impl/reader/StripePlanner$StreamInformation.length:J
+     202: ladd
+     203: lstore        18
+     205: goto          243
+     208: aload         9
+     210: iload         14
+     212: iconst_1
+     213: iadd
+     214: invokevirtual #655                // Method org/apache/orc/OrcProto$RowIndex.getEntry:(I)Lorg/apache/orc/OrcProto$RowIndexEntry;
+     217: iload         15
+     219: invokevirtual #659                // Method org/apache/orc/OrcProto$RowIndexEntry.getPositions:(I)J
+     222: lstore        20
+     224: lload         18
+     226: iload         6
+     228: iload         7
+     230: iconst_0
+     231: lload         20
+     233: aload_1
+     234: getfield      #287                // Field org/apache/orc/impl/reader/StripePlanner$StreamInformation.length:J
+     237: invokestatic  #666                // Method org/apache/orc/impl/RecordReaderUtils.estimateRgEndOffset:(ZIZJJ)J
+     240: ladd
+     241: lstore        18
+     243: lload         11
+     245: lload         18
+     247: lcmp
+     248: ifge          268
+     251: aload_0
+     252: aload_2
+     253: aload_1
+     254: lload         16
+     256: lload         18
+     258: lload         16
+     260: lsub
+     261: invokevirtual #568                // Method addChunk:(Lorg/apache/orc/impl/BufferChunkList;Lorg/apache/orc/impl/reader/StripePlanner$StreamInformation;JJ)V
+     264: lload         18
+     266: lstore        11
+     268: iload         14
+     270: istore        13
+     272: iinc          13, 1
+     275: goto          69
+     278: return
+
+  static {};
+    Code:
+       0: ldc           #2                  // class org/apache/orc/impl/reader/StripePlanner
+       2: invokestatic  #682                // Method org/slf4j/LoggerFactory.getLogger:(Ljava/lang/Class;)Lorg/slf4j/Logger;
+       5: putstatic     #587                // Field LOG:Lorg/slf4j/Logger;
+       8: return
+}

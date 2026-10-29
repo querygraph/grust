@@ -1,0 +1,3228 @@
+Compiled from "RecordReaderImpl.java"
+public class org.apache.orc.impl.RecordReaderImpl implements org.apache.orc.RecordReader {
+  static final org.slf4j.Logger LOG;
+
+  private static final boolean isLogDebugEnabled;
+
+  public static final org.apache.orc.OrcProto$ColumnStatistics EMPTY_COLUMN_STATISTICS;
+
+  protected final org.apache.hadoop.fs.Path path;
+
+  private final long firstRow;
+
+  private final java.util.List<org.apache.orc.StripeInformation> stripes;
+
+  private org.apache.orc.OrcProto$StripeFooter stripeFooter;
+
+  private final long totalRowCount;
+
+  protected final org.apache.orc.TypeDescription schema;
+
+  private final boolean[] fileIncluded;
+
+  private final long rowIndexStride;
+
+  private long rowInStripe;
+
+  private long followRowInStripe;
+
+  private int currentStripe;
+
+  private long rowBaseInStripe;
+
+  private long rowCountInStripe;
+
+  private final org.apache.orc.impl.reader.tree.BatchReader reader;
+
+  private final org.apache.orc.impl.OrcIndex indexes;
+
+  private final boolean[] rowIndexColsToRead;
+
+  private final org.apache.orc.impl.RecordReaderImpl$SargApplier sargApp;
+
+  private boolean[] includedRowGroups;
+
+  private final org.apache.orc.DataReader dataReader;
+
+  private final int maxDiskRangeChunkLimit;
+
+  private final org.apache.orc.impl.reader.StripePlanner planner;
+
+  private final org.apache.orc.impl.reader.tree.TypeReader$ReadPhase startReadPhase;
+
+  private boolean needsFollowColumnsRead;
+
+  private final boolean noSelectedVector;
+
+  private final boolean skipBloomFilters;
+
+  static final java.lang.String[] BAD_CPP_BLOOM_FILTER_VERSIONS;
+
+  private static final java.lang.String TRANSLATED_SARG_SEPARATOR;
+
+  static final boolean $assertionsDisabled;
+
+  static int findColumns(org.apache.orc.impl.SchemaEvolution, java.lang.String);
+    Code:
+       0: aload_0
+       1: aload_1
+       2: invokestatic  #1                  // Method findColumnType:(Lorg/apache/orc/impl/SchemaEvolution;Ljava/lang/String;)Lorg/apache/orc/TypeDescription;
+       5: astore_2
+       6: aload_2
+       7: ifnonnull     14
+      10: iconst_m1
+      11: goto          18
+      14: aload_2
+      15: invokevirtual #7                  // Method org/apache/orc/TypeDescription.getId:()I
+      18: ireturn
+
+  static org.apache.orc.TypeDescription findColumnType(org.apache.orc.impl.SchemaEvolution, java.lang.String);
+    Code:
+       0: aload_0
+       1: invokevirtual #13                 // Method org/apache/orc/impl/SchemaEvolution.getReaderBaseSchema:()Lorg/apache/orc/TypeDescription;
+       4: aload_1
+       5: aload_0
+       6: getfield      #19                 // Field org/apache/orc/impl/SchemaEvolution.isSchemaEvolutionCaseAware:Z
+       9: invokevirtual #23                 // Method org/apache/orc/TypeDescription.findSubtype:(Ljava/lang/String;Z)Lorg/apache/orc/TypeDescription;
+      12: astore_2
+      13: aload_0
+      14: aload_2
+      15: invokevirtual #27                 // Method org/apache/orc/impl/SchemaEvolution.getFileType:(Lorg/apache/orc/TypeDescription;)Lorg/apache/orc/TypeDescription;
+      18: areturn
+      19: astore_2
+      20: new           #31                 // class java/lang/IllegalArgumentException
+      23: dup
+      24: aload_1
+      25: aload_0
+      26: invokevirtual #13                 // Method org/apache/orc/impl/SchemaEvolution.getReaderBaseSchema:()Lorg/apache/orc/TypeDescription;
+      29: invokestatic  #33                 // Method java/lang/String.valueOf:(Ljava/lang/Object;)Ljava/lang/String;
+      32: invokedynamic #39,  0             // InvokeDynamic #0:makeConcatWithConstants:(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
+      37: aload_2
+      38: invokespecial #43                 // Method java/lang/IllegalArgumentException."<init>":(Ljava/lang/String;Ljava/lang/Throwable;)V
+      41: athrow
+    Exception table:
+       from    to  target type
+           0    18    19   Class java/lang/IllegalArgumentException
+
+  static org.apache.orc.TypeDescription findMostCommonColumn(org.apache.orc.impl.SchemaEvolution, java.lang.String);
+    Code:
+       0: aload_0
+       1: invokevirtual #13                 // Method org/apache/orc/impl/SchemaEvolution.getReaderBaseSchema:()Lorg/apache/orc/TypeDescription;
+       4: aload_1
+       5: aload_0
+       6: getfield      #19                 // Field org/apache/orc/impl/SchemaEvolution.isSchemaEvolutionCaseAware:Z
+       9: invokevirtual #23                 // Method org/apache/orc/TypeDescription.findSubtype:(Ljava/lang/String;Z)Lorg/apache/orc/TypeDescription;
+      12: astore_2
+      13: aload_0
+      14: aload_2
+      15: invokevirtual #27                 // Method org/apache/orc/impl/SchemaEvolution.getFileType:(Lorg/apache/orc/TypeDescription;)Lorg/apache/orc/TypeDescription;
+      18: astore_3
+      19: aload_3
+      20: ifnonnull     31
+      23: aload_2
+      24: invokevirtual #47                 // Method org/apache/orc/TypeDescription.getParent:()Lorg/apache/orc/TypeDescription;
+      27: astore_2
+      28: goto          33
+      31: aload_3
+      32: areturn
+      33: aload_2
+      34: ifnonnull     13
+      37: aconst_null
+      38: areturn
+      39: astore_2
+      40: new           #31                 // class java/lang/IllegalArgumentException
+      43: dup
+      44: aload_1
+      45: aload_0
+      46: invokevirtual #13                 // Method org/apache/orc/impl/SchemaEvolution.getReaderBaseSchema:()Lorg/apache/orc/TypeDescription;
+      49: invokestatic  #33                 // Method java/lang/String.valueOf:(Ljava/lang/Object;)Ljava/lang/String;
+      52: invokedynamic #39,  0             // InvokeDynamic #0:makeConcatWithConstants:(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
+      57: aload_2
+      58: invokespecial #43                 // Method java/lang/IllegalArgumentException."<init>":(Ljava/lang/String;Ljava/lang/Throwable;)V
+      61: athrow
+    Exception table:
+       from    to  target type
+           0    32    39   Class java/lang/IllegalArgumentException
+          33    38    39   Class java/lang/IllegalArgumentException
+
+  public static int[] mapSargColumnsToOrcInternalColIdx(java.util.List<org.apache.hadoop.hive.ql.io.sarg.PredicateLeaf>, org.apache.orc.impl.SchemaEvolution);
+    Code:
+       0: aload_0
+       1: invokeinterface #50,  1           // InterfaceMethod java/util/List.size:()I
+       6: newarray       int
+       8: astore_2
+       9: iconst_0
+      10: istore_3
+      11: iload_3
+      12: aload_0
+      13: invokeinterface #50,  1           // InterfaceMethod java/util/List.size:()I
+      18: if_icmpge     80
+      21: iconst_m1
+      22: istore        4
+      24: aload_0
+      25: iload_3
+      26: invokeinterface #55,  2           // InterfaceMethod java/util/List.get:(I)Ljava/lang/Object;
+      31: checkcast     #59                 // class org/apache/hadoop/hive/ql/io/sarg/PredicateLeaf
+      34: invokeinterface #61,  1           // InterfaceMethod org/apache/hadoop/hive/ql/io/sarg/PredicateLeaf.getColumnName:()Ljava/lang/String;
+      39: astore        5
+      41: aload_1
+      42: aload         5
+      44: invokestatic  #65                 // Method findColumns:(Lorg/apache/orc/impl/SchemaEvolution;Ljava/lang/String;)I
+      47: istore        4
+      49: goto          69
+      52: astore        5
+      54: getstatic     #69                 // Field LOG:Lorg/slf4j/Logger;
+      57: ldc           #73                 // String {}
+      59: aload         5
+      61: invokevirtual #75                 // Method java/lang/IllegalArgumentException.getMessage:()Ljava/lang/String;
+      64: invokeinterface #78,  3           // InterfaceMethod org/slf4j/Logger.debug:(Ljava/lang/String;Ljava/lang/Object;)V
+      69: aload_2
+      70: iload_3
+      71: iload         4
+      73: iastore
+      74: iinc          3, 1
+      77: goto          11
+      80: aload_2
+      81: areturn
+    Exception table:
+       from    to  target type
+          24    49    52   Class java/lang/IllegalArgumentException
+
+  protected org.apache.orc.impl.RecordReaderImpl(org.apache.orc.impl.ReaderImpl, org.apache.orc.Reader$Options) throws java.io.IOException;
+    Code:
+       0: aload_0
+       1: invokespecial #84                 // Method java/lang/Object."<init>":()V
+       4: aload_0
+       5: new           #89                 // class java/util/ArrayList
+       8: dup
+       9: invokespecial #91                 // Method java/util/ArrayList."<init>":()V
+      12: putfield      #92                 // Field stripes:Ljava/util/List;
+      15: aload_0
+      16: lconst_0
+      17: putfield      #96                 // Field rowInStripe:J
+      20: aload_0
+      21: lconst_0
+      22: putfield      #100                // Field followRowInStripe:J
+      25: aload_0
+      26: iconst_m1
+      27: putfield      #103                // Field currentStripe:I
+      30: aload_0
+      31: lconst_0
+      32: putfield      #107                // Field rowBaseInStripe:J
+      35: aload_0
+      36: lconst_0
+      37: putfield      #110                // Field rowCountInStripe:J
+      40: aload_0
+      41: aconst_null
+      42: putfield      #113                // Field includedRowGroups:[Z
+      45: aload_1
+      46: invokevirtual #117                // Method org/apache/orc/impl/ReaderImpl.getWriterVersion:()Lorg/apache/orc/OrcFile$WriterVersion;
+      49: astore_3
+      50: aload_2
+      51: invokevirtual #123                // Method org/apache/orc/Reader$Options.getSchema:()Lorg/apache/orc/TypeDescription;
+      54: ifnonnull     95
+      57: getstatic     #69                 // Field LOG:Lorg/slf4j/Logger;
+      60: aload_1
+      61: invokevirtual #128                // Method org/apache/orc/impl/ReaderImpl.getSchema:()Lorg/apache/orc/TypeDescription;
+      64: invokestatic  #33                 // Method java/lang/String.valueOf:(Ljava/lang/Object;)Ljava/lang/String;
+      67: invokedynamic #129,  0            // InvokeDynamic #1:makeConcatWithConstants:(Ljava/lang/String;)Ljava/lang/String;
+      72: invokeinterface #132,  2          // InterfaceMethod org/slf4j/Logger.debug:(Ljava/lang/String;)V
+      77: new           #14                 // class org/apache/orc/impl/SchemaEvolution
+      80: dup
+      81: aload_1
+      82: invokevirtual #128                // Method org/apache/orc/impl/ReaderImpl.getSchema:()Lorg/apache/orc/TypeDescription;
+      85: aconst_null
+      86: aload_2
+      87: invokespecial #135                // Method org/apache/orc/impl/SchemaEvolution."<init>":(Lorg/apache/orc/TypeDescription;Lorg/apache/orc/TypeDescription;Lorg/apache/orc/Reader$Options;)V
+      90: astore        4
+      92: goto          166
+      95: new           #14                 // class org/apache/orc/impl/SchemaEvolution
+      98: dup
+      99: aload_1
+     100: invokevirtual #128                // Method org/apache/orc/impl/ReaderImpl.getSchema:()Lorg/apache/orc/TypeDescription;
+     103: aload_2
+     104: invokevirtual #123                // Method org/apache/orc/Reader$Options.getSchema:()Lorg/apache/orc/TypeDescription;
+     107: aload_2
+     108: invokespecial #135                // Method org/apache/orc/impl/SchemaEvolution."<init>":(Lorg/apache/orc/TypeDescription;Lorg/apache/orc/TypeDescription;Lorg/apache/orc/Reader$Options;)V
+     111: astore        4
+     113: getstatic     #69                 // Field LOG:Lorg/slf4j/Logger;
+     116: invokeinterface #138,  1          // InterfaceMethod org/slf4j/Logger.isDebugEnabled:()Z
+     121: ifeq          166
+     124: aload         4
+     126: invokevirtual #142                // Method org/apache/orc/impl/SchemaEvolution.hasConversion:()Z
+     129: ifeq          166
+     132: getstatic     #69                 // Field LOG:Lorg/slf4j/Logger;
+     135: aload_1
+     136: getfield      #145                // Field org/apache/orc/impl/ReaderImpl.path:Lorg/apache/hadoop/fs/Path;
+     139: invokevirtual #149                // Method org/apache/hadoop/fs/Path.toString:()Ljava/lang/String;
+     142: aload_2
+     143: invokevirtual #123                // Method org/apache/orc/Reader$Options.getSchema:()Lorg/apache/orc/TypeDescription;
+     146: invokevirtual #154                // Method org/apache/orc/TypeDescription.toString:()Ljava/lang/String;
+     149: aload_1
+     150: invokevirtual #128                // Method org/apache/orc/impl/ReaderImpl.getSchema:()Lorg/apache/orc/TypeDescription;
+     153: invokestatic  #33                 // Method java/lang/String.valueOf:(Ljava/lang/Object;)Ljava/lang/String;
+     156: invokedynamic #155,  0            // InvokeDynamic #2:makeConcatWithConstants:(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
+     161: invokeinterface #132,  2          // InterfaceMethod org/slf4j/Logger.debug:(Ljava/lang/String;)V
+     166: aload_0
+     167: aload_2
+     168: invokevirtual #158                // Method org/apache/orc/Reader$Options.useSelected:()Z
+     171: ifne          178
+     174: iconst_1
+     175: goto          179
+     178: iconst_0
+     179: putfield      #161                // Field noSelectedVector:Z
+     182: getstatic     #69                 // Field LOG:Lorg/slf4j/Logger;
+     185: ldc           #164                // String noSelectedVector={}
+     187: aload_0
+     188: getfield      #161                // Field noSelectedVector:Z
+     191: invokestatic  #166                // Method java/lang/Boolean.valueOf:(Z)Ljava/lang/Boolean;
+     194: invokeinterface #78,  3           // InterfaceMethod org/slf4j/Logger.debug:(Ljava/lang/String;Ljava/lang/Object;)V
+     199: aload_0
+     200: aload         4
+     202: invokevirtual #171                // Method org/apache/orc/impl/SchemaEvolution.getReaderSchema:()Lorg/apache/orc/TypeDescription;
+     205: putfield      #174                // Field schema:Lorg/apache/orc/TypeDescription;
+     208: aload_0
+     209: aload_1
+     210: getfield      #145                // Field org/apache/orc/impl/ReaderImpl.path:Lorg/apache/hadoop/fs/Path;
+     213: putfield      #178                // Field path:Lorg/apache/hadoop/fs/Path;
+     216: aload_0
+     217: aload_1
+     218: getfield      #179                // Field org/apache/orc/impl/ReaderImpl.rowIndexStride:I
+     221: i2l
+     222: putfield      #182                // Field rowIndexStride:J
+     225: getstatic     #184                // Field org/apache/orc/OrcConf.IGNORE_NON_UTF8_BLOOM_FILTERS:Lorg/apache/orc/OrcConf;
+     228: aload_1
+     229: getfield      #190                // Field org/apache/orc/impl/ReaderImpl.conf:Lorg/apache/hadoop/conf/Configuration;
+     232: invokevirtual #194                // Method org/apache/orc/OrcConf.getBoolean:(Lorg/apache/hadoop/conf/Configuration;)Z
+     235: istore        5
+     237: aload_1
+     238: invokevirtual #198                // Method org/apache/orc/impl/ReaderImpl.getEncryption:()Lorg/apache/orc/impl/reader/ReaderEncryption;
+     241: astore        6
+     243: aload_0
+     244: aload         4
+     246: invokevirtual #202                // Method org/apache/orc/impl/SchemaEvolution.getFileIncluded:()[Z
+     249: putfield      #206                // Field fileIncluded:[Z
+     252: aload_2
+     253: invokevirtual #209                // Method org/apache/orc/Reader$Options.getSearchArgument:()Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument;
+     256: astore        7
+     258: aload         4
+     260: invokevirtual #202                // Method org/apache/orc/impl/SchemaEvolution.getFileIncluded:()[Z
+     263: arraylength
+     264: newarray       boolean
+     266: astore        8
+     268: aload         7
+     270: ifnull        329
+     273: aload_0
+     274: getfield      #182                // Field rowIndexStride:J
+     277: lconst_0
+     278: lcmp
+     279: ifle          329
+     282: aload_0
+     283: new           #213                // class org/apache/orc/impl/RecordReaderImpl$SargApplier
+     286: dup
+     287: aload         7
+     289: aload_0
+     290: getfield      #182                // Field rowIndexStride:J
+     293: aload         4
+     295: aload_3
+     296: aload_1
+     297: getfield      #215                // Field org/apache/orc/impl/ReaderImpl.useUTCTimestamp:Z
+     300: aload_1
+     301: invokevirtual #218                // Method org/apache/orc/impl/ReaderImpl.writerUsedProlepticGregorian:()Z
+     304: aload_1
+     305: getfield      #221                // Field org/apache/orc/impl/ReaderImpl.options:Lorg/apache/orc/OrcFile$ReaderOptions;
+     308: invokevirtual #225                // Method org/apache/orc/OrcFile$ReaderOptions.getConvertToProlepticGregorian:()Z
+     311: invokespecial #230                // Method org/apache/orc/impl/RecordReaderImpl$SargApplier."<init>":(Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument;JLorg/apache/orc/impl/SchemaEvolution;Lorg/apache/orc/OrcFile$WriterVersion;ZZZ)V
+     314: putfield      #233                // Field sargApp:Lorg/apache/orc/impl/RecordReaderImpl$SargApplier;
+     317: aload_0
+     318: getfield      #233                // Field sargApp:Lorg/apache/orc/impl/RecordReaderImpl$SargApplier;
+     321: aload         8
+     323: invokevirtual #237                // Method org/apache/orc/impl/RecordReaderImpl$SargApplier.setRowIndexCols:([Z)V
+     326: goto          334
+     329: aload_0
+     330: aconst_null
+     331: putfield      #233                // Field sargApp:Lorg/apache/orc/impl/RecordReaderImpl$SargApplier;
+     334: lconst_0
+     335: lstore        9
+     337: lconst_0
+     338: lstore        11
+     340: aload_2
+     341: invokevirtual #241                // Method org/apache/orc/Reader$Options.getOffset:()J
+     344: lstore        13
+     346: aload_2
+     347: invokevirtual #245                // Method org/apache/orc/Reader$Options.getMaxOffset:()J
+     350: lstore        15
+     352: aload_1
+     353: invokevirtual #248                // Method org/apache/orc/impl/ReaderImpl.getStripes:()Ljava/util/List;
+     356: invokeinterface #252,  1          // InterfaceMethod java/util/List.iterator:()Ljava/util/Iterator;
+     361: astore        17
+     363: aload         17
+     365: invokeinterface #256,  1          // InterfaceMethod java/util/Iterator.hasNext:()Z
+     370: ifeq          452
+     373: aload         17
+     375: invokeinterface #261,  1          // InterfaceMethod java/util/Iterator.next:()Ljava/lang/Object;
+     380: checkcast     #265                // class org/apache/orc/StripeInformation
+     383: astore        18
+     385: aload         18
+     387: invokeinterface #267,  1          // InterfaceMethod org/apache/orc/StripeInformation.getOffset:()J
+     392: lstore        19
+     394: lload         13
+     396: lload         19
+     398: lcmp
+     399: ifle          417
+     402: lload         11
+     404: aload         18
+     406: invokeinterface #268,  1          // InterfaceMethod org/apache/orc/StripeInformation.getNumberOfRows:()J
+     411: ladd
+     412: lstore        11
+     414: goto          449
+     417: lload         19
+     419: lload         15
+     421: lcmp
+     422: ifge          449
+     425: aload_0
+     426: getfield      #92                 // Field stripes:Ljava/util/List;
+     429: aload         18
+     431: invokeinterface #271,  2          // InterfaceMethod java/util/List.add:(Ljava/lang/Object;)Z
+     436: pop
+     437: lload         9
+     439: aload         18
+     441: invokeinterface #268,  1          // InterfaceMethod org/apache/orc/StripeInformation.getNumberOfRows:()J
+     446: ladd
+     447: lstore        9
+     449: goto          363
+     452: aload_0
+     453: getstatic     #275                // Field org/apache/orc/OrcConf.ORC_MAX_DISK_RANGE_CHUNK_LIMIT:Lorg/apache/orc/OrcConf;
+     456: aload_1
+     457: getfield      #190                // Field org/apache/orc/impl/ReaderImpl.conf:Lorg/apache/hadoop/conf/Configuration;
+     460: invokevirtual #278                // Method org/apache/orc/OrcConf.getInt:(Lorg/apache/hadoop/conf/Configuration;)I
+     463: putfield      #282                // Field maxDiskRangeChunkLimit:I
+     466: aload_2
+     467: invokevirtual #285                // Method org/apache/orc/Reader$Options.getUseZeroCopy:()Ljava/lang/Boolean;
+     470: astore        17
+     472: aload         17
+     474: ifnonnull     492
+     477: getstatic     #289                // Field org/apache/orc/OrcConf.USE_ZEROCOPY:Lorg/apache/orc/OrcConf;
+     480: aload_1
+     481: getfield      #190                // Field org/apache/orc/impl/ReaderImpl.conf:Lorg/apache/hadoop/conf/Configuration;
+     484: invokevirtual #194                // Method org/apache/orc/OrcConf.getBoolean:(Lorg/apache/hadoop/conf/Configuration;)Z
+     487: invokestatic  #166                // Method java/lang/Boolean.valueOf:(Z)Ljava/lang/Boolean;
+     490: astore        17
+     492: aload_2
+     493: invokevirtual #292                // Method org/apache/orc/Reader$Options.getDataReader:()Lorg/apache/orc/DataReader;
+     496: ifnull        515
+     499: aload_0
+     500: aload_2
+     501: invokevirtual #292                // Method org/apache/orc/Reader$Options.getDataReader:()Lorg/apache/orc/DataReader;
+     504: invokeinterface #296,  1          // InterfaceMethod org/apache/orc/DataReader.clone:()Lorg/apache/orc/DataReader;
+     509: putfield      #301                // Field dataReader:Lorg/apache/orc/DataReader;
+     512: goto          621
+     515: invokestatic  #305                // Method org/apache/orc/impl/InStream.options:()Lorg/apache/orc/impl/InStream$StreamOptions;
+     518: aload_1
+     519: invokevirtual #310                // Method org/apache/orc/impl/ReaderImpl.getCompressionKind:()Lorg/apache/orc/CompressionKind;
+     522: invokestatic  #314                // Method org/apache/orc/impl/OrcCodecPool.getCodec:(Lorg/apache/orc/CompressionKind;)Lorg/apache/orc/CompressionCodec;
+     525: invokevirtual #320                // Method org/apache/orc/impl/InStream$StreamOptions.withCodec:(Lorg/apache/orc/CompressionCodec;)Lorg/apache/orc/impl/InStream$StreamOptions;
+     528: aload_1
+     529: invokevirtual #326                // Method org/apache/orc/impl/ReaderImpl.getCompressionSize:()I
+     532: invokevirtual #329                // Method org/apache/orc/impl/InStream$StreamOptions.withBufferSize:(I)Lorg/apache/orc/impl/InStream$StreamOptions;
+     535: astore        18
+     537: invokestatic  #333                // Method org/apache/orc/impl/DataReaderProperties.builder:()Lorg/apache/orc/impl/DataReaderProperties$Builder;
+     540: aload         18
+     542: invokevirtual #339                // Method org/apache/orc/impl/DataReaderProperties$Builder.withCompression:(Lorg/apache/orc/impl/InStream$StreamOptions;)Lorg/apache/orc/impl/DataReaderProperties$Builder;
+     545: aload_1
+     546: invokevirtual #345                // Method org/apache/orc/impl/ReaderImpl.getFileSystemSupplier:()Ljava/util/function/Supplier;
+     549: invokevirtual #349                // Method org/apache/orc/impl/DataReaderProperties$Builder.withFileSystemSupplier:(Ljava/util/function/Supplier;)Lorg/apache/orc/impl/DataReaderProperties$Builder;
+     552: aload_1
+     553: getfield      #145                // Field org/apache/orc/impl/ReaderImpl.path:Lorg/apache/hadoop/fs/Path;
+     556: invokevirtual #353                // Method org/apache/orc/impl/DataReaderProperties$Builder.withPath:(Lorg/apache/hadoop/fs/Path;)Lorg/apache/orc/impl/DataReaderProperties$Builder;
+     559: aload_0
+     560: getfield      #282                // Field maxDiskRangeChunkLimit:I
+     563: invokevirtual #357                // Method org/apache/orc/impl/DataReaderProperties$Builder.withMaxDiskRangeChunkLimit:(I)Lorg/apache/orc/impl/DataReaderProperties$Builder;
+     566: aload         17
+     568: invokevirtual #361                // Method java/lang/Boolean.booleanValue:()Z
+     571: invokevirtual #364                // Method org/apache/orc/impl/DataReaderProperties$Builder.withZeroCopy:(Z)Lorg/apache/orc/impl/DataReaderProperties$Builder;
+     574: aload_2
+     575: invokevirtual #368                // Method org/apache/orc/Reader$Options.minSeekSize:()I
+     578: invokevirtual #371                // Method org/apache/orc/impl/DataReaderProperties$Builder.withMinSeekSize:(I)Lorg/apache/orc/impl/DataReaderProperties$Builder;
+     581: aload_2
+     582: invokevirtual #374                // Method org/apache/orc/Reader$Options.minSeekSizeTolerance:()D
+     585: invokevirtual #378                // Method org/apache/orc/impl/DataReaderProperties$Builder.withMinSeekSizeTolerance:(D)Lorg/apache/orc/impl/DataReaderProperties$Builder;
+     588: astore        19
+     590: aload_1
+     591: invokevirtual #382                // Method org/apache/orc/impl/ReaderImpl.takeFile:()Lorg/apache/hadoop/fs/FSDataInputStream;
+     594: astore        20
+     596: aload         20
+     598: ifnull        609
+     601: aload         19
+     603: aload         20
+     605: invokevirtual #386                // Method org/apache/orc/impl/DataReaderProperties$Builder.withFile:(Lorg/apache/hadoop/fs/FSDataInputStream;)Lorg/apache/orc/impl/DataReaderProperties$Builder;
+     608: pop
+     609: aload_0
+     610: aload         19
+     612: invokevirtual #390                // Method org/apache/orc/impl/DataReaderProperties$Builder.build:()Lorg/apache/orc/impl/DataReaderProperties;
+     615: invokestatic  #394                // Method org/apache/orc/impl/RecordReaderUtils.createDefaultDataReader:(Lorg/apache/orc/impl/DataReaderProperties;)Lorg/apache/orc/DataReader;
+     618: putfield      #301                // Field dataReader:Lorg/apache/orc/DataReader;
+     621: aload_0
+     622: lload         11
+     624: putfield      #400                // Field firstRow:J
+     627: aload_0
+     628: lload         9
+     630: putfield      #403                // Field totalRowCount:J
+     633: aload_2
+     634: invokevirtual #406                // Method org/apache/orc/Reader$Options.getSkipCorruptRecords:()Ljava/lang/Boolean;
+     637: astore        18
+     639: aload         18
+     641: ifnonnull     659
+     644: getstatic     #409                // Field org/apache/orc/OrcConf.SKIP_CORRUPT_DATA:Lorg/apache/orc/OrcConf;
+     647: aload_1
+     648: getfield      #190                // Field org/apache/orc/impl/ReaderImpl.conf:Lorg/apache/hadoop/conf/Configuration;
+     651: invokevirtual #194                // Method org/apache/orc/OrcConf.getBoolean:(Lorg/apache/hadoop/conf/Configuration;)Z
+     654: invokestatic  #166                // Method java/lang/Boolean.valueOf:(Z)Ljava/lang/Boolean;
+     657: astore        18
+     659: aconst_null
+     660: astore        19
+     662: aconst_null
+     663: astore        20
+     665: aload_2
+     666: invokevirtual #412                // Method org/apache/orc/Reader$Options.allowPluginFilters:()Z
+     669: ifeq          689
+     672: aload_1
+     673: invokevirtual #415                // Method org/apache/orc/impl/ReaderImpl.getFileSystem:()Lorg/apache/hadoop/fs/FileSystem;
+     676: aload_1
+     677: getfield      #145                // Field org/apache/orc/impl/ReaderImpl.path:Lorg/apache/hadoop/fs/Path;
+     680: invokevirtual #419                // Method org/apache/hadoop/fs/FileSystem.makeQualified:(Lorg/apache/hadoop/fs/Path;)Lorg/apache/hadoop/fs/Path;
+     683: invokevirtual #149                // Method org/apache/hadoop/fs/Path.toString:()Ljava/lang/String;
+     686: goto          690
+     689: aconst_null
+     690: astore        21
+     692: aload_2
+     693: aload         4
+     695: invokevirtual #13                 // Method org/apache/orc/impl/SchemaEvolution.getReaderBaseSchema:()Lorg/apache/orc/TypeDescription;
+     698: aload         4
+     700: invokevirtual #425                // Method org/apache/orc/impl/SchemaEvolution.isSchemaEvolutionCaseAware:()Z
+     703: aload_1
+     704: invokevirtual #427                // Method org/apache/orc/impl/ReaderImpl.getFileVersion:()Lorg/apache/orc/OrcFile$Version;
+     707: iconst_0
+     708: aload         21
+     710: aload_1
+     711: getfield      #190                // Field org/apache/orc/impl/ReaderImpl.conf:Lorg/apache/hadoop/conf/Configuration;
+     714: invokestatic  #431                // Method org/apache/orc/impl/filter/FilterFactory.createBatchFilter:(Lorg/apache/orc/Reader$Options;Lorg/apache/orc/TypeDescription;ZLorg/apache/orc/OrcFile$Version;ZLjava/lang/String;Lorg/apache/hadoop/conf/Configuration;)Lorg/apache/orc/filter/BatchFilter;
+     717: astore        22
+     719: aload         22
+     721: ifnull        737
+     724: aload         22
+     726: astore        20
+     728: aload         22
+     730: invokeinterface #437,  1          // InterfaceMethod org/apache/orc/filter/BatchFilter.getColumnNames:()[Ljava/lang/String;
+     735: astore        19
+     737: new           #443                // class java/util/TreeSet
+     740: dup
+     741: invokespecial #445                // Method java/util/TreeSet."<init>":()V
+     744: astore        23
+     746: aload         19
+     748: ifnull        903
+     751: aload         19
+     753: astore        24
+     755: aload         24
+     757: arraylength
+     758: istore        25
+     760: iconst_0
+     761: istore        26
+     763: iload         26
+     765: iload         25
+     767: if_icmpge     876
+     770: aload         24
+     772: iload         26
+     774: aaload
+     775: astore        27
+     777: aload         4
+     779: aload         27
+     781: invokestatic  #1                  // Method findColumnType:(Lorg/apache/orc/impl/SchemaEvolution;Ljava/lang/String;)Lorg/apache/orc/TypeDescription;
+     784: astore        28
+     786: aload         28
+     788: ifnull        800
+     791: aload         28
+     793: invokevirtual #7                  // Method org/apache/orc/TypeDescription.getId:()I
+     796: iconst_m1
+     797: if_icmpne     821
+     800: aload         23
+     802: iconst_m1
+     803: invokestatic  #446                // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;
+     806: invokeinterface #451,  2          // InterfaceMethod java/util/SortedSet.add:(Ljava/lang/Object;)Z
+     811: pop
+     812: aload         4
+     814: aload         27
+     816: invokestatic  #454                // Method findMostCommonColumn:(Lorg/apache/orc/impl/SchemaEvolution;Ljava/lang/String;)Lorg/apache/orc/TypeDescription;
+     819: astore        28
+     821: aload         28
+     823: ifnull        870
+     826: aload         28
+     828: invokevirtual #7                  // Method org/apache/orc/TypeDescription.getId:()I
+     831: iconst_m1
+     832: if_icmpeq     870
+     835: aload         23
+     837: aload         28
+     839: invokevirtual #7                  // Method org/apache/orc/TypeDescription.getId:()I
+     842: invokestatic  #446                // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;
+     845: invokeinterface #451,  2          // InterfaceMethod java/util/SortedSet.add:(Ljava/lang/Object;)Z
+     850: pop
+     851: aload         8
+     853: aload         28
+     855: invokevirtual #7                  // Method org/apache/orc/TypeDescription.getId:()I
+     858: iconst_1
+     859: bastore
+     860: aload         28
+     862: invokevirtual #47                 // Method org/apache/orc/TypeDescription.getParent:()Lorg/apache/orc/TypeDescription;
+     865: astore        28
+     867: goto          821
+     870: iinc          26, 1
+     873: goto          763
+     876: aload_0
+     877: getstatic     #457                // Field org/apache/orc/impl/reader/tree/TypeReader$ReadPhase.LEADERS:Lorg/apache/orc/impl/reader/tree/TypeReader$ReadPhase;
+     880: putfield      #463                // Field startReadPhase:Lorg/apache/orc/impl/reader/tree/TypeReader$ReadPhase;
+     883: getstatic     #69                 // Field LOG:Lorg/slf4j/Logger;
+     886: ldc_w         #466                // String Using startReadPhase: {} with filter columns: {}
+     889: aload_0
+     890: getfield      #463                // Field startReadPhase:Lorg/apache/orc/impl/reader/tree/TypeReader$ReadPhase;
+     893: aload         23
+     895: invokeinterface #468,  4          // InterfaceMethod org/slf4j/Logger.debug:(Ljava/lang/String;Ljava/lang/Object;Ljava/lang/Object;)V
+     900: goto          910
+     903: aload_0
+     904: getstatic     #471                // Field org/apache/orc/impl/reader/tree/TypeReader$ReadPhase.ALL:Lorg/apache/orc/impl/reader/tree/TypeReader$ReadPhase;
+     907: putfield      #463                // Field startReadPhase:Lorg/apache/orc/impl/reader/tree/TypeReader$ReadPhase;
+     910: iconst_0
+     911: istore        24
+     913: aload         8
+     915: astore        25
+     917: aload         25
+     919: arraylength
+     920: istore        26
+     922: iconst_0
+     923: istore        27
+     925: iload         27
+     927: iload         26
+     929: if_icmpge     956
+     932: aload         25
+     934: iload         27
+     936: baload
+     937: istore        28
+     939: iload         28
+     941: ifeq          950
+     944: iconst_1
+     945: istore        24
+     947: goto          956
+     950: iinc          27, 1
+     953: goto          925
+     956: aload_0
+     957: iload         24
+     959: ifeq          967
+     962: aload         8
+     964: goto          968
+     967: aconst_null
+     968: putfield      #474                // Field rowIndexColsToRead:[Z
+     971: new           #477                // class org/apache/orc/impl/TreeReaderFactory$ReaderContext
+     974: dup
+     975: invokespecial #479                // Method org/apache/orc/impl/TreeReaderFactory$ReaderContext."<init>":()V
+     978: aload         4
+     980: invokevirtual #480                // Method org/apache/orc/impl/TreeReaderFactory$ReaderContext.setSchemaEvolution:(Lorg/apache/orc/impl/SchemaEvolution;)Lorg/apache/orc/impl/TreeReaderFactory$ReaderContext;
+     983: aload         23
+     985: aload         20
+     987: invokevirtual #484                // Method org/apache/orc/impl/TreeReaderFactory$ReaderContext.setFilterCallback:(Ljava/util/Set;Ljava/util/function/Consumer;)Lorg/apache/orc/impl/TreeReaderFactory$ReaderContext;
+     990: aload         18
+     992: invokevirtual #361                // Method java/lang/Boolean.booleanValue:()Z
+     995: invokevirtual #488                // Method org/apache/orc/impl/TreeReaderFactory$ReaderContext.skipCorrupt:(Z)Lorg/apache/orc/impl/TreeReaderFactory$ReaderContext;
+     998: aload_1
+     999: invokevirtual #427                // Method org/apache/orc/impl/ReaderImpl.getFileVersion:()Lorg/apache/orc/OrcFile$Version;
+    1002: invokevirtual #492                // Method org/apache/orc/impl/TreeReaderFactory$ReaderContext.fileFormat:(Lorg/apache/orc/OrcFile$Version;)Lorg/apache/orc/impl/TreeReaderFactory$ReaderContext;
+    1005: aload_1
+    1006: getfield      #215                // Field org/apache/orc/impl/ReaderImpl.useUTCTimestamp:Z
+    1009: invokevirtual #496                // Method org/apache/orc/impl/TreeReaderFactory$ReaderContext.useUTCTimestamp:(Z)Lorg/apache/orc/impl/TreeReaderFactory$ReaderContext;
+    1012: aload_1
+    1013: invokevirtual #218                // Method org/apache/orc/impl/ReaderImpl.writerUsedProlepticGregorian:()Z
+    1016: aload_1
+    1017: getfield      #221                // Field org/apache/orc/impl/ReaderImpl.options:Lorg/apache/orc/OrcFile$ReaderOptions;
+    1020: invokevirtual #225                // Method org/apache/orc/OrcFile$ReaderOptions.getConvertToProlepticGregorian:()Z
+    1023: invokevirtual #498                // Method org/apache/orc/impl/TreeReaderFactory$ReaderContext.setProlepticGregorian:(ZZ)Lorg/apache/orc/impl/TreeReaderFactory$ReaderContext;
+    1026: aload         6
+    1028: invokevirtual #502                // Method org/apache/orc/impl/TreeReaderFactory$ReaderContext.setEncryption:(Lorg/apache/orc/impl/reader/ReaderEncryption;)Lorg/apache/orc/impl/TreeReaderFactory$ReaderContext;
+    1031: astore        25
+    1033: aload_0
+    1034: aload         4
+    1036: invokevirtual #171                // Method org/apache/orc/impl/SchemaEvolution.getReaderSchema:()Lorg/apache/orc/TypeDescription;
+    1039: aload         25
+    1041: invokestatic  #506                // Method org/apache/orc/impl/TreeReaderFactory.createRootReader:(Lorg/apache/orc/TypeDescription;Lorg/apache/orc/impl/TreeReaderFactory$Context;)Lorg/apache/orc/impl/reader/tree/BatchReader;
+    1044: putfield      #512                // Field reader:Lorg/apache/orc/impl/reader/tree/BatchReader;
+    1047: aload_0
+    1048: aload_0
+    1049: aload_1
+    1050: invokevirtual #516                // Method org/apache/orc/impl/ReaderImpl.getFileTail:()Lorg/apache/orc/OrcProto$FileTail;
+    1053: invokevirtual #520                // Method org/apache/orc/OrcProto$FileTail.getFooter:()Lorg/apache/orc/OrcProto$Footer;
+    1056: invokevirtual #526                // Method hasBadBloomFilters:(Lorg/apache/orc/OrcProto$Footer;)Z
+    1059: putfield      #530                // Field skipBloomFilters:Z
+    1062: aload         4
+    1064: invokevirtual #533                // Method org/apache/orc/impl/SchemaEvolution.getFileSchema:()Lorg/apache/orc/TypeDescription;
+    1067: invokevirtual #536                // Method org/apache/orc/TypeDescription.getMaximumId:()I
+    1070: iconst_1
+    1071: iadd
+    1072: istore        26
+    1074: aload_0
+    1075: new           #539                // class org/apache/orc/impl/OrcIndex
+    1078: dup
+    1079: iload         26
+    1081: anewarray     #541                // class org/apache/orc/OrcProto$RowIndex
+    1084: iload         26
+    1086: anewarray     #543                // class org/apache/orc/OrcProto$Stream$Kind
+    1089: iload         26
+    1091: anewarray     #545                // class org/apache/orc/OrcProto$BloomFilterIndex
+    1094: invokespecial #547                // Method org/apache/orc/impl/OrcIndex."<init>":([Lorg/apache/orc/OrcProto$RowIndex;[Lorg/apache/orc/OrcProto$Stream$Kind;[Lorg/apache/orc/OrcProto$BloomFilterIndex;)V
+    1097: putfield      #550                // Field indexes:Lorg/apache/orc/impl/OrcIndex;
+    1100: aload_0
+    1101: new           #554                // class org/apache/orc/impl/reader/StripePlanner
+    1104: dup
+    1105: aload         4
+    1107: invokevirtual #533                // Method org/apache/orc/impl/SchemaEvolution.getFileSchema:()Lorg/apache/orc/TypeDescription;
+    1110: aload         6
+    1112: aload_0
+    1113: getfield      #301                // Field dataReader:Lorg/apache/orc/DataReader;
+    1116: aload_3
+    1117: iload         5
+    1119: aload_0
+    1120: getfield      #282                // Field maxDiskRangeChunkLimit:I
+    1123: i2l
+    1124: aload         23
+    1126: invokespecial #556                // Method org/apache/orc/impl/reader/StripePlanner."<init>":(Lorg/apache/orc/TypeDescription;Lorg/apache/orc/impl/reader/ReaderEncryption;Lorg/apache/orc/DataReader;Lorg/apache/orc/OrcFile$WriterVersion;ZJLjava/util/Set;)V
+    1129: putfield      #559                // Field planner:Lorg/apache/orc/impl/reader/StripePlanner;
+    1132: aload_0
+    1133: aload_0
+    1134: getfield      #512                // Field reader:Lorg/apache/orc/impl/reader/tree/BatchReader;
+    1137: lconst_0
+    1138: iconst_1
+    1139: invokevirtual #563                // Method advanceToNextRow:(Lorg/apache/orc/impl/reader/tree/BatchReader;JZ)Z
+    1142: pop
+    1143: goto          1223
+    1146: astore        27
+    1148: aload_0
+    1149: invokevirtual #569                // Method close:()V
+    1152: aload_0
+    1153: getfield      #92                 // Field stripes:Ljava/util/List;
+    1156: invokeinterface #50,  1           // InterfaceMethod java/util/List.size:()I
+    1161: ifne          1168
+    1164: lconst_0
+    1165: goto          1186
+    1168: aload_0
+    1169: getfield      #92                 // Field stripes:Ljava/util/List;
+    1172: iconst_0
+    1173: invokeinterface #55,  2           // InterfaceMethod java/util/List.get:(I)Ljava/lang/Object;
+    1178: checkcast     #265                // class org/apache/orc/StripeInformation
+    1181: invokeinterface #572,  1          // InterfaceMethod org/apache/orc/StripeInformation.getStripeId:()J
+    1186: lstore        28
+    1188: new           #575                // class java/io/IOException
+    1191: dup
+    1192: ldc_w         #577                // String Problem opening stripe %d footer in %s.
+    1195: iconst_2
+    1196: anewarray     #85                 // class java/lang/Object
+    1199: dup
+    1200: iconst_0
+    1201: lload         28
+    1203: invokestatic  #579                // Method java/lang/Long.valueOf:(J)Ljava/lang/Long;
+    1206: aastore
+    1207: dup
+    1208: iconst_1
+    1209: aload_0
+    1210: getfield      #178                // Field path:Lorg/apache/hadoop/fs/Path;
+    1213: aastore
+    1214: invokestatic  #584                // Method java/lang/String.format:(Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/String;
+    1217: aload         27
+    1219: invokespecial #588                // Method java/io/IOException."<init>":(Ljava/lang/String;Ljava/lang/Throwable;)V
+    1222: athrow
+    1223: return
+    Exception table:
+       from    to  target type
+        1132  1143  1146   Class java/lang/Exception
+
+  private boolean hasBadBloomFilters(org.apache.orc.OrcProto$Footer);
+    Code:
+       0: aload_1
+       1: invokevirtual #589                // Method org/apache/orc/OrcProto$Footer.getWriter:()I
+       4: iconst_1
+       5: if_icmpeq     10
+       8: iconst_0
+       9: ireturn
+      10: aload_1
+      11: invokevirtual #594                // Method org/apache/orc/OrcProto$Footer.hasSoftwareVersion:()Z
+      14: ifne          19
+      17: iconst_1
+      18: ireturn
+      19: aload_1
+      20: invokevirtual #597                // Method org/apache/orc/OrcProto$Footer.getSoftwareVersion:()Ljava/lang/String;
+      23: astore_2
+      24: aload_2
+      25: astore_3
+      26: aload_2
+      27: ldc_w         #600                // String -
+      30: invokevirtual #602                // Method java/lang/String.contains:(Ljava/lang/CharSequence;)Z
+      33: ifeq          48
+      36: aload_2
+      37: iconst_0
+      38: aload_2
+      39: bipush        45
+      41: invokevirtual #606                // Method java/lang/String.indexOf:(I)I
+      44: invokevirtual #610                // Method java/lang/String.substring:(II)Ljava/lang/String;
+      47: astore_3
+      48: getstatic     #614                // Field BAD_CPP_BLOOM_FILTER_VERSIONS:[Ljava/lang/String;
+      51: astore        4
+      53: aload         4
+      55: arraylength
+      56: istore        5
+      58: iconst_0
+      59: istore        6
+      61: iload         6
+      63: iload         5
+      65: if_icmpge     92
+      68: aload         4
+      70: iload         6
+      72: aaload
+      73: astore        7
+      75: aload         7
+      77: aload_3
+      78: invokevirtual #618                // Method java/lang/String.equals:(Ljava/lang/Object;)Z
+      81: ifeq          86
+      84: iconst_1
+      85: ireturn
+      86: iinc          6, 1
+      89: goto          61
+      92: iconst_0
+      93: ireturn
+
+  public org.apache.orc.OrcProto$StripeFooter readStripeFooter(org.apache.orc.StripeInformation) throws java.io.IOException;
+    Code:
+       0: aload_0
+       1: getfield      #301                // Field dataReader:Lorg/apache/orc/DataReader;
+       4: aload_1
+       5: invokeinterface #621,  2          // InterfaceMethod org/apache/orc/DataReader.readStripeFooter:(Lorg/apache/orc/StripeInformation;)Lorg/apache/orc/OrcProto$StripeFooter;
+      10: areturn
+
+  static org.apache.orc.impl.RecordReaderImpl$ValueRange getValueRange(org.apache.orc.ColumnStatistics, org.apache.hadoop.hive.ql.io.sarg.PredicateLeaf, boolean);
+    Code:
+       0: aload_0
+       1: invokeinterface #625,  1          // InterfaceMethod org/apache/orc/ColumnStatistics.getNumberOfValues:()J
+       6: lconst_0
+       7: lcmp
+       8: ifne          26
+      11: new           #630                // class org/apache/orc/impl/RecordReaderImpl$ValueRange
+      14: dup
+      15: aload_1
+      16: aload_0
+      17: invokeinterface #632,  1          // InterfaceMethod org/apache/orc/ColumnStatistics.hasNull:()Z
+      22: invokespecial #635                // Method org/apache/orc/impl/RecordReaderImpl$ValueRange."<init>":(Lorg/apache/hadoop/hive/ql/io/sarg/PredicateLeaf;Z)V
+      25: areturn
+      26: aload_0
+      27: instanceof    #638                // class org/apache/orc/IntegerColumnStatistics
+      30: ifeq          79
+      33: aload_0
+      34: checkcast     #638                // class org/apache/orc/IntegerColumnStatistics
+      37: astore_3
+      38: aload_3
+      39: invokeinterface #640,  1          // InterfaceMethod org/apache/orc/IntegerColumnStatistics.getMinimum:()J
+      44: invokestatic  #579                // Method java/lang/Long.valueOf:(J)Ljava/lang/Long;
+      47: astore        11
+      49: aload_3
+      50: invokeinterface #643,  1          // InterfaceMethod org/apache/orc/IntegerColumnStatistics.getMaximum:()J
+      55: invokestatic  #579                // Method java/lang/Long.valueOf:(J)Ljava/lang/Long;
+      58: astore        12
+      60: new           #630                // class org/apache/orc/impl/RecordReaderImpl$ValueRange
+      63: dup
+      64: aload_1
+      65: aload         11
+      67: aload         12
+      69: aload_3
+      70: invokeinterface #646,  1          // InterfaceMethod org/apache/orc/IntegerColumnStatistics.hasNull:()Z
+      75: invokespecial #647                // Method org/apache/orc/impl/RecordReaderImpl$ValueRange."<init>":(Lorg/apache/hadoop/hive/ql/io/sarg/PredicateLeaf;Ljava/lang/Comparable;Ljava/lang/Comparable;Z)V
+      78: areturn
+      79: aload_0
+      80: instanceof    #650                // class org/apache/orc/CollectionColumnStatistics
+      83: ifeq          136
+      86: aload_0
+      87: checkcast     #650                // class org/apache/orc/CollectionColumnStatistics
+      90: astore        4
+      92: aload         4
+      94: invokeinterface #652,  1          // InterfaceMethod org/apache/orc/CollectionColumnStatistics.getMinimumChildren:()J
+      99: invokestatic  #579                // Method java/lang/Long.valueOf:(J)Ljava/lang/Long;
+     102: astore        11
+     104: aload         4
+     106: invokeinterface #655,  1          // InterfaceMethod org/apache/orc/CollectionColumnStatistics.getMaximumChildren:()J
+     111: invokestatic  #579                // Method java/lang/Long.valueOf:(J)Ljava/lang/Long;
+     114: astore        12
+     116: new           #630                // class org/apache/orc/impl/RecordReaderImpl$ValueRange
+     119: dup
+     120: aload_1
+     121: aload         11
+     123: aload         12
+     125: aload         4
+     127: invokeinterface #658,  1          // InterfaceMethod org/apache/orc/CollectionColumnStatistics.hasNull:()Z
+     132: invokespecial #647                // Method org/apache/orc/impl/RecordReaderImpl$ValueRange."<init>":(Lorg/apache/hadoop/hive/ql/io/sarg/PredicateLeaf;Ljava/lang/Comparable;Ljava/lang/Comparable;Z)V
+     135: areturn
+     136: aload_0
+     137: instanceof    #659                // class org/apache/orc/DoubleColumnStatistics
+     140: ifeq          193
+     143: aload_0
+     144: checkcast     #659                // class org/apache/orc/DoubleColumnStatistics
+     147: astore        5
+     149: aload         5
+     151: invokeinterface #661,  1          // InterfaceMethod org/apache/orc/DoubleColumnStatistics.getMinimum:()D
+     156: invokestatic  #663                // Method java/lang/Double.valueOf:(D)Ljava/lang/Double;
+     159: astore        11
+     161: aload         5
+     163: invokeinterface #668,  1          // InterfaceMethod org/apache/orc/DoubleColumnStatistics.getMaximum:()D
+     168: invokestatic  #663                // Method java/lang/Double.valueOf:(D)Ljava/lang/Double;
+     171: astore        12
+     173: new           #630                // class org/apache/orc/impl/RecordReaderImpl$ValueRange
+     176: dup
+     177: aload_1
+     178: aload         11
+     180: aload         12
+     182: aload         5
+     184: invokeinterface #670,  1          // InterfaceMethod org/apache/orc/DoubleColumnStatistics.hasNull:()Z
+     189: invokespecial #647                // Method org/apache/orc/impl/RecordReaderImpl$ValueRange."<init>":(Lorg/apache/hadoop/hive/ql/io/sarg/PredicateLeaf;Ljava/lang/Comparable;Ljava/lang/Comparable;Z)V
+     192: areturn
+     193: aload_0
+     194: instanceof    #671                // class org/apache/orc/StringColumnStatistics
+     197: ifeq          266
+     200: aload_0
+     201: checkcast     #671                // class org/apache/orc/StringColumnStatistics
+     204: astore        6
+     206: new           #630                // class org/apache/orc/impl/RecordReaderImpl$ValueRange
+     209: dup
+     210: aload_1
+     211: aload         6
+     213: invokeinterface #673,  1          // InterfaceMethod org/apache/orc/StringColumnStatistics.getLowerBound:()Ljava/lang/String;
+     218: aload         6
+     220: invokeinterface #676,  1          // InterfaceMethod org/apache/orc/StringColumnStatistics.getUpperBound:()Ljava/lang/String;
+     225: aload         6
+     227: invokeinterface #679,  1          // InterfaceMethod org/apache/orc/StringColumnStatistics.hasNull:()Z
+     232: aload         6
+     234: invokeinterface #680,  1          // InterfaceMethod org/apache/orc/StringColumnStatistics.getMinimum:()Ljava/lang/String;
+     239: ifnonnull     246
+     242: iconst_1
+     243: goto          247
+     246: iconst_0
+     247: aload         6
+     249: invokeinterface #682,  1          // InterfaceMethod org/apache/orc/StringColumnStatistics.getMaximum:()Ljava/lang/String;
+     254: ifnonnull     261
+     257: iconst_1
+     258: goto          262
+     261: iconst_0
+     262: invokespecial #684                // Method org/apache/orc/impl/RecordReaderImpl$ValueRange."<init>":(Lorg/apache/hadoop/hive/ql/io/sarg/PredicateLeaf;Ljava/lang/Comparable;Ljava/lang/Comparable;ZZZ)V
+     265: areturn
+     266: aload_0
+     267: instanceof    #687                // class org/apache/orc/DateColumnStatistics
+     270: ifeq          317
+     273: aload_0
+     274: checkcast     #687                // class org/apache/orc/DateColumnStatistics
+     277: astore        7
+     279: aload         7
+     281: invokeinterface #689,  1          // InterfaceMethod org/apache/orc/DateColumnStatistics.getMinimumLocalDate:()Ljava/time/chrono/ChronoLocalDate;
+     286: astore        11
+     288: aload         7
+     290: invokeinterface #693,  1          // InterfaceMethod org/apache/orc/DateColumnStatistics.getMaximumLocalDate:()Ljava/time/chrono/ChronoLocalDate;
+     295: astore        12
+     297: new           #630                // class org/apache/orc/impl/RecordReaderImpl$ValueRange
+     300: dup
+     301: aload_1
+     302: aload         11
+     304: aload         12
+     306: aload         7
+     308: invokeinterface #696,  1          // InterfaceMethod org/apache/orc/DateColumnStatistics.hasNull:()Z
+     313: invokespecial #647                // Method org/apache/orc/impl/RecordReaderImpl$ValueRange."<init>":(Lorg/apache/hadoop/hive/ql/io/sarg/PredicateLeaf;Ljava/lang/Comparable;Ljava/lang/Comparable;Z)V
+     316: areturn
+     317: aload_0
+     318: instanceof    #697                // class org/apache/orc/DecimalColumnStatistics
+     321: ifeq          368
+     324: aload_0
+     325: checkcast     #697                // class org/apache/orc/DecimalColumnStatistics
+     328: astore        8
+     330: aload         8
+     332: invokeinterface #699,  1          // InterfaceMethod org/apache/orc/DecimalColumnStatistics.getMinimum:()Lorg/apache/hadoop/hive/common/type/HiveDecimal;
+     337: astore        11
+     339: aload         8
+     341: invokeinterface #702,  1          // InterfaceMethod org/apache/orc/DecimalColumnStatistics.getMaximum:()Lorg/apache/hadoop/hive/common/type/HiveDecimal;
+     346: astore        12
+     348: new           #630                // class org/apache/orc/impl/RecordReaderImpl$ValueRange
+     351: dup
+     352: aload_1
+     353: aload         11
+     355: aload         12
+     357: aload         8
+     359: invokeinterface #704,  1          // InterfaceMethod org/apache/orc/DecimalColumnStatistics.hasNull:()Z
+     364: invokespecial #647                // Method org/apache/orc/impl/RecordReaderImpl$ValueRange."<init>":(Lorg/apache/hadoop/hive/ql/io/sarg/PredicateLeaf;Ljava/lang/Comparable;Ljava/lang/Comparable;Z)V
+     367: areturn
+     368: aload_0
+     369: instanceof    #705                // class org/apache/orc/TimestampColumnStatistics
+     372: ifeq          447
+     375: aload_0
+     376: checkcast     #705                // class org/apache/orc/TimestampColumnStatistics
+     379: astore        9
+     381: iload_2
+     382: ifeq          395
+     385: aload         9
+     387: invokeinterface #707,  1          // InterfaceMethod org/apache/orc/TimestampColumnStatistics.getMinimumUTC:()Ljava/sql/Timestamp;
+     392: goto          402
+     395: aload         9
+     397: invokeinterface #711,  1          // InterfaceMethod org/apache/orc/TimestampColumnStatistics.getMinimum:()Ljava/sql/Timestamp;
+     402: astore        11
+     404: iload_2
+     405: ifeq          418
+     408: aload         9
+     410: invokeinterface #713,  1          // InterfaceMethod org/apache/orc/TimestampColumnStatistics.getMaximumUTC:()Ljava/sql/Timestamp;
+     415: goto          425
+     418: aload         9
+     420: invokeinterface #716,  1          // InterfaceMethod org/apache/orc/TimestampColumnStatistics.getMaximum:()Ljava/sql/Timestamp;
+     425: astore        12
+     427: new           #630                // class org/apache/orc/impl/RecordReaderImpl$ValueRange
+     430: dup
+     431: aload_1
+     432: aload         11
+     434: aload         12
+     436: aload         9
+     438: invokeinterface #718,  1          // InterfaceMethod org/apache/orc/TimestampColumnStatistics.hasNull:()Z
+     443: invokespecial #647                // Method org/apache/orc/impl/RecordReaderImpl$ValueRange."<init>":(Lorg/apache/hadoop/hive/ql/io/sarg/PredicateLeaf;Ljava/lang/Comparable;Ljava/lang/Comparable;Z)V
+     446: areturn
+     447: aload_0
+     448: instanceof    #719                // class org/apache/orc/BooleanColumnStatistics
+     451: ifeq          524
+     454: aload_0
+     455: checkcast     #719                // class org/apache/orc/BooleanColumnStatistics
+     458: astore        10
+     460: aload         10
+     462: invokeinterface #721,  1          // InterfaceMethod org/apache/orc/BooleanColumnStatistics.getFalseCount:()J
+     467: lconst_0
+     468: lcmp
+     469: ifne          476
+     472: iconst_1
+     473: goto          477
+     476: iconst_0
+     477: invokestatic  #166                // Method java/lang/Boolean.valueOf:(Z)Ljava/lang/Boolean;
+     480: astore        11
+     482: aload         10
+     484: invokeinterface #724,  1          // InterfaceMethod org/apache/orc/BooleanColumnStatistics.getTrueCount:()J
+     489: lconst_0
+     490: lcmp
+     491: ifeq          498
+     494: iconst_1
+     495: goto          499
+     498: iconst_0
+     499: invokestatic  #166                // Method java/lang/Boolean.valueOf:(Z)Ljava/lang/Boolean;
+     502: astore        12
+     504: new           #630                // class org/apache/orc/impl/RecordReaderImpl$ValueRange
+     507: dup
+     508: aload_1
+     509: aload         11
+     511: aload         12
+     513: aload         10
+     515: invokeinterface #727,  1          // InterfaceMethod org/apache/orc/BooleanColumnStatistics.hasNull:()Z
+     520: invokespecial #647                // Method org/apache/orc/impl/RecordReaderImpl$ValueRange."<init>":(Lorg/apache/hadoop/hive/ql/io/sarg/PredicateLeaf;Ljava/lang/Comparable;Ljava/lang/Comparable;Z)V
+     523: areturn
+     524: new           #630                // class org/apache/orc/impl/RecordReaderImpl$ValueRange
+     527: dup
+     528: aload_1
+     529: aconst_null
+     530: aconst_null
+     531: aload_0
+     532: invokeinterface #632,  1          // InterfaceMethod org/apache/orc/ColumnStatistics.hasNull:()Z
+     537: iconst_0
+     538: iconst_0
+     539: iconst_1
+     540: iconst_0
+     541: invokespecial #728                // Method org/apache/orc/impl/RecordReaderImpl$ValueRange."<init>":(Lorg/apache/hadoop/hive/ql/io/sarg/PredicateLeaf;Ljava/lang/Comparable;Ljava/lang/Comparable;ZZZZZ)V
+     544: areturn
+
+  static org.apache.hadoop.hive.ql.io.sarg.SearchArgument$TruthValue evaluatePredicateProto(org.apache.orc.OrcProto$ColumnStatistics, org.apache.hadoop.hive.ql.io.sarg.PredicateLeaf, org.apache.orc.OrcProto$Stream$Kind, org.apache.orc.OrcProto$ColumnEncoding, org.apache.orc.OrcProto$BloomFilter, org.apache.orc.OrcFile$WriterVersion, org.apache.orc.TypeDescription);
+    Code:
+       0: aload_0
+       1: aload_1
+       2: aload_2
+       3: aload_3
+       4: aload         4
+       6: aload         5
+       8: aload         6
+      10: iconst_1
+      11: iconst_0
+      12: invokestatic  #731                // Method evaluatePredicateProto:(Lorg/apache/orc/OrcProto$ColumnStatistics;Lorg/apache/hadoop/hive/ql/io/sarg/PredicateLeaf;Lorg/apache/orc/OrcProto$Stream$Kind;Lorg/apache/orc/OrcProto$ColumnEncoding;Lorg/apache/orc/OrcProto$BloomFilter;Lorg/apache/orc/OrcFile$WriterVersion;Lorg/apache/orc/TypeDescription;ZZ)Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+      15: areturn
+
+  static org.apache.hadoop.hive.ql.io.sarg.SearchArgument$TruthValue evaluatePredicateProto(org.apache.orc.OrcProto$ColumnStatistics, org.apache.hadoop.hive.ql.io.sarg.PredicateLeaf, org.apache.orc.OrcProto$Stream$Kind, org.apache.orc.OrcProto$ColumnEncoding, org.apache.orc.OrcProto$BloomFilter, org.apache.orc.OrcFile$WriterVersion, org.apache.orc.TypeDescription, boolean, boolean);
+    Code:
+       0: aload_0
+       1: getstatic     #735                // Field EMPTY_COLUMN_STATISTICS:Lorg/apache/orc/OrcProto$ColumnStatistics;
+       4: if_acmpne     11
+       7: getstatic     #739                // Field org/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue.YES_NO_NULL:Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+      10: areturn
+      11: aconst_null
+      12: aload_0
+      13: iload         7
+      15: iconst_1
+      16: invokestatic  #745                // Method org/apache/orc/impl/ColumnStatisticsImpl.deserialize:(Lorg/apache/orc/TypeDescription;Lorg/apache/orc/OrcProto$ColumnStatistics;ZZ)Lorg/apache/orc/impl/ColumnStatisticsImpl;
+      19: astore        9
+      21: aload         9
+      23: aload_1
+      24: iload         8
+      26: invokestatic  #751                // Method getValueRange:(Lorg/apache/orc/ColumnStatistics;Lorg/apache/hadoop/hive/ql/io/sarg/PredicateLeaf;Z)Lorg/apache/orc/impl/RecordReaderImpl$ValueRange;
+      29: astore        10
+      31: aload         6
+      33: invokevirtual #755                // Method org/apache/orc/TypeDescription.getCategory:()Lorg/apache/orc/TypeDescription$Category;
+      36: astore        11
+      38: aload         11
+      40: getstatic     #759                // Field org/apache/orc/TypeDescription$Category.TIMESTAMP:Lorg/apache/orc/TypeDescription$Category;
+      43: if_acmpne     130
+      46: aload         5
+      48: getstatic     #765                // Field org/apache/orc/OrcFile$WriterVersion.ORC_135:Lorg/apache/orc/OrcFile$WriterVersion;
+      51: invokevirtual #771                // Method org/apache/orc/OrcFile$WriterVersion.includes:(Lorg/apache/orc/OrcFile$WriterVersion;)Z
+      54: ifne          85
+      57: getstatic     #69                 // Field LOG:Lorg/slf4j/Logger;
+      60: ldc_w         #775                // String Not using predication pushdown on {} because it doesn\'t include ORC-135. Writer version: {}
+      63: aload_1
+      64: invokeinterface #61,  1           // InterfaceMethod org/apache/hadoop/hive/ql/io/sarg/PredicateLeaf.getColumnName:()Ljava/lang/String;
+      69: aload         5
+      71: invokeinterface #468,  4          // InterfaceMethod org/slf4j/Logger.debug:(Ljava/lang/String;Ljava/lang/Object;Ljava/lang/Object;)V
+      76: aload         10
+      78: getstatic     #777                // Field org/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue.YES_NO:Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+      81: invokevirtual #780                // Method org/apache/orc/impl/RecordReaderImpl$ValueRange.addNull:(Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;)Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+      84: areturn
+      85: aload_1
+      86: invokeinterface #784,  1          // InterfaceMethod org/apache/hadoop/hive/ql/io/sarg/PredicateLeaf.getType:()Lorg/apache/hadoop/hive/ql/io/sarg/PredicateLeaf$Type;
+      91: getstatic     #788                // Field org/apache/hadoop/hive/ql/io/sarg/PredicateLeaf$Type.TIMESTAMP:Lorg/apache/hadoop/hive/ql/io/sarg/PredicateLeaf$Type;
+      94: if_acmpeq     260
+      97: aload_1
+      98: invokeinterface #784,  1          // InterfaceMethod org/apache/hadoop/hive/ql/io/sarg/PredicateLeaf.getType:()Lorg/apache/hadoop/hive/ql/io/sarg/PredicateLeaf$Type;
+     103: getstatic     #793                // Field org/apache/hadoop/hive/ql/io/sarg/PredicateLeaf$Type.DATE:Lorg/apache/hadoop/hive/ql/io/sarg/PredicateLeaf$Type;
+     106: if_acmpeq     260
+     109: aload_1
+     110: invokeinterface #784,  1          // InterfaceMethod org/apache/hadoop/hive/ql/io/sarg/PredicateLeaf.getType:()Lorg/apache/hadoop/hive/ql/io/sarg/PredicateLeaf$Type;
+     115: getstatic     #796                // Field org/apache/hadoop/hive/ql/io/sarg/PredicateLeaf$Type.STRING:Lorg/apache/hadoop/hive/ql/io/sarg/PredicateLeaf$Type;
+     118: if_acmpeq     260
+     121: aload         10
+     123: getstatic     #777                // Field org/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue.YES_NO:Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+     126: invokevirtual #780                // Method org/apache/orc/impl/RecordReaderImpl$ValueRange.addNull:(Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;)Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+     129: areturn
+     130: aload         5
+     132: getstatic     #765                // Field org/apache/orc/OrcFile$WriterVersion.ORC_135:Lorg/apache/orc/OrcFile$WriterVersion;
+     135: if_acmpne     179
+     138: aload         11
+     140: getstatic     #799                // Field org/apache/orc/TypeDescription$Category.DECIMAL:Lorg/apache/orc/TypeDescription$Category;
+     143: if_acmpne     179
+     146: aload         6
+     148: invokevirtual #802                // Method org/apache/orc/TypeDescription.getPrecision:()I
+     151: bipush        18
+     153: if_icmpgt     179
+     156: getstatic     #69                 // Field LOG:Lorg/slf4j/Logger;
+     159: ldc_w         #805                // String Not using predicate push down on {}, because the file doesn\'t include ORC-517. Writer version: {}
+     162: aload_1
+     163: invokeinterface #61,  1           // InterfaceMethod org/apache/hadoop/hive/ql/io/sarg/PredicateLeaf.getColumnName:()Ljava/lang/String;
+     168: aload         5
+     170: invokeinterface #468,  4          // InterfaceMethod org/slf4j/Logger.debug:(Ljava/lang/String;Ljava/lang/Object;Ljava/lang/Object;)V
+     175: getstatic     #739                // Field org/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue.YES_NO_NULL:Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+     178: areturn
+     179: aload         11
+     181: getstatic     #807                // Field org/apache/orc/TypeDescription$Category.DOUBLE:Lorg/apache/orc/TypeDescription$Category;
+     184: if_acmpeq     195
+     187: aload         11
+     189: getstatic     #810                // Field org/apache/orc/TypeDescription$Category.FLOAT:Lorg/apache/orc/TypeDescription$Category;
+     192: if_acmpne     260
+     195: aload         9
+     197: instanceof    #659                // class org/apache/orc/DoubleColumnStatistics
+     200: ifeq          260
+     203: aload         9
+     205: checkcast     #659                // class org/apache/orc/DoubleColumnStatistics
+     208: astore        12
+     210: aload         12
+     212: invokeinterface #813,  1          // InterfaceMethod org/apache/orc/DoubleColumnStatistics.getSum:()D
+     217: invokestatic  #816                // Method java/lang/Double.isNaN:(D)Z
+     220: ifeq          260
+     223: getstatic     #69                 // Field LOG:Lorg/slf4j/Logger;
+     226: ldc_w         #820                // String Not using predication pushdown on {} because stats contain NaN values
+     229: aload_1
+     230: invokeinterface #61,  1           // InterfaceMethod org/apache/hadoop/hive/ql/io/sarg/PredicateLeaf.getColumnName:()Ljava/lang/String;
+     235: invokeinterface #78,  3           // InterfaceMethod org/slf4j/Logger.debug:(Ljava/lang/String;Ljava/lang/Object;)V
+     240: aload         12
+     242: invokeinterface #670,  1          // InterfaceMethod org/apache/orc/DoubleColumnStatistics.hasNull:()Z
+     247: ifeq          256
+     250: getstatic     #739                // Field org/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue.YES_NO_NULL:Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+     253: goto          259
+     256: getstatic     #777                // Field org/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue.YES_NO:Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+     259: areturn
+     260: aload_1
+     261: aload         10
+     263: aload_2
+     264: aload_3
+     265: aload         5
+     267: aload         6
+     269: invokevirtual #755                // Method org/apache/orc/TypeDescription.getCategory:()Lorg/apache/orc/TypeDescription$Category;
+     272: aload         4
+     274: invokestatic  #822                // Method org/apache/orc/util/BloomFilterIO.deserialize:(Lorg/apache/orc/OrcProto$Stream$Kind;Lorg/apache/orc/OrcProto$ColumnEncoding;Lorg/apache/orc/OrcFile$WriterVersion;Lorg/apache/orc/TypeDescription$Category;Lorg/apache/orc/OrcProto$BloomFilter;)Lorg/apache/orc/util/BloomFilter;
+     277: iload         8
+     279: invokestatic  #827                // Method evaluatePredicateRange:(Lorg/apache/hadoop/hive/ql/io/sarg/PredicateLeaf;Lorg/apache/orc/impl/RecordReaderImpl$ValueRange;Lorg/apache/orc/util/BloomFilter;Z)Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+     282: areturn
+
+  public static org.apache.hadoop.hive.ql.io.sarg.SearchArgument$TruthValue evaluatePredicate(org.apache.orc.ColumnStatistics, org.apache.hadoop.hive.ql.io.sarg.PredicateLeaf, org.apache.orc.util.BloomFilter);
+    Code:
+       0: aload_0
+       1: aload_1
+       2: aload_2
+       3: iconst_0
+       4: invokestatic  #831                // Method evaluatePredicate:(Lorg/apache/orc/ColumnStatistics;Lorg/apache/hadoop/hive/ql/io/sarg/PredicateLeaf;Lorg/apache/orc/util/BloomFilter;Z)Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+       7: areturn
+
+  public static org.apache.hadoop.hive.ql.io.sarg.SearchArgument$TruthValue evaluatePredicate(org.apache.orc.ColumnStatistics, org.apache.hadoop.hive.ql.io.sarg.PredicateLeaf, org.apache.orc.util.BloomFilter, boolean);
+    Code:
+       0: aload_0
+       1: aload_1
+       2: iload_3
+       3: invokestatic  #751                // Method getValueRange:(Lorg/apache/orc/ColumnStatistics;Lorg/apache/hadoop/hive/ql/io/sarg/PredicateLeaf;Z)Lorg/apache/orc/impl/RecordReaderImpl$ValueRange;
+       6: astore        4
+       8: aload_1
+       9: aload         4
+      11: aload_2
+      12: iload_3
+      13: invokestatic  #827                // Method evaluatePredicateRange:(Lorg/apache/hadoop/hive/ql/io/sarg/PredicateLeaf;Lorg/apache/orc/impl/RecordReaderImpl$ValueRange;Lorg/apache/orc/util/BloomFilter;Z)Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+      16: areturn
+
+  static org.apache.hadoop.hive.ql.io.sarg.SearchArgument$TruthValue evaluatePredicateRange(org.apache.hadoop.hive.ql.io.sarg.PredicateLeaf, org.apache.orc.impl.RecordReaderImpl$ValueRange, org.apache.orc.util.BloomFilter, boolean);
+    Code:
+       0: aload_1
+       1: invokevirtual #835                // Method org/apache/orc/impl/RecordReaderImpl$ValueRange.isValid:()Z
+       4: ifne          11
+       7: getstatic     #838                // Field org/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue.NO:Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+      10: areturn
+      11: aload_1
+      12: invokevirtual #841                // Method org/apache/orc/impl/RecordReaderImpl$ValueRange.hasValues:()Z
+      15: ifne          71
+      18: aload_0
+      19: invokeinterface #844,  1          // InterfaceMethod org/apache/hadoop/hive/ql/io/sarg/PredicateLeaf.getOperator:()Lorg/apache/hadoop/hive/ql/io/sarg/PredicateLeaf$Operator;
+      24: getstatic     #848                // Field org/apache/hadoop/hive/ql/io/sarg/PredicateLeaf$Operator.IS_NULL:Lorg/apache/hadoop/hive/ql/io/sarg/PredicateLeaf$Operator;
+      27: if_acmpne     34
+      30: getstatic     #854                // Field org/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue.YES:Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+      33: areturn
+      34: aload_0
+      35: invokeinterface #844,  1          // InterfaceMethod org/apache/hadoop/hive/ql/io/sarg/PredicateLeaf.getOperator:()Lorg/apache/hadoop/hive/ql/io/sarg/PredicateLeaf$Operator;
+      40: getstatic     #857                // Field org/apache/hadoop/hive/ql/io/sarg/PredicateLeaf$Operator.NULL_SAFE_EQUALS:Lorg/apache/hadoop/hive/ql/io/sarg/PredicateLeaf$Operator;
+      43: if_acmpne     67
+      46: aload_0
+      47: invokeinterface #860,  1          // InterfaceMethod org/apache/hadoop/hive/ql/io/sarg/PredicateLeaf.getLiteral:()Ljava/lang/Object;
+      52: astore        4
+      54: aload         4
+      56: ifnonnull     63
+      59: getstatic     #854                // Field org/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue.YES:Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+      62: areturn
+      63: getstatic     #838                // Field org/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue.NO:Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+      66: areturn
+      67: getstatic     #863                // Field org/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue.NULL:Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+      70: areturn
+      71: aload_1
+      72: invokevirtual #866                // Method org/apache/orc/impl/RecordReaderImpl$ValueRange.isComparable:()Z
+      75: ifne          95
+      78: aload_1
+      79: getfield      #869                // Field org/apache/orc/impl/RecordReaderImpl$ValueRange.hasNulls:Z
+      82: ifeq          91
+      85: getstatic     #739                // Field org/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue.YES_NO_NULL:Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+      88: goto          94
+      91: getstatic     #777                // Field org/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue.YES_NO:Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+      94: areturn
+      95: aload_0
+      96: invokeinterface #860,  1          // InterfaceMethod org/apache/hadoop/hive/ql/io/sarg/PredicateLeaf.getLiteral:()Ljava/lang/Object;
+     101: checkcast     #872                // class java/lang/Comparable
+     104: astore        5
+     106: aload_0
+     107: invokeinterface #784,  1          // InterfaceMethod org/apache/hadoop/hive/ql/io/sarg/PredicateLeaf.getType:()Lorg/apache/hadoop/hive/ql/io/sarg/PredicateLeaf$Type;
+     112: aload         5
+     114: invokestatic  #874                // Method getBaseObjectForComparison:(Lorg/apache/hadoop/hive/ql/io/sarg/PredicateLeaf$Type;Ljava/lang/Comparable;)Ljava/lang/Comparable;
+     117: astore        6
+     119: aload_0
+     120: aload         6
+     122: aload_1
+     123: invokestatic  #878                // Method evaluatePredicateMinMax:(Lorg/apache/hadoop/hive/ql/io/sarg/PredicateLeaf;Ljava/lang/Comparable;Lorg/apache/orc/impl/RecordReaderImpl$ValueRange;)Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+     126: astore        4
+     128: aload_0
+     129: aload         4
+     131: aload_2
+     132: invokestatic  #882                // Method shouldEvaluateBloomFilter:(Lorg/apache/hadoop/hive/ql/io/sarg/PredicateLeaf;Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;Lorg/apache/orc/util/BloomFilter;)Z
+     135: ifeq          151
+     138: aload_0
+     139: aload         6
+     141: aload_2
+     142: aload_1
+     143: getfield      #869                // Field org/apache/orc/impl/RecordReaderImpl$ValueRange.hasNulls:Z
+     146: iload_3
+     147: invokestatic  #886                // Method evaluatePredicateBloomFilter:(Lorg/apache/hadoop/hive/ql/io/sarg/PredicateLeaf;Ljava/lang/Object;Lorg/apache/orc/util/BloomFilter;ZZ)Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+     150: areturn
+     151: aload         4
+     153: areturn
+
+  private static boolean shouldEvaluateBloomFilter(org.apache.hadoop.hive.ql.io.sarg.PredicateLeaf, org.apache.hadoop.hive.ql.io.sarg.SearchArgument$TruthValue, org.apache.orc.util.BloomFilter);
+    Code:
+       0: aload_2
+       1: ifnull        67
+       4: aload_1
+       5: getstatic     #890                // Field org/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue.NO_NULL:Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+       8: if_acmpeq     67
+      11: aload_1
+      12: getstatic     #838                // Field org/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue.NO:Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+      15: if_acmpeq     67
+      18: aload_0
+      19: invokeinterface #844,  1          // InterfaceMethod org/apache/hadoop/hive/ql/io/sarg/PredicateLeaf.getOperator:()Lorg/apache/hadoop/hive/ql/io/sarg/PredicateLeaf$Operator;
+      24: getstatic     #893                // Field org/apache/hadoop/hive/ql/io/sarg/PredicateLeaf$Operator.EQUALS:Lorg/apache/hadoop/hive/ql/io/sarg/PredicateLeaf$Operator;
+      27: invokevirtual #896                // Method org/apache/hadoop/hive/ql/io/sarg/PredicateLeaf$Operator.equals:(Ljava/lang/Object;)Z
+      30: ifne          63
+      33: aload_0
+      34: invokeinterface #844,  1          // InterfaceMethod org/apache/hadoop/hive/ql/io/sarg/PredicateLeaf.getOperator:()Lorg/apache/hadoop/hive/ql/io/sarg/PredicateLeaf$Operator;
+      39: getstatic     #857                // Field org/apache/hadoop/hive/ql/io/sarg/PredicateLeaf$Operator.NULL_SAFE_EQUALS:Lorg/apache/hadoop/hive/ql/io/sarg/PredicateLeaf$Operator;
+      42: invokevirtual #896                // Method org/apache/hadoop/hive/ql/io/sarg/PredicateLeaf$Operator.equals:(Ljava/lang/Object;)Z
+      45: ifne          63
+      48: aload_0
+      49: invokeinterface #844,  1          // InterfaceMethod org/apache/hadoop/hive/ql/io/sarg/PredicateLeaf.getOperator:()Lorg/apache/hadoop/hive/ql/io/sarg/PredicateLeaf$Operator;
+      54: getstatic     #897                // Field org/apache/hadoop/hive/ql/io/sarg/PredicateLeaf$Operator.IN:Lorg/apache/hadoop/hive/ql/io/sarg/PredicateLeaf$Operator;
+      57: invokevirtual #896                // Method org/apache/hadoop/hive/ql/io/sarg/PredicateLeaf$Operator.equals:(Ljava/lang/Object;)Z
+      60: ifeq          67
+      63: iconst_1
+      64: goto          68
+      67: iconst_0
+      68: ireturn
+
+  private static org.apache.hadoop.hive.ql.io.sarg.SearchArgument$TruthValue evaluatePredicateMinMax(org.apache.hadoop.hive.ql.io.sarg.PredicateLeaf, java.lang.Comparable, org.apache.orc.impl.RecordReaderImpl$ValueRange);
+    Code:
+       0: getstatic     #900                // Field org/apache/orc/impl/RecordReaderImpl$1.$SwitchMap$org$apache$hadoop$hive$ql$io$sarg$PredicateLeaf$Operator:[I
+       3: aload_0
+       4: invokeinterface #844,  1          // InterfaceMethod org/apache/hadoop/hive/ql/io/sarg/PredicateLeaf.getOperator:()Lorg/apache/hadoop/hive/ql/io/sarg/PredicateLeaf$Operator;
+       9: invokevirtual #906                // Method org/apache/hadoop/hive/ql/io/sarg/PredicateLeaf$Operator.ordinal:()I
+      12: iaload
+      13: tableswitch   { // 1 to 7
+                     1: 56
+                     2: 84
+                     3: 142
+                     4: 193
+                     5: 258
+                     6: 435
+                     7: 610
+               default: 627
+          }
+      56: aload_2
+      57: aload_1
+      58: invokevirtual #909                // Method org/apache/orc/impl/RecordReaderImpl$ValueRange.compare:(Ljava/lang/Comparable;)Lorg/apache/orc/impl/RecordReaderImpl$Location;
+      61: astore_3
+      62: aload_3
+      63: getstatic     #913                // Field org/apache/orc/impl/RecordReaderImpl$Location.BEFORE:Lorg/apache/orc/impl/RecordReaderImpl$Location;
+      66: if_acmpeq     76
+      69: aload_3
+      70: getstatic     #919                // Field org/apache/orc/impl/RecordReaderImpl$Location.AFTER:Lorg/apache/orc/impl/RecordReaderImpl$Location;
+      73: if_acmpne     80
+      76: getstatic     #838                // Field org/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue.NO:Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+      79: areturn
+      80: getstatic     #777                // Field org/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue.YES_NO:Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+      83: areturn
+      84: aload_2
+      85: aload_1
+      86: invokevirtual #909                // Method org/apache/orc/impl/RecordReaderImpl$ValueRange.compare:(Ljava/lang/Comparable;)Lorg/apache/orc/impl/RecordReaderImpl$Location;
+      89: astore_3
+      90: aload_2
+      91: invokevirtual #922                // Method org/apache/orc/impl/RecordReaderImpl$ValueRange.isSingleton:()Z
+      94: ifeq          112
+      97: aload_3
+      98: getstatic     #925                // Field org/apache/orc/impl/RecordReaderImpl$Location.MIN:Lorg/apache/orc/impl/RecordReaderImpl$Location;
+     101: if_acmpne     112
+     104: aload_2
+     105: getstatic     #854                // Field org/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue.YES:Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+     108: invokevirtual #780                // Method org/apache/orc/impl/RecordReaderImpl$ValueRange.addNull:(Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;)Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+     111: areturn
+     112: aload_3
+     113: getstatic     #913                // Field org/apache/orc/impl/RecordReaderImpl$Location.BEFORE:Lorg/apache/orc/impl/RecordReaderImpl$Location;
+     116: if_acmpeq     126
+     119: aload_3
+     120: getstatic     #919                // Field org/apache/orc/impl/RecordReaderImpl$Location.AFTER:Lorg/apache/orc/impl/RecordReaderImpl$Location;
+     123: if_acmpne     134
+     126: aload_2
+     127: getstatic     #838                // Field org/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue.NO:Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+     130: invokevirtual #780                // Method org/apache/orc/impl/RecordReaderImpl$ValueRange.addNull:(Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;)Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+     133: areturn
+     134: aload_2
+     135: getstatic     #777                // Field org/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue.YES_NO:Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+     138: invokevirtual #780                // Method org/apache/orc/impl/RecordReaderImpl$ValueRange.addNull:(Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;)Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+     141: areturn
+     142: aload_2
+     143: aload_1
+     144: invokevirtual #909                // Method org/apache/orc/impl/RecordReaderImpl$ValueRange.compare:(Ljava/lang/Comparable;)Lorg/apache/orc/impl/RecordReaderImpl$Location;
+     147: astore_3
+     148: aload_3
+     149: getstatic     #919                // Field org/apache/orc/impl/RecordReaderImpl$Location.AFTER:Lorg/apache/orc/impl/RecordReaderImpl$Location;
+     152: if_acmpne     163
+     155: aload_2
+     156: getstatic     #854                // Field org/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue.YES:Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+     159: invokevirtual #780                // Method org/apache/orc/impl/RecordReaderImpl$ValueRange.addNull:(Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;)Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+     162: areturn
+     163: aload_3
+     164: getstatic     #913                // Field org/apache/orc/impl/RecordReaderImpl$Location.BEFORE:Lorg/apache/orc/impl/RecordReaderImpl$Location;
+     167: if_acmpeq     177
+     170: aload_3
+     171: getstatic     #925                // Field org/apache/orc/impl/RecordReaderImpl$Location.MIN:Lorg/apache/orc/impl/RecordReaderImpl$Location;
+     174: if_acmpne     185
+     177: aload_2
+     178: getstatic     #838                // Field org/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue.NO:Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+     181: invokevirtual #780                // Method org/apache/orc/impl/RecordReaderImpl$ValueRange.addNull:(Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;)Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+     184: areturn
+     185: aload_2
+     186: getstatic     #777                // Field org/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue.YES_NO:Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+     189: invokevirtual #780                // Method org/apache/orc/impl/RecordReaderImpl$ValueRange.addNull:(Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;)Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+     192: areturn
+     193: aload_2
+     194: aload_1
+     195: invokevirtual #909                // Method org/apache/orc/impl/RecordReaderImpl$ValueRange.compare:(Ljava/lang/Comparable;)Lorg/apache/orc/impl/RecordReaderImpl$Location;
+     198: astore_3
+     199: aload_3
+     200: getstatic     #919                // Field org/apache/orc/impl/RecordReaderImpl$Location.AFTER:Lorg/apache/orc/impl/RecordReaderImpl$Location;
+     203: if_acmpeq     227
+     206: aload_3
+     207: getstatic     #928                // Field org/apache/orc/impl/RecordReaderImpl$Location.MAX:Lorg/apache/orc/impl/RecordReaderImpl$Location;
+     210: if_acmpeq     227
+     213: aload_3
+     214: getstatic     #925                // Field org/apache/orc/impl/RecordReaderImpl$Location.MIN:Lorg/apache/orc/impl/RecordReaderImpl$Location;
+     217: if_acmpne     235
+     220: aload_2
+     221: invokevirtual #922                // Method org/apache/orc/impl/RecordReaderImpl$ValueRange.isSingleton:()Z
+     224: ifeq          235
+     227: aload_2
+     228: getstatic     #854                // Field org/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue.YES:Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+     231: invokevirtual #780                // Method org/apache/orc/impl/RecordReaderImpl$ValueRange.addNull:(Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;)Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+     234: areturn
+     235: aload_3
+     236: getstatic     #913                // Field org/apache/orc/impl/RecordReaderImpl$Location.BEFORE:Lorg/apache/orc/impl/RecordReaderImpl$Location;
+     239: if_acmpne     250
+     242: aload_2
+     243: getstatic     #838                // Field org/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue.NO:Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+     246: invokevirtual #780                // Method org/apache/orc/impl/RecordReaderImpl$ValueRange.addNull:(Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;)Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+     249: areturn
+     250: aload_2
+     251: getstatic     #777                // Field org/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue.YES_NO:Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+     254: invokevirtual #780                // Method org/apache/orc/impl/RecordReaderImpl$ValueRange.addNull:(Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;)Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+     257: areturn
+     258: aload_2
+     259: invokevirtual #922                // Method org/apache/orc/impl/RecordReaderImpl$ValueRange.isSingleton:()Z
+     262: ifeq          342
+     265: aload_0
+     266: invokeinterface #931,  1          // InterfaceMethod org/apache/hadoop/hive/ql/io/sarg/PredicateLeaf.getLiteralList:()Ljava/util/List;
+     271: invokeinterface #252,  1          // InterfaceMethod java/util/List.iterator:()Ljava/util/Iterator;
+     276: astore        4
+     278: aload         4
+     280: invokeinterface #256,  1          // InterfaceMethod java/util/Iterator.hasNext:()Z
+     285: ifeq          334
+     288: aload         4
+     290: invokeinterface #261,  1          // InterfaceMethod java/util/Iterator.next:()Ljava/lang/Object;
+     295: astore        5
+     297: aload_0
+     298: invokeinterface #784,  1          // InterfaceMethod org/apache/hadoop/hive/ql/io/sarg/PredicateLeaf.getType:()Lorg/apache/hadoop/hive/ql/io/sarg/PredicateLeaf$Type;
+     303: aload         5
+     305: checkcast     #872                // class java/lang/Comparable
+     308: invokestatic  #874                // Method getBaseObjectForComparison:(Lorg/apache/hadoop/hive/ql/io/sarg/PredicateLeaf$Type;Ljava/lang/Comparable;)Ljava/lang/Comparable;
+     311: astore_1
+     312: aload_2
+     313: aload_1
+     314: invokevirtual #909                // Method org/apache/orc/impl/RecordReaderImpl$ValueRange.compare:(Ljava/lang/Comparable;)Lorg/apache/orc/impl/RecordReaderImpl$Location;
+     317: getstatic     #925                // Field org/apache/orc/impl/RecordReaderImpl$Location.MIN:Lorg/apache/orc/impl/RecordReaderImpl$Location;
+     320: if_acmpne     331
+     323: aload_2
+     324: getstatic     #854                // Field org/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue.YES:Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+     327: invokevirtual #780                // Method org/apache/orc/impl/RecordReaderImpl$ValueRange.addNull:(Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;)Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+     330: areturn
+     331: goto          278
+     334: aload_2
+     335: getstatic     #838                // Field org/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue.NO:Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+     338: invokevirtual #780                // Method org/apache/orc/impl/RecordReaderImpl$ValueRange.addNull:(Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;)Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+     341: areturn
+     342: aload_0
+     343: invokeinterface #931,  1          // InterfaceMethod org/apache/hadoop/hive/ql/io/sarg/PredicateLeaf.getLiteralList:()Ljava/util/List;
+     348: invokeinterface #252,  1          // InterfaceMethod java/util/List.iterator:()Ljava/util/Iterator;
+     353: astore        4
+     355: aload         4
+     357: invokeinterface #256,  1          // InterfaceMethod java/util/Iterator.hasNext:()Z
+     362: ifeq          427
+     365: aload         4
+     367: invokeinterface #261,  1          // InterfaceMethod java/util/Iterator.next:()Ljava/lang/Object;
+     372: astore        5
+     374: aload_0
+     375: invokeinterface #784,  1          // InterfaceMethod org/apache/hadoop/hive/ql/io/sarg/PredicateLeaf.getType:()Lorg/apache/hadoop/hive/ql/io/sarg/PredicateLeaf$Type;
+     380: aload         5
+     382: checkcast     #872                // class java/lang/Comparable
+     385: invokestatic  #874                // Method getBaseObjectForComparison:(Lorg/apache/hadoop/hive/ql/io/sarg/PredicateLeaf$Type;Ljava/lang/Comparable;)Ljava/lang/Comparable;
+     388: astore_1
+     389: aload_2
+     390: aload_1
+     391: invokevirtual #909                // Method org/apache/orc/impl/RecordReaderImpl$ValueRange.compare:(Ljava/lang/Comparable;)Lorg/apache/orc/impl/RecordReaderImpl$Location;
+     394: astore_3
+     395: aload_3
+     396: getstatic     #925                // Field org/apache/orc/impl/RecordReaderImpl$Location.MIN:Lorg/apache/orc/impl/RecordReaderImpl$Location;
+     399: if_acmpeq     416
+     402: aload_3
+     403: getstatic     #934                // Field org/apache/orc/impl/RecordReaderImpl$Location.MIDDLE:Lorg/apache/orc/impl/RecordReaderImpl$Location;
+     406: if_acmpeq     416
+     409: aload_3
+     410: getstatic     #928                // Field org/apache/orc/impl/RecordReaderImpl$Location.MAX:Lorg/apache/orc/impl/RecordReaderImpl$Location;
+     413: if_acmpne     424
+     416: aload_2
+     417: getstatic     #777                // Field org/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue.YES_NO:Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+     420: invokevirtual #780                // Method org/apache/orc/impl/RecordReaderImpl$ValueRange.addNull:(Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;)Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+     423: areturn
+     424: goto          355
+     427: aload_2
+     428: getstatic     #838                // Field org/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue.NO:Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+     431: invokevirtual #780                // Method org/apache/orc/impl/RecordReaderImpl$ValueRange.addNull:(Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;)Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+     434: areturn
+     435: aload_0
+     436: invokeinterface #931,  1          // InterfaceMethod org/apache/hadoop/hive/ql/io/sarg/PredicateLeaf.getLiteralList:()Ljava/util/List;
+     441: astore        4
+     443: aload         4
+     445: ifnull        458
+     448: aload         4
+     450: invokeinterface #937,  1          // InterfaceMethod java/util/List.isEmpty:()Z
+     455: ifeq          466
+     458: aload_2
+     459: getstatic     #777                // Field org/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue.YES_NO:Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+     462: invokevirtual #780                // Method org/apache/orc/impl/RecordReaderImpl$ValueRange.addNull:(Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;)Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+     465: areturn
+     466: aload_0
+     467: invokeinterface #784,  1          // InterfaceMethod org/apache/hadoop/hive/ql/io/sarg/PredicateLeaf.getType:()Lorg/apache/hadoop/hive/ql/io/sarg/PredicateLeaf$Type;
+     472: aload         4
+     474: iconst_0
+     475: invokeinterface #55,  2           // InterfaceMethod java/util/List.get:(I)Ljava/lang/Object;
+     480: checkcast     #872                // class java/lang/Comparable
+     483: invokestatic  #874                // Method getBaseObjectForComparison:(Lorg/apache/hadoop/hive/ql/io/sarg/PredicateLeaf$Type;Ljava/lang/Comparable;)Ljava/lang/Comparable;
+     486: astore        5
+     488: aload_2
+     489: aload         5
+     491: invokevirtual #909                // Method org/apache/orc/impl/RecordReaderImpl$ValueRange.compare:(Ljava/lang/Comparable;)Lorg/apache/orc/impl/RecordReaderImpl$Location;
+     494: astore_3
+     495: aload_3
+     496: getstatic     #913                // Field org/apache/orc/impl/RecordReaderImpl$Location.BEFORE:Lorg/apache/orc/impl/RecordReaderImpl$Location;
+     499: if_acmpeq     509
+     502: aload_3
+     503: getstatic     #925                // Field org/apache/orc/impl/RecordReaderImpl$Location.MIN:Lorg/apache/orc/impl/RecordReaderImpl$Location;
+     506: if_acmpne     587
+     509: aload_0
+     510: invokeinterface #784,  1          // InterfaceMethod org/apache/hadoop/hive/ql/io/sarg/PredicateLeaf.getType:()Lorg/apache/hadoop/hive/ql/io/sarg/PredicateLeaf$Type;
+     515: aload         4
+     517: iconst_1
+     518: invokeinterface #55,  2           // InterfaceMethod java/util/List.get:(I)Ljava/lang/Object;
+     523: checkcast     #872                // class java/lang/Comparable
+     526: invokestatic  #874                // Method getBaseObjectForComparison:(Lorg/apache/hadoop/hive/ql/io/sarg/PredicateLeaf$Type;Ljava/lang/Comparable;)Ljava/lang/Comparable;
+     529: astore        6
+     531: aload_2
+     532: aload         6
+     534: invokevirtual #909                // Method org/apache/orc/impl/RecordReaderImpl$ValueRange.compare:(Ljava/lang/Comparable;)Lorg/apache/orc/impl/RecordReaderImpl$Location;
+     537: astore        7
+     539: aload         7
+     541: getstatic     #919                // Field org/apache/orc/impl/RecordReaderImpl$Location.AFTER:Lorg/apache/orc/impl/RecordReaderImpl$Location;
+     544: if_acmpeq     555
+     547: aload         7
+     549: getstatic     #928                // Field org/apache/orc/impl/RecordReaderImpl$Location.MAX:Lorg/apache/orc/impl/RecordReaderImpl$Location;
+     552: if_acmpne     563
+     555: aload_2
+     556: getstatic     #854                // Field org/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue.YES:Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+     559: invokevirtual #780                // Method org/apache/orc/impl/RecordReaderImpl$ValueRange.addNull:(Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;)Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+     562: areturn
+     563: aload         7
+     565: getstatic     #913                // Field org/apache/orc/impl/RecordReaderImpl$Location.BEFORE:Lorg/apache/orc/impl/RecordReaderImpl$Location;
+     568: if_acmpne     579
+     571: aload_2
+     572: getstatic     #838                // Field org/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue.NO:Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+     575: invokevirtual #780                // Method org/apache/orc/impl/RecordReaderImpl$ValueRange.addNull:(Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;)Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+     578: areturn
+     579: aload_2
+     580: getstatic     #777                // Field org/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue.YES_NO:Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+     583: invokevirtual #780                // Method org/apache/orc/impl/RecordReaderImpl$ValueRange.addNull:(Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;)Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+     586: areturn
+     587: aload_3
+     588: getstatic     #919                // Field org/apache/orc/impl/RecordReaderImpl$Location.AFTER:Lorg/apache/orc/impl/RecordReaderImpl$Location;
+     591: if_acmpne     602
+     594: aload_2
+     595: getstatic     #838                // Field org/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue.NO:Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+     598: invokevirtual #780                // Method org/apache/orc/impl/RecordReaderImpl$ValueRange.addNull:(Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;)Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+     601: areturn
+     602: aload_2
+     603: getstatic     #777                // Field org/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue.YES_NO:Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+     606: invokevirtual #780                // Method org/apache/orc/impl/RecordReaderImpl$ValueRange.addNull:(Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;)Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+     609: areturn
+     610: aload_2
+     611: getfield      #869                // Field org/apache/orc/impl/RecordReaderImpl$ValueRange.hasNulls:Z
+     614: ifeq          623
+     617: getstatic     #777                // Field org/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue.YES_NO:Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+     620: goto          626
+     623: getstatic     #838                // Field org/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue.NO:Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+     626: areturn
+     627: aload_2
+     628: getstatic     #777                // Field org/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue.YES_NO:Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+     631: invokevirtual #780                // Method org/apache/orc/impl/RecordReaderImpl$ValueRange.addNull:(Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;)Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+     634: areturn
+
+  private static org.apache.hadoop.hive.ql.io.sarg.SearchArgument$TruthValue evaluatePredicateBloomFilter(org.apache.hadoop.hive.ql.io.sarg.PredicateLeaf, java.lang.Object, org.apache.orc.util.BloomFilter, boolean, boolean);
+    Code:
+       0: getstatic     #900                // Field org/apache/orc/impl/RecordReaderImpl$1.$SwitchMap$org$apache$hadoop$hive$ql$io$sarg$PredicateLeaf$Operator:[I
+       3: aload_0
+       4: invokeinterface #844,  1          // InterfaceMethod org/apache/hadoop/hive/ql/io/sarg/PredicateLeaf.getOperator:()Lorg/apache/hadoop/hive/ql/io/sarg/PredicateLeaf$Operator;
+       9: invokevirtual #906                // Method org/apache/hadoop/hive/ql/io/sarg/PredicateLeaf$Operator.ordinal:()I
+      12: iaload
+      13: tableswitch   { // 1 to 5
+                     1: 48
+                     2: 57
+                     3: 161
+                     4: 161
+                     5: 66
+               default: 161
+          }
+      48: aload_2
+      49: aload_1
+      50: iconst_0
+      51: iload         4
+      53: invokestatic  #940                // Method checkInBloomFilter:(Lorg/apache/orc/util/BloomFilter;Ljava/lang/Object;ZZ)Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+      56: areturn
+      57: aload_2
+      58: aload_1
+      59: iload_3
+      60: iload         4
+      62: invokestatic  #940                // Method checkInBloomFilter:(Lorg/apache/orc/util/BloomFilter;Ljava/lang/Object;ZZ)Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+      65: areturn
+      66: aload_0
+      67: invokeinterface #931,  1          // InterfaceMethod org/apache/hadoop/hive/ql/io/sarg/PredicateLeaf.getLiteralList:()Ljava/util/List;
+      72: invokeinterface #252,  1          // InterfaceMethod java/util/List.iterator:()Ljava/util/Iterator;
+      77: astore        5
+      79: aload         5
+      81: invokeinterface #256,  1          // InterfaceMethod java/util/Iterator.hasNext:()Z
+      86: ifeq          147
+      89: aload         5
+      91: invokeinterface #261,  1          // InterfaceMethod java/util/Iterator.next:()Ljava/lang/Object;
+      96: astore        6
+      98: aload_0
+      99: invokeinterface #784,  1          // InterfaceMethod org/apache/hadoop/hive/ql/io/sarg/PredicateLeaf.getType:()Lorg/apache/hadoop/hive/ql/io/sarg/PredicateLeaf$Type;
+     104: aload         6
+     106: checkcast     #872                // class java/lang/Comparable
+     109: invokestatic  #874                // Method getBaseObjectForComparison:(Lorg/apache/hadoop/hive/ql/io/sarg/PredicateLeaf$Type;Ljava/lang/Comparable;)Ljava/lang/Comparable;
+     112: astore        7
+     114: aload_2
+     115: aload         7
+     117: iload_3
+     118: iload         4
+     120: invokestatic  #940                // Method checkInBloomFilter:(Lorg/apache/orc/util/BloomFilter;Ljava/lang/Object;ZZ)Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+     123: astore        8
+     125: aload         8
+     127: getstatic     #739                // Field org/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue.YES_NO_NULL:Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+     130: if_acmpeq     141
+     133: aload         8
+     135: getstatic     #777                // Field org/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue.YES_NO:Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+     138: if_acmpne     144
+     141: aload         8
+     143: areturn
+     144: goto          79
+     147: iload_3
+     148: ifeq          157
+     151: getstatic     #890                // Field org/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue.NO_NULL:Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+     154: goto          160
+     157: getstatic     #838                // Field org/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue.NO:Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+     160: areturn
+     161: iload_3
+     162: ifeq          171
+     165: getstatic     #739                // Field org/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue.YES_NO_NULL:Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+     168: goto          174
+     171: getstatic     #777                // Field org/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue.YES_NO:Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+     174: areturn
+
+  private static org.apache.hadoop.hive.ql.io.sarg.SearchArgument$TruthValue checkInBloomFilter(org.apache.orc.util.BloomFilter, java.lang.Object, boolean, boolean);
+    Code:
+       0: iload_2
+       1: ifeq          10
+       4: getstatic     #890                // Field org/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue.NO_NULL:Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+       7: goto          13
+      10: getstatic     #838                // Field org/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue.NO:Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+      13: astore        4
+      15: aload_1
+      16: instanceof    #580                // class java/lang/Long
+      19: ifeq          44
+      22: aload_0
+      23: aload_1
+      24: checkcast     #580                // class java/lang/Long
+      27: invokevirtual #944                // Method java/lang/Long.longValue:()J
+      30: invokevirtual #947                // Method org/apache/orc/util/BloomFilter.testLong:(J)Z
+      33: ifeq          233
+      36: getstatic     #739                // Field org/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue.YES_NO_NULL:Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+      39: astore        4
+      41: goto          233
+      44: aload_1
+      45: instanceof    #664                // class java/lang/Double
+      48: ifeq          73
+      51: aload_0
+      52: aload_1
+      53: checkcast     #664                // class java/lang/Double
+      56: invokevirtual #953                // Method java/lang/Double.doubleValue:()D
+      59: invokevirtual #956                // Method org/apache/orc/util/BloomFilter.testDouble:(D)Z
+      62: ifeq          233
+      65: getstatic     #739                // Field org/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue.YES_NO_NULL:Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+      68: astore        4
+      70: goto          233
+      73: aload_1
+      74: instanceof    #34                 // class java/lang/String
+      77: ifne          101
+      80: aload_1
+      81: instanceof    #959                // class org/apache/hadoop/io/Text
+      84: ifne          101
+      87: aload_1
+      88: instanceof    #961                // class org/apache/hadoop/hive/serde2/io/HiveDecimalWritable
+      91: ifne          101
+      94: aload_1
+      95: instanceof    #963                // class java/math/BigDecimal
+      98: ifeq          120
+     101: aload_0
+     102: aload_1
+     103: invokevirtual #965                // Method java/lang/Object.toString:()Ljava/lang/String;
+     106: invokevirtual #966                // Method org/apache/orc/util/BloomFilter.testString:(Ljava/lang/String;)Z
+     109: ifeq          233
+     112: getstatic     #739                // Field org/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue.YES_NO_NULL:Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+     115: astore        4
+     117: goto          233
+     120: aload_1
+     121: instanceof    #970                // class java/sql/Timestamp
+     124: ifeq          181
+     127: iload_3
+     128: ifeq          153
+     131: aload_0
+     132: aload_1
+     133: checkcast     #970                // class java/sql/Timestamp
+     136: invokevirtual #972                // Method java/sql/Timestamp.getTime:()J
+     139: invokevirtual #947                // Method org/apache/orc/util/BloomFilter.testLong:(J)Z
+     142: ifeq          233
+     145: getstatic     #739                // Field org/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue.YES_NO_NULL:Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+     148: astore        4
+     150: goto          233
+     153: aload_0
+     154: invokestatic  #975                // Method java/util/TimeZone.getDefault:()Ljava/util/TimeZone;
+     157: aload_1
+     158: checkcast     #970                // class java/sql/Timestamp
+     161: invokevirtual #972                // Method java/sql/Timestamp.getTime:()J
+     164: invokestatic  #981                // Method org/apache/orc/impl/SerializationUtils.convertToUtc:(Ljava/util/TimeZone;J)J
+     167: invokevirtual #947                // Method org/apache/orc/util/BloomFilter.testLong:(J)Z
+     170: ifeq          233
+     173: getstatic     #739                // Field org/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue.YES_NO_NULL:Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+     176: astore        4
+     178: goto          233
+     181: aload_1
+     182: instanceof    #987                // class java/time/chrono/ChronoLocalDate
+     185: ifeq          212
+     188: aload_0
+     189: aload_1
+     190: checkcast     #987                // class java/time/chrono/ChronoLocalDate
+     193: invokeinterface #989,  1          // InterfaceMethod java/time/chrono/ChronoLocalDate.toEpochDay:()J
+     198: invokevirtual #947                // Method org/apache/orc/util/BloomFilter.testLong:(J)Z
+     201: ifeq          233
+     204: getstatic     #739                // Field org/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue.YES_NO_NULL:Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+     207: astore        4
+     209: goto          233
+     212: aload_1
+     213: ifnonnull     228
+     216: iload_2
+     217: ifne          228
+     220: getstatic     #838                // Field org/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue.NO:Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+     223: astore        4
+     225: goto          233
+     228: getstatic     #739                // Field org/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue.YES_NO_NULL:Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+     231: astore        4
+     233: aload         4
+     235: getstatic     #739                // Field org/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue.YES_NO_NULL:Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+     238: if_acmpne     250
+     241: iload_2
+     242: ifne          250
+     245: getstatic     #777                // Field org/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue.YES_NO:Lorg/apache/hadoop/hive/ql/io/sarg/SearchArgument$TruthValue;
+     248: astore        4
+     250: getstatic     #69                 // Field LOG:Lorg/slf4j/Logger;
+     253: ldc_w         #992                // String Bloom filter evaluation: {}
+     256: aload         4
+     258: invokeinterface #78,  3           // InterfaceMethod org/slf4j/Logger.debug:(Ljava/lang/String;Ljava/lang/Object;)V
+     263: aload         4
+     265: areturn
+
+  private static java.lang.Comparable getBaseObjectForComparison(org.apache.hadoop.hive.ql.io.sarg.PredicateLeaf$Type, java.lang.Comparable);
+    Code:
+       0: aload_1
+       1: ifnonnull     6
+       4: aconst_null
+       5: areturn
+       6: getstatic     #994                // Field org/apache/orc/impl/RecordReaderImpl$1.$SwitchMap$org$apache$hadoop$hive$ql$io$sarg$PredicateLeaf$Type:[I
+       9: aload_0
+      10: invokevirtual #997                // Method org/apache/hadoop/hive/ql/io/sarg/PredicateLeaf$Type.ordinal:()I
+      13: iaload
+      14: tableswitch   { // 1 to 7
+                     1: 56
+                     2: 73
+                     3: 154
+                     4: 341
+                     5: 410
+                     6: 461
+                     7: 497
+               default: 661
+          }
+      56: aload_1
+      57: instanceof    #167                // class java/lang/Boolean
+      60: ifeq          65
+      63: aload_1
+      64: areturn
+      65: aload_1
+      66: invokevirtual #965                // Method java/lang/Object.toString:()Ljava/lang/String;
+      69: invokestatic  #998                // Method java/lang/Boolean.valueOf:(Ljava/lang/String;)Ljava/lang/Boolean;
+      72: areturn
+      73: aload_1
+      74: instanceof    #987                // class java/time/chrono/ChronoLocalDate
+      77: ifeq          82
+      80: aload_1
+      81: areturn
+      82: aload_1
+      83: instanceof    #1001               // class java/sql/Date
+      86: ifeq          97
+      89: aload_1
+      90: checkcast     #1001               // class java/sql/Date
+      93: invokevirtual #1003               // Method java/sql/Date.toLocalDate:()Ljava/time/LocalDate;
+      96: areturn
+      97: aload_1
+      98: instanceof    #1007               // class java/util/Date
+     101: ifeq          121
+     104: aload_1
+     105: checkcast     #1007               // class java/util/Date
+     108: invokevirtual #1009               // Method java/util/Date.toInstant:()Ljava/time/Instant;
+     111: getstatic     #1013               // Field java/time/ZoneOffset.UTC:Ljava/time/ZoneOffset;
+     114: invokestatic  #1019               // Method java/time/LocalDateTime.ofInstant:(Ljava/time/Instant;Ljava/time/ZoneId;)Ljava/time/LocalDateTime;
+     117: invokevirtual #1025               // Method java/time/LocalDateTime.toLocalDate:()Ljava/time/LocalDate;
+     120: areturn
+     121: aload_1
+     122: instanceof    #34                 // class java/lang/String
+     125: ifeq          136
+     128: aload_1
+     129: checkcast     #34                 // class java/lang/String
+     132: invokestatic  #1026               // Method java/time/LocalDate.parse:(Ljava/lang/CharSequence;)Ljava/time/LocalDate;
+     135: areturn
+     136: aload_1
+     137: instanceof    #970                // class java/sql/Timestamp
+     140: ifeq          661
+     143: aload_1
+     144: checkcast     #970                // class java/sql/Timestamp
+     147: invokevirtual #1032               // Method java/sql/Timestamp.toLocalDateTime:()Ljava/time/LocalDateTime;
+     150: invokevirtual #1025               // Method java/time/LocalDateTime.toLocalDate:()Ljava/time/LocalDate;
+     153: areturn
+     154: aload_1
+     155: instanceof    #167                // class java/lang/Boolean
+     158: ifeq          188
+     161: new           #961                // class org/apache/hadoop/hive/serde2/io/HiveDecimalWritable
+     164: dup
+     165: aload_1
+     166: checkcast     #167                // class java/lang/Boolean
+     169: invokevirtual #361                // Method java/lang/Boolean.booleanValue:()Z
+     172: ifeq          181
+     175: getstatic     #1036               // Field org/apache/hadoop/hive/common/type/HiveDecimal.ONE:Lorg/apache/hadoop/hive/common/type/HiveDecimal;
+     178: goto          184
+     181: getstatic     #1042               // Field org/apache/hadoop/hive/common/type/HiveDecimal.ZERO:Lorg/apache/hadoop/hive/common/type/HiveDecimal;
+     184: invokespecial #1045               // Method org/apache/hadoop/hive/serde2/io/HiveDecimalWritable."<init>":(Lorg/apache/hadoop/hive/common/type/HiveDecimal;)V
+     187: areturn
+     188: aload_1
+     189: instanceof    #447                // class java/lang/Integer
+     192: ifeq          211
+     195: new           #961                // class org/apache/hadoop/hive/serde2/io/HiveDecimalWritable
+     198: dup
+     199: aload_1
+     200: checkcast     #447                // class java/lang/Integer
+     203: invokevirtual #1048               // Method java/lang/Integer.intValue:()I
+     206: i2l
+     207: invokespecial #1051               // Method org/apache/hadoop/hive/serde2/io/HiveDecimalWritable."<init>":(J)V
+     210: areturn
+     211: aload_1
+     212: instanceof    #580                // class java/lang/Long
+     215: ifeq          233
+     218: new           #961                // class org/apache/hadoop/hive/serde2/io/HiveDecimalWritable
+     221: dup
+     222: aload_1
+     223: checkcast     #580                // class java/lang/Long
+     226: invokevirtual #944                // Method java/lang/Long.longValue:()J
+     229: invokespecial #1051               // Method org/apache/hadoop/hive/serde2/io/HiveDecimalWritable."<init>":(J)V
+     232: areturn
+     233: aload_1
+     234: instanceof    #1054               // class java/lang/Float
+     237: ifne          254
+     240: aload_1
+     241: instanceof    #664                // class java/lang/Double
+     244: ifne          254
+     247: aload_1
+     248: instanceof    #34                 // class java/lang/String
+     251: ifeq          266
+     254: new           #961                // class org/apache/hadoop/hive/serde2/io/HiveDecimalWritable
+     257: dup
+     258: aload_1
+     259: invokevirtual #965                // Method java/lang/Object.toString:()Ljava/lang/String;
+     262: invokespecial #1056               // Method org/apache/hadoop/hive/serde2/io/HiveDecimalWritable."<init>":(Ljava/lang/String;)V
+     265: areturn
+     266: aload_1
+     267: instanceof    #963                // class java/math/BigDecimal
+     270: ifeq          288
+     273: new           #961                // class org/apache/hadoop/hive/serde2/io/HiveDecimalWritable
+     276: dup
+     277: aload_1
+     278: checkcast     #963                // class java/math/BigDecimal
+     281: invokestatic  #1058               // Method org/apache/hadoop/hive/common/type/HiveDecimal.create:(Ljava/math/BigDecimal;)Lorg/apache/hadoop/hive/common/type/HiveDecimal;
+     284: invokespecial #1045               // Method org/apache/hadoop/hive/serde2/io/HiveDecimalWritable."<init>":(Lorg/apache/hadoop/hive/common/type/HiveDecimal;)V
+     287: areturn
+     288: aload_1
+     289: instanceof    #1037               // class org/apache/hadoop/hive/common/type/HiveDecimal
+     292: ifeq          307
+     295: new           #961                // class org/apache/hadoop/hive/serde2/io/HiveDecimalWritable
+     298: dup
+     299: aload_1
+     300: checkcast     #1037               // class org/apache/hadoop/hive/common/type/HiveDecimal
+     303: invokespecial #1045               // Method org/apache/hadoop/hive/serde2/io/HiveDecimalWritable."<init>":(Lorg/apache/hadoop/hive/common/type/HiveDecimal;)V
+     306: areturn
+     307: aload_1
+     308: instanceof    #961                // class org/apache/hadoop/hive/serde2/io/HiveDecimalWritable
+     311: ifeq          316
+     314: aload_1
+     315: areturn
+     316: aload_1
+     317: instanceof    #970                // class java/sql/Timestamp
+     320: ifeq          661
+     323: new           #961                // class org/apache/hadoop/hive/serde2/io/HiveDecimalWritable
+     326: dup
+     327: aload_1
+     328: checkcast     #970                // class java/sql/Timestamp
+     331: invokestatic  #1062               // Method org/apache/hadoop/hive/ql/util/TimestampUtils.getDouble:(Ljava/sql/Timestamp;)D
+     334: invokestatic  #1068               // Method java/lang/Double.toString:(D)Ljava/lang/String;
+     337: invokespecial #1056               // Method org/apache/hadoop/hive/serde2/io/HiveDecimalWritable."<init>":(Ljava/lang/String;)V
+     340: areturn
+     341: aload_1
+     342: instanceof    #1071               // class java/lang/Number
+     345: ifeq          359
+     348: aload_1
+     349: checkcast     #1071               // class java/lang/Number
+     352: invokevirtual #1073               // Method java/lang/Number.doubleValue:()D
+     355: invokestatic  #663                // Method java/lang/Double.valueOf:(D)Ljava/lang/Double;
+     358: areturn
+     359: aload_1
+     360: instanceof    #1037               // class org/apache/hadoop/hive/common/type/HiveDecimal
+     363: ifeq          377
+     366: aload_1
+     367: checkcast     #1037               // class org/apache/hadoop/hive/common/type/HiveDecimal
+     370: invokevirtual #1074               // Method org/apache/hadoop/hive/common/type/HiveDecimal.doubleValue:()D
+     373: invokestatic  #663                // Method java/lang/Double.valueOf:(D)Ljava/lang/Double;
+     376: areturn
+     377: aload_1
+     378: instanceof    #34                 // class java/lang/String
+     381: ifeq          392
+     384: aload_1
+     385: invokevirtual #965                // Method java/lang/Object.toString:()Ljava/lang/String;
+     388: invokestatic  #1075               // Method java/lang/Double.valueOf:(Ljava/lang/String;)Ljava/lang/Double;
+     391: areturn
+     392: aload_1
+     393: instanceof    #970                // class java/sql/Timestamp
+     396: ifeq          661
+     399: aload_1
+     400: checkcast     #970                // class java/sql/Timestamp
+     403: invokestatic  #1062               // Method org/apache/hadoop/hive/ql/util/TimestampUtils.getDouble:(Ljava/sql/Timestamp;)D
+     406: invokestatic  #663                // Method java/lang/Double.valueOf:(D)Ljava/lang/Double;
+     409: areturn
+     410: aload_1
+     411: instanceof    #1071               // class java/lang/Number
+     414: ifeq          428
+     417: aload_1
+     418: checkcast     #1071               // class java/lang/Number
+     421: invokevirtual #1078               // Method java/lang/Number.longValue:()J
+     424: invokestatic  #579                // Method java/lang/Long.valueOf:(J)Ljava/lang/Long;
+     427: areturn
+     428: aload_1
+     429: instanceof    #1037               // class org/apache/hadoop/hive/common/type/HiveDecimal
+     432: ifeq          446
+     435: aload_1
+     436: checkcast     #1037               // class org/apache/hadoop/hive/common/type/HiveDecimal
+     439: invokevirtual #1079               // Method org/apache/hadoop/hive/common/type/HiveDecimal.longValue:()J
+     442: invokestatic  #579                // Method java/lang/Long.valueOf:(J)Ljava/lang/Long;
+     445: areturn
+     446: aload_1
+     447: instanceof    #34                 // class java/lang/String
+     450: ifeq          661
+     453: aload_1
+     454: invokevirtual #965                // Method java/lang/Object.toString:()Ljava/lang/String;
+     457: invokestatic  #1080               // Method java/lang/Long.valueOf:(Ljava/lang/String;)Ljava/lang/Long;
+     460: areturn
+     461: aload_1
+     462: instanceof    #987                // class java/time/chrono/ChronoLocalDate
+     465: ifeq          492
+     468: aload_1
+     469: checkcast     #987                // class java/time/chrono/ChronoLocalDate
+     472: astore_2
+     473: aload_2
+     474: getstatic     #1083               // Field java/time/format/DateTimeFormatter.ISO_LOCAL_DATE:Ljava/time/format/DateTimeFormatter;
+     477: aload_2
+     478: invokeinterface #1089,  1         // InterfaceMethod java/time/chrono/ChronoLocalDate.getChronology:()Ljava/time/chrono/Chronology;
+     483: invokevirtual #1093               // Method java/time/format/DateTimeFormatter.withChronology:(Ljava/time/chrono/Chronology;)Ljava/time/format/DateTimeFormatter;
+     486: invokeinterface #1097,  2         // InterfaceMethod java/time/chrono/ChronoLocalDate.format:(Ljava/time/format/DateTimeFormatter;)Ljava/lang/String;
+     491: areturn
+     492: aload_1
+     493: invokevirtual #965                // Method java/lang/Object.toString:()Ljava/lang/String;
+     496: areturn
+     497: aload_1
+     498: instanceof    #970                // class java/sql/Timestamp
+     501: ifeq          506
+     504: aload_1
+     505: areturn
+     506: aload_1
+     507: instanceof    #447                // class java/lang/Integer
+     510: ifeq          528
+     513: new           #970                // class java/sql/Timestamp
+     516: dup
+     517: aload_1
+     518: checkcast     #1071               // class java/lang/Number
+     521: invokevirtual #1078               // Method java/lang/Number.longValue:()J
+     524: invokespecial #1100               // Method java/sql/Timestamp."<init>":(J)V
+     527: areturn
+     528: aload_1
+     529: instanceof    #1054               // class java/lang/Float
+     532: ifeq          546
+     535: aload_1
+     536: checkcast     #1054               // class java/lang/Float
+     539: invokevirtual #1101               // Method java/lang/Float.doubleValue:()D
+     542: invokestatic  #1102               // Method org/apache/hadoop/hive/ql/util/TimestampUtils.doubleToTimestamp:(D)Ljava/sql/Timestamp;
+     545: areturn
+     546: aload_1
+     547: instanceof    #664                // class java/lang/Double
+     550: ifeq          564
+     553: aload_1
+     554: checkcast     #664                // class java/lang/Double
+     557: invokevirtual #953                // Method java/lang/Double.doubleValue:()D
+     560: invokestatic  #1102               // Method org/apache/hadoop/hive/ql/util/TimestampUtils.doubleToTimestamp:(D)Ljava/sql/Timestamp;
+     563: areturn
+     564: aload_1
+     565: instanceof    #1037               // class org/apache/hadoop/hive/common/type/HiveDecimal
+     568: ifeq          579
+     571: aload_1
+     572: checkcast     #1037               // class org/apache/hadoop/hive/common/type/HiveDecimal
+     575: invokestatic  #1106               // Method org/apache/hadoop/hive/ql/util/TimestampUtils.decimalToTimestamp:(Lorg/apache/hadoop/hive/common/type/HiveDecimal;)Ljava/sql/Timestamp;
+     578: areturn
+     579: aload_1
+     580: instanceof    #961                // class org/apache/hadoop/hive/serde2/io/HiveDecimalWritable
+     583: ifeq          597
+     586: aload_1
+     587: checkcast     #961                // class org/apache/hadoop/hive/serde2/io/HiveDecimalWritable
+     590: invokevirtual #1110               // Method org/apache/hadoop/hive/serde2/io/HiveDecimalWritable.getHiveDecimal:()Lorg/apache/hadoop/hive/common/type/HiveDecimal;
+     593: invokestatic  #1106               // Method org/apache/hadoop/hive/ql/util/TimestampUtils.decimalToTimestamp:(Lorg/apache/hadoop/hive/common/type/HiveDecimal;)Ljava/sql/Timestamp;
+     596: areturn
+     597: aload_1
+     598: instanceof    #1007               // class java/util/Date
+     601: ifeq          619
+     604: new           #970                // class java/sql/Timestamp
+     607: dup
+     608: aload_1
+     609: checkcast     #1007               // class java/util/Date
+     612: invokevirtual #1113               // Method java/util/Date.getTime:()J
+     615: invokespecial #1100               // Method java/sql/Timestamp."<init>":(J)V
+     618: areturn
+     619: aload_1
+     620: instanceof    #987                // class java/time/chrono/ChronoLocalDate
+     623: ifeq          661
+     626: new           #970                // class java/sql/Timestamp
+     629: dup
+     630: aload_1
+     631: checkcast     #987                // class java/time/chrono/ChronoLocalDate
+     634: getstatic     #1114               // Field java/time/LocalTime.MIDNIGHT:Ljava/time/LocalTime;
+     637: invokeinterface #1120,  2         // InterfaceMethod java/time/chrono/ChronoLocalDate.atTime:(Ljava/time/LocalTime;)Ljava/time/chrono/ChronoLocalDateTime;
+     642: getstatic     #1013               // Field java/time/ZoneOffset.UTC:Ljava/time/ZoneOffset;
+     645: invokeinterface #1124,  2         // InterfaceMethod java/time/chrono/ChronoLocalDateTime.toInstant:(Ljava/time/ZoneOffset;)Ljava/time/Instant;
+     650: invokevirtual #1129               // Method java/time/Instant.getEpochSecond:()J
+     653: ldc2_w        #1134               // long 1000l
+     656: lmul
+     657: invokespecial #1100               // Method java/sql/Timestamp."<init>":(J)V
+     660: areturn
+     661: new           #1136               // class org/apache/orc/impl/RecordReaderImpl$SargCastException
+     664: dup
+     665: ldc_w         #1138               // String ORC SARGS could not convert from %s to %s
+     668: iconst_2
+     669: anewarray     #85                 // class java/lang/Object
+     672: dup
+     673: iconst_0
+     674: aload_1
+     675: invokevirtual #1140               // Method java/lang/Object.getClass:()Ljava/lang/Class;
+     678: invokevirtual #1144               // Method java/lang/Class.getSimpleName:()Ljava/lang/String;
+     681: aastore
+     682: dup
+     683: iconst_1
+     684: aload_0
+     685: aastore
+     686: invokestatic  #584                // Method java/lang/String.format:(Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/String;
+     689: invokespecial #1149               // Method org/apache/orc/impl/RecordReaderImpl$SargCastException."<init>":(Ljava/lang/String;)V
+     692: athrow
+
+  protected boolean[] pickRowGroups() throws java.io.IOException;
+    Code:
+       0: aload_0
+       1: getfield      #474                // Field rowIndexColsToRead:[Z
+       4: ifnull        11
+       7: aload_0
+       8: invokevirtual #1150               // Method readCurrentStripeRowIndex:()V
+      11: aload_0
+      12: getfield      #233                // Field sargApp:Lorg/apache/orc/impl/RecordReaderImpl$SargApplier;
+      15: ifnonnull     20
+      18: aconst_null
+      19: areturn
+      20: aload_0
+      21: getfield      #233                // Field sargApp:Lorg/apache/orc/impl/RecordReaderImpl$SargApplier;
+      24: aload_0
+      25: getfield      #92                 // Field stripes:Ljava/util/List;
+      28: aload_0
+      29: getfield      #103                // Field currentStripe:I
+      32: invokeinterface #55,  2           // InterfaceMethod java/util/List.get:(I)Ljava/lang/Object;
+      37: checkcast     #265                // class org/apache/orc/StripeInformation
+      40: aload_0
+      41: getfield      #550                // Field indexes:Lorg/apache/orc/impl/OrcIndex;
+      44: invokevirtual #1153               // Method org/apache/orc/impl/OrcIndex.getRowGroupIndex:()[Lorg/apache/orc/OrcProto$RowIndex;
+      47: aload_0
+      48: getfield      #530                // Field skipBloomFilters:Z
+      51: ifeq          58
+      54: aconst_null
+      55: goto          65
+      58: aload_0
+      59: getfield      #550                // Field indexes:Lorg/apache/orc/impl/OrcIndex;
+      62: invokevirtual #1157               // Method org/apache/orc/impl/OrcIndex.getBloomFilterKinds:()[Lorg/apache/orc/OrcProto$Stream$Kind;
+      65: aload_0
+      66: getfield      #1161               // Field stripeFooter:Lorg/apache/orc/OrcProto$StripeFooter;
+      69: invokevirtual #1165               // Method org/apache/orc/OrcProto$StripeFooter.getColumnsList:()Ljava/util/List;
+      72: aload_0
+      73: getfield      #530                // Field skipBloomFilters:Z
+      76: ifeq          83
+      79: aconst_null
+      80: goto          90
+      83: aload_0
+      84: getfield      #550                // Field indexes:Lorg/apache/orc/impl/OrcIndex;
+      87: invokevirtual #1170               // Method org/apache/orc/impl/OrcIndex.getBloomFilterIndex:()[Lorg/apache/orc/OrcProto$BloomFilterIndex;
+      90: iconst_0
+      91: invokevirtual #1174               // Method org/apache/orc/impl/RecordReaderImpl$SargApplier.pickRowGroups:(Lorg/apache/orc/StripeInformation;[Lorg/apache/orc/OrcProto$RowIndex;[Lorg/apache/orc/OrcProto$Stream$Kind;Ljava/util/List;[Lorg/apache/orc/OrcProto$BloomFilterIndex;Z)[Z
+      94: areturn
+
+  private void clearStreams();
+    Code:
+       0: aload_0
+       1: getfield      #559                // Field planner:Lorg/apache/orc/impl/reader/StripePlanner;
+       4: invokevirtual #1178               // Method org/apache/orc/impl/reader/StripePlanner.clearStreams:()V
+       7: return
+
+  private void readStripe() throws java.io.IOException;
+    Code:
+       0: aload_0
+       1: invokevirtual #1181               // Method beginReadStripe:()Lorg/apache/orc/StripeInformation;
+       4: astore_1
+       5: aload_0
+       6: getfield      #559                // Field planner:Lorg/apache/orc/impl/reader/StripePlanner;
+       9: aload_1
+      10: aload_0
+      11: getfield      #206                // Field fileIncluded:[Z
+      14: invokevirtual #1185               // Method org/apache/orc/impl/reader/StripePlanner.parseStripe:(Lorg/apache/orc/StripeInformation;[Z)Lorg/apache/orc/impl/reader/StripePlanner;
+      17: pop
+      18: aload_0
+      19: aload_0
+      20: invokevirtual #1189               // Method pickRowGroups:()[Z
+      23: putfield      #113                // Field includedRowGroups:[Z
+      26: aload_0
+      27: getfield      #113                // Field includedRowGroups:[Z
+      30: ifnull        86
+      33: aload_0
+      34: getfield      #96                 // Field rowInStripe:J
+      37: aload_0
+      38: getfield      #110                // Field rowCountInStripe:J
+      41: lcmp
+      42: ifge          86
+      45: aload_0
+      46: getfield      #113                // Field includedRowGroups:[Z
+      49: aload_0
+      50: getfield      #96                 // Field rowInStripe:J
+      53: aload_0
+      54: getfield      #182                // Field rowIndexStride:J
+      57: ldiv
+      58: l2i
+      59: baload
+      60: ifne          86
+      63: aload_0
+      64: aload_0
+      65: getfield      #110                // Field rowCountInStripe:J
+      68: aload_0
+      69: getfield      #96                 // Field rowInStripe:J
+      72: aload_0
+      73: getfield      #182                // Field rowIndexStride:J
+      76: ladd
+      77: invokestatic  #1191               // Method java/lang/Math.min:(JJ)J
+      80: putfield      #96                 // Field rowInStripe:J
+      83: goto          33
+      86: aload_0
+      87: getfield      #96                 // Field rowInStripe:J
+      90: aload_0
+      91: getfield      #110                // Field rowCountInStripe:J
+      94: lcmp
+      95: ifge          170
+      98: aload_0
+      99: getfield      #559                // Field planner:Lorg/apache/orc/impl/reader/StripePlanner;
+     102: aload_0
+     103: getfield      #550                // Field indexes:Lorg/apache/orc/impl/OrcIndex;
+     106: aload_0
+     107: getfield      #113                // Field includedRowGroups:[Z
+     110: iconst_0
+     111: aload_0
+     112: getfield      #463                // Field startReadPhase:Lorg/apache/orc/impl/reader/tree/TypeReader$ReadPhase;
+     115: invokevirtual #1197               // Method org/apache/orc/impl/reader/StripePlanner.readData:(Lorg/apache/orc/impl/OrcIndex;[ZZLorg/apache/orc/impl/reader/tree/TypeReader$ReadPhase;)Lorg/apache/orc/impl/BufferChunkList;
+     118: pop
+     119: aload_0
+     120: getfield      #512                // Field reader:Lorg/apache/orc/impl/reader/tree/BatchReader;
+     123: aload_0
+     124: getfield      #559                // Field planner:Lorg/apache/orc/impl/reader/StripePlanner;
+     127: aload_0
+     128: getfield      #463                // Field startReadPhase:Lorg/apache/orc/impl/reader/tree/TypeReader$ReadPhase;
+     131: invokevirtual #1201               // Method org/apache/orc/impl/reader/tree/BatchReader.startStripe:(Lorg/apache/orc/impl/reader/StripePlanner;Lorg/apache/orc/impl/reader/tree/TypeReader$ReadPhase;)V
+     134: aload_0
+     135: iconst_1
+     136: putfield      #1207               // Field needsFollowColumnsRead:Z
+     139: aload_0
+     140: getfield      #96                 // Field rowInStripe:J
+     143: lconst_0
+     144: lcmp
+     145: ifeq          170
+     148: aload_0
+     149: aload_0
+     150: getfield      #512                // Field reader:Lorg/apache/orc/impl/reader/tree/BatchReader;
+     153: aload_0
+     154: getfield      #96                 // Field rowInStripe:J
+     157: aload_0
+     158: getfield      #182                // Field rowIndexStride:J
+     161: ldiv
+     162: l2i
+     163: aload_0
+     164: getfield      #463                // Field startReadPhase:Lorg/apache/orc/impl/reader/tree/TypeReader$ReadPhase;
+     167: invokevirtual #1210               // Method seekToRowEntry:(Lorg/apache/orc/impl/reader/tree/BatchReader;ILorg/apache/orc/impl/reader/tree/TypeReader$ReadPhase;)V
+     170: return
+
+  private org.apache.orc.StripeInformation beginReadStripe() throws java.io.IOException;
+    Code:
+       0: aload_0
+       1: getfield      #92                 // Field stripes:Ljava/util/List;
+       4: aload_0
+       5: getfield      #103                // Field currentStripe:I
+       8: invokeinterface #55,  2           // InterfaceMethod java/util/List.get:(I)Ljava/lang/Object;
+      13: checkcast     #265                // class org/apache/orc/StripeInformation
+      16: astore_1
+      17: aload_0
+      18: aload_0
+      19: aload_1
+      20: invokevirtual #1214               // Method readStripeFooter:(Lorg/apache/orc/StripeInformation;)Lorg/apache/orc/OrcProto$StripeFooter;
+      23: putfield      #1161               // Field stripeFooter:Lorg/apache/orc/OrcProto$StripeFooter;
+      26: aload_0
+      27: invokevirtual #1215               // Method clearStreams:()V
+      30: aload_0
+      31: aload_1
+      32: invokeinterface #268,  1          // InterfaceMethod org/apache/orc/StripeInformation.getNumberOfRows:()J
+      37: putfield      #110                // Field rowCountInStripe:J
+      40: aload_0
+      41: lconst_0
+      42: putfield      #96                 // Field rowInStripe:J
+      45: aload_0
+      46: lconst_0
+      47: putfield      #100                // Field followRowInStripe:J
+      50: aload_0
+      51: lconst_0
+      52: putfield      #107                // Field rowBaseInStripe:J
+      55: iconst_0
+      56: istore_2
+      57: iload_2
+      58: aload_0
+      59: getfield      #103                // Field currentStripe:I
+      62: if_icmpge     98
+      65: aload_0
+      66: dup
+      67: getfield      #107                // Field rowBaseInStripe:J
+      70: aload_0
+      71: getfield      #92                 // Field stripes:Ljava/util/List;
+      74: iload_2
+      75: invokeinterface #55,  2           // InterfaceMethod java/util/List.get:(I)Ljava/lang/Object;
+      80: checkcast     #265                // class org/apache/orc/StripeInformation
+      83: invokeinterface #268,  1          // InterfaceMethod org/apache/orc/StripeInformation.getNumberOfRows:()J
+      88: ladd
+      89: putfield      #107                // Field rowBaseInStripe:J
+      92: iinc          2, 1
+      95: goto          57
+      98: aload_0
+      99: getfield      #550                // Field indexes:Lorg/apache/orc/impl/OrcIndex;
+     102: invokevirtual #1153               // Method org/apache/orc/impl/OrcIndex.getRowGroupIndex:()[Lorg/apache/orc/OrcProto$RowIndex;
+     105: astore_2
+     106: iconst_0
+     107: istore_3
+     108: iload_3
+     109: aload_2
+     110: arraylength
+     111: if_icmpge     124
+     114: aload_2
+     115: iload_3
+     116: aconst_null
+     117: aastore
+     118: iinc          3, 1
+     121: goto          108
+     124: aload_1
+     125: areturn
+
+  private void advanceStripe() throws java.io.IOException;
+    Code:
+       0: aload_0
+       1: aload_0
+       2: getfield      #110                // Field rowCountInStripe:J
+       5: putfield      #96                 // Field rowInStripe:J
+       8: aload_0
+       9: getfield      #96                 // Field rowInStripe:J
+      12: aload_0
+      13: getfield      #110                // Field rowCountInStripe:J
+      16: lcmp
+      17: iflt          55
+      20: aload_0
+      21: getfield      #103                // Field currentStripe:I
+      24: aload_0
+      25: getfield      #92                 // Field stripes:Ljava/util/List;
+      28: invokeinterface #50,  1           // InterfaceMethod java/util/List.size:()I
+      33: iconst_1
+      34: isub
+      35: if_icmpge     55
+      38: aload_0
+      39: dup
+      40: getfield      #103                // Field currentStripe:I
+      43: iconst_1
+      44: iadd
+      45: putfield      #103                // Field currentStripe:I
+      48: aload_0
+      49: invokevirtual #1216               // Method readStripe:()V
+      52: goto          8
+      55: return
+
+  private int computeRGIdx(long);
+    Code:
+       0: aload_0
+       1: getfield      #182                // Field rowIndexStride:J
+       4: lconst_0
+       5: lcmp
+       6: ifne          13
+       9: iconst_0
+      10: goto          20
+      13: lload_1
+      14: aload_0
+      15: getfield      #182                // Field rowIndexStride:J
+      18: ldiv
+      19: l2i
+      20: ireturn
+
+  private boolean advanceToNextRow(org.apache.orc.impl.reader.tree.BatchReader, long, boolean) throws java.io.IOException;
+    Code:
+       0: lload_2
+       1: aload_0
+       2: getfield      #107                // Field rowBaseInStripe:J
+       5: lsub
+       6: lstore        5
+       8: aload_0
+       9: getfield      #182                // Field rowIndexStride:J
+      12: lconst_0
+      13: lcmp
+      14: ifeq          117
+      17: aload_0
+      18: getfield      #113                // Field includedRowGroups:[Z
+      21: ifnull        117
+      24: lload         5
+      26: aload_0
+      27: getfield      #110                // Field rowCountInStripe:J
+      30: lcmp
+      31: ifge          117
+      34: aload_0
+      35: lload         5
+      37: invokevirtual #1219               // Method computeRGIdx:(J)I
+      40: istore        7
+      42: aload_0
+      43: getfield      #113                // Field includedRowGroups:[Z
+      46: iload         7
+      48: baload
+      49: ifne          117
+      52: iload         7
+      54: aload_0
+      55: getfield      #113                // Field includedRowGroups:[Z
+      58: arraylength
+      59: if_icmpge     78
+      62: aload_0
+      63: getfield      #113                // Field includedRowGroups:[Z
+      66: iload         7
+      68: baload
+      69: ifne          78
+      72: iinc          7, 1
+      75: goto          52
+      78: iload         7
+      80: aload_0
+      81: getfield      #113                // Field includedRowGroups:[Z
+      84: arraylength
+      85: if_icmplt     100
+      88: iload         4
+      90: ifeq          97
+      93: aload_0
+      94: invokevirtual #1223               // Method advanceStripe:()V
+      97: iload         4
+      99: ireturn
+     100: aload_0
+     101: getfield      #110                // Field rowCountInStripe:J
+     104: iload         7
+     106: i2l
+     107: aload_0
+     108: getfield      #182                // Field rowIndexStride:J
+     111: lmul
+     112: invokestatic  #1191               // Method java/lang/Math.min:(JJ)J
+     115: lstore        5
+     117: lload         5
+     119: aload_0
+     120: getfield      #110                // Field rowCountInStripe:J
+     123: lcmp
+     124: iflt          139
+     127: iload         4
+     129: ifeq          136
+     132: aload_0
+     133: invokevirtual #1223               // Method advanceStripe:()V
+     136: iload         4
+     138: ireturn
+     139: lload         5
+     141: aload_0
+     142: getfield      #96                 // Field rowInStripe:J
+     145: lcmp
+     146: ifeq          222
+     149: aload_0
+     150: getfield      #182                // Field rowIndexStride:J
+     153: lconst_0
+     154: lcmp
+     155: ifeq          201
+     158: lload         5
+     160: aload_0
+     161: getfield      #182                // Field rowIndexStride:J
+     164: ldiv
+     165: l2i
+     166: istore        7
+     168: aload_0
+     169: aload_1
+     170: iload         7
+     172: aload_0
+     173: getfield      #463                // Field startReadPhase:Lorg/apache/orc/impl/reader/tree/TypeReader$ReadPhase;
+     176: invokevirtual #1210               // Method seekToRowEntry:(Lorg/apache/orc/impl/reader/tree/BatchReader;ILorg/apache/orc/impl/reader/tree/TypeReader$ReadPhase;)V
+     179: aload_1
+     180: lload         5
+     182: iload         7
+     184: i2l
+     185: aload_0
+     186: getfield      #182                // Field rowIndexStride:J
+     189: lmul
+     190: lsub
+     191: aload_0
+     192: getfield      #463                // Field startReadPhase:Lorg/apache/orc/impl/reader/tree/TypeReader$ReadPhase;
+     195: invokevirtual #1226               // Method org/apache/orc/impl/reader/tree/BatchReader.skipRows:(JLorg/apache/orc/impl/reader/tree/TypeReader$ReadPhase;)V
+     198: goto          216
+     201: aload_1
+     202: lload         5
+     204: aload_0
+     205: getfield      #96                 // Field rowInStripe:J
+     208: lsub
+     209: aload_0
+     210: getfield      #463                // Field startReadPhase:Lorg/apache/orc/impl/reader/tree/TypeReader$ReadPhase;
+     213: invokevirtual #1226               // Method org/apache/orc/impl/reader/tree/BatchReader.skipRows:(JLorg/apache/orc/impl/reader/tree/TypeReader$ReadPhase;)V
+     216: aload_0
+     217: lload         5
+     219: putfield      #96                 // Field rowInStripe:J
+     222: iconst_1
+     223: ireturn
+
+  public boolean nextBatch(org.apache.hadoop.hive.ql.exec.vector.VectorizedRowBatch) throws java.io.IOException;
+    Code:
+       0: aload_0
+       1: getfield      #96                 // Field rowInStripe:J
+       4: aload_0
+       5: getfield      #110                // Field rowCountInStripe:J
+       8: lcmp
+       9: iflt          57
+      12: aload_0
+      13: dup
+      14: getfield      #103                // Field currentStripe:I
+      17: iconst_1
+      18: iadd
+      19: putfield      #103                // Field currentStripe:I
+      22: aload_0
+      23: getfield      #103                // Field currentStripe:I
+      26: aload_0
+      27: getfield      #92                 // Field stripes:Ljava/util/List;
+      30: invokeinterface #50,  1           // InterfaceMethod java/util/List.size:()I
+      35: if_icmplt     45
+      38: aload_1
+      39: iconst_0
+      40: putfield      #1230               // Field org/apache/hadoop/hive/ql/exec/vector/VectorizedRowBatch.size:I
+      43: iconst_0
+      44: ireturn
+      45: aload_0
+      46: invokevirtual #1216               // Method readStripe:()V
+      49: aload_0
+      50: aload_0
+      51: getfield      #96                 // Field rowInStripe:J
+      54: putfield      #100                // Field followRowInStripe:J
+      57: aload_0
+      58: aload_1
+      59: invokevirtual #1234               // Method org/apache/hadoop/hive/ql/exec/vector/VectorizedRowBatch.getMaxSize:()I
+      62: i2l
+      63: invokevirtual #1237               // Method computeBatchSize:(J)I
+      66: istore_2
+      67: aload_0
+      68: getfield      #512                // Field reader:Lorg/apache/orc/impl/reader/tree/BatchReader;
+      71: aload_1
+      72: invokevirtual #1240               // Method org/apache/hadoop/hive/ql/exec/vector/VectorizedRowBatch.getDataColumnCount:()I
+      75: invokevirtual #1243               // Method org/apache/orc/impl/reader/tree/BatchReader.setVectorColumnCount:(I)V
+      78: aload_0
+      79: getfield      #512                // Field reader:Lorg/apache/orc/impl/reader/tree/BatchReader;
+      82: aload_1
+      83: iload_2
+      84: aload_0
+      85: getfield      #463                // Field startReadPhase:Lorg/apache/orc/impl/reader/tree/TypeReader$ReadPhase;
+      88: invokevirtual #1247               // Method org/apache/orc/impl/reader/tree/BatchReader.nextBatch:(Lorg/apache/hadoop/hive/ql/exec/vector/VectorizedRowBatch;ILorg/apache/orc/impl/reader/tree/TypeReader$ReadPhase;)V
+      91: aload_0
+      92: getfield      #463                // Field startReadPhase:Lorg/apache/orc/impl/reader/tree/TypeReader$ReadPhase;
+      95: getstatic     #457                // Field org/apache/orc/impl/reader/tree/TypeReader$ReadPhase.LEADERS:Lorg/apache/orc/impl/reader/tree/TypeReader$ReadPhase;
+      98: if_acmpne     140
+     101: aload_1
+     102: getfield      #1230               // Field org/apache/hadoop/hive/ql/exec/vector/VectorizedRowBatch.size:I
+     105: ifle          140
+     108: aload_0
+     109: getfield      #512                // Field reader:Lorg/apache/orc/impl/reader/tree/BatchReader;
+     112: aload_1
+     113: iload_2
+     114: aload_0
+     115: aload_0
+     116: getfield      #96                 // Field rowInStripe:J
+     119: aload_0
+     120: getfield      #100                // Field followRowInStripe:J
+     123: invokevirtual #1251               // Method prepareFollowReaders:(JJ)Lorg/apache/orc/impl/reader/tree/TypeReader$ReadPhase;
+     126: invokevirtual #1247               // Method org/apache/orc/impl/reader/tree/BatchReader.nextBatch:(Lorg/apache/hadoop/hive/ql/exec/vector/VectorizedRowBatch;ILorg/apache/orc/impl/reader/tree/TypeReader$ReadPhase;)V
+     129: aload_0
+     130: aload_0
+     131: getfield      #96                 // Field rowInStripe:J
+     134: iload_2
+     135: i2l
+     136: ladd
+     137: putfield      #100                // Field followRowInStripe:J
+     140: aload_0
+     141: dup
+     142: getfield      #96                 // Field rowInStripe:J
+     145: iload_2
+     146: i2l
+     147: ladd
+     148: putfield      #96                 // Field rowInStripe:J
+     151: aload_0
+     152: aload_0
+     153: getfield      #512                // Field reader:Lorg/apache/orc/impl/reader/tree/BatchReader;
+     156: aload_0
+     157: getfield      #96                 // Field rowInStripe:J
+     160: aload_0
+     161: getfield      #107                // Field rowBaseInStripe:J
+     164: ladd
+     165: iconst_1
+     166: invokevirtual #563                // Method advanceToNextRow:(Lorg/apache/orc/impl/reader/tree/BatchReader;JZ)Z
+     169: pop
+     170: iload_2
+     171: ifeq          181
+     174: aload_1
+     175: getfield      #1230               // Field org/apache/hadoop/hive/ql/exec/vector/VectorizedRowBatch.size:I
+     178: ifeq          0
+     181: aload_0
+     182: getfield      #161                // Field noSelectedVector:Z
+     185: ifeq          198
+     188: aload_1
+     189: iload_2
+     190: putfield      #1230               // Field org/apache/hadoop/hive/ql/exec/vector/VectorizedRowBatch.size:I
+     193: aload_1
+     194: iconst_0
+     195: putfield      #1255               // Field org/apache/hadoop/hive/ql/exec/vector/VectorizedRowBatch.selectedInUse:Z
+     198: iload_2
+     199: ifeq          206
+     202: iconst_1
+     203: goto          207
+     206: iconst_0
+     207: ireturn
+     208: astore_2
+     209: new           #575                // class java/io/IOException
+     212: dup
+     213: aload_0
+     214: getfield      #178                // Field path:Lorg/apache/hadoop/fs/Path;
+     217: invokestatic  #33                 // Method java/lang/String.valueOf:(Ljava/lang/Object;)Ljava/lang/String;
+     220: invokedynamic #1258,  0           // InvokeDynamic #3:makeConcatWithConstants:(Ljava/lang/String;)Ljava/lang/String;
+     225: aload_2
+     226: invokespecial #588                // Method java/io/IOException."<init>":(Ljava/lang/String;Ljava/lang/Throwable;)V
+     229: athrow
+    Exception table:
+       from    to  target type
+           0    44   208   Class java/io/IOException
+          45   207   208   Class java/io/IOException
+
+  private org.apache.orc.impl.reader.tree.TypeReader$ReadPhase prepareFollowReaders(long, long) throws java.io.IOException;
+    Code:
+       0: aload_0
+       1: lload_1
+       2: invokevirtual #1219               // Method computeRGIdx:(J)I
+       5: istore        5
+       7: aload_0
+       8: lload_3
+       9: lconst_1
+      10: lsub
+      11: invokevirtual #1219               // Method computeRGIdx:(J)I
+      14: istore        6
+      16: iload         5
+      18: iload         6
+      20: if_icmpne     37
+      23: lload_1
+      24: lload_3
+      25: lcmp
+      26: iflt          37
+      29: lload_1
+      30: lload_3
+      31: lsub
+      32: lstore        7
+      34: goto          49
+      37: lload_1
+      38: iload         5
+      40: i2l
+      41: aload_0
+      42: getfield      #182                // Field rowIndexStride:J
+      45: lmul
+      46: lsub
+      47: lstore        7
+      49: aload_0
+      50: getfield      #1207               // Field needsFollowColumnsRead:Z
+      53: ifeq          94
+      56: aload_0
+      57: iconst_0
+      58: putfield      #1207               // Field needsFollowColumnsRead:Z
+      61: aload_0
+      62: getfield      #559                // Field planner:Lorg/apache/orc/impl/reader/StripePlanner;
+      65: aload_0
+      66: getfield      #550                // Field indexes:Lorg/apache/orc/impl/OrcIndex;
+      69: aload_0
+      70: getfield      #113                // Field includedRowGroups:[Z
+      73: iload         5
+      75: iconst_0
+      76: invokevirtual #1259               // Method org/apache/orc/impl/reader/StripePlanner.readFollowData:(Lorg/apache/orc/impl/OrcIndex;[ZIZ)Lorg/apache/orc/impl/BufferChunkList;
+      79: pop
+      80: aload_0
+      81: getfield      #512                // Field reader:Lorg/apache/orc/impl/reader/tree/BatchReader;
+      84: aload_0
+      85: getfield      #559                // Field planner:Lorg/apache/orc/impl/reader/StripePlanner;
+      88: getstatic     #1263               // Field org/apache/orc/impl/reader/tree/TypeReader$ReadPhase.FOLLOWERS:Lorg/apache/orc/impl/reader/tree/TypeReader$ReadPhase;
+      91: invokevirtual #1201               // Method org/apache/orc/impl/reader/tree/BatchReader.startStripe:(Lorg/apache/orc/impl/reader/StripePlanner;Lorg/apache/orc/impl/reader/tree/TypeReader$ReadPhase;)V
+      94: getstatic     #1263               // Field org/apache/orc/impl/reader/tree/TypeReader$ReadPhase.FOLLOWERS:Lorg/apache/orc/impl/reader/tree/TypeReader$ReadPhase;
+      97: astore        9
+      99: iload         5
+     101: iload         6
+     103: if_icmpne     112
+     106: lload_1
+     107: lload_3
+     108: lcmp
+     109: ifge          145
+     112: aload_0
+     113: aload_0
+     114: getfield      #512                // Field reader:Lorg/apache/orc/impl/reader/tree/BatchReader;
+     117: iload         5
+     119: getstatic     #1266               // Field org/apache/orc/impl/reader/tree/TypeReader$ReadPhase.FOLLOWERS_AND_PARENTS:Lorg/apache/orc/impl/reader/tree/TypeReader$ReadPhase;
+     122: invokevirtual #1210               // Method seekToRowEntry:(Lorg/apache/orc/impl/reader/tree/BatchReader;ILorg/apache/orc/impl/reader/tree/TypeReader$ReadPhase;)V
+     125: aload_0
+     126: getfield      #512                // Field reader:Lorg/apache/orc/impl/reader/tree/BatchReader;
+     129: lload         7
+     131: getstatic     #1266               // Field org/apache/orc/impl/reader/tree/TypeReader$ReadPhase.FOLLOWERS_AND_PARENTS:Lorg/apache/orc/impl/reader/tree/TypeReader$ReadPhase;
+     134: invokevirtual #1226               // Method org/apache/orc/impl/reader/tree/BatchReader.skipRows:(JLorg/apache/orc/impl/reader/tree/TypeReader$ReadPhase;)V
+     137: getstatic     #1266               // Field org/apache/orc/impl/reader/tree/TypeReader$ReadPhase.FOLLOWERS_AND_PARENTS:Lorg/apache/orc/impl/reader/tree/TypeReader$ReadPhase;
+     140: astore        9
+     142: goto          202
+     145: lload         7
+     147: lconst_0
+     148: lcmp
+     149: ifle          202
+     152: aload_0
+     153: aload_0
+     154: getfield      #512                // Field reader:Lorg/apache/orc/impl/reader/tree/BatchReader;
+     157: iload         6
+     159: getstatic     #1269               // Field org/apache/orc/impl/reader/tree/TypeReader$ReadPhase.LEADER_PARENTS:Lorg/apache/orc/impl/reader/tree/TypeReader$ReadPhase;
+     162: invokevirtual #1210               // Method seekToRowEntry:(Lorg/apache/orc/impl/reader/tree/BatchReader;ILorg/apache/orc/impl/reader/tree/TypeReader$ReadPhase;)V
+     165: aload_0
+     166: getfield      #512                // Field reader:Lorg/apache/orc/impl/reader/tree/BatchReader;
+     169: lload_3
+     170: iload         6
+     172: i2l
+     173: aload_0
+     174: getfield      #182                // Field rowIndexStride:J
+     177: lmul
+     178: lsub
+     179: getstatic     #1269               // Field org/apache/orc/impl/reader/tree/TypeReader$ReadPhase.LEADER_PARENTS:Lorg/apache/orc/impl/reader/tree/TypeReader$ReadPhase;
+     182: invokevirtual #1226               // Method org/apache/orc/impl/reader/tree/BatchReader.skipRows:(JLorg/apache/orc/impl/reader/tree/TypeReader$ReadPhase;)V
+     185: aload_0
+     186: getfield      #512                // Field reader:Lorg/apache/orc/impl/reader/tree/BatchReader;
+     189: lload         7
+     191: getstatic     #1266               // Field org/apache/orc/impl/reader/tree/TypeReader$ReadPhase.FOLLOWERS_AND_PARENTS:Lorg/apache/orc/impl/reader/tree/TypeReader$ReadPhase;
+     194: invokevirtual #1226               // Method org/apache/orc/impl/reader/tree/BatchReader.skipRows:(JLorg/apache/orc/impl/reader/tree/TypeReader$ReadPhase;)V
+     197: getstatic     #1266               // Field org/apache/orc/impl/reader/tree/TypeReader$ReadPhase.FOLLOWERS_AND_PARENTS:Lorg/apache/orc/impl/reader/tree/TypeReader$ReadPhase;
+     200: astore        9
+     202: aload         9
+     204: areturn
+
+  private int computeBatchSize(long);
+    Code:
+       0: aload_0
+       1: getfield      #182                // Field rowIndexStride:J
+       4: lconst_0
+       5: lcmp
+       6: ifeq          205
+       9: aload_0
+      10: getfield      #113                // Field includedRowGroups:[Z
+      13: ifnonnull     26
+      16: aload_0
+      17: getfield      #463                // Field startReadPhase:Lorg/apache/orc/impl/reader/tree/TypeReader$ReadPhase;
+      20: getstatic     #471                // Field org/apache/orc/impl/reader/tree/TypeReader$ReadPhase.ALL:Lorg/apache/orc/impl/reader/tree/TypeReader$ReadPhase;
+      23: if_acmpeq     205
+      26: aload_0
+      27: getfield      #96                 // Field rowInStripe:J
+      30: aload_0
+      31: getfield      #110                // Field rowCountInStripe:J
+      34: lcmp
+      35: ifge          205
+      38: aload_0
+      39: getfield      #96                 // Field rowInStripe:J
+      42: aload_0
+      43: getfield      #182                // Field rowIndexStride:J
+      46: ldiv
+      47: l2i
+      48: istore        4
+      50: aload_0
+      51: getfield      #113                // Field includedRowGroups:[Z
+      54: ifnull        93
+      57: aload_0
+      58: getfield      #113                // Field includedRowGroups:[Z
+      61: iload         4
+      63: baload
+      64: ifne          93
+      67: iload         4
+      69: aload_0
+      70: getfield      #113                // Field includedRowGroups:[Z
+      73: arraylength
+      74: if_icmpge     93
+      77: aload_0
+      78: getfield      #113                // Field includedRowGroups:[Z
+      81: iload         4
+      83: baload
+      84: ifne          93
+      87: iinc          4, 1
+      90: goto          67
+      93: iload         4
+      95: istore        5
+      97: aload_0
+      98: getfield      #113                // Field includedRowGroups:[Z
+     101: ifnull        140
+     104: aload_0
+     105: getfield      #463                // Field startReadPhase:Lorg/apache/orc/impl/reader/tree/TypeReader$ReadPhase;
+     108: getstatic     #471                // Field org/apache/orc/impl/reader/tree/TypeReader$ReadPhase.ALL:Lorg/apache/orc/impl/reader/tree/TypeReader$ReadPhase;
+     111: if_acmpne     140
+     114: iload         5
+     116: aload_0
+     117: getfield      #113                // Field includedRowGroups:[Z
+     120: arraylength
+     121: if_icmpge     143
+     124: aload_0
+     125: getfield      #113                // Field includedRowGroups:[Z
+     128: iload         5
+     130: baload
+     131: ifeq          143
+     134: iinc          5, 1
+     137: goto          114
+     140: iinc          5, 1
+     143: iload         5
+     145: i2l
+     146: aload_0
+     147: getfield      #182                // Field rowIndexStride:J
+     150: lmul
+     151: aload_0
+     152: getfield      #110                // Field rowCountInStripe:J
+     155: invokestatic  #1191               // Method java/lang/Math.min:(JJ)J
+     158: lstore        6
+     160: lload_1
+     161: lload         6
+     163: aload_0
+     164: getfield      #96                 // Field rowInStripe:J
+     167: lsub
+     168: invokestatic  #1191               // Method java/lang/Math.min:(JJ)J
+     171: l2i
+     172: istore_3
+     173: getstatic     #1272               // Field isLogDebugEnabled:Z
+     176: ifeq          202
+     179: iload_3
+     180: i2l
+     181: lload_1
+     182: lcmp
+     183: ifge          202
+     186: getstatic     #69                 // Field LOG:Lorg/slf4j/Logger;
+     189: lload         6
+     191: iload_3
+     192: invokedynamic #1275,  0           // InvokeDynamic #4:makeConcatWithConstants:(JI)Ljava/lang/String;
+     197: invokeinterface #132,  2          // InterfaceMethod org/slf4j/Logger.debug:(Ljava/lang/String;)V
+     202: goto          220
+     205: lload_1
+     206: aload_0
+     207: getfield      #110                // Field rowCountInStripe:J
+     210: aload_0
+     211: getfield      #96                 // Field rowInStripe:J
+     214: lsub
+     215: invokestatic  #1191               // Method java/lang/Math.min:(JJ)J
+     218: l2i
+     219: istore_3
+     220: iload_3
+     221: ireturn
+
+  public void close() throws java.io.IOException;
+    Code:
+       0: aload_0
+       1: invokevirtual #1215               // Method clearStreams:()V
+       4: aload_0
+       5: getfield      #301                // Field dataReader:Lorg/apache/orc/DataReader;
+       8: invokeinterface #1278,  1         // InterfaceMethod org/apache/orc/DataReader.close:()V
+      13: return
+
+  public long getRowNumber();
+    Code:
+       0: aload_0
+       1: getfield      #96                 // Field rowInStripe:J
+       4: aload_0
+       5: getfield      #107                // Field rowBaseInStripe:J
+       8: ladd
+       9: aload_0
+      10: getfield      #400                // Field firstRow:J
+      13: ladd
+      14: lreturn
+
+  public float getProgress();
+    Code:
+       0: aload_0
+       1: getfield      #107                // Field rowBaseInStripe:J
+       4: l2f
+       5: aload_0
+       6: getfield      #96                 // Field rowInStripe:J
+       9: l2f
+      10: fadd
+      11: aload_0
+      12: getfield      #403                // Field totalRowCount:J
+      15: l2f
+      16: fdiv
+      17: freturn
+
+  private int findStripe(long);
+    Code:
+       0: iconst_0
+       1: istore_3
+       2: iload_3
+       3: aload_0
+       4: getfield      #92                 // Field stripes:Ljava/util/List;
+       7: invokeinterface #50,  1           // InterfaceMethod java/util/List.size:()I
+      12: if_icmpge     60
+      15: aload_0
+      16: getfield      #92                 // Field stripes:Ljava/util/List;
+      19: iload_3
+      20: invokeinterface #55,  2           // InterfaceMethod java/util/List.get:(I)Ljava/lang/Object;
+      25: checkcast     #265                // class org/apache/orc/StripeInformation
+      28: astore        4
+      30: aload         4
+      32: invokeinterface #268,  1          // InterfaceMethod org/apache/orc/StripeInformation.getNumberOfRows:()J
+      37: lload_1
+      38: lcmp
+      39: ifle          44
+      42: iload_3
+      43: ireturn
+      44: lload_1
+      45: aload         4
+      47: invokeinterface #268,  1          // InterfaceMethod org/apache/orc/StripeInformation.getNumberOfRows:()J
+      52: lsub
+      53: lstore_1
+      54: iinc          3, 1
+      57: goto          2
+      60: new           #31                 // class java/lang/IllegalArgumentException
+      63: dup
+      64: ldc_w         #1279               // String Seek after the end of reader range
+      67: invokespecial #1281               // Method java/lang/IllegalArgumentException."<init>":(Ljava/lang/String;)V
+      70: athrow
+
+  private void readCurrentStripeRowIndex() throws java.io.IOException;
+    Code:
+       0: aload_0
+       1: getfield      #559                // Field planner:Lorg/apache/orc/impl/reader/StripePlanner;
+       4: aload_0
+       5: getfield      #474                // Field rowIndexColsToRead:[Z
+       8: aload_0
+       9: getfield      #550                // Field indexes:Lorg/apache/orc/impl/OrcIndex;
+      12: invokevirtual #1282               // Method org/apache/orc/impl/reader/StripePlanner.readRowIndex:([ZLorg/apache/orc/impl/OrcIndex;)Lorg/apache/orc/impl/OrcIndex;
+      15: pop
+      16: return
+
+  public org.apache.orc.impl.OrcIndex readRowIndex(int, boolean[], boolean[]) throws java.io.IOException;
+    Code:
+       0: iload_1
+       1: aload_0
+       2: getfield      #103                // Field currentStripe:I
+       5: if_icmpne     48
+       8: aload_3
+       9: ifnull        23
+      12: aload_3
+      13: aload_0
+      14: getfield      #474                // Field rowIndexColsToRead:[Z
+      17: invokestatic  #1286               // Method java/util/Arrays.equals:([Z[Z)Z
+      20: ifeq          48
+      23: aload_0
+      24: getfield      #474                // Field rowIndexColsToRead:[Z
+      27: ifnull        35
+      30: aload_0
+      31: getfield      #550                // Field indexes:Lorg/apache/orc/impl/OrcIndex;
+      34: areturn
+      35: aload_0
+      36: getfield      #559                // Field planner:Lorg/apache/orc/impl/reader/StripePlanner;
+      39: aload_3
+      40: aload_0
+      41: getfield      #550                // Field indexes:Lorg/apache/orc/impl/OrcIndex;
+      44: invokevirtual #1282               // Method org/apache/orc/impl/reader/StripePlanner.readRowIndex:([ZLorg/apache/orc/impl/OrcIndex;)Lorg/apache/orc/impl/OrcIndex;
+      47: areturn
+      48: new           #554                // class org/apache/orc/impl/reader/StripePlanner
+      51: dup
+      52: aload_0
+      53: getfield      #559                // Field planner:Lorg/apache/orc/impl/reader/StripePlanner;
+      56: invokespecial #1291               // Method org/apache/orc/impl/reader/StripePlanner."<init>":(Lorg/apache/orc/impl/reader/StripePlanner;)V
+      59: astore        4
+      61: aload_2
+      62: ifnonnull     82
+      65: aload_0
+      66: getfield      #174                // Field schema:Lorg/apache/orc/TypeDescription;
+      69: invokevirtual #536                // Method org/apache/orc/TypeDescription.getMaximumId:()I
+      72: iconst_1
+      73: iadd
+      74: newarray       boolean
+      76: astore_2
+      77: aload_2
+      78: iconst_1
+      79: invokestatic  #1294               // Method java/util/Arrays.fill:([ZZ)V
+      82: aload         4
+      84: aload_0
+      85: getfield      #92                 // Field stripes:Ljava/util/List;
+      88: iload_1
+      89: invokeinterface #55,  2           // InterfaceMethod java/util/List.get:(I)Ljava/lang/Object;
+      94: checkcast     #265                // class org/apache/orc/StripeInformation
+      97: aload_2
+      98: invokevirtual #1185               // Method org/apache/orc/impl/reader/StripePlanner.parseStripe:(Lorg/apache/orc/StripeInformation;[Z)Lorg/apache/orc/impl/reader/StripePlanner;
+     101: pop
+     102: aload         4
+     104: aload_3
+     105: aconst_null
+     106: invokevirtual #1282               // Method org/apache/orc/impl/reader/StripePlanner.readRowIndex:([ZLorg/apache/orc/impl/OrcIndex;)Lorg/apache/orc/impl/OrcIndex;
+     109: areturn
+
+  private void seekToRowEntry(org.apache.orc.impl.reader.tree.BatchReader, int, org.apache.orc.impl.reader.tree.TypeReader$ReadPhase) throws java.io.IOException;
+    Code:
+       0: aload_0
+       1: getfield      #550                // Field indexes:Lorg/apache/orc/impl/OrcIndex;
+       4: invokevirtual #1153               // Method org/apache/orc/impl/OrcIndex.getRowGroupIndex:()[Lorg/apache/orc/OrcProto$RowIndex;
+       7: astore        4
+       9: aload         4
+      11: arraylength
+      12: anewarray     #1298               // class org/apache/orc/impl/PositionProvider
+      15: astore        5
+      17: iconst_0
+      18: istore        6
+      20: iload         6
+      22: aload         5
+      24: arraylength
+      25: if_icmpge     94
+      28: aload         4
+      30: iload         6
+      32: aaload
+      33: ifnull        88
+      36: aload         4
+      38: iload         6
+      40: aaload
+      41: iload_2
+      42: invokevirtual #1300               // Method org/apache/orc/OrcProto$RowIndex.getEntry:(I)Lorg/apache/orc/OrcProto$RowIndexEntry;
+      45: astore        7
+      47: iload_2
+      48: ifne          74
+      51: aload         7
+      53: invokevirtual #1304               // Method org/apache/orc/OrcProto$RowIndexEntry.getPositionsCount:()I
+      56: ifne          74
+      59: aload         5
+      61: iload         6
+      63: new           #1309               // class org/apache/orc/impl/RecordReaderImpl$ZeroPositionProvider
+      66: dup
+      67: invokespecial #1311               // Method org/apache/orc/impl/RecordReaderImpl$ZeroPositionProvider."<init>":()V
+      70: aastore
+      71: goto          88
+      74: aload         5
+      76: iload         6
+      78: new           #1312               // class org/apache/orc/impl/RecordReaderImpl$PositionProviderImpl
+      81: dup
+      82: aload         7
+      84: invokespecial #1314               // Method org/apache/orc/impl/RecordReaderImpl$PositionProviderImpl."<init>":(Lorg/apache/orc/OrcProto$RowIndexEntry;)V
+      87: aastore
+      88: iinc          6, 1
+      91: goto          20
+      94: aload_1
+      95: aload         5
+      97: aload_3
+      98: invokevirtual #1317               // Method org/apache/orc/impl/reader/tree/BatchReader.seek:([Lorg/apache/orc/impl/PositionProvider;Lorg/apache/orc/impl/reader/tree/TypeReader$ReadPhase;)V
+     101: return
+
+  public void seekToRow(long) throws java.io.IOException;
+    Code:
+       0: lload_1
+       1: lconst_0
+       2: lcmp
+       3: ifge          20
+       6: new           #31                 // class java/lang/IllegalArgumentException
+       9: dup
+      10: lload_1
+      11: invokedynamic #1321,  0           // InvokeDynamic #5:makeConcatWithConstants:(J)Ljava/lang/String;
+      16: invokespecial #1281               // Method java/lang/IllegalArgumentException."<init>":(Ljava/lang/String;)V
+      19: athrow
+      20: lload_1
+      21: aload_0
+      22: getfield      #400                // Field firstRow:J
+      25: lcmp
+      26: ifge          43
+      29: new           #31                 // class java/lang/IllegalArgumentException
+      32: dup
+      33: lload_1
+      34: invokedynamic #1324,  0           // InvokeDynamic #6:makeConcatWithConstants:(J)Ljava/lang/String;
+      39: invokespecial #1281               // Method java/lang/IllegalArgumentException."<init>":(Ljava/lang/String;)V
+      42: athrow
+      43: lload_1
+      44: aload_0
+      45: getfield      #400                // Field firstRow:J
+      48: lsub
+      49: lstore_1
+      50: aload_0
+      51: lload_1
+      52: invokevirtual #1325               // Method findStripe:(J)I
+      55: istore_3
+      56: iload_3
+      57: aload_0
+      58: getfield      #103                // Field currentStripe:I
+      61: if_icmpeq     73
+      64: aload_0
+      65: iload_3
+      66: putfield      #103                // Field currentStripe:I
+      69: aload_0
+      70: invokevirtual #1216               // Method readStripe:()V
+      73: aload_0
+      74: getfield      #474                // Field rowIndexColsToRead:[Z
+      77: ifnonnull     84
+      80: aload_0
+      81: invokevirtual #1150               // Method readCurrentStripeRowIndex:()V
+      84: aload_0
+      85: aload_0
+      86: getfield      #512                // Field reader:Lorg/apache/orc/impl/reader/tree/BatchReader;
+      89: lload_1
+      90: iconst_1
+      91: invokevirtual #563                // Method advanceToNextRow:(Lorg/apache/orc/impl/reader/tree/BatchReader;JZ)Z
+      94: pop
+      95: return
+
+  public static java.lang.String encodeTranslatedSargColumn(int, java.lang.Integer);
+    Code:
+       0: iload_0
+       1: aload_1
+       2: ifnonnull     9
+       5: iconst_m1
+       6: goto          13
+       9: aload_1
+      10: invokevirtual #1048               // Method java/lang/Integer.intValue:()I
+      13: invokedynamic #1328,  0           // InvokeDynamic #7:makeConcatWithConstants:(II)Ljava/lang/String;
+      18: areturn
+
+  public static int[] mapTranslatedSargColumns(java.util.List<org.apache.orc.OrcProto$Type>, java.util.List<org.apache.hadoop.hive.ql.io.sarg.PredicateLeaf>);
+    Code:
+       0: aload_1
+       1: invokeinterface #50,  1           // InterfaceMethod java/util/List.size:()I
+       6: newarray       int
+       8: astore_2
+       9: aconst_null
+      10: astore_3
+      11: aconst_null
+      12: astore        4
+      14: iconst_0
+      15: istore        5
+      17: iload         5
+      19: aload_2
+      20: arraylength
+      21: if_icmpge     166
+      24: aload_1
+      25: iload         5
+      27: invokeinterface #55,  2           // InterfaceMethod java/util/List.get:(I)Ljava/lang/Object;
+      32: checkcast     #59                 // class org/apache/hadoop/hive/ql/io/sarg/PredicateLeaf
+      35: invokeinterface #61,  1           // InterfaceMethod org/apache/hadoop/hive/ql/io/sarg/PredicateLeaf.getColumnName:()Ljava/lang/String;
+      40: ldc_w         #1330               // String _
+      43: invokevirtual #1332               // Method java/lang/String.split:(Ljava/lang/String;)[Ljava/lang/String;
+      46: astore        6
+      48: getstatic     #1336               // Field $assertionsDisabled:Z
+      51: ifne          69
+      54: aload         6
+      56: arraylength
+      57: iconst_2
+      58: if_icmpeq     69
+      61: new           #1339               // class java/lang/AssertionError
+      64: dup
+      65: invokespecial #1341               // Method java/lang/AssertionError."<init>":()V
+      68: athrow
+      69: aload         6
+      71: iconst_0
+      72: aaload
+      73: astore        7
+      75: aload         6
+      77: iconst_1
+      78: aaload
+      79: astore        8
+      81: aload         8
+      83: invokestatic  #1342               // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I
+      86: istore        9
+      88: iload         9
+      90: iconst_m1
+      91: if_icmpne     102
+      94: aload_2
+      95: iload         5
+      97: iconst_m1
+      98: iastore
+      99: goto          160
+     102: getstatic     #1336               // Field $assertionsDisabled:Z
+     105: ifne          121
+     108: iload         9
+     110: ifge          121
+     113: new           #1339               // class java/lang/AssertionError
+     116: dup
+     117: invokespecial #1341               // Method java/lang/AssertionError."<init>":()V
+     120: athrow
+     121: aload         7
+     123: aload         4
+     125: invokevirtual #618                // Method java/lang/String.equals:(Ljava/lang/Object;)Z
+     128: ifne          150
+     131: aload_0
+     132: aload         7
+     134: invokestatic  #1342               // Method java/lang/Integer.parseInt:(Ljava/lang/String;)I
+     137: invokeinterface #55,  2           // InterfaceMethod java/util/List.get:(I)Ljava/lang/Object;
+     142: checkcast     #1346               // class org/apache/orc/OrcProto$Type
+     145: astore_3
+     146: aload         7
+     148: astore        4
+     150: aload_2
+     151: iload         5
+     153: aload_3
+     154: iload         9
+     156: invokevirtual #1348               // Method org/apache/orc/OrcProto$Type.getSubtypes:(I)I
+     159: iastore
+     160: iinc          5, 1
+     163: goto          17
+     166: aload_2
+     167: areturn
+
+  public org.apache.orc.CompressionCodec getCompressionCodec();
+    Code:
+       0: aload_0
+       1: getfield      #301                // Field dataReader:Lorg/apache/orc/DataReader;
+       4: invokeinterface #1351,  1         // InterfaceMethod org/apache/orc/DataReader.getCompressionOptions:()Lorg/apache/orc/impl/InStream$StreamOptions;
+       9: invokevirtual #1354               // Method org/apache/orc/impl/InStream$StreamOptions.getCodec:()Lorg/apache/orc/CompressionCodec;
+      12: areturn
+
+  public int getMaxDiskRangeChunkLimit();
+    Code:
+       0: aload_0
+       1: getfield      #282                // Field maxDiskRangeChunkLimit:I
+       4: ireturn
+
+  org.apache.orc.impl.RecordReaderImpl$SargApplier getSargApp();
+    Code:
+       0: aload_0
+       1: getfield      #233                // Field sargApp:Lorg/apache/orc/impl/RecordReaderImpl$SargApplier;
+       4: areturn
+
+  static {};
+    Code:
+       0: ldc           #2                  // class org/apache/orc/impl/RecordReaderImpl
+       2: invokevirtual #1357               // Method java/lang/Class.desiredAssertionStatus:()Z
+       5: ifne          12
+       8: iconst_1
+       9: goto          13
+      12: iconst_0
+      13: putstatic     #1336               // Field $assertionsDisabled:Z
+      16: ldc           #2                  // class org/apache/orc/impl/RecordReaderImpl
+      18: invokestatic  #1360               // Method org/slf4j/LoggerFactory.getLogger:(Ljava/lang/Class;)Lorg/slf4j/Logger;
+      21: putstatic     #69                 // Field LOG:Lorg/slf4j/Logger;
+      24: getstatic     #69                 // Field LOG:Lorg/slf4j/Logger;
+      27: invokeinterface #138,  1          // InterfaceMethod org/slf4j/Logger.isDebugEnabled:()Z
+      32: putstatic     #1272               // Field isLogDebugEnabled:Z
+      35: invokestatic  #1366               // Method org/apache/orc/OrcProto$ColumnStatistics.newBuilder:()Lorg/apache/orc/OrcProto$ColumnStatistics$Builder;
+      38: lconst_0
+      39: invokevirtual #1372               // Method org/apache/orc/OrcProto$ColumnStatistics$Builder.setNumberOfValues:(J)Lorg/apache/orc/OrcProto$ColumnStatistics$Builder;
+      42: iconst_0
+      43: invokevirtual #1378               // Method org/apache/orc/OrcProto$ColumnStatistics$Builder.setHasNull:(Z)Lorg/apache/orc/OrcProto$ColumnStatistics$Builder;
+      46: lconst_0
+      47: invokevirtual #1382               // Method org/apache/orc/OrcProto$ColumnStatistics$Builder.setBytesOnDisk:(J)Lorg/apache/orc/OrcProto$ColumnStatistics$Builder;
+      50: invokevirtual #1385               // Method org/apache/orc/OrcProto$ColumnStatistics$Builder.build:()Lorg/apache/orc/OrcProto$ColumnStatistics;
+      53: putstatic     #735                // Field EMPTY_COLUMN_STATISTICS:Lorg/apache/orc/OrcProto$ColumnStatistics;
+      56: bipush        13
+      58: anewarray     #34                 // class java/lang/String
+      61: dup
+      62: iconst_0
+      63: ldc_w         #1388               // String 1.6.0
+      66: aastore
+      67: dup
+      68: iconst_1
+      69: ldc_w         #1390               // String 1.6.1
+      72: aastore
+      73: dup
+      74: iconst_2
+      75: ldc_w         #1392               // String 1.6.2
+      78: aastore
+      79: dup
+      80: iconst_3
+      81: ldc_w         #1394               // String 1.6.3
+      84: aastore
+      85: dup
+      86: iconst_4
+      87: ldc_w         #1396               // String 1.6.4
+      90: aastore
+      91: dup
+      92: iconst_5
+      93: ldc_w         #1398               // String 1.6.5
+      96: aastore
+      97: dup
+      98: bipush        6
+     100: ldc_w         #1400               // String 1.6.6
+     103: aastore
+     104: dup
+     105: bipush        7
+     107: ldc_w         #1402               // String 1.6.7
+     110: aastore
+     111: dup
+     112: bipush        8
+     114: ldc_w         #1404               // String 1.6.8
+     117: aastore
+     118: dup
+     119: bipush        9
+     121: ldc_w         #1406               // String 1.6.9
+     124: aastore
+     125: dup
+     126: bipush        10
+     128: ldc_w         #1408               // String 1.6.10
+     131: aastore
+     132: dup
+     133: bipush        11
+     135: ldc_w         #1410               // String 1.6.11
+     138: aastore
+     139: dup
+     140: bipush        12
+     142: ldc_w         #1412               // String 1.7.0
+     145: aastore
+     146: putstatic     #614                // Field BAD_CPP_BLOOM_FILTER_VERSIONS:[Ljava/lang/String;
+     149: return
+}

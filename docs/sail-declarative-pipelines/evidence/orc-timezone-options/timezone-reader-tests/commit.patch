@@ -1,0 +1,444 @@
+commit 0653cb2287e6bdb8352aeafbaa816ff25da72f76
+Author:     Alexy Khrabrov <deliverable@gmail.com>
+AuthorDate: Thu Oct 29 14:41:26 2026 -0700
+Commit:     Alexy Khrabrov <deliverable@gmail.com>
+CommitDate: Thu Oct 29 14:41:26 2026 -0700
+
+    test: qualify ORC timezone inheritance and reader pruning boundaries
+
+diff --git a/tests/support/timestamp_timezone.rs b/tests/support/timestamp_timezone.rs
+new file mode 100644
+index 0000000..f288fa0
+--- /dev/null
++++ b/tests/support/timestamp_timezone.rs
+@@ -0,0 +1,189 @@
++// Licensed to the Apache Software Foundation (ASF) under one
++// or more contributor license agreements.  See the NOTICE file
++// distributed with this work for additional information
++// regarding copyright ownership.  The ASF licenses this file
++// to you under the Apache License, Version 2.0 (the
++// "License"); you may not use this file except in compliance
++// with the License.  You may obtain a copy of the License at
++//
++//   http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing,
++// software distributed under the License is distributed on an
++// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
++// KIND, either express or implied.  See the License for the
++// specific language governing permissions and limitations
++// under the License.
++
++use std::sync::{Arc, Mutex};
++
++use arrow::{
++    array::{Array, RecordBatch, TimestampMicrosecondArray},
++    datatypes::{Field, Schema},
++};
++use bytes::Bytes;
++use orc_rust::{
++    error::{OutOfSpecSnafu, Result},
++    proto, ArrowWriterBuilder, TimestampTimeZone, TimestampTimeZoneOptions,
++    TimestampTimeZoneResolver,
++};
++use prost::Message;
++
++pub const INPUT: i64 = 1_593_561_600_000_000;
++pub const HOUR: i64 = 3_600_000_000;
++
++#[derive(Debug)]
++pub struct Fixed(pub i32);
++
++impl TimestampTimeZone for Fixed {
++    fn orc_epoch_seconds(&self) -> i64 {
++        1_420_070_400 - i64::from(self.0) / 1000
++    }
++
++    fn offset_millis(&self, _: i64) -> Result<i32> {
++        Ok(self.0)
++    }
++}
++
++#[derive(Debug)]
++struct Summer;
++
++impl TimestampTimeZone for Summer {
++    fn orc_epoch_seconds(&self) -> i64 {
++        1_420_099_200
++    }
++
++    fn offset_millis(&self, millis: i64) -> Result<i32> {
++        Ok(
++            if (1_583_661_600_000..1_604_221_200_000).contains(&millis) {
++                -25_200_000
++            } else {
++                -28_800_000
++            },
++        )
++    }
++}
++
++#[derive(Debug, Default)]
++pub struct Resolver(pub Mutex<Vec<String>>);
++
++impl TimestampTimeZoneResolver for Resolver {
++    fn resolve(&self, name: &str) -> Result<Arc<dyn TimestampTimeZone>> {
++        self.0.lock().unwrap().push(name.to_owned());
++        match name {
++            "Custom/Summer" => Ok(Arc::new(Summer)),
++            "UTC" => Ok(Arc::new(Fixed(0))),
++            _ => Err(OutOfSpecSnafu {
++                msg: format!("unknown test writer timezone: {name}"),
++            }
++            .build()),
++        }
++    }
++}
++
++pub fn options() -> (TimestampTimeZoneOptions, Arc<Resolver>) {
++    let resolver = Arc::new(Resolver::default());
++    (
++        TimestampTimeZoneOptions::new(Arc::new(Fixed(0)), resolver.clone()),
++        resolver,
++    )
++}
++
++pub fn values(batches: &[RecordBatch]) -> Vec<Option<i64>> {
++    batches
++        .iter()
++        .flat_map(|batch| {
++            batch
++                .column(0)
++                .as_any()
++                .downcast_ref::<TimestampMicrosecondArray>()
++                .unwrap()
++                .iter()
++                .collect::<Vec<_>>()
++        })
++        .collect()
++}
++
++/// Native-written data with deliberately varied stripe names and real row-index
++/// statistics. Rebuild footer offsets after changing lengths; no binary fixtures
++/// or external writer are required to exercise reader state and pruning.
++pub fn file(names: &[Option<&str>], instant: bool) -> Bytes {
++    let array = TimestampMicrosecondArray::from(vec![Some(INPUT), None])
++        .with_timezone_opt(instant.then_some("UTC"));
++    let schema = Arc::new(Schema::new(vec![Field::new(
++        "ts",
++        array.data_type().clone(),
++        true,
++    )]));
++    let batch = RecordBatch::try_new(schema.clone(), vec![Arc::new(array)]).unwrap();
++    let mut encoded = Vec::new();
++    let mut writer = ArrowWriterBuilder::new(&mut encoded, schema)
++        .try_build()
++        .unwrap();
++    for _ in names {
++        writer.write(&batch).unwrap();
++        writer.flush_stripe().unwrap();
++    }
++    writer.close().unwrap();
++
++    let ps_len = usize::from(*encoded.last().unwrap());
++    let ps_start = encoded.len() - ps_len - 1;
++    let mut ps = proto::PostScript::decode(&encoded[ps_start..ps_start + ps_len]).unwrap();
++    assert_eq!(ps.compression(), proto::CompressionKind::None);
++    let footer_start = ps_start - ps.footer_length() as usize;
++    let metadata_start = footer_start - ps.metadata_length() as usize;
++    let mut footer = proto::Footer::decode(&encoded[footer_start..ps_start]).unwrap();
++    assert_eq!(footer.stripes.len(), names.len());
++    let row_index = proto::RowIndex {
++        entry: vec![proto::RowIndexEntry {
++            positions: vec![],
++            statistics: Some(proto::ColumnStatistics {
++                number_of_values: Some(1),
++                has_null: Some(true),
++                timestamp_statistics: Some(proto::TimestampStatistics {
++                    minimum_utc: Some(INPUT / 1000),
++                    maximum_utc: Some(INPUT / 1000),
++                    ..Default::default()
++                }),
++                ..Default::default()
++            }),
++        }],
++    }
++    .encode_to_vec();
++    let mut out = b"ORC".to_vec();
++    for (stripe, name) in footer.stripes.iter_mut().zip(names) {
++        assert_eq!(stripe.index_length(), 0);
++        let old_start = stripe.offset() as usize;
++        let old_footer = old_start + stripe.data_length() as usize;
++        let mut stripe_footer = proto::StripeFooter::decode(
++            &encoded[old_footer..old_footer + stripe.footer_length() as usize],
++        )
++        .unwrap();
++        stripe_footer.writer_timezone = name.map(str::to_owned);
++        stripe_footer.streams.insert(
++            0,
++            proto::Stream {
++                kind: Some(proto::stream::Kind::RowIndex as i32),
++                column: Some(1),
++                length: Some(row_index.len() as u64),
++            },
++        );
++        stripe.offset = Some(out.len() as u64);
++        stripe.index_length = Some(row_index.len() as u64);
++        out.extend_from_slice(&row_index);
++        out.extend_from_slice(&encoded[old_start..old_footer]);
++        let stripe_footer = stripe_footer.encode_to_vec();
++        stripe.footer_length = Some(stripe_footer.len() as u64);
++        out.extend_from_slice(&stripe_footer);
++    }
++    footer.content_length = Some(out.len() as u64);
++    footer.row_index_stride = Some(10_000);
++    out.extend_from_slice(&encoded[metadata_start..footer_start]);
++    let footer = footer.encode_to_vec();
++    ps.footer_length = Some(footer.len() as u64);
++    out.extend_from_slice(&footer);
++    let ps = ps.encode_to_vec();
++    out.extend_from_slice(&ps);
++    out.push(u8::try_from(ps.len()).unwrap());
++    Bytes::from(out)
++}
+diff --git a/tests/timestamp_timezone.rs b/tests/timestamp_timezone.rs
+new file mode 100644
+index 0000000..0a5bbe2
+--- /dev/null
++++ b/tests/timestamp_timezone.rs
+@@ -0,0 +1,235 @@
++// Licensed to the Apache Software Foundation (ASF) under one
++// or more contributor license agreements.  See the NOTICE file
++// distributed with this work for additional information
++// regarding copyright ownership.  The ASF licenses this file
++// to you under the Apache License, Version 2.0 (the
++// "License"); you may not use this file except in compliance
++// with the License.  You may obtain a copy of the License at
++//
++//   http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing,
++// software distributed under the License is distributed on an
++// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
++// KIND, either express or implied.  See the License for the
++// specific language governing permissions and limitations
++// under the License.
++
++use std::sync::Arc;
++
++use arrow::datatypes::{DataType, Field, Schema, TimeUnit};
++use orc_rust::{
++    ArrowReaderBuilder, Predicate, PredicateValue, RowSelector, TimestampPrecision,
++    TimestampTimeZoneOptions,
++};
++
++#[path = "support/timestamp_timezone.rs"]
++mod support;
++use support::{file, options, values, Fixed, Resolver, HOUR, INPUT};
++
++const NAMES: &[Option<&str>] = &[Some("Custom/Summer"), None, Some(""), Some("UTC"), None];
++
++#[test]
++fn writer_names_bypass_chrono_and_missing_names_inherit_per_reader() {
++    let (options, resolver) = options();
++    let builder = ArrowReaderBuilder::try_new(file(NAMES, false))
++        .unwrap()
++        .with_timestamp_precision(TimestampPrecision::Microsecond)
++        .with_timestamp_time_zone_options(options);
++    assert_eq!(
++        builder.schema().field(0).data_type(),
++        &DataType::Timestamp(TimeUnit::Microsecond, Some("UTC".into()))
++    );
++    let batches = builder.build().collect::<Result<Vec<_>, _>>().unwrap();
++    assert_eq!(
++        values(&batches),
++        vec![
++            Some(INPUT + HOUR),
++            None,
++            Some(INPUT + HOUR),
++            None,
++            Some(INPUT + HOUR),
++            None,
++            Some(INPUT),
++            None,
++            Some(INPUT),
++            None,
++        ]
++    );
++    assert_eq!(*resolver.0.lock().unwrap(), ["Custom/Summer", "UTC"]);
++}
++
++#[test]
++fn byte_range_start_does_not_inherit_unread_stripes() {
++    let (options, resolver) = options();
++    let builder = ArrowReaderBuilder::try_new(file(NAMES, false)).unwrap();
++    let start = builder.file_metadata().stripe_metadatas()[1].offset() as usize;
++    let batches = builder
++        .with_file_byte_range(start..usize::MAX)
++        .with_timestamp_precision(TimestampPrecision::Microsecond)
++        .with_timestamp_time_zone_options(options)
++        .build()
++        .collect::<Result<Vec<_>, _>>()
++        .unwrap();
++    assert_eq!(values(&batches), [Some(INPUT), None].repeat(4));
++    assert_eq!(*resolver.0.lock().unwrap(), ["UTC"]);
++}
++
++#[test]
++fn wholly_skipped_stripes_do_not_change_writer_timezone() {
++    let (options, resolver) = options();
++    let batches = ArrowReaderBuilder::try_new(file(NAMES, false))
++        .unwrap()
++        .with_timestamp_precision(TimestampPrecision::Microsecond)
++        .with_timestamp_time_zone_options(options)
++        .with_row_selection(vec![RowSelector::skip(2), RowSelector::select(8)].into())
++        .build()
++        .collect::<Result<Vec<_>, _>>()
++        .unwrap();
++    assert_eq!(values(&batches), [Some(INPUT), None].repeat(4));
++    assert_eq!(*resolver.0.lock().unwrap(), ["UTC"]);
++}
++
++#[test]
++fn output_timezone_is_a_label_and_instant_columns_do_not_resolve_writer_names() {
++    let (options, _) = options();
++    let schema = Arc::new(Schema::new(vec![Field::new(
++        "ts",
++        DataType::Timestamp(TimeUnit::Microsecond, Some("Asia/Kathmandu".into())),
++        true,
++    )]));
++    let batches = ArrowReaderBuilder::try_new(file(&[Some("Custom/Summer")], false))
++        .unwrap()
++        .with_schema(schema.clone())
++        .with_timestamp_time_zone_options(options)
++        .build()
++        .collect::<Result<Vec<_>, _>>()
++        .unwrap();
++    assert_eq!(values(&batches), vec![Some(INPUT + HOUR), None]);
++    assert_eq!(batches[0].schema(), schema);
++
++    let (options, resolver) = support::options();
++    let batches = ArrowReaderBuilder::try_new(file(&[Some("unrecognized")], true))
++        .unwrap()
++        .with_timestamp_precision(TimestampPrecision::Microsecond)
++        .with_timestamp_time_zone_options(options)
++        .build()
++        .collect::<Result<Vec<_>, _>>()
++        .unwrap();
++    assert_eq!(values(&batches), vec![Some(INPUT), None]);
++    assert!(resolver.0.lock().unwrap().is_empty());
++}
++
++#[test]
++fn resolver_failure_is_reported_without_a_metadata_parse_panic() {
++    let (options, _) = options();
++    let error = ArrowReaderBuilder::try_new(file(&[Some("unrecognized")], false))
++        .unwrap()
++        .with_timestamp_time_zone_options(options)
++        .build()
++        .next()
++        .unwrap()
++        .unwrap_err();
++    assert!(error
++        .to_string()
++        .contains("unknown test writer timezone: unrecognized"));
++}
++
++#[test]
++fn opt_in_disables_unsafe_statistics_pruning_but_keeps_manual_selection() {
++    let encoded = file(&[Some("UTC")], false);
++    let predicate = Predicate::eq("ts", PredicateValue::Int64(Some((INPUT + HOUR) / 1000)));
++    let default_builder = ArrowReaderBuilder::try_new(encoded.clone())
++        .unwrap()
++        .with_timestamp_precision(TimestampPrecision::Microsecond)
++        .with_predicate(predicate.clone());
++    assert_eq!(
++        default_builder.schema().field(0).data_type(),
++        &DataType::Timestamp(TimeUnit::Microsecond, None)
++    );
++    let default = default_builder
++        .build()
++        .collect::<Result<Vec<_>, _>>()
++        .unwrap();
++    assert!(values(&default).is_empty());
++    let options =
++        TimestampTimeZoneOptions::new(Arc::new(Fixed(-3_600_000)), Arc::new(Resolver::default()));
++    let batches = ArrowReaderBuilder::try_new(encoded)
++        .unwrap()
++        .with_timestamp_precision(TimestampPrecision::Microsecond)
++        .with_timestamp_time_zone_options(options)
++        .with_predicate(predicate)
++        .with_row_selection(vec![RowSelector::select(1), RowSelector::skip(1)].into())
++        .build()
++        .collect::<Result<Vec<_>, _>>()
++        .unwrap();
++    assert_eq!(values(&batches), vec![Some(INPUT + HOUR)]);
++}
++
++#[cfg(feature = "async")]
++#[tokio::test]
++async fn async_conversion_disables_statistics_pruning_and_keeps_manual_selection() {
++    use futures::TryStreamExt;
++    let options =
++        TimestampTimeZoneOptions::new(Arc::new(Fixed(-3_600_000)), Arc::new(Resolver::default()));
++    let batches =
++        ArrowReaderBuilder::try_new_async(std::io::Cursor::new(file(&[Some("UTC")], false)))
++            .await
++            .unwrap()
++            .with_timestamp_precision(TimestampPrecision::Microsecond)
++            .with_timestamp_time_zone_options(options)
++            .with_predicate(Predicate::eq(
++                "ts",
++                PredicateValue::Int64(Some((INPUT + HOUR) / 1000)),
++            ))
++            .with_row_selection(vec![RowSelector::select(1), RowSelector::skip(1)].into())
++            .build_async()
++            .try_collect::<Vec<_>>()
++            .await
++            .unwrap();
++    assert_eq!(values(&batches), vec![Some(INPUT + HOUR)]);
++}
++
++#[cfg(feature = "async")]
++#[tokio::test]
++async fn async_inheritance_range_starts_and_skipped_stripes_match_sync() {
++    use futures::TryStreamExt;
++    for mode in 0..3 {
++        let (options, resolver) = options();
++        let encoded = file(NAMES, false);
++        let mut builder = ArrowReaderBuilder::try_new_async(std::io::Cursor::new(encoded))
++            .await
++            .unwrap()
++            .with_timestamp_precision(TimestampPrecision::Microsecond)
++            .with_timestamp_time_zone_options(options);
++        if mode == 1 {
++            let start = builder.file_metadata().stripe_metadatas()[1].offset() as usize;
++            builder = builder.with_file_byte_range(start..usize::MAX);
++        } else if mode == 2 {
++            builder = builder
++                .with_row_selection(vec![RowSelector::skip(2), RowSelector::select(8)].into());
++        }
++        let batches = builder.build_async().try_collect::<Vec<_>>().await.unwrap();
++        if mode == 0 {
++            assert_eq!(
++                values(&batches),
++                vec![
++                    Some(INPUT + HOUR),
++                    None,
++                    Some(INPUT + HOUR),
++                    None,
++                    Some(INPUT + HOUR),
++                    None,
++                    Some(INPUT),
++                    None,
++                    Some(INPUT),
++                    None,
++                ]
++            );
++            assert_eq!(*resolver.0.lock().unwrap(), ["Custom/Summer", "UTC"]);
++        } else {
++            assert_eq!(values(&batches), [Some(INPUT), None].repeat(4));
++            assert_eq!(*resolver.0.lock().unwrap(), ["UTC"]);
++        }
++    }
++}

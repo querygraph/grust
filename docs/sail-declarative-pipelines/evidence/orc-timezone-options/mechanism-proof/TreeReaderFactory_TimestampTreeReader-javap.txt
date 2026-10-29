@@ -1,0 +1,660 @@
+Compiled from "TreeReaderFactory.java"
+public class org.apache.orc.impl.TreeReaderFactory$TimestampTreeReader extends org.apache.orc.impl.TreeReaderFactory$TreeReader {
+  protected org.apache.orc.impl.IntegerReader data;
+
+  protected org.apache.orc.impl.IntegerReader nanos;
+
+  private final java.util.Map<java.lang.String, java.lang.Long> baseTimestampMap;
+
+  protected long base_timestamp;
+
+  private final java.util.TimeZone readerTimeZone;
+
+  private final boolean instantType;
+
+  private java.util.TimeZone writerTimeZone;
+
+  private boolean hasSameTZRules;
+
+  private final java.lang.ThreadLocal<java.text.DateFormat> threadLocalDateFormat;
+
+  private final boolean useProleptic;
+
+  private final boolean fileUsesProleptic;
+
+  org.apache.orc.impl.TreeReaderFactory$TimestampTreeReader(int, org.apache.orc.impl.TreeReaderFactory$Context, boolean) throws java.io.IOException;
+    Code:
+       0: aload_0
+       1: iload_1
+       2: aconst_null
+       3: aconst_null
+       4: aconst_null
+       5: aconst_null
+       6: aload_2
+       7: iload_3
+       8: invokespecial #1                  // Method "<init>":(ILorg/apache/orc/impl/InStream;Lorg/apache/orc/impl/InStream;Lorg/apache/orc/impl/InStream;Lorg/apache/orc/OrcProto$ColumnEncoding;Lorg/apache/orc/impl/TreeReaderFactory$Context;Z)V
+      11: return
+
+  protected org.apache.orc.impl.TreeReaderFactory$TimestampTreeReader(int, org.apache.orc.impl.InStream, org.apache.orc.impl.InStream, org.apache.orc.impl.InStream, org.apache.orc.OrcProto$ColumnEncoding, org.apache.orc.impl.TreeReaderFactory$Context, boolean) throws java.io.IOException;
+    Code:
+       0: aload_0
+       1: iload_1
+       2: aload_2
+       3: aload         6
+       5: invokespecial #7                  // Method org/apache/orc/impl/TreeReaderFactory$TreeReader."<init>":(ILorg/apache/orc/impl/InStream;Lorg/apache/orc/impl/TreeReaderFactory$Context;)V
+       8: aload_0
+       9: aconst_null
+      10: putfield      #12                 // Field data:Lorg/apache/orc/impl/IntegerReader;
+      13: aload_0
+      14: aconst_null
+      15: putfield      #16                 // Field nanos:Lorg/apache/orc/impl/IntegerReader;
+      18: aload_0
+      19: iload         7
+      21: putfield      #19                 // Field instantType:Z
+      24: aload_0
+      25: new           #23                 // class java/lang/ThreadLocal
+      28: dup
+      29: invokespecial #25                 // Method java/lang/ThreadLocal."<init>":()V
+      32: putfield      #28                 // Field threadLocalDateFormat:Ljava/lang/ThreadLocal;
+      35: aload_0
+      36: getfield      #28                 // Field threadLocalDateFormat:Ljava/lang/ThreadLocal;
+      39: new           #32                 // class java/text/SimpleDateFormat
+      42: dup
+      43: ldc           #34                 // String yyyy-MM-dd HH:mm:ss
+      45: invokespecial #36                 // Method java/text/SimpleDateFormat."<init>":(Ljava/lang/String;)V
+      48: invokevirtual #39                 // Method java/lang/ThreadLocal.set:(Ljava/lang/Object;)V
+      51: aload_0
+      52: new           #43                 // class java/util/HashMap
+      55: dup
+      56: invokespecial #45                 // Method java/util/HashMap."<init>":()V
+      59: putfield      #46                 // Field baseTimestampMap:Ljava/util/Map;
+      62: iload         7
+      64: ifne          77
+      67: aload         6
+      69: invokeinterface #50,  1           // InterfaceMethod org/apache/orc/impl/TreeReaderFactory$Context.getUseUTCTimestamp:()Z
+      74: ifeq          89
+      77: aload_0
+      78: ldc           #56                 // String UTC
+      80: invokestatic  #58                 // Method java/util/TimeZone.getTimeZone:(Ljava/lang/String;)Ljava/util/TimeZone;
+      83: putfield      #64                 // Field readerTimeZone:Ljava/util/TimeZone;
+      86: goto          96
+      89: aload_0
+      90: invokestatic  #68                 // Method java/util/TimeZone.getDefault:()Ljava/util/TimeZone;
+      93: putfield      #64                 // Field readerTimeZone:Ljava/util/TimeZone;
+      96: aload         6
+      98: invokeinterface #72,  1           // InterfaceMethod org/apache/orc/impl/TreeReaderFactory$Context.getWriterTimezone:()Ljava/lang/String;
+     103: ifnull        119
+     106: aload         6
+     108: invokeinterface #72,  1           // InterfaceMethod org/apache/orc/impl/TreeReaderFactory$Context.getWriterTimezone:()Ljava/lang/String;
+     113: invokevirtual #76                 // Method java/lang/String.isEmpty:()Z
+     116: ifeq          159
+     119: iload         7
+     121: ifeq          142
+     124: aload_0
+     125: aload_0
+     126: aload_0
+     127: getfield      #64                 // Field readerTimeZone:Ljava/util/TimeZone;
+     130: invokevirtual #81                 // Method java/util/TimeZone.getID:()Ljava/lang/String;
+     133: invokevirtual #84                 // Method getBaseTimestamp:(Ljava/lang/String;)J
+     136: putfield      #88                 // Field base_timestamp:J
+     139: goto          174
+     142: aload_0
+     143: aload_0
+     144: invokestatic  #68                 // Method java/util/TimeZone.getDefault:()Ljava/util/TimeZone;
+     147: invokevirtual #81                 // Method java/util/TimeZone.getID:()Ljava/lang/String;
+     150: invokevirtual #84                 // Method getBaseTimestamp:(Ljava/lang/String;)J
+     153: putfield      #88                 // Field base_timestamp:J
+     156: goto          174
+     159: aload_0
+     160: aload_0
+     161: aload         6
+     163: invokeinterface #72,  1           // InterfaceMethod org/apache/orc/impl/TreeReaderFactory$Context.getWriterTimezone:()Ljava/lang/String;
+     168: invokevirtual #84                 // Method getBaseTimestamp:(Ljava/lang/String;)J
+     171: putfield      #88                 // Field base_timestamp:J
+     174: aload         5
+     176: ifnull        227
+     179: aload_0
+     180: aload         5
+     182: invokevirtual #92                 // Method checkEncoding:(Lorg/apache/orc/OrcProto$ColumnEncoding;)V
+     185: aload_3
+     186: ifnull        205
+     189: aload_0
+     190: aload         5
+     192: invokevirtual #96                 // Method org/apache/orc/OrcProto$ColumnEncoding.getKind:()Lorg/apache/orc/OrcProto$ColumnEncoding$Kind;
+     195: aload_3
+     196: iconst_1
+     197: aload         6
+     199: invokestatic  #102                // Method createIntegerReader:(Lorg/apache/orc/OrcProto$ColumnEncoding$Kind;Lorg/apache/orc/impl/InStream;ZLorg/apache/orc/impl/TreeReaderFactory$Context;)Lorg/apache/orc/impl/IntegerReader;
+     202: putfield      #12                 // Field data:Lorg/apache/orc/impl/IntegerReader;
+     205: aload         4
+     207: ifnull        227
+     210: aload_0
+     211: aload         5
+     213: invokevirtual #96                 // Method org/apache/orc/OrcProto$ColumnEncoding.getKind:()Lorg/apache/orc/OrcProto$ColumnEncoding$Kind;
+     216: aload         4
+     218: iconst_0
+     219: aload         6
+     221: invokestatic  #102                // Method createIntegerReader:(Lorg/apache/orc/OrcProto$ColumnEncoding$Kind;Lorg/apache/orc/impl/InStream;ZLorg/apache/orc/impl/TreeReaderFactory$Context;)Lorg/apache/orc/impl/IntegerReader;
+     224: putfield      #16                 // Field nanos:Lorg/apache/orc/impl/IntegerReader;
+     227: aload_0
+     228: aload         6
+     230: invokeinterface #106,  1          // InterfaceMethod org/apache/orc/impl/TreeReaderFactory$Context.fileUsedProlepticGregorian:()Z
+     235: putfield      #109                // Field fileUsesProleptic:Z
+     238: aload_0
+     239: aload         6
+     241: invokeinterface #112,  1          // InterfaceMethod org/apache/orc/impl/TreeReaderFactory$Context.useProlepticGregorian:()Z
+     246: putfield      #115                // Field useProleptic:Z
+     249: return
+
+  public void checkEncoding(org.apache.orc.OrcProto$ColumnEncoding) throws java.io.IOException;
+    Code:
+       0: aload_1
+       1: invokevirtual #96                 // Method org/apache/orc/OrcProto$ColumnEncoding.getKind:()Lorg/apache/orc/OrcProto$ColumnEncoding$Kind;
+       4: getstatic     #118                // Field org/apache/orc/OrcProto$ColumnEncoding$Kind.DIRECT:Lorg/apache/orc/OrcProto$ColumnEncoding$Kind;
+       7: if_acmpeq     41
+      10: aload_1
+      11: invokevirtual #96                 // Method org/apache/orc/OrcProto$ColumnEncoding.getKind:()Lorg/apache/orc/OrcProto$ColumnEncoding$Kind;
+      14: getstatic     #124                // Field org/apache/orc/OrcProto$ColumnEncoding$Kind.DIRECT_V2:Lorg/apache/orc/OrcProto$ColumnEncoding$Kind;
+      17: if_acmpeq     41
+      20: new           #127                // class java/io/IOException
+      23: dup
+      24: aload_1
+      25: invokestatic  #129                // Method java/lang/String.valueOf:(Ljava/lang/Object;)Ljava/lang/String;
+      28: aload_0
+      29: getfield      #133                // Field columnId:I
+      32: invokedynamic #137,  0            // InvokeDynamic #0:makeConcatWithConstants:(Ljava/lang/String;I)Ljava/lang/String;
+      37: invokespecial #141                // Method java/io/IOException."<init>":(Ljava/lang/String;)V
+      40: athrow
+      41: return
+
+  public void startStripe(org.apache.orc.impl.reader.StripePlanner, org.apache.orc.impl.reader.tree.TypeReader$ReadPhase) throws java.io.IOException;
+    Code:
+       0: aload_0
+       1: aload_1
+       2: aload_2
+       3: invokespecial #142                // Method org/apache/orc/impl/TreeReaderFactory$TreeReader.startStripe:(Lorg/apache/orc/impl/reader/StripePlanner;Lorg/apache/orc/impl/reader/tree/TypeReader$ReadPhase;)V
+       6: aload_1
+       7: aload_0
+       8: getfield      #133                // Field columnId:I
+      11: invokevirtual #146                // Method org/apache/orc/impl/reader/StripePlanner.getEncoding:(I)Lorg/apache/orc/OrcProto$ColumnEncoding;
+      14: invokevirtual #96                 // Method org/apache/orc/OrcProto$ColumnEncoding.getKind:()Lorg/apache/orc/OrcProto$ColumnEncoding$Kind;
+      17: astore_3
+      18: aload_0
+      19: aload_3
+      20: aload_1
+      21: new           #152                // class org/apache/orc/impl/StreamName
+      24: dup
+      25: aload_0
+      26: getfield      #133                // Field columnId:I
+      29: getstatic     #154                // Field org/apache/orc/OrcProto$Stream$Kind.DATA:Lorg/apache/orc/OrcProto$Stream$Kind;
+      32: invokespecial #160                // Method org/apache/orc/impl/StreamName."<init>":(ILorg/apache/orc/OrcProto$Stream$Kind;)V
+      35: invokevirtual #163                // Method org/apache/orc/impl/reader/StripePlanner.getStream:(Lorg/apache/orc/impl/StreamName;)Lorg/apache/orc/impl/InStream;
+      38: iconst_1
+      39: aload_0
+      40: getfield      #167                // Field context:Lorg/apache/orc/impl/TreeReaderFactory$Context;
+      43: invokestatic  #102                // Method createIntegerReader:(Lorg/apache/orc/OrcProto$ColumnEncoding$Kind;Lorg/apache/orc/impl/InStream;ZLorg/apache/orc/impl/TreeReaderFactory$Context;)Lorg/apache/orc/impl/IntegerReader;
+      46: putfield      #12                 // Field data:Lorg/apache/orc/impl/IntegerReader;
+      49: aload_0
+      50: aload_3
+      51: aload_1
+      52: new           #152                // class org/apache/orc/impl/StreamName
+      55: dup
+      56: aload_0
+      57: getfield      #133                // Field columnId:I
+      60: getstatic     #171                // Field org/apache/orc/OrcProto$Stream$Kind.SECONDARY:Lorg/apache/orc/OrcProto$Stream$Kind;
+      63: invokespecial #160                // Method org/apache/orc/impl/StreamName."<init>":(ILorg/apache/orc/OrcProto$Stream$Kind;)V
+      66: invokevirtual #163                // Method org/apache/orc/impl/reader/StripePlanner.getStream:(Lorg/apache/orc/impl/StreamName;)Lorg/apache/orc/impl/InStream;
+      69: iconst_0
+      70: aload_0
+      71: getfield      #167                // Field context:Lorg/apache/orc/impl/TreeReaderFactory$Context;
+      74: invokestatic  #102                // Method createIntegerReader:(Lorg/apache/orc/OrcProto$ColumnEncoding$Kind;Lorg/apache/orc/impl/InStream;ZLorg/apache/orc/impl/TreeReaderFactory$Context;)Lorg/apache/orc/impl/IntegerReader;
+      77: putfield      #16                 // Field nanos:Lorg/apache/orc/impl/IntegerReader;
+      80: aload_0
+      81: getfield      #19                 // Field instantType:Z
+      84: ifne          99
+      87: aload_0
+      88: aload_0
+      89: aload_1
+      90: invokevirtual #174                // Method org/apache/orc/impl/reader/StripePlanner.getWriterTimezone:()Ljava/lang/String;
+      93: invokevirtual #84                 // Method getBaseTimestamp:(Ljava/lang/String;)J
+      96: putfield      #88                 // Field base_timestamp:J
+      99: return
+
+  protected long getBaseTimestamp(java.lang.String) throws java.io.IOException;
+    Code:
+       0: aload_1
+       1: ifnull        11
+       4: aload_1
+       5: invokevirtual #76                 // Method java/lang/String.isEmpty:()Z
+       8: ifeq          19
+      11: aload_0
+      12: getfield      #175                // Field writerTimeZone:Ljava/util/TimeZone;
+      15: invokevirtual #81                 // Method java/util/TimeZone.getID:()Ljava/lang/String;
+      18: astore_1
+      19: aload_0
+      20: getfield      #175                // Field writerTimeZone:Ljava/util/TimeZone;
+      23: ifnull        40
+      26: aload_1
+      27: aload_0
+      28: getfield      #175                // Field writerTimeZone:Ljava/util/TimeZone;
+      31: invokevirtual #81                 // Method java/util/TimeZone.getID:()Ljava/lang/String;
+      34: invokevirtual #178                // Method java/lang/String.equals:(Ljava/lang/Object;)Z
+      37: ifne          205
+      40: aload_0
+      41: aload_1
+      42: invokestatic  #58                 // Method java/util/TimeZone.getTimeZone:(Ljava/lang/String;)Ljava/util/TimeZone;
+      45: putfield      #175                // Field writerTimeZone:Ljava/util/TimeZone;
+      48: aload_0
+      49: aload_0
+      50: getfield      #175                // Field writerTimeZone:Ljava/util/TimeZone;
+      53: aload_0
+      54: getfield      #64                 // Field readerTimeZone:Ljava/util/TimeZone;
+      57: invokevirtual #182                // Method java/util/TimeZone.hasSameRules:(Ljava/util/TimeZone;)Z
+      60: putfield      #186                // Field hasSameTZRules:Z
+      63: aload_0
+      64: getfield      #46                 // Field baseTimestampMap:Ljava/util/Map;
+      67: aload_1
+      68: invokeinterface #189,  2          // InterfaceMethod java/util/Map.containsKey:(Ljava/lang/Object;)Z
+      73: ifne          188
+      76: aload_0
+      77: getfield      #28                 // Field threadLocalDateFormat:Ljava/lang/ThreadLocal;
+      80: invokevirtual #194                // Method java/lang/ThreadLocal.get:()Ljava/lang/Object;
+      83: checkcast     #198                // class java/text/DateFormat
+      86: aload_0
+      87: getfield      #175                // Field writerTimeZone:Ljava/util/TimeZone;
+      90: invokevirtual #200                // Method java/text/DateFormat.setTimeZone:(Ljava/util/TimeZone;)V
+      93: aload_0
+      94: getfield      #28                 // Field threadLocalDateFormat:Ljava/lang/ThreadLocal;
+      97: invokevirtual #194                // Method java/lang/ThreadLocal.get:()Ljava/lang/Object;
+     100: checkcast     #198                // class java/text/DateFormat
+     103: ldc           #206                // String 2015-01-01 00:00:00
+     105: invokevirtual #208                // Method java/text/DateFormat.parse:(Ljava/lang/String;)Ljava/util/Date;
+     108: invokevirtual #212                // Method java/util/Date.getTime:()J
+     111: ldc2_w        #218                // long 1000l
+     114: ldiv
+     115: lstore_2
+     116: aload_0
+     117: getfield      #46                 // Field baseTimestampMap:Ljava/util/Map;
+     120: aload_1
+     121: lload_2
+     122: invokestatic  #220                // Method java/lang/Long.valueOf:(J)Ljava/lang/Long;
+     125: invokeinterface #225,  3          // InterfaceMethod java/util/Map.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
+     130: pop
+     131: lload_2
+     132: lstore        4
+     134: aload_0
+     135: getfield      #28                 // Field threadLocalDateFormat:Ljava/lang/ThreadLocal;
+     138: invokevirtual #194                // Method java/lang/ThreadLocal.get:()Ljava/lang/Object;
+     141: checkcast     #198                // class java/text/DateFormat
+     144: aload_0
+     145: getfield      #64                 // Field readerTimeZone:Ljava/util/TimeZone;
+     148: invokevirtual #200                // Method java/text/DateFormat.setTimeZone:(Ljava/util/TimeZone;)V
+     151: lload         4
+     153: lreturn
+     154: astore_2
+     155: new           #127                // class java/io/IOException
+     158: dup
+     159: ldc           #231                // String Unable to create base timestamp
+     161: aload_2
+     162: invokespecial #233                // Method java/io/IOException."<init>":(Ljava/lang/String;Ljava/lang/Throwable;)V
+     165: athrow
+     166: astore        6
+     168: aload_0
+     169: getfield      #28                 // Field threadLocalDateFormat:Ljava/lang/ThreadLocal;
+     172: invokevirtual #194                // Method java/lang/ThreadLocal.get:()Ljava/lang/Object;
+     175: checkcast     #198                // class java/text/DateFormat
+     178: aload_0
+     179: getfield      #64                 // Field readerTimeZone:Ljava/util/TimeZone;
+     182: invokevirtual #200                // Method java/text/DateFormat.setTimeZone:(Ljava/util/TimeZone;)V
+     185: aload         6
+     187: athrow
+     188: aload_0
+     189: getfield      #46                 // Field baseTimestampMap:Ljava/util/Map;
+     192: aload_1
+     193: invokeinterface #236,  2          // InterfaceMethod java/util/Map.get:(Ljava/lang/Object;)Ljava/lang/Object;
+     198: checkcast     #221                // class java/lang/Long
+     201: invokevirtual #239                // Method java/lang/Long.longValue:()J
+     204: lreturn
+     205: aload_0
+     206: getfield      #88                 // Field base_timestamp:J
+     209: lreturn
+    Exception table:
+       from    to  target type
+          93   134   154   Class java/text/ParseException
+          93   134   166   any
+         154   168   166   any
+
+  public void seek(org.apache.orc.impl.PositionProvider[], org.apache.orc.impl.reader.tree.TypeReader$ReadPhase) throws java.io.IOException;
+    Code:
+       0: aload_0
+       1: aload_1
+       2: aload_0
+       3: getfield      #133                // Field columnId:I
+       6: aaload
+       7: aload_2
+       8: invokevirtual #242                // Method seek:(Lorg/apache/orc/impl/PositionProvider;Lorg/apache/orc/impl/reader/tree/TypeReader$ReadPhase;)V
+      11: return
+
+  public void seek(org.apache.orc.impl.PositionProvider, org.apache.orc.impl.reader.tree.TypeReader$ReadPhase) throws java.io.IOException;
+    Code:
+       0: aload_0
+       1: aload_1
+       2: aload_2
+       3: invokespecial #246                // Method org/apache/orc/impl/TreeReaderFactory$TreeReader.seek:(Lorg/apache/orc/impl/PositionProvider;Lorg/apache/orc/impl/reader/tree/TypeReader$ReadPhase;)V
+       6: aload_0
+       7: getfield      #12                 // Field data:Lorg/apache/orc/impl/IntegerReader;
+      10: aload_1
+      11: invokeinterface #247,  2          // InterfaceMethod org/apache/orc/impl/IntegerReader.seek:(Lorg/apache/orc/impl/PositionProvider;)V
+      16: aload_0
+      17: getfield      #16                 // Field nanos:Lorg/apache/orc/impl/IntegerReader;
+      20: aload_1
+      21: invokeinterface #247,  2          // InterfaceMethod org/apache/orc/impl/IntegerReader.seek:(Lorg/apache/orc/impl/PositionProvider;)V
+      26: return
+
+  public void readTimestamp(org.apache.hadoop.hive.ql.exec.vector.TimestampColumnVector, int) throws java.io.IOException;
+    Code:
+       0: aload_0
+       1: getfield      #16                 // Field nanos:Lorg/apache/orc/impl/IntegerReader;
+       4: invokeinterface #252,  1          // InterfaceMethod org/apache/orc/impl/IntegerReader.next:()J
+       9: invokestatic  #255                // Method parseNanos:(J)I
+      12: istore_3
+      13: aload_0
+      14: getfield      #12                 // Field data:Lorg/apache/orc/impl/IntegerReader;
+      17: invokeinterface #252,  1          // InterfaceMethod org/apache/orc/impl/IntegerReader.next:()J
+      22: aload_0
+      23: getfield      #88                 // Field base_timestamp:J
+      26: ladd
+      27: ldc2_w        #218                // long 1000l
+      30: lmul
+      31: iload_3
+      32: ldc_w         #259                // int 1000000
+      35: idiv
+      36: i2l
+      37: ladd
+      38: lstore        4
+      40: lload         4
+      42: lconst_0
+      43: lcmp
+      44: ifge          62
+      47: iload_3
+      48: ldc_w         #260                // int 999999
+      51: if_icmple     62
+      54: lload         4
+      56: ldc2_w        #218                // long 1000l
+      59: lsub
+      60: lstore        4
+      62: lconst_0
+      63: lstore        6
+      65: aload_0
+      66: getfield      #186                // Field hasSameTZRules:Z
+      69: ifne          87
+      72: aload_0
+      73: getfield      #175                // Field writerTimeZone:Ljava/util/TimeZone;
+      76: aload_0
+      77: getfield      #64                 // Field readerTimeZone:Ljava/util/TimeZone;
+      80: lload         4
+      82: invokestatic  #261                // Method org/apache/orc/impl/SerializationUtils.convertBetweenTimezones:(Ljava/util/TimeZone;Ljava/util/TimeZone;J)J
+      85: lstore        6
+      87: aload_1
+      88: getfield      #267                // Field org/apache/hadoop/hive/ql/exec/vector/TimestampColumnVector.time:[J
+      91: iload_2
+      92: lload         4
+      94: lload         6
+      96: ladd
+      97: lastore
+      98: aload_1
+      99: getfield      #273                // Field org/apache/hadoop/hive/ql/exec/vector/TimestampColumnVector.nanos:[I
+     102: iload_2
+     103: iload_3
+     104: iastore
+     105: return
+
+  public void nextVector(org.apache.hadoop.hive.ql.exec.vector.TimestampColumnVector, boolean[], int) throws java.io.IOException;
+    Code:
+       0: iconst_0
+       1: istore        4
+       3: iload         4
+       5: iload_3
+       6: if_icmpge     89
+       9: aload_1
+      10: getfield      #276                // Field org/apache/hadoop/hive/ql/exec/vector/TimestampColumnVector.noNulls:Z
+      13: ifne          26
+      16: aload_1
+      17: getfield      #279                // Field org/apache/hadoop/hive/ql/exec/vector/TimestampColumnVector.isNull:[Z
+      20: iload         4
+      22: baload
+      23: ifne          83
+      26: aload_0
+      27: aload_1
+      28: iload         4
+      30: invokevirtual #283                // Method readTimestamp:(Lorg/apache/hadoop/hive/ql/exec/vector/TimestampColumnVector;I)V
+      33: aload_1
+      34: getfield      #287                // Field org/apache/hadoop/hive/ql/exec/vector/TimestampColumnVector.isRepeating:Z
+      37: ifeq          83
+      40: iload         4
+      42: ifeq          83
+      45: aload_1
+      46: getfield      #267                // Field org/apache/hadoop/hive/ql/exec/vector/TimestampColumnVector.time:[J
+      49: iconst_0
+      50: laload
+      51: aload_1
+      52: getfield      #267                // Field org/apache/hadoop/hive/ql/exec/vector/TimestampColumnVector.time:[J
+      55: iload         4
+      57: laload
+      58: lcmp
+      59: ifne          78
+      62: aload_1
+      63: getfield      #273                // Field org/apache/hadoop/hive/ql/exec/vector/TimestampColumnVector.nanos:[I
+      66: iconst_0
+      67: iaload
+      68: aload_1
+      69: getfield      #273                // Field org/apache/hadoop/hive/ql/exec/vector/TimestampColumnVector.nanos:[I
+      72: iload         4
+      74: iaload
+      75: if_icmpeq     83
+      78: aload_1
+      79: iconst_0
+      80: putfield      #287                // Field org/apache/hadoop/hive/ql/exec/vector/TimestampColumnVector.isRepeating:Z
+      83: iinc          4, 1
+      86: goto          3
+      89: aload_1
+      90: aload_0
+      91: getfield      #115                // Field useProleptic:Z
+      94: iconst_1
+      95: invokevirtual #290                // Method org/apache/hadoop/hive/ql/exec/vector/TimestampColumnVector.changeCalendar:(ZZ)V
+      98: return
+
+  public void nextVector(org.apache.hadoop.hive.ql.exec.vector.TimestampColumnVector, boolean[], org.apache.hadoop.hive.ql.io.filter.FilterContext, int) throws java.io.IOException;
+    Code:
+       0: aload_1
+       1: iconst_0
+       2: putfield      #287                // Field org/apache/hadoop/hive/ql/exec/vector/TimestampColumnVector.isRepeating:Z
+       5: iconst_0
+       6: istore        5
+       8: aload_1
+       9: getfield      #276                // Field org/apache/hadoop/hive/ql/exec/vector/TimestampColumnVector.noNulls:Z
+      12: ifeq          90
+      15: iconst_0
+      16: istore        6
+      18: iload         6
+      20: aload_3
+      21: invokeinterface #294,  1          // InterfaceMethod org/apache/hadoop/hive/ql/io/filter/FilterContext.getSelectedSize:()I
+      26: if_icmpeq     77
+      29: aload_3
+      30: invokeinterface #300,  1          // InterfaceMethod org/apache/hadoop/hive/ql/io/filter/FilterContext.getSelected:()[I
+      35: iload         6
+      37: iaload
+      38: istore        7
+      40: iload         7
+      42: iload         5
+      44: isub
+      45: ifle          58
+      48: aload_0
+      49: iload         7
+      51: iload         5
+      53: isub
+      54: i2l
+      55: invokevirtual #304                // Method skipStreamRows:(J)V
+      58: aload_0
+      59: aload_1
+      60: iload         7
+      62: invokevirtual #283                // Method readTimestamp:(Lorg/apache/hadoop/hive/ql/exec/vector/TimestampColumnVector;I)V
+      65: iload         7
+      67: iconst_1
+      68: iadd
+      69: istore        5
+      71: iinc          6, 1
+      74: goto          18
+      77: aload_0
+      78: iload         4
+      80: iload         5
+      82: isub
+      83: i2l
+      84: invokevirtual #304                // Method skipStreamRows:(J)V
+      87: goto          184
+      90: iconst_0
+      91: istore        6
+      93: iload         6
+      95: aload_3
+      96: invokeinterface #294,  1          // InterfaceMethod org/apache/hadoop/hive/ql/io/filter/FilterContext.getSelectedSize:()I
+     101: if_icmpeq     168
+     104: aload_3
+     105: invokeinterface #300,  1          // InterfaceMethod org/apache/hadoop/hive/ql/io/filter/FilterContext.getSelected:()[I
+     110: iload         6
+     112: iaload
+     113: istore        7
+     115: iload         7
+     117: iload         5
+     119: isub
+     120: ifle          139
+     123: aload_0
+     124: aload_1
+     125: getfield      #279                // Field org/apache/hadoop/hive/ql/exec/vector/TimestampColumnVector.isNull:[Z
+     128: iload         5
+     130: iload         7
+     132: invokestatic  #308                // Method countNonNullRowsInRange:([ZII)I
+     135: i2l
+     136: invokevirtual #304                // Method skipStreamRows:(J)V
+     139: aload_1
+     140: getfield      #279                // Field org/apache/hadoop/hive/ql/exec/vector/TimestampColumnVector.isNull:[Z
+     143: iload         7
+     145: baload
+     146: ifne          156
+     149: aload_0
+     150: aload_1
+     151: iload         7
+     153: invokevirtual #283                // Method readTimestamp:(Lorg/apache/hadoop/hive/ql/exec/vector/TimestampColumnVector;I)V
+     156: iload         7
+     158: iconst_1
+     159: iadd
+     160: istore        5
+     162: iinc          6, 1
+     165: goto          93
+     168: aload_0
+     169: aload_1
+     170: getfield      #279                // Field org/apache/hadoop/hive/ql/exec/vector/TimestampColumnVector.isNull:[Z
+     173: iload         5
+     175: iload         4
+     177: invokestatic  #308                // Method countNonNullRowsInRange:([ZII)I
+     180: i2l
+     181: invokevirtual #304                // Method skipStreamRows:(J)V
+     184: aload_1
+     185: aload_0
+     186: getfield      #115                // Field useProleptic:Z
+     189: iconst_1
+     190: invokevirtual #290                // Method org/apache/hadoop/hive/ql/exec/vector/TimestampColumnVector.changeCalendar:(ZZ)V
+     193: return
+
+  public void nextVector(org.apache.hadoop.hive.ql.exec.vector.ColumnVector, boolean[], int, org.apache.hadoop.hive.ql.io.filter.FilterContext, org.apache.orc.impl.reader.tree.TypeReader$ReadPhase) throws java.io.IOException;
+    Code:
+       0: aload_1
+       1: checkcast     #268                // class org/apache/hadoop/hive/ql/exec/vector/TimestampColumnVector
+       4: astore        6
+       6: aload         6
+       8: aload_0
+       9: getfield      #109                // Field fileUsesProleptic:Z
+      12: iconst_0
+      13: invokevirtual #290                // Method org/apache/hadoop/hive/ql/exec/vector/TimestampColumnVector.changeCalendar:(ZZ)V
+      16: aload_0
+      17: aload_1
+      18: aload_2
+      19: iload_3
+      20: aload         4
+      22: aload         5
+      24: invokespecial #312                // Method org/apache/orc/impl/TreeReaderFactory$TreeReader.nextVector:(Lorg/apache/hadoop/hive/ql/exec/vector/ColumnVector;[ZILorg/apache/hadoop/hive/ql/io/filter/FilterContext;Lorg/apache/orc/impl/reader/tree/TypeReader$ReadPhase;)V
+      27: aload         6
+      29: aload_0
+      30: getfield      #167                // Field context:Lorg/apache/orc/impl/TreeReaderFactory$Context;
+      33: invokeinterface #50,  1           // InterfaceMethod org/apache/orc/impl/TreeReaderFactory$Context.getUseUTCTimestamp:()Z
+      38: invokevirtual #316                // Method org/apache/hadoop/hive/ql/exec/vector/TimestampColumnVector.setIsUTC:(Z)V
+      41: aload         4
+      43: invokeinterface #320,  1          // InterfaceMethod org/apache/hadoop/hive/ql/io/filter/FilterContext.isSelectedInUse:()Z
+      48: ifeq          64
+      51: aload_0
+      52: aload         6
+      54: aload_2
+      55: aload         4
+      57: iload_3
+      58: invokevirtual #323                // Method nextVector:(Lorg/apache/hadoop/hive/ql/exec/vector/TimestampColumnVector;[ZLorg/apache/hadoop/hive/ql/io/filter/FilterContext;I)V
+      61: goto          72
+      64: aload_0
+      65: aload         6
+      67: aload_2
+      68: iload_3
+      69: invokevirtual #326                // Method nextVector:(Lorg/apache/hadoop/hive/ql/exec/vector/TimestampColumnVector;[ZI)V
+      72: return
+
+  private static int parseNanos(long);
+    Code:
+       0: bipush        7
+       2: lload_0
+       3: l2i
+       4: iand
+       5: istore_2
+       6: lload_0
+       7: iconst_3
+       8: lushr
+       9: l2i
+      10: istore_3
+      11: iload_2
+      12: ifeq          26
+      15: iload_3
+      16: getstatic     #329                // Field powerOfTenTable:[J
+      19: iload_2
+      20: iconst_1
+      21: iadd
+      22: laload
+      23: l2i
+      24: imul
+      25: istore_3
+      26: iload_3
+      27: ireturn
+
+  void skipStreamRows(long) throws java.io.IOException;
+    Code:
+       0: aload_0
+       1: getfield      #12                 // Field data:Lorg/apache/orc/impl/IntegerReader;
+       4: lload_1
+       5: invokeinterface #332,  3          // InterfaceMethod org/apache/orc/impl/IntegerReader.skip:(J)V
+      10: aload_0
+      11: getfield      #16                 // Field nanos:Lorg/apache/orc/impl/IntegerReader;
+      14: lload_1
+      15: invokeinterface #332,  3          // InterfaceMethod org/apache/orc/impl/IntegerReader.skip:(J)V
+      20: return
+
+  public void skipRows(long, org.apache.orc.impl.reader.tree.TypeReader$ReadPhase) throws java.io.IOException;
+    Code:
+       0: aload_0
+       1: lload_1
+       2: invokevirtual #335                // Method countNonNulls:(J)J
+       5: lstore_1
+       6: aload_0
+       7: getfield      #12                 // Field data:Lorg/apache/orc/impl/IntegerReader;
+      10: lload_1
+      11: invokeinterface #332,  3          // InterfaceMethod org/apache/orc/impl/IntegerReader.skip:(J)V
+      16: aload_0
+      17: getfield      #16                 // Field nanos:Lorg/apache/orc/impl/IntegerReader;
+      20: lload_1
+      21: invokeinterface #332,  3          // InterfaceMethod org/apache/orc/impl/IntegerReader.skip:(J)V
+      26: return
+}

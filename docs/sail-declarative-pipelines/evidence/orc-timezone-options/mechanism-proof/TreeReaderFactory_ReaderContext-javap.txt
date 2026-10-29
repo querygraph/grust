@@ -1,0 +1,206 @@
+Compiled from "TreeReaderFactory.java"
+public class org.apache.orc.impl.TreeReaderFactory$ReaderContext implements org.apache.orc.impl.TreeReaderFactory$Context {
+  private org.apache.orc.impl.SchemaEvolution evolution;
+
+  private boolean skipCorrupt;
+
+  private boolean useUTCTimestamp;
+
+  private java.lang.String writerTimezone;
+
+  private org.apache.orc.OrcFile$Version fileFormat;
+
+  private org.apache.orc.impl.reader.ReaderEncryption encryption;
+
+  private boolean useProlepticGregorian;
+
+  private boolean fileUsedProlepticGregorian;
+
+  private java.util.Set<java.lang.Integer> filterColumnIds;
+
+  java.util.function.Consumer<org.apache.orc.OrcFilterContext> filterCallback;
+
+  public org.apache.orc.impl.TreeReaderFactory$ReaderContext();
+    Code:
+       0: aload_0
+       1: invokespecial #1                  // Method java/lang/Object."<init>":()V
+       4: aload_0
+       5: iconst_0
+       6: putfield      #7                  // Field skipCorrupt:Z
+       9: aload_0
+      10: iconst_0
+      11: putfield      #13                 // Field useUTCTimestamp:Z
+      14: aload_0
+      15: invokestatic  #16                 // InterfaceMethod java/util/Set.of:()Ljava/util/Set;
+      18: putfield      #22                 // Field filterColumnIds:Ljava/util/Set;
+      21: return
+
+  public org.apache.orc.impl.TreeReaderFactory$ReaderContext setSchemaEvolution(org.apache.orc.impl.SchemaEvolution);
+    Code:
+       0: aload_0
+       1: aload_1
+       2: putfield      #26                 // Field evolution:Lorg/apache/orc/impl/SchemaEvolution;
+       5: aload_0
+       6: areturn
+
+  public org.apache.orc.impl.TreeReaderFactory$ReaderContext setEncryption(org.apache.orc.impl.reader.ReaderEncryption);
+    Code:
+       0: aload_0
+       1: aload_1
+       2: putfield      #30                 // Field encryption:Lorg/apache/orc/impl/reader/ReaderEncryption;
+       5: aload_0
+       6: areturn
+
+  public org.apache.orc.impl.TreeReaderFactory$ReaderContext setFilterCallback(java.util.Set<java.lang.Integer>, java.util.function.Consumer<org.apache.orc.OrcFilterContext>);
+    Code:
+       0: aload_0
+       1: aload_1
+       2: putfield      #22                 // Field filterColumnIds:Ljava/util/Set;
+       5: aload_0
+       6: aload_2
+       7: putfield      #34                 // Field filterCallback:Ljava/util/function/Consumer;
+      10: aload_0
+      11: areturn
+
+  public org.apache.orc.impl.TreeReaderFactory$ReaderContext skipCorrupt(boolean);
+    Code:
+       0: aload_0
+       1: iload_1
+       2: putfield      #7                  // Field skipCorrupt:Z
+       5: aload_0
+       6: areturn
+
+  public org.apache.orc.impl.TreeReaderFactory$ReaderContext useUTCTimestamp(boolean);
+    Code:
+       0: aload_0
+       1: iload_1
+       2: putfield      #13                 // Field useUTCTimestamp:Z
+       5: aload_0
+       6: areturn
+
+  public org.apache.orc.impl.TreeReaderFactory$ReaderContext writerTimeZone(java.lang.String);
+    Code:
+       0: aload_0
+       1: aload_1
+       2: putfield      #38                 // Field writerTimezone:Ljava/lang/String;
+       5: aload_0
+       6: areturn
+
+  public org.apache.orc.impl.TreeReaderFactory$ReaderContext fileFormat(org.apache.orc.OrcFile$Version);
+    Code:
+       0: aload_0
+       1: aload_1
+       2: putfield      #42                 // Field fileFormat:Lorg/apache/orc/OrcFile$Version;
+       5: aload_0
+       6: areturn
+
+  public org.apache.orc.impl.TreeReaderFactory$ReaderContext setProlepticGregorian(boolean, boolean);
+    Code:
+       0: aload_0
+       1: iload_2
+       2: putfield      #46                 // Field useProlepticGregorian:Z
+       5: aload_0
+       6: iload_1
+       7: putfield      #49                 // Field fileUsedProlepticGregorian:Z
+      10: aload_0
+      11: areturn
+
+  public org.apache.orc.impl.SchemaEvolution getSchemaEvolution();
+    Code:
+       0: aload_0
+       1: getfield      #26                 // Field evolution:Lorg/apache/orc/impl/SchemaEvolution;
+       4: areturn
+
+  public java.util.Set<java.lang.Integer> getColumnFilterIds();
+    Code:
+       0: aload_0
+       1: getfield      #22                 // Field filterColumnIds:Ljava/util/Set;
+       4: areturn
+
+  public java.util.function.Consumer<org.apache.orc.OrcFilterContext> getColumnFilterCallback();
+    Code:
+       0: aload_0
+       1: getfield      #34                 // Field filterCallback:Ljava/util/function/Consumer;
+       4: areturn
+
+  public boolean isSkipCorrupt();
+    Code:
+       0: aload_0
+       1: getfield      #7                  // Field skipCorrupt:Z
+       4: ireturn
+
+  public boolean getUseUTCTimestamp();
+    Code:
+       0: aload_0
+       1: getfield      #13                 // Field useUTCTimestamp:Z
+       4: ireturn
+
+  public java.lang.String getWriterTimezone();
+    Code:
+       0: aload_0
+       1: getfield      #38                 // Field writerTimezone:Ljava/lang/String;
+       4: areturn
+
+  public org.apache.orc.OrcFile$Version getFileFormat();
+    Code:
+       0: aload_0
+       1: getfield      #42                 // Field fileFormat:Lorg/apache/orc/OrcFile$Version;
+       4: areturn
+
+  public org.apache.orc.impl.reader.ReaderEncryption getEncryption();
+    Code:
+       0: aload_0
+       1: getfield      #30                 // Field encryption:Lorg/apache/orc/impl/reader/ReaderEncryption;
+       4: areturn
+
+  public boolean useProlepticGregorian();
+    Code:
+       0: aload_0
+       1: getfield      #46                 // Field useProlepticGregorian:Z
+       4: ireturn
+
+  public boolean fileUsedProlepticGregorian();
+    Code:
+       0: aload_0
+       1: getfield      #49                 // Field fileUsedProlepticGregorian:Z
+       4: ireturn
+
+  public org.apache.orc.impl.reader.tree.TypeReader$ReaderCategory getReaderCategory(int);
+    Code:
+       0: aload_0
+       1: invokevirtual #52                 // Method getColumnFilterIds:()Ljava/util/Set;
+       4: iload_1
+       5: invokestatic  #55                 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;
+       8: invokeinterface #61,  2           // InterfaceMethod java/util/Set.contains:(Ljava/lang/Object;)Z
+      13: ifeq          74
+      16: iload_1
+      17: iconst_m1
+      18: if_icmpne     25
+      21: aconst_null
+      22: goto          36
+      25: aload_0
+      26: invokevirtual #65                 // Method getSchemaEvolution:()Lorg/apache/orc/impl/SchemaEvolution;
+      29: invokevirtual #69                 // Method org/apache/orc/impl/SchemaEvolution.getFileSchema:()Lorg/apache/orc/TypeDescription;
+      32: iload_1
+      33: invokevirtual #75                 // Method org/apache/orc/TypeDescription.findSubtype:(I)Lorg/apache/orc/TypeDescription;
+      36: astore_3
+      37: aload_3
+      38: ifnull        60
+      41: aload_3
+      42: invokevirtual #81                 // Method org/apache/orc/TypeDescription.getChildren:()Ljava/util/List;
+      45: ifnull        60
+      48: aload_3
+      49: invokevirtual #81                 // Method org/apache/orc/TypeDescription.getChildren:()Ljava/util/List;
+      52: invokeinterface #85,  1           // InterfaceMethod java/util/List.isEmpty:()Z
+      57: ifeq          67
+      60: getstatic     #91                 // Field org/apache/orc/impl/reader/tree/TypeReader$ReaderCategory.FILTER_CHILD:Lorg/apache/orc/impl/reader/tree/TypeReader$ReaderCategory;
+      63: astore_2
+      64: goto          71
+      67: getstatic     #97                 // Field org/apache/orc/impl/reader/tree/TypeReader$ReaderCategory.FILTER_PARENT:Lorg/apache/orc/impl/reader/tree/TypeReader$ReaderCategory;
+      70: astore_2
+      71: goto          78
+      74: getstatic     #100                // Field org/apache/orc/impl/reader/tree/TypeReader$ReaderCategory.NON_FILTER:Lorg/apache/orc/impl/reader/tree/TypeReader$ReaderCategory;
+      77: astore_2
+      78: aload_2
+      79: areturn
+}

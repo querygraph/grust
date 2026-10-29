@@ -1,0 +1,1093 @@
+commit ed6e9acf4fe9dbe0f3a22adef3da027a1c263bf6
+Author:     Alexy Khrabrov <deliverable@gmail.com>
+AuthorDate: Thu Oct 29 14:40:17 2026 -0700
+Commit:     Alexy Khrabrov <deliverable@gmail.com>
+CommitDate: Thu Oct 29 14:40:17 2026 -0700
+
+    feat: opt into caller-supplied ORC timestamp timezone rules
+
+diff --git a/src/array_decoder/timestamp.rs b/src/array_decoder/timestamp.rs
+index 3a074ea..b5035be 100644
+--- a/src/array_decoder/timestamp.rs
++++ b/src/array_decoder/timestamp.rs
+@@ -43,6 +43,7 @@ use super::{
+ };
+ use crate::error::UnsupportedTypeVariantSnafu;
+ use crate::timestamp::TimestampReadOptions;
++use crate::timestamp_timezone::TimestampTimeZoneConversion;
+ 
+ const NANOSECONDS_IN_SECOND: i128 = 1_000_000_000;
+ const NANOSECOND_DIGITS: i8 = 9;
+@@ -56,6 +57,7 @@ fn get_inner_timestamp_decoder<T: ArrowTimestampType + Send>(
+     stripe: &Stripe,
+     seconds_since_unix_epoch: i64,
+     options: TimestampReadOptions,
++    time_zone: Option<&TimestampTimeZoneConversion>,
+ ) -> PrimitiveArrayDecoder<T> {
+     let data = stripe.stream_map().get(column, Kind::Data);
+     let data = get_signed_int_decoder(data, column.rle_version());
+@@ -65,10 +67,13 @@ fn get_inner_timestamp_decoder<T: ArrowTimestampType + Send>(
+ 
+     let present = PresentDecoder::from_stripe(stripe, column);
+ 
+-    let iter = Box::new(
+-        TimestampDecoder::<T>::new(seconds_since_unix_epoch, data, secondary).with_options(options),
+-    );
+-    PrimitiveArrayDecoder::<T>::new(iter, present)
++    let iter =
++        TimestampDecoder::<T>::new(seconds_since_unix_epoch, data, secondary).with_options(options);
++    let iter = match time_zone {
++        Some(conversion) => iter.with_time_zone(conversion.clone()),
++        None => iter,
++    };
++    PrimitiveArrayDecoder::<T>::new(Box::new(iter), present)
+ }
+ 
+ fn get_timestamp_decoder<T: ArrowTimestampType + Send>(
+@@ -81,6 +86,7 @@ fn get_timestamp_decoder<T: ArrowTimestampType + Send>(
+         stripe,
+         seconds_since_unix_epoch,
+         stripe.timestamp_read_options(),
++        None,
+     );
+     match stripe.writer_tz() {
+         Some(writer_tz) => Box::new(TimestampOffsetArrayDecoder { inner, writer_tz }),
+@@ -98,8 +104,28 @@ fn get_timestamp_instant_decoder<T: ArrowTimestampType + Send>(
+         stripe,
+         ORC_EPOCH_UTC_SECONDS_SINCE_UNIX_EPOCH,
+         stripe.timestamp_read_options(),
++        None,
++    );
++    Box::new(TimestampInstantArrayDecoder {
++        inner,
++        timezone: Some("UTC".into()),
++    })
++}
++
++fn get_converted_timestamp_decoder<T: ArrowTimestampType + Send>(
++    column: &Column,
++    stripe: &Stripe,
++    conversion: &TimestampTimeZoneConversion,
++    timezone: Option<Arc<str>>,
++) -> Box<dyn ArrayBatchDecoder> {
++    let inner = get_inner_timestamp_decoder::<T>(
++        column,
++        stripe,
++        conversion.orc_epoch_seconds(),
++        stripe.timestamp_read_options(),
++        Some(conversion),
+     );
+-    Box::new(TimestampInstantArrayDecoder(inner))
++    Box::new(TimestampInstantArrayDecoder { inner, timezone })
+ }
+ 
+ fn decimal128_decoder(
+@@ -139,6 +165,35 @@ pub fn new_timestamp_decoder(
+     field_type: ArrowDataType,
+     stripe: &Stripe,
+ ) -> Result<Box<dyn ArrayBatchDecoder>> {
++    if let Some(conversion) = stripe.timestamp_time_zone() {
++        return match field_type {
++            ArrowDataType::Timestamp(TimeUnit::Second, timezone) => {
++                Ok(get_converted_timestamp_decoder::<TimestampSecondType>(
++                    column, stripe, conversion, timezone,
++                ))
++            }
++            ArrowDataType::Timestamp(TimeUnit::Millisecond, timezone) => {
++                Ok(get_converted_timestamp_decoder::<TimestampMillisecondType>(
++                    column, stripe, conversion, timezone,
++                ))
++            }
++            ArrowDataType::Timestamp(TimeUnit::Microsecond, timezone) => {
++                Ok(get_converted_timestamp_decoder::<TimestampMicrosecondType>(
++                    column, stripe, conversion, timezone,
++                ))
++            }
++            ArrowDataType::Timestamp(TimeUnit::Nanosecond, timezone) => {
++                Ok(get_converted_timestamp_decoder::<TimestampNanosecondType>(
++                    column, stripe, conversion, timezone,
++                ))
++            }
++            _ => MismatchedSchemaSnafu {
++                orc_type: column.data_type().clone(),
++                arrow_type: field_type,
++            }
++            .fail(),
++        };
++    }
+     let seconds_since_unix_epoch = match stripe.writer_tz() {
+         Some(writer_tz) => {
+             // If writer timezone exists then we must take the ORC epoch according
+@@ -299,9 +354,11 @@ impl<T: ArrowTimestampType> ArrayBatchDecoder for TimestampOffsetArrayDecoder<T>
+     }
+ }
+ 
+-/// Wrapper around PrimitiveArrayDecoder to allow specifying the timezone of the output
+-/// timestamp array as UTC.
+-struct TimestampInstantArrayDecoder<T: ArrowTimestampType>(PrimitiveArrayDecoder<T>);
++/// Attaches an output label without changing the decoded timestamp values.
++struct TimestampInstantArrayDecoder<T: ArrowTimestampType> {
++    inner: PrimitiveArrayDecoder<T>,
++    timezone: Option<Arc<str>>,
++}
+ 
+ impl<T: ArrowTimestampType> ArrayBatchDecoder for TimestampInstantArrayDecoder<T> {
+     fn next_batch(
+@@ -310,15 +367,15 @@ impl<T: ArrowTimestampType> ArrayBatchDecoder for TimestampInstantArrayDecoder<T
+         parent_present: Option<&NullBuffer>,
+     ) -> Result<ArrayRef> {
+         let array = self
+-            .0
++            .inner
+             .next_primitive_batch(batch_size, parent_present)?
+-            .with_timezone("UTC");
++            .with_timezone_opt(self.timezone.clone());
+         let array = Arc::new(array) as ArrayRef;
+         Ok(array)
+     }
+ 
+     fn skip_values(&mut self, n: usize, parent_present: Option<&NullBuffer>) -> Result<()> {
+-        self.0.skip_values(n, parent_present)
++        self.inner.skip_values(n, parent_present)
+     }
+ }
+ 
+diff --git a/src/arrow_reader.rs b/src/arrow_reader.rs
+index 253c217..1109615 100644
+--- a/src/arrow_reader.rs
++++ b/src/arrow_reader.rs
+@@ -36,6 +36,9 @@ use crate::row_selection::RowSelection;
+ use crate::schema::{ArrowSchemaOptions, RootDataType, TimestampPrecision};
+ use crate::stripe::{Stripe, StripeMetadata};
+ use crate::timestamp::TimestampReadOptions;
++use crate::timestamp_timezone::{
++    contains_timestamp, TimestampTimeZoneOptions, TimestampTimeZoneState,
++};
+ 
+ const DEFAULT_BATCH_SIZE: usize = 8192;
+ 
+@@ -49,6 +52,7 @@ pub struct ArrowReaderBuilder<R> {
+     pub(crate) row_selection: Option<RowSelection>,
+     pub(crate) timestamp_precision: TimestampPrecision,
+     pub(crate) timestamp_read_options: TimestampReadOptions,
++    pub(crate) timestamp_time_zone_options: Option<TimestampTimeZoneOptions>,
+     pub(crate) predicate: Option<Predicate>,
+ }
+ 
+@@ -68,6 +72,7 @@ impl<R> ArrowReaderBuilder<R> {
+             row_selection: None,
+             timestamp_precision: TimestampPrecision::default(),
+             timestamp_read_options: TimestampReadOptions::default(),
++            timestamp_time_zone_options: None,
+             predicate: None,
+         }
+     }
+@@ -152,6 +157,21 @@ impl<R> ArrowReaderBuilder<R> {
+         self
+     }
+ 
++    /// Convert ordinary timestamps using explicit reader and writer timezone rules.
++    ///
++    /// This is opt-in and independent of precision handling. Missing or empty
++    /// writer names retain the most recently started stripe's writer timezone,
++    /// initially the reader timezone. Stripes outside the byte range or wholly
++    /// excluded by row selection do not change this state. Inferred timestamp
++    /// fields use UTC labels; explicit schema labels do not select reader rules.
++    /// Predicate-based row-group pruning is disabled in this mode because stored
++    /// timestamp statistics do not bound converted values. Manual row selection
++    /// remains available; callers must still apply their predicate to output rows.
++    pub fn with_timestamp_time_zone_options(mut self, options: TimestampTimeZoneOptions) -> Self {
++        self.timestamp_time_zone_options = Some(options);
++        self
++    }
++
+     /// Set a predicate for row group filtering
+     ///
+     /// The predicate will be evaluated against row group statistics to automatically
+@@ -206,8 +226,9 @@ impl<R> ArrowReaderBuilder<R> {
+             .map(|(key, value)| (key.clone(), String::from_utf8_lossy(value).to_string()))
+             .collect::<HashMap<_, _>>();
+         self.schema_ref.clone().unwrap_or_else(|| {
+-            let options =
+-                ArrowSchemaOptions::new().with_timestamp_precision(self.timestamp_precision);
++            let options = ArrowSchemaOptions::new()
++                .with_timestamp_precision(self.timestamp_precision)
++                .with_timestamp_as_instant(self.timestamp_time_zone_options.is_some());
+             Arc::new(projected_data_type.create_arrow_schema_with_options(&metadata, options))
+         })
+     }
+@@ -238,6 +259,9 @@ impl<R: ChunkReader> ArrowReaderBuilder<R> {
+             projected_data_type,
+             stripe_index: 0,
+             timestamp_read_options: self.timestamp_read_options,
++            timestamp_time_zone_state: self
++                .timestamp_time_zone_options
++                .map(TimestampTimeZoneState::new),
+             file_byte_range: self.file_byte_range,
+         };
+         ArrowReader {
+@@ -277,7 +301,11 @@ impl<R: ChunkReader> ArrowReader<R> {
+ 
+                 // Evaluate predicate if present
+                 let mut stripe_selection: Option<RowSelection> = None;
+-                if let Some(ref predicate) = self.predicate {
++                if let Some(predicate) = self
++                    .predicate
++                    .as_ref()
++                    .filter(|_| self.cursor.timestamp_time_zone_state.is_none())
++                {
+                     // Try to read row indexes for this stripe
+                     match stripe.read_row_indexes(&self.cursor.file_metadata) {
+                         Ok(row_index) => {
+@@ -329,6 +357,15 @@ impl<R: ChunkReader> ArrowReader<R> {
+                     }
+                 }
+ 
++                if self.cursor.timestamp_time_zone_state.is_some()
++                    && (stripe_rows == 0
++                        || final_selection
++                            .as_ref()
++                            .is_some_and(|selection| !selection.selects_any()))
++                {
++                    return self.next().transpose();
++                }
++                let stripe = self.cursor.start_stripe(stripe)?;
+                 let decoder = NaiveStripeDecoder::new_with_selection(
+                     stripe,
+                     self.schema_ref.clone(),
+@@ -374,9 +411,30 @@ pub(crate) struct Cursor<R> {
+     pub projected_data_type: RootDataType,
+     pub stripe_index: usize,
+     pub timestamp_read_options: TimestampReadOptions,
++    pub timestamp_time_zone_state: Option<TimestampTimeZoneState>,
+     pub file_byte_range: Option<Range<usize>>,
+ }
+ 
++impl<R> Cursor<R> {
++    pub(crate) fn start_stripe(&mut self, stripe: Stripe) -> Result<Stripe> {
++        let has_timestamp = stripe
++            .columns()
++            .iter()
++            .any(|column| contains_timestamp(column.data_type()));
++        match self
++            .timestamp_time_zone_state
++            .as_mut()
++            .filter(|_| has_timestamp)
++        {
++            Some(state) => {
++                let conversion = state.start_stripe(stripe.writer_timezone_name())?;
++                Ok(stripe.with_timestamp_time_zone(conversion))
++            }
++            None => Ok(stripe),
++        }
++    }
++}
++
+ impl<R: ChunkReader> Cursor<R> {
+     fn get_stripe_metadatas(&self) -> Vec<StripeMetadata> {
+         if let Some(range) = self.file_byte_range.clone() {
+@@ -402,11 +460,12 @@ impl<R: ChunkReader> Iterator for Cursor<R> {
+         self.get_stripe_metadatas()
+             .get(self.stripe_index)
+             .map(|info| {
+-                let stripe = Stripe::new(
++                let stripe = Stripe::new_with_timestamp_time_zone(
+                     &mut self.reader,
+                     &self.file_metadata,
+                     &self.projected_data_type.clone(),
+                     info,
++                    self.timestamp_time_zone_state.is_some(),
+                 );
+                 self.stripe_index += 1;
+                 stripe.map(|stripe| stripe.with_timestamp_read_options(self.timestamp_read_options))
+diff --git a/src/async_arrow_reader.rs b/src/async_arrow_reader.rs
+index 9d5ac4f..c79e78f 100644
+--- a/src/async_arrow_reader.rs
++++ b/src/async_arrow_reader.rs
+@@ -96,11 +96,12 @@ impl<R: AsyncChunkReader + 'static> StripeFactory<R> {
+ 
+         inner.stripe_index += 1;
+ 
+-        Stripe::new_async(
++        Stripe::new_async_with_timestamp_time_zone(
+             &mut inner.reader,
+             &inner.file_metadata,
+             &inner.projected_data_type,
+             info,
++            inner.timestamp_time_zone_state.is_some(),
+         )
+         .await
+         .map(|stripe| stripe.with_timestamp_read_options(inner.timestamp_read_options))
+@@ -199,7 +200,11 @@ impl<R: AsyncChunkReader + 'static> ArrowStreamReader<R> {
+ 
+                         // Evaluate predicate if present
+                         let mut stripe_selection: Option<RowSelection> = None;
+-                        if let Some(ref predicate) = self.predicate {
++                        if let Some(predicate) = self.predicate.as_ref().filter(|_| {
++                            self.factory.as_ref().is_some_and(|factory| {
++                                factory.inner.timestamp_time_zone_state.is_none()
++                            })
++                        }) {
+                             // Try to read row indexes for this stripe
+                             match stripe.read_row_indexes(&self.file_metadata) {
+                                 Ok(row_index) => {
+@@ -252,6 +257,23 @@ impl<R: AsyncChunkReader + 'static> ArrowStreamReader<R> {
+                             }
+                         }
+ 
++                        let factory = self.factory.as_mut().expect("lost factory");
++                        if factory.inner.timestamp_time_zone_state.is_some()
++                            && (stripe_rows == 0
++                                || final_selection
++                                    .as_ref()
++                                    .is_some_and(|selection| !selection.selects_any()))
++                        {
++                            self.state = StreamState::Init;
++                            continue;
++                        }
++                        let stripe = match factory.inner.start_stripe(stripe) {
++                            Ok(stripe) => stripe,
++                            Err(error) => {
++                                self.state = StreamState::Error;
++                                return Poll::Ready(Some(Err(error)));
++                            }
++                        };
+                         match NaiveStripeDecoder::new_with_selection(
+                             stripe,
+                             self.schema_ref.clone(),
+@@ -320,6 +342,9 @@ impl<R: AsyncChunkReader + 'static> ArrowReaderBuilder<R> {
+             projected_data_type,
+             stripe_index: 0,
+             timestamp_read_options: self.timestamp_read_options,
++            timestamp_time_zone_state: self
++                .timestamp_time_zone_options
++                .map(crate::timestamp_timezone::TimestampTimeZoneState::new),
+             file_byte_range: self.file_byte_range,
+         };
+         ArrowStreamReader::new(
+diff --git a/src/encoding/timestamp.rs b/src/encoding/timestamp.rs
+index f6a07b6..edb99fa 100644
+--- a/src/encoding/timestamp.rs
++++ b/src/encoding/timestamp.rs
+@@ -125,6 +125,7 @@ pub struct TimestampDecoder<T: ArrowTimestampType> {
+     data: Box<dyn PrimitiveValueDecoder<i64> + Send>,
+     secondary: Box<dyn PrimitiveValueDecoder<i64> + Send>,
+     options: crate::timestamp::TimestampReadOptions,
++    time_zone: Option<crate::timestamp_timezone::TimestampTimeZoneConversion>,
+     _marker: PhantomData<T>,
+ }
+ 
+@@ -139,6 +140,7 @@ impl<T: ArrowTimestampType> TimestampDecoder<T> {
+             data,
+             secondary,
+             options: Default::default(),
++            time_zone: None,
+             _marker: PhantomData,
+         }
+     }
+@@ -147,6 +149,14 @@ impl<T: ArrowTimestampType> TimestampDecoder<T> {
+         self.options = options;
+         self
+     }
++
++    pub(crate) fn with_time_zone(
++        mut self,
++        time_zone: crate::timestamp_timezone::TimestampTimeZoneConversion,
++    ) -> Self {
++        self.time_zone = Some(time_zone);
++        self
++    }
+ }
+ 
+ impl<T: ArrowTimestampType> PrimitiveValueDecoder<T::Native> for TimestampDecoder<T> {
+@@ -165,7 +175,14 @@ impl<T: ArrowTimestampType> PrimitiveValueDecoder<T::Native> for TimestampDecode
+         for (index, (&seconds_since_orc_base, &nanoseconds)) in
+             data.iter().zip(secondary.iter()).enumerate()
+         {
+-            out[index] = if self.options == crate::timestamp::TimestampReadOptions::default() {
++            out[index] = if let Some(time_zone) = &self.time_zone {
++                let nanos = crate::timestamp::decode_nanos(
++                    self.base_from_epoch,
++                    seconds_since_orc_base,
++                    nanoseconds,
++                )?;
++                self.options.convert(time_zone.convert(nanos)?, T::UNIT)?
++            } else if self.options == crate::timestamp::TimestampReadOptions::default() {
+                 decode_timestamp::<T>(self.base_from_epoch, seconds_since_orc_base, nanoseconds)?
+             } else {
+                 self.options.decode(
+diff --git a/src/lib.rs b/src/lib.rs
+index 2708ea7..c319173 100644
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -73,6 +73,7 @@ pub mod schema;
+ pub mod statistics;
+ pub mod stripe;
+ pub mod timestamp;
++pub mod timestamp_timezone;
+ mod writer;
+ 
+ pub use arrow_reader::{ArrowReader, ArrowReaderBuilder};
+@@ -83,3 +84,6 @@ pub use predicate::{ComparisonOp, Predicate, PredicateValue};
+ pub use row_selection::{RowSelection, RowSelector};
+ pub use schema::{ArrowSchemaOptions, TimestampPrecision};
+ pub use timestamp::{TimestampPrecisionLoss, TimestampReadOptions};
++pub use timestamp_timezone::{
++    TimestampTimeZone, TimestampTimeZoneOptions, TimestampTimeZoneResolver,
++};
+diff --git a/src/schema.rs b/src/schema.rs
+index 36d6b9b..5308d6d 100644
+--- a/src/schema.rs
++++ b/src/schema.rs
+@@ -43,6 +43,7 @@ pub enum TimestampPrecision {
+ #[derive(Debug, Clone)]
+ pub struct ArrowSchemaOptions {
+     timestamp_precision: TimestampPrecision,
++    timestamp_as_instant: bool,
+ }
+ 
+ impl Default for ArrowSchemaOptions {
+@@ -57,6 +58,7 @@ impl ArrowSchemaOptions {
+     pub fn new() -> Self {
+         Self {
+             timestamp_precision: TimestampPrecision::default(),
++            timestamp_as_instant: false,
+         }
+     }
+ 
+@@ -76,6 +78,11 @@ impl ArrowSchemaOptions {
+     fn timestamp_precision(&self) -> TimestampPrecision {
+         self.timestamp_precision
+     }
++
++    pub(crate) fn with_timestamp_as_instant(mut self, enabled: bool) -> Self {
++        self.timestamp_as_instant = enabled;
++        self
++    }
+ }
+ 
+ /// Represents the root data type of the ORC file. Contains multiple named child types
+@@ -540,7 +547,10 @@ impl DataType {
+             DataType::Decimal {
+                 precision, scale, ..
+             } => ArrowDataType::Decimal128(*precision as u8, *scale as i8), // TODO: safety of cast?
+-            DataType::Timestamp { .. } => ArrowDataType::Timestamp(time_unit, None),
++            DataType::Timestamp { .. } => ArrowDataType::Timestamp(
++                time_unit,
++                options.timestamp_as_instant.then(|| "UTC".into()),
++            ),
+             DataType::TimestampWithLocalTimezone { .. } => {
+                 ArrowDataType::Timestamp(time_unit, Some("UTC".into()))
+             }
+diff --git a/src/stripe.rs b/src/stripe.rs
+index 8f27c34..5b9bdc9 100644
+--- a/src/stripe.rs
++++ b/src/stripe.rs
+@@ -122,7 +122,9 @@ pub struct Stripe {
+     stream_map: StreamMap,
+     number_of_rows: usize,
+     tz: Option<chrono_tz::Tz>,
++    writer_timezone_name: Option<String>,
+     timestamp_read_options: crate::timestamp::TimestampReadOptions,
++    timestamp_time_zone: Option<crate::timestamp_timezone::TimestampTimeZoneConversion>,
+ }
+ 
+ impl Stripe {
+@@ -131,6 +133,16 @@ impl Stripe {
+         file_metadata: &FileMetadata,
+         projected_data_type: &RootDataType,
+         info: &StripeMetadata,
++    ) -> Result<Self> {
++        Self::new_with_timestamp_time_zone(reader, file_metadata, projected_data_type, info, false)
++    }
++
++    pub(crate) fn new_with_timestamp_time_zone<R: ChunkReader>(
++        reader: &mut R,
++        file_metadata: &FileMetadata,
++        projected_data_type: &RootDataType,
++        info: &StripeMetadata,
++        custom_time_zone: bool,
+     ) -> Result<Self> {
+         let footer = reader
+             .get_bytes(info.footer_offset(), info.footer_length())
+@@ -165,11 +177,15 @@ impl Stripe {
+             stream_offset += length;
+         }
+ 
+-        let tz = footer
+-            .writer_timezone
+-            .as_ref()
+-            // TODO: make this return error
+-            .map(|a| a.parse::<chrono_tz::Tz>().unwrap());
++        let tz = if custom_time_zone {
++            None
++        } else {
++            footer
++                .writer_timezone
++                .as_ref()
++                // TODO: make this return error
++                .map(|a| a.parse::<chrono_tz::Tz>().unwrap())
++        };
+ 
+         Ok(Self {
+             columns,
+@@ -179,7 +195,9 @@ impl Stripe {
+             },
+             number_of_rows: info.number_of_rows() as usize,
+             tz,
++            writer_timezone_name: footer.writer_timezone.clone(),
+             timestamp_read_options: Default::default(),
++            timestamp_time_zone: None,
+         })
+     }
+ 
+@@ -190,6 +208,24 @@ impl Stripe {
+         file_metadata: &FileMetadata,
+         projected_data_type: &RootDataType,
+         info: &StripeMetadata,
++    ) -> Result<Self> {
++        Self::new_async_with_timestamp_time_zone(
++            reader,
++            file_metadata,
++            projected_data_type,
++            info,
++            false,
++        )
++        .await
++    }
++
++    #[cfg(feature = "async")]
++    pub(crate) async fn new_async_with_timestamp_time_zone<R: crate::reader::AsyncChunkReader>(
++        reader: &mut R,
++        file_metadata: &FileMetadata,
++        projected_data_type: &RootDataType,
++        info: &StripeMetadata,
++        custom_time_zone: bool,
+     ) -> Result<Self> {
+         let footer = reader
+             .get_bytes(info.footer_offset(), info.footer_length())
+@@ -229,11 +265,15 @@ impl Stripe {
+             stream_offset += length;
+         }
+ 
+-        let tz = footer
+-            .writer_timezone
+-            .as_ref()
+-            // TODO: make this return error
+-            .map(|a| a.parse::<chrono_tz::Tz>().unwrap());
++        let tz = if custom_time_zone {
++            None
++        } else {
++            footer
++                .writer_timezone
++                .as_ref()
++                // TODO: make this return error
++                .map(|a| a.parse::<chrono_tz::Tz>().unwrap())
++        };
+ 
+         Ok(Self {
+             columns,
+@@ -243,7 +283,9 @@ impl Stripe {
+             },
+             number_of_rows: info.number_of_rows() as usize,
+             tz,
++            writer_timezone_name: footer.writer_timezone.clone(),
+             timestamp_read_options: Default::default(),
++            timestamp_time_zone: None,
+         })
+     }
+ 
+@@ -263,6 +305,25 @@ impl Stripe {
+         self.timestamp_read_options
+     }
+ 
++    pub(crate) fn with_timestamp_time_zone(
++        mut self,
++        conversion: crate::timestamp_timezone::TimestampTimeZoneConversion,
++    ) -> Self {
++        self.timestamp_time_zone = Some(conversion);
++        self
++    }
++
++    pub(crate) fn timestamp_time_zone(
++        &self,
++    ) -> Option<&crate::timestamp_timezone::TimestampTimeZoneConversion> {
++        self.timestamp_time_zone.as_ref()
++    }
++
++    /// Original writer timezone metadata, before any name resolution.
++    pub fn writer_timezone_name(&self) -> Option<&str> {
++        self.writer_timezone_name.as_deref()
++    }
++
+     pub fn stream_map(&self) -> &StreamMap {
+         &self.stream_map
+     }
+@@ -271,6 +332,7 @@ impl Stripe {
+         &self.columns
+     }
+ 
++    /// Chrono writer timezone for the default reader; absent with custom timezone rules.
+     pub fn writer_tz(&self) -> Option<chrono_tz::Tz> {
+         self.tz
+     }
+diff --git a/src/timestamp.rs b/src/timestamp.rs
+index 1dbe2f6..82270db 100644
+--- a/src/timestamp.rs
++++ b/src/timestamp.rs
+@@ -63,34 +63,10 @@ impl TimestampReadOptions {
+         encoded_nanos: i64,
+         unit: TimeUnit,
+     ) -> Result<i64> {
+-        let encoded_nanos = u64::try_from(encoded_nanos).map_err(|_| invalid("negative nanos"))?;
+-        let zeros = encoded_nanos & 7;
+-        let nanos = (encoded_nanos >> 3)
+-            .checked_mul(if zeros == 0 {
+-                1
+-            } else {
+-                10_u64.pow(zeros as u32 + 1)
+-            })
+-            .ok_or_else(|| invalid("nanosecond expansion overflow"))?;
+-        ensure!(
+-            nanos < 1_000_000_000,
+-            OutOfSpecSnafu {
+-                msg: "timestamp nanos exceed one second"
+-            }
+-        );
+-        let mut seconds = i128::from(base) + i128::from(encoded_seconds);
+-        // Preserve the Java ORC/ORC-763 decoding rule, including its epoch-edge behavior.
+-        if seconds < 0 && nanos > 999_999 {
+-            seconds -= 1;
+-        }
+-        let value = seconds
+-            .checked_mul(1_000_000_000)
+-            .and_then(|x| x.checked_add(i128::from(nanos)))
+-            .ok_or_else(|| invalid("timestamp expansion overflow"))?;
+-        self.convert(value, unit)
++        self.convert(decode_nanos(base, encoded_seconds, encoded_nanos)?, unit)
+     }
+ 
+-    fn convert(self, nanos: i128, unit: TimeUnit) -> Result<i64> {
++    pub(crate) fn convert(self, nanos: i128, unit: TimeUnit) -> Result<i64> {
+         let divisor = match unit {
+             TimeUnit::Second => 1_000_000_000,
+             TimeUnit::Millisecond => 1_000_000,
+@@ -108,6 +84,33 @@ impl TimestampReadOptions {
+     }
+ }
+ 
++pub(crate) fn decode_nanos(base: i64, encoded_seconds: i64, encoded_nanos: i64) -> Result<i128> {
++    let encoded_nanos = u64::try_from(encoded_nanos).map_err(|_| invalid("negative nanos"))?;
++    let zeros = encoded_nanos & 7;
++    let nanos = (encoded_nanos >> 3)
++        .checked_mul(if zeros == 0 {
++            1
++        } else {
++            10_u64.pow(zeros as u32 + 1)
++        })
++        .ok_or_else(|| invalid("nanosecond expansion overflow"))?;
++    ensure!(
++        nanos < 1_000_000_000,
++        OutOfSpecSnafu {
++            msg: "timestamp nanos exceed one second"
++        }
++    );
++    let mut seconds = i128::from(base) + i128::from(encoded_seconds);
++    // Preserve the Java ORC/ORC-763 decoding rule, including its epoch-edge behavior.
++    if seconds < 0 && nanos > 999_999 {
++        seconds -= 1;
++    }
++    seconds
++        .checked_mul(1_000_000_000)
++        .and_then(|x| x.checked_add(i128::from(nanos)))
++        .ok_or_else(|| invalid("timestamp expansion overflow"))
++}
++
+ fn invalid(message: &str) -> crate::error::OrcError {
+     OutOfSpecSnafu {
+         msg: message.to_owned(),
+diff --git a/src/timestamp_timezone.rs b/src/timestamp_timezone.rs
+new file mode 100644
+index 0000000..cfd96e2
+--- /dev/null
++++ b/src/timestamp_timezone.rs
+@@ -0,0 +1,165 @@
++// Licensed to the Apache Software Foundation (ASF) under one
++// or more contributor license agreements.  See the NOTICE file
++// distributed with this work for additional information
++// regarding copyright ownership.  The ASF licenses this file
++// to you under the Apache License, Version 2.0 (the
++// "License"); you may not use this file except in compliance
++// with the License.  You may obtain a copy of the License at
++//
++//   http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing,
++// software distributed under the License is distributed on an
++// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
++// KIND, either express or implied.  See the License for the
++// specific language governing permissions and limitations
++// under the License.
++
++//! Opt-in writer-to-reader timestamp conversion using caller-supplied timezone rules.
++
++use std::{fmt::Debug, sync::Arc};
++
++use crate::{
++    error::{OutOfSpecSnafu, Result},
++    schema::DataType,
++};
++
++/// An immutable timezone used to interpret ordinary ORC `TIMESTAMP` values.
++///
++/// Implementations must return consistent results for the lifetime of the reader.
++/// The caller owns timezone database selection, versioning, and name semantics.
++/// These rules are independent of the Arrow timestamp's display timezone.
++pub trait TimestampTimeZone: Debug + Send + Sync {
++    /// Unix seconds at local midnight on 2015-01-01, the ORC timestamp epoch.
++    ///
++    /// Compute this with the same rules as [`Self::offset_millis`]. Supplying the
++    /// epoch explicitly avoids imposing a local-time gap/fold policy on callers.
++    fn orc_epoch_seconds(&self) -> i64;
++
++    /// Offset east of UTC, in milliseconds, at a UTC epoch millisecond.
++    ///
++    /// Return an error when the requested instant is unsupported; do not substitute
++    /// a different timezone or narrow the timestamp to a smaller calendar range.
++    fn offset_millis(&self, utc_millis: i64) -> Result<i32>;
++}
++
++/// Resolves nonempty, unmodified writer timezone names from ORC stripe metadata.
++pub trait TimestampTimeZoneResolver: Debug + Send + Sync {
++    /// Return immutable rules for this name, or an explicit error.
++    ///
++    /// Alias, custom-offset, and unknown-name policies belong to the resolver.
++    /// No resolver is called for absent or empty names: those retain the reader's
++    /// current writer timezone, initially the configured reader timezone.
++    fn resolve(&self, name: &str) -> Result<Arc<dyn TimestampTimeZone>>;
++}
++
++/// Optional timezone conversion, independent of fractional precision handling.
++///
++/// Ordinary timestamps use the Java ORC two-offset conversion, preserving the
++/// original instant in same-zone DST folds. `TIMESTAMP_INSTANT` is unaffected.
++/// Inferred ordinary timestamp fields are labeled UTC; an explicitly supplied
++/// Arrow timestamp timezone changes only the output label.
++/// Only Arrow `Timestamp` outputs are supported in this mode; the default
++/// reader's `Decimal128` timestamp override is not converted.
++///
++/// No timezone database is bundled or consulted by this configuration. Exact
++/// compatibility with another reader requires supplying that reader's rules.
++/// Offset queries and intermediate candidates must fit signed 64-bit epoch
++/// milliseconds; final results must fit the requested Arrow unit. This covers
++/// the entire microsecond input range without imposing a calendar-year limit.
++#[derive(Debug, Clone)]
++pub struct TimestampTimeZoneOptions {
++    reader: Arc<dyn TimestampTimeZone>,
++    resolver: Arc<dyn TimestampTimeZoneResolver>,
++}
++
++impl TimestampTimeZoneOptions {
++    /// Configure immutable reader rules and a resolver for stripe writer names.
++    pub fn new(
++        reader: Arc<dyn TimestampTimeZone>,
++        resolver: Arc<dyn TimestampTimeZoneResolver>,
++    ) -> Self {
++        Self { reader, resolver }
++    }
++}
++
++/// State follows stripes actually started by one reader, including range starts.
++#[derive(Debug)]
++pub(crate) struct TimestampTimeZoneState {
++    options: TimestampTimeZoneOptions,
++    writer: Arc<dyn TimestampTimeZone>,
++}
++
++impl TimestampTimeZoneState {
++    pub(crate) fn new(options: TimestampTimeZoneOptions) -> Self {
++        Self {
++            writer: options.reader.clone(),
++            options,
++        }
++    }
++
++    pub(crate) fn start_stripe(
++        &mut self,
++        name: Option<&str>,
++    ) -> Result<TimestampTimeZoneConversion> {
++        if let Some(name) = name.filter(|name| !name.is_empty()) {
++            self.writer = self.options.resolver.resolve(name)?;
++        }
++        Ok(TimestampTimeZoneConversion {
++            writer: self.writer.clone(),
++            reader: self.options.reader.clone(),
++        })
++    }
++}
++
++#[derive(Debug, Clone)]
++pub(crate) struct TimestampTimeZoneConversion {
++    writer: Arc<dyn TimestampTimeZone>,
++    reader: Arc<dyn TimestampTimeZone>,
++}
++
++impl TimestampTimeZoneConversion {
++    pub(crate) fn orc_epoch_seconds(&self) -> i64 {
++        self.writer.orc_epoch_seconds()
++    }
++
++    pub(crate) fn convert(&self, nanos: i128) -> Result<i128> {
++        if Arc::ptr_eq(&self.writer, &self.reader) {
++            return Ok(nanos);
++        }
++        let millis = i64::try_from(nanos.div_euclid(1_000_000))
++            .map_err(|_| invalid("timestamp exceeds timezone millisecond range"))?;
++        let writer_offset = i128::from(self.writer.offset_millis(millis)?);
++        let reader_offset = i128::from(self.reader.offset_millis(millis)?);
++        let candidate = i64::try_from(i128::from(millis) + writer_offset - reader_offset)
++            .map_err(|_| invalid("timezone candidate exceeds millisecond range"))?;
++        let adjustment = writer_offset - i128::from(self.reader.offset_millis(candidate)?);
++        nanos
++            .checked_add(adjustment * 1_000_000)
++            .ok_or_else(|| invalid("timezone adjustment exceeds timestamp range"))
++    }
++}
++
++pub(crate) fn contains_timestamp(data_type: &DataType) -> bool {
++    match data_type {
++        DataType::Timestamp { .. } => true,
++        DataType::Struct { children, .. } => children
++            .iter()
++            .any(|child| contains_timestamp(child.data_type())),
++        DataType::List { child, .. } => contains_timestamp(child),
++        DataType::Map { key, value, .. } => contains_timestamp(key) || contains_timestamp(value),
++        DataType::Union { variants, .. } => variants.iter().any(contains_timestamp),
++        _ => false,
++    }
++}
++
++fn invalid(message: &str) -> crate::error::OrcError {
++    OutOfSpecSnafu {
++        msg: message.to_owned(),
++    }
++    .build()
++}
++
++#[cfg(test)]
++#[path = "timestamp_timezone_tests.rs"]
++mod tests;
+diff --git a/src/timestamp_timezone_tests.rs b/src/timestamp_timezone_tests.rs
+new file mode 100644
+index 0000000..c0e87fa
+--- /dev/null
++++ b/src/timestamp_timezone_tests.rs
+@@ -0,0 +1,208 @@
++// Licensed to the Apache Software Foundation (ASF) under one
++// or more contributor license agreements.  See the NOTICE file
++// distributed with this work for additional information
++// regarding copyright ownership.  The ASF licenses this file
++// to you under the Apache License, Version 2.0 (the
++// "License"); you may not use this file except in compliance
++// with the License.  You may obtain a copy of the License at
++//
++//   http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing,
++// software distributed under the License is distributed on an
++// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
++// KIND, either express or implied.  See the License for the
++// specific language governing permissions and limitations
++// under the License.
++
++use super::*;
++use crate::{TimestampPrecisionLoss, TimestampReadOptions};
++use arrow::datatypes::TimeUnit;
++
++#[derive(Debug)]
++struct Fixed(i32);
++
++impl TimestampTimeZone for Fixed {
++    fn orc_epoch_seconds(&self) -> i64 {
++        1_420_070_400 - i64::from(self.0) / 1000
++    }
++
++    fn offset_millis(&self, _: i64) -> Result<i32> {
++        Ok(self.0)
++    }
++}
++
++// A deliberately bounded test profile, not a timezone database implementation.
++// The 2020 Los Angeles transition instants and expectations below were checked
++// against Java 20.0.2 / tzdb 2023c / ORC 2.3.0.
++#[derive(Debug)]
++struct LosAngeles2020;
++
++impl TimestampTimeZone for LosAngeles2020 {
++    fn orc_epoch_seconds(&self) -> i64 {
++        1_420_099_200
++    }
++
++    fn offset_millis(&self, utc_millis: i64) -> Result<i32> {
++        Ok(
++            if (1_583_661_600_000..1_604_221_200_000).contains(&utc_millis) {
++                -25_200_000
++            } else {
++                -28_800_000
++            },
++        )
++    }
++}
++
++fn conversion(
++    writer: impl TimestampTimeZone + 'static,
++    reader: impl TimestampTimeZone + 'static,
++) -> TimestampTimeZoneConversion {
++    TimestampTimeZoneConversion {
++        writer: Arc::new(writer),
++        reader: Arc::new(reader),
++    }
++}
++
++#[test]
++fn same_rules_preserve_both_fold_instants_without_resolving_local_time() {
++    // Distinct Arc allocations exercise the formula, not the pointer fast path.
++    let conversion = conversion(LosAngeles2020, LosAngeles2020);
++    for micros in [1_604_219_400_000_000_i64, 1_604_223_000_000_000] {
++        let nanos = i128::from(micros) * 1000;
++        assert_eq!(conversion.convert(nanos).unwrap(), nanos);
++    }
++}
++
++#[test]
++fn java_two_offset_rule_matches_cross_zone_gap_and_fold() {
++    let conversion = conversion(Fixed(0), LosAngeles2020);
++    for (input_millis, expected_millis) in [
++        (1_583_634_600_000_i64, 1_583_659_800_000_i64),
++        (1_604_194_200_000, 1_604_219_400_000),
++    ] {
++        assert_eq!(
++            conversion
++                .convert(i128::from(input_millis) * 1_000_000)
++                .unwrap(),
++            i128::from(expected_millis) * 1_000_000
++        );
++    }
++}
++
++#[test]
++fn nonhour_offsets_and_supplied_orc_epoch_are_used() {
++    let conversion = conversion(Fixed(20_700_000), Fixed(-18_000_000));
++    assert_eq!(conversion.orc_epoch_seconds(), 1_420_049_700);
++    assert_eq!(conversion.convert(0).unwrap(), 38_700_000_000_000);
++}
++
++#[test]
++fn conversion_retains_full_microsecond_range_before_narrowing() {
++    let unchanged = conversion(Fixed(0), Fixed(0));
++    let precision = TimestampReadOptions::new();
++    for micros in [
++        i64::MIN,
++        -62_135_596_800_000_000,
++        253_402_300_799_999_999,
++        i64::MAX,
++    ] {
++        let nanos = unchanged.convert(i128::from(micros) * 1000).unwrap();
++        assert_eq!(
++            precision.convert(nanos, TimeUnit::Microsecond).unwrap(),
++            micros
++        );
++    }
++    let west = conversion(Fixed(0), Fixed(-28_800_000));
++    let nanos = west.convert(i128::from(i64::MAX) * 1000).unwrap();
++    assert!(precision.convert(nanos, TimeUnit::Microsecond).is_err());
++    // The reader-zone conversion can cross year 9999 without a calendar limit.
++    assert_eq!(
++        west.convert(253_402_300_799_999_999_000).unwrap(),
++        253_402_329_599_999_999_000
++    );
++}
++
++#[test]
++fn precision_policy_is_applied_after_timezone_conversion() {
++    let conversion = conversion(Fixed(0), Fixed(0));
++    let truncate =
++        TimestampReadOptions::new().with_precision_loss(TimestampPrecisionLoss::Truncate);
++    for (nanos, expected) in [(1001, 1), (-1001, -2), (-1, -1)] {
++        let nanos = conversion.convert(nanos).unwrap();
++        assert!(TimestampReadOptions::new()
++            .convert(nanos, TimeUnit::Microsecond)
++            .is_err());
++        assert_eq!(
++            truncate.convert(nanos, TimeUnit::Microsecond).unwrap(),
++            expected
++        );
++    }
++}
++
++#[derive(Debug)]
++struct Unsupported;
++
++impl TimestampTimeZone for Unsupported {
++    fn orc_epoch_seconds(&self) -> i64 {
++        1_420_070_400
++    }
++
++    fn offset_millis(&self, _: i64) -> Result<i32> {
++        Err(invalid("profile does not support this instant"))
++    }
++}
++
++#[test]
++fn offset_errors_and_checked_candidate_overflow_are_reported() {
++    assert!(conversion(Unsupported, Fixed(0))
++        .convert(0)
++        .unwrap_err()
++        .to_string()
++        .contains("profile does not support this instant"));
++    let conversion = conversion(Fixed(i32::MAX), Fixed(i32::MIN));
++    assert!(conversion
++        .convert(i128::from(i64::MAX) * 1_000_000)
++        .unwrap_err()
++        .to_string()
++        .contains("candidate exceeds"));
++    assert!(conversion.convert(i128::MAX).is_err());
++}
++
++#[derive(Debug)]
++struct Resolver;
++
++impl TimestampTimeZoneResolver for Resolver {
++    fn resolve(&self, name: &str) -> Result<Arc<dyn TimestampTimeZone>> {
++        match name {
++            "custom" => Ok(Arc::new(Fixed(20_700_000))),
++            _ => Err(invalid("unknown test zone")),
++        }
++    }
++}
++
++#[test]
++fn missing_names_retain_current_writer_and_resolution_errors_do_not_replace_it() {
++    let mut state = TimestampTimeZoneState::new(TimestampTimeZoneOptions::new(
++        Arc::new(Fixed(0)),
++        Arc::new(Resolver),
++    ));
++    assert_eq!(
++        state.start_stripe(None).unwrap().orc_epoch_seconds(),
++        1_420_070_400
++    );
++    assert_eq!(
++        state
++            .start_stripe(Some("custom"))
++            .unwrap()
++            .orc_epoch_seconds(),
++        1_420_049_700
++    );
++    assert!(state.start_stripe(Some("invalid")).is_err());
++    for name in [None, Some("")] {
++        assert_eq!(
++            state.start_stripe(name).unwrap().orc_epoch_seconds(),
++            1_420_049_700
++        );
++    }
++}
