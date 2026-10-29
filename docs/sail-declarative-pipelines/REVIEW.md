@@ -5,7 +5,7 @@ existing design. Work is on `work/spark-declarative-pipelines`, based on Sail
 `0ba425c0331aee4dd4e9a280c6a793926fd0876e`. These are local commits; no upstream
 pull requests have been opened or branches pushed.
 
-Current batch source `e4d578ce06` publishes table and persisted-view metadata
+Current batch source `5a5e256328` publishes table and persisted-view metadata
 before batch writes and refreshes existing tables through catalog operations.
 Its detached gate passed 112 selected Sail cases and 67 unchanged upstream Python
 executions. These counts do not establish full SDP parity. Diagnostics, remaining catalog
@@ -284,6 +284,27 @@ separate reference for the behavior motivating this change.
 Streaming reset-policy graph constraints, duplicate case-variant keys, and warning
 event parity still need acceptance coverage. This unit adds no new catalog API,
 physical plan, dependency, or streaming behavior.
+
+## Review structured temporary-view rejection
+
+Commit `5a5e256328` returns `INVALID_TEMP_OBJ_REFERENCE`, SQL state `42K0F`,
+and all four message parameters through the existing structured Connect error
+helper. It preserves the AnalysisException class and derives quoted identifiers
+from the registered graph. The existing BDD case now checks the whole parameter
+map. Its current-catalog placeholder reflects the engines' different native
+catalog names rather than changing Sail's default.
+
+The [receipt](evidence/5a5e256328406b6dcbffd0db83dd39d6f9746553/gate.json) records
+112 selected Sail cases and 67 upstream Python executions, nightly formatting,
+strict Clippy, CLI build and Python lint, all passing. Spark 4.2.1 dry and real
+reference runs returned the same temporary-view error metadata. The initial
+111-pass/one-failure gate is retained with its catalog-fixture correction. This
+strengthens an existing scenario rather than increasing the test count.
+
+The companion streaming probes encountered a missing source during resolution;
+their null structured condition does not establish streaming-query validation
+behavior. Error priority, exact wording, direct-failure attribution, and failure
+events remain separate acceptance work.
 
 ## Constraints for subsequent units
 

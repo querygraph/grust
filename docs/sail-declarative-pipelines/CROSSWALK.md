@@ -22,8 +22,8 @@ Immediate gaps exposed by the view audit:
 
 - Missing-input errors must attribute the direct failure to the view, rather
   than merely return the underlying unresolved-table exception.
-- Temporary-object and streaming-query rejections need complete structured
-  conditions and parameters, beyond matching a fragment of error text.
+- Temporary-object rejection now checks the complete structured condition and
+  parameters at Sail `5a5e256328`. Streaming-query rejection metadata remains open.
 - A view whose expression lacks a permanent-view alias must fail publication;
   dependent views must receive SKIPPED events with the expected severity.
 - Stored view definitions and graph metadata need exact checks alongside data

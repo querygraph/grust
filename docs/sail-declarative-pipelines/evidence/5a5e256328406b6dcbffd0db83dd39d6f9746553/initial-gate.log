@@ -1,0 +1,59 @@
+.......................................................F................ [ 64%]
+........................................                                 [100%]
+=================================== FAILURES ===================================
+_________ test_persistent_views_cannot_refer_to_private_pipeline_views _________
+
+fixturefunc = <function pipeline_error_parameters at 0x10ba67b00>
+request = <FixtureRequest for <Function test_persistent_views_cannot_refer_to_private_pipeline_views>>
+kwargs = {'datatable': [['parameter', 'value'], ['obj', 'view'], ['objName', '`spark_catalog`.`default`.`output`'], ['tempObj',...lysisException('[INVALID_TEMP_OBJ_REFERENCE] view `sail`.`default`.`output` references temporary view `intermediate`')}
+
+    def call_fixture_func(
+        fixturefunc: _FixtureFunc[FixtureValue], request: FixtureRequest, kwargs
+    ) -> FixtureValue:
+        if inspect.isgeneratorfunction(fixturefunc):
+            fixturefunc = cast(Callable[..., Generator[FixtureValue]], fixturefunc)
+            generator = fixturefunc(**kwargs)
+            try:
+                fixture_result = next(generator)
+            except StopIteration:
+                raise ValueError(f"{request.fixturename} did not yield a value") from None
+            finalizer = functools.partial(_teardown_yield_fixture, fixturefunc, generator)
+            request.addfinalizer(finalizer)
+        else:
+            fixturefunc = cast(Callable[..., FixtureValue], fixturefunc)
+>           fixture_result = fixturefunc(**kwargs)
+                             ^^^^^^^^^^^^^^^^^^^^^
+
+../sail-pipelines-proposal/.venv/lib/python3.12/site-packages/_pytest/fixtures.py:1005: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+pipeline_error = AnalysisException('[INVALID_TEMP_OBJ_REFERENCE] view `sail`.`default`.`output` references temporary view `intermediate`')
+datatable = [['parameter', 'value'], ['obj', 'view'], ['objName', '`spark_catalog`.`default`.`output`'], ['tempObj', 'temporary view'], ['tempObjName', '`intermediate`']]
+
+    @then("pipeline error parameters")
+    def pipeline_error_parameters(pipeline_error, datatable):
+        assert datatable[0] == ["parameter", "value"]
+>       assert pipeline_error.getMessageParameters() == dict(datatable[1:])
+E       AssertionError: assert {'tempObj': '...lt`.`output`'} == {'obj': 'view...ntermediate`'}
+E         
+E         Omitting 3 identical items, use -vv to show
+E         Differing items:
+E         {'objName': '`sail`.`default`.`output`'} != {'objName': '`spark_catalog`.`default`.`output`'}
+E         Use -v to get more diff
+
+python/pysail/testing/spark/steps/pipelines.py:61: AssertionError
+----------------------------- Captured stdout call -----------------------------
+2026-10-29 09:33:11: Starting pipeline analysis
+=============================== warnings summary ===============================
+python/pysail/tests/spark/pipelines/test_features.py: 75 warnings
+  /Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pytest_bdd/compat.py:28: PytestRemovedIn10Warning: Passing nodeid to _register_fixture is deprecated. Pass node instead for fixture scoping.
+    request._fixturemanager._register_fixture(
+
+python/pysail/tests/spark/pipelines/test_features.py: 75 warnings
+  /Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/_pytest/fixtures.py:1986: PytestRemovedIn10Warning: Passing baseid to FixtureDef is deprecated. Pass node instead for fixture scoping.
+    fixture_def = FixtureDef(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED python/pysail/tests/spark/pipelines/test_features.py::test_persistent_views_cannot_refer_to_private_pipeline_views
+1 failed, 111 passed, 150 warnings in 21.78s

@@ -1,0 +1,41 @@
+WARNING: Using incubator modules: jdk.incubator.vector
+Using Spark's default log4j profile: org/apache/spark/log4j2-defaults.properties
+Setting default log level to "WARN".
+To adjust logging level use sc.setLogLevel(newLevel). For SparkR, use setLogLevel(newLevel).
+26/10/29 02:30:58 WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/conf.py:61: UserWarning: Failed to set spark.ui.enabled to Some(false) due to [CANNOT_MODIFY_CONFIG] Cannot modify the value of the Spark config: "spark.ui.enabled".
+See also 'https://spark.apache.org/docs/latest/sql-migration-guide.html#ddl-statements'. SQLSTATE: 46110
+  warnings.warn(warn)
+/Users/alexy/src/sail-pipelines-proposal/.venv/lib/python3.12/site-packages/pyspark/sql/connect/conf.py:61: UserWarning: Failed to set spark.sql.warehouse.dir to Some(file:///var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/sail-sdp-properties-1v0j7euf/warehouse) due to [CANNOT_MODIFY_STATIC_CONFIG] Cannot modify the value of the static Spark config: "spark.sql.warehouse.dir". SQLSTATE: 46110
+  warnings.warn(warn)
+2026-10-29 09:31:02: Failed to resolve flow: 'spark_catalog.default.output'.
+Error: [TABLE_OR_VIEW_NOT_FOUND] The table or view `spark_catalog`.`default`.`source` cannot be found. Verify the spelling and correctness of the schema and catalog.
+Search path: [`system`.`builtin`, `system`.`session`, `spark_catalog`.`default`].
+If you did not qualify the name with a schema, verify the current_schema() output, or qualify the name with the correct schema and catalog.
+To tolerate the error on drop use DROP VIEW IF EXISTS or DROP TABLE IF EXISTS. SQLSTATE: 42P01; line 1 pos 36;
+NamedStreamingRelation('UnresolvedRelation [spark_catalog, default, source], [], true
+, name=<Unassigned>)
+{
+  "spark_version": "4.2.1",
+  "cases": [
+    {
+      "name": "temporary",
+      "type": "AnalysisException",
+      "condition": "INVALID_TEMP_OBJ_REFERENCE",
+      "parameters": {
+        "obj": "view",
+        "objName": "`spark_catalog`.`default`.`output`",
+        "tempObjName": "`intermediate`",
+        "tempObj": "temporary view"
+      },
+      "sql_state": "42K0F"
+    },
+    {
+      "name": "streaming",
+      "type": "AnalysisException",
+      "condition": null,
+      "parameters": null,
+      "sql_state": null
+    }
+  ]
+}

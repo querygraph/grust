@@ -10810,3 +10810,7 @@ Sail `e4d578ce0658f94884753e3bfdadb3f2208f5af6` passed its detached fmt, strict 
 ## 2026-10-29T09:30:01.032750+00:00 — DONE first assertion-level SDP crosswalk
 
 Audited all 11 Spark ViewSuite registrations against source and Sail evidence e4d578ce0658f94884753e3bfdadb3f2208f5af6: seven partial behavioral ports, four unmapped, zero fully qualified. Exact covered/missing assertions are in the static inventory; source hashes and mapped passing XML nodes were verified. CROSSWALK.md records next gaps in direct-failure attribution, structured rejection metadata, alias failures, dependent SKIPPED events, and exact view metadata. The remaining 451 static call sites need assertion review and parameter/helper expansion; these counts are not runtime tests or a parity percentage. No implementation change or new design phase.
+
+## 2026-10-29T09:36:09.842153+00:00 — DONE structured temporary-view rejection
+
+Sail 5a5e256328406b6dcbffd0db83dd39d6f9746553 passed detached formatting, strict Clippy, CLI build, Python lint, 112 selected Sail cases and 67 upstream Python executions. Existing BDD scenario now verifies INVALID_TEMP_OBJ_REFERENCE, SQL state 42K0F and all four parameters. Live Spark 4.2.1 dry/real probes confirm metadata. Initial catalog-name fixture mismatch is retained and corrected using the session catalog. Streaming probe missing-source failures are retained without a type-validation parity claim. Full batch acceptance remains active; no new design phase or publication.
