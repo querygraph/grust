@@ -356,3 +356,13 @@ The materialization crosswalk now covers all 27 registrations in addition to the
 11 view registrations. Eight materialization ports are partial and 19 remain
 unmapped. The operator authorizes updating LakeCat catalog coverage and reusing
 that support in Sail so it does not require a separate later implementation.
+
+## Catalog ownership clarification
+
+General catalog support and reusable catalog semantics are implemented in Sail,
+with LakeCat as one supported provider. Shared DDL/schema/partition/property
+behavior needs catalog-neutral Sail acceptance tests. LakeCat-specific changes
+implement its adapter, catalog-state persistence, authorization, and commit/CAS
+integration through the existing seams. They must not duplicate generic Sail
+catalog logic or make pipeline planning depend on LakeCat. The operator explicitly
+clarified this ownership after authorizing LakeCat coverage updates.

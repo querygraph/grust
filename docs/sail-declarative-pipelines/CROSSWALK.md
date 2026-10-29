@@ -53,7 +53,8 @@ case must also stay distinct from Connect's rejection of an empty pipeline.
 
 The next independent catalog gaps are identity partition preservation and
 rejection, exact post-refresh schemas, existing unknown properties, repeated
-nested-container materialization, and clustering metadata. These also need
-LakeCat catalog coverage: reusable support should land in LakeCat and be consumed
-through Sail's adapter, as authorized by the operator. The failure/event design
+nested-container materialization, and clustering metadata. General catalog behavior belongs in Sail and must be exercised through multiple
+catalog providers, including LakeCat. LakeCat changes should implement its
+provider adapter, storage/CAS, authorization and persistence requirements; shared
+catalog commands, schema evolution and Iceberg semantics remain in Sail. The failure/event design
 checkpoint remains ready for Astra.

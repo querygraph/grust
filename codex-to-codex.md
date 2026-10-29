@@ -10822,3 +10822,7 @@ Inspected current Sail and pinned Spark failure/event paths. Recorded the failed
 ## 2026-10-29T09:42:25.483246+00:00 — DONE materialization assertion crosswalk; LakeCat scope update
 
 Audited all 27 pinned Spark MaterializeTablesSuite registrations: eight partial behavioral ports and 19 unmapped. Two full-refresh boolean grids are explicit. Combined view/materialization audit covers 38 static registrations; remaining 424 require assertion review. Source hash and cited passing Sail nodes verified. No Scala-suite execution claim. Operator now authorizes LakeCat catalog coverage updates and reuse through Sail to avoid a separate later implementation. Next work inspects existing LakeCat adapter and its repository instructions. Astra failure/event design checkpoint remains ready; no new architecture selected.
+
+## 2026-10-29T09:44:05.205292+00:00 — catalog ownership clarification
+
+Operator clarified that general catalog support must improve in Sail, with LakeCat one supported catalog. Shared DDL, schema, partition/property and Iceberg behavior stays in Sail; LakeCat changes are provider-adapter, persistence/CAS and governance integration plus coverage. Inspected LakeCat master/origin/master 27e18f390c450c187a34b1c3bb2037c26d107699: existing LakeCatCatalogProvider supports create/load/views but alter_table is explicitly unsupported; it consumes Sail git revision 9f6f8065dd810be8146995876acf872ea803adf0. No production code changed. Next implementation must reconcile the shared Sail catalog surface and dependency revisions before adapter changes.
