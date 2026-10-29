@@ -1,0 +1,119 @@
+{
+  "recorded_at": "2026-10-29T13:22:11.792995+00:00",
+  "sail_commit": "ac7bff5007545859b6c972e2d9b9a17ffc38fa97",
+  "scratch": "/var/folders/pv/1m08mp_x2cg0p9qg0skptk8r0000gn/T/sail-sdp-plan-gold-d38_lt62",
+  "binary_sha256": "c9eeffba64c3ecf2e864bbe6a5a76174518bbf58552f2af6b4df05251e467729",
+  "fixture_files": 45,
+  "changed_files": 2,
+  "changed_cases": 8,
+  "changes": [
+    {
+      "file": "ddl_create_index.json",
+      "cases": [
+        {
+          "index": 0,
+          "input": "CREATE index IF NOT EXISTS i1 ON TABLE a.b.c USING BTREE (col1 OPTIONS ('k1'='v1'), col2 OPTIONS ('k2'='v2')) ",
+          "before": {
+            "failure": "invalid argument: found index at 7:12 expected 'DATABASE', 'SCHEMA', 'NAMESPACE', 'OR', 'TEMP', 'TEMPORARY', 'EXTERNAL', 'TABLE', 'GLOBAL', or 'VIEW'"
+          },
+          "after": {
+            "failure": "invalid argument: found index at 7:12 expected 'MATERIALIZED', 'STREAMING', 'FLOW', 'DATABASE', 'SCHEMA', 'NAMESPACE', 'OR', 'TEMP', 'TEMPORARY', 'EXTERNAL', 'TABLE', 'GLOBAL', or 'VIEW'"
+          }
+        },
+        {
+          "index": 1,
+          "input": "CREATE index i1 ON a.b.c (col1 OPTIONS ('k1'='v1'), col2 OPTIONS ('k2'='v2')) OPTIONS ('k3'='v3', 'k4'='v4')",
+          "before": {
+            "failure": "invalid argument: found index at 7:12 expected 'DATABASE', 'SCHEMA', 'NAMESPACE', 'OR', 'TEMP', 'TEMPORARY', 'EXTERNAL', 'TABLE', 'GLOBAL', or 'VIEW'"
+          },
+          "after": {
+            "failure": "invalid argument: found index at 7:12 expected 'MATERIALIZED', 'STREAMING', 'FLOW', 'DATABASE', 'SCHEMA', 'NAMESPACE', 'OR', 'TEMP', 'TEMPORARY', 'EXTERNAL', 'TABLE', 'GLOBAL', or 'VIEW'"
+          }
+        },
+        {
+          "index": 2,
+          "input": "CREATE index i1 ON a.b.c USING BTREE (col1)",
+          "before": {
+            "failure": "invalid argument: found index at 7:12 expected 'DATABASE', 'SCHEMA', 'NAMESPACE', 'OR', 'TEMP', 'TEMPORARY', 'EXTERNAL', 'TABLE', 'GLOBAL', or 'VIEW'"
+          },
+          "after": {
+            "failure": "invalid argument: found index at 7:12 expected 'MATERIALIZED', 'STREAMING', 'FLOW', 'DATABASE', 'SCHEMA', 'NAMESPACE', 'OR', 'TEMP', 'TEMPORARY', 'EXTERNAL', 'TABLE', 'GLOBAL', or 'VIEW'"
+          }
+        }
+      ]
+    },
+    {
+      "file": "error_misc.json",
+      "cases": [
+        {
+          "index": 3,
+          "input": "CREATE FUNCTION test-func as org.test.func",
+          "before": {
+            "failure": "invalid argument: found FUNCTION at 7:15 expected 'DATABASE', 'SCHEMA', 'NAMESPACE', 'OR', 'TEMP', 'TEMPORARY', 'EXTERNAL', 'TABLE', 'GLOBAL', or 'VIEW'"
+          },
+          "after": {
+            "failure": "invalid argument: found FUNCTION at 7:15 expected 'MATERIALIZED', 'STREAMING', 'FLOW', 'DATABASE', 'SCHEMA', 'NAMESPACE', 'OR', 'TEMP', 'TEMPORARY', 'EXTERNAL', 'TABLE', 'GLOBAL', or 'VIEW'"
+          }
+        },
+        {
+          "index": 10,
+          "input": "USE https://www.spa.rk/bucket/pa-th.json?=&#%",
+          "before": {
+            "failure": "invalid argument: found https at 4:9 expected 'DATABASE', 'SCHEMA', 'NAMESPACE', or 'CATALOG'"
+          },
+          "after": {
+            "failure": "invalid argument: found : at 9:10 expected '.', ';', or end of input"
+          }
+        },
+        {
+          "index": 11,
+          "input": "USE test-test",
+          "before": {
+            "failure": "invalid argument: found test at 4:8 expected 'DATABASE', 'SCHEMA', 'NAMESPACE', or 'CATALOG'"
+          },
+          "after": {
+            "failure": "invalid argument: found - at 8:9 expected '.', ';', or end of input"
+          }
+        },
+        {
+          "index": 12,
+          "input": "USE \u0196pfel",
+          "before": {
+            "failure": "invalid argument: found \u0196pfel at 4:10 expected 'DATABASE', 'SCHEMA', 'NAMESPACE', or 'CATALOG'"
+          },
+          "after": {
+            "success": {
+              "command": {
+                "setCurrentDatabase": {
+                  "database": [
+                    "\u0196pfel"
+                  ]
+                },
+                "planId": null
+              }
+            }
+          }
+        },
+        {
+          "index": 13,
+          "input": "USE \u88681",
+          "before": {
+            "failure": "invalid argument: found \u88681 at 4:8 expected 'DATABASE', 'SCHEMA', 'NAMESPACE', or 'CATALOG'"
+          },
+          "after": {
+            "success": {
+              "command": {
+                "setCurrentDatabase": {
+                  "database": [
+                    "\u88681"
+                  ]
+                },
+                "planId": null
+              }
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -76,3 +76,15 @@ catalog adapter, once its applicable provider operations are supported.
 The failing test body, initial candidate patch and log remain committed as evidence.
 It is now restored in the existing Rust test module and passes unchanged. The
 original failed source and log remain historical evidence.
+
+## Existing identifier policy to preserve
+
+The [golden repair and parser
+controls](evidence/2d54d5a568f8dbac68d2b9ac8519380a25782fd3/gate.json) establish a
+deliberate boundary for the next design. Sail's original word lexer permits Unicode
+alphanumeric characters in unquoted identifiers. Optional USE namespace keywords were
+added in f52d4f7d8, and now expose the same inherited identifier rule for bare USE.
+Spark 4.2.1 rejects the two unquoted Unicode controls and accepts backquoted names. Do
+not silently replace Sail's general identifier policy while adding catalog expressions.
+The eight-case golden repair retains the original Spark exception metadata and makes no
+new SDP parity claim.

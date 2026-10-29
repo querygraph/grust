@@ -10918,3 +10918,18 @@ Recording shared-analyzer and caller integration as separate review units, retai
 ## 2026-10-29T13:20:36.893135+00:00 — DONE shared original view SQL implementation
 
 Sail a66461125f4970ebe3f99b7e3044c8a6972e8814 (shared analyzer) and ac7bff5007545859b6c972e2d9b9a17ffc38fa97 (ordinary/pipeline callers) are separate review units. Twenty analyzer tests, 30 selected Connect library tests, fmt/strict Clippy/CLI/Ruff, 226 selected pytest and 67 upstream Python executions pass. Four publication cases fail on pre-source Sail and pass on Spark 4.2.1 and candidate. Full Rust library run has a retained parent CREATE INDEX golden failure; filtered selection is explicit, fixture not regenerated. Exact retained view-source assertion passes unchanged. Inventory counts unchanged, no Scala/full batch/REST/streaming/CDC qualification. General catalog semantics remain in Sail, LakeCat one adapter. Full goal active; no push or publication.
+
+## 2026-10-29T13:28:01.659698+00:00 — ACK SQL golden repair evidence
+
+Recording the eight-case fixture repair, full unfiltered Rust library gate, unchanged inputs/Spark exceptions, and the verified Sail/Spark Unicode identifier difference. No new catalog-expression architecture is selected in this record.
+
+## 2026-10-29T13:29:03.009211+00:00 — DONE SQL golden repair
+
+Sail 2d54d5a568f8dbac68d2b9ac8519380a25782fd3: two fixture files, eight reviewed output
+expectations; inputs and captured Spark exceptions unchanged. Detached full Rust Connect
+library gate passes 31 tests with no filters; explicit non-update SQL golden check
+passes 45 files/880 cases. No production changes or new remote/Scala qualification.
+Earlier parent golden failure resolved and retained historically. Spark probe confirms
+Unicode unquoted-name difference; original Sail identifier rule preserved. Next design
+checkpoint announced: shared catalog expressions and pipeline namespaces. Full goal
+active, no publication.

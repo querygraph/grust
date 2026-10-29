@@ -1,0 +1,57 @@
+{
+  "sail_commit": "2d54d5a568f8dbac68d2b9ac8519380a25782fd3",
+  "recorded_at": "2026-10-29T13:29:03.009211+00:00",
+  "spark_commit": "617618396087429b5627a86ce933bb0f5d6645cb",
+  "gate_checkout": "detached immutable source; own target",
+  "changed_paths": [
+    "crates/sail-spark-connect/tests/gold_data/plan/ddl_create_index.json",
+    "crates/sail-spark-connect/tests/gold_data/plan/error_misc.json"
+  ],
+  "checks": [
+    {
+      "command": "cargo +1.98.1 test -p sail-spark-connect --lib --locked",
+      "outcome": "pass",
+      "passed": 31,
+      "failed": 0,
+      "ignored": 0,
+      "filtered_out": 0,
+      "log": "rust.log",
+      "environment": "CARGO_PROFILE_DEV_DEBUG=0; CARGO_PROFILE_DEV_INCREMENTAL=false; PYO3_PYTHON=<venv>/bin/python"
+    },
+    {
+      "command": "env -u SAIL_UPDATE_GOLD_DATA <compiled library test binary> proto::plan::tests::test_sql_to_plan --exact",
+      "outcome": "pass",
+      "passed": 1,
+      "log": "gold-check-mode.log",
+      "fixture_files": 45,
+      "fixture_cases": 880
+    },
+    {
+      "command": "git diff --check <parent> <commit>; structured comparison of all changed fixtures",
+      "outcome": "pass",
+      "changed_expectations": 8,
+      "inputs_unchanged": true,
+      "spark_exception_metadata_unchanged": true
+    },
+    {
+      "command": "python spark-reference.py",
+      "outcome": "observed",
+      "spark_version": "4.2.1",
+      "rejected": 4,
+      "parsed": 2,
+      "report": "spark-reference.json"
+    }
+  ],
+  "scope": "Test fixture expectations only; no production code or inputs changed. Six diagnostics and two successful USE plans reflect the previously landed grammar and inherited Sail identifier rule.",
+  "compatibility_boundary": {
+    "sail_unicode_rule_source_commit": "0ba425c0331aee4dd4e9a280c6a793926fd0876e",
+    "source": "crates/sail-sql-parser/src/lexer.rs; word() explicitly accepts Unicode alphanumerics in unquoted identifiers",
+    "bare_use_commit": "f52d4f7d8e4951375c58d952547e4ecc385c2bba",
+    "spark_4_2_1": "Rejects unquoted Unicode identifiers; accepts both quoted control names. The golden output pins Sail behavior, not Spark parity; original captured Spark exceptions remain unchanged."
+  },
+  "limits": [
+    "Closes the retained Rust SQL-plan golden failure; not an original Spark Scala SDP-suite verdict.",
+    "No new CLI/extension build, remote pytest/upstream Python, catalog provider, streaming, CDC or distributed qualification.",
+    "SDP inventory and full-goal acceptance remain incomplete."
+  ]
+}

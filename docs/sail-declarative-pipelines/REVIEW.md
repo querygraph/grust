@@ -927,3 +927,28 @@ Sail ac7bff5007545859b6c972e2d9b9a17ffc38fa97 wires ordinary SQL relations and p
 The full initial Rust library run is not green: 30 pass and the SQL-plan golden test fails on ddl_create_index.json. The same golden test fails on parent a66461125. A hash-verified pre-source 9c42934ed8 CLI probe confirms its expected-token diagnostic already includes MATERIALIZED/STREAMING/FLOW, unlike the fixture. Logs and the failing result remain retained; no golden data was regenerated. No full Rust-suite pass is claimed.
 
 Inventory counts remain 97 reviewed/365 unaudited, SQL 29 partial/nine unmapped, with no fully qualified original Scala registration. Exact view text is no longer an open defect. Catalog-expression/namespace and event architecture, REST view operations, ORC, full batch, streaming and CDC remain incomplete.
+
+## SQL plan golden expectations after pipeline and USE grammar
+
+Sail 2d54d5a568f8dbac68d2b9ac8519380a25782fd3 changes eight expectations in two existing
+fixture files. All inputs and captured Spark exception metadata remain unchanged. Four
+CREATE diagnostics gain MATERIALIZED/STREAMING/FLOW alternatives. Two malformed USE
+diagnostics advance to their invalid delimiter, and two Unicode USE inputs now produce
+the existing SetCurrentDatabase plan under Sail's inherited Unicode identifier rule.
+
+The full Spark Connect Rust library suite passes: 31 tests, zero failures, ignores or
+filters. The SQL-plan golden test also passes with SAIL_UPDATE_GOLD_DATA explicitly
+unset, checking 45 files and 880 cases. The earlier 30-pass/one-fail result remains
+historical evidence; the failure is now resolved. See the [qualified
+receipt](evidence/2d54d5a568f8dbac68d2b9ac8519380a25782fd3/gate.json).
+
+The independent Spark 4.2.1 parser probe rejects both unquoted Unicode names and accepts
+their backquoted controls. Sail's word lexer explicitly permits Unicode unquoted
+identifiers in the original base commit; this fixture-only repair preserves that
+decision and does not claim Spark identifier parity. No production SQL behavior changes
+in this commit.
+
+No remote or original Scala suite was rerun for this fixture-only unit. The preceding
+view-source commit retains its 226 selected pytest and 67 upstream Python verdicts.
+Inventory counts and full batch/streaming/CDC acceptance remain unchanged. The next
+announced design phase is shared catalog expressions and pipeline namespace handling.

@@ -1,0 +1,46 @@
+WARNING: Using incubator modules: jdk.incubator.vector
+Using Spark's default log4j profile: org/apache/spark/log4j2-defaults.properties
+Setting default log level to "WARN".
+To adjust logging level use sc.setLogLevel(newLevel). For SparkR, use setLogLevel(newLevel).
+26/10/29 06:24:08 WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+{
+  "spark_version": "4.2.1",
+  "cases": [
+    {
+      "sql": "USE https://www.spa.rk/bucket/pa-th.json?=&#%",
+      "outcome": "rejected",
+      "exception_type": "ParseException",
+      "message": "\n[INVALID_IDENTIFIER] The unquoted identifier https://www.spa.rk/bucket/pa-th.json?=&#% is invalid and must be back quoted as: `https://www.spa.rk/bucket/pa-th.json?=&#%`.\nUnquoted identifiers can only contain ASCII letters ('a' - 'z', 'A' - 'Z'), digits ('0' - '9'), and underbar ('_').\nUnquoted identifiers must also not start with a digit.\nDifferent data sources and meta stores may impose additional restrictions on valid identifiers. SQLSTATE: 42602 (line 1, pos 4)\n\n== SQL ==\nUSE https://www.spa.rk/bucket/pa-th.json?=&#%\n----^^^\n"
+    },
+    {
+      "sql": "USE test-test",
+      "outcome": "rejected",
+      "exception_type": "ParseException",
+      "message": "\n[INVALID_IDENTIFIER] The unquoted identifier test-test is invalid and must be back quoted as: `test-test`.\nUnquoted identifiers can only contain ASCII letters ('a' - 'z', 'A' - 'Z'), digits ('0' - '9'), and underbar ('_').\nUnquoted identifiers must also not start with a digit.\nDifferent data sources and meta stores may impose additional restrictions on valid identifiers. SQLSTATE: 42602 (line 1, pos 8)\n\n== SQL ==\nUSE test-test\n--------^^^\n"
+    },
+    {
+      "sql": "USE Ɩpfel",
+      "outcome": "rejected",
+      "exception_type": "ParseException",
+      "message": "\n[INVALID_IDENTIFIER] The unquoted identifier Ɩpfel is invalid and must be back quoted as: `Ɩpfel`.\nUnquoted identifiers can only contain ASCII letters ('a' - 'z', 'A' - 'Z'), digits ('0' - '9'), and underbar ('_').\nUnquoted identifiers must also not start with a digit.\nDifferent data sources and meta stores may impose additional restrictions on valid identifiers. SQLSTATE: 42602 (line 1, pos 4)\n\n== SQL ==\nUSE Ɩpfel\n----^^^\n"
+    },
+    {
+      "sql": "USE 表1",
+      "outcome": "rejected",
+      "exception_type": "ParseException",
+      "message": "\n[INVALID_IDENTIFIER] The unquoted identifier 表1 is invalid and must be back quoted as: `表1`.\nUnquoted identifiers can only contain ASCII letters ('a' - 'z', 'A' - 'Z'), digits ('0' - '9'), and underbar ('_').\nUnquoted identifiers must also not start with a digit.\nDifferent data sources and meta stores may impose additional restrictions on valid identifiers. SQLSTATE: 42602 (line 1, pos 4)\n\n== SQL ==\nUSE 表1\n----^^^\n"
+    },
+    {
+      "sql": "USE `Ɩpfel`",
+      "outcome": "parsed",
+      "plan": "'SetCatalogAndNamespace\n+- 'UnresolvedNamespace [Ɩpfel], false\n",
+      "kind": "SetCatalogAndNamespace"
+    },
+    {
+      "sql": "USE `表1`",
+      "outcome": "parsed",
+      "plan": "'SetCatalogAndNamespace\n+- 'UnresolvedNamespace [表1], false\n",
+      "kind": "SetCatalogAndNamespace"
+    }
+  ]
+}
