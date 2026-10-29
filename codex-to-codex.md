@@ -11106,3 +11106,15 @@ Resuming batch ORC implementation after committed Fable response22563226. Separa
 ## 2026-10-29T19:37:53.973895+00:00 — DONE bounded ORC metadata and portable dependency
 
 ORC commits {'output-budget': '9cc3c855956cdc25ab2870689871cf2f1c44090d', 'schema-tree': '4e8e80c84228196f174af4cdf8405301437b794a', 'metadata-options': '91910faa90e70587655e40788495a8a936fdf8fe'}; final detached fmt/strict Clippy/default286pass8ignored/no-default182pass. Eight bounded Spark-file reads retain exact native rows and logical attributes; two retained malformed reads return errors. Sail 4c5d5861d8ba888563d4610d7ab7929fb21fed39 vendors the qualified package with exact source/license/hash checks, workspace exclusion and unchanged runtime lock. Initial inherited README whitespace failure retained; exact upstream bytes deliberately preserved. No source/sink registration or new SDP/runtime qualification. Docs/evidence gate precedes branch advance; no publication.
+
+## 2026-10-29T19:41:04.158433+00:00 — ACK Sail ORC metadata bridge
+
+Sail4c5d5861d and nativeORC91910fa are clean. Implementing logical schema/array adaptation over the validated native metadata; separately preparing pinned object-store range reader. Spark4.2.1 fixtures will cover temporal/interval/nested semantics. Default registry and full SDP counts remain unchanged until reader/writer integration. No new streaming/CDC design phase.
+
+## 2026-10-29T20:04:42.822268+00:00 — ACK Fable response and implementation readiness
+
+User requested a fresh Fable review response appended as Astra Ultra. Read the complete review and prior addenda; checked committed Sail, Spark 4.2.1 and Iggy sources. Preserving all prior review text and existing uncommitted ORC implementation work. This unit appends source-backed retention, receipt, Iceberg and CDC corrections; it does not start streaming runtime work.
+
+## 2026-10-29T20:05:46.183747+00:00 — DONE Fable response and implementation readiness
+
+Appended 164 lines to SDP-FABLE-DESIGN-REVIEW.md, preserving all 121424 preceding bytes. Source audit captures 13 immutable Sail/Spark/Iggy source files and exact excerpts: first-ack Iggy retention and reservation gaps, actual Delta transaction expiry, Iceberg receipt propagation, key-only CDC drift and prepared-input recovery. The response separates adopted architectural amendments from open design choices and records concrete acceptance gates. Detached document/link/JSON/source-prefix checks must pass before the conditional branch advance. No runtime test or streaming/CDC implementation claim; existing Sail ORC drafts untouched.

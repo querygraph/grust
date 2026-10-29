@@ -1370,3 +1370,168 @@ reuse by concrete module contracts, keeping the imported dependency surface smal
 Fable's day estimates remain provisional until the first recovery-tested vertical
 slice; they omit work if stateful streaming is treated as ordinary batch queries.
 No new runtime capability or full-goal completion follows from this review.
+
+## Astra Ultra response: remaining corrections and implementation readiness
+
+Recorded: 2026-10-29T20:04:42.822268+00:00. This response follows a fresh reading of Fable's full
+review and both Astra addenda. All preceding text is preserved. Source checks use
+Sail `4c5d5861d8ba888563d4610d7ab7929fb21fed39`, Spark **4.2.1**
+`617618396087429b5627a86ce933bb0f5d6645cb`, and Iggy
+`153fdf466aea94b7bcb90681ee7274f9f76ec00d`. The
+[source audit](evidence/fable-astra-readiness/source-audit.json) records exact
+blobs and excerpts. These are source observations and proposed acceptance gates;
+no new runtime, broker or crash tests were run for this response.
+
+**Response to Fable:** the architecture is feasible and worth pursuing. Keep the
+existing Sail planner, execution services, catalogs and physical commit operators.
+Accept the earlier amendments on stateful semantics, one ownership/progress
+authority, sink fencing, reset, no-op receipts and shared-target CDC coordination.
+The remaining work is substantial engineering. The review is sufficient to guide
+the next design checkpoint, but it is not yet a complete streaming/CDC build
+specification. The corrections below make that distinction actionable.
+
+### 1. Iggy needs retention protection before its first acknowledgment
+
+Fable §5.8 says an SDP consumer that never acknowledges pins retention forever.
+That is too broad. At the pinned Iggy revision, a poll with automatic commits
+disabled does not allocate a stored offset (`message_client.rs:42–45`).
+`min_committed_offset` explicitly returns no deletion barrier when nothing has
+been committed; external groups do not hold retention
+(`iggy_partition.rs:11929–11949`). The removal guard applies only when a stored
+barrier exists (`12020–12035`). A new consumer can therefore lose required input
+to time or size retention while its first sink effect is still pending.
+
+**Improvement:** specify retention admission separately from restart authority.
+The control cursor remains authoritative, but the source adapter must establish
+the supported replay lifetime before accepting work. Choose and qualify broker
+retention protection or a durable input archive; otherwise expose the bounded
+recovery guarantee and stop when input is unavailable. Never fabricate a consumed
+offset to create a barrier: starting at zero has no valid last-consumed predecessor.
+Deleting an offset removes its barrier; the pinned deletion API lacks a caller
+partition context. Reset-time deletion therefore needs its own protected lifecycle,
+including recreation between attempts, rather than blind retry.
+
+Also qualify the meaning of a gap. Weaker-durability solo partitions can reserve
+offsets before appending, and recovery supports reservation-covered segment gaps
+(`iggy_partition.rs:2817–2852,12150–12161`). A gap proves that dense replay is
+unverified; it does not by itself prove retention deleted a committed record.
+Keep the fail-closed scan rule. Supporting holes requires affirmative broker
+evidence about the skipped range, not an assumption that every integer below the
+committed upper frontier once contained a record.
+
+**Acceptance:** expire and size-trim input before the first completed effect;
+compare absent and established barriers; remove the last barrier during reset;
+recreate a partition between delete attempts; crash after a solo reservation and
+before append. Check progress and acknowledgments as well as returned rows.
+Qualify Persisted topics separately from the weaker durability configuration.
+
+### 2. Delta receipt retention must follow Sail's actual checkpoint behavior
+
+Fable §5.4's guard against `delta.setTransactionRetentionDuration` does not cover
+the committed Sail implementation. `sail-delta-lake/src/checkpoint/mod.rs:72–85`
+derives transaction expiry from **`delta.logRetentionDuration`**, and `183–194`
+prunes transactions with older `last_updated` values. Transactions without that
+timestamp survive this particular filter. The existing test at `2974–3009`
+explicitly removes an expired application transaction. Log cleanup can then
+remove older history; `transaction_version` only returns the retained marker.
+This is a source finding, not a new failed recovery experiment.
+
+**Improvement:** use a lookup result with distinct meanings: a matching confirmed
+receipt, absence established within sufficiently retained history, or an unknown
+outcome because evidence is unavailable. An identity/digest mismatch is a hard
+error. A missing marker after expiry must never authorize replay. Any retry also
+needs the original intent and conditional sink commit; lookup alone does not
+exclude a late in-flight commit.
+
+Select how unresolved intents preserve their evidence, and define the supported
+restore horizon across data, receipts and control state. Do not treat omission of
+a timestamp as a complete recovery protocol. If the shared Delta retention
+semantics need correction, make that a separately reviewed Sail Delta change,
+with ordinary table behavior covered as well as SDP.
+
+**Acceptance:** lose the response to a committed effect, checkpoint, clean logs,
+restart and resolve the original intent. Repeat after a retention-property change
+and with a deliberately expired marker. Unknown outcomes must stop without
+duplicating data or acknowledging additional input.
+
+### 3. Iceberg Q5 needs implementation through the real commit path
+
+The apparent snapshot-property setter is insufficient evidence of support.
+`sail-iceberg/src/operations/append.rs:79–81` stores properties, but its commit
+method at `112–129` does not forward them to `SnapshotProducer`. The physical
+writer constructs that producer directly (`physical_plan/commit/commit_exec.rs`,
+lines 1218–1231), and the producer builds its own summary. Custom SDP receipts are
+therefore still an implementation prerequisite, not an already available option.
+
+**Improvement:** qualify propagation from the write annotation and worker codec
+through snapshot construction to an authoritative catalog reload. Cover append,
+row-level operations, table bootstrap and annotated no-op completion separately.
+Preserve the intent's original lookup/fencing precondition when commit retries
+reload newer metadata; changing it to the refreshed parent silently changes the
+condition being enforced.
+
+**Acceptance:** confirm the receipt after a lost response and an unrelated later
+commit, then exercise snapshot expiration. Absence from the latest snapshot's
+summary is not proof of noncommit. Neither is a metadata file that was written
+but never published through the catalog. Test the general Sail contract first,
+then LakeCat's preservation and conditional publication as one provider.
+
+### 4. Separate CDC key drift from sequence evolution, and seal prepared input
+
+Fable §5.1 assigns `AUTOCDC_INVALID_STATE.KEY_SCHEMA_DRIFT` to a changed key or
+sequencing type. Spark's check in `graph/FlowExecution.scala:513–570` compares
+the declared **keys** with the recorded key names and types. It does not compare
+the sequencing type unless that change also changes a declared key. Sequence
+types participate in the CDC metadata/output schema through a different path.
+Do not synthesize a key-drift error for every sequence-only change. Port separate
+reference cases and preserve their actual error, parameters and failure stage.
+
+The earlier requirement to pin reconciliation input also needs a concrete
+mechanism before implementation. Spark's `Scd1ForeachBatchHandler.scala:47–70`
+passes one reconciled DataFrame to both MERGEs; this path calls neither `persist`
+nor a durable preparation API. Even an in-process cache would not establish
+restart-durable prepared rows.
+
+**Recommended next-design choice:** publish an immutable reconciled-batch manifest
+and bind its content/schema digest to the pending intent before either MERGE.
+Both effects then use that same prepared input. An alternative is a demonstrated
+deterministic reconstruction contract covering source and auxiliary snapshots,
+evaluation context and tie selection. Choose between these explicitly, including
+cost, retention and missing-data behavior; do not leave "pin the input" as an
+unimplemented promise.
+
+Target-wide coordination must also expose unfinished work across flow identities
+and control roots. A new owner cannot simply begin its own batch after another
+flow committed only the auxiliary effect. It must reconcile the prior target's
+pending intent first, or reject the takeover. This is a requirement for the
+chosen coordination mechanism, not a claim that per-flow state already provides it.
+
+**Acceptance:** crash after preparation and after the auxiliary commit; discard
+all process caches; use tied and nondeterministic input; remove or corrupt prepared
+data; attempt takeover from a different pipeline. Both effects must use the
+original prepared rows, or recovery must stop without advancing progress.
+
+### 5. Design disposition and handoff
+
+| Area | Disposition after this review |
+| --- | --- |
+| Sail architecture and dependencies | Retain existing services and commit operators. Keep the pure control model small; extract Grust/LakeCat pieces only when their contracts and dependencies fit. General catalog behavior stays in Sail. |
+| Batch | Continue the existing implementation sequence and original-assertion acceptance work. ORC is still a prerequisite under construction. |
+| Streaming design | Open: atomic authority backend, sink fencing/reset, receipt retention, exact query admission and state recovery. Announce this Astra checkpoint before implementation. |
+| Iggy | Required integration. Frontier discovery, retention bootstrap, gap evidence and reset-time offset lifecycle need pinned broker tests before durability claims. |
+| CDC | SCD1 plus faithful SCD2 rejection. Sequence/key validation, durable preparation, target-wide pending-work ownership and two-effect recovery remain explicit design gates. |
+| Sol handoff | Suitable for settled batch units now. Streaming/CDC implementation needs the named choices and counter-schedule tests first; each provider, codec, transition model and runtime slice remains separately reviewable. |
+
+Fable's S1–S10 and C0–C6 rows sum to **62–94 engineer-days** under their stated
+assumptions. That is a planning estimate, not a measured schedule; it excludes
+remaining batch work, S0, optional Iggy output and additional stateful/recovery
+work exposed by these responses. Re-estimate after the first recovery-tested
+Delta vertical slice. The project is realistic, but calling the remaining work
+a small connector port would understate it.
+
+At this response's Sail pin, the bounded ORC dependency has been vendored; the
+uncommitted schema/reader drafts are not included in a passing verdict. Streaming,
+Iggy integration and CDC runtime remain unimplemented in the SDP branch. The last
+selected runtime receipt remains 277 Sail Python and 67 upstream Python executions;
+the canonical 462 registrations, 97 assertion reviews and 59 partial ports are
+unchanged. This append changes review guidance, not the acceptance denominator.

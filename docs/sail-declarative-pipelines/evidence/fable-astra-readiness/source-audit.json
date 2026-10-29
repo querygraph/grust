@@ -1,0 +1,279 @@
+{
+  "recorded_at": "2026-10-29T20:04:42.822268+00:00",
+  "review_base_commit": "cd615be24b1f19a1aa214a312eabc2dd47245699",
+  "review_path": "docs/sail-declarative-pipelines/SDP-FABLE-DESIGN-REVIEW.md",
+  "preserved_prefix_bytes": 121424,
+  "preserved_prefix_sha256": "db1cd052c80ed70d9dd2d64f52ff8edfd20e81a194c10e8a92b6169a5e2de9a4",
+  "sources": [
+    {
+      "id": "delta_transaction_retention",
+      "repository": "/Users/alexy/src/sail-pipelines-proposal",
+      "commit": "4c5d5861d8ba888563d4610d7ab7929fb21fed39",
+      "path": "crates/sail-delta-lake/src/checkpoint/mod.rs",
+      "git_blob": "7c9f288f23969ceecc974872123d540ee8d3807e",
+      "sha256": "d1289587f192d428d63ddc5262074f212d3d00fe4f59aff787f0e1c41287dc17",
+      "excerpts": [
+        {
+          "first_line": 72,
+          "last_line": 85,
+          "text": "impl CheckpointRetentionTimestamps {\n    fn try_new(metadata: &Metadata, reference_timestamp: i64) -> DeltaResult<Self> {\n        let table_properties = TableProperties::from(metadata.configuration().iter());\n        Ok(Self {\n            deleted_file_retention_timestamp: retention_cutoff_timestamp(\n                reference_timestamp,\n                table_properties.deleted_file_retention_duration(),\n                \"delta.deletedFileRetentionDuration\",\n            )?,\n            transaction_expiration_timestamp: retention_cutoff_timestamp(\n                reference_timestamp,\n                table_properties.log_retention_duration(),\n                \"delta.logRetentionDuration\",\n            )?,"
+        },
+        {
+          "first_line": 183,
+          "last_line": 194,
+          "text": "    fn prune_expired_checkpoint_actions(&mut self, reference_timestamp: i64) -> DeltaResult<()> {\n        let metadata = self.metadata.as_ref().ok_or_else(|| {\n            DeltaTableError::generic(\"Cannot prune checkpoint actions without metadata action\")\n        })?;\n        let retention = CheckpointRetentionTimestamps::try_new(metadata, reference_timestamp)?;\n\n        let txns_before = self.txns.len();\n        self.txns.retain(|_, txn| {\n            txn.last_updated\n                .map(|last_updated| last_updated > retention.transaction_expiration_timestamp)\n                .unwrap_or(true)\n        });"
+        },
+        {
+          "first_line": 2974,
+          "last_line": 3009,
+          "text": "        state.apply_action(Action::Txn(Transaction {\n            app_id: \"expired-app\".to_string(),\n            version: 1,\n            last_updated: Some(now - 31 * DAY_MILLIS),\n        }));\n        state.apply_action(Action::Txn(Transaction {\n            app_id: \"fresh-app\".to_string(),\n            version: 2,\n            last_updated: Some(now - 29 * DAY_MILLIS),\n        }));\n        state.apply_action(Action::Txn(Transaction {\n            app_id: \"legacy-app\".to_string(),\n            version: 3,\n            last_updated: None,\n        }));\n\n        state.prune_expired_checkpoint_actions(now)?;\n\n        assert!(\n            !state\n                .removes\n                .contains_key(&(\"expired.parquet\".to_string(), None))\n        );\n        assert!(\n            state\n                .removes\n                .contains_key(&(\"fresh.parquet\".to_string(), None))\n        );\n        assert!(\n            state\n                .removes\n                .contains_key(&(\"unknown-ts.parquet\".to_string(), None))\n        );\n        assert!(!state.txns.contains_key(\"expired-app\"));\n        assert!(state.txns.contains_key(\"fresh-app\"));\n        assert!(state.txns.contains_key(\"legacy-app\"));"
+        }
+      ]
+    },
+    {
+      "id": "delta_history_cleanup",
+      "repository": "/Users/alexy/src/sail-pipelines-proposal",
+      "commit": "4c5d5861d8ba888563d4610d7ab7929fb21fed39",
+      "path": "crates/sail-delta-lake/src/delta_log/cleanup.rs",
+      "git_blob": "9b696a650382aa7036016036fb258666e6d691d7",
+      "sha256": "fbc39dbd8ee9e8c9a2895bed126aea7d77e9945939721c49ce99a080b465063c",
+      "excerpts": [
+        {
+          "first_line": 120,
+          "last_line": 149,
+          "text": "pub(crate) async fn cleanup_expired_delta_log_files(\n    table_state: &DeltaSnapshot,\n    log_store: &dyn LogStore,\n    cutoff_timestamp: i64,\n    operation_id: Option<Uuid>,\n) -> DeltaResult<usize> {\n    let latest_version = table_state.version();\n    let object_store = log_store.object_store(operation_id);\n    let retention = LogRetentionWindow::new(latest_version, cutoff_timestamp);\n\n    let Some(retention_checkpoint_version) =\n        find_retention_checkpoint_version(table_state, log_store, object_store.clone(), retention)\n            .await?\n    else {\n        return Ok(0);\n    };\n\n    // Before deleting any log files, ensure a classic checkpoint exists at the retention\n    // boundary version when the table uses V2 (UUID-named) checkpoints.\n    ensure_v2_compat_classic_checkpoint(object_store.clone(), retention_checkpoint_version).await?;\n\n    // Validate every checkpoint that will remain after cleanup and collect its sidecar references\n    // before deleting any log file. A damaged retained checkpoint must fail closed while the\n    // older JSON history is still available.\n    let referenced_sidecars =\n        collect_referenced_sidecars(object_store.clone(), retention_checkpoint_version).await?;\n\n    let deleted_logs =\n        delete_logs_before_checkpoint_version(object_store.clone(), retention_checkpoint_version)\n            .await?;"
+        }
+      ]
+    },
+    {
+      "id": "delta_retained_transaction_lookup",
+      "repository": "/Users/alexy/src/sail-pipelines-proposal",
+      "commit": "4c5d5861d8ba888563d4610d7ab7929fb21fed39",
+      "path": "crates/sail-delta-lake/src/snapshot/mod.rs",
+      "git_blob": "e3deba42b1bbf703e8d11aa11739667c7868310f",
+      "sha256": "de03ff389032f1773c77e002d5a1ad615d251b5c40a8fb9b437544295e563ff6",
+      "excerpts": [
+        {
+          "first_line": 745,
+          "last_line": 749,
+          "text": "    pub fn transaction_version(&self, app_id: impl ToString) -> DeltaResult<Option<i64>> {\n        Ok(self\n            .app_txns\n            .get(&app_id.to_string())\n            .map(|txn| txn.version))"
+        }
+      ]
+    },
+    {
+      "id": "iceberg_append_properties",
+      "repository": "/Users/alexy/src/sail-pipelines-proposal",
+      "commit": "4c5d5861d8ba888563d4610d7ab7929fb21fed39",
+      "path": "crates/sail-iceberg/src/operations/append.rs",
+      "git_blob": "51ded97d91c67408700bdeffb3e40137464875af",
+      "sha256": "4b499ac23e4388f1b68c604aa290d5bbb6bd29ed046961933599aea66d190435",
+      "excerpts": [
+        {
+          "first_line": 79,
+          "last_line": 81,
+          "text": "    pub fn set_snapshot_properties(mut self, snapshot_properties: HashMap<String, String>) -> Self {\n        self.snapshot_properties = snapshot_properties;\n        self"
+        },
+        {
+          "first_line": 112,
+          "last_line": 129,
+          "text": "    async fn commit(self: Arc<Self>, tx: &Transaction) -> Result<ActionCommit, String> {\n        let snapshot_producer = SnapshotProducer::new(\n            tx,\n            self.added_data_files.clone(),\n            self.store_ctx.clone(),\n            self.manifest_metadata.clone(),\n        )\n        .with_partition_specs(self.partition_specs.clone())\n        .with_row_lineage_start_row_id(self.row_lineage_start_row_id);\n        snapshot_producer.validate_added_data_files(&self.added_data_files)?;\n\n        if self.check_duplicate {\n            // TODO: validate duplicate files later\n        }\n\n        snapshot_producer\n            .commit(SnapshotUpdateKind::FastAppend)\n            .await"
+        }
+      ]
+    },
+    {
+      "id": "iceberg_physical_commit",
+      "repository": "/Users/alexy/src/sail-pipelines-proposal",
+      "commit": "4c5d5861d8ba888563d4610d7ab7929fb21fed39",
+      "path": "crates/sail-iceberg/src/physical_plan/commit/commit_exec.rs",
+      "git_blob": "c6af21569fefad2c095b7901d01793f851299d9a",
+      "sha256": "cb7d005a18cb4402c5872884f48c02f94470b1acc1b8ceb5c7351ce4f6075463",
+      "excerpts": [
+        {
+          "first_line": 925,
+          "last_line": 943,
+          "text": "                let catalog_metadata_location = if attempt == 1 {\n                    catalog_metadata_location.clone()\n                } else if let Some(catalog_table) = catalog_metadata_table {\n                    Self::load_catalog_metadata_location(&context, catalog_table).await?\n                } else {\n                    catalog_metadata_location.clone()\n                };\n                let latest_meta = if attempt == 1 {\n                    initial_latest_meta.clone()\n                } else if let Some(location) = catalog_metadata_location.as_deref() {\n                    metadata_location_to_object_path_string(location)?\n                } else {\n                    crate::table::find_latest_metadata_file(&object_store, &table_url).await?\n                };\n\n                let bytes = load_metadata_file_bytes(&object_store, &latest_meta).await?;\n                let mut table_meta = TableMetadata::from_json(&bytes)\n                    .map_err(|e| DataFusionError::External(Box::new(e)))?;\n                Self::validate_requirements(Some(&table_meta), &commit_info.requirements)?;"
+        },
+        {
+          "first_line": 1218,
+          "last_line": 1231,
+          "text": "                let mut prepared_snapshot = SnapshotProducer::new(\n                    &tx,\n                    commit_info.data_files.clone(),\n                    Some(store_ctx.clone()),\n                    Some(manifest_meta),\n                )\n                .with_added_delete_files(commit_info.delete_files.clone())\n                .with_removed_data_file_paths(removed_data_file_paths.clone())\n                .with_partition_specs(table_meta.partition_specs.clone())\n                .with_row_lineage_start_row_id(row_lineage_start_row_id)\n                .mark_dynamic_partition_overwrite(dynamic_partition_overwrite)\n                .prepare(commit_info.snapshot_update_kind)\n                .await\n                .map_err(DataFusionError::Execution)?;"
+        },
+        {
+          "first_line": 1315,
+          "last_line": 1320,
+          "text": "                        CatalogCommitOutcome::Conflict => {\n                            prepared_snapshot.cleanup().await;\n                            if attempt >= MAX_COMMIT_RETRIES {\n                                return Err(commit_conflict_error());\n                            }\n                            continue;"
+        }
+      ]
+    },
+    {
+      "id": "iceberg_snapshot_producer",
+      "repository": "/Users/alexy/src/sail-pipelines-proposal",
+      "commit": "4c5d5861d8ba888563d4610d7ab7929fb21fed39",
+      "path": "crates/sail-iceberg/src/operations/snapshot.rs",
+      "git_blob": "07e2c6b09a2c6a0bb9bd0ac7ad25a27e9612075d",
+      "sha256": "537964f9e7c37039b6fbbb57b5d882f238771b5b06c224196cffc0801c48e165",
+      "excerpts": [
+        {
+          "first_line": 394,
+          "last_line": 407,
+          "text": "pub struct SnapshotProducer<'a> {\n    pub tx: &'a Transaction,\n    pub added_data_files: Vec<DataFile>,\n    pub added_delete_files: Vec<DataFile>,\n    pub removed_data_file_paths: Vec<String>,\n    pub store_ctx: Option<StoreContext>,\n    pub manifest_metadata: Option<crate::spec::manifest::ManifestMetadata>,\n    pub partition_specs: Vec<PartitionSpec>,\n    pub write_path_mode: crate::utils::WritePathMode,\n    /// If true, create a snapshot with no parent (for bootstrap scenarios)\n    pub is_bootstrap: bool,\n    pub row_lineage_start_row_id: Option<i64>,\n    pub dynamic_partition_overwrite: bool,\n}"
+        },
+        {
+          "first_line": 991,
+          "last_line": 998,
+          "text": "        let mut summary = crate::spec::snapshots::Summary::new(operation.clone());\n        if self.dynamic_partition_overwrite {\n            summary = summary.with_property(\"replace-partitions\", \"true\");\n        }\n        if added_data_file_count > 0 {\n            summary = summary\n                .with_property(\"added-data-files\", added_data_file_count.to_string())\n                .with_property(\"added-records\", added_records.to_string());"
+        },
+        {
+          "first_line": 1342,
+          "last_line": 1348,
+          "text": "        let mut snapshot_builder = SnapshotBuilder::new()\n            .with_snapshot_id(new_snapshot_id)\n            .with_sequence_number(new_sequence_number)\n            .with_timestamp_ms(timestamp_ms)\n            .with_manifest_list(manifest_list_uri)\n            .with_summary(summary)\n            .with_schema_id(schema_id);"
+        },
+        {
+          "first_line": 1381,
+          "last_line": 1392,
+          "text": "        // For bootstrap mode, expect no existing snapshot (None)\n        // For normal mode, expect the current snapshot ID\n        let expected_snapshot_id = if self.is_bootstrap {\n            None\n        } else {\n            Some(self.tx.snapshot().snapshot_id())\n        };\n\n        let requirements = vec![TableRequirement::RefSnapshotIdMatch {\n            r#ref: MAIN_BRANCH.to_string(),\n            snapshot_id: expected_snapshot_id,\n        }];"
+        }
+      ]
+    },
+    {
+      "id": "iggy_retention_and_reservation",
+      "repository": "/Users/alexy/src/iggy",
+      "commit": "153fdf466aea94b7bcb90681ee7274f9f76ec00d",
+      "path": "core/partitions/src/iggy_partition.rs",
+      "git_blob": "0b8853295ab8b7d96fb5a8be8e8eb0a9b10c4578",
+      "sha256": "ffb2ef118972524a84558dce8aa99ac4579d3575d4f2d17340ca6008b85d815a",
+      "excerpts": [
+        {
+          "first_line": 2817,
+          "last_line": 2852,
+          "text": "    /// The two counters are seeded separately, because the record carries two\n    /// bounds. `offset_frontier` is what messages reached, so it seeds the\n    /// COMMITTED counter; `offset_reserved` is what may have been handed to a\n    /// client, so it seeds the APPEND counter and nothing else. Folding the\n    /// reservation into the committed one would publish a `current_offset` over\n    /// a lease-block hole, and `store_consumer_offset` would then admit offsets\n    /// inside it.\n    ///\n    /// The reservation is SOLO ONLY and applies to weaker durability. Persisted\n    /// topics recover exact append positions from their prepare WAL. Advancing\n    /// them to a reservation before replay would strand the retained segment tail.\n    /// A backup mints nothing: it re-stamps what\n    /// the primary sends and rejects anything that does not continue its own\n    /// counter, so an append point a lease block above its group would have every\n    /// peer refuse the batch. A replicated group is also less exposed, since an\n    /// ack there means a quorum journaled the batch and the hole needs a\n    /// FULL-cluster crash.\n    ///\n    /// Lives HERE rather than in the server crate so the boot paths and the\n    /// simulator share one implementation. A copy in the harness was a copy of\n    /// the max rule that had lost the max, in the one place built to catch\n    /// violations of it.\n    pub fn restore_offset_frontier(&mut self, recovered: Option<&consensus::VsrState>) {\n        let Some(state) = recovered else {\n            return;\n        };\n        let frontier = state.offset_frontier;\n        let reserved = if self.consensus.replica_count() == 1 && !self.durability().is_persisted() {\n            state.offset_reserved\n        } else {\n            0\n        };\n        // NOT `frontier > 0`: the shape a crash before the first flush leaves is\n        // a zero frontier and a nonzero reservation, because the append fence\n        // runs before the journal append, so the first record a partition ever\n        // writes names no data at all."
+        },
+        {
+          "first_line": 4756,
+          "last_line": 4765,
+          "text": "            // Two independently admitted deletes can commit after both saw\n            // the key present. Deletion is idempotent on every replica, while\n            // admission still rejects a request for an already absent key.\n            (ConsumerKind::Consumer, PendingConsumerOffsetMutation::Delete) => {\n                self.consumer_offsets.pin().remove(&key);\n            }\n            (ConsumerKind::ConsumerGroup, PendingConsumerOffsetMutation::Delete) => {\n                self.consumer_group_offsets\n                    .pin()\n                    .remove(&ConsumerGroupId(key));"
+        },
+        {
+          "first_line": 11929,
+          "last_line": 11949,
+          "text": "    /// Minimum committed offset across all consumers and consumer groups, with\n    /// the holder's identity. `None` when nothing has been committed, in which\n    /// case there is no deletion barrier. External groups never hold retention.\n    fn min_committed_offset(&self) -> Option<(u64, ConsumerKind, u32)> {\n        let consumer_guard = self.consumer_offsets.pin();\n        let group_guard = self.consumer_group_offsets.pin();\n        let consumers = consumer_guard.iter().map(|(_, offset)| {\n            (\n                offset.offset.load(Ordering::Relaxed),\n                offset.kind,\n                offset.consumer_id,\n            )\n        });\n        let groups = group_guard.iter().map(|(_, offset)| {\n            (\n                offset.offset.load(Ordering::Relaxed),\n                offset.kind,\n                offset.consumer_id,\n            )\n        });\n        consumers.chain(groups).min_by_key(|(offset, _, _)| *offset)"
+        },
+        {
+          "first_line": 12020,
+          "last_line": 12035,
+          "text": "    fn retention_is_ready(&mut self, through: u64) -> bool {\n        if self.log.segments().len() < 2 {\n            self.maintenance.retention = None;\n            return false;\n        }\n        let segment = &self.log.segments()[0];\n        if !segment.sealed || segment.end_offset > through {\n            self.maintenance.retention = None;\n            return false;\n        }\n        if let Some((barrier, kind, consumer_id)) = self.min_committed_offset()\n            && segment.end_offset > barrier\n        {\n            warn!(namespace_raw = self.namespace().inner(), start_offset = segment.start_offset, end_offset = segment.end_offset, barrier, %kind, consumer_id, \"segment retained: blocked by committed consumer offset\");\n            self.maintenance.retention = None;\n            return false;"
+        },
+        {
+          "first_line": 12150,
+          "last_line": 12161,
+          "text": "    /// Re-anchor the append point after boot re-seeded the offset counter above\n    /// what the recovered segment chain holds.\n    ///\n    /// A hole INSIDE a segment is not survivable: `recover_segment_bounds` walks\n    /// a segment from its FILENAME with a running `expected_offset` and REFUSES\n    /// at the first offset that does not continue it (`OffsetDiscontinuity`),\n    /// which on a solo group tombstones the partition. A surviving index does not\n    /// help: a first entry that is not the file-name offset makes recovery\n    /// discard the index and walk from byte 0, reaching the same refusal. On a\n    /// segment BOUNDARY every reader copes -- absolute offsets in the index,\n    /// `disk_poll_start` walking on into later segments, and a chain guard that\n    /// admits a forward gap the reservation covers."
+        }
+      ]
+    },
+    {
+      "id": "iggy_disabled_auto_commit",
+      "repository": "/Users/alexy/src/iggy",
+      "commit": "153fdf466aea94b7bcb90681ee7274f9f76ec00d",
+      "path": "core/common/src/traits/message_client.rs",
+      "git_blob": "ac773b5b6d1e590d408a352868957fc0d6fd12e4",
+      "sha256": "d9178c9d492352a792c98fbfa1a96372b62c2ca5cd5a6ea1d75a0936c5fca50c",
+      "excerpts": [
+        {
+          "first_line": 42,
+          "last_line": 45,
+          "text": "    /// With automatic commits enabled, a new consumer offset key can be\n    /// rejected with `TooManyConsumerOffsets` at the partition's configured\n    /// limit. That poll returns no messages. Existing keys remain writable,\n    /// and polling without automatic commits does not allocate a stored offset."
+        }
+      ]
+    },
+    {
+      "id": "iggy_offset_delete_context",
+      "repository": "/Users/alexy/src/iggy",
+      "commit": "153fdf466aea94b7bcb90681ee7274f9f76ec00d",
+      "path": "core/common/src/traits/consumer_offset_client.rs",
+      "git_blob": "0689356c47f26e793a64d1f784ac6be3dbcd8dd6",
+      "sha256": "b1f7c93696d72a1e156db5925fa0feef776f11247bca795b5a9946a98aa9303c",
+      "excerpts": [
+        {
+          "first_line": 27,
+          "last_line": 33,
+          "text": "/// Binary clients cache the route of an offset write with the partition context it reported.\n/// After another client deletes and recreates the partition, a write without a caller context\n/// ([`Self::store_consumer_offset`], [`Self::delete_consumer_offset`]) can fail once with\n/// [`IggyError::HistoryUnavailable`] (87), or with [`IggyError::ConsumerGroupPartitionNotOwned`]\n/// (5009) for a consumer group. The failed route is dropped, so the next call routes again and\n/// takes the new context. [`Self::store_consumer_position`] carries the caller's context, so it\n/// keeps getting the refusal for that context."
+        },
+        {
+          "first_line": 76,
+          "last_line": 89,
+          "text": "    /// Delete the consumer offset for a specific consumer or consumer group for the given stream and topic by unique IDs or names.\n    ///\n    /// Authentication is required, and the permission to poll the messages.\n    /// A missing durable key returns [`IggyError::ConsumerOffsetNotFound`] (3021).\n    /// Missing numeric and named groups return codes 5000 and 5003 respectively.\n    /// A replica unable to admit the request returns [`IggyError::TransientNotAccepted`].\n    /// Deletion does not allocate a new key and is allowed at the offset limit.\n    async fn delete_consumer_offset(\n        &self,\n        consumer: &Consumer,\n        stream_id: &Identifier,\n        topic_id: &Identifier,\n        partition_id: Option<u32>,\n    ) -> Result<(), IggyError>;"
+        }
+      ]
+    },
+    {
+      "id": "spark_key_drift",
+      "repository": "/Users/alexy/src/spark-sdp-4.2.1",
+      "commit": "617618396087429b5627a86ce933bb0f5d6645cb",
+      "path": "sql/pipelines/src/main/scala/org/apache/spark/sql/pipelines/graph/FlowExecution.scala",
+      "git_blob": "c4cd358344ca1e49c726990744ee86f2e16d6a87",
+      "sha256": "2d12d8f7952651e87d86cce83e99c9fdd9d4dc7561a3acb9998a91f8db41339c",
+      "excerpts": [
+        {
+          "first_line": 513,
+          "last_line": 570,
+          "text": "  /**\n   * Validate that the AutoCDC key columns the flow expects match the keys recorded in the\n   * existing auxiliary table at [[auxIdent]] as a set: same arity, same set of names (per the\n   * session resolver), same per-name `dataType`s.\n   */\n  private def validateNoAutoCdcKeyDrift(\n      existingAuxTable: CatalogTable,\n      auxIdent: TableIdentifier): Unit = {\n    val resolver = spark.sessionState.conf.resolver\n    val existingAuxSchema = CatalogV2Util.v2ColumnsToStructType(existingAuxTable.columns())\n\n    // Resolve the flow-declared (expected) keys from [[auxiliaryTableSchema]]. We deliberately\n    // do not look them up in [[existingAuxSchema]] - that's the recorded side, and conflating\n    // the two sides would mask drift. See [[expectedAuxiliaryKeyFields]].\n    val expectedKeyFields: Seq[StructField] = expectedAuxiliaryKeyFields\n    val recordedKeyNames = parseRecordedKeyColumnNames(existingAuxTable, auxIdent)\n    val recordedKeyFields: Seq[StructField] = recordedKeyNames.map { name =>\n      existingAuxSchema.fields\n        .find(field => resolver(field.name, name))\n        .getOrElse(\n          // Either an implementation bug or, more likely, the user has corrupted the auxiliary\n          // table schema (e.g. dropped the key column). The remedy is full-refresh in either\n          // case.\n          throw new AnalysisException(\n            errorClass = \"AUTOCDC_INVALID_STATE.AUXILIARY_TABLE_KEY_COLUMN_MISSING\",\n            messageParameters = Map(\n              \"flowName\" -> identifier.unquotedString,\n              \"auxTableName\" -> auxIdent.unquotedString,\n              \"keyColumnName\" -> name,\n              \"propertyName\" -> AutoCdcAuxiliaryTable.keyColumnNamesProperty\n            )\n          )\n        )\n    }\n\n    val drifted =\n      // Arity drift (added or dropped keys).\n      recordedKeyFields.length != expectedKeyFields.length ||\n      // Name or dataType drift: every expected key must have a same-name (resolver-aware)\n      // recorded counterpart with an equivalent dataType. Columns changing nullability and\n      // metadata in the schema are intentionally tolerated, although null key values during\n      // microbatch execution will be invalidated regardless.\n      expectedKeyFields.exists { expected =>\n        recordedKeyFields.find(rf => resolver(rf.name, expected.name)) match {\n          case None => true\n          case Some(recorded) => !recorded.dataType.sameType(expected.dataType)\n        }\n      }\n\n    if (drifted) {\n      throw new AnalysisException(\n        errorClass = \"AUTOCDC_INVALID_STATE.KEY_SCHEMA_DRIFT\",\n        messageParameters = Map(\n          \"flowName\" -> identifier.unquotedString,\n          \"auxTableName\" -> auxIdent.unquotedString,\n          \"expectedKeySchema\" -> StructType(expectedKeyFields).toDDL,\n          \"recordedKeySchema\" -> StructType(recordedKeyFields).toDDL\n        )"
+        }
+      ]
+    },
+    {
+      "id": "spark_sequence_metadata_type",
+      "repository": "/Users/alexy/src/spark-sdp-4.2.1",
+      "commit": "617618396087429b5627a86ce933bb0f5d6645cb",
+      "path": "sql/pipelines/src/main/scala/org/apache/spark/sql/pipelines/graph/Flow.scala",
+      "git_blob": "f88b0cd3a1cbe78cd8ade07a598a7af9609f9d74",
+      "sha256": "50b98c1774c8ae31a79c54951810ae63f2bd99bcb8944deea084938002f0044e",
+      "excerpts": [
+        {
+          "first_line": 250,
+          "last_line": 285,
+          "text": "class AutoCdcMergeFlow(\n    val flow: AutoCdcFlow,\n    val funcResult: FlowFunctionResult\n) extends ResolvedFlow {\n  requireReservedPrefixAbsentInSourceColumns()\n\n  def changeArgs: ChangeArgs = flow.changeArgs\n\n  /** The user-selected projection of [[df.schema]] (i.e. before the SCD metadata column). */\n  private val userSelectedSchema: StructType = {\n    val selectedSchema = ColumnSelection.applyToSchema(\n      schemaName = \"changeDataFeed\",\n      schema = df.schema,\n      columnSelection = changeArgs.columnSelection,\n      caseSensitive = spark.sessionState.conf.caseSensitiveAnalysis\n    )\n    // AutoCDC flows require all key columns to be present in the user-selected source schema,\n    // so that they survive into the target table where SCD reconciliation needs them.\n    requireKeysPresentInSelectedSchema(selectedSchema)\n    selectedSchema\n  }\n\n  /** The DataType of the sequencing expression, derived once from the source change feed. */\n  private[graph] val sequencingType: DataType =\n    df.select(changeArgs.sequencing).schema.head.dataType\n\n  /**\n   * Returns the augmented output schema of this flow, which can differ from the schema of the\n   * source change-data-feed dataframe.\n   *\n   * The source dataframe's schema describes the incoming CDC events; the augmented schema here\n   * applies the user-specified [[ColumnSelection]] and appends the SCD-specific metadata\n   * columns that the AutoCDC MERGE engine projects onto the target table. Downstream\n   * dependencies in the pipeline see this augmented schema.\n   */\n  override val schema: StructType = changeArgs.storedAsScdType match {"
+        }
+      ]
+    },
+    {
+      "id": "spark_cdc_preparation",
+      "repository": "/Users/alexy/src/spark-sdp-4.2.1",
+      "commit": "617618396087429b5627a86ce933bb0f5d6645cb",
+      "path": "sql/pipelines/src/main/scala/org/apache/spark/sql/pipelines/autocdc/Scd1ForeachBatchHandler.scala",
+      "git_blob": "c286f26c8263c7c56b28c6802cb351ef7f36520c",
+      "sha256": "73345667f200592d18f32ef0828eda3994a80c71b3c9848c00eb37841dc7dc5f",
+      "excerpts": [
+        {
+          "first_line": 39,
+          "last_line": 72,
+          "text": "  def execute(batchDf: DataFrame, batchId: Long): Unit = {\n    ScdBatchValidator(\n      destinationIdentifier = targetTableIdentifier,\n      changeArgs = batchProcessor.changeArgs,\n      batchDf = batchDf,\n      batchId = batchId\n    ).validateMicrobatch()\n\n    val reconciledMicrobatch = batchProcessor.reconcileMicrobatch(\n      batchDf = batchDf,\n      // Aux holds at most one row per currently-active tombstone (revived keys are GC'd\n      // by mergeMicrobatchOntoAuxiliaryTable), so it generally stays small enough for a broadcast\n      // join. Future optimizations: key-pruned reads, table format-aware clustering and tombstone\n      // TTL.\n      auxiliaryTableDf = batchDf.sparkSession.read.table(\n        auxiliaryTableIdentifier.quotedString\n      )\n    )\n\n    batchProcessor.mergeMicrobatchOntoAuxiliaryTable(\n      reconciledMicrobatchDf = reconciledMicrobatch,\n      auxiliaryTableIdentifier = auxiliaryTableIdentifier\n    )\n\n    // Failure between these two merges is safe under foreachBatch retry: the aux merge\n    // only ever mutates a tombstone when this batch's event makes it stale (strictly newer\n    // delete advances it) or redundant (`>=` upsert revives the key, GC'ing the tombstone),\n    // so on retry those preconditions no longer hold against the just-advanced aux state -\n    // the aux merge is a no-op and the target merge replays as if for the first time.\n    batchProcessor.mergeMicrobatchOntoTarget(\n      reconciledMicrobatchDf = reconciledMicrobatch,\n      targetTableIdentifier = targetTableIdentifier\n    )\n  }"
+        }
+      ]
+    },
+    {
+      "id": "spark_cdc_reconciliation_plan",
+      "repository": "/Users/alexy/src/spark-sdp-4.2.1",
+      "commit": "617618396087429b5627a86ce933bb0f5d6645cb",
+      "path": "sql/pipelines/src/main/scala/org/apache/spark/sql/pipelines/autocdc/Scd1BatchProcessor.scala",
+      "git_blob": "0656a7eb91b01ae08bb677326a7794356a54664d",
+      "sha256": "30d76961123fb7d08b2be5c02b0aa412ddd407c7c8b6cbb2d5b2ba2ec1c40ec5",
+      "excerpts": [
+        {
+          "first_line": 66,
+          "last_line": 78,
+          "text": "  private[autocdc] def reconcileMicrobatch(\n      batchDf: DataFrame,\n      auxiliaryTableDf: DataFrame): DataFrame = {\n    val deduplicated = deduplicateMicrobatch(validatedMicrobatch = batchDf)\n    val withCdcMetadata = extendMicrobatchRowsWithCdcMetadata(validatedMicrobatch = deduplicated)\n    val projected = projectTargetColumnsOntoMicrobatch(\n      microbatchWithCdcMetadataDf = withCdcMetadata\n    )\n    applyTombstonesToMicrobatch(\n      microbatchDf = projected,\n      auxiliaryTableDf = auxiliaryTableDf\n    )\n  }"
+        }
+      ]
+    }
+  ],
+  "existing_receipts": [
+    "../8d044db3860b4f55e49543c833246af31e986e2e/gate.json",
+    "../orc-metadata-options/provenance.json"
+  ],
+  "limitations": [
+    "Source review only: no fresh runtime, broker, cloud, crash or distributed tests.",
+    "Existing Fable review and both Astra addenda preserved byte for byte.",
+    "No implementation changes or source-coverage count increases.",
+    "Provider mechanisms and prepared-input storage remain next-design choices."
+  ]
+}
