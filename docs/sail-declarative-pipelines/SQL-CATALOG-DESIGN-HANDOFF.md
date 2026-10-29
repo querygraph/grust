@@ -63,13 +63,14 @@ shared analyzer populates it with query.text(). TreeText intentionally reconstru
 parseable AST text and requires nonempty results to end in whitespace. Its contract
 must not be conflated with verbatim source preservation.
 
-TokenSpan offsets are documented as character offsets, not UTF-8 byte offsets.
-Any source extraction design must account for Unicode and avoid blind byte
-slicing. The next Astra pass should decide how original query source is carried
-through the shared parser/analyzer while preserving TreeText's existing contract,
-comments/whitespace, query boundaries and ordinary/pipeline view behavior.
-No replacement API is selected here. General view metadata belongs in Sail;
-LakeCat should store the resulting definition through its normal catalog adapter.
+The span documentation originally described character offsets. Inspection of the
+actual Chumsky 0.13.0 string input and a new Unicode lexer regression establish
+UTF-8 byte offsets; Sail d51777745 corrects that documentation. The completed
+[source-preservation design](SQL-SOURCE-DESIGN.md) records the shared source
+context and Spark 4.2.1 boundary controls. It leaves TreeText's reconstruction
+contract intact. Its implementation remains outstanding. General view metadata
+belongs in Sail; LakeCat should store the resulting definition through its normal
+catalog adapter, once its applicable provider operations are supported.
 
 The failing test body, initial candidate patch and log remain committed as evidence.
 It can be appended to the existing Rust test module and run by the exact filter

@@ -1,0 +1,40 @@
+{
+  "spark_version": "4.2.1",
+  "cases": [
+    {
+      "name": "basic",
+      "sql": "CREATE VIEW b COMMENT 'my persisted comment' AS SELECT * FROM range(1, 4);",
+      "expected": "SELECT * FROM range(1, 4)",
+      "actual": "SELECT * FROM range(1, 4)",
+      "outcome": "passed"
+    },
+    {
+      "name": "trivia",
+      "sql": "CREATE VIEW b AS /* leading */ SELECT  1 /* inside */ + 2 /* trailing */ ;",
+      "expected": "SELECT  1 /* inside */ + 2",
+      "actual": "SELECT  1 /* inside */ + 2",
+      "outcome": "passed"
+    },
+    {
+      "name": "unicode_and_delimiters",
+      "sql": "CREATE VIEW `雪` AS SELECT 'é;雪' AS `值`; -- after",
+      "expected": "SELECT 'é;雪' AS `值`",
+      "actual": "SELECT 'é;雪' AS `值`",
+      "outcome": "passed"
+    },
+    {
+      "name": "cte_and_newlines",
+      "sql": "CREATE VIEW b AS\nWITH c AS (SELECT 1 AS x)\nSELECT x FROM c\n-- trailing\n;",
+      "expected": "WITH c AS (SELECT 1 AS x)\nSELECT x FROM c",
+      "actual": "WITH c AS (SELECT 1 AS x)\nSELECT x FROM c",
+      "outcome": "passed"
+    },
+    {
+      "name": "hint",
+      "sql": "CREATE VIEW b AS SELECT /*+ REPARTITION(1) */ * FROM range(2);",
+      "expected": "SELECT /*+ REPARTITION(1) */ * FROM range(2)",
+      "actual": "SELECT /*+ REPARTITION(1) */ * FROM range(2)",
+      "outcome": "passed"
+    }
+  ]
+}

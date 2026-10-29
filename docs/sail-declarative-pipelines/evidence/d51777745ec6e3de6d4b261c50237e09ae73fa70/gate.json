@@ -1,0 +1,44 @@
+{
+  "sail_commit": "d51777745ec6e3de6d4b261c50237e09ae73fa70",
+  "recorded_at": "2026-10-29T13:03:47.865460+00:00",
+  "spark_commit": "617618396087429b5627a86ce933bb0f5d6645cb",
+  "gate_checkout": "/Users/alexy/src/sail-sdp-gate; detached immutable HEAD; own target",
+  "checks": [
+    {
+      "command": "cargo +nightly fmt -p sail-sql-parser -- --check",
+      "outcome": "pass",
+      "log": "fmt.log"
+    },
+    {
+      "command": "cargo +1.98.1 test -p sail-sql-parser --lib --locked",
+      "outcome": "pass",
+      "passed": 6,
+      "failed": 0,
+      "ignored": 0,
+      "log": "rust.log"
+    },
+    {
+      "command": "cargo +1.98.1 clippy -p sail-sql-parser --all-targets --all-features --locked -- -D warnings",
+      "outcome": "pass",
+      "log": "clippy.log"
+    },
+    {
+      "command": "python spark-source-reference.py",
+      "engine": "Spark 4.2.1 classic JVM SQL parser",
+      "outcome": "pass",
+      "passed": 5,
+      "report": "spark-source-reference.json"
+    }
+  ],
+  "initial_candidate": {
+    "commit": "36a4af5146000cd59d62e598d195a575a06f469e",
+    "rust_tests_passed": 6,
+    "clippy": "failed: expect_used in new test; corrected to Result propagation without changing assertions",
+    "patch": "initial-candidate.patch"
+  },
+  "limits": [
+    "Only a lexer regression test and span documentation change; source preservation is not implemented by this commit.",
+    "Spark parser-only controls; no new Sail end-to-end, CLI build, pytest, native extension or original Scala suite execution.",
+    "Original failing persisted-view assertion remains outstanding; catalog expressions, REST view support, full batch, streaming and CDC remain incomplete."
+  ]
+}

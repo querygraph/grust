@@ -1,0 +1,50 @@
+commit 36a4af5146000cd59d62e598d195a575a06f469e
+Author:     Alexy Khrabrov <deliverable@gmail.com>
+AuthorDate: Thu Oct 29 06:00:25 2026 -0700
+Commit:     Alexy Khrabrov <deliverable@gmail.com>
+CommitDate: Thu Oct 29 06:00:25 2026 -0700
+
+    test: pin SQL lexer spans to UTF-8 byte offsets
+
+diff --git a/crates/sail-sql-parser/src/lexer.rs b/crates/sail-sql-parser/src/lexer.rs
+index 09c58725f..b4b6e89b0 100644
+--- a/crates/sail-sql-parser/src/lexer.rs
++++ b/crates/sail-sql-parser/src/lexer.rs
+@@ -318,3 +318,22 @@ where
+     .collect()
+     .then_ignore(end())
+ }
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++
++    #[test]
++    fn string_input_spans_use_utf8_byte_offsets() {
++        let source = "SELECT 'é' AS 雪";
++        let options = ParserOptions::default();
++        let tokens = create_lexer::<_, chumsky::extra::Err<chumsky::error::Rich<_, _>>>(&options)
++            .parse(source)
++            .into_result()
++            .expect("valid SQL tokens");
++        assert_eq!(tokens[2].1, (7..11).into());
++        assert_eq!(&source[tokens[2].1.start..tokens[2].1.end], "'é'");
++        assert_eq!(tokens[6].1, (15..18).into());
++        assert_eq!(&source[tokens[6].1.start..tokens[6].1.end], "雪");
++    }
++}
+diff --git a/crates/sail-sql-parser/src/span.rs b/crates/sail-sql-parser/src/span.rs
+index 79b56c4f4..ee6606596 100644
+--- a/crates/sail-sql-parser/src/span.rs
++++ b/crates/sail-sql-parser/src/span.rs
+@@ -1,8 +1,8 @@
+ use chumsky::prelude::SimpleSpan;
+ 
+ /// A span in the source code.
+-/// The offsets are measured in the number of characters from the beginning of the input,
+-/// starting from 0.
++/// When parsing a SQL string, offsets are UTF-8 byte offsets from the beginning of the input,
++/// starting from 0. Both ends lie on character boundaries.
+ #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+ pub struct TokenSpan {
+     /// The start offset of the span.

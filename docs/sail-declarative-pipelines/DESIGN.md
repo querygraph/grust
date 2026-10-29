@@ -43,6 +43,14 @@ and [graph resolution tests](https://github.com/apache/spark/blob/v4.2.1/sql/pip
 
 ## Sail integration
 
+General catalog behavior belongs in Sail: SQL expressions and identifiers,
+namespace resolution, metadata validation, view definitions and error transport
+must work through Sail's existing catalog interfaces. LakeCat is one supported
+catalog adapter. Extend LakeCat for missing provider operations or protocol
+coverage; do not move shared SQL semantics into it. Validate shared behavior
+against the applicable memory and REST catalog configurations. Extract reusable
+LakeCat machinery only where a small dependency boundary is actually needed.
+
 | Existing component | Reuse and required change |
 | --- | --- |
 | `sail-spark-connect` protocol and service | Replace the pipeline-command rejection with graph lifecycle and run handlers. Return typed command results and pipeline events through the existing execution response stream. |
